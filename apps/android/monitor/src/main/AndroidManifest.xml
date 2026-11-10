@@ -2,11 +2,33 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- The monitor's components (docs/ARCHITECTURE.md "State + services"). Permissions are the app's (app manifest). -->
+<!-- The monitor's components (docs/ARCHITECTURE.md "State + services") and the permissions they use. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The alert runtime's own needs (also declared by :app): exact alarms and full-screen alarms. USE_EXACT_ALARM
+    <!-- MonitoringService: the one monitoring service of both roles, connectedDevice (not dataSync: a dataSync FGS is
+         capped at 6 h per 24 h on Android 15+). Its prerequisite CHANGE_NETWORK_STATE is granted at install, so a
+         follower without the Nearby devices permission can still run it (BLUETOOTH_CONNECT is a runtime one). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- the glucose notification, the alerts and the sensor reminders -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Live Update chip (promoted ongoing glucose notification, LiveNotification) and the sensor-end countdown -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- MonitorReceiver: monitoring and the alert check start again after a reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- the alert checklist's *No battery restrictions* (setup, Settings › Alert reliability): monitoring must not be
+         killed -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- sensor end in the calendar (opt-in, sensorend/SensorCalendar); Google Calendar is looked up to open it -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <queries>
+        <package android:name="com.google.android.calendar" />
+    </queries>
+
+    <!-- The alert runtime's own needs: exact alarms and full-screen alarms. USE_EXACT_ALARM
          (granted at install, not revocable): the alert check must ring on time in Doze with the service dead —
          service/AlarmPolicy.kt explains the choice of setExactAndAllowWhileIdle over setAlarmClock. -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />

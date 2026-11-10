@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -86,6 +88,56 @@ class ManifestTest {
         val app = root.getElementsByTagName("application").item(0) as Element
         assertEquals("false", app.attr("allowBackup"))
         assertEquals("@xml/data_extraction_rules", app.attr("dataExtractionRules"))
+    }
+
+    private fun elements(tag: String) =
+        root
+            .getElementsByTagName(
+                tag,
+            ).let { list -> (0 until list.length).map { list.item(it) as Element } }
+
+    /** tools/check/allow.json's `permissions` / `queries` keys: the one list of what the app may declare, with why. */
+    private fun allowed(key: String): Set<String> =
+        Json
+            .parseToJsonElement(File("../../../tools/check/allow.json").readText())
+            .jsonObject
+            .getValue(key)
+            .jsonObject.keys
+            .toSortedSet()
+
+    /** #36: only what the shipped features use; a library or module that adds one fails here until the list says why. */
+    @Test
+    fun `the permissions are exactly allow-json's`() {
+        assertEquals(allowed("permissions"), elements("uses-permission").map { it.attr("name") }.toSortedSet())
+        // Bluetooth finds the sensor and phones nearby, never the person's location
+        val scan = elements("uses-permission").single { it.attr("name") == "android.permission.BLUETOOTH_SCAN" }
+        assertEquals("neverForLocation", scan.attr("usesPermissionFlags"))
+    }
+
+    @Test
+    fun `the queries are exactly allow-json's`() {
+        val queries =
+            elements("queries").flatMap { q ->
+                (0 until q.childNodes.length).mapNotNull { q.childNodes.item(it) as? Element }.map { e ->
+                    when (e.tagName) {
+                        "package" -> {
+                            "package:" + e.attr("name")
+                        }
+
+                        "intent" -> {
+                            "intent:" +
+                                (0 until e.childNodes.length)
+                                    .mapNotNull { e.childNodes.item(it) as? Element }
+                                    .joinToString(",") { it.attr("name") }
+                        }
+
+                        else -> {
+                            e.tagName
+                        }
+                    }
+                }
+            }
+        assertEquals(allowed("queries"), queries.toSortedSet())
     }
 
     // The release merged manifest isn't built in `check` (it needs the release key); no main-source manifest naming the
