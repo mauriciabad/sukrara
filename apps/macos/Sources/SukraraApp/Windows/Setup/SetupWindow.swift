@@ -87,13 +87,17 @@ public struct SetupView: View {
         }
     }
 
+    /// The person's glucose unit (`general.unit`): the thresholds are written in it.
+    private var unit: GlucoseUnit { model.store.unit }
+
     private var thresholds: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(L10n.t("Sukrara alerts at these values. Use them, or change them in Settings › Alerts."))
             ForEach([AlertKind.veryLow, .low, .high, .veryHigh, .extremelyHigh], id: \.self) { k in
                 LabeledContent(AlertsRangesPane.kindName(k)) {
                     Text(
-                        model.alerts.settings[k].on ? "\(Int(model.alerts.settings[k].threshold)) mg/dL" : L10n.t("Off")
+                        model.alerts.settings[k].on
+                            ? "\(unit.format(Int(model.alerts.settings[k].threshold))) \(unit.symbol)" : L10n.t("Off")
                     )
                 }
                 .frame(minHeight: 24)

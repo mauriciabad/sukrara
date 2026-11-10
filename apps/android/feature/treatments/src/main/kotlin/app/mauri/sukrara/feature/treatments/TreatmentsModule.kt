@@ -7,6 +7,7 @@ import android.content.Context
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.PenNearEntry
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -45,6 +46,10 @@ class TreatmentsModule(
 
     /** The person's glucose ranges (the tile says the value's range in words, as the card shows it). */
     val bands: StateFlow<Bands> = GraphSettings.config(settings).map { it.bands }.stateIn(scope, SharingStarted.Eagerly, Bands())
+
+    /** The person's glucose unit: the tile writes the value in it. */
+    val unit: StateFlow<GlucoseUnit> =
+        GraphSettings.config(settings).map { it.unit }.stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MGDL)
 
     /**
      * Saves [entries] at [at] (null = now) in the app's scope, so it completes after the quick dialog has closed.

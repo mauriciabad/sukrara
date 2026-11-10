@@ -5,6 +5,7 @@ package app.mauri.sukrara.monitor.systemui
 
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
@@ -207,14 +208,20 @@ class SystemUiTest {
 
     @Test fun `the state sent to System UI is the hub's`() {
         val p = RootPrefs(on = true, position = HookPosition.DEFAULT, color = false, hideIcon = true)
-        val s = RootStatusBar.hookState(state(138, rate = -1.0), p, Bands())
+        val s = RootStatusBar.hookState(state(138, rate = -1.0), p, Bands(), GlucoseUnit.MGDL)
         assertEquals(138, s.mgdl)
         assertEquals(-1.0, s.rate!!, 0.0)
         assertTrue(s.systemIcons)
         assertFalse(s.color)
-        val w = RootStatusBar.hookState(state(mgdl = null, sensor = SensorState.WarmingUp(now.plusSeconds(60))), p, Bands())
+        val w =
+            RootStatusBar.hookState(
+                state(mgdl = null, sensor = SensorState.WarmingUp(now.plusSeconds(60))),
+                p,
+                Bands(),
+                GlucoseUnit.MGDL,
+            )
         assertEquals(nowS + 60, w.readyAtS)
-        assertTrue(RootStatusBar.hookState(state(sensor = SensorState.Ended), p, Bands()).sensorEnded)
+        assertTrue(RootStatusBar.hookState(state(sensor = SensorState.Ended), p, Bands(), GlucoseUnit.MGDL).sensorEnded)
     }
 
     @Test fun `the value never vanishes from the bar when the icons can't show`() {

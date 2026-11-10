@@ -29,6 +29,8 @@ class SettingsPagesTest {
     /** Android settings the pages show (Alerts, an alert's page, Ranges, Graph, the review). */
     private val shown =
         setOf(
+            // Settings › Ranges: the glucose unit, then the six ranges
+            "general.unit",
             "graph.band.veryLow",
             "graph.band.low",
             "graph.band.tight",
@@ -119,8 +121,6 @@ class SettingsPagesTest {
             "lock.widget",
             "lock.background",
             "lock.appearance",
-            // mmol/L in these pages: issue c17 (thresholds and ranges stay mg/dL here)
-            "general.unit",
         )
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())

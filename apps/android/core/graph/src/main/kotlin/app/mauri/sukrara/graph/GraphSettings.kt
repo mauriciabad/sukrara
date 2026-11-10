@@ -5,9 +5,11 @@ package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.Setting
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.TirRange
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -54,6 +56,14 @@ object GraphSettings {
     /** Treatments on the graph, [MarkShow.text]. */
     val Marks = SchemaSettings.text("graph.marks", MarkShow.DEFAULT.text)
 
+    /** The glucose unit every number is written in (`general.unit`, schema option `unit`). */
+    val GlucoseUnitSetting =
+        SchemaSettings.text(
+            "general.unit",
+            GlucoseUnit.MGDL.key,
+            SettingsSpec.OPTIONS.getValue("unit").toSet(),
+        )
+
     /** Each place's own window in hours (0 = the default's). */
     val PlaceHours: Map<GraphPlace, Setting<Double>> =
         GraphPlace.entries.associateWith { SchemaSettings.numberAt("graph.hours.place", it.ordinal) }
@@ -86,13 +96,13 @@ object GraphSettings {
             combine(GraphPlace.entries.map { settings.flow(SensorTime.getValue(it)) }) { v ->
                 GraphPlace.entries.filterIndexed { i, _ -> !v[i] }.toSet()
             }
-        val places = combine(hours, hidden) { h, s -> h to s }
+        val places = combine(hours, hidden, settings.flow(GlucoseUnitSetting)) { h, s, u -> Triple(h, s, GlucoseUnit.of(u)) }
         return combine(bands, numbers, switches, combine(enums, texts) { e, t -> e to t }, places) {
             b,
             (defaultHours, grid, rings),
             (side, crown, marks),
             (e, t),
-            (placeHours, sensorHidden),
+            (placeHours, sensorHidden, unit),
             ->
             GraphConfig(
                 bands = b,
@@ -113,6 +123,7 @@ object GraphSettings {
                 lastElse = GraphText.parseSlot(t[3]),
                 sensorHidden = sensorHidden,
                 marks = MarkShow.parse(t[4]),
+                unit = unit,
             )
         }.distinctUntilChanged()
     }

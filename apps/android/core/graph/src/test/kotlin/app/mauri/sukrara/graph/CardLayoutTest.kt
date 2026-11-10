@@ -6,6 +6,7 @@ package app.mauri.sukrara.graph
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -151,6 +152,7 @@ class CardLayoutTest {
             o["lines"]?.jsonArray?.let { l -> x = x.copy(lines = l.map { it.long()!!.toInt() }) }
             o["gridHours"].long()?.let { x = x.copy(gridHours = it.toInt()) }
             o["high"].long()?.let { x = x.copy(bands = x.bands.copy(high = it.toInt())) }
+            o["unit"].str()?.let { x = x.copy(unit = GlucoseUnit.of(it)) }
             when (val m = o["marks"]) {
                 null -> {}
 
@@ -205,6 +207,7 @@ class CardLayoutTest {
         sensorTime = c.sensorTime(p),
         // a card without a chart still colours the value and the rings by the user's bands
         bands = c.bands,
+        unit = c.unit,
     )
 
     /** The registered card surfaces' shapes (surfaces.json parts and sizes). */
@@ -333,6 +336,7 @@ class CardLayoutTest {
         return mapOf(
             "scene" to r.scene,
             "settings" to r.settings,
+            "unit" to st.unit.key,
             "face" to "${st.value || (st.graph != null && chart == null && r.layouts.any { it.part == CardPart.ALL })}",
             "value" to "${st.value}",
             "graph" to "${st.graph != null}",

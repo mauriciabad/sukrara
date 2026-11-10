@@ -155,6 +155,7 @@ object SettingsIndex {
             addAll(
                 page(
                     SettingsRoute.Ranges,
+                    R.string.st_unit to R.string.st_unit_footer,
                     R.string.st_band_very_low to null,
                     R.string.st_band_low to null,
                     R.string.st_band_tight to null,

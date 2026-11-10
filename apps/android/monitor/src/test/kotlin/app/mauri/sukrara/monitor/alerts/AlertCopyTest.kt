@@ -10,6 +10,7 @@ import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.alerts.TreatmentKind
 import app.mauri.sukrara.core.model.DurationWords
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
@@ -23,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
@@ -159,29 +161,48 @@ class AlertCopyTest {
 
     @Test fun anAlertWithoutAReadingNeverShowsAMadeUpValue() {
         for (kind in listOf(AlertKind.LOW, AlertKind.VERY_LOW, AlertKind.HIGH, AlertKind.FALLING_FAST, AlertKind.RISING_FAST)) {
-            assertEquals("en $kind", "No recent reading", AlertCopy.body(firing(kind, null), en))
-            assertEquals("es $kind", "Sin lectura reciente", AlertCopy.body(firing(kind, null), es))
+            assertEquals("en $kind", "No recent reading", AlertCopy.body(firing(kind, null), en, GlucoseUnit.MGDL))
+            assertEquals("es $kind", "Sin lectura reciente", AlertCopy.body(firing(kind, null), es, GlucoseUnit.MGDL))
         }
     }
 
     @Test fun aLevelAlertShowsTheValueAndArrowAndTheFastOnesTheRate() {
         val r = AlertReading(t = 1_000_000, mgdl = 69, rate = -2.4)
-        assertTrue(AlertCopy.body(firing(AlertKind.LOW, r), en).startsWith("69 mg/dL "))
-        assertTrue(AlertCopy.body(firing(AlertKind.FALLING_FAST, r), en).endsWith(" · falling 2.4 mg/dL/min"))
+        assertTrue(AlertCopy.body(firing(AlertKind.LOW, r), en, GlucoseUnit.MGDL).startsWith("69 mg/dL "))
+        assertTrue(AlertCopy.body(firing(AlertKind.FALLING_FAST, r), en, GlucoseUnit.MGDL).endsWith(" · falling 2.4 mg/dL/min"))
         assertEquals(
             "no rate: no made-up 0.0",
-            AlertCopy.body(firing(AlertKind.LOW, r.copy(rate = null)), en),
-            AlertCopy.body(firing(AlertKind.FALLING_FAST, r.copy(rate = null)), en),
+            AlertCopy.body(firing(AlertKind.LOW, r.copy(rate = null)), en, GlucoseUnit.MGDL),
+            AlertCopy.body(firing(AlertKind.FALLING_FAST, r.copy(rate = null)), en, GlucoseUnit.MGDL),
         )
     }
 
     @Test fun loAndHiAreNeverTheirStoredNumber() {
         val lo = AlertReading(t = 1_000_000, mgdl = 39)
         val hi = AlertReading(t = 1_000_000, mgdl = 401)
-        assertTrue(AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en).startsWith("LO · below 40 mg/dL"))
-        assertTrue(AlertCopy.body(firing(AlertKind.EXTREMELY_HIGH, hi), es).startsWith("HI · por encima de 400 mg/dL"))
-        assertTrue(AlertCopy.body(firing(AlertKind.NO_DATA, lo), en).endsWith("last LO · below 40 mg/dL"))
-        assertTrue("39" !in AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en))
+        assertTrue(AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en, GlucoseUnit.MGDL).startsWith("LO · below 40 mg/dL"))
+        assertTrue(AlertCopy.body(firing(AlertKind.EXTREMELY_HIGH, hi), es, GlucoseUnit.MGDL).startsWith("HI · por encima de 400 mg/dL"))
+        assertTrue(AlertCopy.body(firing(AlertKind.NO_DATA, lo), en, GlucoseUnit.MGDL).endsWith("last LO · below 40 mg/dL"))
+        assertTrue("39" !in AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en, GlucoseUnit.MGDL))
+    }
+
+    /** contracts/settings/units.json: the value, its bound and the rate in mmol/L, the language's decimal separator. */
+    @Test fun inMmolPerLitreEveryNumberIsInTheUnit() {
+        val r = AlertReading(t = 1_000_000, mgdl = 69, rate = -2.4)
+        val mmol = GlucoseUnit.MMOL
+        assertTrue(AlertCopy.body(firing(AlertKind.LOW, r), en, mmol, Locale.ENGLISH).startsWith("3.8 mmol/L "))
+        assertTrue(AlertCopy.body(firing(AlertKind.LOW, r), es, mmol, Locale.forLanguageTag("es")).startsWith("3,8 mmol/L "))
+        assertTrue(
+            AlertCopy.body(firing(AlertKind.FALLING_FAST, r), en, mmol, Locale.ENGLISH).endsWith(" · falling 0.13 mmol/L/min"),
+        )
+        val lo = AlertReading(t = 1_000_000, mgdl = 39)
+        val hi = AlertReading(t = 1_000_000, mgdl = 401)
+        assertTrue(AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en, mmol, Locale.ENGLISH).startsWith("LO · below 2.2 mmol/L"))
+        assertTrue(
+            AlertCopy
+                .body(firing(AlertKind.EXTREMELY_HIGH, hi), es, mmol, Locale.forLanguageTag("es"))
+                .startsWith("HI · por encima de 22,2 mmol/L"),
+        )
     }
 
     @Test fun spanishAndEnglishHaveTheSameKeys() {

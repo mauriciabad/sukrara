@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
@@ -22,6 +23,7 @@ import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.monitor.readiness.AndroidAlertReadiness
 import app.mauri.sukrara.monitor.readiness.NotificationCooldown
 import app.mauri.sukrara.monitor.sensorend.AndroidSensorEndPresenter
@@ -88,6 +90,14 @@ class AlertsModule(
     /** Read at each ringing alert; null until the store answered (the first alert of a process then reads it). */
     private val unlockedNow = unlockedAnswer.stateIn(scope, SharingStarted.Eagerly, null)
 
+    /** The glucose unit the alert texts write numbers in (`general.unit`); mg/dL until the store answered. */
+    private val unitNow =
+        alertSettings
+            .flow(GraphSettings.GlucoseUnitSetting)
+            .map(GlucoseUnit::of)
+            .catch { emit(GlucoseUnit.MGDL) }
+            .stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MGDL)
+
     val notifier =
         AlertNotifier(
             ctx,
@@ -96,6 +106,7 @@ class AlertsModule(
                 val answer = unlockedNow.value ?: runBlocking { unlockedAnswer.first() }
                 NotificationCooldown.appPlays(NotificationCooldown.vibrateOnlyWhenUnlocked(ctx), answer)
             },
+            unit = { unitNow.value },
         )
 
     /** Settings' sound preview and *Send a test alert*. */

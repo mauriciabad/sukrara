@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.str
@@ -47,11 +48,11 @@ class TrendFixtureTest {
         cases.forEach { c ->
             val rate = c["rate"].double()
             val want = (c["expect"] as JsonObject)["text"].str()
-            val fresh = GlucoseCard.face(GlucosePoint(now - 30, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT)
+            val fresh = GlucoseCard.face(GlucosePoint(now - 30, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
             assertEquals(c["name"].str(), want, fresh.arrowText)
-            val stale = GlucoseCard.face(GlucosePoint(now - 6 * 60, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT)
+            val stale = GlucoseCard.face(GlucosePoint(now - 6 * 60, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
             assertEquals(c["name"].str(), TrendMark.RING, stale.arrowText)
         }
-        assertEquals(null, GlucoseCard.face(null, now, null, CardSurface.NOTIFICATION_TEXT).arrowText)
+        assertEquals(null, GlucoseCard.face(null, now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL).arrowText)
     }
 }

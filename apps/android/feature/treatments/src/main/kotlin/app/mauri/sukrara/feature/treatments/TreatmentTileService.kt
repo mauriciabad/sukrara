@@ -66,12 +66,13 @@ class TreatmentTileService : TileService() {
         val canAdd = treatmentsModule.canAdd()
         tile.state = if (canAdd) Tile.STATE_INACTIVE else Tile.STATE_UNAVAILABLE
         val nowS = System.currentTimeMillis() / 1000
-        val look = GlucoseCard.face(state, nowS, CardSurface.QUICK_TILE)
+        val unit = treatmentsModule.unit.value
+        val look = GlucoseCard.face(state, nowS, CardSurface.QUICK_TILE, unit)
         // TalkBack: the card's one sentence (#25), never the subtitle's arrow or struck digits
         tile.stateDescription =
             if (canAdd && look.state != GlucoseLook.State.NONE) {
                 val model = cardModelOf(state, emptyList(), Instant.ofEpochSecond(nowS), CardWords.of(resources))
-                A11y.value(model, treatmentsModule.bands.value, CardSurface.QUICK_TILE, badge = false)
+                A11y.value(model, treatmentsModule.bands.value, CardSurface.QUICK_TILE, unit, badge = false)
             } else {
                 null
             }

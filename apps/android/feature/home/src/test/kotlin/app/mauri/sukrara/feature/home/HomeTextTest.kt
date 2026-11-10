@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performScrollTo
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
@@ -40,7 +41,7 @@ class HomeTextTest {
         fromPen: Set<String> = emptySet(),
         callbacks: HomeCallbacks = HomeCallbacks(),
     ) {
-        val look = homeLook(glucose, NOW)
+        val look = homeLook(glucose, NOW, GlucoseUnit.MGDL)
         val treatments =
             listOf(Samples.treatment("a", TreatmentKind.Carbs, 30.0, 25), Samples.treatment("b", TreatmentKind.RapidInsulin, 4.5, 3 * 60))
         val state =

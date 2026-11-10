@@ -6,6 +6,8 @@ package app.mauri.sukrara.graph
 import app.mauri.sukrara.core.graph.R
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.GlucoseRange
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucoseStats
@@ -23,19 +25,21 @@ import app.mauri.sukrara.graph.stats.TirRange
 object A11y {
     /**
      * The glucose sentence: "112 milligrams per decilitre, falling, in range, 2 min ago", or the reason there is no
-     * value; then the alert or mute the status pill says, when a value is shown and the place has [badge] on.
+     * value; then the alert or mute the status pill says, when a value is shown and the place has [badge] on. The value
+     * and the LO / HI bounds in the person's [unit] ("6,2 milimoles por litro").
      */
     fun value(
         model: CardModel,
         bands: Bands,
         surface: CardSurface,
+        unit: GlucoseUnit,
         badge: Boolean = true,
     ): String {
         val w = model.words
         val now = model.nowS
         val r = model.latest
         val sensor = SensorBadge.look(model.sensor, now, r?.t, w)
-        val face = GlucoseCard.face(r, now, sensor, surface)
+        val face = GlucoseCard.face(r, now, sensor, surface, unit, w.locale)
         val glucose =
             when (face.state) {
                 GlucoseLook.State.WARMING_UP, GlucoseLook.State.ENDED -> {
@@ -52,13 +56,15 @@ object A11y {
 
                 GlucoseLook.State.VALUE -> {
                     val p = checkNotNull(r)
-                    val unit = w.string(R.string.a11y_unit_mgdl)
-                    val bound = p.sgv < LO || p.sgv > HI
+                    val said = w.string(if (unit == GlucoseUnit.MMOL) R.string.a11y_unit_mmol else R.string.a11y_unit_mgdl)
+                    val bound = GlucoseRange.isLo(p.sgv) || GlucoseRange.isHi(p.sgv)
+
+                    fun number(mgdl: Int) = w.string(R.string.a11y_value, unit.text(mgdl, w.locale), said)
                     listOfNotNull(
                         when {
-                            p.sgv < LO -> w.string(R.string.a11y_below, w.string(R.string.a11y_value, "$LO", unit))
-                            p.sgv > HI -> w.string(R.string.a11y_above, w.string(R.string.a11y_value, "$HI", unit))
-                            else -> w.string(R.string.a11y_value, checkNotNull(face.text), unit)
+                            GlucoseRange.isLo(p.sgv) -> w.string(R.string.a11y_below, number(GlucoseRange.FLOOR))
+                            GlucoseRange.isHi(p.sgv) -> w.string(R.string.a11y_above, number(GlucoseRange.CEILING))
+                            else -> number(p.sgv)
                         },
                         w.string(R.string.a11y_value_old).takeIf { face.strike },
                         w.trend(p.rate.takeIf { face.trend == TrendMark.ARROW }).takeUnless { face.strike },
@@ -98,7 +104,7 @@ object A11y {
         val now = model.nowS
         val bands = style.bands.sane()
         val sensor = SensorBadge.look(model.sensor, now, model.latest?.t, w)
-        val first = if (style.value) value(model, bands, surface, style.badge) else age(model, surface)
+        val first = if (style.value) value(model, bands, surface, style.unit, style.badge) else age(model, surface)
         val slots = if (style.value) GlucoseCard.slotItems(model, style, MAX_SLOTS) else emptyList()
         val spoken = slots.mapNotNull { slot(it, now, w) }
         val life =
@@ -127,7 +133,8 @@ object A11y {
         val now = model.nowS
         val r = model.latest
         val sensor = SensorBadge.look(model.sensor, now, r?.t, w)
-        val face = GlucoseCard.face(r, now, sensor, surface)
+        // the age only: no number is said, so the unit doesn't matter
+        val face = GlucoseCard.face(r, now, sensor, surface, GlucoseUnit.MGDL)
         if (face.state == GlucoseLook.State.WARMING_UP ||
             face.state == GlucoseLook.State.ENDED
         ) {
@@ -206,7 +213,7 @@ object A11y {
                         ) {
                             TirRing.text(item.m.tir, item.spec)
                         } else {
-                            MetricGauge.text(item.spec.kind, item.m).first
+                            MetricGauge.text(item.spec.kind, item.m, item.unit, w.locale).first
                         }
                     metric(item.spec.kind, item.spec.range, item.spec.windowS, text, w)
                 }
@@ -360,9 +367,6 @@ object A11y {
         w: CardWords,
         parts: List<String>,
     ) = parts.joinToString(". ") { sentence(w, it) }
-
-    private const val LO = 40
-    private const val HI = 400
 
     /** The most slots a card draws. */
     private const val MAX_SLOTS = 4

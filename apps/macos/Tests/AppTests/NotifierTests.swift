@@ -78,6 +78,27 @@ final class FakeCenter: NotificationPosting {
         #expect(es.headline(firing(.low, treated: 2)) == "Glucosa baja · vuelve a comer")
     }
 
+    /// contracts/settings/units.json: in mmol/L the value, the LO bound and the rate are in the unit, the language's
+    /// decimal separator.
+    @Test func bodyInMmolWritesEveryNumberInTheUnit() {
+        var en = AlertText(language: .en), es = AlertText(language: .es)
+        en.unit = .mmol
+        es.unit = .mmol
+        let fast = firing(.fallingFast, mgdl: 69, rate: -2.4)
+        #expect(en.body(fast, now: clock.now) == "3.8 mmol/L ↓ · falling 0.13 mmol/L/min")
+        #expect(es.body(fast, now: clock.now) == "3,8 mmol/L ↓ · baja 0,13 mmol/L/min")
+        #expect(en.body(firing(.veryLow, mgdl: 39, rate: nil), now: clock.now).hasPrefix("LO · below 2.2 mmol/L"))
+        #expect(
+            es.body(firing(.extremelyHigh, mgdl: 401, rate: nil), now: clock.now).hasPrefix(
+                "HI · por encima de 22,2 mmol/L"))
+        // the notifier writes the unit it is given now
+        var s = AlertSettings()
+        s.rules[.low]?.on = true
+        let n = Notifier(center: center, sounds: nil, text: en, clock: clock, unit: { .mmol }, settings: { s })
+        n.post(firing(.low, mgdl: 62), sound: false, category: AlertNotificationIDs.alertCategory)
+        #expect(center.added.last?.content.body.hasPrefix("3.4 mmol/L") == true)
+    }
+
     @Test func aSilentResumeHasNoSoundAndASoundCopyFailureRingsTheDefault() {
         notifier().post(firing(.low), sound: false, category: AlertNotificationIDs.alertCategory)
         #expect(center.added[0].content.sound == nil)

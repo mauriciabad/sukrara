@@ -6,6 +6,7 @@ package app.mauri.sukrara.monitor.systemui
 import android.content.Intent
 import android.os.Bundle
 import app.mauri.sukrara.core.data.settings.HookPosition
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucosePoint
 
@@ -27,6 +28,8 @@ data class HookState(
     val readyAtS: Long = 0,
     /** The slot daemon's icons are on screen now (a `slot:` placement with root and a running daemon). */
     val iconsShown: Boolean = false,
+    /** The person's glucose unit: the module writes the value in it. */
+    val unit: GlucoseUnit = GlucoseUnit.MGDL,
 ) {
     /** The newest reading for the card's decision, or null. */
     fun latest(): GlucosePoint? = if (mgdl > 0) GlucosePoint(atS, mgdl, rate) else null
@@ -53,6 +56,7 @@ data class HookState(
             putBoolean(ENDED, sensorEnded)
             putLong(READY_AT, readyAtS)
             putBoolean(ICONS_SHOWN, iconsShown)
+            putString(UNIT, unit.key)
         }
 
     companion object {
@@ -67,6 +71,7 @@ data class HookState(
         private const val ENDED = "sensorEnded"
         private const val READY_AT = "readyAt"
         private const val ICONS_SHOWN = "iconsShown"
+        private const val UNIT = "unit"
 
         /**
          * Reads a state the module received. Every value is untrusted and clamped: an unknown placement is the
@@ -90,6 +95,7 @@ data class HookState(
                 sensorEnded = b.getBoolean(ENDED, false),
                 readyAtS = b.getLong(READY_AT, 0).coerceAtLeast(0),
                 iconsShown = b.getBoolean(ICONS_SHOWN, false),
+                unit = GlucoseUnit.of(b.getString(UNIT)),
             )
         }
     }

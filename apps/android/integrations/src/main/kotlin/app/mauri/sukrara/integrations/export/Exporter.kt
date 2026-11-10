@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.export
 
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -11,6 +12,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import java.time.Duration
 import java.time.Instant
 
@@ -51,6 +53,8 @@ class Exporter(
     /** The current sensor (serial, start, end), null when none is known (a follower never knows the serial). */
     private val sensor: Flow<CurrentSensor?>,
     private val clock: Clock,
+    /** The person's glucose unit (`general.unit`): the file's glucose column is written in it, as on the Mac. */
+    private val unit: Flow<GlucoseUnit> = flowOf(GlucoseUnit.MGDL),
 ) {
     /** The current sensor, for the period choice ("This sensor" only when one is known). */
     suspend fun currentSensor(): CurrentSensor? = sensor.first()
@@ -78,7 +82,8 @@ class Exporter(
         return ExportData(start, to, rs, ts, s)
     }
 
-    fun csv(d: ExportData): String = GlucoseCsv.write(d.readings, d.treatments, d.from, d.to, clock.zone, clock.now(), d.sensor)
+    suspend fun csv(d: ExportData): String =
+        GlucoseCsv.write(d.readings, d.treatments, d.from, d.to, clock.zone, clock.now(), d.sensor, unit.first())
 
     fun fileName(d: ExportData): String = GlucoseCsv.fileName(d.from, d.to, clock.zone)
 }

@@ -52,6 +52,7 @@
     <string name="trend_falling">falling</string>
     <string name="trend_falling_fast">falling fast</string>
     <string name="a11y_unit_mgdl">milligrams per decilitre</string>
+    <string name="a11y_unit_mmol">millimoles per litre</string>
     <string name="a11y_value">%1$s %2$s</string>
     <string name="a11y_below">below %1$s</string>
     <string name="a11y_above">above %1$s</string>

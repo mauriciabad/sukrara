@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.GlucoseRange
+import app.mauri.sukrara.core.model.GlucoseUnit
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -107,8 +109,8 @@ enum class Freshness(
         /**
          * THE look of the latest reading ([sgv] at [t], [rate] mg/dL/min) at [nowS], behind every card and glyph
          * surface (the Mac's `Freshness.look` is the same rule; both run contracts/graph/freshness). [ended] = the
-         * sensor ended, [warmup] = a new sensor's warm-up time left ("42m"): their own states, before any value.
-         * Surfaces ask `GlucoseCard.face`, not this.
+         * sensor ended, [warmup] = a new sensor's warm-up time left ("42m"): their own states, before any value. The value
+         * is written in [unit] with [locale]'s decimal separator. Surfaces ask `GlucoseCard.face`, not this.
          */
         fun look(
             sgv: Int?,
@@ -117,6 +119,8 @@ enum class Freshness(
             nowS: Long,
             ended: Boolean = false,
             warmup: String? = null,
+            unit: GlucoseUnit = GlucoseUnit.MGDL,
+            locale: Locale = Locale.getDefault(),
         ): GlucoseLook {
             val fr = of(t?.let { nowS - it })
             return when {
@@ -140,7 +144,7 @@ enum class Freshness(
                     GlucoseLook(
                         GlucoseLook.State.VALUE,
                         fr,
-                        valueText(sgv),
+                        valueText(sgv, unit, locale),
                         fr.strike,
                         if (rate != null && !fr.strike) TrendMark.ARROW else TrendMark.NONE,
                         rate = rate,
@@ -149,12 +153,16 @@ enum class Freshness(
             }
         }
 
-        /** The value as text: the number, or LO / HI outside the sensor's 40–400 mg/dL. */
-        fun valueText(sgv: Int): String =
+        /** The value as text: the number in [unit] ("112", "6.2"), or LO / HI outside the sensor's 40–400 mg/dL. */
+        fun valueText(
+            sgv: Int,
+            unit: GlucoseUnit = GlucoseUnit.MGDL,
+            locale: Locale = Locale.getDefault(),
+        ): String =
             when {
-                sgv < 40 -> "LO"
-                sgv > 400 -> "HI"
-                else -> sgv.toString()
+                GlucoseRange.isLo(sgv) -> "LO"
+                GlucoseRange.isHi(sgv) -> "HI"
+                else -> unit.text(sgv, locale)
             }
 
         /** "14:05" today, "Tue 14:05" this week, "12 Oct" before; the clock time in the phone's 12/24-hour setting. */

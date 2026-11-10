@@ -27,6 +27,7 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 | `graph/surfaces/surfaces.json` | THE registry of every place that shows the card or its value (app paths) | `tools/check` card rules, cross-surface tests |
 | `settings/settings.json` | THE settings schema: every setting, its store + key per platform, number formats, mirroring | `tools/settings/gen.py` → `SettingsSpec`, `SettingsSchemaTest` on every app, `tools/check` |
 | `settings/durations.json` | duration formatting cases ("1 h 30 min") | every `Durations` test |
+| `settings/units.json` | THE glucose units: mg/dL ↔ mmol/L factor and rounding, values and rates as written (en / es), typed mmol/L → stored mg/dL | `UnitsFixtureTest` (Android), `GlucoseUnitTests` (Mac); `gen.py` checks the schema's mmol/L variants |
 | `settings/README.md` | the settings stores and the alert settings safety rule | — |
 | `protocol/PROTOCOL-v2.md`, `protocol/PROTOCOL-identity.md` | the Nostr wire formats wearer ↔ followers | `:core:protocol`, `:share`, `SukraraShare` |
 | `protocol/identity/*.json` | identity test vectors (keys, profile, avatar) — test-only keys | protocol tests on every app |

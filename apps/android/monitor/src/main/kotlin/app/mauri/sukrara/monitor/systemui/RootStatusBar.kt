@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.graph.CardSurface
@@ -103,10 +104,10 @@ class RootStatusBar(
             combine(
                 hub,
                 prefs,
-                graphConfig.map { it.bands },
+                graphConfig.map { it.bands to it.unit },
                 access.state,
                 ticks,
-            ) { s, p, bands, a, _ -> Input(s, p, bands, a.root == true) }
+            ) { s, p, (bands, unit), a, _ -> Input(s, p, bands, a.root == true, unit) }
                 .conflate()
                 .catch { Log.w(TAG, "inputs failed: ${it.javaClass.simpleName}") }
                 .collect {
@@ -149,15 +150,18 @@ class RootStatusBar(
         val prefs: RootPrefs,
         val bands: Bands,
         val root: Boolean,
+        val unit: GlucoseUnit,
     )
 
     private fun apply(input: Input) {
         val now = clock.now().epochSecond
         if (input.prefs != lastPrefs) retryAtMs = 0 // a settings change: try the daemon again at once
         lastPrefs = input.prefs
-        val wantIcons = input.prefs.on && input.root && HookPosition.isSystemIcons(input.prefs.position)
-        // the module draws its text instead while the icons aren't on screen (no root, daemon failed), so the value
-        // never vanishes from the bar and the notification icon is hidden only while one of them shows
+        // the icons are drawables of the mg/dL numbers (sb_n40 … sb_n400): in mmol/L the module writes the value as text
+        val wantIcons =
+            input.prefs.on && input.root && HookPosition.isSystemIcons(input.prefs.position) && input.unit == GlucoseUnit.MGDL
+        // the module draws its text instead while the icons aren't on screen (no root, daemon failed, mmol/L), so the
+        // value never vanishes from the bar and the notification icon is hidden only while one of them shows
         val iconsShown =
             if (wantIcons) {
                 val l = look(input.state, now)
@@ -168,7 +172,7 @@ class RootStatusBar(
                 stopDaemon()
                 false
             }
-        val hook = hookState(input.state, input.prefs, input.bands).copy(iconsShown = iconsShown)
+        val hook = hookState(input.state, input.prefs, input.bands, input.unit).copy(iconsShown = iconsShown)
         if (hook.enabled || sentOn) send(hook, ask = !asked)
         if (hook.enabled) asked = true
         sentOn = hook.enabled
@@ -305,20 +309,21 @@ class RootStatusBar(
         private const val RETRY_MIN_MS = 5 * 60_000L
         private const val RETRY_MAX_MS = 30 * 60_000L
 
-        /** The card's decision for the system icons. */
+        /** The card's decision for the system icons (mg/dL: the icons are drawables of the mg/dL numbers). */
         fun look(
             state: GlucoseState,
             nowS: Long,
         ): GlucoseLook {
-            val h = hookState(state, RootPrefs(true, HookPosition.DEFAULT, true, true), Bands())
-            return GlucoseCard.face(h.latest(), nowS, HookText.sensorLook(h, nowS), CardSurface.STATUS_ICONS)
+            val h = hookState(state, RootPrefs(true, HookPosition.DEFAULT, true, true), Bands(), GlucoseUnit.MGDL)
+            return GlucoseCard.face(h.latest(), nowS, HookText.sensorLook(h, nowS), CardSurface.STATUS_ICONS, GlucoseUnit.MGDL)
         }
 
-        /** The state the module gets for the hub state [s] with the settings [p] and ranges [bands]. */
+        /** The state the module gets for the hub state [s] with the settings [p], ranges [bands] and [unit]. */
         fun hookState(
             s: GlucoseState,
             p: RootPrefs,
             bands: Bands,
+            unit: GlucoseUnit,
         ): HookState {
             val latest = s.latest
             val sensor = s.sensor
@@ -333,6 +338,7 @@ class RootStatusBar(
                 rate = latest?.rateMgdlPerMin?.toDouble(),
                 sensorEnded = sensor == SensorState.Ended,
                 readyAtS = (sensor as? SensorState.WarmingUp)?.readyAt?.epochSecond ?: 0,
+                unit = unit,
             )
         }
     }

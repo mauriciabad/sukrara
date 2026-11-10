@@ -5,6 +5,7 @@ package app.mauri.sukrara.monitor.notify
 
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -107,7 +108,7 @@ class LiveNotificationContentTest {
     @Test
     fun `a fresh value shows value and arrow in the title and the chip, no time`() {
         val c = content(state())
-        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "↗")), c.title)
+        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", "↗")), c.title)
         assertEquals(UiText(R.string.monitor_chip_value, listOf("138")), c.chip)
         assertEquals(Icon.TREND, c.icon)
         assertEquals(1.2, c.trendRate!!, 0.0)
@@ -119,10 +120,20 @@ class LiveNotificationContentTest {
     fun `an out-of-range value says its range in words in the title, never by colour alone`() {
         val low = content(state(mgdl = 62))
         assertEquals(R.string.monitor_notif_value_range, low.title.res)
-        assertEquals(UiText(GraphR.string.card_range_low), low.title.args[2])
+        assertEquals(UiText(GraphR.string.card_range_low), low.title.args[3])
         val high = content(state(mgdl = 200), NotificationPrefs(bands = Bands(high = 210)))
         assertEquals("in the person's ranges", R.string.monitor_notif_value, high.title.res)
         assertEquals("struck: grey, no word", R.string.monitor_notif_value, content(state(mgdl = 62, ageS = 10 * 60)).title.res)
+    }
+
+    /** The person's unit: the title's value and unit in mmol/L (contracts/settings/units.json), the chip's value too. */
+    @Test
+    fun `in mmol per litre the title and the chip write the value in the unit`() {
+        val c = content(state(), NotificationPrefs(chip = true, promotionAllowed = true, unit = GlucoseUnit.MMOL))
+        assertEquals(UiText(R.string.monitor_notif_value, listOf("7.7", "mmol/L", "↗")), c.title)
+        assertEquals(UiText(R.string.monitor_chip_value, listOf("7.7")), c.chip)
+        val lo = content(state(mgdl = 39), NotificationPrefs(unit = GlucoseUnit.MMOL))
+        assertEquals("LO", lo.title.args[0])
     }
 
     @Test
@@ -204,8 +215,8 @@ class LiveNotificationContentTest {
     fun `the notification takes the renderer's face for its surface`() {
         val s = state(ageS = 10 * 60)
         assertEquals(
-            GlucoseCard.face(s.latest?.toPoint(), now.epochSecond, null, CardSurface.NOTIFICATION_TEXT),
-            LiveNotification.face(s, now),
+            GlucoseCard.face(s.latest?.toPoint(), now.epochSecond, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL),
+            LiveNotification.face(s, now, GlucoseUnit.MGDL),
         )
     }
 
@@ -229,7 +240,7 @@ class LiveNotificationContentTest {
                     .jsonPrimitive.content
             val name = c.getValue("name").jsonPrimitive.content
             val content = content(state(rate = rate))
-            assertEquals(name, UiText(R.string.monitor_notif_value, listOf("138", want)), content.title)
+            assertEquals(name, UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", want)), content.title)
             assertEquals(name, rate, content.trendRate)
         }
     }

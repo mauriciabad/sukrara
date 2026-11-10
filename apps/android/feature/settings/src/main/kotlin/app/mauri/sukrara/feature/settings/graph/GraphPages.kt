@@ -30,12 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.CardRow
@@ -47,6 +49,7 @@ import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
+import app.mauri.sukrara.feature.settings.glucoseLabeler
 import app.mauri.sukrara.feature.settings.numberLabeler
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPalette
@@ -219,14 +222,14 @@ fun GraphContent(
     }
     val label = numberLabeler()
     val period = periodLabeler()
-    val mgdl = stringResource(R.string.st_mgdl)
+    val glucose = glucoseLabeler()
     SettingsPage(stringResource(R.string.st_graph_title), onBack) {
         PreviewCard(preview)
 
         val linesTitle = stringResource(R.string.st_graph_lines)
         SettingsGroup(title = linesTitle, titleAction = { resetIcon(GraphSection.Lines, linesTitle) }) {
             if (c.lines.isNotEmpty()) {
-                CardRow { LineChips(c.lines, mgdl, !readOnly) { actions.lines(c.lines - it) } }
+                CardRow { LineChips(c.lines, glucose, !readOnly) { actions.lines(c.lines - it) } }
             }
             val max = SettingsSpec.LINE.maxItems
             ValueRow(
@@ -387,7 +390,7 @@ fun GraphContent(
         }
         FooterText(stringResource(R.string.st_graph_footer))
     }
-    GraphDialogs(dialog, c, actions, label, period, mgdl) { dialog = null }
+    GraphDialogs(dialog, c, actions, label, period) { dialog = null }
 }
 
 @Composable
@@ -398,11 +401,16 @@ private fun slotName(i: Int) =
 private fun rangeName(
     r: TirRange,
     c: GraphConfig,
-): String =
-    when (r) {
-        TirRange.IN_RANGE -> stringResource(R.string.st_ring_counts_in_range, c.bands.low, c.bands.high)
-        TirRange.TIGHT -> stringResource(R.string.st_ring_counts_tight, c.bands.low, c.bands.tight)
+): String {
+    val unit = LocalGlucoseUnit.current
+    val locale = LocalConfiguration.current.locales[0]
+
+    fun number(mgdl: Int) = unit.text(mgdl, locale)
+    return when (r) {
+        TirRange.IN_RANGE -> stringResource(R.string.st_ring_counts_in_range, number(c.bands.low), number(c.bands.high), unit.symbol)
+        TirRange.TIGHT -> stringResource(R.string.st_ring_counts_tight, number(c.bands.low), number(c.bands.tight), unit.symbol)
     }
+}
 
 @Composable
 private fun GraphDialogs(
@@ -411,7 +419,6 @@ private fun GraphDialogs(
     actions: GraphActions,
     label: (NumberSpec, Double) -> String,
     period: (Double) -> String,
-    mgdl: String,
     close: () -> Unit,
 ) {
     fun number(spec: NumberSpec) = { v: Double -> label(spec, v) }
@@ -427,7 +434,7 @@ private fun GraphDialogs(
                 stringResource(R.string.st_graph_line_add),
                 NumberInput(spec, reject = { v -> exists.takeIf { v.toInt() in c.lines } }),
                 spec.default,
-                { "${spec.text(it)} $mgdl" },
+                number(spec),
                 close,
             ) { v -> actions.lines((c.lines + v.toInt()).distinct().sorted()) }
         }
@@ -554,17 +561,17 @@ private fun CloseLater(close: () -> Unit) {
 @Composable
 private fun LineChips(
     lines: List<Int>,
-    mgdl: String,
+    glucose: (Int) -> String,
     enabled: Boolean,
     onRemove: (Int) -> Unit,
 ) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for (l in lines) {
-            val remove = stringResource(R.string.st_graph_line_remove, l)
+            val remove = stringResource(R.string.st_graph_line_remove, glucose(l))
             InputChip(
                 selected = false,
                 onClick = { onRemove(l) },
-                label = { Text("$l $mgdl") },
+                label = { Text(glucose(l)) },
                 enabled = enabled,
                 trailingIcon =
                     if (enabled) {

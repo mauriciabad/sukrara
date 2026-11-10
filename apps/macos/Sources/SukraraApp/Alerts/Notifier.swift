@@ -40,14 +40,17 @@ final class Notifier: AlertNotifying {
     private let text: AlertText
     private let clock: any TimeSource
     private let settings: () -> AlertSettings
+    /// The glucose unit now (`general.unit`): the body writes the value in it.
+    private let unit: () -> GlucoseUnit
     private var lastVariant: [AlertKind: Int] = [:]
     /// The bug-report log: which alert was posted or cleared, never a value.
     var eventLog: RotatingFileLog?
 
     init(
         center: any NotificationPosting, sounds: SoundLibrary?, text: AlertText = .preferred(), clock: any TimeSource,
-        settings: @escaping () -> AlertSettings
+        unit: @escaping () -> GlucoseUnit = { .mgdl }, settings: @escaping () -> AlertSettings
     ) {
+        self.unit = unit
         self.center = center
         self.sounds = sounds
         self.text = text
@@ -59,7 +62,9 @@ final class Notifier: AlertNotifying {
         let s = settings()
         let content = UNMutableNotificationContent()
         content.title = text.title(f)
-        content.body = text.body(f, now: clock.now)
+        var words = text
+        words.unit = unit()
+        content.body = words.body(f, now: clock.now)
         content.categoryIdentifier = category
         content.threadIdentifier = AlertNotificationIDs.alertCategory
         content.userInfo = [Self.sideKey: f.kind.side.rawValue, Self.firingKey: f.id]

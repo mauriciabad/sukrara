@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
@@ -111,6 +112,7 @@ import kotlin.math.roundToInt
 fun homeLook(
     state: GlucoseState,
     now: Instant,
+    unit: GlucoseUnit,
 ): GlucoseLook {
     // the same sensor dates and warm-up rule the drawn card uses (a reading since the sensor's start ends the warm-up)
     val info = state.sensor.info(now)
@@ -129,7 +131,7 @@ fun homeLook(
                 null
             }
         }
-    return GlucoseCard.face(state.latest?.toPoint(), now.epochSecond, sensor, CardSurface.APP_PANEL)
+    return GlucoseCard.face(state.latest?.toPoint(), now.epochSecond, sensor, CardSurface.APP_PANEL, unit)
 }
 
 /**
@@ -380,7 +382,7 @@ private fun panelMotion(
     palette: GraphPalette,
     reduced: Boolean,
 ): CardMotion? {
-    val look = homeLook(glucose, now)
+    val look = homeLook(glucose, now, config.unit)
     val number = look.text.takeIf { look.state == GlucoseLook.State.VALUE && !look.strike }
     val roll = remember { Animatable(1f) }
     var from by remember { mutableStateOf<String?>(null) }

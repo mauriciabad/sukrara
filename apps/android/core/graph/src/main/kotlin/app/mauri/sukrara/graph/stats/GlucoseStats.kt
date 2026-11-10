@@ -231,7 +231,7 @@ enum class Goal(
             IN_RANGE -> m.tir.inRange > 0.70
             BELOW -> m.tir.below < 0.04
             VERY_LOW -> m.tir.veryLow < 0.01
-            AVERAGE -> m.mean < 154
+            AVERAGE -> m.mean < AVERAGE_MGDL
             GMI -> m.gmi < 7.0
             CV -> m.cv <= 36.0
         }
@@ -250,6 +250,9 @@ enum class Goal(
     companion object {
         /** The report's minimum data in a window (70 %): below it the rings wear no mark. */
         const val MIN_COVERAGE = 0.70
+
+        /** The average's goal, mg/dL ([AVERAGE] writes it in mg/dL; other units convert it). */
+        const val AVERAGE_MGDL = 154
     }
 }
 

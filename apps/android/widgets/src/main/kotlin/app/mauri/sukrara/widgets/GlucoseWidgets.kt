@@ -32,6 +32,7 @@ import androidx.glance.background
 import androidx.glance.layout.Box
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.A11y
@@ -133,10 +134,11 @@ fun renderWidget(
 /** The renderer's decision about the value a widget shows (the description and the tap follow it). */
 fun widgetLook(
     model: CardModel,
+    unit: GlucoseUnit,
 ): GlucoseLook {
     val latest = model.latest
     val sensor = SensorBadge.look(model.sensor, model.nowS, latest?.t, model.words)
-    return GlucoseCard.face(latest, model.nowS, sensor, CardSurface.WIDGET_DESCRIPTION)
+    return GlucoseCard.face(latest, model.nowS, sensor, CardSurface.WIDGET_DESCRIPTION, unit, model.words.locale)
 }
 
 /**
@@ -167,7 +169,7 @@ fun widgetTap(
     val model = widgetModel(context, frame)
     return WidgetTap.of(
         role = frame.glucose.role,
-        look = widgetLook(model),
+        look = widgetLook(model, frame.config.unit),
         mgdl = model.latest?.sgv,
         lowLimit = frame.config.bands.low,
         firingKinds = frame.glucose.alerts.firingKinds,

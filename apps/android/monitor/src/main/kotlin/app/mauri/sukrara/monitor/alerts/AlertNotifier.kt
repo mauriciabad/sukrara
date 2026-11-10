@@ -16,6 +16,7 @@ import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.Clock
@@ -37,6 +38,8 @@ class AlertNotifier(
     private val ctx: Context,
     /** The alert sound Sukrara plays itself while Android only vibrates (*Vibrate only when unlocked*). */
     private val unlocked: UnlockedAlertSound? = null,
+    /** The person's glucose unit now (`general.unit`): the alert's value and rate are written in it. */
+    private val unit: () -> GlucoseUnit = { GlucoseUnit.MGDL },
 ) : AlertPresenter {
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
@@ -156,7 +159,7 @@ class AlertNotifier(
         return ctx.getString(R.string.alert_headline_with_context, base, ctx.getString(context))
     }
 
-    private fun text(f: Firing): String = AlertCopy.body(f, words)
+    private fun text(f: Firing): String = AlertCopy.body(f, words, unit())
 
     private fun clockTime(epochS: Long): String = Clock.time(epochS)
 

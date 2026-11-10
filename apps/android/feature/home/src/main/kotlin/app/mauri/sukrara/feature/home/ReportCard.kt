@@ -52,7 +52,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.graph.GraphPalette
@@ -116,6 +118,9 @@ internal fun ReportCardContent(
     val tone = GoalTone(good = Color(palette.tight), bad = Color(palette.high))
     val haptics = rememberHaptics()
     val locale = LocalConfiguration.current.locales[0]
+    val unit = LocalGlucoseUnit.current
+
+    fun glucose(mgdl: Int) = "${unit.text(mgdl, locale)} ${unit.symbol}"
     Card(modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Column(
             Modifier.padding(16.dp).animateContentSize(),
@@ -148,8 +153,8 @@ internal fun ReportCardContent(
             HorizontalDivider()
             MetricRow(
                 stringResource(R.string.report_average),
-                "${Math.round(metrics.mean)} mg/dL",
-                listOf(Goal.AVERAGE.text),
+                glucose(Math.round(metrics.mean).toInt()),
+                listOf(if (unit == GlucoseUnit.MGDL) Goal.AVERAGE.text else "< ${glucose(Goal.AVERAGE_MGDL)}"),
                 Goal.AVERAGE.met(metrics),
                 tone,
             )
@@ -229,9 +234,15 @@ private fun Ranges(
                 y += h + gap
             }
         }
+        // the ranges in the person's unit ("181–250 mg/dL", "10,1–13,9 mmol/L")
+        val unit = LocalGlucoseUnit.current
+        val locale = LocalConfiguration.current.locales[0]
+
+        fun n(mgdl: Int) = unit.text(mgdl, locale)
+        val sym = unit.symbol
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            RangeRow(stringResource(R.string.report_very_high), "> ${b.veryHigh} mg/dL", m.tir.veryHigh, Goal.VERY_HIGH, tone)
-            RangeRow(stringResource(R.string.report_high), "${b.high + 1}–${b.veryHigh} mg/dL", m.tir.high, null, tone)
+            RangeRow(stringResource(R.string.report_very_high), "> ${n(b.veryHigh)} $sym", m.tir.veryHigh, Goal.VERY_HIGH, tone)
+            RangeRow(stringResource(R.string.report_high), "${n(b.high + 1)}–${n(b.veryHigh)} $sym", m.tir.high, null, tone)
             RangeRow(
                 stringResource(R.string.report_above),
                 stringResource(R.string.report_above_detail),
@@ -243,7 +254,7 @@ private fun Ranges(
             HorizontalDivider()
             RangeRow(
                 stringResource(R.string.report_in_range),
-                "${b.low}–${b.high} mg/dL",
+                "${n(b.low)}–${n(b.high)} $sym",
                 m.tir.inRange,
                 Goal.IN_RANGE,
                 tone,
@@ -251,14 +262,14 @@ private fun Ranges(
             )
             RangeRow(
                 stringResource(R.string.report_very_good),
-                stringResource(R.string.report_very_good_detail, "${b.low}–${b.tight}"),
+                stringResource(R.string.report_very_good_detail, "${n(b.low)}–${n(b.tight)}", sym),
                 m.tir.tight,
                 null,
                 tone,
             )
             HorizontalDivider()
-            RangeRow(stringResource(R.string.report_low), "${b.veryLow}–${b.low - 1} mg/dL", m.tir.low, null, tone)
-            RangeRow(stringResource(R.string.report_very_low), "< ${b.veryLow} mg/dL", m.tir.veryLow, Goal.VERY_LOW, tone)
+            RangeRow(stringResource(R.string.report_low), "${n(b.veryLow)}–${n(b.low - 1)} $sym", m.tir.low, null, tone)
+            RangeRow(stringResource(R.string.report_very_low), "< ${n(b.veryLow)} $sym", m.tir.veryLow, Goal.VERY_LOW, tone)
             RangeRow(
                 stringResource(R.string.report_below),
                 stringResource(R.string.report_below_detail),

@@ -8,10 +8,12 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import androidx.core.graphics.ColorUtils
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import app.mauri.sukrara.graph.stats.GlucoseStats
+import java.util.Locale
 import kotlin.math.min
 
 /**
@@ -225,17 +227,28 @@ object GlucoseCard {
 
     /**
      * The value's decision for the newest reading [latest] for [surface]: the card's number and every glyph surface
-     * take it from here ([Freshness.look]: a warming-up or ended sensor first, then the freshness steps).
+     * take it from here ([Freshness.look]: a warming-up or ended sensor first, then the freshness steps), the number in
+     * the person's [unit] with [locale]'s decimal separator.
      */
     fun face(
         latest: GlucosePoint?,
         nowS: Long,
         sensor: SensorBadge.Look?,
         surface: CardSurface,
+        unit: GlucoseUnit,
+        locale: Locale = Locale.getDefault(),
     ): GlucoseLook =
         Freshness
-            .look(latest?.sgv, latest?.t, latest?.rate, nowS, ended = sensor?.ended == true, warmup = sensor?.warmup)
-            .also { f -> faceObserver?.invoke(surface, f) }
+            .look(
+                latest?.sgv,
+                latest?.t,
+                latest?.rate,
+                nowS,
+                ended = sensor?.ended == true,
+                warmup = sensor?.warmup,
+                unit = unit,
+                locale = locale,
+            ).also { f -> faceObserver?.invoke(surface, f) }
 
     /**
      * Where the sensor's time left goes on a card [st] (the WHOLE card, also when drawn in parts): in the chart's
@@ -293,7 +306,7 @@ object GlucoseCard {
         val bands = st.bands.sane()
         val last = if (st.last != LastPlace.OFF) LastTreatment.of(model.treatments, model.muteRule, model.status, model.nowS) else null
         val (rings, fallback) = slotInputs(st, last, model, bands)
-        val items = Slots.arrange(rings, st.last, last, fallback, max)
+        val items = Slots.arrange(rings, st.last, last, fallback, max, st.unit)
         val main = Slots.mainIndex(items)
         return if (main > 0) listOf(items[main]) + items.filterIndexed { i, _ -> i != main } else items
     }
@@ -323,13 +336,13 @@ object GlucoseCard {
         val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(4)
         if (fit < 1) return 0f
         val (rings, fallback) = slotInputs(st, last, model, bands)
-        var items = Slots.arrange(rings, st.last, last, fallback, fit)
+        var items = Slots.arrange(rings, st.last, last, fallback, fit, st.unit)
         // in a box of their own every slot fits whole, the laurels' extra room included
         if (dedicated) {
             while (items.isNotEmpty() &&
                 items.size * size + (items.size - 1) * gap + Slots.extraWidth(items, size / 2) > box.width() + 0.5f
             ) {
-                items = Slots.arrange(rings, st.last, last, fallback, items.size - 1)
+                items = Slots.arrange(rings, st.last, last, fallback, items.size - 1, st.unit)
             }
         }
         if (items.isEmpty()) return 0f

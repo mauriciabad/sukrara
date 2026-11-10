@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
@@ -29,7 +30,11 @@ class TileSubtitleTest {
     )
 
     private fun subtitle(state: GlucoseState) =
-        TreatmentTileService.subtitle(GlucoseCard.face(state, nowS, CardSurface.QUICK_TILE), state.latest?.t?.epochSecond, nowS) {
+        TreatmentTileService.subtitle(
+            GlucoseCard.face(state, nowS, CardSurface.QUICK_TILE, GlucoseUnit.MGDL),
+            state.latest?.t?.epochSecond,
+            nowS,
+        ) {
             when (it) {
                 TileWords.SensorEnded -> "ended"
                 is TileWords.WarmingUp -> "warming ${it.left}"

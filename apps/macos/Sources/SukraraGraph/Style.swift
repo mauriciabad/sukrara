@@ -108,6 +108,8 @@ struct GraphStyle {
     var gridHours = 1
     /// Which parts of each treatment kind show: point, mute line, amount, time (`GraphConfig.marks`).
     var marks = MarkShow.defaults
+    /// The unit the range labels on the right are written in (the card's `CardStyle.unit`; the lines stay at mg/dL).
+    var unit: GlucoseUnit = .mgdl
 }
 
 /// Which parts of each kind's marks the chart draws (Settings › Graph › Treatments on the graph; schema `graph.marks`,
@@ -332,8 +334,8 @@ struct CardStyle {
     /// The ranges the value's colour and the slots count in: the user's (`GraphConfig.cardStyle` sets them), also on a
     /// card without a chart (the value widget used the built-in 180 after the high bound moved, 2026-10-21).
     var bands = Bands()
-    /// The unit the value is written in (the user's setting). The chart's axis and range lines stay mg/dL on both
-    /// platforms for now (OPS issue c14: mmol/L chart labels).
+    /// The unit every number of the card is written in (the user's setting): the value, the chart's range labels,
+    /// the spoken sentence (contracts/settings/units.json).
     var unit: GlucoseUnit = .mgdl
 }
 

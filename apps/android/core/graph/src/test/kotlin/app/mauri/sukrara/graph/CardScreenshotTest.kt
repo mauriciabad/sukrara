@@ -6,6 +6,7 @@ package app.mauri.sukrara.graph
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -78,10 +79,11 @@ class CardScreenshotTest {
         model: CardModel,
         dark: Boolean,
         large: Boolean,
+        st: CardStyle = style,
     ) {
         val hDp = if (large) 300f else 240f
         val pal = GraphPalette.of(dark)
-        val card = GlucoseCard.image(379f, hDp, d, model, style, pal, CardSurface.TEST)
+        val card = GlucoseCard.image(379f, hDp, d, model, st, pal, CardSurface.TEST)
         // the card is transparent (each surface paints its own background): shot on the palette's background
         val bmp = Bitmap.createBitmap(card.width, card.height, Bitmap.Config.ARGB_8888)
         Canvas(bmp).apply {
@@ -96,5 +98,13 @@ class CardScreenshotTest {
         for ((name, model) in scenes()) {
             for (dark in listOf(false, true)) for (large in listOf(false, true)) shoot(name, model, dark, large)
         }
+    }
+
+    /** The card in mmol/L (contracts/settings/units.json): the value, the range labels and the slots' numbers. */
+    @Test
+    fun mmol() {
+        val mmol = style.copy(graph = style.graph?.copy(unit = GlucoseUnit.MMOL), unit = GlucoseUnit.MMOL)
+        val model = Scenes.model(Scenes.day(70, rate = -2.2, swing = 12), Scenes.words(), status = CardStatus.Needed(lowSide = true))
+        for (dark in listOf(false, true)) shoot("low-mmol", model, dark, large = false, st = mmol)
     }
 }

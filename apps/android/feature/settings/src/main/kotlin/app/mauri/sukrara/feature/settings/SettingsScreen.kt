@@ -201,7 +201,7 @@ fun SettingsScreen(
             val prefs by vm.prefs.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             prefs?.let {
-                RangesContent(it, vm::set, onBack, vm::reset, readOnly = from.readOnly) {
+                RangesContent(it, vm::set, onBack, vm::reset, readOnly = from.readOnly, onUnit = vm::setUnit) {
                     SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = preview)
                 }
             }
