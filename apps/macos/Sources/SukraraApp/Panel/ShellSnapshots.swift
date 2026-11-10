@@ -157,6 +157,7 @@
         func postMuted(_ side: AlertSide, until: Date) {}
         func removeMuted(_ side: AlertSide) {}
         func postTest(_ kind: AlertKind) {}
+        func log(_ line: String) {}
     }
 
     private struct NoWake: WakeScheduling {

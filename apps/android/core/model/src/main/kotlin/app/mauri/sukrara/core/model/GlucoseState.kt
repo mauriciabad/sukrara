@@ -182,7 +182,8 @@ data class AlertNote(
     val remote: Boolean = false,
 )
 
-enum class AlertNoteType { Fired, Cleared, Muted, Unmuted, RemindLess, RemindAsUsual, Back, AllMuted, AllUnmuted }
+/** [AllBack]: a timed Mute all ended by itself; [Resumed]: an alert shown again without sound after a restart. */
+enum class AlertNoteType { Fired, Cleared, Muted, Unmuted, RemindLess, RemindAsUsual, Back, AllMuted, AllUnmuted, AllBack, Resumed }
 
 /** A reason an alert would not reach the person as set up; each has a fix in the reliability row. */
 enum class AlertDeliveryProblem {

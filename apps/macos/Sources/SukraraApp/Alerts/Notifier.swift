@@ -17,6 +17,8 @@ protocol AlertNotifying {
     /// Settings › Alerts › Send Test Alert: `kind`'s notification with its sound and alarm level, titled "Test", with
     /// no actions (it mutes nothing) and its own identifier (it never replaces a real alert).
     func postTest(_ kind: AlertKind)
+    /// An `AlertLog` line for the event log (a mute, an unmute, Mute all and its end…).
+    func log(_ line: String)
 }
 
 /// The part of `UNUserNotificationCenter` the notifier uses (tests record requests instead of posting).
@@ -98,6 +100,8 @@ final class Notifier: AlertNotifying {
             id: "test", kind: kind, at: now, reading: GlucoseSample(at: at, mgdl: mgdl, rate: rate),
             threshold: threshold, n: 1, treated: 0)
     }
+
+    func log(_ line: String) { eventLog?.write(line) }
 
     func clear(_ group: AlertGroup) {
         eventLog?.write("alert \(group.rawValue) cleared")

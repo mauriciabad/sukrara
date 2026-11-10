@@ -63,7 +63,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   "like an alarm" ones pass Do Not Disturb; alerts that come close together still ring in full (Android's notification
   cooldown doesn't quieten them). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
-  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted and what you muted in the last day. The no-data check runs from an exact alarm,
+  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
   independent of the monitoring service.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor

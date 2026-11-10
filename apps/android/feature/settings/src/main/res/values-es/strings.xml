@@ -577,6 +577,8 @@
     <string name="st_note_all_muted">Todas las alertas silenciadas durante %1$s</string>
     <string name="st_note_all_muted_off">Todas las alertas silenciadas hasta que lo desactives</string>
     <string name="st_note_all_unmuted">Alertas activadas de nuevo</string>
+    <string name="st_note_all_back">Las alertas vuelven a sonar</string>
+    <string name="st_note_resumed">Reanudada: %1$s (sin sonido)</string>
     <string name="st_profile_add_name">Añade tu nombre</string>
     <string name="st_profile_summary">Tu perfil: el nombre y la foto que ven tus seguidores</string>
     <string name="st_backup_title">Copia de seguridad</string>

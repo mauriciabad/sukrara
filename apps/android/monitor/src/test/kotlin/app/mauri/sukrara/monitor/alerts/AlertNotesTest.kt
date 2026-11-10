@@ -50,6 +50,85 @@ class AlertNotesTest {
             )
         }
 
+    @Test fun aTimedMuteAllEndingByItselfIsAlertsBackOnOnceAlsoAcrossARestart() =
+        runBlocking {
+            val rig = AlertRig()
+            val runtime = rig.runtime()
+            runtime.onState(rig.wearerState(rig.reading(120)))
+            runtime.muteAll(60)
+            rig.clock.instant = rig.clock.instant + Duration.ofMinutes(61)
+            runtime.tick()
+            // newest first: what it lets ring (no data, 61 min without a reading) comes after Alerts back on
+            val types = rig.published.lately.map { it.type }
+            assertEquals(listOf(AlertNoteType.Fired, AlertNoteType.AllBack, AlertNoteType.AllMuted), types.take(3))
+
+            // a process death later: the end is not noted again
+            val again = rig.runtime()
+            again.start()
+            again.tick()
+            assertEquals(1, rig.published.lately.count { it.type == AlertNoteType.AllBack })
+        }
+
+    @Test fun anEndThatHappenedWhileTheProcessWasDeadIsNotedAtTheRestart() =
+        runBlocking {
+            val rig = AlertRig()
+            val runtime = rig.runtime()
+            runtime.onState(rig.wearerState(rig.reading(120)))
+            runtime.muteAll(30)
+            rig.clock.instant = rig.clock.instant + Duration.ofMinutes(45)
+            val again = rig.runtime()
+            again.start()
+            again.tick()
+            assertEquals(
+                listOf(AlertNoteType.AllBack, AlertNoteType.AllMuted),
+                rig.published.lately
+                    .map { it.type }
+                    .filter { it != AlertNoteType.Fired }
+                    .take(2),
+            )
+            assertEquals(1, rig.published.lately.count { it.type == AlertNoteType.AllBack })
+        }
+
+    @Test fun unmuteAllOrMuteAllUntilTurnedOffIsNeverAlertsBackOn() {
+        val now = 10_000L
+        assertEquals(
+            listOf(AlertNoteType.AllUnmuted),
+            AlertNotes.of(app.mauri.sukrara.alerts.AlertInput.UnmuteAll, emptyList(), now, muteAllBefore = now + 600).map { it.type },
+        )
+        assertEquals(emptyList<AlertNoteType>(), AlertNotes.of(null, emptyList(), now, muteAllBefore = 0).map { it.type })
+        assertEquals(
+            emptyList<AlertNoteType>(),
+            AlertNotes.of(null, emptyList(), now, muteAllBefore = now - 1, muteAllAfter = now + 600).map { it.type },
+        )
+        assertEquals(
+            listOf(AlertNoteType.AllBack),
+            AlertNotes.of(null, emptyList(), now, muteAllBefore = now - 1).map { it.type },
+        )
+    }
+
+    @Test fun anAlertShownAgainSilentlyAfterARestartIsResumed() =
+        runBlocking {
+            val rig = AlertRig()
+            val runtime = rig.runtime()
+            runtime.onState(rig.wearerState(rig.reading(120)))
+            rig.clock.instant = rig.clock.instant + Duration.ofMinutes(5)
+            runtime.onState(rig.wearerState(rig.reading(60)))
+            assertEquals(
+                AlertNoteType.Fired,
+                rig.published.lately
+                    .first()
+                    .type,
+            )
+
+            val again = rig.runtime()
+            again.start()
+            again.tick()
+            val resumed = rig.published.lately.first()
+            assertEquals(AlertNoteType.Resumed, resumed.type)
+            assertEquals("low", resumed.kind)
+            assertEquals("the ring is still counted once", 1, rig.published.lately.count { it.type == AlertNoteType.Fired })
+        }
+
     @Test fun keepsTheNewestLines() {
         val at = Instant.ofEpochSecond(1_000)
         val many = List(AlertNotes.MAX + 5) { AlertNote(at.plusSeconds(it.toLong()), AlertNoteType.AllUnmuted) }

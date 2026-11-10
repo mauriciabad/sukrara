@@ -35,8 +35,9 @@ data class SavedNote(
 
 /**
  * The alerts' recent history (Settings › Alerts › Lately): what one input to the rules and its effects add, newest
- * last, kept to [MAX] lines. Only the first ring of an alert counts (not its repeats, nor a silent re-post after a
- * restart).
+ * last, kept to [MAX] lines. Only the first ring of an alert counts (not its repeats); a silent re-post after a
+ * restart is its own *Resumed* line. [muteAllBefore] / [muteAllAfter] = when Mute all ends (0 = off), as last seen
+ * and after this input: a timed one that ran out by itself is *Alerts back on* (before what it lets ring).
  */
 object AlertNotes {
     const val MAX = 20
@@ -45,6 +46,8 @@ object AlertNotes {
         input: AlertInput?,
         effects: List<AlertEffect>,
         now: Long,
+        muteAllBefore: Long = 0,
+        muteAllAfter: Long = 0,
     ): List<AlertNote> {
         val at = Instant.ofEpochSecond(now)
         val remote = input is AlertInput.Remote
@@ -81,10 +84,16 @@ object AlertNotes {
             }
         }
         val byPerson = out.isNotEmpty()
+        val endedByItself = muteAllBefore in 1 until Rules.NEVER && muteAllBefore <= now && muteAllAfter == 0L
+        if (endedByItself && input !is AlertInput.MuteAll && input !is AlertInput.UnmuteAll) {
+            out += AlertNote(at, AlertNoteType.AllBack)
+        }
         for (e in effects) {
             when (e) {
                 is AlertEffect.Fire -> {
-                    if (!e.silent && e.firing.n <= 1) {
+                    if (e.silent) {
+                        out += AlertNote(at, AlertNoteType.Resumed, e.firing.kind.wire, remote = remote)
+                    } else if (e.firing.n <= 1) {
                         out += AlertNote(at, AlertNoteType.Fired, e.firing.kind.wire, e.firing.reading?.mgdl, remote = remote)
                     }
                 }

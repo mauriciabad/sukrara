@@ -88,6 +88,9 @@ class AlertRuntime(
     /** The recent history (Settings › Alerts › Lately), oldest first, saved with the record. */
     private var notes: List<SavedNote> = emptyList()
 
+    /** When Mute all ends as the history last saw it (0 = off), saved: its end by itself gets one *Alerts back on*. */
+    private var muteAllSeen = 0L
+
     /** Which alert each group's notification shows (from the effects), and the muted cards up. */
     private val firing = HashMap<AlertGroup, Firing>()
     private val mutedCards = HashMap<AlertGroup, Pair<Side, Long>>()
@@ -150,6 +153,7 @@ class AlertRuntime(
             fedReadingAt = null
             failed.clear()
             notes = emptyList()
+            muteAllSeen = 0
             unposted.clear()
             attempt(Step.Alarm) { alarm.set(null) }
             attempt(Step.Save) { store.save { AlertRecord() } }
@@ -282,6 +286,7 @@ class AlertRuntime(
         monitoring = record.monitoring
         who = record.who
         notes = record.notes
+        muteAllSeen = record.muteAllUntil
         sensor = record.sensor?.window
         val saved = record.machine ?: return emptyList()
         role = if (saved.role == AlertRole.WEARER) Role.Wearer else Role.Follower
@@ -338,7 +343,9 @@ class AlertRuntime(
         now: Long,
         input: AlertInput? = null,
     ): List<AlertEffect> {
-        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now))
+        val muteAll = m.uiState(now).muteAllUntil
+        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll))
+        muteAllSeen = muteAll
         effects.filterIsInstance<AlertEffect.Schedule>().forEach { e -> attempt(Step.Alarm) { alarm.set(e.at) } }
         val firedNow = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
         retryUnposted(m, now, skip = firedNow)
@@ -474,7 +481,16 @@ class AlertRuntime(
 
     private suspend fun save() {
         val snapshot = machine?.snapshot()
-        store.save { it.copy(machine = snapshot, monitoring = monitoring, who = who, sensor = sensor?.let(::SavedSensor), notes = notes) }
+        store.save {
+            it.copy(
+                machine = snapshot,
+                monitoring = monitoring,
+                who = who,
+                sensor = sensor?.let(::SavedSensor),
+                notes = notes,
+                muteAllUntil = muteAllSeen,
+            )
+        }
     }
 
     private fun publishUi(now: Long) {

@@ -93,5 +93,13 @@ private fun noteText(
         AlertNoteType.AllUnmuted -> {
             stringResource(R.string.st_note_all_unmuted)
         }
+
+        AlertNoteType.AllBack -> {
+            stringResource(R.string.st_note_all_back)
+        }
+
+        AlertNoteType.Resumed -> {
+            stringResource(R.string.st_note_resumed, name)
+        }
     }
 }

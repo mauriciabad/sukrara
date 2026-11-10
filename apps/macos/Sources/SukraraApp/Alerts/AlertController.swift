@@ -44,6 +44,8 @@ final class AlertController {
     @ObservationIgnored private let store: any AlertStateStoring
     @ObservationIgnored private let notifier: any AlertNotifying
     @ObservationIgnored private let wake: any WakeScheduling
+    /// When Mute all ends as last seen (nil = off): its end by itself gets one "Alerts back on" log line.
+    @ObservationIgnored private var muteAllSeen: Date?
 
     init(
         settings: AlertSettings, clock: any TimeSource, store: any AlertStateStoring, notifier: any AlertNotifying,
@@ -124,6 +126,7 @@ final class AlertController {
     /// A user action from a notification, the panel or the menu.
     func perform(_ action: AlertAction) {
         let now = clock.now
+        if let line = Self.logLine(action, settings: settings, now: now) { notifier.log(line) }
         switch action {
         case .mute(let side, let minutes):
             let until = now.addingTimeInterval(TimeInterval(minutes * 60))
@@ -152,6 +155,20 @@ final class AlertController {
             handle(.unmuteAll)
         case .reshow(let side):
             reshow(side)
+        }
+    }
+
+    /// The event log's line for `action` (`AlertLog`); nil for one that changes nothing (`reshow`).
+    static func logLine(_ action: AlertAction, settings: AlertSettings, now: Date) -> String? {
+        switch action {
+        case .mute(let side, let minutes): AlertLog.muted(side, minutes: minutes)
+        case .unmute(let side): AlertLog.unmuted(side)
+        case .remindLess(let side):
+            AlertLog.remindLess(side, intervalMin: settings.notificationActions.relaxMin)
+        case .remindAsUsual(let side): AlertLog.remindAsUsual(side)
+        case .muteAll(let until): AlertLog.allMuted(until: until, now: now)
+        case .unmuteAll: AlertLog.allUnmuted
+        case .reshow: nil
         }
     }
 
@@ -204,12 +221,18 @@ final class AlertController {
     }
 
     private func run(_ effects: [AlertEffect]) {
+        // a timed Mute all that ran out by itself, logged before what it lets ring (Unmute all ends it early: no line)
+        let allEnd = engine.muteAllEnd(at: clock.now)
+        if let seen = muteAllSeen, seen <= clock.now, allEnd == nil { notifier.log(AlertLog.allBack) }
+        muteAllSeen = allEnd
         for effect in effects {
             switch effect {
             case .fire(let f): notifier.post(f, sound: true, category: category(f.kind))
             case .resume(let f): notifier.post(f, sound: false, category: category(f.kind))
             case .clear(let f): notifier.clear(f.kind.group)
-            case .back(let side): notifier.removeMuted(side)
+            case .back(let side):
+                notifier.log(AlertLog.back(side))
+                notifier.removeMuted(side)
             case .schedule(let at):
                 nextWake = at
                 wake.schedule(at: at) { [weak self] in self?.tick() }

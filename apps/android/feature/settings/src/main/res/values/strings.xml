@@ -571,6 +571,8 @@
     <string name="st_note_all_muted">All alerts muted for %1$s</string>
     <string name="st_note_all_muted_off">All alerts muted until you turn it off</string>
     <string name="st_note_all_unmuted">Alerts unmuted</string>
+    <string name="st_note_all_back">Alerts back on</string>
+    <string name="st_note_resumed">Resumed %1$s (no sound)</string>
     <string name="st_profile_add_name">Add your name</string>
     <string name="st_profile_summary">Your profile: the name and picture your followers see</string>
     <string name="st_backup_title">Backup</string>
