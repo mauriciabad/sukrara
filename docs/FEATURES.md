@@ -192,8 +192,8 @@ damaged setup file never asks for the role again or turns alerts off.
   reaching them. Do this once this phone has your sensor." is always shown, then a numbered checklist that ticks
   itself: 1 *Sensor running in Sukrara*, 2 *Paste your recovery code*. Restore is enabled only when this phone has a
   live reading from its own sensor (`RestoreGate`, re-checked just before restoring; `RestoreGateTest`). *Start fresh*
-  is confirmed: "Your followers (and your Mac) will need a new invite. Your old identity can't be brought to this
-  phone later without reinstalling."
+  is confirmed: "Your followers (and your Mac) will need a new invite. To use your old identity again later, restore
+  it in Settings › Sharing › Backup › Replace this identity."
 - **Finish setup** (home's banner): names the first skipped step that still matters — *Allow what alerts
   need*, *Alerts not confirmed*, *Connect your sensor*, *Restore your followers*, in that order; its action walks
   every skipped step in that order, each alone (done or *Later* → the next one, then home; *Later* and Back keep the
@@ -911,7 +911,24 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   (a password of ≥ 12 characters → the code in a secure dialog — no screenshots, hidden in Recents — *Copy and close*
   copies it marked sensitive), *Follower list on relays* (when the encrypted owner backup last went out). The phone
   counts as backed up once the password manager took it or a code was copied (a restore counts too); until then home
-  shows *Not backed up* (dismissable, back after a while).
+  shows *Not backed up* (dismissable, back after a while). Last, *Replace this identity* (see below).
+- **Replace this identity** (Backup's last row; `backup/ReplaceIdentity.kt`): a working identity replaced without
+  reinstalling. The page first says what followers lose, by name (*Your glucose stops reaching Dad and Marta right
+  away.*, *Each one needs a new invite from you to follow you again. Until then their Sukrara warns that no data
+  arrives.*, *Requests waiting for you and unused invites stop working.*; *No one follows this identity now.* when
+  so), and, while the identity exists nowhere else, *This identity isn't backed up: once replaced, it's gone for good.*
+  with *Back up first* (back to Backup). Then two ways: *Restore another identity* (the setup restore form: the same
+  gate — this phone's own sensor live —, the password manager or a pasted code; *Replace with this identity*) or
+  *Start fresh* (a new identity with how the wearer appears now). Each is confirmed in a dialog that names the followers
+  again and repeats the backup warning; its button (*Replace* / *Start fresh*) is armed only by *I understand they must
+  be invited again*. The engine replaces only when asked (`OwnerEngine.createIdentity` / `restore` with
+  `replaceExisting`), never over an unreadable identity, and a code for the identity already in use changes nothing
+  (*That code is for the identity this phone already shares as.*). The old identity stops publishing at once; followers
+  aren't told (they see no data until they join again). Leaving the page doesn't stop a replace that started. Done:
+  *Started fresh. No one follows this phone yet: invite your followers again.* with *Invite someone* (the share screen)
+  and *Done*, or *Replaced. N followers of the restored identity follow this phone now.* with *Done*. Setup's *Start
+  fresh* confirmation says the old identity can be restored later there. Tests: `OwnerEngineTest`,
+  `ReplaceIdentityViewModelTest`, the `replace-*` gallery scenes.
 - **Restore** (switching phones): *Restore from password manager* (only once the restore gate is open: the secret is
   never fetched before; an `ncryptsec` fills the code field and asks for its password; a saved password that isn't
   an `nsec` / `ncryptsec` is never used, it says so) or the pasted code → the newest
@@ -1003,7 +1020,10 @@ errors → *Needs password* (type it), *Wrong password* / *Not a recovery code* 
 anything. *Identity unreadable* (blocking; the file is never replaced silently) → *Retry* (when the Keystore was busy)
 or *Restore from recovery code*. *Sharing* → invite, approve / deny, remove, allow / stop a follower adding entries,
 How you appear (*Save* / *Cancel* / Back; leaving drops an unsaved edit), Backup (each row can be repeated; closing the
-recovery dialog while the code is being made drops it; a code not copied isn't a backup). *Not backed up* → *Backup*
+recovery dialog while the code is being made drops it; a code not copied isn't a backup), Replace this identity (the
+choice → *Cancel* / Back, *Back up first*; the restore form → *Back* (to the choice), its errors inline with the code
+kept; each confirmation → *Cancel* / Back / a tap outside, its button armed only by the checkbox; working → Back leaves,
+the replace finishes; done → *Invite someone* / *Done*). *Not backed up* → *Backup*
 or dismiss. *Request waiting* → the approve dialog over the app (*Later* or Back hides that request until the app
 process restarts; Settings › Sharing's request row shows it again), notification *Allow* (needs unlock) / *Deny*;
 both leave once answered. *Removed* pill → expand / *See less*. *Over the internet* off → its switch (on again sends

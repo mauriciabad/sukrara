@@ -27,8 +27,14 @@ data class Invite(val link: String, val label: String, val expiresAt: Long)
 interface OwnerSharing {
     val state: StateFlow<OwnerShareState>
 
-    /** A new identity ("Start fresh", confirmed first) with how the wearer appears. False when one exists or can't be read. */
-    suspend fun startFresh(profile: Profile): Boolean
+    /**
+     * A new identity ("Start fresh", confirmed first) with how the wearer appears. False when one exists (unless
+     * [replace]: Backup › Replace this identity, confirmed: every follower must be invited again) or can't be read.
+     */
+    suspend fun startFresh(
+        profile: Profile,
+        replace: Boolean = false,
+    ): Boolean
 
     /** "How you appear" (name + picture) for followers. False without an identity or while another app shares as it. */
     suspend fun setProfile(profile: Profile): Boolean
@@ -48,10 +54,14 @@ interface OwnerSharing {
      */
     suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean
 
-    /** Restore from a recovery code; the UI calls it only when the [app.mauri.sukrara.feature.sharing.setup.RestoreGate] is open. */
+    /**
+     * Restore from a recovery code; the UI calls it only when the [app.mauri.sukrara.feature.sharing.setup.RestoreGate] is
+     * open. Over a working identity only with [replace] (Backup › Replace this identity, confirmed first).
+     */
     suspend fun restore(
         code: String,
         password: String?,
+        replace: Boolean = false,
     ): RestoreIdentity.Result
 
     suspend fun createInvite(label: String): Invite?
@@ -98,7 +108,10 @@ class EngineOwnerSharing(
     /** The app starts the engine for a wearer (`followRole`); setup only reads its state. */
     override val state: StateFlow<OwnerShareState> get() = engine.state
 
-    override suspend fun startFresh(profile: Profile): Boolean = engine.createIdentity(scope, profile)
+    override suspend fun startFresh(
+        profile: Profile,
+        replace: Boolean,
+    ): Boolean = engine.createIdentity(scope, profile, replaceExisting = replace)
 
     override suspend fun setProfile(profile: Profile): Boolean = engine.setProfile(profile)
 
@@ -120,7 +133,8 @@ class EngineOwnerSharing(
     override suspend fun restore(
         code: String,
         password: String?,
-    ): RestoreIdentity.Result = engine.restore(scope, code, password)
+        replace: Boolean,
+    ): RestoreIdentity.Result = engine.restore(scope, code, password, replaceExisting = replace)
 
     override suspend fun createInvite(label: String): Invite? {
         val at = now()

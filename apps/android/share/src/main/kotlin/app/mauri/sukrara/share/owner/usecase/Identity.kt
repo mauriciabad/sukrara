@@ -108,6 +108,9 @@ class RestoreIdentity(private val ctx: OwnerContext) {
 
         /** This phone already shares with an identity: restoring replaces it only when the person confirmed. */
         data object AlreadySharing : Result
+
+        /** The code is for the identity this phone already shares as: nothing to replace, nothing changed. */
+        data object SameIdentity : Result
     }
 
     /** Step 1: the identity in [code] (`nsec1…`, `ncryptsec1…` + [password], or hex). */

@@ -22,6 +22,12 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
+import app.mauri.sukrara.feature.sharing.backup.FreshUi
+import app.mauri.sukrara.feature.sharing.backup.ReplaceActions
+import app.mauri.sukrara.feature.sharing.backup.ReplaceConfirmDialog
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityScreen
+import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
+import app.mauri.sukrara.feature.sharing.backup.ReplaceUi
 import app.mauri.sukrara.feature.sharing.backup.SaveOutcome
 import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
 import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
@@ -317,6 +323,19 @@ class SharingScreenshotTest {
             "profile" to { ProfileScreen(me, ProfileSave.Idle, {}, {}) },
             "profile-failed" to { ProfileScreen(Profile("", null), ProfileSave.Failed, {}, {}) },
             "backup-missing" to { BackupScreen(sharing, { SaveOutcome.Saved }, { null }, {}) },
+            "replace-choose" to { ReplaceIdentityScreen(sharing, ReplaceUi(), ReplaceActions()) },
+            "replace-restore" to { ReplaceIdentityScreen(sharing, ReplaceUi(step = ReplaceStep.Restore), ReplaceActions()) },
+            "replace-confirm" to {
+                ReplaceConfirmDialog(
+                    "Start fresh?",
+                    "Start fresh",
+                    listOf("Dad", "Marta"),
+                    backedUp = false,
+                    onConfirm = {},
+                    onDismiss = {},
+                )
+            },
+            "replace-done-fresh" to { ReplaceIdentityScreen(null, ReplaceUi(fresh = FreshUi.Done), ReplaceActions()) },
             "backup-done" to {
                 BackupScreen(
                     sharing.copy(passwordManagerSavedAt = 1_761_450_000, recoveryExportedAt = 1_761_460_000),
