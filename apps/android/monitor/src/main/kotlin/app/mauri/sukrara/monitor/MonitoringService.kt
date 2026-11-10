@@ -157,7 +157,8 @@ class MonitoringService : Service() {
             NotificationPrefs(
                 chip = inputs.chip,
                 numberIcon = inputs.numberIcon,
-                cardKey = listOf(now.epochSecond / 60, inputs.treatments, inputs.config, dark, Clock.signature()),
+                cardKey =
+                    listOf(now.epochSecond / 60, inputs.treatments, inputs.config, dark, Clock.signature(), state.alerts.treatmentQuiet),
                 sharing = inputs.sharing,
             )
         m.notification.post(m.notification.content(state, now, prefs), now, frame, force)

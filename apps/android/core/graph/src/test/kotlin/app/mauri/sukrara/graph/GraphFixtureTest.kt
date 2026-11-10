@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.long
@@ -225,8 +227,11 @@ class GraphFixtureTest {
         assertTrue("label fixtures failed:\n" + fails.joinToString("\n"), fails.isEmpty())
     }
 
-    /** The user's mute after insulin / carbs as status.json gives it (`settings`), else the schema defaults. */
-    private fun muteRule(c: JsonObject): MuteRule {
+    /**
+     * The user's mute after insulin / carbs as status.json gives it (`settings`), else the schema defaults, through
+     * the production rule every card uses ([muteRuleOf] over the alert runtime's [TreatmentQuiet]).
+     */
+    private fun muteRule(c: JsonObject): MuteRule? {
         val settings = c["settings"]?.jsonObject
 
         fun muteS(
@@ -237,15 +242,12 @@ class GraphFixtureTest {
             if (o?.get("on").bool() == false) return null
             return ((o?.get("min").double() ?: defaultMin) * 60).toLong()
         }
-        val insulinS = muteS("muteAfterInsulin", SettingsSpec.MUTE_INSULIN.default)
-        val carbsS = muteS("muteAfterCarbs", SettingsSpec.MUTE_CARBS.default)
-        return MuteRule { t ->
-            when (t.kind) {
-                TreatmentKind.RapidInsulin -> insulinS
-                TreatmentKind.Carbs -> carbsS
-                else -> null
-            }?.let { t.t + it }
-        }
+        val quiet =
+            TreatmentQuiet(
+                rapidS = muteS("muteAfterInsulin", SettingsSpec.MUTE_INSULIN.default),
+                carbsS = muteS("muteAfterCarbs", SettingsSpec.MUTE_CARBS.default),
+            )
+        return muteRuleOf(AlertUiState(treatmentQuiet = quiet))
     }
 
     /**

@@ -125,11 +125,13 @@ sealed interface SourceStatus {
 /**
  * What the alert runtime shows: which alert kinds are firing (contract kind ids), *Mute all* ([mutedUntil] null = off,
  * [UNTIL_TURNED_OFF] = until the person turns it off) and the sides that are quiet or remind less ([quiet]), each with
- * its way out ([AlertControls]), and the badge's answer for the card ([status], every card surface draws it).
+ * its way out ([AlertControls]), the badge's answer for the card ([status], every card surface draws it) and how long
+ * each treatment quiets alerts ([treatmentQuiet]: the cards' mute lines and last-treatment ring).
  */
 data class AlertUiState(
     val firingKinds: Set<String> = emptySet(),
     val status: CardStatus = CardStatus.None,
+    val treatmentQuiet: TreatmentQuiet = TreatmentQuiet(),
     val mutedUntil: Instant? = null,
     val quiet: List<AlertQuietSide> = emptyList(),
     /** What stops alerts from ringing as set up right now (home shows a banner with the fix). */
@@ -143,6 +145,28 @@ data class AlertUiState(
         /** *Mute all* with no end. */
         val UNTIL_TURNED_OFF: Instant = Instant.ofEpochSecond(Long.MAX_VALUE / 1000)
     }
+}
+
+/**
+ * How long a treatment quiets the alerts it answers, as the alert engine runs it now (on a follower mirroring the
+ * wearer, the wearer's rules): [rapidS] after rapid insulin, [carbsS] after carbs, in seconds; null = that rule is off,
+ * or no engine runs. Every card draws its mute lines and last-treatment ring from it, so they end where the engine's
+ * quiet does (contracts/alerts/SPEC.md §2).
+ */
+data class TreatmentQuiet(
+    val rapidS: Long? = null,
+    val carbsS: Long? = null,
+) {
+    /** No treatment quiets anything. */
+    val none: Boolean get() = rapidS == null && carbsS == null
+
+    /** When [t]'s quiet ends (epoch s), or null: its kind quiets nothing (long-acting, a note, a rule that's off). */
+    fun until(t: Treatment): Long? =
+        when (t.kind) {
+            TreatmentKind.RapidInsulin -> rapidS
+            TreatmentKind.Carbs -> carbsS
+            else -> null
+        }?.let { t.at.epochSecond + it }
 }
 
 /**

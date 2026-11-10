@@ -90,7 +90,9 @@ import app.mauri.sukrara.graph.SensorInfo
 import app.mauri.sukrara.graph.SensorLife
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Band
+import app.mauri.sukrara.graph.stats.GlucosePoint
 import app.mauri.sukrara.graph.stats.MetricsCache
 import app.mauri.sukrara.graph.stats.toPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -157,6 +159,30 @@ private val SENSOR_LIFE = Duration.ofDays(15)
 private val WARMUP = Duration.ofHours(1)
 
 /**
+ * The app panel's card model: [points] = the stored history; the badge, mute lines and last-treatment ring are the
+ * alert runtime's ([muteRuleOf], the same rule as every other surface); [sensor] = [glucose]'s sensor dates at [now].
+ */
+internal fun panelModel(
+    glucose: GlucoseState,
+    points: List<GlucosePoint>,
+    treatments: List<Treatment>,
+    now: Instant,
+    words: CardWords,
+    sensor: SensorInfo? = glucose.sensor.info(now),
+): CardModel =
+    CardModel(
+        readings = points,
+        treatments = treatments,
+        nowS = now.epochSecond,
+        words = words,
+        status = glucose.alerts.status,
+        muteRule = muteRuleOf(glucose.alerts),
+        sensor = sensor,
+        // each slot's window counted once per reading, not per scrolled frame
+        metricsOf = MetricsCache(points, now.epochSecond),
+    )
+
+/**
  * The card for [glucose] and the 31 days of [history] / [treatments] at [now]. The chart scrolls through the history
  * with the platform's drag, fling and stretch overscroll; two fingers zoom the time axis (2 h…31 d) at their centre;
  * the renderer's *Now* pill (or TalkBack's *Back to now*) returns to the usual window. The y range and the plot's
@@ -188,19 +214,11 @@ fun PanelCard(
     val nowS = now.epochSecond
     val points = remember(history) { history.map { it.toPoint() } }
     val status = glucose.alerts.status
+    val quiet = glucose.alerts.treatmentQuiet
     val sensor = glucose.sensor.info(now)
     val model =
-        remember(points, treatments, nowS, words, status, sensor) {
-            CardModel(
-                readings = points,
-                treatments = treatments,
-                nowS = nowS,
-                words = words,
-                status = status,
-                sensor = sensor,
-                // each slot's window counted once per reading, not per scrolled frame
-                metricsOf = MetricsCache(points, nowS),
-            )
+        remember(points, treatments, nowS, words, status, quiet, sensor) {
+            panelModel(glucose, points, treatments, now, words, sensor)
         }
     val style = remember(config) { config.appPanelStyle() }
     val motion = panelMotion(glucose, now, config, palette, reduced)
