@@ -108,6 +108,7 @@
     <string name="st_reliability_footer">Las mismas comprobaciones que la fila de fiabilidad de inicio y la configuración. Arreglar abre la pantalla de Android correspondiente; al volver, se actualiza.</string>
     <string name="st_req_ok">Activado</string>
     <string name="st_req_missing">Falta</string>
+    <string name="st_req_failed">Falló</string>
     <string name="st_fix">Arreglar</string>
     <string name="st_fix_item">Arreglar %1$s</string>
     <string name="st_overview_alerts_on">Activadas · umbrales, sonidos, Silenciar todo</string>

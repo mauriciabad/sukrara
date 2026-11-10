@@ -92,6 +92,8 @@ class SettingsPagesTest {
             // Settings › Sensor end › Calendar
             "sensorCalendar.on",
             "sensorCalendar.calendarId",
+            // Settings › Alert reliability (and setup): the answer about Vibrate only when unlocked
+            "alerts.unlockedSound",
             // Settings › Settings from (a follower)
             "follower.settingsFrom",
         )

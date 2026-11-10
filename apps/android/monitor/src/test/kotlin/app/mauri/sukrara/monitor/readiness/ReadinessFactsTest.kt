@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor.readiness
 
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.UnlockedSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,6 +42,44 @@ class ReadinessFactsTest {
                 allGood.copy(bluetoothPermitted = false) to AlertRequirement.Bluetooth,
             )
         for ((facts, item) in cases) assertEquals(facts.toString(), setOf(item), facts.readiness().missing)
+    }
+
+    @Test fun aFailedAlertStepIsTheChecklistsFirstProblemWithItsReport() {
+        val r = allGood.copy(failedSteps = setOf("Notify:level", "Alarm"), notificationsEnabled = false).readiness()
+        assertEquals(AlertRequirement.AlertDelivery, r.firstProblem)
+        assertEquals(setOf(AlertRequirement.AlertDelivery, AlertRequirement.Notifications), r.missing)
+        val report = r.report("1.2.3", 37)
+        assertTrue(report, report.contains("Alarm, Notify:level") && report.contains("AlertDelivery, Notifications"))
+        assertTrue(report, report.contains("Sukrara 1.2.3 · Android API 37"))
+    }
+
+    @Test fun theStepThatWorksAgainLeavesTheChecklist() = assertTrue(allGood.copy(failedSteps = emptySet()).readiness().ready)
+
+    @Test fun alarmsThatCantOverrideDoNotDisturbAreAnItemOnlyWhileAKindRingsLikeAnAlarm() {
+        assertEquals(setOf(AlertRequirement.AlarmsInDnd), allGood.copy(alarmsBypassDnd = false).readiness().missing)
+        assertTrue(allGood.copy(anyAlarmKind = false, alarmsBypassDnd = false).readiness().ready)
+    }
+
+    @Test fun theChannelsAreCreatedAgainOnceDoNotDisturbAccessIsGranted() {
+        // access granted, an alarm channel created before it: create again (Android applies the bypass now)
+        assertTrue(AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, false)))
+        // no access: creating again changes nothing; all overriding already: nothing to do
+        assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = false, alarmChannelsBypass = listOf(false)))
+        assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, true)))
+    }
+
+    @Test fun vibrateOnlyWhenUnlockedIsAskedOnceWhenAndroidWontSay() {
+        val hidden = allGood.copy(vibrateOnlyUnlocked = null)
+        assertEquals(setOf(AlertRequirement.SoundWhenUnlocked), hidden.readiness().missing)
+        // either answer settles it (Keep it on: Sukrara plays the sound itself), and the answer travels with the checklist
+        for (answer in listOf(UnlockedSound.Off, UnlockedSound.AppPlays)) {
+            val r = hidden.copy(unlockedSound = answer).readiness()
+            assertTrue(r.ready)
+            assertEquals(answer, r.unlockedSound)
+        }
+        // Android said: on (Sukrara plays it) or off, nothing to ask
+        assertTrue(allGood.copy(vibrateOnlyUnlocked = true).readiness().ready)
+        assertTrue(allGood.copy(vibrateOnlyUnlocked = false).readiness().ready)
     }
 
     @Test fun fullScreenOnlyMattersWhenAKindRingsLikeAnAlarm() =

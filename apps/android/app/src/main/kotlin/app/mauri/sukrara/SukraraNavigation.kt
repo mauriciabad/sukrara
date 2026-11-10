@@ -589,6 +589,10 @@ private fun route(
             backStack.push(SettingsKey.of(SettingsRoute.Alerts))
         }
 
+        HomeAction.OpenAlertReliability -> {
+            backStack.push(SettingsKey.of(SettingsRoute.Reliability))
+        }
+
         HomeAction.EnableBluetooth -> {
             open(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) {}
         }

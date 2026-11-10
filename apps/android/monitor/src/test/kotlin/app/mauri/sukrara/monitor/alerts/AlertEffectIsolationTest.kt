@@ -8,7 +8,6 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -102,7 +101,7 @@ class AlertEffectIsolationTest {
                     .first()
                     .machine,
             )
-            assertTrue(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
+            assertTrue("Notify:level" in published.failedSteps)
             assertTrue(logged.contains("notify failed: SecurityException"))
         }
 
@@ -116,7 +115,7 @@ class AlertEffectIsolationTest {
                     .first()
                     .machine,
             )
-            assertTrue(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
+            assertTrue("Alarm" in published.failedSteps)
             assertTrue(logged.contains("alarm failed: SecurityException"))
         }
 
@@ -157,12 +156,12 @@ class AlertEffectIsolationTest {
             val runtime = runtime()
             presenter.failing = true
             runtime.onState(low)
-            assertTrue(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
+            assertTrue("Notify:level" in published.failedSteps)
             presenter.failing = false
             rig.clock.instant = rig.clock.now().plusSeconds(60)
             runtime.onState(rig.wearerState(latest = rig.reading(58)))
             assertEquals("the refused alert is posted on the next input, with its sound", listOf("show low"), rig.presenter.log)
-            assertFalse(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
+            assertTrue(published.failedSteps.isEmpty())
         }
 
     @Test fun logLinesCarryNoGlucoseValues() =

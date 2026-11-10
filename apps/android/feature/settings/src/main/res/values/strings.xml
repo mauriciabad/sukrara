@@ -108,6 +108,7 @@
     <string name="st_reliability_footer">The same checks as home\'s reliability row and the setup. Fix opens the Android screen for it; come back and the check updates.</string>
     <string name="st_req_ok">On</string>
     <string name="st_req_missing">Missing</string>
+    <string name="st_req_failed">Failed</string>
     <string name="st_fix">Fix</string>
     <string name="st_fix_item">Fix %1$s</string>
     <string name="st_overview_alerts_on">On · thresholds, sounds, Mute all</string>

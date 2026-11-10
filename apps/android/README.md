@@ -67,7 +67,8 @@ Packages follow the module path: `:feature:home` → `app.mauri.sukrara.feature.
   `AndroidAlertReadiness`) is THE alert-readiness checklist. Home's banner (`HomeModule`), Settings › Alert reliability
   (`SettingsModule(readiness = …)`) and the setup permission step (take it in `SetupModule`'s constructor
   from `alerts.readiness`, don't build a second checker) render the same instance: `readiness` (StateFlow), `refresh()`
-  on resume, `fix(item)` opens the Android screen. Runtime permissions that need an Activity (POST_NOTIFICATIONS,
+  on resume, `fix(item)` opens the Android screen. It is also the one answer for the alert runtime's failed steps
+  (`AlertUiState.failedSteps` → `AlertRequirement.AlertDelivery`): no other "delivery problem" check exists. Runtime permissions that need an Activity (POST_NOTIFICATIONS,
   BLUETOOTH_CONNECT) are requested by the screen; the source then re-reads on the next resume.
 - **Role**: `graph.role` (`RoleStore`, a `StateStore<RoleRecord>`) keeps the role in `role.json` + `role-backup.json`;
   setup writes it with `graph.role.update { it.copy(role = …) }` (never the typed store directly), so a damaged file

@@ -7,6 +7,7 @@ import android.content.Context
 import android.util.Log
 import app.mauri.sukrara.alerts.AlertEvent
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
@@ -18,9 +19,11 @@ import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.monitor.readiness.AndroidAlertReadiness
+import app.mauri.sukrara.monitor.readiness.NotificationCooldown
 import app.mauri.sukrara.monitor.sensorend.AndroidSensorEndPresenter
 import app.mauri.sukrara.monitor.sensorend.SensorEndMemory
 import app.mauri.sukrara.monitor.sensorend.SensorEndNotifier
@@ -30,6 +33,7 @@ import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -38,7 +42,9 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * The alert runtime's wiring (the `AppGraph` composes it; the Application implements [AlertsHost]).
@@ -70,7 +76,27 @@ class AlertsModule(
     private val alarms = AndroidAlarms(ctx)
     val store = AlertStateStore(alertSettings, alertRecord)
     val soundPicker = AlertSoundPicker()
-    val notifier = AlertNotifier(ctx)
+
+    /** The person's answer about Android's *Vibrate only when unlocked* (the checklist asks; #129). */
+    private val unlockedAnswer: Flow<UnlockedSound> =
+        alertSettings
+            .flow(UNLOCKED_SOUND)
+            .map(UnlockedSound::of)
+            .distinctUntilChanged()
+            .catch { emit(UnlockedSound.Unchecked) }
+
+    /** Read at each ringing alert; null until the store answered (the first alert of a process then reads it). */
+    private val unlockedNow = unlockedAnswer.stateIn(scope, SharingStarted.Eagerly, null)
+
+    val notifier =
+        AlertNotifier(
+            ctx,
+            UnlockedAlertSound(ctx) {
+                // a ringing alert in a process that just started may come before the store answered: read it then
+                val answer = unlockedNow.value ?: runBlocking { unlockedAnswer.first() }
+                NotificationCooldown.appPlays(NotificationCooldown.vibrateOnlyWhenUnlocked(ctx), answer)
+            },
+        )
 
     /** Settings' sound preview and *Send a test alert*. */
     val tryOut = AlertTryOut(ctx, notifier)
@@ -93,7 +119,18 @@ class AlertsModule(
      * THE alert checklist (home's reliability row, the settings Reliability page, the setup permission step): one
      * instance so every surface agrees.
      */
-    val readiness: AlertReadinessSource = AndroidAlertReadiness(ctx, scope, dispatchers, store.settings, needsBluetooth)
+    val readiness: AlertReadinessSource =
+        AndroidAlertReadiness(
+            ctx,
+            scope,
+            dispatchers,
+            store.settings,
+            needsBluetooth,
+            // the runtime publishes its failed steps to the hub; the checklist is the one place that answers for them
+            hub.state.map { it.alerts.failedSteps }.distinctUntilChanged(),
+            unlockedAnswer,
+            { alertSettings.set(UNLOCKED_SOUND, it.wire) },
+        )
 
     private val sensorEndSettings: Flow<SensorEndSettings> =
         combine(
@@ -164,3 +201,14 @@ class AlertsModule(
 private data class SensorEndInputs(val wearer: Boolean, val sensor: SensorState, val latestS: Long?, val settings: SensorEndSettings)
 
 private const val TAG = "Sukrara.alerts"
+
+/** Schema `alerts.unlockedSound`. */
+private val UNLOCKED_SOUND =
+    SchemaSettings.text(
+        "alerts.unlockedSound",
+        UnlockedSound.Unchecked.wire,
+        UnlockedSound.entries
+            .map {
+                it.wire
+            }.toSet(),
+    )

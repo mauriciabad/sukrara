@@ -10,7 +10,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
@@ -28,6 +31,7 @@ import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
@@ -66,6 +70,7 @@ import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.RingSpec
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -262,6 +267,13 @@ class SettingsGallery {
             "lock" to { LockScreenContent(20.0, {}, {}) },
             "reliability" to
                 { ReliabilityContent(AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), {}) {} },
+            // a failed alert step (Copy report) and the unanswered Vibrate only when unlocked
+            "reliability-delivery-unlocked" to {
+                ReliabilityContent(
+                    AlertReadiness(setOf(AlertRequirement.AlertDelivery, AlertRequirement.SoundWhenUnlocked), failedSteps = setOf("Alarm")),
+                    {},
+                ) {}
+            },
             "about-update" to { AboutContent("0.12.0", UpdateState.Available(release), {}) {} },
             "about-offline" to { AboutContent("0.12.0", UpdateState.Offline, {}) {} },
             "sensor" to { SensorSettingsContent(sensorWorking, now, zone, SensorSettingsActions()) {} },
@@ -408,6 +420,25 @@ class SettingsGallery {
             compose.waitForIdle()
             compose.onRoot().captureRoboImage("build/outputs/roborazzi/settings-$prefix$name-$theme-$font.png")
         }
+    }
+
+    /** *Sound while the phone is unlocked*: Open the setting, then an answer the person can change at any time. */
+    @Test fun unlockedSoundIsAnsweredOnTheReliabilityPage() {
+        val opened = mutableListOf<AlertRequirement>()
+        var answer by mutableStateOf(UnlockedSound.Unchecked)
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                val missing = if (answer == UnlockedSound.Unchecked) setOf(AlertRequirement.SoundWhenUnlocked) else emptySet()
+                ReliabilityContent(AlertReadiness(missing, unlockedSound = answer), { opened += it }, { answer = it }) {}
+            }
+        }
+        compose.onNodeWithText("Open the setting").performScrollTo().performClick()
+        assertEquals(listOf(AlertRequirement.SoundWhenUnlocked), opened)
+        compose.onNodeWithText("Keep it on").performScrollTo().performClick()
+        assertEquals(UnlockedSound.AppPlays, answer)
+        compose.onNodeWithText("While the phone is unlocked, Sukrara plays the alert sound itself; Android only vibrates.").assertExists()
+        compose.onNodeWithText("It's off").performScrollTo().performClick()
+        assertEquals(UnlockedSound.Off, answer)
     }
 
     @Test fun lightDefault() = gallery(dark = false, fontScale = 1f)

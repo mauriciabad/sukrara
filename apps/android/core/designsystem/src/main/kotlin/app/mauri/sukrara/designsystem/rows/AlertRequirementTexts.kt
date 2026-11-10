@@ -14,11 +14,14 @@ import app.mauri.sukrara.core.model.AlertRequirement
 @StringRes
 fun AlertRequirement.nameRes(): Int =
     when (this) {
+        AlertRequirement.AlertDelivery -> R.string.ds_req_delivery
         AlertRequirement.Notifications -> R.string.ds_req_notifications
         AlertRequirement.FullScreenIntent -> R.string.ds_req_full_screen
         AlertRequirement.ExactAlarm -> R.string.ds_req_exact_alarm
         AlertRequirement.BatteryExemption -> R.string.ds_req_battery
         AlertRequirement.AlertChannel -> R.string.ds_req_channel
+        AlertRequirement.AlarmsInDnd -> R.string.ds_req_dnd
+        AlertRequirement.SoundWhenUnlocked -> R.string.ds_req_unlocked
         AlertRequirement.Bluetooth -> R.string.ds_req_bluetooth
     }
 
@@ -26,10 +29,13 @@ fun AlertRequirement.nameRes(): Int =
 @StringRes
 fun AlertRequirement.whyRes(): Int =
     when (this) {
+        AlertRequirement.AlertDelivery -> R.string.ds_req_delivery_why
         AlertRequirement.Notifications -> R.string.ds_req_notifications_why
         AlertRequirement.FullScreenIntent -> R.string.ds_req_full_screen_why
         AlertRequirement.ExactAlarm -> R.string.ds_req_exact_alarm_why
         AlertRequirement.BatteryExemption -> R.string.ds_req_battery_why
         AlertRequirement.AlertChannel -> R.string.ds_req_channel_why
+        AlertRequirement.AlarmsInDnd -> R.string.ds_req_dnd_why
+        AlertRequirement.SoundWhenUnlocked -> R.string.ds_req_unlocked_why
         AlertRequirement.Bluetooth -> R.string.ds_req_bluetooth_why
     }

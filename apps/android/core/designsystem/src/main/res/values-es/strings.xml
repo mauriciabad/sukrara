@@ -19,6 +19,9 @@
         <item quantity="other">%1$d días</item>
     </plurals>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
+    <string name="ds_req_delivery">Entrega de alertas</string>
+    <string name="ds_req_delivery_why">Android rechazó el último intento de mostrar una alerta, programar la próxima comprobación o guardar las alertas. Sukrara lo vuelve a intentar con cada lectura; el informe dice qué paso falló.</string>
+    <string name="ds_copy_report">Copiar informe</string>
     <string name="ds_req_notifications">Notificaciones</string>
     <string name="ds_req_notifications_why">Sin ellas ninguna alerta puede mostrarse ni sonar.</string>
     <string name="ds_req_full_screen">Alertas a pantalla completa</string>
@@ -29,6 +32,14 @@
     <string name="ds_req_battery_why">Mantiene a Sukrara leyendo el sensor en segundo plano.</string>
     <string name="ds_req_channel">Sonido de alerta y No molestar</string>
     <string name="ds_req_channel_why">Las categorías de alerta deben conservar su sonido y poder saltarse No molestar.</string>
+    <string name="ds_req_dnd">Alarmas en No molestar</string>
+    <string name="ds_req_dnd_why">Permite que las alertas que suenan como una alarma se salten un modo No molestar que silencia las alarmas, como el modo descanso.</string>
+    <string name="ds_req_unlocked">Sonido con el teléfono desbloqueado</string>
+    <string name="ds_req_unlocked_why">La opción de Android Atenuación de notificaciones › Vibrar solo si está desbloqueado silencia todos los sonidos de alerta, también las alarmas, mientras usas el teléfono. Android no deja que las apps la lean: compruébala una vez y díselo a Sukrara.</string>
+    <string name="ds_unlocked_open">Abrir el ajuste</string>
+    <string name="ds_unlocked_off">Está desactivada</string>
+    <string name="ds_unlocked_app">Dejarla activada</string>
+    <string name="ds_unlocked_app_note">Con el teléfono desbloqueado, Sukrara reproduce el sonido de la alerta; Android solo vibra.</string>
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">El sensor envía las lecturas por Bluetooth.</string>
 
