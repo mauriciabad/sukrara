@@ -103,13 +103,16 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
 ## 2. Mute rules
 
 Extremely high and no data are never muted by a treatment: extremely high is the ceiling no treatment rule can
-silence. Very low is muted by carbs (2026-10-18: you ate, give it time; extremely high stays the safety net on the high
-side). The user's own Mute / Mute all (below) cover them too (round f30).
+silence. Very low is muted by carbs **on the wearer's own phone only** (2026-10-18: you ate, give it time; #2, the
+owner's choice E: carbs can be logged from the lock screen by anyone holding the phone, so the wearer's run for the
+followers, every follower — mirroring or with its own rules — and the Mac keep alerting on a very low until the value
+is really above it; the person who ate keeps the 15-min recheck window ADA / ISPAD describe; neither Dexcom nor Libre
+ever quiets urgent low because of carbs). The user's own Mute / Mute all (below) cover them too (round f30).
 
 | Option | Default | Applies to | Rule |
 |---|---|---|---|
 | `muteAfterInsulin` | on, 60 min | `high`, `very_high`, `rising_fast` | A `rapid` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
-| `muteAfterCarbs` | on, 15 min | `very_low`, `low`, `falling_fast` | A `carbs` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
+| `muteAfterCarbs` | on, 15 min | `very_low` (the wearer's own phone only, #2), `low`, `falling_fast` | A `carbs` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
 | `muteFallingHigh` | on, 20 min | `high`, `very_high` | `rate < 0` and `sgv + rate × min < high.mgdl` (it will be back below the high threshold within `min` minutes at the current rate). Re-evaluated on every reading. It only postpones: when it ends, an alert that came due meanwhile fires at once; it doesn't restart the count. |
 
 **Notification actions** (round f30; the user, 2026-10-21: "two kinds of buttons … Mute 30 min doesn't conceptually

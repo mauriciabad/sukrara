@@ -33,8 +33,14 @@ sealed interface RuleAction {
 class AlertEngine(
     /** The local time zone the night window is read in (SPEC §1 "Night alerts"). */
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    /** This run is the wearer's own phone's: carbs may quiet very low here, nowhere else (#2, SPEC §2). */
+    private val wearersOwn: Boolean = true,
     private val newId: () -> String = ::randomId,
 ) {
+    /** [settings] as this run applies them at [now]: the night set inside its window, carbs and very low (#2). */
+    private fun inForce(settings: AlertSettings, now: Long): AlertSettings =
+        settings.at(now, zone()).let { if (it.veryLowQuietByCarbs == wearersOwn) it else it.copy(veryLowQuietByCarbs = wearersOwn) }
+
     private val episodes = EnumMap<AlertGroup, Episode>(AlertGroup::class.java)
     private val snoozes = EnumMap<Side, Snooze>(Side::class.java)
 
@@ -82,7 +88,7 @@ class AlertEngine(
      * up: the runtime shows them again without sound. The next [evaluate] goes on from there.
      */
     fun restore(m: AlertMemory, settings: AlertSettings, now: Long): List<Firing> {
-        val s = settings.at(now, zone())
+        val s = inForce(settings, now)
         episodes.clear()
         snoozes.clear()
         snoozes.putAll(m.snoozes.filterValues { !it.isEmpty })
@@ -113,7 +119,8 @@ class AlertEngine(
      * *Unmute* / *Alert me anyway*: the side's Mute ends and what quiets its episode now (treatments so far, the
      * falling mute) is lifted for the rest of the episode; still matching → alerts at once. Nothing quiet → nothing.
      */
-    fun unmute(kind: AlertKind, s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+    fun unmute(kind: AlertKind, settings: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+        val s = inForce(settings, now)
         val side = kind.side
         val sn = snoozes[side]
         val muted = sn != null && sn.until > now
@@ -206,7 +213,7 @@ class AlertEngine(
      * night set applies inside its window.
      */
     fun evaluate(settings: AlertSettings, d: Doses, now: Long): List<RuleAction> {
-        val s = settings.at(now, zone())
+        val s = inForce(settings, now)
         val out = mutableListOf<RuleAction>()
         if (!s.on) {
             episodes.values.forEach { e -> e.shown?.let { out += RuleAction.Clear(it.kind, it.id, now) } }
@@ -263,7 +270,7 @@ class AlertEngine(
     /** When a timer check is next useful (no-data deadline, a repeat, a window or mute ending, the margin), or null. */
     fun nextCheckAt(settings: AlertSettings, now: Long): Long? {
         if (!settings.on) return null
-        val s = settings.at(now, zone())
+        val s = inForce(settings, now)
         val c = mutableListOf<Long>()
         settings.night.nextSwitch(now, zone())?.let { c += it } // the rules switch: what matches changes
         val r = last

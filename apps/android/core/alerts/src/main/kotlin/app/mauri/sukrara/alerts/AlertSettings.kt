@@ -123,6 +123,11 @@ data class AlertSettings(
     val night: NightProfile = NightProfile(),
     val escalation: Escalation = Escalation(),
     val source: AlertSource = AlertSource.WEARER,
+    /**
+     * A fact of the device running the rules, never stored: carbs may quiet very low only on the wearer's own phone
+     * (#2, SPEC §2); its run for the followers, every follower and the Mac keep alerting on very low.
+     */
+    val veryLowQuietByCarbs: Boolean = true,
 ) {
     fun rule(kind: AlertKind): KindRule = rules[kind] ?: DEFAULT_RULES.getValue(kind)
 
@@ -142,6 +147,7 @@ data class AlertSettings(
     fun mutedBy(kind: AlertKind): TreatmentKind? =
         when {
             kind == AlertKind.EXTREMELY_HIGH -> null
+            kind == AlertKind.VERY_LOW && !veryLowQuietByCarbs -> null
             kind.answeredBy == TreatmentKind.CARBS -> TreatmentKind.CARBS.takeIf { afterCarbs.on }
             kind.answeredBy == TreatmentKind.RAPID -> TreatmentKind.RAPID.takeIf { afterInsulin.on }
             else -> null

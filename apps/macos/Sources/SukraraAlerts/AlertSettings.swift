@@ -189,6 +189,9 @@ public struct AlertSettings: Equatable, Sendable {
     public var night = NightSettings()
     public var escalation = EscalationSettings()
     public var source = AlertSource.wearer
+    /// A fact of the device running the rules, never stored: carbs may quiet very low only on the wearer's own phone
+    /// (#2, SPEC §2); the wearer's run for the followers, every follower and this Mac keep alerting on very low.
+    public var veryLowQuietByCarbs = true
 
     public init() {}
 
@@ -208,7 +211,9 @@ public struct AlertSettings: Equatable, Sendable {
     /// The treatment whose quiet window covers `kind`, or nil: the rule is off, or `kind` is never quieted by a
     /// treatment (extremely high, no data).
     public func quietedBy(_ kind: AlertKind) -> TreatmentKind? {
-        guard kind != .extremelyHigh, let t = kind.treatment else { return nil }
+        guard kind != .extremelyHigh, kind != .veryLow || veryLowQuietByCarbs, let t = kind.treatment else {
+            return nil
+        }
         return quietRule(t).on ? t : nil
     }
 

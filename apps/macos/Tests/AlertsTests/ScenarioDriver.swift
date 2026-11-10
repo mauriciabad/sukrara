@@ -214,7 +214,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         }
     }
 
-    var wearer = AlertEngine(context: AlertContext(settings: s, timeZone: utc))
+    var wearer = AlertEngine(context: AlertContext(settings: s, timeZone: utc, wearersOwn: true))
     // mirror: the wearer's shared engine (no notification actions: what it publishes), feeding `follower`
     var shared = AlertEngine(context: AlertContext(settings: s, timeZone: utc))
     var mono: TimeInterval { real.timeIntervalSince1970 }

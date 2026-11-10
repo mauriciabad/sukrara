@@ -92,8 +92,10 @@ class AlertMachine(
         private set
     var doses: Doses = doses
         private set
-    private val local = AlertEngine(zone, newId)
-    private val shared = if (role == AlertRole.WEARER) AlertEngine(zone, newId) else null
+    private val local = AlertEngine(zone, wearersOwn = role == AlertRole.WEARER, newId = newId)
+
+    /** The wearer's run for the followers: carbs never quiet very low there (#2). */
+    private val shared = if (role == AlertRole.WEARER) AlertEngine(zone, wearersOwn = false, newId = newId) else null
     private var mirror = if (role == AlertRole.FOLLOWER_MIRROR) WearerMirror() else null
     private var lastNow = 0L
 
@@ -128,7 +130,7 @@ class AlertMachine(
     }
 
     /** The settings with the rules in force at [now] (the night set inside its window): what an alert rings with. */
-    fun settingsAt(now: Long): AlertSettings = settings.at(now, zone())
+    fun settingsAt(now: Long): AlertSettings = settings.at(now, zone()).copy(veryLowQuietByCarbs = role == AlertRole.WEARER)
 
     val engine: AlertEngine get() = local
     val wearerMirror: WearerMirror? get() = mirror
@@ -163,7 +165,8 @@ class AlertMachine(
     /** What every surface shows about this device's alerts (the mirror's mutes on a mirroring follower). */
     fun uiState(now: Long): AlertUiState {
         val nightUntil = if (settings.nightAt(now, zone())) settings.night.nextSwitch(now, zone()) ?: 0 else 0
-        val own = AlertUiState.of(local, localSettings(now).at(now, zone()), doses, now).copy(nightUntil = nightUntil)
+        val inForce = localSettings(now).at(now, zone()).copy(veryLowQuietByCarbs = role == AlertRole.WEARER)
+        val own = AlertUiState.of(local, inForce, doses, now).copy(nightUntil = nightUntil)
         val m = mirror ?: return own
         return own.copy(
             quiet = own.quiet + AlertUiState.ofMirror(m, settingsAt(now), now).quiet,

@@ -21,11 +21,13 @@ public struct AlertContext: Equatable, Sendable {
     public var sourceStart: Date?
     /// This Mac's time zone: the night alerts' window is read in it (SPEC §1 "Night alerts").
     public var timeZone: TimeZone
+    /// The run is the wearer's own phone's: carbs may quiet very low there only (#2, SPEC §2). The Mac never is.
+    public var wearersOwn: Bool
 
     public init(
         settings: AlertSettings = AlertSettings(), treatments: [AlertTreatment] = [], sensor: SensorWindow? = nil,
         latest: GlucoseSample? = nil, scope: AlertScope = .all, sourceStart: Date? = nil,
-        timeZone: TimeZone = .current
+        timeZone: TimeZone = .current, wearersOwn: Bool = false
     ) {
         self.settings = settings
         self.treatments = treatments
@@ -34,6 +36,7 @@ public struct AlertContext: Equatable, Sendable {
         self.scope = scope
         self.sourceStart = sourceStart
         self.timeZone = timeZone
+        self.wearersOwn = wearersOwn
     }
 }
 
@@ -102,6 +105,7 @@ public struct AlertEngine: Sendable {
     public init(context: AlertContext) {
         self.context = context
         inForce = context.settings
+        inForce.veryLowQuietByCarbs = context.wearersOwn
     }
 
     public var settings: AlertSettings { context.settings }
@@ -109,7 +113,11 @@ public struct AlertEngine: Sendable {
     var inForce = AlertSettings()
 
     /// The settings with the rules in force at `t`.
-    public func settingsInForce(at t: Date) -> AlertSettings { context.settings.at(t, in: context.timeZone) }
+    public func settingsInForce(at t: Date) -> AlertSettings {
+        var s = context.settings.at(t, in: context.timeZone)
+        s.veryLowQuietByCarbs = context.wearersOwn
+        return s
+    }
 
     /// Handles `input` at `now` (`monotonic`: a clock that never jumps, in s, so a clock set back is measured exactly);
     /// firing ids come from `rng`.
