@@ -17,7 +17,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * The monitor's broadcasts (not exported; system broadcasts still arrive):
  *  - boot, app update, time / time-zone change → evaluate alerts and the sensor end from the saved state, reschedule
- *    the health check, start the service once (each is an allowed background start);
+ *    the health check, start the service once (each is an allowed background start); a time / time-zone change (also
+ *    Settings' 12/24-hour switch) redraws the widgets' times;
+ *  - language change → channel names, the glucose notification and the widgets in the new language;
  *  - exact-alarm permission changed → reschedule;
  *  - the health check alarm → start the service if it should run, schedule the next check;
  *  - the freshness step → redraw the glucose surfaces;
@@ -68,7 +70,12 @@ abstract class MonitorReceiver : BroadcastReceiver() {
             }
 
             Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> {
+                monitor.onClockChanged()
                 restart(monitor, StartReason.TimeChanged)
+            }
+
+            Intent.ACTION_LOCALE_CHANGED -> {
+                monitor.onLocaleChanged()
             }
 
             AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
@@ -122,7 +129,7 @@ abstract class MonitorReceiver : BroadcastReceiver() {
     }
 }
 
-/** The system's broadcasts: boot, app update, time / time-zone change, exact-alarm permission change. */
+/** The system's broadcasts: boot, app update, time / time-zone / language change, exact-alarm permission change. */
 class BootReceiver : MonitorReceiver()
 
 /** The monitor's own alarms and intents: the health check, the freshness step, the glucose notification swiped away. */

@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.util.Locale
+import app.mauri.sukrara.graph.Clock as GraphClock
 
 /** Everything a widget's picture is drawn from, at [now]; [dark] = the night palette. */
 data class WidgetFrame(
@@ -56,7 +58,8 @@ data class WidgetInputs(
 
 /**
  * Redraws the widgets only when what they show changes: the latest reading, its freshness step (monitor's
- * FreshnessTicker alarm sends [freshnessTicks]), the sensor, *Mute all*, the treatments, the settings or the theme.
+ * FreshnessTicker alarm sends [freshnessTicks]), the sensor, *Mute all*, the treatments, the settings, the theme, or how
+ * a time is written (12/24-hour, time zone, language: the monitor sends a tick on each of those changes).
  * While the screen is off nothing is drawn (no launcher shows it); when it comes back on, one redraw catches up if
  * anything changed. No polling: it reacts only to its inputs.
  */
@@ -116,17 +119,24 @@ class WidgetUpdater(
         return WidgetFrame(i.glucose, i.treatments, i.config, i.placements, clock.now(), dark(), i.stored)
     }
 
-    /** What a picture depends on: equal keys draw the same picture. */
+    /**
+     * What a picture depends on: equal keys draw the same picture. [clock] = [GraphClock.signature] (12/24-hour, zone)
+     * and [locale] the language every time and word is written in.
+     */
     internal data class DrawKey(
         val inputs: WidgetInputs,
         val freshnessStep: Long?,
         val dark: Boolean,
+        val clock: String,
+        val locale: Locale,
     ) {
         companion object {
             fun of(
                 inputs: WidgetInputs,
                 now: Instant,
                 dark: Boolean,
+                clock: String = GraphClock.signature(),
+                locale: Locale = Locale.getDefault(),
             ): DrawKey {
                 // the next step's time is constant within one step, so it identifies the step the reading is in
                 val step =
@@ -136,7 +146,7 @@ class WidgetUpdater(
                             ?.epochSecond,
                         now.epochSecond,
                     )
-                return DrawKey(inputs.copy(glucose = inputs.glucose.drawn()), step, dark)
+                return DrawKey(inputs.copy(glucose = inputs.glucose.drawn()), step, dark, clock, locale)
             }
 
             /** Only what the picture, its description and its tap use (not the link's heartbeat or the service). */
