@@ -497,7 +497,10 @@ private fun SensorLine(
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
         Text(
-            stringResource(R.string.home_sensor_ends, relative(ends, state.now)),
+            stringResource(
+                if (ends.isAfter(state.now)) R.string.home_sensor_ends else R.string.home_sensor_ended,
+                relative(ends, state.now),
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

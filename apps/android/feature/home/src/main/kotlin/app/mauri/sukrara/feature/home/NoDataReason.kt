@@ -35,12 +35,16 @@ sealed interface NoDataReason {
     }
 
     /**
-     * A role is set but no reading has come yet ("Not monitoring: no sensor yet"). No "no data" alarm is armed in this
-     * state, so the wording is never an alarm's.
+     * A role is set but no reading has come yet ("Not monitoring: no sensor yet"), or the wearer forgot the sensor
+     * ([history]: older readings stay on the card's chart). No "no data" alarm is armed in this state, so the wording
+     * is never an alarm's.
      */
-    data class NoSensorYet(val follower: Boolean) : NoDataReason {
+    data class NoSensorYet(
+        val follower: Boolean,
+        val history: Boolean = false,
+    ) : NoDataReason {
         override val action = if (follower) HomeAction.OpenSetup else HomeAction.PairSensor
-        override val fullPage = true
+        override val fullPage = !history
     }
 
     data object CoreMissing : NoDataReason {
@@ -96,15 +100,28 @@ sealed interface NoDataReason {
             val sensor = state.sensor
             return when {
                 state.notMonitoring == NotMonitoringReason.SetupIncomplete -> SetupIncomplete
+
                 state.link?.revoked == true -> LinkRevoked
+
                 state.sensor == SensorState.CoreMissing -> CoreMissing
+
                 state.sensor == SensorState.Ended -> SensorEnded
+
                 sensor is SensorState.WarmingUp && look.state == GlucoseLook.State.WARMING_UP -> WarmingUp(sensor.readyAt)
+
                 valueShown -> null
+
+                // the sensor was forgotten: nothing reconnects, so never "it reconnects on its own"
+                latest != null && !follower && state.notMonitoring == NotMonitoringReason.NoSensorYet -> NoSensorYet(false, history = true)
+
                 state.service is ServiceState.Stopped -> MonitoringStopped
+
                 state.sensor == SensorState.BluetoothOff && !follower -> BluetoothOff
+
                 latest == null && state.notMonitoring == NotMonitoringReason.NoSensorYet -> NoSensorYet(follower)
+
                 follower -> WearerSilent(state.link?.lastHeardAt ?: latest?.t)
+
                 else -> NoReadings((state.source as? SourceStatus.Interrupted)?.since ?: latest?.t)
             }
         }

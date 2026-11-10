@@ -190,7 +190,16 @@ fun numberLabeler(): (NumberSpec, Double) -> String {
     return { spec, value ->
         spec.specialOf(value)?.let { words[it] ?: it }
             ?: minutesText(spec, value, durations)
-            ?: listOf(spec.text(value), units[spec.unit] ?: spec.unit).filter { it.isNotEmpty() }.joinToString(" ")
+            // insulin units stick to the number like everywhere else ("2.0u", FEATURES "Treatments")
+            ?: listOf(spec.text(value), units[spec.unit] ?: spec.unit).filter { it.isNotEmpty() }.joinToString(
+                if (spec.unit ==
+                    "u"
+                ) {
+                    ""
+                } else {
+                    " "
+                },
+            )
     }
 }
 

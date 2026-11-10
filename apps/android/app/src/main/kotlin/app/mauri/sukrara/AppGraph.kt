@@ -89,6 +89,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -123,6 +124,9 @@ class AppGraph(
     val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
 
     val appVersion: String = BuildConfig.VERSION_NAME
+
+    /** The app's languages; [App] sets it on a language change so words made outside Compose are made again. */
+    val locales = MutableStateFlow(app.resources.configuration.locales)
 
     // ---- modules (one line each; construction does no I/O) ----
 
@@ -467,7 +471,7 @@ class AppGraph(
             readinessSource = alerts.readiness,
             alertControls = alerts.controls,
             resume = { scope.launch { startMonitoring(StartReason.Resume) } },
-            nextSetupStep = setup.finishItems.map { items -> items.firstOrNull()?.label(app) },
+            nextSetupStep = combine(setup.finishItems, locales) { items, _ -> items.firstOrNull()?.label(app) },
             refreshSetup = setup::refresh,
             widgetPlaced = {
                 widgets.presence.refresh()

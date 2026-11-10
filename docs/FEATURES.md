@@ -410,7 +410,8 @@ Wearer only (`:feature:sensor` `newsensor/NewSensorScreen.kt`; rules in `NewSens
 Android (`:feature:home`: `HomeScreen`, `HomeViewModel`, `NoDataReason`, `banners/HomeBanners`, `HomeCard` = the
 registered `app-panel` card surface; tests `NoDataReasonTest`, `BannerSlotTest`, `HomeViewModelTest`, `HomeGallery`).
 Glucose first: the card (value, arrow, slots, 6 h chart through the one renderer) with the sensor's end date under it
-(in the sensor's last day, the wearer gets a tonal *Pair new sensor* button there). The chart scrolls through the
+(*Sensor ends Nov 20* / *Sensor ended 2 hours ago* once the end has passed and the sensor still reports; in the
+sensor's last day, the wearer gets a tonal *Pair new sensor* button there). The chart scrolls through the
 stored 31 days (drag, fling, stretch at the ends) and two fingers zoom its time axis from 2 h to 31 days; the y range
 and the plot's bottom ease to the visible window; the renderer's *Now* pill (tap, or TalkBack *Back to now*) returns.
 The history is `:monitor` `GlucoseHistory`: the stored days before the live 24 h window, read once an hour, joined with
@@ -438,8 +439,10 @@ person's actions (dismiss, delete, undo, unmute, a quiet's way out); passive upd
 number). The card always stays, with its chart (the renderer draws *No reading since …* + `sensors_off`, the warm-up
 countdown or *Sensor ended* + *Replace sensor*), and the reason sits **under** it, compact: title, one explanation, the
 action, no icon. Only when there is nothing to draw (not set up, no sensor yet, core missing) a full-width reason takes
-the card's place. Reasons: *Sukrara isn't set up yet* → Set up; *Not monitoring: no sensor yet* before the first reading ever
-(no "no data" alarm is armed in this state; follower: *not following anyone yet* → Join) → Pair sensor; *This build
+the card's place. Reasons: *Sukrara isn't set up yet* → Set up; *Not monitoring: no sensor yet* before the first reading ever, and on
+the wearer after *Forget this sensor* (under the card, which keeps the older readings; never *No readings from the
+sensor*, which says it reconnects) (no "no data" alarm is armed in this state; follower: *not following anyone yet*
+→ Join) → Pair sensor; *This build
 can't read Libre 3 sensors* (no action); *Sensor ended* → Pair new sensor; *Sensor warming up* (first reading at …);
 *You no longer follow this person* → Join with a new invite; *Monitoring stopped* → Resume monitoring; *Bluetooth is
 off* → Turn on Bluetooth; follower *No readings from the wearer's phone* (last heard …); wearer *No readings from the
@@ -1332,7 +1335,7 @@ page.
 - Numbers, dates and times follow the chosen language (decimal comma in Spanish, localized day and month names); units stay as they are (mg/dL, `4.5u`, `30g`).
 - Every clock time follows the device's 12/24-hour setting, not the language's default (Android: Settings → System → Date & time → *Use 24-hour format*, read live; Mac: System Settings → Date & Time → *24-hour time*): `21:08` / `9:08 PM` (es `9:08 p. m.`). That covers the card (`Ready at`, *No reading since*, a late reading's time), the graph's hour labels, widgets, lock screen widget, the live notification, sensor reminders and countdowns, the calendar event's description, treatments (list, dialog, followers' entries), alerts list, access requests, settings summaries (reminder times, sensor end, LibreView), the Mac menubar tooltip, dropdown, report and treatments. One helper per platform (Android `graph/Clock.kt`, Mac `Clock` in SukraraGraph.swift), and it is the only place the setting is read (Android: `Clock.hour24Source`, installed by the app; Mac: `Clock.hour24`, formatting with the bare locale so the cycle asked for is the one shown): no surface passes a 24-hour flag of its own (2026-10-21: the value widget showed `08:59` beside the chart cards' `8:59 AM`). Shared cases in `poc/spikes/graph-fixtures/clock`; every surface is rendered in 12- and 24-hour time by the cross-surface tests (`clock12` / `clock24`: every time any surface formats or draws must be in that cycle); `tools/check` `clock` rejects an own flag or time formatter. Switching the setting (or the time zone) while Sukrara runs redraws everything at once: Android's monitor receiver takes Settings' `ACTION_TIME_CHANGED` / `ACTION_TIMEZONE_CHANGED` and re-renders the notification and the widgets (`MonitorModule.onClockChanged`: a redraw tick), and `Clock.signature()` is in every redraw key (the notification's card, the widgets' `DrawKey` with the language too; `WidgetUpdaterTest`, #148); the Mac redraws the menubar and dropdown and re-publishes to the widgets on the current locale's change and the time zone's (`Clock.observeChanges`, `-graphselftest`). The log and debug output keep 24 h.
 - Spanish terms: hidratos (carbs), insulina rápida / lenta, tiempo en rango, seguidores; alert headlines like "Glucosa baja · come más".
-- Changing the language (the phone's, or Sukrara's own per-app language) renames the notification channels and groups (the person's channel settings stay) and redraws the glucose notification at once; the next alert is worded in the new language (Android: `App.onConfigurationChanged` and the monitor's `ACTION_LOCALE_CHANGED` receiver → `MonitorModule.onLocaleChanged`). The widgets redraw at once too (the language is in their redraw key).
+- Changing the language (the phone's, or Sukrara's own per-app language) renames the notification channels and groups (the person's channel settings stay) and redraws the glucose notification and home's *Finish setup* step at once; the next alert is worded in the new language (Android: `App.onConfigurationChanged` and the monitor's `ACTION_LOCALE_CHANGED` receiver → `MonitorModule.onLocaleChanged`). The widgets redraw at once too (the language is in their redraw key).
 - Alert rules and their timeline scenarios stay in English: the engine reports the kind and what was logged, and the notification and the settings pages word them. The log stays in English.
 
 ## Juggluco on this network (Mac)

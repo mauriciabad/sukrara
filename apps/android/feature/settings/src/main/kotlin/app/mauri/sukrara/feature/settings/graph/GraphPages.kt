@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -127,14 +128,15 @@ fun PreviewCard(
     Box(modifier.fillMaxWidth().padding(vertical = 8.dp)) { preview() }
 }
 
-/** A ring window or slot period in words: "12 h", "1 d", "7 d". */
+/** A ring window or slot period in words: "12 h", "1 day", "7 days". */
 @Composable
 fun periodLabeler(): (Double) -> String {
     val h = stringResource(DsR.string.ds_unit_h)
-    val d = stringResource(DsR.string.ds_unit_d)
+    val res = LocalResources.current
     return { s ->
         val sec = s.toLong()
-        if (sec % 86_400L == 0L) "${sec / 86_400L} $d" else "${sec / 3_600L} $h"
+        val days = (sec / 86_400L).toInt()
+        if (sec % 86_400L == 0L) res.getQuantityString(DsR.plurals.ds_days, days, days) else "${sec / 3_600L} $h"
     }
 }
 
