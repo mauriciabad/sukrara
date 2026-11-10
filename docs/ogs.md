@@ -25,7 +25,10 @@ viewer, or another CGM app your family already uses.
 
 **Where things stand.** The current draft is **draft 3**, a proposal no app speaks yet. Sukrara 0.11 uses the
 earlier draft 1, and moving to draft 3 means inviting your followers again. We'll say so clearly before it happens. The
-[background report](24b-open-standard-draft3) explains every design choice.
+[background report](24b-open-standard-draft3) explains every design choice. What Sukrara speaks today, rule by rule,
+is in [its protocol specification](https://github.com/mauriciabad/sukrara/blob/main/contracts/protocol/PROTOCOL-v2.md),
+next to the [test vectors and event sequences](https://github.com/mauriciabad/sukrara/tree/main/contracts/protocol)
+both Sukrara apps and the independent reference follower are checked against.
 
 **For developers.** The [conformance checklist](https://github.com/mauriciabad/open-glucose-stream/blob/main/spec/conformance.md) says what a reader,
 contributor, publisher or administrator app must do. The [test vectors](https://github.com/mauriciabad/open-glucose-stream/tree/main/test-vectors) let you

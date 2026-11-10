@@ -65,6 +65,10 @@ jobs:
         run: python3 tools/settings/gen.py --check
       - name: The local test relay's tests (loopback only)
         run: python3 tools/relay/test_relay.py
+      # The independent Python reference (poc/spec/reference, frozen) with PROTOCOL-v2's rules: every sync sequence
+      # gives the same verdicts and state as both apps, and the OGS vectors are its generator's bytes.
+      - name: Protocol fixtures cross-checked against the reference follower
+        run: python3 tools/protocol/sync_crosscheck.py
       - name: Scripts parse
         run: for f in tools/*.sh tools/*/*.sh; do bash -n "$f" || exit 1; done
 

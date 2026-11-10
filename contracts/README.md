@@ -31,12 +31,13 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 | `settings/README.md` | the settings stores and the alert settings safety rule | — |
 | `protocol/PROTOCOL-v2.md`, `protocol/PROTOCOL-identity.md` | the Nostr wire formats wearer ↔ followers | `:core:protocol`, `:share`, `SukraraShare` |
 | `protocol/identity/*.json` | identity test vectors (keys, profile, avatar) — test-only keys | protocol tests on every app |
-| `protocol/ogs/ogs-draft1.json` | Open Glucose Sharing draft test vectors | protocol tests on every app |
+| `protocol/ogs/ogs-draft1.json` | Open Glucose Sharing draft test vectors (the reference's generator, `tools/protocol/sync_crosscheck.py --write-vectors`) | protocol tests on every app, the reference follower |
 | `protocol/ble/default-mtu.json` (+ `generate.py`) | Bluetooth at ATT MTU 23: a Mac follower's HELLO frames (plain and as a long write) → the wearer's INFO frames, link named | `:share` `NearbyDefaultMtuTest`, `SukraraShare` `NearbyDefaultMtuTests` |
 | `protocol/ble/nearby-pairing.json` | *Pair nearby* numeric comparison: commitment, 6-digit pairing code, offer expiry, the messages, a follower sequence (impostor, wrong nonce, key held until confirmed) | `:core:protocol` `NearbyPairingVectorsTest` (generates it), `SukraraShare` `NearbyPairingVectorsTests` |
-| `protocol/sync/` | owner → follower event sequences → expected follower state (see its README) | follower tests on every app |
+| `protocol/sync/` | owner → follower event sequences → expected follower state (see its README) | follower tests on every app, the reference follower (`tools/protocol/sync_crosscheck.py`, CI) |
 | `protocol/relays/relay-lists.json` | received relay URLs → kept or not; received lists → what is kept (cap, duplicates) | `:core:protocol` `RelayListsTest`, `SukraraShare` `RelayListsTests` |
 | `treatments/treatment-form.json`, `treatments/SPEC.md`, `treatments/libreview-fixture.json` | the treatment form (kinds, units, limits) and the LibreView mapping | treatment UIs + `:integrations` tests |
+| `treatments/merge.json` | SPEC §1 merge: which of two versions of an entry every store keeps (`(u, o)`, equal `u` → the greater origin) | `:core:data` `SukraraDatabaseTest`, `:core:protocol` `TreatmentMergeTest`, `SukraraCore` `TreatmentTests` |
 | `export/libreview-csv.json` (+ `generate.py`, the reference writer) | CSV export cases: inputs → exact lines | `GlucoseCsvTest` (Android), `CoreTests` (Mac) |
 | `pens/scenarios.json` | NovoPen dose engine scenarios | `:pen` tests |
 | `sensor/traces/` | recorded sensor frames from open-source projects' test data (never the owner's sensor) | `:sensor` tests |
