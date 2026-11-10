@@ -5,6 +5,7 @@ package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -110,7 +111,12 @@ class GraphFixtureTest {
         for (c in cases("sensor/life.json")) {
             val now = Scenes.NOW
             val start = now + c["start"].long()!!
-            val info = SensorInfo(start, now + c["end"].long()!!, c["warmup"].long()?.let { now + it } ?: (start + 3600))
+            val info =
+                SensorInfo(
+                    start,
+                    now + c["end"].long()!!,
+                    c["warmup"].long()?.let { now + it } ?: (start + 60L * SensorTiming.DEFAULT_WARMUP_MIN),
+                )
             val latest = c["latest"].long()?.let { now + it }
             val look = SensorBadge.look(info, now, latest, w)!!
             val e = c["expect"]!!.jsonObject

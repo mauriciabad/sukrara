@@ -39,4 +39,5 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 | `treatments/treatment-form.json`, `treatments/SPEC.md`, `treatments/libreview-fixture.json` | the treatment form (kinds, units, limits) and the LibreView mapping | treatment UIs + `:integrations` tests |
 | `export/libreview-csv.json` (+ `generate.py`, the reference writer) | CSV export cases: inputs → exact lines | `GlucoseCsvTest` (Android), `CoreTests` (Mac) |
 | `pens/scenarios.json` | NovoPen dose engine scenarios | `:pen` tests |
+| `sensor/life.json` | THE sensor-life numbers (warm-up grace, default warm-up and wear) and the warm-up cases | `SensorTimingFixtureTest` in `:core:alerts` / `:core:graph` (Android), `SensorTimingTests` in CoreTests / AlertsTests / GraphTests (Mac) |
 | `sensor/traces/` | recorded sensor frames from open-source projects' test data (never the owner's sensor) | `:sensor` tests |

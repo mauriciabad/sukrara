@@ -32,6 +32,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentQuiet
@@ -43,7 +44,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.Duration
 import java.time.Instant
 import app.mauri.sukrara.alerts.AlertUiState as EngineUiState
 import app.mauri.sukrara.alerts.TreatmentKind as EngineTreatmentKind
@@ -565,9 +565,11 @@ class AlertRuntime(
                     s.endsAt?.let { SensorWindow(startEpoch = 0, endEpoch = it.epochSecond, warmupEndEpoch = 0) }
                 }
 
+                // the card's dates for the same state (`cardInfo`): start = ready − the default warm-up
                 is SensorState.WarmingUp -> {
                     s.readyAt.epochSecond.let { ready ->
-                        SensorWindow(ready - SensorWindow.DEFAULT_WARMUP_MIN * 60L, ready + WEAR_S, ready)
+                        val start = ready - SensorTiming.DEFAULT_WARMUP_MIN * 60L
+                        SensorWindow(start, start + SensorTiming.DEFAULT_WEAR_MIN * 60L, ready)
                     }
                 }
 
@@ -579,8 +581,6 @@ class AlertRuntime(
                     null
                 }
             }
-
-        private val WEAR_S = Duration.ofDays(15).seconds
 
         /**
          * How long each treatment quiets alerts under [s], the rules the engine runs (`Rules.coveringDose`: a dose quiets
