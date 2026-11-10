@@ -183,10 +183,15 @@ end (start + the patch info's warm-up, 60 min). All three are left out when the 
 owner's source gives the start only (`sgv.json?sensor=Y`): end = start + 15 days, warm-up 60 min.
 
 - Every reading's live event carries them. A new sensor has no readings for its warm-up, so the owner also publishes
-  a **reading-less live event** `{"v":2,"ss","se","sw"}` (same kind, envelope and expiry) whenever its sensor info
-  changes (new sensor, ended early) and every chunk tick (5 min) while the sensor warms up.
+  a **reading-less live event** `{"v":2,"ss","se","sw"}` (same kind, envelope and expiry, relays and Bluetooth)
+  whenever its sensor info changes (the first sensor it knows after starting, a new sensor, one that ended early; a
+  sensor removed is `{"v":2}`) and every chunk tick (5 min) while the sensor warms up: from `ss` until the first
+  reading at or after `ss`, at most until 15 min past `sw`. Live events are ephemeral (relays don't keep them), so the tick is
+  what a follower connecting during the warm-up gets. Android `PublishReadings` (`PublishReadingsTest`).
 - Followers and the Mac take the sensor from the live event with the newest `created_at` (an older one from a backlog
   doesn't overwrite it); a live event without `se` clears what they knew. A reading-less event adds no reading.
+  Pinned by [sync/sensor-life.json](sync/sensor-life.json) (ended early, removed, a new one warming up, its first
+  reading, a late backlog copy of an old reading).
 - They draw the value card's sensor badge, warm-up and countdown ring from it (docs/FEATURES.md, "Sensor life") and
   keep `no_data` quiet while the sensor has ended or warms up (spikes/alerts/SPEC.md §2).
 - No serial on the wire (the start identifies the sensor). Chunks don't carry it; the BLE companion path relays the

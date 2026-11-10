@@ -58,6 +58,38 @@ struct FollowerRuntimeTests {
             expiration: v.now + 3600)
     }
 
+    /// #55: the wearer's new sensor reaches the Mac while it warms up, before any reading (a reading-less live event,
+    /// contracts/protocol/sync/sensor-life.json): the snapshot the menu bar and widgets draw carries it, no reading.
+    @Test func aWarmingSensorArrivesBeforeAnyReading() async throws {
+        let fixture = loadJSON("protocol/sync/sensor-life.json")
+        let keys = fixture["keys"] as! [String: [String: String]]
+        let now = fixture["now"] as! Int
+        var state = FollowerState(
+            follower: SecretKeyHex(keys[fixture["follower"] as! String]!["sec"]!)!,
+            identity: fixture["identity"] as! String, token: "t", code: "0000", pair: nil,
+            me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
+        state.status = .requested
+        let secrets = InMemorySecretStore()
+        secrets.write(try state.encoded(), account: KeychainStore.followerAccount)
+        let h = RuntimeHarness(now: now, secrets: secrets)
+        await h.runtime.start()
+        let snapshots = await h.runtime.snapshots()
+        let events = fixture["events"] as! [String: Any]
+        for name in ["key-1", "roster-1", "sensor-new-warming"] {
+            await h.hub.push(try #require(SignedEvent.decode(json: JSONText.encode(events[name]!))))
+        }
+        let warming = WearerSensor(start: now - 3200, end: now - 3200 + 15 * 86400, warmupEnd: now - 200)
+        #expect(await eventually { await h.stores.sensor.load() == warming })
+        var shown = false
+        for await snapshot in snapshots where snapshot.sensor == warming {
+            #expect(snapshot.readings.isEmpty)
+            shown = true
+            break
+        }
+        #expect(shown)
+        await h.runtime.stop()
+    }
+
     @Test func joinRequestThenFollowFillsTheStores() async throws {
         let hub = FakeRelayHub(stored: [v.event("invite")])
         let h = RuntimeHarness(now: v.now, hub: hub)

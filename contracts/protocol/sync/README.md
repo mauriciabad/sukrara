@@ -11,6 +11,7 @@ test keys (the OGS draft-1 vector keys plus `D2` = sha256("sukrara/sync/D2")); a
 | file | what it pins |
 |---|---|
 | `join-readings.json` | key delivery → roster → hour chunk → live (reading + sensor) → reading-less sensor update → outsider rejected |
+| `sensor-life.json` | the wearer's sensor without readings: ended early, removed (`{"v":2}`), a new one warming up (reading-less live events), its first reading, a late backlog copy of an old reading that can't bring the old sensor back |
 | `treatments-writer.json` | writer scope: wearer entry, writer's own entry and edit, writer hijack rejected, wearer tombstone, older `(u,o)` ignored |
 | `settings-mirror.json` | mirrored settings: newest `u` wins, only from a roster device; the payload holds every mirrored setting (graph + alerts) |
 | `rotation.json` | phone change / revoke: epoch 2 with a new device, old device and old epoch rejected, late epoch-1 roster ignored. Also the identity-restore case (same wire sequence: new device key, new epoch delivered to every follower, roster with only the new device); Mac `ProtocolCompatTests` replays it through the runtime |

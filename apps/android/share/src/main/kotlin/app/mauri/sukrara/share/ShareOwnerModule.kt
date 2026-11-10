@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.protocol.Wire
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.crypto.SdkNostrCrypto
 import app.mauri.sukrara.share.owner.ApproveResult
@@ -28,7 +29,9 @@ import app.mauri.sukrara.share.transport.OkHttpWebSockets
 import app.mauri.sukrara.share.transport.RelayAccess
 import app.mauri.sukrara.share.transport.RelayPool
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
 
@@ -48,6 +51,8 @@ class ShareOwnerModule(
     private val settings: MirroredSettingsSource = MirroredSettingsSource.None,
     /** Where the relay connections go (the app's `LaunchPlan`; release: the public relays). */
     private val relays: RelayAccess = RelayAccess.Public,
+    /** The wearer's current sensor (`:sensor`'s start, end and warm-up end), sent with the live events. */
+    private val sensor: Flow<SensorLife?> = flowOf(null),
 ) {
     val crypto by lazy { SdkNostrCrypto() }
 
@@ -94,6 +99,7 @@ class ShareOwnerModule(
                     RelayPolicy(on, min.toInt())
                 },
             onRequest = { requests.onRequest(it) },
+            sensor = sensor,
         ).also { engine ->
             watchNetwork()
             // the notification goes as soon as its request is answered anywhere (app, notification) or paused

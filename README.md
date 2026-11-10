@@ -101,7 +101,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   it. A read that brings injections older than 3 days (the pen not read for days) logs them and asks you to *Review*
   them, with *Undo this read*.
 - **Sharing core**: your sharing identity, restorable from its recovery code so existing followers keep following;
-  readings and alerts go to approved followers over Nostr relays (protocol v2). *How readings travel* turns sharing over
+  readings, alerts and your sensor (a new one warming up, its end) go to approved followers over Nostr relays
+  (protocol v2), the sensor even before its first reading. *How readings travel* turns sharing over
   the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of
   each one. If another device is publishing as the same identity, Sukrara stops and says so instead of fighting it.
 - **First-run setup** in a calm, fixed order: role (confirmed) → what alerts need → sensor → confirm your alert
