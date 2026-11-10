@@ -33,7 +33,9 @@
       ],
       "StatusBadge": [
         "look",
-        "Look"
+        "Look",
+        "sensor",
+        "shows"
       ],
       "Slots": [
         "text"

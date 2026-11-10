@@ -71,7 +71,7 @@ class LiveNotificationBuildTest {
         (text as? Spanned)?.getSpans(0, text.length, StrikethroughSpan::class.java)?.isNotEmpty() == true
 
     @Test fun `the ongoing silent status of the glucose channel, outside every group, put back when swiped`() {
-        for (s in listOf(state(), state(mgdl = null), state(sensor = SensorState.Ended))) {
+        for (s in listOf(state(), state(mgdl = null), state(ageS = 6 * 60, sensor = SensorState.Ended))) {
             val n = build(s)
             assertEquals(Channels.GLUCOSE, n.channelId)
             assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
@@ -105,7 +105,7 @@ class LiveNotificationBuildTest {
     }
 
     @Test fun `without a value it stays text, uncoloured, with its state's icon`() {
-        for (s in listOf(state(mgdl = null), state(ageS = 25 * 60), state(sensor = SensorState.Ended))) {
+        for (s in listOf(state(mgdl = null), state(ageS = 25 * 60), state(ageS = 6 * 60, sensor = SensorState.Ended))) {
             val n = build(s)
             assertFalse(n.extras.getBoolean(Notification.EXTRA_COLORIZED))
             assertEquals(Icon.TYPE_RESOURCE, n.smallIcon.type)
@@ -113,7 +113,7 @@ class LiveNotificationBuildTest {
     }
 
     @Test fun `the content's actions are the notification's, each with somewhere to go`() {
-        val ended = build(state(sensor = SensorState.Ended))
+        val ended = build(state(ageS = 6 * 60, sensor = SensorState.Ended))
         assertEquals(listOf(ctx.getString(R.string.monitor_action_replace_sensor)), ended.actions.map { it.title.toString() })
         assertTrue(shadowOf(ended.actions.single().actionIntent).isActivity)
 

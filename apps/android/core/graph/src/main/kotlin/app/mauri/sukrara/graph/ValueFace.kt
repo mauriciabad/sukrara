@@ -14,8 +14,9 @@ import kotlin.math.min
 /**
  * The value's place on a card: the number + trend arrow and under it the late time and / or the status pill ("now"
  * beside the arrow or in the pill's row while the reading is fresh); or,
- * instead of a value, the warm-up, "Sensor ended" with its "Replace sensor" pill, or "No reading since" with the
- * "no readings" icon. One per [GlucoseCard.draw] call.
+ * instead of a value, the warm-up, "Sensor ended" with its "Replace sensor" pill (once an ended sensor's readings
+ * stop; until then the value with the "Ended · Replace sensor" pill), or "No reading since" with the "no readings"
+ * icon. One per [GlucoseCard.draw] call.
  */
 internal class ValueFace(
     private val model: CardModel,
@@ -59,7 +60,8 @@ internal class ValueFace(
 
             GlucoseLook.State.NO_READINGS, GlucoseLook.State.NONE -> drawNone(cv, box, face, small)
 
-            GlucoseLook.State.VALUE -> drawNumber(cv, box, face, look, ink, small)
+            // a sensor past its end whose readings keep arriving: the value, and its pill when no alert's takes the place
+            GlucoseLook.State.VALUE -> drawNumber(cv, box, face, look ?: StatusBadge.sensor(face, w), ink, small)
         }
     }
 

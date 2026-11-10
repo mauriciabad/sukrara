@@ -18,7 +18,10 @@ public struct CardWords: Sendable {
     /// `card_*` strings).
     struct Drawn: Sendable {
         let durations: DurationWords
-        let eatCarbs, carbsShort, takeInsulin, insulinShort, muted, replaceSensor, replaceSensorShort, backToNow: String
+        let eatCarbs, carbsShort, takeInsulin, insulinShort, muted, replaceSensor, replaceSensorShort: String
+        /// The pill beside an ended sensor's value while its readings keep arriving (#3).
+        let sensorEndedPill, sensorEndedPillShort: String
+        let backToNow: String
         /// "now" for a duration under a minute (a treatment logged this minute).
         let now: String
         /// "Muted · 1h 20m" (Mute all, timed).
@@ -74,7 +77,8 @@ public struct CardWords: Sendable {
         drawn: Drawn(
             durations: .en, eatCarbs: "Eat carbs", carbsShort: "Carbs", takeInsulin: "Take insulin",
             insulinShort: "Insulin", muted: "Muted", replaceSensor: "Replace sensor", replaceSensorShort: "Sensor",
-            backToNow: "Now", now: "now", mutedFor: { "Muted · \($0)" }, timeLeft: { left, _ in "\(left) left" },
+            sensorEndedPill: "Ended · Replace sensor", sensorEndedPillShort: "Ended", backToNow: "Now", now: "now",
+            mutedFor: { "Muted · \($0)" }, timeLeft: { left, _ in "\(left) left" },
             periodDays: { "\($0)d" }, periodHours: { "\($0)h" }, average: "avg", gmi: "GMI", cv: "CV",
             noReadingsYet: "No readings yet", noReadingSince: "No reading since", sensorEnded: "Sensor ended",
             warmingUp: "Warming up", almostReady: "Almost ready", waitingReading: "Waiting for the first reading",
@@ -114,7 +118,9 @@ public struct CardWords: Sendable {
         drawn: Drawn(
             durations: .es, eatCarbs: "Come hidratos", carbsShort: "Hidratos", takeInsulin: "Ponte insulina",
             insulinShort: "Insulina", muted: "Silenciadas", replaceSensor: "Cambiar sensor",
-            replaceSensorShort: "Sensor", backToNow: "Ahora", now: "ahora", mutedFor: { "Silenciadas · \($0)" },
+            replaceSensorShort: "Sensor", sensorEndedPill: "Terminado · Cambiar sensor",
+            sensorEndedPillShort: "Terminado",
+            backToNow: "Ahora", now: "ahora", mutedFor: { "Silenciadas · \($0)" },
             timeLeft: { "\(queda($1)) \($0)" }, periodDays: { "\($0) d" }, periodHours: { "\($0) h" },
             average: "media", gmi: "GMI", cv: "CV", noReadingsYet: "Aún no hay lecturas",
             noReadingSince: "Sin lecturas desde", sensorEnded: "Sensor terminado", warmingUp: "Calentando",
@@ -291,7 +297,9 @@ enum A11y {
         }
         let alert =
             style.badge && look.state == .value ? status(data.alerts.status, now: data.now, words: w) : nil
-        return sentences([glucose, alert].compactMap { $0 }, w)
+        // a sensor past its end whose readings keep arriving: its pill's words after the value (#3)
+        let ended = look.ended ? w.sensorEnded : nil
+        return sentences([glucose, alert, ended].compactMap { $0 }, w)
     }
 
     /// "Last 12 hours: 82% in range, 3% below, 15% above" (or "no data"): the window the chart shows.
@@ -333,9 +341,10 @@ enum A11y {
     /// 9:50" at every age, "old reading" too from 5 min, "no reading since 9:50" from 20 min (and once the chart is
     /// gone), "no readings yet" without any; a sensor that ended or is warming up says so, as the value's place does.
     static func age(_ data: CardData, surface: CardSurface, words w: CardWords) -> String? {
-        switch GlucoseCard.face(data, unit: .mgdl, surface: surface).state {
+        let face = GlucoseCard.face(data, unit: .mgdl, surface: surface)
+        switch face.state {
         case .ended, .warmingUp: return sensorState(data, words: w)
-        default: break
+        default: if face.ended { return sensorState(data, words: w) }
         }
         guard let t = data.latest?.t else { return w.noReadings }
         let time = Freshness.timeText(t, now: data.now)

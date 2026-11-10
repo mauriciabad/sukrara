@@ -6,8 +6,11 @@
     "FreshnessFixtureTest and Sukrara -graphselftest run every case through the shared function, the card AND every glyph",
     "surface of the one registry, ../surfaces/surfaces.json (each platform has one adapter per glyph surface id; a surface",
     "without one fails). tools/check (card-surface, card-api, card-text) holds the registered files to it.",
-    "A case: age (s since the reading, null = no reading), sgv, rate (null = no trend), ended (sensor ended).",
+    "A case: age (s since the reading, null = no reading), sgv, rate (null = no trend), ended (the sensor is past its end).",
     "expect: state value|no_readings|none|ended, text (null = no value), strike (also grey), trend arrow|none|null",
+    "ended (#3; absent = false): a value whose sensor is past its end while its readings keep arriving (fresh or late): the",
+    "value stays, with the 'Ended · Replace sensor' pill (whether a reading is valid is the sensor's call, and the alerts act",
+    "on it); once they stop (from 5 min, when the value would be struck) the state is ended: 'Sensor ended' + 'Replace sensor'.",
     "(none = the 'no trend' ring), time (the reading's time shown), now (a card's value place says 'now' where the time",
     "goes, so a fresh value reads as live (#70); text-only glyph surfaces don't), graph (the chart shown).",
     "graph_only: what a card WITHOUT a value (graph-only: the graph widgets) shows, so its age is never hidden (the",
@@ -73,7 +76,13 @@
      "expect": {"state": "value", "text": "HI", "strike": true, "trend": "none", "time": true, "now": false, "graph": true, "graph_only": "dimmed"}},
     {"name": "no reading yet", "age": null, "sgv": null, "rate": null,
      "expect": {"state": "none", "text": null, "strike": false, "trend": null, "time": true, "now": false, "graph": false, "graph_only": "face"}},
-    {"name": "sensor ended", "age": 30, "sgv": 123, "rate": 1.0, "ended": true,
-     "expect": {"state": "ended", "text": null, "strike": false, "trend": null, "time": false, "now": false, "graph": true, "graph_only": "time"}}
+    {"name": "sensor ended, readings keep arriving: the value with the ended flag", "age": 30, "sgv": 123, "rate": 1.0, "ended": true,
+     "expect": {"state": "value", "text": "123", "strike": false, "trend": "arrow", "time": false, "now": true, "graph": true, "graph_only": "time", "ended": true}},
+    {"name": "sensor ended, late reading: still the value with the flag", "age": 300, "sgv": 64, "rate": -1.0, "ended": true,
+     "expect": {"state": "value", "text": "64", "strike": false, "trend": "arrow", "time": true, "now": false, "graph": true, "graph_only": "time", "ended": true}},
+    {"name": "sensor ended, readings stopped (struck from 5 min): Sensor ended", "age": 301, "sgv": 123, "rate": 1.0, "ended": true,
+     "expect": {"state": "ended", "text": null, "strike": false, "trend": null, "time": true, "now": false, "graph": true, "graph_only": "dimmed", "ended": false}},
+    {"name": "sensor ended, no reading at all", "age": null, "sgv": null, "rate": null, "ended": true,
+     "expect": {"state": "ended", "text": null, "strike": false, "trend": null, "time": true, "now": false, "graph": false, "graph_only": "face", "ended": false}}
   ]
 }

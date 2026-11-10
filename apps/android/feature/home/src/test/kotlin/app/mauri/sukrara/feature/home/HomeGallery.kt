@@ -114,7 +114,9 @@ class HomeGallery {
             "warming-up" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.WarmingUp(NOW.plus(Duration.ofMinutes(42))))),
             // a new sensor's first 12 h: the note under the card
             "sensor-early" to ui(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofDays(15)).minus(Duration.ofHours(3))))),
-            "sensor-ended" to ui(Samples.wearer(sensor = SensorState.Ended)),
+            "sensor-ended" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.Ended)),
+            // past its end but still sending (#3): the value with the Ended · Replace sensor pill
+            "sensor-ended-sending" to ui(Samples.wearer(sensor = SensorState.Ended)),
             "bluetooth-off" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.BluetoothOff)),
             "core-missing" to ui(Samples.wearer(sensor = SensorState.CoreMissing)),
             "clock-behind" to

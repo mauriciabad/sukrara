@@ -125,9 +125,11 @@ enum class Freshness(
 
         /**
          * THE look of the latest reading ([sgv] at [t], [rate] mg/dL/min) at [nowS], behind every card and glyph
-         * surface (the Mac's `Freshness.look` is the same rule; both run contracts/graph/freshness). [ended] = the
-         * sensor ended, [warmup] = a new sensor's warm-up time left ("42m"): their own states, before any value. The value
-         * is written in [unit] with [locale]'s decimal separator. Surfaces ask `GlucoseCard.face`, not this.
+         * surface (the Mac's `Freshness.look` is the same rule; both run contracts/graph/freshness). [warmup] = a new
+         * sensor's warm-up time left ("42m"): its own state, before any value. [ended] = the sensor is past its end: while
+         * its readings keep arriving (the value is neither struck nor gone) the value with the [GlucoseLook.ended] flag,
+         * since whether a reading is valid is the sensor's own call and the alerts act on it (#3); once they stop, the
+         * ended state. The value is written in [unit] with [locale]'s decimal separator. Surfaces ask `GlucoseCard.face`.
          */
         fun look(
             sgv: Int?,
@@ -145,7 +147,7 @@ enum class Freshness(
                     GlucoseLook(GlucoseLook.State.WARMING_UP, fr, null, false, null, warmup)
                 }
 
-                ended -> {
+                ended && (sgv == null || t == null || !fr.showValue || fr.strike) -> {
                     GlucoseLook(GlucoseLook.State.ENDED, fr, null, false, null)
                 }
 
@@ -165,6 +167,7 @@ enum class Freshness(
                         fr.strike,
                         if (rate != null && !fr.strike) TrendMark.ARROW else TrendMark.NONE,
                         rate = rate,
+                        ended = ended,
                     )
                 }
             }
@@ -253,7 +256,8 @@ enum class TrendMark {
 
 /**
  * [Freshness.look]'s answer: the [state]; for a value its [text] (number or LO / HI), whether it's [strike]n through
- * and grey, and its [trend] (null without a value); [fresh] for the time and the chart.
+ * and grey, its [trend] (null without a value) and whether the sensor has [ended] while its readings keep arriving (the
+ * card adds the "Ended · Replace sensor" pill); [fresh] for the time and the chart.
  */
 data class GlucoseLook(
     val state: State,
@@ -263,6 +267,7 @@ data class GlucoseLook(
     val trend: TrendMark?,
     val warmup: String? = null,
     val rate: Double? = null,
+    val ended: Boolean = false,
 ) {
     enum class State {
         /** A value to show (fresh, late or struck through). */
@@ -274,7 +279,7 @@ data class GlucoseLook(
         /** No reading at all yet. */
         NONE,
 
-        /** The sensor has ended. */
+        /** The sensor has ended and its readings have stopped (struck or gone): a fresh one shows as a [VALUE]. */
         ENDED,
 
         /** A new sensor warming up: its time left ([warmup]) where the number goes. */

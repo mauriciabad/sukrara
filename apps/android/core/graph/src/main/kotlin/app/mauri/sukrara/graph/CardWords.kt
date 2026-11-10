@@ -24,6 +24,8 @@ class CardWords private constructor(
     val muted: String = r.getString(R.string.badge_muted_short)
     val replaceSensor: String = r.getString(R.string.badge_replace_sensor)
     val replaceSensorShort: String = r.getString(R.string.badge_replace_sensor_short)
+    val sensorEndedPill: String = r.getString(R.string.badge_sensor_ended)
+    val sensorEndedPillShort: String = r.getString(R.string.badge_sensor_ended_short)
     val backToNow: String = r.getString(R.string.chart_back_to_now)
     val slotAverage: String = r.getString(R.string.slot_average_short)
     val slotGmi: String = r.getString(R.string.slot_gmi_short)

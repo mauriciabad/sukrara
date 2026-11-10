@@ -83,6 +83,7 @@ class FreshnessFixtureTest {
                         "now" to (look.state == GlucoseLook.State.VALUE && look.fresh.saysNow).toString(),
                         "graph" to look.fresh.showGraph.toString(),
                         "graph_only" to Freshness.of(age).ageMark.key,
+                        "ended" to look.ended.toString(),
                     )
                 val want =
                     mapOf(
@@ -94,6 +95,7 @@ class FreshnessFixtureTest {
                         "now" to x["now"].bool().toString(),
                         "graph" to x["graph"].bool().toString(),
                         "graph_only" to x["graph_only"].str(),
+                        "ended" to (x["ended"].bool() ?: false).toString(),
                     )
                 if (got == want) null else "${c["name"].str()}: got $got, want $want"
             }

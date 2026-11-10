@@ -113,6 +113,7 @@ data class LiveNotificationContent(
     companion object {
         private val LOW_KINDS = setOf("low", "very_low")
         private val OPEN_APP = Action(UiText(R.string.monitor_action_open_app), Target.OpenApp)
+        private val REPLACE_SENSOR = Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup)
 
         /**
          * The notification for [state] at [now]. Order: setup not done → the sensor's own states (ended, warming up)
@@ -153,7 +154,7 @@ data class LiveNotificationContent(
                             if (state.role ==
                                 Role.Wearer
                             ) {
-                                listOf(Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup))
+                                listOf(REPLACE_SENSOR)
                             } else {
                                 emptyList()
                             },
@@ -227,14 +228,20 @@ data class LiveNotificationContent(
                             listOf(look.text!!, prefs.unit.symbol, look.arrowText!!, UiText(it.words)),
                         )
                     } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, prefs.unit.symbol, look.arrowText!!)),
-                text = if (look.fresh.showTime) UiText(R.string.monitor_notif_reading_at, listOf(reading.t)) else detail,
+                // a sensor past its end whose readings keep arriving (#3): the value, and under it that it has ended
+                text =
+                    when {
+                        look.ended -> UiText(R.string.monitor_notif_sensor_ended_line)
+                        look.fresh.showTime -> UiText(R.string.monitor_notif_reading_at, listOf(reading.t))
+                        else -> detail
+                    },
                 strike = look.strike,
                 chip = chip,
                 icon = icon,
                 trendRate = look.rate.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
                 tap = quickTreatment(state),
-                actions = listOf(OPEN_APP),
+                actions = if (look.ended && state.role == Role.Wearer) listOf(OPEN_APP, REPLACE_SENSOR) else listOf(OPEN_APP),
                 layout = if (live) Layout.LIVE_UPDATE else Layout.CARD,
                 look = look,
                 mgdl = reading.mgdl,

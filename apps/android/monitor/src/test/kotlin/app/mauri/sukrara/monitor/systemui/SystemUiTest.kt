@@ -76,8 +76,11 @@ class SystemUiTest {
         assertTrue(p.desc.endsWith("11:58"))
     }
 
-    @Test fun `an ended sensor is the flag and a warm-up shows nothing`() {
-        assertEquals(SlotIcons.Plan("monitor_ic_sensor_ended", null, "Sukrara: sensor ended"), icons(state(sensor = SensorState.Ended)))
+    @Test fun `an ended sensor is the flag once its readings stop and a warm-up shows nothing`() {
+        val ended = state(ageS = 6 * 60, sensor = SensorState.Ended)
+        assertEquals(SlotIcons.Plan("monitor_ic_sensor_ended", null, "Sukrara: sensor ended"), icons(ended))
+        // past its end but still sending (#3): its value, as every surface shows it
+        assertEquals("sb_n138", icons(state(sensor = SensorState.Ended)).number)
         val warming = state(mgdl = null, sensor = SensorState.WarmingUp(now.plusSeconds(1800)))
         assertEquals(SlotIcons.Plan.EMPTY, icons(warming))
         assertEquals(SlotIcons.Plan.EMPTY, icons(state(mgdl = null)))
@@ -186,7 +189,9 @@ class SystemUiTest {
         assertEquals(white, struck.color) // struck: never the range colour
         assertEquals(HookText.Mark.RING, struck.mark)
         assertEquals(HookText.Mark.NO_READINGS, HookText.of(HookText.face(hook(ageS = 25 * 60), nowS), true, null, white).mark)
-        assertEquals(HookText.Mark.FLAG, HookText.of(HookText.face(hook(ended = true), nowS), true, null, white).mark)
+        assertEquals(HookText.Mark.FLAG, HookText.of(HookText.face(hook(ageS = 6 * 60, ended = true), nowS), true, null, white).mark)
+        // past its end but still sending (#3): the value, as every surface shows it
+        assertEquals(HookText.Mark.ARROW, HookText.of(HookText.face(hook(ended = true), nowS), true, null, white).mark)
         val warm = HookText.face(hook(mgdl = 0, readyAt = nowS + 1800), nowS)
         assertEquals(GlucoseLook.State.WARMING_UP, warm.state)
         assertTrue(CardSurface.STATUS_HOOK in seen)
@@ -223,7 +228,7 @@ class SystemUiTest {
                 GlucoseUnit.MGDL,
             )
         assertEquals(nowS + 60, w.readyAtS)
-        assertTrue(RootStatusBar.hookState(state(sensor = SensorState.Ended), p, Bands(), GlucoseUnit.MGDL).sensorEnded)
+        assertTrue(RootStatusBar.hookState(state(ageS = 6 * 60, sensor = SensorState.Ended), p, Bands(), GlucoseUnit.MGDL).sensorEnded)
     }
 
     @Test fun `the value never vanishes from the bar when the icons can't show`() {

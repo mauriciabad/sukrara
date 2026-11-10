@@ -72,6 +72,9 @@ class CardScreenshotTest {
                 Scenes.model(Scenes.day(140, ageS = 3 * 3600), w, sensor = SensorInfo(Scenes.NOW - 18 * 60, Scenes.NOW + 15 * 86_400)),
             "sensor-ended" to
                 Scenes.model(Scenes.day(140, ageS = 30 * 60), w, sensor = SensorInfo(Scenes.NOW - 15 * 86_400, Scenes.NOW - 20 * 60)),
+            // past its end but still sending (#3): the value with the "Ended · Replace sensor" pill
+            "sensor-ended-sending" to
+                Scenes.model(Scenes.day(140, ageS = 60), w, sensor = SensorInfo(Scenes.NOW - 15 * 86_400, Scenes.NOW - 20 * 60)),
         )
     }
 

@@ -75,7 +75,9 @@ object A11y {
                 }
             }
         val alert = status(model.status, now, w).takeIf { badge && face.state == GlucoseLook.State.VALUE }
-        return sentences(w, listOfNotNull(glucose, alert))
+        // a sensor past its end whose readings keep arriving: its pill's words after the value (#3)
+        val ended = w.string(R.string.a11y_sensor_ended).takeIf { face.ended && age }
+        return sentences(w, listOfNotNull(glucose, alert, ended))
     }
 
     /**
@@ -151,7 +153,8 @@ object A11y {
         // the age only: no number is said, so the unit doesn't matter
         val face = GlucoseCard.face(r, now, sensor, surface, GlucoseUnit.MGDL)
         if (face.state == GlucoseLook.State.WARMING_UP ||
-            face.state == GlucoseLook.State.ENDED
+            face.state == GlucoseLook.State.ENDED ||
+            face.ended
         ) {
             return sensorState(checkNotNull(sensor), now, w)
         }

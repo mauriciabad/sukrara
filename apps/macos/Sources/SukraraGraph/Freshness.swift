@@ -64,8 +64,11 @@ public enum Freshness: Sendable {
 
     /// What every glucose surface shows for the latest reading (`sgv` at `t`, `rate` mg/dL/min) at `now`: the one
     /// decision behind the card (menubar dropdown, widgets) and the menubar title. Android's `Freshness.look`
-    /// (graph/Freshness.kt) is the same rule; both run spikes/graph-fixtures/freshness. `ended` = the sensor has ended,
-    /// `warmup` = a new sensor's warm-up time left: their own states, before any value. Surfaces ask `GlucoseCard.face`.
+    /// (graph/Freshness.kt) is the same rule; both run contracts/graph/freshness. `warmup` = a new sensor's warm-up time
+    /// left: its own state, before any value. `ended` = the sensor is past its end: while its readings keep arriving (the
+    /// value is neither struck nor gone) the value with the `GlucoseLook.ended` flag, since whether a reading is valid is
+    /// the sensor's own call and the alerts act on it (#3); once they stop, the ended state. Surfaces ask
+    /// `GlucoseCard.face`.
     /// `format` writes a value in the user's unit (mg/dL by default); LO / HI outside 40–400 mg/dL.
     static func look(
         sgv: Int?, t: TimeInterval?, rate: Double?, now: TimeInterval, ended: Bool = false, warmup: String? = nil,
@@ -75,7 +78,9 @@ public enum Freshness: Sendable {
         if let warmup {
             return GlucoseLook(state: .warmingUp, fresh: fr, text: nil, strike: false, trend: nil, warmup: warmup)
         }
-        if ended { return GlucoseLook(state: .ended, fresh: fr, text: nil, strike: false, trend: nil) }
+        if ended, sgv == nil || t == nil || !fr.showValue || fr.strike {
+            return GlucoseLook(state: .ended, fresh: fr, text: nil, strike: false, trend: nil)
+        }
         guard let sgv, t != nil else {
             return GlucoseLook(state: .none, fresh: fr, text: nil, strike: false, trend: nil)
         }
@@ -85,7 +90,7 @@ public enum Freshness: Sendable {
         return GlucoseLook(
             state: .value, fresh: fr, text: GlucoseRange.isLo(sgv) ? "LO" : GlucoseRange.isHi(sgv) ? "HI" : format(sgv),
             strike: fr.strike,
-            trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate)
+            trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate, ended: ended)
     }
 
     /// "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days (`timeKind`);
@@ -162,6 +167,9 @@ public struct GlucoseLook: Equatable, Sendable {
     /// While warming up: the time left ("42m").
     public var warmup: String? = nil
     public var rate: Double? = nil
+    /// A value whose sensor is past its end while its readings keep arriving (#3): the card adds the "Ended · Replace
+    /// sensor" pill (`StatusBadge.sensor`).
+    public var ended = false
     public var grey: Bool { strike }
     public var shown: Bool { state == .value }
     /// The trend as text for places that can only write text (the menu bar): the arrow of `rate` when the card draws

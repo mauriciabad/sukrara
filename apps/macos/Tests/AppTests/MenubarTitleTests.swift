@@ -107,9 +107,13 @@ import Testing
             minutesAgo: nil, sensor: SensorInfo(start: now - 600, end: now + 14 * 86400, warmupEnd: now + 42 * 60))
         #expect(warm.value == "42m" && warm.tint == .grey && warm.mark == .symbol(MenubarTitle.warmupSymbol))
         #expect(warm.tooltip.hasPrefix("Sukrara · ready at "))
-        let ended = title(minutesAgo: 1, sensor: SensorInfo(start: now - 15 * 86400, end: now - 60, warmupEnd: now))
+        let past = SensorInfo(start: now - 15 * 86400, end: now - 60, warmupEnd: now)
+        let ended = title(minutesAgo: 6, sensor: past)
         #expect(ended.value.isEmpty && ended.mark == .symbol(MenubarTitle.endedSymbol))
         #expect(ended.tooltip == "Sensor ended — replace sensor")
+        // past its end but still sending (#3): the value, and the tooltip says it ended
+        let sending = title(minutesAgo: 1, sensor: past)
+        #expect(sending.value == "112" && sending.tooltip == "Sensor ended — replace sensor")
         let muted = title(minutesAgo: 1, alerts: engineState(.muteAll(until: muteAllForever)))
         #expect(muted.muted && muted.tooltip.hasSuffix("Alerts muted until you turn it off"))
     }

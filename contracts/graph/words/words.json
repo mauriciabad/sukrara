@@ -9,6 +9,8 @@
     "badge_muted_for": {"en": "Muted · %1$s", "es": "Silenciadas · %1$s"},
     "badge_replace_sensor": {"en": "Replace sensor", "es": "Cambiar sensor"},
     "badge_replace_sensor_short": {"en": "Sensor", "es": "Sensor"},
+    "badge_sensor_ended": {"en": "Ended · Replace sensor", "es": "Terminado · Cambiar sensor"},
+    "badge_sensor_ended_short": {"en": "Ended", "es": "Terminado"},
     "chart_back_to_now": {"en": "Now", "es": "Ahora"},
     "duration_now": {"en": "now", "es": "ahora"},
     "duration_minutes": {"en": "%1$dm", "es": "%1$d min"},

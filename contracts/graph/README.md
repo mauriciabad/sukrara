@@ -72,10 +72,10 @@ start + 60 min). `expect`:
 | key | meaning |
 |---|---|
 | `label` | the badge text, English words: ≥ 24 h left → whole days (`13d`), ≥ 1 h → hours (`20h`), else minutes (`45m`, `0m` once ended) |
-| `ended` | `now ≥ end`: badge in the alert colour, "Sensor ended" once readings stop |
+| `ended` | `now ≥ end`: while readings keep arriving the value stays (with the `pill`), "Sensor ended" once they stop (#3) |
 | `life` | the disc's arc: share of the sensor's life left, 1 → 0 (± 0.001) |
 | `warmup` | while warming up (no reading since the start, ≤ 15 min past the warm-up's end) the card's figure, minutes rounded up (`42m`), from 60 of them hours (`1h`: one rounding, so 59:15 left is `1h`), `Almost ready` from the warm-up's end until the first reading (never `0m` or less); `null` = not warming |
-| `pill` | ended → the action pill under "Sensor ended", `{kind: "sensor", text, short, tonal}` (StatusBadge.replaceSensor, English words); else `null` |
+| `pill` | the sensor's pill for a reading at `latest` (`StatusBadge.sensor`, English words), `{kind: "sensor", text, short, tonal}`: ended with a fresh or late reading → "Ended · Replace sensor" beside the value; ended without one (none, or ≥ 5 min old) → "Replace sensor" under "Sensor ended"; else `null` |
 | `ring` | the ring over the main ring: warming → the warm-up done (fills 0 → 1); else the countdown, share of the window left; `null` = no ring (more than the window left, or ended) (± 0.001) |
 
 ## Clock (`clock/*.json`)
@@ -147,7 +147,8 @@ title in `LiveNotificationContentTest`), Mac `TrendFixtureTests` (plus the menu 
 ## Freshness steps (`freshness/freshness.json`)
 
 What every glucose surface shows as the latest reading ages (90 s time, 5 min struck + grey + "no trend" ring, 20 min
-"no readings" icon, 3 h no chart), through the one shared `Freshness.look` per platform. The file also holds the
+"no readings" icon, 3 h no chart), through the one shared `Freshness.look` per platform; a sensor past its end keeps
+its value with the `ended` flag while its readings keep arriving, and is "Sensor ended" once they stop (#3). The file also holds the
 **surface registry** (`surfaces.android` / `surfaces.mac`: id → files): `FreshnessFixtureTest` (Android, Robolectric on
 JDK 21) and `-graphselftest` (Mac) render every case through one adapter per surface id and fail when a listed surface
 has none; `tools/check` `freshness-surface` scans the listed files (no value formatted outside the look, no own

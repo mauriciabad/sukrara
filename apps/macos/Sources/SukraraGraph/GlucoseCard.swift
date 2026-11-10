@@ -327,6 +327,8 @@ public enum GlucoseCard {
                 face.state.layoutName)
             return
         }
+        // a sensor past its end whose readings keep arriving: its pill when no alert's takes the place (#3)
+        let look = look ?? StatusBadge.sensor(face, w)
         let color = fr.strike ? pal.inkSoft : pal.at(bands, Double(r.sgv))
         // which colour, by name, for the cross-surface test (layout rules "value-color")
         rec.add(

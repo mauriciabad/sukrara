@@ -111,6 +111,8 @@ struct MenubarTitle: Equatable {
                         L10n.t("Sukrara · reading at \(readAt)")
                     }
             }
+            // a sensor past its end that keeps sending (#3): the value, and the tooltip says it ended (the card's pill)
+            if look.ended { tooltip = L10n.t("Sensor ended — replace sensor") }
         case .warmingUp:
             let waiting = data?.sensor.map { now.timeIntervalSince1970 >= $0.warmupEnd } ?? false
             value = waiting ? L10n.t("Almost ready") : look.warmup ?? ""

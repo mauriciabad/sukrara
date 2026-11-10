@@ -114,6 +114,7 @@ func fixtureSetHasCases(_ set: String) {
         #expect(l.fresh.showTime == (e.bool("time") ?? false))
         #expect((l.state == .value && l.fresh.saysNow) == (e.bool("now") ?? false))
         #expect(l.fresh.showGraph == (e.bool("graph") ?? false))
+        #expect(l.ended == (e.bool("ended") ?? false))
     }
 
     /// The card draws what `look` decided: the value (struck), the no-trend ring, the time, the chart.
@@ -143,6 +144,8 @@ func fixtureSetHasCases(_ set: String) {
             let time = lay.first("value.time")
             #expect((time != nil) == (e.bool("time") ?? false || e.bool("now") ?? false))
             #expect((time?.info.hasPrefix("now") ?? false) == (e.bool("now") ?? false))
+            // a sensor past its end that keeps sending: the value with its pill (#3)
+            if e.bool("ended") == true { #expect(lay.first("value.status")?.info.hasPrefix("sensor") == true) }
         case "no_readings": #expect(lay.first("value.none")?.info == "NO_READINGS")
         case "none": #expect(lay.first("value.none")?.info == "NONE")
         case "ended": #expect(lay.first("value.ended") != nil)
@@ -298,7 +301,11 @@ func fixtureSetHasCases(_ set: String) {
         #expect(abs(look.life - (e.number("life") ?? .nan)) <= 0.001)
         #expect(look.warmup == e.string("warmup"))
         if let want = e.number("ring") { #expect(abs((ring ?? .nan) - want) <= 0.001) } else { #expect(ring == nil) }
-        let pill = look.ended ? StatusBadge.replaceSensor(.en) : nil
+        // the sensor's pill as the value's place draws it, for a reading at `latest`
+        let latest = c.number("latest").map { now + $0 }
+        let face = Freshness.look(
+            sgv: latest == nil ? nil : 120, t: latest, rate: 0, now: now, ended: look.ended, warmup: look.warmup)
+        let pill = StatusBadge.sensor(face, .en)
         let wp = e.child("pill")
         #expect(pill?.kind == wp.string("kind") && pill?.text == wp.string("text") && pill?.short == wp.string("short"))
     }

@@ -59,7 +59,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   damaged saved data, finish setup), the last 24 h of treatments (tap one to edit its amount, time or note, with
   *Undo*; delete + undo; a follower's entry nothing took yet says *Not sent* with *Retry*), and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
   there's no value it says why and what to do (Bluetooth off, the sensor used by another app, a scan or a new pairing
-  needed, the phone's clock behind the readings, the sensor warming up or ended…).
+  needed, the phone's clock behind the readings, the sensor warming up or ended…). A sensor past its end that keeps
+  sending (a Dexcom's grace period) keeps its value with an *Ended · Replace sensor* pill, and its lows still alert.
 - A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
   freshness steps as the card: from 5 min the number is struck through, from 20 min it's gone. Tap → *Add treatment*.
   Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status

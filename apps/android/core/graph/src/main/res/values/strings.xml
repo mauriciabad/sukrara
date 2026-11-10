@@ -16,6 +16,8 @@
     </plurals>
     <string name="badge_replace_sensor">Replace sensor</string>
     <string name="badge_replace_sensor_short">Sensor</string>
+    <string name="badge_sensor_ended">Ended · Replace sensor</string>
+    <string name="badge_sensor_ended_short">Ended</string>
     <string name="chart_back_to_now">Now</string>
     <string name="duration_now">now</string>
     <string name="duration_minutes">%1$dm</string>

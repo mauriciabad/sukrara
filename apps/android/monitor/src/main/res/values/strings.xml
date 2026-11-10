@@ -122,6 +122,8 @@
     <string name="monitor_sub_wifi">Nightscout API on Wi-Fi</string>
     <string name="monitor_notif_not_monitoring">Not monitoring: no sensor yet</string>
     <string name="monitor_notif_sensor_ended">Sensor ended</string>
+    <!-- under the value while a sensor past its end keeps sending readings -->
+    <string name="monitor_notif_sensor_ended_line">Sensor ended · Replace sensor</string>
     <!-- %1$s = the time it will be ready ("14:05") -->
     <string name="monitor_notif_warming_up">Sensor warming up · ready at %1$s</string>
     <string name="monitor_notif_bluetooth_off">Bluetooth is off: turn it on to get readings</string>

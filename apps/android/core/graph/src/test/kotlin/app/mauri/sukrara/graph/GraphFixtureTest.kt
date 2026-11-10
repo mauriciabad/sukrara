@@ -127,13 +127,16 @@ class GraphFixtureTest {
             val ring = SensorBadge.ring(look, info, now, c["countdownHours"].long()!!.toInt())
             val want = e["ring"].double()
             if (want == null) assertNull(name(c), ring) else assertEquals(name(c), want, ring!!, 0.001)
+            // the sensor's pill as the value's place draws it, for a reading at `latest`
+            val face = Freshness.look(latest?.let { 120 }, latest, 0.0, now, ended = look.ended, warmup = look.warmup)
+            val p = StatusBadge.sensor(face, w)
             val pill = e["pill"]
             if (pill == null || pill is JsonNull) {
-                assertEquals(name(c), false, look.ended && latest == null)
+                assertNull(name(c), p)
             } else {
-                val p = StatusBadge.replaceSensor(w)
-                assertEquals(name(c), pill.jsonObject["text"].str(), p.text)
-                assertEquals(name(c), pill.jsonObject["short"].str(), p.short)
+                assertEquals(name(c), pill.jsonObject["kind"].str(), p?.kind)
+                assertEquals(name(c), pill.jsonObject["text"].str(), p?.text)
+                assertEquals(name(c), pill.jsonObject["short"].str(), p?.short)
             }
         }
     }
