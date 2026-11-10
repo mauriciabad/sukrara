@@ -84,6 +84,15 @@ fun registerLibraryCheck(
 tasks.withType<Test>().configureEach {
     // Robolectric on SDK 36 reaches into FileDescriptor internals (AppGraphTest)
     jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+    // StringsParityTest reads every module's values/ and values-es/ strings (a changed translation runs it again)
+    inputs
+        .files(
+            fileTree(rootDir) {
+                include("**/src/main/res/values/strings.xml", "**/src/main/res/values-es/strings.xml")
+                exclude("**/build/**", ".gradle/**")
+            },
+        ).withPropertyName("moduleStrings")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 androidComponents {
