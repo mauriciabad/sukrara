@@ -19,7 +19,9 @@
     "the fast kinds, the sensor's LO / HI as such, for no data how long ('ageMin' since the last reading, at least the",
     "rule's 20 min) or 'No reading yet' when the source never delivered one, 'No recent reading' when a level alert has",
     "no reading. 'action' = the notification's buttons; 'mute_choice_spoken' = what TalkBack says for a Mute chip.",
-    "'all_scope' (#42, UX review: 'Mute all copy should say what it covers'): under Mute all's line on the device."
+    "'all_scope' (#42, UX review: 'Mute all copy should say what it covers'): under Mute all's line on the device.",
+    "'night' (#38): while the night alerts apply, the line every surface that shows alert states says, with the clock",
+    "time they end (the platform's clock formatter)."
   ],
   "cases": [
     {"state": "side_muted", "side": "low", "leftMin": 12, "en": "Low alerts muted · 12 min left", "es": "Alertas de glucosa baja silenciadas · quedan 12 min"},
@@ -37,6 +39,7 @@
     {"state": "all_forever", "en": "Alerts muted until you turn it off", "es": "Alertas silenciadas hasta que lo desactives"},
     {"state": "notif_title", "side": "low", "en": "Low alerts muted", "es": "Alertas de glucosa baja silenciadas"},
     {"state": "notif_text", "until": "10:42", "en": "Until 10:42", "es": "Hasta las 10:42"},
+    {"state": "night", "until": "7:00", "en": "Night alerts until 7:00", "es": "Alertas de noche hasta las 7:00"},
     {"state": "pill", "leftMin": 72, "en": "Muted · 1h 12m", "es": "Silenciadas · 1 h 12 min"},
     {"state": "pill_forever", "en": "Muted", "es": "Silenciadas"},
     {"state": "choice", "min": 30, "en": "For 30 min", "es": "Durante 30 min"},

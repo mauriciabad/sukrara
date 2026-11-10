@@ -17,6 +17,7 @@ struct AlertsRangesPane: View {
     /// The running alert rules (Send Test Alert, Active now); nil in an offline run.
     var controller: AlertController? = nil
     @State private var editing: AlertKind?
+    @State private var editingNight: AlertKind?
 
     var body: some View {
         Form {
@@ -38,6 +39,7 @@ struct AlertsRangesPane: View {
                 }
             }
             if let controller { ActiveNowSection(alerts: controller) }
+            nightSection
             Section(L10n.t("Quiet times")) {
                 quiet(L10n.t("Quiet after insulin"), \.muteAfterInsulin, "alerts.muteAfterInsulin.min")
                 quiet(L10n.t("Quiet while a high falls"), \.muteFallingHigh, "alerts.muteFallingHigh.min")
@@ -112,12 +114,84 @@ struct AlertsRangesPane: View {
             }
         }
         .formStyle(.grouped)
+        .sheet(item: $editingNight) { kind in
+            NightDetails(model: model, kind: kind, readOnly: model.alertsMirrored && kind != .noData) {
+                editingNight = nil
+            }
+        }
         .sheet(item: $editing) { kind in
             AlertDetails(
                 model: model, kind: kind, controller: controller,
                 readOnly: model.alertsMirrored && kind != .noData
             ) { editing = nil }
         }
+    }
+
+    /// Night alerts (#38): the switch, its hours, and every alert's night rule (very low always on), with the line that
+    /// says they apply now.
+    @ViewBuilder private var nightSection: some View {
+        let n = model.shownAlerts.night
+        let readOnly = model.alertsMirrored
+        Section {
+            if let until = controller?.ui.nightUntil {
+                Label(MuteCopy.nightUntil(until: Clock.time(until)), systemImage: "moon.zzz")
+            }
+            if readOnly {
+                LabeledContent(L10n.t("Night alerts")) {
+                    ReadOnlyValue(value: ReadOnlyValue.onOff(n.on), source: model.mirrorSource)
+                }
+            } else {
+                Toggle(L10n.t("Night alerts"), isOn: alertBinding(\.night.on))
+            }
+            nightTime(L10n.t("Starts"), \.from, readOnly: readOnly)
+            nightTime(L10n.t("Ends"), \.to, readOnly: readOnly)
+            ForEach(AlertKind.allCases, id: \.self) { kind in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Self.kindName(kind))
+                        Text(Self.nightSummary(kind, n, unit: model.unit)).font(.callout).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(L10n.t("Details…")) { editingNight = kind }
+                        .controlSize(.small)
+                        .accessibilityLabel(L10n.t("\(Self.kindName(kind)) alert at night"))
+                }
+                .disabled(!n.on)
+            }
+        } header: {
+            Text(L10n.t("Night alerts"))
+        } footer: {
+            Text(
+                L10n.t(
+                    "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night."
+                )
+            )
+            .font(.callout).foregroundStyle(.secondary)
+        }
+    }
+
+    /// A night hour as a time picker (minutes after local midnight in the settings).
+    private func nightTime(_ label: String, _ path: WritableKeyPath<NightSettings, Int>, readOnly: Bool) -> some View {
+        let minute = model.shownAlerts.night[keyPath: path]
+        let binding = Binding<Date>(
+            get: {
+                Calendar.current.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: Date()) ?? Date()
+            },
+            set: { d in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                model.alerts.update { $0.night[keyPath: path] = (c.hour ?? 0) * 60 + (c.minute ?? 0) }
+            })
+        return DatePicker(label, selection: binding, displayedComponents: .hourAndMinute)
+            .disabled(readOnly || !model.shownAlerts.night.on)
+    }
+
+    /// "Always on · below 55 mg/dL · every 5 min", "Off" (one alert's night rule).
+    static func nightSummary(_ kind: AlertKind, _ n: NightSettings, unit: GlucoseUnit) -> String {
+        var s = AlertSettings()
+        s[kind] = n[kind]
+        s.sounds.kinds[kind.rawValue] = "none"
+        let rule = summary(kind, s, unit: unit).replacingOccurrences(of: " · " + L10n.t("silent"), with: "")
+        return kind == .veryLow ? L10n.t("Always on") + " · " + rule : rule
     }
 
     /// One alert: its switch, a summary of what applies, and Details….
@@ -336,6 +410,68 @@ private struct AlertDetails: View {
             .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480, height: 520)
+    }
+}
+
+/// The sheet behind a night alert's Details…: on (very low always), its threshold and repeat at night (read-only while
+/// the wearer's rules apply) and Like an alarm.
+private struct NightDetails: View {
+    @Bindable var model: SettingsModel
+    let kind: AlertKind
+    let readOnly: Bool
+    let done: () -> Void
+
+    var body: some View {
+        let shown = model.shownAlerts.night[kind]
+        let name = AlertsRangesPane.kindName(kind)
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    if readOnly || kind == .veryLow {
+                        LabeledContent(L10n.t("\(name) alert at night")) {
+                            ReadOnlyValue(value: ReadOnlyValue.onOff(shown.on), source: model.mirrorSource)
+                        }
+                    } else {
+                        Toggle(
+                            L10n.t("\(name) alert at night"),
+                            isOn: Binding(
+                                get: { shown.on }, set: { v in model.alerts.update { $0.night[kind].on = v } }))
+                    }
+                    let id = "alerts.night.threshold.\(kind.rawValue)"
+                    if let number = SettingsSpec.settings.first(where: { $0.id == id })?.number,
+                        let format = SettingsSpec.numbers[number]
+                    {
+                        NumberSettingRow(
+                            label: L10n.t("Threshold"), format: format,
+                            value: Binding(
+                                get: { shown.threshold },
+                                set: { v in model.alerts.update { $0.night[kind].threshold = v } }),
+                            readOnly: readOnly)
+                    }
+                    NumberSettingRow(
+                        label: L10n.t("Repeat"), format: SettingsSpec.alertRepeat,
+                        value: Binding(
+                            get: { Double(shown.repeatMin) },
+                            set: { v in model.alerts.update { $0.night[kind].repeatMin = Int(v) } }),
+                        readOnly: readOnly)
+                    Toggle(
+                        L10n.t("Like an alarm"),
+                        isOn: Binding(
+                            get: { model.alerts.settings.night[kind].alarm },
+                            set: { v in model.alerts.update { $0.night[kind].alarm = v } }))
+                } footer: {
+                    Text(L10n.t("Applies only between the night alerts' start and end."))
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+            }
+            .formStyle(.grouped)
+            HStack {
+                Spacer()
+                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
+            }
+            .padding([.horizontal, .bottom], 20)
+        }
+        .frame(width: 480, height: 380)
     }
 }
 

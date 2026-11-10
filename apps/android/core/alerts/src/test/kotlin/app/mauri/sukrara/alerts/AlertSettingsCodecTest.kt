@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AlertSettingsCodecTest {
@@ -41,6 +42,40 @@ class AlertSettingsCodecTest {
                 source = AlertSource.OWN,
             )
         assertEquals(s, AlertSettingsCodec.decode(AlertSettingsCodec.encode(s)))
+    }
+
+    /** #38: the night set is read like the day's (each field at its default when missing), very low always on. */
+    @Test fun nightIsReadAndVeryLowStaysOn() {
+        val s =
+            AlertSettingsCodec.decode(
+                """{"v":1,"night":{"on":true,"from":1380,"to":2000,"alerts":{"very_low":{"on":false,"mgdl":60},"high":{"mgdl":260,"repeatMin":60}}}}""",
+            )!!
+        assertEquals(true, s.night.on)
+        assertEquals(1380, s.night.fromMin)
+        assertEquals(NightProfile.DEFAULT_TO, s.night.toMin)
+        assertEquals(KindRule(true, 60.0, 5, true), s.night.rule(AlertKind.VERY_LOW))
+        assertEquals(KindRule(true, 260.0, 60, false), s.night.rule(AlertKind.HIGH))
+        assertEquals(AlertSettings.DEFAULT_RULES[AlertKind.LOW], s.night.rule(AlertKind.LOW))
+        assertEquals(s, AlertSettingsCodec.decode(AlertSettingsCodec.encode(s)))
+    }
+
+    /** #38: the window, also across midnight, and when the rules switch next. */
+    @Test fun nightWindow() {
+        val utc = java.time.ZoneOffset.UTC
+
+        fun at(h: Int, m: Int, day: Int = 0) = 1_759_968_000L + day * 86_400 + h * 3600 + m * 60
+        var n = NightProfile(on = true)
+        assertTrue(n.active(at(23, 0), utc) && n.active(at(6, 59), utc))
+        assertFalse(n.active(at(7, 0), utc) || n.active(at(21, 59), utc))
+        assertEquals(at(22, 0), n.nextSwitch(at(21, 0), utc))
+        assertEquals(at(7, 0, day = 1), n.nextSwitch(at(23, 0), utc))
+        n = n.copy(fromMin = 13 * 60, toMin = 14 * 60)
+        assertTrue(n.active(at(13, 30), utc) && !n.active(at(14, 0), utc))
+        assertFalse(n.copy(toMin = n.fromMin).active(at(13, 0), utc))
+        assertNull(n.copy(toMin = n.fromMin).nextSwitch(at(0, 0), utc))
+        val s = AlertSettings(night = n.withRule(AlertKind.HIGH, KindRule(false, 180.0, 15)))
+        assertFalse(s.at(at(13, 30), utc).rule(AlertKind.HIGH).on)
+        assertTrue(s.at(at(15, 0), utc).rule(AlertKind.HIGH).on)
     }
 
     /** #37: the waits and the margin are read and coerced (a low may wait at most 15 min); very low never waits. */

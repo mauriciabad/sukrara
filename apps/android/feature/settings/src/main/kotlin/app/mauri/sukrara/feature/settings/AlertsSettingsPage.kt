@@ -59,6 +59,8 @@ class AlertsActions(
     val quietExit: (AlertQuietSide, QuietExit) -> Unit = { _, _ -> },
     /** A muted side's *Change to* length: kind (wire name), minutes. */
     val muteSide: (String, Int) -> Unit = { _, _ -> },
+    /** Settings › Alerts › Night alerts (#38). */
+    val openNight: () -> Unit = {},
 )
 
 /** The alert rows' groups: lows, highs, rates, signal. */
@@ -189,6 +191,15 @@ fun AlertsSettingsContent(
                     )
                 }
             }
+        }
+        // #38: a second set of the rules for the night, with its hours; says when it is on now
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_night_title),
+                actions.openNight,
+                summary = nightSummary(ui),
+                icon = DsR.drawable.ds_ic_bedtime,
+            )
         }
         // the review edits the thresholds: only where this phone's own are in use
         if (!ui.mirrored) {

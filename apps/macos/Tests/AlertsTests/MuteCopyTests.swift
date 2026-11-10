@@ -49,6 +49,7 @@ import Testing
         case "all_forever": MuteCopy.allForever(l)
         case "notif_title": side.map { MuteCopy.notificationTitle($0, l) }
         case "notif_text": MuteCopy.notificationText(until: c.until ?? "", l)
+        case "night": MuteCopy.nightUntil(until: c.until ?? "", l)
         case "choice": MuteCopy.choice(c.min ?? -1, l)
         case "choice_forever": MuteCopy.choiceForever(l)
         default: nil
@@ -57,7 +58,7 @@ import Testing
 
     static let lines: Set<String> = [
         "side_muted", "side_after", "side_falling", "side_less", "all_timed", "all_forever", "notif_title",
-        "notif_text",
+        "notif_text", "night",
         "choice", "choice_forever",
     ]
 

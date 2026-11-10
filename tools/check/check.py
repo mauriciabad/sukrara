@@ -850,10 +850,12 @@ def alert_fields(spec):
 
 
 def normal_field(path, kinds):
-    """alerts.low.mgdl -> alerts.{kind}.mgdl"""
+    """alerts.low.mgdl -> alerts.{kind}.mgdl; night.alerts.low.mgdl -> night.alerts.{kind}.mgdl (the night set, #38)"""
     parts = path.split(".")
     if len(parts) > 2 and parts[0] == "alerts" and parts[1] in kinds:
         parts[1] = "{kind}"
+    elif len(parts) > 3 and parts[:2] == ["night", "alerts"] and parts[2] in kinds:
+        parts[2] = "{kind}"
     return ".".join(parts)
 
 

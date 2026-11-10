@@ -44,6 +44,7 @@ object SettingsIndex {
             SettingsRoute.Overview, is SettingsRoute.Pen, is SettingsRoute.PenDoses -> null
             SettingsRoute.Alerts -> R.string.st_alerts_title
             is SettingsRoute.AlertKindPage -> R.string.st_alerts_title
+            SettingsRoute.NightAlerts, is SettingsRoute.NightKindPage -> R.string.st_night_title
             SettingsRoute.Ranges -> R.string.st_ranges_title
             SettingsRoute.Graph -> R.string.st_graph_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
@@ -155,6 +156,14 @@ object SettingsIndex {
                 ),
             )
             for ((kind, name) in kindNames) addAll(page(SettingsRoute.AlertKindPage(kind), name to null))
+            addAll(
+                page(
+                    SettingsRoute.NightAlerts,
+                    R.string.st_night_title to R.string.st_night_use_summary,
+                    R.string.st_night_from to null,
+                    R.string.st_night_to to null,
+                ),
+            )
             addAll(
                 page(
                     SettingsRoute.Ranges,

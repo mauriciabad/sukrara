@@ -30,6 +30,9 @@ sealed interface MuteLine {
     /** The muted notification's text "Until 10:42" ([until] epoch s; the platform formats the clock time). */
     data class NotifUntil(val until: Long) : MuteLine
 
+    /** "Night alerts until 7:00" while the night alerts apply (#38; [until] epoch s, the platform's clock time). */
+    data class NightUntil(val until: Long) : MuteLine
+
     /** The card's pill "Muted · 1h 12m" (compact duration). */
     data class Pill(val leftMin: Long) : MuteLine
 

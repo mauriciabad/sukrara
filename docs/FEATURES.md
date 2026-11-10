@@ -49,6 +49,22 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
 - Episodes: one per group and side; a brief exit (back in range for less than the repeat interval, at least 5 min)
   clears the notification but keeps the episode, its repeat count and its treatments; no new "first" alert.
 - Repeats count from the last alert of the episode; repeat 0 = once per episode.
+- **Night alerts** (#38, SPEC §1 "Night alerts"; scenarios `night.txt`; Android Settings › Alerts › *Night alerts*
+  (es *Alertas de noche*) and each alert's night page, Mac Settings › Alerts › *Night Alerts* with a Details… sheet per
+  alert): a second set of every alert's rule (on, threshold, remind every, like an alarm) that applies every day
+  between *Starts* and *Ends* in the phone's / Mac's local time (22:00–07:00 by default; may cross midnight). Off by
+  default; very low is always on at night (no switch on its night page). The quiet rules, the waits near a threshold,
+  the notification buttons and the sounds are the same day and night. The rules switch at the window's edges (the
+  timer wakes then): a high of 200 under a night high of 250 clears at 22:00, and at 07:00 the day rules alert again.
+  They are rules, so the wearer's run for the followers uses them (a follower in *Settings from: Wearer* alerts as the
+  wearer's phone does and shows them read-only) and the settings event mirrors them; *like an alarm* and no data's night
+  rule stay each device's. What others do: Dexcom G7 Alert Profiles (urgent low can't be turned off, signal loss
+  shared), xDrip+ per-alert hours, LoopFollow day / night from 22:00. *States and exits*: *night alerts on, day now*:
+  the Alerts page row says *22:00–07:00*; *night alerts apply now*: Android home under the card *Night alerts until
+  7:00* (es *Alertas de noche hasta las 7:00*, `copy.json` `night`) with **Change** (opens the night page), the
+  Alerts page row *On now · until 7:00* and the night page's strip with **Turn off**; Mac: the panel's line with
+  **Change…** (Settings › Alerts) and the same line in Settings › Alerts › Night Alerts; out: its end time, turning
+  it off, or moving its hours.
 - **Near a threshold** (#37, SPEC §1 "Waiting before the first alert" / "Back by the margin"; scenarios
   `persistence.txt`; Android Settings › Alerts › *Near a threshold*, Mac Settings › Alerts › *Near a threshold*, en + es):
   *Low alerts wait* (Off, 5–15 min) and *High alerts wait* (Off, 15 min–4 h, for high and very high): an episode's

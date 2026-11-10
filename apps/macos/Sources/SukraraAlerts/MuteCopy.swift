@@ -84,6 +84,11 @@ public enum MuteCopy {
         l == .en ? "Until \(until)" : "Hasta las \(until)"
     }
 
+    /// While the night alerts apply (#38): "Night alerts until 7:00" (`until`: the clock time they end).
+    public static func nightUntil(until: String, _ l: AppLanguage = .current) -> String {
+        l == .en ? "Night alerts until \(until)" : "Alertas de noche hasta las \(until)"
+    }
+
     /// A Mute choice: "For 30 min", "For 1 h".
     public static func choice(_ minutes: Int, _ l: AppLanguage = .current) -> String {
         (l == .en ? "For " : "Durante ") + Durations.text(minutes)

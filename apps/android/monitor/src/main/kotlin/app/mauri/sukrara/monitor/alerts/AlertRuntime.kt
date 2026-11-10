@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
+import java.time.ZoneId
 import app.mauri.sukrara.alerts.AlertUiState as EngineUiState
 import app.mauri.sukrara.alerts.TreatmentKind as EngineTreatmentKind
 
@@ -78,6 +79,8 @@ class AlertRuntime(
     private val lockedBoot: (LockedBootPlan) -> Unit = {},
     /** The monotonic clock in s (`SystemClock.elapsedRealtime`): a wall clock set back is measured exactly. */
     private val elapsed: () -> Long? = { null },
+    /** The phone's time zone now (it changes when travelling): the night alerts' window is read in it (#38). */
+    private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) : AlertControls {
     private val mutex = Mutex()
     private var started = false
@@ -219,7 +222,7 @@ class AlertRuntime(
             val m = machine ?: return
             val f = firing[group]
             if (f != null) {
-                presenter.show(f, m.settings, silent = true, who = whoFor(m), relaxedMin = relaxedMin(m, group, now()))
+                presenter.show(f, m.settingsAt(now()), silent = true, who = whoFor(m), relaxedMin = relaxedMin(m, group, now()))
             } else {
                 mutedCards.remove(group)
                 reconcileMutedCards(now())
@@ -349,7 +352,7 @@ class AlertRuntime(
     }
 
     private suspend fun startMachine(alertRole: AlertRole, saved: AlertState?, now: Long): List<AlertEffect> {
-        val m = AlertMachine(alertRole, effectiveSettings(alertRole), doses, newId)
+        val m = AlertMachine(alertRole, effectiveSettings(alertRole), doses, newId, zone)
         machine = m
         val effects = m.start(saved, saved?.local?.last, sensor, now, elapsed())
         fedReadingAt = saved?.local?.last?.t
@@ -385,7 +388,7 @@ class AlertRuntime(
         effects.filterIsInstance<AlertEffect.Schedule>().forEach { e -> attempt(Step.Alarm) { alarm.set(e.at) } }
         val firedNow = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
         retryUnposted(m, now, skip = firedNow)
-        for (e in ringOrder(effects, m.settings)) {
+        for (e in ringOrder(effects, m.settingsAt(now))) {
             when (e) {
                 is AlertEffect.Fire -> {
                     val group = e.firing.kind.group
@@ -428,7 +431,7 @@ class AlertRuntime(
     /** Posts [f] in [group]'s slot; a refusal is remembered with its sound, for [retryUnposted]. */
     private suspend fun post(m: AlertMachine, group: AlertGroup, f: Firing, silent: Boolean, relax: Int) {
         if (!silent) presenter.beforeRing()
-        if (attempt(Step.Notify, group) { presenter.show(f, m.settings, silent, whoFor(m), relax) }) {
+        if (attempt(Step.Notify, group) { presenter.show(f, m.settingsAt(now()), silent, whoFor(m), relax) }) {
             unposted.remove(group)
         } else {
             unposted[group] = silent && unposted[group] != false // a loud post that failed stays loud
@@ -489,7 +492,7 @@ class AlertRuntime(
             val card = q.kind.side to q.until
             if (mutedCards[group] == card) continue
             attempt(Step.Notify, group) {
-                presenter.showMuted(group, q.kind.side, q.kind, q.until, m.settings, now)
+                presenter.showMuted(group, q.kind.side, q.kind, q.until, m.settingsAt(now), now)
                 mutedCards[group] = card // only once shown: a refused post is tried again next time
             }
         }
@@ -501,7 +504,7 @@ class AlertRuntime(
             val relax = relaxedMin(m, group, now)
             if (shownRelax[group] == relax || group in unposted) continue
             attempt(Step.Notify, group) {
-                presenter.show(f, m.settings, silent = true, who = whoFor(m), relaxedMin = relax)
+                presenter.show(f, m.settingsAt(now), silent = true, who = whoFor(m), relaxedMin = relax)
                 shownRelax[group] = relax
             }
         }
@@ -544,6 +547,7 @@ class AlertRuntime(
                 status = m?.status(now)?.let(::cardStatusOf) ?: CardStatus.None,
                 treatmentQuiet = m?.let { treatmentQuietOf(it.settings, ui) } ?: TreatmentQuiet(),
                 mutedUntil = instantOf(ui.muteAllUntil),
+                nightUntil = ui.nightUntil.takeIf { it > 0 }?.let(Instant::ofEpochSecond),
                 quiet =
                     ui.quiet.map { q ->
                         AlertQuietSide(

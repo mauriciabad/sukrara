@@ -3,6 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.alerts
 
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+
 /**
  * One kind's rule. [threshold]: mg/dL for levels, mg/dL/min (positive) for rates, minutes for no data.
  * [repeatMin] 0 = once per episode. [alarm]: ring like an alarm (alarm volume / Time Sensitive), local to the device.
@@ -52,6 +57,50 @@ data class Persistence(val lowMin: Int = 0, val highMin: Int = 0, val marginMgdl
         }
 }
 
+/**
+ * SPEC §1 "Night alerts" (#38): a second set of every kind's rule in force each day from [fromMin] to [toMin] (minutes
+ * after local midnight; the window may cross midnight; equal = never). Very low is always on at night.
+ */
+data class NightProfile(
+    val on: Boolean = false,
+    val fromMin: Int = DEFAULT_FROM,
+    val toMin: Int = DEFAULT_TO,
+    val rules: Map<AlertKind, KindRule> = AlertSettings.DEFAULT_RULES,
+) {
+    /** [kind]'s night rule; very low can't be off at night (the safety net). */
+    fun rule(kind: AlertKind): KindRule =
+        (rules[kind] ?: AlertSettings.DEFAULT_RULES.getValue(kind)).let { if (kind == AlertKind.VERY_LOW) it.copy(on = true) else it }
+
+    fun withRule(kind: AlertKind, rule: KindRule): NightProfile = copy(rules = rules + (kind to rule))
+
+    /** The night rules are in force at [epoch] (local time in [zone]). */
+    fun active(epoch: Long, zone: ZoneId): Boolean {
+        if (!on || fromMin == toMin) return false
+        val t = Instant.ofEpochSecond(epoch).atZone(zone).toLocalTime()
+        val m = t.hour * 60 + t.minute
+        return if (fromMin < toMin) m in fromMin until toMin else m >= fromMin || m < toMin
+    }
+
+    /** The next moment after [epoch] the rules switch (night starts or ends), or null when off. */
+    fun nextSwitch(epoch: Long, zone: ZoneId): Long? {
+        if (!on || fromMin == toMin) return null
+        val now = Instant.ofEpochSecond(epoch).atZone(zone)
+        return listOf(fromMin, toMin)
+            .flatMap { m -> (0L..1L).map { d -> at(now, d, m) } }
+            .filter { it > epoch }
+            .minOrNull()
+    }
+
+    private fun at(now: ZonedDateTime, days: Long, minute: Int): Long =
+        ZonedDateTime.of(now.toLocalDate().plusDays(days), LocalTime.of(minute / 60, minute % 60), now.zone).toEpochSecond()
+
+    companion object {
+        /** 22:00–07:00 (LoopFollow's night starts at 22:00; Nightscout's day starts at 7). */
+        const val DEFAULT_FROM = 22 * 60
+        const val DEFAULT_TO = 7 * 60
+    }
+}
+
 /** Followers: mirror the wearer's `alert` events, or run these rules on the followed data (SPEC §3 `source`). */
 enum class AlertSource(val wire: String) { WEARER("wearer"), OWN("own") }
 
@@ -65,9 +114,17 @@ data class AlertSettings(
     val sounds: SoundSettings = SoundSettings(),
     val actions: NotificationActions = NotificationActions(),
     val persistence: Persistence = Persistence(),
+    val night: NightProfile = NightProfile(),
     val source: AlertSource = AlertSource.WEARER,
 ) {
     fun rule(kind: AlertKind): KindRule = rules[kind] ?: DEFAULT_RULES.getValue(kind)
+
+    /** The night rules are in force at [epoch] (SPEC §1 "Night alerts"). */
+    fun nightAt(epoch: Long, zone: ZoneId): Boolean = night.active(epoch, zone)
+
+    /** These settings with the rules in force at [epoch]: the night set inside its window, else as they are. */
+    fun at(epoch: Long, zone: ZoneId): AlertSettings =
+        if (!night.active(epoch, zone)) this else copy(rules = AlertKind.entries.associateWith(night::rule))
 
     fun withRule(kind: AlertKind, rule: KindRule): AlertSettings = copy(rules = rules + (kind to rule))
 

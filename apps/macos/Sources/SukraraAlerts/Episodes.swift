@@ -140,8 +140,9 @@ extension AlertEngine {
                 ? nil
                 : all >= muteAllForever ? muteAllForever : min(all, t.addingTimeInterval(SettingsSpec.muteAll.max * 60))
         }
+        e.inForce = e.settingsInForce(at: t)
         e.episodes = e.episodes.filter { _, ep in
-            ep.lastIn <= t && t.timeIntervalSince(ep.lastIn) < ep.holdTime(context.settings)
+            ep.lastIn <= t && t.timeIntervalSince(ep.lastIn) < ep.holdTime(e.inForce)
         }
         let resumed = AlertGroup.allCases.compactMap { e.episodes[$0]?.shown }.map(AlertEffect.resume)
         return (e, resumed + [.schedule(e.nextCheck(after: t))])

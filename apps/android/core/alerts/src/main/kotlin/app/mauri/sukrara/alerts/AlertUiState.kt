@@ -26,11 +26,14 @@ data class QuietSide(
  * What every surface shows about alerts: the quiet sides, Mute all (0 = off, [Rules.NEVER] = until turned off) and
  * [lifted]: side → when *Unmute* / *Alert me anyway* lifted its open episode's quiet (the treatments logged up to then
  * no longer quiet it, [Rules.coveringDose]'s `after`), so the badge and the cards' mute lines drop it at once too.
+ * [nightUntil]: the night alerts' end while they are in force (#38).
  */
 data class AlertUiState(
     val quiet: List<QuietSide> = emptyList(),
     val muteAllUntil: Long = 0,
     val lifted: Map<Side, Long> = emptyMap(),
+    /** The night rules are in force until then (SPEC §1 "Night alerts"; 0 = the day rules). */
+    val nightUntil: Long = 0,
 ) {
     /** Side → muted until (this device's Mute, and Mute all on every side): the badge's [AlertStatus.Paused]. */
     fun paused(): Map<Side, Long> {

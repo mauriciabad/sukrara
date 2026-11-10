@@ -71,7 +71,10 @@ struct PanelView: View {
                 }
                 if model.notificationPermission.needsAttention { notificationsWarning }
                 if model.focusCanHoldAlerts { focusNote }
-                if let alerts = model.alerts { AlertBlocks(alerts: alerts, now: context.date, custom: $customMute) }
+                if let alerts = model.alerts {
+                    NightRow(alerts: alerts, open: links.map { l in { l.openSettingsPane(.alerts) } })
+                    AlertBlocks(alerts: alerts, now: context.date, custom: $customMute)
+                }
                 if let updates = model.updates { UpdateRow(updates: updates) }
                 if let links {
                     ActionRows(
@@ -565,6 +568,28 @@ private struct SetupRows: View {
             Button(L10n.t("Finish Setup…"), systemImage: "checklist", action: links.openSetup)
         } else if needsFollow {
             Button(L10n.t("Follow Someone…"), systemImage: "person.badge.plus", action: links.openFollow)
+        }
+    }
+}
+
+/// While the night alerts apply (#38): "Night alerts until 7:00" with Change… (Settings › Alerts, where its switch and
+/// hours are). Nothing in the day.
+private struct NightRow: View {
+    let alerts: AlertController
+    let open: (() -> Void)?
+
+    var body: some View {
+        if let until = alerts.ui.nightUntil {
+            HStack {
+                Label(MuteCopy.nightUntil(until: Clock.time(until)), systemImage: "moon.zzz")
+                Spacer()
+                if let open {
+                    Button(L10n.t("Change…"), action: open)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel(L10n.t("Night alerts: Change"))
+                }
+            }
         }
     }
 }

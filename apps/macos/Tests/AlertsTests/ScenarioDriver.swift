@@ -22,8 +22,17 @@ struct Scenario: CustomTestStringConvertible, Sendable {
     var lines: [Line]
     var end: Int
     var mirror: Bool
+    /// `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; nil = 08:54.
+    var at: Int? = nil
 
     var testDescription: String { "\(file): \(title)" }
+
+    /// "22:05" → minutes after midnight.
+    static func clockMinutes(_ text: String) -> Int? {
+        let p = text.trimmingCharacters(in: .whitespaces).split(separator: ":")
+        guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]) else { return nil }
+        return h * 60 + m
+    }
 
     static var directory: URL { Contracts.url("alerts/scenarios") }
 
@@ -43,17 +52,19 @@ struct Scenario: CustomTestStringConvertible, Sendable {
         var lines: [Line] = []
         var end: Int?
         var mirror = false
+        var at: Int?
         func flush() {
             guard let t = title else { return }
             out.append(
                 Scenario(
                     file: file, title: t, settings: settings, lines: lines, end: end ?? lines.map(\.minute).max() ?? 0,
-                    mirror: mirror))
+                    mirror: mirror, at: at))
             title = nil
             settings = []
             lines = []
             end = nil
             mirror = false
+            at = nil
         }
         for raw in text.components(separatedBy: "\n") {
             let l = trim(raw.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
@@ -67,6 +78,8 @@ struct Scenario: CustomTestStringConvertible, Sendable {
                 end = Int(trim(l.dropFirst(4)))
             } else if l == "mirror" {
                 mirror = true
+            } else if l.hasPrefix("at ") {
+                at = clockMinutes(String(l.dropFirst(3)))
             } else {
                 let (left, right) =
                     l.range(of: "=>").map { (trim(l[..<$0.lowerBound]), String(l[$0.upperBound...])) } ?? (l, "")
@@ -118,22 +131,29 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
     case "persist.low": s.persistence.lowMin = try int()
     case "persist.high": s.persistence.highMin = try int()
     case "persist.margin": s.persistence.marginMgdl = try int()
+    case "night": s.night.on = v == "on"
+    case "night.from", "night.to":
+        guard let m = Scenario.clockMinutes(v) else { throw ScenarioError.bad("not a time: \(kv)") }
+        if k == "night.from" { s.night.from = m } else { s.night.to = m }
     default:
-        let parts = k.split(separator: ".", maxSplits: 1).map(String.init)
+        let night = k.hasPrefix("night.")
+        let parts = (night ? String(k.dropFirst(6)) : k).split(separator: ".", maxSplits: 1).map(String.init)
         guard let kind = AlertKind(rawValue: parts[0]) else { throw ScenarioError.bad("unknown setting \(kv)") }
+        var r = night ? s.night[kind] : s[kind]
         if parts.count == 1 {
             switch v {
-            case "on": s[kind].on = true
-            case "off": s[kind].on = false
+            case "on": r.on = true
+            case "off": r.on = false
             default:
                 guard let x = Double(v) else { throw ScenarioError.bad("not a number: \(kv)") }
-                s[kind].threshold = x
+                r.threshold = x
             }
         } else if parts[1] == "repeat" {
-            s[kind].repeatMin = try int()
+            r.repeatMin = try int()
         } else {
             throw ScenarioError.bad("unknown setting \(kv)")
         }
+        if night { s.night[kind] = r } else { s[kind] = r }
     }
 }
 
@@ -141,7 +161,10 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
 /// scenario also runs a follower mirroring the wearer: `AlertMirror` over a second engine that gets everything but the
 /// wearer's notification actions (what the wearer publishes, SPEC §2).
 func runScenario(_ sc: Scenario) throws -> [String] {
-    let t0 = 1_760_000_040  // a whole minute
+    let base = 1_760_000_040  // a whole minute
+    // `at HH:MM`: that time of the same day (UTC)
+    let t0 = sc.at.map { base - base % 86400 + $0 * 60 } ?? base
+    let utc = TimeZone(identifier: "UTC")!
     var s = AlertSettings()
     for kv in sc.settings { try applySetting(&s, kv) }
     // the scenario's time (the monotonic clock); the wearer's own clock is `clock`, moved by `clock back`
@@ -182,9 +205,9 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         }
     }
 
-    var wearer = AlertEngine(context: AlertContext(settings: s))
+    var wearer = AlertEngine(context: AlertContext(settings: s, timeZone: utc))
     // mirror: the wearer's shared engine (no notification actions: what it publishes), feeding `follower`
-    var shared = AlertEngine(context: AlertContext(settings: s))
+    var shared = AlertEngine(context: AlertContext(settings: s, timeZone: utc))
     var mono: TimeInterval { real.timeIntervalSince1970 }
     func wearerDo(_ input: AlertInput) { wearerEffects(wearer.handle(input, at: clock, monotonic: mono)) }
     func both(_ input: AlertInput) {

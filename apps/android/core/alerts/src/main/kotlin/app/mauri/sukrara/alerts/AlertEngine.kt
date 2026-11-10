@@ -4,6 +4,7 @@
 package app.mauri.sukrara.alerts
 
 import java.security.SecureRandom
+import java.time.ZoneId
 import java.util.EnumMap
 
 /** What one run of the rules decided (SPEC §1–§2). */
@@ -29,7 +30,11 @@ sealed interface RuleAction {
  * still matches); the falling-high mute only postpones. This device's *Mute* / *Remind less* act on a side, outlive
  * the episode and end at their time or once back by the margin; *Mute all* quiets everything until its end.
  */
-class AlertEngine(private val newId: () -> String = ::randomId) {
+class AlertEngine(
+    /** The local time zone the night window is read in (SPEC §1 "Night alerts"). */
+    private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    private val newId: () -> String = ::randomId,
+) {
     private val episodes = EnumMap<AlertGroup, Episode>(AlertGroup::class.java)
     private val snoozes = EnumMap<Side, Snooze>(Side::class.java)
 
@@ -76,7 +81,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
      * Back to [m] (episodes over by [now] dropped, an expired Mute all off). Returns the firings whose notification was
      * up: the runtime shows them again without sound. The next [evaluate] goes on from there.
      */
-    fun restore(m: AlertMemory, s: AlertSettings, now: Long): List<Firing> {
+    fun restore(m: AlertMemory, settings: AlertSettings, now: Long): List<Firing> {
+        val s = settings.at(now, zone())
         episodes.clear()
         snoozes.clear()
         snoozes.putAll(m.snoozes.filterValues { !it.isEmpty })
@@ -195,8 +201,12 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         sourceStart = sourceStart.shiftedBack(delta)
     }
 
-    /** Re-check everything against the newest reading at [now]: no data, repeats, windows ending, the margin. */
-    fun evaluate(s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+    /**
+     * Re-check everything against the newest reading at [now]: no data, repeats, windows ending, the margin. [settings]'s
+     * night set applies inside its window.
+     */
+    fun evaluate(settings: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+        val s = settings.at(now, zone())
         val out = mutableListOf<RuleAction>()
         if (!s.on) {
             episodes.values.forEach { e -> e.shown?.let { out += RuleAction.Clear(it.kind, it.id, now) } }
@@ -244,9 +254,11 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
     }
 
     /** When a timer check is next useful (no-data deadline, a repeat, a window or mute ending, the margin), or null. */
-    fun nextCheckAt(s: AlertSettings, now: Long): Long? {
-        if (!s.on) return null
+    fun nextCheckAt(settings: AlertSettings, now: Long): Long? {
+        if (!settings.on) return null
+        val s = settings.at(now, zone())
         val c = mutableListOf<Long>()
+        settings.night.nextSwitch(now, zone())?.let { c += it } // the rules switch: what matches changes
         val r = last
         val nd = s.rule(AlertKind.NO_DATA)
         val since = noDataSince()

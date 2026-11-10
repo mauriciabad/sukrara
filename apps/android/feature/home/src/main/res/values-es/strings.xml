@@ -153,6 +153,7 @@
     <string name="home_pill_alert_options">Opciones de alertas</string>
     <string name="home_quiet_side">Alertas %1$s</string>
     <string name="home_mute_alerts">Silenciar alertas</string>
+    <string name="home_night_change">Cambiar</string>
     <string name="home_quiet_all">Todas las alertas</string>
     <string name="home_quiet_taken">En silencio tras tu tratamiento, para que no suenen mientras hace efecto.</string>
     <string name="home_quiet_muted">Las silenciaste en este teléfono.</string>

@@ -343,6 +343,7 @@ private fun HomeColumn(
         PenQuestionCard(penQuestions, { Clock.time(it) }, callbacks.pen.answer, Modifier.padding(horizontal = 16.dp))
         BannerSlot(infoBanner)
         MuteControl(state, callbacks.onAlert, onMuteAll)
+        NightLine(state, callbacks.onAction)
         Treatments(
             state.treatments,
             state.readOnly,
@@ -979,6 +980,36 @@ private fun MuteControl(
                 )
                 Text(stringResource(R.string.home_mute_alerts))
             }
+        }
+    }
+}
+
+/**
+ * While the night alerts apply (#38): "Night alerts until 7:00" under the card with *Change*, which opens Settings ›
+ * Alerts › Night alerts (its switch and hours are the ways to change or leave it). Nothing in the day.
+ */
+@Composable
+private fun NightLine(
+    state: HomeUiState,
+    onAction: (HomeAction) -> Unit,
+) {
+    val until =
+        state.glucose.alerts.nightUntil
+            ?.takeIf { state.glucose.role != null }
+    Reveal(until != null) {
+        val words = rememberAlertWords()
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("night-alerts"), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painterResource(DsR.drawable.ds_ic_bedtime),
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp).size(18.dp),
+            )
+            Text(
+                until?.let { u -> MuteText.night(u.epochSecond, words) { clockTime(Instant.ofEpochSecond(it)) } }.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = { onAction(HomeAction.OpenNightAlerts) }) { Text(stringResource(R.string.home_night_change)) }
         }
     }
 }

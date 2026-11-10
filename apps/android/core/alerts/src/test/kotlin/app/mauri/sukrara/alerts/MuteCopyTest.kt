@@ -40,6 +40,7 @@ class MuteCopyTest {
                 "all_forever",
                 "notif_title",
                 "notif_text",
+                "night",
                 "pill",
                 "pill_forever",
                 "choice",
@@ -85,6 +86,10 @@ class MuteCopyTest {
 
             "notif_text" -> {
                 MuteLine.NotifUntil(0)
+            }
+
+            "night" -> {
+                MuteLine.NightUntil(0)
             }
 
             "pill" -> {
@@ -202,6 +207,10 @@ class MuteCopyTest {
 
                 is MuteLine.NotifUntil -> {
                     "Until $clock"
+                }
+
+                is MuteLine.NightUntil -> {
+                    "Night alerts until $clock"
                 }
 
                 is MuteLine.Pill -> {

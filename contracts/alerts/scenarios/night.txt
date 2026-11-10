@@ -1,0 +1,54 @@
+# Night alerts (#38, SPEC.md §1 "Night alerts"; format: SPEC.md §7): a second set of every kind's rule in force each
+# day in a window of the wearer's local time (the scenarios run in UTC; `at HH:MM` is minute 0's time of day). Off by
+# default: every scenario here turns it on (22:00–07:00 unless it says otherwise).
+
+scenario At 22:00 a high under the night threshold clears; at 07:00 the day rules alert again
+at 21:58
+settings night=on night.high=250
+  0  glucose 200  => High glucose          # 21:58, day: high from 180
+  2               => clear high            # 22:00, night: high from 250
+542               => High glucose          # 07:00, day again: a new episode, at once
+543
+
+scenario The switch wakes the timer between readings
+at 21:58
+settings night=on night.high=250
+ 0  readings every 5, glucose 200  => High glucose
+ 2                                 => clear high      # 22:00 on the timer, not at the next reading
+ 3
+
+scenario A night low threshold of 80: 75 alerts only at night
+at 21:55
+settings night=on night.low=80
+ 0  glucose 75                         # day: in range
+ 5               => Low glucose        # 22:00: low below 80 at night
+ 6
+
+scenario Very low always alerts at night, whatever the night set says
+at 23:00
+settings night=on night.very_low=off night.low=off
+ 0  glucose 50   => Very low glucose
+ 1
+
+scenario The night repeat replaces the day's
+at 22:30
+settings night=on night.high.repeat=60
+ 0  glucose 200  => High glucose
+60               => High glucose       # not at 15: the night repeat is 60 min
+61
+
+scenario A window that doesn't cross midnight
+at 12:55
+settings night=on night.from=13:00 night.to=14:00 night.high=off
+ 0  glucose 200  => High glucose
+ 5               => clear high         # 13:00: highs off in the window
+65               => High glucose       # 14:00: the day rules again
+66
+
+scenario The followers' alerts follow the night rules too (the rules decide for both)
+mirror
+at 21:59
+settings night=on night.high=off
+ 0  glucose 200  => High glucose; follower High glucose
+ 1               => clear high; follower clear high     # 22:00: highs off at night
+ 2

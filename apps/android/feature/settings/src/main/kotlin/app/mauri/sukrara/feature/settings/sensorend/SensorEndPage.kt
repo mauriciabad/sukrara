@@ -330,10 +330,10 @@ private fun currentSensor(
         }
     }
 
-/** The M3 time picker in a dialog (a reminder's time, bedtime, wake-up). */
+/** The M3 time picker in a dialog (a reminder's time, bedtime, wake-up, the night alerts' hours). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeDialog(
+internal fun TimeDialog(
     title: String,
     minute: Int,
     onClose: () -> Unit,

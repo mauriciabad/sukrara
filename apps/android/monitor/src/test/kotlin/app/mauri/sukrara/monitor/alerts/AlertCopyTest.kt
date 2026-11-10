@@ -139,6 +139,10 @@ class AlertCopyTest {
                 MuteLine.NotifUntil(0)
             }
 
+            "night" -> {
+                MuteLine.NightUntil(0)
+            }
+
             "pill" -> {
                 MuteLine.Pill(c.long("leftMin"))
             }

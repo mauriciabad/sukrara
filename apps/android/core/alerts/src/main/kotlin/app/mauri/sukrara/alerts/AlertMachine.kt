@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.alerts
 
+import java.time.ZoneId
+
 /** Everything that can change what alerts (one call of [AlertMachine.handle] each). */
 sealed interface AlertInput {
     /** A new reading (any source; an older one than the newest only re-evaluates). */
@@ -74,40 +76,47 @@ class AlertMachine(
     settings: AlertSettings,
     doses: Doses = Doses(),
     newId: () -> String = AlertEngine::randomId,
+    /** The local time zone of this device: the night window is read in it (SPEC §1 "Night alerts"). */
+    private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) {
     var settings: AlertSettings = settings
         private set
     var doses: Doses = doses
         private set
-    private val local = AlertEngine(newId)
-    private val shared = if (role == AlertRole.WEARER) AlertEngine(newId) else null
+    private val local = AlertEngine(zone, newId)
+    private val shared = if (role == AlertRole.WEARER) AlertEngine(zone, newId) else null
     private var mirror = if (role == AlertRole.FOLLOWER_MIRROR) WearerMirror() else null
     private var lastNow = 0L
 
     /** [lastNow]'s moment on the monotonic clock (null = not seen in this process). */
     private var lastElapsed: Long? = null
 
-    /** The rules [local] runs: a mirroring follower checks only `no_data` itself. */
-    private val localSettings: AlertSettings
-        get() =
-            if (role != AlertRole.FOLLOWER_MIRROR) {
-                settings
-            } else {
-                settings.copy(
-                    rules =
-                        AlertKind.entries.associateWith { k ->
-                            settings.rule(k).let {
-                                if (k ==
-                                    AlertKind.NO_DATA
-                                ) {
-                                    it
-                                } else {
-                                    it.copy(on = false)
-                                }
-                            }
-                        },
-                )
-            }
+    /**
+     * The rules [local] runs at [now]: a mirroring follower checks only `no_data` itself (its day or night rule, read at
+     * [now]: the night set would turn very low on again).
+     */
+    private fun localSettings(now: Long): AlertSettings {
+        if (role != AlertRole.FOLLOWER_MIRROR) return settings
+        val inForce = settings.at(now, zone())
+        return inForce.copy(
+            rules =
+                AlertKind.entries.associateWith { k ->
+                    inForce.rule(k).let {
+                        if (k ==
+                            AlertKind.NO_DATA
+                        ) {
+                            it
+                        } else {
+                            it.copy(on = false)
+                        }
+                    }
+                },
+            night = inForce.night.copy(on = false),
+        )
+    }
+
+    /** The settings with the rules in force at [now] (the night set inside its window): what an alert rings with. */
+    fun settingsAt(now: Long): AlertSettings = settings.at(now, zone())
 
     val engine: AlertEngine get() = local
     val wearerMirror: WearerMirror? get() = mirror
@@ -127,7 +136,7 @@ class AlertMachine(
         val state = saved?.takeIf { it.role == role }
         local.sensor = sensor
         shared?.sensor = sensor
-        val shown = state?.let { local.restore(it.local, localSettings, now) }.orEmpty()
+        val shown = state?.let { local.restore(it.local, localSettings(now), now) }.orEmpty()
         state?.shared?.let { shared?.restore(it, settings, now) }
         state?.mirror?.let { if (role == AlertRole.FOLLOWER_MIRROR) mirror = WearerMirror(it) }
         lastNow = state?.lastNow ?: 0
@@ -140,16 +149,17 @@ class AlertMachine(
 
     /** What every surface shows about this device's alerts (the mirror's mutes on a mirroring follower). */
     fun uiState(now: Long): AlertUiState {
-        val own = AlertUiState.of(local, localSettings, doses, now)
+        val nightUntil = if (settings.nightAt(now, zone())) settings.night.nextSwitch(now, zone()) ?: 0 else 0
+        val own = AlertUiState.of(local, localSettings(now).at(now, zone()), doses, now).copy(nightUntil = nightUntil)
         val m = mirror ?: return own
         return own.copy(
-            quiet = own.quiet + AlertUiState.ofMirror(m, settings, now).quiet,
+            quiet = own.quiet + AlertUiState.ofMirror(m, settingsAt(now), now).quiet,
             muteAllUntil = maxOf(own.muteAllUntil, m.muteAllUntil.takeIf { it > now } ?: 0),
         )
     }
 
     /** The badge under the value at [now] (the effective rules, also a mirroring follower's: the wearer's). */
-    fun status(now: Long): AlertStatus = AlertStatus.of(local.last, settings, doses, now, uiState(now))
+    fun status(now: Long): AlertStatus = AlertStatus.of(local.last, settingsAt(now), doses, now, uiState(now))
 
     fun snapshot(): AlertState =
         AlertState(role = role, local = local.snapshot(), shared = shared?.snapshot(), mirror = mirror?.snapshot(), lastNow = lastNow)
@@ -180,13 +190,13 @@ class AlertMachine(
             is AlertInput.Reading -> {
                 out += published(shared?.reading(input.reading, settings, doses, now))
                 out += mirrorReading(input.reading, now)
-                out += own(local.reading(input.reading, localSettings, doses, now))
+                out += own(local.reading(input.reading, localSettings(now), doses, now))
             }
 
             AlertInput.Tick -> {
                 out += published(shared?.evaluate(settings, doses, now))
                 out += mirrorReading(local.last, now)
-                out += own(local.evaluate(localSettings, doses, now))
+                out += own(local.evaluate(localSettings(now), doses, now))
             }
 
             is AlertInput.Treatments -> {
@@ -208,7 +218,7 @@ class AlertMachine(
 
             is AlertInput.Source -> {
                 out += published(shared?.sourceStarted(input.startedAt, settings, doses, now))
-                out += own(local.sourceStarted(input.startedAt, localSettings, doses, now))
+                out += own(local.sourceStarted(input.startedAt, localSettings(now), doses, now))
             }
 
             is AlertInput.Remote -> {
@@ -226,12 +236,12 @@ class AlertMachine(
     }
 
     private fun reevaluate(now: Long): List<AlertEffect> =
-        published(shared?.evaluate(settings, doses, now)) + own(local.evaluate(localSettings, doses, now))
+        published(shared?.evaluate(settings, doses, now)) + own(local.evaluate(localSettings(now), doses, now))
 
     private fun mirrorsKind(kind: AlertKind) = mirror != null && kind != AlertKind.NO_DATA
 
     private fun action(input: AlertInput, now: Long): List<AlertEffect> {
-        val s = localSettings
+        val s = localSettings(now)
         val m = mirror
         return when (input) {
             is AlertInput.Mute -> {
@@ -316,6 +326,10 @@ class AlertMachine(
 
     private fun schedule(now: Long) =
         AlertEffect.Schedule(
-            listOfNotNull(local.nextCheckAt(localSettings, now), shared?.nextCheckAt(settings, now), mirror?.nextCheckAt(now)).minOrNull(),
+            listOfNotNull(
+                local.nextCheckAt(localSettings(now), now),
+                shared?.nextCheckAt(settings, now),
+                mirror?.nextCheckAt(now),
+            ).minOrNull(),
         )
 }
