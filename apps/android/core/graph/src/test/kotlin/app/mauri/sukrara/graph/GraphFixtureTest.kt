@@ -13,6 +13,7 @@ import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.long
 import app.mauri.sukrara.graph.Fixtures.str
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.Goal
 import app.mauri.sukrara.graph.stats.ShareText
 import app.mauri.sukrara.graph.stats.TimeInRange
@@ -59,6 +60,28 @@ class GraphFixtureTest {
             val x = c["x"].double()!!
             val got = if (c["goal"].str() == "coverage") ShareText.coverage(x, locale) else ShareText.of(x, goal, locale)
             assertEquals(name(c), c["expect"].str(), got)
+        }
+    }
+
+    @Test
+    fun range() {
+        val now = 1_800_000_000L
+        val words = Scenes.words()
+        val cs = cases("range/range.json")
+        assertTrue(cs.isNotEmpty())
+        for (c in cs) {
+            val sgv = c["sgv"].long()!!.toInt()
+            val b = c["bands"]?.jsonObject
+            val bands =
+                Bands().let { d ->
+                    d.copy(low = b?.get("low").long()?.toInt() ?: d.low, high = b?.get("high").long()?.toInt() ?: d.high)
+                }
+            val pill = c["pill"]?.jsonObject?.let { StatusBadge.Look(it["kind"].str()!!, "x", "x", it["tonal"].bool()!!) }
+            val face = Freshness.look(sgv, now - (c["age"].long() ?: 60), 0.0, now)
+            val got = RangeState.shown(face, sgv, bands, pill)
+            val e = c["expect"]!!.jsonObject
+            assertEquals(name(c), e["range"].str(), got?.key)
+            if (got != null) assertEquals(name(c), e["text"].str(), words.range(got))
         }
     }
 

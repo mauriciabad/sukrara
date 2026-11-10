@@ -4449,6 +4449,22 @@
         }
       }
     },
+    "Sukrara · %@ · reading at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · %1$@ · reading at %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · %1$@ · lectura de las %2$@"
+          }
+        }
+      }
+    },
     "Sukrara · reading at %@" : {
       "localizations" : {
         "en" : {

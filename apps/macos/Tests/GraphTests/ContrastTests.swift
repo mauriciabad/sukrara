@@ -24,6 +24,16 @@ import Testing
         }
     }
 
+    /// The range word (#26) on its tint of every out-of-range colour (PillContrastTest on Android).
+    @Test(arguments: [false, true]) func rangeWordsAreReadable(dark: Bool) {
+        let pal = GraphPalette.of(dark: dark)
+        for tint in [pal.veryLow, pal.low, pal.high, pal.veryHigh, pal.extremelyHigh] {
+            let (bg, fg) = RangeTag.colors(tint: tint, pal)
+            let ratio = Self.contrast(fg, Self.over(bg, pal.bg))
+            #expect(ratio >= 4.5, "\(tint) dark=\(dark): \(ratio)")
+        }
+    }
+
     /// The light carbs colour is the one Android uses (TreatmentMarks.palette(false)).
     @Test func lightCarbsIsTheSharedValue() {
         #expect(TreatmentMarks.color("carbs", dark: false) == GraphPalette.hex(0xA65A00))

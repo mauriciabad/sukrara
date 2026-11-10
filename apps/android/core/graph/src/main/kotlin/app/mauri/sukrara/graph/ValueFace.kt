@@ -236,7 +236,12 @@ internal class ValueFace(
             exact = true,
         )
         val badgeH = (box.height() * 0.24f).coerceIn(14 * d, 24 * d)
-        val badgeRow = look != null && box.height() - badgeH * 1.25f - (if (fr.showTime) small.textSize * 1.25f else 0f) >= 26 * d
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
+        val range = RangeState.shown(face, r.sgv, bands, look)
+        val rangeText = range?.let(w::range)
+        val badgeRow =
+            (look != null || range != null) &&
+                box.height() - badgeH * 1.25f - (if (fr.showTime) small.textSize * 1.25f else 0f) >= 26 * d
         val timeH =
             if (badgeRow) {
                 badgeH * 1.25f
@@ -311,17 +316,32 @@ internal class ValueFace(
             rec.add("value.trend", markBox, "ring")
         }
         val time = if (fr.showTime) Freshness.timeText(r.t, nowS) else null
-        if (badgeRow && look != null) {
+        if (badgeRow) {
             val top = numBox.bottom + badgeH * 0.25f
-            val bw = StatusBadge.draw(cv, box.left, top, badgeH, box.width(), look, pal.dark)
-            rec.add("value.status", RectF(box.left, top, box.left + bw, top + badgeH), "${look.kind} [row]")
+            var rx = box.left
+            if (look != null) {
+                // the pill keeps room for the range word: its short words or its icon rather than no word
+                val keep = rangeText?.let { RangeTag.width(it, badgeH) + badgeH * 0.35f } ?: 0f
+                val maxW = if (box.width() - keep >= badgeH) box.width() - keep else box.width()
+                val bw = StatusBadge.draw(cv, box.left, top, badgeH, maxW, look, pal.dark)
+                rec.add("value.status", RectF(box.left, top, box.left + bw, top + badgeH), "${look.kind} [row]")
+                rx += bw + badgeH * 0.35f
+            }
+            if (range != null && rangeText != null) {
+                if (rx + RangeTag.width(rangeText, badgeH) <= box.right) {
+                    val b = RangeTag.draw(cv, rx, top, badgeH, rangeText, color, pal, ink)
+                    rec.add("value.range", b, "${range.key} [row]")
+                    rx = b.right + badgeH * 0.35f
+                } else {
+                    rec.add("value.range", info = "${range.key} [row] (no room)")
+                }
+            }
             if (time != null) {
-                // the late time shares the pill's row
+                // the late time shares the row
                 val t = Paint(small).apply { textSize = badgeH * 0.56f }
-                val tx = box.left + bw + badgeH * 0.35f
-                if (tx + t.measureText(time) <= box.right) {
-                    cv.drawText(time, tx, top + badgeH / 2 + t.textSize * 0.36f, t)
-                    rec.add("value.time", RectF(tx, top, tx + t.measureText(time), top + badgeH), "[badge row]")
+                if (rx + t.measureText(time) <= box.right) {
+                    cv.drawText(time, rx, top + badgeH / 2 + t.textSize * 0.36f, t)
+                    rec.add("value.time", RectF(rx, top, rx + t.measureText(time), top + badgeH), "[badge row]")
                     rec.add("time.text", info = time)
                 } else {
                     rec.add("value.time", info = "[badge row] (no room)")
@@ -329,13 +349,23 @@ internal class ValueFace(
             }
             return
         }
+        // no row: the pill's icon, then the range word, beside the arrow when they fit
+        val ih = min(numBox.height() * 0.5f, 24 * d)
+        var ix = x + arrowSize * 1.15f
         if (iconBadge && look != null) {
-            val ih = min(numBox.height() * 0.5f, 24 * d)
-            val ix = x + arrowSize * 1.15f
             StatusBadge.draw(cv, ix, cy - ih / 2, ih, ih, look, pal.dark)
             rec.add("value.status", RectF(ix, cy - ih / 2, ix + ih, cy + ih / 2), "${look.kind} [icon]")
+            ix += ih * 1.3f
         } else if (look != null) {
             rec.add("value.status", info = "${look.kind} (no room)")
+        }
+        if (range != null && rangeText != null) {
+            val th = min(ih, 20 * d)
+            if (ix + RangeTag.width(rangeText, th) <= box.right) {
+                rec.add("value.range", RangeTag.draw(cv, ix, cy - th / 2, th, rangeText, color, pal, ink), "${range.key} [beside]")
+            } else {
+                rec.add("value.range", info = "${range.key} (no room)")
+            }
         }
         if (time != null) {
             cv.drawText(time, box.left, baseY + small.textSize * 1.25f, small)

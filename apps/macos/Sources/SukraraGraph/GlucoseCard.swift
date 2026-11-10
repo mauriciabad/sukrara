@@ -305,7 +305,9 @@ public enum GlucoseCard {
         let time = fr.showTime ? Freshness.timeText(r.t, now: now) : ""
         let smallH = fr.showTime ? CTFontGetSize(small) * 1.25 : 0
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
-        let badgeRow = look != nil && box.height - badgeH * 1.25 - smallH >= 26 * d
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
+        let range = RangeState.shown(face, sgv: r.sgv, bands: bands, pill: look)
+        let badgeRow = (look != nil || range != nil) && box.height - badgeH * 1.25 - smallH >= 26 * d
         // the late time shares the badge's row (after the badge) when there is one
         let timeH = badgeRow ? badgeH * 1.25 : smallH
         let numBox = CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - timeH)
@@ -345,14 +347,30 @@ public enum GlucoseCard {
                 "value.trend", CGRect(x: x, y: numBox.midY - arrowSize / 2, width: arrowSize, height: arrowSize), "ring"
             )
         }
-        if badgeRow, let look {
+        if badgeRow {
             let top = numBox.maxY + badgeH * 0.25
-            let bw = StatusBadge.draw(
-                ctx, x: box.minX, y: top, h: badgeH, maxW: box.width, look, dark: pal.dark, knockout: pal.knockout)
-            rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
+            var tx = box.minX
+            if let look {
+                // the pill keeps room for the range word: its short words or its icon rather than no word
+                let keep = range.map { RangeTag.width($0.words, h: badgeH) + badgeH * 0.35 } ?? 0
+                let maxW = box.width - keep >= badgeH ? box.width - keep : box.width
+                let bw = StatusBadge.draw(
+                    ctx, x: box.minX, y: top, h: badgeH, maxW: maxW, look, dark: pal.dark, knockout: pal.knockout)
+                rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
+                tx += bw + badgeH * 0.35
+            }
+            if let range {
+                if tx + RangeTag.width(range.words, h: badgeH) <= box.maxX {
+                    let b = RangeTag.draw(ctx, x: tx, y: top, h: badgeH, range.words, tint: color, pal)
+                    rec.add("value.range", b, "\(range.rawValue) [row]")
+                    tx = b.maxX + badgeH * 0.35
+                } else {
+                    rec.add("value.range", nil, "\(range.rawValue) [row] (no room)")
+                }
+            }
             if fr.showTime {
+                // the late time shares the row
                 let t = Ink.font(badgeH * 0.56, .regular)
-                let tx = box.minX + bw + badgeH * 0.35
                 if tx + Ink.width(time, t) <= box.maxX {
                     Ink.draw(ctx, time, x: tx, y: top + badgeH / 2 + badgeH * 0.56 * 0.36, t, pal.inkSoft)
                     rec.add(
@@ -374,6 +392,17 @@ public enum GlucoseCard {
                     "\(look.kind) [icon]")
             } else if let look {
                 rec.add("value.status", nil, "\(look.kind) (no room)")
+            }
+            // no row: the range word beside the arrow (after the pill's icon) when it fits
+            if let range {
+                let ix = x + arrowSize * 1.15 + (iconBadge ? iconH * 1.3 : 0)
+                let th = min(iconH, 20 * d)
+                if ix + RangeTag.width(range.words, h: th) <= box.maxX {
+                    let b = RangeTag.draw(ctx, x: ix, y: numBox.midY - th / 2, h: th, range.words, tint: color, pal)
+                    rec.add("value.range", b, "\(range.rawValue) [beside]")
+                } else {
+                    rec.add("value.range", nil, "\(range.rawValue) (no room)")
+                }
             }
             if fr.showTime {
                 Ink.draw(ctx, time, x: box.minX, y: baseY + CTFontGetSize(small) * 1.25, small, pal.inkSoft)

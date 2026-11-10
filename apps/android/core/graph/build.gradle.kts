@@ -14,6 +14,8 @@ android {
     // Robolectric's resource loader reads FileDescriptor internals on JDK 21
     testOptions.unitTests.all {
         it.jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+        // `-Dlayout.write=true`: CardLayoutTest writes its shared answers into contracts/graph/layout/expect.json
+        System.getProperty("layout.write")?.let { v -> it.systemProperty("layout.write", v) }
     }
 }
 

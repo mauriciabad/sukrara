@@ -60,6 +60,8 @@ class CardScreenshotTest {
         return listOf(
             "in-range" to Scenes.model(Scenes.day(125), w, treatments = meal),
             "low" to Scenes.model(Scenes.day(70, rate = -2.2, swing = 12), w, status = CardStatus.Needed(lowSide = true)),
+            // out of range without an action pill: the range in words (#26)
+            "low-no-alert" to Scenes.model(Scenes.day(64, rate = -1.2, swing = 8), w),
             "high" to Scenes.model(Scenes.day(230, rate = 1.4), w, status = CardStatus.Paused(false, Scenes.NOW + 45 * 60)),
             "stale-6min" to Scenes.model(Scenes.day(140, ageS = 6 * 60), w),
             "stale-25min" to Scenes.model(Scenes.day(140, ageS = 25 * 60), w),

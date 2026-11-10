@@ -91,6 +91,7 @@
     <string name="monitor_channel_alarm_no_data">Sin datos (alarma)</string>
 
     <string name="monitor_notif_value">%1$s mg/dL %2$s</string>
+    <string name="monitor_notif_value_range">%1$s mg/dL %2$s · %3$s</string>
     <string name="monitor_notif_reading_at">Lectura de las %1$s</string>
     <string name="monitor_notif_no_readings_since">Sin lecturas desde las %1$s</string>
     <string name="monitor_notif_waiting">Esperando la glucosa…</string>

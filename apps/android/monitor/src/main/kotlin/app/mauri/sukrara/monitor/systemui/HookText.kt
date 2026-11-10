@@ -8,6 +8,7 @@ import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphPalette
+import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.SensorBadge
 import app.mauri.sukrara.graph.TrendMark
 import app.mauri.sukrara.graph.stats.Band
@@ -67,13 +68,15 @@ object HookText {
     /**
      * The text for [look]: the value in its range colour (when [colorOn] and out of range) or [base] with its arrow /
      * the "no trend" ring; struck through at half strength from 5 min; from 20 min no value, only the "no readings"
-     * icon; the flag once the sensor has ended; a warming-up sensor's time left where the number goes.
+     * icon; the flag once the sensor has ended; a warming-up sensor's time left where the number goes. [range] = the
+     * value's range ([HookText.range]), said to TalkBack.
      */
     fun of(
         look: GlucoseLook,
         colorOn: Boolean,
         rangeColor: Int?,
         base: Int,
+        range: RangeState? = null,
     ): Render =
         when (look.state) {
             GlucoseLook.State.WARMING_UP -> {
@@ -96,11 +99,15 @@ object HookText {
                     if (look.strike) 0.5f else 1f,
                     if (look.strike || !colorOn) base else rangeColor ?: base,
                     if (look.trend == TrendMark.ARROW) Mark.ARROW else Mark.RING,
-                    "Glucose $text${if (look.strike) " (old)" else ""}",
+                    // the range in words for TalkBack, as the colour shows it (#26: never by colour alone)
+                    "Glucose $text" + if (look.strike) " (old)" else range?.let { ", " + it.key.replace('_', ' ') }.orEmpty(),
                     look.rate,
                 )
             }
         }
+
+    /** The range of the state's value, for the words (null in range or without a value). */
+    fun range(s: HookState): RangeState? = s.mgdl.takeIf { it > 0 }?.let { RangeState.of(it, s.bands) }
 
     /**
      * The range colour of [mgdl] on a status bar whose own ink is [base]: null in range (the clock's colour, like the

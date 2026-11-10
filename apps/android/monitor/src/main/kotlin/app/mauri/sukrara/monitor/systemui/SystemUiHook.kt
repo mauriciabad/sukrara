@@ -817,7 +817,14 @@ class SystemUiHook : XposedModule() {
                 }
                 visibility = VISIBLE
                 val base = reference?.get()?.currentTextColor ?: currentTextColor
-                val v = HookText.of(HookText.face(st, nowS()), st.color, HookText.rangeColor(st.mgdl, st.bands, base), base)
+                val v =
+                    HookText.of(
+                        HookText.face(st, nowS()),
+                        st.color,
+                        HookText.rangeColor(st.mgdl, st.bands, base),
+                        base,
+                        HookText.range(st),
+                    )
                 text = v.text
                 paintFlags = if (v.strike) paintFlags or Paint.STRIKE_THRU_TEXT_FLAG else paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
                 setTextColor(v.color)

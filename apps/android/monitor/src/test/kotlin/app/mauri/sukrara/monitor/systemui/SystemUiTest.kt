@@ -14,6 +14,7 @@ import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphPalette
+import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.stats.Bands
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -158,6 +159,18 @@ class SystemUiTest {
         readyAt: Long = 0,
         position: String = HookPosition.AFTER_CLOCK,
     ) = HookState(true, position, true, true, Bands(), mgdl, nowS - ageS, rate, ended, readyAt)
+
+    @Test fun `TalkBack hears an out-of-range value's range, as the colour shows it`() {
+        val white = 0xFFFFFFFF.toInt()
+        val low = hook(mgdl = 62)
+        assertEquals("Glucose 62, low", HookText.of(HookText.face(low, nowS), true, null, white, HookText.range(low)).desc)
+        assertEquals("Glucose 138", HookText.of(HookText.face(hook(), nowS), true, null, white, HookText.range(hook())).desc)
+        val old = hook(mgdl = 62, ageS = 6 * 60)
+        assertEquals("Glucose 62 (old)", HookText.of(HookText.face(old, nowS), true, null, white, HookText.range(old)).desc)
+        val p = SlotIcons.plan(HookText.face(low, nowS), "11:58", RangeState.LOW)
+        assertTrue(p.desc, p.desc.contains("62 mg/dL low"))
+        assertTrue(SlotIcons.isValue(p.desc))
+    }
 
     @Test fun `the hook text follows the card's decision`() {
         GlucoseCard.faceObserver = { s, _ -> seen += s }

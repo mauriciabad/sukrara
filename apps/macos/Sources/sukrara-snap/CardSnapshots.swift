@@ -97,6 +97,14 @@
                         readings: ending(60, 64, -1.2), sensor: sensor, alerts: CardAlerts(status: .needed(.low)),
                         now: now)
                 ),
+                // out of range without an action pill: the range in words (#26)
+                ("lowquiet", CardData(readings: ending(60, 64, -1.2), sensor: sensor, now: now)),
+                (
+                    "highmuted",
+                    CardData(
+                        readings: ending(60, 262, 1.4), sensor: sensor,
+                        alerts: CardAlerts(status: .paused(.high, until: now + 2700)), now: now)
+                ),
             ]
         }
 

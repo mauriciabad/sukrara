@@ -331,7 +331,14 @@ class LiveNotification(
         text: UiText,
         now: Instant,
     ): String {
-        val args = text.args.map { if (it is Instant) Freshness.timeText(it.epochSecond, now.epochSecond) else it }
+        val args =
+            text.args.map {
+                when (it) {
+                    is Instant -> Freshness.timeText(it.epochSecond, now.epochSecond)
+                    is UiText -> resolve(it, now)
+                    else -> it
+                }
+            }
         return context.getString(text.res, *args.toTypedArray())
     }
 

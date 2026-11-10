@@ -249,16 +249,26 @@ class CardLayoutTest {
 
     /**
      * What the alert runtime says for a scene with the default thresholds, reduced to what these scenes
-     * need: a current reading past the low / high threshold needs action; nothing covers or mutes it here.
+     * need: a current reading past the low / high threshold needs action, unless the newest carbs (low) / rapid insulin
+     * (high) still mutes it (the default mutes; the Mac's DefaultAlertRules is the same).
      */
     private fun standInStatus(sc: Scene): CardStatus {
         val r = sc.readings.lastOrNull() ?: return CardStatus.None
         if (!Freshness.of(now - r.t).showGraph) return CardStatus.None
-        return when {
-            r.sgv < SettingsSpec.THRESHOLD_LOW.default -> CardStatus.Needed(lowSide = true)
-            r.sgv > SettingsSpec.THRESHOLD_HIGH.default -> CardStatus.Needed(lowSide = false)
-            else -> CardStatus.None
-        }
+        val low =
+            when {
+                r.sgv < SettingsSpec.THRESHOLD_LOW.default -> true
+                r.sgv > SettingsSpec.THRESHOLD_HIGH.default -> false
+                else -> return CardStatus.None
+            }
+        val kind = if (low) TreatmentKind.Carbs else TreatmentKind.RapidInsulin
+        val cover =
+            sc.treatments
+                .filter { it.kind == kind && it.at.epochSecond <= now }
+                .mapNotNull { t -> defaultMutes.muteUntil(t)?.let { t to it } }
+                .filter { it.second > now }
+                .maxByOrNull { it.first.at }
+        return cover?.let { (t, until) -> CardStatus.Taken(kind, t.at.epochSecond, until) } ?: CardStatus.Needed(lowSide = low)
     }
 
     private fun renderAll(): List<Render> {
@@ -533,7 +543,24 @@ class CardLayoutTest {
         }
 
         // the shared answers: every one these shapes produce is the one the Mac checks against
-        val expect = Fixtures.read("layout/expect.json")["answers"]!!.jsonObject
+        val expectFile = Fixtures.read("layout/expect.json")
+        if (System.getProperty("layout.write") == "true") {
+            // Android's answers added or updated; the answers only the Mac produces (glyph surfaces) stay
+            val merged =
+                expectFile["answers"]!!
+                    .jsonObject
+                    .mapValues { it.value.str()!! }
+                    .toSortedMap()
+                    .apply { putAll(answers) }
+
+            // the file's own style: "/" escaped
+            fun q(s: String) = JsonPrimitive(s).toString().replace("/", "\\/")
+            val body = merged.entries.joinToString(",\n") { (k, v) -> "  ${q(k)}: ${q(v)}" }
+            Fixtures.write("layout/expect.json", "{\n \"about\": ${expectFile["about"]},\n \"answers\": {\n$body\n }\n}\n")
+            println("layout: wrote ${merged.size} answers to layout/expect.json")
+            return
+        }
+        val expect = expectFile["answers"]!!.jsonObject
         val diffs =
             answers
                 .filter { (k, v) ->

@@ -44,6 +44,11 @@
     <string name="card_ready_at">Ready at %1$s</string>
     <string name="card_almost_ready">Almost ready</string>
     <string name="card_waiting_reading">Waiting for the first reading</string>
+    <string name="card_range_very_low">Very low</string>
+    <string name="card_range_low">Low</string>
+    <string name="card_range_high">High</string>
+    <string name="card_range_very_high">Very high</string>
+    <string name="card_range_extremely_high">Extremely high</string>
     <string name="trend_unknown">trend unknown</string>
     <string name="trend_steady">steady</string>
     <string name="trend_rising">rising</string>

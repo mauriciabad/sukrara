@@ -98,6 +98,7 @@
 
     <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = the trend arrow -->
     <string name="monitor_notif_value">%1$s mg/dL %2$s</string>
+    <string name="monitor_notif_value_range">%1$s mg/dL %2$s · %3$s</string>
     <!-- %1$s = the reading's time ("14:05", "Tue 14:05") -->
     <string name="monitor_notif_reading_at">Reading at %1$s</string>
     <string name="monitor_notif_no_readings_since">No readings since %1$s</string>

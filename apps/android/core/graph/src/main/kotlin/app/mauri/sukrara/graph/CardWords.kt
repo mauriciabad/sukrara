@@ -52,6 +52,9 @@ class CardWords private constructor(
     fun timeLeft(min: Long): String =
         r.getQuantityString(R.plurals.badge_time_left, Durations.compactQuantity(min), Durations.compact(min, durations))
 
+    /** The range word the card draws under an out-of-range value ("Low", "Very high"). */
+    fun range(state: RangeState): String = r.getString(state.words)
+
     /** "Muted · 1h 20m". */
     fun mutedFor(min: Long): String = r.getString(R.string.badge_muted_for, Durations.compact(min, durations))
 

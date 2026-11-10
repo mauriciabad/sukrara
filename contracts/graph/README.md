@@ -105,6 +105,14 @@ The ring's crown / laurel and the % column's crown (docs/FEATURES.md, "Time-in-r
 | `crown` | whether the column's 100 wears the crown |
 | `flower` | the laurel's flower (`Bloom`): `none`, `lavender` (95), `forget_me_not` (96), `daisy` (97), `cherry` (98), `rosette` (99 and the crowned 100) |
 
+## Range word (`range/range.json`)
+
+The range in words under an out-of-range value, so no card says it by colour alone (#26, WCAG 1.4.1; docs/FEATURES.md,
+"Range in words"): `RangeState.shown` on both platforms. A case: `name`; `sgv`; optional `age` (the reading's, s,
+default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, tonal}`, the status pill the card draws;
+absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
+`text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
+
 ## Trend arrow (`trend/trend.json`)
 
 The one trend arrow per platform (`TrendAngle`): a case is `rate` (mg/dL/min, null = no trend) and `expect`
