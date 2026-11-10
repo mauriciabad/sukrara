@@ -344,7 +344,15 @@
     </plurals>
     <string name="st_sensorend_warmup">Cuenta atrás del calentamiento</string>
     <string name="st_sensorend_warmup_summary">La primera hora de un sensor nuevo, hasta su primera lectura</string>
-    <string name="st_sensorend_footer">Un recordatorio que llegaría después del final del sensor se omite. El inicio de la cuenta atrás también decide cuándo la gráfica muestra el anillo de cuenta atrás del sensor. Con el chip de glucosa activado, la cuenta atrás del final se queda en las notificaciones para que la barra de estado siga mostrando tu glucosa. Desliza una cuenta atrás para ocultarla con este sensor. Android no comparte su horario de descanso con las apps, así que indica tu noche aquí.</string>
+    <string name="st_sensorend_after">Después del final</string>
+    <string name="st_sensorend_again">Recordar de nuevo</string>
+    <string name="st_sensorend_again_off">Desactivado</string>
+    <plurals name="st_sensorend_again_every">
+        <item quantity="one">Cada hora</item>
+        <item quantity="many">Cada %d horas</item>
+        <item quantity="other">Cada %d horas</item>
+    </plurals>
+    <string name="st_sensorend_footer">Un recordatorio que llegaría después del final del sensor se omite. El inicio de la cuenta atrás también decide cuándo la gráfica muestra el anillo de cuenta atrás del sensor. Con el chip de glucosa activado, la cuenta atrás del final se queda en las notificaciones para que la barra de estado siga mostrando tu glucosa. Desliza una cuenta atrás para ocultarla con este sensor. Android no comparte su horario de descanso con las apps, así que indica tu noche aquí. Después del final, «Sensor terminado» vuelve cada cierto tiempo hasta que inicies un sensor nuevo, nunca en tu noche.</string>
     <string name="st_reset_section">Restablecer %1$s</string>
     <string name="st_reset">Restablecer</string>
     <string name="st_slot_tir">Tiempo en rango</string>

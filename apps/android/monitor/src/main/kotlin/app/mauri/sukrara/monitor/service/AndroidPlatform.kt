@@ -144,17 +144,17 @@ class AndroidAlarms(
         }
 
     /**
-     * The sensor-end notifier's one alarm ([SENSOR_END_CHECK]): an event (reminder, window start, end) exact and waking
-     * like an alert check, a countdown's progress tick non-waking ([Wakeup.SensorTick]).
+     * The sensor-end notifier's two alarms: the next event ([SENSOR_END_CHECK]: reminder, window start, end) exact and
+     * waking like an alert check, and a countdown's progress tick before it ([SENSOR_END_TICK], non-waking
+     * [Wakeup.SensorTick]). Two, so a tick a sleeping phone holds back never stands in for the end (#140).
      */
     fun sensorEnd(clock: Clock): SensorEndAlarm {
         val exact = alertCheck(SENSOR_END_CHECK, clock)
-        return SensorEndAlarm { at, isExact ->
-            if (at == null || isExact) {
-                exact.set(at)
-            } else {
-                set(Wakeup.SensorTick, at * 1000, alertIntent(SENSOR_END_CHECK))
-            }
+        return SensorEndAlarm { event, tick ->
+            exact.set(event)
+            val pi = alertIntent(SENSOR_END_TICK)
+            runCatching { if (tick == null) am.cancel(pi) else set(Wakeup.SensorTick, tick * 1000, pi) }
+                .onFailure { Log.w(TAG, "sensor tick not scheduled: ${it.javaClass.simpleName}") }
         }
     }
 
@@ -193,6 +193,7 @@ class AndroidAlarms(
         const val ALERT_CHECK = 1
         const val SENSOR_END_CHECK = 2
         const val LOCKED_BOOT = 3
+        const val SENSOR_END_TICK = 4
     }
 }
 

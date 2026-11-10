@@ -14,10 +14,11 @@ import app.mauri.sukrara.monitor.R
  * notifications per shade section (AOSP `GroupHelper`): ≥ 2 *ungrouped* notifications go into one system bundle, and
  * ≥ 3 *sparse* app groups (1–2 children each) are merged too. So every alerting notification of Sukrara is in one of
  * two app groups, each with its own summary: [Group.ALERTS] (every alert and muted card; two alerts at once still
- * each ring and show their own title, the summary never alerts: `GROUP_ALERT_CHILDREN`) and [Group.INFO] (sensor end,
- * status). One group per alert would be sparse groups and get merged with anything (measured on API 36/37).
- * The ongoing glucose notification stays ungrouped (alone in the silent section; a promoted Live Update can't be in
- * a group). A post in [Group.INFO] that would sound waits for [SoundGap], so it never mutes an alert.
+ * each ring and show their own title, the summary never alerts: `GROUP_ALERT_CHILDREN`) and [Group.INFO] (sensor end
+ * and its countdowns, status). One group per alert would be sparse groups and get merged with anything (measured on
+ * API 36/37). The ongoing glucose notification is the one ungrouped notification: a second one (a sensor countdown,
+ * #156) and Android bundles both. A group child can still be a Live Update (only a group summary can't). A post in
+ * [Group.INFO] that would sound waits for [SoundGap], so it never mutes an alert.
  */
 object NotificationGroups {
     enum class Group(val key: String, val summaryId: Int, private val nameRes: Int) {

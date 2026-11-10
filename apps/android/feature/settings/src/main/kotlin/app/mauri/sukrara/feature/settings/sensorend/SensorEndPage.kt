@@ -53,6 +53,7 @@ import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SchemaPrefs
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -126,6 +127,7 @@ fun SensorEndContent(
     // null = closed; -1 = a new reminder
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingHours by rememberSaveable { mutableStateOf(false) }
+    var choosingAgain by rememberSaveable { mutableStateOf(false) }
     // the night's time picker: true = bedtime, false = wake-up, null = closed
     var pickingNight by rememberSaveable { mutableStateOf<Boolean?>(null) }
     SettingsPage(stringResource(R.string.st_sensorend_title), onBack, modifier) {
@@ -174,14 +176,14 @@ fun SensorEndContent(
                 stringResource(R.string.st_sensorend_bedtime),
                 Clock.minuteOfDay(c.nightStart),
                 { pickingNight = true },
-                enabled = c.evening,
+                enabled = c.evening || c.endedRepeatHours > 0,
                 icon = DsR.drawable.ds_ic_bedtime,
             )
             ValueRow(
                 stringResource(R.string.st_sensorend_wakeup),
                 Clock.minuteOfDay(c.nightEnd),
                 { pickingNight = false },
-                enabled = c.evening,
+                enabled = c.evening || c.endedRepeatHours > 0,
                 icon = DsR.drawable.ds_ic_sunny,
             )
         }
@@ -211,6 +213,14 @@ fun SensorEndContent(
                 icon = DsR.drawable.ds_ic_hourglass_top,
             )
         }
+        SettingsGroup(title = stringResource(R.string.st_sensorend_after)) {
+            ValueRow(
+                stringResource(R.string.st_sensorend_again),
+                againText(c.endedRepeatHours),
+                { choosingAgain = true },
+                icon = DsR.drawable.ds_ic_dia_sensor,
+            )
+        }
         calendar?.let { (state, port) -> SensorCalendarGroup(state, port) }
         FooterText(stringResource(R.string.st_sensorend_footer))
     }
@@ -236,6 +246,16 @@ fun SensorEndContent(
             { choosingHours = false },
         ) { actions.setCountdownHours(it) }
     }
+    if (choosingAgain) {
+        val res = LocalContext.current.resources
+        NumberDialog(
+            stringResource(R.string.st_sensorend_again),
+            NumberInput(SettingsSpec.ENDED_REPEAT_HOURS),
+            c.endedRepeatHours.toDouble(),
+            { againText(res, it.toInt()) },
+            { choosingAgain = false },
+        ) { v -> actions.change { it.copy(endedRepeatHours = v.toInt()) } }
+    }
     pickingNight?.let { bed ->
         TimeDialog(
             stringResource(if (bed) R.string.st_sensorend_bedtime else R.string.st_sensorend_wakeup),
@@ -253,6 +273,22 @@ fun SensorEndContent(
         }
     }
 }
+
+/** *Sensor ended* again: "Every 2 hours" / "Off". */
+@Composable
+private fun againText(hours: Int): String = againText(LocalContext.current.resources, hours)
+
+private fun againText(
+    res: android.content.res.Resources,
+    hours: Int,
+): String =
+    if (hours <=
+        0
+    ) {
+        res.getString(R.string.st_sensorend_again_off)
+    } else {
+        res.getQuantityString(R.plurals.st_sensorend_again_every, hours, hours)
+    }
 
 /** The evening reminder comes this long before bedtime (the planner's rule). */
 private const val EVENING_BEFORE_MIN = 2 * 60

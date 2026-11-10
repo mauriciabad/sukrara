@@ -74,6 +74,15 @@ enum class WidgetKind(
             GRAPH -> GraphWidget()
             COMBINED -> CombinedWidget()
         }
+
+    /** Its receiver (the launcher's broadcasts; the redraw alarm asks whether one is placed). */
+    val receiver: Class<out CardWidgetReceiver>
+        get() =
+            when (this) {
+                VALUE -> ValueWidgetReceiver::class.java
+                GRAPH -> GraphWidgetReceiver::class.java
+                COMBINED -> CombinedWidgetReceiver::class.java
+            }
 }
 
 /** The margin inside the widget around the card: a ring's laurel or crown shows there instead of being cut. */

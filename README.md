@@ -74,8 +74,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   data* when that alert would have.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
-  ready*, *Sensor ended* with *Replace sensor* (it opens the new-sensor flow), and optionally the sensor's end as an
-  event in Sukrara's own calendar or one you pick (Settings › Sensor end).
+  ready*, *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
+  your night until you start a new sensor), and optionally the sensor's end as an event in Sukrara's own calendar or
+  one you pick (Settings › Sensor end).
 - **Monitoring** in one foreground service that comes back by itself (boot, update, a 15 min health check); before the
   first reading every surface says *Not monitoring: no sensor yet* and no no-data alarm is armed.
 - **Treatments**: a quick dialog for rapid / long insulin, carbs and a note (from the notification, the Quick

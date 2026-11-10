@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.sensor.libre3
 
-import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.sensor.ble.BleLink
@@ -306,31 +305,28 @@ internal class Libre3Driver(
 
         val lifeCount = u16(0)
         val rawRate = u16(4).toShort().toInt()
-        val reading = u16(2)
-        val uncapped = u16(15)
-        val mgdl = if (uncapped in VALID_MGDL) uncapped else reading
-        // below the sensor's range: only when the uncapped AND the capped value both say so (one odd word is no LO)
-        val belowRange = mgdl !in VALID_MGDL && uncapped in 1 until GlucoseRange.FLOOR && reading in 1..GlucoseRange.FLOOR
-        if (mgdl !in VALID_MGDL && !belowRange) {
-            log("ignoring out-of-range glucose")
-            return
-        }
+        val now = clockMs() / 1000
+        val rate = if (rawRate == -32768) null else rawRate / 100.0
+        val at = Instant.ofEpochSecond(now)
+        // outside 40–400 the reading is the flagged LO / HI (the Libre app's "LO" / "HI"), never the number; LibreView
+        // keeps a HI's own number, a LO has none
+        val (current, sensorGlucose) =
+            when (val value = Libre3Value.decode(capped = u16(2), uncapped = u16(15))) {
+                is Libre3Value.None -> return log("ignoring glucose: ${value.why}")
+
+                // the glucose timer keeps running
+                Libre3Value.Lo -> Reading.lo(at, SourceId.Libre3) to null
+
+                is Libre3Value.Hi -> Reading.hi(at, SourceId.Libre3) to SensorGlucose(lifeCount, value.mgdl, now, rate)
+
+                is Libre3Value.Number -> reading(now, value.mgdl, rate) to SensorGlucose(lifeCount, value.mgdl, now, rate)
+            }
 
         link?.cancel(glucoseTimeout)
         if (lifeCount == lastLifeCount) return
         lastLifeCount = lifeCount
         events.onStatus(LinkStatus.Live)
-        val now = clockMs() / 1000
-        val rate = if (rawRate == -32768) null else rawRate / 100.0
-        val at = Instant.ofEpochSecond(now)
-        // outside 40–400 the reading is the flagged LO / HI (the Libre app's "LO" / "HI"), never the number
-        events.onReading(
-            when {
-                belowRange || GlucoseRange.isLo(mgdl) -> Reading.lo(at, SourceId.Libre3)
-                GlucoseRange.isHi(mgdl) -> Reading.hi(at, SourceId.Libre3)
-                else -> reading(now, mgdl, rate)
-            },
-        )
+        events.onReading(current)
 
         // The packet also carries the matching 5-minute value, which fills a follower's chart a bit faster.
         val histLifeCount = u16(10)
@@ -342,7 +338,7 @@ internal class Libre3Driver(
                 null
             }
         histPoint?.let { events.onHistory(listOf(reading(it.epochSec, it.mgdl, null))) }
-        events.onSensorGlucose(if (belowRange) null else SensorGlucose(lifeCount, mgdl, now, rate), listOfNotNull(histPoint))
+        events.onSensorGlucose(sensorGlucose, listOfNotNull(histPoint))
     }
 
     /** Encrypts a command and writes it to PatchControl (same framing as incoming packets). */

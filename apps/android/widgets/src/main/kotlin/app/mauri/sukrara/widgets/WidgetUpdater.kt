@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.util.Locale
 import app.mauri.sukrara.graph.Clock as GraphClock
@@ -62,6 +64,11 @@ data class WidgetInputs(
  * a time is written (12/24-hour, time zone, language: the monitor sends a tick on each of those changes).
  * While the screen is off nothing is drawn (no launcher shows it); when it comes back on, one redraw catches up if
  * anything changed. No polling: it reacts only to its inputs.
+ *
+ * A widget is a picture the launcher keeps after the app's process dies, and the monitor's alarm is armed only while
+ * its service posts. So every picture asks [nextRedraw] for its own next freshness step (a time shown at 90 s, struck
+ * through at 5 min, …; null = it never changes): the widgets' alarm, which starts the process when needed and calls
+ * [tick]. No widget ever shows a value as current while nothing will redraw it (#98).
  */
 class WidgetUpdater(
     private val scope: CoroutineScope,
@@ -75,10 +82,12 @@ class WidgetUpdater(
     private val screenOn: Flow<Boolean>,
     private val dark: () -> Boolean,
     private val redraw: suspend () -> Unit,
+    private val nextRedraw: (Instant?) -> Unit = {},
 ) {
     private val latestInputs = MutableStateFlow<WidgetInputs?>(null)
     private val drawnFrame = MutableStateFlow<WidgetFrame?>(null)
     private var drawnKey: DrawKey? = null
+    private val drawing = Mutex()
 
     /** The frame the widgets show; set just before every redraw. */
     val frame: StateFlow<WidgetFrame?> = drawnFrame.asStateFlow()
@@ -95,18 +104,33 @@ class WidgetUpdater(
             }
     }
 
+    /**
+     * The widgets' redraw alarm came: redraws now if the step changed, before it returns (the receiver waits), also
+     * with the screen off: the process may be gone again by the time it comes on, and nothing else would draw.
+     */
+    suspend fun tick() {
+        val inputs = latestInputs.filterNotNull().first()
+        onChange(inputs, screenOn = true)
+    }
+
     private suspend fun onChange(
         inputs: WidgetInputs,
         screenOn: Boolean,
-    ) {
+    ) = drawing.withLock {
         latestInputs.value = inputs
         val now = clock.now()
         val night = dark()
         val key = DrawKey.of(inputs, now, night)
-        if (key == drawnKey || !screenOn) return
+        if (key == drawnKey || !screenOn) return@withLock
         drawnKey = key
         drawnFrame.value = WidgetFrame(inputs.glucose, inputs.treatments, inputs.config, inputs.placements, now, night, inputs.stored)
         redraw()
+        // the picture's own next step, whoever else is alive by then
+        val latest =
+            inputs.glucose.latest
+                ?.t
+                ?.epochSecond
+        nextRedraw(Freshness.nextChangeAt(latest, now.epochSecond)?.let(Instant::ofEpochSecond))
     }
 
     /**
