@@ -52,21 +52,45 @@ struct GraphPalette {
         veryLow: hex(0xB3261E), low: hex(0xD92D2A), tight: hex(0x17A34A), target: hex(0x6E9E1E),
         high: hex(0xD97706), veryHigh: hex(0xC2410C), extremelyHigh: hex(0xA3238F))
     static func of(dark: Bool) -> GraphPalette { dark ? darkPalette : lightPalette }
+
+    /// On the panel's recessed module (black 18 % / white 50 % over the menu material) the grid is one step stronger;
+    /// with Increase Contrast the secondary ink and the grid are stronger again (the module gets an outline).
+    func onModule(contrast: Bool) -> GraphPalette {
+        var p = self
+        switch (dark, contrast) {
+        case (true, false): p.grid = Self.hex(0x4A4A4F)
+        case (false, false): p.grid = Self.hex(0xC8C8CE)
+        case (true, true): p.grid = Self.hex(0x7C7C82); p.inkSoft = Self.hex(0xD8D8DC)
+        case (false, true): p.grid = Self.hex(0x8A8A90); p.inkSoft = Self.hex(0x3C3C40)
+        }
+        return p
+    }
 }
 
 /// A chart scrolled through time (the dropdown; Android's app panel; the other surfaces can't scroll): the window ends
 /// at `end` (at most now) instead of now; `y` = the y range to draw while the surface animates it towards the window's
 /// own (`GlucoseCard.yRange`; nil = the window's own); `now` = the "Now" pill's visibility 0…1 (0 = none). GlucoseGraph.kt `ChartView`.
-struct ChartView: Equatable {
-    var end: TimeInterval
-    var y: ClosedRange<Double>? = nil
-    var now: CGFloat = 0
+public struct ChartView: Equatable, Sendable {
+    public var end: TimeInterval
+    public var y: ClosedRange<Double>? = nil
+    public var now: CGFloat = 0
     /// The plot's bottom, pt above the chart's bottom, while the surface eases it (nil = the layout's, "chart.plot.natural").
-    var plotInset: CGFloat? = nil
+    public var plotInset: CGFloat? = nil
     /// The window's length while the surface is zoomed (`minSpan`…`maxSpan`; nil = the place's "time shown", `GraphStyle.window`).
-    var span: TimeInterval? = nil
+    public var span: TimeInterval? = nil
     /// The narrowest and widest window a pinch zooms to (GlucoseGraph.kt `ChartView.MIN_SPAN_S` / `MAX_SPAN_S`).
-    static let minSpan: TimeInterval = 2 * 3600, maxSpan: TimeInterval = 31 * 86400
+    public static let minSpan: TimeInterval = 2 * 3600, maxSpan: TimeInterval = 31 * 86400
+
+    public init(
+        end: TimeInterval, y: ClosedRange<Double>? = nil, now: CGFloat = 0, plotInset: CGFloat? = nil,
+        span: TimeInterval? = nil
+    ) {
+        self.end = end
+        self.y = y
+        self.now = now
+        self.plotInset = plotInset
+        self.span = span
+    }
 }
 
 struct GraphStyle {
@@ -84,6 +108,10 @@ struct GraphStyle {
     var gridHours = 1
     /// Which parts of each treatment kind show: point, mute line, amount, time (`GraphConfig.marks`).
     var marks = MarkShow.defaults
+    /// The unit the range labels on the right are written in (the card's `CardStyle.unit`; the lines stay at mg/dL).
+    var unit: GlucoseUnit = .mgdl
+    /// The language the chart's words are drawn in (the labels' times, the Now pill).
+    var words: CardWords = .en
 }
 
 /// Which parts of each kind's marks the chart draws (Settings › Graph › Treatments on the graph; schema `graph.marks`,
@@ -151,22 +179,6 @@ public struct MarkShow: Codable, Equatable, Sendable {
 /// What a slot beside the value shows (investigation 18): a time-in-range ring or one of the report's numbers.
 public enum SlotKind: String, Codable, CaseIterable, Sendable {
     case tir = "TIR", gmi = "GMI", average = "AVERAGE", cv = "CV"
-    var label: String {
-        switch self {
-        case .tir: "Time in range"
-        case .gmi: "GMI"
-        case .average: "Average glucose"
-        case .cv: "Variability (CV)"
-        }
-    }
-    var short: String {
-        switch self {
-        case .tir: ""
-        case .gmi: "GMI"
-        case .average: "avg"
-        case .cv: "CV"
-        }
-    }
 }
 
 /// One slot beside the value: its kind, window and, for a ring, which range its centre counts. `faded` = drawn
@@ -180,7 +192,6 @@ public struct RingSpec: Codable, Equatable, Sendable {
     public var order: [Band] = DEFAULT_RING_ORDER
     /// Whether the ring wears its `TirMark` (`GraphConfig.ringMarks`).
     public var marks = true
-    public var period: String { periodLabel(window) }
     public init(
         window: TimeInterval, range: TirRange = .inRange, kind: SlotKind = .tir, faded: Bool = true,
         order: [Band] = DEFAULT_RING_ORDER, marks: Bool = true
@@ -196,7 +207,7 @@ public struct RingSpec: Codable, Equatable, Sendable {
 
 /// The doctor's report numbers for one window (GlucoseMetrics.kt): time in the five ranges, time-weighted mean and
 /// SD, CV, GMI.
-struct GlucoseMetrics: Codable, Equatable {
+struct GlucoseMetrics: Codable, Equatable, Sendable {
     var tir: TimeInRange
     var mean: Double
     var sd: Double
@@ -266,9 +277,12 @@ enum Goal: CaseIterable {
 /// A time share as the number of a percentage, without the "%": "64", "5.2", "70.2" (ShareText in GlucoseMetrics.kt,
 /// cases in spikes/graph-fixtures/share). Whole percent from 10 %, one decimal under 10 %, and more decimals (up to two)
 /// whenever rounding would put the number on the other side of its goal than the value or show "100" for a share that
-/// isn't all (100 is the crown's number, TirMark); a non-zero share too small to show is "<0.1", one too close to all ">99.9". [locale] nil = "." (the Mac's texts are English, like its other numbers).
+/// isn't all (100 is the crown's number, TirMark); a non-zero share too small to show is "<0.1", one too close to all ">99.9",
+/// none at all "0" (never "0.0": a figure with a decimal beside the value can be read as a glucose value). [locale] nil =
+/// "." (the Mac's texts are English, like its other numbers).
 enum ShareText {
     private static func format(_ x: Double, _ met: ((Double) -> Bool)?, _ locale: Locale?) -> String {
+        if x <= 0 { return "0" }
         func shown(_ d: Int) -> Double { let k = pow(10.0, Double(d + 2)); return (x * k).rounded() / k }
         var d = x < 0.095 ? 1 : 0
         // more decimals while rounding crosses the goal, or turns a share that isn't all into "100" (the crown's number)
@@ -282,11 +296,6 @@ enum ShareText {
     }
     /// Coverage against the report's 70 % (the "only … % has data" note).
     static func coverage(_ x: Double, locale: Locale? = nil) -> String { format(x, { $0 >= Goal.minCoverage }, locale) }
-}
-
-func periodLabel(_ s: TimeInterval) -> String {
-    let i = Int(s)
-    return i % 86400 == 0 ? "\(i / 86400)d" : "\(i / 3600)h"
 }
 
 /// What a whole glucose card shows: value header and/or chart, up to three rings (main first), the last-treatment slot
@@ -308,9 +317,20 @@ struct CardStyle {
     /// The ranges the value's colour and the slots count in: the user's (`GraphConfig.cardStyle` sets them), also on a
     /// card without a chart (the value widget used the built-in 180 after the high bound moved, 2026-10-21).
     var bands = Bands()
-    /// The unit the value is written in (the user's setting). The chart's axis and range lines stay mg/dL on both
-    /// platforms for now (OPS issue c14: mmol/L chart labels).
+    /// The unit every number of the card is written in (the user's setting): the value, the chart's range labels,
+    /// the spoken sentence (contracts/settings/units.json).
     var unit: GlucoseUnit = .mgdl
+    /// The language the card's words are drawn in (the pill, the slots' periods, the value's place); the chart's are
+    /// `graph.words`, set together by `speaking`.
+    var words: CardWords = .en
+
+    /// This style drawing its words (the card's and its chart's) in `w`.
+    func speaking(_ w: CardWords) -> CardStyle {
+        var s = self
+        s.words = w
+        s.graph?.words = w
+        return s
+    }
 }
 
 /// Everything the graph settings decide (UserDefaults on the Mac; the widget gets it in its snapshot).

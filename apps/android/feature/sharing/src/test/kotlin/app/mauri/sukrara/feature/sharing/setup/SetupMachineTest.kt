@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SetupMachineTest {
-    private val none = SetupFacts(role = null, followerAvailable = false, ownSensorLive = false, hasIdentity = false)
+    private val none = SetupFacts(role = null, ownSensorLive = false, hasIdentity = false)
     private val facts = none.copy(role = Role.Wearer)
     private val m = SetupMachine
 
@@ -24,7 +24,7 @@ class SetupMachineTest {
 
     @Test
     fun `the exact step order`() {
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Identity), m.steps(facts))
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Identity, SetupStep.History), m.steps(facts))
     }
 
     @Test
@@ -50,13 +50,22 @@ class SetupMachineTest {
     }
 
     @Test
-    fun `follower stays on the role step while following isn't in this build`() {
-        assertEquals(Result.Refused(RoleRefusal.FollowerNotAvailable), m.chooseRole(Role.Follower, confirmed = true, none))
-        val f = none.copy(followerAvailable = true)
-        assertEquals(Result.Done(Role.Follower), m.chooseRole(Role.Follower, confirmed = true, f))
-        val follower = f.copy(role = Role.Follower)
-        assertEquals(Permissions, m.next(m.completeWelcome(SetupRecord()), follower))
-        assertTrue(Sensor !in m.steps(follower))
+    fun `a follower joins before anything else and can't skip it`() {
+        assertEquals(Result.Done(Role.Follower), m.chooseRole(Role.Follower, confirmed = true, none))
+        val follower = none.copy(role = Role.Follower)
+        assertEquals(listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts), m.steps(follower))
+        assertTrue(SetupStep.Join !in m.steps(facts))
+        val start = m.completeWelcome(SetupRecord())
+        assertEquals(SetupStep.Join, m.next(start, follower))
+        assertEquals(start, m.skip(start, SetupStep.Join))
+        // joining alone isn't enough: the waiting screen (its code) is left with Continue
+        val joined = follower.copy(following = true)
+        assertEquals(SetupStep.Join, m.next(start, joined))
+        val done = m.completeJoin(start, joined)
+        assertEquals(Permissions, m.next(done, joined))
+        // a follow that ended (declined, removed) asks for a new link again
+        assertEquals(SetupStep.Join, m.next(done, follower))
+        assertEquals(start, m.completeJoin(start, follower))
     }
 
     @Test
@@ -94,13 +103,13 @@ class SetupMachineTest {
         val r = m.confirmAlerts(m.skip(m.completePermissions(wearer()), Sensor))
         assertEquals(Identity, m.next(m.completeIdentity(r, facts), facts))
         val shared = facts.copy(hasIdentity = true)
-        assertNull(m.next(m.completeIdentity(r, shared), shared))
+        assertEquals(SetupStep.History, m.next(m.completeIdentity(r, shared), shared))
     }
 
     @Test
     fun `skipped steps become Finish-setup items and drop out when their fact changes`() {
         var r = wearer()
-        for (s in listOf(Permissions, Sensor, Alerts, Identity)) r = m.skip(r, s)
+        for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
         assertNull(m.next(r, facts))
         assertEquals(FinishItem.entries, m.finishItems(r, facts))
         val later = facts.copy(ownSensorLive = true, hasIdentity = true)
@@ -110,11 +119,34 @@ class SetupMachineTest {
     @Test
     fun `a reopened item shows its step again, then back to home`() {
         var r = wearer()
-        for (s in listOf(Permissions, Sensor, Alerts, Identity)) r = m.skip(r, s)
+        for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
         r = m.reopen(r, Alerts)
         assertEquals(Alerts, m.next(r, facts))
         r = m.skip(r, Alerts)
         assertNull(m.next(r, facts))
+    }
+
+    @Test
+    fun `bring your history back is offered once, to a wearer, and again after the database was replaced`() {
+        val done =
+            m.completeIdentity(
+                m.confirmAlerts(m.completeSensor(m.completePermissions(wearer()), facts.copy(ownSensorLive = true))),
+                facts.copy(hasIdentity = true),
+            )
+        val live = facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true)
+        assertEquals(SetupStep.History, m.next(done, live))
+        assertTrue(m.historyDue(done, Role.Wearer))
+        // either answer is final, and it never becomes a Finish-setup item
+        for (answered in listOf(m.completeHistory(done), m.skip(done, SetupStep.History))) {
+            assertNull(m.next(answered, live))
+            assertTrue(m.finishItems(answered, live).isEmpty())
+            assertTrue(!m.historyDue(answered, Role.Wearer))
+            // a replaced database offers it again
+            assertTrue(m.historyDue(m.reopen(answered, SetupStep.History), Role.Wearer))
+        }
+        // never to a follower (their history is the wearer's) or before a role
+        assertTrue(SetupStep.History !in m.steps(facts.copy(role = Role.Follower)))
+        assertTrue(!m.historyDue(done, Role.Follower) && !m.historyDue(done, null))
     }
 
     @Test

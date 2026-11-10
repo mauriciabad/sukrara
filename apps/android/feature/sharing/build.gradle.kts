@@ -12,7 +12,9 @@ plugins {
 
 android {
     // Robolectric's resource loader reads FileDescriptor internals on JDK 21
-    testOptions.unitTests.all { it.jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
+    testOptions.unitTests.all {
+        it.jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+    }
     testOptions.unitTests.isIncludeAndroidResources = true
 }
 
@@ -23,6 +25,8 @@ dependencies {
     implementation(project(":core:data"))
     // the alert settings the alert step confirms
     implementation(project(":core:alerts"))
+    // THE duration formatter's words (the upload interval)
+    implementation(project(":core:graph"))
     // the wearer's sharing engine
     implementation(project(":share"))
     implementation(libs.androidx.core.ktx)
@@ -32,6 +36,13 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     // invite QR code
     implementation(libs.zxing.core)
+    // reading the invite QR on the join step: CameraX frames decoded on the phone (zxing-cpp, no Play Services)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.zxing.cpp)
+    // the identity to / from the phone's password manager (Backup, restore)
+    implementation(libs.androidx.credentials)
     testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

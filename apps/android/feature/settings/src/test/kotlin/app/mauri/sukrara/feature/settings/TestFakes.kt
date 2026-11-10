@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.UnlockedSound
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -54,8 +55,13 @@ class RecordingControls : AlertControls {
 }
 
 class FakeReadiness(missing: Set<AlertRequirement> = emptySet()) : AlertReadinessSource {
-    override val readiness: StateFlow<AlertReadiness> = MutableStateFlow(AlertReadiness(missing))
+    override val readiness: MutableStateFlow<AlertReadiness> = MutableStateFlow(AlertReadiness(missing))
     val fixed = mutableListOf<AlertRequirement>()
+
+    override fun answerUnlockedSound(answer: UnlockedSound) {
+        readiness.value =
+            readiness.value.copy(unlockedSound = answer, missing = readiness.value.missing - AlertRequirement.SoundWhenUnlocked)
+    }
 
     override fun refresh() = Unit
 

@@ -12,10 +12,13 @@ import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.RosterCodec
 import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.event.TreatmentCodec
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.protocol.testing.OgsVectors
 import app.mauri.sukrara.protocol.testing.OgsVectors.Companion.str
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -39,7 +42,12 @@ class OgsVectorsTest {
         assertEquals(d.str("d_backup(I)"), Wire.backupD(v.key("I").public))
         assertEquals(d.str("gk(G1)"), Wire.gk(v.key("G1").public))
         assertEquals(d.str("gk(G2)"), Wire.gk(v.key("G2").public))
-        val carbs = v.plaintexts.getValue("treatment-owner").jsonObject.str("content").let(TreatmentCodec::decode)
+        val carbs =
+            v.plaintexts
+                .getValue("treatment-owner")
+                .jsonObject
+                .str("content")
+                .let(TreatmentCodec::decode)
         assertEquals(d.str("d_treatment(sid, carbs.id)"), Wire.treatmentD(v.sid, carbs.id))
     }
 
@@ -50,14 +58,43 @@ class OgsVectorsTest {
             val o = p.jsonObject
             val ev = v.events.getValue(name)
             val content = o["content"]?.jsonPrimitive?.content ?: o.getValue("rumor").jsonObject.str("content")
-            val again = when {
-                "rumor" in o -> RumorCodec.encode(RumorCodec.decode(o.getValue("rumor").jsonObject.str("kind").toInt(), content)!!)
-                ev.kind == Wire.KIND_LIVE -> ReadingsCodec.encodeLive(ReadingsCodec.decodeLive(content))
-                ev.kind == Wire.KIND_ALERT -> AlertCodec.encode(AlertCodec.decode(content))
-                ev.tag("c") == Wire.glucoseC(v.sid) -> ReadingsCodec.decodeChunk(content).let { ReadingsCodec.encodeChunk(it.hour, it.readings) }
-                ev.tag("c") == Wire.treatmentsC(v.sid) -> TreatmentCodec.encode(TreatmentCodec.decode(content))
-                else -> RosterCodec.encode(RosterCodec.decode(content))
-            }
+            val again =
+                when {
+                    "rumor" in o -> {
+                        RumorCodec.encode(
+                            RumorCodec.decode(
+                                o
+                                    .getValue("rumor")
+                                    .jsonObject
+                                    .str("kind")
+                                    .toInt(),
+                                content,
+                            )!!,
+                        )
+                    }
+
+                    ev.kind == Wire.KIND_LIVE -> {
+                        ReadingsCodec.encodeLive(ReadingsCodec.decodeLive(content))
+                    }
+
+                    ev.kind == Wire.KIND_ALERT -> {
+                        AlertCodec.encode(AlertCodec.decode(content))
+                    }
+
+                    ev.tag(
+                        "c",
+                    ) == Wire.glucoseC(v.sid) -> {
+                        ReadingsCodec.decodeChunk(content).let { ReadingsCodec.encodeChunk(it.hour, it.readings) }
+                    }
+
+                    ev.tag("c") == Wire.treatmentsC(v.sid) -> {
+                        TreatmentCodec.encode(TreatmentCodec.decode(content))
+                    }
+
+                    else -> {
+                        RosterCodec.encode(RosterCodec.decode(content))
+                    }
+                }
             // The reference writes a roster without a wearer profile as `"profile":null`; Sukrara leaves it out.
             assertEquals(name, content.replace(",\"profile\":null}", "}"), again)
             checked++
@@ -82,15 +119,34 @@ class OgsVectorsTest {
         assertEquals(ble.getValue("info_m").jsonObject.str("m"), BleMessages.infoM(v.sid, nonce))
         assertEquals(ble.getValue("info"), json(BleMessages.info(v.sid, nonce, null, v.now)))
         val pair = (ble.getValue("info_pairing") as JsonArray)[1].jsonObject
-        val pairing = BleMessages.Pairing(
-            v.key("I").public,
-            pair.getValue("relays").jsonArray.map { it.jsonPrimitive.content },
-            pair.getValue("pair").jsonObject.str("t"),
-            pair.getValue("pair").jsonObject.str("x").toLong(),
-            Profile.of(pair.getValue("pair").jsonObject["profile"]),
-        )
-        assertEquals(ble.getValue("info_pairing"), json(BleMessages.info(v.sid, nonce, pairing, v.now)))
+        val pairing =
+            BleMessages.Pairing(
+                v.key("I").public,
+                pair.getValue("relays").jsonArray.map { it.jsonPrimitive.content },
+                pair.getValue("pair").jsonObject.str("t"),
+                pair
+                    .getValue("pair")
+                    .jsonObject
+                    .str("x")
+                    .toLong(),
+                Profile.of(pair.getValue("pair").jsonObject["profile"]),
+                NearbyPairing.commit("00".repeat(32)),
+            )
+        // Sukrara's offer is draft 1's plus the commitment `c` (PROTOCOL-v2 §Nearby pairing; nearby-pairing.json)
+        val withCommit =
+            JsonArray(
+                listOf(
+                    JsonPrimitive("INFO"),
+                    JsonObject(pair + ("pair" to JsonObject(pair.getValue("pair").jsonObject + ("c" to JsonPrimitive(pairing.commit))))),
+                ),
+            )
+        assertEquals(withCommit, json(BleMessages.info(v.sid, nonce, pairing, v.now)))
         assertEquals(ble.getValue("info"), json(BleMessages.info(v.sid, nonce, pairing, pairing.expiry)))
+        // the follower reads the offer back (Find phones nearby); expired, absent or without a commitment = none
+        assertEquals(pairing.copy(relays = Wire.validRelays(pairing.relays)), BleMessages.pairing(withCommit[1].jsonObject, v.now))
+        assertEquals(null, BleMessages.pairing(pair, v.now))
+        assertEquals(null, BleMessages.pairing(withCommit[1].jsonObject, pairing.expiry))
+        assertEquals(null, BleMessages.pairing((ble.getValue("info") as JsonArray)[1].jsonObject, v.now))
         assertEquals(ble.getValue("hello"), json(BleMessages.hello(nonce, null)))
         val hello = BleMessages.parse(BleMessages.hello(nonce, null))!!
         assertEquals("HELLO", hello.type)
@@ -100,6 +156,12 @@ class OgsVectorsTest {
         assertEquals(BleMessages.Owner.Other, BleMessages.owner(info, null, v.sid, listOf("ff")))
         assertEquals(BleMessages.Owner.Unknown, BleMessages.owner(info, null, null, listOf(nonce)))
         assertEquals(BleMessages.Owner.Other, BleMessages.owner(pair, v.key("X").public, v.sid, listOf(nonce)))
+        // B§6: before sid, the pairing `i` says ours; once sid is known only `m` does (a copied `i` never proves it)
+        val ours = v.key("I").public
+        assertEquals(BleMessages.Owner.Ours, BleMessages.owner(pair, ours, null, emptyList()))
+        assertEquals(BleMessages.Owner.Ours, BleMessages.owner(pair, ours, v.sid, listOf(nonce)))
+        assertEquals(BleMessages.Owner.Other, BleMessages.owner(pair, ours, v.sid, listOf("ff")))
+        assertEquals(BleMessages.Owner.Unknown, BleMessages.owner(info, ours, null, listOf(nonce)))
     }
 
     @Test fun treatmentPayloadRules() {

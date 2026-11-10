@@ -11,15 +11,47 @@ import kotlinx.coroutines.flow.update
 import java.io.File
 import java.time.Instant
 
+/** What kind of store a damaged file belongs to: decides what the damage means for the person. */
+enum class StoreKind {
+    /** A settings store (DataStore preferences). */
+    Settings,
+
+    /** The readings / treatments database. */
+    Database,
+
+    /** A Keystore-encrypted secret. */
+    Secret,
+
+    /** A state or data file (`TypedStore`, [FileStore]). */
+    File,
+}
+
 /** A stored file that couldn't be read. The damaged bytes are kept at [quarantinedTo] for the report. */
 data class CorruptFile(
-    /** Which store: a file name, a settings store, a secret name. */
+    val kind: StoreKind,
+    /** Which store of [kind]: a file name, a settings store, a secret name. */
     val store: String,
     /** The kept copy of the damaged bytes; null when the damaged file was already gone. */
     val quarantinedTo: File?,
     val at: Instant,
-    /** The decoder's error type, never the content. */
+    /** The decoder's error type ([reasonOf]), never its message: messages can quote the stored content. */
     val reason: String,
+)
+
+/**
+ * The report-safe reason for [error]: the class name of its root cause, never a message (kotlinx serialization and
+ * DataStore messages can quote the damaged input, i.e. readings or keys).
+ */
+fun reasonOf(error: Throwable): String {
+    var root = error
+    while (true) root = root.cause?.takeIf { it !== root } ?: break
+    return root.javaClass.name.substringAfterLast('.')
+}
+
+/** A directory [CorruptionLog.rescan] searches for kept copies, and the kind of store kept there. */
+data class QuarantineRoot(
+    val dir: File,
+    val kind: StoreKind,
 )
 
 /**
@@ -37,14 +69,34 @@ class CorruptionLog {
         }
     }
 
-    /** Reports every kept copy under [roots] (a previous process found them; nobody acknowledged them yet). */
-    fun rescan(roots: List<File>) {
-        roots.filter { it.isDirectory }
-            .flatMap { root -> root.walkTopDown().filter { it.isFile && QUARANTINE_MARK in it.name } }
+    /**
+     * Reports every kept copy under [roots] (a previous process found them; nobody acknowledged them yet). A copy under
+     * several roots belongs to the deepest one (the secrets' dir sits inside the files dir).
+     */
+    fun rescan(roots: List<QuarantineRoot>) {
+        roots
+            .filter { it.dir.isDirectory }
+            .flatMap { root -> root.dir.walkTopDown().filter { it.isFile && QUARANTINE_MARK in it.name } }
+            .distinctBy { it.canonicalPath }
             .forEach { copy ->
-                val store = copy.name.substringBefore(QUARANTINE_MARK)
-                val at = copy.name.substringAfter(QUARANTINE_MARK).toLongOrNull()?.let(Instant::ofEpochMilli) ?: Instant.EPOCH
-                report(CorruptFile(store, copy, at, "found at start"))
+                val kind =
+                    roots
+                        .filter { copy.canonicalPath.startsWith(it.dir.canonicalPath + File.separator) }
+                        .maxBy { it.dir.canonicalPath.length }
+                        .kind
+                val name = copy.name.substringBefore(QUARANTINE_MARK)
+                val store =
+                    when (kind) {
+                        StoreKind.Settings -> name.removeSuffix(".preferences_pb")
+                        StoreKind.Secret -> name.removeSuffix(".bin")
+                        else -> name
+                    }
+                val at =
+                    copy.name
+                        .substringAfter(QUARANTINE_MARK)
+                        .toLongOrNull()
+                        ?.let(Instant::ofEpochMilli) ?: Instant.EPOCH
+                report(CorruptFile(kind, store, copy, at, "found at start"))
             }
     }
 

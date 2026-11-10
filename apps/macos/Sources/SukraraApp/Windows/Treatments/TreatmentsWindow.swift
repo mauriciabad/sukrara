@@ -5,78 +5,349 @@ import AppKit
 import SukraraCore
 import SwiftUI
 
-/// Add treatment: Rapid, Long, Carbs, Note at once, when (now or minutes ago); Save sends every filled field.
+/// The kinds in form order, with the symbol the form and the Treatments window show.
+enum TreatmentKindLook {
+    static func symbol(_ k: Treatment.Kind) -> String {
+        switch k {
+        case .rapid: "syringe"
+        case .long: "syringe.fill"
+        case .carbs: "fork.knife"
+        case .note: "text.bubble"
+        }
+    }
+
+    static func name(_ k: Treatment.Kind) -> String {
+        switch k {
+        case .rapid: L10n.t("Rapid")
+        case .long: L10n.t("Long")
+        case .carbs: L10n.t("Carbs")
+        case .note: L10n.t("Note")
+        }
+    }
+
+    static func unit(_ k: Treatment.Kind) -> String { k == .carbs ? "g" : "u" }
+}
+
+/// Add Treatment: Rapid, Long and Carbs side by side, a Note with its byte counter, and *When?* (a chip that opens a
+/// clock time / minutes-ago picker); the line under them says which alerts the entries will quiet. Return saves,
+/// Escape cancels. The focused field is the one the latest reading (or the card's pill) suggests.
+/// A field the open Add Treatment window should move the focus to (a card pill picked while it is open).
+@Observable
+public final class AddTreatmentFocus {
+    public private(set) var field: Treatment.Kind?
+    /// Bumped on every request, so asking for the same field again moves the focus back to it.
+    public private(set) var count = 0
+    public init() {}
+    public func request(_ field: Treatment.Kind) {
+        self.field = field
+        count += 1
+    }
+}
+
 public struct AddTreatmentView: View {
     @State private var fields = TreatmentForm.Fields()
-    @State private var minutes = ""
+    @State private var when = TreatmentForm.When.now
+    @State private var pickTime = false
     @State private var saved = false
+    /// The pen entry that may already be this insulin (*Already logged by the pen?*), with the entries Save made.
+    @State private var penAsk: (pen: Treatment, entries: [Treatment])?
     @FocusState private var focus: Treatment.Kind?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let focusCarbs: Bool
-    let save: ([Treatment]) -> Void
+    let initialFocus: Treatment.Kind
+    /// The quiet line for entries logged at `at` (epoch s): rapid insulin, carbs; nil = nothing to say.
+    let quiet: (_ rapid: Bool, _ carbs: Bool, _ at: Int64) -> String?
+    /// A pen entry of an insulin kind in `entries` close enough in time to be the same injection (nil = none).
+    let penDuplicate: (_ entries: [Treatment]) -> Treatment?
+    /// Saves `entries`; `close` = the form is done (false: something stays in it).
+    let save: (_ entries: [Treatment], _ close: Bool) -> Void
     let cancel: () -> Void
     var now: () -> Date = Date.init
+    /// Focus moves asked for while the window is open.
+    var focusRequests: AddTreatmentFocus?
 
-    public init(focusCarbs: Bool, save: @escaping ([Treatment]) -> Void, cancel: @escaping () -> Void) {
-        self.focusCarbs = focusCarbs
+    public init(
+        focus: Treatment.Kind, focusRequests: AddTreatmentFocus? = nil,
+        quiet: @escaping (Bool, Bool, Int64) -> String? = { _, _, _ in nil },
+        penDuplicate: @escaping ([Treatment]) -> Treatment? = { _ in nil },
+        save: @escaping ([Treatment], Bool) -> Void, cancel: @escaping () -> Void
+    ) {
+        initialFocus = focus
+        self.focusRequests = focusRequests
+        self.quiet = quiet
+        self.penDuplicate = penDuplicate
         self.save = save
         self.cancel = cancel
     }
 
-    private var ago: TreatmentForm.MinutesAgo { minutes.isEmpty ? .valid(nil) : TreatmentForm.minutesAgo(minutes) }
+    private var quietLine: String? {
+        func has(_ k: Treatment.Kind) -> Bool {
+            fields.amounts.contains { a in
+                if a.kind == k, case .value = a.amount { return true }
+                return false
+            }
+        }
+        let nowS = Int64(now().timeIntervalSince1970)
+        return quiet(has(.rapid), has(.carbs), when.resolve(now: nowS))
+    }
 
     public var body: some View {
-        Form {
-            amount(L10n.t("Rapid"), "u", $fields.rapid, .rapid)
-            amount(L10n.t("Long"), "u", $fields.long, .long)
-            amount(L10n.t("Carbs"), "g", $fields.carbs, .carbs)
-            TextField(L10n.t("Note"), text: Binding(get: { fields.note }, set: { fields.note = TreatmentForm.filterNote($0, old: fields.note) }))
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(L10n.t("Add Treatment")).font(.title2.weight(.semibold))
+                Spacer()
+                Button {
+                    pickTime = true
+                } label: {
+                    Label(Self.whenLabel(when, now: now()), systemImage: "clock")
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .help(L10n.t("When it happened"))
+                .accessibilityLabel(L10n.t("When: \(Self.whenLabel(when, now: now()))"))
+                .popover(isPresented: $pickTime, arrowEdge: .bottom) {
+                    WhenPicker(when: when) { picked in
+                        if let picked { when = picked }
+                        pickTime = false
+                    }
+                }
+            }
+            HStack(alignment: .top, spacing: 8) {
+                amount(.rapid, $fields.rapid)
+                amount(.long, $fields.long)
+                amount(.carbs, $fields.carbs)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                kindLabel(.note)
+                TextField(
+                    L10n.t("Note"),
+                    text: Binding(
+                        get: { fields.note }, set: { fields.note = TreatmentForm.filterNote($0, old: fields.note) }),
+                    prompt: Text(L10n.t("Pizza, exercise, sick…"))
+                )
+                .textFieldStyle(.roundedBorder)
                 .focused($focus, equals: .note)
-            TextField(L10n.t("Minutes ago (empty = now)"), text: Binding(get: { minutes }, set: { minutes = TreatmentForm.filterMinutes($0) }))
-            if fields.hasInvalidAmount || ago == .invalid {
-                Text(L10n.t("Insulin up to 100u, carbs up to 500g, at most 23 h 59 min ago."))
-                    .font(.caption).foregroundStyle(.red)
+                .onSubmit(commit)
+                .accessibilityLabel(L10n.t("Note"))
+                let bytes = fields.note.utf8.count
+                if bytes > Treatment.noteBytes - 20 {
+                    Text(verbatim: "\(bytes) / \(Treatment.noteBytes)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .accessibilityLabel(L10n.t("\(Treatment.noteBytes - bytes) characters left"))
+                }
+            }
+            if let q = quietLine {
+                Label(q, systemImage: "bell.slash").foregroundStyle(.secondary)
+            }
+            if fields.hasInvalidAmount {
+                Text(L10n.t("Insulin up to 100u, carbs up to 500g."))
+                    .font(.callout).foregroundStyle(.red)
             }
             HStack {
                 Spacer()
                 Button(L10n.t("Cancel"), action: cancel).keyboardShortcut(.cancelAction)
                 Button(L10n.t("Save")) { commit() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!fields.canSave || ago == .invalid)
+                    .disabled(!fields.canSave)
             }
+            .controlSize(.large)
         }
-        .formStyle(.grouped)
+        .padding(20)
+        .frame(width: 440)
+        .fixedSize(horizontal: false, vertical: true)
         .scaleEffect(saved && !reduceMotion ? 0.97 : 1)
         .animation(reduceMotion ? nil : .spring(duration: 0.25), value: saved)
-        .frame(width: 380)
-        .onAppear { focus = focusCarbs ? .carbs : .rapid }
+        .animation(reduceMotion ? nil : .default, value: quietLine)
+        .onAppear { focus = initialFocus }
+        .onChange(of: focusRequests?.count) {
+            if let field = focusRequests?.field, penAsk == nil { focus = field }
+        }
+        .alert(
+            L10n.t("Already logged by the pen?"),
+            isPresented: Binding(get: { penAsk != nil }, set: { if !$0 { penAsk = nil } }),
+            presenting: penAsk
+        ) { ask in
+            Button(L10n.t("Cancel"), role: .cancel) { keepInsulin(ask) }
+            Button(L10n.t("Log Anyway")) { finish(ask.entries) }
+        } message: { ask in
+            Text(Self.penLine(ask.pen))
+        }
     }
 
-    private func amount(_ label: String, _ unit: String, _ text: Binding<String>, _ kind: Treatment.Kind) -> some View {
-        HStack {
-            TextField(label, text: Binding(get: { text.wrappedValue }, set: { text.wrappedValue = TreatmentForm.filterAmount($0) }))
-                .focused($focus, equals: kind)
-                .accessibilityLabel(label)
-            Text(unit).foregroundStyle(.secondary).accessibilityHidden(true)
+    /// "8.5u rapid at 12:40".
+    static func penLine(_ t: Treatment) -> String {
+        let a = TreatmentsView.amount(t.a)
+        let at = Clock.time(Date(timeIntervalSince1970: TimeInterval(t.t)))
+        return t.k == .long ? L10n.t("\(a)u long-acting at \(at)") : L10n.t("\(a)u rapid at \(at)")
+    }
+
+    /// Cancel on the pen question: everything else of this save is saved; the insulin of the pen's kind stays typed.
+    private func keepInsulin(_ ask: (pen: Treatment, entries: [Treatment])) {
+        penAsk = nil
+        let rest = ask.entries.filter { $0.k != ask.pen.k }
+        if !rest.isEmpty { save(rest, false) }
+        let kept = fields
+        fields = TreatmentForm.Fields()
+        if ask.pen.k == .rapid { fields.rapid = kept.rapid } else { fields.long = kept.long }
+        focus = ask.pen.k
+    }
+
+    private func finish(_ entries: [Treatment]) {
+        penAsk = nil
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+        saved = true
+        save(entries, true)
+    }
+
+    private func kindLabel(_ k: Treatment.Kind) -> some View {
+        Label(TreatmentKindLook.name(k), systemImage: TreatmentKindLook.symbol(k))
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+    }
+
+    private func amount(_ k: Treatment.Kind, _ text: Binding<String>) -> some View {
+        let invalid = TreatmentForm.parse(text.wrappedValue, grams: k == .carbs) == .invalid
+        return VStack(alignment: .leading, spacing: 4) {
+            kindLabel(k)
+            HStack(spacing: 4) {
+                TextField(
+                    TreatmentKindLook.name(k),
+                    text: Binding(
+                        get: { text.wrappedValue }, set: { text.wrappedValue = TreatmentForm.filterAmount($0) }),
+                    prompt: Text(verbatim: "0")
+                )
+                .textFieldStyle(.roundedBorder)
+                .focused($focus, equals: k)
+                .onSubmit(commit)
+                .accessibilityLabel(TreatmentKindLook.name(k))
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(invalid ? Color.red : .clear))
+                Text(TreatmentKindLook.unit(k)).foregroundStyle(.secondary).accessibilityHidden(true)
+            }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func commit() {
-        guard case .valid(let agoS) = ago else { return }
+        // one Return can reach both the field's submit and the default button: save once
+        guard fields.canSave, !saved else { return }
         let d = now()
-        let t = Int64(d.timeIntervalSince1970) - Int64(agoS ?? 0)
+        let t = when.resolve(now: Int64(d.timeIntervalSince1970))
         let entries = fields.treatments(at: t, u: TreatmentsModel.millis(d))
-        guard !entries.isEmpty else { return }
-        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
-        saved = true
-        save(entries)
+        guard !entries.isEmpty, penAsk == nil else { return }
+        if let pen = penDuplicate(entries) {
+            penAsk = (pen, entries)
+            return
+        }
+        finish(entries)
+    }
+
+    /// The chip: "Now", "15 min ago", "Today 14:05", "Yesterday 23:10".
+    static func whenLabel(_ when: TreatmentForm.When, now: Date) -> String {
+        switch when {
+        case .now: return L10n.t("Now")
+        case .ago(let m): return L10n.t("\(Durations.text(m)) ago")
+        case .at(let t):
+            let d = Date(timeIntervalSince1970: TimeInterval(t))
+            return Calendar.current.isDate(d, inSameDayAs: now)
+                ? L10n.t("Today \(Clock.time(d))") : L10n.t("Yesterday \(Clock.time(d))")
+        }
     }
 }
 
-/// The Treatments window: entries newest first with their delivery state, Retry, delete with a 10 s undo toast / ⌘Z.
+/// *When?*: a clock time (later than now = yesterday) or minutes ago with 5 / 15 / 30 / 60 presets; Now, Cancel, OK.
+struct WhenPicker: View {
+    let when: TreatmentForm.When
+    /// The choice, or nil for Cancel.
+    let done: (TreatmentForm.When?) -> Void
+    @State private var date = Date()
+    @State private var relative = false
+    @State private var minutes = ""
+    @FocusState private var minutesFocus: Bool
+
+    var body: some View {
+        let typed = TreatmentForm.When.fromPicker(minutesAgo: minutes)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.t("When?")).font(.headline)
+            Picker(L10n.t("When?"), selection: $relative) {
+                Text(L10n.t("Time")).tag(false)
+                Text(L10n.t("Minutes ago")).tag(true)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            if relative {
+                HStack(spacing: 6) {
+                    TextField(
+                        L10n.t("Minutes ago"),
+                        text: Binding(get: { minutes }, set: { minutes = TreatmentForm.filterMinutes($0) })
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 70)
+                    .focused($minutesFocus)
+                    Text(verbatim: "min").foregroundStyle(.secondary).accessibilityHidden(true)
+                }
+                HStack(spacing: 6) {
+                    ForEach(TreatmentForm.agoPresets, id: \.self) { m in
+                        let on = typed == .ago(m)
+                        Button(Durations.text(m)) { minutes = "\(m)" }
+                            .buttonStyle(on ? AnyPrimitiveButtonStyle(.borderedProminent) : .init(.bordered))
+                    }
+                }
+                .controlSize(.small)
+            } else {
+                DatePicker(L10n.t("Time"), selection: $date, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.stepperField)
+                    .labelsHidden()
+            }
+            HStack {
+                Button(L10n.t("Now")) { done(.now) }
+                Spacer()
+                Button(L10n.t("Cancel")) { done(nil) }.keyboardShortcut(.cancelAction)
+                Button(L10n.t("OK")) {
+                    if relative {
+                        done(typed)
+                    } else {
+                        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+                        done(.fromPicker(hour: c.hour ?? 0, minute: c.minute ?? 0, now: Date()))
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(relative && typed == nil)
+            }
+        }
+        .padding(14)
+        .frame(width: 280)
+        .onAppear {
+            switch when {
+            case .now: break
+            case .at(let t): date = Date(timeIntervalSince1970: TimeInterval(t))
+            case .ago(let m):
+                relative = true
+                minutes = "\(m)"
+            }
+        }
+        .onChange(of: relative) { _, r in if r { minutesFocus = true } }
+    }
+}
+
+/// A button style chosen at run time (the preset that matches the typed minutes is prominent).
+struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
+    private let make: (Configuration) -> AnyView
+    init<S: PrimitiveButtonStyle>(_ style: S) { make = { AnyView(style.makeBody(configuration: $0)) } }
+    func makeBody(configuration: Configuration) -> some View { make(configuration) }
+}
+
+/// The Treatments window: the last 7 days grouped by day, newest first, each entry with its kind's symbol, time,
+/// time since, delivery state (Retry), who logged it (tooltip), and for the entries this Mac wrote Edit… and Delete
+/// (buttons and the context menu) with a 10 s undo toast / ⌘Z. Arriving entries slide in.
 public struct TreatmentsView: View {
     @Bindable var model: TreatmentsModel
     var add: () -> Void
+    var now: () -> Date = Date.init
+    /// The entry Edit… opened (the sheet over the window).
+    @State private var editing: TreatmentsModel.Row?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(model: TreatmentsModel, add: @escaping () -> Void) {
         self.model = model
@@ -85,62 +356,148 @@ public struct TreatmentsView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            if model.rows.isEmpty {
-                ContentUnavailableView(L10n.t("No treatments yet"), systemImage: "syringe")
+            if TreatmentsModel.byDay(model.rows, now: now()).isEmpty {
+                ContentUnavailableView(
+                    L10n.t("No treatments in the last 7 days"), systemImage: "syringe",
+                    description: Text(L10n.t("Entries logged on the phone or here show up in this list.")))
             } else {
-                List(model.rows) { row in rowView(row) }
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    let days = TreatmentsModel.byDay(model.rows, now: context.date)
+                    List {
+                        ForEach(days, id: \.day) { group in
+                            Section(Self.dayTitle(group.day, now: context.date)) {
+                                ForEach(group.rows) { row in
+                                    rowView(row, now: context.date)
+                                        .transition(.move(edge: .top).combined(with: .opacity))
+                                }
+                            }
+                        }
+                    }
+                    .animation(reduceMotion ? nil : .snappy, value: model.rows.map(\.id))
+                }
+                .id(model.clockStyle)
             }
             if !model.canWrite {
                 Label(
                     model.isFollowing
                         ? L10n.t("The wearer hasn't allowed this Mac to add treatments")
                         : L10n.t("Follow someone to see and add their treatments"),
-                    systemImage: model.isFollowing ? "lock" : "person.badge.plus")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
+                    systemImage: model.isFollowing ? "lock" : "person.badge.plus"
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10)
             }
             if model.undoAvailable, let u = model.undo {
                 HStack {
-                    Text(L10n.t("Deleted \(Self.title(u.row.treatment))"))
+                    Text(
+                        u.kind == .deleted
+                            ? L10n.t("Deleted \(Self.title(u.shown))") : L10n.t("Changed to \(Self.title(u.shown))"))
                     Spacer()
-                    Button(L10n.t("Undo")) { Task { await model.undoDelete() } }
+                    Button(L10n.t("Undo")) { Task { await model.undoLast() } }
                         .keyboardShortcut("z", modifiers: .command)
                 }
                 .padding(10)
                 .background(.thinMaterial)
-                .task(id: u.row.id) {
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task(id: u.until) {
                     try? await Task.sleep(for: .seconds(TreatmentsModel.undoSeconds))
                     model.dismissUndo()
                 }
             }
         }
+        .animation(reduceMotion ? nil : .snappy, value: model.undo)
+        .sheet(item: $editing) { row in
+            EditTreatmentView(
+                treatment: row.treatment,
+                save: { amount, note, at in
+                    editing = nil
+                    Task { await model.edit(row, amount: amount, note: note, at: at) }
+                },
+                cancel: { editing = nil })
+        }
         .toolbar {
             Button(action: add) { Label(L10n.t("Add treatment"), systemImage: "plus") }
                 .disabled(!model.canWrite)
-                .help(model.canWrite ? L10n.t("Add treatment") : L10n.t("The wearer hasn't allowed this Mac to add treatments"))
+                .help(
+                    model.canWrite
+                        ? L10n.t("Add treatment") : L10n.t("The wearer hasn't allowed this Mac to add treatments"))
         }
-        .frame(minWidth: 420, minHeight: 360)
+        .frame(minWidth: 460, minHeight: 380)
     }
 
-    private func rowView(_ row: TreatmentsModel.Row) -> some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(Self.title(row.treatment))
-                Text(Clock.time(Date(timeIntervalSince1970: TimeInterval(row.treatment.t))))
-                    .foregroundStyle(.secondary)
+    /// One entry. VoiceOver reads the entry's lines as one element (who logged it as the hint); the doses, the
+    /// delivery's Retry, Edit and Delete stay elements of their own, so each can be reached and used.
+    private func rowView(_ row: TreatmentsModel.Row, now: Date) -> some View {
+        let t = row.treatment
+        let at = Date(timeIntervalSince1970: TimeInterval(t.t))
+        let loggedBy = Self.loggedBy(t, mine: model.isMine(row), wearer: model.wearer)
+        return HStack(spacing: 10) {
+            Image(systemName: TreatmentKindLook.symbol(t.k))
+                .frame(width: 20)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Self.title(t)).contentTransition(.numericText())
+                    if let pen = Self.penLine(t) { Text(pen).font(.callout).foregroundStyle(.secondary) }
+                    if t.k != .note, !t.n.isEmpty { Text(t.n).font(.callout).foregroundStyle(.secondary) }
+                    Text(Clock.time(at) + " · " + Self.since(at, now: now))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(loggedBy)
+                // the separator under the row starts at the text, not at a delivery label further right
+                .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                if let doses = t.pd, doses.count > 1 {
+                    DisclosureGroup(L10n.t("Doses")) {
+                        ForEach(Array(doses.enumerated()), id: \.offset) { _, d in
+                            HStack {
+                                Text(Self.doseText(d)).foregroundStyle(d.p ? .secondary : .primary)
+                                Spacer()
+                                Text(Clock.time(Date(timeIntervalSince1970: TimeInterval(d.t))))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .font(.callout)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Self.doseSpoken(d))
+                        }
+                    }
+                    .font(.callout)
+                }
             }
             Spacer()
             delivery(row)
             if model.canChange(row) {
-                Button { Task { await model.delete(row) } } label: { Image(systemName: "trash") }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(L10n.t("Delete \(Self.title(row.treatment))"))
+                Button {
+                    editing = row
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.t("Edit…"))
+                .accessibilityLabel(L10n.t("Edit \(Self.title(t))"))
+                Button {
+                    Task { await model.delete(row) }
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.t("Delete"))
+                .accessibilityLabel(L10n.t("Delete \(Self.title(t))"))
             }
         }
-        .frame(minHeight: 28)
-        .accessibilityElement(children: .combine)
+        .frame(minHeight: 30)
+        .help(loggedBy)
+        .accessibilityElement(children: .contain)
+        .contextMenu {
+            if model.canChange(row) {
+                Button(L10n.t("Edit…")) { editing = row }
+                Button(L10n.t("Delete"), role: .destructive) { Task { await model.delete(row) } }
+            }
+        }
     }
 
     @ViewBuilder private func delivery(_ row: TreatmentsModel.Row) -> some View {
@@ -157,9 +514,65 @@ public struct TreatmentsView: View {
         }
     }
 
+    /// "From the pen · 1.5u primed" ("From the pen" without priming); nil for an entry typed by hand.
+    static func penLine(_ t: Treatment) -> String? {
+        guard t.fromPen else { return nil }
+        guard let pr = t.pr, pr > 0 else { return L10n.t("From the pen") }
+        return L10n.t("From the pen · \(amount(pr))u primed")
+    }
+
+    /// One dose the pen recorded: "8u", "1u primed".
+    static func doseText(_ d: Treatment.PenDose) -> String {
+        d.p ? L10n.t("\(amount(d.a))u primed") : "\(amount(d.a))u"
+    }
+
+    /// VoiceOver: "12:37, 1 unit, primed".
+    static func doseSpoken(_ d: Treatment.PenDose) -> String {
+        let at = Clock.time(Date(timeIntervalSince1970: TimeInterval(d.t)))
+        return d.p
+            ? L10n.t("\(at), \(amount(d.a)) units, primed") : L10n.t("\(at), \(amount(d.a)) units")
+    }
+
+    /// "4.5", "12".
+    static func amount(_ a: Double) -> String {
+        a.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(a)) : String(format: "%.1f", a)
+    }
+
+    /// "Logged on Ana's phone", "Logged on this Mac", "Logged by a follower", "Read from the pen on Ana's phone";
+    /// `mine` = this Mac wrote it, `wearer` = the followed person's name (nil: "the wearer's phone").
+    static func loggedBy(_ t: Treatment, mine: Bool = false, wearer: String? = nil) -> String {
+        if t.fromPen {
+            return wearer.map { L10n.t("Read from the pen on \($0)'s phone") }
+                ?? L10n.t("Read from the pen on the wearer's phone")
+        }
+        if mine { return L10n.t("Logged on this Mac") }
+        switch t.o {
+        case .phone:
+            return wearer.map { L10n.t("Logged on \($0)'s phone") } ?? L10n.t("Logged on the wearer's phone")
+        case .mac: return L10n.t("Logged on a Mac")
+        case .follower: return L10n.t("Logged by a follower")
+        }
+    }
+
+    /// "now", "12m ago", "3h 5m ago".
+    static func since(_ at: Date, now: Date) -> String {
+        let min = Int(max(0, now.timeIntervalSince(at)) / 60)
+        return min < 1 ? L10n.t("just now") : L10n.t("\(Durations.compact(min, .current)) ago")
+    }
+
+    /// "Today", "Yesterday", "Monday 26 Oct".
+    static func dayTitle(_ day: Date, now: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDate(day, inSameDayAs: now) { return L10n.t("Today") }
+        if let y = cal.date(byAdding: .day, value: -1, to: now), cal.isDate(day, inSameDayAs: y) {
+            return L10n.t("Yesterday")
+        }
+        return day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated))
+    }
+
     /// "4.5u rapid insulin", "30g carbs", the note's text.
     static func title(_ t: Treatment) -> String {
-        let a = t.a.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(t.a)) : String(format: "%.1f", t.a)
+        let a = amount(t.a)
         switch t.k {
         case .rapid: return L10n.t("\(a)u rapid insulin")
         case .long: return L10n.t("\(a)u long-acting insulin")

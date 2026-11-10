@@ -2,25 +2,71 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- The monitor's components (docs/ARCHITECTURE.md "State + services"). Permissions are the app's (app manifest). -->
+<!-- The monitor's components (docs/ARCHITECTURE.md "State + services") and the permissions they use. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The alert runtime's own needs (also declared by :app): exact alarms and full-screen alarms. USE_EXACT_ALARM
+    <!-- MonitoringService: the one monitoring service of both roles, connectedDevice (not dataSync: a dataSync FGS is
+         capped at 6 h per 24 h on Android 15+). Its prerequisite CHANGE_NETWORK_STATE is granted at install, so a
+         follower without the Nearby devices permission can still run it (BLUETOOTH_CONNECT is a runtime one). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- the glucose notification, the alerts and the sensor reminders -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Live Update chip (promoted ongoing glucose notification, LiveNotification) and the sensor-end countdown -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- MonitorReceiver: monitoring and the alert check start again after a reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- the alert checklist's *No battery restrictions* (setup, Settings › Alert reliability): monitoring must not be
+         killed -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- sensor end in the calendar (opt-in, sensorend/SensorCalendar); Google Calendar is looked up to open it -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <queries>
+        <package android:name="com.google.android.calendar" />
+        <!-- Read glucose aloud (readaloud/ReadAloud): the phone's text-to-speech engine -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
+    <!-- The alert runtime's own needs: exact alarms and full-screen alarms. USE_EXACT_ALARM
          (granted at install, not revocable): the alert check must ring on time in Doze with the service dead —
          service/AlarmPolicy.kt explains the choice of setExactAndAllowWhileIdle over setAlarmClock. -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Lists Sukrara under Do Not Disturb access, so the person can let the alarm-level channels override a mode that
+         silences alarms (setBypassDnd only takes effect with that access; readiness/AndroidAlertReadiness). -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
+    <!-- Only this app may feed the System UI module (systemui/RootStatusBar → systemui/SystemUiHook): System UI's
+         receiver requires it of the sender. -->
+    <permission
+        android:name="${applicationId}.permission.SYSTEMUI_STATE"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="${applicationId}.permission.SYSTEMUI_STATE" />
 
     <application>
+        <!-- Read glucose aloud: the app shortcut's target, says the glucose and closes at once (no screen). Not
+             exported: the launcher starts Sukrara's own shortcut as Sukrara. -->
+        <activity
+            android:name=".readaloud.ReadAloudActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
         <!-- the one monitoring service of both roles; connectedDevice (not dataSync: capped at 6 h a day) -->
         <service
             android:name=".MonitoringService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
         <!-- boot, update, time changes, exact-alarm permission → check alerts, reschedule the health check, start the
-             service once. Not exported: the system broadcasts listed still arrive. -->
+             service once; time and language changes also redraw the widgets. Not exported: the system broadcasts
+             listed still arrive. -->
         <receiver
             android:name=".BootReceiver"
             android:exported="false">
@@ -29,7 +75,20 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <!-- Before the first unlock after a restart (docs/30-direct-boot.md): the only component that runs then
+             (directBootAware). Says monitoring waits for the unlock and rings as "No data" from the device-protected
+             plan; the boot after the unlock clears it. Never reads the app's credential-encrypted storage. -->
+        <receiver
+            android:name=".lockedboot.LockedBootReceiver"
+            android:directBootAware="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         <!-- the monitor's own alarms and intents: health check, freshness step, glucose notification swiped away -->
@@ -43,12 +102,32 @@
         <receiver
             android:name=".AlertActionReceiver"
             android:exported="false" />
-        <!-- System UI opens the channel sounds from here (no permission possible); it serves only bundled sounds. -->
+        <!-- System UI opens the channel sounds from here (no permission possible); it serves only bundled sounds.
+             directBootAware: the "No data" alarm before the first unlock plays its sound too (it reads only the
+             device-protected plan then). -->
         <provider
             android:name=".AlertSoundProvider"
             android:authorities="${applicationId}.alertsound"
+            android:directBootAware="true"
             android:exported="true"
             android:grantUriPermissions="false"
             tools:ignore="ExportedContentProvider" />
+        <!-- libxposed service: LSPosed hands the app its XposedService through this provider (LSPosed calls it, so no
+             permission is possible). What it reports is advisory: it only picks which hint the root page shows. -->
+        <provider
+            android:name="io.github.libxposed.service.XposedProvider"
+            android:authorities="${applicationId}.XposedService"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
+        <!-- Also an LSPosed module (libxposed API 102, scope System UI: resources/META-INF/xposed). System UI with the
+             module loaded says hello when it (re)starts; only System UI (STATUS_BAR_SERVICE) can send it. -->
+        <receiver
+            android:name=".systemui.HookHelloReceiver"
+            android:exported="true"
+            android:permission="android.permission.STATUS_BAR_SERVICE">
+            <intent-filter>
+                <action android:name="${applicationId}.SYSTEMUI_HELLO" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

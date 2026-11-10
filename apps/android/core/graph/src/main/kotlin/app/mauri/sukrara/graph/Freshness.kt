@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.GlucoseRange
+import app.mauri.sukrara.core.model.GlucoseUnit
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -14,7 +16,7 @@ import java.util.Locale
  *
  * | | age | value | time of the reading | graph |
  * |---|---|---|---|---|
- * | [FRESH] | ≤ 90 s | ✓ | – | ✓ |
+ * | [FRESH] | ≤ 90 s | ✓ | "now" ([saysNow]) | ✓ |
  * | [LATE] | ≤ 5 min | ✓ | ✓ | ✓ |
  * | [STALE] | ≤ 20 min | struck through, grey | ✓ | ✓ |
  * | [OLD] | ≤ 3 h | – ("no readings") | ✓ | ✓ |
@@ -35,6 +37,12 @@ enum class Freshness(
     OLD(false, true, false, true),
     GONE(false, true, false, false),
     ;
+
+    /**
+     * A card's value place says "now" where the time goes (beside the arrow, or in the pill's row): a fresh value reads
+     * as live, not just as "no time shown" (#70; contracts/graph/freshness `now`). Text-only places don't.
+     */
+    val saysNow: Boolean get() = this == FRESH
 
     /**
      * What a card WITHOUT a value (graph-only: the graph widget) shows of its data's age, so it never looks current
@@ -83,7 +91,15 @@ enum class Freshness(
         const val STALE_S = 5 * 60L
         const val OLD_S = 20 * 60L
         const val GONE_S = 3 * 3600L
-        private val STEPS = listOf(LATE_S, STALE_S, OLD_S, GONE_S)
+
+        /** From this age [timeText] names the day too: a bare clock time could be today's or yesterday's. */
+        const val DAY_S = 12 * 3600L
+
+        /** From this age [timeText] says the date instead: a weekday could be this week's or last week's. */
+        const val DATE_S = 6 * 86400L
+
+        /** Every age at which a surface's picture changes: the steps, then the time text's day and date. */
+        private val STEPS = listOf(LATE_S, STALE_S, OLD_S, GONE_S, DAY_S, DATE_S)
 
         fun of(ageS: Long?): Freshness =
             when {
@@ -95,10 +111,13 @@ enum class Freshness(
                 else -> GONE
             }
 
-        /** The next age (s) at which [of] changes, so a surface knows when to redraw without a new reading. */
+        /**
+         * The next age (s) at which [of] or [timeText] changes, so a surface knows when to redraw without a new reading
+         * (else a widget last drawn at 3 h still says *No reading since 7:14* the next morning).
+         */
         fun nextChangeS(ageS: Long): Long? = STEPS.firstOrNull { it >= ageS }?.plus(1)
 
-        /** When (epoch s) the step of a reading taken at [t] changes next, seen at [nowS]; null = never again / none. */
+        /** When (epoch s) what a reading taken at [t] looks like changes next, seen at [nowS]; null = never again / none. */
         fun nextChangeAt(
             t: Long?,
             nowS: Long,
@@ -106,9 +125,11 @@ enum class Freshness(
 
         /**
          * THE look of the latest reading ([sgv] at [t], [rate] mg/dL/min) at [nowS], behind every card and glyph
-         * surface (the Mac's `Freshness.look` is the same rule; both run contracts/graph/freshness). [ended] = the
-         * sensor ended, [warmup] = a new sensor's warm-up time left ("42m"): their own states, before any value.
-         * Surfaces ask `GlucoseCard.face`, not this.
+         * surface (the Mac's `Freshness.look` is the same rule; both run contracts/graph/freshness). [warmup] = a new
+         * sensor's warm-up time left ("42m"): its own state, before any value. [ended] = the sensor is past its end: while
+         * its readings keep arriving (the value is neither struck nor gone) the value with the [GlucoseLook.ended] flag,
+         * since whether a reading is valid is the sensor's own call and the alerts act on it (#3); once they stop, the
+         * ended state. The value is written in [unit] with [locale]'s decimal separator. Surfaces ask `GlucoseCard.face`.
          */
         fun look(
             sgv: Int?,
@@ -117,6 +138,8 @@ enum class Freshness(
             nowS: Long,
             ended: Boolean = false,
             warmup: String? = null,
+            unit: GlucoseUnit = GlucoseUnit.MGDL,
+            locale: Locale = Locale.getDefault(),
         ): GlucoseLook {
             val fr = of(t?.let { nowS - it })
             return when {
@@ -124,7 +147,7 @@ enum class Freshness(
                     GlucoseLook(GlucoseLook.State.WARMING_UP, fr, null, false, null, warmup)
                 }
 
-                ended -> {
+                ended && (sgv == null || t == null || !fr.showValue || fr.strike) -> {
                     GlucoseLook(GlucoseLook.State.ENDED, fr, null, false, null)
                 }
 
@@ -140,24 +163,32 @@ enum class Freshness(
                     GlucoseLook(
                         GlucoseLook.State.VALUE,
                         fr,
-                        valueText(sgv),
+                        valueText(sgv, unit, locale),
                         fr.strike,
                         if (rate != null && !fr.strike) TrendMark.ARROW else TrendMark.NONE,
                         rate = rate,
+                        ended = ended,
                     )
                 }
             }
         }
 
-        /** The value as text: the number, or LO / HI outside the sensor's 40–400 mg/dL. */
-        fun valueText(sgv: Int): String =
+        /** The value as text: the number in [unit] ("112", "6.2"), or LO / HI outside the sensor's 40–400 mg/dL. */
+        fun valueText(
+            sgv: Int,
+            unit: GlucoseUnit = GlucoseUnit.MGDL,
+            locale: Locale = Locale.getDefault(),
+        ): String =
             when {
-                sgv < 40 -> "LO"
-                sgv > 400 -> "HI"
-                else -> sgv.toString()
+                GlucoseRange.isLo(sgv) -> "LO"
+                GlucoseRange.isHi(sgv) -> "HI"
+                else -> unit.text(sgv, locale)
             }
 
-        /** "14:05" today, "Tue 14:05" this week, "12 Oct" before; the clock time in the phone's 12/24-hour setting. */
+        /**
+         * "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days ([timeKind]);
+         * the clock time in the phone's 12/24-hour setting.
+         */
         fun timeText(
             t: Long,
             nowS: Long,
@@ -165,14 +196,42 @@ enum class Freshness(
             zone: ZoneId = ZoneId.systemDefault(),
         ): String {
             val at = Instant.ofEpochSecond(t).atZone(zone)
-            val now = Instant.ofEpochSecond(nowS).atZone(zone)
             val time = Clock.time(t, locale = locale, zone = zone)
-            return when {
-                at.toLocalDate() == now.toLocalDate() -> time
-                nowS - t < 6 * 86400 -> at.dayOfWeek.getDisplayName(TextStyle.SHORT, locale) + " " + time
-                else -> "${at.dayOfMonth} ${at.month.getDisplayName(TextStyle.SHORT, locale)}"
+            return when (timeKind(t, nowS, zone)) {
+                TimeKind.TIME -> time
+                TimeKind.DAY -> at.dayOfWeek.getDisplayName(TextStyle.SHORT, locale) + " " + time
+                TimeKind.DATE -> "${at.dayOfMonth} ${at.month.getDisplayName(TextStyle.SHORT, locale)}"
             }
         }
+
+        /**
+         * Which form [timeText] writes for [t] seen at [nowS] (contracts/graph/freshness `times`): the clock time alone
+         * while it is today's and at most [DAY_S] old, the day with it from then or on another day, the date after
+         * [DATE_S]. A future time (a sensor's *Ready at*) is a clock time unless it falls on another day.
+         */
+        fun timeKind(
+            t: Long,
+            nowS: Long,
+            zone: ZoneId = ZoneId.systemDefault(),
+        ): TimeKind {
+            val day = Instant.ofEpochSecond(t).atZone(zone).toLocalDate()
+            val today = Instant.ofEpochSecond(nowS).atZone(zone).toLocalDate()
+            val age = nowS - t
+            return when {
+                day == today && age <= DAY_S -> TimeKind.TIME
+                age <= DATE_S -> TimeKind.DAY
+                else -> TimeKind.DATE
+            }
+        }
+    }
+
+    /** [timeText]'s three forms ("14:05", "Tue 14:05", "12 Oct"), by their contract names. */
+    enum class TimeKind(
+        val key: String,
+    ) {
+        TIME("time"),
+        DAY("day"),
+        DATE("date"),
     }
 }
 
@@ -197,7 +256,8 @@ enum class TrendMark {
 
 /**
  * [Freshness.look]'s answer: the [state]; for a value its [text] (number or LO / HI), whether it's [strike]n through
- * and grey, and its [trend] (null without a value); [fresh] for the time and the chart.
+ * and grey, its [trend] (null without a value) and whether the sensor has [ended] while its readings keep arriving (the
+ * card adds the "Ended · Replace sensor" pill); [fresh] for the time and the chart.
  */
 data class GlucoseLook(
     val state: State,
@@ -207,6 +267,7 @@ data class GlucoseLook(
     val trend: TrendMark?,
     val warmup: String? = null,
     val rate: Double? = null,
+    val ended: Boolean = false,
 ) {
     enum class State {
         /** A value to show (fresh, late or struck through). */
@@ -218,7 +279,7 @@ data class GlucoseLook(
         /** No reading at all yet. */
         NONE,
 
-        /** The sensor has ended. */
+        /** The sensor has ended and its readings have stopped (struck or gone): a fresh one shows as a [VALUE]. */
         ENDED,
 
         /** A new sensor warming up: its time left ([warmup]) where the number goes. */

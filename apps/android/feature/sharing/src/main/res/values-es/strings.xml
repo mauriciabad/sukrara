@@ -8,6 +8,10 @@
     <string name="sh_setup_cancel">Cancelar</string>
     <string name="sh_setup_continue">Continuar</string>
     <string name="sh_setup_later">Más tarde</string>
+    <string name="sh_setup_test_title">Enviar una alerta de prueba</string>
+    <string name="sh_setup_test_body">La alerta real, marcada como prueba. Pruébala con No molestar activado.</string>
+    <string name="sh_setup_test_sent">Enviada: mira tus notificaciones. Se va sola en 2 min.</string>
+    <string name="sh_setup_test_send">Enviar</string>
     <string name="sh_setup_skip">Omitir</string>
     <string name="sh_setup_start">Empezar</string>
     <string name="sh_setup_allow">Permitir</string>
@@ -22,10 +26,26 @@
     <string name="sh_setup_role_wearer_means">Este móvil lee tu sensor y lo comparte.</string>
     <string name="sh_setup_role_follower">Sigo a alguien</string>
     <string name="sh_setup_role_follower_means">Este móvil muestra la glucosa de otra persona.</string>
-    <string name="sh_setup_role_follower_later">Seguir desde Android llegará en una versión posterior. Usa Sukrara para Mac para seguir.</string>
     <string name="sh_setup_role_confirm_title">¿%1$s?</string>
     <string name="sh_setup_role_confirm_text">Un papel por instalación. Para cambiarlo después hay que reinstalar Sukrara.</string>
     <string name="sh_setup_role_confirm">Confirmar</string>
+    <string name="sh_setup_role_delete_title">¿Borrar el historial anterior?</string>
+    <string name="sh_setup_role_delete_text">Has elegido «%1$s». Esto borra lo que este móvil guardaba de antes: %2$s, %3$s. No se puede deshacer. Para guardar una copia, exporta antes un archivo CSV.</string>
+    <plurals name="sh_setup_role_delete_readings">
+        <item quantity="one">%1$s lectura de glucosa</item>
+        <item quantity="many">%1$s lecturas de glucosa</item>
+        <item quantity="other">%1$s lecturas de glucosa</item>
+    </plurals>
+    <plurals name="sh_setup_role_delete_treatments">
+        <item quantity="one">%1$s tratamiento</item>
+        <item quantity="many">%1$s tratamientos</item>
+        <item quantity="other">%1$s tratamientos</item>
+    </plurals>
+    <string name="sh_setup_role_delete_and">%1$s y %2$s</string>
+    <string name="sh_setup_role_delete_range">del %1$s al %2$s</string>
+    <string name="sh_setup_role_delete_day">del %1$s</string>
+    <string name="sh_setup_role_delete_export">Exportar CSV antes</string>
+    <string name="sh_setup_role_delete_confirm">Borrar y continuar</string>
     <string name="sh_setup_permissions_title">Que las alertas te lleguen</string>
     <string name="sh_setup_permissions_body">Tus alertas necesitan esto. La misma lista se queda en la pantalla de inicio hasta que todo esté permitido.</string>
     <string name="sh_setup_permissions_continue_anyway">Continuar igualmente</string>
@@ -65,7 +85,7 @@
     <string name="sh_fresh_body">Una identidad nueva para este móvil. Vuelves a invitar a tus seguidores.</string>
     <string name="sh_fresh_action">Empezar de cero</string>
     <string name="sh_fresh_confirm_title">¿Empezar de cero?</string>
-    <string name="sh_fresh_confirm_text">Tus seguidores (y tu Mac) necesitarán una invitación nueva. Tu identidad anterior no se podrá traer a este móvil después sin reinstalar.</string>
+    <string name="sh_fresh_confirm_text">Tus seguidores (y tu Mac) necesitarán una invitación nueva. Para volver a usar tu identidad anterior, restáurala en Ajustes › Compartir › Copia de seguridad › Sustituir esta identidad.</string>
     <string name="sh_fresh_confirm">Empezar de cero</string>
     <string name="sh_conflict_title">Otra app está compartiendo como tú</string>
     <string name="sh_conflict_body">Otro móvil sigue compartiendo con tu identidad. Sukrara ha pausado los cambios en tus seguidores para que no se deshagan entre sí. Tus lecturas y alertas siguen funcionando aquí.</string>
@@ -85,8 +105,10 @@
     <string name="sh_share_create">Crear invitación</string>
     <string name="sh_share_try_again">Reintentar</string>
     <string name="sh_share_failed">No se ha podido crear la invitación. Revisa internet y que compartir esté configurado.</string>
+    <string name="sh_share_internet_off">Compartir por internet está desactivado. Un enlace de invitación y la solicitud que trae viajan por internet: actívalo para invitar a alguien, o usa Emparejar cerca en Ajustes › Compartir.</string>
+    <string name="sh_share_internet_turn_on">Activar compartir por internet</string>
     <string name="sh_share_qr_label">Código QR de la invitación. El enlace está debajo.</string>
-    <string name="sh_share_scan">Pídele que instale Sukrara, elija \"Sigo a alguien\" y escanee este código, o envíale el enlace.</string>
+    <string name="sh_share_scan">Envíale el enlace: lo abre en Sukrara en su teléfono o Mac. Sukrara en otro teléfono o en un Mac también puede escanear este código.</string>
     <string name="sh_share_note">Este enlace funciona una vez, hasta el %1$s. Envíalo solo a %2$s: quien lo abra primero puede pedir seguirte, y tú decides. No contiene ninguna clave de tu glucosa.</string>
     <string name="sh_share_note_unnamed">Este enlace funciona una vez, hasta el %1$s. Envíalo solo a la persona que invitas: quien lo abra primero puede pedir seguirte, y tú decides. No contiene ninguna clave de tu glucosa.</string>
     <string name="sh_share_send">Enviar enlace</string>
@@ -125,4 +147,320 @@
         <item quantity="many">%1$d seguidores</item>
         <item quantity="other">%1$d seguidores</item>
     </plurals>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_cube">Cubo</string>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_drop">Gota</string>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_dots">Puntos</string>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_rings">Anillos</string>
+    <!-- Avatar shape: the name's first letter -->
+    <string name="sh_avatar_shape_letter">Letra</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_teal">Verde azulado</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_lime">Lima</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_coral">Coral</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_purple">Morado</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_amber">Ámbar</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_sky">Azul cielo</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_pink">Rosa</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_grey">Gris</string>
+    <!-- Button: a new random picture -->
+    <string name="sh_avatar_shuffle">Otra al azar</string>
+    <!-- Button: show the picture options -->
+    <string name="sh_avatar_customize">Personalizar</string>
+    <!-- Button: hide the picture options -->
+    <string name="sh_avatar_done">Listo</string>
+    <!-- Button: rotate the picture's colours -->
+    <string name="sh_avatar_turn_colours">Girar los colores</string>
+    <!-- Page title: your name and picture as followers see them -->
+    <string name="sh_profile_title">Cómo te ven</string>
+    <!-- Field: the person's name -->
+    <string name="sh_profile_name">Tu nombre</string>
+    <!-- Note under the profile editor -->
+    <string name="sh_profile_privacy">Solo las personas con las que compartes ven tu nombre y tu imagen. Viajan cifrados y nunca se publican.</string>
+    <!-- How you appear: when followers see the change -->
+    <string name="sh_profile_followers_note">Tus seguidores verán el cambio la próxima vez que su app se conecte.</string>
+    <!-- How you appear: save refused -->
+    <string name="sh_profile_save_failed">No se pudo guardar: compartir está en pausa mientras otra app comparte como tú. Tus cambios siguen aquí.</string>
+    <!-- Button: save the profile -->
+    <string name="sh_profile_save">Guardar</string>
+    <!-- Profile row without a name -->
+    <string name="sh_profile_add_name">Añade tu nombre</string>
+    <!-- Profile row summary; %1$s = "2 followers" -->
+    <string name="sh_profile_row_summary">%1$s · Cómo te ven</string>
+    <!-- Approve, leaked link: field for the code on the follower's phone -->
+    <string name="sh_approve_type_code">Código de su teléfono</string>
+    <!-- Approve: typed code differs -->
+    <string name="sh_approve_code_wrong">Ese no es el código de su teléfono.</string>
+    <!-- Approve: Allow didn't work -->
+    <string name="sh_approve_failed">No se pudo dar acceso: la invitación caducó o ya se usó. Envía una nueva.</string>
+    <!-- Approve: decide later (the request keeps waiting) -->
+    <string name="sh_approve_later">Más tarde</string>
+    <!-- Approve: the invite card's heading -->
+    <string name="sh_approve_your_invite">Tu invitación</string>
+    <!-- Approve: invite without a label -->
+    <string name="sh_approve_no_label">Invitación sin nombre</string>
+    <!-- Approve: the name looks like the invite's label (a hint) -->
+    <string name="sh_approve_label_matches">El nombre coincide</string>
+    <!-- Approve: the name differs from the invite's label -->
+    <string name="sh_approve_label_differs">Otro nombre</string>
+    <!-- Approve: %1$s = invite time, %2$s = request time -->
+    <string name="sh_approve_sent_asked">Enviada %1$s · pedida %2$s</string>
+    <!-- Approve: %1$s = request time -->
+    <string name="sh_approve_asked">Pedida %1$s</string>
+    <!-- Backup page title / row -->
+    <string name="sh_backup_title">Copia de seguridad</string>
+    <!-- Backup row: backed up -->
+    <string name="sh_backup_row_done">Hecha</string>
+    <!-- Backup row: not backed up -->
+    <string name="sh_backup_row_missing">Sin copia: con un teléfono nuevo perderías a tus seguidores</string>
+    <!-- Follower row: may add entries -->
+    <string name="sh_followers_can_add">Puede añadir entradas</string>
+    <!-- Follower row: only sees -->
+    <string name="sh_followers_sees_only">Solo ve</string>
+    <!-- Button: show removed followers -->
+    <string name="sh_followers_removed_show">Eliminados</string>
+    <!-- Button: fold removed followers -->
+    <string name="sh_followers_removed_hide">Ver menos</string>
+    <!-- Group title: removed followers -->
+    <string name="sh_followers_removed">Eliminados</string>
+    <!-- Removed follower; %1$s = date -->
+    <string name="sh_followers_removed_at">Eliminado el %1$s</string>
+    <!-- Switch: follower may add entries -->
+    <string name="sh_followers_writer">Puede añadir entradas</string>
+    <!-- Switch summary -->
+    <string name="sh_followers_writer_summary">Las comidas, la insulina y las notas que añada aparecen en tu registro.</string>
+    <!-- Writer switch refused -->
+    <string name="sh_followers_writer_refused">No se pudo cambiar: compartir está en pausa mientras otra app comparte como tú.</string>
+    <!-- Backup intro, backed up -->
+    <string name="sh_backup_intro_saved">Tu identidad para compartir está guardada fuera de este teléfono. En un teléfono nuevo, restáurala y tus seguidores te seguirán viendo.</string>
+    <!-- Backup intro, not backed up -->
+    <string name="sh_backup_intro_missing">Tu identidad para compartir solo existe en este teléfono. Si lo pierdes, todos necesitarían una nueva invitación.</string>
+    <!-- Row: save to password manager -->
+    <string name="sh_backup_save">Guardar en el gestor de contraseñas</string>
+    <!-- Row: save again -->
+    <string name="sh_backup_save_again">Volver a guardar en el gestor de contraseñas</string>
+    <!-- Saved; %1$s = date -->
+    <string name="sh_backup_saved_at">Guardada el %1$s</string>
+    <!-- Row summary -->
+    <string name="sh_backup_recommended">Recomendado: restaura en un teléfono nuevo con un toque</string>
+    <!-- Row / dialog: recovery code -->
+    <string name="sh_recovery_title">Código de recuperación</string>
+    <!-- Row summary -->
+    <string name="sh_recovery_summary">Un código protegido con tu contraseña, para guardarlo en un lugar seguro</string>
+    <!-- Recovery code kept; %1$s = date -->
+    <string name="sh_recovery_kept_at">Copiado el %1$s</string>
+    <!-- Row: the encrypted backup on relays -->
+    <string name="sh_backup_relays">Lista de seguidores en los relays</string>
+    <!-- %1$s = date -->
+    <string name="sh_backup_relays_updated">Actualizada el %1$s (cifrada)</string>
+    <!-- Not yet on relays -->
+    <string name="sh_backup_relays_not_yet">Aún no se ha subido: se sube cuando el teléfono tiene conexión</string>
+    <!-- Save result -->
+    <string name="sh_backup_saved">Guardada en tu gestor de contraseñas.</string>
+    <!-- Save result -->
+    <string name="sh_backup_cancelled">No se guardó: cerraste el gestor de contraseñas.</string>
+    <!-- Save result -->
+    <string name="sh_backup_failed">Tu gestor de contraseñas no pudo guardarla. Inténtalo de nuevo o crea un código de recuperación.</string>
+    <!-- Save result -->
+    <string name="sh_backup_no_identity">Aún no hay identidad para compartir que guardar.</string>
+    <!-- Backup footer -->
+    <string name="sh_backup_footer">Los relays solo guardan tu lista de seguidores, cifrada. Sin la entrada del gestor de contraseñas o el código de recuperación nadie puede restaurarla, ni siquiera tú.</string>
+    <!-- Backup › Replace this identity (restore another or start fresh over a working one) -->
+    <string name="sh_replace_title">Sustituir esta identidad</string>
+    <string name="sh_replace_summary">Restaura otra identidad o empieza de cero. Cada seguidor necesitará una invitación nueva.</string>
+    <string name="sh_replace_intro">Este móvil comparte tu glucosa como una identidad. Sustituirla termina de compartir como esta, para cada móvil y Mac que la sigue.</string>
+    <string name="sh_replace_lose_title">Lo que pierden tus seguidores</string>
+    <string name="sh_replace_lose_named">Tu glucosa deja de llegar a %1$s al instante.</string>
+    <string name="sh_replace_lose_none">Ahora nadie sigue esta identidad.</string>
+    <string name="sh_replace_lose_invite">Su Sukrara dice que dejaste de compartir, no que no llegan datos. Cada uno necesita una invitación nueva tuya para volver a seguirte.</string>
+    <string name="sh_replace_lose_pending">Las solicitudes pendientes y las invitaciones sin usar dejan de funcionar.</string>
+    <string name="sh_replace_not_backed_up">Esta identidad no tiene copia de seguridad: una vez sustituida, se pierde para siempre.</string>
+    <string name="sh_replace_back_up_first">Hacer copia primero</string>
+    <string name="sh_replace_restore">Restaurar otra identidad</string>
+    <string name="sh_replace_restore_summary">Desde su código de recuperación o tu gestor de contraseñas. Sus seguidores pasan a este móvil.</string>
+    <string name="sh_replace_fresh">Empezar de cero</string>
+    <string name="sh_replace_fresh_summary">Una identidad nueva con tu nombre e imagen actuales. Nadie la sigue hasta que invites a alguien.</string>
+    <string name="sh_replace_restore_action">Sustituir por esta identidad</string>
+    <string name="sh_replace_back">Atrás</string>
+    <string name="sh_replace_confirm_title_restore">¿Sustituir esta identidad?</string>
+    <string name="sh_replace_confirm_title_fresh">¿Empezar de cero?</string>
+    <string name="sh_replace_confirm_check">Entiendo que habrá que volver a invitarlos</string>
+    <string name="sh_replace_confirm_restore">Sustituir</string>
+    <string name="sh_replace_fresh_busy">Creando la identidad nueva…</string>
+    <string name="sh_replace_telling">Avisando a tus seguidores…</string>
+    <string name="sh_replace_telling_text">Así su Sukrara dice que dejaste de compartir en vez de avisar de que no llegan datos. Tarda unos segundos; después se sustituye la identidad.</string>
+    <string name="sh_replace_telling_count">%1$d de %2$d avisados</string>
+    <string name="sh_replace_cancelled">Cancelado. No ha cambiado nada: tus seguidores siguen recibiendo tu glucosa.</string>
+    <string name="sh_replace_fresh_failed">No se ha podido crear la identidad nueva. No ha cambiado nada: vuelve a intentarlo.</string>
+    <string name="sh_replace_done_restore">Sustituida. %1$d seguidores de la identidad restaurada siguen ahora este móvil.</string>
+    <string name="sh_replace_done_fresh">Has empezado de cero. Nadie sigue este móvil todavía: vuelve a invitar a tus seguidores.</string>
+    <string name="sh_replace_invite">Invitar a alguien</string>
+    <string name="sh_replace_done">Listo</string>
+    <string name="sh_restore_err_same">Ese código es de la identidad con la que este móvil ya comparte. No ha cambiado nada.</string>
+    <!-- Recovery dialog text -->
+    <string name="sh_recovery_text">Elige una contraseña. El código solo funciona con ella; guárdalos por separado.</string>
+    <!-- Field -->
+    <string name="sh_recovery_password">Contraseña</string>
+    <!-- %1$d = minimum length -->
+    <string name="sh_recovery_password_rule">Al menos %1$d caracteres</string>
+    <!-- Recovery code being made -->
+    <string name="sh_recovery_working">Creando el código…</string>
+    <!-- Recovery code failed -->
+    <string name="sh_recovery_failed">No se pudo crear el código. Inténtalo de nuevo.</string>
+    <!-- Under the shown code -->
+    <string name="sh_recovery_keep">Guárdalo en un lugar seguro. Quien tenga el código y la contraseña puede compartir como tú.</string>
+    <!-- Button -->
+    <string name="sh_recovery_create">Crear código</string>
+    <!-- Button -->
+    <string name="sh_recovery_copy_close">Copiar y cerrar</string>
+    <!-- Sharing paused (another app shares as you) -->
+    <string name="sh_paused_title">Compartir está en pausa</string>
+    <!-- Sharing paused body -->
+    <string name="sh_paused_body">Otra app está compartiendo como tú. Ajustes › Compartir explica cómo solucionarlo.</string>
+    <!-- Button: restore from the password manager -->
+    <string name="sh_restore_manager">Restaurar desde el gestor de contraseñas</string>
+    <!-- No saved identity -->
+    <string name="sh_restore_manager_none">Tu gestor de contraseñas no tiene ninguna identidad de Sukrara guardada en esta cuenta.</string>
+    <!-- Password manager error -->
+    <string name="sh_restore_manager_failed">Tu gestor de contraseñas no respondió. Inténtalo de nuevo o pega el código de recuperación.</string>
+    <!-- Start fresh needs a name -->
+    <string name="sh_fresh_needs_name">Añade tu nombre para empezar.</string>
+    <!-- Page title: an invite link opened on this phone -->
+    <string name="sh_invite_here_page">Invitación</string>
+    <!-- Invite opened on an Android phone -->
+    <string name="sh_invite_here_title">Este teléfono comparte sus propias lecturas</string>
+    <!-- Why it can not be used here -->
+    <string name="sh_invite_here_body">Esta invitación es para el teléfono o Mac que va a seguir. Envía el enlace a ese dispositivo; la invitación sigue sin usar hasta entonces.</string>
+    <!-- Button: copy the invite link -->
+    <string name="sh_invite_here_copy">Copiar enlace</string>
+    <!-- Allow didnt happen; %1$s = name -->
+    <string name="sh_approve_refused_title">%1$s no tiene acceso</string>
+    <!-- Allow refused while another app shares as you -->
+    <string name="sh_approve_refused_paused">Compartir está en pausa mientras otra app comparte como tú. Soluciónalo en Ajustes › Compartir y envía una nueva invitación.</string>
+    <!-- The password manager returned something else -->
+    <string name="sh_restore_manager_not_identity">Esa contraseña guardada no es una identidad de Sukrara. Elige la entrada «Sukrara · npub…» o pega el código de recuperación.</string>
+    <string name="sh_join_title">Seguir a alguien</string>
+    <string name="sh_join_body">Pide a la persona que lleva el sensor que abra Sukrara, toque Compartir y te envíe el enlace de invitación. Pégalo aquí o escanea el código QR de su teléfono.</string>
+    <string name="sh_join_link">Enlace de invitación</string>
+    <string name="sh_join_name">Tu nombre</string>
+    <string name="sh_join_name_hint">Para que sepa quién lo pide. Opcional.</string>
+    <string name="sh_join_action">Unirme</string>
+    <string name="sh_join_looking">Buscando la invitación…</string>
+    <string name="sh_join_someone">la persona que te invitó</string>
+    <string name="sh_join_waiting">Esperando a que %1$s te dé acceso</string>
+    <string name="sh_join_active">Sigues a %1$s</string>
+    <string name="sh_join_code_hint">Si te pide un código, dile:</string>
+    <string name="sh_join_waiting_note">%1$s recibe una notificación para darte acceso. Sus lecturas aparecerán en inicio en cuanto lo haga; mientras, puedes seguir con la configuración.</string>
+    <string name="sh_join_declined">%1$s no te ha dado acceso. Pídele un enlace nuevo y pégalo aquí.</string>
+    <string name="sh_join_used">Otro teléfono usó antes esta invitación de %1$s. Pídele un enlace nuevo y pégalo aquí.</string>
+    <string name="sh_join_revoked">%1$s ha dejado de compartir contigo. Pega un enlace nuevo para volver a seguirle.</string>
+    <string name="sh_join_err_invalid">No es un enlace de invitación de Sukrara. Empieza por https://sukrara.mauri.app/join#</string>
+    <string name="sh_join_err_not_found">No se ha encontrado esta invitación. Puede que la hayan cancelado: pide un enlace nuevo.</string>
+    <string name="sh_join_err_offline">No hay conexión a internet. Revisa la conexión y vuelve a intentarlo.</string>
+    <string name="sh_join_err_expired">Esta invitación ha caducado. Pide un enlace nuevo.</string>
+    <string name="sh_join_err_wrong">Esta invitación no coincide con su enlace. Pide un enlace nuevo.</string>
+    <string name="sh_join_err_already">Este teléfono ya sigue a alguien. Deja de seguirle primero en Ajustes › Compartir.</string>
+    <string name="sh_join_err_store">No se ha podido guardar la clave en este teléfono. Vuelve a intentarlo.</string>
+    <!-- The invite was found: who is inviting, before anything is sent -->
+    <string name="sh_join_confirm_title">¿Seguir a %1$s?</string>
+    <string name="sh_join_confirm_body">%1$s te ha invitado a ver su glucosa. Seguir pide a %1$s que dé acceso a este teléfono; no se comparte nada hasta que lo haga.</string>
+    <string name="sh_join_confirm_note">Este nombre y esta imagen vienen de la invitación. Sigue solo si sabes quién te ha enviado este enlace.</string>
+    <string name="sh_join_follow">Seguir</string>
+    <string name="sh_following_title">Siguiendo</string>
+    <string name="sh_following_waiting">Esperando a que %1$s te dé acceso</string>
+    <string name="sh_following_active">Sigues a %1$s</string>
+    <string name="sh_following_code">Si te pide un código: %1$s</string>
+    <string name="sh_following_last_heard">Última lectura recibida %1$s</string>
+    <string name="sh_following_never">Aún no ha llegado ninguna lectura</string>
+    <string name="sh_following_can_write">Puedes añadir entradas a su registro</string>
+    <string name="sh_following_cannot_write">Solo esa persona puede añadir entradas a su registro</string>
+    <string name="sh_following_relays">Conectado a %1$d de %2$d relays</string>
+    <string name="sh_following_relays_off">Sin conexión (la monitorización no está en marcha)</string>
+    <string name="sh_following_stop">Dejar de seguir</string>
+    <string name="sh_following_stop_title">¿Dejar de seguir a %1$s?</string>
+    <string name="sh_following_stop_text">Sus lecturas, entradas y alertas se borran de este teléfono. Para volver a seguirle necesitas un enlace de invitación nuevo.</string>
+    <string name="sh_following_stop_failed">No se ha podido borrar la clave de este teléfono. Vuelve a intentarlo.</string>
+    <string name="sh_following_unreadable">Este teléfono no puede abrir ahora la clave de seguidor. Sukrara sigue intentándolo; sus lecturas guardadas y las alertas se mantienen. Si no se recupera, deja de seguir y vuelve a unirte.</string>
+    <string name="sh_following_damaged">La clave de seguidor de este teléfono está dañada. Deja de seguir y vuelve a unirte con un enlace nuevo.</string>
+    <string name="sh_following_join_again">Unirme con un enlace nuevo</string>
+    <!-- Bluetooth cercano (portador: Ajustes › Compartir; seguidor: página Siguiendo) -->
+    <string name="sh_nearby_group">Cómo llegan las lecturas</string>
+    <string name="sh_internet_title">Por internet</string>
+    <string name="sh_internet_on">Cifrado, a través de relés Nostr</string>
+    <string name="sh_internet_off">Desactivado. Los seguidores que solo usan internet no ven lecturas nuevas.</string>
+    <string name="sh_interval_title">Intervalo de subida</string>
+    <string name="sh_interval_every_reading">Cada lectura</string>
+    <string name="sh_interval_every">Cada %1$s</string>
+    <string name="sh_interval_unavailable">Compartir por internet está desactivado</string>
+    <string name="sh_nearby_title">Por Bluetooth cerca</string>
+    <string name="sh_nearby_off">Desactivado. Los seguidores reciben las lecturas por internet.</string>
+    <string name="sh_nearby_off_no_internet">Desactivado. Los seguidores no reciben lecturas nuevas.</string>
+    <string name="sh_nearby_bluetooth_off">El Bluetooth está desactivado</string>
+    <string name="sh_nearby_permission">Necesita el permiso de Dispositivos cercanos</string>
+    <string name="sh_nearby_unsupported">Este teléfono no puede compartir por Bluetooth</string>
+    <plurals name="sh_nearby_connected">
+        <item quantity="one">%d dispositivo conectado cerca</item>
+        <item quantity="other">%d dispositivos conectados cerca</item>
+    </plurals>
+    <string name="sh_nearby_connected_phone">conectado a su teléfono</string>
+    <string name="sh_nearby_waiting">Activado · ningún dispositivo seguidor cerca</string>
+    <string name="sh_nearby_searching">buscando su teléfono</string>
+    <string name="sh_nearby_no_followers">Se activa cuando alguien te sigue</string>
+    <string name="sh_nearby_idle">sin conexión</string>
+    <string name="sh_nearby_allow">Permitir Dispositivos cercanos</string>
+    <string name="sh_nearby_allow_summary">Las lecturas pasan entre teléfonos cercanos, incluso sin internet</string>
+    <string name="sh_nearby_turn_on">Activar el Bluetooth</string>
+    <string name="sh_nearby_devices">Dispositivos cercanos</string>
+    <string name="sh_nearby_mac">Mac</string>
+    <string name="sh_nearby_phone">teléfono</string>
+    <string name="sh_nearby_device_name">%1$s · %2$s</string>
+    <string name="sh_nearby_device_connected">Conectado</string>
+    <string name="sh_nearby_device_disconnected">Desconectado</string>
+    <string name="sh_following_nearby">Bluetooth: %1$s</string>
+    <string name="sh_pair_nearby">Emparejar cerca</string>
+    <string name="sh_pair_nearby_off">Durante 10 minutos, un teléfono cercano puede pedir seguirte sin enlace. Luego los dos teléfonos muestran el mismo código.</string>
+    <string name="sh_pair_nearby_on">Abierto · se cierra en %1$s. En su teléfono: Buscar teléfonos cerca, al unirse.</string>
+    <string name="sh_approve_nearby">Pedido con Emparejar cerca: cualquier teléfono al alcance del Bluetooth puede pedirlo. Permite solo si su teléfono muestra este mismo código.</string>
+    <string name="sh_pair_asking">Preguntando al teléfono de %1$s…</string>
+    <string name="sh_pair_compare">¿El teléfono de %1$s muestra este código?</string>
+    <string name="sh_pair_waiting">Mismo código. Esperando a que %1$s te dé acceso.</string>
+    <string name="sh_pair_why">Toca Mismo código solo si coinciden todas las cifras: otro teléfono cercano podría hacerse pasar por %1$s.</string>
+    <string name="sh_pair_same">Mismo código</string>
+    <string name="sh_pair_different">Código distinto</string>
+    <string name="sh_join_err_mismatch">Los códigos no coincidían, así que no se ha compartido nada. Vuelve a probar junto a su teléfono.</string>
+    <string name="sh_approve_invite_nearby">Emparejar cerca</string>
+    <string name="sh_find_nearby">Buscar teléfonos cerca</string>
+    <string name="sh_find_nearby_hint">¿Sin enlace? Si está a tu lado, pídele que active Emparejar cerca (Ajustes › Compartir) y busca su teléfono por Bluetooth.</string>
+    <string name="sh_find_nearby_looking">Buscando teléfonos con Emparejar cerca activado…</string>
+    <string name="sh_find_nearby_found">Toca a la persona que quieres seguir. Sigue buscando más…</string>
+    <string name="sh_find_nearby_ask">Pedir seguirle</string>
+    <string name="sh_find_nearby_stop">Dejar de buscar</string>
+    <string name="sh_scan_qr">Escanear código QR</string>
+    <string name="sh_scan_picture">Desde una imagen</string>
+    <string name="sh_scan_point">Apunta la cámara al código QR de su teléfono. Se lee en este teléfono: no se graba ni se envía nada.</string>
+    <string name="sh_scan_preview">Vista de la cámara para el código QR</string>
+    <string name="sh_scan_cancel">Cancelar</string>
+    <string name="sh_scan_allow">Permitir cámara</string>
+    <string name="sh_scan_settings">Abrir ajustes</string>
+    <string name="sh_scan_camera_why">Sukrara necesita la cámara para leer el código QR. No se graba ni se envía nada. También puedes pegar el enlace o elegir una imagen del código.</string>
+    <string name="sh_scan_camera_off">El acceso a la cámara está desactivado para Sukrara. Actívalo en los ajustes de la app, o pega el enlace o elige una imagen del código.</string>
+    <string name="sh_scan_no_camera">No se pudo abrir ninguna cámara en este dispositivo. Pega el enlace o elige una imagen del código.</string>
+    <string name="sh_scan_read">Invitación leída. Añade tu nombre si quieres y toca Unirme.</string>
+    <string name="sh_scan_picture_none">No hay ningún código QR de invitación de Sukrara en esa imagen. Prueba con una captura más nítida o pega el enlace.</string>
+    <!-- configuración: Recupera tu historial (se ofrece una vez) -->
+    <string name="sh_setup_history_title">Recupera tu historial</string>
+    <string name="sh_setup_history_body">Sukrara empieza con el historial vacío. Recupera los últimos 90 días desde Tidepool, LibreView o un archivo exportado de la app anterior, para volver a tener tu gráfica, tus informes y tus últimas dosis.</string>
+    <string name="sh_setup_history_note">Nada cuenta doble: las lecturas de tu sensor mandan, e importar otra vez solo añade lo que falta. También puedes hacerlo más tarde en Ajustes › Compartir con apps › Importar historial.</string>
+    <string name="sh_setup_history_open">Recuperarlo</string>
+    <string name="sh_setup_history_skip">Empezar vacío</string>
 </resources>

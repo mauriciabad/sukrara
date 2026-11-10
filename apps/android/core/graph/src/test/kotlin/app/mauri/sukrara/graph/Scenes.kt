@@ -25,17 +25,29 @@ internal object Scenes {
         return CardWords.of(base.createConfigurationContext(conf).resources)
     }
 
-    /** A day of 5-minute readings around [centre] mg/dL, the newest [ageS] old with [rate]. */
+    /**
+     * A day of 5-minute readings ending at [centre] mg/dL, the newest [ageS] old with [rate] (mg/dL per minute). The
+     * last [TAIL] readings fall or rise at that rate, so the trend arrow matches the chart's end; before them a slow wave
+     * of [swing] that meets the tail without a jump.
+     */
     fun day(
         centre: Int,
         ageS: Long = 60,
         rate: Double? = -0.4,
         swing: Int = 35,
-    ): List<GlucosePoint> =
-        (0 until 288).map { i ->
+    ): List<GlucosePoint> {
+        val perStep = (rate ?: 0.0) * 5
+        val joint = 287 - TAIL
+        val start = centre - perStep * TAIL
+        return (0 until 288).map { i ->
             val t = NOW - ageS - (287 - i) * 300L
-            GlucosePoint(t, (centre + swing * sin(i / 18.0)).toInt(), if (i == 287) rate else null)
+            val v = if (i >= joint) centre - perStep * (287 - i) else start + swing * (sin(i / 18.0) - sin(joint / 18.0))
+            GlucosePoint(t, Math.round(v).toInt(), if (i == 287) rate else null)
         }
+    }
+
+    /** The readings of [day]'s straight end (half an hour). */
+    const val TAIL = 6
 
     fun treatment(
         id: String,

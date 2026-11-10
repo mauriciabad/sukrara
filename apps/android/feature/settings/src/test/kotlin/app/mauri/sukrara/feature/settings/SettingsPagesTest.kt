@@ -29,36 +29,125 @@ class SettingsPagesTest {
     /** Android settings the pages show (Alerts, an alert's page, Ranges, Graph, the review). */
     private val shown =
         setOf(
-            "graph.band.veryLow", "graph.band.low", "graph.band.tight", "graph.band.high", "graph.band.veryHigh",
-            "graph.band.extremelyHigh", "graph.hours", "graph.ringCount", "graph.ringMarks", "graph.side", "graph.columnCrown",
-            "graph.gridHours", "alerts.on", "alerts.kind.on", "alerts.threshold.very_low", "alerts.threshold.low",
-            "alerts.threshold.high", "alerts.threshold.very_high", "alerts.threshold.extremely_high", "alerts.threshold.falling_fast",
-            "alerts.threshold.rising_fast", "alerts.threshold.no_data", "alerts.kind.repeat", "alerts.kind.alarm", "alerts.kind.sound",
-            "alerts.muteAfterInsulin.on", "alerts.muteAfterInsulin.min", "alerts.muteFallingHigh.on", "alerts.muteFallingHigh.min",
-            "alerts.muteAfterCarbs.on", "alerts.muteAfterCarbs.min", "alerts.actions.muteMin", "alerts.actions.relaxMin",
-            "alerts.actions.backMgdl", "alerts.actions.backMin", "alerts.sounds.pack", "alerts.sounds.shuffle",
+            // Settings › Ranges: the glucose unit, then the six ranges
+            "general.unit",
+            "graph.band.veryLow",
+            "graph.band.low",
+            "graph.band.tight",
+            "graph.band.high",
+            "graph.band.veryHigh",
+            "graph.band.extremelyHigh",
+            "graph.hours",
+            "graph.ringCount",
+            "graph.ringMarks",
+            "graph.side",
+            "graph.columnCrown",
+            "graph.gridHours",
+            "graph.hours.place",
+            "graph.slots",
+            "graph.ringRange",
+            "graph.ringOrder",
+            "graph.marks",
+            "graph.lines",
+            "graph.lastPlace",
+            "graph.lastElse",
+            "graph.sensorTime.place",
+            // Settings › Lock screen
+            "lock.treatmentTime",
+            "alerts.on",
+            "alerts.kind.on",
+            "alerts.threshold.very_low",
+            "alerts.threshold.low",
+            "alerts.threshold.high",
+            "alerts.threshold.very_high",
+            "alerts.threshold.extremely_high",
+            "alerts.threshold.falling_fast",
+            "alerts.threshold.rising_fast",
+            "alerts.threshold.no_data",
+            "alerts.kind.repeat",
+            "alerts.kind.alarm",
+            "alerts.kind.sound",
+            "alerts.muteAfterInsulin.on",
+            "alerts.muteAfterInsulin.min",
+            "alerts.muteFallingHigh.on",
+            "alerts.muteFallingHigh.min",
+            "alerts.muteAfterCarbs.on",
+            "alerts.muteAfterCarbs.min",
+            // Settings › Alerts › If a very low gets no answer (#39: the wearer's two rows, a follower's switch)
+            "alerts.escalation.on",
+            "alerts.escalation.min",
+            "alerts.escalation.follow",
+            // Settings › Alerts › Night alerts and each alert's night page (#38)
+            "alerts.night.on",
+            "alerts.night.from",
+            "alerts.night.to",
+            "alerts.night.kind.on",
+            "alerts.night.kind.repeat",
+            "alerts.night.kind.alarm",
+            "alerts.night.threshold.very_low",
+            "alerts.night.threshold.low",
+            "alerts.night.threshold.high",
+            "alerts.night.threshold.very_high",
+            "alerts.night.threshold.extremely_high",
+            "alerts.night.threshold.falling_fast",
+            "alerts.night.threshold.rising_fast",
+            "alerts.night.threshold.no_data",
+            // Settings › Alerts › Near a threshold (#37)
+            "alerts.persistence.lowMin",
+            "alerts.persistence.highMin",
+            "alerts.persistence.marginMgdl",
+            "alerts.actions.muteMin",
+            "alerts.actions.relaxMin",
+            "alerts.actions.backMgdl",
+            "alerts.actions.backMin",
+            "alerts.sounds.pack",
+            "alerts.sounds.shuffle",
             "alerts.thresholdsConfirmedAt",
             // Settings › Sensor (the app joins it to the sensor module)
             "source.source",
+            // Settings › Sensor › Juggluco's web server (the SecureStore, through the sensor module)
+            "source.jugglucoSecret",
+            // Settings › Status bar and Settings › Sensor end
+            "statusbar.chip",
+            "statusbar.icon",
+            "statusbar.lockScreen",
+            "statusbar.hook",
+            "statusbar.hookPosition",
+            "statusbar.hookColor",
+            "statusbar.hideNotifIcon",
+            "sensor.reminders",
+            "sensor.countdownHours",
+            // Settings › Sensor end › Calendar
+            "sensorCalendar.on",
+            "sensorCalendar.calendarId",
+            // Settings › Alert reliability (and setup): the answer about Vibrate only when unlocked
+            "alerts.unlockedSound",
+            // Settings › Settings from (a follower)
+            "follower.settingsFrom",
+            // the overview's search: its recent queries
+            "settings.searchRecent",
         )
 
     /** Shown by another chunk's screen (sensor 18, sharing / setup 24, home 16, pens 19, integrations 26, widgets 20). */
     private val elsewhere =
         setOf(
-            "sensor.countdownHours", "sharing.nostr", "sharing.bleFollowers", "home.uploadBanner",
-            "sensor.reminders", "widget.overrides", "statusbar.chip", "statusbar.icon",
+            "sharing.nostr",
+            "sharing.nostrInterval",
+            "sharing.bleFollowers",
+            "widget.overrides",
         ) + SettingsSpec.SETTINGS.map { it.id }.filter { it.startsWith("pens.") || it.startsWith("apps.") } +
-            setOf("sensorCalendar.on", "sensorCalendar.calendarId", "healthConnect.on")
+            setOf("healthConnect.on")
 
     /** Not on a settings page, or internal format / state with no row. */
     private val pending =
         setOf(
-            "graph.hours.place", "graph.slots", "graph.ringRange", "graph.ringOrder", "graph.marks", "graph.lines", "graph.lastPlace",
-            "graph.lastElse", "graph.sensorTime.place", "follower.settingsFrom", "alerts.source", "alerts.v",
-            "statusbar.systemIcons", "statusbar.hook", "statusbar.hookPosition", "statusbar.hookColor", "statusbar.hideNotifIcon",
-            "lock.widget", "lock.background", "lock.appearance", "lock.treatmentTime",
-            // mmol/L in these pages: issue c17 (thresholds and ranges stay mg/dL here)
-            "general.unit",
+            // derived from follower.settingsFrom (no row of its own)
+            "alerts.source",
+            "alerts.v",
+            // the LSPosed lock-screen widget, not ported from the PoC yet (#66)
+            "lock.widget",
+            "lock.background",
+            "lock.appearance",
         )
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -67,19 +156,34 @@ class SettingsPagesTest {
 
     @Test
     fun `every Android schema setting is shown here, by another screen, or listed as pending`() {
-        val android = SettingsSpec.SETTINGS.filter { it.android.isNotEmpty() }.map { it.id }.toSet()
+        val android =
+            SettingsSpec.SETTINGS
+                .filter { it.android.isNotEmpty() }
+                .map { it.id }
+                .toSet()
         assertEquals(emptySet<String>(), android - shown - elsewhere - pending)
         assertEquals(emptySet<String>(), (shown + pending) - android)
         assertEquals(emptySet<String>(), shown intersect pending)
     }
 
     @Test
+    fun `the alert kinds are the schema's, in its order`() {
+        assertEquals(SettingsSpec.OPTIONS.getValue("alertKind"), AlertKind.entries.map { it.wire })
+    }
+
+    @Test
     fun `every number the pages show has its schema format`() {
         for (kind in AlertKind.entries) assertNotNull(SchemaPrefs.thresholdSpec(kind))
         for (which in QuietKind.entries) assertNotNull(SchemaPrefs.spec(AlertEdits.quietSpecId(which)))
+        for (which in WaitKind.entries) assertNotNull(SchemaPrefs.spec(which.specId))
         for (band in SchemaPrefs.Bands) assertEquals(band.default, SchemaPrefs.bandSpec(band).default, 0.0)
-        listOf("alerts.actions.muteMin", "alerts.actions.relaxMin", "alerts.actions.backMgdl", "alerts.actions.backMin", "alerts.kind.repeat")
-            .forEach { assertNotNull(SchemaPrefs.spec(it)) }
+        listOf(
+            "alerts.actions.muteMin",
+            "alerts.actions.relaxMin",
+            "alerts.actions.backMgdl",
+            "alerts.actions.backMin",
+            "alerts.kind.repeat",
+        ).forEach { assertNotNull(SchemaPrefs.spec(it)) }
     }
 
     @Test
@@ -93,7 +197,9 @@ class SettingsPagesTest {
 
     @Test
     fun `a level threshold can't cross its neighbours`() {
-        val s = app.mauri.sukrara.alerts.AlertSettings()
+        val s =
+            app.mauri.sukrara.alerts
+                .AlertSettings()
         assertNull(AlertEdits.thresholdConflict(s, AlertKind.LOW, 65.0))
         assertEquals(null to 70.0, AlertEdits.thresholdConflict(s, AlertKind.VERY_LOW, 80.0))
         assertEquals(180.0 to 300.0, AlertEdits.thresholdConflict(s, AlertKind.VERY_HIGH, 160.0))
@@ -102,7 +208,9 @@ class SettingsPagesTest {
 
     @Test
     fun `alert edits change only their field and keep values in format`() {
-        val s0 = app.mauri.sukrara.alerts.AlertSettings()
+        val s0 =
+            app.mauri.sukrara.alerts
+                .AlertSettings()
         val s1 = AlertEdits.repeat(AlertKind.HIGH, 0.0)(s0)
         assertEquals(0, s1.rule(AlertKind.HIGH).repeatMin)
         assertEquals(s0.rule(AlertKind.LOW), s1.rule(AlertKind.LOW))
@@ -128,6 +236,9 @@ class SettingsPagesTest {
                 override val prerelease = true
                 override val releases = ReleasesSource { Result.success(emptyList()) }
                 override val clock = FakeClock()
+                override val sensor = flowOf(app.mauri.sukrara.core.model.SensorState.None)
+                override val appsShared = flowOf(emptySet<AppOutput>())
+                override val systemAccess = NoSystemAccess
             }
         val vm = AlertsViewModel(deps)
         vm.muteAll(0.0)
@@ -137,4 +248,21 @@ class SettingsPagesTest {
         vm.remindAsUsual(AlertKind.HIGH)
         assertEquals(listOf("muteAll null", "muteAll 120", "unmuteAll", "unmute very_low", "remindAsUsual high"), controls.calls)
     }
+}
+
+/** A phone without root or LSPosed. */
+object NoSystemAccess : app.mauri.sukrara.core.model.SystemAccessPort {
+    override val state =
+        kotlinx.coroutines.flow.MutableStateFlow(
+            app.mauri.sukrara.core.model
+                .SystemAccessState(root = false, module = app.mauri.sukrara.core.model.ModuleState.Missing),
+        )
+
+    override suspend fun checkRoot() = Unit
+
+    override fun refresh() = Unit
+
+    override suspend fun restartSystemUi(): String? = null
+
+    override suspend fun requestScope(): String? = null
 }

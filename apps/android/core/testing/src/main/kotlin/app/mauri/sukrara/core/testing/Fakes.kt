@@ -6,14 +6,19 @@ package app.mauri.sukrara.core.testing
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.storage.HistoryImport
+import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.supersedes
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,14 +113,36 @@ class InMemoryReadingsRepository : ReadingsRepository {
     ): List<Reading> = readings.value.filter { it.t >= from && it.t < to }
 
     override suspend fun upsert(readings: List<Reading>) {
+        val tolerance = HistoryImport.SAME_READING
         this.readings.update { current ->
-            (current + readings).associateBy { it.t to it.source }.values.sortedBy { it.t }
+            val own = readings.filterNot { it.imported }
+            // as in Room: the sensor's own reading removes the imported copies within the tolerance
+            val kept = current.filterNot { c -> c.imported && own.any { Duration.between(it.t, c.t).abs() <= tolerance } }
+            (kept + readings).associateBy { it.t to it.source }.values.sortedBy { it.t }
         }
     }
+
+    /** Everything stored, any source (the import fake reads it). */
+    val all: List<Reading> get() = readings.value
+
+    /** Adds [new] as they are (the import fake, after [HistoryImport.readings] chose them). */
+    fun addImported(new: List<Reading>) = readings.update { current -> (current + new).sortedBy { it.t } }
 
     override suspend fun deleteBefore(cutoff: Instant): Int {
         val before = readings.value.size
         readings.update { all -> all.filter { it.t >= cutoff } }
+        return before - readings.value.size
+    }
+
+    override suspend fun spanOf(sources: Set<SourceId>): StoredSpan =
+        readings.value
+            .filter { it.source in sources }
+            .map { it.t }
+            .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
+
+    override suspend fun deleteFrom(sources: Set<SourceId>): Int {
+        val before = readings.value.size
+        readings.update { all -> all.filterNot { it.source in sources } }
         return before - readings.value.size
     }
 }
@@ -126,19 +153,53 @@ class InMemoryTreatmentsRepository : TreatmentsRepository {
     override fun between(
         from: Instant,
         to: Instant,
-    ): Flow<List<Treatment>> = records.map { all ->
-        all.values.map { it.treatment }.filter { !it.deleted && it.at >= from && it.at < to }.sortedBy { it.at }
-    }
+    ): Flow<List<Treatment>> =
+        records.map { all ->
+            all.values
+                .map { it.treatment }
+                .filter { !it.deleted && it.at >= from && it.at < to }
+                .sortedBy { it.at }
+        }
 
     override suspend fun get(id: String): TreatmentRecord? = records.value[id]
 
     override suspend fun upsertIfNewer(record: TreatmentRecord): Boolean {
         val stored = records.value[record.treatment.id]
-        if (stored != null && stored.treatment.modifiedAt >= record.treatment.modifiedAt) return false
+        if (stored != null && !record.treatment.supersedes(stored.treatment)) return false
         records.update { it + (record.treatment.id to record) }
         return true
     }
 
     override suspend fun changedSince(since: Instant): List<TreatmentRecord> =
-        records.value.values.filter { it.treatment.modifiedAt > since }.sortedBy { it.treatment.modifiedAt }
+        records.value.values
+            .filter { it.treatment.modifiedAt > since }
+            .sortedBy { it.treatment.modifiedAt }
+
+    override suspend fun replace(record: TreatmentRecord) = records.update { it + (record.treatment.id to record) }
+
+    override suspend fun span(): StoredSpan =
+        records.value.values
+            .map { it.treatment }
+            .filter { !it.deleted }
+            .map { it.at }
+            .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
+
+    override suspend fun deleteAll() = records.update { emptyMap() }
+
+    /** Everything stored, tombstones included (the import fake reads it). */
+    val all: List<TreatmentRecord> get() = records.value.values.toList()
+
+    fun addImported(new: List<TreatmentRecord>) = records.update { it + new.associateBy { r -> r.treatment.id } }
+}
+
+/** [HistoryImportStore] over the in-memory stores, by the same [HistoryImport] rules as Room. */
+class InMemoryHistoryImport(
+    private val readings: InMemoryReadingsRepository,
+    private val treatments: InMemoryTreatmentsRepository,
+) : HistoryImportStore {
+    override suspend fun importReadings(batch: List<Reading>): Int =
+        HistoryImport.readings(readings.all, batch).also(readings::addImported).size
+
+    override suspend fun importTreatments(batch: List<TreatmentRecord>): Int =
+        HistoryImport.treatments(treatments.all, batch).also(treatments::addImported).size
 }

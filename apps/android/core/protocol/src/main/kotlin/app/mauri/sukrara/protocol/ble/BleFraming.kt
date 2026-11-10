@@ -25,7 +25,9 @@ object BleUuids {
 /** Frame = `[msgId u16][idx u16][count u16]` big-endian + up to `min(mtu − 3, 512) − 6` payload bytes. */
 object BleFraming {
     const val HEADER = 6
-    private const val MAX_ATTRIBUTE = 512
+
+    /** The ATT attribute limit: no frame (and no long write a central queues) is longer. */
+    const val MAX_ATTRIBUTE = 512
     private const val MIN_PAYLOAD = 14
 
     /** Reassembly limits (B§4.3). */
@@ -43,9 +45,13 @@ object BleFraming {
         return (0 until count).map { idx ->
             val from = idx * per
             val to = minOf(payload.size, from + per)
-            ByteBuffer.allocate(HEADER + (to - from))
-                .putShort(msgId.toShort()).putShort(idx.toShort()).putShort(count.toShort())
-                .put(payload, from, to - from).array()
+            ByteBuffer
+                .allocate(HEADER + (to - from))
+                .putShort(msgId.toShort())
+                .putShort(idx.toShort())
+                .putShort(count.toShort())
+                .put(payload, from, to - from)
+                .array()
         }
     }
 

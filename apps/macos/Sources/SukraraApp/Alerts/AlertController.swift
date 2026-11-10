@@ -15,14 +15,18 @@ enum AlertAction: Equatable {
     case remindAsUsual(AlertSide)
     case muteAll(until: Date)
     case unmuteAll
+    /// A *Mute…* / *Change Time…* reply that isn't a length: nothing changes, the side's notification comes back
+    /// silently (macOS removed it when the action was used).
+    case reshow(AlertSide)
 }
 
 /// Runs the alert rules on this Mac (`SukraraAlerts`) and shows what they decide through the `Notifier`.
 ///
 /// - Own rules, or (`mirroring`) the wearer's alerts through `AlertMirror` plus this Mac's own no-data rule.
 /// - The no-data rule is timed by the engine's `schedule` effect (a wake), never by the next reading, and re-checked on
-///   wake from sleep and clock changes (`tick`). Before the first reading ever, nothing is armed: the engine has no
-///   reading to measure "no data" from, so a Mac that never followed anyone never rings.
+///   wake from sleep and clock changes (`tick`). No data counts from the last reading or the source's start
+///   (`sourceStarted`), whichever is newer: a Mac that never followed anyone (nor reached Juggluco) never rings, a source
+///   that started but never delivers a reading does.
 /// - Every change is saved (`AlertStateStoring`), so a relaunch resumes the alerts that were up, silently, and keeps
 ///   the mutes.
 @Observable
@@ -41,6 +45,10 @@ final class AlertController {
     @ObservationIgnored private let store: any AlertStateStoring
     @ObservationIgnored private let notifier: any AlertNotifying
     @ObservationIgnored private let wake: any WakeScheduling
+    /// When Mute all ends as last seen (nil = off): its end by itself gets one "Alerts back on" log line.
+    @ObservationIgnored private var muteAllSeen: Date?
+    /// #128: readings stamped at or before this don't feed the rules (set when monitoring ends, gone when a source starts).
+    @ObservationIgnored private var fence: Date?
 
     init(
         settings: AlertSettings, clock: any TimeSource, store: any AlertStateStoring, notifier: any AlertNotifying,
@@ -59,6 +67,7 @@ final class AlertController {
             mirror = m
             mirrored = saved?.mirrored ?? [:]
         }
+        fence = saved?.fence
         run(effects)
     }
 
@@ -68,7 +77,10 @@ final class AlertController {
 
     /// The newest reading the Mac has (also an old one at launch: "no data" is measured from it).
     func reading(_ r: Reading) {
+        // still on its way from a follow or source that ended: it can't arm no data again (#128)
+        if let fence, r.t <= fence { return }
         let sample = GlucoseSample(at: r.t, mgdl: Double(r.mgdl), rate: r.rate)
+        noteClock()
         if mirroring {
             for side in mirror.reading(sample, settings, at: clock.now) { notifier.removeMuted(side) }
         }
@@ -77,6 +89,15 @@ final class AlertController {
 
     func treatments(_ list: [AlertTreatment]) { handle(.treatments(list)) }
     func sensor(_ window: SensorWindow?) { handle(.sensor(window)) }
+
+    /// The reading source started (following someone, Juggluco reached): no data counts from now until a reading, also
+    /// with none ever. A source already running keeps its start (also across relaunches); `resetMonitoring` forgets it.
+    func sourceStarted() {
+        // a new source (a join, Juggluco reached): its backfill counts, so no fence (#128)
+        fence = nil
+        guard engine.context.sourceStart == nil else { return }
+        handle(.source(since: clock.now))
+    }
 
     func settings(_ s: AlertSettings) {
         guard s != engine.settings else { return }
@@ -98,6 +119,8 @@ final class AlertController {
     /// An alert event of the wearer's phone (PROTOCOL-v2 "Alerts"). No data is always this Mac's own.
     func wearerAlert(_ p: AlertPayload) {
         guard mirroring, settings.on, let kind = AlertKind(rawValue: p.kind), kind != .noData else { return }
+        noteClock()
+        defer { expireMirror() }
         let at = Date(timeIntervalSince1970: TimeInterval(p.at))
         if p.fires {
             let firing = AlertFiring(
@@ -108,7 +131,20 @@ final class AlertController {
                 },
                 threshold: p.threshold ?? settings[kind].threshold, n: p.count, treated: p.treatments)
             mirrored[kind.group] = firing
-            if mirror.fire(kind, id: p.id, at: at) { notifier.post(firing, sound: true, category: category(kind)) }
+            // #39: the wearer's very low nobody answered there, when this Mac takes escalations
+            let escalated = p.esc != nil && settings.escalation.follow
+            if mirror.fire(kind, id: p.id, at: at, escalated: escalated) {
+                if escalated { notifier.log(AlertLog.escalated(kind)) }
+                notifier.post(
+                    firing, sound: true, category: category(kind),
+                    escalated: escalated || mirror.isEscalated(kind.group))
+            }
+        } else if p.answered {
+            // answered on the wearer's phone: shown again plain, without sound
+            if let id = mirror.answered(kind), let f = mirrored[kind.group], f.id == id {
+                notifier.log(AlertLog.answered(kind))
+                notifier.post(f, sound: false, category: category(kind), escalated: false)
+            }
         } else if mirror.clear(kind, id: p.id) {
             notifier.clear(kind.group)
         }
@@ -121,6 +157,8 @@ final class AlertController {
     /// A user action from a notification, the panel or the menu.
     func perform(_ action: AlertAction) {
         let now = clock.now
+        noteClock()
+        if let line = Self.logLine(action, settings: settings, now: now) { notifier.log(line) }
         switch action {
         case .mute(let side, let minutes):
             let until = now.addingTimeInterval(TimeInterval(minutes * 60))
@@ -130,32 +168,88 @@ final class AlertController {
         case .remindLess(let side):
             mirror.remindLess(side, relaxMin: settings.notificationActions.relaxMin)
             handle(.remindLess(side))
+            reshow(side)
         case .unmute(let side):
             notifier.removeMuted(side)
             showAgain(mirror.unmute(side, at: now))
             handle(.unmute(side))
         case .remindAsUsual(let side):
-            showAgain(mirror.remindAsUsual(side, at: now))
-            handle(.remindAsUsual(side))
+            let shownAgain = showAgain(mirror.remindAsUsual(side, at: now))
+            let fired = handle(.remindAsUsual(side)).contains {
+                if case .fire(let f) = $0 { f.kind.side == side } else { false }
+            }
+            if !shownAgain && !fired { reshow(side) }
         case .muteAll(let until):
             for g in mirror.muteAll(until: until) { notifier.clear(g) }
             handle(.muteAll(until: until))
         case .unmuteAll:
             for id in mirror.unmuteAll(at: now) { showAgain(id) }
             handle(.unmuteAll)
+        case .reshow(let side):
+            reshow(side)
         }
     }
 
-    /// Stopped following (or following someone new): nothing measures "no data" from the old wearer's readings any
-    /// more, and their alerts go. This Mac's mutes stay (the user set them).
+    /// The event log's line for `action` (`AlertLog`); nil for one that changes nothing (`reshow`).
+    static func logLine(_ action: AlertAction, settings: AlertSettings, now: Date) -> String? {
+        switch action {
+        case .mute(let side, let minutes): AlertLog.muted(side, minutes: minutes)
+        case .unmute(let side): AlertLog.unmuted(side)
+        case .remindLess(let side):
+            AlertLog.remindLess(side, intervalMin: settings.notificationActions.relaxMin)
+        case .remindAsUsual(let side): AlertLog.remindAsUsual(side)
+        case .muteAll(let until): AlertLog.allMuted(until: until, now: now)
+        case .unmuteAll: AlertLog.allUnmuted
+        case .reshow: nil
+        }
+    }
+
+    /// Shows `side`'s notification again without sound, as it is now (SPEC §2: macOS removes a notification once one
+    /// of its actions is used): the alert still up, in its current category (after *Remind Less* with *Remind as
+    /// Usual*), this Mac's own or the wearer's; with no alert up, the muted note while the side is muted.
+    private func reshow(_ side: AlertSide) {
+        let group = side.mainKind.group
+        if let f = engine.showing(group), f.kind.side == side {
+            notifier.post(f, sound: false, category: category(f.kind))
+        } else if mirroring, mirror.isShowing(group), let f = mirrored[group], f.kind.side == side {
+            notifier.post(f, sound: false, category: category(f.kind))
+        } else if let until = [
+            engine.snoozes.muteEnd(side, at: clock.now), mirror.snoozes.muteEnd(side, at: clock.now),
+        ]
+        .compactMap({ $0 }).max() {
+            notifier.postMuted(side, until: until)
+        }
+    }
+
+    /// Settings › Alerts › Send Test Alert: a real notification titled "Test" (the engine and its mutes don't see it).
+    func sendTest(_ kind: AlertKind) { notifier.postTest(kind) }
+
+    /// Monitoring dropped without the person stopping it (the wearer stopped sharing, the follow broke): a passive
+    /// notification says why. nil = monitoring is back (or the person ended it): the note goes.
+    func monitoringStopped(_ reason: String?) { notifier.monitoringStopped(reason) }
+
+    /// Stopped following, following someone new, or moved between a wearer and Juggluco: the readings this Mac watches
+    /// are someone else's (#6), so it starts fresh: nothing measures "no data" from the old readings, their alerts go,
+    /// and this Mac's Mute all and side mutes end too (a "Mute all until you turn it off" set for one person must not
+    /// silence the next one's very lows). A *Settings from* change is the same person: `setMirroring` keeps them.
     func resetMonitoring() {
         for g in AlertGroup.allCases { notifier.clear(g) }
-        let snapshot = AlertEngine.Snapshot(episodes: [], snoozes: engine.snoozes, muteAllUntil: engine.muteAllUntil)
+        for side in AlertSide.allCases { notifier.removeMuted(side) }
+        if engine.muteAllEnd(at: clock.now) != nil || mirror.muteAllEnd(at: clock.now) != nil
+            || !engine.snoozes.active(at: clock.now).isEmpty || !mirror.snoozes.active(at: clock.now).isEmpty
+        {
+            notifier.log(AlertLog.freshState)
+        }
+        let snapshot = AlertEngine.Snapshot(
+            episodes: [], snoozes: SideSnoozes(), muteAllUntil: nil, lastNow: engine.snapshot.lastNow)
         let (fresh, effects) = AlertEngine.restore(
             snapshot, context: AlertContext(settings: settings, scope: engine.context.scope), at: clock.now)
         engine = fresh
-        mirror.forgetShown()
+        mirror = AlertMirror()
         mirrored = [:]
+        muteAllSeen = nil
+        // what is still on its way from the old source can't arm no data again (#128); the next source's start clears it
+        fence = clock.now
         run(effects)
     }
 
@@ -167,17 +261,42 @@ final class AlertController {
 
     // MARK: engine
 
-    private func handle(_ input: AlertInput) {
-        run(engine.handle(input, at: clock.now))
+    @discardableResult
+    private func handle(_ input: AlertInput) -> [AlertEffect] {
+        noteClock()
+        let effects = engine.handle(input, at: clock.now, monotonic: clock.monotonic)
+        run(effects)
+        expireMirror()
+        return effects
+    }
+
+    /// A clock set back moves the engine's kept times and this Mac's mutes on the wearer's alerts alike.
+    private func noteClock() {
+        let back = engine.observeClock(clock.now, monotonic: clock.monotonic)
+        if back > 0 { mirror.shiftBack(back) }
+    }
+
+    /// This Mac's Mute all on the wearer's alerts ran out (the timer, or any input that comes first): the wearer's
+    /// newest alerts still up show at once.
+    private func expireMirror() {
+        let shown = mirror.expire(at: clock.now)
+        for id in shown { showAgain(id) }
+        if !shown.isEmpty { save() }
     }
 
     private func run(_ effects: [AlertEffect]) {
+        // a timed Mute all that ran out by itself, logged before what it lets ring (Unmute all ends it early: no line)
+        let allEnd = engine.muteAllEnd(at: clock.now)
+        if let seen = muteAllSeen, seen <= clock.now, allEnd == nil { notifier.log(AlertLog.allBack) }
+        muteAllSeen = allEnd
         for effect in effects {
             switch effect {
             case .fire(let f): notifier.post(f, sound: true, category: category(f.kind))
             case .resume(let f): notifier.post(f, sound: false, category: category(f.kind))
             case .clear(let f): notifier.clear(f.kind.group)
-            case .back(let side): notifier.removeMuted(side)
+            case .back(let side):
+                notifier.log(AlertLog.back(side))
+                notifier.removeMuted(side)
             case .schedule(let at):
                 nextWake = at
                 wake.schedule(at: at) { [weak self] in self?.tick() }
@@ -187,9 +306,19 @@ final class AlertController {
         save()
     }
 
-    private func showAgain(_ id: String?) {
-        guard mirroring, let id, let f = mirrored.values.first(where: { $0.id == id }) else { return }
+    /// Posts the wearer's firing `id` with sound (Unmute / Remind as Usual on a mirrored alert): true = posted.
+    @discardableResult
+    private func showAgain(_ id: String?) -> Bool {
+        guard mirroring, let id, let f = mirrored.values.first(where: { $0.id == id }) else { return false }
         notifier.post(f, sound: true, category: category(f.kind))
+        return true
+    }
+
+    /// This Mac's Mute of each side on the wearer's mirrored alerts, in force at `t`.
+    func mirroredSideMutes(at t: Date) -> [AlertSide: Date] {
+        Dictionary(
+            uniqueKeysWithValues: AlertSide.allCases.compactMap { s in mirror.snoozes.muteEnd(s, at: t).map { (s, $0) }
+            })
     }
 
     /// Recomputes `ui` (also from the panel's countdown, so an ended mute disappears).
@@ -207,7 +336,7 @@ final class AlertController {
     }
 
     private func save() {
-        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored))
+        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored, fence: fence))
     }
 }
 

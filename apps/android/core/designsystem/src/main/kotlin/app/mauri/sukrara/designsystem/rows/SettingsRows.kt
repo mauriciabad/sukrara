@@ -3,29 +3,33 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.designsystem.rows
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.annotation.DrawableRes
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,9 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -60,10 +66,19 @@ private val RowPadding = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
 fun SettingsGroup(
     modifier: Modifier = Modifier,
     title: String? = null,
+    /** Beside the title (a section's Reset icon), end-aligned. */
+    titleAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        if (title != null) SettingsHeader(title)
+        if (title != null && titleAction != null) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                SettingsHeader(title, Modifier.weight(1f))
+                titleAction()
+            }
+        } else if (title != null) {
+            SettingsHeader(title)
+        }
         Column(Modifier.clip(GroupShape), verticalArrangement = Arrangement.spacedBy(2.dp), content = content)
     }
 }
@@ -91,6 +106,9 @@ private fun RowFrame(
     enabled: Boolean,
     modifier: Modifier = Modifier,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    /** A state that needs the person (taps blocked by Android): icon and summary in the error colour. */
+    warning: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
@@ -102,14 +120,25 @@ private fun RowFrame(
             .alpha(if (enabled) 1f else DisabledAlpha),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) {
-            Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (leading != null) {
+            leading()
+            Spacer(Modifier.width(16.dp))
+        } else if (icon != null) {
+            Icon(
+                painterResource(icon),
+                contentDescription = null,
+                tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.width(16.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = titleColor, style = MaterialTheme.typography.bodyLarge)
+            Text(title, Modifier.testTag(ROW_TITLE_TAG), color = titleColor, style = MaterialTheme.typography.bodyLarge)
             if (!summary.isNullOrEmpty()) {
-                Text(summary, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    summary,
+                    color = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
         trailing()
@@ -118,7 +147,14 @@ private fun RowFrame(
 
 private const val DisabledAlpha = 0.38f
 
-/** A switch; the whole row toggles (TalkBack: "switch, on"). A disabled row explains why in [summary]. */
+/** The test tag of every row's title (the settings search index test reads the rows of each page by it). */
+const val ROW_TITLE_TAG = "settings-row-title"
+
+/**
+ * A switch; the whole row toggles (TalkBack: "switch, on"). A disabled row explains why in [summary]. [readOnly]: a
+ * value this phone doesn't decide (a follower's mirrored setting): the switch shows it but can't be flipped, the text
+ * stays at full contrast (the page says why and how to change it).
+ */
 @Composable
 fun SwitchRow(
     title: String,
@@ -128,24 +164,76 @@ fun SwitchRow(
     summary: String? = null,
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
+    readOnly: Boolean = false,
 ) {
     val haptics = rememberHaptics()
+    val active = enabled && !readOnly
     RowFrame(
         title,
         summary,
         icon,
         enabled,
-        modifier.toggleable(checked, enabled, Role.Switch) {
+        modifier.toggleable(checked, active, Role.Switch) {
             haptics.toggle(it)
             onCheckedChange(it)
         },
     ) {
         Spacer(Modifier.width(16.dp))
-        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+        Switch(checked = checked, onCheckedChange = null, enabled = active)
     }
 }
 
-/** Opens another screen; a chevron at the end. */
+/**
+ * Two targets in one row (AOSP's primary switch preference): the row opens [onClick]'s page, the switch after the
+ * divider turns the thing on or off. TalkBack reads them as two nodes: a button and a switch. [warning]: the thing is
+ * on but something outside the app stops it (icon and summary in the error colour; the row opens the fix).
+ */
+@Composable
+fun SplitSwitchRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+    @DrawableRes icon: Int? = null,
+    enabled: Boolean = true,
+    switchEnabled: Boolean = enabled,
+    warning: Boolean = false,
+) {
+    val haptics = rememberHaptics()
+    Row(
+        modifier.fillMaxWidth().height(IntrinsicSize.Min).background(MaterialTheme.colorScheme.surfaceBright),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RowFrame(
+            title,
+            summary,
+            icon,
+            enabled,
+            Modifier.weight(1f).clickable(enabled, role = Role.Button, onClick = onClick),
+            warning = warning,
+        )
+        VerticalDivider(Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .toggleable(checked, switchEnabled, Role.Switch) {
+                    haptics.toggle(it)
+                    onCheckedChange(it)
+                }.semantics { contentDescription = title }
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Switch(checked = checked, onCheckedChange = null, enabled = switchEnabled)
+        }
+    }
+}
+
+/**
+ * Opens another screen; a chevron at the end. [leading] replaces [icon] with other content (the overview's
+ * [CategoryIcon], a picture): decorative, the title says what the row is.
+ */
 @Composable
 fun NavigationRow(
     title: String,
@@ -154,8 +242,9 @@ fun NavigationRow(
     summary: String? = null,
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
+    leading: (@Composable () -> Unit)? = null,
 ) {
-    RowFrame(title, summary, icon, enabled, modifier.clickable(enabled, role = Role.Button, onClick = onClick)) {
+    RowFrame(title, summary, icon, enabled, modifier.clickable(enabled, role = Role.Button, onClick = onClick), leading = leading) {
         Icon(
             painterResource(R.drawable.ds_ic_chevron_right),
             contentDescription = null,
@@ -164,7 +253,35 @@ fun NavigationRow(
     }
 }
 
-/** A value that opens a choice or number dialog: the current [value] below the title. */
+/**
+ * Does something right here (copy, show, bring back) instead of opening a screen: no chevron, TalkBack reads a
+ * button and [onClickLabel] ("copy") as what a tap does. The caller confirms the result (a haptic, a changed summary).
+ */
+@Composable
+fun ActionRow(
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+    @DrawableRes icon: Int? = null,
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    leading: (@Composable () -> Unit)? = null,
+) {
+    RowFrame(
+        title,
+        summary,
+        icon,
+        enabled,
+        modifier.clickable(enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick),
+        leading = leading,
+    )
+}
+
+/**
+ * A value that opens a choice or number dialog: the current [value] below the title. [readOnly]: shown at full
+ * contrast but not opened (a follower's mirrored setting; TalkBack: "disabled").
+ */
 @Composable
 fun ValueRow(
     title: String,
@@ -173,8 +290,9 @@ fun ValueRow(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
+    readOnly: Boolean = false,
 ) {
-    RowFrame(title, value, icon, enabled, modifier.clickable(enabled, role = Role.Button, onClick = onClick))
+    RowFrame(title, value, icon, enabled, modifier.clickable(enabled && !readOnly, role = Role.Button, onClick = onClick))
 }
 
 /** Not tappable: a fact (version, an address). */
@@ -195,7 +313,11 @@ fun CardRow(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier.fillMaxWidth().heightIn(min = RowMinHeight).background(MaterialTheme.colorScheme.surfaceBright).then(RowPadding),
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = RowMinHeight)
+            .background(MaterialTheme.colorScheme.surfaceBright)
+            .then(RowPadding),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         content = content,
     )

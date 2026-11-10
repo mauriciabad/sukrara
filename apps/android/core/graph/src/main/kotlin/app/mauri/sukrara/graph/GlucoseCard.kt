@@ -8,9 +8,12 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import androidx.core.graphics.ColorUtils
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.Bands
+import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import app.mauri.sukrara.graph.stats.GlucoseStats
+import java.util.Locale
 import kotlin.math.min
 
 /**
@@ -23,6 +26,13 @@ object GlucoseCard {
     /** A slot is only drawn when its window has at least this much data. */
     const val MIN_COVERAGE = 0.25
 
+    /**
+     * Slots beside the value smaller than this (dp) are at most [CROWDED_MAX]: three rings that small read as one
+     * cluttered row of near-equal numbers (#71; layout/rules.json `crowdedSlots`).
+     */
+    const val CROWDED_DP = 56f
+    const val CROWDED_MAX = 2
+
     /** Tests: every [CardLayout] drawn and every [GlucoseLook] decided, as it happens (null in the app). */
     @Volatile var observer: ((CardLayout) -> Unit)? = null
 
@@ -31,7 +41,8 @@ object GlucoseCard {
     /**
      * Draw [part] of the card [model] for [surface] into ([w] × [h]) px at the canvas origin ([d] = px per dp) and
      * return what was laid out. [motion] = the app panel's value animation (paint only); [view] = a scrolled / zoomed
-     * chart.
+     * chart; [fontScale] = the system's font size (the surface's `Configuration.fontScale`): the chart's words grow with
+     * it up to [GlucoseGraph.MAX_TEXT_SCALE].
      */
     fun draw(
         cv: Canvas,
@@ -45,6 +56,7 @@ object GlucoseCard {
         part: CardPart,
         motion: CardMotion? = null,
         view: ChartView? = null,
+        fontScale: Float = 1f,
     ): CardLayout {
         val rec = CardLayout(surface, part, st, w, h, d)
         val nowS = model.nowS
@@ -97,10 +109,11 @@ object GlucoseCard {
                     model.words,
                     latest?.t,
                 )
-            GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view)
+            GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view, fontScale)
             dimmed?.let(cv::restoreToCount)
         }
-        if (age != Freshness.AgeMark.NONE && latest != null) drawAgeLabel(cv, chart, latest.t, nowS, age, pal, d, rec)
+        // a sensor that ended or is warming up says so instead of the reading's time, which would read as a gap
+        if (age != Freshness.AgeMark.NONE && latest != null) drawAgeLabel(cv, chart, latest.t, nowS, age, sl, model.words, pal, d, rec)
         // a graph-only card without its chart: the value's face alone (a graph card has no slots or badge)
         if (noChart && !st.value) value.draw(cv, chart, null, null)
         if (st.value && part != CardPart.GRAPH) {
@@ -121,8 +134,12 @@ object GlucoseCard {
 
     /**
      * A card without a value: the reading's time centred over the top of [chart] on a background pill, after the
-     * "no readings" icon from 20 min ([age], freshness.json `graph_only`; GlucoseCard.swift `drawAgeLabel`). The text
-     * shrinks to fit the chart's width (down to 60 %) and the pill never grows past it.
+     * "no readings" icon from 20 min ([age], freshness.json `graph_only`; GlucoseCard.swift `drawAgeLabel`). The
+     * sensor's own states instead, as the value's place says them, so they never read as a gap in the readings: once it
+     * has ended the checkered flag and "Sensor ended"; while a new one warms up its disc filling and "Warming up · 40m"
+     * ("Almost ready" past the warm-up's end), the time left always labelled and at the pill's size, never a figure
+     * that could pass for a value (#27). The text shrinks to fit the chart's width (down to 60 %) and the pill never
+     * grows past it.
      */
     private fun drawAgeLabel(
         cv: Canvas,
@@ -130,17 +147,27 @@ object GlucoseCard {
         t: Long,
         nowS: Long,
         age: Freshness.AgeMark,
+        sensor: SensorBadge.Look?,
+        w: CardWords,
         pal: GraphPalette,
         d: Float,
         rec: CardLayout,
     ) {
-        val text = Freshness.timeText(t, nowS)
+        val warmup = sensor?.warmup
+        val ended = sensor?.ended == true && warmup == null
+        val text =
+            when {
+                warmup != null -> if (sensor?.waiting(nowS) == true) warmup else "${w.warmingUp} · $warmup"
+                ended -> w.sensorEnded
+                else -> Freshness.timeText(t, nowS)
+            }
+        val own = warmup != null || ended
         val ink =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
                 typeface = RoundedFont.typeface(600)
             }
-        val hasIcon = age == Freshness.AgeMark.NO_READINGS
+        val hasIcon = own || age == Freshness.AgeMark.NO_READINGS
 
         // the pill's width at text size s: icon + gap + text + padding (the same proportions as below)
         fun width(s: Float): Float {
@@ -162,11 +189,23 @@ object GlucoseCard {
         cv.drawRoundRect(box, bh / 2, bh / 2, bg)
         val clip = cv.save()
         cv.clipRect(box)
-        if (icon > 0) Glyphs.drawSymbol(cv, Glyphs.noReadings, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+        when {
+            warmup != null -> SensorBadge.disc(cv, box.left + padX, box.centerY() - icon / 2, icon, checkNotNull(sensor), pal)
+            ended -> SensorBadge.flag(cv, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+            icon > 0 -> Glyphs.drawSymbol(cv, Glyphs.noReadings, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+        }
         cv.drawText(text, box.left + padX + icon + gap, box.centerY() + size * 0.36f, ink)
         cv.restoreToCount(clip)
-        rec.add("graph.age", box, age.key)
-        rec.add("time.text", info = text)
+        rec.add(
+            "graph.age",
+            box,
+            when {
+                warmup != null -> "warmup"
+                ended -> "ended"
+                else -> age.key
+            },
+        )
+        if (own) rec.add("graph.age.text", info = text) else rec.add("time.text", info = text)
     }
 
     /** [draw] into a new bitmap of [wDp] × [hDp] dp at [d] px per dp (widgets, the notification, the lock screen). */
@@ -179,9 +218,10 @@ object GlucoseCard {
         pal: GraphPalette,
         surface: CardSurface,
         part: CardPart = CardPart.ALL,
+        fontScale: Float = 1f,
     ): Bitmap {
         val bmp = Bitmap.createBitmap((wDp * d).toInt().coerceAtLeast(1), (hDp * d).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        draw(Canvas(bmp), bmp.width.toFloat(), bmp.height.toFloat(), model, st, pal, d, surface, part)
+        draw(Canvas(bmp), bmp.width.toFloat(), bmp.height.toFloat(), model, st, pal, d, surface, part, fontScale = fontScale)
         return bmp
     }
 
@@ -197,17 +237,28 @@ object GlucoseCard {
 
     /**
      * The value's decision for the newest reading [latest] for [surface]: the card's number and every glyph surface
-     * take it from here ([Freshness.look]: a warming-up or ended sensor first, then the freshness steps).
+     * take it from here ([Freshness.look]: a warming-up or ended sensor first, then the freshness steps), the number in
+     * the person's [unit] with [locale]'s decimal separator.
      */
     fun face(
         latest: GlucosePoint?,
         nowS: Long,
         sensor: SensorBadge.Look?,
         surface: CardSurface,
+        unit: GlucoseUnit,
+        locale: Locale = Locale.getDefault(),
     ): GlucoseLook =
         Freshness
-            .look(latest?.sgv, latest?.t, latest?.rate, nowS, ended = sensor?.ended == true, warmup = sensor?.warmup)
-            .also { f -> faceObserver?.invoke(surface, f) }
+            .look(
+                latest?.sgv,
+                latest?.t,
+                latest?.rate,
+                nowS,
+                ended = sensor?.ended == true,
+                warmup = sensor?.warmup,
+                unit = unit,
+                locale = locale,
+            ).also { f -> faceObserver?.invoke(surface, f) }
 
     /**
      * Where the sensor's time left goes on a card [st] (the WHOLE card, also when drawn in parts): in the chart's
@@ -224,6 +275,51 @@ object GlucoseCard {
             st.graph != null && fr.showGraph && st.graph.axisLabels -> SensorSpot.GRAPH
             else -> SensorSpot.NONE
         }
+
+    /** The user's rings with enough data and the fallback ring (shown when no recent treatment takes its place). */
+    private fun slotInputs(
+        st: CardStyle,
+        last: LastTreatment.Info?,
+        model: CardModel,
+        bands: Bands,
+    ): Pair<List<Triple<Int, RingSpec, GlucoseMetrics>>, Pair<RingSpec, GlucoseMetrics>?> {
+        val rings =
+            st.rings.take(3).mapIndexedNotNull { i, spec ->
+                model.metrics(spec, bands).takeIf { it.tir.coverage >= MIN_COVERAGE }?.let { Triple(i, spec, it) }
+            }
+        val fallback =
+            if (st.last != LastPlace.OFF && last == null) {
+                st.lastElse?.let { s -> model.metrics(s, bands).takeIf { it.tir.coverage >= MIN_COVERAGE }?.let { s to it } }
+            } else {
+                null
+            }
+        return rings to fallback
+    }
+
+    /**
+     * The slots a card [st] shows for [model], as words for a text-only place (`Slots.text`: value, short label), in
+     * priority order (main ring, a recent treatment, second ring, …), at most [max]: the same choice the drawn card
+     * makes, for a place that can only write text (Android 17's MetricStyle).
+     */
+    fun slotTexts(
+        model: CardModel,
+        st: CardStyle,
+        max: Int,
+    ): List<Pair<String, String>> = slotItems(model, st, max).mapNotNull { Slots.text(it, model.nowS, model.words) }
+
+    /** The slots a card [st] shows for [model], main first, at most [max] (what [slotTexts] and [A11y] say). */
+    internal fun slotItems(
+        model: CardModel,
+        st: CardStyle,
+        max: Int,
+    ): List<SlotItem> {
+        val bands = st.bands.sane()
+        val last = if (st.last != LastPlace.OFF) LastTreatment.of(model.treatments, model.muteRule, model.status, model.nowS) else null
+        val (rings, fallback) = slotInputs(st, last, model, bands)
+        val items = Slots.arrange(rings, st.last, last, fallback, max, st.unit)
+        val main = Slots.mainIndex(items)
+        return if (main > 0) listOf(items[main]) + items.filterIndexed { i, _ -> i != main } else items
+    }
 
     /**
      * Slots right-aligned in [box] (main rightmost); returns the width used. Beside the value ([dedicated] false) at
@@ -247,25 +343,17 @@ object GlucoseCard {
         val size = if (st.slotDisc != null) min(box.height(), 84 * d) else min(box.height() * 0.96f, 84 * d)
         if (size < 30 * d) return 0f
         val gap = if (st.slotDisc != null) 6 * d else size * 0.14f
-        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(4)
+        val most = if (!dedicated && size < CROWDED_DP * d) CROWDED_MAX else 4
+        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(most)
         if (fit < 1) return 0f
-        val rings =
-            st.rings.take(3).mapIndexedNotNull { i, spec ->
-                model.metrics(spec, bands).takeIf { it.tir.coverage >= MIN_COVERAGE }?.let { Triple(i, spec, it) }
-            }
-        val fallback =
-            if (st.last != LastPlace.OFF && last == null) {
-                st.lastElse?.let { s -> model.metrics(s, bands).takeIf { it.tir.coverage >= MIN_COVERAGE }?.let { s to it } }
-            } else {
-                null
-            }
-        var items = Slots.arrange(rings, st.last, last, fallback, fit)
+        val (rings, fallback) = slotInputs(st, last, model, bands)
+        var items = Slots.arrange(rings, st.last, last, fallback, fit, st.unit)
         // in a box of their own every slot fits whole, the laurels' extra room included
         if (dedicated) {
             while (items.isNotEmpty() &&
                 items.size * size + (items.size - 1) * gap + Slots.extraWidth(items, size / 2) > box.width() + 0.5f
             ) {
-                items = Slots.arrange(rings, st.last, last, fallback, items.size - 1)
+                items = Slots.arrange(rings, st.last, last, fallback, items.size - 1, st.unit)
             }
         }
         if (items.isEmpty()) return 0f

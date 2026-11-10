@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -38,34 +39,59 @@ class TypedStoreCorruptionTest {
         TypedStore<Pairing?>(file, Pairing.serializer().nullable, initial = null, whenCorrupt = LOST, SukraraJson, log, clock, scope)
 
     @Test
-    fun `missing file starts at initial, updates persist`() = runTest {
-        val store = store(backgroundScope)
-        assertNull(store.data.first())
-        store.update { Pairing("ABC", 1) }
-        assertEquals(Pairing("ABC", 1), store.data.first())
-        assertTrue(file.readText().contains("\"serial\":\"ABC\""))
-        assertNull(store.corruption.value)
+    fun `missing file starts at initial, updates persist`() =
+        runTest {
+            val store = store(backgroundScope)
+            assertNull(store.data.first())
+            store.update { Pairing("ABC", 1) }
+            assertEquals(Pairing("ABC", 1), store.data.first())
+            assertTrue(file.readText().contains("\"serial\":\"ABC\""))
+            assertNull(store.corruption.value)
+        }
+
+    @Test
+    fun `a damaged file is kept aside and reported, then the chosen value applies`() =
+        runTest {
+            file.parentFile!!.mkdirs()
+            file.writeText("{\"serial\": tru")
+            val store = store(backgroundScope)
+
+            assertEquals(LOST, store.data.first())
+
+            val report = checkNotNull(store.corruption.value)
+            assertEquals("{\"serial\": tru", report.quarantinedTo!!.readText())
+            assertEquals(listOf(report), log.files.value)
+        }
+
+    @Test
+    fun `the report never quotes the damaged content`() =
+        runTest {
+            file.parentFile!!.mkdirs()
+            file.writeText("{\"serial\": \"3MH00SECRET42\", \"epoch\": 7.5mmol")
+            val store = store(backgroundScope)
+
+            assertEquals(LOST, store.data.first())
+
+            val report = checkNotNull(store.corruption.value)
+            assertEquals(StoreKind.File, report.kind)
+            assertFalse(report.toString(), report.toString().contains("SECRET42"))
+            assertFalse(report.reason.contains("mmol"))
+            assertTrue(report.reason, report.reason.endsWith("Exception"))
+        }
+
+    @Test
+    fun `the reason is the root cause's class name, never a message`() {
+        val error = IllegalStateException("glucose 182 mg/dL", IllegalArgumentException("{\"nsec\":\"x\"}"))
+        assertEquals("IllegalArgumentException", reasonOf(error))
     }
 
     @Test
-    fun `a damaged file is kept aside and reported, then the chosen value applies`() = runTest {
-        file.parentFile!!.mkdirs()
-        file.writeText("{\"serial\": tru")
-        val store = store(backgroundScope)
-
-        assertEquals(LOST, store.data.first())
-
-        val report = checkNotNull(store.corruption.value)
-        assertEquals("{\"serial\": tru", report.quarantinedTo!!.readText())
-        assertEquals(listOf(report), log.files.value)
-    }
-
-    @Test
-    fun `unknown fields from a newer version are ignored, not corruption`() = runTest {
-        file.parentFile!!.mkdirs()
-        file.writeText("{\"serial\":\"X\",\"epoch\":3,\"future\":true}")
-        val store = store(backgroundScope)
-        assertEquals(Pairing("X", 3), store.data.first())
-        assertNull(store.corruption.value)
-    }
+    fun `unknown fields from a newer version are ignored, not corruption`() =
+        runTest {
+            file.parentFile!!.mkdirs()
+            file.writeText("{\"serial\":\"X\",\"epoch\":3,\"future\":true}")
+            val store = store(backgroundScope)
+            assertEquals(Pairing("X", 3), store.data.first())
+            assertNull(store.corruption.value)
+        }
 }

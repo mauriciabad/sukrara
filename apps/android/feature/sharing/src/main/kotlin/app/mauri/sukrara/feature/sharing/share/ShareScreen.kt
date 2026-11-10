@@ -60,13 +60,14 @@ import app.mauri.sukrara.feature.sharing.setup.startSafely
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
-import kotlinx.coroutines.launch
 
 /**
  * "Share with someone": a label only the wearer sees, then a single-use invite as a QR (springs in) and a link to send
- * or copy, its expiry and what the follower will see. Every invite still needs the wearer's Allow.
+ * or copy, its expiry and what the follower will see. Every invite still needs the wearer's Allow. While
+ * [internetOff] (an invite link and its request travel over the internet) it says so and offers to turn it on.
  */
 @Composable
 fun ShareScreen(
@@ -74,10 +75,16 @@ fun ShareScreen(
     onCreate: (String) -> Unit,
     onAnother: () -> Unit,
     modifier: Modifier = Modifier,
+    internetOff: Boolean = false,
+    onTurnOnInternet: () -> Unit = {},
 ) {
     var label by rememberSaveable { mutableStateOf("") }
     Column(
-        modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
+        modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         StepHeader(stringResource(R.string.sh_share_title), stringResource(R.string.sh_share_body))
@@ -92,13 +99,22 @@ fun ShareScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (invite is InviteUi.Failed) NoteCard(stringResource(R.string.sh_share_failed), error = true)
+                if (internetOff) {
+                    NoteCard(stringResource(R.string.sh_share_internet_off))
+                    OutlinedButton(onClick = onTurnOnInternet, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.sh_share_internet_turn_on))
+                    }
+                }
                 Button(
                     onClick = { onCreate(label) },
-                    enabled = invite !is InviteUi.Creating,
+                    enabled = invite !is InviteUi.Creating && !internetOff,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) { Text(stringResource(if (invite is InviteUi.Failed) R.string.sh_share_try_again else R.string.sh_share_create)) }
             }
-            is InviteUi.Ready -> ReadyInvite(invite.invite, onAnother)
+
+            is InviteUi.Ready -> {
+                ReadyInvite(invite.invite, onAnother)
+            }
         }
         Text(stringResource(R.string.sh_share_they_see), style = MaterialTheme.typography.titleSmall)
         Text(stringResource(R.string.sh_share_they_see_body), style = MaterialTheme.typography.bodyMedium)
@@ -129,8 +145,10 @@ private fun ColumnScope.ReadyInvite(
             Modifier
                 .align(Alignment.CenterHorizontally)
                 .size(240.dp)
-                .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
-                .clip(RoundedCornerShape(16.dp))
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                }.clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
                 .padding(12.dp)
                 .semantics { contentDescription = qrLabel },
@@ -164,7 +182,9 @@ private fun ColumnScope.ReadyInvite(
             modifier = Modifier.weight(1f).heightIn(min = 48.dp),
         ) { Text(stringResource(R.string.sh_share_copy)) }
     }
-    OutlinedButton(onClick = onAnother, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.sh_share_another)) }
+    OutlinedButton(onClick = onAnother, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Text(stringResource(R.string.sh_share_another))
+    }
 }
 
 private const val LABEL_MAX = 40
@@ -175,6 +195,7 @@ internal fun qrBitmap(
     size: Int,
 ): Bitmap {
     val matrix = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size, mapOf(EncodeHintType.MARGIN to 1))
-    val pixels = IntArray(size * size) { i -> if (matrix[i % size, i / size]) android.graphics.Color.BLACK else android.graphics.Color.WHITE }
+    val pixels =
+        IntArray(size * size) { i -> if (matrix[i % size, i / size]) android.graphics.Color.BLACK else android.graphics.Color.WHITE }
     return Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888)
 }

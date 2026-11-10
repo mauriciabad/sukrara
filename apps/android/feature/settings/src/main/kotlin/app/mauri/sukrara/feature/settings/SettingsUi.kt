@@ -7,12 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,15 +21,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -36,6 +39,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -44,14 +48,15 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.alerts.AlertKind
-import app.mauri.sukrara.core.designsystem.R as DsR
 import app.mauri.sukrara.core.model.DurationWords
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.settings.NumberSpec
 import java.time.Instant
 import java.time.ZoneId
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * A settings page: large collapsing title, a back button, the groups scrolling below. [scroll] false: the content
@@ -62,13 +67,16 @@ import java.time.ZoneId
 fun SettingsPage(
     title: String,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     scroll: Boolean = true,
+    snackbar: SnackbarHostState? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.fillMaxSize().nestedScroll(bar.nestedScrollConnection),
+        modifier = modifier.fillMaxSize().nestedScroll(bar.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        snackbarHost = { snackbar?.let { SnackbarHost(it) } },
         topBar = {
             LargeTopAppBar(
                 title = { Text(title) },
@@ -120,6 +128,29 @@ fun StateStrip(
     }
 }
 
+/** Each alert's icon: the level alerts are a reading below / above its threshold lines, the rates double arrows. */
+@DrawableRes
+fun kindIcon(kind: AlertKind): Int =
+    when (kind) {
+        AlertKind.VERY_LOW -> DsR.drawable.ds_ic_dia_very_low
+        AlertKind.LOW -> DsR.drawable.ds_ic_dia_low
+        AlertKind.HIGH -> DsR.drawable.ds_ic_dia_high
+        AlertKind.VERY_HIGH -> DsR.drawable.ds_ic_dia_very_high
+        AlertKind.EXTREMELY_HIGH -> DsR.drawable.ds_ic_dia_extremely_high
+        AlertKind.FALLING_FAST -> DsR.drawable.ds_ic_keyboard_double_arrow_down
+        AlertKind.RISING_FAST -> DsR.drawable.ds_ic_keyboard_double_arrow_up
+        AlertKind.NO_DATA -> DsR.drawable.ds_ic_no_data
+    }
+
+/** The quiet rules' icons: insulin, carbs, a falling trend. */
+@DrawableRes
+fun quietIcon(which: QuietKind): Int =
+    when (which) {
+        QuietKind.AfterInsulin -> DsR.drawable.ds_ic_dia_insulin_rapid
+        QuietKind.AfterCarbs -> DsR.drawable.ds_ic_dia_carbs
+        QuietKind.FallingHigh -> DsR.drawable.ds_ic_trending_down
+    }
+
 /** An alert kind's name ("Very low", "No data"). */
 @Composable
 fun kindName(kind: AlertKind): String =
@@ -137,8 +168,28 @@ fun kindName(kind: AlertKind): String =
     )
 
 /**
+ * An alert kind inside a sentence, never a capitalised name mid-sentence: "Use the very low alert" / es "Usar la
+ * alerta de glucosa muy baja", "¿Desactivar la alerta sin datos?".
+ */
+@Composable
+fun kindInSentence(kind: AlertKind): String =
+    stringResource(
+        when (kind) {
+            AlertKind.VERY_LOW -> R.string.st_kind_in_very_low
+            AlertKind.LOW -> R.string.st_kind_in_low
+            AlertKind.HIGH -> R.string.st_kind_in_high
+            AlertKind.VERY_HIGH -> R.string.st_kind_in_very_high
+            AlertKind.EXTREMELY_HIGH -> R.string.st_kind_in_extremely_high
+            AlertKind.FALLING_FAST -> R.string.st_kind_in_falling_fast
+            AlertKind.RISING_FAST -> R.string.st_kind_in_rising_fast
+            AlertKind.NO_DATA -> R.string.st_kind_in_no_data
+        },
+    )
+
+/**
  * Labels number values as the dialogs and rows show them: the special word ("Once", "Until you turn it off") or
- * "70 mg/dL" / "30 min". A plain function (dialog option labels aren't composable), built from this locale's strings.
+ * "70 mg/dL" / "3,9 mmol/L" (a glucose format in the screen's unit, [LocalGlucoseUnit]) / "30 min". A plain function
+ * (dialog option labels aren't composable), built from this locale's strings. Values are stored ones.
  */
 @Composable
 fun numberLabeler(): (NumberSpec, Double) -> String {
@@ -158,10 +209,21 @@ fun numberLabeler(): (NumberSpec, Double) -> String {
             "s" to stringResource(DsR.string.ds_unit_s),
         )
     val durations = CardWords.of(LocalContext.current.resources).durations
+    val glucose = LocalGlucoseUnit.current
     return { spec, value ->
+        val shown = spec.inUnit(glucose)
         spec.specialOf(value)?.let { words[it] ?: it }
             ?: minutesText(spec, value, durations)
-            ?: listOf(spec.text(value), units[spec.unit] ?: spec.unit).filter { it.isNotEmpty() }.joinToString(" ")
+            // insulin units stick to the number like everywhere else ("2.0u", FEATURES "Treatments")
+            ?: listOf(spec.text(value, glucose), units[shown.unit] ?: shown.unit).filter { it.isNotEmpty() }.joinToString(
+                if (spec.unit ==
+                    "u"
+                ) {
+                    ""
+                } else {
+                    " "
+                },
+            )
     }
 }
 
@@ -176,6 +238,17 @@ internal fun minutesText(
 ): String? {
     if (spec.unit != "min" || spec.scale != 1.0 || value < 0 || value != Math.rint(value)) return null
     return Durations.text(value.toLong(), words)
+}
+
+/**
+ * Writes a glucose level (mg/dL) as the screens show it, in the screen's unit ([LocalGlucoseUnit]) through THE
+ * conversion (`GlucoseUnit`): "70 mg/dL", "3,9 mmol/L". A plain function, like [numberLabeler].
+ */
+@Composable
+fun glucoseLabeler(): (Int) -> String {
+    val unit = LocalGlucoseUnit.current
+    val locale = LocalConfiguration.current.locales[0]
+    return { mgdl -> "${unit.text(mgdl, locale)} ${unit.symbol}" }
 }
 
 /** One number value's label (see [numberLabeler]). */
@@ -241,14 +314,20 @@ fun thresholdInput(
     kind: AlertKind,
 ): app.mauri.sukrara.designsystem.dialog.NumberInput {
     val spec = SchemaPrefs.thresholdSpec(kind)
+    val unit = LocalGlucoseUnit.current
     val between = stringResource(R.string.st_threshold_between)
     return app.mauri.sukrara.designsystem.dialog.NumberInput(
         spec,
-        presets = spec.presets.filter { AlertEdits.thresholdConflict(settings, kind, it) == null },
+        keep = { AlertEdits.thresholdConflict(settings, kind, it) == null },
         reject = { v ->
             AlertEdits.thresholdConflict(settings, kind, v)?.let { (lo, hi) ->
-                between.format(lo?.let(spec::text) ?: spec.text(spec.min), hi?.let(spec::text) ?: spec.text(spec.max))
+                val shown = spec.inUnit(unit)
+                between.format(
+                    "${spec.text(lo ?: spec.min, unit)} ${shown.unit}",
+                    "${spec.text(hi ?: spec.max, unit)} ${shown.unit}",
+                )
             }
         },
+        unit = unit,
     )
 }

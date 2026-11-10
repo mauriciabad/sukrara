@@ -5,6 +5,8 @@ package app.mauri.sukrara.core.data.files
 
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.CorruptionLog
+import app.mauri.sukrara.core.data.StoreKind
+import app.mauri.sukrara.core.data.reasonOf
 import app.mauri.sukrara.core.model.Clock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
@@ -50,29 +52,32 @@ class FileStore<T>(
     private val lock = Mutex()
     private var quarantined: FileLoad.Corrupt? = null
 
-    suspend fun load(): FileLoad<T> = withContext(io) {
-        lock.withLock {
-            if (!file.exists()) return@withLock FileLoad.Missing
-            when (val decoded = decode(file.readBytes())) {
-                is Decoded.Ok -> FileLoad.Loaded(decoded.value)
-                is Decoded.Damaged -> quarantine(decoded.reason)
+    suspend fun load(): FileLoad<T> =
+        withContext(io) {
+            lock.withLock {
+                if (!file.exists()) return@withLock FileLoad.Missing
+                when (val decoded = decode(file.readBytes())) {
+                    is Decoded.Ok -> FileLoad.Loaded(decoded.value)
+                    is Decoded.Damaged -> quarantine(decoded.reason)
+                }
             }
         }
-    }
 
-    suspend fun save(value: T) = withContext(io) {
-        lock.withLock {
-            writeAtomically(file, codec.encode(value))
-            quarantined = null
+    suspend fun save(value: T) =
+        withContext(io) {
+            lock.withLock {
+                writeAtomically(file, codec.encode(value))
+                quarantined = null
+            }
         }
-    }
 
-    suspend fun delete() = withContext(io) {
-        lock.withLock {
-            if (file.exists() && !file.delete()) throw IOException("can't delete ${file.name}")
-            quarantined = null
+    suspend fun delete() =
+        withContext(io) {
+            lock.withLock {
+                if (file.exists() && !file.delete()) throw IOException("can't delete ${file.name}")
+                quarantined = null
+            }
         }
-    }
 
     private sealed interface Decoded<out T> {
         data class Ok<T>(val value: T) : Decoded<T>
@@ -87,14 +92,14 @@ class FileStore<T>(
         } catch (e: IOException) {
             throw e
         } catch (e: Exception) {
-            Decoded.Damaged(e.javaClass.simpleName)
+            Decoded.Damaged(reasonOf(e))
         }
 
     private fun quarantine(reason: String): FileLoad.Corrupt {
         quarantined?.let { return it }
         val now = clock.now()
         val copy = file.copyTo(quarantineTarget(file, now.toEpochMilli()), overwrite = true)
-        corruption.report(CorruptFile(store = file.name, quarantinedTo = copy, at = now, reason = reason))
+        corruption.report(CorruptFile(StoreKind.File, store = file.name, quarantinedTo = copy, at = now, reason = reason))
         return FileLoad.Corrupt(copy, reason).also { quarantined = it }
     }
 

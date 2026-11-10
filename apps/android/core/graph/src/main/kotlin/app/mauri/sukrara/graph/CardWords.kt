@@ -7,6 +7,8 @@ import android.content.res.Resources
 import app.mauri.sukrara.core.graph.R
 import app.mauri.sukrara.core.model.DurationWords
 import app.mauri.sukrara.core.model.Durations
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 /**
  * Every word the card draws, read once from the graph's strings (en + es) so the renderer itself needs no Context:
@@ -22,6 +24,8 @@ class CardWords private constructor(
     val muted: String = r.getString(R.string.badge_muted_short)
     val replaceSensor: String = r.getString(R.string.badge_replace_sensor)
     val replaceSensorShort: String = r.getString(R.string.badge_replace_sensor_short)
+    val sensorEndedPill: String = r.getString(R.string.badge_sensor_ended)
+    val sensorEndedPillShort: String = r.getString(R.string.badge_sensor_ended_short)
     val backToNow: String = r.getString(R.string.chart_back_to_now)
     val slotAverage: String = r.getString(R.string.slot_average_short)
     val slotGmi: String = r.getString(R.string.slot_gmi_short)
@@ -52,16 +56,15 @@ class CardWords private constructor(
     fun timeLeft(min: Long): String =
         r.getQuantityString(R.plurals.badge_time_left, Durations.compactQuantity(min), Durations.compact(min, durations))
 
+    /** The range word the card draws under an out-of-range value ("Low", "Very high"). */
+    fun range(state: RangeState): String = r.getString(state.words)
+
     /** "Muted · 1h 20m". */
     fun mutedFor(min: Long): String = r.getString(R.string.badge_muted_for, Durations.compact(min, durations))
 
     fun ago(duration: String): String = r.getString(R.string.duration_ago, duration)
 
     fun readyAt(time: String): String = r.getString(R.string.card_ready_at, time)
-
-    /** "Sensor: 13d left" for [min] minutes left. */
-    fun sensorLeft(min: Long): String =
-        r.getQuantityString(R.plurals.card_sensor_left, Durations.wholeQuantity(min), Durations.whole(min, durations))
 
     /** A slot's window: "1d", "12h". */
     fun period(windowS: Long): String =
@@ -80,14 +83,18 @@ class CardWords private constructor(
         return if (m < 1) durationNow else Durations.compact(m, durations)
     }
 
-    /** The trend in words for [rate] mg/dL/min (null = unknown). */
+    /** The trend in words for [rate] mg/dL/min (null = unknown): one word per arrow ([TrendAngle.step]). */
     fun trend(rate: Double?): String =
         r.getString(
-            when {
-                rate == null -> R.string.trend_unknown
-                kotlin.math.abs(rate) < 1 -> R.string.trend_steady
-                rate > 0 -> if (rate >= 2) R.string.trend_rising_fast else R.string.trend_rising
-                else -> if (rate <= -2) R.string.trend_falling_fast else R.string.trend_falling
+            when (rate?.let(TrendAngle::step)) {
+                null -> R.string.trend_unknown
+                3 -> R.string.trend_rising_very_fast
+                2 -> R.string.trend_rising_fast
+                1 -> R.string.trend_rising
+                0 -> R.string.trend_steady
+                -1 -> R.string.trend_falling
+                -2 -> R.string.trend_falling_fast
+                else -> R.string.trend_falling_very_fast
             },
         )
 
@@ -95,6 +102,20 @@ class CardWords private constructor(
         id: Int,
         vararg args: Any,
     ): String = r.getString(id, *args)
+
+    internal fun plural(
+        id: Int,
+        quantity: Int,
+        vararg args: Any,
+    ): String = r.getQuantityString(id, quantity, *args)
+
+    /** The language these words are in (a spoken sentence's capital letter, the range word in lower case). */
+    val locale: Locale = r.configuration.locales[0]
+
+    private val decimalSeparator = DecimalFormatSymbols.getInstance(locale).decimalSeparator
+
+    /** A number the card drew ("6.7", "6,7") with this language's decimal separator, so it is read as one number. */
+    internal fun decimal(number: String): String = number.replace('.', decimalSeparator).replace(',', decimalSeparator)
 
     companion object {
         /** The words for [resources]' language (a widget / notification / Compose context's). */

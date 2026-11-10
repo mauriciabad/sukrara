@@ -13,6 +13,10 @@
     <string name="sh_setup_continue">Continue</string>
     <!-- Setup: leave this step for later (goes to the Finish setup card) -->
     <string name="sh_setup_later">Later</string>
+    <string name="sh_setup_test_title">Send a test alert</string>
+    <string name="sh_setup_test_body">The real alert, marked as a test. Try it with Do Not Disturb on.</string>
+    <string name="sh_setup_test_sent">Sent: check your notifications. It goes away by itself in 2 min.</string>
+    <string name="sh_setup_test_send">Send</string>
     <!-- Setup: skip this step (goes to the Finish setup card) -->
     <string name="sh_setup_skip">Skip</string>
     <!-- Setup: first button on the welcome screen -->
@@ -42,13 +46,36 @@
     <!-- Setup role: what the follower option means -->
     <string name="sh_setup_role_follower_means">This phone shows someone else\'s glucose.</string>
     <!-- Setup role: following is not in this build yet -->
-    <string name="sh_setup_role_follower_later">Following on Android comes in a later version. Use Sukrara for Mac to follow.</string>
     <!-- Setup role confirmation title; %1$s = the chosen option -->
     <string name="sh_setup_role_confirm_title">%1$s?</string>
     <!-- Setup role confirmation: what it means -->
     <string name="sh_setup_role_confirm_text">One role per install. Changing it later means reinstalling Sukrara.</string>
     <!-- Setup role confirmation button -->
     <string name="sh_setup_role_confirm">Confirm</string>
+    <!-- Setup role change that deletes history: dialog title -->
+    <string name="sh_setup_role_delete_title">Delete the earlier history?</string>
+    <!-- Setup role change that deletes history: %1$s = the chosen option, %2$s = what is deleted ("1,204 glucose readings and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
+    <string name="sh_setup_role_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone. To keep a copy, export a CSV file first.</string>
+    <!-- Setup role change: how many glucose readings are deleted; %1$s = the number -->
+    <plurals name="sh_setup_role_delete_readings">
+        <item quantity="one">%1$s glucose reading</item>
+        <item quantity="other">%1$s glucose readings</item>
+    </plurals>
+    <!-- Setup role change: how many treatments (insulin, carbs) are deleted; %1$s = the number -->
+    <plurals name="sh_setup_role_delete_treatments">
+        <item quantity="one">%1$s treatment</item>
+        <item quantity="other">%1$s treatments</item>
+    </plurals>
+    <!-- Setup role change: readings and treatments together; %1$s = readings, %2$s = treatments -->
+    <string name="sh_setup_role_delete_and">%1$s and %2$s</string>
+    <!-- Setup role change: the deleted history's dates; %1$s = first day, %2$s = last day -->
+    <string name="sh_setup_role_delete_range">from %1$s to %2$s</string>
+    <!-- Setup role change: the deleted history is from one day; %1$s = the day -->
+    <string name="sh_setup_role_delete_day">from %1$s</string>
+    <!-- Setup role change: opens the CSV export (all of the history) before deleting -->
+    <string name="sh_setup_role_delete_export">Export CSV first</string>
+    <!-- Setup role change: deletes the history and stores the new role -->
+    <string name="sh_setup_role_delete_confirm">Delete and continue</string>
     <!-- Setup checklist: title -->
     <string name="sh_setup_permissions_title">Let alerts reach you</string>
     <!-- Setup checklist: explanation -->
@@ -126,7 +153,7 @@
     <!-- Start fresh confirmation title -->
     <string name="sh_fresh_confirm_title">Start fresh?</string>
     <!-- Start fresh confirmation text -->
-    <string name="sh_fresh_confirm_text">Your followers (and your Mac) will need a new invite. Your old identity can\'t be brought to this phone later without reinstalling.</string>
+    <string name="sh_fresh_confirm_text">Your followers (and your Mac) will need a new invite. To use your old identity again later, restore it in Settings › Sharing › Backup › Replace this identity.</string>
     <!-- Start fresh confirmation button -->
     <string name="sh_fresh_confirm">Start fresh</string>
     <!-- Identity conflict: title -->
@@ -165,10 +192,12 @@
     <string name="sh_share_try_again">Try again</string>
     <!-- Error creating invite -->
     <string name="sh_share_failed">Couldn\'t create the invite. Check the internet and that sharing is set up.</string>
+    <string name="sh_share_internet_off">Sharing over the internet is off. An invite link and the request it brings travel over the internet: turn it on to invite someone, or use Pair nearby in Settings › Sharing.</string>
+    <string name="sh_share_internet_turn_on">Turn on sharing over the internet</string>
     <!-- TalkBack label of the invite QR -->
     <string name="sh_share_qr_label">Invite QR code. The link is below.</string>
     <!-- Share: instructions -->
-    <string name="sh_share_scan">Ask them to install Sukrara, choose \"I follow someone\" and scan this code, or send them the link.</string>
+    <string name="sh_share_scan">Send them the link: they open it in Sukrara on their phone or Mac. Sukrara on another phone or a Mac can also scan this code.</string>
     <!-- Invite note; %1$s = expiry, %2$s = label -->
     <string name="sh_share_note">This link works once, until %1$s. Send it only to %2$s: whoever opens it first can ask to follow you, and you still allow them. It holds no key to your glucose.</string>
     <!-- Invite note; %1$s = expiry -->
@@ -235,4 +264,320 @@
         <item quantity="one">%1$d follower</item>
         <item quantity="other">%1$d followers</item>
     </plurals>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_cube">Cube</string>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_drop">Drop</string>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_dots">Dots</string>
+    <!-- Avatar shape -->
+    <string name="sh_avatar_shape_rings">Rings</string>
+    <!-- Avatar shape: the name's first letter -->
+    <string name="sh_avatar_shape_letter">Letter</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_teal">Teal</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_lime">Lime</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_coral">Coral</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_purple">Purple</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_amber">Amber</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_sky">Sky blue</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_pink">Pink</string>
+    <!-- Avatar colour (TalkBack) -->
+    <string name="sh_avatar_colour_grey">Grey</string>
+    <!-- Button: a new random picture -->
+    <string name="sh_avatar_shuffle">Shuffle</string>
+    <!-- Button: show the picture options -->
+    <string name="sh_avatar_customize">Customize</string>
+    <!-- Button: hide the picture options -->
+    <string name="sh_avatar_done">Done</string>
+    <!-- Button: rotate the picture's colours -->
+    <string name="sh_avatar_turn_colours">Turn the colours</string>
+    <!-- Page title: your name and picture as followers see them -->
+    <string name="sh_profile_title">How you appear</string>
+    <!-- Field: the person's name -->
+    <string name="sh_profile_name">Your name</string>
+    <!-- Note under the profile editor -->
+    <string name="sh_profile_privacy">Only the people you share with see your name and picture. They travel encrypted and are never published.</string>
+    <!-- How you appear: when followers see the change -->
+    <string name="sh_profile_followers_note">Your followers see the change the next time their app connects.</string>
+    <!-- How you appear: save refused -->
+    <string name="sh_profile_save_failed">Couldn\'t save: sharing is paused while another app shares as you. Your changes are still here.</string>
+    <!-- Button: save the profile -->
+    <string name="sh_profile_save">Save</string>
+    <!-- Profile row without a name -->
+    <string name="sh_profile_add_name">Add your name</string>
+    <!-- Profile row summary; %1$s = "2 followers" -->
+    <string name="sh_profile_row_summary">%1$s · How you appear</string>
+    <!-- Approve, leaked link: field for the code on the follower's phone -->
+    <string name="sh_approve_type_code">Code on their phone</string>
+    <!-- Approve: typed code differs -->
+    <string name="sh_approve_code_wrong">That\'s not the code on their phone.</string>
+    <!-- Approve: Allow didn't work -->
+    <string name="sh_approve_failed">Couldn\'t give access: the invite expired or was already used. Send a new invite.</string>
+    <!-- Approve: decide later (the request keeps waiting) -->
+    <string name="sh_approve_later">Later</string>
+    <!-- Approve: the invite card's heading -->
+    <string name="sh_approve_your_invite">Your invite</string>
+    <!-- Approve: invite without a label -->
+    <string name="sh_approve_no_label">Invite without a name</string>
+    <!-- Approve: the name looks like the invite's label (a hint) -->
+    <string name="sh_approve_label_matches">Name matches</string>
+    <!-- Approve: the name differs from the invite's label -->
+    <string name="sh_approve_label_differs">Different name</string>
+    <!-- Approve: %1$s = invite time, %2$s = request time -->
+    <string name="sh_approve_sent_asked">Sent %1$s · asked %2$s</string>
+    <!-- Approve: %1$s = request time -->
+    <string name="sh_approve_asked">Asked %1$s</string>
+    <!-- Backup page title / row -->
+    <string name="sh_backup_title">Backup</string>
+    <!-- Backup row: backed up -->
+    <string name="sh_backup_row_done">Backed up</string>
+    <!-- Backup row: not backed up -->
+    <string name="sh_backup_row_missing">Not backed up: a new phone would lose your followers</string>
+    <!-- Follower row: may add entries -->
+    <string name="sh_followers_can_add">Can add entries</string>
+    <!-- Follower row: only sees -->
+    <string name="sh_followers_sees_only">Sees only</string>
+    <!-- Button: show removed followers -->
+    <string name="sh_followers_removed_show">Removed</string>
+    <!-- Button: fold removed followers -->
+    <string name="sh_followers_removed_hide">See less</string>
+    <!-- Group title: removed followers -->
+    <string name="sh_followers_removed">Removed</string>
+    <!-- Removed follower; %1$s = date -->
+    <string name="sh_followers_removed_at">Removed %1$s</string>
+    <!-- Switch: follower may add entries -->
+    <string name="sh_followers_writer">Can add entries</string>
+    <!-- Switch summary -->
+    <string name="sh_followers_writer_summary">Meals, insulin and notes they add appear in your log.</string>
+    <!-- Writer switch refused -->
+    <string name="sh_followers_writer_refused">Couldn\'t change it: sharing is paused while another app shares as you.</string>
+    <!-- Backup intro, backed up -->
+    <string name="sh_backup_intro_saved">Your sharing identity is saved outside this phone. On a new phone, restore it and your followers keep seeing you.</string>
+    <!-- Backup intro, not backed up -->
+    <string name="sh_backup_intro_missing">Your sharing identity only exists on this phone. If you lose it, everyone would need a new invite.</string>
+    <!-- Row: save to password manager -->
+    <string name="sh_backup_save">Save to password manager</string>
+    <!-- Row: save again -->
+    <string name="sh_backup_save_again">Save to password manager again</string>
+    <!-- Saved; %1$s = date -->
+    <string name="sh_backup_saved_at">Saved %1$s</string>
+    <!-- Row summary -->
+    <string name="sh_backup_recommended">Recommended: restore on a new phone in one tap</string>
+    <!-- Row / dialog: recovery code -->
+    <string name="sh_recovery_title">Recovery code</string>
+    <!-- Row summary -->
+    <string name="sh_recovery_summary">A code protected by your password, to keep somewhere safe</string>
+    <!-- Recovery code kept; %1$s = date -->
+    <string name="sh_recovery_kept_at">Copied %1$s</string>
+    <!-- Row: the encrypted backup on relays -->
+    <string name="sh_backup_relays">Follower list on relays</string>
+    <!-- %1$s = date -->
+    <string name="sh_backup_relays_updated">Updated %1$s (encrypted)</string>
+    <!-- Not yet on relays -->
+    <string name="sh_backup_relays_not_yet">Not uploaded yet: it goes out when the phone is online</string>
+    <!-- Save result -->
+    <string name="sh_backup_saved">Saved to your password manager.</string>
+    <!-- Save result -->
+    <string name="sh_backup_cancelled">Not saved: you closed the password manager.</string>
+    <!-- Save result -->
+    <string name="sh_backup_failed">Your password manager couldn\'t save it. Try again, or make a recovery code.</string>
+    <!-- Save result -->
+    <string name="sh_backup_no_identity">There\'s no sharing identity to save yet.</string>
+    <!-- Backup footer -->
+    <string name="sh_backup_footer">The relays only hold your follower list, encrypted. Without the password manager entry or the recovery code nobody can restore it, not even you.</string>
+    <!-- Backup › Replace this identity (restore another or start fresh over a working one) -->
+    <string name="sh_replace_title">Replace this identity</string>
+    <string name="sh_replace_summary">Restore another identity or start fresh. Every follower needs a new invite.</string>
+    <string name="sh_replace_intro">This phone shares your glucose as one identity. Replacing it ends sharing as this one, for every phone and Mac that follows it.</string>
+    <string name="sh_replace_lose_title">What your followers lose</string>
+    <string name="sh_replace_lose_named">Your glucose stops reaching %1$s right away.</string>
+    <string name="sh_replace_lose_none">No one follows this identity now.</string>
+    <string name="sh_replace_lose_invite">Their Sukrara says you stopped sharing, not that no data arrives. Each one needs a new invite from you to follow you again.</string>
+    <string name="sh_replace_lose_pending">Requests waiting for you and unused invites stop working.</string>
+    <string name="sh_replace_not_backed_up">This identity isn\'t backed up: once replaced, it\'s gone for good.</string>
+    <string name="sh_replace_back_up_first">Back up first</string>
+    <string name="sh_replace_restore">Restore another identity</string>
+    <string name="sh_replace_restore_summary">From its recovery code or your password manager. Its followers move to this phone.</string>
+    <string name="sh_replace_fresh">Start fresh</string>
+    <string name="sh_replace_fresh_summary">A new identity with how you appear now. No one follows it until you invite them.</string>
+    <string name="sh_replace_restore_action">Replace with this identity</string>
+    <string name="sh_replace_back">Back</string>
+    <string name="sh_replace_confirm_title_restore">Replace this identity?</string>
+    <string name="sh_replace_confirm_title_fresh">Start fresh?</string>
+    <string name="sh_replace_confirm_check">I understand they must be invited again</string>
+    <string name="sh_replace_confirm_restore">Replace</string>
+    <string name="sh_replace_fresh_busy">Making the new identity…</string>
+    <string name="sh_replace_telling">Telling your followers…</string>
+    <string name="sh_replace_telling_text">So their Sukrara says you stopped sharing instead of warning that no data arrives. This takes a few seconds; then the identity is replaced.</string>
+    <string name="sh_replace_telling_count">%1$d of %2$d told</string>
+    <string name="sh_replace_cancelled">Cancelled. Nothing changed: your followers keep getting your glucose.</string>
+    <string name="sh_replace_fresh_failed">Couldn\'t make the new identity. Nothing changed: try again.</string>
+    <string name="sh_replace_done_restore">Replaced. %1$d followers of the restored identity follow this phone now.</string>
+    <string name="sh_replace_done_fresh">Started fresh. No one follows this phone yet: invite your followers again.</string>
+    <string name="sh_replace_invite">Invite someone</string>
+    <string name="sh_replace_done">Done</string>
+    <string name="sh_restore_err_same">That code is for the identity this phone already shares as. Nothing changed.</string>
+    <!-- Recovery dialog text -->
+    <string name="sh_recovery_text">Choose a password. The code only works with it; keep both apart.</string>
+    <!-- Field -->
+    <string name="sh_recovery_password">Password</string>
+    <!-- %1$d = minimum length -->
+    <string name="sh_recovery_password_rule">At least %1$d characters</string>
+    <!-- Recovery code being made -->
+    <string name="sh_recovery_working">Making the code…</string>
+    <!-- Recovery code failed -->
+    <string name="sh_recovery_failed">Couldn\'t make the code. Try again.</string>
+    <!-- Under the shown code -->
+    <string name="sh_recovery_keep">Keep it somewhere safe. Anyone with the code and the password can share as you.</string>
+    <!-- Button -->
+    <string name="sh_recovery_create">Make code</string>
+    <!-- Button -->
+    <string name="sh_recovery_copy_close">Copy and close</string>
+    <!-- Sharing paused (another app shares as you) -->
+    <string name="sh_paused_title">Sharing is paused</string>
+    <!-- Sharing paused body -->
+    <string name="sh_paused_body">Another app is sharing as you. Settings › Sharing explains how to fix it.</string>
+    <!-- Button: restore from the password manager -->
+    <string name="sh_restore_manager">Restore from password manager</string>
+    <!-- No saved identity -->
+    <string name="sh_restore_manager_none">Your password manager has no Sukrara identity saved on this account.</string>
+    <!-- Password manager error -->
+    <string name="sh_restore_manager_failed">Your password manager couldn\'t answer. Try again, or paste the recovery code.</string>
+    <!-- Start fresh needs a name -->
+    <string name="sh_fresh_needs_name">Add your name to start.</string>
+    <!-- Page title: an invite link opened on this phone -->
+    <string name="sh_invite_here_page">Invite</string>
+    <!-- Invite opened on an Android phone -->
+    <string name="sh_invite_here_title">This phone shares its own readings</string>
+    <!-- Why it can not be used here -->
+    <string name="sh_invite_here_body">This invite is for the phone or Mac that will follow. Send the link to that device; the invite stays unused until then.</string>
+    <!-- Button: copy the invite link -->
+    <string name="sh_invite_here_copy">Copy link</string>
+    <!-- Allow didnt happen; %1$s = name -->
+    <string name="sh_approve_refused_title">%1$s doesn\'t have access</string>
+    <!-- Allow refused while another app shares as you -->
+    <string name="sh_approve_refused_paused">Sharing is paused while another app shares as you. Fix that in Settings › Sharing, then send a new invite.</string>
+    <!-- The password manager returned something else -->
+    <string name="sh_restore_manager_not_identity">That saved password isn\'t a Sukrara identity. Pick the entry named \"Sukrara · npub…\", or paste the recovery code.</string>
+    <string name="sh_join_title">Follow someone</string>
+    <string name="sh_join_body">Ask the person who wears the sensor to open Sukrara, tap Share and send you the invite link. Paste it here or scan the QR code on their phone.</string>
+    <string name="sh_join_link">Invite link</string>
+    <string name="sh_join_name">Your name</string>
+    <string name="sh_join_name_hint">So they know who is asking. Optional.</string>
+    <string name="sh_join_action">Join</string>
+    <string name="sh_join_looking">Looking for the invite…</string>
+    <string name="sh_join_someone">the person who invited you</string>
+    <string name="sh_join_waiting">Waiting for %1$s to allow you</string>
+    <string name="sh_join_active">You follow %1$s</string>
+    <string name="sh_join_code_hint">If they ask for a code, tell them:</string>
+    <string name="sh_join_waiting_note">%1$s gets a notification to allow you. Their readings appear on home as soon as they do; you can continue setup meanwhile.</string>
+    <string name="sh_join_declined">%1$s didn\'t allow you. Ask them for a new link and paste it here.</string>
+    <string name="sh_join_used">Another phone used this invite from %1$s first. Ask them for a new link and paste it here.</string>
+    <string name="sh_join_revoked">%1$s stopped sharing with you. Paste a new link to follow again.</string>
+    <string name="sh_join_err_invalid">That isn\'t a Sukrara invite link. It starts with https://sukrara.mauri.app/join#</string>
+    <string name="sh_join_err_not_found">This invite wasn\'t found. It may have been cancelled: ask for a new link.</string>
+    <string name="sh_join_err_offline">Can\'t reach the internet. Check the connection and try again.</string>
+    <string name="sh_join_err_expired">This invite has expired. Ask for a new link.</string>
+    <string name="sh_join_err_wrong">This invite doesn\'t match its link. Ask for a new link.</string>
+    <string name="sh_join_err_already">This phone already follows someone. Stop following first in Settings › Sharing.</string>
+    <string name="sh_join_err_store">Couldn\'t save the key on this phone. Try again.</string>
+    <!-- The invite was found: who is inviting, before anything is sent -->
+    <string name="sh_join_confirm_title">Follow %1$s?</string>
+    <string name="sh_join_confirm_body">%1$s invited you to see their glucose. Follow asks %1$s to allow this phone; nothing is shared until they do.</string>
+    <string name="sh_join_confirm_note">This name and picture come from the invite. Follow only if you know who sent you this link.</string>
+    <string name="sh_join_follow">Follow</string>
+    <string name="sh_following_title">Following</string>
+    <string name="sh_following_waiting">Waiting for %1$s to allow you</string>
+    <string name="sh_following_active">You follow %1$s</string>
+    <string name="sh_following_code">If they ask for a code: %1$s</string>
+    <string name="sh_following_last_heard">Last reading arrived %1$s</string>
+    <string name="sh_following_never">No reading has arrived yet</string>
+    <string name="sh_following_can_write">You can add entries to their log</string>
+    <string name="sh_following_cannot_write">Only they can add entries to their log</string>
+    <string name="sh_following_relays">Connected to %1$d of %2$d relays</string>
+    <string name="sh_following_relays_off">Not connected (monitoring isn\'t running)</string>
+    <string name="sh_following_stop">Stop following</string>
+    <string name="sh_following_stop_title">Stop following %1$s?</string>
+    <string name="sh_following_stop_text">Their readings, entries and alerts leave this phone. To follow again you need a new invite link.</string>
+    <string name="sh_following_stop_failed">Couldn\'t remove the key from this phone. Try again.</string>
+    <string name="sh_following_unreadable">This phone can\'t open the follower key right now. Sukrara keeps trying; their stored readings and alerts stay. If it doesn\'t recover, stop following and join again.</string>
+    <string name="sh_following_damaged">The follower key on this phone is damaged. Stop following, then join again with a new link.</string>
+    <string name="sh_following_join_again">Join with a new link</string>
+    <!-- Bluetooth nearby (wearer: Settings › Sharing; follower: Following page) -->
+    <string name="sh_nearby_group">How readings travel</string>
+    <string name="sh_internet_title">Over the internet</string>
+    <string name="sh_internet_on">Encrypted, through Nostr relays</string>
+    <string name="sh_internet_off">Off. Followers who only use the internet see no new readings.</string>
+    <string name="sh_interval_title">Upload interval</string>
+    <string name="sh_interval_every_reading">Every reading</string>
+    <string name="sh_interval_every">Every %1$s</string>
+    <string name="sh_interval_unavailable">Sharing over the internet is off</string>
+    <string name="sh_nearby_title">Over Bluetooth nearby</string>
+    <string name="sh_nearby_off">Off. Followers get readings over the internet.</string>
+    <string name="sh_nearby_off_no_internet">Off. Followers get no new readings.</string>
+    <string name="sh_nearby_bluetooth_off">Bluetooth is off</string>
+    <string name="sh_nearby_permission">Needs the Nearby devices permission</string>
+    <string name="sh_nearby_unsupported">This phone can\'t share over Bluetooth</string>
+    <plurals name="sh_nearby_connected">
+        <item quantity="one">%d device connected nearby</item>
+        <item quantity="other">%d devices connected nearby</item>
+    </plurals>
+    <string name="sh_nearby_connected_phone">connected to their phone</string>
+    <string name="sh_nearby_waiting">On · no follower device nearby</string>
+    <string name="sh_nearby_searching">looking for their phone</string>
+    <string name="sh_nearby_no_followers">On once someone follows you</string>
+    <string name="sh_nearby_idle">not connected</string>
+    <string name="sh_nearby_allow">Allow Nearby devices</string>
+    <string name="sh_nearby_allow_summary">Readings go between phones nearby, even without internet</string>
+    <string name="sh_nearby_turn_on">Turn on Bluetooth</string>
+    <string name="sh_nearby_devices">Nearby devices</string>
+    <string name="sh_nearby_mac">Mac</string>
+    <string name="sh_nearby_phone">phone</string>
+    <string name="sh_nearby_device_name">%1$s · %2$s</string>
+    <string name="sh_nearby_device_connected">Connected</string>
+    <string name="sh_nearby_device_disconnected">Disconnected</string>
+    <string name="sh_following_nearby">Bluetooth: %1$s</string>
+    <string name="sh_pair_nearby">Pair nearby</string>
+    <string name="sh_pair_nearby_off">For 10 minutes, a phone nearby can ask to follow you without a link. Both phones then show the same code.</string>
+    <string name="sh_pair_nearby_on">Open · closes in %1$s. On their phone: Find phones nearby, when joining.</string>
+    <string name="sh_approve_nearby">Asked with Pair nearby: any phone in Bluetooth range can ask. Allow only if their phone shows this same code.</string>
+    <string name="sh_pair_asking">Asking %1$s\'s phone…</string>
+    <string name="sh_pair_compare">Does %1$s\'s phone show this code?</string>
+    <string name="sh_pair_waiting">Same code. Waiting for %1$s to allow you.</string>
+    <string name="sh_pair_why">Tap Same code only if every digit matches: another phone nearby could pretend to be %1$s.</string>
+    <string name="sh_pair_same">Same code</string>
+    <string name="sh_pair_different">Different code</string>
+    <string name="sh_join_err_mismatch">The codes didn\'t match, so nothing was shared. Try again next to their phone.</string>
+    <string name="sh_approve_invite_nearby">Pair nearby</string>
+    <string name="sh_find_nearby">Find phones nearby</string>
+    <string name="sh_find_nearby_hint">No link? If they\'re next to you, ask them to turn on Pair nearby (Settings › Sharing) and find their phone over Bluetooth.</string>
+    <string name="sh_find_nearby_looking">Looking for phones with Pair nearby on…</string>
+    <string name="sh_find_nearby_found">Tap the person you want to follow. Still looking for more…</string>
+    <string name="sh_find_nearby_ask">Ask to follow</string>
+    <string name="sh_find_nearby_stop">Stop looking</string>
+    <string name="sh_scan_qr">Scan QR code</string>
+    <string name="sh_scan_picture">From a picture</string>
+    <string name="sh_scan_point">Point the camera at the QR code on their phone. It\'s read on this phone: nothing is recorded or sent.</string>
+    <string name="sh_scan_preview">Camera view for the QR code</string>
+    <string name="sh_scan_cancel">Cancel</string>
+    <string name="sh_scan_allow">Allow camera</string>
+    <string name="sh_scan_settings">Open settings</string>
+    <string name="sh_scan_camera_why">Sukrara needs the camera to read the QR code. Nothing is recorded or sent. You can also paste the link or pick a picture of the code.</string>
+    <string name="sh_scan_camera_off">Camera access is off for Sukrara. Turn it on in the app\'s settings, or paste the link or pick a picture of the code.</string>
+    <string name="sh_scan_no_camera">Couldn\'t open a camera on this device. Paste the link or pick a picture of the code.</string>
+    <string name="sh_scan_read">Invite read. Add your name if you like and tap Join.</string>
+    <string name="sh_scan_picture_none">No Sukrara invite QR code in that picture. Try a sharper screenshot, or paste the link.</string>
+    <!-- setup: Bring your history back (offered once) -->
+    <string name="sh_setup_history_title">Bring your history back</string>
+    <string name="sh_setup_history_body">Sukrara starts with an empty history. Bring back the last 90 days from Tidepool, LibreView or a file you exported from the earlier app, so your graph, reports and last doses are there again.</string>
+    <string name="sh_setup_history_note">Nothing is counted twice: your sensor\'s own readings win, and importing again only adds what is missing. You can also do it later in Settings › Share with apps › Import history.</string>
+    <string name="sh_setup_history_open">Bring it back</string>
+    <string name="sh_setup_history_skip">Start empty</string>
 </resources>

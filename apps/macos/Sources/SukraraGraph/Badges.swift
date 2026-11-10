@@ -15,50 +15,56 @@ enum StatusBadge {
     /// `kind` = the treatment kind whose colour and marker the badge uses; `tonal` = taken.
     struct Look: Equatable { var kind: String; var text: String; var short: String; var tonal: Bool }
 
-    /// The action pill on an ended sensor (round sensor-life): the same pill, kind "sensor" (neutral colour, sensor disc).
-    static let replaceSensor = Look(kind: "sensor", text: "Replace sensor", short: "Sensor", tonal: false)
+    /// The action pill on an ended sensor whose readings have stopped (round sensor-life), under "Sensor ended": the
+    /// same pill, kind "sensor" (neutral colour, sensor disc).
+    static func replaceSensor(_ w: CardWords) -> Look {
+        Look(kind: "sensor", text: w.drawn.replaceSensor, short: w.drawn.replaceSensorShort, tonal: false)
+    }
+    /// The pill beside the value of a sensor past its end whose readings keep arriving (#3): "Ended · Replace sensor".
+    /// An alert's pill wins over it (the action that matters now); it comes back once that one is gone.
+    static func sensorEnded(_ w: CardWords) -> Look {
+        Look(kind: "sensor", text: w.drawn.sensorEndedPill, short: w.drawn.sensorEndedPillShort, tonal: false)
+    }
+    /// The sensor's pill for `face` (contracts/graph/sensor `pill`; StatusBadge.sensor on Android): ended with a value,
+    /// ended without one, or none.
+    static func sensor(_ face: GlucoseLook, _ w: CardWords) -> Look? {
+        if face.state == .ended { return replaceSensor(w) }
+        return face.ended ? sensorEnded(w) : nil
+    }
     /// The pill over a scrolled chart (GlucoseGraph, `ChartView.now`): the same pill, kind "now" (neutral colour, arrow).
-    static let backToNow = Look(kind: "now", text: "Now", short: "Now", tonal: false)
+    static func backToNow(_ w: CardWords) -> Look {
+        Look(kind: "now", text: w.drawn.backToNow, short: w.drawn.backToNow, tonal: false)
+    }
 
-    static func look(_ s: AlertStatus, now: TimeInterval) -> Look? {
+    /// The pill for `s` at `now` in the card's language `w`; nil for none, and for a mute that has already ended.
+    static func look(_ s: AlertStatus, now: TimeInterval, words w: CardWords) -> Look? {
         switch s.current(at: now) {
         case .none: return nil
         case .needed(let k):
             return k == .low
-                ? Look(kind: "carbs", text: "Eat carbs", short: "Carbs", tonal: false)
-                : Look(kind: "rapid", text: "Take insulin", short: "Insulin", tonal: false)
+                ? Look(kind: "carbs", text: w.drawn.eatCarbs, short: w.drawn.carbsShort, tonal: false)
+                : Look(kind: "rapid", text: w.drawn.takeInsulin, short: w.drawn.insulinShort, tonal: false)
         case .taken(_, let tr, let until):
-            let d = TreatmentMarks.duration(until - now, up: true)
-            return Look(kind: tr.k, text: "\(d) left", short: d, tonal: true)
+            return left(tr.k, until - now, w)
         case .paused(let k, let until):  // muted on this device: the colour of what answers it
+            let kind = k == .low ? "carbs" : "rapid"
             if until >= AlertStatus.never {
-                return Look(kind: k == .low ? "carbs" : "rapid", text: "Muted", short: "Muted", tonal: true)
+                return Look(kind: kind, text: w.drawn.muted, short: w.drawn.muted, tonal: true)
             }
-            let d = TreatmentMarks.duration(until - now, up: true)
-            return Look(kind: k == .low ? "carbs" : "rapid", text: "\(d) left", short: d, tonal: true)
+            return left(kind, until - now, w)
         case .muted(let until):  // Mute all in range: neutral, the "notifications off" bell
             if until >= AlertStatus.never {
-                return Look(kind: "muted", text: BadgeCopy.pillForever, short: "Muted", tonal: true)
+                return Look(kind: "muted", text: w.drawn.muted, short: w.drawn.muted, tonal: true)
             }
             return Look(
-                kind: "muted", text: BadgeCopy.pill(leftMin: BadgeCopy.leftMin(until - now)), short: "Muted",
+                kind: "muted", text: BadgeCopy.pill(leftMin: BadgeCopy.leftMin(until - now), w), short: w.drawn.muted,
                 tonal: true)
         }
     }
 
-    /// For screen readers, in `w`'s language (the mute lines read like MuteCopy's: "Low alerts muted · 12 min left").
-    static func describe(_ s: AlertStatus, now: TimeInterval, words w: CardWords) -> String? {
-        func left(_ until: TimeInterval) -> String { Durations.text(BadgeCopy.leftMin(until - now)) }
-        switch s.current(at: now) {
-        case .none: return nil
-        case .needed(let k): return k == .low ? w.eatCarbs : w.takeInsulin
-        // only Mute all has no end
-        case .paused(_, let until) where until >= AlertStatus.never: return w.mutedForever
-        case .paused(let k, let until): return w.sideMuted(k == .low, left(until))
-        case .taken(let k, let tr, let until): return w.sideAfter(k == .low, tr.k == "carbs", left(until))
-        case .muted(let until):
-            return until > now && until < AlertStatus.never ? w.mutedLeft(left(until)) : w.mutedForever
-        }
+    /// A mute's pill counting down: "45m left" (short "45m") / "quedan 45 min" ("45 min").
+    private static func left(_ kind: String, _ s: TimeInterval, _ w: CardWords) -> Look {
+        Look(kind: kind, text: w.timeLeft(BadgeCopy.leftMin(s)), short: w.duration(s, up: true), tonal: true)
     }
 
     /// Material Symbols "notifications_paused" (Apache 2.0), viewBox 0 -960 960 960.
@@ -158,13 +164,6 @@ enum StatusBadge {
 /// rings stay as they are. `nearValue` = leftmost, next to the number; `end` = rightmost. Raw values = Android's.
 public enum LastPlace: String, Codable, CaseIterable, Sendable {
     case off = "OFF", nearValue = "NEAR_VALUE", end = "END"
-    var label: String {
-        switch self {
-        case .off: "Off"
-        case .nearValue: "Next to the number"
-        case .end: "At the right end"
-        }
-    }
 }
 
 /// One slot beside the value, ready to draw.
@@ -243,14 +242,19 @@ enum Slots {
 
     /// What a slot shows, for the layout report (Slots.describe in CardStatus.kt, the same words): kind, window, range,
     /// the number in it, its mark, and whether it is the main one (and carries the sensor countdown ring).
-    static func describe(_ item: SlotItem, main: Bool, countdown: Double?) -> String {
+    static func describe(_ item: SlotItem, main: Bool, countdown: Double?, unit: GlucoseUnit) -> String {
         var out: String
         switch item {
         case let .metric(spec, m, _):
             out = "\(spec.kind.rawValue) \(Int(spec.window))"
             if spec.kind == .tir { out += " \(spec.range.rawValue)" }
             out +=
-                " " + (m.empty ? "-" : spec.kind == .tir ? TirRing.text(m.tir, spec) : MetricGauge.text(spec.kind, m).0)
+                " "
+                + (m.empty
+                    ? "-"
+                    : spec.kind == .tir
+                        ? TirRing.text(m.tir, spec)
+                        : MetricGauge.text(spec.kind, m, unit: unit, locale: Locale(identifier: "en_US_POSIX")).0)
             let mk = mark(item)
             if mk != .none { out += " \(mk.rawValue)" }
         case let .last(info):
@@ -314,16 +318,19 @@ enum Slots {
     /// time-in-range ring draws it under its crown).
     static func draw(
         _ ctx: CGContext, _ item: SlotItem, center c: CGPoint, radius: CGFloat, now: TimeInterval, _ pal: GraphPalette,
-        d: CGFloat,
+        d: CGFloat, unit: GlucoseUnit, words w: CardWords,
         countdown: Double? = nil
     ) {
         switch item {
         case let .metric(spec, m, e) where spec.kind == .tir:
-            TirRing.draw(ctx, center: c, radius: radius, tir: m.tir, spec: spec, pal, emphasis: e, countdown: countdown)
+            TirRing.draw(
+                ctx, center: c, radius: radius, tir: m.tir, spec: spec, pal, emphasis: e, countdown: countdown, words: w
+            )
             return
         case let .metric(spec, m, e):
-            MetricGauge.draw(ctx, center: c, radius: radius, m: m, spec: spec, pal, emphasis: e, d: d)
-        case let .last(info): LastSlot.draw(ctx, center: c, radius: radius, info: info, now: now, pal, d: d)
+            MetricGauge.draw(
+                ctx, center: c, radius: radius, m: m, spec: spec, pal, emphasis: e, d: d, glucose: unit, words: w)
+        case let .last(info): LastSlot.draw(ctx, center: c, radius: radius, info: info, now: now, pal, d: d, words: w)
         }
         SensorBadge.drawCountdown(ctx, center: c, radius: radius, countdown, pal)
     }
@@ -339,7 +346,7 @@ enum LastSlot {
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius: CGFloat, info: LastTreatment.Info, now: TimeInterval,
         _ pal: GraphPalette,
-        d: CGFloat
+        d: CGFloat, words w: CardWords
     ) {
         if let carbs = info.carbs, radius >= pairMin * d {
             return drawPair(ctx, center: c, radius: radius, info, carbs.info, now: now, pal)
@@ -369,7 +376,7 @@ enum LastSlot {
         Ink.draw(ctx, s, x: c.x, y: c.y + radius * 0.17, Ink.font(size, .heavy), col, align: 0.5)
         let sub = radius * 0.3
         Ink.draw(
-            ctx, TreatmentMarks.duration(now - info.tr.t), x: c.x, y: c.y + radius * 0.17 + sub * 1.25,
+            ctx, w.duration(now - info.tr.t), x: c.x, y: c.y + radius * 0.17 + sub * 1.25,
             Ink.font(sub, .semibold), pal.inkSoft, align: 0.5)
     }
 

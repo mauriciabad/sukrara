@@ -9,6 +9,7 @@ import app.mauri.sukrara.sensor.ble.BleLink
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.ble.SensorEvents
 import app.mauri.sukrara.sensor.ble.SensorGlucose
+import app.mauri.sukrara.sensor.brand.Trace
 import app.mauri.sukrara.sensor.libre3.Libre3Protocol.CH_CERT
 import app.mauri.sukrara.sensor.libre3.Libre3Protocol.CH_CHALLENGE
 import app.mauri.sukrara.sensor.libre3.Libre3Protocol.CH_COMMAND
@@ -188,13 +189,28 @@ class Libre3DriverTest {
         val events = FakeEvents()
         val security = FakeSecurity()
         var clockMs = nowMs
-        val driver = Libre3Driver(
-            pairing(kAuth), events, security, clockMs = { clockMs }, random = { it.fill(0xAB.toByte()) }, lastLifeCount = lastLifeCount,
-        )
-        val allChars = setOf(
-            CH_COMMAND, CH_CHALLENGE, CH_CERT, Libre3Protocol.CH_PATCH_CONTROL, CH_PATCH_STATUS, Libre3Protocol.CH_EVENT_LOG,
-            CH_GLUCOSE, CH_HISTORIC, Libre3Protocol.CH_CLINICAL, Libre3Protocol.CH_FACTORY,
-        )
+        val driver =
+            Libre3Driver(
+                pairing(kAuth),
+                events,
+                security,
+                clockMs = { clockMs },
+                random = { it.fill(0xAB.toByte()) },
+                lastLifeCount = lastLifeCount,
+            )
+        val allChars =
+            setOf(
+                CH_COMMAND,
+                CH_CHALLENGE,
+                CH_CERT,
+                Libre3Protocol.CH_PATCH_CONTROL,
+                CH_PATCH_STATUS,
+                Libre3Protocol.CH_EVENT_LOG,
+                CH_GLUCOSE,
+                CH_HISTORIC,
+                Libre3Protocol.CH_CLINICAL,
+                Libre3Protocol.CH_FACTORY,
+            )
 
         fun connect() = driver.onConnected(link, allChars, 0)
 
@@ -223,9 +239,12 @@ class Libre3DriverTest {
     private fun reading(epochSec: Long, mgdl: Int, rate: Double?) = Reading(Instant.ofEpochSecond(epochSec), mgdl, rate, SourceId.Libre3)
 
     /** The 40-byte challenge reply as three 20-byte frames: LE16 offset + 18 bytes, zero padded. */
-    private val replyFrames = listOf(
-        "write 22CE 0000" + "55".repeat(18), "write 22CE 1200" + "55".repeat(18), "write 22CE 2400" + "55".repeat(4) + "00".repeat(14),
-    )
+    private val replyFrames =
+        listOf(
+            "write 22CE 0000" + "55".repeat(18),
+            "write 22CE 1200" + "55".repeat(18),
+            "write 22CE 2400" + "55".repeat(4) + "00".repeat(14),
+        )
     private val fullSubscriptions = listOf("sub 1338", "sub 1BEE", "sub 195A", "sub 1AB8", "sub 1D24", "sub 177A", "sub 1482")
 
     @Test
@@ -256,10 +275,14 @@ class Libre3DriverTest {
         assertEquals(LinkStatus.Pairing, s.events.lastStatus())
         val cert = Libre3Protocol.APP_CERTIFICATE
         assertEquals(162, cert.size)
-        val certFrames = (0 until 9).map { i ->
-            "write 23FA %02x%02x".format(i * 18 and 0xFF, i * 18 shr 8) + cert.copyOfRange(i * 18, i * 18 + 18).hex()
-        }
-        assertEquals(listOf("sub 2198", "sub 23FA", "sub 22CE", "write 2198 01", "write 2198 02") + certFrames + "write 2198 03", s.link.take())
+        val certFrames =
+            (0 until 9).map { i ->
+                "write 23FA %02x%02x".format(i * 18 and 0xFF, i * 18 shr 8) + cert.copyOfRange(i * 18, i * 18 + 18).hex()
+            }
+        assertEquals(
+            listOf("sub 2198", "sub 23FA", "sub 22CE", "write 2198 01", "write 2198 02") + certFrames + "write 2198 03",
+            s.link.take(),
+        )
 
         s.notify(CH_COMMAND, byteArrayOf(0x04)) // certificate accepted → "send your certificate"
         assertEquals(listOf("write 2198 09"), s.link.take())
@@ -268,9 +291,11 @@ class Libre3DriverTest {
         s.securityData(10, patchCert, CH_CERT)
         assertEquals("cert ${patchCert.hex()}", s.security.calls.last())
         val eph = byteArrayOf(0x04) + ByteArray(64) { 0x33 } // 65 bytes → 4 frames, the last 11 + 7 zero bytes
-        val ephFrames = (0 until 4).map { i ->
-            "write 23FA %02x00".format(i * 18) + (eph.copyOfRange(i * 18, minOf(i * 18 + 18, 65)) + ByteArray(maxOf(0, i * 18 + 18 - 65))).hex()
-        }
+        val ephFrames =
+            (0 until 4).map { i ->
+                "write 23FA %02x00".format(i * 18) +
+                    (eph.copyOfRange(i * 18, minOf(i * 18 + 18, 65)) + ByteArray(maxOf(0, i * 18 + 18 - 65))).hex()
+            }
         assertEquals(listOf("write 2198 0d") + ephFrames + "write 2198 0e", s.link.take())
 
         val patchEph = ByteArray(65) { 0x77 }
@@ -310,8 +335,17 @@ class Libre3DriverTest {
         assertEquals(1, s.events.readings.size)
         // a flat rate code (-32768) means "no rate"
         s.packet(CH_GLUCOSE, hex("e903" + "7800" + "0080" + "00000000" + "0000" + "0000" + "00" + "0000") + ByteArray(12), 33, 7)
-        assertNull(s.events.readings.last().rateMgdlPerMin)
-        assertEquals(120, s.events.readings.last().mgdl)
+        assertNull(
+            s.events.readings
+                .last()
+                .rateMgdlPerMin,
+        )
+        assertEquals(
+            120,
+            s.events.readings
+                .last()
+                .mgdl,
+        )
     }
 
     /** A restarted driver (watchdog, Bluetooth on) doesn't report the last life count again as a new reading. */
@@ -339,6 +373,87 @@ class Libre3DriverTest {
         s.link.fire()
         assertEquals(LinkStatus.Reconnecting("no glucose data after authorizing"), s.events.lastStatus())
         assertEquals(listOf("disconnect"), s.link.take())
+    }
+
+    private val libre3Trace = Trace.of("libre3")
+
+    /** One packet of `contracts/sensor/traces/libre3.txt` in its own authorized session. */
+    private fun replay(label: String): Session {
+        val s = Session()
+        s.connect()
+        s.challenge()
+        s.link.take()
+        s.packet(CH_GLUCOSE, libre3Trace[label], cipherLen = 33, seq = 5)
+        return s
+    }
+
+    /** A LO: the capped word's below-range flag (Juggluco's 8231) or, without it, uncapped and capped both below 40. */
+    @Test
+    fun belowRangeIsALoWithoutRateOrLibreViewValue() {
+        val now = nowMs / 1000
+        for (label in listOf("lo", "lo-unflagged")) {
+            val s = replay(label)
+            assertEquals(label, listOf(Reading.lo(Instant.ofEpochSecond(now), SourceId.Libre3)), s.events.readings)
+            assertTrue(
+                label,
+                s.events.readings
+                    .single()
+                    .isLo,
+            )
+            assertNull(
+                label,
+                s.events.readings
+                    .single()
+                    .rateMgdlPerMin,
+            )
+            assertEquals(label, listOf("cancel"), s.link.take()) // a LO is data: the glucose timer stops
+            assertEquals(label, LinkStatus.Live, s.events.lastStatus())
+            // no number for LibreView; the 5-minute point (42) still goes
+            assertEquals(label, listOf(null to listOf(SensorGlucose(2985, 42, start + 60L * 2986))), s.events.sensorGlucose)
+        }
+    }
+
+    /** A HI (> 400 → 401, no rate); LibreView keeps the sensor's own number, the uncapped one while it is one. */
+    @Test
+    fun aboveRangeIsAHiAndLibreViewKeepsTheNumber() {
+        val now = nowMs / 1000
+        for ((label, kept) in listOf("hi" to 450, "hi-unflagged" to 450, "hi-over" to 401)) {
+            val s = replay(label)
+            assertEquals(label, listOf(Reading.hi(Instant.ofEpochSecond(now), SourceId.Libre3)), s.events.readings)
+            assertEquals(
+                label,
+                401,
+                s.events.readings
+                    .single()
+                    .mgdl,
+            )
+            assertNull(
+                label,
+                s.events.readings
+                    .single()
+                    .rateMgdlPerMin,
+            )
+            assertEquals(label, listOf("cancel"), s.link.take())
+            val lifeCount = libre3Trace[label].let { (it[0].toInt() and 0xFF) or ((it[1].toInt() and 0xFF) shl 8) }
+            assertEquals(
+                label,
+                SensorGlucose(lifeCount, kept, now, 2.5),
+                s.events.sensorGlucose
+                    .single()
+                    .first,
+            )
+        }
+    }
+
+    /** A data-quality error (too hot, too cold, …), a range flag the numbers contradict or the no-range code: no value. */
+    @Test
+    fun flaggedOrContradictoryPacketsAreNoValue() {
+        for (label in listOf("too-hot", "too-cold", "dq-low", "flag-contradicts", "no-range")) {
+            val s = replay(label)
+            assertTrue(label, s.events.readings.isEmpty())
+            assertTrue(label, s.events.sensorGlucose.isEmpty())
+            assertEquals(label, emptyList<String>(), s.link.take()) // the 120 s timer still runs: a stream of them reconnects
+        }
     }
 
     @Test

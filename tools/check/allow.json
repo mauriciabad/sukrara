@@ -1,5 +1,5 @@
 {
-  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason.",
+  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. play_permissions: what the Google Play build (play flavor) removes from and adds to that list, each with the reason (ManifestTest on the play manifest, verify-apk.sh --play). prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
   "header_exts": [
     ".kt",
     ".swift",
@@ -8,12 +8,16 @@
     ".c",
     ".h",
     ".js",
-    ".mjs"
+    ".mjs",
+    ".xml",
+    ".yml",
+    ".yaml"
   ],
   "header_exempt": [
     "*.gradle.kts",
     "*/gradlew",
-    "assets/brand/*"
+    "assets/brand/*",
+    "*/lint-baseline.xml"
   ],
   "images_ok": [
     "docs/img/*",
@@ -45,6 +49,36 @@
       "path": "apps/android/sensor/src/main/kotlin/app/mauri/sukrara/sensor/juggluco/JugglucoSource.kt",
       "contains": "http://127.0.0.1:17580",
       "reason": "local Juggluco on this phone: its web server listens on loopback only (127.0.0.1:17580); nothing leaves the device"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/NsConfig.kt",
+      "contains": "\"http\" -> if (isLoopback(host))",
+      "reason": "Nightscout upload is https only, the home network too (#93); a typed http:// address is accepted only for this phone's loopback (localhost / 127.0.0.1: it never leaves the phone, e.g. a local test site through adb reverse), all network_security_config allows; any other http:// is refused with 'Use https://'"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/NightscoutApiPage.kt",
+      "contains": "summary = \"http://${s.secret}@127.0.0.1:${NightscoutApi.PORT}\"",
+      "reason": "Nightscout API on this phone: the loopback address apps on this phone use, shown as text for copying (the server binds 127.0.0.1 only); nothing is opened"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/NightscoutApiPage.kt",
+      "contains": "summary = \"http://127.0.0.1:${NightscoutApi.PORT}/?token=${s.secret}\"",
+      "reason": "Nightscout API on this phone: the loopback address with the token, shown as text for copying (the server binds 127.0.0.1 only); nothing is opened"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/NightscoutApiPage.kt",
+      "contains": "summary = \"http://${s.lanSecret}@${l.address}:${NightscoutApi.PORT}\"",
+      "reason": "Nightscout API on the home Wi-Fi (opt-in, warned as unencrypted): the address other devices on this Wi-Fi use, with the Wi-Fi secret only (never the phone apps' secret), shown as text for copying; the app opens nothing"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift",
+      "contains": "URL(string: \"http://\\(address):\\(port)\")",
+      "reason": "Mac Juggluco on this network (opt-in switch, off by default; Settings says it is plain http): built only from a LanAddress that isPrivate (10/8, 172.16/12, 192.168/16), never a public address or a name"
+    },
+    {
+      "path": "apps/android/app/src/main/kotlin/app/mauri/sukrara/LaunchPlan.kt",
+      "contains": "url.startsWith(\"ws://\")",
+      "reason": "LaunchPlan accepts a ws:// test relay only from a debug build's RELAYS command (src/debug, a local relay such as ws://10.0.2.2:7447); release builds always get the public wss:// relays whatever the choice (LaunchPlanTest); opens nothing"
     }
   ],
   "network_ok": [
@@ -58,11 +92,43 @@
     },
     {
       "path": "apps/android/share/src/main/kotlin/app/mauri/sukrara/share/transport/WebSocket.kt",
-      "reason": "Nostr sharing: relay WebSockets; RelayPool passes only wss:// URLs (Wire.secureRelays), never cleartext"
+      "reason": "Nostr sharing: relay WebSockets to the URLs RelayPool keeps through the launch's RelayAccess: release builds wss:// only (Wire.secureRelays); a debug build's RELAYS choice may add a local ws:// test relay (cleartext permitted only to 10.0.2.2 / loopback by the debug network security config)"
     },
     {
       "path": "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/UpdateCheck.kt",
       "reason": "About page update check: GET the fixed https URL api.github.com/repos/mauriciabad/sukrara/releases once per page open (no user-entered host, nothing sent)"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/NsClient.kt",
+      "reason": "Nightscout upload: the user-entered site, validated by NsSite.parse (https://, or http:// only to loopback); redirects are never followed and the token / secret never appears in a reason"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/libreview/LibreViewClient.kt",
+      "reason": "LibreView upload: Abbott's fixed https config URL, then the https API address it names (every URL checked https, no user info); redirects are never followed; http only to loopback in tests (internal constructor flag)"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/LocalHttpServer.kt",
+      "reason": "xDrip+ server for Garmin watches: listens (never connects) on 127.0.0.1 only; bounded pool, request head and deadline; off by default"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/tidepool/TidepoolClient.kt",
+      "reason": "Tidepool upload and Import history's download (GET /data, /message/notes): fixed https api.tidepool.org (tests: MockWebServer on loopback); redirects never followed; the session token never in logs or reasons"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/LanWatcher.kt",
+      "reason": "registers a ConnectivityManager callback to learn the Wi-Fi's address; opens no connection"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoLanSource.swift",
+      "reason": "Mac Juggluco on this network (opt-in): URLSessionLanHTTP's GETs and live stream; every URL is built by JugglucoApi.base (private IPv4 addresses only); tests use a fake LanHTTP"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraShare/Relay/WebSocket.swift",
+      "reason": "Mac relay WebSockets: RelayPool passes the protocol's wss:// relay list only"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraApp/System/UpdateCheck.swift",
+      "reason": "Mac update check: GET the fixed https URL of the GitHub releases API (no user-entered host, nothing sent)"
     }
   ],
   "durations_ok": {},
@@ -76,15 +142,7 @@
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     },
     {
-      "section": "Freshness (every glucose surface)",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
       "section": "Sensor scan: other sensors",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
-      "section": "Data export",
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     },
     {
@@ -92,28 +150,82 @@
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     },
     {
-      "section": "Sensor reminders and countdowns",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
-      "section": "Sensor end in calendar",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
-      "section": "Share with apps on this phone (investigation 22)",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
-      "section": "Tidepool upload (docs/27)",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
-      "section": "Nightscout upload (docs/25)",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
       "section": "Languages",
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     }
-  ]
+  ],
+  "permissions": {
+    "android.permission.INTERNET": "relays (wss), uploads (https), LibreView sign-in, Juggluco on loopback (:share, :sensor, :integrations)",
+    "android.permission.ACCESS_NETWORK_STATE": "reconnect when the network comes back; the Nightscout API serves only on Wi-Fi (:share, :integrations)",
+    "android.permission.ACCESS_LOCAL_NETWORK": "Android 17: home-network devices may reach the opt-in Nightscout API (:integrations)",
+    "android.permission.FOREGROUND_SERVICE": "MonitoringService, the one monitoring service (:monitor; also androidx.work)",
+    "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE": "MonitoringService type connectedDevice, not dataSync (capped at 6 h a day) (:monitor)",
+    "android.permission.CHANGE_NETWORK_STATE": "the connectedDevice FGS prerequisite granted at install: a follower without Nearby devices still monitors (:monitor)",
+    "android.permission.POST_NOTIFICATIONS": "the glucose notification, alerts, reminders, access requests (:monitor)",
+    "android.permission.POST_PROMOTED_NOTIFICATIONS": "the Live Update chip and the sensor-end countdown (:monitor; verify-apk.sh requires it)",
+    "android.permission.RECEIVE_BOOT_COMPLETED": "monitoring and the alert check start again after a reboot (:monitor; also androidx.work)",
+    "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS": "the alert checklist's No battery restrictions: monitoring must not be killed (:monitor)",
+    "android.permission.USE_EXACT_ALARM": "the alert check rings on time in Doze with the service dead (:monitor)",
+    "android.permission.USE_FULL_SCREEN_INTENT": "the urgent-low alarm over the lock screen (:monitor)",
+    "android.permission.ACCESS_NOTIFICATION_POLICY": "Do Not Disturb access: alarm-level alerts override a mode that silences alarms (:monitor)",
+    "android.permission.VIBRATE": "alert and pen-read haptics (:monitor, :pen)",
+    "android.permission.WAKE_LOCK": "androidx.work (the pen sync worker); Sukrara takes no wake lock itself",
+    "android.permission.READ_CALENDAR": "sensor end in the calendar, opt-in (:monitor SensorCalendar)",
+    "android.permission.WRITE_CALENDAR": "sensor end in the calendar, opt-in (:monitor SensorCalendar)",
+    "android.permission.BLUETOOTH_CONNECT": "the sensor link and nearby sharing (:sensor, :share)",
+    "android.permission.BLUETOOTH_SCAN": "finding a sensor and a wearer's phone nearby, neverForLocation (:sensor, :share)",
+    "android.permission.BLUETOOTH_ADVERTISE": "the wearer's phone offers nearby sharing (:share AndroidNearbyServer)",
+    "android.permission.CAMERA": "scanning the invite QR on the join step (:feature:sharing ScanInvite)",
+    "android.permission.NFC": "starting / taking over a Libre 3 and reading a pen with a tap (:sensor, :pen)",
+    "android.permission.health.WRITE_BLOOD_GLUCOSE": "Health Connect blood glucose, opt-in (:integrations PlatformHealth)",
+    "app.mauri.sukrara.permission.SYSTEMUI_STATE": "our own signature permission: only Sukrara feeds the System UI module (:monitor)",
+    "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
+  },
+  "play_permissions": {
+    "remove": {
+      "android.permission.USE_EXACT_ALARM": "Play allows it only for alarm-clock and calendar apps (app/src/play/AndroidManifest.xml)",
+      "app.mauri.sukrara.permission.SYSTEMUI_STATE": "no System UI module in the Play build (Device and Network Abuse)"
+    },
+    "add": {
+      "android.permission.SCHEDULE_EXACT_ALARM": "the alert check's exact alarms; the person can refuse it and the alert checklist then asks for Alarms and reminders (:monitor readiness)"
+    }
+  },
+  "queries": {
+    "package:com.google.android.calendar": "open the sensor-end event in Google Calendar (:monitor, :app, :feature:settings)",
+    "package:tk.glucodata": "Juggluco: pens through Juggluco and Settings › Sensor's Open Juggluco (:pen, :feature:settings)",
+    "package:com.garmin.android.apps.connectmobile": "Share with apps: Garmin Connect reads the xDrip+ server (:integrations)",
+    "package:com.garmin.connectiq": "Share with apps: Connect IQ reads the xDrip+ server (:integrations)",
+    "intent:com.eveningoutpost.dexdrip.BgEstimate": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "intent:com.librelink.app.ThirdPartyIntegration.GLUCOSE_READING": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "intent:com.librelink.app.ThirdPartyIntegration.SENSOR_ACTIVATE": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "intent:glucodata.Minute": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "package:com.freestylelibre3.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.de": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.gb": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.fr": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.it": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.es": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.nl": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.at": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.de": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.gb": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.fr": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.it": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.es": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.nl": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.at": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "intent:android.intent.action.TTS_SERVICE": "Read glucose aloud: the phone's text-to-speech engine (:monitor ReadAloud)"
+  },
+  "prerelease_ok": {
+    "material3": {
+      "version": "1.5.0-rc01",
+      "reason": "Settings and setup rows are Material 3 Expressive SegmentedListItems, which exist only in 1.5 (1.4.0, the newest stable and the Compose BOM 2026.09.00 one, has none). 1.5.0-rc01 (2026-11-04) has no API changes since beta01, only fixes. The owner prefers the newest libraries (#81): move to 1.5.0 as soon as it is stable, then drop this entry."
+    }
+  }
 }

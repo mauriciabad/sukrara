@@ -2,4 +2,339 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<resources />
+<resources>
+    <string name="in_cancel">Cancel</string>
+
+    <!-- Export data -->
+    <string name="in_export_title">Export data</string>
+    <string name="in_export_intro">Your readings and entries as one spreadsheet file in LibreView\'s layout, for your clinic, Tidepool or a spreadsheet. Only what is on this phone.</string>
+    <string name="in_export_intro_follower">The readings and entries of the person you follow, as one spreadsheet file in LibreView\'s layout. Only what this phone has received: it is their data, not yours.</string>
+    <string name="in_export_period">Period</string>
+    <string name="in_export_period_sensor">This sensor</string>
+    <string name="in_export_period_all">Everything on this phone</string>
+    <plurals name="in_export_period_days">
+        <item quantity="one">Last %d day</item>
+        <item quantity="other">Last %d days</item>
+    </plurals>
+    <string name="in_export_contents">In the file</string>
+    <string name="in_export_counting">Counting…</string>
+    <plurals name="in_export_readings">
+        <item quantity="one">%d reading</item>
+        <item quantity="other">%d readings</item>
+    </plurals>
+    <plurals name="in_export_treatments">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <string name="in_export_save">Save file</string>
+    <string name="in_export_share">Share</string>
+    <string name="in_export_share_chooser">Share glucose data</string>
+    <string name="in_export_saved">File saved</string>
+    <string name="in_export_failed">Couldn\'t write the file</string>
+    <string name="in_export_footer">One row every 5 minutes, oldest first, with insulin, carbs and notes. The file name has only the dates, never a name. Tidepool Uploader\'s LibreView import reads it.</string>
+
+    <!-- Share with apps -->
+    <string name="in_apps_title">Share with apps</string>
+    <string name="in_apps_intro_wearer">Your glucose in other apps: your clinic through LibreView, your own Nightscout site, Garmin watches through the xDrip+ server, apps on this phone, Health Connect, and a file for your clinic.</string>
+    <string name="in_apps_intro_follower">The glucose of the person you follow in other apps: Garmin watches through the xDrip+ server, and a file.</string>
+    <string name="in_apps_nightscout_group" translatable="false">Nightscout</string>
+    <string name="in_apps_clinic_group">Your clinic</string>
+    <string name="in_apps_watch_group">Watches</string>
+    <string name="in_apps_phone_group">Apps on this phone</string>
+    <string name="in_apps_xdrip">xDrip+ server</string>
+    <string name="in_apps_xdrip_off">For Garmin watches · any app on this phone can read it while it\'s on</string>
+    <string name="in_apps_xdrip_on">On · 127.0.0.1:17580</string>
+    <string name="in_apps_xdrip_busy">Another app uses port 17580 · turn its server off, then this one off and on</string>
+    <string name="in_apps_xdrip_juggluco">Juggluco is the source, so Juggluco serves the watch</string>
+    <string name="in_apps_xdrip_read_by">read by %1$s</string>
+    <string name="in_apps_xdrip_last_asked">last asked %1$s</string>
+    <string name="in_apps_xdrip_not_asked">not asked yet</string>
+    <string name="in_apps_files_group">Files</string>
+    <string name="in_apps_export_summary">A CSV file for your clinic or a spreadsheet</string>
+    <string name="in_apps_footer">The xDrip+ server listens only on this phone (127.0.0.1:17580), like xDrip+ itself, so Garmin watch faces and data fields made for xDrip+ read it through Garmin Connect. While it is on, any app on this phone can read your last 24 hours of glucose from it.</string>
+
+    <!-- Nightscout API on this phone -->
+    <string name="in_nsapi_title">Nightscout API on this phone</string>
+    <string name="in_nsapi_intro">Apps on this phone that read a Nightscout site (xDrip+, GlucoDataHandler, watch faces) can read your glucose and entries from here instead, without the internet. They need the API secret below.</string>
+    <string name="in_nsapi_switch">Nightscout API</string>
+    <string name="in_nsapi_off">Off</string>
+    <string name="in_nsapi_on">On · http://127.0.0.1:17581</string>
+    <string name="in_nsapi_busy">Another app uses port 17581 · turn its server off, then this one off and on</string>
+    <string name="in_nsapi_unreadable">The API secret can\'t be read: make a new one</string>
+    <string name="in_nsapi_secret_group">API secret</string>
+    <string name="in_nsapi_show_secret">Show API secret</string>
+    <string name="in_nsapi_show_secret_summary">Apps need it to read. Screenshots are blocked while it shows.</string>
+    <string name="in_nsapi_secret_label">Nightscout API secret</string>
+    <string name="in_nsapi_copy">For apps on this phone · Tap to copy</string>
+    <string name="in_nsapi_copy_action">copy</string>
+    <string name="in_nsapi_copied">Copied · it leaves the clipboard in a minute</string>
+    <string name="in_nsapi_xdrip_url">Address for xDrip+</string>
+    <string name="in_nsapi_token_url">Address with token (watch faces, other apps)</string>
+    <string name="in_nsapi_hide_secret">Hide API secret</string>
+    <string name="in_nsapi_secret_unreadable">The API secret can\'t be read right now. Make a new one and enter it again in your apps.</string>
+    <string name="in_nsapi_new_secret">New secret</string>
+    <string name="in_nsapi_new_secret_summary">Apps on this phone using the old one stop reading</string>
+    <string name="in_nsapi_new_secret_title">Make a new API secret?</string>
+    <string name="in_nsapi_new_secret_text">Apps that use the current secret can\'t read your glucose anymore until you enter the new one in them.</string>
+    <string name="in_nsapi_new_secret_action">New secret</string>
+    <string name="in_nsapi_footer">Only apps on this phone can reach it (and devices on your home Wi-Fi while that option is on), and only with the secret. It serves the last 7 days of glucose and 30 days of entries; each reading says where it came from (this phone\'s sensor, an untested sensor, or the person you follow). It isn\'t a source for a closed loop.</string>
+    <!-- Upload status (every upload page) -->
+    <string name="in_status_off">Off</string>
+    <string name="in_status_setup">Set up the site first</string>
+    <string name="in_status_auth">The site refused the token or secret: change it</string>
+    <string name="in_status_unreadable">The saved token can\'t be read: enter it again</string>
+    <string name="in_status_paused">Paused: another app (%1$s) uploads to this site</string>
+    <string name="in_status_waiting">On · nothing sent yet</string>
+    <plurals name="in_status_ok">
+        <item quantity="one">Last upload %1$s · %2$d item</item>
+        <item quantity="other">Last upload %1$s · %2$d items</item>
+    </plurals>
+    <string name="in_status_failing">%1$s Trying again soon.</string>
+    <string name="in_status_follower">Only the phone that wears the sensor uploads</string>
+
+    <!-- Nightscout upload -->
+    <string name="in_ns_title">Nightscout upload</string>
+    <string name="in_ns_intro">Send your glucose, entries and sensor changes to your own Nightscout site, so LoopFollow, Nightguard, Nightscout reports and Home Assistant see them from anywhere.</string>
+    <string name="in_ns_site">Site</string>
+    <string name="in_ns_site_none">Not set up</string>
+    <string name="in_ns_main">Upload to my Nightscout</string>
+    <string name="in_ns_main_needs_site">Set up the site first</string>
+    <string name="in_ns_status">Status</string>
+    <string name="in_ns_anyway">Upload anyway</string>
+    <string name="in_ns_anyway_summary">Readings from both apps will show up on the site</string>
+    <string name="in_ns_what">What to send</string>
+    <string name="in_ns_unavailable">Turn the upload on first</string>
+    <string name="in_ns_readings">Glucose readings</string>
+    <string name="in_ns_readings_summary">Every reading, the last 30 days included</string>
+    <string name="in_ns_entries">Insulin, carbs and notes</string>
+    <string name="in_ns_entries_summary">Edits and deletions too</string>
+    <string name="in_ns_sensor">Sensor changes</string>
+    <string name="in_ns_sensor_summary">For the sensor age</string>
+    <string name="in_ns_battery">Phone battery</string>
+    <string name="in_ns_battery_summary">Shown in Nightscout and LoopFollow</string>
+    <string name="in_ns_advanced">Advanced</string>
+    <string name="in_ns_api">API</string>
+    <string name="in_ns_api_v1">API v1 (recommended)</string>
+    <string name="in_ns_api_v1_sub">Sends readings in batches; every Nightscout has it</string>
+    <string name="in_ns_api_v3">API v3</string>
+    <string name="in_ns_api_v3_sub">One request per reading; needs an access token</string>
+    <string name="in_ns_remove">Remove this site</string>
+    <string name="in_ns_remove_title">Remove this site?</string>
+    <string name="in_ns_remove_text">Sukrara stops uploading and forgets the address and the token. What is already on the site stays there.</string>
+    <string name="in_ns_remove_action">Remove</string>
+    <string name="in_ns_footer">Sukrara only uploads: it never reads your data back. Prefer an access token with only the upload permissions (Nightscout › Admin tools › Subjects) over the API secret, which can change everything on the site. Either is kept encrypted on this phone. The site needs https:// with a certificate from a public authority: a self-signed or private certificate isn\'t trusted. If another app such as Juggluco or xDrip+ uploads to the same site, turn its upload off.</string>
+    <string name="in_ns_dialog_title">Nightscout site</string>
+    <string name="in_ns_dialog_url">Address</string>
+    <string name="in_ns_dialog_token">Access token</string>
+    <string name="in_ns_dialog_secret">API secret</string>
+    <string name="in_ns_dialog_credential">Token or secret</string>
+    <string name="in_ns_dialog_keep">Leave it empty to keep the saved one</string>
+    <string name="in_ns_dialog_test">Test</string>
+    <string name="in_ns_dialog_save">Save</string>
+    <string name="in_ns_testing">Testing…</string>
+    <string name="in_ns_test_ok">Connected · Nightscout %1$s</string>
+    <string name="in_ns_test_ok_plain">Connected</string>
+    <string name="in_ns_test_auth">The site refused this token or secret</string>
+    <string name="in_ns_test_failed">Couldn\'t connect. %1$s</string>
+    <string name="in_ns_problem_https">Use https://: Sukrara sends your data only encrypted. A server at home needs a certificate: Let\'s Encrypt and Tailscale give one free.</string>
+    <string name="in_ns_problem_url">This isn\'t a web address</string>
+
+    <!-- LibreView upload -->
+    <string name="in_lv_title" translatable="false">LibreView</string>
+    <string name="in_lv_intro">Send your Libre 3 glucose and your entries to your LibreView account, the way the FreeStyle Libre 3 app does, so your clinic sees them in its reports.</string>
+    <string name="in_lv_account">Account</string>
+    <string name="in_lv_sign_in">Sign in</string>
+    <string name="in_lv_signed_in">Signed in</string>
+    <string name="in_lv_main">Upload to LibreView</string>
+    <string name="in_lv_main_needs_account">Sign in first</string>
+    <string name="in_lv_status_setup">Sign in first</string>
+    <string name="in_lv_status_auth">LibreView asks you to sign in again (another app may have taken over the account)</string>
+    <string name="in_lv_glucose">Glucose</string>
+    <string name="in_lv_glucose_summary">From a Libre 3 connected to this phone, from the moment you switch it on</string>
+    <string name="in_lv_glucose_from">From a Libre 3 connected to this phone, since %1$s</string>
+    <string name="in_lv_entries_summary">Entries you make or change from now on; edits and deletes correct what LibreView has</string>
+    <string name="in_lv_sign_out">Sign out</string>
+    <string name="in_lv_sign_out_title">Sign out of LibreView?</string>
+    <string name="in_lv_sign_out_text">Nothing more goes up until you sign in again. What LibreView already has stays there.</string>
+    <string name="in_lv_sign_out_action">Sign out</string>
+    <string name="in_lv_footer">Use the email and password of your LibreView account (the one LibreLink or the Libre 3 app uses). Sukrara sends the password once to sign in and keeps only LibreView\'s sign-in token, encrypted on this phone. Only one device uploads for a LibreView account: if LibreLink, the Libre 3 app or Juggluco does, Sukrara asks before it takes over. Glucose goes up only from a Libre 3 that Sukrara connects to itself.</string>
+    <string name="in_lv_dialog_title">Sign in to LibreView</string>
+    <string name="in_lv_email">Email</string>
+    <string name="in_lv_password">Password</string>
+    <string name="in_lv_password_note">Used once to sign in, never saved</string>
+    <string name="in_lv_sign_in_action">Sign in</string>
+    <string name="in_lv_signing_in">Signing in…</string>
+    <string name="in_lv_bad_credentials">LibreView didn\'t accept this email and password</string>
+    <string name="in_lv_failed">Couldn\'t sign in. %1$s</string>
+    <string name="in_lv_take_over_title">Another device uploads for this account</string>
+    <string name="in_lv_take_over_text">LibreView takes data from one device per account, today another one (LibreLink, the Libre 3 app or Juggluco). If Sukrara takes over, that device stops uploading to LibreView. Take over only if Sukrara should be the one that uploads.</string>
+    <string name="in_lv_take_over">Take over</string>
+    <string name="in_lv_other_title">Not your sensor\'s LibreView account</string>
+    <string name="in_lv_other_text">Your sensor was started with the LibreView account in Settings › Sensor, not with this one. Your glucose and entries will go to this account, and your clinic won\'t see them in the other one.</string>
+    <string name="in_lv_other_action">Upload to this account</string>
+    <string name="in_lv_other_row">Not the account in Settings › Sensor</string>
+    <string name="in_lv_other_row_summary">Your clinic sees these uploads only in this account. Sign in with the sensor\'s account to change it.</string>
+    <!-- Tidepool upload -->
+    <string name="in_tp_title" translatable="false">Tidepool</string>
+    <string name="in_tp_intro">Tidepool keeps your diabetes data in one place for you and your clinic. Sukrara can upload your glucose and your insulin, carbs and notes to your Tidepool account.</string>
+    <string name="in_tp_intro_follower">Tidepool keeps diabetes data in one place. If you choose to, Sukrara can upload the glucose and entries of the person you follow to a Tidepool account.</string>
+    <string name="in_tp_account">Account</string>
+    <string name="in_tp_sign_in">Sign in</string>
+    <string name="in_tp_signed_in">Signed in</string>
+    <string name="in_tp_main">Upload to Tidepool</string>
+    <string name="in_tp_main_needs_account">Sign in first</string>
+    <string name="in_tp_status_setup">Sign in first</string>
+    <string name="in_tp_status_auth">Signed out by Tidepool: sign in again</string>
+    <string name="in_tp_status_choice">Waiting for your choice below</string>
+    <string name="in_tp_follow">Upload the person you follow</string>
+    <string name="in_tp_follow_off">Off: nothing is uploaded from this phone</string>
+    <string name="in_tp_follow_on">Their data goes to the account above</string>
+    <string name="in_tp_glucose">Glucose readings</string>
+    <string name="in_tp_glucose_summary">One every 5 minutes, the last 30 days included</string>
+    <string name="in_tp_sign_out">Sign out</string>
+    <string name="in_tp_sign_out_title">Sign out of Tidepool?</string>
+    <string name="in_tp_sign_out_text">Nothing more goes up until you sign in again. What Tidepool already has stays there.</string>
+    <string name="in_tp_footer">Sukrara signs in with Tidepool\'s own login and keeps only the session, never your password. If Tidepool already gets your Libre data through LibreView, turn glucose off here, or each reading shows up twice.</string>
+    <string name="in_tp_dialog_title">Sign in to Tidepool</string>
+    <string name="in_tp_email">Email</string>
+    <string name="in_tp_password">Password</string>
+    <string name="in_tp_password_note">Used once to sign in, never saved</string>
+    <string name="in_tp_sign_in_action">Sign in</string>
+    <string name="in_tp_signing_in">Signing in…</string>
+    <string name="in_tp_bad_credentials">Tidepool didn\'t accept this email and password</string>
+    <string name="in_tp_failed">Couldn\'t sign in. %1$s</string>
+    <string name="in_bc_title">Send glucose to apps</string>
+    <string name="in_bc_intro">Apps on this phone that take glucose from xDrip+, LibreLink or Juggluco broadcasts (AndroidAPS, GlucoDataHandler, watch apps) can get each new reading from this phone\'s Libre 3. Only the apps you switch on get it.</string>
+    <string name="in_bc_status">Status</string>
+    <string name="in_bc_off">Off · no app is allowed</string>
+    <string name="in_bc_waiting">Waiting for a reading from this phone\'s Libre 3</string>
+    <string name="in_bc_last_sent">Last sent %1$s</string>
+    <string name="in_bc_hold_stale">the newest reading was too old to send</string>
+    <string name="in_bc_hold_future">the newest reading\'s time is in the future (check the phone\'s clock)</string>
+    <string name="in_bc_hold_lohi">LO and HI readings aren\'t sent</string>
+    <string name="in_bc_hold_no_app">no allowed app listens right now</string>
+    <string name="in_bc_follower">Nothing is sent from a follower\'s phone: apps that dose or alert must get glucose from the wearer\'s own sensor.</string>
+    <string name="in_bc_apps_group">Apps that listen</string>
+    <string name="in_bc_none">No app on this phone listens</string>
+    <string name="in_bc_none_summary">Install the app (for example AndroidAPS or GlucoDataHandler) and come back</string>
+    <string name="in_bc_changed">%1$s · this app changed since you allowed it (another signature), so nothing is sent · Tap to allow it again</string>
+    <string name="in_bc_remove">Remove %1$s</string>
+    <string name="in_bc_gone">Not installed · Tap to remove</string>
+    <string name="in_bc_footer">Only the Libre 3 this phone reads itself is sent, at most once a minute, and never LO / HI, old readings or a followed person\'s data. Each app gets one format (xDrip+ first, then LibreLink, then Juggluco), so it never gets a reading twice. A closed loop may dose insulin from these readings: allow only the apps you use.</string>
+    <string name="in_hc_title" translatable="false">Health Connect</string>
+    <string name="in_hc_intro">Your glucose in Health Connect, where health and fitness apps you allow can read it. Only readings from this phone\'s own sensor go in, once a minute.</string>
+    <string name="in_hc_switch">Write glucose to Health Connect</string>
+    <string name="in_hc_off">Off</string>
+    <string name="in_hc_waiting">On · waiting for a reading</string>
+    <string name="in_hc_written">On · last written %1$s</string>
+    <string name="in_hc_needs_permission">Health Connect doesn\'t allow writing now · nothing is written until you allow it again</string>
+    <string name="in_hc_denied">Health Connect didn\'t allow it · allow Sukrara in Health Connect, then turn this on</string>
+    <string name="in_hc_rate_limited">On · Health Connect asked to slow down (%1$s) · trying again later</string>
+    <string name="in_hc_failed">On · Health Connect refused the last write (error %1$d) · trying again later</string>
+    <string name="in_hc_open">Open Health Connect</string>
+    <string name="in_hc_open_summary">See, share or delete what was written</string>
+    <string name="in_hc_open_off">Records already written stay there until you delete them</string>
+    <string name="in_hc_open_allow">Allow Sukrara to write blood glucose</string>
+    <string name="in_hc_follower">Nothing is written on a follower\'s phone: Health Connect holds this phone owner\'s own health records, and the glucose here is the person you follow.</string>
+    <string name="in_hc_follower_short">Not on a follower\'s phone</string>
+    <string name="in_hc_unavailable">Health Connect isn\'t available on this phone (it may be turned off in Android settings).</string>
+    <string name="in_hc_unavailable_short">Not available on this phone</string>
+    <string name="in_hc_footer">When you turn it on, the last 30 days go in first. Each minute is one record, so nothing is written twice. LO and HI readings have no number and are left out. Turning it off stops writing; delete what was written in Health Connect.</string>
+    <string name="in_bc_loop_twice_title">AndroidAPS may get each reading twice</string>
+    <string name="in_bc_loop_twice">xDrip+ and GlucoDataHandler can pass readings on to AndroidAPS. If one of them does, switch AndroidAPS off here or turn their forwarding off, so AndroidAPS gets each reading once.</string>
+    <string name="in_nsapi_also_lan">also on Wi-Fi %1$s</string>
+    <string name="in_nsapi_lan_group">On your home Wi-Fi</string>
+    <string name="in_nsapi_lan_switch">Also on this Wi-Fi</string>
+    <string name="in_nsapi_lan_off">Off · only apps on this phone can read it</string>
+    <string name="in_nsapi_lan_starting">Starting…</string>
+    <string name="in_nsapi_lan_on">On · http://%1$s:17581 for devices on this Wi-Fi</string>
+    <string name="in_nsapi_lan_no_wifi">Paused · the phone isn\'t on Wi-Fi</string>
+    <string name="in_nsapi_lan_not_private">Paused · this Wi-Fi doesn\'t look like a home network (no private address)</string>
+    <string name="in_nsapi_lan_open">Paused · this Wi-Fi has no password, so anyone nearby could join it</string>
+    <string name="in_nsapi_lan_other">Paused · this isn\'t the Wi-Fi you turned it on in</string>
+    <string name="in_nsapi_lan_no_permission">Paused · Android doesn\'t allow local network access</string>
+    <string name="in_nsapi_lan_allow_here">Allow on this Wi-Fi</string>
+    <string name="in_nsapi_lan_allow_here_summary">From now on it listens on this Wi-Fi instead</string>
+    <string name="in_nsapi_lan_settings">Open Android settings</string>
+    <string name="in_nsapi_lan_settings_summary">Permissions › Nearby devices › Allow. Keep it allowed: the sensor connection needs it too. To stop, use the switch above.</string>
+    <string name="in_nsapi_lan_warning_title">Other devices can read it</string>
+    <string name="in_nsapi_lan_warning">Any device on this Wi-Fi (computers, TVs, guests\' phones) can read your glucose, doses and notes with the Wi-Fi secret. The connection isn\'t encrypted: someone on the same Wi-Fi can see that secret when a device sends it, so it is a separate one from the phone apps\' secret and you can replace it any time. It works only on the Wi-Fi you turn it on in, and never on Wi-Fi without a password.</string>
+    <string name="in_nsapi_lan_confirm_title">Open the API to your home Wi-Fi?</string>
+    <string name="in_nsapi_lan_confirm_action">Turn on</string>
+    <string name="in_nsapi_lan_url">Address on this Wi-Fi</string>
+    <string name="in_nsapi_lan_refused">Not turned on: it works only while the phone is on a home Wi-Fi with a password</string>
+    <string name="in_nsapi_lan_api_stopped">Paused · the API itself isn\'t running (see above)</string>
+    <string name="in_nsapi_lan_unreadable">Paused · its Wi-Fi secret can\'t be read: make a new one below</string>
+    <string name="in_nsapi_lan_last_caller">last read by %1$s %2$s</string>
+    <string name="in_nsapi_lan_not_read">no device has read it yet</string>
+    <string name="in_nsapi_lan_secret_label">Nightscout API Wi-Fi secret</string>
+    <string name="in_nsapi_lan_copy">Wi-Fi secret, for devices on this Wi-Fi · Tap to copy</string>
+    <string name="in_nsapi_lan_new_secret">New Wi-Fi secret</string>
+    <string name="in_nsapi_lan_new_secret_summary">Devices on this Wi-Fi using the old one stop reading; apps on this phone keep theirs</string>
+    <string name="in_nsapi_lan_new_secret_title">Make a new Wi-Fi secret?</string>
+    <string name="in_nsapi_lan_new_secret_text">Devices on your Wi-Fi that use the current one can\'t read your glucose until you enter the new one in them. Apps on this phone keep their secret.</string>
+    <string name="in_bc_reallow_title">Allow %1$s again?</string>
+    <string name="in_bc_reallow_text">%1$s (%2$s) is signed with a different key than when you allowed it. That happens when it was reinstalled from another source, and it can also be a different app using the same name. Allow it again only if you installed it yourself from a source you trust (its developer may publish the certificate to compare with the one below): an app like AndroidAPS may dose insulin from these readings.</string>
+    <string name="in_bc_signer_was">Certificate when you allowed it (SHA-256)</string>
+    <string name="in_bc_signer_now">Certificate now (SHA-256)</string>
+    <string name="in_bc_signer_unknown">Its new signature can\'t be checked (it isn\'t one certificate), so it can\'t be allowed. Remove it, or install it again from its usual source.</string>
+    <string name="in_bc_reallow_action">Allow again</string>
+    <!-- LibreView: Upload every (apps.libreviewInterval) -->
+    <string name="in_lv_interval">Upload every</string>
+    <!-- Import history (Settings › Share with apps › Import history, setup's Bring your history back) -->
+    <string name="in_import_title">Import history</string>
+    <string name="in_import_row_summary">The last 90 days from Tidepool, LibreView or a file</string>
+    <string name="in_import_intro">Sukrara starts with an empty history. Bring back the last 90 days from where it already is. Nothing is added twice: what is on this phone wins, and importing again only adds what is missing.</string>
+    <string name="in_import_follower">Your history is the person you follow\'s: it comes from their phone, so there is nothing to import here.</string>
+    <string name="in_import_accounts_group">From your accounts</string>
+    <string name="in_import_tidepool_summary">Download the last 90 days from %1$s</string>
+    <string name="in_import_tidepool_summary_plain">Download the last 90 days from your Tidepool account</string>
+    <string name="in_import_tidepool_sign_in">Sign in to Tidepool first</string>
+    <string name="in_import_tidepool_sign_in_action">Sign in to Tidepool</string>
+    <string name="in_import_action">import</string>
+    <string name="in_import_libreview_summary">LibreView gives your history as a file: download it there, then choose it here</string>
+    <string name="in_import_libreview_title">History from LibreView</string>
+    <string name="in_import_libreview_steps">1. Open LibreView and sign in.\n2. Glucose History › Download glucose data.\n3. Choose that file here.\n\nLibreView has no way for apps to download your history, so this one step is yours.</string>
+    <string name="in_import_libreview_open">Open LibreView</string>
+    <string name="in_import_libreview_choose">Choose the file</string>
+    <string name="in_import_cancel">Cancel</string>
+    <string name="in_import_file">Choose a file</string>
+    <string name="in_import_file_summary">A Sukrara export (Export data with All time in the earlier app, or Everything on this phone) or LibreView\'s file</string>
+    <string name="in_import_footer">Imported history shows on the graph and in reports, is kept 90 days and reaches your followers like the rest. It never goes to LibreView, Tidepool, Nightscout or Health Connect: they have it already or got it from the same place, and a second copy would count twice. Readings of the last 15 minutes are left to your sensor.</string>
+    <string name="in_import_running_tidepool">Importing from Tidepool…</string>
+    <string name="in_import_running_libreview">Importing LibreView\'s file…</string>
+    <string name="in_import_running_file">Importing the file…</string>
+    <string name="in_import_done_tidepool">Imported from Tidepool</string>
+    <string name="in_import_done_libreview">Imported LibreView\'s file</string>
+    <string name="in_import_done_file">Imported the file</string>
+    <string name="in_import_stopped">Import stopped</string>
+    <string name="in_import_stopped_body">What was added stays. Importing again adds only what is missing.</string>
+    <string name="in_import_failed">Couldn\'t import</string>
+    <string name="in_import_stop">Stop</string>
+    <string name="in_import_ok">OK</string>
+    <string name="in_import_added">Added %1$s and %2$s</string>
+    <plurals name="in_import_readings">
+        <item quantity="one">%d reading</item>
+        <item quantity="other">%d readings</item>
+    </plurals>
+    <plurals name="in_import_entries">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <plurals name="in_import_already">
+        <item quantity="one">%d was already here</item>
+        <item quantity="other">%d were already here</item>
+    </plurals>
+    <plurals name="in_import_outside">
+        <item quantity="one">%d older than 90 days or from the last 15 minutes left out</item>
+        <item quantity="other">%d older than 90 days or from the last 15 minutes left out</item>
+    </plurals>
+    <plurals name="in_import_skipped">
+        <item quantity="one">%d row Sukrara doesn\'t keep left out (finger-sticks, ketones)</item>
+        <item quantity="other">%d rows Sukrara doesn\'t keep left out (finger-sticks, ketones)</item>
+    </plurals>
+    <string name="in_import_err_not_glucose">This isn\'t a glucose file. Choose a Sukrara export or LibreView\'s Download glucose data file.</string>
+    <string name="in_import_err_dates">The dates in this file are in a layout Sukrara can\'t read. Nothing was added.</string>
+    <string name="in_import_err_unreadable">Couldn\'t open the file. Choose it again.</string>
+    <string name="in_import_err_signed_out">Not signed in to Tidepool. Sign in, then import again.</string>
+</resources>

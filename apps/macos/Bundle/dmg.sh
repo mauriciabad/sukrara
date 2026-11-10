@@ -5,10 +5,13 @@
 #
 # Packages build/Sukrara.app (run Bundle/bundle.sh first) as build/Sukrara-<version>.dmg (a window with the app, an
 # arrow and an Applications shortcut; needs dmgbuild: `uv tool install dmgbuild`, else a plain image with the same
-# two items) and build/Sukrara-mac-<version>.zip (ditto, keeps the signature). The dmg is signed with the app's
-# identity and checked by mounting it and verifying the app inside.
-# NOTARY_PROFILE=<profile>: notarize + staple the dmg (needs a Developer ID build). Without it,
-# Gatekeeper asks on first launch (System Settings → Privacy & Security → Open Anyway).
+# two items) and build/Sukrara-mac-<version>.zip (ditto, keeps the signature). The dmg is signed with the certificate
+# that signed the app, named by its SHA-1 (after a renewal two valid identities share a name), and checked by mounting
+# it and verifying the app inside. Images are made and mounted with `diskutil image` (hdiutil's attach / create /
+# detach are deprecated since macOS 27; dmgbuild still calls hdiutil itself).
+# NOTARY_PROFILE=<profile>: notarize + staple the dmg (needs a Developer ID build); its window then has no first-launch
+# help. Without it, Gatekeeper asks on first launch (System Settings → Privacy & Security → Open Anyway), and the window
+# says so.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 OUT=$(dirname "$HERE")/build
@@ -33,8 +36,16 @@ DMG=$OUT/Sukrara-$VER.dmg
 W=$OUT/dmg
 rm -rf "$W" "$DMG"
 mkdir -p "$W"
+# The signing certificate's SHA-1: the leaf the app carries (cert0, DER), so the dmg gets exactly the app's identity.
+SHA=
+if [ -n "$ID" ]; then
+  codesign -d --extract-certificates="$W/cert" "$APP" 2>/dev/null || die "can't read the certificates $APP is signed with"
+  SHA=$(shasum -a 1 "$W/cert0" | cut -d' ' -f1 | tr 'a-f' 'A-F')
+  security find-identity -v -p codesigning | grep -q " $SHA " ||
+    die "the identity that signed $APP ($ID, SHA-1 $SHA) isn't a valid code-signing identity in the keychain"
+fi
 if command -v dmgbuild >/dev/null; then
-  swift "$HERE/dmg/background.swift" "$W"
+  swift "$HERE/dmg/background.swift" "$W" ${NOTARY_PROFILE:+--notarized}
   tiffutil -cathidpicheck "$W/background.png" "$W/background@2x.png" -out "$W/background.tiff" >/dev/null
   dmgbuild -s "$HERE/dmg/settings.py" -D app="$APP" -D background="$W/background.tiff" Sukrara "$DMG"
 else
@@ -42,18 +53,22 @@ else
   mkdir -p "$W/root"
   cp -R "$APP" "$W/root/"
   ln -s /Applications "$W/root/Applications"
-  hdiutil create -volname Sukrara -srcfolder "$W/root" -ov -format UDZO "$DMG" >/dev/null
+  diskutil image create from --format UDZO --volumeName Sukrara "$W/root" "$DMG" >/dev/null
 fi
-[ -n "$ID" ] && codesign --force --sign "$ID" $TS "$DMG"
+if [ -n "$SHA" ]; then codesign --force --sign "$SHA" $TS "$DMG"; fi
 # The app as the user gets it: mount read-only and verify the copy inside.
 MNT=$(mktemp -d "$OUT/mnt.XXXXXX")
-# Never leave the image mounted or the mount point behind, whatever fails.
-trap 'hdiutil detach "$MNT" >/dev/null 2>&1 || true; rmdir "$MNT" 2>/dev/null || true' EXIT
-hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$MNT" "$DMG" >/dev/null
+DEV=
+# Never leave the image attached or the mount point behind, whatever fails.
+trap '[ -z "$DEV" ] || diskutil eject "$DEV" >/dev/null 2>&1 || true; rmdir "$MNT" 2>/dev/null || true' EXIT
+# The first line names the image's own device (the volumes it holds follow): ejecting it detaches the image.
+DEV=$(diskutil image attach --readOnly --nobrowse --mountPoint "$MNT" "$DMG" | awk 'NR == 1 {print $1}')
+case "$DEV" in /dev/disk*) ;; *) die "attaching $DMG didn't name its device ('$DEV')" ;; esac
 OK=1
 codesign --verify --deep --strict "$MNT/Sukrara.app" || OK=0
-hdiutil detach "$MNT" >/dev/null
-rmdir "$MNT"
+diskutil eject "$DEV" >/dev/null
+DEV=
+rmdir "$MNT" 2>/dev/null || true  # diskutil removes a mount point it made; this one is ours
 trap - EXIT
 [ "$OK" = 1 ] || die "the app inside $DMG fails codesign --verify --deep --strict"
 if [ -n "${NOTARY_PROFILE:-}" ]; then
@@ -64,4 +79,4 @@ fi
 ZIP=$OUT/Sukrara-mac-$VER.zip
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
-echo "built $DMG${ID:+ (signed: $ID)} and $ZIP"
+echo "built $DMG${ID:+ (signed: $ID, SHA-1 $SHA)} and $ZIP"

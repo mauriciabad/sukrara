@@ -20,8 +20,11 @@ import app.mauri.sukrara.monitor.MonitorReceiver
 import app.mauri.sukrara.monitor.MonitoringService
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.alerts.AlertAlarm
+import app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationIds
+import app.mauri.sukrara.monitor.notify.SoundGap
+import app.mauri.sukrara.monitor.sensorend.SensorEndAlarm
 import java.time.Duration
 import java.time.Instant
 
@@ -70,8 +73,12 @@ class AndroidStoppedNotice(
                 .addAction(Notification.Action.Builder(null, context.getString(R.string.monitor_action_resume), resume).build())
                 .setAutoCancel(true)
                 .build()
-        runCatching { nm.notify(NotificationIds.MONITORING_STOPPED, notification) }
-            .onFailure { Log.w(TAG, "stopped notice: ${it.javaClass.simpleName}") }
+        // at once, never waiting in SoundGap: Android is stopping the service, a waiting post could die with the process.
+        // Its sound holds back an alert that comes within the second (it waits the rest instead of ringing muted)
+        SoundGap.shared.postNow(NotificationIds.MONITORING_STOPPED, SoundGap.sounds(context, Channels.STATUS)) {
+            runCatching { nm.notify(NotificationIds.MONITORING_STOPPED, notification) }
+                .onFailure { Log.w(TAG, "stopped notice: ${it.javaClass.simpleName}") }
+        }
     }
 
     override fun cancel() = nm.cancel(NotificationIds.MONITORING_STOPPED)
@@ -119,6 +126,42 @@ class AndroidAlarms(
             }
         }
 
+    /**
+     * The alarm of the time before the first unlock ([LockedBootReceiver]: *No data* while Sukrara can't monitor), exact
+     * and waking like an alert check. Set and cancelled only by that receiver, which is direct-boot aware.
+     */
+    fun lockedBoot(clock: Clock): AlertAlarm =
+        AlertAlarm { at ->
+            val pi =
+                PendingIntent.getBroadcast(
+                    context,
+                    LOCKED_BOOT,
+                    Intent(context, LockedBootReceiver::class.java).setAction(LockedBootReceiver.ACTION_RING),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            if (at == null) {
+                am.cancel(pi)
+            } else {
+                val inMs = ((at - clock.now().epochSecond) * 1000).coerceAtLeast(0)
+                set(Wakeup.AlertCheck, SystemClock.elapsedRealtime() + inMs, pi)
+            }
+        }
+
+    /**
+     * The sensor-end notifier's two alarms: the next event ([SENSOR_END_CHECK]: reminder, window start, end) exact and
+     * waking like an alert check, and a countdown's progress tick before it ([SENSOR_END_TICK], non-waking
+     * [Wakeup.SensorTick]). Two, so a tick a sleeping phone holds back never stands in for the end (#140).
+     */
+    fun sensorEnd(clock: Clock): SensorEndAlarm {
+        val exact = alertCheck(SENSOR_END_CHECK, clock)
+        return SensorEndAlarm { event, tick ->
+            exact.set(event)
+            val pi = alertIntent(SENSOR_END_TICK)
+            runCatching { if (tick == null) am.cancel(pi) else set(Wakeup.SensorTick, tick * 1000, pi) }
+                .onFailure { Log.w(TAG, "sensor tick not scheduled: ${it.javaClass.simpleName}") }
+        }
+    }
+
     private fun set(
         wakeup: Wakeup,
         at: Long,
@@ -153,6 +196,8 @@ class AndroidAlarms(
     companion object {
         const val ALERT_CHECK = 1
         const val SENSOR_END_CHECK = 2
+        const val LOCKED_BOOT = 3
+        const val SENSOR_END_TICK = 4
     }
 }
 

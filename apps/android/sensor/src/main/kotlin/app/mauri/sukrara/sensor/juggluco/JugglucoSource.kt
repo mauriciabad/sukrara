@@ -37,7 +37,17 @@ sealed interface JugglucoStatus {
 
     /** Juggluco's server isn't answering (not running, web server off, wrong mode); retried with backoff. */
     data class Unreachable(val why: String) : JugglucoStatus
+
+    /**
+     * Juggluco refused Sukrara (HTTP 401 / 403): its web server has an API secret and Sukrara's is missing or
+     * different ([JugglucoSecret]). No readings until they match; retried with backoff (a secret saved meanwhile is
+     * used at the next try).
+     */
+    data object Refused : JugglucoStatus
 }
+
+/** Juggluco answered 401 / 403: the API secret is missing or wrong. */
+internal class JugglucoRefusedException : Exception("refused: API secret")
 
 /** Where the Juggluco source sends what it learns. */
 internal interface JugglucoSink {
@@ -52,14 +62,23 @@ internal interface JugglucoSink {
 /**
  * Glucose from Juggluco's web server on this phone ("Local only" mode, loopback cleartext):
  * GET /api/v1/entries.json for history, then hold GET /x/live (SSE) open — push, no polling. Reconnects with backoff
- * 5 s → 60 s. [run] loops until its coroutine is cancelled; cancelling also cancels the open call.
+ * 5 s → 60 s. [run] loops until its coroutine is cancelled; cancelling also cancels the open call. With an API secret
+ * ([secret], read again at every connection) every request carries `api-secret: sha1hex(secret)`; a refusal is
+ * [JugglucoStatus.Refused].
  */
-internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = LOCAL_URL, private val zone: () -> ZoneId) {
+internal class JugglucoSource(
+    http: OkHttpClient,
+    private val baseUrl: String = LOCAL_URL,
+    private val secret: suspend () -> String? = { null },
+    private val zone: () -> ZoneId,
+) {
     companion object {
         /** Juggluco's default web-server port on this phone. Loopback only (never leaves the device). */
         const val LOCAL_URL = "http://127.0.0.1:17580"
         const val FIRST_BACKOFF_MS = 5_000L
         const val MAX_BACKOFF_MS = 60_000L
+        private const val HTTP_UNAUTHORIZED = 401
+        private const val HTTP_FORBIDDEN = 403
         private val json = Json { ignoreUnknownKeys = true }
 
         /**
@@ -92,13 +111,17 @@ internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = 
          * Juggluco's `sensor_status` (watchserver.cpp `firstdata`): `"dd-mm-yy HH:MM (3d 5h)"`, the start in the phone's
          * local time; the serial is the entry's `_id` before `#`. No wear length published → the Libre 3 Plus default.
          */
-        fun parseSensorStatus(body: String, zone: ZoneId): SensorInfo? = runCatching {
-            val e = (json.parseToJsonElement(body) as JsonArray).first().jsonObject
-            val st = e.str("sensor_status")?.takeIf { it.length >= 14 } ?: return null
-            val start = LocalDateTime.parse(st.substring(0, 14), DateTimeFormatter.ofPattern("dd-MM-yy HH:mm"))
-                .atZone(zone).toEpochSecond()
-            SensorLife.fromStart(e.str("_id").orEmpty().substringBefore('#'), start, 0)
-        }.getOrNull()
+        fun parseSensorStatus(body: String, zone: ZoneId): SensorInfo? =
+            runCatching {
+                val e = (json.parseToJsonElement(body) as JsonArray).first().jsonObject
+                val st = e.str("sensor_status")?.takeIf { it.length >= 14 } ?: return null
+                val start =
+                    LocalDateTime
+                        .parse(st.substring(0, 14), DateTimeFormatter.ofPattern("dd-MM-yy HH:mm"))
+                        .atZone(zone)
+                        .toEpochSecond()
+                SensorLife.fromStart(e.str("_id").orEmpty().substringBefore('#'), start, 0)
+            }.getOrNull()
 
         private fun JsonObject.str(key: String) = this[key]?.takeIf { it !is JsonNull }?.jsonPrimitive?.contentOrNull
 
@@ -106,14 +129,19 @@ internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = 
             Reading(Instant.ofEpochSecond(epochSec), mgdl, rate, SourceId.Juggluco)
     }
 
-    private val http = http.newBuilder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(90, TimeUnit.SECONDS) // > Juggluco's 20 s SSE keep-alive: a silent stream fails and reconnects
-        .build()
+    private val http =
+        http
+            .newBuilder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS) // > Juggluco's 20 s SSE keep-alive: a silent stream fails and reconnects
+            .build()
 
     @Volatile private var call: Call? = null
 
     @Volatile private var liveCall: Call? = null
+
+    /** The `api-secret` header value of this connection, null without a secret. */
+    @Volatile private var hashed: String? = null
 
     /** Cancels the open requests, the live stream included (the coroutine running [run] must be cancelled too). */
     fun cancelCall() {
@@ -126,12 +154,16 @@ internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = 
         var backoff = FIRST_BACKOFF_MS
         while (currentCoroutineContext().isActive) {
             try {
+                hashed = secret()?.let(JugglucoSecret::header)
                 sink.onStatus(JugglucoStatus.FetchingHistory)
                 sink.onReadings(get("/api/v1/entries.json?count=${if (first) 1600 else 180}&interval=0", ::parseEntries), live = false)
                 first = false
                 sensor()?.let(sink::onSensor)
                 live(sink) { backoff = FIRST_BACKOFF_MS }
                 sink.onStatus(JugglucoStatus.Unreachable("live stream ended"))
+            } catch (e: JugglucoRefusedException) {
+                if (!currentCoroutineContext().isActive) break
+                sink.onStatus(JugglucoStatus.Refused)
             } catch (e: Exception) {
                 if (!currentCoroutineContext().isActive) break
                 sink.onStatus(JugglucoStatus.Unreachable("${e.javaClass.simpleName}: ${e.message?.take(80)}"))
@@ -141,9 +173,17 @@ internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = 
         }
     }
 
+    private fun request(path: String): Request.Builder =
+        Request.Builder().url("$baseUrl$path").apply { hashed?.let { header(JugglucoSecret.HEADER, it) } }
+
+    private fun answered(code: Int) {
+        if (code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN) throw JugglucoRefusedException()
+    }
+
     private fun <T> get(path: String, parse: (String) -> T): T {
-        val req = Request.Builder().url("$baseUrl$path").build()
+        val req = request(path).build()
         http.newCall(req).also { call = it }.execute().use { resp ->
+            answered(resp.code)
             check(resp.isSuccessful) { "HTTP ${resp.code}" }
             return parse(resp.body?.string().orEmpty())
         }
@@ -152,8 +192,9 @@ internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = 
     private fun sensor(): SensorInfo? = runCatching { get("/sgv.json?count=1&sensor=Y") { parseSensorStatus(it, zone()) } }.getOrNull()
 
     private fun live(sink: JugglucoSink, onData: () -> Unit) {
-        val req = Request.Builder().url("$baseUrl/x/live").header("Accept", "text/event-stream").build()
+        val req = request("/x/live").header("Accept", "text/event-stream").build()
         http.newCall(req).also { liveCall = it }.execute().use { resp ->
+            answered(resp.code)
             check(resp.isSuccessful) { "HTTP ${resp.code}" }
             sink.onStatus(JugglucoStatus.Live)
             val src = checkNotNull(resp.body).source()
@@ -162,8 +203,14 @@ internal class JugglucoSource(http: OkHttpClient, private val baseUrl: String = 
             while (true) {
                 val line = src.readUtf8Line() ?: return
                 when {
-                    line.isEmpty() -> event = ""
-                    line.startsWith("event:") -> event = line.substring(6).trim()
+                    line.isEmpty() -> {
+                        event = ""
+                    }
+
+                    line.startsWith("event:") -> {
+                        event = line.substring(6).trim()
+                    }
+
                     line.startsWith("data:") && event == "glucose" -> {
                         val (reading, id) = parseLive(line.substring(5).trim()) ?: continue
                         onData()

@@ -6,6 +6,7 @@ package app.mauri.sukrara.graph
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -22,9 +23,11 @@ import java.util.TimeZone
 
 /**
  * Roborazzi goldens of the card (synthetic readings only): one phone-width card per scene, light + dark, default +
- * largest font (the card scales its text with the box, so "largest font" is the taller box a surface gives it).
- * The Goldens workflow (CI, Linux) records src/test/snapshots; `verifyRoborazziDebug` compares, `compareRoborazziDebug`
- * shows a local diff.
+ * largest font (the card scales its text with the box, so "largest font" is the taller box a surface gives it); the
+ * same scenes in Spanish (the longest words: range words, warm-up, sensor ended, no readings); and the app panel as
+ * it draws itself (its style, header over chart). The widgets' and the notification's goldens are their modules'
+ * (WidgetShotsTest, NotificationCardShotsTest). The Goldens workflow (CI, Linux) records src/test/snapshots;
+ * `verifyRoborazziDebug` compares, `compareRoborazziDebug` shows a local diff.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -50,8 +53,7 @@ class CardScreenshotTest {
 
     private val style = CardStyle(rings = listOf(RingSpec(86_400), RingSpec(7 * 86_400L)), last = LastPlace.NEAR_VALUE, sensorTime = true)
 
-    private fun scenes(): List<Pair<String, CardModel>> {
-        val w = Scenes.words()
+    private fun scenes(w: CardWords = Scenes.words()): List<Pair<String, CardModel>> {
         val meal =
             listOf(
                 Scenes.treatment("i1", TreatmentKind.RapidInsulin, 4.5, 40 * 60),
@@ -60,6 +62,8 @@ class CardScreenshotTest {
         return listOf(
             "in-range" to Scenes.model(Scenes.day(125), w, treatments = meal),
             "low" to Scenes.model(Scenes.day(70, rate = -2.2, swing = 12), w, status = CardStatus.Needed(lowSide = true)),
+            // out of range without an action pill: the range in words (#26)
+            "low-no-alert" to Scenes.model(Scenes.day(64, rate = -1.2, swing = 8), w),
             "high" to Scenes.model(Scenes.day(230, rate = 1.4), w, status = CardStatus.Paused(false, Scenes.NOW + 45 * 60)),
             "stale-6min" to Scenes.model(Scenes.day(140, ageS = 6 * 60), w),
             "stale-25min" to Scenes.model(Scenes.day(140, ageS = 25 * 60), w),
@@ -68,6 +72,9 @@ class CardScreenshotTest {
                 Scenes.model(Scenes.day(140, ageS = 3 * 3600), w, sensor = SensorInfo(Scenes.NOW - 18 * 60, Scenes.NOW + 15 * 86_400)),
             "sensor-ended" to
                 Scenes.model(Scenes.day(140, ageS = 30 * 60), w, sensor = SensorInfo(Scenes.NOW - 15 * 86_400, Scenes.NOW - 20 * 60)),
+            // past its end but still sending (#3): the value with the "Ended · Replace sensor" pill
+            "sensor-ended-sending" to
+                Scenes.model(Scenes.day(140, ageS = 60), w, sensor = SensorInfo(Scenes.NOW - 15 * 86_400, Scenes.NOW - 20 * 60)),
         )
     }
 
@@ -76,10 +83,11 @@ class CardScreenshotTest {
         model: CardModel,
         dark: Boolean,
         large: Boolean,
+        st: CardStyle = style,
     ) {
         val hDp = if (large) 300f else 240f
         val pal = GraphPalette.of(dark)
-        val card = GlucoseCard.image(379f, hDp, d, model, style, pal, CardSurface.TEST)
+        val card = GlucoseCard.image(379f, hDp, d, model, st, pal, CardSurface.TEST)
         // the card is transparent (each surface paints its own background): shot on the palette's background
         val bmp = Bitmap.createBitmap(card.width, card.height, Bitmap.Config.ARGB_8888)
         Canvas(bmp).apply {
@@ -94,5 +102,50 @@ class CardScreenshotTest {
         for ((name, model) in scenes()) {
             for (dark in listOf(false, true)) for (large in listOf(false, true)) shoot(name, model, dark, large)
         }
+    }
+
+    /** Every scene in Spanish, light: the words and the 24-hour clock of a Spanish phone (`card-es-<scene>-light`). */
+    @Test
+    fun spanish() {
+        val es = Locale.forLanguageTag("es-ES")
+        Locale.setDefault(es)
+        for ((name, model) in scenes(Scenes.words(es))) shoot("es-$name", model, dark = false, large = false)
+    }
+
+    /**
+     * The app panel as PanelCard draws it: [GraphConfig.appPanelStyle] (the default settings), the header row over the
+     * chart at the registry's widest size (`panel-<scene>-<theme>`).
+     */
+    @Test
+    fun appPanel() {
+        val st = GraphConfig().appPanelStyle()
+        val w = Scenes.words()
+        val panel =
+            listOf(
+                "in-range" to scenes(w).first { it.first == "in-range" }.second,
+                "low" to scenes(w).first { it.first == "low" }.second,
+            )
+        for ((name, model) in panel) {
+            for (dark in listOf(false, true)) {
+                val pal = GraphPalette.of(dark)
+                val header = GlucoseCard.image(379f, 120f, d, model, st, pal, CardSurface.APP_PANEL, CardPart.HEADER)
+                val graph = GlucoseCard.image(379f, 180f, d, model, st, pal, CardSurface.APP_PANEL, CardPart.GRAPH)
+                val bmp = Bitmap.createBitmap(header.width, header.height + graph.height, Bitmap.Config.ARGB_8888)
+                Canvas(bmp).apply {
+                    drawColor(pal.bg)
+                    drawBitmap(header, 0f, 0f, null)
+                    drawBitmap(graph, 0f, header.height.toFloat(), null)
+                }
+                bmp.captureRoboImage("src/test/snapshots/panel-$name-${if (dark) "dark" else "light"}.png")
+            }
+        }
+    }
+
+    /** The card in mmol/L (contracts/settings/units.json): the value, the range labels and the slots' numbers. */
+    @Test
+    fun mmol() {
+        val mmol = style.copy(graph = style.graph?.copy(unit = GlucoseUnit.MMOL), unit = GlucoseUnit.MMOL)
+        val model = Scenes.model(Scenes.day(70, rate = -2.2, swing = 12), Scenes.words(), status = CardStatus.Needed(lowSide = true))
+        for (dark in listOf(false, true)) shoot("low-mmol", model, dark, large = false, st = mmol)
     }
 }

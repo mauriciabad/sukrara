@@ -10,14 +10,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.NavTargets
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.monitor.service.StartReason
+import app.mauri.sukrara.sensor.pairing.PairingLoad
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** The one activity: launcher, invite links (`sukrara:` / `https://sukrara.mauri.app/join`). */
@@ -27,17 +36,39 @@ class MainActivity : ComponentActivity() {
     /** A request to open the new-sensor flow, until the navigation has opened it. */
     private var openNewSensor by mutableStateOf(false)
 
+    /** The pen whose page a pen read card asked for, until the navigation has opened it. */
+    private var openPen by mutableStateOf<PenTarget?>(null)
+
+    /** Health Connect asked for the privacy rationale, until the navigation has opened the Health Connect page. */
+    private var openHealth by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
             deepLink = intent?.data
-            openNewSensor = opensNewSensor(intent?.action)
+            askNewSensor(intent)
+            openPen = penPage(intent)
+            openHealth = healthRationale(intent)
         }
         val graph = graph
         setContent {
+            // the person's glucose unit: every number the screens show and every number input follows it
+            val unit by remember { graph.graphConfig.map { it.unit }.distinctUntilChanged() }.collectAsState(GlucoseUnit.MGDL)
             SukraraTheme {
-                SukraraNavigation(graph, deepLink, openNewSensor, { openNewSensor = false }, Modifier.fillMaxSize())
+                CompositionLocalProvider(LocalGlucoseUnit provides unit) {
+                    SukraraNavigation(
+                        graph,
+                        deepLink,
+                        openNewSensor,
+                        { openNewSensor = false },
+                        Modifier.fillMaxSize(),
+                        openPen = openPen,
+                        onPenShow = { openPen = null },
+                        openHealthConnect = openHealth,
+                        onHealthConnectShow = { openHealth = false },
+                    )
+                }
             }
         }
     }
@@ -45,7 +76,27 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         deepLink = intent.data
-        if (opensNewSensor(intent.action)) openNewSensor = true
+        askNewSensor(intent)
+        penPage(intent)?.let { openPen = it }
+        if (healthRationale(intent)) openHealth = true
+    }
+
+    /**
+     * The new-sensor flow for [i] (a notification, a widget, a sensor tap), only when Sukrara asked for it
+     * ([SensorSetupGate]: another app's intent just opens the app). A tap only when no sensor is being read: resting
+     * the phone on the running sensor must not re-pair it (a new pairing would interrupt its readings); then the app
+     * just opens.
+     */
+    private fun askNewSensor(i: Intent?) {
+        val request = SensorSetupGate.request(i) ?: return
+        if (!request.fromSensorTap) {
+            openNewSensor = true
+            return
+        }
+        lifecycleScope.launch {
+            val current = (graph.sensor.pairings.load() as? PairingLoad.Ok)?.pairing
+            if (current == null || current.ended || current.failed != null) openNewSensor = true
+        }
     }
 
     override fun onResume() {
@@ -58,5 +109,24 @@ class MainActivity : ComponentActivity() {
             graph.ready.await()
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) graph.startMonitoring(StartReason.App)
         }
+        // opening the app while a very low rings is an answer on this phone: the followers' escalation is withdrawn (#39)
+        lifecycleScope.launch { graph.alerts.runtime.acknowledge() }
     }
 }
+
+/**
+ * The pen page a pen read card's *Check it* / *Review* asks for (only the wearer's phone has pens; Settings checks
+ * again).
+ */
+private fun penPage(i: Intent?): PenTarget? =
+    i
+        ?.takeIf { it.action == NavTargets.ACTION_PEN_PAGE }
+        ?.getStringExtra(NavTargets.EXTRA_PEN_SERIAL)
+        ?.takeIf { it.isNotBlank() }
+        ?.let { PenTarget(it, i.getBooleanExtra(NavTargets.EXTRA_PEN_REVIEW, false)) }
+
+/** Health Connect's link to this app's privacy rationale (the manifest's `.HealthPermissionsRationale` alias). */
+private fun healthRationale(i: Intent?): Boolean =
+    i?.action == Intent.ACTION_VIEW_PERMISSION_USAGE && i.hasCategory(HEALTH_PERMISSIONS_CATEGORY)
+
+private const val HEALTH_PERMISSIONS_CATEGORY = "android.intent.category.HEALTH_PERMISSIONS"

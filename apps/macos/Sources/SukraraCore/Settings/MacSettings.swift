@@ -7,7 +7,8 @@ import Foundation
 /// `SettingsSpec.Keys`, number defaults from the generated `NumberSpec`s). Number values are always read through
 /// their format (`NumberSpec.coerce`), so only values the settings accept get in.
 public enum MacSettings {
-    public static let bandVeryLow = number("graph.band.veryLow", SettingsSpec.Keys.bandVeryLow, SettingsSpec.bandVeryLow)
+    public static let bandVeryLow = number(
+        "graph.band.veryLow", SettingsSpec.Keys.bandVeryLow, SettingsSpec.bandVeryLow)
     public static let bandLow = number("graph.band.low", SettingsSpec.Keys.bandLow, SettingsSpec.bandLow)
     public static let bandTight = number("graph.band.tight", SettingsSpec.Keys.bandTight, SettingsSpec.bandTight)
     public static let bandHigh = number("graph.band.high", SettingsSpec.Keys.bandHigh, SettingsSpec.bandHigh)
@@ -19,12 +20,51 @@ public enum MacSettings {
     public static let gridHours = number("graph.gridHours", SettingsSpec.Keys.gridHours, SettingsSpec.gridHours)
     public static let countdownHours = number(
         "sensor.countdownHours", SettingsSpec.Keys.countdownHours, SettingsSpec.countdownHours)
+    public static let ringCount = number("graph.ringCount", SettingsSpec.Keys.ringCount, SettingsSpec.ringCount)
+    /// Each place's own time shown (`placeHours`, 0 = same as `graphHours`): always this Mac's, never mirrored.
+    public static let menubarHours = number(
+        "graph.hours.place", SettingsSpec.Keys.menubarHours, SettingsSpec.placeHours)
+    public static let widgetHours = number("graph.hours.place", SettingsSpec.Keys.widgetHours, SettingsSpec.placeHours)
+    // The structured graph settings, stored in their wire spellings (PROTOCOL-v2 "Settings"); the defaults are the
+    // renderer's (`GraphConfig()`, checked by GraphSettingsTests).
+    public static let slots = SettingSpec(
+        key: SettingsSpec.Keys.slots, defaultValue: "TIR:86400:1,TIR:604800:1,GMI:1209600:1")
+    public static let ringRange = SettingSpec(key: SettingsSpec.Keys.ringRange, defaultValue: "IN_RANGE")
+    public static let ringOrder = SettingSpec(
+        key: SettingsSpec.Keys.ringOrder, defaultValue: "TIGHT,TARGET,LOW,VERY_LOW,HIGH,VERY_HIGH")
+    public static let lines = SettingSpec(key: SettingsSpec.Keys.lines, defaultValue: "100")
+    public static let lastPlace = SettingSpec(key: SettingsSpec.Keys.lastPlace, defaultValue: "NEAR_VALUE")
+    /// One slot, "" = nothing.
+    public static let lastElse = SettingSpec(key: SettingsSpec.Keys.lastElse, defaultValue: "TIR:2592000:1")
+    public static let marks = SettingSpec(
+        key: SettingsSpec.Keys.marks,
+        defaultValue: "rapid:point+line+amount+time,long:point+amount+time,carbs:point,note:point")
+    public static let ringMarks = SettingSpec(key: SettingsSpec.Keys.ringMarks, defaultValue: true)
+    public static let side = SettingSpec(key: SettingsSpec.Keys.side, defaultValue: true)
+    public static let columnCrown = SettingSpec(key: SettingsSpec.Keys.columnCrown, defaultValue: true)
+    /// The sensor's time left per place: always this Mac's.
+    public static let menubarSensorTime = SettingSpec(key: SettingsSpec.Keys.menubarSensorTime, defaultValue: true)
+    public static let widgetSensorTime = SettingSpec(key: SettingsSpec.Keys.widgetSensorTime, defaultValue: true)
+    /// The Settings window's last pane (a view state).
+    public static let settingsPane = SettingSpec(key: SettingsSpec.Keys.settingsPane, defaultValue: "general")
+    /// The Glucose Report window's period in days (1, 7, 14, 30), remembered between openings.
+    public static let reportDays = SettingSpec(key: SettingsSpec.Keys.reportDays, defaultValue: 14)
     public static let settingsFrom = SettingSpec(key: SettingsSpec.Keys.settingsFrom, defaultValue: "wearer")
     public static let unit = SettingSpec(key: SettingsSpec.Keys.unit, defaultValue: GlucoseUnit.mgdl.rawValue)
+    /// *Read Glucose Aloud* from any app with Control-Shift-Command-G (on by default; off when another app needs the keys).
+    public static let readAloudShortcut = SettingSpec(key: SettingsSpec.Keys.readAloudShortcut, defaultValue: true)
+    /// Read glucose from Juggluco's web server on the home network (off by default; plain http, private addresses).
+    public static let jugglucoLan = SettingSpec(key: SettingsSpec.Keys.jugglucoLan, defaultValue: false)
+    /// Juggluco's address ("192.168.1.23" or with ":port"); blank = find it on this Mac's networks.
+    public static let jugglucoAddress = SettingSpec(key: SettingsSpec.Keys.jugglucoAddress, defaultValue: "")
+    /// The Keychain account of Juggluco's API secret (schema `source.jugglucoSecret`).
+    public static let jugglucoSecretAccount = "jugglucoSecret"
     /// The alert settings: ONE JSON value (contracts/alerts/SPEC.md §3), owned by the alert settings store.
     public static let alerts = SettingSpec(key: SettingsSpec.Keys.alerts, defaultValue: Data())
     /// The first-run walk's step states (JSON), owned by `SetupFlow`.
     public static let setupSteps = SettingSpec(key: SettingsSpec.Keys.setupSteps, defaultValue: Data())
+    /// The version *Later* skipped in the update offer ("" = none), owned by `UpdateCheck`.
+    public static let updateSkippedVersion = SettingSpec(key: SettingsSpec.Keys.updateSkippedVersion, defaultValue: "")
 
     /// The six range bands, low to high (their rows keep them in order).
     public static let bands = [bandVeryLow, bandLow, bandTight, bandHigh, bandVeryHigh, bandExtremelyHigh]

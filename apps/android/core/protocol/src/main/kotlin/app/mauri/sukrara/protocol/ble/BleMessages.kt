@@ -12,6 +12,7 @@ import app.mauri.sukrara.protocol.UnsignedEvent
 import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.WireJson
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -32,32 +33,73 @@ object BleMessages {
 
     data class Hello(val nonce: String, val id: String?)
 
-    /** Pairing offer inside INFO: the invite token, its expiry and the wearer's profile. */
-    data class Pairing(val identity: PublicKeyHex, val relays: List<String>, val token: String, val expiry: Long, val profile: Profile?)
+    /**
+     * Pairing offer inside INFO: the invite token, its expiry, the wearer's profile and [commit] = `c`, the wearer's
+     * commitment to its pairing nonce (PROTOCOL-v2 §Nearby pairing).
+     */
+    data class Pairing(
+        val identity: PublicKeyHex,
+        val relays: List<String>,
+        val token: String,
+        val expiry: Long,
+        val profile: Profile?,
+        val commit: String,
+    )
 
     fun event(event: SignedEvent): ByteArray = "[\"EVENT\",${event.toJson()}]".toByteArray()
 
-    fun hello(nonce: String, id: String?): ByteArray = message("HELLO", buildJsonObject {
-        put("v", Wire.V)
-        put("nonce", nonce)
-        id?.let { put("id", it) }
-    })
+    fun hello(nonce: String, id: String?): ByteArray =
+        message(
+            "HELLO",
+            buildJsonObject {
+                put("v", Wire.V)
+                put("nonce", nonce)
+                id?.let { put("id", it) }
+            },
+        )
 
     /** INFO: `nonce` + `m` always; `i`, `relays`, `pair` only for an open, unexpired [pairing]. */
-    fun info(sid: String, nonce: String, pairing: Pairing?, now: Long): ByteArray = message("INFO", buildJsonObject {
-        put("v", Wire.V)
-        put("nonce", nonce)
-        put("m", infoM(sid, nonce))
-        if (pairing != null && pairing.expiry > now) {
-            put("i", pairing.identity.hex)
-            put("relays", buildJsonArray { pairing.relays.forEach { add(JsonPrimitive(it)) } })
-            put("pair", buildJsonObject {
-                put("t", pairing.token)
-                put("x", pairing.expiry)
-                pairing.profile?.let { put("profile", it.toJson()) }
-            })
-        }
-    })
+    fun info(sid: String, nonce: String, pairing: Pairing?, now: Long): ByteArray =
+        message(
+            "INFO",
+            buildJsonObject {
+                put("v", Wire.V)
+                put("nonce", nonce)
+                put("m", infoM(sid, nonce))
+                if (pairing != null && pairing.expiry > now) {
+                    put("i", pairing.identity.hex)
+                    put("relays", buildJsonArray { pairing.relays.forEach { add(JsonPrimitive(it)) } })
+                    put(
+                        "pair",
+                        buildJsonObject {
+                            put("t", pairing.token)
+                            put("x", pairing.expiry)
+                            pairing.profile?.let { put("profile", it.toJson()) }
+                            put("c", pairing.commit)
+                        },
+                    )
+                }
+            },
+        )
+
+    /**
+     * The *Pair nearby* offer in an INFO body (B§7.3): the wearer's identity `i`, its `wss://` relays, the invite token
+     * and expiry, the wearer's profile and its commitment `c`. null when there is none, it's malformed, has no
+     * commitment, is expired at [now] or claims to last longer than 10 minutes plus clock skew (so a fake offer can't
+     * stay listed).
+     */
+    fun pairing(info: JsonObject, now: Long): Pairing? {
+        val identity = (info["i"] as? JsonPrimitive)?.content?.let(PublicKeyHex::parse) ?: return null
+        val pair = info["pair"] as? JsonObject ?: return null
+        val token = (pair["t"] as? JsonPrimitive)?.content?.takeIf { TOKEN.matches(it) } ?: return null
+        val expiry =
+            (pair["x"] as? JsonPrimitive)?.content?.toLongOrNull()?.takeIf { NearbyPairing.offerExpiryOk(it, now) } ?: return null
+        val commit = (pair["c"] as? JsonPrimitive)?.content?.takeIf(NearbyPairing::isHex64) ?: return null
+        val relays = (info["relays"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty()
+        return Pairing(identity, Wire.validRelays(relays), token, expiry, Profile.of(pair["profile"]), commit)
+    }
+
+    private val TOKEN = Regex("[A-Za-z0-9_-]{16,64}")
 
     private fun message(type: String, body: JsonElement): ByteArray =
         buildJsonArray {
@@ -66,10 +108,11 @@ object BleMessages {
         }.toString().toByteArray()
 
     /** null for anything that isn't `[type, body]`. */
-    fun parse(bytes: ByteArray): Message? = runCatching {
-        val arr = WireJson.parseToJsonElement(bytes.decodeToString()) as JsonArray
-        Message((arr[0] as JsonPrimitive).content, arr[1])
-    }.getOrNull()
+    fun parse(bytes: ByteArray): Message? =
+        runCatching {
+            val arr = WireJson.parseToJsonElement(bytes.decodeToString()) as JsonArray
+            Message((arr[0] as JsonPrimitive).content, arr[1])
+        }.getOrNull()
 
     /** The HELLO's nonce (1–64 hex) and identity proof (128 hex) if well-formed. */
     fun parseHello(body: JsonElement): Hello? {
@@ -85,17 +128,25 @@ object BleMessages {
     enum class Owner { Ours, Other, Unknown }
 
     /**
-     * Is the phone that sent [info] our wearer? [nonces] = those our recent HELLOs carried. Ours: `i` is our identity,
-     * or `m` matches our `sid` for one of our nonces. Other: another identity, or a known `sid` that doesn't match.
-     * Unknown: no `sid` yet (request pending) and no `i` — receive, but don't write.
+     * Is the phone that sent [info] our wearer (PROTOCOL-v2 "Bluetooth link", *Which owner*;
+     * contracts/protocol/ble/link-rules.json)? [nonces] = those our last HELLOs carried. Once we know [sid], `m` is
+     * checked first: only `m` over one of our nonces can make it ours (`i` is public while any wearer pairs, so a copied
+     * `i` never does), and an `i` naming another identity still makes it other. Before [sid] (request pending): `i` = our
+     * identity is ours, another `i` is other, no `i` (or no identity yet) is unknown — receive, but don't write.
      */
     fun owner(info: JsonObject, identity: PublicKeyHex?, sid: String?, nonces: Collection<String>): Owner {
         val i = (info["i"] as? JsonPrimitive)?.content?.ifEmpty { null }
-        if (identity != null && i != null) return if (i == identity.hex) Owner.Ours else Owner.Other
-        if (sid == null) return Owner.Unknown
-        val n = (info["nonce"] as? JsonPrimitive)?.content
-        val m = (info["m"] as? JsonPrimitive)?.content
-        return if (n != null && n in nonces && m == infoM(sid, n)) Owner.Ours else Owner.Other
+        if (sid != null) {
+            val n = (info["nonce"] as? JsonPrimitive)?.content
+            val m = (info["m"] as? JsonPrimitive)?.content
+            if (n == null || n !in nonces || m != infoM(sid, n)) return Owner.Other
+            return if (identity != null && i != null && i != identity.hex) Owner.Other else Owner.Ours
+        }
+        return when {
+            identity == null || i == null -> Owner.Unknown
+            i == identity.hex -> Owner.Ours
+            else -> Owner.Other
+        }
     }
 }
 
@@ -113,7 +164,13 @@ object HelloProof {
         crypto.sign(follower, UnsignedEvent(KIND, content(sid, nonce, dev), emptyList(), 0)).sig
 
     /** The (follower key, device) among [followers] whose proof [sig] signs for [nonce], or null. */
-    fun identify(crypto: NostrCrypto, sig: String, sid: String, nonce: String, followers: Collection<PublicKeyHex>): Pair<PublicKeyHex, String>? {
+    fun identify(
+        crypto: NostrCrypto,
+        sig: String,
+        sid: String,
+        nonce: String,
+        followers: Collection<PublicKeyHex>,
+    ): Pair<PublicKeyHex, String>? {
         if (!Hex.isHex(sig, 128, 128)) return null
         for (f in followers) {
             for (dev in DEVICES) {

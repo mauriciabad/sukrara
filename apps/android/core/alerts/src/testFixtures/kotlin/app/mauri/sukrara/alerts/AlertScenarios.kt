@@ -5,29 +5,31 @@ package app.mauri.sukrara.alerts
 
 import app.mauri.sukrara.core.testing.Contracts
 import java.io.File
+import java.time.ZoneOffset
 
 /**
  * The wearer under test in a scenario: the bare [AlertMachine] ([MachineDevice], `:core:alerts`) or the Android alert
- * runtime around it (`:monitor`). [handle] returns the effects the device applied; [restart] is a process restart: the
- * device resumes from what it saved.
+ * runtime around it (`:monitor`). [handle] returns the effects the device applied at its clock's [t] (epoch s) and the
+ * monotonic [elapsed] (s: the scenario's own time, so a `clock back` is measurable); [restart] is a process restart:
+ * the device resumes from what it saved.
  */
 interface ScenarioDevice {
-    fun handle(input: AlertInput, t: Long): List<AlertEffect>
+    fun handle(input: AlertInput, t: Long, elapsed: Long): List<AlertEffect>
 
-    fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long): List<AlertEffect>
+    fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect>
 }
 
 /** The machine alone; a restart goes through the saved state's JSON like the runtime's store. */
 class MachineDevice(settings: AlertSettings, t0: Long) : ScenarioDevice {
-    private var machine = AlertMachine(AlertRole.WEARER, settings).also { it.start(null, null, null, t0) }
+    private var machine = AlertMachine(AlertRole.WEARER, settings, zone = { ZoneOffset.UTC }).also { it.start(null, null, null, t0, t0) }
 
-    override fun handle(input: AlertInput, t: Long) = machine.handle(input, t)
+    override fun handle(input: AlertInput, t: Long, elapsed: Long) = machine.handle(input, t, elapsed)
 
-    override fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long): List<AlertEffect> {
+    override fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect> {
         val saved = AlertStateCodec.decode(AlertStateCodec.encode(machine.snapshot()))
         val last = machine.engine.last
-        machine = AlertMachine(AlertRole.WEARER, settings, doses)
-        return machine.start(saved, last, sensor, t)
+        machine = AlertMachine(AlertRole.WEARER, settings, doses, zone = { ZoneOffset.UTC })
+        return machine.start(saved, last, sensor, t, elapsed)
     }
 }
 
@@ -46,10 +48,21 @@ object AlertScenarios {
         val lines: List<Line>,
         val end: Int,
         val mirror: Boolean,
+        /** `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; null = [T0]. */
+        val at: Int? = null,
     )
 
     /** A whole minute. */
     private const val T0 = 1_760_000_040L
+
+    /** Midnight (UTC) of [T0]'s day: `at HH:MM` counts from it. */
+    private const val DAY0 = T0 - T0 % 86_400
+
+    /** "22:05" → minutes after midnight. */
+    fun clockMinutes(text: String): Int =
+        requireNotNull(Regex("(\\d{1,2}):(\\d{2})").matchEntire(text.trim())) { "not a time: $text" }
+            .groupValues
+            .let { it[1].toInt() * 60 + it[2].toInt() }
 
     fun dir(): File = Contracts.root.resolve("alerts/scenarios")
 
@@ -66,26 +79,56 @@ object AlertScenarios {
         var lines = mutableListOf<Line>()
         var end: Int? = null
         var mirror = false
+        var at: Int? = null
+
         fun flush() {
             val t = title ?: return
-            out += Scenario(file, t, settings, lines, end ?: lines.maxOf { it.minute }, mirror)
-            title = null; settings = emptyList(); lines = mutableListOf(); end = null; mirror = false
+            out += Scenario(file, t, settings, lines, end ?: lines.maxOf { it.minute }, mirror, at)
+            title = null
+            settings = emptyList()
+            lines = mutableListOf()
+            end = null
+            mirror = false
+            at = null
         }
         for (raw in text.lines()) {
             val l = raw.substringBefore('#').trim()
             if (l.isEmpty()) continue
             when {
-                l.startsWith("scenario ") -> { flush(); title = l.removePrefix("scenario ").trim() }
-                l.startsWith("settings ") -> settings = l.removePrefix("settings ").trim().split(Regex("\\s+"))
-                l.startsWith("end ") -> end = l.removePrefix("end ").trim().toInt()
-                l == "mirror" -> mirror = true
+                l.startsWith("scenario ") -> {
+                    flush()
+                    title = l.removePrefix("scenario ").trim()
+                }
+
+                l.startsWith("settings ") -> {
+                    settings = l.removePrefix("settings ").trim().split(Regex("\\s+"))
+                }
+
+                l.startsWith("end ") -> {
+                    end = l.removePrefix("end ").trim().toInt()
+                }
+
+                l == "mirror" -> {
+                    mirror = true
+                }
+
+                l.startsWith("at ") -> {
+                    at = clockMinutes(l.removePrefix("at "))
+                }
+
                 else -> {
                     requireNotNull(title) { "$file: a line before any scenario: $raw" }
                     val (left, right) = if ("=>" in l) l.substringBefore("=>") to l.substringAfter("=>") else l to ""
                     val time = left.trim().substringBefore(' ')
                     require(time.matches(Regex("""\d+(:\d{2})?"""))) { "$file: not a time: $raw" }
                     val at = time.split(':').let { it[0].toInt() * 60 + (it.getOrNull(1)?.toInt() ?: 0) }
-                    val events = left.trim().removePrefix(time).split(',').map { it.trim() }.filter { it.isNotEmpty() }
+                    val events =
+                        left
+                            .trim()
+                            .removePrefix(time)
+                            .split(',')
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
                     val expect = right.split(';').map { it.trim() }.filter { it.isNotEmpty() && it != "nothing" }
                     require(lines.none { it.minute == at / 60 }) { "$file: two lines for minute ${at / 60}" }
                     lines += Line(at / 60, at, events, expect)
@@ -99,27 +142,97 @@ object AlertScenarios {
     /** One `key=value` of a `settings` line or `set` event on top of [s]. */
     fun set(s: AlertSettings, kv: String): AlertSettings {
         val (k, v) = kv.split('=', limit = 2).also { require(it.size == 2) { "not key=value: $kv" } }.let { it[0] to it[1] }
+
         fun quiet(q: QuietRule) = if (v == "off") q.copy(on = false) else QuietRule(on = true, min = v.toInt())
         return when (k) {
-            "alerts" -> s.copy(on = v == "on")
-            "carbs.mute" -> s.copy(afterCarbs = quiet(s.afterCarbs))
-            "insulin.mute" -> s.copy(afterInsulin = quiet(s.afterInsulin))
-            "falling.mute" -> s.copy(fallingHigh = quiet(s.fallingHigh))
-            "mute.min" -> s.copy(actions = s.actions.copy(muteMin = v.toInt()))
-            "relax.min" -> s.copy(actions = s.actions.copy(relaxMin = v.toInt()))
-            "back.mgdl" -> s.copy(actions = s.actions.copy(backMgdl = v.toInt()))
-            "back.min" -> s.copy(actions = s.actions.copy(backMin = v.toInt()))
+            "alerts" -> {
+                s.copy(on = v == "on")
+            }
+
+            "carbs.mute" -> {
+                s.copy(afterCarbs = quiet(s.afterCarbs))
+            }
+
+            "insulin.mute" -> {
+                s.copy(afterInsulin = quiet(s.afterInsulin))
+            }
+
+            "falling.mute" -> {
+                s.copy(fallingHigh = quiet(s.fallingHigh))
+            }
+
+            "mute.min" -> {
+                s.copy(actions = s.actions.copy(muteMin = v.toInt()))
+            }
+
+            "relax.min" -> {
+                s.copy(actions = s.actions.copy(relaxMin = v.toInt()))
+            }
+
+            "back.mgdl" -> {
+                s.copy(actions = s.actions.copy(backMgdl = v.toInt()))
+            }
+
+            "back.min" -> {
+                s.copy(actions = s.actions.copy(backMin = v.toInt()))
+            }
+
+            "persist.low" -> {
+                s.copy(persistence = s.persistence.copy(lowMin = v.toInt()))
+            }
+
+            "persist.high" -> {
+                s.copy(persistence = s.persistence.copy(highMin = v.toInt()))
+            }
+
+            "persist.margin" -> {
+                s.copy(persistence = s.persistence.copy(marginMgdl = v.toInt()))
+            }
+
+            "night" -> {
+                s.copy(night = s.night.copy(on = v == "on"))
+            }
+
+            "escalate" -> {
+                s.copy(escalation = if (v == "off") s.escalation.copy(on = false) else s.escalation.copy(on = true, min = v.toInt()))
+            }
+
+            "follower.escalate" -> {
+                s.copy(escalation = s.escalation.copy(follow = v == "on"))
+            }
+
+            "night.from" -> {
+                s.copy(night = s.night.copy(fromMin = clockMinutes(v)))
+            }
+
+            "night.to" -> {
+                s.copy(night = s.night.copy(toMin = clockMinutes(v)))
+            }
+
             else -> {
-                val kind = requireNotNull(AlertKind.fromWire(k.substringBefore('.'))) { "unknown setting $kv" }
-                val r = s.rule(kind)
-                s.withRule(
-                    kind,
-                    when (k.substringAfter('.', "")) {
-                        "" -> when (v) { "on" -> r.copy(on = true); "off" -> r.copy(on = false); else -> r.copy(threshold = v.toDouble()) }
-                        "repeat" -> r.copy(repeatMin = v.toInt())
-                        else -> error("unknown setting $kv")
-                    },
-                )
+                val night = k.startsWith("night.")
+                val key = k.removePrefix("night.")
+                val kind = requireNotNull(AlertKind.fromWire(key.substringBefore('.'))) { "unknown setting $kv" }
+                val r = if (night) s.night.rule(kind) else s.rule(kind)
+                val rule =
+                    when (key.substringAfter('.', "")) {
+                        "" -> {
+                            when (v) {
+                                "on" -> r.copy(on = true)
+                                "off" -> r.copy(on = false)
+                                else -> r.copy(threshold = v.toDouble())
+                            }
+                        }
+
+                        "repeat" -> {
+                            r.copy(repeatMin = v.toInt())
+                        }
+
+                        else -> {
+                            error("unknown setting $kv")
+                        }
+                    }
+                if (night) s.copy(night = s.night.withRule(kind, rule)) else s.withRule(kind, rule)
             }
         }
     }
@@ -140,57 +253,117 @@ object AlertScenarios {
     fun run(sc: Scenario, device: (AlertSettings, Long) -> ScenarioDevice = ::MachineDevice): List<String> {
         var s = sc.settings.fold(AlertSettings()) { acc, kv -> set(acc, kv) }
         val got = HashMap<Int, MutableList<String>>()
-        var t = T0
-        fun note(what: String) { got.getOrPut(((t - T0) / 60).toInt()) { mutableListOf() } += what }
+        val t0 = sc.at?.let { DAY0 + it * 60L } ?: T0
+        // the scenario's time (the monotonic clock); the wearer's own clock is `wall()`, moved by `clock back`
+        var t = t0
+        var offset = 0L
 
-        val wearer = device(s, T0)
+        fun wall() = t + offset
+
+        fun note(what: String) {
+            got.getOrPut(((t - t0) / 60).toInt()) { mutableListOf() } += what
+        }
+
+        val wearer = device(s, t0)
+
         // the follower's own no_data isn't run (SPEC §7)
         fun followerSettings() = s.withRule(AlertKind.NO_DATA, s.rule(AlertKind.NO_DATA).copy(on = false))
-        val follower = AlertMachine(AlertRole.FOLLOWER_MIRROR, followerSettings()).also { it.start(null, null, null, T0) }
+        val follower =
+            AlertMachine(
+                AlertRole.FOLLOWER_MIRROR,
+                followerSettings(),
+                zone = { ZoneOffset.UTC },
+            ).also { it.start(null, null, null, t0, t0) }
         val doses = mutableListOf<Pair<TreatmentKind, Long>>()
         val deleted = mutableSetOf<Int>()
         var sensor: SensorWindow? = null
+
+        // when each device asked to be woken, on the scenario's time
         var timer: Long? = null
+        var followerTimer: Long? = null
 
-        fun followerSaw(effects: List<AlertEffect>) = effects.forEach { e ->
-            when (e) {
-                is AlertEffect.Fire -> note("follower ${Headlines.english(e.firing.kind, e.firing.treated)}")
-                is AlertEffect.Clear -> note("follower clear ${e.kind.wire}")
-                is AlertEffect.Back -> note("follower back ${e.side.wire}")
-                is AlertEffect.Mirror -> error("a follower never publishes")
-                is AlertEffect.Schedule -> Unit
+        fun followerSaw(effects: List<AlertEffect>) =
+            effects.forEach { e ->
+                when (e) {
+                    is AlertEffect.Fire -> note("follower ${Headlines.english(e.firing.kind, e.firing.treated, e.firing.escalated)}")
+                    is AlertEffect.Answered -> note("follower answered ${e.firing.kind.wire}")
+                    is AlertEffect.Escalated -> error("a follower never escalates")
+                    is AlertEffect.Clear -> note("follower clear ${e.kind.wire}")
+                    is AlertEffect.Back -> note("follower back ${e.side.wire}")
+                    is AlertEffect.Mirror -> error("a follower never publishes")
+                    is AlertEffect.Schedule -> followerTimer = e.at
+                }
             }
+
+        // the follower is another device: its clock is the scenario's
+        fun follow(input: AlertInput) {
+            if (sc.mirror) followerSaw(follower.handle(input, t, t))
         }
 
-        fun follow(input: AlertInput) { if (sc.mirror) followerSaw(follower.handle(input, t)) }
+        fun wearer(input: AlertInput) = wearer.handle(input, wall(), t)
 
-        fun wearerDid(effects: List<AlertEffect>) = effects.forEach { e ->
-            when (e) {
-                is AlertEffect.Fire -> note(if (e.silent) "resume ${e.firing.kind.wire}" else Headlines.english(e.firing.kind, e.firing.treated))
-                is AlertEffect.Clear -> note("clear ${e.kind.wire}")
-                is AlertEffect.Back -> note("back ${e.side.wire}")
-                is AlertEffect.Mirror -> follow(AlertInput.Remote(e.event))
-                is AlertEffect.Schedule -> timer = e.at
+        fun wearerDid(effects: List<AlertEffect>) =
+            effects.forEach { e ->
+                when (e) {
+                    is AlertEffect.Fire -> {
+                        note(
+                            if (e.silent) "resume ${e.firing.kind.wire}" else Headlines.english(e.firing.kind, e.firing.treated),
+                        )
+                    }
+
+                    is AlertEffect.Clear -> {
+                        note("clear ${e.kind.wire}")
+                    }
+
+                    is AlertEffect.Back -> {
+                        note("back ${e.side.wire}")
+                    }
+
+                    is AlertEffect.Mirror -> {
+                        follow(AlertInput.Remote(e.event))
+                    }
+
+                    is AlertEffect.Answered -> {
+                        error("a wearer never shows an answered escalation")
+                    }
+
+                    // the wearer's history line only: what the followers show is compared on their side
+                    is AlertEffect.Escalated -> {
+                        Unit
+                    }
+
+                    is AlertEffect.Schedule -> {
+                        timer = e.at?.let { it - offset }
+                    }
+                }
             }
-        }
 
-        fun doses() = Doses(
-            carbs = doses.filterIndexed { i, d -> i !in deleted && d.first == TreatmentKind.CARBS }.map { it.second },
-            rapid = doses.filterIndexed { i, d -> i !in deleted && d.first == TreatmentKind.RAPID }.map { it.second },
-        )
+        fun doses() =
+            Doses(
+                carbs = doses.filterIndexed { i, d -> i !in deleted && d.first == TreatmentKind.CARBS }.map { it.second },
+                rapid = doses.filterIndexed { i, d -> i !in deleted && d.first == TreatmentKind.RAPID }.map { it.second },
+            )
 
         var glucose = 0
-        var rate = 0.0
+        var rate: Double? = null
         var age = 0
         var sensorOn = true
         var every = 1
         var nextReading: Long? = null
-        val byTime = sc.lines.associateBy { T0 + it.at }
-        val stop = T0 + (sc.end + 1) * 60L
-        fun allEnd(w: List<String>, from: Int): Long =
-            if (w.getOrNull(from) == "never") Rules.NEVER else t + minutes(w.drop(from).joinToString(" ")) * 60L
+        val byTime = sc.lines.associateBy { t0 + it.at }
+        val stop = t0 + (sc.end + 1) * 60L
+
+        fun allEnd(w: List<String>, from: Int, now: Long = wall()): Long =
+            if (w.getOrNull(from) == "never") Rules.NEVER else now + minutes(w.drop(from).joinToString(" ")) * 60L
+
         fun kind(word: String) = requireNotNull(AlertKind.fromWire(word)) { "unknown kind $word" }
-        fun length(w: List<String>, from: Int) = w.drop(from).joinToString(" ").takeIf { it.isNotBlank() }?.let(::minutes) ?: s.actions.muteMin
+
+        fun length(w: List<String>, from: Int) =
+            w
+                .drop(from)
+                .joinToString(" ")
+                .takeIf { it.isNotBlank() }
+                ?.let(::minutes) ?: s.actions.muteMin
 
         while (t < stop) {
             byTime[t]?.events?.forEach { ev ->
@@ -198,101 +371,211 @@ object AlertScenarios {
                 when (w[0]) {
                     "glucose" -> {
                         glucose = w[1].toInt()
-                        rate = w.indexOf("rate").takeIf { it > 0 }?.let { w[it + 1].toDouble() } ?: 0.0
+                        rate = w.indexOf("rate").takeIf { it > 0 }?.let { w[it + 1].toDouble() }
                         age = w.indexOf("age").takeIf { it > 0 }?.let { w[it + 1].toInt() } ?: 0
                         if (nextReading == null) nextReading = t
                     }
-                    "readings" -> every = w[2].toInt()
-                    "sensor" -> when (w[1]) {
-                        "ended" -> { sensorOn = false; sensor = SensorWindow(t - 15 * 86_400L, t, t - 15 * 86_400L + 3600); wearerDid(wearer.handle(AlertInput.Sensor(sensor), t)) }
-                        "started" -> { sensorOn = false; sensor = SensorWindow.started(t, 15 * 1440); wearerDid(wearer.handle(AlertInput.Sensor(sensor), t)) }
-                        "on", "off" -> { sensorOn = w[1] == "on"; if (sensorOn) nextReading = t }
-                        else -> error("unknown event: $ev")
+
+                    "readings" -> {
+                        every = w[2].toInt()
                     }
+
+                    "sensor" -> {
+                        when (w[1]) {
+                            "ended" -> {
+                                sensorOn = false
+                                sensor = SensorWindow(wall() - 15 * 86_400L, wall(), wall() - 15 * 86_400L + 3600)
+                                wearerDid(wearer(AlertInput.Sensor(sensor)))
+                            }
+
+                            "started" -> {
+                                sensorOn = false
+                                sensor = SensorWindow.started(wall(), 15 * 1440)
+                                wearerDid(wearer(AlertInput.Sensor(sensor)))
+                            }
+
+                            "on", "off" -> {
+                                sensorOn = w[1] == "on"
+                                if (sensorOn) nextReading = t
+                            }
+
+                            else -> {
+                                error("unknown event: $ev")
+                            }
+                        }
+                    }
+
+                    "source" -> {
+                        require(w.getOrNull(1) == "started") { "unknown event: $ev" }
+                        wearerDid(wearer(AlertInput.Source(wall())))
+                    }
+
+                    "clock" -> {
+                        require(w.getOrNull(1) == "back") { "unknown event: $ev" }
+                        offset -= minutes(w.drop(2).joinToString(" ")) * 60L
+                        wearerDid(wearer(AlertInput.Tick)) // the system's clock-change notice (TIME_SET)
+                    }
+
                     "carbs", "insulin" -> {
-                        doses += (if (w[0] == "carbs") TreatmentKind.CARBS else TreatmentKind.RAPID) to t
-                        wearerDid(wearer.handle(AlertInput.Treatments(doses()), t))
+                        doses += (if (w[0] == "carbs") TreatmentKind.CARBS else TreatmentKind.RAPID) to wall()
+                        wearerDid(wearer(AlertInput.Treatments(doses())))
                     }
+
                     "delete" -> {
                         val k = if (w[1] == "carbs") TreatmentKind.CARBS else TreatmentKind.RAPID
                         deleted += doses.indices.last { it !in deleted && doses[it].first == k }
-                        wearerDid(wearer.handle(AlertInput.Treatments(doses()), t))
+                        wearerDid(wearer(AlertInput.Treatments(doses())))
                     }
-                    "mute" -> wearerDid(
-                        wearer.handle(if (w[1] == "all") AlertInput.MuteAll(allEnd(w, 2)) else AlertInput.Mute(kind(w[1]), length(w, 2)), t),
-                    )
-                    "relax" -> wearerDid(wearer.handle(AlertInput.RemindLess(kind(w[1])), t))
-                    "unmute" -> wearerDid(wearer.handle(if (w[1] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[1])), t))
-                    "unrelax" -> wearerDid(wearer.handle(AlertInput.RemindAsUsual(kind(w[1])), t))
+
+                    "mute" -> {
+                        wearerDid(
+                            wearer(
+                                if (w[1] ==
+                                    "all"
+                                ) {
+                                    AlertInput.MuteAll(allEnd(w, 2))
+                                } else {
+                                    AlertInput.Mute(kind(w[1]), length(w, 2))
+                                },
+                            ),
+                        )
+                    }
+
+                    "relax" -> {
+                        wearerDid(wearer(AlertInput.RemindLess(kind(w[1]))))
+                    }
+
+                    "unmute" -> {
+                        wearerDid(wearer(if (w[1] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[1]))))
+                    }
+
+                    "unrelax" -> {
+                        wearerDid(wearer(AlertInput.RemindAsUsual(kind(w[1]))))
+                    }
+
+                    // the wearer taps, swipes or opens the alert: an answer on the wearer's phone (#39)
+                    "ack" -> {
+                        wearerDid(wearer(AlertInput.Acknowledge(kind(w[1]))))
+                    }
+
                     "follower" -> {
                         require(sc.mirror) { "follower event without mirror: $ev" }
                         follow(
                             when (w[1]) {
-                                "mute" -> if (w[2] == "all") AlertInput.MuteAll(allEnd(w, 3)) else AlertInput.Mute(kind(w[2]), length(w, 3))
-                                "relax" -> AlertInput.RemindLess(kind(w[2]))
-                                "unmute" -> if (w[2] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[2]))
-                                "unrelax" -> AlertInput.RemindAsUsual(kind(w[2]))
-                                else -> error("unknown event: $ev")
+                                "mute" -> {
+                                    if (w[2] ==
+                                        "all"
+                                    ) {
+                                        AlertInput.MuteAll(allEnd(w, 3, t))
+                                    } else {
+                                        AlertInput.Mute(kind(w[2]), length(w, 3))
+                                    }
+                                }
+
+                                "relax" -> {
+                                    AlertInput.RemindLess(kind(w[2]))
+                                }
+
+                                "unmute" -> {
+                                    if (w[2] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[2]))
+                                }
+
+                                "unrelax" -> {
+                                    AlertInput.RemindAsUsual(kind(w[2]))
+                                }
+
+                                else -> {
+                                    error("unknown event: $ev")
+                                }
                             },
                         )
                     }
+
                     "set" -> {
                         s = w.drop(1).fold(s) { acc, kv -> set(acc, kv) }
                         follow(AlertInput.Settings(followerSettings()))
-                        wearerDid(wearer.handle(AlertInput.Settings(s), t))
+                        wearerDid(wearer(AlertInput.Settings(s)))
                     }
+
                     // the process restarts: the device resumes from its saved state and last reading
-                    "restart" -> wearerDid(wearer.restart(s, doses(), sensor, t))
-                    else -> error("unknown event: $ev")
+                    "restart" -> {
+                        wearerDid(wearer.restart(s, doses(), sensor, wall(), t))
+                    }
+
+                    else -> {
+                        error("unknown event: $ev")
+                    }
                 }
             }
             val due = nextReading
             if (sensorOn && due != null && due <= t) {
-                val r = AlertReading(t - age * 60L, glucose, rate)
-                wearerDid(wearer.handle(AlertInput.Reading(r), t))
-                follow(AlertInput.Reading(r))
+                // stamped by the wearer's clock; the follower gets it with the wearer's own time
+                val r = AlertReading(wall() - age * 60L, glucose, rate)
+                wearerDid(wearer(AlertInput.Reading(r)))
+                follow(AlertInput.Reading(r.copy(t = t - age * 60L)))
                 nextReading = t + every * 60L
             } else if (timer.let { it != null && it <= t }) {
-                wearerDid(wearer.handle(AlertInput.Tick, t))
+                wearerDid(wearer(AlertInput.Tick))
+                follow(AlertInput.Tick)
+            } else if (sc.mirror && followerTimer.let { it != null && it <= t }) {
                 follow(AlertInput.Tick)
             }
-            t = listOfNotNull(byTime.keys.filter { it > t }.minOrNull(), nextReading?.takeIf { sensorOn }, timer).filter { it > t }.minOrNull() ?: break
+            t =
+                listOfNotNull(
+                    byTime.keys.filter { it > t }.minOrNull(),
+                    nextReading?.takeIf { sensorOn },
+                    timer,
+                    followerTimer?.takeIf { sc.mirror },
+                ).filter { it > t }.minOrNull()
+                    ?: break
         }
+
         // the wearer's and the follower's actions are compared apart (their order within a minute is free)
         fun split(l: List<String>) = l.partition { !it.startsWith("follower ") }.let { (w, f) -> w + f }
         val expected = sc.lines.associate { it.minute to it.expect }
         return (0..sc.end).mapNotNull { m ->
             val want = split(expected[m].orEmpty())
             val have = split(got[m].orEmpty())
-            if (want == have) null else "minute $m: expected ${want.ifEmpty { listOf("nothing") }}, got ${have.ifEmpty { listOf("nothing") }}"
+            if (want ==
+                have
+            ) {
+                null
+            } else {
+                "minute $m: expected ${want.ifEmpty { listOf("nothing") }}, got ${have.ifEmpty { listOf("nothing") }}"
+            }
         }
     }
 }
 
 /** SPEC §1's English headlines (the apps word them from their own strings; the scenarios use these). */
 object Headlines {
-    private fun label(k: AlertKind) = when (k) {
-        AlertKind.VERY_LOW -> "Very low"
-        AlertKind.LOW -> "Low"
-        AlertKind.HIGH -> "High"
-        AlertKind.VERY_HIGH -> "Very high"
-        AlertKind.EXTREMELY_HIGH -> "Extremely high"
-        AlertKind.FALLING_FAST -> "Falling fast"
-        AlertKind.RISING_FAST -> "Rising fast"
-        AlertKind.NO_DATA -> "No data"
-    }
+    private fun label(k: AlertKind) =
+        when (k) {
+            AlertKind.VERY_LOW -> "Very low"
+            AlertKind.LOW -> "Low"
+            AlertKind.HIGH -> "High"
+            AlertKind.VERY_HIGH -> "Very high"
+            AlertKind.EXTREMELY_HIGH -> "Extremely high"
+            AlertKind.FALLING_FAST -> "Falling fast"
+            AlertKind.RISING_FAST -> "Rising fast"
+            AlertKind.NO_DATA -> "No data"
+        }
 
-    fun english(k: AlertKind, treated: Int): String {
-        val base = when {
-            k.isLevel -> "${label(k)} glucose"
-            k == AlertKind.NO_DATA -> "No glucose data"
-            else -> label(k)
-        }
-        val more = when {
-            treated <= 0 || !k.isLevel -> null
-            k.side == Side.LOW -> if (treated == 1) "eat more" else "eat more again"
-            else -> if (treated == 1) "still high after insulin" else "still high after more insulin"
-        }
+    fun english(k: AlertKind, treated: Int, escalated: Boolean = false): String {
+        val base =
+            when {
+                k.isLevel -> "${label(k)} glucose"
+                k == AlertKind.NO_DATA -> "No glucose data"
+                else -> label(k)
+            }
+        val more =
+            when {
+                treated <= 0 || !k.isLevel -> null
+                k.side == Side.LOW -> if (treated == 1) "eat more" else "eat more again"
+                else -> if (treated == 1) "still high after insulin" else "still high after more insulin"
+            }
+        // #39: a follower's very low that nobody answered on the wearer's phone
+        if (escalated) return "$base · no response"
         return if (more == null) base else "$base · $more"
     }
 }

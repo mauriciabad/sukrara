@@ -53,6 +53,21 @@ import Testing
         }
     }
 
+    /// A debug build takes the system's language overrides, so a dev run can be checked in Spanish (#77); a release
+    /// build still refuses every argument.
+    @Test func debugBuildsTakeTheLanguageArguments() throws {
+        let args = ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES", "-NSDoubleLocalizedStrings", "YES"]
+        let p = try plan(debugBundle, args, env: ["SUKRARA_DEV": "1"])
+        #expect(p.isOffline && p.mode == .normal)
+        #expect(throws: LaunchError.unknownArgument("-AppleLanguages")) { try plan(installed, args) }
+        #expect(throws: LaunchError.unknownArgument("-AppleLanguages")) {
+            try plan(debugBundle, ["-AppleLanguages"], env: ["SUKRARA_DEV": "1"])
+        }
+        #expect(throws: LaunchError.unknownArgument("-keychainService")) {
+            try plan(debugBundle, ["-keychainService", "t"], env: ["SUKRARA_DEV": "1"])
+        }
+    }
+
     @Test func devBuildsAreRecognised() {
         #expect(!installed.isDevBuild(home: home, exists: exists))
         #expect(!downloaded.isDevBuild(home: home, exists: exists))
@@ -121,6 +136,9 @@ import Testing
         let wanted = ServicesPlan(ble: false, relays: true, alerts: true, widgetFeed: false, notifications: true)
         #expect(ServicesPlan.all.limited(by: wanted) == wanted)
         #expect(ServicesPlan.none.limited(by: .all) == .none)
+        // Juggluco on the home network: possible in the installed app only (it connects only once switched on)
+        #expect(ServicesPlan.all.allows(.lan) && !ServicesPlan.none.allows(.lan))
+        #expect(!ServicesPlan.all.limited(by: wanted).lan)
     }
 }
 

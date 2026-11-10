@@ -135,6 +135,16 @@ public struct SideSnoozes: Codable, Equatable, Sendable {
         }
     }
 
+    /// The clock was set back by `d`: every Mute's end and margin count move with it (a Mute keeps its length).
+    mutating func shiftBack(_ d: TimeInterval) {
+        bySide = bySide.mapValues { sn in
+            var s = sn
+            s.until = sn.until?.shiftedBack(d)
+            s.backSince = sn.backSince?.shiftedBack(d)
+            return s
+        }
+    }
+
     private mutating func put(_ side: AlertSide, _ sn: Snooze) {
         bySide[side] = sn.until == nil && sn.relaxMin == 0 ? nil : sn
     }
@@ -155,24 +165,39 @@ public struct SideSnoozes: Codable, Equatable, Sendable {
 
 /// The margin rule (SPEC §2): `reading` is back in range by the margin for `side`. Lows at least `backMgdl` above the
 /// highest enabled low-side threshold, highs below the lowest enabled high-side threshold minus `backMgdl`, a rate
-/// side while its rate doesn't match; no data always (a reading came).
-public func isBackByMargin(_ side: AlertSide, _ reading: GlucoseSample, _ s: AlertSettings) -> Bool {
-    let m = Double(s.notificationActions.backMgdl)
+/// side while its rate doesn't match; no data always (a reading came). Nil = `reading` can't tell: a rate side and a
+/// reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1). `margin`: the
+/// notification actions' by default; a level episode's own end uses `persistence.marginMgdl` (`isOutOfRange`).
+public func isBackByMargin(_ side: AlertSide, _ reading: GlucoseSample, _ s: AlertSettings, margin: Int? = nil)
+    -> Bool?
+{
+    let m = Double(margin ?? s.notificationActions.backMgdl)
     switch side {
+    // a LO / HI is beyond every threshold: never back in range, whatever the margin's edge
     case .low:
+        if reading.isLo { return false }
         guard let edge = [AlertKind.veryLow, .low].filter({ s[$0].on }).map({ s[$0].threshold }).max() else {
             return true
         }
         return reading.mgdl >= edge + m
     case .high:
+        if reading.isHi { return false }
         guard
             let edge = [AlertKind.high, .veryHigh, .extremelyHigh].filter({ s[$0].on }).map({ s[$0].threshold }).min()
         else {
             return true
         }
         return reading.mgdl < edge - m
-    case .fallingFast: return !s[.fallingFast].on || (reading.rate ?? 0) > -s[.fallingFast].threshold
-    case .risingFast: return !s[.risingFast].on || (reading.rate ?? 0) < s[.risingFast].threshold
+    case .fallingFast: return !s[.fallingFast].on ? true : reading.rate.map { $0 > -s[.fallingFast].threshold }
+    case .risingFast: return !s[.risingFast].on ? true : reading.rate.map { $0 < s[.risingFast].threshold }
     case .noData: return true
     }
+}
+
+/// `reading` keeps a level episode of `side` out of range (SPEC §1 "Back by the margin", #37): fresh, and not yet
+/// `persistence.marginMgdl` inside the side's threshold. No margin (0, the default): never, today's behaviour.
+public func isOutOfRange(_ side: AlertSide, _ reading: GlucoseSample?, _ s: AlertSettings, at t: Date) -> Bool {
+    guard s.persistence.marginMgdl > 0, s.on, let r = reading, t.timeIntervalSince(r.at) <= AlertEngine.freshness
+    else { return false }
+    return isBackByMargin(side, r, s, margin: s.persistence.marginMgdl) == false
 }

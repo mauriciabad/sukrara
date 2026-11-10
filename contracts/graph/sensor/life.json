@@ -1,5 +1,5 @@
 {
- "about": "Sensor life badge, warm-up, countdown ring and the ended card's action pill (round sensor-life), shared by Android (GraphFixtureTest.sensor) and Mac (-graphselftest). Format: ../README.md.",
+ "about": "Sensor life badge, warm-up, countdown ring and the ended sensor's pill (round sensor-life), shared by Android (GraphFixtureTest.sensor) and Mac (-graphselftest). Format: ../README.md.",
  "cases": [
   {
    "name": "2 days in: 13d (whole days, floor)",
@@ -122,11 +122,51 @@
    }
   },
   {
-   "name": "ended 10 min ago: 0m, ended, no ring",
+   "name": "ended 10 min ago, readings keep arriving: the value with Ended · Replace sensor",
    "start": -1296600,
    "end": -600,
    "countdownHours": 8,
    "latest": -60,
+   "expect": {
+    "label": "0m",
+    "ended": true,
+    "life": 0,
+    "warmup": null,
+    "ring": null,
+    "pill": {
+     "kind": "sensor",
+     "text": "Ended · Replace sensor",
+     "short": "Ended",
+     "tonal": false
+    }
+   }
+  },
+  {
+   "name": "ends now, readings keep arriving: ended, the value's pill",
+   "start": -1296000,
+   "end": 0,
+   "countdownHours": 8,
+   "latest": -60,
+   "expect": {
+    "label": "0m",
+    "ended": true,
+    "life": 0,
+    "warmup": null,
+    "ring": null,
+    "pill": {
+     "kind": "sensor",
+     "text": "Ended · Replace sensor",
+     "short": "Ended",
+     "tonal": false
+    }
+   }
+  },
+  {
+   "name": "ended 10 min ago, readings stopped 6 min ago: Sensor ended with Replace sensor",
+   "start": -1296600,
+   "end": -600,
+   "countdownHours": 8,
+   "latest": -360,
    "expect": {
     "label": "0m",
     "ended": true,
@@ -142,11 +182,11 @@
    }
   },
   {
-   "name": "ends now: ended",
-   "start": -1296000,
-   "end": 0,
+   "name": "ended, no reading at all: Sensor ended with Replace sensor",
+   "start": -1296600,
+   "end": -600,
    "countdownHours": 8,
-   "latest": -60,
+   "latest": null,
    "expect": {
     "label": "0m",
     "ended": true,

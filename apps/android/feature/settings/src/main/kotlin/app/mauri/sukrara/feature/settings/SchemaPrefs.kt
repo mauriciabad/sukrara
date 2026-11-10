@@ -23,15 +23,11 @@ object SchemaPrefs {
     /** The six graph ranges, lowest first; each must stay between its neighbours. */
     val Bands: List<Setting<Double>> = GraphSettings.Bands
 
-    val GraphHours = GraphSettings.Hours
-    val GridHours = GraphSettings.GridHours
-    val RingCount = GraphSettings.RingCount
-    val Side = GraphSettings.Side
-    val ColumnCrown = GraphSettings.ColumnCrown
-    val RingMarks = GraphSettings.RingMarks
-
     /** When the wearer confirmed the alert thresholds (ISO instant; empty = never). */
     val ThresholdsConfirmedAt = SchemaSettings.text("alerts.thresholdsConfirmedAt", default = "")
+
+    /** The settings search's recent queries, one per line, newest first (`RecentSearches`). */
+    val SearchRecent = SchemaSettings.text("settings.searchRecent", default = "")
 
     /** The number format of a setting by schema id (e.g. `alerts.threshold.low`). */
     fun spec(id: String): NumberSpec {
@@ -48,5 +44,7 @@ object SchemaPrefs {
 
     /** Whether (and when) the alert thresholds were confirmed; home's Finish-setup card asks until they are. */
     fun thresholdsConfirmedAt(settings: SettingsRepository): Flow<Instant?> =
-        settings.flow(ThresholdsConfirmedAt).map { text -> text.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it) }.getOrNull() } }
+        settings.flow(ThresholdsConfirmedAt).map { text ->
+            text.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        }
 }

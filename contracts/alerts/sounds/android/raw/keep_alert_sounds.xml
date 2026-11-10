@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The alert sounds are looked up by name (alerts/AlertSounds.kt), so resource shrinking must keep them. -->
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The alert sounds are picked at play time through monitor AlertSoundFiles (direct R.raw references, #44); this keeps
+     them all through resource shrinking anyway. tools/release/verify-sounds.sh fails a release APK that lost one. -->
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:keep="@raw/arcade_*,@raw/kart_*,@raw/quest_*,@raw/soft_*,@raw/silence" />

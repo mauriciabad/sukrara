@@ -3,13 +3,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.PensPort
+import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.feature.settings.advanced.AdvancedPort
+import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
+import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarPort
+import app.mauri.sukrara.protocol.event.Avatar
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * What the settings pages need from the rest of the app (features never depend on `:app` or on each other). The app
@@ -35,10 +44,152 @@ interface SettingsDeps {
     val appVersion: String
     val prerelease: Boolean
 
-    val releases: ReleasesSource
+    /** About's update check against the GitHub releases; null in the Google Play build (updates come from Play). */
+    val releases: ReleasesSource?
 
     val clock: Clock
+
+    /** Whether this phone reads insulin pens (the wearer's phone with NFC): Settings shows *Insulin pens* only then. */
+    fun pensAvailable(): Boolean = false
+
+    /** The pens, their pages and Android's tap state (null on a phone that doesn't read pens). */
+    val pens: PensPort? get() = null
+
+    /** Root for Sukrara and the System UI module (Settings › Status bar, "With root"); null in the Google Play build. */
+    val systemAccess: SystemAccessPort?
+
+    /** The wearer's sensor as the hub knows it (Settings › Sensor end shows its end). */
+    val sensor: Flow<SensorState>
+
+    /** Which outputs Share with apps has on (the overview row's summary). */
+    val appsShared: Flow<Set<AppOutput>>
+
+    /** The wearer's data doesn't go to their clinic yet and the banner wasn't dismissed (the same memory as home's). */
+    val clinicBanner: Flow<Boolean> get() = flowOf(false)
+
+    /** *Share your data with your clinic*: Dismiss (on home too). */
+    fun dismissClinicBanner() {}
+
+    /** Undo on the "Tip closed" snackbar after [dismissClinicBanner]. */
+    fun restoreClinicBanner() {}
+
+    /** How many tips (home's and this one) are closed: *Show closed tips* shows while any is. */
+    val closedTips: Flow<Int> get() = flowOf(0)
+
+    /** *Show closed tips*: every closed tip can show again. */
+    fun restoreClosedTips() {}
+
+    /** An alert's sound preview and *Send a test alert* (the alert runtime's notifier); nothing in screenshots. */
+    val alertPlayback: AlertPlayback get() = AlertPlayback.None
+
+    /** Settings › Sensor end › Calendar (the wearer's phone); nothing in screenshots. */
+    val sensorCalendar: SensorCalendarPort get() = SensorCalendarPort.None
+
+    /** Settings › Advanced: relays, *Reconnect now*, the log, the identity and the settings file. */
+    val advanced: AdvancedPort get() = AdvancedPort.None
+
+    /** The overview's Profile and Backup rows (the wearer's sharing). */
+    val overviewSharing: Flow<OverviewSharing> get() = flowOf(OverviewSharing())
+
+    /** A follower's *Settings from* (Settings › Settings from); nothing on the wearer's phone. */
+    val settingsFrom: SettingsFromPort get() = SettingsFromPort.None
 }
+
+/**
+ * The overview's sharing rows: [wearer] (a follower has no profile or backup here), the profile [name] (null = not
+ * set) and picture ([avatar]) and the identity's [backup].
+ */
+data class OverviewSharing(
+    val wearer: Boolean = true,
+    val name: String? = null,
+    val avatar: Avatar? = null,
+    val backup: BackupState = BackupState.NoIdentity,
+)
+
+/** What the overview's Backup row says about the sharing identity. */
+enum class BackupState {
+    /** Somewhere besides this phone (password manager, a recovery code kept, or where it was restored from). */
+    Saved,
+
+    /** Only on this phone. */
+    NotSaved,
+
+    /** No identity yet: nothing to back up until the person shares. */
+    NoIdentity,
+
+    /** The stored identity can't be read: Backup leads to restoring it from the recovery code. */
+    Unreadable,
+
+    /** Another app shares as this identity: backups wait until that is solved (Backup explains). */
+    Paused,
+}
+
+/**
+ * Hearing an alert from its settings page, only on the person's tap: [play] its sound for a pack (with its vibration
+ * when [vibrate]) on the volume it rings on, [stop] it, [sendTest] the real notification on its channel labelled as
+ * a test (no alert state changes), and the kind's notification channel ([channelId]) for Android's settings.
+ */
+interface AlertPlayback {
+    fun play(
+        kind: AlertKind,
+        pack: String,
+        alarm: Boolean,
+        vibrate: Boolean,
+    )
+
+    fun stop()
+
+    /** Android's settings silence this alert (its channel's sound off or importance too low). */
+    fun silenced(
+        kind: AlertKind,
+        alarm: Boolean,
+    ): Boolean
+
+    /** The person chose this alert's sound in Android's settings: it plays that one, whatever the pack (every ▶ too). */
+    fun soundChosenInAndroid(
+        kind: AlertKind,
+        alarm: Boolean,
+    ): Boolean = false
+
+    fun sendTest(
+        kind: AlertKind,
+        settings: AlertSettings,
+    )
+
+    fun channelId(
+        kind: AlertKind,
+        alarm: Boolean,
+    ): String?
+
+    object None : AlertPlayback {
+        override fun play(
+            kind: AlertKind,
+            pack: String,
+            alarm: Boolean,
+            vibrate: Boolean,
+        ) = Unit
+
+        override fun stop() = Unit
+
+        override fun silenced(
+            kind: AlertKind,
+            alarm: Boolean,
+        ) = false
+
+        override fun sendTest(
+            kind: AlertKind,
+            settings: AlertSettings,
+        ) = Unit
+
+        override fun channelId(
+            kind: AlertKind,
+            alarm: Boolean,
+        ): String? = null
+    }
+}
+
+/** An output to other apps that is switched on (Settings › Share with apps). */
+enum class AppOutput { LibreView, Tidepool, NightscoutUpload, XdripServer, NightscoutApi, Broadcasts, HealthConnect }
 
 /** Reads and changes the alert settings; [update] applies a change to the stored value (never to a stale copy). */
 interface AlertSettingsStore {

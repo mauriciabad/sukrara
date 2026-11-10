@@ -5,7 +5,11 @@ package app.mauri.sukrara.core.data
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import app.mauri.sukrara.core.data.db.QuarantiningOpenHelperFactory
+import app.mauri.sukrara.core.data.db.RoomHistoryImport
+import app.mauri.sukrara.core.data.db.RoomPenLedgerRepository
 import app.mauri.sukrara.core.data.db.RoomReadingsRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
 import app.mauri.sukrara.core.data.db.SukraraDatabase
@@ -19,15 +23,23 @@ import app.mauri.sukrara.core.data.secure.KeystoreSecureStore
 import app.mauri.sukrara.core.data.secure.SecretBox
 import app.mauri.sukrara.core.data.settings.DataStoreSettingsRepository
 import app.mauri.sukrara.core.data.settings.PreferenceStores
+import app.mauri.sukrara.core.data.settings.SettingsTransfer
 import app.mauri.sukrara.core.data.state.TypedStore
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.storage.HistoryImportStore
+import app.mauri.sukrara.core.model.storage.PenLedgerRepository
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -51,12 +63,12 @@ data class Retention(
  * - `datastore/<store>.preferences_pb`: settings, one file per schema store;
  * - `files/state/<name>.json`: typed state ([typedStore]);
  * - `files/secure/<name>.bin`: secrets ([secureStore]);
- * - `databases/sukrara.db`: readings, treatments, sharing ledger;
+ * - `databases/sukrara.db`: readings, treatments, sharing ledger, the pen ledger;
  * - `files/diag/`: the diagnostic log.
  */
 class DataModule(
     private val context: Context,
-    appVersion: String,
+    private val appVersion: String,
     private val dispatchers: DispatcherProvider,
     private val clock: Clock,
     private val retention: Retention = Retention(),
@@ -72,29 +84,65 @@ class DataModule(
     val json: Json = SukraraJson
 
     private val datastoreDir: File get() = File(context.filesDir.parentFile, "datastore")
+    private val secureDir: File get() = File(context.filesDir, "secure")
 
     val http: OkHttpClient by lazy { Http.client(appVersion) }
 
     val diagLog: DiagLog by lazy { DiagLog(File(context.filesDir, "diag"), clock, dispatchers.io, scope) }
 
-    val settings: SettingsRepository by lazy {
-        DataStoreSettingsRepository(PreferenceStores(datastoreDir, corruption, clock, scope))
-    }
+    private val preferenceStores by lazy { PreferenceStores(datastoreDir, corruption, clock, scope) }
+
+    val settings: SettingsRepository by lazy { DataStoreSettingsRepository(preferenceStores) }
+
+    /** Settings › Advanced's settings file; [normalize] checks JSON values by `store:key` (the alert settings). */
+    fun settingsTransfer(
+        normalize: Map<String, (String) -> String?>,
+    ): SettingsTransfer = SettingsTransfer(preferenceStores, appVersion, normalize)
 
     val secureStore: SecureStore by lazy {
-        KeystoreSecureStore(File(context.filesDir, "secure"), secretBox, corruption, clock, dispatchers.io)
+        KeystoreSecureStore(secureDir, secretBox, corruption, clock, dispatchers.io)
     }
 
+    /**
+     * True once this process opened a database of another version and replaced it with an empty one (no migrations,
+     * [SukraraDatabase]): setup offers Import history again.
+     */
+    val databaseReplaced = MutableStateFlow(false)
+
     val database: SukraraDatabase by lazy {
-        Room.databaseBuilder(context, SukraraDatabase::class.java, SukraraDatabase.FILE)
+        Room
+            .databaseBuilder(context, SukraraDatabase::class.java, SukraraDatabase.FILE)
             .openHelperFactory(QuarantiningOpenHelperFactory(::quarantineDatabase))
-            .setQueryCoroutineContext(dispatchers.io)
+            // no migrations: another version, older or newer, is dropped (every table) and created afresh. This one call
+            // covers downgrades too (fallbackToDestructiveMigrationOnDowngrade would require migrations on upgrades again)
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .addCallback(
+                object : RoomDatabase.Callback() {
+                    override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+                        databaseReplaced.value = true
+                        diagLog.log("database", "another version was replaced by an empty database")
+                    }
+                },
+            ).setQueryCoroutineContext(dispatchers.io)
             .build()
     }
 
+    /** Every stored reading, whoever it is from: for the follower engine's own wipes and writes. */
     val readings: ReadingsRepository by lazy { RoomReadingsRepository(database.readings()) }
 
+    /**
+     * The readings as the phone's current [role] sees them: never another role's sources ([SourceId.notOf]). What
+     * the hub, the history, the report, the export and the uploads read.
+     */
+    fun readingsFor(role: Flow<Role?>): ReadingsRepository = RoomReadingsRepository(database.readings(), role.map(SourceId::notOf))
+
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
+
+    /** THE import path (Import history): every importer stores through it, deduplicated (`HistoryImport`). */
+    val historyImport: HistoryImportStore by lazy { RoomHistoryImport(database.readings(), database.treatments()) }
+
+    /** The pen ledger, stored with the treatments of each pen change in one transaction (`:pen`). */
+    val penLedger: PenLedgerRepository by lazy { RoomPenLedgerRepository(database.penLedger()) }
 
     /**
      * The typed state file `files/state/<name>.json`. [whenCorrupt] is what the store continues from if the file is
@@ -123,18 +171,28 @@ class DataModule(
      * Re-reports damaged files earlier runs kept and nobody acknowledged, opens the database and applies retention,
      * off the main thread. Call from `AppGraph.ready()`.
      */
-    suspend fun ready() = withContext(dispatchers.io) {
-        corruption.rescan(listOf(context.filesDir, datastoreDir, context.getDatabasePath(SukraraDatabase.FILE).parentFile!!))
-        database.openHelper.writableDatabase
-        prune()
-    }
+    suspend fun ready() =
+        withContext(dispatchers.io) {
+            corruption.rescan(
+                listOf(
+                    QuarantineRoot(context.filesDir, StoreKind.File),
+                    QuarantineRoot(secureDir, StoreKind.Secret),
+                    QuarantineRoot(datastoreDir, StoreKind.Settings),
+                    QuarantineRoot(context.getDatabasePath(SukraraDatabase.FILE).parentFile!!, StoreKind.Database),
+                ),
+            )
+            database.openHelper.writableDatabase
+            prune()
+        }
 
     /** SQLite found the database damaged and is about to recreate it: keep a copy (and its WAL) and report it. */
     private fun quarantineDatabase(db: File) {
         val now = clock.now()
-        val kept = listOf(db, File(db.path + "-wal")).filter { it.exists() }
-            .map { it.copyTo(FileStore.quarantineTarget(it, now.toEpochMilli()), overwrite = true) }
-        corruption.report(CorruptFile("database:${db.name}", kept.firstOrNull(), now, "sqlite corruption"))
+        val kept =
+            listOf(db, File(db.path + "-wal"))
+                .filter { it.exists() }
+                .map { it.copyTo(FileStore.quarantineTarget(it, now.toEpochMilli()), overwrite = true) }
+        corruption.report(CorruptFile(StoreKind.Database, db.name, kept.firstOrNull(), now, "sqlite corruption"))
     }
 
     /** Deletes history older than [retention]; pending outbox entries are never deleted. */

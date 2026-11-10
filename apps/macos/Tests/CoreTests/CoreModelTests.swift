@@ -138,6 +138,35 @@ struct Case: @unchecked Sendable, CustomTestStringConvertible {
         #expect(TreatmentMerge.winner(phone, mac) == phone)
     }
 
+    /// contracts/treatments/merge.json (SPEC §1): the greater `(u, o)` wins in either arrival order; the same cases run
+    /// on Android through Room (`SukraraDatabaseTest`) and the wire comparison (`TreatmentMergeTest`).
+    @Test func theContractsMergeCases() throws {
+        let data = try Data(contentsOf: Contracts.url("treatments/merge.json"))
+        let cases = try #require(
+            (try JSONSerialization.jsonObject(with: data) as? [String: Any])?["cases"] as? [[String: Any]])
+        #expect(!cases.isEmpty)
+        func version(_ v: Any?) throws -> Treatment {
+            let v = try #require(v as? [String: Any])
+            let o = try #require(Treatment.Origin(rawValue: v["o"] as? String ?? ""))
+            return entry(
+                u: try #require((v["u"] as? NSNumber)?.int64Value), o: o,
+                a: try #require((v["a"] as? NSNumber)?.doubleValue))
+        }
+        for c in cases {
+            let name = c["name"] as? String ?? "?"
+            let cur = try version(c["cur"]), inc = try version(c["inc"])
+            let wins = c["wins"] as? String
+            // both arrival orders keep the same version (`same`: an equal `(u, o)`, the second changes nothing)
+            for (first, second) in [(cur, inc), (inc, cur)] {
+                let winner = wins == "same" ? first : wins == "inc" ? inc : cur
+                #expect(TreatmentMerge.winner(first, second) == winner, "\(name)")
+                var log = TreatmentLog(entries: [first])
+                #expect(log.merge([second]).isEmpty == (wins == "same" || winner == first), "\(name)")
+                #expect(log.entries["x"] == winner, "\(name)")
+            }
+        }
+    }
+
     @Test func aDeletionIsANewerVersion() {
         var log = TreatmentLog(entries: [entry(u: 1, o: .mac)])
         #expect(log.merge([entry(u: 2, o: .mac, del: true)]).count == 1)
@@ -171,8 +200,15 @@ struct Case: @unchecked Sendable, CustomTestStringConvertible {
 
     @Test func trendThresholdsMatchAndroid() {
         #expect(Trend(rate: 0.99) == .steady && Trend(rate: -0.99) == .steady)
-        #expect(Trend(rate: 1) == .rising && Trend(rate: 2) == .risingFast)
-        #expect(Trend(rate: -1.5) == .falling && Trend(rate: -2) == .fallingFast)
+        #expect(Trend(rate: 1) == .rising && Trend(rate: 2) == .risingFast && Trend(rate: 3) == .risingVeryFast)
+        #expect(Trend(rate: -1.5) == .falling && Trend(rate: -2) == .fallingFast && Trend(rate: -3) == .fallingVeryFast)
         #expect(Trend.words(rate: nil) == "trend unknown")
+    }
+
+    @Test func loAndHiAreStoredAsTheFlags() {
+        let t = Date(timeIntervalSince1970: 1000)
+        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 35, rate: -2)) == Reading(t: t, mgdl: 39, rate: nil))
+        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 450, rate: 1)) == Reading(t: t, mgdl: 401, rate: nil))
+        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 120, rate: 1)) == Reading(t: t, mgdl: 120, rate: 1))
     }
 }

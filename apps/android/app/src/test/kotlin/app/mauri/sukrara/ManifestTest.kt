@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -34,6 +36,8 @@ class ManifestTest {
         setOf(
             "app.mauri.sukrara.MainActivity", // launcher and invite links
             "app.mauri.sukrara.monitor.AlertSoundProvider", // System UI reads the channel sounds
+            // LSPosed hands the app its service here (advisory: it only picks the root page's hint)
+            "io.github.libxposed.service.XposedProvider",
             "androidx.compose.ui.tooling.PreviewActivity", // ui-tooling, debugImplementation only (Studio previews)
             "androidx.activity.ComponentActivity", // ui-test-manifest, debugImplementation only (:feature:home Compose tests)
             // home-screen widgets: any launcher sends their broadcasts and opens their settings
@@ -50,6 +54,22 @@ class ManifestTest {
     }
 
     @Test
+    fun `only Sukrara's own intents open the new-sensor flow`() {
+        assertEquals("false", named("app.mauri.sukrara.SensorSetupActivity").attr("exported"))
+        val actions = root.getElementsByTagName("action").let { list -> (0 until list.length).map { list.item(it) as Element } }
+        assertTrue(
+            "no intent filter declares the new-sensor action",
+            actions.none { it.attr("name") == app.mauri.sukrara.core.model.NavTargets.ACTION_SENSOR_SETUP },
+        )
+    }
+
+    @Test
+    fun `only System UI can say hello to the root status bar`() {
+        val hello = named("app.mauri.sukrara.monitor.systemui.HookHelloReceiver")
+        assertEquals("android.permission.STATUS_BAR_SERVICE", hello.attr("permission"))
+    }
+
+    @Test
     fun `the sound provider only serves files and file provider stays private`() {
         val sounds = named("app.mauri.sukrara.monitor.AlertSoundProvider")
         assertEquals("false", sounds.attr("grantUriPermissions"))
@@ -63,11 +83,121 @@ class ManifestTest {
         }
     }
 
+    /**
+     * Before the first unlock after a restart only these run (docs/30-direct-boot.md): they read the device-protected
+     * plan and never the app graph. Any other component there would start code that expects the unlocked storage.
+     */
+    @Test
+    fun `only the locked boot receiver and the sound provider run before the first unlock`() {
+        val aware = components.filter { it.attr("directBootAware") == "true" }.map { it.attr("name") }.toSet()
+        assertEquals(
+            setOf(
+                "app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver",
+                "app.mauri.sukrara.monitor.AlertSoundProvider",
+                // Room's own, bound only with multi-instance invalidation (Sukrara doesn't enable it): never runs
+                "androidx.room.MultiInstanceInvalidationService",
+            ),
+            aware,
+        )
+        val receiver = named("app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver")
+        assertEquals("false", receiver.attr("exported"))
+        val actions = receiver.getElementsByTagName("action").let { l -> (0 until l.length).map { (l.item(it) as Element).attr("name") } }
+        assertEquals(setOf("android.intent.action.LOCKED_BOOT_COMPLETED", "android.intent.action.BOOT_COMPLETED"), actions.toSet())
+    }
+
     @Test
     fun `no backup and no device transfer`() {
         val app = root.getElementsByTagName("application").item(0) as Element
         assertEquals("false", app.attr("allowBackup"))
         assertEquals("@xml/data_extraction_rules", app.attr("dataExtractionRules"))
+    }
+
+    private fun elements(tag: String) =
+        root
+            .getElementsByTagName(
+                tag,
+            ).let { list -> (0 until list.length).map { list.item(it) as Element } }
+
+    private val allowJson by lazy { Json.parseToJsonElement(File("../../../tools/check/allow.json").readText()).jsonObject }
+
+    /** tools/check/allow.json's `permissions` / `queries` keys: the one list of what the app may declare, with why. */
+    private fun allowed(key: String): Set<String> =
+        allowJson
+            .getValue(key)
+            .jsonObject.keys
+            .toSortedSet()
+
+    /** #36: only what the shipped features use; a library or module that adds one fails here until the list says why. */
+    @Test
+    fun `the permissions are exactly allow-json's`() {
+        assertEquals(allowed("permissions"), elements("uses-permission").map { it.attr("name") }.toSortedSet())
+        // Bluetooth finds the sensor and phones nearby, never the person's location
+        val scan = elements("uses-permission").single { it.attr("name") == "android.permission.BLUETOOTH_SCAN" }
+        assertEquals("neverForLocation", scan.attr("usesPermissionFlags"))
+    }
+
+    /** The Google Play build's merged manifest (play flavor, app/src/play): what Play's policies don't allow is gone. */
+    private val play: Element by lazy {
+        DocumentBuilderFactory
+            .newInstance()
+            .apply { isNamespaceAware = true }
+            .newDocumentBuilder()
+            .parse(File(System.getProperty("sukrara.playManifest") ?: error("sukrara.playManifest not set")))
+            .documentElement
+    }
+
+    private fun Element.names(tag: String) =
+        getElementsByTagName(tag).let { l ->
+            (0 until l.length).map {
+                (l.item(it) as Element).attr("name")
+            }
+        }
+
+    @Test
+    fun `the Play build's permissions are allow-json's with play_permissions applied`() {
+        val change = allowJson.getValue("play_permissions").jsonObject
+        val remove = change.getValue("remove").jsonObject.keys
+        val add = change.getValue("add").jsonObject.keys
+        assertEquals((allowed("permissions") - remove + add).toSortedSet(), play.names("uses-permission").toSortedSet())
+        assertTrue("android.permission.USE_EXACT_ALARM" in remove && "android.permission.SCHEDULE_EXACT_ALARM" in add)
+    }
+
+    @Test
+    fun `the Play build has no LSPosed module and no System UI hello`() {
+        val components = listOf("provider", "receiver").flatMap { play.names(it) }
+        assertFalse("io.github.libxposed.service.XposedProvider" in components)
+        assertFalse("app.mauri.sukrara.monitor.systemui.HookHelloReceiver" in components)
+        assertTrue(play.names("permission").none { it.endsWith(".permission.SYSTEMUI_STATE") })
+        // the rest is the same app: the launcher, the monitor, the alert sounds
+        for (c in listOf("app.mauri.sukrara.monitor.MonitoringService", "app.mauri.sukrara.monitor.AlertSoundProvider")) {
+            assertTrue("$c missing from the Play build", c in play.names("service") + components)
+        }
+    }
+
+    @Test
+    fun `the queries are exactly allow-json's`() {
+        val queries =
+            elements("queries").flatMap { q ->
+                (0 until q.childNodes.length).mapNotNull { q.childNodes.item(it) as? Element }.map { e ->
+                    when (e.tagName) {
+                        "package" -> {
+                            "package:" + e.attr("name")
+                        }
+
+                        "intent" -> {
+                            "intent:" +
+                                (0 until e.childNodes.length)
+                                    .mapNotNull { e.childNodes.item(it) as? Element }
+                                    .joinToString(",") { it.attr("name") }
+                        }
+
+                        else -> {
+                            e.tagName
+                        }
+                    }
+                }
+            }
+        assertEquals(allowed("queries"), queries.toSortedSet())
     }
 
     // The release merged manifest isn't built in `check` (it needs the release key); no main-source manifest naming the

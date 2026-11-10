@@ -14,6 +14,31 @@ object NavTargets {
     /** Boolean extra of [ACTION_QUICK_TREATMENT]: open with Carbs focused (a low is going on). */
     const val EXTRA_FOCUS_CARBS = "app.mauri.sukrara.extra.FOCUS_CARBS"
 
-    /** The new-sensor / sensor setup flow. */
+    /** String extra of [ACTION_QUICK_TREATMENT]: edit this stored entry (home's list) instead of adding new ones. */
+    const val EXTRA_TREATMENT_ID = "app.mauri.sukrara.extra.TREATMENT_ID"
+
+    /** Boolean extra of [ACTION_QUICK_TREATMENT]: open with Long-acting focused (a rapid pen's dose was just read). */
+    const val EXTRA_FOCUS_LONG = "app.mauri.sukrara.extra.FOCUS_LONG"
+
+    /** Long extra of [ACTION_QUICK_TREATMENT]: *When* starts at this time (epoch ms; a pen read's injection), not now. */
+    const val EXTRA_AT = "app.mauri.sukrara.extra.AT"
+
+    /**
+     * The new-sensor / sensor setup flow. Intents for it target [SENSOR_SETUP_ACTIVITY] explicitly (not exported:
+     * only Sukrara's own PendingIntents reach it); the main activity ignores the action from any other app.
+     */
     const val ACTION_SENSOR_SETUP = "app.mauri.sukrara.action.SENSOR_SETUP"
+
+    /** The non-exported trampoline (`:app`) that opens the new-sensor flow: `Intent.setClassName(packageName, this)`. */
+    const val SENSOR_SETUP_ACTIVITY = "app.mauri.sukrara.SensorSetupActivity"
+
+    /** Boolean extra of [ACTION_SENSOR_SETUP]: a sensor was tapped (NFC) while Sukrara wasn't in front. */
+    const val EXTRA_FROM_SENSOR_TAP = "app.mauri.sukrara.extra.FROM_SENSOR_TAP"
+
+    /** Settings › Insulin pens › one pen ([EXTRA_PEN_SERIAL]); without the extra, the pens page. */
+    const val ACTION_PEN_PAGE = "app.mauri.sukrara.action.PEN_PAGE"
+    const val EXTRA_PEN_SERIAL = "app.mauri.sukrara.extra.PEN_SERIAL"
+
+    /** Boolean extra of [ACTION_PEN_PAGE]: that pen's last big read in *Doses read* (*Review*, *Undo this read*). */
+    const val EXTRA_PEN_REVIEW = "app.mauri.sukrara.extra.PEN_REVIEW"
 }

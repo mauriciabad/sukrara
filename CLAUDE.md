@@ -30,6 +30,10 @@ sections your change touches.
   (`// Sukrara — https://github.com/mauriciabad/sukrara` / `// Copyright (C) 2026 Maurici Abad` /
   `// SPDX-License-Identifier: GPL-3.0-or-later`; `#` for py / sh / yml, `<!-- -->` for xml).
   *(checks `java`, `header`: new source files, and files moved out of `poc/`)*
+- **Formatted code:** Kotlin through Spotless (ktlint + Compose rules, `apps/android/.editorconfig`; `./gradlew
+  spotlessApply` fixes), Swift through `swift format` (`apps/macos/.swift-format`; `swift format --in-place
+  --recursive Sources Tests`). Generated `SettingsSpec` files are left as the generator writes them.
+  *(Spotless in `./gradlew check`; check `format`: changed Swift files; CI mac job; `run.sh --format` for both)*
 - **Strings:** every user-visible Android text in the owning module's `res/values/strings.xml` and
   `res/values-es/strings.xml` (docs/DEVELOPMENT.md "Strings"). *(check `strings`: new hardcoded `Text("…")` etc.,
   each module's en/es keys; `StringsParityTest`)*
@@ -41,9 +45,10 @@ sections your change touches.
 - **Phone / Mac installs contain all merged work:** install only with `tools/install.sh phone|mac` (refuses a dirty
   tree, a HEAD without origin/main / the integration branches / the last installed commit, or failing checks; verifies
   the signed build first).
-- **Cleartext only where it's validated:** the app permits cleartext so a home-network Nightscout works; every
-  `http://` / `ws://` URL or scheme and every place that opens a connection in the Android app needs an entry in
-  `tools/check/allow.json` (`cleartext_ok` / `network_ok`) with the reason. *(check `cleartext`, everything outside `poc/`)*
+- **Cleartext only where it's validated:** the app permits cleartext only to this phone (loopback); Nightscout is
+  https only, the home network too; every `http://` / `ws://` URL or scheme and every place that opens a connection in
+  the Android app needs an entry in `tools/check/allow.json` (`cleartext_ok` / `network_ok`) with the reason. *(check
+  `cleartext`, everything outside `poc/`)*
 - **Test and snapshot runs never touch the owner's devices:** every Mac snapshot / test run and every dev build runs
   offline — no Bluetooth, relays or alert engine. The Mac decides this in one pure, unit-tested place, `LaunchMode`
   (normal | snapshot (DEBUG) | test → the services it may start). Tests never use real relays or sensors.

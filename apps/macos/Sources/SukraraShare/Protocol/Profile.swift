@@ -77,10 +77,22 @@ public struct Profile: Hashable, Sendable, Codable {
         self.avatar = avatar
     }
 
-    /// From a received `{"name","avatar"}` object; a missing name is "".
+    /// From a received `{"name","avatar"}` object: the name trimmed and cut to 40 (as Android's `Profile.of`); a
+    /// missing name is "".
     public init?(wire: [String: Any]) {
-        name = wire["name"] as? String ?? ""
+        name = Self.normalisedName(typed: wire["name"] as? String ?? "", previous: "")
         avatar = Avatar(wire: wire["avatar"])
+    }
+
+    /// A name as shown: control and format characters removed, trimmed; nil when nothing is left, so the caller shows
+    /// its generic word (contracts/protocol/identity/profile-v1.json `shown`; Android `Profile.shownName`).
+    public static func shownName(_ name: String?) -> String? {
+        let kept = String.UnicodeScalarView(
+            (name ?? "").unicodeScalars.filter {
+                $0.properties.generalCategory != .control && $0.properties.generalCategory != .format
+            })
+        let shown = String(kept).trimmingCharacters(in: .whitespacesAndNewlines)
+        return shown.isEmpty ? nil : shown
     }
 
     public func wireObject() -> [String: Any] {

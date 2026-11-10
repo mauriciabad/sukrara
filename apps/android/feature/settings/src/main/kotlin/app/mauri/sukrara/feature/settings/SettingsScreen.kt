@@ -4,7 +4,15 @@
 package app.mauri.sukrara.feature.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -14,6 +22,40 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.feature.settings.advanced.AdvancedScreen
+import app.mauri.sukrara.feature.settings.advanced.LogScreen
+import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
+import app.mauri.sukrara.feature.settings.follower.SettingsFromContent
+import app.mauri.sukrara.feature.settings.follower.SettingsFromNote
+import app.mauri.sukrara.feature.settings.follower.SettingsFromViewModel
+import app.mauri.sukrara.feature.settings.follower.readOnly
+import app.mauri.sukrara.feature.settings.graph.GraphActions
+import app.mauri.sukrara.feature.settings.graph.GraphContent
+import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
+import app.mauri.sukrara.feature.settings.graph.GraphViewModel
+import app.mauri.sukrara.feature.settings.lock.LockScreenContent
+import app.mauri.sukrara.feature.settings.lock.LockScreenViewModel
+import app.mauri.sukrara.feature.settings.pens.DosesReadPage
+import app.mauri.sukrara.feature.settings.pens.PenPage
+import app.mauri.sukrara.feature.settings.pens.PenViewModel
+import app.mauri.sukrara.feature.settings.pens.PensContent
+import app.mauri.sukrara.feature.settings.pens.PensViewModel
+import app.mauri.sukrara.feature.settings.search.BuildFeature
+import app.mauri.sukrara.feature.settings.search.RecentSearch
+import app.mauri.sukrara.feature.settings.search.RecentSearches
+import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
+import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
+import app.mauri.sukrara.feature.settings.sensorend.SensorEndViewModel
+import app.mauri.sukrara.feature.settings.statusbar.RootStatusBarSection
+import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
+import app.mauri.sukrara.feature.settings.statusbar.StatusBarViewModel
+import app.mauri.sukrara.feature.settings.statusbar.liveUpdatesAllowed
+import app.mauri.sukrara.feature.settings.statusbar.openLiveUpdateSettings
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 /** The settings pages (the app's Nav3 entries map one key to each). */
 sealed interface SettingsRoute {
@@ -23,21 +65,54 @@ sealed interface SettingsRoute {
 
     data class AlertKindPage(val kind: AlertKind) : SettingsRoute
 
+    /** Settings › Alerts › Night alerts (#38). */
+    data object NightAlerts : SettingsRoute
+
+    /** Settings › Alerts › Night alerts › one alert's night rule. */
+    data class NightKindPage(val kind: AlertKind) : SettingsRoute
+
     data object Ranges : SettingsRoute
 
     data object Graph : SettingsRoute
 
+    /** Settings › Graph › Treatments on the graph. */
+    data object GraphMarks : SettingsRoute
+
+    data object LockScreen : SettingsRoute
+
+    /** Settings › Insulin pens (the wearer's phone with NFC). */
+    data object Pens : SettingsRoute
+
+    /** Settings › Insulin pens › one pen. */
+    data class Pen(val serial: String) : SettingsRoute
+
+    /** Settings › Insulin pens › one pen › Doses read; [review]: only its last big read, with *Undo this read*. */
+    data class PenDoses(val serial: String, val review: Boolean = false) : SettingsRoute
+
     data object Reliability : SettingsRoute
+
+    data object StatusBar : SettingsRoute
+
+    data object SensorEnd : SettingsRoute
 
     data object About : SettingsRoute
 
     /** The threshold review (also the setup's "Review alert thresholds" step). */
     data object ThresholdReview : SettingsRoute
+
+    /** Settings › Advanced: settings file, relays, log, identity. */
+    data object Advanced : SettingsRoute
+
+    /** Settings › Advanced › Log. */
+    data object Log : SettingsRoute
+
+    /** Settings › Settings from (a follower). */
+    data object SettingsFrom : SettingsRoute
 }
 
 /**
  * Renders [route] with its ViewModel from [deps]. [navigate] opens another settings page, [onBack] leaves this one;
- * Sensor and Sharing are other features' screens. [onReviewDone] gets the review's result (setup continues on it;
+ * Sensor and Sharing are other features' screens. [onReviewFinish] gets the review's result (setup continues on it;
  * from settings it just goes back).
  */
 @Composable
@@ -48,7 +123,15 @@ fun SettingsScreen(
     onBack: () -> Unit,
     openSensor: () -> Unit,
     openSharing: () -> Unit,
-    onReviewDone: (ThresholdReviewResult) -> Unit = { onBack() },
+    openApps: () -> Unit = {},
+    openClinicUpload: () -> Unit = {},
+    openClinicTidepool: () -> Unit = {},
+    openProfile: () -> Unit = {},
+    openBackup: () -> Unit = {},
+    openExport: () -> Unit = {},
+    onReviewFinish: (ThresholdReviewResult) -> Unit = { onBack() },
+    /** The live card the Ranges and Graph pages show on top (the app's own panel; nothing in tests). */
+    preview: @Composable () -> Unit = {},
 ) {
     val clock = deps.clock
     when (route) {
@@ -56,14 +139,46 @@ fun SettingsScreen(
             val vm = alertsViewModel(deps)
             val ui by vm.ui.collectAsStateWithLifecycle()
             val readiness by deps.readiness.readiness.collectAsStateWithLifecycle()
+            val apps by deps.appsShared.collectAsStateWithLifecycle(emptySet())
+            val clinic by deps.clinicBanner.collectAsStateWithLifecycle(false)
+            val closedTips by deps.closedTips.collectAsStateWithLifecycle(0)
+            val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            val recent = recentSearches(deps)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
             SettingsOverviewContent(
                 ui?.settings?.on ?: true,
                 ui?.alerts ?: AlertUiState(),
                 readiness,
                 clock,
-                OverviewActions(navigate, openSensor, openSharing, vm::unmuteAll),
-                onBack,
+                OverviewActions(
+                    open = navigate,
+                    openSensor = openSensor,
+                    openSharing = openSharing,
+                    openApps = openApps,
+                    unmuteAll = vm::unmuteAll,
+                    openClinicUpload = openClinicUpload,
+                    openClinicTidepool = openClinicTidepool,
+                    dismissClinicBanner = deps::dismissClinicBanner,
+                    restoreClinicBanner = deps::restoreClinicBanner,
+                    restoreClosedTips = deps::restoreClosedTips,
+                    pens = deps.pensAvailable(),
+                    build =
+                        buildSet {
+                            if (deps.systemAccess != null) add(BuildFeature.Root)
+                            if (deps.releases != null) add(BuildFeature.UpdateCheck)
+                        },
+                    openProfile = openProfile,
+                    openBackup = openBackup,
+                    openExport = openExport,
+                ),
+                apps,
+                clinic,
+                closedTips,
+                sharing,
+                from,
+                recent,
+                onBack = onBack,
             )
         }
 
@@ -71,6 +186,7 @@ fun SettingsScreen(
             val vm = alertsViewModel(deps)
             val ui by vm.ui.collectAsStateWithLifecycle()
             val confirmedAt by SchemaPrefs.thresholdsConfirmedAt(deps.settings).collectAsStateWithLifecycle(null)
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             ui?.let {
                 AlertsSettingsContent(
                     it,
@@ -78,8 +194,9 @@ fun SettingsScreen(
                     clock,
                     AlertsActions(vm::edit, vm::muteAll, vm::unmuteAll, { k -> navigate(SettingsRoute.AlertKindPage(k)) }, {
                         navigate(SettingsRoute.ThresholdReview)
-                    }),
-                    onBack,
+                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }),
+                    header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                    onBack = onBack,
                 )
             }
         }
@@ -87,42 +204,242 @@ fun SettingsScreen(
         is SettingsRoute.AlertKindPage -> {
             val vm = alertsViewModel(deps)
             val ui by vm.ui.collectAsStateWithLifecycle()
-            ui?.let { AlertKindContent(route.kind, it, clock, AlertKindActions(vm::edit, vm::unmute, vm::remindAsUsual), onBack) }
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            ui?.let {
+                AlertKindContent(
+                    route.kind,
+                    it,
+                    clock,
+                    AlertKindActions(vm::edit, vm::unmute, vm::remindAsUsual, deps.alertPlayback),
+                    header = { if (it.mirrors(route.kind)) SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                    onBack = onBack,
+                )
+            }
+        }
+
+        SettingsRoute.NightAlerts -> {
+            val vm = alertsViewModel(deps)
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            ui?.let {
+                NightAlertsContent(
+                    it,
+                    vm::edit,
+                    { k -> navigate(SettingsRoute.NightKindPage(k)) },
+                    header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                    onBack = onBack,
+                )
+            }
+        }
+
+        is SettingsRoute.NightKindPage -> {
+            val vm = alertsViewModel(deps)
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            ui?.let { NightKindContent(route.kind, it, vm::edit, onBack) }
         }
 
         SettingsRoute.Ranges -> {
             val vm = viewModel { GraphPrefsViewModel(deps.settings) }
             val prefs by vm.prefs.collectAsStateWithLifecycle()
-            prefs?.let { RangesContent(it, { s, v -> vm.set(s, v) }, onBack) }
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            prefs?.let {
+                RangesContent(it, vm::set, onBack, vm::reset, readOnly = from.readOnly, onUnit = vm::setUnit) {
+                    SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = preview)
+                }
+            }
         }
 
-        SettingsRoute.Graph -> {
-            val vm = viewModel { GraphPrefsViewModel(deps.settings) }
-            val prefs by vm.prefs.collectAsStateWithLifecycle()
-            prefs?.let { GraphBasicsContent(it, { s, v -> vm.set(s, v) }, { s, v -> vm.set(s, v) }, onBack) }
+        SettingsRoute.Graph, SettingsRoute.GraphMarks -> {
+            val vm = viewModel { GraphViewModel(deps.settings) }
+            val config by vm.config.collectAsStateWithLifecycle()
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            val withNote: @Composable () -> Unit = {
+                SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = preview)
+            }
+            val actions =
+                GraphActions(
+                    number = vm::set,
+                    bool = vm::set,
+                    lines = vm::lines,
+                    slots = vm::slots,
+                    lastPlace = vm::lastPlace,
+                    lastElse = vm::lastElse,
+                    ringRange = vm::ringRange,
+                    ringOrder = vm::ringOrder,
+                    marks = vm::marks,
+                    placeHours = vm::placeHours,
+                    sensorTime = vm::sensorTime,
+                    reset = vm::reset,
+                    openMarks = { navigate(SettingsRoute.GraphMarks) },
+                )
+            config?.let {
+                if (route == SettingsRoute.Graph) {
+                    GraphContent(it, actions, onBack, from.readOnly, withNote)
+                } else {
+                    GraphMarksContent(it, actions, onBack, from.readOnly, withNote)
+                }
+            }
+        }
+
+        SettingsRoute.Pens -> {
+            val vm = viewModel { PensViewModel(deps.settings, deps.pens) }
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            ui?.let { PensContent(it, vm, onBack) { s -> navigate(SettingsRoute.Pen(s)) } }
+        }
+
+        is SettingsRoute.Pen -> {
+            val port = deps.pens
+            if (port == null) {
+                val back by rememberUpdatedState(onBack)
+                LaunchedEffect(Unit) { back() }
+            } else {
+                val vm = viewModel(key = "pen-${route.serial}") { PenViewModel(port, route.serial, deps.settings) }
+                PenPage(
+                    vm,
+                    onBack,
+                    openDoses = { navigate(SettingsRoute.PenDoses(route.serial)) },
+                    openReview = { navigate(SettingsRoute.PenDoses(route.serial, review = true)) },
+                )
+            }
+        }
+
+        is SettingsRoute.PenDoses -> {
+            val port = deps.pens
+            if (port == null) {
+                val back by rememberUpdatedState(onBack)
+                LaunchedEffect(Unit) { back() }
+            } else {
+                val vm = viewModel(key = "pen-${route.serial}") { PenViewModel(port, route.serial, deps.settings) }
+                DosesReadPage(vm, onBack, review = route.review)
+            }
+        }
+
+        SettingsRoute.LockScreen -> {
+            val vm = viewModel { LockScreenViewModel(deps.settings) }
+            val seconds by vm.seconds.collectAsStateWithLifecycle()
+            seconds?.let { LockScreenContent(it, vm::set, onBack) }
         }
 
         SettingsRoute.Reliability -> {
             val readiness by deps.readiness.readiness.collectAsStateWithLifecycle()
+            val alerts by deps.alertSettings.settings.collectAsStateWithLifecycle(null)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
-            ReliabilityContent(readiness, deps.readiness::fix, onBack)
+            ReliabilityContent(
+                readiness,
+                deps.readiness::fix,
+                deps.readiness::answerUnlockedSound,
+                alerts = alerts,
+                playback = deps.alertPlayback,
+                onBack = onBack,
+            )
+        }
+
+        SettingsRoute.StatusBar -> {
+            val vm = viewModel { StatusBarViewModel(deps.settings, deps.systemAccess) }
+            val prefs by vm.prefs.collectAsStateWithLifecycle()
+            val root by vm.root.collectAsStateWithLifecycle()
+            val access by vm.access.collectAsStateWithLifecycle()
+            val busy by vm.busy.collectAsStateWithLifecycle()
+            val problem by vm.problem.collectAsStateWithLifecycle()
+            var choosing by rememberSaveable { mutableStateOf(false) }
+            val context = LocalContext.current
+            // the person may come back from Android's Live Updates switch, KernelSU or LSPosed: read them again on resume
+            var allowed by remember { mutableStateOf(context.liveUpdatesAllowed()) }
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                allowed = context.liveUpdatesAllowed()
+                vm.refresh()
+            }
+            prefs?.let {
+                StatusBarContent(it, allowed, vm::setChip, vm::setNumberIcon, context::openLiveUpdateSettings, onBack, vm::setLockScreen) {
+                    root?.let { r -> RootStatusBarSection(r, access, busy, problem, choosing, { c -> choosing = c }, vm.actions) }
+                }
+            }
+        }
+
+        SettingsRoute.SensorEnd -> {
+            val vm = viewModel { SensorEndViewModel(deps.settings, deps.sensor) }
+            val prefs by vm.prefs.collectAsStateWithLifecycle()
+            val calendar by deps.sensorCalendar.state.collectAsStateWithLifecycle(null)
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            prefs?.let {
+                SensorEndContent(
+                    it,
+                    clock.now(),
+                    SensorEndActions(vm::change, vm::setCountdownHours),
+                    onBack,
+                    calendar = calendar?.let { c -> c to deps.sensorCalendar },
+                    countdownReadOnly = from.readOnly,
+                    countdownNote = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                )
+            }
         }
 
         SettingsRoute.About -> {
+            // the Google Play build has no update check (deps.releases null): Play brings the updates
             val vm = viewModel { AboutViewModel(deps.releases, deps.appVersion, deps.prerelease) }
             val state by vm.state.collectAsStateWithLifecycle()
             AboutContent(vm.installed, state, vm::check, onBack)
+        }
+
+        SettingsRoute.Advanced -> {
+            AdvancedScreen(
+                deps.advanced,
+                { LocalDate.now(clock.zone) },
+                { navigate(SettingsRoute.Log) },
+                { navigate(SettingsRoute.ThresholdReview) },
+                onBack,
+            )
+        }
+
+        SettingsRoute.Log -> {
+            LogScreen(deps.advanced, onBack)
+        }
+
+        SettingsRoute.SettingsFrom -> {
+            val vm = viewModel { SettingsFromViewModel(deps.settingsFrom) }
+            val state by vm.state.collectAsStateWithLifecycle()
+            state?.let { SettingsFromContent(it, clock, SettingsFromActions(vm::choose, vm::copyWearer, vm::resetToDefault), onBack) }
         }
 
         SettingsRoute.ThresholdReview -> {
             val vm = viewModel { ThresholdReviewViewModel(deps.alertSettings, deps.settings, deps.clock) }
             val draft by vm.draft.collectAsStateWithLifecycle()
             draft?.let { d: AlertSettings ->
-                AlertThresholdReviewContent(d, vm::setThreshold, { vm.confirm(onReviewDone) }, { onReviewDone(ThresholdReviewResult.Cancelled) })
+                AlertThresholdReviewContent(
+                    d,
+                    vm::setThreshold,
+                    { vm.confirm(onReviewFinish) },
+                    { onReviewFinish(ThresholdReviewResult.Cancelled) },
+                )
             }
         }
     }
 }
 
+/**
+ * The search's recent queries (`settings.searchRecent`), remembered and cleared on this phone only. A query is
+ * remembered as its result opens another page: the write starts at once and finishes even though the overview leaves.
+ */
 @Composable
-private fun alertsViewModel(deps: SettingsDeps): AlertsViewModel = viewModel(factory = viewModelFactory { initializer { AlertsViewModel(deps) } })
+private fun recentSearches(deps: SettingsDeps): RecentSearch {
+    val scope = rememberCoroutineScope()
+    val text by remember(deps) { deps.settings.flow(SchemaPrefs.SearchRecent) }.collectAsStateWithLifecycle("")
+
+    fun write(change: (String) -> String) {
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable) { deps.settings.update(SchemaPrefs.SearchRecent, change) }
+        }
+    }
+    return remember(text, deps) {
+        RecentSearch(
+            RecentSearches.decode(text),
+            remember = { q -> write { RecentSearches.encode(RecentSearches.add(RecentSearches.decode(it), q)) } },
+            clear = { write { "" } },
+        )
+    }
+}
+
+@Composable
+private fun alertsViewModel(
+    deps: SettingsDeps,
+): AlertsViewModel = viewModel(factory = viewModelFactory { initializer { AlertsViewModel(deps) } })

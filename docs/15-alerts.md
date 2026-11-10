@@ -280,7 +280,8 @@ deleted. Checked on an emulator: by default a low went to `alert_a_low` (categor
 `alert_a_high` and the low to `alert_n_low` (played as `USAGE_NOTIFICATION_EVENT`). All four played.
 
 On the Mac there is no alarm volume. The same switch ("Like an alarm") means **Time Sensitive**, which only works in a
-build signed with that entitlement; today's builds show it as a normal notification.
+build signed with that entitlement (a provisioning profile: `Bundle/bundle.sh`); a build without one shows it as a
+normal notification and says a Focus can hold it back.
 
 ## Notification behaviour learned on the way
 
@@ -291,10 +292,71 @@ build signed with that entitlement; today's builds show it as a normal notificat
   - **Lows** (by default; any alert set to *Alarm* volume since 0.11.4): `CATEGORY_ALARM` + `USAGE_ALARM`. They follow the alarm volume, ring in "Alarms only" Do Not Disturb
     (`ZenModeFiltering.isAlarm`), and are exempt from every cooldown.
   - **Everything else** (*Notification* volume): `CATEGORY_REMINDER`. Exempt from the avalanche, and let through Do Not Disturb only if you
-    allow reminders, so highs don't wake you through DND unless you want them to.
+    allow reminders, so highs don't wake you through DND unless you want them to (since 2026-10-28 they post `CATEGORY_ALARM` whenever that changes nothing in DND: see the per-app cooldown below).
   - After that, high, very high and no data played.
-- Per-app cooldown (only when the user applies cooldown to all apps) can still soften a second alert that comes within
-  seconds of another one. Real alerts are minutes apart.
+- **Per-app cooldown softened the second alert of a reading** (2026-10-28, from the AOSP source, main). Android 15+
+  *Notification cooldown* (one switch since the March 2025 Pixel drop; `notification_cooldown_enabled` /
+  `notification_cooldown_all` default 1 in the source) runs `StrategyPerApp` keyed on the package (per channel only
+  if the person changed that channel's sound): any notification of the app that sounded in the last 60 s makes the
+  next one play at 30 % volume and vibration, a third within 10 s is muted (`MUTE_REASON_COOLDOWN`); a tap on one of
+  them resets it. Only `CATEGORY_ALARM`, `CATEGORY_CAR_EMERGENCY` / `CATEGORY_CAR_WARNING` are exempt; the channel's
+  usage doesn't count, and exempt posts still start the window. Low (alarm) and Falling fast (notification) fire in
+  the same reading, so Falling fast played at 30 %. The fix (`AlertCategory`): every alert posts `CATEGORY_ALARM`,
+  except a notification-volume alert while Do Not Disturb would treat an alarm and a reminder differently
+  (`ZenModeFiltering`: Alarms only lets every alarm through; Priority checks `allowAlarms` / `allowReminders`), where
+  it stays `CATEGORY_REMINDER` and DND decides as before. The channels keep their usage, sound and the person's
+  overrides; full screen stays alarm-only.
+  Checked on an Android 17 emulator (cooldown on, `logcat -b events -s notification_alert`, fields buzz, beep, blink,
+  politeness, mute reason; debug `ALERTS --es kinds … --el gapMs … [--ez reminder true]`): three alerts 2 s apart as
+  `CATEGORY_REMINDER` went politeness 1, then 2 + mute 32768 (`MUTE_REASON_COOLDOWN`) twice; the same three as
+  `CATEGORY_ALARM` right after all rang at politeness 0. In Priority DND (Android's default policy) Falling fast
+  posted as `reminder` and stayed intercepted (mute 512), the alarm-level very low rang.
+  Limits: the exemption is behind the `polite_notifications_attn_update` flag (on in that build; a build without it
+  quietens every category); Android 17's policy also has hidden per-category sound / vibration allowances, so a Priority
+  mode that lets reminders through silently but alarms with sound would ring a notification-volume alert (louder, not
+  quieter); "Vibrate only when unlocked" (`notification_cooldown_vibrate_unlocked`, see #129 below) drops every notification sound
+  while the phone is unlocked, alarms included.
+- **One sound per app per second** (`NotificationUsageStats` / `AlertRateLimiter`, years old, any category): a second
+  sounding notification within 1 s is muted (`MUTE_REASON_RATE_LIMIT`, 4096 on the emulator) and still shows; a newer
+  sound would cut the first one off anyway. When one reading fires several alerts, the runtime posts the one that
+  must be heard first (`ringOrder`: alarm level, most severe, then level → rate → no data; `AlertRingOrderTest`); the
+  others show quietly. Only ringing alerts of different groups that follow each other move: a restart's silent re-post,
+  a Clear or a second alert of the same group keeps the engine's order, so nothing replaces or outlives what the engine
+  decided. The limit counts every notification of the app, so a sensor or status notice posted in the same second as
+  an alert (the sensor lost, then *No data*) muted the alert (#130). Since 2026-11-10 every info notification that
+  would sound (its channel at default importance or above, with a sound or a vibration) goes through `SoundGap`: it
+  waits 1.1 s, so an alert decided at the same moment rings first, and posts only 1.1 s after the last alert sound; a
+  newer post of the same id replaces the waiting one, a cancel drops it (`SoundGapTest`). The *Monitoring stopped*
+  notice still posts at once (Android is stopping the service, a waiting post could die with it), through
+  `SoundGap.postNow`. Since the follow-up the other direction is covered too: an alert that comes less than 1.1 s
+  *after* any info sound (a waiting one that landed, or that notice) waits the rest of the gap before it posts (at
+  most 1.1 s, `AlertPresenter.beforeRing`; `AlertRingTurnTest`): a short delay instead of an alert muted by the
+  limit. Alerts among themselves still never wait (the ring order decides).
+- **"Vibrate only when unlocked" (#129, 2026-11-10, from the AOSP source, main).** NotificationAttentionHelper:
+  `vibrateOnly = hasValidVibrate && mNotificationCooldownVibrateUnlocked && mUserPresent`, then the sound plays only
+  `if (hasValidSound && !vibrateOnly)`; `mUserPresent` is set on ACTION_USER_PRESENT and cleared on SCREEN_OFF. No
+  category is exempt, so every alert only vibrates while the person uses the phone; a channel without vibration still
+  sounds. The value (`Settings.System.notification_cooldown_vibrate_unlocked`) is `@hide` without `@Readable`, so an
+  app targeting S+ gets a SecurityException reading it, and the cooldown page has no public action (Settings declares
+  `android.settings.MANAGE_ADAPTIVE_NOTIFICATIONS` for `PoliteNotificationsPreferenceFragment`). In Sukrara: the
+  checklist item *Sound while the phone is unlocked* (`NotificationCooldown` tries the read; null → the person opens the
+  page and answers *It's off* / *Keep it on*, schema `alerts.unlockedSound`, Android-only); with *Keep it on* (or Android
+  saying it's on) `UnlockedAlertSound` plays the channel's own sound itself while the user is present (screen on, past
+  the keyguard), only for a ringing post on a channel that sounds and vibrates and only where Do Not Disturb lets the
+  alert through, one per second, stopped by Clear / Mute. Left out: playing the sound when nobody answered (it would
+  ring twice for everyone with the setting off, the 2026-10-18 double-sound bug); following later changes to the setting
+  (Android sends nothing an app may read; the answer stays changeable in Settings › Alert reliability). Not checked on
+  a device yet (QA Q8: setting on, phone unlocked, *Send a test alert*).
+- **The alarm channels' Do Not Disturb override needs access (#15, 2026-11-10, from the AOSP source, main).**
+  `PreferencesHelper.createNotificationChannel` keeps an app's `setBypassDnd(true)` only when the app holds Do Not
+  Disturb access as the channel is created or updated (`if (existing.getUserLockedFields() == 0 && hasDndAccess)`), so
+  `alert_alarm.*` channels created before the person granted access never overrode a mode that silences alarms. The
+  app now declares `ACCESS_NOTIFICATION_POLICY` (to be listed under Do Not Disturb access), the checklist has *Alarms
+  in Do Not Disturb* (while a kind rings like an alarm; Fix opens `ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`), and
+  every checklist read creates the channels again once access is granted and an alarm channel doesn't override yet:
+  the existing ids take the bypass, and a channel the person edited keeps their choice (Fix then opens its page; no
+  versioned ids needed). `ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED` is registered-only, so the resume refresh
+  is what catches the grant. Not checked on an emulator yet (DND on, very low after granting).
 - **Two sounds at once after an app update (2026-10-18, user report).** Measured on the Pixel (`dumpsys audio`,
   `notification_alert` events): every Sukrara update made SystemUI start two players within 0.5 s, the system
   default sound (`USAGE_NOTIFICATION`, LSPosed's "Module update complete" notification, channel
@@ -315,8 +377,9 @@ build signed with that entitlement; today's builds show it as a normal notificat
   re-posting the alerts that were up with the same identifier and no sound; same tests in `-alerts-selftest`, and the
   shared timeline event `restart` (SPEC §7, `episodes.txt`) runs on both engines.
 - **Mac Time Sensitive** needs `com.apple.developer.usernotifications.time-sensitive`, which only a provisioning
-  profile grants. The app checks its own entitlement: lows are `.timeSensitive` when it has it, `.active` otherwise
-  (today).
+  profile grants (`Bundle/bundle.sh` signs with `app-profile.entitlements.in` when it finds one, #19). The app reads
+  its own entitlement and the person's setting (`TimeSensitive`): alarms are `.timeSensitive` when both allow it,
+  `.active` otherwise, and the panel / setup / Settings › Alerts say which.
 
 ## Alert UX round f30 (2026-10-22)
 
@@ -357,6 +420,7 @@ app never shows an alert that isn't real; test them on the emulator), `--es aler
 
 - **Not a medical device.** Alerts depend on the phone being on, the app not being killed, and Do Not Disturb. The
   very low can't be set to bypass DND unless the user allows alarms.
-- macOS Time Sensitive needs a provisioned build (Developer ID).
+- macOS Time Sensitive needs a provisioned build (Developer ID profile, docs/20-publishing.md): breaking through a
+  Focus is checked by hand (QA.md Q8).
 - The follower's local "no data" uses its own threshold even when mirroring.
 - Mirroring over Bluetooth only (no internet) between two real phones wasn't run; the emulators have no Bluetooth.

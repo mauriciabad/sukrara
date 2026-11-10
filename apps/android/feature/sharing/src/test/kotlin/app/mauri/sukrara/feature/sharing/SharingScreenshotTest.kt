@@ -5,7 +5,9 @@ package app.mauri.sukrara.feature.sharing
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -19,11 +21,27 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.feature.sharing.backup.BackupScreen
+import app.mauri.sukrara.feature.sharing.backup.FreshUi
+import app.mauri.sukrara.feature.sharing.backup.ReplaceActions
+import app.mauri.sukrara.feature.sharing.backup.ReplaceConfirmDialog
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityScreen
+import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
+import app.mauri.sukrara.feature.sharing.backup.ReplaceUi
+import app.mauri.sukrara.feature.sharing.backup.SaveOutcome
 import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
+import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
+import app.mauri.sukrara.feature.sharing.followers.FollowersActions
 import app.mauri.sukrara.feature.sharing.followers.FollowersPage
+import app.mauri.sukrara.feature.sharing.profile.ProfileSave
+import app.mauri.sukrara.feature.sharing.profile.ProfileScreen
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
+import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
+import app.mauri.sukrara.feature.sharing.setup.RoleChange
+import app.mauri.sukrara.feature.sharing.setup.ScanInvite
+import app.mauri.sukrara.feature.sharing.setup.ScanState
 import app.mauri.sukrara.feature.sharing.setup.SetupActions
 import app.mauri.sukrara.feature.sharing.setup.SetupContent
 import app.mauri.sukrara.feature.sharing.setup.SetupFacts
@@ -31,12 +49,28 @@ import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupUi
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
+import app.mauri.sukrara.feature.sharing.share.ApproveDialog
+import app.mauri.sukrara.feature.sharing.share.ApproveRefusedDialog
 import app.mauri.sukrara.feature.sharing.share.InviteUi
 import app.mauri.sukrara.feature.sharing.share.ShareScreen
+import app.mauri.sukrara.protocol.PublicKeyHex
+import app.mauri.sukrara.protocol.ble.BleMessages
+import app.mauri.sukrara.protocol.event.Avatar
+import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.owner.IdentityCheck
+import app.mauri.sukrara.share.ble.NearbyServerCore
+import app.mauri.sukrara.share.ble.NearbyStatus
+import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.JoinResult
+import app.mauri.sukrara.share.follower.NearbyOffer
+import app.mauri.sukrara.share.follower.NearbySearch
+import app.mauri.sukrara.share.follower.PairingCheck
+import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import com.github.takahirom.roborazzi.RoborazziComposeOptions
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -49,6 +83,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
 
@@ -66,7 +101,7 @@ class SharingScreenshotTest {
         Locale.setDefault(Locale.US)
     }
 
-    private val facts = SetupFacts(role = Role.Wearer, followerAvailable = false, ownSensorLive = false, hasIdentity = false)
+    private val facts = SetupFacts(role = Role.Wearer, ownSensorLive = false, hasIdentity = false)
 
     private fun ui(
         step: SetupStep,
@@ -80,7 +115,7 @@ class SharingScreenshotTest {
     ) = SetupUi(
         step = step,
         index = index,
-        count = 6,
+        count = 7,
         facts = facts,
         record = record,
         readiness = AlertReadiness(missing),
@@ -94,13 +129,56 @@ class SharingScreenshotTest {
     )
 
     private val live = facts.copy(ownSensorLive = true)
-    private val conflict = OwnerShareState.AnotherAppSharingAsYou(IdentityCheck.Reason.entries.first(), followersReceiving = true, relays = emptyMap())
+    private val conflict =
+        OwnerShareState.AnotherAppSharingAsYou(
+            IdentityCheck.Reason.entries.first(),
+            followersReceiving = true,
+            relays = emptyMap(),
+        )
     private val followers =
         listOf(
-            FollowerRecord("k1", "Anna", since = 1_761_000_000),
+            FollowerRecord("k1", "Anna", since = 1_761_000_000, avatarJson = Avatar.v1(1, "dots", 45, 7).toString()),
             FollowerRecord("k2", "MacBook", since = 1_759_000_000),
+            FollowerRecord("k4", "Old phone", since = 1_750_000_000, revoked = 1_755_000_000),
         )
-    private val request = PendingRequest("k3", "Dad", "t", "4821", at = 1_761_500_000, label = "Dad's phone")
+    private val request =
+        PendingRequest(
+            "k3",
+            "Dad",
+            "t",
+            "4821",
+            at = 1_761_500_000,
+            avatarJson = Avatar.v1(4, "cube", 90, 1).toString(),
+            label = "Dad's phone",
+            inviteSentAt = 1_761_499_000,
+        )
+    private val me = Profile("Núria", Avatar.v1(0, "drop", 45, 3))
+    private val sharing =
+        OwnerShareState.Sharing(
+            1,
+            followers,
+            listOf(request),
+            emptyMap(),
+            backupPublishedAt = 1_761_400_000,
+            recoveryExportedAt = 0,
+            profile = me,
+            writers = setOf("k1"),
+        )
+
+    /** The join step while a *Pair nearby* join waits on [check]. */
+    private fun pairingUi(check: PairingCheck) =
+        ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(
+            follow =
+                FollowState.Following(
+                    status = FollowStatus.Requested,
+                    wearer = me,
+                    code = "1234",
+                    canWrite = false,
+                    lastHeardAt = null,
+                    relays = emptyMap(),
+                    pairing = check,
+                ),
+        )
 
     private fun scenes(): List<Pair<String, @Composable () -> Unit>> {
         // the app passes Settings' threshold rows; this module only sees their slot
@@ -111,8 +189,15 @@ class SharingScreenshotTest {
         return listOf(
             "setup-1-welcome" to { SetupContent(ui(SetupStep.Welcome, 1, facts.copy(role = null)), a) },
             "setup-2-role" to { SetupContent(ui(SetupStep.Role, 2, facts.copy(role = null)), a) },
+            "setup-2-role-delete-history" to {
+                val loss = RoleLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+                SetupContent(ui(SetupStep.Role, 2, facts.copy(role = Role.Follower)).copy(roleChange = RoleChange(Role.Wearer, loss)), a)
+            },
             "setup-3-permissions" to {
-                SetupContent(ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), a)
+                SetupContent(
+                    ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
+                    a.copy(sendTestAlert = {}),
+                )
             },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
             "setup-4-sensor-live" to { SetupContent(ui(SetupStep.Sensor, 4, live), a) },
@@ -134,13 +219,143 @@ class SharingScreenshotTest {
                 SetupContent(ui(SetupStep.Identity, 6, live, restore = RestoreUi.Busy), a)
             },
             "setup-6-identity-conflict" to { SetupContent(ui(SetupStep.Identity, 6, live, share = conflict), a) },
+            "setup-7-history" to { SetupContent(ui(SetupStep.History, 7, live), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
             "share-new" to { ShareScreen(InviteUi.None, {}, {}) },
             "share-ready" to {
-                ShareScreen(InviteUi.Ready(Invite("https://sukrara.mauri.app/join#c3ludGhldGljLWludml0ZS1mb3ItdGVzdHM", "Anna", 1_761_600_000)), {}, {})
+                ShareScreen(
+                    InviteUi.Ready(Invite("https://sukrara.mauri.app/join#c3ludGhldGljLWludml0ZS1mb3ItdGVzdHM", "Anna", 1_761_600_000)),
+                    {},
+                    {},
+                )
             },
-            "followers" to { FollowersPage(followers, listOf(request), {}, {}, {}) },
-            "followers-empty" to { FollowersPage(emptyList(), emptyList(), {}, {}, {}) },
+            "followers" to { FollowersPage(sharing, FollowersActions()) },
+            "followers-pair-nearby" to {
+                FollowersPage(
+                    sharing,
+                    FollowersActions(),
+                    nearby = NearbyUi(status = NearbyStatus.Searching, pairingUntil = 1_761_600_000 + 581),
+                    now = { 1_761_600_000 },
+                )
+            },
+            "followers-nearby-devices" to {
+                FollowersPage(
+                    sharing.copy(nearbyPaired = setOf("k2")),
+                    FollowersActions(),
+                    nearby =
+                        NearbyUi(
+                            status = NearbyStatus.Connected(1),
+                            links = listOf(NearbyServerCore.Named("k1", "phone", 1_761_600_000_000)),
+                            internet = false,
+                        ),
+                    now = { 1_761_600_000 },
+                )
+            },
+            "setup-join-find-nearby" to {
+                val offer =
+                    NearbyOffer(
+                        "phone",
+                        BleMessages.Pairing(PublicKeyHex("ab".repeat(32)), emptyList(), "t".repeat(22), 1_761_600_600, me, "c".repeat(64)),
+                    )
+                SetupContent(
+                    ui(
+                        SetupStep.Join,
+                        2,
+                        facts.copy(role = Role.Follower),
+                    ).copy(nearby = NearbySearch(NearbyStatus.Searching, listOf(offer))),
+                    a,
+                )
+            },
+            "setup-join-find-nearby-off" to {
+                SetupContent(
+                    ui(
+                        SetupStep.Join,
+                        2,
+                        facts.copy(role = Role.Follower),
+                    ).copy(nearby = NearbySearch(NearbyStatus.BluetoothOff, emptyList())),
+                    a,
+                )
+            },
+            "setup-join-pair-asking" to { SetupContent(pairingUi(PairingCheck(null, confirmed = false)), a) },
+            "setup-join-pair-compare" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = false)), a) },
+            "setup-join-pair-waiting" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = true)), a) },
+            "setup-join-pair-differed" to {
+                SetupContent(
+                    ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Failed(JoinResult.CodesDiffered)),
+                    a,
+                )
+            },
+            "setup-join-confirm" to {
+                val invite =
+                    app.mauri.sukrara.protocol.invite.Invite(
+                        PublicKeyHex("ab".repeat(32)),
+                        "t".repeat(22),
+                        1_761_600_000,
+                        emptyList(),
+                        me,
+                    )
+                SetupContent(ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Confirm(invite)), a)
+            },
+            "setup-join-scan-why" to { ScanScene(ScanState.Rationale) },
+            "setup-join-scan-off" to { ScanScene(ScanState.Denied) },
+            "setup-join-scan-no-camera" to { ScanScene(ScanState.NoCamera) },
+            "approve-nearby" to {
+                ApproveDialog(
+                    request.copy(nearby = true, code = "021472", label = ""),
+                    working = false,
+                    onAllow = {},
+                    onDeny = {},
+                    onLater = {},
+                    time = ::utcTime,
+                )
+            },
+            "followers-empty" to {
+                FollowersPage(OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0), FollowersActions())
+            },
+            "follower-dialog" to {
+                FollowerDialog(followers[0], nearby = null, writer = true, refused = false, onWriter = {}, onRemove = {}, onClose = {})
+            },
+            "approve" to
+                { ApproveDialog(request, working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime) },
+            "approve-leaked" to {
+                ApproveDialog(
+                    request.copy(others = 2),
+                    working = false,
+                    onAllow = {},
+                    onDeny = {},
+                    onLater = {},
+                    time = ::utcTime,
+                )
+            },
+            "approve-refused" to { ApproveRefusedDialog(request, ApproveResult.Gone, {}) },
+            "profile" to { ProfileScreen(me, ProfileSave.Idle, {}, {}) },
+            "profile-failed" to { ProfileScreen(Profile("", null), ProfileSave.Failed, {}, {}) },
+            "backup-missing" to { BackupScreen(sharing, { SaveOutcome.Saved }, { null }, {}) },
+            "replace-choose" to { ReplaceIdentityScreen(sharing, ReplaceUi(), ReplaceActions()) },
+            "replace-restore" to { ReplaceIdentityScreen(sharing, ReplaceUi(step = ReplaceStep.Restore), ReplaceActions()) },
+            "replace-confirm" to {
+                ReplaceConfirmDialog(
+                    "Start fresh?",
+                    "Start fresh",
+                    listOf("Dad", "Marta"),
+                    backedUp = false,
+                    onConfirm = {},
+                    onDismiss = {},
+                )
+            },
+            "replace-telling" to {
+                ReplaceIdentityScreen(sharing, ReplaceUi(fresh = FreshUi.Busy, telling = TellingFollowers(3, 1)), ReplaceActions())
+            },
+            "replace-cancelled" to { ReplaceIdentityScreen(sharing, ReplaceUi(cancelled = true), ReplaceActions()) },
+            "replace-done-fresh" to { ReplaceIdentityScreen(null, ReplaceUi(fresh = FreshUi.Done), ReplaceActions()) },
+            "backup-done" to {
+                BackupScreen(
+                    sharing.copy(passwordManagerSavedAt = 1_761_450_000, recoveryExportedAt = 1_761_460_000),
+                    { SaveOutcome.Saved },
+                    { null },
+                    {},
+                )
+            },
         )
     }
 
@@ -166,3 +381,19 @@ class SharingScreenshotTest {
         }
     }
 }
+
+/** The join step's QR scanner when the camera can't be used (each with its way out); the live preview needs a camera. */
+@Composable
+private fun ScanScene(state: ScanState) {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ScanInvite(enabled = true, onInvite = {}, initial = state)
+    }
+}
+
+/** Fixed-zone times for the goldens. */
+private fun utcTime(epochS: Long): String =
+    java.time.Instant
+        .ofEpochSecond(epochS)
+        .atZone(java.time.ZoneOffset.UTC)
+        .toLocalTime()
+        .toString()

@@ -5,11 +5,14 @@ package app.mauri.sukrara.monitor.notify
 
 import androidx.annotation.StringRes
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.monitor.R
 import java.time.Instant
 
@@ -20,9 +23,41 @@ data class UiText(
 )
 
 /**
- * What the glucose notification shows, decided from the hub state alone. Equal contents = the same notification
- * (the notifier skips re-posting it). The value, trend mark and freshness come from the card's face rule
- * ([face], `GlucoseCard.face` once the renderer lands), never formatted here.
+ * The status-bar settings and what Android allows, as the glucose notification needs them: [chip] = Settings › Status
+ * bar › *Live Update chip*; [promotionAllowed] = Android lets the app post Live Updates now; [numberIcon] = *Number
+ * icon* (the small icon is the value while there's no chip); [cardKey] = everything the custom card draws besides
+ * the hub state (treatments, graph settings, theme, the minute), so equal contents mean the same card.
+ */
+data class NotificationPrefs(
+    val chip: Boolean = true,
+    val promotionAllowed: Boolean = false,
+    val numberIcon: Boolean = true,
+    val cardKey: Any? = null,
+    val sharing: SharingLine? = null,
+    /** The person's ranges: the title says an out-of-range value's range in words (#26). */
+    val bands: Bands = Bands(),
+    /** The person's glucose unit: the title's value and unit (`general.unit`). */
+    val unit: GlucoseUnit = GlucoseUnit.MGDL,
+    /** The value shows on the lock screen (`statusbar.lockScreen`, #94); off = private, a public "Monitoring" there. */
+    val lockScreen: Boolean = true,
+)
+
+/**
+ * Who can read along, as the glucose notification's sub text says it ("2 followers · 1 nearby · Nightscout API on
+ * Wi-Fi"): [followers] = the wearer's active followers, [nearby] = follower devices connected over Bluetooth now (both
+ * the wearer's only), [wifi] = the Nightscout API listens on the home Wi-Fi now (either role: devices on the network
+ * can read). Null = none of it on this phone.
+ */
+data class SharingLine(
+    val followers: Int,
+    val nearby: Int,
+    val wifi: Boolean = false,
+)
+
+/**
+ * What the glucose notification shows, decided from the hub state and [NotificationPrefs] alone. Equal contents = the
+ * same notification (the notifier skips re-posting it). The value, trend mark and freshness come from the card's face
+ * rule ([face], `GlucoseCard.face`), never formatted here.
  */
 data class LiveNotificationContent(
     val title: UiText,
@@ -38,9 +73,35 @@ data class LiveNotificationContent(
     val readingAt: Instant?,
     val tap: Target,
     val actions: List<Action>,
+    /** How a value shows; the states without one are always [Layout.TEXT]. */
+    val layout: Layout = Layout.TEXT,
+    /** The face's decision for the value ([Icon.NUMBER], the card, MetricStyle); null without a value. */
+    val look: GlucoseLook? = null,
+    /** The value's reading (mg/dL), for the card's range colour and the metric's style. */
+    val mgdl: Int? = null,
+    /** [NotificationPrefs.cardKey] while [layout] is [Layout.CARD]. */
+    val cardKey: Any? = null,
+    /**
+     * The sub text ([NotificationPrefs.sharing]): a wearer's followers, and the Nightscout API on the Wi-Fi in either
+     * role; null with none of it.
+     */
+    val sharing: SharingLine? = null,
+    /** [NotificationPrefs.lockScreen]: public on the lock screen, else private with a public "Monitoring". */
+    val lockScreen: Boolean = true,
 ) {
-    /** [TREND] = the renderer's arrow for [trendRate]; the others are the states' icons. */
-    enum class Icon { TREND, NO_TREND, NO_READINGS, SENSOR_ENDED, APP }
+    /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value itself; the others are the states' icons. */
+    enum class Icon { TREND, NO_TREND, NUMBER, NO_READINGS, SENSOR_ENDED, APP }
+
+    enum class Layout {
+        /** A promoted Live Update: the chip (arrow + value), MetricStyle expanded on Android 17. */
+        LIVE_UPDATE,
+
+        /** Colorized in the range colour with the renderer's header row and chart (no chip). */
+        CARD,
+
+        /** Title and text only (no value, or nothing better allowed). */
+        TEXT,
+    }
 
     sealed interface Target {
         /** The quick "Add treatment" dialog; Carbs focused while a low is going on. */
@@ -56,6 +117,7 @@ data class LiveNotificationContent(
     companion object {
         private val LOW_KINDS = setOf("low", "very_low")
         private val OPEN_APP = Action(UiText(R.string.monitor_action_open_app), Target.OpenApp)
+        private val REPLACE_SENSOR = Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup)
 
         /**
          * The notification for [state] at [now]. Order: setup not done → the sensor's own states (ended, warming up)
@@ -64,10 +126,26 @@ data class LiveNotificationContent(
         fun from(
             state: GlucoseState,
             now: Instant,
-            face: (GlucoseState, Instant) -> GlucoseLook,
+            face: (GlucoseState, Instant, GlucoseUnit) -> GlucoseLook,
+            prefs: NotificationPrefs = NotificationPrefs(),
         ): LiveNotificationContent {
-            if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state)
-            val look = face(state, now)
+            if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state).copy(lockScreen = prefs.lockScreen)
+            val sharing =
+                prefs.sharing?.let { s ->
+                    // followers are the wearer's; the API on the Wi-Fi is either role's
+                    val line = if (state.role == Role.Wearer) s else s.copy(followers = 0, nearby = 0)
+                    line.takeIf { state.role != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
+                }
+            return content(state, now, face, prefs).copy(sharing = sharing, lockScreen = prefs.lockScreen)
+        }
+
+        private fun content(
+            state: GlucoseState,
+            now: Instant,
+            face: (GlucoseState, Instant, GlucoseUnit) -> GlucoseLook,
+            prefs: NotificationPrefs,
+        ): LiveNotificationContent {
+            val look = face(state, now, prefs.unit)
             val detail = detail(state)
             return when (look.state) {
                 GlucoseLook.State.ENDED -> {
@@ -80,7 +158,7 @@ data class LiveNotificationContent(
                             if (state.role ==
                                 Role.Wearer
                             ) {
-                                listOf(Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup))
+                                listOf(REPLACE_SENSOR)
                             } else {
                                 emptyList()
                             },
@@ -114,37 +192,64 @@ data class LiveNotificationContent(
                 }
 
                 GlucoseLook.State.VALUE -> {
-                    value(state, look, now, detail)
+                    value(state, look, detail, prefs)
                 }
             }
         }
 
+        /**
+         * A value: a Live Update when the chip is wanted and allowed, else the colorized card. The chip's arrow is its
+         * icon (the renderer's), never a text arrow too: two arrows could disagree. It can't strike text through: from
+         * 5 min it shows the reading's time (with the ring icon) instead of a bare number that would read as current.
+         * Without the chip the small icon is the number itself when *Number icon* is on.
+         */
         private fun value(
             state: GlucoseState,
             look: GlucoseLook,
-            now: Instant,
             detail: UiText?,
+            prefs: NotificationPrefs,
         ): LiveNotificationContent {
             val reading = state.latest!!
-            // The chip's arrow is its icon (the renderer's), never a text arrow too: two arrows could disagree. It can't
-            // strike text through: from 5 min it shows the reading's time (with the ring icon) instead of a bare number
-            // that would read as current.
+            val live = prefs.chip && prefs.promotionAllowed
             val chip =
-                if (look.strike) {
-                    UiText(R.string.monitor_chip_stale, listOf(reading.t))
-                } else {
-                    UiText(R.string.monitor_chip_value, listOf(look.text!!))
+                when {
+                    !live -> null
+                    look.strike -> UiText(R.string.monitor_chip_stale, listOf(reading.t))
+                    else -> UiText(R.string.monitor_chip_value, listOf(look.text!!))
+                }
+            val icon =
+                when {
+                    !live && prefs.numberIcon -> Icon.NUMBER
+                    look.trend == TrendMark.ARROW -> Icon.TREND
+                    else -> Icon.NO_TREND
                 }
             return LiveNotificationContent(
-                title = UiText(R.string.monitor_notif_value, listOf(look.text!!, look.arrowText!!)),
-                text = if (look.fresh.showTime) UiText(R.string.monitor_notif_reading_at, listOf(reading.t)) else detail,
+                // the range in words too, never by colour alone (#26): "64 mg/dL ↘ · Low", "3,6 mmol/L ↘ · Baja"
+                title =
+                    RangeState.shown(look, reading.mgdl, prefs.bands, null)?.let {
+                        UiText(
+                            R.string.monitor_notif_value_range,
+                            listOf(look.text!!, prefs.unit.symbol, look.arrowText!!, UiText(it.words)),
+                        )
+                    } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, prefs.unit.symbol, look.arrowText!!)),
+                // a sensor past its end whose readings keep arriving (#3): the value, and under it that it has ended
+                text =
+                    when {
+                        look.ended -> UiText(R.string.monitor_notif_sensor_ended_line)
+                        look.fresh.showTime -> UiText(R.string.monitor_notif_reading_at, listOf(reading.t))
+                        else -> detail
+                    },
                 strike = look.strike,
                 chip = chip,
-                icon = if (look.trend == TrendMark.ARROW) Icon.TREND else Icon.NO_TREND,
+                icon = icon,
                 trendRate = look.rate.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
                 tap = quickTreatment(state),
-                actions = listOf(OPEN_APP),
+                actions = if (look.ended && state.role == Role.Wearer) listOf(OPEN_APP, REPLACE_SENSOR) else listOf(OPEN_APP),
+                layout = if (live) Layout.LIVE_UPDATE else Layout.CARD,
+                look = look,
+                mgdl = reading.mgdl,
+                cardKey = if (live) null else prefs.cardKey,
             )
         }
 

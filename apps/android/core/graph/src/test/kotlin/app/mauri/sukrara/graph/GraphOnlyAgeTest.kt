@@ -62,10 +62,22 @@ class GraphOnlyAgeTest {
                     if (age == null || sgv == null) {
                         emptyList()
                     } else {
-                        (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, sgv, c["rate"].double())
+                        (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } +
+                            GlucosePoint(now - age, sgv, c["rate"].double())
                     }
                 val model = CardModel(readings, emptyList(), now, words)
-                val lay = GlucoseCard.draw(Canvas(), 332f, 138f, model, st, GraphPalette.of(false), 1f, CardSurface.WIDGET_GRAPH, CardPart.ALL)
+                val lay =
+                    GlucoseCard.draw(
+                        Canvas(),
+                        332f,
+                        138f,
+                        model,
+                        st,
+                        GraphPalette.of(false),
+                        1f,
+                        CardSurface.WIDGET_GRAPH,
+                        CardPart.ALL,
+                    )
                 val mark = lay.first("graph.age")?.info
                 val chart = lay.first("chart") != null
                 val ok =
@@ -96,6 +108,52 @@ class GraphOnlyAgeTest {
         assertEquals("time", lay.first("graph.age")?.info)
         val time = Freshness.timeText(now - 10, now)
         assertTrue("$time in ${lay.all("time.text").map { it.info }}", lay.all("time.text").any { it.info == time })
+    }
+
+    /**
+     * An ended sensor says "Sensor ended" with the flag over the chart, never the last reading's time (a gap), at every
+     * graph widget size (Mac: FreshnessFixtureTests.anEndedSensorIsNeverAGap).
+     */
+    @Test fun endedIsNeverAGap() {
+        val age = 4200L
+        val readings = (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, 118, 0.2)
+        val sensor = SensorInfo(now - 15 * 86_400L - 3600, now - 3600, now - 15 * 86_400L)
+        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true)
+        val model = CardModel(readings, emptyList(), now, Scenes.words(), sensor = sensor)
+        val last = Freshness.timeText(now - age, now)
+        for ((w, h) in listOf(170f to 170f, 320f to 80f, 320f to 170f, 60f to 60f)) {
+            val lay = GlucoseCard.draw(Canvas(), w, h, model, st, GraphPalette.of(false), 1f, CardSurface.WIDGET_GRAPH, CardPart.ALL)
+            assertEquals("${w}x$h", "ended", lay.first("graph.age")?.info)
+            assertTrue("${w}x$h: ${lay.all("time.text").map { it.info }}", lay.all("time.text").none { it.info == last })
+        }
+    }
+
+    /**
+     * A new sensor warming up says so in the pill over the chart ("Warming up · 40m", "Almost ready" past the warm-up's
+     * end), never the previous sensor's last reading time (a gap) nor the countdown at the value's size (#27), at every
+     * graph widget size (Mac: FreshnessFixtureTests.aWarmingUpSensorIsNeverAGap).
+     */
+    @Test fun warmupIsNeverAGap() {
+        val age = 7500L // off the hour: a 24-hour hour label never equals the reading's time
+        val readings = (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, 110, 0.0)
+        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true)
+        val last = Freshness.timeText(now - age, now)
+        val cases =
+            listOf(
+                SensorInfo(now - 1200, now + 1_208_400, now + 2400) to "Warming up · 40m",
+                SensorInfo(now - 3900, now + 1_205_700, now - 300) to "Almost ready",
+            )
+        for ((sensor, want) in cases) {
+            val model = CardModel(readings, emptyList(), now, Scenes.words(), sensor = sensor)
+            for ((w, h) in listOf(170f to 170f, 320f to 80f, 320f to 170f, 60f to 60f)) {
+                val lay = GlucoseCard.draw(Canvas(), w, h, model, st, GraphPalette.of(false), 1f, CardSurface.WIDGET_GRAPH, CardPart.ALL)
+                assertEquals("${w}x$h", "warmup", lay.first("graph.age")?.info)
+                assertEquals("${w}x$h", want, lay.first("graph.age.text")?.info)
+                assertTrue("${w}x$h: ${lay.all("time.text").map { it.info }}", lay.all("time.text").none { it.info == last })
+                assertTrue("${w}x$h: no countdown at the value's size", lay.all("value.warmup").isEmpty())
+                assertTrue("${w}x$h: the pill's size", lay.first("graph.age")!!.box!!.height() <= 18f * 1.7f)
+            }
+        }
     }
 
     /** The pill never grows past the chart, however narrow the widget (the widest label: icon + time). */

@@ -202,6 +202,41 @@ Android (Kotlin, `app/src/main/kotlin/app/mauri/sukrara/pen/`, `ui/Pen*.kt`); th
 | 0.11.52: the treatment dialog's pen icon is gone (title row back to *Add treatment* + *When?*); the dialog still reads a held pen, and *Nothing new* / red *Couldn't read the pen* show under the fields for 3 s (polite live region) | `ui/PenDialog.kt` `PenReadWord`, `ui/TreatmentDialog.kt`; deleted `ic_dia_pen_nfc.xml`, `pen_dialog_read_a11y` |
 | 0.11.50: *Replace your entry* / *Replace with 8.5u* instead of *Log it* / *Log 8.5u* / *Log this injection* when the dose matches a hand-typed entry (it replaces it, never doubles) | `ui/PenSettings.kt`, `ui/PenUi.kt` |
 
+**Rebuilt in `apps/android` (issue #145).** Added: the big read's card (*23 injections logged · Since 2 Oct* with
+*Review* and *Undo*) and notification, its *Review* (Doses read filtered to the read) with *Undo this read*, the pens
+page's antenna spot, the *Juggluco also reads pens* row (`:pen`, `feature/settings/pens`, `designsystem/nfc`).
+Changed: the big read is kept in the pen's ledger (`Pen.big`) instead of the read card's memory, so *Review* and *Undo
+this read* also work after a restart or from the pen page (*Review the last read*, 7 days); *Undo this read* is
+refused only when an entry of the read changed since (each entry's `u`), not by any later pen change, so an everyday
+read in between doesn't take the undo away. Kept as decided: the read logs at once and is flagged (nothing blocks a
+read, row below); the 72 h threshold stays a fixed engine guard. Discarded: the unused `pen_read_big` plural (*Check N
+injections*, from the superseded "hold big reads" rule).
+
+**Rebuilt in `apps/android` (issue #116).** Added: home's question card (*Priming or injected?* / *Same injection?*
+with the read card's answers, the oldest first, *1 more to check*), the *Same injection?* sheet for several typed
+entries (radio rows, *None of these*; also from Doses read, and *Choose* on the read card and the notification opens
+home for it), the pen read into Add treatment, *Add treatment* from a read at its time with the other insulin focused,
+the hints (*Injected? Hold your pen to the phone.*, *Next time, just tap your pen*, *Pen read 2d ago*), the read
+card's wavy ring with progress, check pop, count-up and failure shake, the entry sheet's flying dose and counting
+totals, and Roborazzi goldens of every pen screen (`:pen` `PenShotsTest`, recorded by the Goldens workflow). Changed:
+the question card sits **under** the glucose card, not above it (home's rule: glucose first; a dose waiting to be named
+is never a safety banner, and the ongoing notification already makes it found); the dialog read **logs the whole read
+at once** (the owner's rule: a read is never confirmed, nothing blocks) instead of holding the newest injection until
+*Save*: the dialog shows it in the field with *Undo* and *Save* never logs it again, so closing the dialog can't lose a
+dose the pen was held for; the dialog reads only unlocked (Android reads tags unlocked only). Discarded: the PoC's
+primed chips peeling off the card (the check and the count already say it; one more motion on a card that closes by
+itself), its pen icon in the dialog title (already discarded in 0.11.52).
+
+**Rebuilt in `apps/android` (issue #117).** Changed: the ledger moved from `files/state/pens.json` into the database
+(`pen_ledger`, schema version 2) so a read's ledger and entries are one Room transaction (`PenLedgerDao.commit`; the
+old order "ledger first, then each entry" could leave a dose pointing at a missing entry after a crash); the pen reads
+only insulin and pen entries instead of the whole treatments table; *Already logged by your pen?* lives in the
+dialog's saved state (a rotation asks it again) and stops the lock-screen countdown while it is open; the uploads
+(LibreView, Nightscout, Tidepool) hold a pen entry until its session closes (`UploadHold`: its last dose + *One
+injection*). Discarded: reading the old `pens.json` (no backwards compatibility: a known pen's next tap rebuilds its
+record from its entries in the log, as after a reinstall; its name, a passed display check and an open question are
+asked again).
+
 | Discarded or changed | Why |
 |---|---|
 | DESIGN's "every dose after the first large one is injected" | a split dose around a cartridge change (`5, 0.5, 0.5, 1, 3`) logged 10u; priming now = small doses before the **last** large one (PRODUCT §3.2) |

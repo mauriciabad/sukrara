@@ -9,9 +9,9 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Doses
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
@@ -21,18 +21,30 @@ import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
+import app.mauri.sukrara.monitor.lockedboot.LockedBootPlan
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.Instant
+import java.time.ZoneOffset
 
 /** What a test's fake notification shade shows: one entry per group slot. */
 class FakePresenter : AlertPresenter {
     val slots = linkedMapOf<AlertGroup, String>()
     val log = mutableListOf<String>()
-    var problems: Set<AlertDeliveryProblem> = emptySet()
+
+    /** Whose alert each [show] was (the wearer's name on a follower). */
+    val who = mutableListOf<String?>()
+
+    /** How many times an alert waited for its turn to ring ([beforeRing]: every loud post, never a silent one). */
+    var waits = 0
+
+    override suspend fun beforeRing() {
+        waits++
+    }
 
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         slots[firing.kind.group] = firing.kind.wire
         log += (if (silent) "resume " else "show ") + firing.kind.wire
+        this.who += who
     }
 
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
@@ -44,8 +56,6 @@ class FakePresenter : AlertPresenter {
         slots.remove(group)
         log += "clear ${group.wire}"
     }
-
-    override fun deliveryProblems(alarmKinds: Set<AlertKind>) = problems
 }
 
 class FakeAlarm : AlertAlarm {
@@ -65,22 +75,52 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
     val alarm = FakeAlarm()
     val treatments = MutableStateFlow<List<Treatment>>(emptyList())
     var published = AlertUiState()
+
+    /** The last plan the runtime saved for the time before the first unlock (lockedboot). */
+    var lockedBoot: LockedBootPlan? = null
+
+    /** The monotonic clock the runtime reads (s; null = none, as a test that never moves the wall clock back). */
+    var elapsed: Long? = null
     private var ids = 0
 
-    fun runtime() = AlertRuntime(store, treatments, presenter, alarm, { }, { published = it }, clock, newId = { "id${++ids}" })
+    fun runtime() =
+        AlertRuntime(
+            store,
+            treatments,
+            presenter,
+            alarm,
+            { },
+            { published = it },
+            clock,
+            newId = { "id${++ids}" },
+            lockedBoot = { lockedBoot = it },
+            elapsed = { elapsed },
+            zone = { ZoneOffset.UTC },
+        )
 
     fun reading(mgdl: Int, at: Instant = clock.now()) = Reading(at, mgdl, null, SourceId.Libre3)
 
-    fun wearerState(latest: Reading?, monitoring: Boolean = true) = GlucoseState.Initial.copy(
-        role = Role.Wearer,
-        latest = latest,
-        monitoringStartedAt = if (monitoring) latest?.t ?: clock.now() else null,
-    )
+    fun wearerState(latest: Reading?, monitoring: Boolean = true) =
+        GlucoseState.Initial.copy(
+            role = Role.Wearer,
+            latest = latest,
+            monitoringStartedAt = if (monitoring) latest?.t ?: clock.now() else null,
+        )
+
+    /** A follower's hub state: the wearer's readings over the follow stream, the link to [wearer]. */
+    fun followerState(latest: Reading?, wearer: String = "Ana") =
+        GlucoseState.Initial.copy(
+            role = Role.Follower,
+            latest = latest?.copy(source = SourceId.Relay),
+            link = LinkState(wearer, latest?.t),
+            monitoringStartedAt = latest?.t ?: clock.now(),
+        )
 }
 
 /** [d] as the treatment log the runtime reads after a restart. */
 fun treatmentsOf(d: Doses): List<Treatment> =
-    d.carbs.mapIndexed { i, t -> treatment("c$i", TreatmentKind.Carbs, t) } + d.rapid.mapIndexed { i, t -> treatment("r$i", TreatmentKind.RapidInsulin, t) }
+    d.carbs.mapIndexed { i, t -> treatment("c$i", TreatmentKind.Carbs, t) } +
+        d.rapid.mapIndexed { i, t -> treatment("r$i", TreatmentKind.RapidInsulin, t) }
 
 private fun treatment(id: String, kind: TreatmentKind, t: Long) =
     Treatment(id, kind, 1.0, Instant.ofEpochSecond(t), modifiedAt = Instant.ofEpochSecond(t), origin = TreatmentOrigin.Phone)

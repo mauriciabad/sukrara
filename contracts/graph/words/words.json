@@ -1,0 +1,41 @@
+{
+  "about": "Every word the card draws, English and Spanish (#77): the pill, durations, slot periods and names, the value's place, the range word and the chart's Now pill. Keys are Android's core/graph string names (values/ + values-es/strings.xml); the Mac's are CardWords.drawn (SukraraGraph/A11y.swift). Run by CardWordsFixtureTest (Android, the resources' raw text) and CardWordsFixtureTests (Mac, each word or format filled with the same sample arguments: %1$s = 'X', %1$d = 7, %2$d = 5). A change to a word lands here and on both platforms in one round. What VoiceOver / TalkBack say is in ../spoken.",
+  "words": {
+    "badge_eat_carbs": {"en": "Eat carbs", "es": "Come hidratos"},
+    "badge_carbs_short": {"en": "Carbs", "es": "Hidratos"},
+    "badge_take_insulin": {"en": "Take insulin", "es": "Ponte insulina"},
+    "badge_insulin_short": {"en": "Insulin", "es": "Insulina"},
+    "badge_muted_short": {"en": "Muted", "es": "Silenciadas"},
+    "badge_muted_for": {"en": "Muted · %1$s", "es": "Silenciadas · %1$s"},
+    "badge_replace_sensor": {"en": "Replace sensor", "es": "Cambiar sensor"},
+    "badge_replace_sensor_short": {"en": "Sensor", "es": "Sensor"},
+    "badge_sensor_ended": {"en": "Ended · Replace sensor", "es": "Terminado · Cambiar sensor"},
+    "badge_sensor_ended_short": {"en": "Ended", "es": "Terminado"},
+    "chart_back_to_now": {"en": "Now", "es": "Ahora"},
+    "duration_now": {"en": "now", "es": "ahora"},
+    "duration_minutes": {"en": "%1$dm", "es": "%1$d min"},
+    "duration_hours": {"en": "%1$dh", "es": "%1$d h"},
+    "duration_hours_minutes": {"en": "%1$dh %2$dm", "es": "%1$d h %2$d min"},
+    "duration_days": {"en": "%1$dd", "es": "%1$d d"},
+    "period_days": {"en": "%1$dd", "es": "%1$d d"},
+    "period_hours": {"en": "%1$dh", "es": "%1$d h"},
+    "slot_average_short": {"en": "avg", "es": "media"},
+    "slot_gmi_short": {"en": "GMI", "es": "GMI"},
+    "slot_cv_short": {"en": "CV", "es": "CV"},
+    "card_no_readings_yet": {"en": "No readings yet", "es": "Aún no hay lecturas"},
+    "card_no_reading_since": {"en": "No reading since", "es": "Sin lecturas desde"},
+    "card_sensor_ended": {"en": "Sensor ended", "es": "Sensor terminado"},
+    "card_warming_up": {"en": "Warming up", "es": "Calentando"},
+    "card_ready_at": {"en": "Ready at %1$s", "es": "Listo a las %1$s"},
+    "card_almost_ready": {"en": "Almost ready", "es": "Casi listo"},
+    "card_waiting_reading": {"en": "Waiting for the first reading", "es": "Esperando la primera lectura"},
+    "card_range_very_low": {"en": "Very low", "es": "Muy baja"},
+    "card_range_low": {"en": "Low", "es": "Baja"},
+    "card_range_high": {"en": "High", "es": "Alta"},
+    "card_range_very_high": {"en": "Very high", "es": "Muy alta"},
+    "card_range_extremely_high": {"en": "Extremely high", "es": "Extremadamente alta"}
+  },
+  "plurals": {
+    "badge_time_left": {"en": {"one": "%1$s left", "other": "%1$s left"}, "es": {"one": "queda %1$s", "other": "quedan %1$s"}}
+  }
+}

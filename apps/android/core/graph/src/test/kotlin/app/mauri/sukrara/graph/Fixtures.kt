@@ -22,6 +22,12 @@ internal object Fixtures {
 
     fun read(path: String): JsonObject = Json.parseToJsonElement(File(root, path).readText()) as JsonObject
 
+    /** Replaces a fixture file (CardLayoutTest with `-Dlayout.write=true` only). */
+    fun write(
+        path: String,
+        text: String,
+    ) = File(root, path).writeText(text)
+
     fun JsonElement?.str(): String? = (this as? JsonPrimitive)?.takeIf { it !is JsonNull && it.isString }?.content
 
     fun JsonElement?.long(): Long? = (this as? JsonPrimitive)?.takeIf { it !is JsonNull }?.longOrNull

@@ -52,6 +52,8 @@ data class TreatmentEntity(
     @ColumnInfo(name = "received_at") val receivedAt: Long?,
     val delivery: String,
     @ColumnInfo(name = "pen_json") val penJson: String?,
+    /** `ImportSource.id` for an entry Import history brought back, else null. */
+    @ColumnInfo(name = "imported_from") val importedFrom: String?,
 )
 
 /** A signed event waiting to be published (follower writes, wearer re-publishes); [sentAt] null until a relay took it. */
@@ -63,4 +65,14 @@ data class OutboxEntity(
     val event: String,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "sent_at") val sentAt: Long?,
+)
+
+/**
+ * The pen ledger (`:pen`'s JSON document; one row, id 0): in this database so a pen change stores it and the
+ * treatments it writes in one transaction ([PenLedgerDao.commit]).
+ */
+@Entity(tableName = "pen_ledger")
+data class PenLedgerEntity(
+    @PrimaryKey val id: Int = 0,
+    val json: String,
 )

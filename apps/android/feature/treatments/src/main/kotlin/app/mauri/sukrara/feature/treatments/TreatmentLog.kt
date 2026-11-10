@@ -71,6 +71,18 @@ class TreatmentLog(
     /** Brings [previous] (what [edit] or [delete] returned) back as the newest version. */
     suspend fun undo(previous: Treatment): Boolean = rewrite(previous.id) { previous } != null
 
+    /**
+     * *Retry* on an entry nothing took ([TreatmentDelivery.Failed]): the same version is pending again and handed to
+     * sharing at once. False when it isn't stored or not failed.
+     */
+    suspend fun retry(id: String): Boolean {
+        val stored = repository.get(id)?.takeIf { it.delivery == TreatmentDelivery.Failed } ?: return false
+        val again = stored.copy(delivery = TreatmentDelivery.Pending)
+        repository.replace(again)
+        sync.publish(again)
+        return true
+    }
+
     private suspend fun rewrite(
         id: String,
         change: (Treatment) -> Treatment,
@@ -83,6 +95,33 @@ class TreatmentLog(
         write(stored.copy(treatment = next, author = writer.key, delivery = writer.delivery))
         return stored.treatment
     }
+
+    /**
+     * Stores the versions one pen change made on this phone, through [commit] (the pen ledger and these records in one
+     * transaction): `modifiedAt` exactly as given (the pen engine tells its own writes from the user's edits by it),
+     * the stored `creator` kept, `author` = this phone; then the stored ones go to sharing. Only the wearer writes
+     * records (a change of the ledger alone has none).
+     */
+    suspend fun storeFromPen(
+        records: List<TreatmentRecord>,
+        commit: suspend (List<TreatmentRecord>) -> List<TreatmentRecord>,
+    ) {
+        if (records.isEmpty()) {
+            commit(records)
+            return
+        }
+        val writer = sync.writer.value ?: throw NotAllowed()
+        if (writer.throughOutbox) throw NotAllowed()
+        val mine =
+            records.map { r ->
+                val stored = repository.get(r.treatment.id)
+                r.copy(creator = stored?.creator ?: writer.key, author = writer.key, delivery = writer.delivery)
+            }
+        for (r in commit(mine)) sync.publish(r)
+    }
+
+    /** Whether the pen reader may write now (the wearer's phone, sharing or not). */
+    fun penMayWrite(): Boolean = sync.writer.value?.throughOutbox == false
 
     private suspend fun write(record: TreatmentRecord) {
         if (repository.upsertIfNewer(record)) sync.publish(record)

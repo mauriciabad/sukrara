@@ -7,11 +7,13 @@ import app.mauri.sukrara.protocol.event.EventFactory
 import app.mauri.sukrara.protocol.event.LivePayload
 import app.mauri.sukrara.protocol.event.RosterPayload
 import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.follow.FollowResult
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.follow.FollowerState
+import app.mauri.sukrara.protocol.follow.StreamFollower
 import app.mauri.sukrara.protocol.testing.FollowerModel
 import app.mauri.sukrara.protocol.testing.OgsVectors
 import app.mauri.sukrara.protocol.testing.OgsVectors.Companion.str
@@ -51,7 +53,12 @@ class AcceptanceRulesTest {
         val fin = sc.getValue("final").jsonObject
         val st = m.follower.state
         assertEquals(FollowStatus.Revoked, st.status)
-        assertEquals(fin.getValue("epochs").jsonArray.map { it.jsonPrimitive.content.toInt() }, st.epochs.values.map { it.n }.sorted())
+        assertEquals(
+            fin.getValue("epochs").jsonArray.map { it.jsonPrimitive.content.toInt() },
+            st.epochs.values
+                .map { it.n }
+                .sorted(),
+        )
         assertEquals(fin.str("readings").toInt(), m.readings.size)
         assertEquals(fin.str("treatments").toInt(), m.treatments.size)
         assertEquals(fin.str("deleted").toInt(), m.treatments.values.count { it.deleted })
@@ -64,13 +71,20 @@ class AcceptanceRulesTest {
     }
 
     /** A follower with key-1 and roster-1 applied (epoch 1, device D). */
-    private fun joined(): FollowerModel = model().apply {
-        assertEquals("accepted:key", feed(v.events.getValue("key-1"), v.now).code)
-        assertEquals("accepted:roster", feed(v.events.getValue("roster-1"), v.now).code)
-    }
+    private fun joined(): FollowerModel =
+        model().apply {
+            assertEquals("accepted:key", feed(v.events.getValue("key-1"), v.now).code)
+            assertEquals("accepted:roster", feed(v.events.getValue("roster-1"), v.now).code)
+        }
 
     private fun settings(signer: KeyPair, u: Long, createdAt: Long) =
-        factory.settings(signer, g1.public, v.sid, SettingsPayload(u, JsonObject(mapOf("low" to JsonPrimitive(70))), JsonObject(emptyMap())), createdAt)
+        factory.settings(
+            signer,
+            g1.public,
+            v.sid,
+            SettingsPayload(u, JsonObject(mapOf("low" to JsonPrimitive(70))), JsonObject(emptyMap())),
+            createdAt,
+        )
 
     @Test fun settingsNewestUWinsAndOnlyFromADevice() {
         val m = joined()
@@ -85,10 +99,24 @@ class AcceptanceRulesTest {
 
     @Test fun rosterMustNameTheEpochOfItsKeyAndNewestWins() {
         val m = joined()
-        val wrongEpoch = factory.roster(i, g1.public, v.sid, RosterPayload(2, listOf(d.public.hex), emptyList(), emptyList(), null), v.now + 10)
+        val wrongEpoch =
+            factory.roster(
+                i,
+                g1.public,
+                v.sid,
+                RosterPayload(2, listOf(d.public.hex), emptyList(), emptyList(), null),
+                v.now + 10,
+            )
         assertEquals("rejected:roster-epoch-mismatch", m.feed(wrongEpoch, v.now).code)
         val olderAt = v.events.getValue("roster-1").createdAt - 1
-        val older = factory.roster(i, g1.public, v.sid, RosterPayload(1, listOf(v.key("X").public.hex), emptyList(), emptyList(), null), olderAt)
+        val older =
+            factory.roster(
+                i,
+                g1.public,
+                v.sid,
+                RosterPayload(1, listOf(v.key("X").public.hex), emptyList(), emptyList(), null),
+                olderAt,
+            )
         assertEquals("ignored:roster-older", m.feed(older, v.now).code)
         assertEquals(listOf(d.public.hex), m.follower.state.devices)
     }
@@ -101,6 +129,15 @@ class AcceptanceRulesTest {
         assertNull((m.feed(live(v.now - 60), v.now) as FollowResult.Ignored).rekey)
         val first = m.feed(live(v.now + 10), v.now + 10) as FollowResult.Ignored
         assertEquals(Rumor.Rekey(Wire.gk(g1.public)), first.rekey)
+        // `have` names the newest epoch held, not the unknown one: the OGS vectors' rekey request, byte for byte
+        val vector =
+            v.plaintexts
+                .getValue("rekey-request")
+                .jsonObject
+                .getValue("rumor")
+                .jsonObject
+                .str("content")
+        assertEquals(vector, RumorCodec.encode(first.rekey!!))
         assertNull((m.feed(live(v.now + 11), v.now + 60) as FollowResult.Ignored).rekey)
         assertNotNull((m.feed(live(v.now + 12), v.now + 311) as FollowResult.Ignored).rekey)
         val stranger = factory.live(v.key("X"), crypto.generate().public, LivePayload(WireReading(v.now + 20, 120, null), null), v.now + 20)
@@ -110,7 +147,15 @@ class AcceptanceRulesTest {
     @Test fun aKeyNewerThanTheRevokeReApprovesAndAnOldRevokeIsIgnored() {
         val f = v.key("F").public
         val m = joined()
-        val key = { at: Long -> factory.gift(i, f, Rumor.KeyDelivery(v.sid, 1, crypto.nsec(g1.secret), listOf(d.public.hex), emptyList()), at, at + Wire.TTL_KEY_DELIVERY) }
+        val key = { at: Long ->
+            factory.gift(
+                i,
+                f,
+                Rumor.KeyDelivery(v.sid, 1, crypto.nsec(g1.secret), listOf(d.public.hex), emptyList()),
+                at,
+                at + Wire.TTL_KEY_DELIVERY,
+            )
+        }
         assertEquals("ignored:revoked-before-latest-key", m.feed(factory.gift(i, f, Rumor.Revoked, v.now - 10, v.now + 600), v.now).code)
         assertEquals("accepted:revoked", m.feed(factory.gift(i, f, Rumor.Revoked, v.now + 10, v.now + 600), v.now + 10).code)
         assertEquals("ignored:revoked", m.feed(v.events.getValue("live"), v.now + 10).code)
@@ -135,6 +180,57 @@ class AcceptanceRulesTest {
         val m = joined()
         val future = factory.live(d, g1.public, LivePayload(WireReading(v.now + 301, 120, null), null), v.now)
         assertEquals("rejected:reading-in-future", m.feed(future, v.now).code)
+        val nextHour = Wire.hourOf(v.now) + Wire.HOUR
+        val laterHour =
+            factory.chunk(
+                d,
+                g1.public,
+                v.sid,
+                nextHour + Wire.HOUR,
+                listOf(WireReading(nextHour + Wire.HOUR + 60, 120, null)),
+                v.now,
+            )
+        assertEquals("rejected:reading-in-future", m.feed(laterHour, v.now).code)
+        val hour = Wire.hourOf(v.now)
+        val aheadRow =
+            factory.chunk(
+                d,
+                g1.public,
+                v.sid,
+                hour,
+                listOf(WireReading(hour, 110, null), WireReading(v.now + 301, 120, null)),
+                v.now,
+            )
+        assertEquals("rejected:reading-in-future", m.feed(aheadRow, v.now).code)
+        val fine =
+            factory.chunk(
+                d,
+                g1.public,
+                v.sid,
+                hour,
+                listOf(WireReading(hour, 110, null), WireReading(v.now + 300, 120, null)),
+                v.now + 1,
+            )
+        assertEquals("accepted:chunk", m.feed(fine, v.now).code)
+    }
+
+    @Test fun seenIdsAreCappedLeastRecentlySeenFirst() {
+        val full = (0 until StreamFollower.SEEN_LIMIT).associate { "old-$it" to v.now + Wire.DAY }
+        val m = FollowerModel(crypto, FollowerState(follower = v.key("F"), identity = i.public, seen = full))
+        val key = v.events.getValue("key-1")
+        assertEquals("accepted:key", m.feed(key, v.now).code)
+        assertEquals("accepted:roster", m.feed(v.events.getValue("roster-1"), v.now).code)
+        val seen = m.follower.state.seen
+        assertEquals(StreamFollower.SEEN_LIMIT, seen.size)
+        assertEquals(false, "old-0" in seen || "old-1" in seen)
+        assertEquals(true, "old-2" in seen)
+        // a duplicate becomes the most recent, so it outlives the older ids
+        assertEquals("ignored:duplicate", m.feed(key, v.now).code)
+        assertEquals(
+            key.id,
+            m.follower.state.seen.keys
+                .last(),
+        )
     }
 
     @Test fun seenIdsArePrunedAtTheirExpiration() {

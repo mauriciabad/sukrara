@@ -231,7 +231,7 @@ enum class Goal(
             IN_RANGE -> m.tir.inRange > 0.70
             BELOW -> m.tir.below < 0.04
             VERY_LOW -> m.tir.veryLow < 0.01
-            AVERAGE -> m.mean < 154
+            AVERAGE -> m.mean < AVERAGE_MGDL
             GMI -> m.gmi < 7.0
             CV -> m.cv <= 36.0
         }
@@ -250,13 +250,17 @@ enum class Goal(
     companion object {
         /** The report's minimum data in a window (70 %): below it the rings wear no mark. */
         const val MIN_COVERAGE = 0.70
+
+        /** The average's goal, mg/dL ([AVERAGE] writes it in mg/dL; other units convert it). */
+        const val AVERAGE_MGDL = 154
     }
 }
 
 /**
  * A time share as the number of a percentage, without the "%": whole percent from 10 %, one decimal under 10 %, and
  * more decimals (up to two) whenever rounding would put the number on the other side of its goal than the value (or
- * turn a share that isn't all into "100"); a non-zero share that rounds to 0 is "<0.1". contracts/graph/share.
+ * turn a share that isn't all into "100"); a non-zero share that rounds to 0 is "<0.1", none at all is "0" (never
+ * "0.0": a figure with a decimal beside the value can be read as a glucose value). contracts/graph/share.
  */
 object ShareText {
     private fun format(
@@ -264,6 +268,8 @@ object ShareText {
         met: ((Double) -> Boolean)?,
         locale: java.util.Locale,
     ): String {
+        if (x <= 0.0) return "0"
+
         fun shown(d: Int): Double {
             val k = Math.pow(10.0, d + 2.0)
             return Math.round(x * k) / k

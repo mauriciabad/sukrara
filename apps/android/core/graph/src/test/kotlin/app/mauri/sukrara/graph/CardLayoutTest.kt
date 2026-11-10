@@ -6,6 +6,7 @@ package app.mauri.sukrara.graph
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -20,6 +21,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -35,10 +37,11 @@ import kotlin.math.abs
 
 /**
  * The layout rules of contracts/graph/layout (rules.json over scenes.json; expect.json = the answers the Mac checks
- * too), run on the renderer itself. Each registered card surface is
- * stood in for by its shape (parts and sizes from surfaces.json, its place's settings): every rule must hold across
- * all of them, and every shared answer they produce must equal expect.json (this test never rewrites it). Once the
- * surfaces exist, their real entry paths replace the stand-ins.
+ * too), run on the renderer itself. Every registered card surface is drawn with the style its entry path uses (the
+ * widgets' [widgetCardStyle], the notification's [notificationCardStyle], the app panel's
+ * [GraphConfig.appPanelStyle]) at its sizes and parts from surfaces.json ([shapesAreTheRegisteredCardSurfaces] keeps
+ * them equal): every rule must hold across all of them, and every shared answer they produce must equal expect.json
+ * (this test never rewrites it).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -151,6 +154,7 @@ class CardLayoutTest {
             o["lines"]?.jsonArray?.let { l -> x = x.copy(lines = l.map { it.long()!!.toInt() }) }
             o["gridHours"].long()?.let { x = x.copy(gridHours = it.toInt()) }
             o["high"].long()?.let { x = x.copy(bands = x.bands.copy(high = it.toInt())) }
+            o["unit"].str()?.let { x = x.copy(unit = GlucoseUnit.of(it)) }
             when (val m = o["marks"]) {
                 null -> {}
 
@@ -205,6 +209,7 @@ class CardLayoutTest {
         sensorTime = c.sensorTime(p),
         // a card without a chart still colours the value and the rings by the user's bands
         bands = c.bands,
+        unit = c.unit,
     )
 
     /** The registered card surfaces' shapes (surfaces.json parts and sizes). */
@@ -220,22 +225,51 @@ class CardLayoutTest {
             Shape("widget-combined", GraphPlace.WIDGETS, listOf(CardPart.ALL to 0f), sizes("widget-combined")) {
                 widgetCardStyle(CardSurface.WIDGET_COMBINED, it)
             },
+            // the panel's real style (GraphConfig.appPanelStyle, what HomeCard's PanelCard draws with)
             Shape("app-panel", GraphPlace.APP, listOf(CardPart.HEADER to 120f, CardPart.GRAPH to 180f), sizes("app-panel")) {
-                full(it, GraphPlace.APP)
+                it.appPanelStyle()
             },
-            // Layout coverage only, not registered surfaces (not in the app; surfaces.json "about"): the shapes the Mac
-            // shares answers with in expect.json (a wide 3-ring lock-screen card, a value-only card, the notification's
-            // header + graph). Drop one only together with the expect.json answers it alone produces.
+            // the notification's real style (WidgetStyle.kt notificationCardStyle, what :monitor draws with)
+            Shape("notification", GraphPlace.NOTIFICATION, listOf(CardPart.HEADER to 64f, CardPart.GRAPH to 96f), sizes("notification")) {
+                notificationCardStyle(it)
+            },
+            // the Sensor ready page's real style (WidgetStyle.kt sensorReadyCardStyle, what :feature:sensor draws with)
+            Shape("sensor-ready", GraphPlace.APP, listOf(CardPart.VALUE to 0f), sizes("sensor-ready")) {
+                sensorReadyCardStyle(it)
+            },
+            // Layout coverage only, not a registered surface (not in the app; surfaces.json "about"): the shape the Mac
+            // shares answers with in expect.json (a wide 3-ring lock-screen card). Drop it only together with the
+            // expect.json answers it alone produces.
             Shape("lockscreen-shape", GraphPlace.WIDGETS, listOf(CardPart.ALL to 0f), listOf(380f to 200f, 360f to 170f)) {
                 full(it, GraphPlace.WIDGETS)
             },
-            Shape("value-only-shape", GraphPlace.APP, listOf(CardPart.VALUE to 0f), listOf(220f to 72f)) {
-                full(it, GraphPlace.APP, graph = false)
-            },
-            Shape("notification-shape", GraphPlace.NOTIFICATION, listOf(CardPart.HEADER to 64f, CardPart.GRAPH to 96f), listOf(291f to 0f, 240f to 0f)) {
-                full(it, GraphPlace.NOTIFICATION)
-            },
         )
+
+    /** The shapes that are layout coverage only, not surfaces of the app (see [shapes]). */
+    private val coverageOnly = setOf("lockscreen-shape", "value-only-shape")
+
+    /**
+     * The shapes are the registry: one per Android card surface of surfaces.json with exactly its parts and sizes, so
+     * a surface added, resized or split into other parts is drawn here the same round.
+     */
+    @Test
+    fun shapesAreTheRegisteredCardSurfaces() {
+        val registered =
+            Fixtures
+                .read("surfaces/surfaces.json")["android"]!!
+                .jsonObject["surfaces"]!!
+                .jsonArray
+                .map { it.jsonObject }
+                .filter { it["kind"].str() == "card" }
+        val shapes = shapes().associateBy { it.id }
+        assertEquals("card surfaces of surfaces.json", registered.map { it["id"].str()!! }.toSet(), shapes.keys - coverageOnly)
+        for (s in registered) {
+            val id = s["id"].str()!!
+            val parts = s["parts"]!!.jsonArray.map { it.str()!! }
+            assertEquals("$id parts", parts, shapes.getValue(id).parts.map { it.first.name.lowercase() })
+            assertEquals("$id sizes", sizes(id), shapes.getValue(id).sizes)
+        }
+    }
 
     /** The alert settings' default mutes after insulin and carbs (the schema's defaults). */
     private val defaultMutes =
@@ -249,19 +283,30 @@ class CardLayoutTest {
 
     /**
      * What the alert runtime says for a scene with the default thresholds, reduced to what these scenes
-     * need: a current reading past the low / high threshold needs action; nothing covers or mutes it here.
+     * need: a current reading past the low / high threshold needs action, unless the newest carbs (low) / rapid insulin
+     * (high) still mutes it (the default mutes; the Mac's DefaultAlertRules is the same).
      */
     private fun standInStatus(sc: Scene): CardStatus {
         val r = sc.readings.lastOrNull() ?: return CardStatus.None
         if (!Freshness.of(now - r.t).showGraph) return CardStatus.None
-        return when {
-            r.sgv < SettingsSpec.THRESHOLD_LOW.default -> CardStatus.Needed(lowSide = true)
-            r.sgv > SettingsSpec.THRESHOLD_HIGH.default -> CardStatus.Needed(lowSide = false)
-            else -> CardStatus.None
-        }
+        val low =
+            when {
+                r.sgv < SettingsSpec.THRESHOLD_LOW.default -> true
+                r.sgv > SettingsSpec.THRESHOLD_HIGH.default -> false
+                else -> return CardStatus.None
+            }
+        val kind = if (low) TreatmentKind.Carbs else TreatmentKind.RapidInsulin
+        val cover =
+            sc.treatments
+                .filter { it.kind == kind && it.at.epochSecond <= now }
+                .mapNotNull { t -> defaultMutes.muteUntil(t)?.let { t to it } }
+                .filter { it.second > now }
+                .maxByOrNull { it.first.at }
+        return cover?.let { (t, until) -> CardStatus.Taken(kind, t.at.epochSecond, until) } ?: CardStatus.Needed(lowSide = low)
     }
 
-    private fun renderAll(): List<Render> {
+    /** Every scene × settings × shape × size; [fontScale] = the system font size the surfaces pass. */
+    private fun renderAll(fontScale: Float = 1f): List<Render> {
         val words = Scenes.words()
         val pal = GraphPalette.of(false)
         val out = ArrayList<Render>()
@@ -297,6 +342,7 @@ class CardLayoutTest {
                                         d,
                                         CardSurface.TEST,
                                         part,
+                                        fontScale = fontScale,
                                     ).also { bmp.recycle() }
                             }
                         out += Render(shape.id, "${w.toInt()}x${h.toInt()}", sc.id, sid, layouts)
@@ -323,6 +369,7 @@ class CardLayoutTest {
         return mapOf(
             "scene" to r.scene,
             "settings" to r.settings,
+            "unit" to st.unit.key,
             "face" to "${st.value || (st.graph != null && chart == null && r.layouts.any { it.part == CardPart.ALL })}",
             "value" to "${st.value}",
             "graph" to "${st.graph != null}",
@@ -380,11 +427,48 @@ class CardLayoutTest {
 
     @Test
     fun everySurfaceShapeFollowsTheSameRules() {
+        val answers = sortedMapOf<String, String>()
         val renders = renderAll()
+        val problems = ruleProblems(renders, answers)
+        if (problems.isNotEmpty()) {
+            fail("${problems.size} layout rule failures (contracts/graph/layout/rules.json):\n  " + problems.take(40).joinToString("\n  "))
+        }
+        compareAnswers(renders, answers)
+    }
+
+    /**
+     * A large system font (2×: the chart's words at their 1.3× cap, `GlucoseGraph.MAX_TEXT_SCALE`) keeps every rule
+     * too: the same pass over the same renders. The shared answers are the default size's (the Mac draws at 1×).
+     */
+    @Test
+    fun largeFontFollowsTheSameRules() {
+        val renders = renderAll(fontScale = 2f)
+        val problems = ruleProblems(renders, sortedMapOf())
+        // the words did grow: a treatment label is 1.3× as tall as at 1×
+        val grown = renders.flatMap { it.layouts }.mapNotNull { it.first("chart.label")?.box }
+        assertTrue("no render shows a treatment label at 2×", grown.isNotEmpty())
+        assertTrue(
+            "treatment labels at 2× are ${grown.map {
+                it.height()
+            }.distinct()} tall, want ${GlucoseGraph.TEXT_ROW_DP * GlucoseGraph.MAX_TEXT_SCALE}",
+            grown.all { abs(it.height() / d - GlucoseGraph.TEXT_ROW_DP * GlucoseGraph.MAX_TEXT_SCALE) < 0.05f },
+        )
+        if (problems.isNotEmpty()) {
+            fail(
+                "${problems.size} layout rule failures at 2× font (contracts/graph/layout/rules.json):\n  " +
+                    problems.take(40).joinToString("\n  "),
+            )
+        }
+    }
+
+    /** Every rule of rules.json over [renders]; the shared rules' answers go into [answers]. */
+    private fun ruleProblems(
+        renders: List<Render>,
+        answers: MutableMap<String, String>,
+    ): List<String> {
         val problems = ArrayList<String>()
 
         // the rules: same inputs → same elements, whatever the surface; shared rules give the answers the Mac checks
-        val answers = sortedMapOf<String, String>()
         for (rule in rulesFile["rules"]!!.jsonArray.map { it.jsonObject }) {
             val name = rule["name"].str()!!
             val by = rule["by"]!!.jsonArray.map { it.str()!! }
@@ -438,12 +522,14 @@ class CardLayoutTest {
         val badge = rulesFile["badge"]!!.jsonObject
         val (withBadge, noBadge) = badge["compare"]!!.jsonArray.map { it.str()!! }
         val badgeEls = badge["elements"]!!.jsonArray.map { it.str()!! }.toSet()
+        // an hour label the badge covers is left out but laid out as if drawn: compared as one
+        val covered = badge["covered"].str()!!
 
         fun badgeDesc(r: Render) =
             r.layouts
                 .flatMap { l ->
-                    l.elements.filter { it.name in badgeEls }.map { e ->
-                        "${e.name} ${e.info}" +
+                    l.elements.filter { it.name in badgeEls || it.name == covered }.map { e ->
+                        "${if (e.name == covered) "time.text" else e.name} ${e.info}" +
                             (
                                 e.box?.let { b ->
                                     " @${CardLayout.dp(
@@ -474,6 +560,21 @@ class CardLayoutTest {
             }
         }
         if (compared == 0) problems += "badge: no render shows the sensor badge (rule untested)"
+        // no hour label is drawn under the badge (#71)
+        var coveredSeen = 0
+        val cut = GlucoseGraph.BADGE_CUT_DP
+        for (r in renders) {
+            for (l in r.layouts) {
+                val s = l.first("chart.sensor.drawn")?.box ?: continue
+                val erasedRight = s.right + cut * l.d
+                coveredSeen += l.all(covered).size
+                for (t in l.all("time.text")) {
+                    val b = t.box ?: continue
+                    if (b.left < erasedRight) problems += "badge on $r: the hour label '${t.info}' is drawn under the sensor badge"
+                }
+            }
+        }
+        if (coveredSeen == 0) problems += "badge: no render has an hour label under the badge (rule untested)"
 
         // the distribution's erased outline: the dots plus one constant margin
         val dist = rulesFile["distribution"]!!.jsonObject
@@ -503,16 +604,76 @@ class CardLayoutTest {
         }
         if (cuts == 0) problems += "distribution: no render erases its outline (rule untested)"
 
+        // small slots beside the value are at most two (#71)
+        val crowded = rulesFile["crowdedSlots"]!!.jsonObject
+        val crowdedDp = crowded["dp"].double()!!
+        val crowdedMax = crowded["max"].long()!!.toInt()
+        if (abs(GlucoseCard.CROWDED_DP - crowdedDp) > 1e-4 || GlucoseCard.CROWDED_MAX != crowdedMax) {
+            problems += "crowdedSlots: GlucoseCard ${GlucoseCard.CROWDED_DP}/${GlucoseCard.CROWDED_MAX}, rules.json $crowded"
+        }
+        var small = 0
+        for (r in renders) {
+            for (l in r.layouts.filter { it.part != CardPart.SLOTS }) {
+                val slots = l.all("slot")
+                val size = slots.firstOrNull()?.box?.width() ?: continue
+                if (size / l.d >= crowdedDp) continue
+                small++
+                if (slots.size > crowdedMax) problems += "crowdedSlots on $r: ${slots.size} slots of ${size / l.d} dp"
+            }
+        }
+        if (small == 0) problems += "crowdedSlots: no render has small slots beside the value (rule untested)"
+
+        // a warming-up sensor's time left is labelled and never at a value's size
+        val warmup = rulesFile["warmup"]!!.jsonObject
+        val maxText = warmup["maxText"].double()!!
+        val warmWords = warmup["words"]!!.jsonArray.map { it.str()!! }
+        var warmShown = 0
+        for (r in renders) {
+            for (l in r.layouts) {
+                val e = l.first("value.warmup") ?: continue
+                warmShown++
+                val size = (e.box?.height() ?: Float.MAX_VALUE) / l.d
+                if (size > maxText + 0.05) problems += "warmup on $r: text ${size}dp, want ≤ $maxText"
+                val text = l.first("value.warmup.text")?.info
+                if (text == null ||
+                    warmWords.none { text.startsWith(it) }
+                ) {
+                    problems += "warmup on $r: \"$text\" doesn't say $warmWords first"
+                }
+            }
+        }
+        if (warmShown == 0) problems += "warmup: no render shows a warming-up sensor (rule untested)"
+
         // treatment labels only up to maxHours
         val maxHours = rulesFile["treatmentLabels"]!!.jsonObject["maxHours"].long()!!
         assertTrue("treatmentLabels maxHours", GlucoseGraph.LABELS_MAX_S == maxHours * 3600)
+        return problems
+    }
 
-        if (problems.isNotEmpty()) {
-            fail("${problems.size} layout rule failures (contracts/graph/layout/rules.json):\n  " + problems.take(40).joinToString("\n  "))
-        }
-
+    /** The shared [answers] these shapes produce against expect.json (or written into it with `-Dlayout.write=true`). */
+    private fun compareAnswers(
+        renders: List<Render>,
+        answers: Map<String, String>,
+    ) {
         // the shared answers: every one these shapes produce is the one the Mac checks against
-        val expect = Fixtures.read("layout/expect.json")["answers"]!!.jsonObject
+        val expectFile = Fixtures.read("layout/expect.json")
+        if (System.getProperty("layout.write") == "true") {
+            // Android's answers added or updated; the answers only the Mac produces (glyph surfaces) stay
+            val merged =
+                expectFile["answers"]!!
+                    .jsonObject
+                    .mapValues { it.value.str()!! }
+                    .toSortedMap()
+                    .apply { putAll(answers) }
+
+            // the file's own style: "/" escaped
+            fun q(s: String) = JsonPrimitive(s).toString().replace("/", "\\/")
+            val body = merged.entries.joinToString(",\n") { (k, v) -> "  ${q(k)}: ${q(v)}" }
+            Fixtures.write("layout/expect.json", "{\n \"about\": ${expectFile["about"]},\n \"answers\": {\n$body\n }\n}\n")
+            println("layout: wrote ${merged.size} answers to layout/expect.json")
+            return
+        }
+        val expect = expectFile["answers"]!!.jsonObject
         val diffs =
             answers
                 .filter { (k, v) ->

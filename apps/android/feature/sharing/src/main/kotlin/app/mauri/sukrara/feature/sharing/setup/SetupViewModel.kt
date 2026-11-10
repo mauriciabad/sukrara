@@ -11,7 +11,18 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.feature.sharing.RoleLoss
 import app.mauri.sukrara.feature.sharing.SetupModule
+import app.mauri.sukrara.feature.sharing.following
+import app.mauri.sukrara.protocol.event.Avatar
+import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.invite.Invite
+import app.mauri.sukrara.share.ble.NearbyStatus
+import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.InviteLookup
+import app.mauri.sukrara.share.follower.JoinResult
+import app.mauri.sukrara.share.follower.NearbyOffer
+import app.mauri.sukrara.share.follower.NearbySearch
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import kotlinx.coroutines.CancellationException
@@ -20,9 +31,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.security.SecureRandom
 
 /** The restore form's state. The code and password never live here (screen-local, not saved). */
 sealed interface RestoreUi {
@@ -37,6 +52,31 @@ sealed interface RestoreUi {
     data class Restored(val followers: Int) : RestoreUi
 }
 
+/** The join step's own state (the link itself stays in the screen, never logged). */
+sealed interface JoinUi {
+    data object Idle : JoinUi
+
+    /** Looking for the invite on the relays (up to ~25 s), or saving the key after *Follow*. */
+    data object Busy : JoinUi
+
+    /**
+     * The invite was found: who is inviting (the name and picture in it), waiting for *Follow* or *Cancel*. Nothing
+     * was saved or sent yet.
+     */
+    data class Confirm(val invite: Invite) : JoinUi
+
+    data class Failed(val result: JoinResult) : JoinUi
+}
+
+/**
+ * A role picked on the role step, waiting for the person's confirmation. [loss] = the history it deletes from this
+ * phone (its own dialog, with *Export CSV first*); null = nothing to delete (the plain role confirmation).
+ */
+data class RoleChange(
+    val role: Role,
+    val loss: RoleLoss?,
+)
+
 /** Everything one setup screen shows. [step] null = setup is over: go home. */
 data class SetupUi(
     val step: SetupStep?,
@@ -50,11 +90,19 @@ data class SetupUi(
     val gate: RestoreGate,
     val share: OwnerShareState,
     val restore: RestoreUi,
+    val follow: FollowState = FollowState.NotFollowing,
+    val join: JoinUi = JoinUi.Idle,
+    /** An invite link opened on this phone: the join step's field starts with it. */
+    val invite: String? = null,
+    /** *Find phones nearby* while it looks (null = not looking). */
+    val nearby: NearbySearch? = null,
     val busy: Boolean,
     /** Opened from the Finish-setup card: one step, then home. */
     val single: Boolean,
     /** Back shows the previous step (not on the first step, nor back into the role once chosen). */
     val canBack: Boolean,
+    /** The role step's open confirmation (null = none). */
+    val roleChange: RoleChange? = null,
 )
 
 /**
@@ -67,8 +115,12 @@ class SetupViewModel(
 ) : ViewModel() {
     private val shown = MutableStateFlow<SetupStep?>(null)
     private val restore = MutableStateFlow<RestoreUi>(RestoreUi.Idle)
+    private val joining = MutableStateFlow<JoinUi>(JoinUi.Idle)
     private val busy = MutableStateFlow(false)
     private val single = MutableStateFlow(false)
+
+    /** The role step's confirmation; kept while *Export CSV first* is open, so it shows again on the way back. */
+    private val roleChange = MutableStateFlow<RoleChange?>(null)
 
     /** False until [openedOn] is reopened in the record: no other step flashes and setup doesn't end before it shows. */
     private val ready = MutableStateFlow(openedOn == null)
@@ -80,19 +132,31 @@ class SetupViewModel(
     private val editing = MutableStateFlow<AlertSettings?>(null)
 
     private val inputs =
-        combine(m.setupStore.data, m.roles.role, m.hub.state, m.sharing.state, combine(m.alertSettings.settings, m.alertsConfirmedAt, ::Pair)) {
-                record,
-                role,
-                glucose,
-                share,
-                (alerts, confirmedAt),
+        combine(
+            m.setupStore.data,
+            m.roles.role,
+            m.hub.state,
+            combine(m.sharing.state, m.follower.state, ::Pair),
+            combine(m.alertSettings.settings, m.alertsConfirmedAt, ::Pair),
+        ) {
+            record,
+            role,
+            glucose,
+            (share, follow),
+            (alerts, confirmedAt),
             ->
-            Inputs(record, role, glucose, share, alerts, confirmedAt != null)
+            Inputs(record, role, glucose, share, follow, alerts, confirmedAt != null)
         }
 
     val ui: StateFlow<SetupUi?> =
         // the checklist is THE live flow (the monitor computes it asynchronously): never a copy taken on resume
-        combine(inputs, m.readiness.readiness, shown, combine(restore, busy, single, editing, ready, ::Locals)) { i, readiness, override, l ->
+        combine(
+            inputs,
+            m.readiness.readiness,
+            shown,
+            combine(restore, busy, single, editing, ready, ::Locals),
+            combine(joining, m.pendingInvite, roleChange, ::Triple),
+        ) { i, readiness, override, l, (join, invite, change) ->
             if (!l.ready) return@combine null
             // opened on one step: nothing until this flow itself sees the reopened record (no early "setup is over")
             if (openedOn != null && !seenOpen) {
@@ -103,7 +167,7 @@ class SetupViewModel(
             val facts =
                 SetupFacts(
                     role = i.role,
-                    followerAvailable = m.followerAvailable,
+                    following = i.follow.following,
                     ownSensorLive = RestoreGate.ownSensorLive(i.glucose, now),
                     hasIdentity = i.share is OwnerShareState.Sharing || i.share is OwnerShareState.AnotherAppSharingAsYou,
                     alertsConfirmed = i.alertsConfirmed,
@@ -127,9 +191,14 @@ class SetupViewModel(
                 gate = RestoreGate.evaluate(facts.ownSensorLive),
                 share = i.share,
                 restore = l.restore,
+                follow = i.follow,
+                join = join,
+                invite = invite,
                 busy = l.busy,
                 single = l.single,
-                canBack = !l.single && at > 0 && !(facts.role != null && steps[at - 1] == SetupStep.Role),
+                // the join step goes back to the role (a phone that wears the sensor after all)
+                canBack = !l.single && at > 0 && (step == SetupStep.Join || !(facts.role != null && steps[at - 1] == SetupStep.Role)),
+                roleChange = change.takeIf { step == SetupStep.Role },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -182,6 +251,10 @@ class SetupViewModel(
      * left as skipped (written first), so its Finish-setup row stays.
      */
     fun back(onLeave: () -> Unit) {
+        // an invite shown for confirmation: Back is its Cancel (the step stays)
+        if (joining.value is JoinUi.Confirm) return cancelInvite()
+        // the join step's list is gone: Bluetooth stops looking
+        searching.value = null
         val u = ui.value ?: return onLeave()
         if (u.single) {
             leaving = true
@@ -203,17 +276,191 @@ class SetupViewModel(
 
     fun readinessFix(r: app.mauri.sukrara.core.model.AlertRequirement) = m.readiness.fix(r)
 
+    fun readinessAnswerUnlocked(answer: app.mauri.sukrara.core.model.UnlockedSound) = m.readiness.answerUnlockedSound(answer)
+
     fun continueWelcome() = record(SetupMachine::completeWelcome)
 
-    /** P10: called after the person confirmed what the role means. A changed role resets the alert runtime first. */
+    /**
+     * Continue on the role step: asks what choosing [role] would delete, then shows its confirmation
+     * ([SetupUi.roleChange]). Nothing changes until the person confirms ([chooseRole]); a failed check leaves the step
+     * as it was.
+     */
+    fun reviewRole(role: Role) {
+        if (busy.value) return
+        viewModelScope.launch {
+            busy.value = true
+            try {
+                roleChange.value = RoleChange(role, m.roles.loss(role))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("Sukrara.setup", "role check failed: ${e.javaClass.simpleName}")
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    /** Cancel on the role confirmation: the role stays as it was and nothing is deleted. */
+    fun cancelRole() {
+        roleChange.value = null
+    }
+
+    /**
+     * P10: called after the person confirmed what the role means (and, when it deletes history, *Delete and
+     * continue*). A changed role resets the alert runtime first.
+     */
     fun chooseRole(role: Role) =
         act {
+            roleChange.value = null
+            searching.value = null
             val facts = ui.value?.facts ?: return@act
             val chosen = SetupMachine.chooseRole(role, confirmed = true, facts) as? Result.Done ?: return@act
             if (facts.role != chosen.value) m.resetAlerts()
             m.roles.set(chosen.value)
             m.startMonitoring()
         }
+
+    /** The invite link opened on this phone that was already looked up by itself (not again after a rotation). */
+    private var openedLookedUp: String? = null
+
+    /**
+     * *Join*: looks up the invite behind [link] (reads only) and shows who is inviting with *Follow* / *Cancel*. An
+     * invite link opened on this phone is looked up by itself, once per opening ([opened]).
+     */
+    fun lookUp(
+        link: String,
+        opened: Boolean = false,
+    ) {
+        if (joining.value == JoinUi.Busy || joining.value is JoinUi.Confirm) return
+        if (opened) {
+            if (link == openedLookedUp) return
+            openedLookedUp = link
+        }
+        joining.value = JoinUi.Busy
+        viewModelScope.launch {
+            val found =
+                try {
+                    m.follower.lookUp(link)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    InviteLookup.Failed(JoinResult.Offline)
+                }
+            joining.value =
+                when (found) {
+                    is InviteLookup.Found -> JoinUi.Confirm(found.invite)
+                    is InviteLookup.Failed -> JoinUi.Failed(found.result)
+                }
+        }
+    }
+
+    /** *Follow* on the invite shown: joins as [name] (with a new picture); then monitoring starts, which sends the request. */
+    fun join(name: String) {
+        val invite = (joining.value as? JoinUi.Confirm)?.invite ?: return
+        joining.value = JoinUi.Busy
+        viewModelScope.launch {
+            val result =
+                try {
+                    m.follower.join(invite, profileFor(name))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    JoinResult.Offline
+                }
+            joining.value = if (result == JoinResult.Joined) JoinUi.Idle else JoinUi.Failed(result)
+            if (result == JoinResult.Joined) {
+                m.pendingInvite.value = null
+                openedLookedUp = null
+                // the follow's own link takes over: a second search would spend the shared scan budget
+                searching.value = null
+            }
+        }
+    }
+
+    /**
+     * *Cancel* (or Back) on the invite shown: nothing was sent. A link opened on this phone leaves the field too (the
+     * person may not have wanted it); a pasted one stays.
+     */
+    fun cancelInvite() {
+        if (joining.value !is JoinUi.Confirm) return
+        joining.value = JoinUi.Idle
+        m.pendingInvite.value = null
+        openedLookedUp = null
+    }
+
+    /** null = not looking; each new number starts a fresh search (after Bluetooth or the permission came back). */
+    private val searching = MutableStateFlow<Int?>(null)
+
+    /** *Find phones nearby*: Bluetooth looks only while the join step shows the list. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val nearbySearch: StateFlow<NearbySearch?> =
+        searching
+            .flatMapLatest { on ->
+                if (on !=
+                    null
+                ) {
+                    m.follower.findNearby().onStart { emit(NearbySearch(NearbyStatus.Searching, emptyList())) }
+                } else {
+                    flowOf(null)
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun findNearby(on: Boolean) {
+        searching.value = if (on) (searching.value ?: 0) + 1 else null
+        clearJoinError()
+    }
+
+    /** Bluetooth turned on / Nearby devices allowed: a running search starts again. */
+    fun refreshNearby() {
+        searching.value?.let { searching.value = it + 1 }
+    }
+
+    /** Asks the wearer whose phone offered *Pair nearby*; the search stops (the follow's own link takes over). */
+    fun joinNearby(
+        offer: NearbyOffer,
+        name: String,
+    ) {
+        if (joining.value == JoinUi.Busy) return
+        viewModelScope.launch {
+            joining.value = JoinUi.Busy
+            searching.value = null
+            val result =
+                try {
+                    m.follower.joinNearby(offer, profileFor(name))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    JoinResult.Offline
+                }
+            joining.value = if (result == JoinResult.Joined) JoinUi.Idle else JoinUi.Failed(result)
+        }
+    }
+
+    /** *Same code* uses the wearer's key; *Different code* ends the join and says why (back to the link and the list). */
+    fun confirmNearby(same: Boolean) {
+        viewModelScope.launch {
+            val done = m.follower.confirmNearby(same)
+            if (done && !same) joining.value = JoinUi.Failed(JoinResult.CodesDiffered)
+        }
+    }
+
+    private fun profileFor(name: String) =
+        name
+            .trim()
+            .take(Profile.MAX_NAME)
+            .takeIf { it.isNotEmpty() }
+            ?.let { Profile(it, Avatar.random(SecureRandom())) }
+
+    fun clearJoinError() {
+        if (joining.value is JoinUi.Failed) joining.value = JoinUi.Idle
+    }
+
+    fun completeJoin() {
+        searching.value = null
+        val facts = ui.value?.facts ?: return
+        record { SetupMachine.completeJoin(it, facts) }
+    }
 
     fun completePermissions() = record(SetupMachine::completePermissions)
 
@@ -241,10 +488,10 @@ class SetupViewModel(
             m.setupStore.update(SetupMachine::confirmAlerts)
         }
 
-    /** P10: called after the person confirmed what Start fresh means. */
-    fun startFresh() =
+    /** P10: called after the person confirmed what Start fresh means, with how they appear to followers. */
+    fun startFresh(profile: Profile) =
         act {
-            val created = m.sharing.startFresh()
+            val created = m.sharing.startFresh(profile)
             val facts = ui.value?.facts ?: return@act
             m.setupStore.update { SetupMachine.completeIdentity(it, facts.copy(hasIdentity = created || facts.hasIdentity)) }
         }
@@ -275,7 +522,14 @@ class SetupViewModel(
                 RestoreIdentity.Result.RelaysUnreachable
             }
         restore.value = if (result is RestoreIdentity.Result.Restored) RestoreUi.Restored(result.followers) else RestoreUi.Failed(result)
-        if (result is RestoreIdentity.Result.Restored) m.setupStore.update { SetupMachine.completeIdentity(it, u.facts.copy(hasIdentity = true)) }
+        if (result is RestoreIdentity.Result.Restored) {
+            m.setupStore.update {
+                SetupMachine.completeIdentity(
+                    it,
+                    u.facts.copy(hasIdentity = true),
+                )
+            }
+        }
     }
 
     fun clearRestoreError() {
@@ -283,6 +537,17 @@ class SetupViewModel(
     }
 
     fun skip(step: SetupStep) = record { SetupMachine.skip(it, step) }
+
+    /** *Bring it back*: the history step is done (written first, while this screen still lives), then [open] runs. */
+    fun openHistoryImport(open: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                m.setupStore.update(SetupMachine::completeHistory)
+            } finally {
+                open()
+            }
+        }
+    }
 
     private fun record(change: (SetupRecord) -> SetupRecord) =
         act {
@@ -311,6 +576,7 @@ class SetupViewModel(
         val role: Role?,
         val glucose: app.mauri.sukrara.core.model.GlucoseState,
         val share: OwnerShareState,
+        val follow: FollowState,
         val alerts: AlertSettings,
         val alertsConfirmed: Boolean,
     )
@@ -330,4 +596,3 @@ class SetupViewModel(
         ) = viewModelFactory { initializer { SetupViewModel(module, startAt) } }
     }
 }
-

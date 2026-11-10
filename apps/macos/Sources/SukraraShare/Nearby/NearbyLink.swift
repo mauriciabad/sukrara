@@ -37,13 +37,15 @@ public struct NearbyLink: Sendable {
 
     public var identity: Identity
     private let crypto: any NostrCrypto
-    private var perFrame: Int?
+    private var mtu: Int?
     private var reassembler = BleReassembler()
     private var outbox: [Pending] = []
     private var inFlight: Pending?
     private var msgId: UInt16 = 0
-    /// Our last HELLO nonces: an INFO must prove `sid` over one of them.
+    /// Our last HELLO nonces (at most `noncesKept`): an INFO must prove `sid` over one of them.
     public private(set) var nonces: [String] = []
+    /// How many HELLO nonces an INFO may answer (PROTOCOL-v2 "Bluetooth link"): a recorded older INFO proves nothing.
+    public static let noncesKept = 4
     /// The phone proved it's our wearer's.
     public private(set) var verified = false
 
@@ -52,17 +54,17 @@ public struct NearbyLink: Sendable {
         self.crypto = crypto
     }
 
-    public var isConnected: Bool { perFrame != nil }
+    public var isConnected: Bool { mtu != nil }
 
-    /// Notifications are on: start the protocol. `perFrame` = writable bytes per frame minus the 6-byte header.
-    public mutating func connected(perFrame: Int, nonce: String) -> [Effect] {
-        self.perFrame = perFrame
+    /// Notifications are on: start the protocol. `mtu` = the connection's ATT MTU (`NearbyCentral.attMtu`).
+    public mutating func connected(mtu: Int, nonce: String) -> [Effect] {
+        self.mtu = mtu
         return hello(nonce: nonce)
     }
 
-    /// HELLO with `nonce` (the last 4 are kept) and, once we know `sid`, the identity proof.
+    /// HELLO with `nonce` (the last `noncesKept` are kept) and, once we know `sid`, the identity proof.
     public mutating func hello(nonce: String) -> [Effect] {
-        nonces = Array((nonces + [nonce]).suffix(4))
+        nonces = Array((nonces + [nonce]).suffix(Self.noncesKept))
         var proof: String?
         if let sid = identity.sid, let follower = identity.follower {
             proof = try? HelloProof.sign(sid: sid, nonce: nonce, follower: follower, crypto: crypto)
@@ -100,7 +102,7 @@ public struct NearbyLink: Sendable {
     /// The connection is gone: everything queued fails.
     public mutating func disconnected() -> [Effect] {
         let failed = ([inFlight].compactMap { $0 } + outbox).compactMap(\.token)
-        perFrame = nil
+        mtu = nil
         outbox = []
         inFlight = nil
         verified = false
@@ -109,9 +111,9 @@ public struct NearbyLink: Sendable {
     }
 
     private mutating func enqueue(_ payload: Data, token: Int?) -> [Effect] {
-        guard let perFrame else { return token.map { [.sent(token: $0, ok: false)] } ?? [] }
+        guard let mtu else { return token.map { [.sent(token: $0, ok: false)] } ?? [] }
         msgId &+= 1
-        let frames = BleFraming.frames(msgId: msgId, payload: payload, perFrame: perFrame)
+        let frames = BleFraming.frames(msgId: msgId, payload: payload, mtu: mtu)
         for (i, frame) in frames.enumerated() {
             outbox.append(Pending(frame: frame, token: i == frames.count - 1 ? token : nil))
         }

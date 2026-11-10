@@ -1,0 +1,306 @@
+{
+    "v": 1,
+    "about": "Owner → follower sequence 'sensor-life' (contracts/protocol/sync/README.md). Throwaway keys, synthetic data.",
+    "keys": {
+        "I": {
+            "sec": "49c56efe45711db397cc7aae0bf6b5a0de5f2bbe65e4272f2acd29f514111409",
+            "pub": "cf4e0f449b84d73112efdb97730e0aff75b213b2ef9e0947177a0c1f9139e972"
+        },
+        "D": {
+            "sec": "1f517459ffeec1872c8ed3db3b9b944533f4d67f411070ed8e979c0a8f32dc6a",
+            "pub": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974"
+        },
+        "D2": {
+            "sec": "0b53a61ae9954d98bc11b6aa238fa0fd22b3f87f80ff421c7132d492b367a86c",
+            "pub": "e8f25d35bc09ed61bc669fa9f33d96bad3c31db5f2a20703f6191cf83d0b49e1"
+        },
+        "W": {
+            "sec": "97f4fcce9ec27ea64bf770c61f60347e2fc8e9cec36500a83135a76888d8c802",
+            "pub": "59dc1e07fd4130eabe3964319dbee4117e067e6108aa0b3f1a5a843ae0fb4489"
+        },
+        "F": {
+            "sec": "1d7252c5c2323b79cab7e9cb2dbe8f6724d98f23ab50e52e23ce359098389387",
+            "pub": "441dfd2506793cad7f56836950b48b1ea3b4ddc312fa951626ee4162a1970994"
+        },
+        "G1": {
+            "sec": "37beb56c0fb3f501b7fe8bab3ce768956c2ec4fcc0bcbb9bbdec8a5e80fd71d8",
+            "pub": "82ad7d84c0d8dc12a706a416d37512e5f2daaead9ab3ad201bbe4f6434234c6a"
+        },
+        "G2": {
+            "sec": "9abad26e11e08f9b96958c9e25981670dfe849b19feeef1f3cef1bd4a25aa84d",
+            "pub": "c2421f3256af8ec9fc5dd5fdc94dab1f6f4d01609df5410d2837bb3cc321767b"
+        },
+        "G3": {
+            "sec": "1b75d173b4e978c701e9c68ac7c5a6b891495d8e428e3ac71b2dddab7aa4341a",
+            "pub": "cf8e193d57c7f66fcf6e92f0b8f9a127a94acbac57f0d79d2a9be550805f7cdf"
+        }
+    },
+    "sid": "74767bf125c92e2efb705d29cb173f5bafda20bce46bf81e1a0a603e854c913a",
+    "follower": "F",
+    "identity": "cf4e0f449b84d73112efdb97730e0aff75b213b2ef9e0947177a0c1f9139e972",
+    "now": 1792087200,
+    "events": {
+        "key-1": {
+            "id": "ea89356705bc0702f859a97b5d7668308297203981d3704905cdc35abfe396ce",
+            "pubkey": "24cde45fc75c117357c9dff2f94118b8f96ef01f0865eefbc4040a1cc861e996",
+            "created_at": 1794213173,
+            "kind": 1059,
+            "tags": [
+                [
+                    "expiration",
+                    "1794679200"
+                ],
+                [
+                    "p",
+                    "441dfd2506793cad7f56836950b48b1ea3b4ddc312fa951626ee4162a1970994"
+                ]
+            ],
+            "content": "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",
+            "sig": "d125f1a87fae39e1fd00f7e9f86f6735fcd7dae2deec9823e93d8cc4c1acd26fe1e72cf27d03ad16f540c731b43f2442496cad314d6a04cb2c1a398b611ec990"
+        },
+        "roster-1": {
+            "id": "402822349f1bdf366f2649a2b63624ea14eafb19ed40cbb7c93be7971d03b04a",
+            "pubkey": "cf4e0f449b84d73112efdb97730e0aff75b213b2ef9e0947177a0c1f9139e972",
+            "created_at": 1792087100,
+            "kind": 30078,
+            "tags": [
+                [
+                    "d",
+                    "011e14378379a46c5944f25e5f183239"
+                ],
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1794679100"
+                ]
+            ],
+            "content": "ArpGxe/s4z9Vk9TCjL1hZvc0/7ONpF1tUClCQMiWUfDZfRB2SuYKkNeU4XmQOMAwii6K7SQuNkKFOfMZ8gYlwozMSHmBmox8PNVTRda3OWaO64uCbVpSi4ZYDRS2bDQyVezgJNjcgHn98LVDLc581uzs6QCFXPbWWD2gmQh0FlvJ/pkL9Yh4na1eMWiduXSe9qg6zbSC5sYN4W+WZiiO8wRO2vD8T9wEoaABeb5SmR1LIUMVJgJ8e52ePYEJiUA7zguqNSfJia/CpiYsfM8lhsa3a/wNUybiPNQI8r5DezkeYho=",
+            "sig": "fec14fc63a356344b74fb5656537017d7de2e405b0bb4f2e980fa404b5cd6973ae3e93c1379ea1f14a83d0760a1eb633cb057e506a5f2ebe1842f6dc0a66cb85"
+        },
+        "live-old-sensor": {
+            "id": "b51e4063ed3b3e70af534d00810fbf65a71b33e69acab9bb817d367fc46c7483",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792083805,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792087405"
+                ]
+            ],
+            "content": "AiKjdCCv9L+vwseUFNHxdga3HCL/ssQzEpLkUwwhy96/0TGcVh9HfRY2ogoHqwCRXq+vyJ3mIbYOPxJ9JuXQX7o0XXa5R3hGf4LzvTI2zKZESo0ws39TgcuSw0f5deXQ+i+lRRcxtvGqXWgzynmJUXR/PAmVO/GmeLUrri+dLy5NNdPfZCUb6+QDlYqeePKak34qr3YY0ND4w+7jOpwP+qlSScalXIuzFUfTpcB1liBRvhdSds8idBPB3H3nIAfg4RQH",
+            "sig": "7135123bd04e534d07676080a27832ae79145fc52ee36713656bf9f83b74c21430c8a97b0345ac4cd933bf30df6444c3f4bdeeb13159465a74861058ed466c23"
+        },
+        "sensor-ended-early": {
+            "id": "18b3de033ba99eb849abdeda8f098a499ed2bfee139767e0180fcacf59c8e237",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792083900,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792087500"
+                ]
+            ],
+            "content": "Ah1AJD+8S7NVyQyi2HGdGdLNuCK7SzpTAQxwMRFa00y93oBNHMACE6c7ZMQTVX7nRn7NUkkcI1qGmFwEoO3ETe4cKrHgYQvDO0syZnpLam00Y0VP4GpB1IGBGLnCLK10vJaE9NnXpFJ/Z1EBCuEM4WhSpydes0x8+Ht2+McY1n87wqA=",
+            "sig": "03fbac9f99ce0db6f0d1e592aac2bdd1f6800a6f5f4f1d81a5656a60c38f18cd79f98b185d2a375eed597e997cf77388f36e1c302d5c04e067034c704acc9a25"
+        },
+        "sensor-removed": {
+            "id": "2ef8e26dcdc94b80af172a7f8f9df7ed041135e4c7a5845bb821969a688f7bfa",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792083950,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792087550"
+                ]
+            ],
+            "content": "AuoBn/4BauR/8BBlh1FAi0NLpMI0474Hp91/UAPvYQSZVlnMRainwBdQxOeZwTIp1q+ohV012TQ0LS71SADp2UjrccsDRvdS29LQkQFHcBq8BwiJrux+cK34Ug4AlD9QUKl8",
+            "sig": "95c7fdb14eeb530b48ecccfc1e4f8c9a2428b030b2f6d8d8b4c31117ae4f0daf37e9b396bcfeadb90b0c82a15e5acfad60ae13dd2ebf22f7c9dcea15b99238eb"
+        },
+        "sensor-new-warming": {
+            "id": "5d0ca3aa0732082e847d3390f98a66d8ef63b46bf7cff38af535d7764270c79a",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792084000,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792087600"
+                ]
+            ],
+            "content": "AgfSGtRgqAjLuiKudLN2jrKsEICIVVhMlpmgxeIdYoSyVmuMKoUkAnciNjGPhSmStHeess+jR5kAk766rr/s8QF97i9aYIPHKNngbXVhiWNXQeQ411qaGpinfGZx+8X4yYzVmN0v1ZmXg0AkJ6ToPpqXxaTCEGvPLp08VgUam0ZFquQ=",
+            "sig": "484699fa1040c995a958fe36b0d71dccabcdc11619e62fde28ad790cc05c91e9ff5ba67f21c0aa83564fd53043305fd26f24af9ab809ea2bfb1fbbf1363439da"
+        },
+        "sensor-warming-tick": {
+            "id": "88ad667c4951edfe5b582184c78c7b39652935e9cf4d9a232cc909fd599d2f7c",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792084300,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792087900"
+                ]
+            ],
+            "content": "AjHDTZMMgPsvi8WG6CTtLhZEBg7HRkFKzAxQJQG7aABkpqNHhBL/+Q05uZU8WWPZK6Gs4MP1KFXXjnNjzQTptyGYb0vh45jDtLiGulBbt0ysijR6qCgautob4Iu1Ykur5mZ4oWYwWJY++jUUQl1I9goZXNiSBm0kh5CE3m9Vlltx2ns=",
+            "sig": "3eb28f316f4abdb1f61245491c79e2f0b6e36f393561ade5c1ace66b3d5e3f45f29303b36faf5fc1c376035760f787bfe481a7d13b49132de0611f98eb49c883"
+        },
+        "live-first-reading": {
+            "id": "084aad901f1363c14b7ff05ec021cf81c8ac220a5ecf7cd5eff33694bbe511b0",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792087145,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792090745"
+                ]
+            ],
+            "content": "Au7Gee+jODHoEHtSW4pbbSzJPyOiKlNInbvfsOO4eNwks4tV2RhOxWlgmet6Wapnu47H/dqJNwNr4cQb3dos8SHfraxJ//U5w7MFdiJ7d4PLGyUgZ49YM24mRFtTlfz2OGalN5MnjdOZ2bK3AIaSSl2YcqRPiAySzQR3nrNgZqSxc6GMQoHWDqLimDxyHopSWnkiRzVC9BMvLoyfVZRVWZSmbZJhUcZCTuvRIibiCFVXnnluzBrAb3yZB66UOCr/BVWD",
+            "sig": "a4a2e09ad364b14a4a31bd4d7e38b7a46c1172bb009d31280ba49f3dfb6f9f765533c1e762636f397bfe7b7814118a087b41b659e47bd98a4827774d859038ef"
+        },
+        "live-old-backlog": {
+            "id": "f19fe9dbfcb21093ba984734422c2be91bde494bbffd374746f1613f761f3318",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792083855,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792087455"
+                ]
+            ],
+            "content": "AmG+alDifgTyiZMe7UtyMnJErRcJYCgsGVNbkBaU2plBx4MCG4tnWhGUDhr8ZhwHshsnbqDrk9vMZb9WzK5oUx1h6oqxxVvKFtUdK5YcMWgUopo0pZyrZDs+a69AhxZ1nyb16h8GtrhauWr3c5PB+TKEnOSthy5ka09eZmn0tFGeZnkDoX9pJc7sEolmbBTfeqU20kH+QtJbreunLEe2IQ6LSoW3nqbTTxU/LuFZDApyWwTCXUR27y8qffUpVkd0QFOv",
+            "sig": "47e7440d7d036237dfaf0aac16cd2031fe5ae1b41f7503eaa96249eba0be1492b0b0f5193d3c5b29aaf2029b06bff88d3d4616026951e1413f14b2f8336842c7"
+        },
+        "live-future-sensor": {
+            "id": "be9cd43687d219e4d1fa12d080627affe5753922c63fc7cf44dc0d5604d8b5c2",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792087605,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792091205"
+                ]
+            ],
+            "content": "Ah6jXYb7lcF3cNm3HPqhM15GhlAQ9g68/wTd1lP3f2mHIaSqxvmt/VHieT9wWQvNXDCvLC5NFi/EA8uLoIXW3Z4FLLov80YbguWZ9qwywIhNYwI7N3jX0G7WBJUORbq3Dtn0fckH650g8IIh2TEhB2fT+vAJIURbe9L/8UGpPLnBQZMxNEUga6eALae2tkiq3ifhZ/Asl+v3P2mt6lOJAmaOtdiR6kQRUwBf8umlavoJprS/fYHsL3TQPBqVwhPLiQEn",
+            "sig": "1b2603d8baee06944fda48de2d17180f4118d5f28c43f75f7d1d275606f85df70fb53d321de85f00445f36340ffb26c7bfeba84cf6d120a1cd84efc548b587dc"
+        }
+    },
+    "steps": [
+        {
+            "event": "key-1",
+            "expect": "accepted:key"
+        },
+        {
+            "event": "roster-1",
+            "expect": "accepted:roster"
+        },
+        {
+            "event": "live-old-sensor",
+            "expect": "accepted:live"
+        },
+        {
+            "event": "sensor-ended-early",
+            "expect": "accepted:sensor"
+        },
+        {
+            "event": "sensor-removed",
+            "expect": "accepted:sensor"
+        },
+        {
+            "event": "sensor-new-warming",
+            "expect": "accepted:sensor"
+        },
+        {
+            "event": "sensor-warming-tick",
+            "expect": "accepted:sensor"
+        },
+        {
+            "event": "live-first-reading",
+            "expect": "accepted:live"
+        },
+        {
+            "event": "live-old-backlog",
+            "expect": "accepted:live"
+        },
+        {
+            "event": "live-future-sensor",
+            "expect": "rejected:reading-in-future"
+        }
+    ],
+    "expected": {
+        "status": "active",
+        "epochs": [
+            1
+        ],
+        "devices": [
+            "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974"
+        ],
+        "writers": [],
+        "wearer": null,
+        "readings": [
+            [
+                1792083800,
+                140,
+                0.5
+            ],
+            [
+                1792083850,
+                138,
+                -0.5
+            ],
+            [
+                1792087140,
+                101,
+                null
+            ]
+        ],
+        "sensor": {
+            "ss": 1792084000,
+            "se": 1793380000,
+            "sw": 1792087000
+        },
+        "treatments": [],
+        "settings": null,
+        "alerts": 0
+    }
+}

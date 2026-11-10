@@ -11,7 +11,8 @@ Juggluco checkout (a release build fails without it). Architecture: [`docs/ARCHI
 cd apps/android
 ./gradlew :core:alerts:test             # one JVM module's tests (fast: prefer targeted tasks)
 ./gradlew :monitor:testDebugUnitTest    # one Android module's tests
-./gradlew :app:assembleDebug            # debug APK (app.mauri.sukrara, debug key)
+./gradlew :app:testFullDebugUnitTest    # the app module's tests (it has flavors: full = GitHub, play = Google Play)
+./gradlew :app:assembleFullDebug        # debug APK (app.mauri.sukrara, debug key); assemblePlayDebug for the Play build
 ./gradlew check                         # everything CI runs: unit tests + lint (slow)
 ```
 
@@ -28,7 +29,7 @@ Several agents build in parallel on one 16 GB Mac: run the tasks of the module y
 | `:core:alerts` | JVM | the pure alert engine |
 | `:core:protocol` | JVM | Nostr protocol v2 wire formats (no nostr-sdk) |
 | `:core:data` | Android | DataStore settings/state, SecureStore, Room |
-| `:core:designsystem` | Android | theme, motion, shared rows |
+| `:core:designsystem` | Android | theme, motion, shared rows, the avatar renderer (uses `:core:protocol`'s `Avatar`) |
 | `:core:graph` | Android | the one card/graph renderer |
 | `:monitor` | Android | `GlucoseHub` implementation, monitoring service, alert runtime, notifications |
 | `:sensor` | Android + JNI | Bluetooth link, Libre 3 (native core `Libre3Crypto`), pairing, Juggluco source |
@@ -67,7 +68,8 @@ Packages follow the module path: `:feature:home` → `app.mauri.sukrara.feature.
   `AndroidAlertReadiness`) is THE alert-readiness checklist. Home's banner (`HomeModule`), Settings › Alert reliability
   (`SettingsModule(readiness = …)`) and the setup permission step (take it in `SetupModule`'s constructor
   from `alerts.readiness`, don't build a second checker) render the same instance: `readiness` (StateFlow), `refresh()`
-  on resume, `fix(item)` opens the Android screen. Runtime permissions that need an Activity (POST_NOTIFICATIONS,
+  on resume, `fix(item)` opens the Android screen. It is also the one answer for the alert runtime's failed steps
+  (`AlertUiState.failedSteps` → `AlertRequirement.AlertDelivery`): no other "delivery problem" check exists. Runtime permissions that need an Activity (POST_NOTIFICATIONS,
   BLUETOOTH_CONNECT) are requested by the screen; the source then re-reads on the next resume.
 - **Role**: `graph.role` (`RoleStore`, a `StateStore<RoleRecord>`) keeps the role in `role.json` + `role-backup.json`;
   setup writes it with `graph.role.update { it.copy(role = …) }` (never the typed store directly), so a damaged file
@@ -75,7 +77,9 @@ Packages follow the module path: `:feature:home` → `app.mauri.sukrara.feature.
 - **Debug fakes**: `app/src/debug` has `DebugReceiver` / `DebugFakes` and `BuildVariant` (the release copy in
   `app/src/release` returns no test source). `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver
   -a app.mauri.sukrara.debug.SYNTHETIC --ez on true [--ei cycle 135] [--ez frozen true]` replaces the sensor with a
-  made-up 45–215 mg/dL curve on the emulator (`cycle 135` = its lowest point now); `--ez on false` removes it.
+  made-up 45–215 mg/dL curve on the emulator (`cycle 135` = its lowest point now; `--ei endsInMin N` ends the sensor
+  in N minutes, `--ei warmupMin W` makes it a new sensor warming up for W minutes: the countdowns on an emulator);
+  `--ez on false` removes it.
 - **Manifest**: a module declares its own components in its `src/main/AndroidManifest.xml`. Exported components
   need a permission (ManifestTest lists the allowed exceptions). Debug-only tools live in `app/src/debug`.
 - **Strings**: every user-visible text in the module's `res/values/strings.xml` and `res/values-es/strings.xml`.
@@ -115,7 +119,7 @@ Fakes in `:core:testing`: `FakeClock` (settable time and zone), `TestDispatchers
 | `debug.DebugReceiver` (exported, `DUMP`) | `:app` `src/debug` | debug builds only |
 | `MonitoringService` (FGS `connectedDevice`), `BootReceiver`, `AlertCheckReceiver`, `AlertActionReceiver`, `HealthCheckReceiver` | `:monitor` | live |
 | `AlertSoundProvider` `${applicationId}.alertsound` (exported read-only for System UI) | `:monitor` | live |
-| `SensorTapActivity` (NFC, `DISPATCH_NFC_MESSAGE`) | `:sensor` | declared disabled (taps are read by the new-sensor screen) |
+| `SensorTapActivity` (NFC, `DISPATCH_NFC_MESSAGE`) | `:sensor` | disabled until *Open Sukrara when you scan a sensor*; opens the new-sensor flow (not while a sensor is being read) |
 | `PenTapActivity` (NFC), `PenReadActivity` | `:pen` | tap activity enabled only while pens are on |
 | `TreatmentTileService`, `QuickTreatmentActivity` | `:feature:treatments` | live |
 | `FileProvider` `${applicationId}.export` | `:integrations` | live (not exported) |
@@ -129,9 +133,13 @@ broadcast): `:sensor` / `:share` register it at runtime while monitoring runs.
 - Version from `<repo>/VERSION` (`0.12.0` → versionCode 12000; `BuildConfig.PRERELEASE` while major is 0).
 - Signed with `SUKRARA_KEYSTORE` (default `~/.android/sukrara-release.jks`, alias `sukrara`); the password comes only
   from env `SUKRARA_KEYSTORE_PASSWORD` (Gradle never reads the Keychain):
-  `SUKRARA_KEYSTORE_PASSWORD="$(security find-generic-password -s sukrara-android-release -a sukrara -w)" ./gradlew :app:assembleRelease`.
+  `SUKRARA_KEYSTORE_PASSWORD="$(security find-generic-password -s sukrara-android-release -a sukrara -w)" ./gradlew :app:assembleFullRelease`.
+- Two flavors, one package and key (docs/20-publishing.md › Flavors): `full` (GitHub: `assembleFullRelease`, an APK,
+  `tools/release/android-release.sh`) and `play` (Google Play: `bundlePlayRelease`, an app bundle,
+  `tools/release/play-bundle.sh`). The play flavor's differences are all in `app/src/play` (`Store`, the manifest).
 - The Libre 3 core comes from Juggluco (`-Psukrara.juggluco=…`, env `SUKRARA_JUGGLUCO`, else
   `<main checkout>/third_party/Juggluco`) at the commit in `sensor/juggluco.lock`, clean tree. Debug builds without
-  it only warn (the app reports the missing core). Any release output (`preReleaseBuild`) fails without the key or
-  the pinned checkout, and `assembleRelease` / `installRelease` fail if the APK lacks `lib/arm64-v8a/libsukrara_libre3.so`.
+  it only warn (the app reports the missing core). Any release output (`pre<Flavor>ReleaseBuild`) fails without the key
+  or the pinned checkout, and assembling, installing or bundling a release fails if the APK / bundle lacks
+  `lib/arm64-v8a/libsukrara_libre3.so`.
 - `local.properties` (`sdk.dir=…`) is needed once per clone/worktree when `ANDROID_HOME` isn't set.

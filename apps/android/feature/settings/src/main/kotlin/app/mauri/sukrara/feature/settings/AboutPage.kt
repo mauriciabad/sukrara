@@ -15,66 +15,82 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** Checks for an update once when the About page opens (and on *Check again*); never polls. */
+/** The privacy policy on the site (docs/privacy.md): what Sukrara stores and sends, and where. */
+const val PRIVACY_URL = "https://sukrara.mauri.app/privacy"
+
+/**
+ * Checks for an update once when the About page opens (and on *Check again*); never polls. Without [releases] (the
+ * Google Play build: Play brings the updates) there is no check and [state] stays null.
+ */
 class AboutViewModel(
-    private val releases: ReleasesSource,
+    private val releases: ReleasesSource?,
     val installed: String,
     private val prerelease: Boolean,
 ) : ViewModel() {
-    private val _state = MutableStateFlow<UpdateState>(UpdateState.Checking)
-    val state: StateFlow<UpdateState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<UpdateState?>(null)
+    val state: StateFlow<UpdateState?> = _state.asStateFlow()
 
     init {
         check()
     }
 
     fun check() {
+        val source = releases ?: return
         _state.value = UpdateState.Checking
-        viewModelScope.launch { _state.value = UpdateCheck.state(releases.fetch(), installed, prerelease) }
+        viewModelScope.launch { _state.value = UpdateCheck.state(source.fetch(), installed, prerelease) }
     }
 }
 
-/** What a release file is for, from its name ("Mac", "Android"); unknown kinds show their file name. */
-@Composable
-private fun platformOf(name: String): String =
-    when {
-        name.endsWith(".apk") -> stringResource(R.string.st_asset_android)
-        name.endsWith(".dmg") || (name.contains("mac", ignoreCase = true) && name.endsWith(".zip")) -> stringResource(R.string.st_asset_mac)
-        else -> name
-    }
-
-/** About: version, update check, Sukrara on other devices, report a problem. */
+/**
+ * About: version, update check (none when [update] is null: the Google Play build), Sukrara on other devices, report a
+ * problem, source code, privacy policy.
+ */
 @Composable
 fun AboutContent(
     installed: String,
-    update: UpdateState,
+    update: UpdateState?,
     onCheckAgain: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     SettingsPage(stringResource(R.string.st_about_title), onBack) {
         SettingsGroup {
-            InfoRow(stringResource(R.string.st_about_version), summary = installed)
+            InfoRow(stringResource(R.string.st_about_version), summary = installed, icon = DsR.drawable.ds_ic_info)
             when (update) {
-                UpdateState.Checking -> InfoRow(stringResource(R.string.st_update_checking))
+                null -> {}
 
-                is UpdateState.UpToDate ->
-                    NavigationRow(stringResource(R.string.st_update_none), onCheckAgain, summary = stringResource(R.string.st_update_check_again))
+                UpdateState.Checking -> {
+                    InfoRow(stringResource(R.string.st_update_checking), icon = DsR.drawable.ds_ic_update)
+                }
 
-                is UpdateState.Available ->
+                is UpdateState.UpToDate -> {
+                    NavigationRow(
+                        stringResource(R.string.st_update_none),
+                        onCheckAgain,
+                        summary = stringResource(R.string.st_update_check_again),
+                        icon = DsR.drawable.ds_ic_check_circle,
+                    )
+                }
+
+                is UpdateState.Available -> {
                     NavigationRow(
                         stringResource(R.string.st_update_available, update.release.tag.removePrefix("v")),
                         { context.openUrl(update.release.url) },
                         summary = stringResource(if (update.release.prerelease) R.string.st_update_prerelease else R.string.st_update_open),
+                        icon = DsR.drawable.ds_ic_download,
                     )
+                }
 
-                UpdateState.Offline ->
+                UpdateState.Offline -> {
                     NavigationRow(
                         stringResource(R.string.st_update_offline),
                         { context.openUrl(UpdateCheck.RELEASES_URL) },
                         summary = stringResource(R.string.st_update_offline_summary),
+                        icon = DsR.drawable.ds_ic_download,
                     )
+                }
             }
         }
         val latest =
@@ -83,15 +99,26 @@ fun AboutContent(
                 is UpdateState.UpToDate -> update.latest
                 else -> null
             }
-        val others = latest?.assets.orEmpty().filterNot { it.name.endsWith(".apk") }
+        val others = latest?.let(UpdateCheck::otherDevices).orEmpty()
         if (others.isNotEmpty()) {
             SettingsGroup(title = stringResource(R.string.st_other_devices)) {
-                for (asset in others) NavigationRow(platformOf(asset.name), { context.openUrl(asset.url) }, summary = asset.name)
+                for (asset in others) {
+                    NavigationRow(stringResource(R.string.st_asset_mac), {
+                        context.openUrl(asset.url)
+                    }, summary = asset.name, icon = DsR.drawable.ds_ic_download)
+                }
             }
         }
         SettingsGroup {
-            NavigationRow(stringResource(R.string.st_report_problem), { context.openUrl(UpdateCheck.ISSUES_URL) }, summary = stringResource(R.string.st_report_problem_summary))
-            NavigationRow(stringResource(R.string.st_source_code), { context.openUrl(UpdateCheck.REPO_URL) }, summary = stringResource(R.string.st_license))
+            NavigationRow(stringResource(R.string.st_report_problem), {
+                context.openUrl(UpdateCheck.ISSUES_URL)
+            }, summary = stringResource(R.string.st_report_problem_summary), icon = DsR.drawable.ds_ic_bug_report)
+            NavigationRow(stringResource(R.string.st_source_code), {
+                context.openUrl(UpdateCheck.REPO_URL)
+            }, summary = stringResource(R.string.st_license), icon = DsR.drawable.ds_ic_code)
+            NavigationRow(stringResource(R.string.st_privacy), {
+                context.openUrl(PRIVACY_URL)
+            }, summary = stringResource(R.string.st_privacy_summary), icon = DsR.drawable.ds_ic_privacy)
         }
     }
 }

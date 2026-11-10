@@ -3,7 +3,8 @@
 "One graph everywhere" as data: each `*.json` here holds `cases` that both renderers must decide the same way.
 
 - Android: `GraphFixtureTest` in `:core:graph` (`cd apps/android && ./gradlew :core:graph:test`)
-- Mac: `GraphTests` (`cd apps/macos && swift test --filter GraphTests`)
+- Mac: `GraphTests` (`cd apps/macos && swift test --filter GraphTests`); `status.json` also through the alert engine and
+  `CardAlertsMapping` in `StatusFixtureTests` (AppTests)
 - CI runs both (`.github/workflows/checks.yml`); `tools/check` reminds you to add a case when the card code changes.
 
 A case: `name`; optional `settings` (alert settings JSON, ../alerts/SPEC.md §3, missing keys = defaults);
@@ -24,10 +25,12 @@ A case: `name`; optional `settings` (alert settings JSON, ../alerts/SPEC.md §3,
 
 The layout dump: which treatment labels are drawn, where and with what text (rules: docs/16-graph.md, "Treatment
 labels"). Run by `GraphFixtureTest.labels` (Android) and `-graphselftest` (Mac), which also checks that SF Pro's real
-width of each label fits the width model. A case: `name`; `chart` `{w, h}` (the chart's area, dp); `hours` (window);
+width of each label fits the width model. A case: `name`; optional `locale` (`es`: the labels' times in Spanish, "1 h 35 min", "ahora": the widths the Spanish card lays out, #77); `chart` `{w, h}` (the chart's area, dp); `hours` (window);
 `pct` (time in range has data, so the % column shows where the chart is ≥ 240 dp wide); `treatments` as above
 (`k`: rapid | long | carbs | note; times relative to "now"). Optional `marks` (Treatments on the graph): absent = the defaults (carbs: point
-only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). The file's `pctLabel` and `valueLabel` stand in for the widest
+only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). Optional
+`fontScale` (the system font size, absent = 1): the chart's text scale is it capped to 1…1.3 (`GlucoseGraph.textScale`):
+the labels, their rows and the side columns' widest labels grow by it; the geometry (marker spacing, the gap between labels, the 90 dp second-row threshold) doesn't. The file's `pctLabel` and `valueLabel` stand in for the widest
 % label and the widest value on the right (dp; the real ones are measured with the drawing font): each side column is
 it plus the gap of `layout/rules.json` on each side. `expect`:
 
@@ -41,6 +44,10 @@ it plus the gap of `layout/rules.json` on each side. `expect`:
 Positions are rounded to 0.5 dp; Android computes in `Float`, the Mac in `Double`. To add a case, write it with an
 empty `expect`, run `GraphFixtureTest` (`--rerun`: Gradle doesn't see the fixture files as inputs), check the dump in
 the failure message against the rules, paste it, and run the Mac self-test.
+
+## The card's words (`words/words.json`)
+
+Every word the card draws, English and Spanish (#77): the pill (*Eat carbs* / *Come hidratos*, *45m left* / *quedan 45 min*), the short durations (`duration_*`), the slots' periods and names (`period_*`, `slot_*_short`), the value's place (`card_*`), the range words and the chart's *Now*. Keys are Android's `core/graph` string names; run by `CardWordsFixtureTest` (Android, the resources' raw text in each language) and `CardWordsFixtureTests` (Mac, `CardWords.drawn` filled with the file's sample arguments). The Mac keeps these words in code (`CardWords`, SukraraGraph/A11y.swift: the widget extension has no String Catalog), so this file is what keeps the two in step. `layout/rules.json` `warmup` lists the Spanish warm-up words too (`es`), and the Mac renders the whole layout matrix a second time in Spanish (`LayoutTests.spanishWordsLayOutTheSameOnEverySurface`).
 
 ## Where the sensor badge goes (`place/place.json`)
 
@@ -65,10 +72,10 @@ start + 60 min). `expect`:
 | key | meaning |
 |---|---|
 | `label` | the badge text, English words: ≥ 24 h left → whole days (`13d`), ≥ 1 h → hours (`20h`), else minutes (`45m`, `0m` once ended) |
-| `ended` | `now ≥ end`: badge in the alert colour, "Sensor ended" once readings stop |
+| `ended` | `now ≥ end`: while readings keep arriving the value stays (with the `pill`), "Sensor ended" once they stop (#3) |
 | `life` | the disc's arc: share of the sensor's life left, 1 → 0 (± 0.001) |
 | `warmup` | while warming up (no reading since the start, ≤ 15 min past the warm-up's end) the card's figure, minutes rounded up (`42m`), from 60 of them hours (`1h`: one rounding, so 59:15 left is `1h`), `Almost ready` from the warm-up's end until the first reading (never `0m` or less); `null` = not warming |
-| `pill` | ended → the action pill under "Sensor ended", `{kind: "sensor", text, short, tonal}` (StatusBadge.replaceSensor, English words); else `null` |
+| `pill` | the sensor's pill for a reading at `latest` (`StatusBadge.sensor`, English words), `{kind: "sensor", text, short, tonal}`: ended with a fresh or late reading → "Ended · Replace sensor" beside the value; ended without one (none, or ≥ 5 min old) → "Replace sensor" under "Sensor ended"; else `null` |
 | `ring` | the ring over the main ring: warming → the warm-up done (fills 0 → 1); else the countdown, share of the window left; `null` = no ring (more than the window left, or ended) (± 0.001) |
 
 ## Clock (`clock/*.json`)
@@ -105,6 +112,30 @@ The ring's crown / laurel and the % column's crown (docs/FEATURES.md, "Time-in-r
 | `crown` | whether the column's 100 wears the crown |
 | `flower` | the laurel's flower (`Bloom`): `none`, `lavender` (95), `forget_me_not` (96), `daisy` (97), `cherry` (98), `rosette` (99 and the crowned 100) |
 
+## Range word (`range/range.json`)
+
+The range in words under an out-of-range value, so no card says it by colour alone (#26, WCAG 1.4.1; docs/FEATURES.md,
+"Range in words"): `RangeState.shown` on both platforms. A case: `name`; `sgv`; optional `age` (the reading's, s,
+default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, tonal}`, the status pill the card draws;
+absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
+`text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
+
+## Spoken sentence (`spoken/*.json`)
+
+THE sentence TalkBack and VoiceOver say for the card on every surface (#25; docs/FEATURES.md, "Spoken sentence"): `A11y`
+on both platforms. Run by `SpokenFixtureTest` (Android) and `SpokenFixtureTests` (Mac). Every case's `expect` is
+`{en, es}`, the exact sentence; `{time}` stands for `Freshness.timeText` of the reading (the clock's own format).
+
+`card.json` (`A11y.card`): optional `reading` `{age, sgv, rate?}` (absent = none yet), `history` `{sgv, hours}` (a reading
+every 5 min before it at that value), `sensor` `{start, end}` (s from now; warm-up ends an hour after the start),
+`status` (`needed:low|high`, `taken:carbs|rapid:<end>`, `paused:low|high:<end>`, `muted:<end>`; `<end>` = s from now or
+`never`), `unit` (`mmol`; default mg/dL; ../settings/units.json) and `card` (the place's style:
+`value` (default true), `graph` (the chart's hours; absent = no chart), `badge` (default true), `rings`
+`[{kind, window, range?}]`, `sensorTime` (default false), `countdownHours`).
+
+`slots.json` (`A11y.metric` / `A11y.last`): `slot` `{kind, range?, window, text}` (`text` = the number the slot draws,
+`<0.1` / `>99.9` included) or `last` `{k, a, age}` with an optional `with` (the carbs drawn inside running insulin).
+
 ## Trend arrow (`trend/trend.json`)
 
 The one trend arrow per platform (`TrendAngle`): a case is `rate` (mg/dL/min, null = no trend) and `expect`
@@ -116,12 +147,16 @@ title in `LiveNotificationContentTest`), Mac `TrendFixtureTests` (plus the menu 
 ## Freshness steps (`freshness/freshness.json`)
 
 What every glucose surface shows as the latest reading ages (90 s time, 5 min struck + grey + "no trend" ring, 20 min
-"no readings" icon, 3 h no chart), through the one shared `Freshness.look` per platform. The file also holds the
+"no readings" icon, 3 h no chart), through the one shared `Freshness.look` per platform; a sensor past its end keeps
+its value with the `ended` flag while its readings keep arriving, and is "Sensor ended" once they stop (#3). The file also holds the
 **surface registry** (`surfaces.android` / `surfaces.mac`: id → files): `FreshnessFixtureTest` (Android, Robolectric on
 JDK 21) and `-graphselftest` (Mac) render every case through one adapter per surface id and fail when a listed surface
 has none; `tools/check` `freshness-surface` scans the listed files (no value formatted outside the look, no own
 thresholds). A new glucose surface: add it to the registry, write its adapter on its platform. `steps` pins the redraw
-times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays with Android's alarm.
+times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays with Android's alarm. `times` pins what the
+reading's time says (`Freshness.timeKind`: `time` = the clock time, today's and at most 12 h old; `day` = the weekday
+with it, from 12 h or on another day; `date` after 6 days), run by `FreshnessFixtureTest.times` and
+`FreshnessFixtureTests.timeKinds` in UTC.
 
 ## Surfaces and layout across surfaces (`surfaces/surfaces.json`, `layout/*.json`)
 
@@ -147,6 +182,14 @@ times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays wit
 - `layout/rules.json` `distribution`: the distribution's dot pitch, dot radius and the outline erased around the dots
   (`cut`, dp); both renderers' constants must equal them and every drawn distribution's erased box
   (`chart.distribution.cut`) is its dots' box (`chart.distribution.dots`) plus `cut` on the right and the top.
+- `layout/rules.json` `crowdedSlots`: slots beside the value smaller than `dp` are at most `max` (#71); both renderers'
+  constants equal them and every render is checked (CardLayoutTest, LayoutTests).
+- `layout/rules.json` `badge` `covered`: an hour label the sensor badge's erased outline would cut into is left out and recorded as
+  `chart.hour.covered` (compared as `time.text`, so the labels stay laid out as if the badge weren't there); no drawn hour
+  label starts inside the badge as drawn (`chart.sensor.drawn`) plus its erased outline (#71).
+- `layout/rules.json` `warmup`: a warming-up sensor's time left never passes for a value (#27): every render whose
+  value's place shows the warm-up (`value.warmup`) draws it at most `maxText` dp tall and labelled
+  (`value.warmup.text` starts with one of `words`: `Warming up · 40m`, `Almost ready`).
 - `layout/scenes.json` `scroll`: scrolled charts (the app panel, the Mac dropdown), each case a scene and how far back
   (`back`, s) the window ends and, zoomed, how long it is (`span`, s), rendered through the scrollable surfaces' entry paths (`PanelCard` with a `ChartScroll`,
   `CardView.scrollEnd`): the chart must equal the chart of the visible data alone (every reading and treatment outside
@@ -155,7 +198,7 @@ times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays wit
   `chart.markers`) on both platforms.
 - `layout/expect.json`: the shared rules' answers, generated by `CardLayoutTest` with `-Dlayout.write=true` (review the
   diff: it is where Android and the Mac agree); the Mac checks its own surfaces against it.
-- Facts: `scene`, `settings`; `face` (the surface shows a value: a card with one, or a glyph surface), `value`
+- Facts: `scene`, `settings`; `unit` (the glucose unit the card writes in: `mgdl` / `mmol`); `face` (the surface shows a value: a card with one, or a glyph surface), `value`
   (`true` / `false` for cards, `glyph`), `graph`, `labels`, `side`, `hours`, `sensorTime`, `badge` (the card style),
   `rings` (`KIND:window:RANGE:marks,…|lastPlace|lastElse`), `chart` (`WxH` dp), `pctWide` (chart ≥ 240 dp), `lane2`,
   `sensorShown`, `part` and `box` (the part and box the slots were laid out in).

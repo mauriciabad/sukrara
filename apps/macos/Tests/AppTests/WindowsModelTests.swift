@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import AppKit
 import Foundation
 import ServiceManagement
 import SukraraAlerts
@@ -20,6 +21,12 @@ func scratchStore() -> DefaultsSettingsStore {
     return DefaultsSettingsStore(defaults: d)
 }
 
+/// The settings window's model over a fresh store, following nobody.
+func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
+    SettingsModel(
+        store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil), wearer: wearer, version: "0")
+}
+
 /// `sukrara:` links (`AppLink`): the widget's two clicks never reach the follow step as a bad invite.
 @Suite struct AppLinkTests {
     @Test func widgetLinksRouteToTheirPlace() {
@@ -33,6 +40,74 @@ func scratchStore() -> DefaultsSettingsStore {
         let invite = "sukrara:join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         #expect(AppLink(URL(string: invite)!) == .invite(invite))
         #expect(AppLink(URL(string: "sukrara://treatment/old")!) == .invite("sukrara://treatment/old"))
+    }
+
+    /// #110: a link that launches the app arrives before the windows exist; it waits and opens once launch is done.
+    @Test func aLinkThatArrivesDuringLaunchOpensAfterIt() {
+        var inbox = LinkInbox()
+        let invite = URL(string: "sukrara:join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!
+        let add = URL(string: SukraraIDs.Link.newTreatment)!
+        #expect(inbox.receive([invite, URL(string: "https://example.com")!]).isEmpty)
+        #expect(inbox.receive([add]).isEmpty)
+        #expect(inbox.pending == [invite, add])  // only Sukrara's links, in order
+        #expect(inbox.launched() == [invite, add])
+        #expect(inbox.pending.isEmpty && inbox.launched().isEmpty)  // each opens once
+        #expect(inbox.receive([add]) == [add])  // after launch: at once
+    }
+
+    /// The web invite link reaches the follow step too; other https links aren't Sukrara's.
+    @Test func theWebInviteLinkIsAnInviteAndOtherWebLinksAreIgnored() {
+        let web = Wire.inviteBase + String(repeating: "A", count: 32)
+        #expect(AppLink(URL(string: web)!) == .invite(web))
+        #expect(AppLink(URL(string: "https://sukrara.mauri.app/")!) == nil)
+        #expect(AppLink(URL(string: "https://example.com/join#" + String(repeating: "A", count: 32))!) == nil)
+        #expect(AppLink(URL(string: "http://sukrara.mauri.app/join#" + String(repeating: "A", count: 32))!) == nil)
+        var inbox = LinkInbox()  // and it waits out a launch like a sukrara: link
+        #expect(inbox.receive([URL(string: web)!]).isEmpty)
+        #expect(inbox.launched() == [URL(string: web)!])
+    }
+
+    /// #34: a universal link (the web invite clicked in Safari, Mail, Messages…) goes where a handed-over invite goes,
+    /// the follow step's confirmation; nothing else the system might hand over opens anything.
+    @Test func aUniversalLinkIsTheWebInviteOnly() {
+        let web = URL(string: Wire.inviteBase + String(repeating: "A", count: 32))!
+        let browsing = NSUserActivityTypeBrowsingWeb
+        #expect(AppLink.universal(type: browsing, url: web) == web)
+        #expect(AppLink(web) == .invite(web.absoluteString))
+        #expect(AppLink.universal(type: "app.mauri.sukrara.handoff", url: web) == nil)
+        #expect(AppLink.universal(type: browsing, url: nil) == nil)
+        #expect(AppLink.universal(type: browsing, url: URL(string: "https://sukrara.mauri.app/privacy")) == nil)
+        #expect(AppLink.universal(type: browsing, url: URL(string: "https://sukrara.mauri.app/join/")) == nil)
+        #expect(AppLink.universal(type: browsing, url: URL(string: "sukrara:join#AAAA")) == nil)
+    }
+
+    /// The site's `apple-app-site-association` hands this app exactly the invite page, and the profile build's
+    /// entitlement names that site: the three agree with `AppLink`.
+    @Test func theSiteAssociationListsTheInvitePageForThisApp() throws {
+        struct Association: Decodable {
+            struct Links: Decodable {
+                struct Detail: Decodable {
+                    var appIDs: [String]
+                    var components: [[String: String]]
+                }
+                var details: [Detail]
+            }
+            var applinks: Links
+        }
+        let repo = LocalizationTests.macRoot.deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: repo.appending(path: "docs/.well-known/apple-app-site-association"))
+        let details = try JSONDecoder().decode(Association.self, from: data).applinks.details
+        #expect(details.count == 1)
+        #expect(details.first?.appIDs == ["\(SukraraIDs.teamID).\(SukraraIDs.appBundleID)"])
+        #expect(details.first?.components.map { $0["/"] } == ["/join"])
+        #expect(details.first?.components.allSatisfy { $0["#"] == nil && $0["?"] == nil } == true)  // any invite
+        #expect(AppLink(URL(string: "https://\(AppLink.inviteHost)/join#AAAA")!) != nil)
+        #expect(SukraraIDs.associatedDomain == "applinks:\(AppLink.inviteHost)")
+        let entitlements = try String(
+            contentsOf: LocalizationTests.macRoot.appending(path: "Bundle/app-profile.entitlements.in"), encoding: .utf8
+        )
+        #expect(entitlements.contains("<string>\(SukraraIDs.associatedDomain)</string>"))
+        #expect(entitlements.contains("<string>@TEAM@.\(SukraraIDs.appBundleID)</string>"))  // the keychain group
     }
 }
 
@@ -118,6 +193,34 @@ func scratchStore() -> DefaultsSettingsStore {
         #expect(item.status == .off && item.lastError != nil)
     }
 
+    /// #108: setup's Open at login step is done only once macOS has the login item on.
+    @Test func theSetupStepCompletesOnlyWhenTheLoginItemIsOn() {
+        let fake = FakeLogin()
+        fake.fail = true
+        let model = SetupModel(settings: scratchSettings())
+        model.loginItem = LoginItem(service: fake)
+        model.flow.open(.openAtLogin)
+        model.openAtLogin()  // refused: the step stays, with the reason
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+        #expect(model.loginItem?.lastError != nil && model.loginItem?.offersLoginItems == true)
+        fake.fail = false
+        fake.next = .requiresApproval
+        model.openAtLogin()  // waiting for approval: still not done
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+        #expect(model.loginItem?.status == .needsApproval)
+        fake.status = .enabled  // allowed in System Settings › Login Items
+        model.openAtLogin()
+        #expect(model.flow.states[.openAtLogin] == .done && model.flow.current == nil)
+        #expect(fake.calls == ["register", "register"])  // found on: not registered again
+    }
+
+    @Test func withoutALoginItemTheSetupStepDoesNothing() {
+        let model = SetupModel(settings: scratchSettings())
+        model.flow.open(.openAtLogin)
+        model.openAtLogin()
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+    }
+
     @Test func everyStateBeyondOnAndOffHasALine() {
         #expect(OpenAtLoginRows.note(.on, error: nil) == nil && OpenAtLoginRows.note(.off, error: nil) == nil)
         #expect(OpenAtLoginRows.note(.needsApproval, error: nil) != nil)
@@ -126,16 +229,104 @@ func scratchStore() -> DefaultsSettingsStore {
     }
 }
 
-/// The panel's Add Treatment… row: available only while following with the wearer's permission, else the reason.
+/// The panel's Add Treatment… row: available only while following with the wearer's permission, else one of four
+/// named reasons that say what would change it.
 @Suite struct AddTreatmentAvailabilityTests {
-    @Test func dimmedWithItsReasonUnlessAllowed() {
-        #expect(AddTreatmentAvailability(isFollowing: true, canWrite: true) == .available)
-        #expect(AddTreatmentAvailability(isFollowing: true, canWrite: true).reason == nil)
-        #expect(AddTreatmentAvailability(isFollowing: true, canWrite: false) == .notAllowed)
-        #expect(AddTreatmentAvailability(isFollowing: false, canWrite: true) == .notFollowing)
-        #expect(AddTreatmentAvailability(isFollowing: false, canWrite: false).reason != nil)
-        #expect(AddTreatmentAvailability(isFollowing: true, canWrite: false).reason != nil)
+    @Test func dimmedWithItsNamedReasonUnlessAllowed() {
+        #expect(AddTreatmentAvailability(link: .following(wearer: "Ana", canWrite: true)) == .available)
+        #expect(AddTreatmentAvailability(link: .following(wearer: "Ana", canWrite: true)).reason == nil)
+        let notWriter = AddTreatmentAvailability(link: .following(wearer: "Ana", canWrite: false))
+        #expect(notWriter == .notWriter(wearer: "Ana") && notWriter.reason?.hasPrefix("Ana hasn't") == true)
+        let waiting = AddTreatmentAvailability(link: .requested(code: "1234", wearer: "Ana", pairing: nil))
+        #expect(waiting.reason == "Waiting for Ana to approve this Mac")
+        #expect(AddTreatmentAvailability(link: .revoked) == .revoked)
+        #expect(AddTreatmentAvailability(link: .declined) == .ended)
+        #expect(AddTreatmentAvailability(link: .inviteUsed) == .ended)
+        #expect(AddTreatmentAvailability(link: .notFollowing) == .notFollowing)
+        let reasons = [
+            AddTreatmentAvailability.waiting(wearer: nil), .notWriter(wearer: nil), .revoked, .ended, .notFollowing,
+        ].compactMap(\.reason)
+        #expect(Set(reasons).count == 5, "each state names its own reason")
     }
+
+    /// The card's pill: Eat carbs / Take insulin open Add Treatment on their field where this Mac may log; a mute
+    /// pill opens its ways out.
+    @Test func pillActions() {
+        #expect(PillAction.of(.needed(.low), canAdd: true) == .treat(.carbs))
+        #expect(PillAction.of(.needed(.high), canAdd: true) == .treat(.rapid))
+        #expect(PillAction.of(.needed(.low), canAdd: false) == .none)
+        #expect(PillAction.of(.paused(.high, until: 100), canAdd: false) == .quiet(.high))
+        let mark = GraphMark(t: 0, k: "carbs", a: 20)
+        #expect(PillAction.of(.taken(.low, treatment: mark, until: 100), canAdd: true) == .quiet(.low))
+        #expect(PillAction.of(.muted(until: AlertStatus.never), canAdd: true) == .muteAll)
+        #expect(PillAction.of(.none, canAdd: true) == .none)
+        // Mute all on while out of range: the pill's way out is Mute all's
+        #expect(PillAction.of(.paused(.low, until: 100), canAdd: true, muteAll: true) == .muteAll)
+    }
+}
+
+/// Add Treatment's *When?* chip, quiet line and the Treatments window's days.
+@Suite struct AddTreatmentFormTests {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    @Test func whenResolvesAtSave() {
+        let n = Int64(now.timeIntervalSince1970)
+        #expect(TreatmentForm.When.now.resolve(now: n) == n)
+        #expect(TreatmentForm.When.ago(15).resolve(now: n) == n - 900)
+        #expect(TreatmentForm.When.at(n - 3600).resolve(now: n) == n - 3600)
+        #expect(TreatmentForm.When.at(n + 60).resolve(now: n) == n, "never ahead of now")
+        #expect(TreatmentForm.When.fromPicker(minutesAgo: "30") == .ago(30))
+        #expect(TreatmentForm.When.fromPicker(minutesAgo: "0") == .now)
+        #expect(TreatmentForm.When.fromPicker(minutesAgo: "") == nil)
+        #expect(TreatmentForm.When.fromPicker(minutesAgo: "1440") == nil, "a day or more")
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let c = cal.dateComponents([.hour, .minute], from: now)
+        // the current minute is now; a later clock time is yesterday's
+        #expect(TreatmentForm.When.fromPicker(hour: c.hour!, minute: c.minute!, now: now, calendar: cal) == .now)
+        let later = TreatmentForm.When.fromPicker(hour: (c.hour! + 1) % 24, minute: c.minute!, now: now, calendar: cal)
+        #expect(later == .at(Int64(now.timeIntervalSince1970) - Int64(c.second(now, cal)) - 23 * 3600))
+        #expect(AddTreatmentView.whenLabel(.ago(15), now: now) == "15 min ago")
+        #expect(AddTreatmentView.whenLabel(.now, now: now) == "Now")
+    }
+
+    @Test func quietLineSaysWhatTheEntriesQuiet() {
+        let n = Int64(now.timeIntervalSince1970)
+        let s = AlertSettings()
+        #expect(
+            TreatmentQuietNote.of(rapid: true, carbs: true, at: n, now: n, settings: s, mirroring: false)
+                == "Highs quiet for 1 h · lows quiet for 15 min")
+        #expect(
+            TreatmentQuietNote.of(rapid: false, carbs: true, at: n - 600, now: n, settings: s, mirroring: false)
+                == "Lows quiet for 5 min")
+        #expect(TreatmentQuietNote.of(rapid: true, carbs: false, at: n, now: n, settings: s, mirroring: true) == nil)
+        #expect(
+            TreatmentQuietNote.of(rapid: false, carbs: true, at: n - 3600, now: n, settings: s, mirroring: false)
+                == nil)
+        var off = s
+        off.on = false
+        #expect(TreatmentQuietNote.of(rapid: true, carbs: true, at: n, now: n, settings: off, mirroring: false) == nil)
+    }
+
+    @Test func treatmentsWindowShowsSevenDaysByDay() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let n = Int64(now.timeIntervalSince1970)
+        let agos: [Int64] = [0, 1, 3600, 86400 + 60, 6 * 86400, 8 * 86400]
+        var rows: [TreatmentsModel.Row] = []
+        for (i, ago) in agos.enumerated() {
+            let t = Treatment(id: "\(i)", k: .carbs, a: 10, t: n - ago, u: 1, o: .phone)
+            rows.append(TreatmentsModel.Row(treatment: t, delivery: nil))
+        }
+        let days = TreatmentsModel.byDay(rows.reversed(), now: now, calendar: cal)
+        let ids: [String] = days.flatMap { $0.rows.map { $0.id } }
+        #expect(ids == ["0", "1", "2", "3", "4"], "newest first, nothing older than 7 days")
+        #expect(Set(days.map { $0.day }).count == days.count)
+    }
+}
+
+private extension DateComponents {
+    func second(_ d: Date, _ cal: Calendar) -> Int { cal.component(.second, from: d) }
 }
 
 @Suite struct SetupFlowTests {
@@ -194,6 +385,66 @@ func scratchStore() -> DefaultsSettingsStore {
     }
 }
 
+/// #107: setup's alert step has Android's rows (the five levels and no data), each changeable; nothing is stored
+/// before Use these, and a changed level applies (this Mac's own rules) even while the wearer's are mirrored.
+@Suite struct SetupAlertStepTests {
+    static let marta = WearerSettings(
+        json: #"{"alerts":{"alerts":{"low":{"on":true,"mgdl":72},"high":{"on":true,"mgdl":200}}}}"#, wearer: "Marta")
+
+    @Test func theRowsAreTheFiveLevelsAndNoDataInUse() {
+        let m = SetupModel(settings: scratchSettings(wearer: Self.marta))
+        #expect(SetupModel.reviewedKinds == [.veryLow, .low, .high, .veryHigh, .extremelyHigh, .noData])
+        #expect(SetupModel.reviewedKinds.map(m.threshold) == [55, 72, 200, 250, 300, 20])
+        #expect(m.levelsMirrored && m.thresholdsInOrder)
+    }
+
+    @Test func noDataIsThisMacsOwnAndTheWearersLevelsStay() {
+        let settings = scratchSettings(wearer: Self.marta)
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(30, .noData)
+        #expect(m.threshold(.noData) == 30 && settings.alerts.settings[.noData].threshold == 20)  // not stored yet
+        m.confirmThresholds()
+        #expect(settings.alerts.settings[.noData].threshold == 30)
+        #expect(settings.settingsFrom == .wearer && settings.shownAlerts[.low].threshold == 72)
+        #expect(m.flow.states[.alerts] == .done && m.editedThresholds.isEmpty)
+    }
+
+    @Test func aChangedLevelBecomesThisMacsOwnStartingFromTheWearers() {
+        let settings = scratchSettings(wearer: Self.marta)
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(80, .low)
+        m.confirmThresholds()
+        #expect(settings.settingsFrom == .custom && !m.levelsMirrored)
+        #expect(settings.shownAlerts[.low].threshold == 80 && settings.shownAlerts[.high].threshold == 200)
+        #expect(m.flow.states[.alerts] == .done)
+    }
+
+    @Test func levelsOutOfOrderWait() {
+        let settings = scratchSettings()
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(65, .veryLow)
+        m.setThreshold(60, .low)  // below very low: both are values each input offers
+        #expect(!m.thresholdsInOrder)
+        m.confirmThresholds()
+        #expect(m.flow.states[.alerts] == nil && m.flow.current == .alerts && settings.settingsFrom == .wearer)
+        m.setThreshold(70, .low)
+        #expect(m.thresholdsInOrder)
+    }
+
+    @Test func useTheseWithoutAChangeStoresNothing() {
+        let settings = scratchSettings()
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(70, .low)  // the value in use: no change
+        m.confirmThresholds()
+        #expect(m.flow.states[.alerts] == .done && settings.settingsFrom == .wearer)
+        #expect(settings.store.value(MacSettings.alerts).isEmpty)
+    }
+}
+
 final class RecordingSender: TreatmentActions {
     var sent: [Treatment] = []
     var accept = true
@@ -216,7 +467,7 @@ final class RecordingSender: TreatmentActions {
         #expect(m.rows.isEmpty && m.undoAvailable)
         #expect(sender.sent.last?.del == true)
         clock += 5
-        await m.undoDelete()
+        await m.undoLast()
         #expect(m.rows.map(\.id) == ["a"] && m.rows[0].delivery == .sending)
         #expect(sender.sent.last?.del == false)
         #expect(sender.sent.last!.u > sender.sent.first!.u)
@@ -226,13 +477,79 @@ final class RecordingSender: TreatmentActions {
         var clock = Date(timeIntervalSince1970: 2000)
         let sender = RecordingSender()  // the model holds its actions weakly
         let m = TreatmentsModel(
-            rows: [.init(treatment: Self.mine, delivery: nil)], canWrite: true, actions: sender,
+            rows: [.init(treatment: Self.mine, delivery: .accepted)], canWrite: true, actions: sender,
             now: { clock })
         await m.delete(m.rows[0])
+        #expect(m.rows.isEmpty)
         clock += TreatmentsModel.undoSeconds + 0.1
         #expect(!m.undoAvailable)
-        await m.undoDelete()
+        await m.undoLast()
         #expect(m.rows.isEmpty)
+    }
+
+    @Test func editSendsANewerVersionAndUndoTakesItBack() async {
+        var clock = Date(timeIntervalSince1970: 2000)
+        let sender = RecordingSender()
+        let m = TreatmentsModel(
+            rows: [.init(treatment: Self.mine, delivery: .accepted)], canWrite: true, actions: sender, now: { clock })
+        await m.edit(m.rows[0], amount: 5.5, note: "", at: 1100)
+        #expect(m.rows.map(\.treatment.a) == [5.5] && m.rows[0].treatment.t == 1100 && m.rows[0].delivery == .sending)
+        #expect(sender.sent.last?.id == "a" && sender.sent.last?.a == 5.5 && sender.sent.last!.u > Self.mine.u)
+        #expect(m.undo?.kind == .changed && m.undo?.shown.a == 5.5)
+        clock += 3
+        await m.undoLast()
+        #expect(m.rows[0].treatment.a == 4 && m.rows[0].treatment.t == 1000 && !m.undoAvailable)
+        #expect(sender.sent.count == 2 && sender.sent[1].u > sender.sent[0].u && !sender.sent[1].del)
+    }
+
+    @Test func anEditWithoutAChangeSendsNothing() async {
+        let sender = RecordingSender()
+        let m = TreatmentsModel(rows: [.init(treatment: Self.mine, delivery: .sent)], canWrite: true, actions: sender)
+        await m.edit(m.rows[0], amount: 4, note: "", at: 1000)
+        #expect(sender.sent.isEmpty && m.undo == nil)
+    }
+
+    @Test func aChangedEntryStaysListedWhileItsUndoIsOffered() async {
+        let sender = RecordingSender()
+        let m = TreatmentsModel(rows: [.init(treatment: Self.mine, delivery: .sent)], canWrite: true, actions: sender)
+        await m.edit(m.rows[0], amount: 6, note: "", at: 1000)
+        var echoed = Self.mine
+        echoed.a = 6
+        echoed.o = .follower
+        m.sync([echoed], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.rows.map(\.treatment.a) == [6] && m.rows[0].delivery == .accepted)
+    }
+
+    /// The runtime keeps this Mac's entries as `o: follower` (how every writer sends them): they stay this Mac's to
+    /// edit and delete by their delivery state; another follower's entry never is.
+    @Test func ownEntriesStayChangeableInTheRuntimesCopy() {
+        let m = TreatmentsModel(rows: [], canWrite: true, actions: nil)
+        var own = Self.mine
+        own.o = .follower
+        let other = Treatment(id: "c", k: .carbs, a: 20, t: 950, u: 1, o: .follower)
+        m.sync([own, other, Self.phones], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.rows.map { m.canChange($0) } == [true, false, false])
+        #expect(TreatmentsView.loggedBy(own, mine: true) == "Logged on this Mac")
+        #expect(TreatmentsView.loggedBy(Self.phones, wearer: "Ana") == "Logged on Ana's phone")
+        m.sync([own], deliveries: ["a": .accepted], canWrite: false)
+        #expect(!m.canChange(m.rows[0]))
+    }
+
+    @Test func theEditSheetParsesLikeAddTreatment() {
+        #expect(EditTreatmentView.text(of: Self.mine) == "4")
+        #expect(EditTreatmentView.edited(Self.mine, text: "4,5")! == (4.5, ""))
+        #expect(EditTreatmentView.edited(Self.mine, text: "150") == nil)
+        #expect(EditTreatmentView.edited(Self.phones, text: "30.4")! == (30, ""))
+        let note = Treatment(id: "n", k: .note, a: 0, t: 1000, n: "Walk", u: 1, o: .mac)
+        #expect(EditTreatmentView.edited(note, text: "  Run ")! == (0, "Run"))
+        #expect(EditTreatmentView.edited(note, text: " ") == nil)
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        // the picker's OK on the entry's own clock time (three days later) keeps the entry's day
+        let old = Treatment(id: "o", k: .rapid, a: 2, t: 1_800_000_000, u: 1, o: .mac)
+        #expect(EditTreatmentView.isOwnTime(.at(1_800_000_000 + 3 * 86400), of: old, calendar: utc))
+        #expect(!EditTreatmentView.isOwnTime(.at(1_800_000_000 + 60), of: old, calendar: utc))
+        #expect(!EditTreatmentView.isOwnTime(.now, of: old, calendar: utc))
     }
 
     @Test func thePhonesEntriesCantBeChanged() async {
@@ -258,8 +575,9 @@ final class RecordingSender: TreatmentActions {
 @Suite struct QRImportTests {
     /// The short invite link of contracts/protocol/identity/vectors.json.
     static let link: String = {
-        let root = try! JSONSerialization.jsonObject(
-            with: Data(contentsOf: Contracts.url("protocol/identity/vectors.json"))) as! [String: Any]
+        let root =
+            try! JSONSerialization.jsonObject(
+                with: Data(contentsOf: Contracts.url("protocol/identity/vectors.json"))) as! [String: Any]
         return (root["invite"] as! [String: String])["short_link"]!
     }()
 
@@ -271,26 +589,134 @@ final class RecordingSender: TreatmentActions {
     @Test func aQRCodeThatIsNoInviteIsRefusedWithTheExactText() async {
         #expect(QRImport.inviteText(in: QRImport.image(of: "https://example.com")!) == nil)
         let m = FollowModel(status: .notFollowing, actions: nil, macName: "Mac")
-        await m.follow(qrText: nil)
+        await m.lookUp(qrText: nil)
         #expect(m.failure?.message == "No Sukrara invite QR code found in that image.")
     }
 
     @Test func pastedTextThatIsNoLinkNeverReachesTheRelays() async {
         final class Never: FollowActions {
             var calls = 0
-            func join(link: String) async throws(FollowFailure) { calls += 1 }
+            var joined = 0
+            var names: [String] = []
+            func lookUp(link: String) async throws(FollowFailure) -> Invite? {
+                calls += 1
+                return InviteConfirmTests.marta
+            }
+            func join(invite: Invite) async throws(FollowFailure) { joined += 1 }
             func joinNearby(name: String) async throws(FollowFailure) { calls += 1 }
+            func confirmNearby(same: Bool) async -> Bool { false }
+            func setProfile(name: String, avatar: Avatar?) async { names.append(name) }
+            func setName(_ name: String) async { names.append(name) }
             func cancelJoin() async {}
             func unfollow() async {}
         }
         let a = Never()
         let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
         m.linkText = "hello"
-        await m.follow()
+        await m.lookUp()
         #expect(m.failure == .invalidLink && a.calls == 0 && m.status == .notFollowing)
         m.linkText = Self.link
-        await m.follow()
-        #expect(a.calls == 1 && m.failure == nil)
+        m.macName = "Ana's MacBook"
+        await m.lookUp()
+        #expect(a.calls == 1 && m.failure == nil && a.joined == 0 && a.names.isEmpty)
+        await m.confirmInvite()
+        #expect(a.joined == 1)
+        #expect(a.names == ["Ana's MacBook"])  // the typed name goes with the request
+    }
+
+    /// Nearby: asking shows "Asking Marta's phone…"; *Different Code* ends the join and says why; *Same Code* keeps it.
+    @Test func nearbyCodesSameOrDifferent() async {
+        final class Pairing: FollowActions {
+            var confirmed: [Bool] = []
+            func lookUp(link: String) async throws(FollowFailure) -> Invite? { nil }
+            func join(invite: Invite) async throws(FollowFailure) {}
+            func joinNearby(name: String) async throws(FollowFailure) {}
+            func confirmNearby(same: Bool) async -> Bool {
+                confirmed.append(same)
+                return true
+            }
+            func setProfile(name: String, avatar: Avatar?) async {}
+            func setName(_ name: String) async {}
+            func cancelJoin() async {}
+            func unfollow() async {}
+        }
+        let a = Pairing()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        m.nearby = NearbyPhone(wearer: "Marta")
+        await m.askNearby()
+        #expect(m.status == .waiting(wearer: "Marta", pairing: .init(code: nil, confirmed: false)))
+        m.status = .waiting(wearer: "Marta", pairing: .init(code: "021472", confirmed: false))
+        await m.confirmNearby(same: true)
+        #expect(m.failure == nil && a.confirmed == [true])
+        await m.confirmNearby(same: false)
+        #expect(m.failure == .codesDiffered && m.status == .notFollowing && a.confirmed == [true, false])
+        #expect(m.failure?.message.hasPrefix("The codes didn't match") == true)
+    }
+}
+
+/// Every invite opens a confirmation: who is inviting (from the invite) with *Follow* / *Cancel*; nothing is sent
+/// before *Follow*, whether the link was opened, pasted or read from a QR image.
+@Suite struct InviteConfirmTests {
+    static let marta = Invite(
+        identity: String(repeating: "ab", count: 32), token: "t", expiry: Int.max, relays: [],
+        profile: Profile(name: "Marta", avatar: .v1(c: 6, s: "dots", a: 45, n: 11)))
+
+    final class Recorder: FollowActions {
+        var lookups: [String] = []
+        var joined: [Invite] = []
+        var lookUpFails: FollowFailure?
+        func lookUp(link: String) async throws(FollowFailure) -> Invite? {
+            lookups.append(link)
+            if let lookUpFails { throw lookUpFails }
+            return InviteConfirmTests.marta
+        }
+        func join(invite: Invite) async throws(FollowFailure) { joined.append(invite) }
+        func joinNearby(name: String) async throws(FollowFailure) {}
+        func confirmNearby(same: Bool) async -> Bool { false }
+        func setProfile(name: String, avatar: Avatar?) async {}
+        func setName(_ name: String) async {}
+        func cancelJoin() async {}
+        func unfollow() async {}
+    }
+
+    @Test func anOpenedLinkShowsWhoIsInvitingAndNeverFollowsByItself() async {
+        let a = Recorder()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        await m.open(link: QRImportTests.link)
+        #expect(a.lookups == [QRImportTests.link])
+        #expect(m.invite == Self.marta && a.joined.isEmpty && m.status == .notFollowing)
+        // Cancel: nothing sent, and the opened link leaves the field
+        m.cancelInvite()
+        #expect(m.invite == nil && m.linkText.isEmpty && a.joined.isEmpty)
+        // Follow without an invite shown does nothing
+        await m.confirmInvite()
+        #expect(a.joined.isEmpty)
+    }
+
+    @Test func followAsksTheWearerWithTheInviteShown() async {
+        let a = Recorder()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        m.linkText = QRImportTests.link
+        await m.lookUp()
+        await m.confirmInvite()
+        #expect(a.joined == [Self.marta] && m.invite == nil)
+    }
+
+    @Test func aPastedLinkStaysAfterCancel() async {
+        let a = Recorder()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        m.linkText = QRImportTests.link
+        await m.lookUp()
+        m.cancelInvite()
+        #expect(m.invite == nil && m.linkText == QRImportTests.link && a.joined.isEmpty)
+    }
+
+    @Test func aLookupThatFailsSaysWhyAndShowsNoInvite() async {
+        let a = Recorder()
+        a.lookUpFails = .expired
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        await m.open(link: QRImportTests.link)
+        #expect(m.invite == nil && m.failure == .expired && m.status == .notFollowing && a.joined.isEmpty)
     }
 }
 
@@ -305,15 +731,6 @@ final class RecordingSender: TreatmentActions {
         #expect(s.number(MacSettings.graphHours) == 48)
     }
 
-    @Test func everyP0MacNumberSettingHasItsSchemaFormat() {
-        for n in MacSettings.bands + [MacSettings.graphHours, MacSettings.gridHours, MacSettings.countdownHours] {
-            let info = SettingsSpec.settings.first { $0.id == n.id }
-            #expect(info != nil, "\(n.id)")
-            #expect(info.map { "defaults:" + n.spec.key == $0.mac || $0.mac.hasPrefix("defaults:" + n.spec.key) } == true)
-            #expect(SettingsSpec.numbers[info?.number ?? ""] == n.format, "\(n.id)")
-        }
-    }
-
     @Test func alertSettingsKeepTheLastGoodValueWhenUnreadable() {
         let s = scratchStore()
         let a = AlertSettingsStore(store: s)
@@ -326,7 +743,8 @@ final class RecordingSender: TreatmentActions {
     }
 
     @Test func wearerSettingsMirrorByWirePath() {
-        let json = #"{"v":2,"type":"settings","u":1,"graph":{"low":65,"defaultHours":999},"alerts":{"alerts":{"low":{"on":false,"mgdl":72}}}}"#
+        let json =
+            #"{"v":2,"type":"settings","u":1,"graph":{"low":65,"defaultHours":999},"alerts":{"alerts":{"low":{"on":false,"mgdl":72}}}}"#
         let w = WearerSettings(json: json, wearer: "Ana")!
         #expect(w.number("graph.band.low") == 65)
         #expect(w.number("graph.hours") == 48)  // coerced to the schema's range
@@ -345,5 +763,24 @@ final class RecordingSender: TreatmentActions {
         s.set(SettingsFrom.custom.rawValue, for: MacSettings.settingsFrom)
         let own = GraphConfig.load(from: s, wearer: w)
         #expect(own.bands.low == 75 && own.hours == 6)
+    }
+
+    /// Add Treatment opens centred under the status item, kept 12 pt inside the screen, 6 pt under the menu bar.
+    @Test @MainActor func addTreatmentOpensUnderTheStatusItem() {
+        let area = NSRect(x: 0, y: 0, width: 1440, height: 875)
+        let size = NSSize(width: 400, height: 300)
+        let mid = AppWindows.underMenuBar(size: size, anchor: NSRect(x: 900, y: 875, width: 60, height: 24), area: area)
+        #expect(mid == NSPoint(x: 730, y: 869))
+        let edge = AppWindows.underMenuBar(
+            size: size, anchor: NSRect(x: 1400, y: 875, width: 40, height: 24), area: area)
+        #expect(edge.x == 1028, "\(edge)")
+        #expect(AppWindows.underMenuBar(size: size, anchor: nil, area: area).x == 1028)
+    }
+
+    @Test func aPillAsksTheOpenWindowToMoveTheFocus() {
+        let f = AddTreatmentFocus()
+        f.request(.carbs)
+        f.request(.carbs)
+        #expect(f.field == .carbs && f.count == 2)  // the same field again still moves the focus back
     }
 }

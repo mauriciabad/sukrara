@@ -31,6 +31,31 @@ class FreshnessFixtureTest {
         }
     }
 
+    /** The reading's time: the clock time, the day with it from 12 h (or another day), the date after 6 days. */
+    @Test fun times() {
+        val times = file["times"]!!.jsonObject
+        val now = times["now"].long()!!
+        val utc = java.time.ZoneOffset.UTC
+        val fails =
+            times["cases"]!!.jsonArray.mapNotNull { e ->
+                val c = e.jsonObject
+                val at = c["now"].long() ?: now
+                val got = Freshness.timeKind(at - c["age"].long()!!, at, utc).key
+                c["name"].str().takeIf { got != c["expect"].str() }?.let { "$it: got $got" }
+            }
+        assertTrue(fails.joinToString("\n"), fails.isEmpty())
+        // and the words: 07:14 this morning is "Fri 07:14" from 19:14 on, as yesterday's 23:00 is "Thu 23:00"
+        Clock.hour24Source = { true }
+        try {
+            val morning = now - (12 * 3600 + 46 * 60)
+            assertEquals("07:14", Freshness.timeText(morning, morning + 12 * 3600, java.util.Locale.UK, utc))
+            assertEquals("Fri 07:14", Freshness.timeText(morning, now, java.util.Locale.UK, utc))
+            assertEquals("Thu 23:00", Freshness.timeText(now - 21 * 3600, now, java.util.Locale.UK, utc))
+        } finally {
+            Clock.hour24Source = null
+        }
+    }
+
     @Test fun cases() {
         val now = 1_800_000_000L
         val cases = file["cases"] as JsonArray
@@ -55,8 +80,10 @@ class FreshnessFixtureTest {
                         "strike" to look.strike.toString(),
                         "trend" to look.trend?.let { if (it == TrendMark.ARROW) "arrow" else "none" },
                         "time" to look.fresh.showTime.toString(),
+                        "now" to (look.state == GlucoseLook.State.VALUE && look.fresh.saysNow).toString(),
                         "graph" to look.fresh.showGraph.toString(),
                         "graph_only" to Freshness.of(age).ageMark.key,
+                        "ended" to look.ended.toString(),
                     )
                 val want =
                     mapOf(
@@ -65,8 +92,10 @@ class FreshnessFixtureTest {
                         "strike" to x["strike"].bool().toString(),
                         "trend" to x["trend"].str(),
                         "time" to x["time"].bool().toString(),
+                        "now" to x["now"].bool().toString(),
                         "graph" to x["graph"].bool().toString(),
                         "graph_only" to x["graph_only"].str(),
+                        "ended" to (x["ended"].bool() ?: false).toString(),
                     )
                 if (got == want) null else "${c["name"].str()}: got $got, want $want"
             }

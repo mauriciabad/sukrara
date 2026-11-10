@@ -8,6 +8,7 @@ import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.AlertPayload
 import app.mauri.sukrara.protocol.event.LivePayload
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.owner.IdentityCheck
 import app.mauri.sukrara.protocol.owner.IdentityConflict
@@ -17,9 +18,13 @@ import java.util.TreeMap
 
 /**
  * Readings to followers: a live event for each new reading younger than [LIVE_MAX_AGE]; hour chunks for
- * every hour that changed — earlier hours at once, the current hour at most every [CHUNK_EVERY] — with `created_at`
+ * every hour that changed — earlier hours at once, the current hour at most every [chunkEvery] (the upload interval,
+ * [CHUNK_EVERY] by default) — with `created_at`
  * strictly increasing per hour. Keeps the last [BACKFILL_HOURS] in memory (what a new follower or a rotation gets).
- * Not thread-safe: the engine calls it on its serial dispatcher.
+ * The wearer's sensor (PROTOCOL-v2 "Sensor life") rides on every live event; a **reading-less live event** carries it
+ * alone when it changes ([onSensor]: a new sensor, one that ended early, none any more) and at every [tick] while the
+ * sensor warms up, so followers see a warm-up and a sensor end before any reading. Not thread-safe: the engine calls
+ * it on its serial dispatcher.
  */
 class PublishReadings(private val ctx: OwnerContext) {
     private val readings = TreeMap<Long, WireReading>()
@@ -27,6 +32,12 @@ class PublishReadings(private val ctx: OwnerContext) {
     private val chunkSentAt = mutableMapOf<Long, Long>()
     private val chunkCreatedAt = mutableMapOf<Long, Long>()
     private var newestLive = 0L
+
+    /** The sensor every live event carries (null = the wearer knows none). */
+    private var sensor: SensorLife? = null
+
+    /** Seconds between two publishes of the current hour's chunk ([app.mauri.sukrara.share.owner.RelayPolicy.chunkEvery]). */
+    var chunkEvery: Long = CHUNK_EVERY
 
     /** New readings from the hub (oldest first). Returns the events to publish. */
     fun onReadings(s: OwnerState, new: List<Reading>, now: Long): List<SignedEvent> {
@@ -38,7 +49,7 @@ class PublishReadings(private val ctx: OwnerContext) {
             if (readings.put(w.t, w) != w) dirty += Wire.hourOf(w.t)
             if (w.t > newestLive && now - w.t < LIVE_MAX_AGE) {
                 newestLive = w.t
-                out += ctx.events.live(s.device(ctx.crypto), s.readKey(ctx.crypto).public, LivePayload(w, null), now)
+                out += live(s, LivePayload(w, sensor), now)
             }
         }
         prune(now)
@@ -52,8 +63,36 @@ class PublishReadings(private val ctx: OwnerContext) {
         return flush(s, now, force = true)
     }
 
-    /** Called every [CHUNK_EVERY]: the current hour's chunk if it changed. */
-    fun tick(s: OwnerState, now: Long): List<SignedEvent> = flush(s, now, force = false)
+    /**
+     * The wearer's sensor changed ([new] null = none any more): a reading-less live event says so at once. The first
+     * known sensor counts as a change, so one that started while sharing was off reaches followers without waiting
+     * for a reading; a first null (nothing known yet) sends nothing.
+     */
+    fun onSensor(s: OwnerState, new: SensorLife?, now: Long): List<SignedEvent> {
+        if (new == sensor) return emptyList()
+        sensor = new
+        return listOf(sensorOnly(s, now))
+    }
+
+    /**
+     * Called every [CHUNK_EVERY]: the current hour's chunk if it changed and [chunkEvery] has passed, and the sensor
+     * again while it warms up (live events aren't stored by relays: a follower that connects during the warm-up gets it
+     * from the next tick).
+     */
+    fun tick(s: OwnerState, now: Long): List<SignedEvent> =
+        flush(s, now, force = false) + listOfNotNull(sensor?.takeIf { warming(it, now) }?.let { sensorOnly(s, now) })
+
+    /**
+     * Warming up as followers draw it (`:core:graph` SensorLife.warming): started, no reading since its start, and not
+     * more than [WARMUP_GRACE] past the warm-up's end (a warm-up that brings no reading).
+     */
+    private fun warming(sensor: SensorLife, now: Long): Boolean =
+        now >= sensor.start && now < sensor.warmupEnd + WARMUP_GRACE && (readings.lastEntry()?.key ?: 0) < sensor.start
+
+    private fun sensorOnly(s: OwnerState, now: Long): SignedEvent = live(s, LivePayload(null, sensor), now)
+
+    private fun live(s: OwnerState, payload: LivePayload, now: Long): SignedEvent =
+        ctx.events.live(s.device(ctx.crypto), s.readKey(ctx.crypto).public, payload, now)
 
     fun publishAlert(s: OwnerState, alert: AlertPayload, now: Long): SignedEvent =
         ctx.events.alert(s.device(ctx.crypto), s.readKey(ctx.crypto).public, alert, now)
@@ -62,7 +101,7 @@ class PublishReadings(private val ctx: OwnerContext) {
         val current = Wire.hourOf(now)
         val out = mutableListOf<SignedEvent>()
         for (h in dirty.descendingSet().toList()) {
-            if (!force && h >= current && now - (chunkSentAt[h] ?: 0) < CHUNK_EVERY) continue
+            if (!force && h >= current && now - (chunkSentAt[h] ?: 0) < chunkEvery) continue
             dirty -= h
             val rows = readings.subMap(h, h + Wire.HOUR).values
             if (rows.isEmpty()) continue
@@ -87,6 +126,9 @@ class PublishReadings(private val ctx: OwnerContext) {
         const val CHUNK_EVERY = 300L
         const val LIVE_MAX_AGE = 600L
         const val FUTURE_SLACK = 60L
+
+        /** How long past its warm-up's end a sensor with no reading yet still counts as warming up (15 min). */
+        const val WARMUP_GRACE = 15 * 60L
     }
 }
 
@@ -99,27 +141,38 @@ class IdentityConflictDetector(private val ctx: OwnerContext) {
     /** The state with the conflict recorded, or null when [ev] is fine (ours, older or unrelated). */
     fun check(s: OwnerState, ev: SignedEvent, now: Long): OwnerState? =
         when (val r = IdentityConflict.check(ctx.crypto, s.marks(ctx.crypto), ev)) {
-            IdentityCheck.Fine -> null
+            IdentityCheck.Fine -> {
+                null
+            }
+
             is IdentityCheck.Conflict -> {
                 val newest = maxOf(ev.createdAt, s.conflict?.eventCreatedAt ?: 0)
-                s.copy(conflict = ConflictRecord(r.reason, now, newest))
+                // an unknown epoch stays the reason (followers stopped taking our readings) whatever comes after it
+                val unknown = IdentityCheck.Reason.RosterUnknownEpoch
+                val reason = if (s.conflict?.reason == unknown) unknown else r.reason
+                s.copy(conflict = ConflictRecord(reason, now, newest))
             }
         }
 
     /**
      * "I turned it off — retry": clears the block and republishes roster and backup with `created_at` past the other
-     * app's event, so relays keep ours. If the other app is still running, its next event blocks again.
+     * app's events ([found]: what the relays hold signed by our identity), so relays keep ours. When the other app holds
+     * an epoch we don't, rotate above its newest instead ([IdentityConflict.retryEpoch]): followers rank rosters and
+     * keys by epoch number, so only a higher epoch naming this phone wins them back. If the other app is still running,
+     * its next event blocks again.
      */
-    fun retry(s: OwnerState, now: Long): Step {
+    fun retry(s: OwnerState, found: List<SignedEvent>, now: Long): Step {
         val conflict = s.conflict ?: return Step(s)
-        // the conflict's created_at is the floor for this publish (ControlEvents.nextAt), then it is forgotten. After
-        // the other app rotated (unknown epoch) a plain roster would be older than its epoch: rotate instead, so our
-        // followers get a newer key naming this phone.
-        val step = if (conflict.reason == IdentityCheck.Reason.RosterUnknownEpoch) {
-            Rotate(ctx)(s, now)
-        } else {
-            ControlEvents.roster(ctx, s, now) + { ControlEvents.backup(ctx, it, now) }
-        }
+        val identity = s.identity(ctx.crypto).public.hex
+        val newestOther = found.filter { it.pubkey == identity && it.kind == Wire.KIND_DATA }.maxOfOrNull { it.createdAt } ?: 0
+        // the floor for this publish (ControlEvents.nextAt), then it is forgotten
+        val floored = s.copy(conflict = conflict.copy(eventCreatedAt = maxOf(conflict.eventCreatedAt, newestOther)))
+        val unknownEpoch = conflict.reason == IdentityCheck.Reason.RosterUnknownEpoch
+        val step =
+            when (val epoch = IdentityConflict.retryEpoch(ctx.crypto, s.marks(ctx.crypto), found, unknownEpoch)) {
+                null -> ControlEvents.roster(ctx, floored, now) + { ControlEvents.backup(ctx, it, now) }
+                else -> Rotate(ctx)(floored, now, epoch)
+            }
         return Step(step.state.copy(conflict = null), step.publish)
     }
 

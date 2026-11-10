@@ -3,38 +3,188 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 import SukraraAlerts
+import SukraraCore
 import SukraraGraph
 
+/// The title's inks on the menu bar (#8): red below the range, orange above, grey when stale or warming up, each with
+/// at least `minContrast` (WCAG 4.5:1, 13 pt text) on the bar it's drawn on. The system red and orange are about 3.6:1
+/// and 2.2:1 on a light bar, so a light bar gets darker ones and a dark bar lighter ones; the status item picks them
+/// from the button's appearance when it draws (`StatusItemController.color`). `lightBars` / `darkBars` are the
+/// lightest and darkest a bar of that appearance gets, plain or over a wallpaper (grey levels, 0–1).
+enum MenubarInk {
+    static let minContrast = 4.5
+    static let lightBars: [Double] = [1.0, 0.85]
+    static let darkBars: [Double] = [0.0, 0.12, 0.2]
+
+    /// The ink (sRGB, 0–1) of `tint` on a light or dark bar; nil = the bar's own ink (in range).
+    static func rgb(_ tint: MenubarTitle.Tint, dark: Bool) -> (r: Double, g: Double, b: Double)? {
+        switch tint {
+        case .plain: nil
+        case .below: dark ? (1.0, 0.478, 0.439) : (0.69, 0.0, 0.125)
+        case .above: dark ? (1.0, 0.624, 0.039) : (0.604, 0.271, 0.0)
+        case .grey: dark ? (0.659, 0.659, 0.659) : (0.373, 0.373, 0.373)
+        }
+    }
+
+    /// WCAG relative luminance of an sRGB colour.
+    static func luminance(_ c: (r: Double, g: Double, b: Double)) -> Double {
+        func lin(_ v: Double) -> Double { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+    }
+
+    /// WCAG contrast ratio of two sRGB colours (1…21).
+    static func contrast(_ a: (r: Double, g: Double, b: Double), _ b: (r: Double, g: Double, b: Double)) -> Double {
+        let (la, lb) = (luminance(a), luminance(b))
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+}
+
 /// What the status item shows: the value's decision from the one renderer (`GlucoseCard.face`, surface
-/// `.menubarTitle`: value, strike when stale, the arrow, warm-up / ended / no readings) plus the mute bell. It adds no
-/// freshness or value logic of its own.
+/// `.menubarTitle`: value, strike when stale, the trend, warm-up / ended / no readings), its range colour
+/// (`GlucoseCard.rangeSide`), the mute bell and the tooltip. It adds no freshness or value logic of its own.
 struct MenubarTitle: Equatable {
-    /// "112 ↘", "Warming up 42m", "—".
+    /// The picture beside (or instead of) the value.
+    enum Mark: Equatable {
+        /// THE card arrow at the rate's angle (`GlucoseCard.trendImage`).
+        case arrow(Double)
+        /// The "no trend" ring (a value without a rate).
+        case ring
+        /// An SF Symbol instead of a value (no readings for 20 min, the sensor ended), or beside the warm-up's time left.
+        case symbol(String)
+        case none
+    }
+
+    /// The value's ink (its colours on each bar: `MenubarInk`).
+    enum Tint: Equatable {
+        /// The menu bar's own ink (in range).
+        case plain
+        /// Below the range: red.
+        case below
+        /// Above the range: orange.
+        case above
+        /// Secondary: a stale value, the warm-up's time left.
+        case grey
+    }
+
+    /// The whole title as text ("112 ↘", "Warming up 42m", "—"): tests and places that can only write text.
     var text: String
+    /// What the status item writes beside the mark: "112", "42m", or "" when a symbol stands alone.
+    var value: String
+    var mark: Mark
+    var tint: Tint
     /// Struck through and dimmed: the reading is stale (5–20 min old).
     var strike: Bool
     /// The bell with a slash: Mute all or a side's mute is on (the panel says which and until when).
     var muted: Bool
     /// The VoiceOver sentence: the renderer's value sentence, then the mute.
     var accessibilityLabel: String
+    /// The hover text: when the reading is from (or since when none came), the warm-up's end, the sensor's end, and
+    /// the Mute all countdown.
+    var tooltip: String
 
-    static func of(look: GlucoseLook, spoken: String, alerts: AlertUIState, reason: String?) -> MenubarTitle {
+    /// The range in the Mac's language ("Low", "Baja").
+    static func word(_ r: RangeState) -> String {
+        switch r {
+        case .veryLow: L10n.t("Very low")
+        case .low: L10n.t("Low")
+        case .high: L10n.t("High")
+        case .veryHigh: L10n.t("Very high")
+        case .extremelyHigh: L10n.t("Extremely high")
+        }
+    }
+
+    static let endedSymbol = "flag.checkered"
+    /// Beside a warming-up sensor's time left, so "42m" never reads as a value (#27).
+    static let warmupSymbol = "hourglass"
+
+    static func of(
+        look: GlucoseLook, data: CardData? = nil, config: GraphConfig = GraphConfig(), spoken: String,
+        alerts: AlertUIState, reason: String?
+    ) -> MenubarTitle {
         let muted =
             alerts.muteAllUntil != nil
             || alerts.quiets.contains { q in
                 if case .sideMuted = q.quiet { return true }
                 return false
             }
-        let text: String
+        let now = data.map { Date(timeIntervalSince1970: $0.now) } ?? Date()
+        let latest = data?.readings.max { $0.t < $1.t }
+        let readAt = latest.map { Clock.time(Date(timeIntervalSince1970: $0.t)) }
+        var text: String
+        var value: String
+        var mark = Mark.none
+        var tint = Tint.plain
+        var tooltip = "Sukrara"
+        var label = reason.map { look.state == .value ? spoken : $0 } ?? spoken
         switch look.state {
         case .value:
-            text = [look.text ?? GlucoseCard.noValueText, look.arrowText].compactMap { $0 }.joined(separator: " ")
-        case .warmingUp: text = L10n.t("Warming up") + (look.warmup.map { " \($0)" } ?? "")
-        case .ended: text = L10n.t("Sensor ended")
-        case .noReadings, .none: text = GlucoseCard.noValueText
+            value = look.text ?? GlucoseCard.noValueText
+            text = [value, look.arrowText].compactMap { $0 }.joined(separator: " ")
+            switch look.trend {
+            case .arrow: mark = look.rate.map { .arrow($0) } ?? .ring
+            case .noTrend: mark = .ring
+            case nil: mark = .none
+            }
+            if look.strike {
+                tint = .grey
+            } else if let data {
+                switch GlucoseCard.rangeSide(data, config: config) {
+                case .below: tint = .below
+                case .above: tint = .above
+                case .inRange, nil: tint = .plain
+                }
+            }
+            // the range in words where the colour shows it (#26: never by colour alone; VoiceOver's sentence says it too)
+            let range = tint == .plain || tint == .grey ? nil : latest.flatMap { RangeState.of($0.sgv, config.bands) }
+            if let readAt {
+                tooltip =
+                    if let range {
+                        L10n.t("Sukrara · \(Self.word(range)) · reading at \(readAt)")
+                    } else {
+                        L10n.t("Sukrara · reading at \(readAt)")
+                    }
+            }
+            // a sensor past its end that keeps sending (#3): the value, and the tooltip says it ended (the card's pill)
+            if look.ended { tooltip = L10n.t("Sensor ended — replace sensor") }
+        case .warmingUp:
+            let waiting = data?.sensor.map { now.timeIntervalSince1970 >= $0.warmupEnd } ?? false
+            value = waiting ? L10n.t("Almost ready") : look.warmup ?? ""
+            text = L10n.t("Warming up") + (look.warmup.map { " \($0)" } ?? "")
+            mark = .symbol(warmupSymbol)
+            tint = .grey
+            if let s = data?.sensor {
+                tooltip =
+                    now.timeIntervalSince1970 >= s.warmupEnd
+                    ? L10n.t("Sukrara · waiting for the first reading")
+                    : L10n.t("Sukrara · ready at \(Clock.time(Date(timeIntervalSince1970: s.warmupEnd)))")
+            }
+        case .ended:
+            value = ""
+            text = L10n.t("Sensor ended")
+            mark = .symbol(endedSymbol)
+            tooltip = L10n.t("Sensor ended — replace sensor")
+            label = tooltip
+        case .noReadings:
+            value = ""
+            text = GlucoseCard.noValueText
+            mark = .symbol(GlucoseCard.noReadingsSymbol)
+            if let readAt {
+                tooltip = L10n.t("Sukrara · no reading since \(readAt)")
+                if reason == nil { label = L10n.t("Glucose: no reading since \(readAt)") }
+            }
+        case .none:
+            value = GlucoseCard.noValueText
+            text = GlucoseCard.noValueText
+            if let reason { tooltip = reason }
         }
-        var label = reason.map { look.state == .value ? spoken : $0 } ?? spoken
-        if muted { label += ". " + L10n.t("Alerts muted") }
-        return MenubarTitle(text: text, strike: look.strike, muted: muted, accessibilityLabel: label)
+        if let until = alerts.muteAllUntil, let line = MuteCopy.allLine(until: until, now: now) {
+            tooltip += " · " + line
+            label += ". " + line
+        } else if muted {
+            label += ". " + L10n.t("Alerts muted")
+        }
+        return MenubarTitle(
+            text: text, value: value, mark: mark, tint: tint, strike: look.strike, muted: muted,
+            accessibilityLabel: label, tooltip: tooltip)
     }
 }

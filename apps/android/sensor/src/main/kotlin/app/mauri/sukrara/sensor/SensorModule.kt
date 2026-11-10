@@ -10,6 +10,8 @@ import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.sensor.ble.AndroidGatt
+import app.mauri.sukrara.sensor.ble.AndroidScanner
+import app.mauri.sukrara.sensor.juggluco.JugglucoSecret
 import app.mauri.sukrara.sensor.juggluco.JugglucoSource
 import app.mauri.sukrara.sensor.libre3.Libre3Crypto
 import app.mauri.sukrara.sensor.libreview.LibreViewAccount
@@ -45,23 +47,31 @@ class SensorModule(
 
     val pairings = PairingStore(secure)
 
+    /** Juggluco's web-server API secret (optional; the Keystore). */
+    val jugglucoSecret = JugglucoSecret(secure)
+
     /** Whether this build can read a Libre 3 directly (release builds always can; verifyNativeCore). */
     val hasLibre3Core: Boolean get() = Libre3Crypto.isAvailable
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val source = SourceManager(
-        kind = sourceKind,
-        pairings = pairings,
-        security = Libre3Crypto.takeIf { it.isAvailable },
-        connector = AndroidGatt(app),
-        juggluco = { JugglucoSource(http, zone = { clock.zone }) },
-        clock = clock,
-        dispatcher = dispatchers.default.limitedParallelism(1),
-        io = dispatchers.io,
-        log = log,
-    )
+    val source =
+        SourceManager(
+            kind = sourceKind,
+            pairings = pairings,
+            security = Libre3Crypto.takeIf { it.isAvailable },
+            connector = AndroidGatt(app),
+            scanner = AndroidScanner(app),
+            juggluco = { JugglucoSource(http, secret = jugglucoSecret::read, zone = { clock.zone }) },
+            clock = clock,
+            dispatcher = dispatchers.default.limitedParallelism(1),
+            io = dispatchers.io,
+            log = log,
+        )
 
     val libreView = LibreViewAccount(receiverIds, http, dispatchers.io)
+
+    /** *Open Sukrara when you scan a sensor* (the tap activity's enabled state). */
+    val tapLaunch = SensorTapLaunch(app)
 
     val nfc = NfcPairing(pairings, receiverIds, onPaired = source::retry, io = dispatchers.io, log = log)
 }

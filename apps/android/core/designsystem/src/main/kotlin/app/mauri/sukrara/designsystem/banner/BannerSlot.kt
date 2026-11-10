@@ -4,12 +4,15 @@
 package app.mauri.sukrara.designsystem.banner
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -21,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +41,13 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
+
+/** One of a banner's equal choices (*LibreView* / *Tidepool*): a pill with the service's own, untinted [icon]. */
+data class BannerChoice(
+    val label: String,
+    @param:DrawableRes val icon: Int,
+    val onClick: () -> Unit,
+)
 
 /** How much a banner matters: [Safety] = alerts or readings may not work (error colours, filled action); [Info] = a tip. */
 enum class BannerSeverity { Safety, Info }
@@ -55,9 +66,15 @@ data class Banner(
     val onAction: () -> Unit,
     val onDismiss: (() -> Unit)?,
     val severity: BannerSeverity = BannerSeverity.Info,
+    /** A second, quieter way out next to the action (*Turn off*), a text button before it. */
+    val secondary: Pair<String, () -> Unit>? = null,
+    /** Equal choices side by side instead of one action (each opens its own page). */
+    val choices: List<BannerChoice> = emptyList(),
 ) {
     init {
-        require(action != null || onDismiss != null) { "banner $id has no way out: give it an action or a dismiss" }
+        require(action != null || onDismiss != null || choices.isNotEmpty()) {
+            "banner $id has no way out: give it an action, choices or a dismiss"
+        }
     }
 }
 
@@ -93,8 +110,12 @@ private fun BannerCard(b: Banner) {
         Column(Modifier.padding(start = 16.dp, top = 12.dp, end = 4.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 // a safety banner's icon is never the informational primary blue
-                Icon(painterResource(b.icon), contentDescription = null, tint = if (safety) content else colors.primary,
-                    modifier = Modifier.padding(top = 12.dp))
+                Icon(
+                    painterResource(b.icon),
+                    contentDescription = null,
+                    tint = if (safety) content else colors.primary,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f).padding(top = 10.dp)) {
                     Text(b.title, style = MaterialTheme.typography.titleMedium)
@@ -106,17 +127,39 @@ private fun BannerCard(b: Banner) {
                     }
                 }
             }
-            b.action?.let { label ->
-                // a safety action starts at the text's edge, clear of the floating button in the bottom-end corner
+            if (b.choices.isNotEmpty()) {
                 Row(
                     Modifier.fillMaxWidth().padding(start = 40.dp, end = 12.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    b.choices.forEach { c ->
+                        FilledTonalButton(
+                            onClick = c.onClick,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp),
+                        ) {
+                            Image(painterResource(c.icon), contentDescription = null, modifier = Modifier.size(28.dp))
+                            Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
+                        }
+                    }
+                }
+            }
+            b.action?.let { label ->
+                // a safety action starts at the text's edge and stops short of the floating button in the bottom-end
+                // corner (at a large font it wraps rather than slide under it)
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 40.dp, end = if (safety) FAB_CLEARANCE else 12.dp, top = 8.dp),
                     horizontalArrangement = if (safety) Arrangement.Start else Arrangement.End,
                 ) {
                     if (safety) {
-                        Button(onClick = b.onAction, colors = ButtonDefaults.buttonColors(containerColor = colors.error, contentColor = colors.onError)) {
+                        Button(
+                            onClick = b.onAction,
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.error, contentColor = colors.onError),
+                        ) {
                             Text(label)
                         }
                     } else {
+                        b.secondary?.let { (text, onClick) -> TextButton(onClick = onClick) { Text(text) } }
                         FilledTonalButton(onClick = b.onAction) { Text(label) }
                     }
                 }
@@ -124,3 +167,6 @@ private fun BannerCard(b: Banner) {
         }
     }
 }
+
+/** A floating button (56 dp) inside the screen edge (16 dp), seen from the card's inner edge (16 dp in): 56 + 8. */
+private val FAB_CLEARANCE = 64.dp

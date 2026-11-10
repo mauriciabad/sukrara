@@ -58,6 +58,102 @@ public struct NotificationActionSettings: Codable, Equatable, Sendable {
     }
 }
 
+/// SPEC §1 "Waiting before the first alert" and "Back by the margin" (#37): a low / high side's first alert of an
+/// episode waits until the side has been out of range for `lowMin` / `highMin` minutes in a row; a level episode is back
+/// in range only once `marginMgdl` inside the threshold. All 0 = today's behaviour.
+public struct PersistenceSettings: Codable, Equatable, Sendable {
+    public var lowMin: Int
+    public var highMin: Int
+    public var marginMgdl: Int
+    public init(lowMin: Int = 0, highMin: Int = 0, marginMgdl: Int = 0) {
+        self.lowMin = lowMin
+        self.highMin = highMin
+        self.marginMgdl = marginMgdl
+    }
+
+    /// Minutes `kind`'s first alert waits for `reading`: very low, extremely high, a LO, a HI and the non-level kinds
+    /// never wait (the safety net is never delayed).
+    public func waitMin(_ kind: AlertKind, _ reading: GlucoseSample?) -> Int {
+        guard let r = reading, !r.isLo, !r.isHi, kind != .veryLow, kind != .extremelyHigh else { return 0 }
+        switch kind.side {
+        case .low: return lowMin
+        case .high: return highMin
+        default: return 0
+        }
+    }
+}
+
+/// SPEC §1 "Night alerts" (#38): a second set of every kind's rule in force each day from `from` to `to` (minutes
+/// after local midnight; the window may cross midnight; equal = never). Very low is always on at night.
+public struct NightSettings: Equatable, Sendable {
+    /// 22:00–07:00 (LoopFollow's night starts at 22:00; Nightscout's day starts at 7).
+    public static let defaultFrom = 22 * 60
+    public static let defaultTo = 7 * 60
+
+    public var on = false
+    public var from = NightSettings.defaultFrom
+    public var to = NightSettings.defaultTo
+    public var rules: [AlertKind: AlertRule] = Dictionary(
+        uniqueKeysWithValues: AlertKind.allCases.map { ($0, .defaults($0)) })
+
+    public init() {}
+
+    /// `kind`'s night rule; very low can't be off at night (the safety net).
+    public subscript(kind: AlertKind) -> AlertRule {
+        get {
+            var r = rules[kind] ?? .defaults(kind)
+            if kind == .veryLow { r.on = true }
+            return r
+        }
+        set { rules[kind] = newValue }
+    }
+
+    private func minute(_ t: Date, _ tz: TimeZone) -> Int {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = tz
+        let c = cal.dateComponents([.hour, .minute], from: t)
+        return (c.hour ?? 0) * 60 + (c.minute ?? 0)
+    }
+
+    /// The night rules are in force at `t` (local time in `tz`).
+    public func isActive(at t: Date, in tz: TimeZone) -> Bool {
+        guard on, from != to else { return false }
+        let m = minute(t, tz)
+        return from < to ? (m >= from && m < to) : (m >= from || m < to)
+    }
+
+    /// The next moment after `t` the rules switch (night starts or ends), or nil when off.
+    public func nextSwitch(after t: Date, in tz: TimeZone) -> Date? {
+        guard on, from != to else { return nil }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = tz
+        let today = cal.startOfDay(for: t)
+        var out: [Date] = []
+        for m in [from, to] {
+            for d in 0...1 {
+                guard let day = cal.date(byAdding: .day, value: d, to: today),
+                    let x = cal.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: day)
+                else { continue }
+                if x > t { out.append(x) }
+            }
+        }
+        return out.min()
+    }
+}
+
+/// SPEC §4 "No answer to a very low" (#39), each device's own: the wearer escalates a very low nobody answered on its
+/// phone for `min` minutes (`on`); a follower shows those escalations (`follow`).
+public struct EscalationSettings: Codable, Equatable, Sendable {
+    public var on: Bool
+    public var min: Int
+    public var follow: Bool
+    public init(on: Bool = true, min: Int = 5, follow: Bool = true) {
+        self.on = on
+        self.min = min
+        self.follow = follow
+    }
+}
+
 /// Sound choice: the pack every kind uses, per-kind overrides (`system` / `none` allowed), shuffle variants.
 public struct AlertSoundSettings: Codable, Equatable, Sendable {
     public static let packs = ["arcade", "kart", "quest", "soft"]
@@ -89,7 +185,13 @@ public struct AlertSettings: Equatable, Sendable {
     public var muteAfterCarbs = QuietRule(on: true, min: 15)
     public var sounds = AlertSoundSettings()
     public var notificationActions = NotificationActionSettings()
+    public var persistence = PersistenceSettings()
+    public var night = NightSettings()
+    public var escalation = EscalationSettings()
     public var source = AlertSource.wearer
+    /// A fact of the device running the rules, never stored: carbs may quiet very low only on the wearer's own phone
+    /// (#2, SPEC §2); the wearer's run for the followers, every follower and this Mac keep alerting on very low.
+    public var veryLowQuietByCarbs = true
 
     public init() {}
 
@@ -98,10 +200,20 @@ public struct AlertSettings: Equatable, Sendable {
         set { rules[kind] = newValue }
     }
 
+    /// These settings with the rules in force at `t`: the night set inside its window, else as they are (SPEC §1).
+    public func at(_ t: Date, in tz: TimeZone) -> AlertSettings {
+        guard night.isActive(at: t, in: tz) else { return self }
+        var s = self
+        for k in AlertKind.allCases { s[k] = night[k] }
+        return s
+    }
+
     /// The treatment whose quiet window covers `kind`, or nil: the rule is off, or `kind` is never quieted by a
     /// treatment (extremely high, no data).
     public func quietedBy(_ kind: AlertKind) -> TreatmentKind? {
-        guard kind != .extremelyHigh, let t = kind.treatment else { return nil }
+        guard kind != .extremelyHigh, kind != .veryLow || veryLowQuietByCarbs, let t = kind.treatment else {
+            return nil
+        }
         return quietRule(t).on ? t : nil
     }
 
@@ -144,7 +256,8 @@ public struct AlertSettings: Equatable, Sendable {
 
 extension AlertSettings: Codable {
     private enum Key: String, CodingKey {
-        case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteAfterCarbs, sounds, notificationActions, source
+        case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteAfterCarbs, sounds, notificationActions, persistence
+        case night, escalation, source
     }
 
     private struct DynamicKey: CodingKey {
@@ -203,14 +316,31 @@ extension AlertSettings: Codable {
         self.init()
         let root = try Loose(from: decoder)
         if let on = root["on"]?.bool { self.on = on }
-        for kind in AlertKind.allCases {
-            guard let p = root["alerts"]?[kind.rawValue] else { continue }
-            var r = AlertRule.defaults(kind)
-            if let on = p["on"]?.bool { r.on = on }
-            if let alarm = p["alarm"]?.bool { r.alarm = alarm }
-            if let x = p[Self.thresholdKey(kind)]?.number { r.threshold = AlertLimits.threshold(kind).coerce(x) }
-            if let x = p["repeatMin"]?.number { r.repeatMin = Int(SettingsSpec.alertRepeat.coerce(x)) }
-            self[kind] = r
+        /// An `alerts` object's rules, each missing or bad field at its default (also the night set's).
+        func rules(_ alerts: Loose?) -> [AlertKind: AlertRule] {
+            Dictionary(
+                uniqueKeysWithValues: AlertKind.allCases.map { kind in
+                    var r = AlertRule.defaults(kind)
+                    guard let p = alerts?[kind.rawValue] else { return (kind, r) }
+                    if let on = p["on"]?.bool { r.on = on }
+                    if let alarm = p["alarm"]?.bool { r.alarm = alarm }
+                    if let x = p[Self.thresholdKey(kind)]?.number {
+                        r.threshold = AlertLimits.threshold(kind).coerce(x)
+                    }
+                    if let x = p["repeatMin"]?.number { r.repeatMin = Int(SettingsSpec.alertRepeat.coerce(x)) }
+                    return (kind, r)
+                })
+        }
+        self.rules = rules(root["alerts"])
+        if let n = root["night"] {
+            func minute(_ key: String, _ fallback: Int) -> Int {
+                n[key]?.number.flatMap { $0 >= 0 && $0 < 1440 ? Int($0) : nil } ?? fallback
+            }
+            night.on = n["on"]?.bool ?? night.on
+            night.from = minute("from", night.from)
+            night.to = minute("to", night.to)
+            night.rules = rules(n["alerts"])
+            night.rules[.veryLow]?.on = true  // never off at night
         }
         func quiet(_ key: String, _ d: QuietRule, _ limits: NumberSpec) -> QuietRule {
             QuietRule(on: root[key]?["on"]?.bool ?? d.on, min: root[key]?["min"]?.number.map(limits.coerce) ?? d.min)
@@ -237,6 +367,22 @@ extension AlertSettings: Codable {
                 backMgdl: int("backMgdl", SettingsSpec.backMgdl, d.backMgdl),
                 backMin: int("backMin", SettingsSpec.backMin, d.backMin))
         }
+        if let p = root["persistence"] {
+            let d = persistence
+            func int(_ key: String, _ limits: NumberSpec, _ fallback: Int) -> Int {
+                p[key]?.number.map { Int(limits.coerce($0)) } ?? fallback
+            }
+            persistence = PersistenceSettings(
+                lowMin: int("lowMin", SettingsSpec.persistLow, d.lowMin),
+                highMin: int("highMin", SettingsSpec.persistHigh, d.highMin),
+                marginMgdl: int("marginMgdl", SettingsSpec.persistMargin, d.marginMgdl))
+        }
+        if let e = root["escalation"] {
+            escalation = EscalationSettings(
+                on: e["on"]?.bool ?? escalation.on,
+                min: e["min"]?.number.map { Int(SettingsSpec.escalateMin.coerce($0)) } ?? escalation.min,
+                follow: e["follow"]?.bool ?? escalation.follow)
+        }
         if let s = root["source"]?.string.flatMap(AlertSource.init(rawValue:)) { source = s }
     }
 
@@ -245,20 +391,38 @@ extension AlertSettings: Codable {
         try c.encode(Self.formatVersion, forKey: .v)
         try c.encode(on, forKey: .on)
         var alerts = c.nestedContainer(keyedBy: DynamicKey.self, forKey: .alerts)
-        for kind in AlertKind.allCases {
-            let r = self[kind]
-            var rule = alerts.nestedContainer(keyedBy: DynamicKey.self, forKey: DynamicKey(kind.rawValue))
-            try rule.encode(r.on, forKey: DynamicKey("on"))
-            try rule.encode(r.threshold, forKey: DynamicKey(Self.thresholdKey(kind)))
-            try rule.encode(r.repeatMin, forKey: DynamicKey("repeatMin"))
-            try rule.encode(r.alarm, forKey: DynamicKey("alarm"))
-        }
+        for kind in AlertKind.allCases { try encodeRule(self[kind], kind, into: &alerts) }
         try c.encode(muteAfterInsulin, forKey: .muteAfterInsulin)
         try c.encode(muteFallingHigh, forKey: .muteFallingHigh)
         try c.encode(muteAfterCarbs, forKey: .muteAfterCarbs)
         try c.encode(sounds, forKey: .sounds)
         try c.encode(notificationActions, forKey: .notificationActions)
+        var n = c.nestedContainer(keyedBy: DynamicKey.self, forKey: .night)
+        try n.encode(night.on, forKey: DynamicKey("on"))
+        try n.encode(night.from, forKey: DynamicKey("from"))
+        try n.encode(night.to, forKey: DynamicKey("to"))
+        try encodeRules(into: &n, { night[$0] })
+        try c.encode(persistence, forKey: .persistence)
+        try c.encode(escalation, forKey: .escalation)
         try c.encode(source, forKey: .source)
+    }
+
+    private func encodeRule(
+        _ r: AlertRule, _ kind: AlertKind, into alerts: inout KeyedEncodingContainer<DynamicKey>
+    ) throws {
+        var rule = alerts.nestedContainer(keyedBy: DynamicKey.self, forKey: DynamicKey(kind.rawValue))
+        try rule.encode(r.on, forKey: DynamicKey("on"))
+        try rule.encode(r.threshold, forKey: DynamicKey(Self.thresholdKey(kind)))
+        try rule.encode(r.repeatMin, forKey: DynamicKey("repeatMin"))
+        try rule.encode(r.alarm, forKey: DynamicKey("alarm"))
+    }
+
+    /// `rule`'s every kind as an `alerts` object inside `parent` (the night set's).
+    private func encodeRules(
+        into parent: inout KeyedEncodingContainer<DynamicKey>, _ rule: (AlertKind) -> AlertRule
+    ) throws {
+        var alerts = parent.nestedContainer(keyedBy: DynamicKey.self, forKey: DynamicKey("alerts"))
+        for kind in AlertKind.allCases { try encodeRule(rule(kind), kind, into: &alerts) }
     }
 
     /// Lenient decode of stored / mirrored JSON; anything unreadable gives the defaults.

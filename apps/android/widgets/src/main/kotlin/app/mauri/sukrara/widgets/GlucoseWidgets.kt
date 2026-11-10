@@ -32,6 +32,7 @@ import androidx.glance.background
 import androidx.glance.layout.Box
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardModel
@@ -72,6 +73,15 @@ enum class WidgetKind(
             GRAPH -> GraphWidget()
             COMBINED -> CombinedWidget()
         }
+
+    /** Its receiver (the launcher's broadcasts; the redraw alarm asks whether one is placed). */
+    val receiver: Class<out CardWidgetReceiver>
+        get() =
+            when (this) {
+                VALUE -> ValueWidgetReceiver::class.java
+                GRAPH -> GraphWidgetReceiver::class.java
+                COMBINED -> CombinedWidgetReceiver::class.java
+            }
 }
 
 /** The margin inside the widget around the card: a ring's laurel or crown shows there instead of being cut. */
@@ -87,7 +97,7 @@ private const val SHARE_OF_LIMIT = 1.5f / 3f
 fun widgetModel(
     context: Context,
     frame: WidgetFrame,
-): CardModel = cardModelOf(frame.glucose, frame.treatments, frame.now, CardWords.of(context.resources))
+): CardModel = cardModelOf(frame.glucose, frame.treatments, frame.now, CardWords.of(context.resources), frame.slots)
 
 /** The card style of [kind] for the placement with [overrides]. */
 fun widgetStyle(
@@ -125,22 +135,25 @@ fun renderWidget(
     val h = (bmp.height - 2 * pad).coerceAtLeast(1f)
     val model = widgetModel(context, frame)
     val style = widgetStyle(kind, frame, overrides)
-    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL)
+    // the chart's words follow the system font size (the renderer caps it)
+    val fontScale = context.resources.configuration.fontScale
+    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL, fontScale = fontScale)
     return bmp
 }
 
 /** The renderer's decision about the value a widget shows (the description and the tap follow it). */
 fun widgetLook(
     model: CardModel,
+    unit: GlucoseUnit,
 ): GlucoseLook {
     val latest = model.latest
     val sensor = SensorBadge.look(model.sensor, model.nowS, latest?.t, model.words)
-    return GlucoseCard.face(latest, model.nowS, sensor, CardSurface.WIDGET_DESCRIPTION)
+    return GlucoseCard.face(latest, model.nowS, sensor, CardSurface.WIDGET_DESCRIPTION, unit, model.words.locale)
 }
 
 /**
- * What a widget says to TalkBack: the value sentence (value, trend, range, age; or why there's none) and, with a chart,
- * its summary. A follower's widget starts with the wearer's name.
+ * What a widget says to TalkBack: the card's one sentence ([A11y.card]: the value, its alert, the slots, the chart
+ * summary; a graph-only widget how old its chart is). A follower's widget starts with the wearer's name.
  */
 fun describeCard(
     context: Context,
@@ -150,8 +163,7 @@ fun describeCard(
 ): String {
     val model = widgetModel(context, frame)
     val style = widgetStyle(kind, frame, overrides)
-    val value = A11y.value(model, style.bands, CardSurface.WIDGET_DESCRIPTION, badge = style.value && style.badge)
-    val sentence = listOfNotNull(value, style.graph?.let { A11y.chart(model, it) }).joinToString(". ")
+    val sentence = A11y.card(model, style, CardSurface.WIDGET_DESCRIPTION)
     val name =
         frame.glucose.link
             ?.wearerName
@@ -167,7 +179,7 @@ fun widgetTap(
     val model = widgetModel(context, frame)
     return WidgetTap.of(
         role = frame.glucose.role,
-        look = widgetLook(model),
+        look = widgetLook(model, frame.config.unit),
         mgdl = model.latest?.sgv,
         lowLimit = frame.config.bands.low,
         firingKinds = frame.glucose.alerts.firingKinds,
@@ -193,6 +205,17 @@ abstract class CardWidget(
             val frame by updater.frame.collectAsState()
             WidgetContent(kind, frame ?: first, appWidgetId)
         }
+    }
+
+    /** The picker's and the pin dialog's picture: the same card over a sample day ([previewFrame]), at each size. */
+    override val previewSizeMode = SizeMode.Responsive(kind.previewSizes)
+
+    override suspend fun providePreview(
+        context: Context,
+        widgetCategory: Int,
+    ) {
+        val frame = previewFrame(java.time.Instant.now(), isDark(context))
+        provideContent { PreviewContent(kind, frame) }
     }
 
     /**
@@ -232,6 +255,31 @@ private fun WidgetContent(
         Image(
             ImageProvider(bitmap),
             contentDescription = description,
+            modifier = GlanceModifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds,
+        )
+    }
+}
+
+/** A preview: the picture only (no tap, nothing to describe beyond the widget's own label). */
+@Composable
+private fun PreviewContent(
+    kind: WidgetKind,
+    frame: WidgetFrame,
+) {
+    val context = LocalContext.current
+    val size: DpSize = LocalSize.current
+    val bitmap = remember(size) { renderWidget(context, kind, size.width.value, size.height.value, frame, WidgetOverrides()) }
+    Box(
+        GlanceModifier
+            .fillMaxSize()
+            .appWidgetBackground()
+            .background(Color(GraphPalette.of(frame.dark).bg))
+            .cornerRadius(android.R.dimen.system_app_widget_background_radius),
+    ) {
+        Image(
+            ImageProvider(bitmap),
+            contentDescription = null,
             modifier = GlanceModifier.fillMaxSize(),
             contentScale = ContentScale.FillBounds,
         )

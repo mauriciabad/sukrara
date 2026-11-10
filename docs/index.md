@@ -10,25 +10,23 @@ Live glucose from a **FreeStyle Libre 3** on your **Mac menubar**, **Android sta
 watch** and your **family's devices**. End-to-end encrypted, over Bluetooth nearby or public Nostr relays from
 anywhere. **No cloud account, nothing to host.** The name: *sucre* (sugar) + *ara* (Catalan: now).
 
-**[Download for Android](https://github.com/mauriciabad/sukrara/releases/download/v0.11.52/Sukrara-0.11.52.apk)**
-· **[Download for Mac](https://github.com/mauriciabad/sukrara/releases/download/v0.11.52/Sukrara-0.11.52.dmg)**
+**[Download for Android](https://github.com/mauriciabad/sukrara/releases/download/v0.12.0/Sukrara-0.12.0.apk)**
+· **[Download for Mac](https://github.com/mauriciabad/sukrara/releases/download/v0.12.0/Sukrara-0.12.0.dmg)**
 · [All releases](https://github.com/mauriciabad/sukrara/releases)
-· [Source and install steps](https://github.com/mauriciabad/sukrara#try-it)
+· [Source and install steps](https://github.com/mauriciabad/sukrara#install)
+· [Privacy policy](privacy)
 
-**Mac** (Apple Silicon, macOS 14+): open the dmg and drag Sukrara onto Applications, or
-`brew install --cask mauriciabad/tap/sukrara`. The app isn't notarized yet, so the first launch says *"Sukrara" Not
-Opened — Apple could not verify "Sukrara" is free of malware…*: click **Done**, then **System Settings → Privacy &
-Security**, scroll to **Security**, click **Open Anyway** next to *"Sukrara" was blocked to protect your Mac* and
-confirm with your password or Touch ID. Only once; Control-click → Open no longer skips this on macOS 15+
-([Apple: open a Mac app from an unknown developer](https://support.apple.com/guide/mac-help/mh40616/mac)). Sukrara
-lives in the menu bar.
+**Mac** (Apple Silicon, macOS 15+): open the dmg and drag Sukrara onto Applications, or
+`brew install --cask mauriciabad/tap/sukrara`. It's notarized by Apple, so it opens like any other app. Sukrara lives
+in the menu bar.
 
 **Android** (16+, arm64): open the APK and allow installs from your browser when asked (**Settings → Allow from this
-source**), then **Install**. [Obtainium](https://obtainium.imranr.dev/) can keep it updated.
+source**), then **Install**. [Obtainium](https://obtainium.imranr.dev/) can keep it updated (turn on *Include
+prereleases*).
 
-> **Alpha, built from research spikes.** Each feature started as a proof of concept with a written report (below);
-> The app bundles them for daily use. The real Sukrara will be rebuilt from scratch with what we learned.
-> **Not a medical device:** don't make treatment decisions from it.
+> **A preview.** Each feature started as a proof of concept with a written report (below); the Android and Mac apps
+> are built anew from what they found, tested against the same shared specs. Releases are prereleases until they've
+> been tested on a real sensor. **Not a medical device:** don't make treatment decisions from it.
 
 <p>
   <img src="img/widgets/widgets-light.png" alt="Home-screen widgets, light: the glucose number with a trend arrow, time-in-range rings for 7 days and 1 day, a 12 h chart of a day with meals and the sensor's 11 days left, and a smaller value widget" width="270">

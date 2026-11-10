@@ -7,13 +7,18 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import app.mauri.sukrara.core.data.DataModule
+import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.protocol.Wire
+import app.mauri.sukrara.protocol.event.SensorLife
+import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.crypto.SdkNostrCrypto
+import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerIdentityStore
+import app.mauri.sukrara.share.owner.RelayPolicy
 import app.mauri.sukrara.share.owner.SeenWraps
 import app.mauri.sukrara.share.owner.requests.RequestNotifications
 import app.mauri.sukrara.share.owner.requests.RequestNotifier
@@ -21,10 +26,14 @@ import app.mauri.sukrara.share.owner.usecase.MirroredSettingsSource
 import app.mauri.sukrara.share.owner.usecase.OwnerContext
 import app.mauri.sukrara.share.owner.usecase.RandomBytes
 import app.mauri.sukrara.share.transport.OkHttpWebSockets
+import app.mauri.sukrara.share.transport.RelayAccess
 import app.mauri.sukrara.share.transport.RelayPool
-import java.security.SecureRandom
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import java.security.SecureRandom
 
 /**
  * The wearer's sharing graph (composed by `AppGraph`, owner role only). Nothing is built until first use.
@@ -40,6 +49,10 @@ class ShareOwnerModule(
     val scope: CoroutineScope,
     val requestNotifications: RequestNotifications,
     private val settings: MirroredSettingsSource = MirroredSettingsSource.None,
+    /** Where the relay connections go (the app's `LaunchPlan`; release: the public relays). */
+    private val relays: RelayAccess = RelayAccess.Public,
+    /** The wearer's current sensor (`:sensor`'s start, end and warm-up end), sent with the live events. */
+    private val sensor: Flow<SensorLife?> = flowOf(null),
 ) {
     val crypto by lazy { SdkNostrCrypto() }
 
@@ -52,17 +65,41 @@ class ShareOwnerModule(
 
     /** Relays read gift wraps addressed to the identity only after NIP-42 AUTH as it: the pool gets I when known. */
     private val transport by lazy {
-        RelayPool(Wire.DEFAULT_RELAYS, authKey = { ownerEngine.identityKey() }, crypto, OkHttpWebSockets(data.http), dispatchers.io, { clock.now().epochSecond })
+        RelayPool(
+            Wire.DEFAULT_RELAYS,
+            authKey = { ownerEngine.identityKey() },
+            crypto,
+            OkHttpWebSockets(data.http),
+            dispatchers.io,
+            { clock.now().epochSecond },
+            access = relays,
+        )
     }
 
     private val requests by lazy { RequestNotifier(requestNotifications) }
 
+    /** The GATT server for nearby followers; on while the switch is (Settings › Sharing › Bluetooth). */
+    private val nearby by lazy { AndroidNearbyServer(context, crypto, data.settings.flow(NearbySharing), scope) }
+
     val ownerEngine: OwnerEngine by lazy {
         val seen = SeenWraps { id, at -> data.database.seenWraps().markSeen(id, at) }
         OwnerEngine(
-            ownerContext, identityStore, transport, hub, seen, data.treatments, clock, dispatchers.default,
+            ownerContext,
+            identityStore,
+            transport,
+            hub,
+            seen,
+            data.treatments,
+            clock,
+            dispatchers.default,
             settings = settings,
+            nearby = nearby,
+            relayPolicy =
+                combine(data.settings.flow(RelaySharing), data.settings.flow(RelayInterval)) { on, min ->
+                    RelayPolicy(on, min.toInt())
+                },
             onRequest = { requests.onRequest(it) },
+            sensor = sensor,
         ).also { engine ->
             watchNetwork()
             // the notification goes as soon as its request is answered anywhere (app, notification) or paused
@@ -82,10 +119,21 @@ class ShareOwnerModule(
         try {
             val request = engine.pendingRequest(follower) ?: return false
             if (!allow) return true.also { engine.deny(follower) }
-            return request.others == 0 && engine.approve(follower)
+            return request.others == 0 && engine.approve(follower) == ApproveResult.Allowed
         } finally {
             if (!wasRunning) engine.stop()
         }
+    }
+
+    companion object {
+        /** Settings › Sharing › Bluetooth (the schema's `sharing.bleFollowers`). */
+        val NearbySharing = SchemaSettings.bool("sharing.bleFollowers", default = true)
+
+        /** Settings › Sharing › Over the internet (the schema's `sharing.nostr`). */
+        val RelaySharing = SchemaSettings.bool("sharing.nostr", default = true)
+
+        /** Settings › Sharing › Upload interval, minutes; 0 = every reading (the schema's `sharing.nostrInterval`). */
+        val RelayInterval = SchemaSettings.number("sharing.nostrInterval")
     }
 
     /** The network came back: reconnect relays now instead of waiting out the backoff. */

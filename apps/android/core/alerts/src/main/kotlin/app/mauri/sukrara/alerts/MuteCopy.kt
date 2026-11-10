@@ -30,6 +30,9 @@ sealed interface MuteLine {
     /** The muted notification's text "Until 10:42" ([until] epoch s; the platform formats the clock time). */
     data class NotifUntil(val until: Long) : MuteLine
 
+    /** "Night alerts until 7:00" while the night alerts apply (#38; [until] epoch s, the platform's clock time). */
+    data class NightUntil(val until: Long) : MuteLine
+
     /** The card's pill "Muted · 1h 12m" (compact duration). */
     data class Pill(val leftMin: Long) : MuteLine
 
@@ -57,13 +60,14 @@ object MuteCopy {
     }
 
     /** The state line of a [QuietSide] at [now] (relaxed and not quiet: the remind-less line). */
-    fun of(q: QuietSide, now: Long): MuteLine = when (q.reason) {
-        QuietReason.NOTIFICATION -> sideMuted(q.kind.side, q.until, now)
-        QuietReason.CARBS -> MuteLine.SideAfter(q.kind.side, TreatmentKind.CARBS, leftMin(q.until, now))
-        QuietReason.INSULIN -> MuteLine.SideAfter(q.kind.side, TreatmentKind.RAPID, leftMin(q.until, now))
-        QuietReason.FALLING -> MuteLine.SideFalling(q.kind.side)
-        null -> MuteLine.SideLess(q.kind.side, q.relaxMin)
-    }
+    fun of(q: QuietSide, now: Long): MuteLine =
+        when (q.reason) {
+            QuietReason.NOTIFICATION -> sideMuted(q.kind.side, q.until, now)
+            QuietReason.CARBS -> MuteLine.SideAfter(q.kind.side, TreatmentKind.CARBS, leftMin(q.until, now))
+            QuietReason.INSULIN -> MuteLine.SideAfter(q.kind.side, TreatmentKind.RAPID, leftMin(q.until, now))
+            QuietReason.FALLING -> MuteLine.SideFalling(q.kind.side)
+            null -> MuteLine.SideLess(q.kind.side, q.relaxMin)
+        }
 
     fun sideMuted(side: Side, until: Long, now: Long): MuteLine =
         MuteLine.SideMuted(side, if (until >= Rules.NEVER) null else leftMin(until, now))
@@ -75,5 +79,14 @@ object MuteCopy {
     fun pill(until: Long, now: Long): MuteLine = if (until >= Rules.NEVER) MuteLine.PillForever else MuteLine.Pill(leftMin(until, now))
 
     /** The Mute all choices: the presets in order, 0 = until turned off. */
-    fun muteAllChoices(): List<MuteLine> = AlertLimits.MUTE_ALL.presetMinutes.map { if (it == 0) MuteLine.ChoiceForever else MuteLine.Choice(it) }
+    fun muteAllChoices(): List<MuteLine> =
+        AlertLimits.MUTE_ALL.presetMinutes.map {
+            if (it ==
+                0
+            ) {
+                MuteLine.ChoiceForever
+            } else {
+                MuteLine.Choice(it)
+            }
+        }
 }

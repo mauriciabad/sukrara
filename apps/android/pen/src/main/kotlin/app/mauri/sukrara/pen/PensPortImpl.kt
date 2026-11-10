@@ -1,0 +1,336 @@
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+package app.mauri.sukrara.pen
+
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import app.mauri.sukrara.core.data.nfc.TagIntents
+import app.mauri.sukrara.core.model.PenAnswer
+import app.mauri.sukrara.core.model.PenCandidate
+import app.mauri.sukrara.core.model.PenCheck
+import app.mauri.sukrara.core.model.PenDoseInfo
+import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PenHeldDose
+import app.mauri.sukrara.core.model.PenInfo
+import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.PenQuestionInfo
+import app.mauri.sukrara.core.model.PenReadUndo
+import app.mauri.sukrara.core.model.PenReview
+import app.mauri.sukrara.core.model.PenSessionInfo
+import app.mauri.sukrara.core.model.PenSessionStatus
+import app.mauri.sukrara.core.model.PenTaps
+import app.mauri.sukrara.core.model.PenTypedBy
+import app.mauri.sukrara.core.model.PensPort
+import app.mauri.sukrara.pen.engine.Ledger
+import app.mauri.sukrara.pen.engine.PdDose
+import app.mauri.sukrara.pen.engine.PenEngine
+import app.mauri.sukrara.pen.engine.PenEntry
+import app.mauri.sukrara.pen.engine.Question
+import app.mauri.sukrara.pen.engine.Seen
+import app.mauri.sukrara.pen.engine.Session
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+
+/** Settings' view of the pens ([PensPort]) over the pen runtime; nothing here decides about doses. */
+class PensPortImpl(
+    private val context: Context,
+    private val module: PensModule,
+) : PensPort {
+    private val pensRt get() = module.pens
+
+    // the ledger loaded first: a page reopened after the app was killed must not see "no pens" and close
+    override val pens: Flow<List<PenInfo>> =
+        pensRt.ledger.onStart { pensRt.load() }.map { l ->
+            val entries = if (l.pens.values.any { it.returning }) module.penEntries() else emptyList()
+            l.pens.values
+                .sortedBy { it.first }
+                .map { info(it.serial, l, entries) }
+        }
+
+    override val questions: Flow<List<PenQuestionInfo>> =
+        kotlinx.coroutines.flow
+            .combine(pensRt.ledger.onStart { pensRt.load() }, module.logChanges) { l, _ -> l }
+            .map { l ->
+                val open = l.open().sortedBy { it.at }
+                if (open.isEmpty()) return@map emptyList()
+                val log = module.penEntries()
+                open.mapNotNull { q -> questionInfo(q, l, log) }
+            }
+
+    override suspend fun answer(
+        question: PenQuestionInfo,
+        answer: PenAnswer,
+    ): Boolean {
+        val k = keysOf(question.id, question.keys) ?: return false
+        val done =
+            when (answer) {
+                PenAnswer.Suggested -> pensRt.acceptSuggestion(question.id, k)
+                PenAnswer.AllPriming -> pensRt.allPriming(question.id, k)
+                is PenAnswer.Same -> pensRt.answerMatch(question.id, answer.entry, k)
+            }
+        module.syncNotices()
+        return done
+    }
+
+    private fun info(
+        serial: String,
+        l: Ledger,
+        entries: List<PenEntry>,
+    ): PenInfo {
+        val p = l.pens.getValue(serial)
+        val profile = PenProfiles.byId(p.model) ?: PenProfiles.ECHO_PLUS
+        val held =
+            if (!profile.verified && p.check == null) {
+                pensRt.heldForCheck(serial)?.let { r ->
+                    r.doses.maxByOrNull { it.time }?.let { PenHeldDose(it.units, it.time, r.scanTime) }
+                }
+            } else {
+                null
+            }
+        return PenInfo(
+            serial = serial,
+            name = Pens.displayName(serial, l.pens),
+            model = profile.name,
+            kind = p.kind,
+            since = p.since,
+            first = p.first,
+            lastScan = p.lastScan,
+            older = p.older,
+            returningSince =
+                if (p.returning) {
+                    entries.filter { it.pen == serial }.flatMap { it.pd.orEmpty() }.maxOfOrNull { it.t }
+                } else {
+                    null
+                },
+            untested = !profile.verified,
+            check =
+                when (p.check) {
+                    Pens.CHECK_OK -> PenCheck.Ok
+                    Pens.CHECK_FAILED -> PenCheck.Failed
+                    else -> PenCheck.None
+                },
+            opened = p.opened,
+            held = held,
+            review =
+                p.big?.let { b ->
+                    PenReview(b.at, b.since, b.entries.size, b.merged, b.undo.keys.toSet())
+                },
+        )
+    }
+
+    override fun sessions(serial: String): Flow<List<PenSessionInfo>> =
+        kotlinx.coroutines.flow.combine(pensRt.ledger, module.logChanges) { l, _ -> l }.map { l ->
+            val pen = l.pens[serial] ?: return@map emptyList()
+            val (sessions, entries) = pensRt.history(serial)
+            val byId = entries.associateBy { it.id }
+            sessions.map { s -> session(s, pen.doses, byId[s.entry], pen.replaced[s.entry]?.a, l) }
+        }
+
+    private fun session(
+        s: Session,
+        doses: Map<String, Seen>,
+        entry: PenEntry?,
+        mergedFrom: Double?,
+        l: Ledger,
+    ) = PenSessionInfo(
+        serial = s.serial,
+        t = s.t,
+        units = entry?.takeIf { !it.del }?.a ?: s.a,
+        primed = s.pr,
+        status = STATUS[s.status] ?: PenSessionStatus.NotLogged,
+        entry = s.entry,
+        question = s.question,
+        sameQuestion = l.questions.firstOrNull { it.id == s.question }?.type == PenEngine.MATCH_Q,
+        candidates =
+            l.questions
+                .firstOrNull { it.id == s.question }
+                ?.cands
+                ?.size ?: 0,
+        mergedFrom = mergedFrom,
+        incomplete = s.incomplete,
+        doses =
+            s.keys
+                .mapNotNull { k ->
+                    doses[k]?.let { PenDoseInfo(k, it.t, it.a, k in s.primed, it.inc) }
+                }.sortedBy { it.t },
+    )
+
+    override suspend fun entry(id: String): PenEntryInfo? {
+        val e = module.penEntries().firstOrNull { it.id == id && !it.del && it.pen != null && !it.pd.isNullOrEmpty() } ?: return null
+        val pen = pensRt.load().pens[e.pen]
+        val inc = pen?.doses?.values.orEmpty()
+        return PenEntryInfo(
+            id = e.id,
+            serial = e.pen!!,
+            kind = e.k,
+            units = e.a,
+            primed = e.pr ?: 0.0,
+            t = e.t,
+            note = e.n,
+            doses =
+                e.pd!!.mapIndexed { i, d ->
+                    PenDoseInfo(
+                        "$i",
+                        d.t,
+                        d.a,
+                        d.p,
+                        inc.any { it.t == d.t && PenEngine.tenths(it.a) == PenEngine.tenths(d.a) && it.inc },
+                    )
+                },
+            replaced = pen?.replaced?.get(e.id)?.let { it.a to it.t },
+        )
+    }
+
+    override suspend fun rename(
+        serial: String,
+        name: String,
+    ) = pensRt.update(serial) { it.copy(name = name.trim().take(40)) }
+
+    override suspend fun setKind(
+        serial: String,
+        kind: String,
+    ) = pensRt.update(serial) { it.copy(kind = if (kind == "long") "long" else "rapid") }
+
+    override suspend fun opened(serial: String) = pensRt.opened(serial)
+
+    override suspend fun forget(serial: String) = pensRt.forget(serial)
+
+    override suspend fun logDoses(
+        serial: String,
+        doses: Map<String, Boolean>,
+    ) = pensRt.logDoses(serial, doses).also { if (it) module.syncNotices() }
+
+    override suspend fun sessionEntry(
+        serial: String,
+        t: Long,
+    ) = pensRt.sessionEntry(serial, t)?.let { PenNearEntry(it.id, it.a, it.t) }
+
+    override suspend fun joinEntry(
+        serial: String,
+        doses: Map<String, Boolean>,
+        id: String,
+    ) = pensRt.joinEntry(serial, doses, id)
+
+    override suspend fun match(
+        serial: String,
+        t: Long,
+        units: Double,
+    ) = pensRt.match(serial, t, units)?.let { PenNearEntry(it.id, it.a, it.t) }
+
+    override suspend fun correct(
+        shown: PenEntryInfo,
+        primed: List<Boolean>,
+    ): PenEntryInfo? {
+        // the doses exactly as the sheet showed them: an entry a read changed meanwhile isn't touched
+        val pd = shown.doses.map { PdDose(it.t, it.units, it.primed) }
+        return pensRt.correct(shown.id, pd, primed)?.let { shown }
+    }
+
+    override suspend fun restore(was: PenEntryInfo) = pensRt.restoreLast(was.id)
+
+    /** The question's keys in its own order when they are the doses the page showed; null = it changed. */
+    private suspend fun keysOf(
+        question: String,
+        shown: List<String>,
+    ): List<String>? =
+        pensRt
+            .load()
+            .questions
+            .firstOrNull { it.id == question }
+            ?.keys
+            ?.takeIf { it.toSet() == shown.toSet() }
+
+    override suspend fun undoRead(serial: String): PenReadUndo =
+        when (pensRt.undoBig(serial)) {
+            BigUndo.Done -> PenReadUndo.Done.also { module.syncNotices() }
+            BigUndo.Changed -> PenReadUndo.Changed
+            BigUndo.Gone -> PenReadUndo.Gone
+        }
+
+    override suspend fun checkPassed(
+        serial: String,
+        readAt: Long,
+    ): Boolean = pensRt.checkPassed(serial, readAt)
+
+    override suspend fun checkFailed(serial: String) = pensRt.checkFailed(serial)
+
+    override suspend fun checkAgain(serial: String) = pensRt.checkAgain(serial)
+
+    override fun taps(): PenTaps = module.taps()
+
+    override fun openTagSettings(): Boolean = TagIntents.openAllow(context)
+
+    override fun openNfcSettings() {
+        start(Intent(Settings.ACTION_NFC_SETTINGS))
+    }
+
+    override fun openNotifySettings() {
+        start(module.notices.readChannelSettings())
+    }
+
+    override fun openJugglucoInfo() {
+        start(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", PensModule.JUGGLUCO, null)))
+    }
+
+    private fun start(i: Intent): Boolean =
+        try {
+            context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
+        }
+
+    companion object {
+        private val STATUS =
+            mapOf(
+                Session.LOGGED to PenSessionStatus.Logged,
+                Session.MERGED to PenSessionStatus.Merged,
+                Session.CORRECTED to PenSessionStatus.Corrected,
+                Session.PRIMING to PenSessionStatus.Priming,
+                Session.WAITING to PenSessionStatus.Waiting,
+                Session.REVIEW to PenSessionStatus.Review,
+                Session.NOT_LOGGED to PenSessionStatus.NotLogged,
+                Session.BEFORE to PenSessionStatus.Before,
+                Session.IGNORED to PenSessionStatus.Ignored,
+            )
+    }
+}
+
+/**
+ * An open question as the screens show it: its doses (the suggestion's roles), what answering logs (the suggestion,
+ * or the pen's injection a *Same injection?* asks about) and the live typed entries it may be, nearest first. Null when
+ * its doses are gone from the ledger.
+ */
+internal fun questionInfo(
+    q: Question,
+    l: Ledger,
+    log: List<PenEntry>,
+): PenQuestionInfo? {
+    val pen = l.pens[q.serial] ?: return null
+    val seen = q.keys.mapNotNull { k -> pen.doses[k]?.let { k to it } }
+    if (seen.isEmpty()) return null
+    val inj = seen.filter { !it.second.p }
+    val t = (inj.ifEmpty { seen }).minOf { it.second.t }
+    val live = log.associateBy { it.id }
+    return PenQuestionInfo(
+        id = q.id,
+        serial = q.serial,
+        same = q.type == PenEngine.MATCH_Q,
+        keys = q.keys,
+        doses = seen.map { (k, d) -> PenDoseInfo(k, d.t, d.a, d.p, d.inc) }.sortedBy { it.t },
+        units = PenEngine.r1(inj.sumOf { it.second.a }),
+        t = t,
+        candidates =
+            q.cands
+                .mapNotNull { id -> live[id]?.takeIf { !it.del } }
+                .sortedBy { kotlin.math.abs(it.t - t) }
+                .map { PenCandidate(it.id, it.a, it.t, TYPED_BY[it.o] ?: PenTypedBy.Phone) },
+        asked = q.at,
+    )
+}
+
+private val TYPED_BY = mapOf("phone" to PenTypedBy.Phone, "mac" to PenTypedBy.Mac, "follower" to PenTypedBy.Follower)

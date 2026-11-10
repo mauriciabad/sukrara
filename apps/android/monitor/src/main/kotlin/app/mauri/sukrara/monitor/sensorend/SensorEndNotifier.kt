@@ -3,128 +3,202 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.sensorend
 
-import android.app.Notification
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.StateStore
-import app.mauri.sukrara.monitor.R
-import app.mauri.sukrara.monitor.alerts.AlertAlarm
-import app.mauri.sukrara.monitor.notify.Channels
-import app.mauri.sukrara.monitor.notify.NotificationGroups
-import app.mauri.sukrara.monitor.notify.NotificationIds
+import app.mauri.sukrara.graph.cardInfo
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** What the sensor-end notifier shows (Android: [AndroidSensorEndPresenter]; tests: a fake). */
+/** The sensor notices the notifier shows (each its own notification). */
+enum class SensorNotice { REMINDER, COUNTDOWN, WARMUP, READY, ENDED }
+
+/** What the sensor-end notifier shows (Android: [AndroidSensorEndPresenter]; tests: a fake). All times epoch s. */
 interface SensorEndPresenter {
-    fun warn(endsAt: Long, now: Long)
+    fun remind(end: Long, now: Long, text: ReminderText)
+
+    /** The end countdown; [promote] = ask for a Live Update (only while the glucose chip is off). */
+    fun countdown(end: Long, hours: Int, now: Long, promote: Boolean)
+
+    /** The warm-up countdown to [warmupEnd]; [waiting] = past it, "Almost ready" without a timer. */
+    fun warmup(start: Long, warmupEnd: Long, now: Long, waiting: Boolean)
+
+    fun ready()
 
     fun ended()
 
-    fun clear()
+    fun cancel(notice: SensorNotice)
 }
 
 /**
- * Warns before the sensor ends and says when it has: driven by the hub's sensor state while the service
- * runs ([onSensor]) and by its own exact alarm, boot and clock changes ([check], from `AlertsModule.check`).
+ * The notifier's two alarms: [event] = the next moment that matters (exact, waking, on time), [tick] = a progress
+ * refresh before it (non-waking); null cancels each.
+ */
+fun interface SensorEndAlarm {
+    fun set(event: Long?, tick: Long?)
+}
+
+/** The settings the notifier plans with: Settings › Sensor end, the countdown hours, the glucose chip. */
+data class SensorEndSettings(val config: SensorEndConfig, val countdownHours: Int, val chip: Boolean)
+
+/**
+ * Sensor-end reminders, the end and warm-up countdowns, *Sensor ready* and *Sensor ended* for the wearer
+ * ([SensorEndPlan] has the rules). Every trigger recomputes what should show **now** and sets one alarm for the next
+ * moment that matters, so a changed sensor, zone or setting never leaves a stale alarm:
+ * - [update]: the hub's sensor and newest reading while the service runs, and every settings change;
+ * - [check]: the alarm, boot, app update, time change (from the saved sensor alone: the hub may not know it yet);
+ * - [unlocked]: an unlock that brings a reminder forward; [dismissed]: a countdown swiped away (kept away for it).
  */
 class SensorEndNotifier(
     private val store: StateStore<SensorEndMemory>,
     private val presenter: SensorEndPresenter,
-    private val alarm: AlertAlarm,
+    private val alarm: SensorEndAlarm,
     private val clock: Clock,
+    private val settings: suspend () -> SensorEndSettings,
 ) {
     private val mutex = Mutex()
 
-    /** The hub's sensor: an active sensor's end plans the notices; no sensor clears them. */
-    suspend fun onSensor(sensor: SensorState) {
-        when (sensor) {
-            is SensorState.Active -> sensor.endsAt?.let { apply(it.epochSecond) }
-            SensorState.None -> apply(null)
-            else -> Unit // warming up, ended, Bluetooth off, …: the planned end still holds
-        }
-    }
-
-    /** Re-evaluates the planned end now (alarm, boot, time change). */
-    suspend fun check() {
-        apply(store.data.first().endsAt.takeIf { it > 0 })
-    }
-
-    private suspend fun apply(endsAt: Long?) = mutex.withLock {
+    /**
+     * The hub's [sensor] and the newest reading's time ([latestS]); [wearer] false (a follower, no role) clears
+     * everything: only the phone that wears the sensor reminds. No sensor ([SensorState.None]: forgotten, or not read
+     * yet after a restart or before the first unlock) takes every notice down but keeps what was announced for the
+     * sensor, so the same sensor coming back never announces it again (#102).
+     */
+    suspend fun update(
+        wearer: Boolean,
+        sensor: SensorState,
+        latestS: Long?,
+        s: SensorEndSettings,
+    ) = mutex.withLock {
         val now = clock.now().epochSecond
         val before = store.data.first()
-        val d = SensorEndPlan.decide(endsAt, now, before)
-        if (d.clear) presenter.clear()
-        if (d.warn && endsAt != null) presenter.warn(endsAt, now)
-        if (d.ended) presenter.ended()
-        store.update { d.memory }
-        alarm.set(d.next)
-    }
-}
+        if (!wearer) return@withLock forget(before)
+        if (sensor == SensorState.None) return@withLock park(before)
+        val info = sensor.cardInfo()
+        val mem =
+            when {
+                info != null -> {
+                    SensorEndPlan.remember(before, info.startS, info.endS, info.warmupEndS, s.config.hashCode(), now, sensor.id())
+                }
 
-/** The sensor notifications on channel `sensor`, in the `info` group (never bundled with alerts). */
-class AndroidSensorEndPresenter(private val ctx: Context) : SensorEndPresenter {
-    override fun warn(endsAt: Long, now: Long) {
-        val hours = ((endsAt - now + 1799) / 3600).coerceAtLeast(1)
-        val left = ctx.getString(app.mauri.sukrara.core.graph.R.string.duration_text_hours, hours)
-        post(
-            builder()
-                .setContentTitle(ctx.getString(R.string.sensor_end_soon_title, left))
-                .setContentText(ctx.getString(R.string.sensor_end_soon_text))
-                .setWhen(endsAt * 1000)
-                .setShowWhen(true)
-                .setUsesChronometer(true)
-                .setChronometerCountDown(true)
-                .setTimeoutAfter(((endsAt - now) * 1000).coerceAtLeast(1_000))
-                .build(),
-        )
-    }
+                // an end before the planned one: the sensor stopped early
+                sensor == SensorState.Ended && before.known -> {
+                    SensorEndPlan.remember(before, before.start, minOf(before.end, now), before.warmupEnd, s.config.hashCode(), now)
+                }
 
-    override fun ended() {
-        val pair = Notification.Action.Builder(null, ctx.getString(R.string.sensor_action_pair), openApp(ACTION_PAIR_SENSOR)).build()
-        post(
-            builder()
-                .setContentTitle(ctx.getString(R.string.sensor_ended_title))
-                .setContentText(ctx.getString(R.string.sensor_ended_text))
-                .addAction(pair)
-                .build(),
-        )
+                // Bluetooth off, a missing core, a step for the person: the planned sensor still holds (a parked one
+                // waits for the sensor itself: Juggluco's first state says nothing about the sensor that was forgotten)
+                before.known && !before.parked -> {
+                    SensorEndPlan.remember(before, before.start, before.end, before.warmupEnd, s.config.hashCode(), now)
+                }
+
+                else -> {
+                    return@withLock
+                }
+            }
+        // a new sensor: the old one's notices go
+        if (before.known && (mem.start != before.start || mem.id != before.id)) SensorNotice.entries.forEach(presenter::cancel)
+        apply(mem, latestS?.takeIf { it >= mem.start }, s, now)
     }
 
-    override fun clear() = NotificationGroups.cancel(ctx, ID, NotificationGroups.Group.INFO)
-
-    @Volatile private var channelsReady = false
-
-    private fun builder(): Notification.Builder {
-        if (!channelsReady) {
-            Channels.create(ctx) // idempotent; the alarm receiver may post before the app made them
-            channelsReady = true
+    /** Re-plans from the saved sensor now (alarm, boot, time change). */
+    suspend fun check() =
+        mutex.withLock {
+            val before = store.data.first()
+            if (!before.known || before.parked) return@withLock alarm.set(null, null)
+            val s = settings()
+            val now = clock.now().epochSecond
+            apply(SensorEndPlan.remember(before, before.start, before.end, before.warmupEnd, s.config.hashCode(), now), null, s, now)
         }
-        return Notification.Builder(ctx, CHANNEL)
-            .setSmallIcon(ctx.applicationInfo.icon)
-            .setCategory(Notification.CATEGORY_REMINDER)
-            .setContentIntent(openApp(null))
-            .setAutoCancel(true)
-            .setGroup(NotificationGroups.Group.INFO.key)
+
+    /** The phone was unlocked: recorded and re-planned only when it brings a reminder forward. */
+    suspend fun unlocked() =
+        mutex.withLock {
+            val before = store.data.first()
+            val s = settings()
+            val now = clock.now().epochSecond
+            if (!SensorEndPlan.unlockWanted(before, s.config, now, clock.zone)) return@withLock
+            apply(before.copy(lastUnlock = now), null, s, now)
+        }
+
+    /**
+     * A countdown was swiped away: not shown again for this sensor ([warmup] = the warm-up one, and no "ready"). The end
+     * countdown also goes by itself at the end (its timeout sends the same intent): that is no swipe.
+     */
+    suspend fun dismissed(warmup: Boolean) =
+        mutex.withLock {
+            val now = clock.now().epochSecond
+            val timedOut = !warmup && store.data.first().let { it.known && now >= it.end - SensorEndPlan.TICK_WINDOW }
+            if (!timedOut) store.update { if (warmup) it.copy(warmupDismissed = true) else it.copy(countdownDismissed = true) }
+            presenter.cancel(if (warmup) SensorNotice.WARMUP else SensorNotice.COUNTDOWN)
+        }
+
+    private suspend fun forget(before: SensorEndMemory) {
+        SensorNotice.entries.forEach(presenter::cancel)
+        if (before != SensorEndMemory()) store.update { SensorEndMemory() }
+        alarm.set(null, null)
     }
 
-    private fun post(n: Notification) = NotificationGroups.post(ctx, ID, n, NotificationGroups.Group.INFO, CHANNEL)
-
-
-    /** The app at its start screen, or with [action] (the new-sensor flow handles [ACTION_PAIR_SENSOR]). */
-    private fun openApp(action: String?): PendingIntent {
-        val launch = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: Intent().setPackage(ctx.packageName)
-        action?.let { launch.setAction(it) }
-        return PendingIntent.getActivity(ctx, if (action == null) 10 else 11, launch, PendingIntent.FLAG_IMMUTABLE)
+    /** No sensor now: nothing shows or is planned, what was announced for the sensor stays ([SensorEndMemory.parked]). */
+    private suspend fun park(before: SensorEndMemory) {
+        SensorNotice.entries.forEach(presenter::cancel)
+        if (before.known && !before.parked) store.update { it.copy(parked = true) }
+        alarm.set(null, null)
     }
 
-    companion object {
-        const val CHANNEL = Channels.SENSOR
-        const val ID = NotificationIds.SENSOR
-        const val ACTION_PAIR_SENSOR = "app.mauri.sukrara.action.PAIR_SENSOR"
+    /**
+     * Shows what [SensorEndPlan.plan] says for [m0] at [now]. The memory is saved **before** anything is posted: a
+     * process killed in between (an app update, Android) never announces the same step twice (#102).
+     */
+    private suspend fun apply(
+        m0: SensorEndMemory,
+        first: Long?,
+        s: SensorEndSettings,
+        now: Long,
+    ) {
+        val p = SensorEndPlan.plan(s.config, s.countdownHours, now, clock.zone, m0, first)
+        var mem = m0
+        if (p.warmup) mem = mem.copy(warmupShown = true)
+        if (p.ready) mem = mem.copy(readyShown = true)
+        // remembered: after a restart the warm-up must not come back before the next reading
+        if (first != null && mem.firstReading == 0L) mem = mem.copy(firstReading = first)
+        p.remind?.let { mem = mem.copy(lastReminder = it) }
+        if (p.ended) mem = mem.copy(endedShown = true, lastEnded = now)
+        store.update { mem }
+
+        if (p.warmup) {
+            presenter.warmup(mem.start, mem.warmupEnd, now, p.warmupWaiting)
+        } else {
+            // the first reading (or the give-up) ends it, whatever it shows
+            presenter.cancel(SensorNotice.WARMUP)
+        }
+        if (p.ready) presenter.ready()
+        if (p.remind != null) presenter.remind(mem.end, now, p.remindText)
+        if (p.countdown) {
+            presenter.countdown(
+                mem.end,
+                s.countdownHours,
+                now,
+                promote = !s.chip,
+            )
+        } else {
+            presenter.cancel(SensorNotice.COUNTDOWN)
+        }
+        if (p.dropReminder) presenter.cancel(SensorNotice.REMINDER)
+        if (p.ended) {
+            presenter.cancel(SensorNotice.REMINDER)
+            presenter.ended()
+        }
+        alarm.set(p.next, p.tick)
     }
 }
+
+/** The source's identity of the sensor (its serial), or null when the source doesn't know one. */
+private fun SensorState.id(): String? =
+    when (this) {
+        is SensorState.WarmingUp -> id
+        is SensorState.Active -> id
+        else -> null
+    }

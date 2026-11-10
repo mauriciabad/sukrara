@@ -19,15 +19,10 @@ public enum BleFraming {
     static let maxAttribute = 512
     static let minPayload = 14
 
-    /// Splits `payload` for an ATT `mtu` (an attribute value is at most 512 bytes even with MTU 517).
+    /// Splits `payload` for an ATT `mtu` (an attribute value is at most 512 bytes even with MTU 517). Every frame fits
+    /// one ATT Write Request / notification (`mtu − 3` bytes): never a long (prepared) write.
     public static func frames(msgId: UInt16, payload: Data, mtu: Int) -> [Data] {
-        frames(msgId: msgId, payload: payload, perFrame: min(mtu - 3, maxAttribute) - header)
-    }
-
-    /// Splits `payload` into frames carrying `perFrame` payload bytes each (CoreBluetooth reports the writable length
-    /// directly: `maximumWriteValueLength − 6`).
-    public static func frames(msgId: UInt16, payload: Data, perFrame: Int) -> [Data] {
-        let per = max(perFrame, minPayload)
+        let per = max(min(mtu - 3, maxAttribute) - header, minPayload)
         let bytes = [UInt8](payload)
         let count = max(1, (bytes.count + per - 1) / per)
         precondition(count <= Int(UInt16.max), "BLE message too large")
@@ -113,10 +108,20 @@ public struct BleReassembler: Sendable {
 
 /// What the wearer's phone says in INFO: `nonce` + `m` always; `i`, `relays`, `pair` only while "Pair nearby" is open.
 public struct BleInfo: Equatable, Sendable {
+    /// The *Pair nearby* offer: the invite token, its expiry, the wearer's profile and `commit` = `c`, the wearer's
+    /// commitment to its pairing nonce (PROTOCOL-v2 "Nearby pairing").
     public struct Pairing: Equatable, Sendable {
         public let token: String
         public let expiry: Int
         public let profile: Profile?
+        public let commit: String
+
+        public init(token: String, expiry: Int, profile: Profile?, commit: String) {
+            self.token = token
+            self.expiry = expiry
+            self.profile = profile
+            self.commit = commit
+        }
     }
 
     public let nonce: String?
@@ -135,7 +140,7 @@ public struct BleInfo: Equatable, Sendable {
 
     /// Whose phone sent this INFO (B§6).
     public enum Owner: Equatable, Sendable {
-        /// Our wearer's: `i` is our identity, or `m` proves our `sid` over one of our HELLO nonces.
+        /// Our wearer's: `m` proves our `sid` over one of our HELLO nonces, or (before `sid`) `i` is our identity.
         case ours
         /// Another identity, or a missing / wrong proof while we know the `sid`.
         case other
@@ -143,19 +148,33 @@ public struct BleInfo: Equatable, Sendable {
         case unknown
     }
 
+    /// PROTOCOL-v2 "Bluetooth link", *Which owner* (contracts/protocol/ble/link-rules.json): once we know `sid`, `m` is
+    /// checked first: only `m` over one of our nonces can make it ours (`i` is public while any wearer pairs, so a
+    /// copied `i` never does), and an `i` naming another identity still makes it other. Before `sid`: `i` = our
+    /// identity is ours, another `i` is other, no `i` (or no identity yet) is unknown.
     public func owner(identity ours: String?, sid: String?, nonces: [String]) -> Owner {
-        if let ours, let identity { return identity == ours ? .ours : .other }
-        guard let sid else { return .unknown }
-        guard let nonce, nonces.contains(nonce), m == BleMessage.infoM(sid: sid, nonce: nonce) else { return .other }
-        return .ours
+        if let sid {
+            guard let nonce, nonces.contains(nonce), m == BleMessage.infoM(sid: sid, nonce: nonce) else {
+                return .other
+            }
+            if let ours, let identity, identity != ours { return .other }
+            return .ours
+        }
+        guard let ours, let identity else { return .unknown }
+        return identity == ours ? .ours : .other
     }
 
-    /// The invite a nearby pairing offer stands for (the token is the invite token; the code is checked by the wearer).
-    public var invite: Invite? {
-        guard let identity, Hex.isKey(identity), let pairing else { return nil }
-        return Invite(
+    /// The invite a nearby pairing offer stands for (the token is the invite token), nil when it has none or it
+    /// can't be listed at `now`: expired, or claiming to last longer than 10 minutes plus clock skew (a fake offer
+    /// can't stay listed). Nothing in it is trusted until both devices show the same pairing code.
+    public func offer(now: Int) -> NearbyOffer? {
+        guard let identity, Hex.isKey(identity), let pairing,
+            NearbyPairing.offerExpiryOK(pairing.expiry, now: now)
+        else { return nil }
+        let invite = Invite(
             identity: identity, token: pairing.token, expiry: pairing.expiry, relays: relays,
             profile: pairing.profile)
+        return NearbyOffer(invite: invite, commit: pairing.commit)
     }
 }
 
@@ -183,7 +202,7 @@ public enum BleMessage: Equatable, Sendable {
             if let identity = info.identity { body["i"] = identity }
             if !info.relays.isEmpty { body["relays"] = info.relays }
             if let pairing = info.pairing {
-                var pair: [String: Any] = ["t": pairing.token, "x": pairing.expiry]
+                var pair: [String: Any] = ["t": pairing.token, "x": pairing.expiry, "c": pairing.commit]
                 if let profile = pairing.profile { pair["profile"] = profile.wireObject() }
                 body["pair"] = pair
             }
@@ -204,14 +223,17 @@ public enum BleMessage: Equatable, Sendable {
             guard let o = array[1] as? [String: Any] else { return nil }
             let pair = o["pair"] as? [String: Any]
             let pairing = pair.flatMap { p -> BleInfo.Pairing? in
-                guard let t = p["t"] as? String, let x = (p["x"] as? NSNumber)?.intValue else { return nil }
+                guard let t = p["t"] as? String, let x = (p["x"] as? NSNumber)?.intValue,
+                    let c = p["c"] as? String, Hex.isKey(c)
+                else { return nil }
                 return .init(
-                    token: t, expiry: x, profile: (p["profile"] as? [String: Any]).flatMap(Profile.init(wire:)))
+                    token: t, expiry: x, profile: (p["profile"] as? [String: Any]).flatMap(Profile.init(wire:)),
+                    commit: c)
             }
             return .info(
                 BleInfo(
                     nonce: o["nonce"] as? String, m: o["m"] as? String, identity: o["i"] as? String,
-                    relays: Relays.secure(o["relays"]), pairing: pairing))
+                    relays: Relays.list(o["relays"]), pairing: pairing))
         case "HELLO":
             guard let o = array[1] as? [String: Any], let nonce = o["nonce"] as? String else { return nil }
             return .hello(nonce: nonce, id: o["id"] as? String)

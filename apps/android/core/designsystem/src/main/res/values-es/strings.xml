@@ -6,14 +6,22 @@
     <string name="ds_ok">Aceptar</string>
     <string name="ds_cancel">Cancelar</string>
     <string name="ds_dismiss">Descartar</string>
-    <string name="ds_custom">Personalizado</string>
+    <string name="ds_custom">Personalizado…</string>
     <string name="ds_custom_label">Valor</string>
     <string name="ds_custom_range">De %1$s a %2$s %3$s</string>
     <string name="ds_unit_h">h</string>
     <string name="ds_unit_d">días</string>
     <string name="ds_unit_min">min</string>
     <string name="ds_unit_s">s</string>
+    <plurals name="ds_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
+    <string name="ds_req_delivery">Entrega de alertas</string>
+    <string name="ds_req_delivery_why">Android rechazó el último intento de mostrar una alerta, programar la próxima comprobación o guardar las alertas. Sukrara lo vuelve a intentar con cada lectura; el informe dice qué paso falló.</string>
+    <string name="ds_copy_report">Copiar informe</string>
     <string name="ds_req_notifications">Notificaciones</string>
     <string name="ds_req_notifications_why">Sin ellas ninguna alerta puede mostrarse ni sonar.</string>
     <string name="ds_req_full_screen">Alertas a pantalla completa</string>
@@ -24,6 +32,14 @@
     <string name="ds_req_battery_why">Mantiene a Sukrara leyendo el sensor en segundo plano.</string>
     <string name="ds_req_channel">Sonido de alerta y No molestar</string>
     <string name="ds_req_channel_why">Las categorías de alerta deben conservar su sonido y poder saltarse No molestar.</string>
+    <string name="ds_req_dnd">Alarmas en No molestar</string>
+    <string name="ds_req_dnd_why">Permite que las alertas que suenan como una alarma se salten un modo No molestar que silencia las alarmas, como el modo descanso.</string>
+    <string name="ds_req_unlocked">Sonido con el teléfono desbloqueado</string>
+    <string name="ds_req_unlocked_why">La opción de Android Atenuación de notificaciones › Vibrar solo si está desbloqueado silencia todos los sonidos de alerta, también las alarmas, mientras usas el teléfono. Android no deja que las apps la lean: compruébala una vez y díselo a Sukrara.</string>
+    <string name="ds_unlocked_open">Abrir el ajuste</string>
+    <string name="ds_unlocked_off">Está desactivada</string>
+    <string name="ds_unlocked_app">Dejarla activada</string>
+    <string name="ds_unlocked_app_note">Con el teléfono desbloqueado, Sukrara reproduce el sonido de la alerta; Android solo vibra.</string>
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">El sensor envía las lecturas por Bluetooth.</string>
 
@@ -45,9 +61,86 @@
     <string name="mute_all_left_one">Alertas silenciadas · queda %1$s</string>
     <string name="mute_all_left_other">Alertas silenciadas · quedan %1$s</string>
     <string name="mute_all_forever">Alertas silenciadas hasta que lo desactives</string>
+    <string name="mute_all_scope">Incluidas muy baja y sin datos, solo en este teléfono</string>
     <string name="mute_notif_until">Hasta las %1$s</string>
+    <string name="night_until">Alertas de noche hasta las %1$s</string>
     <string name="mute_pill">Silenciadas · %1$s</string>
     <string name="mute_pill_forever">Silenciadas</string>
     <string name="mute_choice">Durante %1$s</string>
     <string name="mute_choice_forever">Hasta que lo desactives</string>
+    <!-- Las salidas de una alerta silenciada y de Silenciar alertas (QuietControls) -->
+    <string name="ds_quiet_unmute">Reactivar</string>
+    <string name="ds_quiet_anyway">Avisarme igualmente</string>
+    <string name="ds_quiet_as_usual">Recordar como siempre</string>
+    <string name="ds_quiet_change_to">Cambiar a</string>
+    <string name="ds_mute_all_unmute">Reactivar</string>
+    <string name="ds_mute_all_change">Cambiar duración</string>
+    <string name="ds_quiet_a11y_action">Alertas %1$s: %2$s</string>
+    <string name="ds_a11y_unmute_all">Reactivar alertas</string>
+    <string name="ds_a11y_change_mute">Cambiar cuánto tiempo están silenciadas las alertas</string>
+    <string name="ds_a11y_mute_all">Silenciar alertas</string>
+    <!-- UserErrors: why something failed, in plain words, with its next step -->
+    <string name="ds_err_no_internet">El móvil no tiene conexión a internet.</string>
+    <string name="ds_err_not_found">No se encuentra el servidor. Revisa la dirección y la conexión a internet.</string>
+    <string name="ds_err_cant_connect">No se puede conectar con el servidor. Comprueba que funciona y que la dirección es correcta.</string>
+    <string name="ds_err_timed_out">El servidor no ha respondido a tiempo.</string>
+    <string name="ds_err_secure">No se ha podido establecer una conexión segura. Revisa la dirección y la fecha y hora del móvil.</string>
+    <string name="ds_err_untrusted_cert">El certificado del sitio no es de confianza: es autofirmado o de una autoridad privada. Si el servidor es tuyo, dale un certificado gratuito (Let\'s Encrypt, Tailscale) o ponlo detrás de un proxy inverso que tenga uno.</string>
+    <string name="ds_err_sign_in">La sesión ha caducado o la contraseña o el secreto no son correctos. Vuelve a iniciar sesión.</string>
+    <string name="ds_err_server">El servicio tiene un problema ahora mismo.</string>
+    <string name="ds_err_refused">El servicio no ha aceptado los datos.</string>
+    <string name="ds_err_address">Esa dirección no funciona. Revísala, incluido https://.</string>
+    <string name="ds_err_other">Algo ha fallado. Inténtalo de nuevo.</string>
+    <!-- A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
+    <string name="ds_pen_priming">Purgado</string>
+    <string name="ds_pen_injected">Inyectado</string>
+    <!-- %1$s time, %2$s amount in words, %3$s Priming / Injected -->
+    <string name="ds_pen_dose_a11y">%1$s, %2$s, %3$s</string>
+    <string name="ds_pen_mark_injected">Marcar como inyectado</string>
+    <string name="ds_pen_mark_priming">Marcar como purgado</string>
+    <string name="ds_pen_incomplete">Incompleta</string>
+    <string name="ds_pen_nothing_injected">Nada inyectado</string>
+    <string name="ds_pen_from_pen">De la pluma</string>
+    <string name="ds_pen_primed">%1$s de purgado</string>
+    <string name="ds_pen_replaced">Reemplazó tu entrada de %1$s a las %2$s</string>
+    <string name="ds_pen_remove">Quitar del registro</string>
+    <string name="ds_pen_save">Guardar</string>
+    <string name="ds_pen_done">Hecho</string>
+    <string name="ds_pen_delete">Borrar</string>
+    <string name="ds_pen_kind_rapid">rápida</string>
+    <string name="ds_pen_kind_long">lenta</string>
+    <plurals name="ds_pen_units_spoken">
+        <item quantity="one">%1$s unidad</item>
+        <item quantity="many">%1$s unidades</item>
+        <item quantity="other">%1$s unidades</item>
+    </plurals>
+    <string name="ds_pen_q_doses">¿Purgado o inyección?</string>
+    <string name="ds_pen_q_same">¿Es la misma inyección?</string>
+    <string name="ds_pen_q_doses_line">%1$s a las %2$s</string>
+    <string name="ds_pen_and">%1$s y %2$s</string>
+    <string name="ds_pen_q_same_one">Pluma %1$s a las %2$s · tuya %3$s a las %4$s</string>
+    <string name="ds_pen_q_same_line">Pluma %1$s a las %2$s</string>
+    <plurals name="ds_pen_q_nearby">
+        <item quantity="one">%d entrada escrita cerca</item>
+        <item quantity="many">%d entradas escritas cerca</item>
+        <item quantity="other">%d entradas escritas cerca</item>
+    </plurals>
+    <plurals name="ds_pen_q_more">
+        <item quantity="one">%d más por revisar</item>
+        <item quantity="many">%d más por revisar</item>
+        <item quantity="other">%d más por revisar</item>
+    </plurals>
+    <string name="ds_pen_q_log">Registrar %1$s</string>
+    <string name="ds_pen_q_all_priming">Todo purgado</string>
+    <string name="ds_pen_q_same_yes">La misma</string>
+    <string name="ds_pen_q_different">Inyecciones distintas</string>
+    <string name="ds_pen_q_choose">Elegir</string>
+    <string name="ds_pen_q_sheet_pen">Tu pluma: %1$s a las %2$s</string>
+    <string name="ds_pen_q_sheet_ask">¿Es una de las entradas que escribiste? Esa entrada pasa a ser la de la pluma, así la dosis no se registra dos veces.</string>
+    <string name="ds_pen_q_candidate">%1$s a las %2$s</string>
+    <string name="ds_pen_q_by_phone">Escrita en este móvil</string>
+    <string name="ds_pen_q_by_mac">Escrita en el Mac</string>
+    <string name="ds_pen_q_by_follower">Añadida por alguien que te sigue</string>
+    <string name="ds_pen_q_none">Ninguna</string>
+    <string name="ds_pen_q_none_text">Registrar la dosis de la pluma como una inyección aparte</string>
 </resources>

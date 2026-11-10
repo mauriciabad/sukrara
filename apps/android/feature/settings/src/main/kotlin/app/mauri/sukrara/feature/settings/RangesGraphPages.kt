@@ -12,29 +12,32 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.data.settings.Setting
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.designsystem.dialog.Choice
+import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
-import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.feature.settings.graph.PreviewCard
+import app.mauri.sukrara.graph.GraphSettings
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** The graph settings the Ranges and Graph pages show (stored values, mg/dL / hours). */
+/** The six stored ranges the Ranges page shows (mg/dL), lowest first, and the glucose unit they are shown in. */
 data class GraphPrefs(
     val bands: List<Double> = SchemaPrefs.Bands.map { it.default },
-    val hours: Double = SchemaPrefs.GraphHours.default,
-    val gridHours: Double = SchemaPrefs.GridHours.default,
-    val ringCount: Double = SchemaPrefs.RingCount.default,
-    val side: Boolean = SchemaPrefs.Side.default,
-    val crown: Boolean = SchemaPrefs.ColumnCrown.default,
-    val ringMarks: Boolean = SchemaPrefs.RingMarks.default,
-)
+    val unit: GlucoseUnit = GlucoseUnit.MGDL,
+) {
+    val isDefault: Boolean get() = bands == SchemaPrefs.Bands.map { it.default }
+}
 
 object BandOrder {
     /**
@@ -53,7 +56,7 @@ object BandOrder {
     }
 }
 
-/** Reads and writes the schema settings of the Ranges and Graph pages. */
+/** Reads and writes the ranges. */
 class GraphPrefsViewModel(
     private val settings: SettingsRepository,
 ) : ViewModel() {
@@ -61,29 +64,45 @@ class GraphPrefsViewModel(
     val prefs: StateFlow<GraphPrefs?> =
         combine(
             combine(SchemaPrefs.Bands.map { settings.flow(it) }) { it.toList() },
-            settings.flow(SchemaPrefs.GraphHours),
-            settings.flow(SchemaPrefs.GridHours),
-            settings.flow(SchemaPrefs.RingCount),
-            combine(settings.flow(SchemaPrefs.Side), settings.flow(SchemaPrefs.ColumnCrown), settings.flow(SchemaPrefs.RingMarks)) { a, b, c -> Triple(a, b, c) },
-        ) { bands, hours, grid, rings, (side, crown, marks) -> GraphPrefs(bands, hours, grid, rings, side, crown, marks) }
+            settings.flow(GraphSettings.GlucoseUnitSetting),
+        ) { bands, unit -> GraphPrefs(bands, GlucoseUnit.of(unit)) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun <T> set(
-        setting: Setting<T>,
-        value: T,
-    ) where T : Any {
+    fun set(
+        setting: Setting<Double>,
+        value: Double,
+    ) {
         viewModelScope.launch { settings.set(setting, value) }
+    }
+
+    /** The glucose unit every number is shown and typed in (`general.unit`; never mirrored from the wearer). */
+    fun setUnit(unit: GlucoseUnit) {
+        viewModelScope.launch { settings.set(GraphSettings.GlucoseUnitSetting, unit.key) }
+    }
+
+    /** Every range back to its default (the order of the defaults is valid, so writing them one by one is safe). */
+    fun reset() {
+        viewModelScope.launch { SchemaPrefs.Bands.forEach { settings.set(it, it.default) } }
     }
 }
 
-/** Ranges: the six bands the graph colours and time in range use (mg/dL). */
+/**
+ * Ranges: the live card, the glucose unit (mg/dL or mmol/L, every number in the app), the six bands the graph colours
+ * and time in range use, Reset ranges. [readOnly] = a follower not in Custom: the bands in use, nothing to change
+ * ([preview] says why and opens *Settings from*); the unit is this phone's own and stays editable.
+ */
 @Composable
 fun RangesContent(
     prefs: GraphPrefs,
     onSet: (Setting<Double>, Double) -> Unit,
     onBack: () -> Unit,
+    onReset: () -> Unit = {},
+    readOnly: Boolean = false,
+    onUnit: (GlucoseUnit) -> Unit = {},
+    preview: @Composable () -> Unit = {},
 ) {
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
+    var choosingUnit by rememberSaveable { mutableStateOf(false) }
     val titles =
         listOf(
             R.string.st_band_very_low,
@@ -93,73 +112,73 @@ fun RangesContent(
             R.string.st_band_very_high,
             R.string.st_band_extremely_high,
         )
+    val bandIcons =
+        listOf(
+            DsR.drawable.ds_ic_dia_very_low,
+            DsR.drawable.ds_ic_dia_low,
+            DsR.drawable.ds_ic_dia_range,
+            DsR.drawable.ds_ic_dia_high,
+            DsR.drawable.ds_ic_dia_very_high,
+            DsR.drawable.ds_ic_dia_extremely_high,
+        )
     SettingsPage(stringResource(R.string.st_ranges_title), onBack) {
+        PreviewCard(preview)
+        SettingsGroup {
+            ValueRow(stringResource(R.string.st_unit), prefs.unit.symbol, { choosingUnit = true }, icon = DsR.drawable.ds_ic_tune)
+        }
+        FooterText(stringResource(R.string.st_unit_footer))
         SettingsGroup {
             SchemaPrefs.Bands.forEachIndexed { i, setting ->
-                ValueRow(stringResource(titles[i]), numberLabel(SchemaPrefs.bandSpec(setting), prefs.bands[i]), { editing = i })
+                ValueRow(
+                    stringResource(titles[i]),
+                    numberLabel(SchemaPrefs.bandSpec(setting), prefs.bands[i]),
+                    { editing = i },
+                    icon = bandIcons[i],
+                    readOnly = readOnly,
+                )
+            }
+        }
+
+        if (!prefs.isDefault && !readOnly) {
+            SettingsGroup {
+                ValueRow(
+                    stringResource(R.string.st_ranges_reset),
+                    stringResource(R.string.st_ranges_reset_summary),
+                    onReset,
+                    icon = DsR.drawable.ds_ic_restart_alt,
+                )
             }
         }
         FooterText(stringResource(R.string.st_ranges_footer))
     }
+    if (choosingUnit) {
+        ChoiceDialog(
+            stringResource(R.string.st_unit),
+            GlucoseUnit.entries.map { Choice(it.symbol, it) },
+            prefs.unit,
+            { choosingUnit = false },
+            onUnit,
+        )
+    }
     editing?.let { i ->
         val setting = SchemaPrefs.Bands[i]
         val spec = SchemaPrefs.bandSpec(setting)
+        val unit = LocalGlucoseUnit.current
         val between = stringResource(R.string.st_band_between)
         val input =
             NumberInput(
                 spec,
-                presets = spec.presets.filter { BandOrder.conflict(prefs.bands, i, it) == null },
+                keep = { BandOrder.conflict(prefs.bands, i, it) == null },
                 reject = { v ->
                     BandOrder.conflict(prefs.bands, i, v)?.let { (lo, hi) ->
-                        between.format(lo?.let(spec::text) ?: spec.text(spec.min), hi?.let(spec::text) ?: spec.text(spec.max))
+                        between.format(spec.text(lo ?: spec.min, unit), spec.text(hi ?: spec.max, unit), spec.inUnit(unit).unit)
                     }
                 },
+                unit = unit,
             )
         val label = numberLabeler()
         NumberDialog(stringResource(titles[i]), input, prefs.bands[i], { label(spec, it) }, { editing = null }) {
             onSet(setting, it)
-        }
-    }
-}
-
-/** Graph basics: time shown, the column beside it, vertical lines, rings. */
-@Composable
-fun GraphBasicsContent(
-    prefs: GraphPrefs,
-    onSetNumber: (Setting<Double>, Double) -> Unit,
-    onSetBool: (Setting<Boolean>, Boolean) -> Unit,
-    onBack: () -> Unit,
-) {
-    var editing by rememberSaveable { mutableStateOf<String?>(null) }
-    val numbers =
-        listOf(
-            Triple(SchemaPrefs.GraphHours, R.string.st_graph_hours, prefs.hours),
-            Triple(SchemaPrefs.GridHours, R.string.st_graph_grid, prefs.gridHours),
-            Triple(SchemaPrefs.RingCount, R.string.st_graph_rings, prefs.ringCount),
-        )
-    SettingsPage(stringResource(R.string.st_graph_title), onBack) {
-        SettingsGroup {
-            for ((setting, title, value) in numbers) {
-                ValueRow(stringResource(title), numberLabel(SchemaPrefs.spec(setting.id), value), { editing = setting.id })
-            }
-        }
-        SettingsGroup {
-            SwitchRow(stringResource(R.string.st_graph_side), prefs.side, { onSetBool(SchemaPrefs.Side, it) }, summary = stringResource(R.string.st_graph_side_summary))
-            SwitchRow(stringResource(R.string.st_graph_crown), prefs.crown, { onSetBool(SchemaPrefs.ColumnCrown, it) }, enabled = prefs.side)
-            SwitchRow(
-                stringResource(R.string.st_graph_marks),
-                prefs.ringMarks,
-                { onSetBool(SchemaPrefs.RingMarks, it) },
-                summary = stringResource(R.string.st_graph_marks_summary),
-            )
-        }
-        FooterText(stringResource(R.string.st_graph_footer))
-    }
-    numbers.firstOrNull { it.first.id == editing }?.let { (setting, title, value) ->
-        val spec = SchemaPrefs.spec(setting.id)
-        val label = numberLabeler()
-        NumberDialog(stringResource(title), NumberInput(spec), value, { label(spec, it) }, { editing = null }) {
-            onSetNumber(setting, it)
         }
     }
 }

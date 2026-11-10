@@ -1,0 +1,11 @@
+/* Sukrara — https://github.com/mauriciabad/sukrara */
+/* Copyright (C) 2026 Maurici Abad */
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Spanish for the privacy descriptions macOS shows when it asks (Info.plist.in has the English); bundle.sh copies */
+/* this folder into Contents/Resources. LocalizationTests checks every *UsageDescription of Info.plist.in is here. */
+
+/* Asked before Bluetooth is first used: following a nearby wearer's phone */
+"NSBluetoothAlwaysUsageDescription" = "Seguir por Bluetooth la glucosa de quien lleva el sensor cerca.";
+
+/* Asked before the local network is first used: Juggluco on the home network */
+"NSLocalNetworkUsageDescription" = "Leer la glucosa de Juggluco en tu red doméstica, cuando lo activas en Ajustes.";

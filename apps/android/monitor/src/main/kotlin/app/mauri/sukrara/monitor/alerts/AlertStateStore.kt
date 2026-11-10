@@ -30,6 +30,10 @@ data class AlertRecord(
     val who: String? = null,
     /** The sensor's life (no `no_data` while it is warming up or has ended), also for the receiver. */
     val sensor: SavedSensor? = null,
+    /** The alerts' recent history, oldest first ([AlertNotes.MAX] lines). */
+    val notes: List<SavedNote> = emptyList(),
+    /** When Mute all ends as [notes] last saw it (0 = off): its end by itself is noted once, also after a restart. */
+    val muteAllUntil: Long = 0,
 )
 
 /** [SensorWindow] as saved. */
@@ -54,7 +58,9 @@ class AlertStateStore(
 
     /** Changes the stored settings in one atomic edit (two screens editing at once never lose a change). */
     suspend fun updateSettings(transform: (AlertSettings) -> AlertSettings) =
-        settingsRepo.update(SETTINGS) { stored -> AlertSettingsCodec.encode(transform(AlertSettingsCodec.decode(stored) ?: AlertSettings())) }
+        settingsRepo.update(
+            SETTINGS,
+        ) { stored -> AlertSettingsCodec.encode(transform(AlertSettingsCodec.decode(stored) ?: AlertSettings())) }
 
     suspend fun load(): AlertRecord = record.data.first()
 

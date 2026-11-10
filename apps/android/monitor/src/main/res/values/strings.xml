@@ -27,31 +27,52 @@
     <string name="alert_headline_no_data">No glucose data</string>
     <string name="alert_headline_with_context">%1$s · %2$s</string>
     <string name="alert_context_eat_more">eat more</string>
+    <string name="alert_context_no_response">no response</string>
     <string name="alert_context_eat_more_again">eat more again</string>
     <string name="alert_context_after_insulin">still high after insulin</string>
     <string name="alert_context_after_more_insulin">still high after more insulin</string>
-    <string name="alert_text_value">%1$d mg/dL %2$s</string>
-    <string name="alert_text_falling">%1$s · falling %2$s mg/dL/min</string>
-    <string name="alert_text_rising">%1$s · rising %2$s mg/dL/min</string>
+    <string name="alert_text_value">%1$s %2$s</string>
+    <!-- a glucose value: %1$s = the number in the person's unit (69, 3.8), %2$s = the unit (mg/dL, mmol/L) -->
+    <string name="alert_text_glucose">%1$s %2$s</string>
+    <!-- %1$s = the sensor's bound as alert_text_glucose (40 mg/dL, 2.2 mmol/L) -->
+    <string name="alert_text_lo">LO · below %1$s</string>
+    <string name="alert_text_hi">HI · above %1$s</string>
+    <!-- %2$s = the rate's number, %3$s = its unit (mg/dL/min, mmol/L/min) -->
+    <string name="alert_text_falling">%1$s · falling %2$s %3$s</string>
+    <string name="alert_text_rising">%1$s · rising %2$s %3$s</string>
     <string name="alert_text_no_reading">No recent reading</string>
-    <string name="alert_text_no_data">No reading for %1$s</string>
-    <string name="alert_text_no_data_last">No reading for %1$s · last %2$d mg/dL</string>
+    <string name="alert_text_no_data">No reading yet</string>
+    <string name="alert_text_no_data_last">No reading for %1$s · last %2$s</string>
     <string name="alert_relaxed_subtext">Reminders every %1$s</string>
 
     <!-- Alert notification actions (work from the lock screen; nothing opens). -->
     <string name="alert_action_mute">Mute…</string>
     <string name="alert_action_mute_for_label">Mute for (e.g. 45 min, 1 h 30)</string>
+    <!-- What TalkBack says for a length chip of Mute… / Change time: %1$s = the side ("Low"), %2$s = "30 min" -->
+    <string name="alert_mute_choice_a11y">%1$s alerts: mute for %2$s</string>
     <string name="alert_action_remind_less">Remind less</string>
     <string name="alert_action_remind_usual">Remind as usual</string>
     <string name="alert_action_unmute">Unmute</string>
     <string name="alert_action_change">Change time</string>
 
     <!-- Sensor end. -->
-    <string name="sensor_end_soon_title">Sensor ends in %1$s</string>
-    <string name="sensor_end_soon_text">Have a new sensor ready to change it in time.</string>
+    <string name="sensor_end_today">Sensor ends today at %1$s</string>
+    <string name="sensor_end_tomorrow">Sensor ends tomorrow at %1$s</string>
+    <string name="sensor_end_on_day">Sensor ends on %1$s at %2$s</string>
+    <string name="sensor_end_reminder_text">Have a new sensor ready.</string>
+    <string name="sensor_end_spare_text">Take your spare sensor with you</string>
+    <string name="sensor_end_tonight">Sensor ends tonight at %1$s</string>
+    <string name="sensor_end_tonight_text">Change it before bed</string>
+    <string name="sensor_countdown_title">Sensor ends at %1$s</string>
+    <string name="sensor_countdown_text">Have a new sensor ready to replace it.</string>
+    <string name="sensor_warmup_title">Sensor warming up</string>
+    <string name="sensor_warmup_text">Readings at %1$s</string>
+    <string name="sensor_almost_ready">Almost ready</string>
+    <string name="sensor_waiting_first_reading">Waiting for the first reading</string>
+    <string name="sensor_ready_title">Sensor ready</string>
+    <string name="sensor_ready_text">Readings have started. The first 12 hours can be less accurate.</string>
     <string name="sensor_ended_title">Sensor ended</string>
     <string name="sensor_ended_text">No readings until you start a new sensor.</string>
-    <string name="sensor_action_pair">Pair new sensor</string>
 
     <!-- notification groups and channels (names the person sees in Android's notification settings) -->
     <string name="monitor_group_alerts">Glucose alerts</string>
@@ -64,6 +85,7 @@
     <string name="monitor_channel_sensor_countdown">Sensor countdown</string>
     <string name="monitor_channel_pen_results">Pen doses</string>
     <string name="monitor_channel_pen_check">Pen reminders</string>
+    <string name="monitor_channel_treatment_draft">Unsaved treatments</string>
     <string name="monitor_channel_alert_very_low">Very low</string>
     <string name="monitor_channel_alert_low">Low</string>
     <string name="monitor_channel_alert_high">High</string>
@@ -81,14 +103,31 @@
     <string name="monitor_channel_alarm_rising_fast">Rising fast (alarm)</string>
     <string name="monitor_channel_alarm_no_data">No data (alarm)</string>
 
-    <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = the trend arrow -->
-    <string name="monitor_notif_value">%1$s mg/dL %2$s</string>
+    <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = its unit (mg/dL, mmol/L), %3$s = the trend arrow -->
+    <string name="monitor_notif_value">%1$s %2$s %3$s</string>
+    <string name="monitor_notif_value_range">%1$s %2$s %3$s · %4$s</string>
     <!-- %1$s = the reading's time ("14:05", "Tue 14:05") -->
     <string name="monitor_notif_reading_at">Reading at %1$s</string>
     <string name="monitor_notif_no_readings_since">No readings since %1$s</string>
     <string name="monitor_notif_waiting">Waiting for glucose…</string>
+    <!-- the glucose notification's sub text on a wearer that shares: active followers; %d = how many [CHAR LIMIT=20] -->
+    <plurals name="monitor_sub_followers">
+        <item quantity="one">%d follower</item>
+        <item quantity="other">%d followers</item>
+    </plurals>
+    <!-- appended as " · 1 nearby": follower devices connected over Bluetooth now; %d = how many [CHAR LIMIT=16] -->
+    <plurals name="monitor_sub_nearby">
+        <item quantity="one">%d nearby</item>
+        <item quantity="other">%d nearby</item>
+    </plurals>
+    <string name="monitor_sub_wifi">Nightscout API on Wi-Fi</string>
     <string name="monitor_notif_not_monitoring">Not monitoring: no sensor yet</string>
+    <!-- the glucose notification on the lock screen with *Glucose on the lock screen* off: no value until unlocked -->
+    <string name="monitor_notif_public_title">Sukrara</string>
+    <string name="monitor_notif_public_text">Monitoring</string>
     <string name="monitor_notif_sensor_ended">Sensor ended</string>
+    <!-- under the value while a sensor past its end keeps sending readings -->
+    <string name="monitor_notif_sensor_ended_line">Sensor ended · Replace sensor</string>
     <!-- %1$s = the time it will be ready ("14:05") -->
     <string name="monitor_notif_warming_up">Sensor warming up · ready at %1$s</string>
     <string name="monitor_notif_bluetooth_off">Bluetooth is off: turn it on to get readings</string>
@@ -97,6 +136,8 @@
     <string name="monitor_chip_value">%1$s</string>
     <!-- Live Update chip once the value is 5 min old: the reading's time -->
     <string name="monitor_chip_stale">%1$s</string>
+    <!-- Android 17 Live Update card (MetricStyle): the value's unit and the late reading's label -->
+    <string name="monitor_metric_reading">Reading</string>
     <string name="monitor_action_open_app">Open Sukrara</string>
     <string name="monitor_action_set_up_sensor">Set up sensor</string>
     <string name="monitor_action_replace_sensor">Replace sensor</string>
@@ -105,4 +146,17 @@
     <string name="monitor_stopped_title">Monitoring stopped</string>
     <string name="monitor_stopped_text">No glucose readings or alerts until it runs again. Tap to resume.</string>
     <string name="monitor_action_resume">Resume</string>
+    <!-- before the first unlock after a restart (lockedboot): on the lock screen, no health data -->
+    <string name="monitor_locked_boot_title">Unlock to resume monitoring</string>
+    <string name="monitor_locked_boot_text">Your phone restarted. Sukrara can\'t read your sensor or alert you until you unlock it.</string>
+    <string name="monitor_locked_boot_alarm_title">No glucose data · unlock your phone</string>
+    <string name="monitor_locked_boot_alarm_text">No readings since %1$s. Sukrara can\'t read your sensor or alert you until you unlock your phone.</string>
+    <string name="alert_test_title">Test · %1$s</string>
+    <string name="alert_test_text">A test, not a reading. Your real alert sounds like this.</string>
+    <string name="calendar_event_title">Sensor ends</string>
+    <string name="calendar_event_description">Sensor %1$s, started %2$s. Sukrara keeps this event up to date.</string>
+    <!-- Read glucose aloud: the app shortcut (launcher long-press, TalkBack's actions on the app icon) -->
+    <string name="read_aloud_short">Read aloud</string>
+    <string name="read_aloud_long">Read glucose aloud</string>
+    <string name="read_aloud_unavailable">No text-to-speech voice for this language. Add one in Settings › Accessibility › Text-to-speech output.</string>
 </resources>

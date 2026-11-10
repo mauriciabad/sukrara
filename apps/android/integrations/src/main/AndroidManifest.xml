@@ -4,6 +4,36 @@
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- the uploads (Nightscout, LibreView, Tidepool: https) and the local servers -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Nightscout API on the home Wi-Fi: LanWatcher reads the active network to serve only on Wi-Fi -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Android 17: devices on the home network may connect to the Nightscout API (opt-in, off by default; asked on
+         its page) -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- Health Connect blood glucose (opt-in, healthconnect/PlatformHealth: the platform API, no client app to look up) -->
+    <uses-permission android:name="android.permission.health.WRITE_BLOOD_GLUCOSE" />
+
+    <queries>
+        <!-- Share with apps: Garmin Connect / Connect IQ read the xDrip+ server for the watch ("read by …") -->
+        <package android:name="com.garmin.android.apps.connectmobile" />
+        <package android:name="com.garmin.connectiq" />
+        <!-- Glucose broadcasts (broadcasts/Broadcaster): the apps that receive one of the formats are listed by name
+             for the person to allow (xDrip+, AndroidAPS, GlucoDataHandler… are found through these, not by package) -->
+        <intent>
+            <action android:name="com.eveningoutpost.dexdrip.BgEstimate" />
+        </intent>
+        <intent>
+            <action android:name="com.librelink.app.ThirdPartyIntegration.GLUCOSE_READING" />
+        </intent>
+        <intent>
+            <action android:name="com.librelink.app.ThirdPartyIntegration.SENSOR_ACTIVATE" />
+        </intent>
+        <intent>
+            <action android:name="glucodata.Minute" />
+        </intent>
+    </queries>
+
     <application>
         <!-- Export data: the CSV handed to the share sheet, from cache/export/ only -->
         <provider

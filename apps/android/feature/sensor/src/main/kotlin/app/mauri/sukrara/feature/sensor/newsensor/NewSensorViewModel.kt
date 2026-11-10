@@ -7,7 +7,11 @@ import android.nfc.Tag
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.sensor.SensorProfile
+import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.pairing.PairOutcome
 import app.mauri.sukrara.sensor.source.SensorStatus
 import kotlinx.coroutines.CancellationException
@@ -16,13 +20,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.Instant
 
 /** What the new-sensor flow needs from the sensor side (SensorUiModule implements it over the SensorModule). */
@@ -32,14 +39,35 @@ interface NewSensorPort {
 
     suspend fun pair(tag: Tag): PairOutcome
 
+    /**
+     * Save a scanned family's new pairing ([id]: the typed id, or empty), make reading the sensor directly the source
+     * and start monitoring. Returns the pairing's key (`SensorStatus.Direct.key`).
+     */
+    suspend fun pairScanned(
+        profile: SensorProfile,
+        id: String,
+    ): String
+
     val detail: StateFlow<SensorStatus>
     val sensor: StateFlow<SensorState>
+
+    /** The newest stored reading (the glucose hub's): the *Sensor ready* page draws the first one. */
+    val latest: Flow<Reading?>
+
+    /** THE graph settings every card draws with (unit, ranges). */
+    val graphConfig: Flow<GraphConfig>
 
     /** Connect again with the saved pairing (BleFailed › Retry). */
     fun retryLink()
 
     /** Make Juggluco the glucose source (Sukrara stops reading the sensor directly). */
     suspend fun useJuggluco()
+
+    /** *Use it*: the sensor the scan found (its session started at [startEpoch]) is the one being worn (#133). */
+    fun useFoundSensor(startEpoch: Long)
+
+    /** *Look for another sensor*: skip the device the scan found and scan on (#133). */
+    fun lookForAnother()
 
     /**
      * A sensor was just paired: make the Libre 3 the glucose source (Juggluco may have been it) and start monitoring
@@ -49,7 +77,15 @@ interface NewSensorPort {
 }
 
 /** One-shot effects the screen plays (one haptic each). */
-enum class NewSensorEffect { TapSucceeded, Ready }
+enum class NewSensorEffect {
+    /** A tag answered: it's being read (a light tick, so the person keeps still). */
+    TagFound,
+    TapSucceeded,
+
+    /** The tap read something that can't be used (not a sensor, an ended or unsupported one, moved too soon). */
+    TapFailed,
+    Ready,
+}
 
 /**
  * Runs [NewSensorMachine]. The NFC exchange runs in [appScope], never in the ViewModel's scope: closing the screen
@@ -59,12 +95,29 @@ class NewSensorViewModel(
     private val port: NewSensorPort,
     private val clock: Clock,
     private val appScope: CoroutineScope,
+    initial: NewSensorState = NewSensorState(),
 ) : ViewModel() {
-    private val _state = MutableStateFlow(NewSensorState())
+    private val _state = MutableStateFlow(initial)
+
+    @Volatile private var saving = false
     val state: StateFlow<NewSensorState> = _state.asStateFlow()
 
     private val _effects = Channel<NewSensorEffect>(Channel.BUFFERED)
     val effects: Flow<NewSensorEffect> = _effects.receiveAsFlow()
+
+    private val openedAt = clock.now()
+
+    /**
+     * The reading the *Sensor ready* page shows: the newest one, once it came after this flow opened (a sensor's clock
+     * may be a little behind the phone's: [FIRST_READING_SLACK]); never the previous sensor's last value.
+     */
+    val firstReading: StateFlow<Reading?> =
+        port.latest
+            .map { r -> r?.takeUnless { it.t.isBefore(openedAt - FIRST_READING_SLACK) } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The person's unit and ranges for the first reading's card. */
+    val graphConfig: StateFlow<GraphConfig> = port.graphConfig.stateIn(viewModelScope, SharingStarted.Eagerly, GraphConfig())
 
     init {
         viewModelScope.launch {
@@ -72,7 +125,8 @@ class NewSensorViewModel(
         }
         viewModelScope.launch {
             // a 1 s clock only while something counts (Bluetooth timeout, warm-up countdown)
-            state.map { it.step is NewSensorStep.ConnectingBle || it.step is NewSensorStep.WarmingUp }
+            state
+                .map { it.step is NewSensorStep.ConnectingBle || it.step is NewSensorStep.WarmingUp }
                 .distinctUntilChanged()
                 .collect { counting ->
                     while (counting && (_state.value.step.let { it is NewSensorStep.ConnectingBle || it is NewSensorStep.WarmingUp })) {
@@ -93,12 +147,50 @@ class NewSensorViewModel(
 
     fun onContinue() = send(NewSensorEvent.Continue)
 
+    fun onChoose(profile: SensorProfile) = send(NewSensorEvent.Choose(profile))
+
+    fun onIdChange(text: String) = send(NewSensorEvent.IdTyped(text))
+
+    /** "Pair" on a scanned family's setup: saved in [appScope] (leaving the screen mustn't lose a half-saved pairing). */
+    fun onPair() {
+        val step = _state.value.step as? NewSensorStep.SensorSetupStep ?: return
+        if (!step.canPair || saving) return
+        saving = true // one pairing per tap: a double tap must not save two
+        appScope.launch {
+            try {
+                val key = port.pairScanned(step.profile, step.id)
+                send(NewSensorEvent.PairedScanned(key))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // storage failed: nothing was paired; the setup stays, Pair can be tapped again
+            } finally {
+                saving = false
+            }
+        }
+    }
+
     fun onCancel() = send(NewSensorEvent.Cancel)
 
     fun onRetry() {
         val step = _state.value.step
         send(NewSensorEvent.Retry)
-        if (step is NewSensorStep.BleFailed) port.retryLink()
+        // a wrong id / refused / failed PIN goes back to the setup: reconnecting would only repeat it
+        if (step is NewSensorStep.BleFailed && !step.cause.needsSetup) port.retryLink()
+    }
+
+    /** *Use it* on the question about the sensor the scan found (#133). */
+    fun onUseFound() {
+        val link = (_state.value.step as? NewSensorStep.ConnectingBle)?.link as? LinkStatus.ConfirmSensor ?: return
+        port.useFoundSensor(link.startEpoch)
+        send(NewSensorEvent.SensorAnswered)
+    }
+
+    /** *Look for another sensor* (#133): the question's other answer, or a G7 the Dexcom app never authenticates. */
+    fun onLookForAnother() {
+        if (_state.value.step !is NewSensorStep.ConnectingBle) return
+        port.lookForAnother()
+        send(NewSensorEvent.SensorAnswered)
     }
 
     fun onUseJuggluco() {
@@ -115,13 +207,14 @@ class NewSensorViewModel(
         send(NewSensorEvent.TagFound)
         appScope.launch {
             // a failing read (storage, the sensor gone) must still end the tap page: it has no other way out
-            val outcome = try {
-                read()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                PairOutcome.Failed(e.javaClass.simpleName)
-            }
+            val outcome =
+                try {
+                    read()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    PairOutcome.Failed(e.javaClass.simpleName)
+                }
             if (outcome is PairOutcome.Paired) port.onPaired()
             send(NewSensorEvent.Tapped(outcome))
         }
@@ -132,8 +225,20 @@ class NewSensorViewModel(
             val before = _state.value
             val after = NewSensorMachine.reduce(before, event, clock.now())
             if (!_state.compareAndSet(before, after)) continue
-            if (before.step == NewSensorStep.ReadingNfc && after.step is NewSensorStep.ConnectingBle) {
+            if ((before.step == NewSensorStep.ReadingNfc || before.step is NewSensorStep.SensorSetupStep) &&
+                after.step is NewSensorStep.ConnectingBle
+            ) {
                 _effects.trySend(NewSensorEffect.TapSucceeded)
+            }
+            if (before.step != NewSensorStep.ReadingNfc &&
+                after.step == NewSensorStep.ReadingNfc
+            ) {
+                _effects.trySend(NewSensorEffect.TagFound)
+            }
+            if (before.step == NewSensorStep.ReadingNfc &&
+                (after.step is NewSensorStep.NfcFailed || after.step == NewSensorStep.TakeoverFailed)
+            ) {
+                _effects.trySend(NewSensorEffect.TapFailed)
             }
             if (before.step != NewSensorStep.Ready && after.step == NewSensorStep.Ready) _effects.trySend(NewSensorEffect.Ready)
             return
@@ -142,5 +247,8 @@ class NewSensorViewModel(
 
     private companion object {
         const val TICK_MS = 1_000L
+
+        /** How far before the flow opened a reading may be stamped and still be the new sensor's first. */
+        val FIRST_READING_SLACK: Duration = Duration.ofMinutes(3)
     }
 }

@@ -6,12 +6,15 @@ import SukraraAlerts
 import SukraraCore
 import SukraraGraph
 
-/// The words of an alert notification in the user's language (English, Spanish). Self-contained: the value, the
-/// direction and what it means, readable on the lock screen without opening the app.
+/// The words of an alert notification in the user's language (English, Spanish): every Mac case of
+/// `contracts/alerts/copy.json`, the words Android writes too (`AlertCopyTests`; the state lines are `MuteCopy`'s).
+/// Self-contained: the value, the direction and what it means, readable on the lock screen without opening the app.
 struct AlertText: Equatable {
-    enum Language: String { case en, es }
+    typealias Language = AppLanguage
 
     let language: Language
+    /// The unit every number is written in (`general.unit`; contracts/settings/units.json).
+    var unit: GlucoseUnit = .mgdl
 
     /// The first preferred language Sukrara speaks, else English.
     static func preferred(_ languages: [String] = Locale.preferredLanguages) -> AlertText {
@@ -22,35 +25,54 @@ struct AlertText: Equatable {
         return AlertText(language: spoken ?? .en)
     }
 
-    /// "Low · 62 mg/dL ↓" (no reading: just the meaning).
-    func title(_ f: AlertFiring) -> String {
-        guard let r = f.reading, f.kind != .noData else { return headline(f) }
-        return "\(headline(f)) · \(Int(r.mgdl.rounded())) mg/dL \(TrendAngle.text(r.rate))"
+    /// The notification title: the headline only (the same words on every platform, contracts/alerts/SPEC.md §1).
+    func title(_ f: AlertFiring) -> String { headline(f) }
+
+    /// A follower's title for the wearer's very low nobody answered on the wearer's phone (#39).
+    func title(_ f: AlertFiring, escalated: Bool) -> String {
+        guard escalated else { return headline(f) }
+        return headline(f) + (language == .en ? " · no response" : " · sin respuesta")
     }
 
-    /// "Falling slowly. Below 70 mg/dL since 14:05." / "No reading for 20 min."
+    /// The body: the value and arrow (`69 mg/dL ↘`), with the rate for falling / rising fast (`· falling 2.4
+    /// mg/dL/min`, `· falling 0.13 mmol/L/min`), and for no data how long and the last value. Never the threshold, never a made-up number: the
+    /// sensor's LO / HI as such (not its stored 39 / 401), and without a reading it says so.
     func body(_ f: AlertFiring, now: Date) -> String {
+        let en = language == .en
         if f.kind == .noData {
-            let minutes = f.reading.map { Durations.minutesLeft(now.timeIntervalSince($0.at)) }
-            switch language {
-            case .en: return minutes.map { "No reading for \(Durations.text($0))." } ?? "No reading."
-            case .es: return minutes.map { "Sin lecturas desde hace \(Durations.text($0))." } ?? "Sin lecturas."
-            }
+            // a source that never delivered a reading: nothing to count from but its start, nothing to show
+            guard let r = f.reading else { return en ? "No reading yet" : "Aún no hay lecturas" }
+            let since = Durations.text(max(Int(f.threshold.rounded()), Int(now.timeIntervalSince(r.at) / 60)))
+            return en
+                ? "No reading for \(since) · last \(value(r))" : "Sin lecturas desde hace \(since) · última \(value(r))"
         }
-        let trend = trendWords(f.reading?.rate)
-        let threshold = Int(f.threshold.rounded())
-        let limit: String
+        guard let r = f.reading else { return en ? "No recent reading" : "Sin lectura reciente" }
+        let shown = "\(value(r)) \(TrendAngle.text(r.rate))"
+        guard let rate = r.rate, f.kind == .fallingFast || f.kind == .risingFast else { return shown }
+        let amount = "\(unit.rateText(abs(rate), locale: locale)) \(unit.rateSymbol)"
         switch (language, f.kind) {
-        case (_, .fallingFast), (_, .risingFast):
-            limit =
-                language == .en
-                ? "Faster than \(f.threshold.formatted()) mg/dL per minute."
-                : "Más de \(f.threshold.formatted()) mg/dL por minuto."
-        case (.en, _): limit = f.kind.isBelowThreshold ? "Below \(threshold) mg/dL." : "At or above \(threshold) mg/dL."
-        case (.es, _):
-            limit = f.kind.isBelowThreshold ? "Por debajo de \(threshold) mg/dL." : "\(threshold) mg/dL o más."
+        case (.en, .fallingFast): return "\(shown) · falling \(amount)"
+        case (.en, _): return "\(shown) · rising \(amount)"
+        case (.es, .fallingFast): return "\(shown) · baja \(amount)"
+        case (.es, _): return "\(shown) · sube \(amount)"
         }
-        return "\(trend). \(limit)"
+    }
+
+    private var locale: Locale { Locale(identifier: language.rawValue) }
+
+    /// `69 mg/dL` / `3,8 mmol/L` (the user's unit, the language's decimal separator), or the sensor's LO / HI with what
+    /// it means, the bound in the unit.
+    private func value(_ r: GlucoseSample) -> String {
+        func shown(_ mgdl: Int) -> String { "\(unit.format(mgdl, locale: locale)) \(unit.symbol)" }
+        if r.isLo {
+            let b = shown(GlucoseRange.floor)
+            return language == .en ? "LO · below \(b)" : "LO · por debajo de \(b)"
+        }
+        if r.isHi {
+            let b = shown(GlucoseRange.ceiling)
+            return language == .en ? "HI · above \(b)" : "HI · por encima de \(b)"
+        }
+        return shown(Int(r.mgdl.rounded()))
     }
 
     /// The headline in the language (English: the engine's SPEC copy; highs never suggest more insulin).
@@ -63,54 +85,29 @@ struct AlertText: Equatable {
         case .high: base = "Glucosa alta"
         case .veryHigh: base = "Glucosa muy alta"
         case .extremelyHigh: base = "Glucosa extremadamente alta"
-        case .fallingFast: base = "Bajando rápido"
-        case .risingFast: base = "Subiendo rápido"
+        case .fallingFast: base = "Bajada rápida"
+        case .risingFast: base = "Subida rápida"
         case .noData: base = "Sin datos de glucosa"
         }
         guard f.treated > 0, f.kind.group == .level else { return base }
-        if f.kind.isBelowThreshold { return base + (f.treated == 1 ? " · come algo más" : " · come algo más otra vez") }
+        if f.kind.isBelowThreshold { return base + (f.treated == 1 ? " · come más" : " · vuelve a comer") }
         return base + (f.treated == 1 ? " · sigue alta tras la insulina" : " · sigue alta tras más insulina")
     }
 
-    func trendWords(_ rate: Double?) -> String {
-        guard let r = rate else { return language == .en ? "Trend unknown" : "Tendencia desconocida" }
-        switch language {
-        case .en:
-            return r >= 2
-                ? "Rising fast" : r >= 1 ? "Rising" : r > -1 ? "Steady" : r > -2 ? "Falling" : "Falling fast"
-        case .es:
-            return r >= 2
-                ? "Subiendo rápido" : r >= 1 ? "Subiendo" : r > -1 ? "Estable" : r > -2 ? "Bajando" : "Bajando rápido"
-        }
-    }
+    /// The muted note: "Low alerts muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
+    func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, language) }
 
-    /// The muted note: "Low alerts muted" / "Until 10:42".
-    func mutedTitle(_ side: AlertSide) -> String {
-        switch language {
-        case .en: return MuteCopy.notificationTitle(side)
-        case .es:
-            let name: String
-            switch side {
-            case .low: name = "de glucosa baja"
-            case .high: name = "de glucosa alta"
-            case .fallingFast: name = "de bajada rápida"
-            case .risingFast: name = "de subida rápida"
-            case .noData: name = "sin datos"
-            }
-            return "Alertas \(name) silenciadas"
-        }
-    }
+    func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, language) }
 
-    func mutedBody(until: String) -> String {
-        language == .en ? MuteCopy.notificationText(until: until) : "Hasta las \(until)"
-    }
+    /// Settings › Alerts › Send Test Alert: "Test · Low glucose".
+    func testTitle(_ f: AlertFiring) -> String { "\(language == .en ? "Test" : "Prueba") · \(title(f))" }
 
     // Action titles (HIG title case in English; the ellipsis = more input follows).
     var mute: String { language == .en ? "Mute…" : "Silenciar…" }
     var muteButton: String { language == .en ? "Mute" : "Silenciar" }
     var mutePlaceholder: String { language == .en ? "30 min, 1 h, 2 h…" : "30 min, 1 h, 2 h…" }
-    var remindLess: String { language == .en ? "Remind Less" : "Recordar menos" }
-    var remindAsUsual: String { language == .en ? "Remind as Usual" : "Recordar como siempre" }
+    var remindLess: String { language == .en ? "Remind Less" : "Avisar menos" }
+    var remindAsUsual: String { language == .en ? "Remind as Usual" : "Avisar como siempre" }
     var unmute: String { language == .en ? "Unmute" : "Reactivar" }
-    var changeTime: String { language == .en ? "Change Time…" : "Cambiar hora…" }
+    var changeTime: String { language == .en ? "Change Time…" : "Cambiar duración…" }
 }

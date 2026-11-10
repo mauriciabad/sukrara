@@ -4,8 +4,12 @@
 package app.mauri.sukrara.feature.sensor.newsensor
 
 import android.nfc.Tag
-import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.pairing.PairOutcome
 import app.mauri.sukrara.sensor.source.SensorStatus
@@ -24,9 +28,11 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -37,23 +43,57 @@ class NewSensorViewModelTest {
     private val t0: Instant = Instant.parse("2026-10-27T08:00:00Z")
 
     /** Follows the test scheduler, so the 1 s tick loop sees virtual time pass (and the 2 min timeout ends it). */
-    private val clock = object : Clock {
-        override fun now(): Instant = t0.plusMillis(dispatcher.scheduler.currentTime)
-        override val zone: ZoneId = ZoneOffset.UTC
-    }
+    private val clock =
+        object : Clock {
+            override fun now(): Instant = t0.plusMillis(dispatcher.scheduler.currentTime)
+
+            override val zone: ZoneId = ZoneOffset.UTC
+        }
 
     private class FakePort : NewSensorPort {
         var env = SensorEnv(true, true, true, true, false, true, true, true)
         var retries = 0
         var juggluco = 0
         var libre3 = 0
+
         override suspend fun env() = env
+
         override suspend fun pair(tag: Tag): PairOutcome = error("tests pass the read directly")
+
+        val scanned = ArrayList<Pair<SensorProfile, String>>()
+
+        override suspend fun pairScanned(profile: SensorProfile, id: String): String {
+            scanned += profile to id
+            return "key:$id"
+        }
+
         override val detail = MutableStateFlow<SensorStatus>(SensorStatus.NoSensor)
         override val sensor = MutableStateFlow<SensorState>(SensorState.None)
-        override fun retryLink() { retries++ }
-        override suspend fun useJuggluco() { juggluco++ }
-        override suspend fun onPaired() { libre3++ }
+        override val latest = MutableStateFlow<Reading?>(null)
+        override val graphConfig = MutableStateFlow(GraphConfig())
+
+        override fun retryLink() {
+            retries++
+        }
+
+        override suspend fun useJuggluco() {
+            juggluco++
+        }
+
+        override suspend fun onPaired() {
+            libre3++
+        }
+
+        val used = ArrayList<Long>()
+        var lookedFurther = 0
+
+        override fun useFoundSensor(startEpoch: Long) {
+            used += startEpoch
+        }
+
+        override fun lookForAnother() {
+            lookedFurther++
+        }
     }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
@@ -61,95 +101,150 @@ class NewSensorViewModelTest {
     @After fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.vm(port: FakePort, appScope: TestScope = this) =
-        NewSensorViewModel(port, clock, appScope.backgroundScope).also { it.start(); runCurrent() }
+        NewSensorViewModel(port, clock, appScope.backgroundScope, NewSensorState(profile = SensorProfile.Libre3)).also {
+            it.start()
+            runCurrent()
+        }
 
-    @Test fun `a successful tap connects, then the paired sensor's live data is Ready, one haptic each`() = runTest(dispatcher) {
-        val port = FakePort()
-        val vm = vm(port)
-        val effects = mutableListOf<NewSensorEffect>()
-        backgroundScope.launch { vm.effects.toList(effects) }
-        vm.onTagRead { PairOutcome.Paired("ABC", activated = false) }
-        runCurrent()
-        assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
-        port.detail.value = SensorStatus.Libre3("ABC", LinkStatus.Live)
-        port.sensor.value = SensorState.Active(null)
-        runCurrent()
-        assertEquals(NewSensorStep.Ready, vm.state.value.step)
-        assertEquals(listOf(NewSensorEffect.TapSucceeded, NewSensorEffect.Ready), effects)
-    }
+    @Test fun `a successful tap connects, then the paired sensor's live data is Ready, one haptic each`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            val vm = vm(port)
+            val effects = mutableListOf<NewSensorEffect>()
+            backgroundScope.launch { vm.effects.toList(effects) }
+            vm.onTagRead { PairOutcome.Paired("ABC", activated = false) }
+            runCurrent()
+            assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
+            port.detail.value = SensorStatus.Direct(SensorProfile.Libre3, "ABC", "ABC", LinkStatus.Live)
+            port.sensor.value = SensorState.Active(null)
+            runCurrent()
+            assertEquals(NewSensorStep.Ready, vm.state.value.step)
+            assertEquals(listOf(NewSensorEffect.TagFound, NewSensorEffect.TapSucceeded, NewSensorEffect.Ready), effects)
+        }
 
-    @Test fun `a paired sensor becomes the source and monitoring starts, a failed tap changes nothing`() = runTest(dispatcher) {
-        val port = FakePort()
-        val vm = vm(port)
-        vm.onTagRead { PairOutcome.Failed("tag lost") }
-        runCurrent()
-        assertEquals(0, port.libre3)
-        vm.onTagRead { PairOutcome.Paired("ABC", activated = true) }
-        runCurrent()
-        assertEquals(1, port.libre3)
-    }
+    @Test fun `the ready page shows the new sensor's first reading, never the previous sensor's last one`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            port.latest.value = Reading(t0 - Duration.ofMinutes(20), 140, null, SourceId.Libre3)
+            val vm = vm(port)
+            assertNull(vm.firstReading.value)
+            val first = Reading(t0 + Duration.ofMinutes(2), 112, 0.4, SourceId.Libre3)
+            port.latest.value = first
+            runCurrent()
+            assertEquals(first, vm.firstReading.value)
+        }
 
-    @Test fun `a read that throws ends the tap page as a failed tap (it has no other way out)`() = runTest(dispatcher) {
-        val vm = vm(FakePort())
-        vm.onTagRead { throw java.io.IOException("datastore") }
-        runCurrent()
-        assertEquals(NewSensorStep.NfcFailed(NfcFailure.MovedTooSoon), vm.state.value.step)
-    }
+    @Test fun `a tag that isn't a sensor plays the found tick, then the refusal`() =
+        runTest(dispatcher) {
+            val vm = vm(FakePort())
+            val effects = mutableListOf<NewSensorEffect>()
+            backgroundScope.launch { vm.effects.toList(effects) }
+            vm.onTagRead { PairOutcome.NotASensor }
+            runCurrent()
+            assertEquals(NewSensorStep.NfcFailed(NfcFailure.NotASensor), vm.state.value.step)
+            assertEquals(listOf(NewSensorEffect.TagFound, NewSensorEffect.TapFailed), effects)
+        }
 
-    @Test fun `a second tag during a read is ignored`() = runTest(dispatcher) {
-        val vm = vm(FakePort())
-        val answer = CompletableDeferred<PairOutcome>()
-        var reads = 0
-        vm.onTagRead { reads++; answer.await() }
-        vm.onTagRead { reads++; answer.await() }
-        runCurrent()
-        assertEquals(1, reads)
-        assertEquals(NewSensorStep.ReadingNfc, vm.state.value.step)
-    }
+    @Test fun `a paired sensor becomes the source and monitoring starts, a failed tap changes nothing`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            val vm = vm(port)
+            vm.onTagRead { PairOutcome.Failed("tag lost") }
+            runCurrent()
+            assertEquals(0, port.libre3)
+            vm.onTagRead { PairOutcome.Paired("ABC", activated = true) }
+            runCurrent()
+            assertEquals(1, port.libre3)
+        }
 
-    @Test fun `closing the screen mid-tap doesn't cancel the read and its outcome still lands`() = runTest(dispatcher) {
-        val vm = vm(FakePort())
-        val answer = CompletableDeferred<PairOutcome>()
-        vm.onTagRead { answer.await() }
-        runCurrent()
-        vm.onCancel() // ignored while reading
-        assertEquals(NewSensorStep.ReadingNfc, vm.state.value.step)
-        answer.complete(PairOutcome.Paired("ABC", activated = true))
-        runCurrent()
-        assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
-    }
+    @Test fun `a read that throws ends the tap page as a failed tap (it has no other way out)`() =
+        runTest(dispatcher) {
+            val vm = vm(FakePort())
+            vm.onTagRead { throw java.io.IOException("datastore") }
+            runCurrent()
+            assertEquals(NewSensorStep.NfcFailed(NfcFailure.MovedTooSoon), vm.state.value.step)
+        }
 
-    @Test fun `bluetooth times out under virtual time and retry reconnects the link`() = runTest(dispatcher) {
-        val port = FakePort()
-        val vm = vm(port)
-        vm.onTagRead { PairOutcome.Paired("ABC", activated = false) }
-        runCurrent()
-        advanceTimeBy(121_000)
-        runCurrent()
-        assertEquals(NewSensorStep.BleFailed("ABC", BleFailure.Timeout), vm.state.value.step)
-        vm.onRetry()
-        runCurrent()
-        assertEquals(1, port.retries)
-        assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
-    }
+    @Test fun `a second tag during a read is ignored`() =
+        runTest(dispatcher) {
+            val vm = vm(FakePort())
+            val answer = CompletableDeferred<PairOutcome>()
+            var reads = 0
+            vm.onTagRead {
+                reads++
+                answer.await()
+            }
+            vm.onTagRead {
+                reads++
+                answer.await()
+            }
+            runCurrent()
+            assertEquals(1, reads)
+            assertEquals(NewSensorStep.ReadingNfc, vm.state.value.step)
+        }
 
-    @Test fun `use Juggluco switches the source`() = runTest(dispatcher) {
-        val port = FakePort().apply { env = env.copy(nfcAvailable = false) }
-        val vm = vm(port)
-        assertEquals(NewSensorStep.NoNfc, vm.state.value.step)
-        vm.onUseJuggluco()
-        runCurrent()
-        assertEquals(1, port.juggluco)
-        assertEquals(NewSensorStep.UsingJuggluco, vm.state.value.step)
-    }
+    @Test fun `closing the screen mid-tap doesn't cancel the read and its outcome still lands`() =
+        runTest(dispatcher) {
+            val vm = vm(FakePort())
+            val answer = CompletableDeferred<PairOutcome>()
+            vm.onTagRead { answer.await() }
+            runCurrent()
+            vm.onCancel() // ignored while reading
+            assertEquals(NewSensorStep.ReadingNfc, vm.state.value.step)
+            answer.complete(PairOutcome.Paired("ABC", activated = true))
+            runCurrent()
+            assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
+        }
 
-    @Test fun `coming back after signing in re-checks the gates`() = runTest(dispatcher) {
-        val port = FakePort().apply { env = env.copy(signedIn = false) }
-        val vm = vm(port)
-        assertEquals(NewSensorStep.NeedsLibreViewSignIn, vm.state.value.step)
-        port.env = port.env.copy(signedIn = true)
-        vm.start()
-        runCurrent()
-        assertEquals(NewSensorStep.WaitingForTap, vm.state.value.step)
-    }
+    @Test fun `bluetooth times out under virtual time and retry reconnects the link`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            val vm = vm(port)
+            vm.onTagRead { PairOutcome.Paired("ABC", activated = false) }
+            runCurrent()
+            advanceTimeBy(121_000)
+            runCurrent()
+            assertEquals(NewSensorStep.BleFailed("ABC", BleFailure.Timeout), vm.state.value.step)
+            vm.onRetry()
+            runCurrent()
+            assertEquals(1, port.retries)
+            assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
+        }
+
+    /** #133: the person's answers about the sensor the scan found reach the source. */
+    @Test fun `use it and look for another reach the source`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            val question = NewSensorStep.ConnectingBle("k", clock.now(), false, SensorProfile.DexcomG7, LinkStatus.ConfirmSensor(42L))
+            val vm = NewSensorViewModel(port, clock, backgroundScope, NewSensorState(step = question, profile = SensorProfile.DexcomG7))
+            vm.onUseFound()
+            runCurrent()
+            assertEquals(listOf(42L), port.used)
+            assertEquals(null, (vm.state.value.step as NewSensorStep.ConnectingBle).link)
+            vm.onLookForAnother()
+            runCurrent()
+            assertEquals(1, port.lookedFurther)
+        }
+
+    @Test fun `use Juggluco switches the source`() =
+        runTest(dispatcher) {
+            val port = FakePort().apply { env = env.copy(nfcAvailable = false) }
+            val vm = vm(port)
+            assertEquals(NewSensorStep.NoNfc, vm.state.value.step)
+            vm.onUseJuggluco()
+            runCurrent()
+            assertEquals(1, port.juggluco)
+            assertEquals(NewSensorStep.UsingJuggluco, vm.state.value.step)
+        }
+
+    @Test fun `coming back after signing in re-checks the gates`() =
+        runTest(dispatcher) {
+            val port = FakePort().apply { env = env.copy(signedIn = false) }
+            val vm = vm(port)
+            assertEquals(NewSensorStep.NeedsLibreViewSignIn, vm.state.value.step)
+            port.env = port.env.copy(signedIn = true)
+            vm.start()
+            runCurrent()
+            assertEquals(NewSensorStep.WaitingForTap, vm.state.value.step)
+        }
 }

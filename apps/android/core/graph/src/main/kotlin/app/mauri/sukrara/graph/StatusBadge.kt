@@ -16,7 +16,8 @@ import app.mauri.sukrara.core.model.CardStatus
  * The pill under the glucose value, from [CardStatus]: nothing in range; "Eat carbs" / "Take insulin" filled in the
  * colour of what to log; tonal with the "paused" bell and the time left while a treatment or this device's mute
  * covers it ("45m left", "Muted" without an end); the neutral "Muted · 1h 20m" with the "off" bell for Mute all.
- * The same pill says "Replace sensor" on an ended sensor and "Now" over a scrolled chart.
+ * The same pill says "Replace sensor" on an ended sensor ("Ended · Replace sensor" beside a value while its readings
+ * keep arriving) and "Now" over a scrolled chart.
  */
 object StatusBadge {
     /** [kind] = the treatment kind whose colour and marker the pill uses ("muted", "sensor", "now": neutral). */
@@ -30,25 +31,32 @@ object StatusBadge {
     /** Kind of the Mute all pill (neutral colour, the "notifications off" bell). */
     const val MUTED = "muted"
 
+    /** Whether [s] draws a pill at [now] ([look] isn't null): not for none, nor for a mute that has already ended. */
+    fun shows(
+        s: CardStatus,
+        now: Long,
+    ): Boolean =
+        when (s) {
+            CardStatus.None -> false
+            is CardStatus.Needed -> true
+            is CardStatus.Taken -> s.until > now
+            is CardStatus.Paused -> s.until > now
+            is CardStatus.Muted -> s.until > now
+        }
+
     /** The pill for [s] at [now]; null for none, and for a mute that has already ended (never "0m left"). */
     fun look(
         s: CardStatus,
         now: Long,
         w: CardWords,
+    ): Look? = if (shows(s, now)) pill(s, now, w) else null
+
+    private fun pill(
+        s: CardStatus,
+        now: Long,
+        w: CardWords,
     ): Look? =
         when (s) {
-            is CardStatus.Taken if s.until <= now -> {
-                null
-            }
-
-            is CardStatus.Paused if s.until <= now -> {
-                null
-            }
-
-            is CardStatus.Muted if s.until <= now -> {
-                null
-            }
-
             CardStatus.None -> {
                 null
             }
@@ -75,18 +83,28 @@ object StatusBadge {
             }
         }
 
-    /** The action pill on an ended sensor. */
+    /** The action pill on an ended sensor whose readings have stopped, under "Sensor ended". */
     fun replaceSensor(w: CardWords) = Look("sensor", w.replaceSensor, w.replaceSensorShort, false)
+
+    /**
+     * The pill beside the value of a sensor past its end whose readings keep arriving (#3): "Ended · Replace sensor".
+     * An alert's pill wins over it (the action that matters now); it comes back once that one is gone.
+     */
+    fun sensorEnded(w: CardWords) = Look("sensor", w.sensorEndedPill, w.sensorEndedPillShort, false)
+
+    /** The sensor's pill for [face] (contracts/graph/sensor `pill`): ended with a value, ended without one, or none. */
+    fun sensor(
+        face: GlucoseLook,
+        w: CardWords,
+    ): Look? =
+        when {
+            face.state == GlucoseLook.State.ENDED -> replaceSensor(w)
+            face.ended -> sensorEnded(w)
+            else -> null
+        }
 
     /** The pill over a scrolled chart. */
     fun backToNow(w: CardWords) = Look("now", w.backToNow, w.backToNow, false)
-
-    /** For screen readers: the pill's full words (the alert runtime adds its own mute lines where it has them). */
-    fun describe(
-        s: CardStatus,
-        now: Long,
-        w: CardWords,
-    ): String? = look(s, now, w)?.text
 
     /** Minutes left of a mute ending at [until]: partial minutes round up ("1m" to the end). */
     private fun leftMin(

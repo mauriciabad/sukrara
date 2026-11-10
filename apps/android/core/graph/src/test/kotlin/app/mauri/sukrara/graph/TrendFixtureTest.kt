@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.str
@@ -13,11 +14,18 @@ import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.util.Locale
 
 /**
- * contracts/graph/trend: the one trend arrow (Mac: GraphTests TrendFixtureTests). The drawn arrow's angle and double,
- * the text arrow, and the face's [GlucoseLook.arrowText] that every text place writes, all from [TrendAngle].
+ * contracts/graph/trend: the one trend arrow (Mac: GraphTests TrendFixtureTests). The drawn arrow's snapped angle and
+ * double, the text arrow, the face's [GlucoseLook.arrowText] that every text place writes, the spoken word and the
+ * Nightscout direction, all from [TrendAngle]'s band.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class TrendFixtureTest {
     private val cases = (Fixtures.read("trend/trend.json")["cases"] as JsonArray).map { it.jsonObject }
 
@@ -30,8 +38,12 @@ class TrendFixtureTest {
                 val x = c["expect"] as JsonObject
                 val got = Triple(TrendAngle.text(rate), rate?.let { TrendAngle.deg(it).toDouble() }, rate?.let(TrendAngle::isDouble))
                 val want = Triple(x["text"].str(), x["deg"].double(), x["double"].bool())
-                val same = got.first == want.first && got.third == want.third &&
-                    (got.second == want.second || (got.second != null && want.second != null && kotlin.math.abs(got.second!! - want.second!!) < 1e-3))
+                val same =
+                    got.first == want.first && got.third == want.third &&
+                        (
+                            got.second == want.second ||
+                                (got.second != null && want.second != null && kotlin.math.abs(got.second!! - want.second!!) < 1e-3)
+                        )
                 if (same) null else "${c["name"].str()}: got $got, want $want"
             }
         assertTrue(fails.joinToString("\n"), fails.isEmpty())
@@ -43,11 +55,28 @@ class TrendFixtureTest {
         cases.forEach { c ->
             val rate = c["rate"].double()
             val want = (c["expect"] as JsonObject)["text"].str()
-            val fresh = GlucoseCard.face(GlucosePoint(now - 30, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT)
+            val fresh = GlucoseCard.face(GlucosePoint(now - 30, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
             assertEquals(c["name"].str(), want, fresh.arrowText)
-            val stale = GlucoseCard.face(GlucosePoint(now - 6 * 60, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT)
+            val stale = GlucoseCard.face(GlucosePoint(now - 6 * 60, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
             assertEquals(c["name"].str(), TrendMark.RING, stale.arrowText)
         }
-        assertEquals(null, GlucoseCard.face(null, now, null, CardSurface.NOTIFICATION_TEXT).arrowText)
+        assertEquals(null, GlucoseCard.face(null, now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL).arrowText)
     }
+
+    /** One word per arrow: what TalkBack says for each rate, in English and Spanish, is the fixture's band word. */
+    @Test fun `the words follow the fixture`() {
+        for ((key, locale) in mapOf("en" to Locale.ENGLISH, "es" to Locale.forLanguageTag("es"))) {
+            val w = Scenes.words(locale)
+            cases.forEach { c ->
+                val want = ((c["expect"] as JsonObject)["words"] as JsonObject)[key].str()
+                assertEquals("${c["name"].str()} ($key)", want, w.trend(c["rate"].double()))
+            }
+        }
+    }
+
+    /** The Nightscout upload and the local web endpoints send the band's direction name. */
+    @Test fun `the Nightscout direction follows the fixture`() =
+        cases.forEach { c ->
+            assertEquals(c["name"].str(), (c["expect"] as JsonObject)["nightscout"].str(), TrendAngle.nightscout(c["rate"].double()))
+        }
 }

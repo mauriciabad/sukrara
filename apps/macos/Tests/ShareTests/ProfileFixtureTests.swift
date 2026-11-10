@@ -48,6 +48,19 @@ struct ProfileFixtureTests {
         }
     }
 
+    @Test func receivedNames() {
+        for c in fixture["received"] as! [[String: Any]] {
+            #expect(Profile(wire: c["in"] as! [String: Any])?.name == c["name"] as? String)
+        }
+    }
+
+    @Test func shownNames() {
+        for c in fixture["shown"] as! [[String: Any]] {
+            let name = c["name"] as! String
+            #expect(Profile.shownName(name) == c["shown"] as? String, "\(name.debugDescription)")
+        }
+    }
+
     @Test func updateBody() {
         for c in fixture["update"] as! [[String: Any]] {
             let profile = Profile(name: c["name"] as! String, avatar: Avatar(wire: c["avatar"]))

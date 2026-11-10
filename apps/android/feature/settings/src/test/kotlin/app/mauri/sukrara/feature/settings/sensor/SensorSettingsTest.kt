@@ -3,14 +3,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings.sensor
 
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.testing.FakeClock
@@ -42,7 +46,13 @@ class SensorSettingsTest {
 
     private val now = Instant.parse("2026-10-27T14:00:00Z")
     private val sensor = SensorSummary("3MH00ABCDEF", now.minusSeconds(5 * 86_400), now.plusSeconds(10 * 86_400))
-    private val working = SensorSettingsState(SourceChoice.Libre3Direct, SensorState.Active(sensor.endsAt), sensor, LibreViewSummary("me@example.invalid", 123456789))
+    private val working =
+        SensorSettingsState(
+            SourceChoice.Libre3Direct,
+            SensorState.Active(sensor.endsAt),
+            sensor,
+            LibreViewSummary("me@example.invalid", 123456789),
+        )
 
     private class FakePort(initial: SensorSettingsState) : SensorSettingsPort {
         override val state = MutableStateFlow(initial)
@@ -86,7 +96,7 @@ class SensorSettingsTest {
     fun `the current source is selected and tapping it does nothing`() {
         val chosen = mutableListOf<SourceChoice>()
         show(working, SensorSettingsActions(setSource = { chosen += it }))
-        compose.onNodeWithText("Libre 3 directly").performScrollTo().performClick()
+        compose.onNodeWithText("This phone reads the sensor").performScrollTo().performClick()
         compose.onNodeWithText("Read the sensor directly?").assertDoesNotExist()
         assertTrue(chosen.isEmpty())
     }
@@ -98,6 +108,35 @@ class SensorSettingsTest {
         compose.onNodeWithText("10d", substring = true).assertExists()
         compose.onNodeWithText("me@example.invalid").performScrollTo().assertExists()
         compose.onNodeWithText("123456789").assertExists()
+    }
+
+    @Test
+    fun `monitoring stopped with a pairing says so with Resume, never no sensor`() {
+        var resumed = 0
+        show(working.copy(state = SensorState.None, paired = true, stopped = true), SensorSettingsActions(resume = { resumed++ }))
+        compose.onNodeWithText("Monitoring is stopped", substring = true).assertExists()
+        compose.onNodeWithText("No sensor", substring = true).assertDoesNotExist()
+        compose.onAllNodesWithTextFirst("Monitoring stopped").assertExists()
+        compose.onNodeWithText("Resume").performClick()
+        assertEquals(1, resumed)
+    }
+
+    @Test
+    fun `Juggluco refusing the secret says so and the secret can be typed, saved or removed`() {
+        val saved = mutableListOf<String>()
+        val refused =
+            working.copy(source = SourceChoice.Juggluco, link = SourceLink.JugglucoRefused, jugglucoSecret = true)
+        show(refused, SensorSettingsActions(setJugglucoSecret = { saved += it }))
+        compose.onNodeWithText("Juggluco refuses Sukrara", substring = true).assertExists()
+        compose.onNodeWithText("Juggluco on this phone").assertExists()
+        compose.onNodeWithText("Change API secret").performClick()
+        compose.onNodeWithText("Save").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction()).performTextInput("s3cret")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("s3cret"), saved)
+        compose.onAllNodesWithTextFirst("API secret").performClick()
+        compose.onNodeWithText("Remove").performClick()
+        assertEquals(listOf("s3cret", ""), saved)
     }
 
     @Test
@@ -130,6 +169,30 @@ class SensorSettingsTest {
     }
 
     @Test
+    fun `an untested family is named and tagged, its no-value reasons are said`() {
+        show(working.copy(family = SensorFamily("Dexcom G7 / ONE+", untested = true), link = SourceLink.NoValueCalibration))
+        compose.onNodeWithText("Dexcom G7 / ONE+ · untested").assertExists()
+        compose.onNodeWithText("asks for a calibration", substring = true).assertExists()
+        compose.onNodeWithText("Working", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a sensor error offers Pair new sensor`() {
+        var paired = 0
+        show(working.copy(link = SourceLink.NoValueSensorError), SensorSettingsActions(pairNewSensor = { paired++ }))
+        compose.onAllNodes(hasText("the sensor reports an error", substring = true)).onFirst().assertExists()
+        compose.onAllNodesWithTextFirst("Pair new sensor").performClick()
+        assertEquals(1, paired)
+    }
+
+    @Test
+    fun `an old sensor skipped while searching is said`() {
+        show(working.copy(family = SensorFamily("Dexcom G7 / ONE+", untested = true, skippedOld = 1), link = SourceLink.Searching))
+        compose.onNodeWithText("An older Dexcom G7 / ONE+ nearby has ended", substring = true).assertExists()
+        compose.onNodeWithText("Looking for the sensor", substring = true).assertExists()
+    }
+
+    @Test
     fun `sign out asks first, Cancel keeps the account`() {
         var signedOut = 0
         show(working, SensorSettingsActions(signOut = { signedOut++ }))
@@ -145,7 +208,12 @@ class SensorSettingsTest {
     @Test
     fun `signed out shows Sign in`() {
         var signIn = 0
-        show(working.copy(state = SensorState.ActionNeeded(SensorAction.SignInLibreView), account = null), SensorSettingsActions(signIn = { signIn++ }))
+        show(
+            working.copy(state = SensorState.ActionNeeded(SensorAction.SignInLibreView), account = null),
+            SensorSettingsActions(signIn = {
+                signIn++
+            }),
+        )
         compose.onAllNodesWithTextFirst("Sign in to LibreView").performClick()
         assertEquals(1, signIn)
     }
@@ -163,6 +231,57 @@ class SensorSettingsTest {
         assertEquals(listOf(SourceChoice.Juggluco), port.sources)
         assertTrue(port.signedOut)
         compose.onNodeWithText("Juggluco").assertIsSelected()
+    }
+
+    @Test
+    fun `forget asks first, Cancel keeps the sensor, open on scan toggles`() {
+        var forgot = 0
+        val scan = mutableListOf<Boolean>()
+        show(
+            working.copy(paired = true, openOnScan = OpenOnScan(on = false)),
+            SensorSettingsActions(forget = { forgot++ }, setOpenOnScan = { scan += it }),
+        )
+        compose.onNodeWithText("Open Sukrara when you scan a sensor").performScrollTo().performClick()
+        assertEquals(listOf(true), scan)
+        compose.onNodeWithText("Forget this sensor").performScrollTo().performClick()
+        compose.onNodeWithText("Forget this sensor?").assertExists()
+        compose.onNodeWithText("Cancel").performClick()
+        assertEquals(0, forgot)
+        compose.onNodeWithText("Forget this sensor").performClick()
+        compose.onNodeWithText("Forget").performClick()
+        assertEquals(1, forgot)
+    }
+
+    @Test
+    fun `blocked sensor taps show the card at the top and a warning row, both open Android's screen`() {
+        var allowed = 0
+        val scan = mutableListOf<Boolean>()
+        show(
+            working.copy(paired = true, openOnScan = OpenOnScan(on = true, blocked = true)),
+            SensorSettingsActions(setOpenOnScan = { scan += it }, allowTaps = { allowed++ }),
+        )
+        compose.onNodeWithText("Sensor taps are blocked").assertExists()
+        compose.onNodeWithText("Allow").performScrollTo().performClick()
+        assertEquals(1, allowed)
+        // the warning row: the row opens Android's screen, its switch still turns it off
+        compose.onNodeWithText("Blocked · tap to allow").performScrollTo().performClick()
+        assertEquals(2, allowed)
+        compose.onNode(isToggleable()).performScrollTo().performClick()
+        assertEquals(listOf(false), scan)
+    }
+
+    @Test
+    fun `allowed or off, the sensor taps card is gone`() {
+        show(working.copy(paired = true, openOnScan = OpenOnScan(on = true, blocked = false)))
+        compose.onNodeWithText("Sensor taps are blocked").assertDoesNotExist()
+        compose.onNodeWithText("A sensor tap opens pairing when no sensor is being read").assertExists()
+    }
+
+    @Test
+    fun `with Juggluco as the source the This phone rows are hidden`() {
+        show(working.copy(source = SourceChoice.Juggluco, paired = true, openOnScan = OpenOnScan(on = true)))
+        compose.onNodeWithText("Forget this sensor").assertDoesNotExist()
+        compose.onNodeWithText("Open Sukrara when you scan a sensor").assertDoesNotExist()
     }
 
     private fun ComposeContentTestRule.onAllNodesWithTextFirst(text: String) = onAllNodes(hasText(text)).onFirst().performScrollTo()

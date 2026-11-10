@@ -7,6 +7,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.R
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -59,18 +60,25 @@ class AndroidRequestNotifications(
     private val post: (Notification) -> Unit,
     private val remove: () -> Unit,
 ) : RequestNotifications {
+    /** The follower's name, or *Someone* when it has none (an empty or blank name never shows as "?" or nothing). */
+    private fun shown(name: String) = Profile.shownName(name).ifEmpty { context.getString(R.string.share_request_someone) }
+
     override fun show(request: PendingRequest) {
         val time = time(request.at)
-        val text = when {
-            request.others > 0 -> context.getString(R.string.share_request_others)
-            request.label.isNotBlank() -> context.getString(R.string.share_request_for, request.label, time)
-            else -> context.getString(R.string.share_request_from, time)
-        }
-        val builder = base()
-            .setContentTitle(context.getString(R.string.share_request_title, request.name))
-            .setContentText(text)
-            .setStyle(Notification.BigTextStyle().bigText(text))
-        if (request.others == 0) {
+        val text =
+            when {
+                request.nearby -> context.getString(R.string.share_request_nearby)
+                request.others > 0 -> context.getString(R.string.share_request_others)
+                request.label.isNotBlank() -> context.getString(R.string.share_request_for, request.label, time)
+                else -> context.getString(R.string.share_request_from, time)
+            }
+        val builder =
+            base()
+                .setContentTitle(context.getString(R.string.share_request_title, shown(request.name)))
+                .setContentText(text)
+                .setStyle(Notification.BigTextStyle().bigText(text))
+        // a code to type or compare needs the app: no Allow from the notification
+        if (request.allowFromNotification) {
             builder.addAction(action(RequestActionReceiver.ACTION_DENY, R.string.share_request_deny, request.follower, auth = false))
             builder.addAction(action(RequestActionReceiver.ACTION_ALLOW, R.string.share_request_allow, request.follower, auth = true))
         }
@@ -79,21 +87,24 @@ class AndroidRequestNotifications(
 
     override fun showNotAllowed() {
         val text = context.getString(R.string.share_request_failed_text)
-        val builder = base()
-            .setContentTitle(context.getString(R.string.share_request_failed_title))
-            .setContentText(text)
-            .setStyle(Notification.BigTextStyle().bigText(text))
+        val builder =
+            base()
+                .setContentTitle(context.getString(R.string.share_request_failed_title))
+                .setContentText(text)
+                .setStyle(Notification.BigTextStyle().bigText(text))
         post(builder.build())
     }
 
     override fun cancel() = remove()
 
     private fun base(): Notification.Builder {
-        val builder = Notification.Builder(context, channel)
-            .setSmallIcon(context.applicationInfo.icon)
-            .setCategory(Notification.CATEGORY_SOCIAL)
-            .setAutoCancel(true)
-            .setGroup(group)
+        val builder =
+            Notification
+                .Builder(context, channel)
+                .setSmallIcon(context.applicationInfo.icon)
+                .setCategory(Notification.CATEGORY_SOCIAL)
+                .setAutoCancel(true)
+                .setGroup(group)
         context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
             builder.setContentIntent(PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE))
         }
@@ -102,11 +113,15 @@ class AndroidRequestNotifications(
 
     private fun action(what: String, label: Int, follower: String, auth: Boolean): Notification.Action {
         // one PendingIntent per follower and action: a newer request can never retarget an Allow being unlocked
-        val intent = Intent(context, RequestActionReceiver::class.java)
-            .setAction(what)
-            .setIdentifier("$what:$follower")
-            .putExtra(RequestActionReceiver.EXTRA_FOLLOWER, follower)
+        val intent =
+            Intent(context, RequestActionReceiver::class.java)
+                .setAction(what)
+                .setIdentifier("$what:$follower")
+                .putExtra(RequestActionReceiver.EXTRA_FOLLOWER, follower)
         val pending = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-        return Notification.Action.Builder(null, context.getString(label), pending).setAuthenticationRequired(auth).build()
+        return Notification.Action
+            .Builder(null, context.getString(label), pending)
+            .setAuthenticationRequired(auth)
+            .build()
     }
 }

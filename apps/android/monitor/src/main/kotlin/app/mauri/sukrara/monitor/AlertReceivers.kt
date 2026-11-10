@@ -11,6 +11,7 @@ import android.util.Log
 import app.mauri.sukrara.alerts.AlertLimits
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.monitor.alerts.AlertsModule
+import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -19,8 +20,9 @@ interface AlertsHost {
     val alerts: AlertsModule
 }
 
+/** The one [AlertsModule]; null before the first unlock after a restart (the app graph needs the unlocked storage). */
 internal val Context.alertsModule: AlertsModule?
-    get() = (applicationContext as? AlertsHost)?.alerts
+    get() = if (!userUnlocked) null else (applicationContext as? AlertsHost)?.alerts
 
 private const val TAG = "Sukrara.alerts"
 
@@ -42,10 +44,24 @@ class AlertActionReceiver : BroadcastReceiver() {
                     val minutes = typed?.let(Durations::parse)?.takeIf { it > 0 && AlertLimits.ACTION_MUTE.valid(it.toDouble()) }
                     if (minutes != null) runtime.mute(kind, minutes) else runtime.reshow(kind)
                 }
-                REMIND_LESS -> runtime.remindLess(kind)
-                REMIND_AS_USUAL -> runtime.remindAsUsual(kind)
-                UNMUTE -> runtime.unmute(kind)
-                TIDY -> NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
+
+                REMIND_LESS -> {
+                    runtime.remindLess(kind)
+                }
+
+                REMIND_AS_USUAL -> {
+                    runtime.remindAsUsual(kind)
+                }
+
+                UNMUTE -> {
+                    runtime.unmute(kind)
+                }
+
+                TIDY -> {
+                    // a swipe is an answer on this phone (#39), then the group's tidy-up
+                    runtime.acknowledge(kind)
+                    NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
+                }
             }
         }
     }
@@ -71,15 +87,25 @@ class AlertActionReceiver : BroadcastReceiver() {
  */
 class AlertCheckReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != ACTION_CHECK) return
         val module = context.alertsModule ?: return
-        runAsync(ACTION_CHECK) {
-            withTimeoutOrNull(ALERT_CHECK_BUDGET_MS) { module.check() } ?: Log.w(TAG, "alert check timed out")
-            module.restarter.restart()
+        when (val action = intent.action) {
+            ACTION_CHECK -> {
+                runAsync(action) {
+                    withTimeoutOrNull(ALERT_CHECK_BUDGET_MS) { module.check() } ?: Log.w(TAG, "alert check timed out")
+                    module.restarter.restart()
+                }
+            }
+
+            // a sensor countdown swiped away: kept away for this sensor
+            ACTION_COUNTDOWN_DISMISSED, ACTION_WARMUP_DISMISSED -> {
+                runAsync(action) { module.sensorEnd.dismissed(warmup = action == ACTION_WARMUP_DISMISSED) }
+            }
         }
     }
 
     companion object {
         const val ACTION_CHECK = "app.mauri.sukrara.alert.CHECK"
+        const val ACTION_COUNTDOWN_DISMISSED = "app.mauri.sukrara.sensor.COUNTDOWN_DISMISSED"
+        const val ACTION_WARMUP_DISMISSED = "app.mauri.sukrara.sensor.WARMUP_DISMISSED"
     }
 }

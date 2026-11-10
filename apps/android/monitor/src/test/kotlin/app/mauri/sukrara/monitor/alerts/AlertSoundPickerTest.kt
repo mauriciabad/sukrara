@@ -21,6 +21,13 @@ class AlertSoundPickerTest {
         assertNotEquals(first, p.pick(AlertKind.LOW, s, 10_000))
     }
 
+    /** Settings › a pack changed, then *Send a test alert* within the hold: the test plays the new pack. */
+    @Test fun aChangedPackPicksAnewInsideTheHold() {
+        val p = AlertSoundPicker()
+        assertEquals("quest_low_1", p.pick(AlertKind.LOW, SoundSettings(pack = "quest", shuffle = false), 0))
+        assertEquals("soft_low_1", p.pick(AlertKind.LOW, SoundSettings(pack = "soft", shuffle = false), 1_000))
+    }
+
     @Test fun noShuffleSystemAndUnknownPack() {
         val p = AlertSoundPicker()
         assertEquals("soft_high_1", p.pick(AlertKind.HIGH, SoundSettings(pack = "soft", shuffle = false), 0))
@@ -35,10 +42,19 @@ class AlertSoundPickerTest {
 
     @Test fun everyPickableFileExists() {
         val raw = Contracts.root.resolve("alerts/sounds/android/raw")
-        val names = raw.listFiles().orEmpty().map { it.nameWithoutExtension }.toSet()
+        val names =
+            raw
+                .listFiles()
+                .orEmpty()
+                .map { it.nameWithoutExtension }
+                .toSet()
         assertTrue(AlertSoundPicker.SILENCE in names)
-        for (pack in AlertSoundPicker.PACKS) for (k in AlertKind.entries) for (n in 1..AlertSoundPicker.VARIANTS) {
-            assertTrue("${pack}_${k.wire}_$n missing", "${pack}_${k.wire}_$n" in names)
+        for (pack in AlertSoundPicker.PACKS) {
+            for (k in AlertKind.entries) {
+                for (n in 1..AlertSoundPicker.VARIANTS) {
+                    assertTrue("${pack}_${k.wire}_$n missing", "${pack}_${k.wire}_$n" in names)
+                }
+            }
         }
     }
 }

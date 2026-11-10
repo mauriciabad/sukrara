@@ -1,0 +1,44 @@
+{
+  "_about": [
+    "THE glucose units (#24): values are stored, sent, alerted on and exported in mg/dL; mmol/L is only how they are shown",
+    "and typed (setting general.unit). One conversion and formatting function per platform: Android :core:model",
+    "GlucoseUnit.kt, Mac SukraraCore GlucoseUnit.swift; both are tested against this file (Android UnitsFixtureTest in",
+    ":core:graph, Mac GlucoseUnitTests). Every surface writes a glucose number through them: the card's value, the chart's",
+    "range labels and lines, the spoken sentence, notifications, alert copy, widgets, status bar, Mac menu bar, settings.",
+    "factor   mg/dL per mmol/L: 18.0182 (glucose's molar mass 180.16 g/mol / 10, the WHO / IFCC factor; xDrip+'s",
+    "         MMOLL_TO_MGDL and the CSV export's). Others in use: AndroidAPS and many dosing charts 18, Nightscout",
+    "         18.01559; Abbott (LibreLink) and Dexcom don't publish theirs and show one decimal. 18 and 18.0182 differ in",
+    "         the shown decimal at 46 of the 361 values 40-400 (e.g. 100 mg/dL: 5.5 here, 5.6 at 18), never by more than 0.1.",
+    "round    half away from zero on the exact quotient: value = sign * floor(|mgdl / factor| * 10^d + 0.5) / 10^d.",
+    "value    a glucose value: mg/dL whole numbers; mmol/L one decimal, always written ('5.0', never '5').",
+    "rate     a trend rate (mg/dL/min): mg/dL/min one decimal; mmol/L/min two decimals (0.1 mg/dL/min = 0.0055).",
+    "decimal  the separator of the language: '.' in English, ',' in Spanish ('7,8'). Data formats (CSV export, wire,",
+    "         broadcasts) never use the shown unit or the comma: they stay mg/dL.",
+    "bounds   LO / HI are words in both units (Freshness.valueText); what they mean is written with the bound in the unit:",
+    "         'below 40 mg/dL' / 'below 2.2 mmol/L', 'above 400 mg/dL' / 'above 22.2 mmol/L'.",
+    "input    a value typed or picked in mmol/L becomes the stored mg/dL on the schema format's step (whole mg/dL; 0.1",
+    "         mg/dL/min for rates): stored = round(shown * factor / step) * step, then the format's coerce. A number",
+    "         setting in mg/dL has a 'mmol' variant in settings.json (its own min, max, step, nudge, decimals and presets",
+    "         in mmol/L); every value of that variant's grid must come back unchanged (stored, then shown again), which",
+    "         every platform's test checks for every variant."
+  ],
+  "factor": 18.0182,
+  "value": [
+    [40, "mgdl", "en", "40"], [112, "mgdl", "en", "112"], [400, "mgdl", "es", "400"],
+    [40, "mmol", "en", "2.2"], [54, "mmol", "en", "3.0"], [55, "mmol", "en", "3.1"], [70, "mmol", "en", "3.9"],
+    [72, "mmol", "en", "4.0"], [90, "mmol", "en", "5.0"], [99, "mmol", "en", "5.5"], [100, "mmol", "en", "5.5"],
+    [101, "mmol", "en", "5.6"], [141, "mmol", "en", "7.8"], [180, "mmol", "en", "10.0"], [181, "mmol", "en", "10.0"],
+    [250, "mmol", "en", "13.9"], [300, "mmol", "en", "16.6"], [400, "mmol", "en", "22.2"],
+    [70, "mmol", "es", "3,9"], [141, "mmol", "es", "7,8"], [180, "mmol", "es", "10,0"], [400, "mmol", "es", "22,2"]
+  ],
+  "rate": [
+    [2.0, "mgdl", "en", "2.0"], [-1.5, "mgdl", "en", "-1.5"], [2.0, "mgdl", "es", "2,0"],
+    [0.0, "mmol", "en", "0.00"], [0.9, "mmol", "en", "0.05"], [1.0, "mmol", "en", "0.06"], [2.0, "mmol", "en", "0.11"],
+    [3.0, "mmol", "en", "0.17"], [-1.5, "mmol", "en", "-0.08"], [-3.4, "mmol", "en", "-0.19"], [-0.05, "mmol", "en", "0.00"], [-0.04, "mgdl", "en", "0.0"], [2.0, "mmol", "es", "0,11"]
+  ],
+  "input": [
+    [3.9, 1, 70], [4.0, 1, 72], [3.0, 1, 54], [10.0, 1, 180], [13.9, 1, 250], [7.8, 1, 141], [2.2, 1, 40],
+    [22.2, 1, 400], [0.5, 1, 9], [0.11, 0.1, 2.0], [0.06, 0.1, 1.1], [0.17, 0.1, 3.1]
+  ],
+  "symbol": {"mgdl": ["mg/dL", "mg/dL/min"], "mmol": ["mmol/L", "mmol/L/min"]}
+}

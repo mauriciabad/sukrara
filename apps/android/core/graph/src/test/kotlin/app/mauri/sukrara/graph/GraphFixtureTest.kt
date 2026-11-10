@@ -3,14 +3,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.long
 import app.mauri.sukrara.graph.Fixtures.str
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.Goal
 import app.mauri.sukrara.graph.stats.ShareText
 import app.mauri.sukrara.graph.stats.TimeInRange
@@ -61,6 +65,28 @@ class GraphFixtureTest {
     }
 
     @Test
+    fun range() {
+        val now = 1_800_000_000L
+        val words = Scenes.words()
+        val cs = cases("range/range.json")
+        assertTrue(cs.isNotEmpty())
+        for (c in cs) {
+            val sgv = c["sgv"].long()!!.toInt()
+            val b = c["bands"]?.jsonObject
+            val bands =
+                Bands().let { d ->
+                    d.copy(low = b?.get("low").long()?.toInt() ?: d.low, high = b?.get("high").long()?.toInt() ?: d.high)
+                }
+            val pill = c["pill"]?.jsonObject?.let { StatusBadge.Look(it["kind"].str()!!, "x", "x", it["tonal"].bool()!!) }
+            val face = Freshness.look(sgv, now - (c["age"].long() ?: 60), 0.0, now)
+            val got = RangeState.shown(face, sgv, bands, pill)
+            val e = c["expect"]!!.jsonObject
+            assertEquals(name(c), e["range"].str(), got?.key)
+            if (got != null) assertEquals(name(c), e["text"].str(), words.range(got))
+        }
+    }
+
+    @Test
     fun mark() {
         for (c in cases("mark/mark.json")) {
             val t = c["tir"]!!.jsonObject
@@ -85,7 +111,12 @@ class GraphFixtureTest {
         for (c in cases("sensor/life.json")) {
             val now = Scenes.NOW
             val start = now + c["start"].long()!!
-            val info = SensorInfo(start, now + c["end"].long()!!, c["warmup"].long()?.let { now + it } ?: (start + 3600))
+            val info =
+                SensorInfo(
+                    start,
+                    now + c["end"].long()!!,
+                    c["warmup"].long()?.let { now + it } ?: (start + 60L * SensorTiming.DEFAULT_WARMUP_MIN),
+                )
             val latest = c["latest"].long()?.let { now + it }
             val look = SensorBadge.look(info, now, latest, w)!!
             val e = c["expect"]!!.jsonObject
@@ -96,13 +127,16 @@ class GraphFixtureTest {
             val ring = SensorBadge.ring(look, info, now, c["countdownHours"].long()!!.toInt())
             val want = e["ring"].double()
             if (want == null) assertNull(name(c), ring) else assertEquals(name(c), want, ring!!, 0.001)
+            // the sensor's pill as the value's place draws it, for a reading at `latest`
+            val face = Freshness.look(latest?.let { 120 }, latest, 0.0, now, ended = look.ended, warmup = look.warmup)
+            val p = StatusBadge.sensor(face, w)
             val pill = e["pill"]
             if (pill == null || pill is JsonNull) {
-                assertEquals(name(c), false, look.ended && latest == null)
+                assertNull(name(c), p)
             } else {
-                val p = StatusBadge.replaceSensor(w)
-                assertEquals(name(c), pill.jsonObject["text"].str(), p.text)
-                assertEquals(name(c), pill.jsonObject["short"].str(), p.short)
+                assertEquals(name(c), pill.jsonObject["kind"].str(), p?.kind)
+                assertEquals(name(c), pill.jsonObject["text"].str(), p?.text)
+                assertEquals(name(c), pill.jsonObject["short"].str(), p?.short)
             }
         }
     }
@@ -179,17 +213,22 @@ class GraphFixtureTest {
         val file = Fixtures.read("labels/labels.json")
         val pctLabel = file["pctLabel"].double()!!.toFloat()
         val valueLabel = file["valueLabel"].double()!!.toFloat()
-        val w = Scenes.words()
+        // a case's `locale` (es) lays the labels out with that language's times ("1 h 35 min")
+        val words = mapOf("en" to Scenes.words(), "es" to Scenes.words(Locale.forLanguageTag("es")))
         val now = Scenes.NOW
         val all = cases("labels/labels.json")
         assertTrue("no label cases", all.isNotEmpty())
         val fails = ArrayList<String>()
         for (c in all) {
+            val w = words.getValue(c["locale"].str() ?: "en")
             val chart = c["chart"]!!.jsonObject
             val cw = chart["w"].double()!!.toFloat()
             val lanes = GlucoseGraph.lanes(chart["h"].double()!!.toFloat(), 1f)
             val windowS = (c["hours"].double()!! * 3600).toLong()
-            val (left, right) = GlucoseGraph.plotX(0f, cw, c["pct"].bool() != false, true, 1f, pctLabel, valueLabel)
+            // a large system font: the labels and the side columns' widest labels grow, the geometry doesn't
+            val scale = GlucoseGraph.textScale(c["fontScale"].double()?.toFloat() ?: 1f)
+            val (left, right) =
+                GlucoseGraph.plotX(0f, cw, c["pct"].bool() != false, true, 1f, pctLabel * scale, valueLabel * scale)
             val from = now - windowS
             val lay =
                 TreatmentMarks.layout(
@@ -202,6 +241,7 @@ class GraphFixtureTest {
                     1f,
                     w,
                     marksOf(c),
+                    scale,
                 )
             val e = c["expect"]!!.jsonObject
             val plot = e["plot"]!!.jsonArray.map { it.double()!! }
@@ -225,8 +265,11 @@ class GraphFixtureTest {
         assertTrue("label fixtures failed:\n" + fails.joinToString("\n"), fails.isEmpty())
     }
 
-    /** The user's mute after insulin / carbs as status.json gives it (`settings`), else the schema defaults. */
-    private fun muteRule(c: JsonObject): MuteRule {
+    /**
+     * The user's mute after insulin / carbs as status.json gives it (`settings`), else the schema defaults, through
+     * the production rule every card uses ([muteRuleOf] over the alert runtime's [TreatmentQuiet]).
+     */
+    private fun muteRule(c: JsonObject): MuteRule? {
         val settings = c["settings"]?.jsonObject
 
         fun muteS(
@@ -237,15 +280,12 @@ class GraphFixtureTest {
             if (o?.get("on").bool() == false) return null
             return ((o?.get("min").double() ?: defaultMin) * 60).toLong()
         }
-        val insulinS = muteS("muteAfterInsulin", SettingsSpec.MUTE_INSULIN.default)
-        val carbsS = muteS("muteAfterCarbs", SettingsSpec.MUTE_CARBS.default)
-        return MuteRule { t ->
-            when (t.kind) {
-                TreatmentKind.RapidInsulin -> insulinS
-                TreatmentKind.Carbs -> carbsS
-                else -> null
-            }?.let { t.t + it }
-        }
+        val quiet =
+            TreatmentQuiet(
+                rapidS = muteS("muteAfterInsulin", SettingsSpec.MUTE_INSULIN.default),
+                carbsS = muteS("muteAfterCarbs", SettingsSpec.MUTE_CARBS.default),
+            )
+        return muteRuleOf(AlertUiState(treatmentQuiet = quiet))
     }
 
     /**

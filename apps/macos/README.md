@@ -10,7 +10,10 @@ cd apps/macos
 swift build                      # debug build of every target (Swift 6 language mode)
 swift test                       # Swift Testing; fixtures from contracts/ (SUKRARA_CONTRACTS overrides the path)
 swift format lint --strict -r Package.swift Sources Tests
-Bundle/bundle.sh                 # build/Sukrara.app + PlugIns/SukraraWidget.appex, signed (Apple Development, team QWUV9H4A3G)
+Bundle/bundle.sh                 # build/Sukrara.app + PlugIns/SukraraWidget.appex, signed by team QWUV9H4A3G: with the
+                                 # provisioning profiles in ~/.apple-dev/profiles (Developer ID, Time Sensitive,
+                                 # data-protection keychain, universal links), else Apple Development without them
+Bundle/bundle.sh --no-profile    # signed, without the profiles
 Bundle/bundle.sh --unsigned      # ad hoc signed, for CI / machines without the identity
 Bundle/bundle.sh --dev           # CFBundleVersion <code>.<yyMMddHHmm> so the widget host refreshes previews
 Bundle/dmg.sh                    # build/Sukrara-<version>.dmg + build/Sukrara-mac-<version>.zip

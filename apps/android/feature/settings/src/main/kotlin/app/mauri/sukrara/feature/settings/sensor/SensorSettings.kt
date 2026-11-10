@@ -44,7 +44,32 @@ enum class SourceLink {
 
     /** Juggluco's web server doesn't answer: no readings until Juggluco runs with it on. */
     JugglucoUnreachable,
+
+    /** Juggluco refuses Sukrara: its web server's API secret and Sukrara's don't match (or one is missing). */
+    JugglucoRefused,
+
+    /** Looking for the sensor (a scanned family): short scans until it shows up. Leaves by itself. */
+    Searching,
+
+    /** Connected, but the sensor asks for a calibration (Dexcom): done in the vendor's app or receiver. */
+    NoValueCalibration,
+
+    /** Connected, a temporary sensor issue: values come back by themselves. */
+    NoValueTemporary,
+
+    /** Connected, the sensor reports an error: if it lasts, the sensor needs replacing. */
+    NoValueSensorError,
+
+    /** Connected, the last message carried no value: waiting for the next one. */
+    NoValueMissing,
 }
+
+/**
+ * The paired sensor's family as the page names it ([label]: the brand name, not translated), whether Sukrara's support
+ * for it was confirmed on a real sensor ([untested] = never) and how many older sensors of the family the scan found
+ * nearby and skipped since the last reading ([skippedOld]: an ended one still bonded and advertising).
+ */
+data class SensorFamily(val label: String, val untested: Boolean, val skippedOld: Int = 0)
 
 /**
  * Everything Settings › Sensor shows. [sensor] is null until a sensor is known; [account] null = not signed in.
@@ -55,7 +80,22 @@ data class SensorSettingsState(
     val sensor: SensorSummary?,
     val account: LibreViewSummary?,
     val link: SourceLink = SourceLink.Receiving,
+    val family: SensorFamily? = null,
+    /** A sensor pairing is saved on this phone (*Forget this sensor* shows). */
+    val paired: Boolean = false,
+    /** *Open Sukrara when you scan a sensor*: null = the phone has no NFC (the row doesn't show). */
+    val openOnScan: OpenOnScan? = null,
+    /**
+     * Monitoring is stopped while something is set up to read (a pairing, or Juggluco): the source isn't read, so
+     * [state] says nothing about the sensor. The page says *Monitoring stopped* with *Resume*, never "no sensor".
+     */
+    val stopped: Boolean = false,
+    /** Juggluco's API secret is saved (never shown; null = not read yet). */
+    val jugglucoSecret: Boolean? = null,
 )
+
+/** The tap switch: [on], and [blocked] = Android stops Sukrara's tag intents (Settings › Apps › Sukrara). */
+data class OpenOnScan(val on: Boolean, val blocked: Boolean = false)
 
 /**
  * What Settings › Sensor needs from the sensor feature (features never depend on each other: the app implements it
@@ -72,6 +112,30 @@ interface SensorSettingsPort {
 
     /** Forgets the LibreView account's email and receiver ID; a running sensor keeps working. */
     suspend fun signOut()
+
+    /** *Open Sukrara when you scan a sensor* on or off. */
+    fun setOpenOnScan(on: Boolean) = Unit
+
+    /** The page is shown again: read what can change outside the app (Android blocking Sukrara's NFC taps). */
+    fun recheck() = Unit
+
+    /** Android's screen that allows Sukrara's NFC taps (the blocked card's *Allow*, the warning row). */
+    fun allowTaps() = Unit
+
+    /**
+     * *Forget this sensor*: the saved pairing goes and the link stops; no "no data" alarm follows (monitoring counts
+     * again from the next sensor's first reading). Runs to the end in the app's scope.
+     */
+    fun forget() = Unit
+
+    /** *Resume* while monitoring is stopped ([SensorSettingsState.stopped]): starts it again. */
+    fun resume() = Unit
+
+    /**
+     * Saves Juggluco's web-server API secret (blank removes it) and reconnects to Juggluco with it. Runs to the end in
+     * the app's scope.
+     */
+    fun setJugglucoSecret(secret: String) = Unit
 }
 
 class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel() {
@@ -86,7 +150,21 @@ class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel(
         viewModelScope.launch { port.signOut() }
     }
 
+    fun setOpenOnScan(on: Boolean) = port.setOpenOnScan(on)
+
+    fun recheck() = port.recheck()
+
+    fun allowTaps() = port.allowTaps()
+
+    fun forget() = port.forget()
+
+    fun resume() = port.resume()
+
+    fun setJugglucoSecret(secret: String) = port.setJugglucoSecret(secret)
+
     companion object {
-        fun factory(port: SensorSettingsPort): ViewModelProvider.Factory = viewModelFactory { initializer { SensorSettingsViewModel(port) } }
+        fun factory(
+            port: SensorSettingsPort,
+        ): ViewModelProvider.Factory = viewModelFactory { initializer { SensorSettingsViewModel(port) } }
     }
 }

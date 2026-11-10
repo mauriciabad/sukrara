@@ -4,34 +4,66 @@
 package app.mauri.sukrara.feature.sharing
 
 import android.content.Context
+import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
-import app.mauri.sukrara.core.model.AlertReadinessSource
-import app.mauri.sukrara.feature.sharing.setup.SetupRecord
+import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
 import app.mauri.sukrara.feature.sharing.setup.FinishItem
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.SetupFacts
 import app.mauri.sukrara.feature.sharing.setup.SetupMachine
+import app.mauri.sukrara.feature.sharing.setup.SetupRecord
+import app.mauri.sukrara.feature.sharing.setup.SetupStep
+import app.mauri.sukrara.feature.sharing.setup.ThresholdField
+import app.mauri.sukrara.feature.sharing.share.LaterRequests
 import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.Instant
-import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
-import app.mauri.sukrara.feature.sharing.setup.ThresholdField
-import kotlinx.coroutines.flow.first
-import app.mauri.sukrara.core.data.settings.SchemaSettings
-import app.mauri.sukrara.core.model.storage.SettingsRepository
 
 /** The phone's role (`AppGraph`'s own `role` store, read by the hub and the alert runtime). */
 interface RoleStore {
     val role: Flow<Role?>
 
+    /** What [set] with [role] would delete from this phone; null = nothing (no confirmation needed). */
+    suspend fun loss(role: Role): RoleLoss?
+
+    /** Stores [role]; the other role's readings (and, when the role changed, every treatment) are deleted. */
     suspend fun set(role: Role)
+}
+
+/**
+ * The history a role change deletes (the previous person's): [readings] glucose readings and [treatments] logged
+ * treatments, together spanning [from]..[to]. The role step asks before deleting it (#125).
+ */
+data class RoleLoss(
+    val readings: Int,
+    val treatments: Int,
+    val from: Instant,
+    val to: Instant,
+) {
+    companion object {
+        /** Null when both spans are empty: nothing to ask about. */
+        fun of(
+            readings: StoredSpan,
+            treatments: StoredSpan,
+        ): RoleLoss? {
+            val firsts = listOfNotNull(readings.first, treatments.first)
+            val lasts = listOfNotNull(readings.last, treatments.last)
+            if (readings.count + treatments.count == 0 || firsts.isEmpty() || lasts.isEmpty()) return null
+            return RoleLoss(readings.count, treatments.count, firsts.min(), lasts.max())
+        }
+    }
 }
 
 /**
@@ -66,12 +98,17 @@ class SetupModule(
     val startMonitoring: () -> Unit,
     val readiness: AlertReadinessSource,
     val clock: Clock,
-    /** Following on Android is in this build. */
-    val followerAvailable: Boolean = false,
+    /** The follower role (join, stop following). */
+    val follower: FollowerSharing = FollowerSharing.None,
 ) {
+    /** An invite link opened on this phone before it follows anyone: setup's join step starts with it. */
+    val pendingInvite = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+
     /** When the alert thresholds were confirmed (setup or Settings › Alerts), null = never. */
     val alertsConfirmedAt: Flow<Instant?> by lazy {
-        settings.flow(THRESHOLDS_CONFIRMED_AT).map { text -> text.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it) }.getOrNull() } }
+        settings.flow(THRESHOLDS_CONFIRMED_AT).map { text ->
+            text.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        }
     }
 
     /**
@@ -86,6 +123,17 @@ class SetupModule(
         settings.set(THRESHOLDS_CONFIRMED_AT, clock.now().toString())
     }
 
+    /** Access requests put off with Later in the approve dialog (process memory). */
+    val laterRequests = LaterRequests()
+
+    /** Import history still to offer on its own ([SetupMachine.historyDue]): the app opens that one step once. */
+    val historyDue: Flow<Boolean> by lazy {
+        combine(roles.role, setupStore.data) { r, record -> SetupMachine.historyDue(record, r) }.distinctUntilChanged()
+    }
+
+    /** The database was replaced by an empty one (a version change): offer Import history again. */
+    suspend fun offerHistoryAgain() = setupStore.update { SetupMachine.reopen(it, SetupStep.History) }
+
     /** Home and setup call this on resume: permissions change in the system's settings. */
     fun refresh() {
         readiness.refresh()
@@ -93,21 +141,27 @@ class SetupModule(
 
     /** The home "Finish setup" card's items ([FinishSetupCard]); empty before a role and once nothing is left. */
     val finishItems: Flow<List<FinishItem>> by lazy {
-        combine(setupStore.data, roles.role, hub.state, sharing.state, combine(alertsConfirmedAt, readiness.readiness, ::Pair)) {
-                record,
-                role,
-                glucose,
-                share,
-                (confirmed, checklist),
+        combine(
+            setupStore.data,
+            roles.role,
+            hub.state,
+            combine(sharing.state, follower.state, ::Pair),
+            combine(alertsConfirmedAt, readiness.readiness, ::Pair),
+        ) {
+            record,
+            role,
+            glucose,
+            (share, follow),
+            (confirmed, checklist),
             ->
             val facts =
                 SetupFacts(
                     role = role,
-                    followerAvailable = followerAvailable,
+                    following = follow.following,
                     ownSensorLive = RestoreGate.ownSensorLive(glucose, clock.now()),
                     hasIdentity = share is OwnerShareState.Sharing || share is OwnerShareState.AnotherAppSharingAsYou,
                     alertsConfirmed = confirmed != null,
-                    alertsReady = checklist.ready,
+                    alertsReady = checklist.setupReady,
                 )
             SetupMachine.finishItems(record, facts)
         }

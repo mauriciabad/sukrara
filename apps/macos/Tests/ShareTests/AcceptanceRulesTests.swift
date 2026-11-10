@@ -12,7 +12,7 @@ struct AcceptanceRulesTests {
 
     func session(status: LinkStatus = .requested) throws -> FollowerSession {
         var state = FollowerState(
-            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", nearby: false,
+            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
             me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
         state.status = status
         return try FollowerSession(state: state, crypto: crypto)
@@ -94,8 +94,13 @@ struct AcceptanceRulesTests {
         #expect(rumor.sender == v.pub("F"))
         #expect(rumor.kind == Wire.kindToOwner)
         #expect(rumor.content.contains("\"type\":\"rekey\""))
-        // `have` names the newest gk held (epoch 1), not the unknown one.
+        // `have` names the newest gk held (epoch 1), not the unknown one: the OGS vectors' rekey request.
         #expect(rumor.content.contains("\"have\":\"\(Wire.gk(groupPublicKey: v.pub("G1")))\""))
+        let vector = try #require(v.plaintext("rekey-request")?["rumor"] as? [String: Any])
+        func body(_ json: String?) throws -> NSDictionary? {
+            try JSONSerialization.jsonObject(with: Data((json ?? "").utf8)) as? NSDictionary
+        }
+        #expect(try body(rumor.content) == body(vector["content"] as? String))
         #expect(wrap.expiration == v.now + Wire.ttlRequest)
         #expect(follower.receive(newer, now: v.now + 60).publish.isEmpty)
         #expect(follower.receive(newer, now: v.now + Wire.rekeyInterval).publish.count == 1)
@@ -157,6 +162,46 @@ struct AcceptanceRulesTests {
         #expect(follower.state.sensorCreatedAt == -1)
     }
 
+    @Test func chunkFromTheFutureIsRefused() throws {
+        var follower = try session()
+        _ = follower.receive(v.event("key-1"), now: v.now)
+        _ = follower.receive(v.event("roster-1"), now: v.now)
+        func chunk(hour: Int, rows: [(dt: Int, sgv: Int)], createdAt: Int) throws -> SignedEvent {
+            let r = rows.map { "[\($0.dt),\($0.sgv)]" }.joined(separator: ",")
+            let content = try crypto.nip44Encrypt(
+                "{\"v\":2,\"h\":\(hour),\"r\":[\(r)]}", from: v.secret("D"), to: v.pub("G1"))
+            return try crypto.sign(
+                kind: Wire.kindData, content: content,
+                tags: [
+                    ["d", Wire.chunkD(sid: v.sid, hour: hour)], ["c", Wire.glucoseC(sid: v.sid)],
+                    ["gk", Wire.gk(groupPublicKey: v.pub("G1"))],
+                ], createdAt: createdAt, with: v.secret("D"))
+        }
+        let hour = v.now - v.now % 3600
+        let later = try chunk(hour: hour + 7200, rows: [(60, 120)], createdAt: v.now)
+        #expect(follower.receive(later, now: v.now).verdict == .rejected("reading-in-future"))
+        let ahead = try chunk(hour: hour, rows: [(0, 110), (v.now + 301 - hour, 120)], createdAt: v.now)
+        #expect(follower.receive(ahead, now: v.now).verdict == .rejected("reading-in-future"))
+        let fine = try chunk(hour: hour, rows: [(0, 110), (v.now + 300 - hour, 120)], createdAt: v.now + 1)
+        #expect(follower.receive(fine, now: v.now).verdict == .accepted("chunk"))
+    }
+
+    @Test func seenIdsAreCappedLeastRecentlySeenFirst() throws {
+        var state = FollowerState(
+            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
+            me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
+        state.status = .requested
+        var follower = try FollowerSession(state: state, crypto: crypto, seenLimit: 3)
+        let key = v.event("key-1"), roster = v.event("roster-1"), live = v.event("live")
+        #expect(follower.receive(key, now: v.now).verdict == .accepted("key"))
+        #expect(follower.receive(roster, now: v.now).verdict == .accepted("roster"))
+        #expect(follower.receive(live, now: v.now).verdict == .accepted("live"))
+        #expect(follower.receive(key, now: v.now).verdict == .ignored("duplicate"))  // the most recent now
+        _ = follower.receive(v.event("chunk"), now: v.now)  // over the cap: down to the 2 most recent
+        #expect(follower.receive(key, now: v.now).verdict == .ignored("duplicate"))
+        #expect(follower.receive(live, now: v.now).verdict != .ignored("duplicate"))
+    }
+
     @Test func declinedOnlyWhileWaiting() throws {
         var follower = try session()
         let declined = try crypto.giftWrap(
@@ -192,6 +237,23 @@ struct AcceptanceRulesTests {
         #expect(
             again.receive(v.event("treatment-writer-hijack"), now: v.now).verdict == .rejected("writer-not-creator"))
         #expect(again.receive(v.event("live"), now: v.now).verdict == .accepted("live"))
+    }
+
+    /// contracts/treatments/merge.json: the wire comparison a follower judges with (equal `u`: the greater origin wins).
+    @Test func treatmentMergeCases() throws {
+        let cases = try #require(loadJSON("treatments/merge.json")["cases"] as? [[String: Any]])
+        func payload(_ v: Any?) throws -> TreatmentPayload {
+            let v = try #require(v as? [String: Any])
+            return TreatmentPayload(
+                id: "x", kind: "rapid", amount: (v["a"] as? NSNumber)?.doubleValue ?? 0, t: 100, note: "",
+                u: try #require((v["u"] as? NSNumber)?.intValue), deleted: false,
+                origin: try #require(v["o"] as? String))
+        }
+        for c in cases {
+            let cur = try payload(c["cur"]), inc = try payload(c["inc"])
+            #expect(inc.isNewer(than: cur) == (c["wins"] as? String == "inc"), "\(c["name"] ?? "?")")
+            #expect(cur.isNewer(than: inc) == (c["wins"] as? String == "cur"), "\(c["name"] ?? "?")")
+        }
     }
 
     @Test func secretsNeverPrint() throws {

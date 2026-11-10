@@ -58,6 +58,32 @@ import Testing
         #expect(missing.isEmpty, "Add these keys (with en + es) to Localizable.xcstrings: \(missing)")
     }
 
+    /// #136: the privacy descriptions macOS shows when it asks (Bluetooth, Local Network) are in Spanish too: every
+    /// `*UsageDescription` of Info.plist.in has its line in Bundle/es.lproj/InfoPlist.strings.
+    @Test func everyPrivacyDescriptionHasSpanish() throws {
+        let bundle = Self.macRoot.appending(path: "Bundle")
+        let plist = try String(contentsOf: bundle.appending(path: "Info.plist.in"), encoding: .utf8)
+        let keys = Set(plist.matches(of: /<key>(NS\w+UsageDescription)<\/key>/).map { String($0.output.1) })
+        #expect(keys.count >= 2, "no privacy descriptions found in Info.plist.in")
+        let strings = try #require(
+            NSDictionary(contentsOf: bundle.appending(path: "es.lproj/InfoPlist.strings")) as? [String: String])
+        #expect(Set(strings.keys) == keys)
+        #expect(strings.values.allSatisfy { !$0.isEmpty })
+    }
+
+    /// What people read is in plain words: no protocol terms (#144). Logs may use them; the catalog may not.
+    @Test func noProtocolTermsInWhatPeopleRead() throws {
+        let terms = [/(?i)relay/, /(?i)\bv2\b/, /(?i)roster/, /(?i)\bwriter/, /(?i)epoch/, /\bBLE\b/]
+        var failing: [String] = []
+        for (key, byLanguage) in try catalogValues() {
+            for (language, value) in byLanguage + [("key", key)]
+            where terms.contains(where: { value.contains($0) }) || value.contains("relé") {
+                failing.append("\(language): \(value)")
+            }
+        }
+        #expect(failing.isEmpty, "Protocol terms in Localizable.xcstrings: \(failing.sorted())")
+    }
+
     /// Every specifier as "%@", so an interpolation matches whatever type the catalog key uses.
     static func normalized(_ key: String) -> String { key.replacing(/%(?:\d+\$)?(lld|lf|@|d)/, with: "%@") }
 
@@ -65,14 +91,15 @@ import Testing
     /// found on their own).
     static func l10nKeys(in source: String) -> [String] {
         let chars = Array(source)
-        let marker = Array("L10n.t(\"")
+        let marker = Array("L10n.t(")
         var keys: [String] = []
         var i = 0
         while i + marker.count <= chars.count {
-            if chars[i] == "L", Array(chars[i..<i + marker.count]) == marker,
-                let (key, _) = literal(chars, from: i + marker.count)
-            {
-                keys.append(key)
+            if chars[i] == "L", Array(chars[i..<i + marker.count]) == marker {
+                // the literal may start on the next line (a wrapped call)
+                var j = i + marker.count
+                while j < chars.count, chars[j].isWhitespace { j += 1 }
+                if j < chars.count, chars[j] == "\"", let (key, _) = literal(chars, from: j + 1) { keys.append(key) }
             }
             i += 1
         }

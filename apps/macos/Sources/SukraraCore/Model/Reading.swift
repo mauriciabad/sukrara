@@ -42,3 +42,35 @@ extension Reading: Codable {
         try c.encodeIfPresent(rate, forKey: .rate)
     }
 }
+
+/// The range a glucose number is shown in. Outside it a reading is a flag, LO or HI, never a number: CGMs measure
+/// about 40–400 mg/dL and say "LO" / "HI" beyond. LO / HI travel as 39 / 401 mg/dL (the values Nightscout, xDrip+ and
+/// the Dexcom share use). The card shows the flag and the alert rules (contracts/alerts/SPEC.md §1) treat LO as below
+/// every low threshold and HI as above every high one. Android `:core:model` `GlucoseRange` has the same numbers.
+public enum GlucoseRange {
+    public static let floor = 40
+    public static let ceiling = 400
+
+    /// How a LO reading is stored and sent.
+    public static let lo = floor - 1
+
+    /// How a HI reading is stored and sent.
+    public static let hi = ceiling + 1
+
+    public static func isLo(_ mgdl: Int) -> Bool { mgdl < floor }
+
+    public static func isHi(_ mgdl: Int) -> Bool { mgdl > ceiling }
+
+    public static func isLo(_ mgdl: Double) -> Bool { mgdl < Double(floor) }
+
+    public static func isHi(_ mgdl: Double) -> Bool { mgdl > Double(ceiling) }
+
+    /// `reading` as it is stored (Android `GlucoseRange.normalise`, at the hub): any number below the floor becomes
+    /// `lo` and any above the ceiling `hi`, without a rate, so a wearer's raw 35 or 450 reaches the card, graph and
+    /// export as the flag.
+    public static func normalised(_ reading: Reading) -> Reading {
+        if isLo(reading.mgdl) { return Reading(t: reading.t, mgdl: lo, rate: nil) }
+        if isHi(reading.mgdl) { return Reading(t: reading.t, mgdl: hi, rate: nil) }
+        return reading
+    }
+}

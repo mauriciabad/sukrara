@@ -31,45 +31,139 @@ object AlertSettingsCodec {
         return fromJson(root)
     }
 
-    fun toJson(s: AlertSettings): JsonObject = buildJsonObject {
-        put("v", VERSION)
-        put("on", s.on)
-        putJsonObject("alerts") {
-            for (kind in AlertKind.entries) {
-                val rule = s.rule(kind)
-                putJsonObject(kind.wire) {
-                    put("on", rule.on)
-                    when (thresholdKey(kind)) {
-                        RATE -> put(RATE, rule.threshold)
-                        else -> put(thresholdKey(kind), rule.threshold.toInt())
-                    }
-                    put("repeatMin", rule.repeatMin)
-                    put("alarm", rule.alarm)
-                }
+    fun toJson(s: AlertSettings): JsonObject =
+        buildJsonObject {
+            put("v", VERSION)
+            put("on", s.on)
+            put("alerts", rulesJson(s::rule))
+            putQuiet("muteAfterInsulin", s.afterInsulin)
+            putQuiet("muteFallingHigh", s.fallingHigh)
+            putQuiet("muteAfterCarbs", s.afterCarbs)
+            putJsonObject("sounds") {
+                put("pack", s.sounds.pack)
+                putJsonObject("kinds") { s.sounds.perKind.forEach { (k, v) -> put(k.wire, v) } }
+                put("shuffle", s.sounds.shuffle)
             }
+            putJsonObject("notificationActions") {
+                put("muteMin", s.actions.muteMin)
+                put("relaxMin", s.actions.relaxMin)
+                put("backMgdl", s.actions.backMgdl)
+                put("backMin", s.actions.backMin)
+            }
+            putJsonObject("escalation") {
+                put("on", s.escalation.on)
+                put("min", s.escalation.min)
+                put("follow", s.escalation.follow)
+            }
+            putJsonObject("night") {
+                put("on", s.night.on)
+                put("from", s.night.fromMin)
+                put("to", s.night.toMin)
+                put("alerts", rulesJson(s.night::rule))
+            }
+            putJsonObject("persistence") {
+                put("lowMin", s.persistence.lowMin)
+                put("highMin", s.persistence.highMin)
+                put("marginMgdl", s.persistence.marginMgdl)
+            }
+            put("source", s.source.wire)
         }
-        putQuiet("muteAfterInsulin", s.afterInsulin)
-        putQuiet("muteFallingHigh", s.fallingHigh)
-        putQuiet("muteAfterCarbs", s.afterCarbs)
-        putJsonObject("sounds") {
-            put("pack", s.sounds.pack)
-            putJsonObject("kinds") { s.sounds.perKind.forEach { (k, v) -> put(k.wire, v) } }
-            put("shuffle", s.sounds.shuffle)
-        }
-        putJsonObject("notificationActions") {
-            put("muteMin", s.actions.muteMin)
-            put("relaxMin", s.actions.relaxMin)
-            put("backMgdl", s.actions.backMgdl)
-            put("backMin", s.actions.backMin)
-        }
-        put("source", s.source.wire)
-    }
 
     fun fromJson(j: JsonObject): AlertSettings {
         val d = AlertSettings()
-        val alerts = j.obj("alerts")
-        val rules = AlertKind.entries.associateWith { kind ->
-            val def = d.rule(kind)
+        val rules = rulesOf(j.obj("alerts"))
+        val night = j.obj("night")
+        val escalation = j.obj("escalation")
+        val sounds = j.obj("sounds")
+        val actions = j.obj("notificationActions")
+        val persistence = j.obj("persistence")
+
+        fun action(key: String, limit: NumberLimit, def: Int) = limit.coerce(actions?.num(key)?.toInt() ?: def)
+
+        fun persist(key: String, limit: NumberLimit, def: Int) = limit.coerce(persistence?.num(key)?.toInt() ?: def)
+        return AlertSettings(
+            on = j.bool("on") ?: d.on,
+            rules = rules,
+            afterInsulin = j.quiet("muteAfterInsulin", d.afterInsulin, AlertLimits.MUTE_INSULIN),
+            fallingHigh = j.quiet("muteFallingHigh", d.fallingHigh, AlertLimits.MUTE_FALLING),
+            afterCarbs = j.quiet("muteAfterCarbs", d.afterCarbs, AlertLimits.MUTE_CARBS),
+            sounds =
+                SoundSettings(
+                    pack = sounds?.str("pack") ?: d.sounds.pack,
+                    perKind =
+                        sounds
+                            ?.obj("kinds")
+                            ?.entries
+                            ?.mapNotNull { (k, v) ->
+                                AlertKind.fromWire(k)?.let { kind ->
+                                    (v as? JsonPrimitive)?.takeIf { it.isString }?.let {
+                                        kind to
+                                            it.content
+                                    }
+                                }
+                            }?.toMap() ?: emptyMap(),
+                    shuffle = sounds?.bool("shuffle") ?: d.sounds.shuffle,
+                ),
+            actions =
+                NotificationActions(
+                    muteMin = action("muteMin", AlertLimits.ACTION_MUTE, d.actions.muteMin),
+                    relaxMin = action("relaxMin", AlertLimits.ACTION_RELAX, d.actions.relaxMin),
+                    backMgdl = action("backMgdl", AlertLimits.BACK_MGDL, d.actions.backMgdl),
+                    backMin = action("backMin", AlertLimits.BACK_MIN, d.actions.backMin),
+                ),
+            escalation =
+                Escalation(
+                    on = escalation?.bool("on") ?: d.escalation.on,
+                    min = AlertLimits.ESCALATE_MIN.coerce(escalation?.num("min")?.toInt() ?: d.escalation.min),
+                    follow = escalation?.bool("follow") ?: d.escalation.follow,
+                ),
+            night =
+                NightProfile(
+                    on = night?.bool("on") ?: d.night.on,
+                    fromMin = night?.num("from")?.toInt()?.takeIf { it in 0 until MINUTES_A_DAY } ?: d.night.fromMin,
+                    toMin = night?.num("to")?.toInt()?.takeIf { it in 0 until MINUTES_A_DAY } ?: d.night.toMin,
+                    // never off at night
+                    rules =
+                        rulesOf(
+                            night?.obj("alerts"),
+                        ).let { it + (AlertKind.VERY_LOW to it.getValue(AlertKind.VERY_LOW).copy(on = true)) },
+                ),
+            persistence =
+                Persistence(
+                    lowMin = persist("lowMin", AlertLimits.PERSIST_LOW, d.persistence.lowMin),
+                    highMin = persist("highMin", AlertLimits.PERSIST_HIGH, d.persistence.highMin),
+                    marginMgdl = persist("marginMgdl", AlertLimits.PERSIST_MARGIN, d.persistence.marginMgdl),
+                ),
+            source = AlertSource.entries.firstOrNull { it.wire == j.str("source") } ?: d.source,
+        )
+    }
+
+    private const val RATE = "rate"
+
+    /** Minutes in a day: a night window's ends are 0 until this. */
+    const val MINUTES_A_DAY = 24 * 60
+
+    /** Every kind's rule as the SPEC §3 `alerts` object (also the night set's). */
+    private fun rulesJson(rule: (AlertKind) -> KindRule): JsonObject =
+        buildJsonObject {
+            for (kind in AlertKind.entries) {
+                val r = rule(kind)
+                putJsonObject(kind.wire) {
+                    put("on", r.on)
+                    when (thresholdKey(kind)) {
+                        RATE -> put(RATE, r.threshold)
+                        else -> put(thresholdKey(kind), r.threshold.toInt())
+                    }
+                    put("repeatMin", r.repeatMin)
+                    put("alarm", r.alarm)
+                }
+            }
+        }
+
+    /** An `alerts` object's rules, each missing or bad field at its default. */
+    private fun rulesOf(alerts: JsonObject?): Map<AlertKind, KindRule> =
+        AlertKind.entries.associateWith { kind ->
+            val def = AlertSettings.DEFAULT_RULES.getValue(kind)
             val o = alerts?.obj(kind.wire) ?: return@associateWith def
             KindRule(
                 on = o.bool("on") ?: def.on,
@@ -78,42 +172,19 @@ object AlertSettingsCodec {
                 alarm = o.bool("alarm") ?: def.alarm,
             )
         }
-        val sounds = j.obj("sounds")
-        val actions = j.obj("notificationActions")
-        fun action(key: String, limit: NumberLimit, def: Int) = limit.coerce(actions?.num(key)?.toInt() ?: def)
-        return AlertSettings(
-            on = j.bool("on") ?: d.on,
-            rules = rules,
-            afterInsulin = j.quiet("muteAfterInsulin", d.afterInsulin, AlertLimits.MUTE_INSULIN),
-            fallingHigh = j.quiet("muteFallingHigh", d.fallingHigh, AlertLimits.MUTE_FALLING),
-            afterCarbs = j.quiet("muteAfterCarbs", d.afterCarbs, AlertLimits.MUTE_CARBS),
-            sounds = SoundSettings(
-                pack = sounds?.str("pack") ?: d.sounds.pack,
-                perKind = sounds?.obj("kinds")?.entries
-                    ?.mapNotNull { (k, v) -> AlertKind.fromWire(k)?.let { kind -> (v as? JsonPrimitive)?.takeIf { it.isString }?.let { kind to it.content } } }
-                    ?.toMap() ?: emptyMap(),
-                shuffle = sounds?.bool("shuffle") ?: d.sounds.shuffle,
-            ),
-            actions = NotificationActions(
-                muteMin = action("muteMin", AlertLimits.ACTION_MUTE, d.actions.muteMin),
-                relaxMin = action("relaxMin", AlertLimits.ACTION_RELAX, d.actions.relaxMin),
-                backMgdl = action("backMgdl", AlertLimits.BACK_MGDL, d.actions.backMgdl),
-                backMin = action("backMin", AlertLimits.BACK_MIN, d.actions.backMin),
-            ),
-            source = AlertSource.entries.firstOrNull { it.wire == j.str("source") } ?: d.source,
-        )
-    }
 
-    private const val RATE = "rate"
-
-    private fun thresholdKey(kind: AlertKind) = when (kind.group) {
-        AlertGroup.RATE -> RATE
-        AlertGroup.NO_DATA -> "min"
-        AlertGroup.LEVEL -> "mgdl"
-    }
+    private fun thresholdKey(kind: AlertKind) =
+        when (kind.group) {
+            AlertGroup.RATE -> RATE
+            AlertGroup.NO_DATA -> "min"
+            AlertGroup.LEVEL -> "mgdl"
+        }
 
     private fun kotlinx.serialization.json.JsonObjectBuilder.putQuiet(key: String, q: QuietRule) =
-        putJsonObject(key) { put("on", q.on); put("min", q.min) }
+        putJsonObject(key) {
+            put("on", q.on)
+            put("min", q.min)
+        }
 
     private fun JsonObject.quiet(key: String, def: QuietRule, limit: NumberLimit): QuietRule {
         val o = obj(key) ?: return def
@@ -121,8 +192,12 @@ object AlertSettingsCodec {
     }
 
     private fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
+
     private fun JsonObject.prim(key: String): JsonPrimitive? = this[key] as? JsonPrimitive
+
     private fun JsonObject.bool(key: String): Boolean? = prim(key)?.takeIf { !it.isString }?.booleanOrNull
+
     private fun JsonObject.num(key: String): Double? = prim(key)?.takeIf { !it.isString }?.doubleOrNull
+
     private fun JsonObject.str(key: String): String? = prim(key)?.takeIf { it.isString }?.content
 }

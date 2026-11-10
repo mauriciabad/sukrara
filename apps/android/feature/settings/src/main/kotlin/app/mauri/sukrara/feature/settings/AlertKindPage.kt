@@ -3,12 +3,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.model.AlertQuietReason
@@ -21,22 +25,25 @@ import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
+import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.settings.SettingsSpec
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** What an alert's page can do besides editing its rule. */
 class AlertKindActions(
     val edit: ((app.mauri.sukrara.alerts.AlertSettings) -> app.mauri.sukrara.alerts.AlertSettings) -> Unit = {},
     val unmute: (AlertKind) -> Unit = {},
     val remindAsUsual: (AlertKind) -> Unit = {},
+    val playback: AlertPlayback = AlertPlayback.None,
 )
 
 /** Turning these off removes a safety net: it asks first (ux §2 #9). */
-private val ConfirmOff = setOf(AlertKind.VERY_LOW, AlertKind.NO_DATA)
+internal val ConfirmOff = setOf(AlertKind.VERY_LOW, AlertKind.NO_DATA)
 
 /**
  * The side's quiet state with its exit, worded by [MuteText] and counting down: "Low alerts muted · 12 min left ·
@@ -68,6 +75,8 @@ fun AlertKindContent(
     ui: AlertsUi,
     clock: Clock,
     actions: AlertKindActions,
+    /** Above the page's groups (a follower's *Settings from* note while [AlertsUi.mirrors] this kind). */
+    header: @Composable () -> Unit = {},
     onBack: () -> Unit,
 ) {
     val rule = ui.settings.rule(kind)
@@ -78,19 +87,37 @@ fun AlertKindContent(
     val label = numberLabeler()
     SettingsPage(kindName(kind), onBack) {
         ui.quietOf(kind)?.let { QuietStrip(kind, it, clock, actions) }
+        header()
         SettingsGroup {
             SwitchRow(
-                stringResource(R.string.st_kind_use, kindName(kind)),
+                stringResource(R.string.st_kind_use, kindInSentence(kind)),
                 rule.on,
                 { on -> if (!on && kind in ConfirmOff) dialog = "off" else actions.edit(AlertEdits.kindOn(kind, on)) },
                 enabled = ui.settings.on,
                 summary = if (ui.settings.on) null else stringResource(R.string.st_alerts_main_off),
+                icon = kindIcon(kind),
+                readOnly = ui.mirrors(kind),
             )
         }
         SettingsGroup(title = stringResource(R.string.st_alert_when)) {
-            ValueRow(stringResource(R.string.st_threshold), thresholdSentence(kind, rule.threshold), { dialog = "threshold" }, enabled = rule.on)
-            ValueRow(stringResource(R.string.st_repeat), numberLabel(repeatSpec, rule.repeatMin.toDouble()), { dialog = "repeat" }, enabled = rule.on)
+            ValueRow(
+                stringResource(R.string.st_threshold),
+                thresholdSentence(kind, rule.threshold),
+                { dialog = "threshold" },
+                enabled = rule.on,
+                icon = DsR.drawable.ds_ic_dia_range,
+                readOnly = ui.mirrors(kind),
+            )
+            ValueRow(
+                stringResource(R.string.st_repeat),
+                numberLabel(repeatSpec, rule.repeatMin.toDouble()),
+                { dialog = "repeat" },
+                enabled = rule.on,
+                icon = DsR.drawable.ds_ic_repeat,
+                readOnly = ui.mirrors(kind),
+            )
         }
+
         SettingsGroup(title = stringResource(R.string.st_sound_title)) {
             SwitchRow(
                 stringResource(R.string.st_alarm),
@@ -98,6 +125,7 @@ fun AlertKindContent(
                 { on -> if (!on && kind in ConfirmOff) dialog = "alarmOff" else actions.edit(AlertEdits.alarm(kind, on)) },
                 summary = stringResource(R.string.st_alarm_summary),
                 enabled = rule.on,
+                icon = DsR.drawable.ds_ic_notifications_active,
             )
             val own = ui.settings.sounds.perKind[kind]
             ValueRow(
@@ -105,48 +133,167 @@ fun AlertKindContent(
                 own?.let { packName(it) } ?: stringResource(R.string.st_sound_same, packName(ui.settings.sounds.pack)),
                 { dialog = "sound" },
                 enabled = rule.on,
+                icon = DsR.drawable.ds_ic_music_note,
             )
             NavigationRow(
                 stringResource(R.string.st_notification_settings),
                 { context.openNotificationSettings() },
                 summary = stringResource(R.string.st_notification_settings_summary),
+                icon = DsR.drawable.ds_ic_tune,
             )
         }
+        TryOutGroup(kind, ui.settings, actions.playback)
         FooterText(stringResource(if (kind.isLevel) R.string.st_kind_footer_level else R.string.st_kind_footer_other))
     }
     when (dialog) {
-        "off" ->
+        "off" -> {
             ConfirmDialog(
-                stringResource(R.string.st_kind_off_title, kindName(kind)),
+                stringResource(R.string.st_kind_off_title, kindInSentence(kind)),
                 stringResource(if (kind == AlertKind.NO_DATA) R.string.st_kind_off_text_no_data else R.string.st_kind_off_text_very_low),
                 stringResource(R.string.st_turn_off),
                 { dialog = null },
             ) { actions.edit(AlertEdits.kindOn(kind, false)) }
+        }
 
-        "alarmOff" ->
+        "alarmOff" -> {
             ConfirmDialog(
-                stringResource(R.string.st_alarm_off_title, kindName(kind)),
+                stringResource(R.string.st_alarm_off_title, kindInSentence(kind)),
                 stringResource(R.string.st_alarm_off_text),
                 stringResource(R.string.st_turn_off),
                 { dialog = null },
             ) { actions.edit(AlertEdits.alarm(kind, false)) }
+        }
 
-        "threshold" ->
-            NumberDialog(stringResource(R.string.st_threshold), thresholdInput(ui.settings, kind), rule.threshold, { label(thresholdSpec, it) }, { dialog = null }) {
+        "threshold" -> {
+            NumberDialog(
+                stringResource(
+                    R.string.st_threshold,
+                ),
+                thresholdInput(ui.settings, kind),
+                rule.threshold,
+                { label(thresholdSpec, it) },
+                {
+                    dialog =
+                        null
+                },
+            ) {
                 actions.edit(AlertEdits.threshold(kind, it))
             }
+        }
 
-        "repeat" ->
-            NumberDialog(stringResource(R.string.st_repeat), NumberInput(repeatSpec), rule.repeatMin.toDouble(), { label(repeatSpec, it) }, { dialog = null }) {
+        "repeat" -> {
+            NumberDialog(
+                stringResource(
+                    R.string.st_repeat,
+                ),
+                NumberInput(repeatSpec),
+                rule.repeatMin.toDouble(),
+                { label(repeatSpec, it) },
+                {
+                    dialog =
+                        null
+                },
+            ) {
                 actions.edit(AlertEdits.repeat(kind, it))
             }
+        }
 
         "sound" -> {
             val same = stringResource(R.string.st_sound_same, packName(ui.settings.sounds.pack))
-            val options = listOf(Choice<String?>(same, null)) + SettingsSpec.OPTIONS.getValue("soundPack").map { Choice<String?>(packName(it), it) }
-            ChoiceDialog(stringResource(R.string.st_sound), options, ui.settings.sounds.perKind[kind], { dialog = null }) {
+            val alarm = ui.settings.rule(kind).alarm
+            val playback = actions.playback
+            DisposableEffect(playback) { onDispose { playback.stop() } }
+            val options =
+                listOf(Choice<String?>(same, null, trailing = soundPreview(kind, ui.settings.sounds.pack, alarm, playback))) +
+                    SettingsSpec.OPTIONS.getValue("soundPack").map {
+                        Choice<String?>(packName(it), it, trailing = soundPreview(kind, it, alarm, playback))
+                    }
+            // a sound chosen in the channel's Android settings plays whatever the pack: every ▶ sounds the same, say why
+            val android = stringResource(R.string.st_sound_chosen_in_android).takeIf { playback.soundChosenInAndroid(kind, alarm) }
+            ChoiceDialog(stringResource(R.string.st_sound), options, ui.settings.sounds.perKind[kind], { dialog = null }, android) {
                 actions.edit(AlertEdits.sound(kind, it))
             }
         }
     }
+}
+
+/**
+ * Hear it before it matters: *Play sound* (its sound on the volume it rings on, with its vibration while *Play with
+ * vibration* is on; stops when the page closes), *Send a test alert* (the real notification, worded as a test, nothing
+ * else changes) and its Android notification channel (sound, vibration, Do Not Disturb override).
+ */
+@Composable
+private fun TryOutGroup(
+    kind: AlertKind,
+    settings: app.mauri.sukrara.alerts.AlertSettings,
+    playback: AlertPlayback,
+) {
+    val context = LocalContext.current
+    val rule = settings.rule(kind)
+    val pack = settings.sounds.soundOf(kind)
+    var vibrate by rememberSaveable { mutableStateOf(true) }
+    DisposableEffect(playback) { onDispose { playback.stop() } }
+    val volume = stringResource(if (rule.alarm) R.string.st_volume_alarm else R.string.st_volume_notification)
+    SettingsGroup(title = stringResource(R.string.st_try_title)) {
+        val silenced = playback.silenced(kind, rule.alarm)
+        ValueRow(
+            stringResource(R.string.st_play_sound),
+            if (silenced) stringResource(R.string.st_silenced_by_android) else listOf(packName(pack), volume).joinToString(" · "),
+            { playback.play(kind, pack, rule.alarm, vibrate) },
+            icon = DsR.drawable.ds_ic_play_arrow,
+            enabled = pack != "none" || vibrate,
+        )
+        SwitchRow(stringResource(R.string.st_play_vibrate), vibrate, { vibrate = it }, icon = DsR.drawable.ds_ic_vibration)
+        TestAlertRow(
+            settings,
+            playback,
+            kind.takeIf { settings.on },
+            summary = stringResource(R.string.st_send_test_summary),
+            disabledSummary = stringResource(R.string.st_send_test_alerts_off),
+        )
+        playback.channelId(kind, rule.alarm)?.let { channel ->
+            NavigationRow(
+                stringResource(R.string.st_channel_settings),
+                { context.openChannelSettings(channel) },
+                summary = stringResource(R.string.st_channel_settings_summary),
+                icon = DsR.drawable.ds_ic_tune,
+            )
+        }
+    }
+}
+
+/**
+ * The ▶ beside a sound option in a sound dialog: plays [pack] as [kind] rings (its volume, no vibration), so the
+ * person hears each option before choosing; the dialog stops it when it closes. *None* has nothing to play.
+ */
+internal fun soundPreview(
+    kind: AlertKind,
+    pack: String,
+    alarm: Boolean,
+    playback: AlertPlayback,
+): (@Composable () -> Unit)? =
+    // a silenced channel plays nothing: the page's *Play sound* row says why, a ▶ that does nothing would only confuse
+    if (pack == "none" || playback === AlertPlayback.None || playback.silenced(kind, alarm)) {
+        null
+    } else {
+        {
+            val haptics = rememberHaptics()
+            IconButton(onClick = {
+                haptics.tick()
+                playback.play(kind, pack, alarm, vibrate = false)
+            }) {
+                Icon(painterResource(DsR.drawable.ds_ic_play_arrow), stringResource(R.string.st_play_option, packName(pack)))
+            }
+        }
+    }
+
+/** Opens Android's settings of one notification channel of this app. */
+fun android.content.Context.openChannelSettings(channel: String) {
+    startActivity(
+        android.content
+            .Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+            .putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channel)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
 }

@@ -1,5 +1,5 @@
 {
-  "about": "Every place that shows the glucose card or its value, per platform: THE registry behind 'One graph everywhere' (CLAUDE.md) and the freshness steps. A 'card' surface draws card pixels only through the renderer (GlucoseCard.draw / GlucoseCard.image) and chooses only its size, its place's settings and the parts; a 'glyph' surface (text, icons and words the system lays out) takes the value, the trend mark and the freshness steps from GlucoseCard.face (a GlucoseLook) and never formats a glucose value itself. tools/check: card-surface (a file that calls the renderer must be a registered file of the surface it names; every surface is rendered by the tests), card-api (outside 'owners' only the 'api' members of the renderer's namespaces: every painter, found automatically, and the 'api' keys), card-text (no surface formats a glucose value itself; '// card-ok: <why>' marks a line that must). CardLayoutTest (Android) and -graphselftest (Mac) render ../layout/scenes.json through each surface's real entry path at its sizes and check ../layout/rules.json; FreshnessFixtureTest and -graphselftest run the card and every glyph surface through ../freshness/freshness.json's steps. Sizes are dp / pt of the surface's own box (see each surface's 'size'). A card surface draws its value through the renderer too (one of the parts all / header / value) unless its entry has 'no_value' with the reason (CardLayoutTest, -graphselftest). Paths are the apps' (apps/android, apps/macos); 'owners', 'sources' and 'tests' are globs. A named file that doesn't exist is a 'pending file' NOTE while tools/check/strict is absent, and fails once it exists. Not included, removed with their CardSurface constants (register them again with the code): Android lockscreen widget and its description, the SystemUI hook chip and root status-bar icons (systemui cut), the notification’s custom card image (the live notification is the notification-text glyph), the first-reading card and a value on the treatment Quick Settings tile.",
+  "about": "Every place that shows the glucose card or its value, per platform: THE registry behind 'One graph everywhere' (CLAUDE.md) and the freshness steps. A 'card' surface draws card pixels only through the renderer (GlucoseCard.draw / GlucoseCard.image) and chooses only its size, its place's settings and the parts; a 'glyph' surface (text, icons and words the system lays out) takes the value, the trend mark and the freshness steps from GlucoseCard.face (a GlucoseLook) and never formats a glucose value itself. tools/check: card-surface (a file that calls the renderer must be a registered file of the surface it names; every surface is rendered by the tests), card-api (outside 'owners' only the 'api' members of the renderer's namespaces: every painter, found automatically, and the 'api' keys), card-text (no surface formats a glucose value itself; '// card-ok: <why>' marks a line that must). CardLayoutTest (Android) and -graphselftest (Mac) render ../layout/scenes.json through each surface's real entry path at its sizes and check ../layout/rules.json; FreshnessFixtureTest and -graphselftest run the card and every glyph surface through ../freshness/freshness.json's steps. Sizes are dp / pt of the surface's own box (see each surface's 'size'). A card surface draws its value through the renderer too (one of the parts all / header / value) unless its entry has 'no_value' with the reason (CardLayoutTest, -graphselftest). Paths are the apps' (apps/android, apps/macos); 'owners', 'sources' and 'tests' are globs. A named file that doesn't exist is a 'pending file' NOTE while tools/check/strict is absent, and fails once it exists. Not included, removed with their CardSurface constants (register them again with the code): Android lockscreen widget and its description.",
   "android": {
     "enum": "apps/android/core/graph/src/main/kotlin/app/mauri/sukrara/graph/CardSurface.kt",
     "owners": [
@@ -16,7 +16,8 @@
         "draw",
         "face",
         "observer",
-        "yRange"
+        "yRange",
+        "slotTexts"
       ],
       "ValueGlyphs": [
         "arrow",
@@ -28,13 +29,13 @@
       ],
       "SensorBadge": [
         "look",
-        "describe",
         "Look"
       ],
       "StatusBadge": [
         "look",
-        "describe",
-        "Look"
+        "Look",
+        "sensor",
+        "shows"
       ],
       "Slots": [
         "text"
@@ -59,7 +60,8 @@
         "timeText",
         "nextChangeAt",
         "nextChangeS",
-        "valueText"
+        "valueText",
+        "timeKind"
       ]
     },
     "value_text_ok": [
@@ -78,6 +80,14 @@
         ],
         "size": "widget, margins included",
         "sizes": [
+          [
+            48,
+            48
+          ],
+          [
+            110,
+            48
+          ],
           [
             170,
             80
@@ -187,10 +197,51 @@
         ]
       },
       {
+        "id": "notification",
+        "kind": "card",
+        "entry": "renderNotificationArt",
+        "parts": [
+          "header",
+          "graph"
+        ],
+        "size": "the notification's content column (shade width minus its sides and the icon column)",
+        "sizes": [
+          [
+            291,
+            0
+          ],
+          [
+            240,
+            0
+          ]
+        ],
+        "files": [
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/notify/NotificationCard.kt"
+        ]
+      },
+      {
+        "id": "sensor-ready",
+        "kind": "card",
+        "entry": "FirstReadingCard",
+        "parts": [
+          "value"
+        ],
+        "size": "fixed 220 x 72 on the new-sensor flow's Sensor ready page",
+        "sizes": [
+          [
+            220,
+            72
+          ]
+        ],
+        "files": [
+          "apps/android/feature/sensor/src/main/kotlin/app/mauri/sukrara/feature/sensor/newsensor/FirstReading.kt"
+        ]
+      },
+      {
         "id": "notification-text",
         "kind": "glyph",
         "entry": "build",
-        "what": "title, Live Update chip text and small icon (the custom card's value row is the renderer's header: 'notification')",
+        "what": "title, Live Update chip text, MetricStyle value, the card's slots as MetricStyle words (GlucoseCard.slotTexts) and small icon (the number icon included); the custom card's value row is the renderer's header: 'notification'",
         "files": [
           "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/LiveNotification.kt"
         ]
@@ -203,6 +254,44 @@
         ],
         "entry": "describeCard",
         "what": "what the home widgets and the app panel say to a screen reader"
+      },
+      {
+        "id": "status-icons",
+        "kind": "glyph",
+        "files": [
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/RootStatusBar.kt",
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/SystemUiWords.kt"
+        ],
+        "entry": "look",
+        "what": "the root status bar's system icons (number + trend drawables, no-readings / ended icon) and their TalkBack text (THE sentence in the person's language, after the icon's mark)"
+      },
+      {
+        "id": "status-hook",
+        "kind": "glyph",
+        "files": [
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/HookText.kt",
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/SystemUiWords.kt"
+        ],
+        "entry": "face",
+        "what": "the System UI module's value beside the clock / the icons (text, arrow, struck, no-readings, flag), the range colour of the system icons and the text's TalkBack words (the app's sentences by face)"
+      },
+      {
+        "id": "quick-tile",
+        "kind": "glyph",
+        "files": [
+          "apps/android/feature/treatments/src/main/kotlin/app/mauri/sukrara/feature/treatments/TreatmentTileService.kt"
+        ],
+        "entry": "face",
+        "what": "the Add treatment Quick Settings tile's subtitle: the value and trend as text (struck when late), or the sensor's words"
+      },
+      {
+        "id": "read-aloud",
+        "kind": "glyph",
+        "files": [
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/readaloud/ReadAloud.kt"
+        ],
+        "entry": "sentence",
+        "what": "Read glucose aloud (the app shortcut): THE glucose sentence with its age and the pill's words, said by text-to-speech"
       }
     ]
   },
@@ -225,17 +314,21 @@
         "face",
         "accessibilityLabel",
         "noValueText",
-        "yRange"
+        "yRange",
+        "rangeSide",
+        "trendImage",
+        "noReadingsSymbol",
+        "pillRect",
+        "chartRects",
+        "chartSpan"
       ],
       "SensorBadge": [
         "look",
-        "describe",
         "Look",
         "flag"
       ],
       "StatusBadge": [
         "look",
-        "describe",
         "Look"
       ],
       "Slots": [],

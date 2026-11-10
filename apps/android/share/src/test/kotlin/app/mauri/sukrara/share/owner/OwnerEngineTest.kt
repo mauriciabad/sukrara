@@ -18,7 +18,14 @@ import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.protocol.Wire
+import app.mauri.sukrara.protocol.event.Avatar
+import app.mauri.sukrara.protocol.event.LivePayload
+import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.SensorLife
+import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
@@ -26,90 +33,280 @@ import app.mauri.sukrara.share.OwnerFixtures.crypto
 import app.mauri.sukrara.share.owner.usecase.CreateIdentity
 import app.mauri.sukrara.share.owner.usecase.RemoveFollower
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
-import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 
 class OwnerEngineTest {
     private val ctx = OwnerFixtures.context()
     private val relay = FakeRelayTransport()
     private val store = OwnerIdentityStore(InMemorySecureStore())
 
-    private fun TestScope.engine() = OwnerEngine(
-        ctx, store, relay, NoHub, { _, _ -> true }, InMemoryTreatmentsRepository(), FakeClock(Instant.ofEpochSecond(NOW)), StandardTestDispatcher(testScheduler),
-    )
-
-    @Test fun aRotationInterruptedByACrashIsResentOnStartUntilARelayAccepts() = runTest {
-        val follower = crypto.generate()
-        val base = CreateIdentity(ctx)(null, NOW).state.let {
-            it.copy(followers = listOf(FollowerRecord(follower.public.hex, "Mac", NOW)), rosterPublishedAt = NOW, backupPublishedAt = NOW)
-        }
-        val follower2 = FollowerRecord(crypto.generate().public.hex, "Old", NOW)
-        // saved before publishing, then the process died: nothing reached a relay
-        val rotated = RemoveFollower(ctx)(base.copy(followers = base.followers + follower2), follower2.key, NOW)!!.state
-        store.save(rotated)
-
-        val e = engine()
-        e.start(backgroundScope)
-        runCurrent()
-        val delivery = relay.published.mapNotNull { OwnerFixtures.open(follower, it) }.filterIsInstance<Rumor.KeyDelivery>().single()
-        assertEquals(rotated.current.n, delivery.epoch)
-
-        rotated.pendingControl.forEach { relay.ok(it.eventId) }
-        runCurrent()
-        assertTrue((store.load() as OwnerIdentityStore.Load.Loaded).state.pendingControl.isEmpty())
-        e.stop()
-    }
-
-    @Test fun restoreNeverReplacesAWorkingIdentitySilently() = runTest {
-        val e = engine()
-        assertTrue(e.createIdentity(backgroundScope, null))
-        runCurrent()
-        val code = crypto.nsec(crypto.generate().secret)
-        assertEquals(RestoreIdentity.Result.AlreadySharing, e.restore(backgroundScope, code, null))
-        e.stop()
-    }
-
-    @Test fun anUnreadableIdentityIsABlockingStateAndCreateIsRefused() = runTest {
-        val secure = InMemorySecureStore().also { it.write(OwnerIdentityStore.NAME, "garbage".encodeToByteArray()) }
-        val e = OwnerEngine(ctx, OwnerIdentityStore(secure), relay, NoHub, { _, _ -> true }, InMemoryTreatmentsRepository(), FakeClock(), StandardTestDispatcher(testScheduler))
-        e.start(backgroundScope)
-        runCurrent()
-        assertEquals(OwnerShareState.IdentityUnreadable(transient = false), e.state.value)
-        assertEquals(false, e.createIdentity(backgroundScope, null))
-        e.stop()
-    }
-
-    @Test fun theTreatmentLogFollowsEveryNewEpochAndWritersGetASubscription() = runTest {
-        val repo = InMemoryTreatmentsRepository()
-        repo.upsertIfNewer(
-            TreatmentRecord(Treatment("a0000000-0000-4000-8000-00000000000a", TreatmentKind.Carbs, 20.0, Instant.ofEpochSecond(NOW - 600), modifiedAt = Instant.ofEpochSecond(NOW - 600), origin = TreatmentOrigin.Phone)),
+    private fun TestScope.engine() =
+        OwnerEngine(
+            ctx,
+            store,
+            relay,
+            NoHub,
+            { _, _ -> true },
+            InMemoryTreatmentsRepository(),
+            FakeClock(Instant.ofEpochSecond(NOW)),
+            StandardTestDispatcher(testScheduler),
         )
-        val ana = crypto.generate().public.hex
-        val bob = crypto.generate().public.hex
-        store.save(CreateIdentity(ctx)(null, NOW).state.copy(followers = listOf(FollowerRecord(ana, "Ana", NOW), FollowerRecord(bob, "Bob", NOW))))
-        val e = OwnerEngine(ctx, store, relay, NoHub, { _, _ -> true }, repo, FakeClock(Instant.ofEpochSecond(NOW)), StandardTestDispatcher(testScheduler))
-        e.start(backgroundScope)
-        runCurrent()
-        fun treatmentGks() = relay.published.filter { it.tag("c") != null && it.kind == app.mauri.sukrara.protocol.Wire.KIND_DATA }.map { it.tag("gk") }
-        assertEquals(1, treatmentGks().size)
 
-        e.setWriter(ana, allowed = true)
-        assertEquals(listOf(ana), relay.subscriptions.getValue("writers").single().authors)
-        e.remove(bob)
-        runCurrent()
-        // republished under the new epoch's key
-        assertEquals(2, treatmentGks().distinct().size)
-        e.remove(ana)
-        assertTrue("writers" !in relay.subscriptions)
-        e.stop()
-    }
+    @Test fun aRotationInterruptedByACrashIsResentOnStartUntilARelayAccepts() =
+        runTest {
+            val follower = crypto.generate()
+            val base =
+                CreateIdentity(ctx)(null, NOW).state.let {
+                    it.copy(
+                        followers = listOf(FollowerRecord(follower.public.hex, "Mac", NOW)),
+                        rosterPublishedAt = NOW,
+                        backupPublishedAt = NOW,
+                    )
+                }
+            val follower2 = FollowerRecord(crypto.generate().public.hex, "Old", NOW)
+            // saved before publishing, then the process died: nothing reached a relay
+            val rotated = RemoveFollower(ctx)(base.copy(followers = base.followers + follower2), follower2.key, NOW)!!.state
+            store.save(rotated)
+
+            val e = engine()
+            e.start(backgroundScope)
+            runCurrent()
+            val delivery =
+                relay.published
+                    .mapNotNull { OwnerFixtures.open(follower, it) }
+                    .filterIsInstance<Rumor.KeyDelivery>()
+                    .single()
+            assertEquals(rotated.current.n, delivery.epoch)
+
+            rotated.pendingControl.forEach { relay.ok(it.eventId) }
+            runCurrent()
+            assertTrue((store.load() as OwnerIdentityStore.Load.Loaded).state.pendingControl.isEmpty())
+            e.stop()
+        }
+
+    /** #55: the wearer's sensor reaches the relays as a reading-less live event when it changes, with no reading. */
+    @Test fun aSensorChangeIsPublishedWithoutAReading() =
+        runTest {
+            val s = CreateIdentity(ctx)(null, NOW).state.copy(rosterPublishedAt = NOW, backupPublishedAt = NOW)
+            store.save(s)
+            val sensor = MutableStateFlow<SensorLife?>(null)
+            val e =
+                OwnerEngine(
+                    ctx,
+                    store,
+                    relay,
+                    NoHub,
+                    { _, _ -> true },
+                    InMemoryTreatmentsRepository(),
+                    FakeClock(Instant.ofEpochSecond(NOW)),
+                    StandardTestDispatcher(testScheduler),
+                    sensor = sensor,
+                )
+            e.start(backgroundScope)
+            runCurrent()
+
+            fun sensorEvents() =
+                relay.published
+                    .filter { it.kind == Wire.KIND_LIVE }
+                    .map { ReadingsCodec.decodeLive(crypto.decrypt(s.readKey(crypto).secret, s.device(crypto).public, it.content)!!) }
+            assertTrue("nothing known yet: nothing sent", sensorEvents().isEmpty())
+            val fresh = SensorLife(NOW - 60, NOW + 15 * Wire.DAY, NOW + 3540)
+            sensor.value = fresh
+            runCurrent()
+            assertEquals(listOf(LivePayload(null, fresh)), sensorEvents())
+            e.stop()
+        }
+
+    @Test fun restoreNeverReplacesAWorkingIdentitySilently() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, null))
+            runCurrent()
+            val code = crypto.nsec(crypto.generate().secret)
+            assertEquals(RestoreIdentity.Result.AlreadySharing, e.restore(backgroundScope, code, null))
+            e.stop()
+        }
+
+    /** Backup › Replace this identity › Start fresh: a new identity over the working one, only when asked. */
+    @Test fun startFreshReplacesAWorkingIdentityOnlyWhenConfirmed() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            runCurrent()
+            val before = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertFalse(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            assertEquals(before, (store.load() as OwnerIdentityStore.Load.Loaded).state)
+
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null), replaceExisting = true))
+            runCurrent()
+            val after = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertFalse(before.identity(crypto).public == after.identity(crypto).public)
+            assertTrue(e.running)
+            val shown = e.state.value as OwnerShareState.Sharing
+            assertEquals("Ana", shown.profile?.name)
+            assertTrue(shown.followers.isEmpty())
+            // the new identity's own backup goes out; the old one publishes nothing more
+            assertTrue(relay.published.any { it.pubkey == after.identity(crypto).public.hex })
+            e.stop()
+        }
+
+    /** Backup › Replace this identity › Restore: another identity over the working one; its own code changes nothing. */
+    @Test fun restoreReplacesAWorkingIdentityWhenConfirmedButNeverWithItself() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            runCurrent()
+            val mine = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            val own = crypto.nsec(mine.identity(crypto).secret)
+            assertEquals(RestoreIdentity.Result.SameIdentity, e.restore(backgroundScope, own, null, replaceExisting = true))
+            assertEquals(mine, (store.load() as OwnerIdentityStore.Load.Loaded).state)
+
+            val other = CreateIdentity(ctx)(Profile("Ana", null), NOW - 50)
+            relay.stored += other.publish.filter { it.kind == Wire.KIND_DATA }
+            val code = crypto.nsec(other.state.identity(crypto).secret)
+            val restored = e.restore(backgroundScope, code, null, replaceExisting = true)
+            assertTrue(restored is RestoreIdentity.Result.Restored)
+            runCurrent()
+            val now = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertEquals(other.state.identity(crypto).public, now.identity(crypto).public)
+            assertTrue(e.running)
+            e.stop()
+        }
+
+    @Test fun anUnreadableIdentityIsABlockingStateAndCreateIsRefused() =
+        runTest {
+            val secure = InMemorySecureStore().also { it.write(OwnerIdentityStore.NAME, "garbage".encodeToByteArray()) }
+            val e =
+                OwnerEngine(
+                    ctx,
+                    OwnerIdentityStore(secure),
+                    relay,
+                    NoHub,
+                    { _, _ -> true },
+                    InMemoryTreatmentsRepository(),
+                    FakeClock(),
+                    StandardTestDispatcher(testScheduler),
+                )
+            e.start(backgroundScope)
+            runCurrent()
+            assertEquals(OwnerShareState.IdentityUnreadable(transient = false), e.state.value)
+            assertEquals(false, e.createIdentity(backgroundScope, null))
+            e.stop()
+        }
+
+    @Test fun theTreatmentLogFollowsEveryNewEpochAndWritersGetASubscription() =
+        runTest {
+            val repo = InMemoryTreatmentsRepository()
+            repo.upsertIfNewer(
+                TreatmentRecord(
+                    Treatment(
+                        "a0000000-0000-4000-8000-00000000000a",
+                        TreatmentKind.Carbs,
+                        20.0,
+                        Instant.ofEpochSecond(NOW - 600),
+                        modifiedAt = Instant.ofEpochSecond(NOW - 600),
+                        origin = TreatmentOrigin.Phone,
+                    ),
+                ),
+            )
+            val ana = crypto.generate().public.hex
+            val bob = crypto.generate().public.hex
+            val followers = listOf(FollowerRecord(ana, "Ana", NOW), FollowerRecord(bob, "Bob", NOW))
+            store.save(CreateIdentity(ctx)(null, NOW).state.copy(followers = followers))
+            val e =
+                OwnerEngine(
+                    ctx,
+                    store,
+                    relay,
+                    NoHub,
+                    { _, _ -> true },
+                    repo,
+                    FakeClock(Instant.ofEpochSecond(NOW)),
+                    StandardTestDispatcher(testScheduler),
+                )
+            e.start(backgroundScope)
+            runCurrent()
+
+            fun treatmentGks() =
+                relay.published
+                    .filter { it.tag("c") != null && it.kind == app.mauri.sukrara.protocol.Wire.KIND_DATA }
+                    .map { it.tag("gk") }
+            assertEquals(1, treatmentGks().size)
+
+            e.setWriter(ana, allowed = true)
+            assertEquals(
+                listOf(ana),
+                relay.subscriptions
+                    .getValue("writers")
+                    .single()
+                    .authors,
+            )
+            e.remove(bob)
+            runCurrent()
+            // republished under the new epoch's key
+            assertEquals(2, treatmentGks().distinct().size)
+            e.remove(ana)
+            assertTrue("writers" !in relay.subscriptions)
+            e.stop()
+        }
+
+    @Test fun profileWritersAndBackupReachTheState() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Alex", null)))
+            runCurrent()
+            val before = e.state.value as OwnerShareState.Sharing
+            assertEquals("Alex", before.profile?.name)
+            assertFalse(before.backedUp)
+
+            val avatar = Avatar.v1(1, "rings", 0, 3)
+            assertTrue(e.setProfile(Profile("Núria", avatar)))
+            assertEquals(Profile("Núria", avatar), (e.state.value as OwnerShareState.Sharing).profile)
+
+            // a refused save records nothing
+            assertFalse(e.saveToPasswordManager { _, _ -> false })
+            assertFalse((e.state.value as OwnerShareState.Sharing).backedUp)
+            // a code made but not kept isn't a backup either
+            assertTrue(e.exportRecovery("correct horse battery")!!.startsWith("ncryptsec1"))
+            assertFalse((e.state.value as OwnerShareState.Sharing).backedUp)
+            var saved: Pair<String, String>? = null
+            assertTrue(e.saveToPasswordManager { id, secret -> true.also { saved = id to secret } })
+            assertTrue(saved!!.first.startsWith("Sukrara · npub1"))
+            assertTrue(saved!!.second.startsWith("nsec1"))
+            assertTrue((e.state.value as OwnerShareState.Sharing).backedUp)
+            assertEquals(NOW, (store.load() as OwnerIdentityStore.Load.Loaded).state.passwordManagerSavedAt)
+            e.stop()
+        }
+
+    @Test fun aLeakedInviteIsAllowedOnlyWithTheCodeFromTheFollowersPhone() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, null))
+            runCurrent()
+            val link = InviteLink.parse(e.createInvite("Mom")!!)!!
+            val s = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            val mom = crypto.generate()
+            relay.deliver("inbox", OwnerFixtures.request(mom, s, link.token, "Mom"))
+            runCurrent()
+            relay.deliver("inbox", OwnerFixtures.request(crypto.generate(), s, link.token, "Mom"))
+            runCurrent()
+            val request = e.pendingRequest(mom.public.hex)!!
+            assertEquals(1, request.others)
+            assertEquals(ApproveResult.NeedsCode, e.approve(mom.public.hex))
+            assertEquals(ApproveResult.NeedsCode, e.approve(mom.public.hex, typedCode = "0000".takeIf { it != request.code } ?: "1111"))
+            assertEquals(ApproveResult.Allowed, e.approve(mom.public.hex, typedCode = request.code))
+            assertEquals(ApproveResult.Gone, e.approve(mom.public.hex, typedCode = request.code))
+            e.stop()
+        }
 
     private object NoHub : GlucoseHub {
         override val state = MutableStateFlow(GlucoseState.Initial)

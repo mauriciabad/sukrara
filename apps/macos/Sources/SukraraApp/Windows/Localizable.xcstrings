@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ alert at night" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ alert at night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerta de %@ de noche"
+          }
+        }
+      }
+    },
+    "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ te ha invitado a ver su glucosa. Seguir pide a %2$@ que dé acceso a este Mac; no se comparte nada hasta que lo haga."
+          }
+        }
+      }
+    },
+    "%@ (off)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (off)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (desactivada)"
+          }
+        }
+      }
+    },
     "%@'s phone is nearby" : {
       "localizations" : {
         "en" : {
@@ -77,6 +125,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un modo de concentración (No molestar, Dormir…) puede retener las alarmas de Sukrara en este Mac. Permite Sukrara en cada modo y deja que el móvil sea la alarma."
+          }
+        }
+      }
+    },
+    "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una alerta de glucosa baja o alta solo suena cuando la glucosa lleva este tiempo seguido fuera de rango. Muy baja y extremadamente alta nunca esperan. Un rebote hacia el rango menor que el margen es el mismo episodio: no hay una nueva primera alerta y sus tratamientos siguen contando."
           }
         }
       }
@@ -161,6 +225,22 @@
         }
       }
     },
+    "Alarms are Time Sensitive: they show and play during a Focus (Do Not Disturb, Sleep…) that allows Time Sensitive notifications." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alarms are Time Sensitive: they show and play during a Focus (Do Not Disturb, Sleep…) that allows Time Sensitive notifications."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alarmas son notificaciones urgentes: se muestran y suenan durante un modo de concentración (No molestar, Dormir…) que permita las notificaciones urgentes."
+          }
+        }
+      }
+    },
     "Alert banners or sounds are off: alerts may go unnoticed." : {
       "localizations" : {
         "en" : {
@@ -173,6 +253,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Los avisos o los sonidos de las alertas están desactivados: puede que no las notes."
+          }
+        }
+      }
+    },
+    "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono: «Glucosa muy baja · sin respuesta»."
           }
         }
       }
@@ -305,18 +401,18 @@
         }
       }
     },
-    "Another device already used this invite. Ask for a new invite on the phone." : {
+    "Always on" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Another device already used this invite. Ask for a new invite on the phone."
+            "value" : "Always on"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otro dispositivo ya ha usado esta invitación. Pide una nueva en el móvil."
+            "value" : "Siempre activa"
           }
         }
       }
@@ -337,6 +433,38 @@
         }
       }
     },
+    "Applies only between the night alerts' start and end." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applies only between the night alerts' start and end."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se aplica entre el inicio y el fin de las alertas de noche."
+          }
+        }
+      }
+    },
+    "Ask them for a new invite to follow again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask them for a new invite to follow again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pídele una invitación nueva para volver a seguirle."
+          }
+        }
+      }
+    },
     "Ask to follow" : {
       "localizations" : {
         "en" : {
@@ -349,6 +477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pedir permiso para seguir"
+          }
+        }
+      }
+    },
+    "Asking %@'s phone…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asking %@'s phone…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preguntando al móvil de %@…"
           }
         }
       }
@@ -401,18 +545,82 @@
         }
       }
     },
-    "Can't reach the relays. Check the internet connection and try again." : {
+    "Can't add treatments until the follower key can be read" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't reach the relays. Check the internet connection and try again."
+            "value" : "Can't add treatments until the follower key can be read"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede conectar con los relés. Revisa la conexión a internet y vuelve a intentarlo."
+            "value" : "No se pueden añadir tratamientos hasta poder leer la clave de seguimiento"
+          }
+        }
+      }
+    },
+    "Can't connect over the internet. Check the internet connection and try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't connect over the internet. Check the internet connection and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede conectar por internet. Revisa la conexión a internet y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Can't read the follower key from the Keychain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read the follower key from the Keychain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer la clave para seguir en el Llavero"
+          }
+        }
+      }
+    },
+    "Can't remove the follower key from the Keychain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't remove the follower key from the Keychain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede borrar la clave para seguir del Llavero"
+          }
+        }
+      }
+    },
+    "Can't read the follower key from the Keychain. Retrying; alerting on the last data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read the follower key from the Keychain. Retrying; alerting on the last data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer la clave de seguimiento del Llavero. Reintentando; las alertas siguen con los últimos datos."
           }
         }
       }
@@ -445,6 +653,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hidratos"
+          }
+        }
+      }
+    },
+    "Changed to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changed to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiado a %@"
           }
         }
       }
@@ -497,18 +721,18 @@
         }
       }
     },
-    "Code to type on the phone: %@" : {
+    "Click Same Code only if every digit matches: another phone nearby could pretend to be %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Code to type on the phone: %@"
+            "value" : "Click Same Code only if every digit matches: another phone nearby could pretend to be %@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Código para escribir en el móvil: %@"
+            "value" : "Haz clic en Mismo código solo si coinciden todas las cifras: otro móvil cercano podría hacerse pasar por %@."
           }
         }
       }
@@ -593,6 +817,22 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
     "Delete %@" : {
       "localizations" : {
         "en" : {
@@ -621,6 +861,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eliminado: %@"
+          }
+        }
+      }
+    },
+    "Different Code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Different Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código distinto"
+          }
+        }
+      }
+    },
+    "Does %@'s phone show this code?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Does %@'s phone show this code?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿El móvil de %@ muestra este código?"
           }
         }
       }
@@ -657,6 +929,70 @@
         }
       }
     },
+    "Each invite works once. Ask the wearer for a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each invite works once. Ask the wearer for a new one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada invitación sirve una vez. Pide una nueva a quien lleva el sensor."
+          }
+        }
+      }
+    },
+    "Edit %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar %@"
+          }
+        }
+      }
+    },
+    "Edit Treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar tratamiento"
+          }
+        }
+      }
+    },
+    "Ends" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminan"
+          }
+        }
+      }
+    },
     "Enter %@–%@ %@" : {
       "localizations" : {
         "en" : {
@@ -669,6 +1005,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escribe %@–%@ %@"
+          }
+        }
+      }
+    },
+    "Enter the API secret set in Juggluco." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the API secret set in Juggluco."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe el secreto de la API que pusiste en Juggluco."
           }
         }
       }
@@ -765,6 +1117,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seguir"
+          }
+        }
+      }
+    },
+    "Follow %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow %@?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Seguir a %@?"
           }
         }
       }
@@ -881,6 +1249,22 @@
         }
       }
     },
+    "Following Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Following Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de seguimiento…"
+          }
+        }
+      }
+    },
     "Following stopped: %@" : {
       "localizations" : {
         "en" : {
@@ -941,6 +1325,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "De %@: siguen su móvil"
+          }
+        }
+      }
+    },
+    "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde cualquier app: el valor, su tendencia y su antigüedad, con la voz de VoiceOver si VoiceOver está activado. Desactívalo si otra app usa estas teclas. Leer la glucosa en voz alta también está en el menú contextual del valor de la barra de menús."
           }
         }
       }
@@ -1009,6 +1409,22 @@
         }
       }
     },
+    "High alerts wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High alerts wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas de glucosa alta esperan"
+          }
+        }
+      }
+    },
     "High from" : {
       "localizations" : {
         "en" : {
@@ -1021,6 +1437,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alta desde"
+          }
+        }
+      }
+    },
+    "If a very low gets no answer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If a very low gets no answer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si nadie responde a una muy baja"
+          }
+        }
+      }
+    },
+    "Ignore bounces within" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore bounces within"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorar rebotes de hasta"
           }
         }
       }
@@ -1073,6 +1521,38 @@
         }
       }
     },
+    "Juggluco Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de Juggluco…"
+          }
+        }
+      }
+    },
+    "Keep the order: very low below low, low below high, high below very high, very high below extremely high." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep the order: very low below low, low below high, high below very high, very high below extremely high."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto."
+          }
+        }
+      }
+    },
     "Last reading %@" : {
       "localizations" : {
         "en" : {
@@ -1089,6 +1569,22 @@
         }
       }
     },
+    "Last reading %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last reading %@. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última lectura: %@. %@"
+          }
+        }
+      }
+    },
     "Later" : {
       "localizations" : {
         "en" : {
@@ -1101,6 +1597,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más tarde"
+          }
+        }
+      }
+    },
+    "Logged on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en el móvil de %@"
+          }
+        }
+      }
+    },
+    "Logged on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en este Mac"
           }
         }
       }
@@ -1153,6 +1681,22 @@
         }
       }
     },
+    "Low alerts wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low alerts wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas de glucosa baja esperan"
+          }
+        }
+      }
+    },
     "Low below" : {
       "localizations" : {
         "en" : {
@@ -1165,6 +1709,118 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Baja por debajo de"
+          }
+        }
+      }
+    },
+    "Near a threshold" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Near a threshold"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca de un umbral"
+          }
+        }
+      }
+    },
+    "Night alerts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night alerts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas de noche"
+          }
+        }
+      }
+    },
+    "Night alerts: Change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night alerts: Change"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas de noche: cambiar"
+          }
+        }
+      }
+    },
+    "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otros umbrales, avisos y alarmas cada noche. La alerta de muy baja siempre suena de noche. Los silencios, las esperas cerca de un umbral, los botones de la notificación y los sonidos son los mismos de día y de noche."
+          }
+        }
+      }
+    },
+    "Starts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "When they don't answer a very low" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When they don't answer a very low"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si no responde a una muy baja"
+          }
+        }
+      }
+    },
+    "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS no deja a Sukrara usar la red local. Activa Sukrara en Ajustes del Sistema › Privacidad y seguridad › Red local."
           }
         }
       }
@@ -1197,6 +1853,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Silenciar todas las alertas"
+          }
+        }
+      }
+    },
+    "No glucose readings or alerts until it's back." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No glucose readings or alerts until it's back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay lecturas de glucosa ni avisos hasta que vuelva."
           }
         }
       }
@@ -1245,6 +1917,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aún no hay lecturas"
+          }
+        }
+      }
+    },
+    "No readings from the wearer's phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No readings from the wearer's phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay lecturas del móvil de quien lleva el sensor"
           }
         }
       }
@@ -1345,6 +2033,38 @@
         }
       }
     },
+    "Not monitoring: can't read the follower key from the Keychain. Retrying…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: can't read the follower key from the Keychain. Retrying…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: no se puede leer la clave de seguimiento del Llavero. Reintentando…"
+          }
+        }
+      }
+    },
+    "Not monitoring: macOS doesn't let Sukrara use the local network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: macOS doesn't let Sukrara use the local network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: macOS no deja a Sukrara usar la red local"
+          }
+        }
+      }
+    },
     "Not monitoring: not following anyone yet" : {
       "localizations" : {
         "en" : {
@@ -1361,18 +2081,18 @@
         }
       }
     },
-    "Not monitoring: offline dev build (no sensor, relays or alerts)" : {
+    "Not monitoring: offline development build (no sensor, internet or alerts)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: offline dev build (no sensor, relays or alerts)"
+            "value" : "Not monitoring: offline development build (no sensor, internet or alerts)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin vigilancia: versión de desarrollo sin conexión (sin sensor, relés ni alertas)"
+            "value" : "Sin vigilancia: versión de desarrollo sin conexión (sin sensor, internet ni alertas)"
           }
         }
       }
@@ -1485,6 +2205,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nota"
+          }
+        }
+      }
+    },
+    "Nothing heard yet. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing heard yet. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no ha llegado nada. %@"
           }
         }
       }
@@ -1633,18 +2369,50 @@
         }
       }
     },
-    "Paste the invite link from the wearer's phone (Sukrara › Share › Invite)." : {
+    "Open the invite link from the person you follow, or follow their phone nearby. No alerts ring until their first reading arrives." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paste the invite link from the wearer's phone (Sukrara › Share › Invite)."
+            "value" : "Open the invite link from the person you follow, or follow their phone nearby. No alerts ring until their first reading arrives."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pega el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar)."
+            "value" : "Abre el enlace de invitación de la persona a la que sigues, o sigue su móvil cercano. No suena ninguna alerta hasta que llegue su primera lectura."
+          }
+        }
+      }
+    },
+    "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pega o arrastra aquí el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar). Empieza por https://sukrara.mauri.app/join#"
+          }
+        }
+      }
+    },
+    "Open System Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open System Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Ajustes del Sistema…"
           }
         }
       }
@@ -1729,22 +2497,6 @@
         }
       }
     },
-    "Ranges (mg/dL)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ranges (mg/dL)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rangos (mg/dL)"
-          }
-        }
-      }
-    },
     "Rapid" : {
       "localizations" : {
         "en" : {
@@ -1761,6 +2513,54 @@
         }
       }
     },
+    "Read from the pen on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read from the pen on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leído de la pluma en el móvil de %@"
+          }
+        }
+      }
+    },
+    "Read Glucose Aloud" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read Glucose Aloud"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa en voz alta"
+          }
+        }
+      }
+    },
+    "Read glucose aloud with %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read glucose aloud with %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa en voz alta con %@"
+          }
+        }
+      }
+    },
     "Remind as Usual" : {
       "localizations" : {
         "en" : {
@@ -1772,7 +2572,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recordar como siempre"
+            "value" : "Avisar como siempre"
           }
         }
       }
@@ -1853,6 +2653,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Igual que por defecto"
+          }
+        }
+      }
+    },
+    "Same Code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mismo código"
+          }
+        }
+      }
+    },
+    "Same code. Waiting for %@ to allow this Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same code. Waiting for %@ to allow this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mismo código. Esperando a que %@ permita este Mac."
           }
         }
       }
@@ -1985,18 +2817,18 @@
         }
       }
     },
-    "Some steps were skipped. \"Finish setup\" in the Sukrara menu takes you back to them." : {
+    "Some steps were skipped. \"Finish Setup…\" in the Sukrara menu takes you back to them." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Some steps were skipped. \"Finish setup\" in the Sukrara menu takes you back to them."
+            "value" : "Some steps were skipped. \"Finish Setup…\" in the Sukrara menu takes you back to them."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Has omitido algunos pasos. «Terminar configuración» en el menú de Sukrara te lleva de vuelta a ellos."
+            "value" : "Has omitido algunos pasos. «Terminar configuración…» en el menú de Sukrara te lleva de vuelta a ellos."
           }
         }
       }
@@ -2145,6 +2977,38 @@
         }
       }
     },
+    "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara te avisa con estos valores. Cambia los que quieras aquí: nada cambia hasta que elijas Usar estos."
+          }
+        }
+      }
+    },
+    "Sukrara opens at login." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara opens at login."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara se abre al iniciar sesión."
+          }
+        }
+      }
+    },
     "Sukrara Settings" : {
       "localizations" : {
         "en" : {
@@ -2157,22 +3021,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustes de Sukrara"
-          }
-        }
-      }
-    },
-    "Sukrara alerts at these values. Use them, or change them in Settings › Alerts." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara alerts at these values. Use them, or change them in Settings › Alerts."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara avisa con estos valores. Úsalos o cámbialos en Ajustes › Alertas."
           }
         }
       }
@@ -2209,6 +3057,22 @@
         }
       }
     },
+    "Sukrara keeps trying while the Mac is unlocked." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara keeps trying while the Mac is unlocked."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara lo sigue intentando mientras el Mac está desbloqueado."
+          }
+        }
+      }
+    },
     "Sukrara shows the glucose of someone you follow in the menu bar and alerts you when it's out of range." : {
       "localizations" : {
         "en" : {
@@ -2237,6 +3101,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara se abre al iniciar sesión, así la barra de menús siempre muestra la glucosa."
+          }
+        }
+      }
+    },
+    "Sukrara's default" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara's default"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "predeterminado de Sukrara"
+          }
+        }
+      }
+    },
+    "Sukrara stopped monitoring" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara stopped monitoring"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara ha dejado de vigilar"
           }
         }
       }
@@ -2289,6 +3185,70 @@
         }
       }
     },
+    "The codes didn't match, so nothing was shared. Try again next to the wearer's phone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The codes didn't match, so nothing was shared. Try again next to the wearer's phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los códigos no coincidían, así que no se ha compartido nada. Vuelve a probar junto al móvil de la persona a la que sigues."
+          }
+        }
+      }
+    },
+    "The follower state is damaged; stop following and join again" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The follower state is damaged; stop following and join again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los datos para seguir están dañados; deja de seguir y vuelve a unirte"
+          }
+        }
+      }
+    },
+    "The phone may be asleep, off or on another network." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone may be asleep, off or on another network."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El móvil puede estar en reposo, apagado o en otra red."
+          }
+        }
+      }
+    },
+    "the person who invited you" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the person who invited you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la persona que te invitó"
+          }
+        }
+      }
+    },
     "The wearer declined. Ask them for a new invite." : {
       "localizations" : {
         "en" : {
@@ -2337,6 +3297,22 @@
         }
       }
     },
+    "Their phone may be off, offline or out of battery." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their phone may be off, offline or out of battery."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su móvil puede estar apagado, sin conexión o sin batería."
+          }
+        }
+      }
+    },
     "Their readings are removed from this Mac. To follow again, they have to send a new invite." : {
       "localizations" : {
         "en" : {
@@ -2349,6 +3325,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
+          }
+        }
+      }
+    },
+    "They allow it on their phone. No alerts ring until their first reading arrives." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They allow it on their phone. No alerts ring until their first reading arrives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo permite en su móvil. No suena ninguna alerta hasta que llegue su primera lectura."
+          }
+        }
+      }
+    },
+    "They removed this Mac from their followers. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They removed this Mac from their followers. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitó este Mac de sus seguidores. %@"
+          }
+        }
+      }
+    },
+    "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son las alertas de %@, desde su móvil. Cambiar un nivel las convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
+          }
+        }
+      }
+    },
+    "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son los valores predeterminados de Sukrara. Cambiar un nivel los convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
           }
         }
       }
@@ -2449,6 +3489,22 @@
         }
       }
     },
+    "This name and picture come from the invite. Follow only if you know who sent you this link." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This name and picture come from the invite. Follow only if you know who sent you this link."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este nombre y esta imagen vienen de la invitación. Sigue solo si sabes quién te ha enviado este enlace."
+          }
+        }
+      }
+    },
     "Threshold" : {
       "localizations" : {
         "en" : {
@@ -2461,6 +3517,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Umbral"
+          }
+        }
+      }
+    },
+    "Time Sensitive notifications are off for Sukrara, so a Focus (Do Not Disturb, Sleep…) can hold back its alarms. Turn them on in Sukrara's notification settings." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Sensitive notifications are off for Sukrara, so a Focus (Do Not Disturb, Sleep…) can hold back its alarms. Turn them on in Sukrara's notification settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las notificaciones urgentes de Sukrara están desactivadas, así que un modo de concentración (No molestar, Dormir…) puede retener sus alarmas. Actívalas en los ajustes de notificaciones de Sukrara."
           }
         }
       }
@@ -2493,6 +3565,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tratamientos…"
+          }
+        }
+      }
+    },
+    "Turn on Juggluco's web server on the phone, on this network, or enter its address." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Juggluco's web server on the phone, on this network, or enter its address."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activa el servidor web de Juggluco en el móvil, en esta red, o escribe su dirección."
           }
         }
       }
@@ -2769,6 +3857,22 @@
         }
       }
     },
+    "Very low and no data included, on this Mac only" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very low and no data included, on this Mac only"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluidas muy baja y sin datos, solo en este Mac"
+          }
+        }
+      }
+    },
     "Waiting for %@ to approve" : {
       "localizations" : {
         "en" : {
@@ -2849,6 +3953,22 @@
         }
       }
     },
+    "from %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de %@"
+          }
+        }
+      }
+    },
     "macOS didn't add Sukrara to the login items. Move Sukrara to the Applications folder and try again." : {
       "localizations" : {
         "en" : {
@@ -2877,6 +3997,4230 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "quien lleva el sensor"
+          }
+        }
+      }
+    },
+    "%@ (wearer)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (wearer)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (quien lleva el sensor)"
+          }
+        }
+      }
+    },
+    "%@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ of %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de %@"
+          }
+        }
+      }
+    },
+    "%@'s settings from their phone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s settings from their phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes de %@, desde su móvil."
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@"
+          }
+        }
+      }
+    },
+    "A ring's centre counts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A ring's centre counts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El centro de un anillo cuenta"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir"
+          }
+        }
+      }
+    },
+    "Add a line at" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a line at"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir una línea en"
+          }
+        }
+      }
+    },
+    "Amount" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amount"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cantidad"
+          }
+        }
+      }
+    },
+    "At the right end" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At the right end"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En el extremo derecho"
+          }
+        }
+      }
+    },
+    "Average glucose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average glucose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucosa media"
+          }
+        }
+      }
+    },
+    "Beside the graph" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beside the graph"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junto al gráfico"
+          }
+        }
+      }
+    },
+    "Beside the value" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beside the value"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junto al valor"
+          }
+        }
+      }
+    },
+    "Change…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar…"
+          }
+        }
+      }
+    },
+    "Close treatments share one label. Hidden amounts leave it; the time shows once." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close treatments share one label. Hidden amounts leave it; the time shows once."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los tratamientos cercanos comparten una etiqueta. Las cantidades ocultas no aparecen; la hora sale una vez."
+          }
+        }
+      }
+    },
+    "Copy %@'s settings?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy %@'s settings?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Copiar los ajustes de %@?"
+          }
+        }
+      }
+    },
+    "Copy Settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar ajustes"
+          }
+        }
+      }
+    },
+    "Copy the Wearer's Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy the Wearer's Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar los ajustes de quien lleva el sensor…"
+          }
+        }
+      }
+    },
+    "Crown beside the graph when all of it is in range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crown beside the graph when all of it is in range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corona junto al gráfico cuando todo está en rango"
+          }
+        }
+      }
+    },
+    "Custom" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizados"
+          }
+        }
+      }
+    },
+    "Dashed lines at these levels, up to six." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dashed lines at these levels, up to six."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Líneas discontinuas en estos niveles, hasta seis."
+          }
+        }
+      }
+    },
+    "Default" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Predeterminados"
+          }
+        }
+      }
+    },
+    "Each place can show a window of its own; Same as default follows the default." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each place can show a window of its own; Same as default follows the default."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada lugar puede mostrar su propio periodo; Igual que el predeterminado sigue al predeterminado."
+          }
+        }
+      }
+    },
+    "Fainter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fainter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más tenue"
+          }
+        }
+      }
+    },
+    "GMI" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GMI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GMI"
+          }
+        }
+      }
+    },
+    "Graph" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graph"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gráfico"
+          }
+        }
+      }
+    },
+    "In range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rango"
+          }
+        }
+      }
+    },
+    "In use" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En uso"
+          }
+        }
+      }
+    },
+    "Last treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Último tratamiento"
+          }
+        }
+      }
+    },
+    "Lines across the graph" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lines across the graph"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Líneas en el gráfico"
+          }
+        }
+      }
+    },
+    "Long-acting insulin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long-acting insulin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insulina lenta"
+          }
+        }
+      }
+    },
+    "Main" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Main"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Principal"
+          }
+        }
+      }
+    },
+    "Menu bar panel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu bar panel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panel de la barra de menús"
+          }
+        }
+      }
+    },
+    "Move Down" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Down"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar"
+          }
+        }
+      }
+    },
+    "Move Up" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Up"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subir"
+          }
+        }
+      }
+    },
+    "Mute line" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute line"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Línea de silencio"
+          }
+        }
+      }
+    },
+    "Next to the number" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next to the number"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junto al número"
+          }
+        }
+      }
+    },
+    "Not following anyone, so Sukrara's defaults are used." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not following anyone, so Sukrara's defaults are used."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sigues a nadie, así que se usan los ajustes predeterminados de Sukrara."
+          }
+        }
+      }
+    },
+    "Notes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notas"
+          }
+        }
+      }
+    },
+    "Nothing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada"
+          }
+        }
+      }
+    },
+    "On" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activado"
+          }
+        }
+      }
+    },
+    "Period" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Periodo"
+          }
+        }
+      }
+    },
+    "Point" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Point"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Punto"
+          }
+        }
+      }
+    },
+    "Position" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posición"
+          }
+        }
+      }
+    },
+    "Ranges" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranges"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rangos"
+          }
+        }
+      }
+    },
+    "Rapid insulin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapid insulin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insulina rápida"
+          }
+        }
+      }
+    },
+    "Remove this line" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove this line"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar esta línea"
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer"
+          }
+        }
+      }
+    },
+    "Reset All Graph Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset All Graph Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer todos los ajustes del gráfico…"
+          }
+        }
+      }
+    },
+    "Reset Order" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Order"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer el orden"
+          }
+        }
+      }
+    },
+    "Reset Ranges" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Ranges"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer los rangos"
+          }
+        }
+      }
+    },
+    "Reset to Defaults…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Defaults…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer los predeterminados…"
+          }
+        }
+      }
+    },
+    "Reset to Sukrara's defaults?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Sukrara's defaults?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Restablecer los predeterminados de Sukrara?"
+          }
+        }
+      }
+    },
+    "Reset to Defaults" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Defaults"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer"
+          }
+        }
+      }
+    },
+    "This Mac's ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules go back to Sukrara's defaults. Sounds, the no-data alert, Mute all and the notification's buttons stay." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules go back to Sukrara's defaults. Sounds, the no-data alert, Mute all and the notification's buttons stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los rangos, el gráfico, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor, las reglas de alerta y las de silencio de este Mac vuelven a los predeterminados de Sukrara. Los sonidos, la alerta sin datos, Silenciar todas las alertas y los botones de la notificación se mantienen."
+          }
+        }
+      }
+    },
+    "Reset Treatments" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Treatments"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer los tratamientos"
+          }
+        }
+      }
+    },
+    "Reset all graph settings?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset all graph settings?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Restablecer todos los ajustes del gráfico?"
+          }
+        }
+      }
+    },
+    "Rewards on the rings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rewards on the rings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premios en los anillos"
+          }
+        }
+      }
+    },
+    "Rewards on the rings (laurel, flowers, crown)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rewards on the rings (laurel, flowers, crown)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premios en los anillos (laurel, flores, corona)"
+          }
+        }
+      }
+    },
+    "Ring order" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring order"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orden del anillo"
+          }
+        }
+      }
+    },
+    "Rings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anillos"
+          }
+        }
+      }
+    },
+    "Rings and numbers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rings and numbers"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anillos y números"
+          }
+        }
+      }
+    },
+    "Second" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Second"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segundo"
+          }
+        }
+      }
+    },
+    "Sensor" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor"
+          }
+        }
+      }
+    },
+    "Sensor countdown (last hours)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor countdown (last hours)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuenta atrás del sensor (últimas horas)"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes"
+          }
+        }
+      }
+    },
+    "Settings from" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings from"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de"
+          }
+        }
+      }
+    },
+    "Sukrara's defaults." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara's defaults."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes predeterminados de Sukrara."
+          }
+        }
+      }
+    },
+    "Third" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Third"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tercero"
+          }
+        }
+      }
+    },
+    "This Mac's own settings, in the Graph, Rings and Alerts panes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's own settings, in the Graph, Rings and Alerts panes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes propios de este Mac, en los paneles Gráfico, Anillos y Alertas."
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hora"
+          }
+        }
+      }
+    },
+    "Time in range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time in range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo en rango"
+          }
+        }
+      }
+    },
+    "Time in range distribution" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time in range distribution"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distribución del tiempo en rango"
+          }
+        }
+      }
+    },
+    "Time left in the menu bar panel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time left in the menu bar panel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo restante en el panel de la barra de menús"
+          }
+        }
+      }
+    },
+    "Time left on widgets" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time left on widgets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo restante en los widgets"
+          }
+        }
+      }
+    },
+    "Time shown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time shown"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo mostrado"
+          }
+        }
+      }
+    },
+    "To change these on this Mac, choose Custom." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To change these on this Mac, choose Custom."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para cambiarlos en este Mac, elige Personalizados."
+          }
+        }
+      }
+    },
+    "Treatments on the graph" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treatments on the graph"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tratamientos en el gráfico"
+          }
+        }
+      }
+    },
+    "Used by the graph, the rings, the report and the menu bar colour, and kept in order." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used by the graph, the rings, the report and the menu bar colour, and kept in order."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los usan el gráfico, los anillos, el informe y el color de la barra de menús, y se mantienen en orden."
+          }
+        }
+      }
+    },
+    "Variability (CV)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variability (CV)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabilidad (CV)"
+          }
+        }
+      }
+    },
+    "Vertical lines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertical lines"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Líneas verticales"
+          }
+        }
+      }
+    },
+    "Very good" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very good"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muy bien"
+          }
+        }
+      }
+    },
+    "Waiting for %@'s settings. Sukrara's defaults are used until they arrive." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@'s settings. Sukrara's defaults are used until they arrive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando los ajustes de %@. Hasta que lleguen se usan los predeterminados de Sukrara."
+          }
+        }
+      }
+    },
+    "Wearer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wearer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quien lleva el sensor"
+          }
+        }
+      }
+    },
+    "Widgets" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets"
+          }
+        }
+      }
+    },
+    "Without a recent treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without a recent treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin un tratamiento reciente"
+          }
+        }
+      }
+    },
+    "crown when all in range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crown when all in range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "corona cuando todo está en rango"
+          }
+        }
+      }
+    },
+    "else %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "else %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "si no, %@ %@"
+          }
+        }
+      }
+    },
+    "nothing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nothing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nada"
+          }
+        }
+      }
+    },
+    "time in range distribution" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "time in range distribution"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "distribución del tiempo en rango"
+          }
+        }
+      }
+    },
+    "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quien lleva el sensor y Predeterminados deciden los rangos, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Personalizados te deja ajustarlos en este Mac. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada lugar son siempre de este Mac."
+          }
+        }
+      }
+    },
+    "This Mac's ranges, time shown, rings, lines, last treatment, sensor countdown and alert rules become theirs, as a starting point to change. Sounds and the other settings of this Mac stay." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's ranges, time shown, rings, lines, last treatment, sensor countdown and alert rules become theirs, as a starting point to change. Sounds and the other settings of this Mac stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los rangos, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y las reglas de alerta de este Mac pasan a ser los suyos, como punto de partida para cambiarlos. Los sonidos y los demás ajustes de este Mac se quedan."
+          }
+        }
+      }
+    },
+    "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El tiempo mostrado, los anillos, las líneas, los rangos, el último tratamiento y los ajustes del sensor vuelven a sus valores predeterminados."
+          }
+        }
+      }
+    },
+    "A ring over the main ring counts down the sensor's last hours. The warm-up and Sensor ended show either way." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A ring over the main ring counts down the sensor's last hours. The warm-up and Sensor ended show either way."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un anillo sobre el anillo principal cuenta atrás las últimas horas del sensor. El calentamiento y Sensor terminado se muestran igualmente."
+          }
+        }
+      }
+    },
+    "Clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En el sentido de las agujas del reloj desde las 12. Arrastra un rango para moverlo, o haz clic con Control para Subir y Bajar."
+          }
+        }
+      }
+    },
+    "Reconnect Now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnect Now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconectar ahora"
+          }
+        }
+      }
+    },
+    "Reconnect over the internet and to the phone over Bluetooth now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnect over the internet and to the phone over Bluetooth now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconectar ahora por internet y con el móvil por Bluetooth"
+          }
+        }
+      }
+    },
+    "Sukrara · %@ · reading at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · %1$@ · reading at %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · %1$@ · lectura de las %2$@"
+          }
+        }
+      }
+    },
+    "Sukrara · reading at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · reading at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · lectura de las %@"
+          }
+        }
+      }
+    },
+    "Sukrara · waiting for the first reading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · waiting for the first reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · esperando la primera lectura"
+          }
+        }
+      }
+    },
+    "Sukrara · ready at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · ready at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · listo a las %@"
+          }
+        }
+      }
+    },
+    "Sensor ended — replace sensor" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor ended — replace sensor"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor terminado: cámbialo"
+          }
+        }
+      }
+    },
+    "Sukrara · no reading since %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · no reading since %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara · sin lecturas desde las %@"
+          }
+        }
+      }
+    },
+    "Glucose: no reading since %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucose: no reading since %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucosa: sin lecturas desde las %@"
+          }
+        }
+      }
+    },
+    "%@ days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ días"
+          }
+        }
+      }
+    },
+    "1 day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 día"
+          }
+        }
+      }
+    },
+    "Above range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Above range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por encima del rango"
+          }
+        }
+      }
+    },
+    "All time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo"
+          }
+        }
+      }
+    },
+    "Below range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por debajo del rango"
+          }
+        }
+      }
+    },
+    "Export CSV…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export CSV…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportar CSV…"
+          }
+        }
+      }
+    },
+    "Glucose Report" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucose Report"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informe de glucosa"
+          }
+        }
+      }
+    },
+    "Glucose Report…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucose Report…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informe de glucosa…"
+          }
+        }
+      }
+    },
+    "Goal %@: met" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal %@: met"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objetivo %@: cumplido"
+          }
+        }
+      }
+    },
+    "Goal %@: missed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal %@: missed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objetivo %@: no cumplido"
+          }
+        }
+      }
+    },
+    "Goals for type 1 and type 2 diabetes (international consensus)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goals for type 1 and type 2 diabetes (international consensus)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objetivos para diabetes tipo 1 y tipo 2 (consenso internacional)."
+          }
+        }
+      }
+    },
+    "Last 14 days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 14 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Últimos 14 días"
+          }
+        }
+      }
+    },
+    "Last 30 days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 30 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Últimos 30 días"
+          }
+        }
+      }
+    },
+    "Last 7 days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Últimos 7 días"
+          }
+        }
+      }
+    },
+    "No readings in this period yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No readings in this period yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay lecturas en este periodo."
+          }
+        }
+      }
+    },
+    "No readings to export yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No readings to export yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay lecturas que exportar."
+          }
+        }
+      }
+    },
+    "Period:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period:"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Periodo:"
+          }
+        }
+      }
+    },
+    "Sensor active %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor active %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor activo %@"
+          }
+        }
+      }
+    },
+    "Target" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Target"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objetivo"
+          }
+        }
+      }
+    },
+    "This sensor" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This sensor"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este sensor"
+          }
+        }
+      }
+    },
+    "Time in ranges" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time in ranges"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo en rangos"
+          }
+        }
+      }
+    },
+    "Only %@ of the period has sensor data; a report needs %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only %@ of the period has sensor data; a report needs %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo el %@ del periodo tiene datos del sensor; un informe necesita el %@."
+          }
+        }
+      }
+    },
+    "%@ ago" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ago"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hace %@"
+          }
+        }
+      }
+    },
+    "%@ alerts: Change time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ alerts: Change time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas %@: cambiar duración"
+          }
+        }
+      }
+    },
+    "%@ alerts: Mute" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ alerts: Mute"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas %@: silenciar"
+          }
+        }
+      }
+    },
+    "%@ characters left" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ characters left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedan %@ caracteres"
+          }
+        }
+      }
+    },
+    "%@ hasn't turned on “Can add entries” for this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't turned on “Can add entries” for this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no ha activado «Puede añadir entradas» para este Mac"
+          }
+        }
+      }
+    },
+    "Alert Me Anyway" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert Me Anyway"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisarme igualmente"
+          }
+        }
+      }
+    },
+    "Alerts: Change time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerts: Change time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas: cambiar duración"
+          }
+        }
+      }
+    },
+    "Alerts: Unmute" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerts: Unmute"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas: reactivar"
+          }
+        }
+      }
+    },
+    "Change Time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar duración"
+          }
+        }
+      }
+    },
+    "Eat carbs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eat carbs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Come hidratos"
+          }
+        }
+      }
+    },
+    "Enter %@–%@, e.g. 1 h 30 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter %@–%@, e.g. 1 h 30 min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe %@–%@, p. ej. 1 h 30 min"
+          }
+        }
+      }
+    },
+    "Entries logged on the phone or here show up in this list." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entries logged on the phone or here show up in this list."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las entradas registradas en el móvil o aquí aparecen en esta lista."
+          }
+        }
+      }
+    },
+    "Highs quiet for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highs quiet for %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altas en silencio durante %@"
+          }
+        }
+      }
+    },
+    "Highs quiet for %@ · lows quiet for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highs quiet for %@ · lows quiet for %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altas en silencio durante %@ · bajas en silencio durante %@"
+          }
+        }
+      }
+    },
+    "Insulin up to 100u, carbs up to 500g." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insulin up to 100u, carbs up to 500g."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insulina hasta 100u, hidratos hasta 500g."
+          }
+        }
+      }
+    },
+    "Logged by a follower" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged by a follower"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado por un seguidor"
+          }
+        }
+      }
+    },
+    "Logged by the pen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged by the pen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado por la pluma"
+          }
+        }
+      }
+    },
+    "Logged on a Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on a Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en un Mac"
+          }
+        }
+      }
+    },
+    "Logged on the wearer's phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on the wearer's phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en el móvil de quien lleva el sensor"
+          }
+        }
+      }
+    },
+    "Lows quiet for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lows quiet for %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajas en silencio durante %@"
+          }
+        }
+      }
+    },
+    "Minutes ago" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutes ago"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hace minutos"
+          }
+        }
+      }
+    },
+    "Mute" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar"
+          }
+        }
+      }
+    },
+    "Mute alerts for" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute alerts for"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar alertas durante"
+          }
+        }
+      }
+    },
+    "No treatments in the last 7 days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No treatments in the last 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin tratamientos en los últimos 7 días"
+          }
+        }
+      }
+    },
+    "Not following anyone: ask for a new invite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not following anyone: ask for a new invite"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sigues a nadie: pide una invitación nueva"
+          }
+        }
+      }
+    },
+    "Now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora"
+          }
+        }
+      }
+    },
+    "Pizza, exercise, sick…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pizza, exercise, sick…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pizza, ejercicio, enfermo…"
+          }
+        }
+      }
+    },
+    "Remind Less" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind Less"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisar menos"
+          }
+        }
+      }
+    },
+    "Show Alert Options" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Alert Options"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar opciones de alerta"
+          }
+        }
+      }
+    },
+    "Show what you can do" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show what you can do"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar lo que puedes hacer"
+          }
+        }
+      }
+    },
+    "Take insulin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take insulin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ponte insulina"
+          }
+        }
+      }
+    },
+    "The wearer hasn't turned on “Can add entries” for this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The wearer hasn't turned on “Can add entries” for this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quien lleva el sensor no ha activado «Puede añadir entradas» para este Mac"
+          }
+        }
+      }
+    },
+    "The wearer stopped sharing with this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The wearer stopped sharing with this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quien lleva el sensor dejó de compartir con este Mac"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "Today %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy %@"
+          }
+        }
+      }
+    },
+    "Waiting for %@ to approve this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to approve this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando a que %@ apruebe este Mac"
+          }
+        }
+      }
+    },
+    "Waiting for the wearer to approve this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the wearer to approve this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando a que quien lleva el sensor apruebe este Mac"
+          }
+        }
+      }
+    },
+    "When it happened" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When it happened"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuándo ocurrió"
+          }
+        }
+      }
+    },
+    "When: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuándo: %@"
+          }
+        }
+      }
+    },
+    "When?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Cuándo?"
+          }
+        }
+      }
+    },
+    "Yesterday" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayer"
+          }
+        }
+      }
+    },
+    "Yesterday %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayer %@"
+          }
+        }
+      }
+    },
+    "just now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "just now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ahora mismo"
+          }
+        }
+      }
+    },
+    "%@ alert" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ alert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerta %@"
+          }
+        }
+      }
+    },
+    "%@ alert details" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ alert details"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalles de la alerta %@"
+          }
+        }
+      }
+    },
+    "Active now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activo ahora"
+          }
+        }
+      }
+    },
+    "After %@ without data" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After %@ without data"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tras %@ sin datos"
+          }
+        }
+      }
+    },
+    "Back in range by" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back in range by"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De vuelta en rango por"
+          }
+        }
+      }
+    },
+    "Banners, Focus and the lock screen are in System Settings." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banners, Focus and the lock screen are in System Settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisos, Concentración y pantalla bloqueada están en Ajustes del Sistema."
+          }
+        }
+      }
+    },
+    "Below %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por debajo de %@ %@"
+          }
+        }
+      }
+    },
+    "Details…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalles…"
+          }
+        }
+      }
+    },
+    "Different sound each time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Different sound each time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un sonido distinto cada vez"
+          }
+        }
+      }
+    },
+    "For at least" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For at least"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante al menos"
+          }
+        }
+      }
+    },
+    "From %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde %@ %@"
+          }
+        }
+      }
+    },
+    "From the notification" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the notification"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde la notificación"
+          }
+        }
+      }
+    },
+    "Like an alarm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Like an alarm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Como una alarma"
+          }
+        }
+      }
+    },
+    "Mute first offers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute first offers"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar ofrece primero"
+          }
+        }
+      }
+    },
+    "Notification Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notification Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de notificaciones…"
+          }
+        }
+      }
+    },
+    "Play" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducir"
+          }
+        }
+      }
+    },
+    "Play %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducir %@"
+          }
+        }
+      }
+    },
+    "Remind less: every" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind less: every"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisar menos: cada"
+          }
+        }
+      }
+    },
+    "Same as the pack" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same as the pack"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Igual que el paquete"
+          }
+        }
+      }
+    },
+    "Send Test Alert" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send Test Alert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar alerta de prueba"
+          }
+        }
+      }
+    },
+    "Sound" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sound"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonido"
+          }
+        }
+      }
+    },
+    "This is how this alert looks and sounds. Nothing was muted or logged." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is how this alert looks and sounds. Nothing was muted or logged."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Así se ve y suena esta alerta. No se ha silenciado ni registrado nada."
+          }
+        }
+      }
+    },
+    "When it alerts follows the wearer's rules. Choose Custom to change it on this Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When it alerts follows the wearer's rules. Choose Custom to change it on this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuándo avisa sigue las reglas de quien lleva el sensor. Elige Personalizado para cambiarlo en este Mac."
+          }
+        }
+      }
+    },
+    "every %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "every %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cada %@"
+          }
+        }
+      }
+    },
+    "like an alarm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "like an alarm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "como una alarma"
+          }
+        }
+      }
+    },
+    "once" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "once"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "una vez"
+          }
+        }
+      }
+    },
+    "silent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "silent"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin sonido"
+          }
+        }
+      }
+    },
+    "Mute and Remind less end once the value is back inside the threshold by this margin for this long." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute and Remind less end once the value is back inside the threshold by this margin for this long."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar y Avisar menos terminan cuando el valor vuelve dentro del umbral por este margen durante este tiempo."
+          }
+        }
+      }
+    },
+    "Like an alarm: Time Sensitive, so it shows and plays during a Focus when Sukrara is allowed to. The test alert is a real notification titled “Test”; nothing is muted or logged." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Like an alarm: Time Sensitive, so it shows and plays during a Focus when Sukrara is allowed to. The test alert is a real notification titled “Test”; nothing is muted or logged."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Como una alarma: urgente, así se muestra y suena durante una Concentración si Sukrara tiene permiso. La alerta de prueba es una notificación real titulada «Prueba»; no se silencia ni registra nada."
+          }
+        }
+      }
+    },
+    "Almost ready" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almost ready"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casi listo"
+          }
+        }
+      }
+    },
+    "Internet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internet"
+          }
+        }
+      }
+    },
+    "Bluetooth off" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth desactivado"
+          }
+        }
+      }
+    },
+    "Bluetooth not allowed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth not allowed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth sin permiso"
+          }
+        }
+      }
+    },
+    "Looking for the phone over Bluetooth" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for the phone over Bluetooth"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando el móvil por Bluetooth"
+          }
+        }
+      }
+    },
+    "Bluetooth: connected to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth: connected to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth: conectado a %@"
+          }
+        }
+      }
+    },
+    "%@ couldn't be read and was moved aside; Sukrara started it again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ couldn't be read and was moved aside; Sukrara started it again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo leer %@ y se apartó; Sukrara lo empezó de nuevo."
+          }
+        }
+      }
+    },
+    "Sukrara may not use Bluetooth: allow it in System Settings › Privacy & Security › Bluetooth to get readings from the phone nearby." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara may not use Bluetooth: allow it in System Settings › Privacy & Security › Bluetooth to get readings from the phone nearby."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara no puede usar el Bluetooth: permítelo en Ajustes del Sistema › Privacidad y seguridad › Bluetooth para recibir lecturas del móvil cercano."
+          }
+        }
+      }
+    },
+    "Back to Now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to Now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a ahora"
+          }
+        }
+      }
+    },
+    "Earlier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earlier"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antes"
+          }
+        }
+      }
+    },
+    "Zoom Out" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom Out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alejar"
+          }
+        }
+      }
+    },
+    "Zoom In" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom In"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acercar"
+          }
+        }
+      }
+    },
+    "Already logged by the pen?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already logged by the pen?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Ya lo registró la pluma?"
+          }
+        }
+      }
+    },
+    "Log Anyway" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log Anyway"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar igualmente"
+          }
+        }
+      }
+    },
+    "%@u long-acting at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@u long-acting at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@u de lenta a las %@"
+          }
+        }
+      }
+    },
+    "%@u rapid at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@u rapid at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@u de rápida a las %@"
+          }
+        }
+      }
+    },
+    "Doses" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doses"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosis"
+          }
+        }
+      }
+    },
+    "From the pen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the pen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De la pluma"
+          }
+        }
+      }
+    },
+    "From the pen · %@u primed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the pen · %@u primed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De la pluma · %@u de purga"
+          }
+        }
+      }
+    },
+    "%@u primed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@u primed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@u de purga"
+          }
+        }
+      }
+    },
+    "%@, %@ units, primed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ units, primed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ unidades, purga"
+          }
+        }
+      }
+    },
+    "%@, %@ units" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ units"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ unidades"
+          }
+        }
+      }
+    },
+    "Read from the pen on the wearer's phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read from the pen on the wearer's phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leído de la pluma en el móvil de quien lleva el sensor"
+          }
+        }
+      }
+    },
+    "Colour %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colour %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color %lld"
+          }
+        }
+      }
+    },
+    "Cube" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cube"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cubo"
+          }
+        }
+      }
+    },
+    "Customize" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Customize"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizar"
+          }
+        }
+      }
+    },
+    "Dots" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dots"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puntos"
+          }
+        }
+      }
+    },
+    "Drop" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gota"
+          }
+        }
+      }
+    },
+    "Edit how you appear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit how you appear"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar cómo te ven"
+          }
+        }
+      }
+    },
+    "Edit…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar…"
+          }
+        }
+      }
+    },
+    "How You Appear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How You Appear"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo te ven"
+          }
+        }
+      }
+    },
+    "How You Appear to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How You Appear to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo te ve %@"
+          }
+        }
+      }
+    },
+    "How you appear to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How you appear to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo te ve %@"
+          }
+        }
+      }
+    },
+    "How you appear to the wearer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How you appear to the wearer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo te ve la persona que lleva el sensor"
+          }
+        }
+      }
+    },
+    "Letter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letra"
+          }
+        }
+      }
+    },
+    "Name for this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name for this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre de este Mac"
+          }
+        }
+      }
+    },
+    "Shape" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shape"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forma"
+          }
+        }
+      }
+    },
+    "Shuffle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shuffle"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otra al azar"
+          }
+        }
+      }
+    },
+    "The person you follow sees the change as soon as it reaches them." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The person you follow sees the change as soon as it reaches them."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona a la que sigues ve el cambio en cuanto le llega."
+          }
+        }
+      }
+    },
+    "The wearer sees this name in their list of people who follow them" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The wearer sees this name in their list of people who follow them"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona que lleva el sensor ve este nombre en su lista de personas que la siguen"
+          }
+        }
+      }
+    },
+    "Turn the Colours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn the Colours"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Girar los colores"
+          }
+        }
+      }
+    },
+    "Your name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your name"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu nombre"
+          }
+        }
+      }
+    },
+    "Only the people you share with see your name and picture. They travel end-to-end encrypted and are never posted publicly." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the people you share with see your name and picture. They travel end-to-end encrypted and are never posted publicly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo las personas con las que compartes ven tu nombre y tu imagen. Viajan cifrados de extremo a extremo y nunca se publican."
+          }
+        }
+      }
+    },
+    "Not monitoring: looking for Juggluco on this network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: looking for Juggluco on this network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin monitorizar: buscando Juggluco en esta red"
+          }
+        }
+      }
+    },
+    "Not monitoring: Juggluco wasn't found on this network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: Juggluco wasn't found on this network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin monitorizar: no se ha encontrado Juggluco en esta red"
+          }
+        }
+      }
+    },
+    "Waiting for the first reading from Juggluco" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the first reading from Juggluco"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando la primera lectura de Juggluco"
+          }
+        }
+      }
+    },
+    "Not monitoring: can't reach Juggluco at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: can't reach Juggluco at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin monitorizar: no se puede conectar con Juggluco en %@"
+          }
+        }
+      }
+    },
+    "Not monitoring: Juggluco refused the API secret" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: Juggluco refused the API secret"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin monitorizar: Juggluco ha rechazado el secreto de la API"
+          }
+        }
+      }
+    },
+    "Not monitoring: %@ isn't an address on your home network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: %@ isn't an address on your home network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin monitorizar: %@ no es una dirección de tu red de casa"
+          }
+        }
+      }
+    },
+    "Starting…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starting…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciando…"
+          }
+        }
+      }
+    },
+    "Looking for Juggluco on this network…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for Juggluco on this network…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando Juggluco en esta red…"
+          }
+        }
+      }
+    },
+    "Not found. Check that Juggluco's web server is on with Local only off and that Sukrara may use the local network (System Settings › Privacy & Security › Local Network), or type its address." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not found. Check that Juggluco's web server is on with Local only off and that Sukrara may use the local network (System Settings › Privacy & Security › Local Network), or type its address."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No encontrado. Comprueba que el servidor web de Juggluco está activado con «Local only» desactivado y que Sukrara puede usar la red local (Ajustes del Sistema › Privacidad y seguridad › Red local), o escribe su dirección."
+          }
+        }
+      }
+    },
+    "Reading Juggluco at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading Juggluco at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo Juggluco en %@"
+          }
+        }
+      }
+    },
+    "Can't reach Juggluco at %@. Retrying…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't reach Juggluco at %@. Retrying…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede conectar con Juggluco en %@. Reintentando…"
+          }
+        }
+      }
+    },
+    "Juggluco refused the API secret. Type the one set in Juggluco." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco refused the API secret. Type the one set in Juggluco."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco ha rechazado el secreto de la API. Escribe el que tiene Juggluco."
+          }
+        }
+      }
+    },
+    "%@ isn't a home-network address (like 192.168.1.23). Fix it or leave it blank." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ isn't a home-network address (like 192.168.1.23). Fix it or leave it blank."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no es una dirección de tu red de casa (como 192.168.1.23). Corrígela o déjala en blanco."
+          }
+        }
+      }
+    },
+    "Juggluco on this network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco on this network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco en esta red"
+          }
+        }
+      }
+    },
+    "Paused while following %@: their readings come first." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused while following %@: their readings come first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pausa mientras sigues a %@: sus lecturas van primero."
+          }
+        }
+      }
+    },
+    "Try Again" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reintentar"
+          }
+        }
+      }
+    },
+    "Address" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Address"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dirección"
+          }
+        }
+      }
+    },
+    "Find it automatically" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find it automatically"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscarla automáticamente"
+          }
+        }
+      }
+    },
+    "API secret" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API secret"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secreto de la API"
+          }
+        }
+      }
+    },
+    "Source" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origen"
+          }
+        }
+      }
+    },
+    "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mientras este Mac no sigue a nadie, puede leer la glucosa del servidor web de Juggluco en la misma red (en Juggluco: Ajustes › Servidor web, con «Local only» desactivado). Solo http sin cifrar en tu red de casa: las lecturas viajan sin cifrar entre el móvil y este Mac."
+          }
+        }
+      }
+    },
+    "Faster than %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faster than %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más rápido que %@ %@"
+          }
+        }
+      }
+    },
+    "Ranges (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranges (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rangos (%@)"
+          }
+        }
+      }
+    },
+    "Remove the line at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the line at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar la línea de %@"
           }
         }
       }

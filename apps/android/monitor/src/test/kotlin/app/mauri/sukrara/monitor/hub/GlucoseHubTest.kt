@@ -165,19 +165,77 @@ class GlucoseHubTest {
         }
 
     @Test
-    fun `LO and HI readings are kept, malformed and far-future ones dropped`() =
+    fun `LO and HI readings are stored as the flags, malformed and far-future ones dropped`() =
         runTest {
             val hub = hub()
             val source = FakeSource()
             backgroundScope.launch { hub.attach(source) }
             runCurrent()
             val future = Reading(clock.now() + Duration.ofHours(1), 130, null, SourceId.Libre3)
-            source.emitted.emit(listOf(reading(0, agoMin = 3), reading(38, agoMin = 2), reading(450, agoMin = 1), future))
+            source.emitted.emit(
+                listOf(reading(0, agoMin = 5), reading(1200, agoMin = 4), reading(38, agoMin = 3), reading(450, agoMin = 2), future),
+            )
+            // Juggluco, the relay and Nearby pass raw numbers: the hub stores every LO / HI the same way, rate dropped
+            hub.ingest(listOf(reading(12, agoMin = 1), reading(401, agoMin = 0)), SourceId.Relay)
             runCurrent()
             assertEquals(
-                listOf(38, 450),
+                listOf(39 to null, 401 to null, 39 to null, 401 to null),
+                hub.state.value.recent
+                    .map { it.mgdl to it.rateMgdlPerMin },
+            )
+        }
+
+    @Test
+    fun `a reading from ahead of the phone's clock says the clock is behind until one as new is accepted`() =
+        runTest {
+            val hub = hub()
+            val source = FakeSource()
+            backgroundScope.launch { hub.attach(source) }
+            runCurrent()
+            assertNull(hub.state.value.clockBehind)
+            val ahead = Reading(clock.now() + Duration.ofMinutes(12), 130, null, SourceId.Libre3)
+            source.emitted.emit(listOf(reading(120, agoMin = 3), ahead))
+            runCurrent()
+            val behind = checkNotNull(hub.state.value.clockBehind) { "the clock should be behind" }
+            assertEquals(ahead.t, behind.readingAt)
+            assertEquals(Duration.ofMinutes(12), behind.ahead)
+            assertEquals(
+                listOf(120),
                 hub.state.value.recent
                     .map { it.mgdl },
+            ) // the future one is still dropped
+
+            // backfill older than the dropped reading says nothing about the clock
+            source.emitted.emit(listOf(reading(118, agoMin = 2)))
+            runCurrent()
+            assertNotNull(hub.state.value.clockBehind)
+
+            // the clock set right: the next reading is accepted and clears it
+            clock.advance(Duration.ofMinutes(13))
+            source.emitted.emit(listOf(reading(125)))
+            runCurrent()
+            assertNull(hub.state.value.clockBehind)
+            assertEquals(
+                125,
+                hub.state.value.latest
+                    ?.mgdl,
+            )
+        }
+
+    @Test
+    fun `a reading within the tolerance is accepted and never says the clock is behind`() =
+        runTest {
+            val hub = hub()
+            val source = FakeSource()
+            backgroundScope.launch { hub.attach(source) }
+            runCurrent()
+            source.emitted.emit(listOf(Reading(clock.now() + Duration.ofMinutes(4), 130, null, SourceId.Libre3)))
+            runCurrent()
+            assertNull(hub.state.value.clockBehind)
+            assertEquals(
+                130,
+                hub.state.value.latest
+                    ?.mgdl,
             )
         }
 
@@ -197,6 +255,62 @@ class GlucoseHubTest {
             hub.resetMonitoring()
             runCurrent()
             assertEquals(NotMonitoringReason.NoSensorYet, hub.state.value.notMonitoring)
+        }
+
+    /**
+     * #128: a follow that ended fences what is still on its way (a relay or Bluetooth reading), also across a restart (the
+     * fence is in the saved record); a join clears it, so its backfill arms no data.
+     */
+    @Test
+    fun `an ending's fence survives a restart and a join clears it`() =
+        runTest {
+            role.value = Role.Follower // the follow ended: its link is gone, so nothing "starts" a source again
+            val first = hub()
+            first.resetMonitoring(fence = true)
+            runCurrent()
+            assertNotNull(record.data.first().armAfterEpochMs)
+
+            val restarted = hub() // the process died: a new hub over the same record
+            val source = FakeSource()
+            backgroundScope.launch { restarted.attach(source) }
+            runCurrent()
+            source.emitted.emit(listOf(reading(118, agoMin = 2)))
+            runCurrent()
+            assertEquals(NotMonitoringReason.NoSensorYet, restarted.state.value.notMonitoring)
+
+            restarted.resetMonitoring(fence = false) // a join: its backfill is stamped before it
+            source.emitted.emit(listOf(reading(117, agoMin = 3)))
+            runCurrent()
+            assertNotNull(restarted.state.value.monitoringStartedAt)
+            assertNull(record.data.first().armAfterEpochMs)
+        }
+
+    @Test
+    fun `a reading of a forgotten sensor still on its way doesn't arm monitoring again, the next sensor's does`() =
+        runTest {
+            val hub = hub()
+            val source = FakeSource()
+            backgroundScope.launch { hub.attach(source) }
+            runCurrent()
+            source.emitted.emit(listOf(reading(120, agoMin = 1)))
+            runCurrent()
+            assertNotNull(hub.state.value.monitoringStartedAt)
+
+            hub.resetMonitoring(fence = true)
+            // queued in the source before it stopped: stamped before the reset
+            source.emitted.emit(listOf(reading(121, agoMin = 0)))
+            runCurrent()
+            assertEquals(NotMonitoringReason.NoSensorYet, hub.state.value.notMonitoring)
+            assertEquals(
+                121,
+                hub.state.value.latest
+                    ?.mgdl,
+            )
+
+            clock.advance(Duration.ofMinutes(1))
+            source.emitted.emit(listOf(reading(125, agoMin = 0)))
+            runCurrent()
+            assertEquals(clock.now(), hub.state.value.monitoringStartedAt)
         }
 
     @Test

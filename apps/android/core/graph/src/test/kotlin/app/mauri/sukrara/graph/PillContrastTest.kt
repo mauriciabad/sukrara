@@ -20,7 +20,9 @@ class PillContrastTest {
     private val kinds = listOf("rapid", "long", "carbs", "note")
 
     /** What the pill sits on: the card, and the app's light background `#F7F8FC` behind a transparent card. */
-    private fun grounds(dark: Boolean) = if (dark) listOf(GraphPalette.of(true).bg, 0xFF0B0C0E.toInt()) else listOf(GraphPalette.of(false).bg, 0xFFF7F8FC.toInt())
+    private fun grounds(
+        dark: Boolean,
+    ) = if (dark) listOf(GraphPalette.of(true).bg, 0xFF0B0C0E.toInt()) else listOf(GraphPalette.of(false).bg, 0xFFF7F8FC.toInt())
 
     private fun check(dark: Boolean) {
         val p = TreatmentMarks.palette(dark)
@@ -32,6 +34,20 @@ class PillContrastTest {
                 val tint = ColorUtils.compositeColors(TreatmentMarks.tonalTint(c, dark), ground)
                 val tonal = ColorUtils.calculateContrast(TreatmentMarks.tonalInk(k, dark), tint)
                 assertTrue("$k tonal pill on ${Integer.toHexString(ground)} (dark=$dark): $tonal", tonal >= 4.5)
+            }
+        }
+    }
+
+    /** The range word (#26) on its tint of every out-of-range colour, on the card and the app's background. */
+    @Test fun `range words reach 4_5 to 1`() {
+        for (dark in listOf(false, true)) {
+            val pal = GraphPalette.of(dark)
+            for (tint in listOf(pal.veryLow, pal.low, pal.high, pal.veryHigh, pal.extremelyHigh)) {
+                for (ground in grounds(dark)) {
+                    val bg = ColorUtils.compositeColors(RangeTag.background(tint, dark), ground)
+                    val ratio = ColorUtils.calculateContrast(RangeTag.ink(pal, null), bg)
+                    assertTrue("range tag ${Integer.toHexString(tint)} on ${Integer.toHexString(ground)}: $ratio", ratio >= 4.5)
+                }
             }
         }
     }

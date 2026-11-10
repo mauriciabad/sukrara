@@ -10,7 +10,9 @@ import androidx.datastore.core.Serializer
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.CorruptionLog
+import app.mauri.sukrara.core.data.StoreKind
 import app.mauri.sukrara.core.data.files.FileStore
+import app.mauri.sukrara.core.data.reasonOf
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.StateStore
 import kotlinx.coroutines.CoroutineScope
@@ -50,15 +52,17 @@ class TypedStore<T> internal constructor(
     /** Set when this store's file was found damaged in this process (the report the UI shows). */
     val corruption: StateFlow<CorruptFile?> = corrupted.asStateFlow()
 
-    private val store: DataStore<T> = DataStoreFactory.create(
-        serializer = JsonSerializer(serializer, initial, json),
-        corruptionHandler = ReplaceFileCorruptionHandler { error ->
-            quarantine(error)
-            whenCorrupt
-        },
-        scope = scope,
-        produceFile = { file },
-    )
+    private val store: DataStore<T> =
+        DataStoreFactory.create(
+            serializer = JsonSerializer(serializer, initial, json),
+            corruptionHandler =
+                ReplaceFileCorruptionHandler { error ->
+                    quarantine(error)
+                    whenCorrupt
+                },
+            scope = scope,
+            produceFile = { file },
+        )
 
     override val data: Flow<T> = store.data
 
@@ -71,7 +75,7 @@ class TypedStore<T> internal constructor(
         val aside = FileStore.quarantineTarget(file, now.toEpochMilli())
         // copy, not move: DataStore replaces the file itself right after this handler
         val kept = file.takeIf { it.exists() }?.copyTo(aside, overwrite = true)
-        val report = CorruptFile(store = file.name, quarantinedTo = kept, at = now, reason = error.message.orEmpty())
+        val report = CorruptFile(StoreKind.File, store = file.name, quarantinedTo = kept, at = now, reason = reasonOf(error))
         corrupted.value = report
         log.report(report)
     }

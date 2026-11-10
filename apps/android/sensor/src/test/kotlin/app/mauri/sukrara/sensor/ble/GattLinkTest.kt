@@ -24,6 +24,19 @@ class GattLinkTest {
 
     private class FakeConnection(val generation: Int, val log: MutableList<String>) : GattConnection {
         var closed = false
+        var bonded = false
+
+        override val isBonded get() = bonded
+
+        override fun read(characteristic: UUID): Boolean {
+            log += "read#$generation ${characteristic.toString().take(8)}"
+            return true
+        }
+
+        override fun bond(): Boolean {
+            log += "bond#$generation"
+            return true
+        }
 
         override fun discoverServices(): Boolean {
             log += "discover#$generation"
@@ -87,6 +100,14 @@ class GattLinkTest {
             calls += "notify ${value.size}"
         }
 
+        override fun onRead(characteristic: UUID, value: ByteArray) {
+            calls += "read ${value.size}"
+        }
+
+        override fun onBondChanged(bonded: Boolean) {
+            calls += "bonded $bonded"
+        }
+
         override fun onLinkFailed(why: String) {
             calls += "failed $why"
             link?.disconnect() // what Libre3Driver.fail does
@@ -130,177 +151,259 @@ class GattLinkTest {
     }
 
     @Test
-    fun operationsRunOneAtATime() = runTest {
-        val r = Rig(this)
-        r.driver.onConnectedAction = { it.subscribe(chA); it.write(chB, byteArrayOf(1)) }
-        r.link.start()
-        r.connectAndDiscover()
-        assertEquals(listOf("connect#1", "discover#1", "sub#1 00000001"), r.connector.take())
-        r.connector.emit(GattEvent.OperationDone(1, chA, 0))
-        runCurrent()
-        assertEquals(listOf("write#1 00000002"), r.connector.take())
-        r.scope.cancel()
-    }
-
-    @Test
-    fun anOperationThatNeverCompletesTimesOutAndANewConnectionIsMade() = runTest {
-        val r = Rig(this)
-        r.driver.onConnectedAction = { it.subscribe(chA) }
-        r.link.start()
-        r.connectAndDiscover()
-        r.connector.take()
-        advanceTimeBy(GattLink.OP_TIMEOUT_MS + 1)
-        assertTrue(r.driver.calls.any { it.startsWith("failed") && it.endsWith("timed out") })
-        assertEquals(listOf("close#1"), r.connector.take()) // closed at once, no waiting for a callback
-        assertEquals(LinkStatus.WaitingForSensor, r.statuses.all.last())
-        advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
-        assertEquals(listOf("connect#3"), r.connector.take()) // a NEW connection (never connect() on the stale one)
-        r.scope.cancel()
-    }
-
-    @Test
-    fun serviceDiscoveryTimesOut() = runTest {
-        val r = Rig(this)
-        r.link.start()
-        r.connector.emit(GattEvent.ConnectionChanged(1, connected = true, status = 0))
-        runCurrent()
-        advanceTimeBy(GattLink.OP_TIMEOUT_MS + 1)
-        assertEquals(listOf("connect#1", "discover#1", "close#1"), r.connector.take())
-        r.scope.cancel()
-    }
-
-    @Test
-    fun backoffDoublesAndResetsWhenTheSensorTalks() = runTest {
-        val r = Rig(this)
-        r.link.start()
-        runCurrent()
-        val waits = ArrayList<Long>()
-        repeat(4) {
-            val gen = r.connector.current.generation
-            r.connector.emit(GattEvent.ConnectionChanged(gen, connected = false, status = 133))
+    fun aReadCompletesWithItsValueAndTheQueueGoesOn() =
+        runTest {
+            val r = Rig(this)
+            r.driver.onConnectedAction = {
+                it.read(chA)
+                it.subscribe(chB)
+            }
+            r.link.start()
             runCurrent()
-            val before = currentTime
-            while (r.connector.connections.last().generation == gen) advanceTimeBy(100)
-            waits += currentTime - before
+            r.connectAndDiscover()
+            assertEquals(listOf("connect#1", "discover#1", "read#1 00000001"), r.connector.take())
+            r.connector.emit(GattEvent.OperationDone(1, chA, 0)) // not what is waiting: ignored
+            runCurrent()
+            assertTrue(r.connector.take().isEmpty())
+            r.connector.emit(GattEvent.Read(1, chA, byteArrayOf(1, 2, 3), 0))
+            runCurrent()
+            assertEquals(listOf("sub#1 00000002"), r.connector.take())
+            assertTrue("read 3" in r.driver.calls)
         }
-        assertEquals(listOf(1_000L, 2_000L, 4_000L, 8_000L), waits.map { (it + 99) / 1000 * 1000 })
-        r.connectAndDiscover()
-        r.connector.emit(GattEvent.Notification(r.connector.current.generation, chA, byteArrayOf(1)))
-        runCurrent()
-        val gen = r.connector.current.generation
-        r.connector.emit(GattEvent.ConnectionChanged(gen, connected = false, status = 8))
-        runCurrent()
-        advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
-        assertTrue(r.connector.current.generation > gen)
-        r.scope.cancel()
-    }
+
+    /** A bond waits for the person (the PIN) up to its own timeout, then counts as not bonded: no reconnect loop. */
+    @Test
+    fun aBondWaitsForThePersonThenFails() =
+        runTest {
+            val r = Rig(this)
+            r.driver.onConnectedAction = { it.bond() }
+            r.link.start()
+            runCurrent()
+            r.connectAndDiscover()
+            assertEquals(listOf("connect#1", "discover#1", "bond#1"), r.connector.take())
+            advanceTimeBy(GattLink.OP_TIMEOUT_MS * 2) // longer than an operation may take: still waiting
+            runCurrent()
+            assertTrue(r.driver.calls.none { it.startsWith("bonded") || it.startsWith("failed") })
+            advanceTimeBy(GattLink.BOND_TIMEOUT_MS)
+            runCurrent()
+            assertTrue("bonded false" in r.driver.calls)
+            assertTrue(r.connector.take().none { it.startsWith("connect") })
+        }
+
+    @Test
+    fun aBondSettlesFromTheStackAndAnExistingBondAtOnce() =
+        runTest {
+            val r = Rig(this)
+            r.driver.onConnectedAction = { it.bond() }
+            r.link.start()
+            runCurrent()
+            r.connectAndDiscover()
+            r.connector.emit(GattEvent.BondChanged(1, bonded = true))
+            runCurrent()
+            assertTrue("bonded true" in r.driver.calls)
+
+            val s = Rig(this)
+            s.driver.onConnectedAction = { it.bond() }
+            s.link.start()
+            runCurrent()
+            s.connector.current.bonded = true
+            s.connectAndDiscover()
+            assertTrue("bonded true" in s.driver.calls)
+            assertTrue(s.connector.take().none { it.startsWith("bond#") })
+        }
+
+    @Test
+    fun operationsRunOneAtATime() =
+        runTest {
+            val r = Rig(this)
+            r.driver.onConnectedAction = {
+                it.subscribe(chA)
+                it.write(chB, byteArrayOf(1))
+            }
+            r.link.start()
+            r.connectAndDiscover()
+            assertEquals(listOf("connect#1", "discover#1", "sub#1 00000001"), r.connector.take())
+            r.connector.emit(GattEvent.OperationDone(1, chA, 0))
+            runCurrent()
+            assertEquals(listOf("write#1 00000002"), r.connector.take())
+            r.scope.cancel()
+        }
+
+    @Test
+    fun anOperationThatNeverCompletesTimesOutAndANewConnectionIsMade() =
+        runTest {
+            val r = Rig(this)
+            r.driver.onConnectedAction = { it.subscribe(chA) }
+            r.link.start()
+            r.connectAndDiscover()
+            r.connector.take()
+            advanceTimeBy(GattLink.OP_TIMEOUT_MS + 1)
+            assertTrue(r.driver.calls.any { it.startsWith("failed") && it.endsWith("timed out") })
+            assertEquals(listOf("close#1"), r.connector.take()) // closed at once, no waiting for a callback
+            assertEquals(LinkStatus.WaitingForSensor, r.statuses.all.last())
+            advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
+            assertEquals(listOf("connect#3"), r.connector.take()) // a NEW connection (never connect() on the stale one)
+            r.scope.cancel()
+        }
+
+    @Test
+    fun serviceDiscoveryTimesOut() =
+        runTest {
+            val r = Rig(this)
+            r.link.start()
+            r.connector.emit(GattEvent.ConnectionChanged(1, connected = true, status = 0))
+            runCurrent()
+            advanceTimeBy(GattLink.OP_TIMEOUT_MS + 1)
+            assertEquals(listOf("connect#1", "discover#1", "close#1"), r.connector.take())
+            r.scope.cancel()
+        }
+
+    @Test
+    fun backoffDoublesAndResetsWhenTheSensorTalks() =
+        runTest {
+            val r = Rig(this)
+            r.link.start()
+            runCurrent()
+            val waits = ArrayList<Long>()
+            repeat(4) {
+                val gen = r.connector.current.generation
+                r.connector.emit(GattEvent.ConnectionChanged(gen, connected = false, status = 133))
+                runCurrent()
+                val before = currentTime
+                while (r.connector.connections
+                        .last()
+                        .generation == gen
+                ) {
+                    advanceTimeBy(100)
+                }
+                waits += currentTime - before
+            }
+            assertEquals(listOf(1_000L, 2_000L, 4_000L, 8_000L), waits.map { (it + 99) / 1000 * 1000 })
+            r.connectAndDiscover()
+            r.connector.emit(GattEvent.Notification(r.connector.current.generation, chA, byteArrayOf(1)))
+            runCurrent()
+            val gen = r.connector.current.generation
+            r.connector.emit(GattEvent.ConnectionChanged(gen, connected = false, status = 8))
+            runCurrent()
+            advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
+            assertTrue(r.connector.current.generation > gen)
+            r.scope.cancel()
+        }
 
     /** Bluetooth on is the source's job: it starts a new link + driver (SourceManagerTest.bluetoothOffAndBackOn). */
     @Test
-    fun bluetoothOffClosesWithoutRetries() = runTest {
-        val r = Rig(this)
-        r.link.start()
-        r.connectAndDiscover()
-        r.connector.take()
-        r.connector.isBluetoothOn = false
-        r.link.bluetoothOff()
-        assertEquals(listOf("close#1"), r.connector.take())
-        assertEquals(LinkStatus.WaitingForBluetooth, r.statuses.all.last())
-        assertEquals("disconnected", r.driver.calls.last())
-        advanceTimeBy(5 * 60_000L)
-        assertEquals(emptyList<String>(), r.connector.take()) // no retries while off
-        r.scope.cancel()
-    }
+    fun bluetoothOffClosesWithoutRetries() =
+        runTest {
+            val r = Rig(this)
+            r.link.start()
+            r.connectAndDiscover()
+            r.connector.take()
+            r.connector.isBluetoothOn = false
+            r.link.bluetoothOff()
+            assertEquals(listOf("close#1"), r.connector.take())
+            assertEquals(LinkStatus.WaitingForBluetooth, r.statuses.all.last())
+            assertEquals("disconnected", r.driver.calls.last())
+            advanceTimeBy(5 * 60_000L)
+            assertEquals(emptyList<String>(), r.connector.take()) // no retries while off
+            r.scope.cancel()
+        }
 
     @Test
-    fun bluetoothOffCancelsAPendingReconnect() = runTest {
-        val r = Rig(this)
-        r.link.start()
-        r.connectAndDiscover()
-        r.link.disconnect() // a reconnect is now armed
-        r.connector.take()
-        r.link.bluetoothOff()
-        advanceTimeBy(5 * 60_000L)
-        assertEquals(emptyList<String>(), r.connector.take())
-        r.scope.cancel()
-    }
+    fun bluetoothOffCancelsAPendingReconnect() =
+        runTest {
+            val r = Rig(this)
+            r.link.start()
+            r.connectAndDiscover()
+            r.link.disconnect() // a reconnect is now armed
+            r.connector.take()
+            r.link.bluetoothOff()
+            advanceTimeBy(5 * 60_000L)
+            assertEquals(emptyList<String>(), r.connector.take())
+            r.scope.cancel()
+        }
 
     @Test
-    fun bluetoothAlreadyOffAtStartWaits() = runTest {
-        val r = Rig(this)
-        r.connector.isBluetoothOn = false
-        r.link.start()
-        advanceTimeBy(5 * 60_000L)
-        assertEquals(emptyList<String>(), r.connector.take())
-        assertEquals(LinkStatus.WaitingForBluetooth, r.statuses.all.last())
-        r.scope.cancel()
-    }
+    fun bluetoothAlreadyOffAtStartWaits() =
+        runTest {
+            val r = Rig(this)
+            r.connector.isBluetoothOn = false
+            r.link.start()
+            advanceTimeBy(5 * 60_000L)
+            assertEquals(emptyList<String>(), r.connector.take())
+            assertEquals(LinkStatus.WaitingForBluetooth, r.statuses.all.last())
+            r.scope.cancel()
+        }
 
     /** The stack throwing (adapter gone, Bluetooth turning off mid-call) is a dropped link, never a crash. */
     @Test
-    fun aFailingStackRetriesWithBackoff() = runTest {
-        val r = Rig(this)
-        r.connector.stackFails = 2
-        r.link.start()
-        assertEquals(LinkStatus.WaitingForSensor, r.statuses.all.last())
-        advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
-        assertEquals(emptyList<String>(), r.connector.take()) // second failure
-        advanceTimeBy(2 * GattLink.FIRST_BACKOFF_MS + 1)
-        assertEquals(listOf("connect#3"), r.connector.take())
-        r.scope.cancel()
-    }
+    fun aFailingStackRetriesWithBackoff() =
+        runTest {
+            val r = Rig(this)
+            r.connector.stackFails = 2
+            r.link.start()
+            assertEquals(LinkStatus.WaitingForSensor, r.statuses.all.last())
+            advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
+            assertEquals(emptyList<String>(), r.connector.take()) // second failure
+            advanceTimeBy(2 * GattLink.FIRST_BACKOFF_MS + 1)
+            assertEquals(listOf("connect#3"), r.connector.take())
+            r.scope.cancel()
+        }
 
     @Test
-    fun lateCallbacksOfAClosedConnectionAreIgnored() = runTest {
-        val r = Rig(this)
-        r.link.start()
-        r.connectAndDiscover()
-        val old = r.connector.callbacks.last()
-        r.link.disconnect()
-        advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
-        r.driver.calls.clear()
-        old(GattEvent.Notification(1, chA, byteArrayOf(1, 2, 3)))
-        old(GattEvent.ServicesDiscovered(1, 0, setOf(chA)))
-        runCurrent()
-        assertEquals(emptyList<String>(), r.driver.calls)
-        r.scope.cancel()
-    }
+    fun lateCallbacksOfAClosedConnectionAreIgnored() =
+        runTest {
+            val r = Rig(this)
+            r.link.start()
+            r.connectAndDiscover()
+            val old = r.connector.callbacks.last()
+            r.link.disconnect()
+            advanceTimeBy(GattLink.FIRST_BACKOFF_MS + 1)
+            r.driver.calls.clear()
+            old(GattEvent.Notification(1, chA, byteArrayOf(1, 2, 3)))
+            old(GattEvent.ServicesDiscovered(1, 0, setOf(chA)))
+            runCurrent()
+            assertEquals(emptyList<String>(), r.driver.calls)
+            r.scope.cancel()
+        }
 
     @Test
-    fun aRevokedPermissionStopsTheLinkWithAState() = runTest {
-        val r = Rig(this)
-        r.connector.permissionRevoked = true
-        r.link.start()
-        assertEquals(LinkStatus.PermissionMissing, r.statuses.all.last())
-        advanceTimeBy(5 * 60_000L)
-        assertEquals(emptyList<String>(), r.connector.take())
-        r.scope.cancel()
-    }
+    fun aRevokedPermissionStopsTheLinkWithAState() =
+        runTest {
+            val r = Rig(this)
+            r.connector.permissionRevoked = true
+            r.link.start()
+            assertEquals(LinkStatus.PermissionMissing, r.statuses.all.last())
+            advanceTimeBy(5 * 60_000L)
+            assertEquals(emptyList<String>(), r.connector.take())
+            r.scope.cancel()
+        }
 
     @Test
-    fun closeStopsEverything() = runTest {
-        val r = Rig(this)
-        var fired = false
-        r.link.start()
-        r.connectAndDiscover()
-        r.link.schedule(1_000) { fired = true }
-        r.link.close()
-        assertEquals("closed", r.driver.calls.last())
-        advanceTimeBy(10 * 60_000L)
-        assertEquals(false, fired)
-        assertEquals(listOf("connect#1", "discover#1", "close#1"), r.connector.take())
-        r.scope.cancel()
-    }
+    fun closeStopsEverything() =
+        runTest {
+            val r = Rig(this)
+            var fired = false
+            r.link.start()
+            r.connectAndDiscover()
+            r.link.schedule(1_000) { fired = true }
+            r.link.close()
+            assertEquals("closed", r.driver.calls.last())
+            advanceTimeBy(10 * 60_000L)
+            assertEquals(false, fired)
+            assertEquals(listOf("connect#1", "discover#1", "close#1"), r.connector.take())
+            r.scope.cancel()
+        }
 
     @Test
-    fun aFailedOperationStatusTellsTheDriver() = runTest {
-        val r = Rig(this)
-        r.driver.onConnectedAction = { it.subscribe(chA) }
-        r.link.start()
-        r.connectAndDiscover()
-        r.connector.emit(GattEvent.OperationDone(1, chA, 133))
-        runCurrent()
-        assertTrue(r.driver.calls.any { it.startsWith("failed operation on") && it.endsWith("133") })
-        r.scope.cancel()
-    }
+    fun aFailedOperationStatusTellsTheDriver() =
+        runTest {
+            val r = Rig(this)
+            r.driver.onConnectedAction = { it.subscribe(chA) }
+            r.link.start()
+            r.connectAndDiscover()
+            r.connector.emit(GattEvent.OperationDone(1, chA, 133))
+            runCurrent()
+            assertTrue(r.driver.calls.any { it.startsWith("failed operation on") && it.endsWith("133") })
+            r.scope.cancel()
+        }
 }

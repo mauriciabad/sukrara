@@ -48,7 +48,8 @@
             func scene(
                 link: LinkState = .following(wearer: "Marta", canWrite: true), readings: [Reading],
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
-                mode: LaunchMode = .normal, focus: Bool = false, act: (AlertController) -> Void = { _ in }
+                mode: LaunchMode = .normal, timeSensitive: TimeSensitive = .on, scroll: ChartScroll = ChartScroll(),
+                keychainUnreadable: Bool = false, act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
                 own.source = .own
@@ -64,30 +65,67 @@
                 var snapshot = FollowerSnapshot.empty
                 snapshot.link = link
                 snapshot.readings = readings
+                snapshot.keychainUnreadable = keychainUnreadable
                 let start = Int(now.timeIntervalSince1970) - 6 * 86400
                 snapshot.sensor = WearerSensor(start: start, end: start + 14 * 86400, warmupEnd: start + 3600)
                 model.apply(snapshot)
                 act(controller)
                 controller.refreshUI()
                 model.notificationPermission = permission
-                model.focusCanHoldAlerts = focus
-                let setupModel = SetupModel(store: store, follow: FollowModel(status: .notFollowing, actions: nil))
+                model.timeSensitive = timeSensitive
+                let setupModel = SetupModel(
+                    settings: SettingsModel(
+                        store: store, follow: FollowModel(status: .notFollowing, actions: nil), version: "0.12.0"))
                 setupModel.flow = setup
                 let treatments = TreatmentsModel(rows: [], canWrite: false, actions: nil)
                 treatments.isFollowing = link.isFollowing
                 if case .following(_, true) = link { treatments.canWrite = true }
                 let links = PanelLinks(
-                    setup: setupModel, treatments: treatments, openSetup: {}, openFollow: {}, openAddTreatment: {},
-                    openTreatments: {}, openSettings: {})
+                    setup: setupModel, treatments: treatments, openSetup: {}, openFollow: {},
+                    openAddTreatment: { _ in },
+                    openTreatments: {}, openReport: {}, openSettings: {}, openSettingsPane: { _ in })
                 return Scene(
                     view: AnyView(
                         VStack(alignment: .leading, spacing: 8) {
                             MenubarStrip(title: model.menubarTitle)
-                            PanelView(model: model, links: links)
+                            PanelView(model: model, links: links, scroll: scroll)
                         }))
             }
 
+            // the title alone, as a following Mac draws it for a reading (#8: its inks on every kind of bar)
+            func title(_ readings: [Reading]) -> MenubarTitle {
+                let controller = AlertController(
+                    settings: AlertSettings(), clock: SystemClock(), store: MemoryAlertState(),
+                    notifier: SilentNotifier(),
+                    wake: NoWake())
+                let plan = LaunchPlan(
+                    mode: .normal, services: .all,
+                    data: .isolated(root: FileManager.default.temporaryDirectory.appending(path: suite)))
+                let model = AppModel(plan: plan, alerts: controller)
+                var snapshot = FollowerSnapshot.empty
+                snapshot.link = .following(wearer: "Marta", canWrite: true)
+                snapshot.readings = readings
+                model.apply(snapshot)
+                controller.refreshUI()
+                return model.menubarTitle
+            }
+            let titles = [
+                ending(112, rate: -0.4), ending(62, rate: -1.6), ending(246, rate: 1.2),
+                ending(131, rate: 0, age: 12 * 60),
+            ].map(title)
+            let inks = Scene(
+                view: AnyView(
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(MenubarStrip.Ground.allCases, id: \.self) { ground in
+                            HStack(spacing: 0) {
+                                ForEach(titles.indices, id: \.self) { MenubarStrip(title: titles[$0], ground: ground) }
+                            }
+                        }
+                    }))
+
             return [
+                // in range, low, high and stale on the bar, over a wallpaper and with Reduce Transparency
+                ("menubar-inks", inks),
                 ("panel-following", scene(readings: ending(112, rate: -0.4))),
                 ("panel-low", scene(readings: ending(62, rate: -1.6))),
                 ("panel-high", scene(readings: ending(246, rate: 1.2))),
@@ -106,6 +144,20 @@
                 ("panel-waiting-first-reading", scene(readings: [])),
                 ("panel-not-following", scene(link: .notFollowing, readings: [])),
                 ("panel-revoked", scene(link: .revoked, readings: [])),
+                // the no-data reasons with their ways out (#72)
+                (
+                    "panel-waiting-approval",
+                    scene(link: .requested(code: "4821", wearer: "Marta", pairing: nil), readings: [])
+                ),
+                ("panel-declined", scene(link: .declined, readings: [])),
+                ("panel-broken", scene(link: .broken(.stateDamaged), readings: [])),
+                ("panel-wearer-silent", scene(readings: ending(131, rate: 0, age: 45 * 60))),
+                (
+                    "panel-keychain-retrying",
+                    scene(
+                        link: .broken(.keyUnreadable),
+                        readings: ending(112, rate: -0.4), keychainUnreadable: true)
+                ),
                 (
                     "panel-finish-setup",
                     scene(
@@ -113,24 +165,47 @@
                         setup: SetupFlow(states: [.welcome: .done, .follow: .skipped, .alerts: .done]))
                 ),
                 ("panel-notifications-off", scene(readings: ending(105, rate: 0), permission: .denied)),
-                ("panel-focus-can-hold", scene(readings: ending(105, rate: 0), focus: true)),
+                ("panel-focus-can-hold", scene(readings: ending(105, rate: 0), timeSensitive: .unavailable)),
+                ("panel-time-sensitive-off", scene(readings: ending(105, rate: 0), timeSensitive: .turnedOff)),
                 ("panel-fixture", scene(readings: ending(112, rate: -0.4), mode: .fixture)),
+                (
+                    "panel-chart-scrolled",
+                    scene(
+                        readings: ending(112, rate: -0.4),
+                        scroll: ChartScroll(end: now.timeIntervalSince1970 - 8 * 3600, span: 4 * 3600))
+                ),
             ]
         }
     }
 
-    /// The status item's title as the menu bar draws it (the same attributed string and bell), on a bar-like strip.
+    /// The status item's title as the menu bar draws it (the same attributed string and bell), on a bar-like strip:
+    /// the bar's material, the material over a colourful wallpaper, or a solid bar (Reduce Transparency).
     private struct MenubarStrip: View {
+        enum Ground: CaseIterable { case bar, wallpaper, solid }
         let title: MenubarTitle
+        var ground = Ground.bar
 
         var body: some View {
-            HStack(spacing: 4) {
+            HStack(spacing: 3) {
                 Text(AttributedString(StatusItemController.attributed(title)))
-                if title.muted { Image(systemName: "bell.slash") }
+                if let image = StatusItemController.image(title) {
+                    Image(nsImage: image).renderingMode(image.isTemplate ? .template : .original)
+                }
             }
             .padding(.horizontal, 10)
             .frame(height: 24)
-            .background(.bar)
+            .background {
+                switch ground {
+                case .bar: Rectangle().fill(.bar)
+                case .wallpaper:
+                    ZStack {
+                        LinearGradient(
+                            colors: [.indigo, .orange, .teal, .pink], startPoint: .leading, endPoint: .trailing)
+                        Rectangle().fill(.bar)
+                    }
+                case .solid: Color(nsColor: .windowBackgroundColor)
+                }
+            }
             .accessibilityLabel(title.accessibilityLabel)
         }
     }
@@ -142,10 +217,13 @@
     }
 
     private struct SilentNotifier: AlertNotifying {
-        func post(_ firing: AlertFiring, sound: Bool, category: String) {}
+        func post(_ firing: AlertFiring, sound: Bool, category: String, escalated: Bool) {}
         func clear(_ group: AlertGroup) {}
         func postMuted(_ side: AlertSide, until: Date) {}
         func removeMuted(_ side: AlertSide) {}
+        func postTest(_ kind: AlertKind) {}
+        func log(_ line: String) {}
+        func monitoringStopped(_ reason: String?) {}
     }
 
     private struct NoWake: WakeScheduling {

@@ -1,0 +1,120 @@
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+package app.mauri.sukrara.monitor.alerts
+
+import app.mauri.sukrara.monitor.R
+
+/**
+ * Every alert sound file (contracts/alerts/sounds/android/raw) by the name [AlertSoundPicker] picks: `<pack>_<kind>_<n>`
+ * and [AlertSoundPicker.SILENCE]. Direct `R.raw` references, never a look-up by name (#44): the compiler checks every
+ * file exists, R8 keeps exactly these, and a name outside the packs can't open any other resource. `AlertSoundFilesTest`
+ * checks the table against the contract's files and every name the picker can return.
+ */
+object AlertSoundFiles {
+    /** The raw resource of [name], or null (not a sound: the caller falls back to the system sound). */
+    fun of(name: String): Int? = BY_NAME[name]
+
+    val names: Set<String> get() = BY_NAME.keys
+
+    private val BY_NAME: Map<String, Int> =
+        mapOf(
+            "arcade_very_low_1" to R.raw.arcade_very_low_1,
+            "arcade_very_low_2" to R.raw.arcade_very_low_2,
+            "arcade_very_low_3" to R.raw.arcade_very_low_3,
+            "arcade_low_1" to R.raw.arcade_low_1,
+            "arcade_low_2" to R.raw.arcade_low_2,
+            "arcade_low_3" to R.raw.arcade_low_3,
+            "arcade_high_1" to R.raw.arcade_high_1,
+            "arcade_high_2" to R.raw.arcade_high_2,
+            "arcade_high_3" to R.raw.arcade_high_3,
+            "arcade_very_high_1" to R.raw.arcade_very_high_1,
+            "arcade_very_high_2" to R.raw.arcade_very_high_2,
+            "arcade_very_high_3" to R.raw.arcade_very_high_3,
+            "arcade_extremely_high_1" to R.raw.arcade_extremely_high_1,
+            "arcade_extremely_high_2" to R.raw.arcade_extremely_high_2,
+            "arcade_extremely_high_3" to R.raw.arcade_extremely_high_3,
+            "arcade_falling_fast_1" to R.raw.arcade_falling_fast_1,
+            "arcade_falling_fast_2" to R.raw.arcade_falling_fast_2,
+            "arcade_falling_fast_3" to R.raw.arcade_falling_fast_3,
+            "arcade_rising_fast_1" to R.raw.arcade_rising_fast_1,
+            "arcade_rising_fast_2" to R.raw.arcade_rising_fast_2,
+            "arcade_rising_fast_3" to R.raw.arcade_rising_fast_3,
+            "arcade_no_data_1" to R.raw.arcade_no_data_1,
+            "arcade_no_data_2" to R.raw.arcade_no_data_2,
+            "arcade_no_data_3" to R.raw.arcade_no_data_3,
+            "kart_very_low_1" to R.raw.kart_very_low_1,
+            "kart_very_low_2" to R.raw.kart_very_low_2,
+            "kart_very_low_3" to R.raw.kart_very_low_3,
+            "kart_low_1" to R.raw.kart_low_1,
+            "kart_low_2" to R.raw.kart_low_2,
+            "kart_low_3" to R.raw.kart_low_3,
+            "kart_high_1" to R.raw.kart_high_1,
+            "kart_high_2" to R.raw.kart_high_2,
+            "kart_high_3" to R.raw.kart_high_3,
+            "kart_very_high_1" to R.raw.kart_very_high_1,
+            "kart_very_high_2" to R.raw.kart_very_high_2,
+            "kart_very_high_3" to R.raw.kart_very_high_3,
+            "kart_extremely_high_1" to R.raw.kart_extremely_high_1,
+            "kart_extremely_high_2" to R.raw.kart_extremely_high_2,
+            "kart_extremely_high_3" to R.raw.kart_extremely_high_3,
+            "kart_falling_fast_1" to R.raw.kart_falling_fast_1,
+            "kart_falling_fast_2" to R.raw.kart_falling_fast_2,
+            "kart_falling_fast_3" to R.raw.kart_falling_fast_3,
+            "kart_rising_fast_1" to R.raw.kart_rising_fast_1,
+            "kart_rising_fast_2" to R.raw.kart_rising_fast_2,
+            "kart_rising_fast_3" to R.raw.kart_rising_fast_3,
+            "kart_no_data_1" to R.raw.kart_no_data_1,
+            "kart_no_data_2" to R.raw.kart_no_data_2,
+            "kart_no_data_3" to R.raw.kart_no_data_3,
+            "quest_very_low_1" to R.raw.quest_very_low_1,
+            "quest_very_low_2" to R.raw.quest_very_low_2,
+            "quest_very_low_3" to R.raw.quest_very_low_3,
+            "quest_low_1" to R.raw.quest_low_1,
+            "quest_low_2" to R.raw.quest_low_2,
+            "quest_low_3" to R.raw.quest_low_3,
+            "quest_high_1" to R.raw.quest_high_1,
+            "quest_high_2" to R.raw.quest_high_2,
+            "quest_high_3" to R.raw.quest_high_3,
+            "quest_very_high_1" to R.raw.quest_very_high_1,
+            "quest_very_high_2" to R.raw.quest_very_high_2,
+            "quest_very_high_3" to R.raw.quest_very_high_3,
+            "quest_extremely_high_1" to R.raw.quest_extremely_high_1,
+            "quest_extremely_high_2" to R.raw.quest_extremely_high_2,
+            "quest_extremely_high_3" to R.raw.quest_extremely_high_3,
+            "quest_falling_fast_1" to R.raw.quest_falling_fast_1,
+            "quest_falling_fast_2" to R.raw.quest_falling_fast_2,
+            "quest_falling_fast_3" to R.raw.quest_falling_fast_3,
+            "quest_rising_fast_1" to R.raw.quest_rising_fast_1,
+            "quest_rising_fast_2" to R.raw.quest_rising_fast_2,
+            "quest_rising_fast_3" to R.raw.quest_rising_fast_3,
+            "quest_no_data_1" to R.raw.quest_no_data_1,
+            "quest_no_data_2" to R.raw.quest_no_data_2,
+            "quest_no_data_3" to R.raw.quest_no_data_3,
+            "soft_very_low_1" to R.raw.soft_very_low_1,
+            "soft_very_low_2" to R.raw.soft_very_low_2,
+            "soft_very_low_3" to R.raw.soft_very_low_3,
+            "soft_low_1" to R.raw.soft_low_1,
+            "soft_low_2" to R.raw.soft_low_2,
+            "soft_low_3" to R.raw.soft_low_3,
+            "soft_high_1" to R.raw.soft_high_1,
+            "soft_high_2" to R.raw.soft_high_2,
+            "soft_high_3" to R.raw.soft_high_3,
+            "soft_very_high_1" to R.raw.soft_very_high_1,
+            "soft_very_high_2" to R.raw.soft_very_high_2,
+            "soft_very_high_3" to R.raw.soft_very_high_3,
+            "soft_extremely_high_1" to R.raw.soft_extremely_high_1,
+            "soft_extremely_high_2" to R.raw.soft_extremely_high_2,
+            "soft_extremely_high_3" to R.raw.soft_extremely_high_3,
+            "soft_falling_fast_1" to R.raw.soft_falling_fast_1,
+            "soft_falling_fast_2" to R.raw.soft_falling_fast_2,
+            "soft_falling_fast_3" to R.raw.soft_falling_fast_3,
+            "soft_rising_fast_1" to R.raw.soft_rising_fast_1,
+            "soft_rising_fast_2" to R.raw.soft_rising_fast_2,
+            "soft_rising_fast_3" to R.raw.soft_rising_fast_3,
+            "soft_no_data_1" to R.raw.soft_no_data_1,
+            "soft_no_data_2" to R.raw.soft_no_data_2,
+            "soft_no_data_3" to R.raw.soft_no_data_3,
+            "silence" to R.raw.silence,
+        )
+}

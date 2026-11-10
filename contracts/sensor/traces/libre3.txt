@@ -1,0 +1,25 @@
+# FreeStyle Libre 3 one-minute glucose packets, decrypted (29 bytes): u16 lifeCount, u16 capped reading word,
+# i16 rate (0.01 mg/dL/min, 0x8000 none), u16 ESA, u16 projected, u16 historic lifeCount, u16 historic, u8 trend /
+# status bits, u16 uncapped, u16 uncapped historic, u16 temperature, 8 bytes fast data (all little-endian).
+# Origin: built from the layout and constants in DiaBLE DiaBLE/Libre3.swift parseOneMinuteReading (MIT: value in
+# bits 0-12, result range in bits 13-14, data-quality error bit 15, LIBRE3_DQERROR_*) and Juggluco
+# Common/src/main/cpp/libre3/bluetooth.cpp (GPL-3: struct oneminute, the below-range 8231). No recorded LO / HI
+# packet is published; the flags await one from a real sensor (#132).
+# Below range, flagged: the capped word 0x2027 is Juggluco's 8231 (below-range bit + 39); uncapped 35.
+lo b80b2720008000000000a90b2a0000230000008c0a0000000000000000
+# Below range without the flag: capped 39 and uncapped 35 both below 40 (the value rule).
+lo-unflagged b90b2700008000000000a90b2a0000230000008c0a0000000000000000
+# Above range, flagged (DiaBLE's HI = 0x4000) with a capped 401; uncapped 450 (kept for LibreView).
+hi ba0b9141fa0000000000ae0b8b0100c20100008c0a0000000000000000
+# Above range, flagged; the uncapped 550 is past the sensor's 501, so the capped 401 is what LibreView gets.
+hi-over bb0b9141fa0000000000ae0b8b0100260200008c0a0000000000000000
+# Above range without the flag: capped 400, uncapped 450 (> 400 → HI, the number kept for LibreView).
+hi-unflagged bc0b9001fa0000000000ae0b8b0100c20100008c0a0000000000000000
+# Data-quality errors (DiaBLE LIBRE3_DQERROR_*): too hot 0xA000, too cold 0xC000, plain 0x8000; the numbers look fine.
+too-hot bd0b78a0000000000000ae0b760000780000008c0a0000000000000000
+too-cold be0b78c0000000000000ae0b760000780000008c0a0000000000000000
+dq-low bf0b2780008000000000ae0b2a0000230000008c0a0000000000000000
+# A below-range flag on 120 mg/dL contradicts the number: no value, never a LO.
+flag-contradicts c00b7820000000000000ae0b760000780000008c0a0000000000000000
+# The no-range code (both range bits): no value.
+no-range c10b7860000000000000ae0b760000780000008c0a0000000000000000

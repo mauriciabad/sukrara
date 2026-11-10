@@ -13,23 +13,40 @@ import app.mauri.sukrara.feature.sensor.newsensor.NewSensorEvent.TagFound
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorEvent.Tapped
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorEvent.Tick
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorEvent.UseJuggluco
+import app.mauri.sukrara.sensor.SensorProfile
+import app.mauri.sukrara.sensor.ble.FailReason
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.pairing.PairOutcome
 import app.mauri.sukrara.sensor.source.SensorStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Duration
 import java.time.Instant
 
 class NewSensorMachineTest {
     private val t0: Instant = Instant.parse("2026-10-27T08:00:00Z")
-    private val ok = SensorEnv(
-        coreAvailable = true, nfcAvailable = true, nfcOn = true, signedIn = true,
-        officialAppInstalled = false, bluetoothPermission = true, bluetoothOn = true, notificationsAllowed = true,
-    )
+    private val ok =
+        SensorEnv(
+            coreAvailable = true,
+            nfcAvailable = true,
+            nfcOn = true,
+            signedIn = true,
+            officialAppInstalled = false,
+            bluetoothPermission = true,
+            bluetoothOn = true,
+            notificationsAllowed = true,
+        )
 
-    private fun run(vararg events: NewSensorEvent, from: NewSensorState = NewSensorState(), now: Instant = t0) =
+    private fun run(
+        vararg events: NewSensorEvent,
+        from: NewSensorState =
+            NewSensorState(
+                profile = SensorProfile.Libre3,
+            ),
+        now: Instant = t0,
+    ) =
         events.fold(from) { s, e -> NewSensorMachine.reduce(s, e, now) }
 
     private fun step(vararg events: NewSensorEvent, now: Instant = t0) = run(*events, now = now).step
@@ -37,22 +54,23 @@ class NewSensorMachineTest {
     private val paired = arrayOf(Start(ok), TagFound, Tapped(PairOutcome.Paired("ABC", activated = true)))
 
     private fun live(serial: String, link: LinkStatus, state: SensorState = SensorState.Active(null)) =
-        Source(SensorStatus.Libre3(serial, link), state)
+        Source(SensorStatus.Direct(SensorProfile.Libre3, serial, serial, link), state)
 
     @Test fun `all gates open goes straight to the tap`() =
         assertEquals(NewSensorStep.WaitingForTap, step(Start(ok)))
 
     @Test fun `gates come in order and each blocks before the next`() {
-        val cases = listOf(
-            ok.copy(coreAvailable = false, nfcAvailable = false, signedIn = false) to NewSensorStep.CoreMissing,
-            ok.copy(nfcAvailable = false, signedIn = false) to NewSensorStep.NoNfc,
-            ok.copy(nfcOn = false, signedIn = false) to NewSensorStep.NfcOff,
-            ok.copy(signedIn = false, officialAppInstalled = true) to NewSensorStep.NeedsLibreViewSignIn,
-            ok.copy(officialAppInstalled = true, bluetoothPermission = false) to NewSensorStep.OfficialAppWarning,
-            ok.copy(bluetoothPermission = false, bluetoothOn = false) to NewSensorStep.NeedsBluetoothPermission,
-            ok.copy(bluetoothOn = false, notificationsAllowed = false) to NewSensorStep.BluetoothOff,
-            ok.copy(notificationsAllowed = false) to NewSensorStep.NeedsNotifications,
-        )
+        val cases =
+            listOf(
+                ok.copy(coreAvailable = false, nfcAvailable = false, signedIn = false) to NewSensorStep.CoreMissing,
+                ok.copy(nfcAvailable = false, signedIn = false) to NewSensorStep.NoNfc,
+                ok.copy(nfcOn = false, signedIn = false) to NewSensorStep.NfcOff,
+                ok.copy(signedIn = false, officialAppInstalled = true) to NewSensorStep.NeedsLibreViewSignIn,
+                ok.copy(officialAppInstalled = true, bluetoothPermission = false) to NewSensorStep.OfficialAppWarning,
+                ok.copy(bluetoothPermission = false, bluetoothOn = false) to NewSensorStep.NeedsBluetoothPermission,
+                ok.copy(bluetoothOn = false, notificationsAllowed = false) to NewSensorStep.BluetoothOff,
+                ok.copy(notificationsAllowed = false) to NewSensorStep.NeedsNotifications,
+            )
         cases.forEach { (env, expected) -> assertEquals(env.toString(), expected, step(Start(env))) }
     }
 
@@ -86,14 +104,16 @@ class NewSensorMachineTest {
         assertEquals(NewSensorStep.WaitingForTap, step(Start(ok.copy(notificationsAllowed = false)), Continue))
 
     @Test fun `tap outcomes map to their steps`() {
-        val cases = mapOf(
-            PairOutcome.OwnedByAnotherApp("ABC") to NewSensorStep.TakeoverFailed,
-            PairOutcome.Ended("ABC") to NewSensorStep.NfcFailed(NfcFailure.SensorEnded),
-            PairOutcome.Libre2Unsupported to NewSensorStep.NfcFailed(NfcFailure.NotLibre3),
-            PairOutcome.Unsupported("lingo") to NewSensorStep.NfcFailed(NfcFailure.NotLibre3),
-            PairOutcome.Failed("tag lost") to NewSensorStep.NfcFailed(NfcFailure.MovedTooSoon),
-            PairOutcome.Paired("ABC", activated = false) to NewSensorStep.ConnectingBle("ABC", t0, activated = false),
-        )
+        val cases =
+            mapOf(
+                PairOutcome.OwnedByAnotherApp("ABC") to NewSensorStep.TakeoverFailed,
+                PairOutcome.Ended("ABC") to NewSensorStep.NfcFailed(NfcFailure.SensorEnded),
+                PairOutcome.Libre2Unsupported to NewSensorStep.NfcFailed(NfcFailure.Libre2),
+                PairOutcome.NotASensor to NewSensorStep.NfcFailed(NfcFailure.NotASensor),
+                PairOutcome.Unsupported("lingo") to NewSensorStep.NfcFailed(NfcFailure.OtherSensor),
+                PairOutcome.Failed("tag lost") to NewSensorStep.NfcFailed(NfcFailure.MovedTooSoon),
+                PairOutcome.Paired("ABC", activated = false) to NewSensorStep.ConnectingBle("ABC", t0, activated = false),
+            )
         cases.forEach { (outcome, expected) -> assertEquals(expected, step(Start(ok), TagFound, Tapped(outcome))) }
     }
 
@@ -134,11 +154,16 @@ class NewSensorMachineTest {
         assertEquals(NewSensorStep.ConnectingBle("ABC", t0, activated = true), s)
     }
 
-    @Test fun `connecting phases keep connecting`() =
+    @Test fun `connecting phases keep connecting, the latest link names the pairing step ticked off`() {
         assertEquals(
-            NewSensorStep.ConnectingBle("ABC", t0, true),
+            NewSensorStep.ConnectingBle("ABC", t0, true, link = LinkStatus.Authorizing),
+            step(*paired, live("ABC", LinkStatus.Connecting), live("ABC", LinkStatus.Authorizing)),
+        )
+        assertEquals(
+            NewSensorStep.ConnectingBle("ABC", t0, true, link = LinkStatus.Reconnecting("x")),
             step(*paired, live("ABC", LinkStatus.Authorizing), live("ABC", LinkStatus.Reconnecting("x"))),
         )
+    }
 
     @Test fun `bluetooth problems after the tap`() {
         assertEquals(
@@ -147,7 +172,13 @@ class NewSensorMachineTest {
         )
         assertEquals(
             NewSensorStep.BleFailed("ABC", BleFailure.PermissionMissing),
-            step(*paired, Source(SensorStatus.BluetoothPermissionMissing, SensorState.ActionNeeded(app.mauri.sukrara.core.model.SensorAction.GrantBluetooth))),
+            step(
+                *paired,
+                Source(
+                    SensorStatus.BluetoothPermissionMissing,
+                    SensorState.ActionNeeded(app.mauri.sukrara.core.model.SensorAction.GrantBluetooth),
+                ),
+            ),
         )
         assertEquals(
             NewSensorStep.TakeoverFailed,
@@ -166,7 +197,10 @@ class NewSensorMachineTest {
 
     @Test fun `a bluetooth failure recovers by itself when the link comes back`() {
         val off = live("ABC", LinkStatus.WaitingForBluetooth)
-        assertEquals(NewSensorStep.ConnectingBle("ABC", t0, activated = false), step(*paired, off, live("ABC", LinkStatus.Connecting)))
+        assertEquals(
+            NewSensorStep.ConnectingBle("ABC", t0, activated = false, link = LinkStatus.Connecting),
+            step(*paired, off, live("ABC", LinkStatus.Connecting)),
+        )
         assertEquals(NewSensorStep.Ready, step(*paired, off, live("ABC", LinkStatus.Live)))
         val noPermission = Source(SensorStatus.BluetoothPermissionMissing, SensorState.None)
         assertEquals(NewSensorStep.Ready, step(*paired, noPermission, live("ABC", LinkStatus.Live)))
@@ -200,28 +234,30 @@ class NewSensorMachineTest {
     }
 
     @Test fun `cancel before the tap aborts, during the read is ignored, after the tap leaves it running`() {
-        val beforeTap = listOf(
-            arrayOf<NewSensorEvent>(),
-            arrayOf<NewSensorEvent>(Start(ok.copy(coreAvailable = false))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(nfcAvailable = false))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(nfcOn = false))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(signedIn = false))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(officialAppInstalled = true))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(bluetoothPermission = false))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(bluetoothOn = false))),
-            arrayOf<NewSensorEvent>(Start(ok.copy(notificationsAllowed = false))),
-            arrayOf<NewSensorEvent>(Start(ok)),
-            arrayOf<NewSensorEvent>(Start(ok), TagFound, Tapped(PairOutcome.Failed("x"))),
-            arrayOf<NewSensorEvent>(Start(ok), TagFound, Tapped(PairOutcome.OwnedByAnotherApp("A"))),
-        )
+        val beforeTap =
+            listOf(
+                arrayOf<NewSensorEvent>(),
+                arrayOf<NewSensorEvent>(Start(ok.copy(coreAvailable = false))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(nfcAvailable = false))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(nfcOn = false))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(signedIn = false))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(officialAppInstalled = true))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(bluetoothPermission = false))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(bluetoothOn = false))),
+                arrayOf<NewSensorEvent>(Start(ok.copy(notificationsAllowed = false))),
+                arrayOf<NewSensorEvent>(Start(ok)),
+                arrayOf<NewSensorEvent>(Start(ok), TagFound, Tapped(PairOutcome.Failed("x"))),
+                arrayOf<NewSensorEvent>(Start(ok), TagFound, Tapped(PairOutcome.OwnedByAnotherApp("A"))),
+            )
         beforeTap.forEach { assertEquals(NewSensorStep.Cancelled, step(*it, Cancel)) }
         assertEquals(NewSensorStep.ReadingNfc, step(Start(ok), TagFound, Cancel))
         assertEquals(NewSensorStep.ReadingNfc, step(Start(ok), TagFound, UseJuggluco))
-        val afterTap = listOf(
-            arrayOf(*paired),
-            arrayOf(*paired, live("ABC", LinkStatus.WarmingUp(60))),
-            arrayOf(*paired, live("ABC", LinkStatus.WaitingForBluetooth)),
-        )
+        val afterTap =
+            listOf(
+                arrayOf(*paired),
+                arrayOf(*paired, live("ABC", LinkStatus.WarmingUp(60))),
+                arrayOf(*paired, live("ABC", LinkStatus.WaitingForBluetooth)),
+            )
         afterTap.forEach { assertEquals(NewSensorStep.LeftRunning, step(*it, Cancel)) }
     }
 
@@ -244,5 +280,110 @@ class NewSensorMachineTest {
             val final = run(*events)
             assertEquals(final, run(Start(ok), TagFound, Retry, Cancel, Tick(t0.plusSeconds(999)), from = final))
         }
+    }
+
+    // MARK: choosing the sensor and the untested families
+
+    private val fresh = NewSensorState()
+
+    @Test fun `the flow opens on the choice with the Libre 3 preselected, which goes on to its gates`() {
+        val chosen = run(Start(ok), from = fresh)
+        assertEquals(NewSensorStep.ChooseSensor(SensorProfile.Libre3), chosen.step)
+        assertEquals(NewSensorStep.WaitingForTap, run(NewSensorEvent.Continue, from = chosen).step)
+    }
+
+    @Test fun `an untested family asks first, and Continue anyway works only after the wait`() {
+        val warned = run(Start(ok), NewSensorEvent.Choose(SensorProfile.DexcomG6), NewSensorEvent.Continue, from = fresh)
+        assertEquals(NewSensorStep.ConfirmUntested(SensorProfile.DexcomG6, t0), warned.step)
+        assertEquals(warned, run(NewSensorEvent.Continue, from = warned, now = t0.plusSeconds(9)))
+        assertEquals(
+            NewSensorStep.SensorSetupStep(SensorProfile.DexcomG6),
+            run(NewSensorEvent.Continue, from = warned, now = t0.plusSeconds(10)).step,
+        )
+        // Cancel goes back to the choice, never on
+        assertEquals(NewSensorStep.ChooseSensor(SensorProfile.DexcomG6), run(Cancel, from = warned).step)
+    }
+
+    @Test fun `a scanned family needs Bluetooth incl scanning and skips the Libre 3 gates`() {
+        val noLibreGates = ok.copy(coreAvailable = false, nfcAvailable = false, signedIn = false)
+        val setup = SensorProfile.AidexX
+
+        fun after(env: SensorEnv) =
+            run(Start(env), NewSensorEvent.Choose(setup), NewSensorEvent.Continue, NewSensorEvent.Continue, from = fresh, now = t0)
+                .let { run(NewSensorEvent.Continue, from = it, now = t0.plusSeconds(10)) }
+                .step
+        assertEquals(NewSensorStep.SensorSetupStep(setup), after(noLibreGates))
+        assertEquals(NewSensorStep.NeedsBluetoothPermission, after(noLibreGates.copy(scanPermission = false)))
+        assertEquals(NewSensorStep.BluetoothOff, after(noLibreGates.copy(bluetoothOn = false)))
+    }
+
+    @Test fun `the typed id is normalized and Pair waits for a valid one`() {
+        val setup = NewSensorState(step = NewSensorStep.SensorSetupStep(SensorProfile.DexcomG6), profile = SensorProfile.DexcomG6, env = ok)
+        val typed = run(NewSensorEvent.IdTyped("8g-ab c"), from = setup)
+        assertEquals("8GABC", (typed.step as NewSensorStep.SensorSetupStep).id)
+        assertEquals(typed, run(NewSensorEvent.PairedScanned("k"), from = typed))
+        val full = run(NewSensorEvent.IdTyped("8GABCD99"), from = typed) // cut to 6
+        assertEquals("8GABCD", (full.step as NewSensorStep.SensorSetupStep).id)
+        assertEquals(
+            NewSensorStep.ConnectingBle("k", t0, activated = false, profile = SensorProfile.DexcomG6),
+            run(NewSensorEvent.PairedScanned("k"), from = full).step,
+        )
+        // the gates re-checked on resume keep what was typed
+        assertEquals(full, run(Start(ok), from = full).copy(env = ok))
+    }
+
+    @Test fun `a scanned family's link states show on the connecting page, a failure goes back to the setup`() {
+        val connecting =
+            NewSensorState(
+                step = NewSensorStep.ConnectingBle("k", t0, activated = false, profile = SensorProfile.SmartGuide),
+                profile = SensorProfile.SmartGuide,
+                env = ok,
+            )
+
+        fun direct(link: LinkStatus) = Source(SensorStatus.Direct(SensorProfile.SmartGuide, "AC-1", "k", link), SensorState.Active(null))
+        assertEquals(LinkStatus.EnterPin, (run(direct(LinkStatus.EnterPin), from = connecting).step as NewSensorStep.ConnectingBle).link)
+        assertEquals(
+            connecting,
+            run(Source(SensorStatus.Direct(SensorProfile.SmartGuide, "x", "other", LinkStatus.Live), SensorState.None), from = connecting),
+        )
+        val failed = run(direct(LinkStatus.Failed(FailReason.BondFailed)), from = connecting)
+        assertEquals(NewSensorStep.BleFailed("k", BleFailure.BondFailed), failed.step)
+        assertEquals(NewSensorStep.SensorSetupStep(SensorProfile.SmartGuide), run(Retry, from = failed).step)
+        assertEquals(NewSensorStep.Ready, run(direct(LinkStatus.Live), from = connecting).step)
+    }
+
+    /**
+     * #133: the question about a sensor started long before the pairing waits for the person (no timeout), offers *Use
+     * it* and *Look for another sensor*, and either answer connects again with a fresh clock; a G7 the Dexcom app never
+     * authenticates offers *Look for another sensor* too.
+     */
+    @Test fun `the found-sensor question waits for an answer and either answer connects again`() {
+        val asked =
+            NewSensorState(
+                step = NewSensorStep.ConnectingBle("k", t0, false, SensorProfile.DexcomG7, LinkStatus.ConfirmSensor(1L)),
+                profile = SensorProfile.DexcomG7,
+            )
+        assertEquals(asked, run(Tick(t0.plus(NewSensorMachine.SCANNED_TIMEOUT)), from = asked))
+        assertEquals(
+            listOf(NewSensorAction.UseIt, NewSensorAction.LookForAnother, NewSensorAction.Close),
+            asked.step.page().actions,
+        )
+        val later = t0.plusSeconds(600)
+        assertEquals(
+            NewSensorStep.ConnectingBle("k", later, false, SensorProfile.DexcomG7, null),
+            run(NewSensorEvent.SensorAnswered, from = asked, now = later).step,
+        )
+        val vendor = NewSensorStep.ConnectingBle("k", t0, false, SensorProfile.DexcomG7, LinkStatus.WaitingForVendorApp)
+        assertEquals(listOf(NewSensorAction.LookForAnother, NewSensorAction.Close), vendor.page().actions)
+    }
+
+    @Test fun `a scanned family gets longer before the not-answering page`() {
+        val connecting =
+            NewSensorState(step = NewSensorStep.ConnectingBle("k", t0, false, SensorProfile.DexcomG7), profile = SensorProfile.DexcomG7)
+        assertTrue(run(Tick(t0.plus(NewSensorMachine.BLE_TIMEOUT)), from = connecting).step is NewSensorStep.ConnectingBle)
+        assertEquals(
+            NewSensorStep.BleFailed("k", BleFailure.Timeout),
+            run(Tick(t0.plus(NewSensorMachine.SCANNED_TIMEOUT)), from = connecting).step,
+        )
     }
 }

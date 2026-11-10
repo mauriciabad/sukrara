@@ -7,6 +7,7 @@ import app.mauri.sukrara.protocol.Hex
 import app.mauri.sukrara.protocol.event.Payload.longOrNull
 import app.mauri.sukrara.protocol.event.Payload.obj
 import app.mauri.sukrara.protocol.event.Payload.string
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -47,6 +48,17 @@ class Avatar private constructor(val json: JsonObject) {
         const val PALETTES = 8
         val SHAPES = listOf("cube", "drop", "dots", "rings", "letter")
 
+        /** A stored avatar (its JSON text, e.g. a follower record's), or null when missing or not an avatar. */
+        fun parse(text: String?): Avatar? = text?.let { runCatching { of(Json.parseToJsonElement(it)) }.getOrNull() }
+
+        /** A new person's default: a random v1 picture, any shape but `letter`. */
+        fun random(random: java.util.Random): Avatar =
+            v1(random.nextInt(PALETTES), SHAPES[random.nextInt(SHAPES.size - 1)], random.nextInt(24) * 15, random.nextInt().toLong())
+
+        /** The name's first character (code point), uppercased; "?" for a blank name. */
+        fun initial(name: String): String =
+            name.trim().takeIf { it.isNotEmpty() }?.let { String(Character.toChars(it.codePointAt(0))).uppercase() } ?: "?"
+
         /** From the wire: any object with a positive integer `v` and ≤ 512 bytes of JSON; else null. */
         fun of(e: JsonElement?): Avatar? {
             val o = e as? JsonObject ?: return null
@@ -56,19 +68,21 @@ class Avatar private constructor(val json: JsonObject) {
         }
 
         /** A normalised v1 avatar: `c` mod 8, unknown shape → cube, `a` mod 360 down to a multiple of 15, `n` & 0x7fffffff. */
-        fun v1(colors: Int, shape: String, angle: Int, seed: Long) = Avatar(
-            buildJsonObject {
-                put("v", 1)
-                put("c", Math.floorMod(colors, PALETTES))
-                put("s", shape.takeIf { it in SHAPES } ?: "cube")
-                put("a", Math.floorMod(angle, 360) / 15 * 15)
-                put("n", seed and 0x7fffffffL)
-            },
-        )
+        fun v1(colors: Int, shape: String, angle: Int, seed: Long) =
+            Avatar(
+                buildJsonObject {
+                    put("v", 1)
+                    put("c", Math.floorMod(colors, PALETTES))
+                    put("s", shape.takeIf { it in SHAPES } ?: "cube")
+                    put("a", Math.floorMod(angle, 360) / 15 * 15)
+                    put("n", seed and 0x7fffffffL)
+                },
+            )
 
         /** v1 `dots`: five circles from `sha256("sukrara/avatar/v1/dots:" + n)` (contracts/protocol/identity/avatar-v1.json). */
         fun v1Dots(seed: Long): List<Dot> {
             val h = Hex.sha256("sukrara/avatar/v1/dots:$seed".toByteArray())
+
             fun u(i: Int) = (h[i].toInt() and 0xff) / 255.0
             return (0 until 5).map { k ->
                 Dot(0.25 + 0.5 * u(4 * k + 1), 0.25 + 0.5 * u(4 * k + 2), 0.08 + 0.12 * u(4 * k), 90 + (110 * u(4 * k + 3)).toInt())
@@ -79,20 +93,41 @@ class Avatar private constructor(val json: JsonObject) {
 
 /** A person's self-asserted name and picture. Travels only inside encrypted messages; authenticates nothing. */
 data class Profile(val name: String, val avatar: Avatar?) {
-    fun toJson(): JsonObject = buildJsonObject {
-        put("name", name)
-        put("avatar", avatar?.json ?: JsonNull)
-    }
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("name", name)
+            put("avatar", avatar?.json ?: JsonNull)
+        }
 
     companion object {
         const val MAX_NAME = 40
 
+        /** A stored profile (its JSON text), or null. */
+        fun parse(text: String?): Profile? = text?.let { runCatching { of(Json.parseToJsonElement(it)) }.getOrNull() }
+
         /** An edit of [typed] over the stored [previous] name: trimmed, at most 40 characters, blank keeps [previous]. */
         fun editedName(typed: String, previous: String): String = typed.trim().ifBlank { previous }.take(MAX_NAME)
 
+        /**
+         * A name as shown: control and format characters removed, trimmed; "" when nothing is left, so the caller
+         * shows its generic word (*Someone*) instead (contracts/protocol/identity/profile-v1.json `shown`; Mac
+         * `Profile.shownName`).
+         */
+        fun shownName(name: String): String =
+            name
+                .filterNot { Character.isISOControl(it) || Character.getType(it) == Character.FORMAT.toInt() }
+                .trim()
+
         fun of(e: JsonElement?): Profile? {
             val o = e as? JsonObject ?: return null
-            return Profile(o.string("name").orEmpty().trim().take(MAX_NAME), Avatar.of(o.obj("avatar")))
+            return Profile(
+                o
+                    .string("name")
+                    .orEmpty()
+                    .trim()
+                    .take(MAX_NAME),
+                Avatar.of(o.obj("avatar")),
+            )
         }
     }
 }

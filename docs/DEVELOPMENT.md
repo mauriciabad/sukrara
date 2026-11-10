@@ -28,7 +28,10 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Version | `tools/release/version.sh` → `0.12.0 12000 prerelease` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs the rules on every push and the Android / Mac jobs when their paths (or
-`contracts/`, `tools/`, `VERSION`, `assets/`) change; `gate` is the only required check.
+`contracts/`, `tools/`, `VERSION`, `assets/`) change; `gate` is the only required check. Every `uses:` is pinned to a
+commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`); Dependabot
+(`.github/dependabot.yml`) moves both weekly. Look a tag's SHA up with `gh api repos/<owner>/<action>/commits/<tag>
+--jq .sha`.
 
 ## Devices
 
@@ -39,7 +42,10 @@ CI (`.github/workflows/checks.yml`) runs the rules on every push and the Android
 - **Mac**: the owner's copy is `~/Applications/Sukrara.app` (team-signed, with the widget). Never overwrite it with a
   test build; test builds run from another path, offline (`LaunchMode`: snapshot / test runs start no Bluetooth,
   relays or alerts). After replacing the app, `pkill -f SukraraWidget.appex` and keep `pluginkit -mAv | grep sukrara`
-  pointing only at `~/Applications/Sukrara.app`.
+  pointing only at `~/Applications/Sukrara.app`. `Bundle/bundle.sh` signs with the provisioning profiles in
+  `~/.apple-dev/profiles` when they're there (Developer ID, Time Sensitive, data-protection keychain, universal links:
+  docs/20-publishing.md); such a test build also claims `https://sukrara.mauri.app/join`, so unregister it after
+  testing (`lsregister -u <app>`, `pluginkit -r <appex>`).
 
 ## Install (one build line)
 
@@ -57,8 +63,10 @@ verifies it (`tools/release/verify-apk.sh` / `verify-app.sh`), installs in place
   the release scripts export it from the Keychain item.
   Its public SHA-256 is `tools/release/android-cert.sha256`. Backup procedure: [docs/20](20-publishing.md#the-android-release-key).
   Debug builds use `~/.android/debug.keystore` (`tools/release/android-debug-cert.sha256`, also in assetlinks).
-- **Mac**: the Apple Development identity of team `QWUV9H4A3G` (no notarization yet); App Group
-  `QWUV9H4A3G.app.mauri.sukrara`.
+- **Mac**: the *Developer ID Application* identity of team `QWUV9H4A3G` with the Developer ID provisioning profiles in
+  `~/.apple-dev/profiles`; `tools/release/mac-release.sh` notarizes and staples the app and the dmg with the notarytool
+  keychain profile `sukrara` (since 0.12.0; docs/20-publishing.md › Mac release: Developer ID and notarization).
+  App Group `QWUV9H4A3G.app.mauri.sukrara`.
 
 ## Strings (Android, English + Spain Spanish)
 
@@ -73,6 +81,30 @@ hidratos, insulina rápida / lenta, tiempo en rango). Compose reads `stringResou
 Debug commands that replace the sensor or make up data live only in `src/debug` (Android) or `#if DEBUG` / the
 `sukrara-snap` and test targets (Mac): a release build cannot contain them (`debug` check, `verify-apk.sh`,
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
+
+The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
+app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO` and `RELAYS` (their
+extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"; docs/QA.md "Emulator"). The Mac's:
+`sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1`. The `debug-docs`
+check fails when docs/FEATURES.md, docs/QA.md or this file name a command or extra the code doesn't have: add the
+command to the code first, or fix the docs.
+
+**Relays in debug builds.** A debug build connects to no relay at all (`LaunchPlan`: release builds always use the
+public relays) until the `RELAYS` debug command points it somewhere. For sharing tests run the local test relay
+(`tools/relay/relay.py`, standard-library Python, in memory, listens on this computer's loopback only) and point every
+emulator at it; the emulator reaches the computer's `127.0.0.1` as `10.0.2.2`:
+
+```sh
+python3 tools/relay/relay.py --port 7447            # logs every connection, REQ and EVENT
+adb -s emulator-5554 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver \
+    -a app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447
+```
+
+The command saves the choice and ends the app process, so every relay connection is made again from it (open the
+app). `--es urls off` goes back to no relay; `--es urls public` uses the public relays on purpose (only when a test
+needs them). Check with `adb shell cat /proc/net/tcp6` that the app's uid (`dumpsys package app.mauri.sukrara | grep
+uid=`) has no socket other than `…0202000A:1D17` (10.0.2.2:7447). The relay's own tests: `python3
+tools/relay/test_relay.py` (CI runs them).
 
 ## Orchestration that worked
 

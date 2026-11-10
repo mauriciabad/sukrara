@@ -17,7 +17,7 @@ import app.mauri.sukrara.monitor.alerts.AlertChannels
  *
  * NEVER rename or reuse an id: Android keeps the person's choices (sound, importance, "override Do Not Disturb") per
  * channel id, so a renamed channel silently resets them to our defaults — for alert channels that can mean a muted
- * alarm the person had made loud. New behaviour gets a new id; a removed channel is deleted explicitly.
+ * alarm the person had made loud. New behaviour gets a new id; a removed channel is deleted explicitly ([DELETED]).
  */
 object Channels {
     enum class Group(
@@ -44,15 +44,25 @@ object Channels {
         val kind: Kind,
         /** The alert kind (contract id) of an alert channel. */
         val alertKind: String? = null,
+        /** No sound and no vibration, at whatever importance (an info channel that must still show on the lock screen). */
+        val silent: Boolean = false,
     )
 
-    const val GLUCOSE = "glucose"
+    const val GLUCOSE = "glucose.live"
     const val STATUS = "status"
     const val REQUESTS = "requests"
     const val SENSOR = "sensor"
-    const val SENSOR_COUNTDOWN = "sensor.countdown"
+    const val SENSOR_COUNTDOWN = "sensor.countdowns"
     const val PEN_RESULTS = "pen.results"
     const val PEN_CHECK = "pen.check"
+    const val TREATMENT_DRAFT = "treatment.draft"
+
+    /**
+     * Channels that were replaced, deleted by [create]: `sensor.countdown` and `glucose` were low importance, which the
+     * phone's "hide silent notifications" lock-screen option hides (#148, #94); a channel's importance can't be raised,
+     * so [SENSOR_COUNTDOWN] and [GLUCOSE] are new ids.
+     */
+    val DELETED = listOf("sensor.countdown", "glucose")
 
     /** The alert kinds of `contracts/alerts/SPEC.md`, in its order. */
     val ALERT_KINDS =
@@ -64,14 +74,34 @@ object Channels {
 
     val ALL: List<Spec> =
         listOf(
-            // the ongoing glucose notification: silent, no badge (it changes every minute)
-            Spec(GLUCOSE, R.string.monitor_channel_glucose, NotificationManager.IMPORTANCE_LOW, Group.INFO, Kind.INFO),
+            // the ongoing glucose notification: default importance so it shows on the lock screen (also with "hide
+            // silent notifications" on, #94), but never a sound, a vibration or a badge (it changes every minute)
+            Spec(GLUCOSE, R.string.monitor_channel_glucose, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO, silent = true),
             Spec(STATUS, R.string.monitor_channel_status, NotificationManager.IMPORTANCE_HIGH, Group.INFO, Kind.INFO),
             Spec(REQUESTS, R.string.monitor_channel_requests, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO),
             Spec(SENSOR, R.string.monitor_channel_sensor, NotificationManager.IMPORTANCE_HIGH, Group.INFO, Kind.INFO),
-            Spec(SENSOR_COUNTDOWN, R.string.monitor_channel_sensor_countdown, NotificationManager.IMPORTANCE_LOW, Group.INFO, Kind.INFO),
+            // both sensor countdowns: default importance so they show on the lock screen (also with "hide silent
+            // notifications" on), but never a sound or a vibration
+            Spec(
+                SENSOR_COUNTDOWN,
+                R.string.monitor_channel_sensor_countdown,
+                NotificationManager.IMPORTANCE_DEFAULT,
+                Group.INFO,
+                Kind.INFO,
+                silent = true,
+            ),
             Spec(PEN_RESULTS, R.string.monitor_channel_pen_results, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO),
             Spec(PEN_CHECK, R.string.monitor_channel_pen_check, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO),
+            // *Treatment not saved* (the lock-screen countdown kept a draft): seen after the unlock, never a sound (the
+            // person was just looking at the dialog)
+            Spec(
+                TREATMENT_DRAFT,
+                R.string.monitor_channel_treatment_draft,
+                NotificationManager.IMPORTANCE_DEFAULT,
+                Group.INFO,
+                Kind.INFO,
+                silent = true,
+            ),
         ) +
             ALERT_KINDS.map { Spec(alert(it), alertName(it), NotificationManager.IMPORTANCE_HIGH, Group.ALERTS, Kind.ALERT, it) } +
             ALERT_KINDS.map { Spec(alarm(it), alarmName(it), NotificationManager.IMPORTANCE_HIGH, Group.ALERTS_ALARM, Kind.ALARM, it) }
@@ -85,6 +115,7 @@ object Channels {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannelGroups(Group.entries.map { NotificationChannelGroup(it.id, context.getString(it.nameRes)) })
         nm.createNotificationChannels(ALL.map { channel(context, it) })
+        DELETED.forEach(nm::deleteNotificationChannel)
     }
 
     /**
@@ -105,9 +136,15 @@ object Channels {
         when (spec.kind) {
             Kind.INFO -> {
                 setShowBadge(spec.id != GLUCOSE && spec.id != SENSOR_COUNTDOWN)
+                if (spec.silent) {
+                    setSound(null, null)
+                    enableVibration(false)
+                }
             }
 
-            Kind.ALERT, Kind.ALARM -> AlertChannels.configure(this, context, AlertKind.fromWire(spec.alertKind!!)!!, spec.kind == Kind.ALARM)
+            Kind.ALERT, Kind.ALARM -> {
+                AlertChannels.configure(this, context, AlertKind.fromWire(spec.alertKind!!)!!, spec.kind == Kind.ALARM)
+            }
         }
     }
 
@@ -147,15 +184,30 @@ object NotificationIds {
 
     /** "Monitoring stopped — tap to resume". */
     const val MONITORING_STOPPED = 2
+
+    /** Before the first unlock after a restart: "Unlock to resume monitoring", ringing as *No data* (lockedboot). */
+    const val LOCKED_BOOT = 3
     const val SENSOR = 10
     const val SENSOR_COUNTDOWN = 11
+    const val SENSOR_ENDED = 12
+    const val SENSOR_WARMUP = 13
+    const val SENSOR_READY = 14
     const val PEN_RESULTS = 20
     const val PEN_CHECK = 21
+
+    /** *Treatment not saved*: what the quick dialog's lock-screen countdown closed on. */
+    const val TREATMENT_DRAFT = 22
     const val REQUESTS = 30
+
+    /** What the followed wearer said: invite used, declined, access removed. */
+    const val FOLLOWING = 31
 
     /** Alerts: the `alerts` notification group's summary, then one slot per alert group (level, rate, no data). */
     const val ALERTS_SUMMARY = 1000
     const val ALERTS_BASE = 1001
+
+    /** Settings › an alert › *Send a test alert*: its own slot, so a test never replaces (or is replaced by) a real alert. */
+    const val ALERT_TEST = 1010
 
     /** The `info` notification group's summary. */
     const val INFO_SUMMARY = 1100

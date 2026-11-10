@@ -58,31 +58,42 @@ public struct FollowerSession: Sendable {
     private let followerPublic: String
     /// gk → (epoch, read key).
     private var epochKeys: [String: (n: Int, g: SecretKeyHex)] = [:]
-    /// Event ids whose fate is final → when they may be forgotten (their expiry, at most a day).
-    private var seen: [String: Int] = [:]
+    /// Event ids whose fate is final → when they may be forgotten (their expiry, at most a day) and when last seen.
+    /// At most `seenLimit`: past it, the expired go first, then the least recently seen (down to 90 %).
+    private var seen: [String: (until: Int, used: Int)] = [:]
+    private var seenClock = 0
+    private let seenLimit: Int
     private var rekeyAskedAt: [String: Int] = [:]
     /// d tag → created_at of our last treatment event (strictly increasing per d).
     private var lastTreatmentCreatedAt: [String: Int] = [:]
-    private static let seenLimit = 5000
+    /// The most event ids remembered as seen (PROTOCOL-v2 "Relay rules"; Android `StreamFollower.SEEN_LIMIT`).
+    public static let seenLimit = 5000
 
-    public init(state: FollowerState, crypto: any NostrCrypto) throws(CryptoError) {
+    public init(state: FollowerState, crypto: any NostrCrypto, seenLimit: Int = FollowerSession.seenLimit)
+        throws(CryptoError)
+    {
         self.state = state
         self.crypto = crypto
+        self.seenLimit = seenLimit
         messages = FollowerMessages(crypto: crypto, follower: state.follower)
         followerPublic = try crypto.publicKey(of: state.follower)
         for epoch in state.epochs { try addEpoch(epoch) }
     }
 
     /// A new follower for an opened invite: makes the follower key `F` (never printed or logged). Status `new`.
-    public static func join(invite: Invite, me: Profile, nearby: Bool, crypto: any NostrCrypto, now: Int)
-        throws(JoinError) -> FollowerSession
-    {
+    /// `commit`: a nearby offer's commitment; the join then makes its pairing nonce now, after the offer was read
+    /// (PROTOCOL-v2 "Nearby pairing").
+    public static func join(
+        invite: Invite, me: Profile, commit: String?, crypto: any NostrCrypto, now: Int,
+        nonce: String = NearbyPairing.nonce()
+    ) throws(JoinError) -> FollowerSession {
         guard invite.expiry > now else { throw .expired }
         let secret = crypto.generateSecret()
         guard let pub = try? crypto.publicKey(of: secret) else { throw .keyFailed }
         let state = FollowerState(
             follower: secret, identity: invite.identity, token: invite.token,
-            code: Wire.matchCode(followerPublicKey: pub, token: invite.token), nearby: nearby, me: me,
+            code: Wire.matchCode(followerPublicKey: pub, token: invite.token),
+            pair: commit.map { FollowerState.NearbyPair(commit: $0, nonce: nonce) }, me: me,
             wearer: invite.profile, relays: invite.relays.isEmpty ? Wire.defaultRelays : invite.relays)
         guard let session = try? FollowerSession(state: state, crypto: crypto) else { throw .keyFailed }
         return session
@@ -105,8 +116,8 @@ public struct FollowerSession: Sendable {
     /// retry while still waiting).
     public mutating func requestAccess(now: Int) throws(CryptoError) -> SignedEvent {
         let wrap = try messages.toOwner(
-            FollowerMessages.requestBody(token: state.token, profile: state.me), identity: state.identity,
-            ttl: Wire.ttlRequest, now: now)
+            FollowerMessages.requestBody(token: state.token, profile: state.me, nonce: state.pair?.nonce),
+            identity: state.identity, ttl: Wire.ttlRequest, now: now)
         if state.status == .new {
             state.status = .requested
             state.requestedAt = now
@@ -175,7 +186,11 @@ public struct FollowerSession: Sendable {
     // MARK: - incoming
 
     public mutating func receive(_ event: SignedEvent, now: Int) -> Outcome {
-        if seen[event.id] != nil { return Outcome(.ignored("duplicate")) }
+        if seen[event.id] != nil {
+            seenClock += 1
+            seen[event.id]?.used = seenClock  // the most recent now
+            return Outcome(.ignored("duplicate"))
+        }
         guard crypto.verify(event) else { return Outcome(.rejected("bad-signature")) }
         remember(event, now: now)
         if event.isExpired(now: now) { return Outcome(.ignored("expired")) }
@@ -186,7 +201,7 @@ public struct FollowerSession: Sendable {
         guard let sid = state.sid else { return Outcome(.ignored("no-sid")) }
         do throws(PayloadError) {
             switch event.kind {
-            case Wire.kindData: return try receiveData(event, epoch: n, key: g, sid: sid)
+            case Wire.kindData: return try receiveData(event, epoch: n, key: g, sid: sid, now: now)
             case Wire.kindLive, Wire.kindAlert:
                 guard state.devices.contains(event.pubkey) else { return notInRosterYet(event, "author-not-device") }
                 let plain = try decrypt(event, key: g)
@@ -225,7 +240,7 @@ public struct FollowerSession: Sendable {
         return Outcome(.rejected(reason))
     }
 
-    private mutating func receiveData(_ event: SignedEvent, epoch n: Int, key g: SecretKeyHex, sid: String)
+    private mutating func receiveData(_ event: SignedEvent, epoch n: Int, key g: SecretKeyHex, sid: String, now: Int)
         throws(PayloadError) -> Outcome
     {
         let d = event.tag("d"), c = event.tag("c"), author = event.pubkey
@@ -245,6 +260,10 @@ public struct FollowerSession: Sendable {
             guard state.devices.contains(author) else { return notInRosterYet(event, "author-not-device") }
             let chunk = try ChunkPayload.decode(try decrypt(event, key: g))
             guard d == Wire.chunkD(sid: sid, hour: chunk.hour) else { return Outcome(.rejected("d-mismatch")) }
+            let latest = now + Wire.futureTolerance
+            guard chunk.hour <= latest, !chunk.readings.contains(where: { $0.t > latest }) else {
+                return Outcome(.rejected("reading-in-future"))
+            }
             var outcome = Outcome(.accepted("chunk"))
             if !chunk.readings.isEmpty { outcome.deltas = [.readings(chunk.readings)] }
             return outcome
@@ -282,7 +301,9 @@ public struct FollowerSession: Sendable {
     }
 
     /// Writer scope: a writer changes only entries it created; the wearer's own entry (`o` ≠ follower) beats a copy a
-    /// writer created first, whatever its `u`; the newest `(u, o)` wins otherwise.
+    /// writer created first, whatever its `u`; the newest `(u, o)` wins otherwise. A wearer device's copy of the
+    /// version already held (the echo of this writer's entry, after the relay sent the writer's own copy back) is passed
+    /// on too: it is what tells the writer the wearer accepted it (PROTOCOL-v2 "Writers": `u` ≥ the sent `u`).
     private mutating func receiveTreatment(_ entry: TreatmentPayload, author: String) -> Outcome {
         let fromWearer = state.devices.contains(author)
         let held = state.treatments[entry.id]
@@ -299,9 +320,10 @@ public struct FollowerSession: Sendable {
         }
         let creator = (held == nil || override) ? author : held!.creator
         let newer = held.map { (entry.u, entry.origin) > ($0.u, $0.origin) } ?? true
-        guard newer || override else { return Outcome(.ignored("treatment-older")) }
+        let echo = fromWearer && !newer && held.map { (entry.u, entry.origin) == ($0.u, $0.origin) } == true
+        guard newer || override || echo else { return Outcome(.ignored("treatment-older")) }
         state.treatments[entry.id] = .init(creator: creator, u: entry.u, origin: entry.origin)
-        var outcome = Outcome(.accepted("treatment"))
+        var outcome = Outcome(.accepted(echo ? "treatment-echo" : "treatment"))
         outcome.deltas = [.treatment(entry, fromWearer: fromWearer, creator: creator, override: override)]
         return outcome
     }
@@ -323,7 +345,9 @@ public struct FollowerSession: Sendable {
     private mutating func receiveAlert(plain: String, now: Int) throws(PayloadError) -> Outcome {
         let alert = try AlertPayload.decode(plain)
         guard now - alert.at <= Wire.alertMaxAge else { return Outcome(.ignored("alert-stale")) }
-        let key = "\(alert.id)|\(alert.fires ? "fire" : "clear")|\(alert.count)"
+        // an escalated copy of a firing (#39: the same id sent again with `esc`) and an answer are news, not duplicates
+        let what = alert.fires ? "fire" : alert.answered ? "answered" : "clear"
+        let key = "\(alert.id)|\(what)|\(alert.count)|\(alert.esc.map(String.init) ?? "")"
         guard !state.alertKeys.contains(key) else { return Outcome(.ignored("alert-duplicate")) }
         state.alertKeys.append(key)
         if state.alertKeys.count > FollowerState.alertKeysKept { state.alertKeys.removeFirst() }
@@ -360,13 +384,51 @@ public struct FollowerSession: Sendable {
             var outcome = Outcome(.accepted(name))
             outcome.deltas = [.status(state.status)]
             return outcome
+        case .pair(let nonce): return receivePairNonce(nonce)
         case .unknown: return Outcome(.ignored("unknown-type"))
         }
     }
 
+    /// The wearer opened its nonce `nb` (only for a nearby join still waiting, once): it must match the offer's
+    /// commitment, else it isn't from the phone that made the offer. Then both devices can show the code.
+    private mutating func receivePairNonce(_ nonce: String) -> Outcome {
+        guard var pair = state.pair, state.status == .requested else { return Outcome(.ignored("pair")) }
+        guard pair.code == nil else { return Outcome(.ignored("pair-known")) }
+        guard NearbyPairing.commit(nonce) == pair.commit else { return Outcome(.rejected("pair-commit")) }
+        pair.code = NearbyPairing.code(
+            identity: state.identity, follower: followerPublic, token: state.token, followerNonce: pair.nonce,
+            wearerNonce: nonce)
+        state.pair = pair
+        var outcome = Outcome(.accepted("pair"))
+        outcome.deltas = [.status(state.status)]
+        return outcome
+    }
+
+    /// The person saw the same pairing code on the wearer's phone: a key held until now is used (the outcome of that
+    /// key), otherwise the next one is. nil when there is no code to confirm yet (or no nearby join).
+    public mutating func confirmPairing() -> Outcome? {
+        guard var pair = state.pair, pair.code != nil, !pair.confirmed else { return nil }
+        let held = pair.held
+        pair.confirmed = true
+        pair.held = nil
+        state.pair = pair
+        guard let held else {
+            var outcome = Outcome(.ignored("confirmed"))
+            outcome.deltas = [.status(state.status)]
+            return outcome
+        }
+        return receiveKey(held.delivery, sentAt: held.sentAt)
+    }
+
     /// A key delivery sealed by the identity. One newer than the revoked notice re-approves a removed follower (the
     /// wearer invited it again), even when it carries a key already held; otherwise a removed follower stays removed.
+    /// A nearby join holds it until the person confirmed the pairing code.
     private mutating func receiveKey(_ delivery: KeyDelivery, sentAt: Int) -> Outcome {
+        if var pair = state.pair, !pair.confirmed {
+            if sentAt >= (pair.held?.sentAt ?? Int.min) { pair.held = .init(delivery: delivery, sentAt: sentAt) }
+            state.pair = pair
+            return Outcome(.ignored("unconfirmed"))
+        }
         if let sid = state.sid, sid != delivery.sid { return Outcome(.rejected("sid-changed")) }
         guard let g = try? crypto.nsecDecode(delivery.nsec), let gPub = try? crypto.publicKey(of: g) else {
             return Outcome(.rejected("invalid"))
@@ -422,7 +484,12 @@ public struct FollowerSession: Sendable {
     }
 
     private mutating func remember(_ event: SignedEvent, now: Int) {
-        if seen.count >= Self.seenLimit { seen = seen.filter { $0.value > now } }
-        seen[event.id] = min(event.expiration ?? now + 86_400, now + 86_400)
+        seenClock += 1
+        seen[event.id] = (min(event.expiration ?? now + 86_400, now + 86_400), seenClock)
+        guard seen.count > seenLimit else { return }
+        seen = seen.filter { $0.value.until > now }
+        guard seen.count > seenLimit else { return }
+        let keep = Swift.max(1, seenLimit * 9 / 10)
+        for (id, _) in seen.sorted(by: { $0.value.used < $1.value.used }).prefix(seen.count - keep) { seen[id] = nil }
     }
 }

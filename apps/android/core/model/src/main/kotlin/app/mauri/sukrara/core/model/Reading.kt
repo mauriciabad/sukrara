@@ -7,14 +7,69 @@ import java.time.Instant
 
 /**
  * One glucose value. [mgdl] is always mg/dL (the unit setting only changes how it is shown); [rateMgdlPerMin] is the
- * sensor's trend rate when it sends one.
+ * sensor's trend rate when it sends one. A value outside [GlucoseRange] is a flagged LO / HI reading, not a number.
  */
 data class Reading(
     val t: Instant,
     val mgdl: Int,
     val rateMgdlPerMin: Double?,
     val source: SourceId,
-)
+) {
+    /** Lower than the sensor can measure: shown as "LO", below every low alert threshold. */
+    val isLo: Boolean get() = GlucoseRange.isLo(mgdl)
+
+    /** Higher than the sensor can measure: shown as "HI", above every high alert threshold. */
+    val isHi: Boolean get() = GlucoseRange.isHi(mgdl)
+
+    /** Brought back by Import history ([SourceId.Imported]): never uploaded to a service. */
+    val imported: Boolean get() = source in SourceId.Imported
+
+    companion object {
+        /** A sensor said "below my range" at [t]: no number is known (stored as [GlucoseRange.LO], no rate). */
+        fun lo(t: Instant, source: SourceId) = Reading(t, GlucoseRange.LO, null, source)
+
+        /** A sensor said "above my range" at [t] (stored as [GlucoseRange.HI], no rate). */
+        fun hi(t: Instant, source: SourceId) = Reading(t, GlucoseRange.HI, null, source)
+    }
+}
+
+/**
+ * The range a glucose number is shown in. Outside it a reading is a flag, LO or HI, never a number: CGMs measure about
+ * 40–400 mg/dL and say "LO" / "HI" beyond. LO / HI travel as 39 / 401 mg/dL, the values Nightscout, xDrip+ and the
+ * Dexcom share use, so followers, uploads and exports understand them without a new field. The card ([Reading.isLo] /
+ * [Reading.isHi]) and the alert rules (contracts/alerts/SPEC.md §1: LO matches every low kind, HI every high kind) read
+ * the same bounds; the Mac has the same numbers.
+ */
+object GlucoseRange {
+    const val FLOOR = 40
+    const val CEILING = 400
+
+    /** How a LO reading is stored and sent. */
+    const val LO = FLOOR - 1
+
+    /** How a HI reading is stored and sent. */
+    const val HI = CEILING + 1
+
+    fun isLo(mgdl: Int): Boolean = mgdl < FLOOR
+
+    fun isHi(mgdl: Int): Boolean = mgdl > CEILING
+
+    /** What a glucose value can be at all: anything else (0, negative, absurd) is malformed and dropped. */
+    val PLAUSIBLE = 1..1000
+
+    /**
+     * [r] as it is stored, at the one way in (the hub): a malformed value is null (dropped), any number below the floor
+     * becomes [LO] and any above the ceiling [HI], without a rate. Every source (sensor, Juggluco, relay, Nearby) then
+     * reaches the card, the graph, uploads and the export with the same two flags, never a raw 35 or 450.
+     */
+    fun normalise(r: Reading): Reading? =
+        when {
+            r.mgdl !in PLAUSIBLE -> null
+            isLo(r.mgdl) -> if (r.mgdl == LO && r.rateMgdlPerMin == null) r else Reading.lo(r.t, r.source)
+            isHi(r.mgdl) -> if (r.mgdl == HI && r.rateMgdlPerMin == null) r else Reading.hi(r.t, r.source)
+            else -> r
+        }
+}
 
 /** Where readings come from. A value class so new sources are added without touching every `when`. */
 @JvmInline
@@ -26,11 +81,51 @@ value class SourceId(val id: String) {
         /** Juggluco's local web server on the same phone (wearer). */
         val Juggluco = SourceId("juggluco")
 
+        /** The other sensor families the phone reads itself (wearer); untested on real sensors. */
+        val DexcomG7 = SourceId("dexcom-g7")
+        val DexcomG6 = SourceId("dexcom-g6")
+        val SmartGuide = SourceId("accu-chek-smartguide")
+        val AidexX = SourceId("aidex-x")
+
+        /** Every source that is this phone's own sensor (not a follower feed). */
+        val Wearer: Set<SourceId> = setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX)
+
         /** The wearer's readings over Nostr relays (follower). */
         val Relay = SourceId("relay")
 
         /** The wearer's phone nearby over Bluetooth (follower). */
         val Nearby = SourceId("nearby")
+
+        /** Every source that is the followed person's feed. */
+        val Follower: Set<SourceId> = setOf(Relay, Nearby)
+
+        /**
+         * History brought back by Import history (`storage.ImportSource`: LibreView, Tidepool, a file): the wearer's
+         * own past readings, never this phone's sensor (no live reading, no restore gate) and never uploaded.
+         */
+        val Imported: Set<SourceId> = setOf(SourceId("import-libreview"), SourceId("import-tidepool"), SourceId("import-file"))
+
+        /**
+         * The sources whose readings are [role]'s person: the phone's own sensor and its imported history, or the
+         * followed person's feed.
+         */
+        fun of(role: Role): Set<SourceId> =
+            when (role) {
+                Role.Wearer -> Wearer + Imported
+                Role.Follower -> Follower
+            }
+
+        /**
+         * The sources of the other role: another person's readings while [role] is this phone's role (the person
+         * followed earlier, or one's own sensor while following). Never shown, exported or sent; deleted at a role
+         * change. No role yet hides nothing (setup isn't done; the role chosen next cleans up).
+         */
+        fun notOf(role: Role?): Set<SourceId> =
+            when (role) {
+                null -> emptySet()
+                Role.Wearer -> Follower
+                Role.Follower -> Wearer + Imported
+            }
     }
 }
 
@@ -48,3 +143,18 @@ enum class Trend {
 
 /** Whether this phone wears the sensor or follows someone who does. */
 enum class Role { Wearer, Follower }
+
+/** The stored days and the live window as one history. */
+object ReadingHistory {
+    /**
+     * [stored] (older readings, oldest first, read now and then) up to where the [live] window starts, then the whole
+     * live window (always the fresher copy: a backfill inside it shows at once). Nothing counts twice.
+     */
+    fun join(
+        stored: List<Reading>,
+        live: List<Reading>,
+    ): List<Reading> {
+        val start = live.firstOrNull()?.t ?: return stored
+        return stored.filter { it.t.isBefore(start) } + live
+    }
+}

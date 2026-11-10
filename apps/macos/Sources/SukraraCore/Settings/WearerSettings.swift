@@ -32,8 +32,17 @@ public struct WearerSettings: Sendable, Equatable {
         return b
     }
 
+    /// The mirrored text for a schema id (`graph.slots`, `graph.ringOrder`, `graph.lastElse` …: the wire spellings).
+    public func string(_ id: String) -> String? {
+        guard let (_, value) = mirrored(id, kind: nil), case .string(let s) = value else { return nil }
+        return s
+    }
+
+    /// Only what the schema mirrors: a row's `mirrorExcept` kinds (no data) read as nil even when a wearer sent them.
     private func mirrored(_ id: String, kind: String?) -> (SettingInfo, JSONValue)? {
-        guard let info = SettingsSpec.settings.first(where: { $0.id == id }), info.mirror, let wire = info.wire else {
+        guard let info = SettingsSpec.settings.first(where: { $0.id == id }), info.mirrors(kind: kind),
+            let wire = info.wire
+        else {
             return nil
         }
         let path = wire.replacingOccurrences(of: "{kind}", with: kind ?? "").split(separator: ".").map(String.init)

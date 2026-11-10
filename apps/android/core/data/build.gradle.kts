@@ -6,7 +6,14 @@
 plugins {
     id("sukrara.android.library")
     id("sukrara.room")
+    id("sukrara.contracts")
     id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+android {
+    testOptions.unitTests.isIncludeAndroidResources = true
+    // the exported schema, for MigrationTestHelper.createDatabase under Robolectric
+    sourceSets["test"].assets.srcDir("$projectDir/schemas")
 }
 
 dependencies {
@@ -22,4 +29,6 @@ dependencies {
 }
 
 // Robolectric (SukraraDatabaseTest) reaches into FileDescriptor internals on JDK 21
-tasks.withType<Test>().configureEach { jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
+tasks.withType<Test>().configureEach {
+    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+}

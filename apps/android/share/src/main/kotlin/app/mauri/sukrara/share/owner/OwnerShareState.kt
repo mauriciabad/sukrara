@@ -4,8 +4,13 @@
 package app.mauri.sukrara.share.owner
 
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.owner.IdentityCheck
+import app.mauri.sukrara.share.ble.NearbyServerCore
+import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.transport.RelayStatus
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /** What the wearer's sharing shows (home banner, Settings › Sharing). Every state has a way out (FEATURES.md). */
 sealed interface OwnerShareState {
@@ -27,7 +32,19 @@ sealed interface OwnerShareState {
         val relays: Map<String, RelayStatus>,
         val backupPublishedAt: Long,
         val recoveryExportedAt: Long,
-    ) : OwnerShareState
+        /** How the wearer appears to followers (null = never set). */
+        val profile: Profile? = null,
+        /** Active followers that may add entries ("Can add entries"). */
+        val writers: Set<String> = emptySet(),
+        val passwordManagerSavedAt: Long = 0,
+        /** When this phone restored the identity (from a code or the password manager, so it exists elsewhere). */
+        val restoredAt: Long = 0,
+        /** Followers paired with *Pair nearby* (this phone only): listed in Nearby devices also while out of range. */
+        val nearbyPaired: Set<String> = emptySet(),
+    ) : OwnerShareState {
+        /** The identity is somewhere besides this phone: the password manager, a recovery code kept, or where it came from. */
+        val backedUp: Boolean get() = passwordManagerSavedAt > 0 || recoveryExportedAt > 0 || restoredAt > 0
+    }
 
     /**
      * Another device (e.g. the old phone after a restore) publishes as this identity. Roster / backup / rotation and follower
@@ -41,12 +58,72 @@ sealed interface OwnerShareState {
     ) : OwnerShareState
 }
 
-/** Bluetooth sharing with nearby followers. Until then a no-op. */
+/**
+ * Backup › Replace this identity telling the followers first: [told] of [followers] notices a relay accepted so far
+ * (the identity is replaced once all are, or after 15 s); Cancel keeps the identity.
+ */
+data class TellingFollowers(val followers: Int, val told: Int)
+
+/** What an Allow did. */
+enum class ApproveResult {
+    Allowed,
+
+    /** The invite expired or was used, or the request isn't waiting any more: a new invite is needed. */
+    Gone,
+
+    /** Another app shares as this identity: follower changes wait until that is solved. */
+    Paused,
+
+    /** Other phones tried the same link: the code from the follower's phone is needed. */
+    NeedsCode,
+}
+
+/**
+ * Bluetooth sharing with nearby followers: the GATT server (`AndroidNearbyServer`), [None] where there is none (tests).
+ * It serves exactly while the engine runs ([start] / [stop]) and only events the engine hands it ([publish]).
+ */
 interface OwnerNearby {
+    /** What Settings › Sharing shows for the Bluetooth row. */
+    val status: StateFlow<NearbyStatus>
+
+    /** Connected follower devices whose identity proof named an active follower, oldest first. */
+    val links: StateFlow<List<NearbyServerCore.Named>>
+
+    fun start(host: Host)
+
+    fun stop()
+
+    /** The followers changed (advertise only while there is one, B§3). */
+    fun refresh()
+
     fun publish(event: SignedEvent)
 
+    /** An event a central sent that the engine accepted (a writer's entry): to the other centrals. */
+    fun forward(event: SignedEvent, except: String)
+
+    /** "Forget this device": drops the links [follower]'s proof named. */
+    fun forget(follower: String)
+
+    /** The engine side: the stream id and followers for INFO and the identity proof, and incoming events. */
+    interface Host : NearbyServerCore.Host {
+        fun onEvent(event: SignedEvent, peer: String)
+    }
+
     object None : OwnerNearby {
+        override val status: StateFlow<NearbyStatus> = MutableStateFlow(NearbyStatus.Stopped)
+        override val links: StateFlow<List<NearbyServerCore.Named>> = MutableStateFlow(emptyList())
+
+        override fun start(host: Host) = Unit
+
+        override fun stop() = Unit
+
+        override fun refresh() = Unit
+
         override fun publish(event: SignedEvent) = Unit
+
+        override fun forward(event: SignedEvent, except: String) = Unit
+
+        override fun forget(follower: String) = Unit
     }
 }
 

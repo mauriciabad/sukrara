@@ -9,7 +9,6 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 
 /*
  * What the alert runtime drives. The Android implementations are AlertNotifier, AndroidAlarms.alertCheck and the module's
@@ -24,13 +23,13 @@ interface AlertPresenter {
      */
     fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int)
 
+    /** Right before an alert rings: waits (a second at most) until nothing of the app's can mute its sound. */
+    suspend fun beforeRing() = Unit
+
     /** Replaces the group's slot with "[side] alerts muted · until [until]" (count-down, Unmute, Change time). */
     fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long)
 
     fun clear(group: AlertGroup)
-
-    /** What stops an alert from reaching the person now (checked on every publish; shown on home). */
-    fun deliveryProblems(alarmKinds: Set<AlertKind>): Set<AlertDeliveryProblem>
 }
 
 /** The one exact wake-up of the alert runtime: [AlertRuntime.tick] at [at] (epoch s); null = none needed. */

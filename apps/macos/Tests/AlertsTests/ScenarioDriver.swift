@@ -22,8 +22,17 @@ struct Scenario: CustomTestStringConvertible, Sendable {
     var lines: [Line]
     var end: Int
     var mirror: Bool
+    /// `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; nil = 08:54.
+    var at: Int? = nil
 
     var testDescription: String { "\(file): \(title)" }
+
+    /// "22:05" → minutes after midnight.
+    static func clockMinutes(_ text: String) -> Int? {
+        let p = text.trimmingCharacters(in: .whitespaces).split(separator: ":")
+        guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]) else { return nil }
+        return h * 60 + m
+    }
 
     static var directory: URL { Contracts.url("alerts/scenarios") }
 
@@ -43,17 +52,19 @@ struct Scenario: CustomTestStringConvertible, Sendable {
         var lines: [Line] = []
         var end: Int?
         var mirror = false
+        var at: Int?
         func flush() {
             guard let t = title else { return }
             out.append(
                 Scenario(
                     file: file, title: t, settings: settings, lines: lines, end: end ?? lines.map(\.minute).max() ?? 0,
-                    mirror: mirror))
+                    mirror: mirror, at: at))
             title = nil
             settings = []
             lines = []
             end = nil
             mirror = false
+            at = nil
         }
         for raw in text.components(separatedBy: "\n") {
             let l = trim(raw.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
@@ -67,6 +78,8 @@ struct Scenario: CustomTestStringConvertible, Sendable {
                 end = Int(trim(l.dropFirst(4)))
             } else if l == "mirror" {
                 mirror = true
+            } else if l.hasPrefix("at ") {
+                at = clockMinutes(String(l.dropFirst(3)))
             } else {
                 let (left, right) =
                     l.range(of: "=>").map { (trim(l[..<$0.lowerBound]), String(l[$0.upperBound...])) } ?? (l, "")
@@ -115,22 +128,35 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
     case "relax.min": s.notificationActions.relaxMin = try int()
     case "back.mgdl": s.notificationActions.backMgdl = try int()
     case "back.min": s.notificationActions.backMin = try int()
+    case "persist.low": s.persistence.lowMin = try int()
+    case "persist.high": s.persistence.highMin = try int()
+    case "persist.margin": s.persistence.marginMgdl = try int()
+    case "escalate":
+        if v == "off" { s.escalation.on = false } else { s.escalation.on = true; s.escalation.min = try int() }
+    case "follower.escalate": s.escalation.follow = v == "on"
+    case "night": s.night.on = v == "on"
+    case "night.from", "night.to":
+        guard let m = Scenario.clockMinutes(v) else { throw ScenarioError.bad("not a time: \(kv)") }
+        if k == "night.from" { s.night.from = m } else { s.night.to = m }
     default:
-        let parts = k.split(separator: ".", maxSplits: 1).map(String.init)
+        let night = k.hasPrefix("night.")
+        let parts = (night ? String(k.dropFirst(6)) : k).split(separator: ".", maxSplits: 1).map(String.init)
         guard let kind = AlertKind(rawValue: parts[0]) else { throw ScenarioError.bad("unknown setting \(kv)") }
+        var r = night ? s.night[kind] : s[kind]
         if parts.count == 1 {
             switch v {
-            case "on": s[kind].on = true
-            case "off": s[kind].on = false
+            case "on": r.on = true
+            case "off": r.on = false
             default:
                 guard let x = Double(v) else { throw ScenarioError.bad("not a number: \(kv)") }
-                s[kind].threshold = x
+                r.threshold = x
             }
         } else if parts[1] == "repeat" {
-            s[kind].repeatMin = try int()
+            r.repeatMin = try int()
         } else {
             throw ScenarioError.bad("unknown setting \(kv)")
         }
+        if night { s.night[kind] = r } else { s[kind] = r }
     }
 }
 
@@ -138,16 +164,22 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
 /// scenario also runs a follower mirroring the wearer: `AlertMirror` over a second engine that gets everything but the
 /// wearer's notification actions (what the wearer publishes, SPEC §2).
 func runScenario(_ sc: Scenario) throws -> [String] {
-    let t0 = 1_760_000_040  // a whole minute
+    let base = 1_760_000_040  // a whole minute
+    // `at HH:MM`: that time of the same day (UTC)
+    let t0 = sc.at.map { base - base % 86400 + $0 * 60 } ?? base
+    let utc = TimeZone(identifier: "UTC")!
     var s = AlertSettings()
     for kv in sc.settings { try applySetting(&s, kv) }
+    // the scenario's time (the monotonic clock); the wearer's own clock is `clock`, moved by `clock back`
     var clock = Date(timeIntervalSince1970: TimeInterval(t0))
+    var real = clock
+    var offset: TimeInterval = 0
     var treatments: [(kind: TreatmentKind, at: Date, deleted: Bool)] = []
     var got: [Int: [String]] = [:]
     var follower = AlertMirror()
     var published: [String: AlertFiring] = [:]
 
-    func record(_ what: String) { got[Int(clock.timeIntervalSince1970) / 60 - t0 / 60, default: []].append(what) }
+    func record(_ what: String) { got[Int(real.timeIntervalSince1970) / 60 - t0 / 60, default: []].append(what) }
     func live() -> [AlertTreatment] {
         treatments.filter { !$0.deleted }.map { AlertTreatment(kind: $0.kind, at: $0.at) }
     }
@@ -163,29 +195,58 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             }
         }
     }
-    func publishedEffects(_ effects: [AlertEffect]) {
-        for e in effects {
+    // the wearer's run for the followers, with its escalation of an unanswered very low (#39)
+    var watch = EscalationWatch()
+    func publishedEvents(_ events: [EscalationWatch.Event]) {
+        for e in events {
             switch e {
-            case .fire(let f):
+            case .fire(let f, let esc):
                 published[f.id] = f
-                if follower.fire(f.kind, id: f.id, at: f.at) { record("follower \(f.headline)") }
+                let escalated = esc != nil && s.escalation.follow
+                if follower.fire(f.kind, id: f.id, at: f.at, escalated: escalated) {
+                    record("follower \(f.headline)" + (escalated ? " · no response" : ""))
+                }
             case .clear(let f):
                 if follower.clear(f.kind, id: f.id) { record("follower clear \(f.kind.rawValue)") }
-            case .back, .resume, .schedule: break
+            case .answered(let kind, _):
+                if follower.answered(kind) != nil { record("follower answered \(kind.rawValue)") }
             }
         }
     }
 
-    var wearer = AlertEngine(context: AlertContext(settings: s))
+    var wearer = AlertEngine(context: AlertContext(settings: s, timeZone: utc, wearersOwn: true))
     // mirror: the wearer's shared engine (no notification actions: what it publishes), feeding `follower`
-    var shared = AlertEngine(context: AlertContext(settings: s))
-    func both(_ input: AlertInput) {
-        wearerEffects(wearer.handle(input, at: clock))
-        if sc.mirror { publishedEffects(shared.handle(input, at: clock)) }
+    var shared = AlertEngine(context: AlertContext(settings: s, timeZone: utc))
+    var mono: TimeInterval { real.timeIntervalSince1970 }
+    /// What the followers get after a wearer input: the shared run's `effects`, `answer` = an answer on the wearer's phone.
+    func share(_ effects: [AlertEffect], answer: Bool) {
+        guard sc.mirror else { return }
+        publishedEvents(
+            watch.step(
+                shared: effects, answer: answer, newest: shared.showing(.level), settings: s.escalation, at: clock))
     }
+    /// A wearer's own action (never shared): `answer` = it answers a very low on the wearer's phone.
+    func wearerDo(_ input: AlertInput, answer: Bool = false) {
+        wearerEffects(wearer.handle(input, at: clock, monotonic: mono))
+        share([], answer: answer)
+    }
+    func both(_ input: AlertInput) {
+        wearerEffects(wearer.handle(input, at: clock, monotonic: mono))
+        guard sc.mirror else { return }
+        var answer = false
+        if case .treatments(let list) = input { answer = watch.answeredBy(list) }
+        share(shared.handle(input, at: clock, monotonic: mono), answer: answer)
+    }
+    // the follower is another device: its clock is the scenario's
     func followerReading(_ r: GlucoseSample?) {
         guard sc.mirror else { return }
-        for side in follower.reading(r, s, at: clock) { record("follower back \(side.rawValue)") }
+        for side in follower.reading(r, s, at: real) { record("follower back \(side.rawValue)") }
+    }
+    func followerShow(_ id: String?) { if let id, let f = published[id] { record("follower \(f.headline)") } }
+    /// The follower's Mute all ran out (its timer, or the input that came first).
+    func followerExpire() {
+        guard sc.mirror else { return }
+        for id in follower.expire(at: real) { followerShow(id) }
     }
     func minutes(_ w: [String], _ from: Int) throws -> Int? {
         guard w.count > from else { return nil }
@@ -193,10 +254,10 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         guard let m = Durations.parse(t) else { throw ScenarioError.bad("not a duration: \(t)") }
         return m
     }
-    func allEnd(_ w: [String], _ from: Int) throws -> Date {
+    func allEnd(_ w: [String], _ from: Int, from now: Date) throws -> Date {
         if w.count > from && w[from] == "never" { return muteAllForever }
         guard let m = try minutes(w, from) else { throw ScenarioError.bad("mute all needs a length") }
-        return clock.addingTimeInterval(TimeInterval(m * 60))
+        return now.addingTimeInterval(TimeInterval(m * 60))
     }
     func side(_ name: String) throws -> AlertSide {
         guard let k = AlertKind(rawValue: name) else { throw ScenarioError.bad("unknown kind \(name)") }
@@ -207,12 +268,14 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     }
 
     var glucose = 0.0
-    var rate = 0.0
+    var rate: Double?
     var age = 0
     var sensorOn = true
     var every = 1
     var nextReading: Int?
+    // when each device asked to be woken, on the scenario's time
     var timer: Int?
+    var followerTimer: Int?
     guard Set(sc.lines.map(\.minute)).count == sc.lines.count else {
         throw ScenarioError.bad("\(sc.file): \(sc.title): two lines for the same minute")
     }
@@ -220,7 +283,8 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     let stop = t0 + (sc.end + 1) * 60
     var t = t0
     while t < stop {
-        clock = Date(timeIntervalSince1970: TimeInterval(t))
+        real = Date(timeIntervalSince1970: TimeInterval(t))
+        clock = real.addingTimeInterval(offset)
         for ev in byTime[t]?.events ?? [] {
             let w = ev.split(whereSeparator: \.isWhitespace).map(String.init)
             func after(_ key: String) -> String? {
@@ -229,7 +293,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             switch w[0] {
             case "glucose":
                 glucose = Double(w[1]) ?? 0
-                rate = after("rate").flatMap(Double.init) ?? 0
+                rate = after("rate").flatMap(Double.init)
                 age = after("age").flatMap(Int.init) ?? 0
                 if nextReading == nil { nextReading = t }
             case "readings": every = Int(w[2]) ?? 1
@@ -247,6 +311,17 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                     sensorOn = w[1] == "on"
                     if sensorOn { nextReading = t }
                 }
+            case "source":
+                guard w.count > 1, w[1] == "started" else { throw ScenarioError.bad("unknown event: \(ev)") }
+                both(.source(since: clock))
+            case "clock":
+                guard w.count > 2, w[1] == "back", let m = try minutes(w, 2) else {
+                    throw ScenarioError.bad("unknown event: \(ev)")
+                }
+                offset -= TimeInterval(m * 60)
+                clock = real.addingTimeInterval(offset)
+                watch.shiftBack(TimeInterval(m * 60))
+                both(.tick)  // the system's clock-change notice (the app ticks the alerts)
             case "carbs", "insulin":
                 treatments.append((w[0] == "carbs" ? .carbs : .rapidInsulin, clock, false))
                 both(.treatments(live()))
@@ -256,32 +331,38 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 both(.treatments(live()))
             case "mute":
                 if w[1] == "all" {
-                    wearerEffects(wearer.handle(.muteAll(until: try allEnd(w, 2)), at: clock))
+                    wearerDo(.muteAll(until: try allEnd(w, 2, from: clock)), answer: true)
                 } else {
                     let m = try minutes(w, 2) ?? s.notificationActions.muteMin
-                    wearerEffects(wearer.handle(.mute(try side(w[1]), minutes: m), at: clock))
+                    let sd = try side(w[1])
+                    wearerDo(.mute(sd, minutes: m), answer: sd == .low)
                 }
-            case "relax": wearerEffects(wearer.handle(.remindLess(try side(w[1])), at: clock))
+            case "relax": wearerDo(.remindLess(try side(w[1])), answer: try side(w[1]) == .low)
             case "unmute":
-                wearerEffects(wearer.handle(w[1] == "all" ? .unmuteAll : .unmute(try side(w[1])), at: clock))
-            case "unrelax": wearerEffects(wearer.handle(.remindAsUsual(try side(w[1])), at: clock))
+                if w[1] == "all" {
+                    wearerDo(.unmuteAll, answer: true)
+                } else {
+                    wearerDo(.unmute(try side(w[1])), answer: try side(w[1]) == .low)
+                }
+            case "unrelax": wearerDo(.remindAsUsual(try side(w[1])), answer: try side(w[1]) == .low)
+            // the wearer taps, swipes or opens the alert: an answer on the wearer's phone (#39)
+            case "ack": share([], answer: try side(w[1]) == .low)
             case "follower":
-                func show(_ id: String?) { if let id, let f = published[id] { record("follower \(f.headline)") } }
                 switch (w[1], w.count > 2 ? w[2] : "") {
                 case ("mute", "all"):
-                    for g in follower.muteAll(until: try allEnd(w, 3)) {
+                    for g in follower.muteAll(until: try allEnd(w, 3, from: real)) {
                         record("follower clear \(newestKind(g)?.rawValue ?? g.rawValue)")
                     }
                 case ("mute", let k):
                     let sd = try side(k)
                     let m = try minutes(w, 3) ?? s.notificationActions.muteMin
-                    if follower.mute(sd, until: clock.addingTimeInterval(TimeInterval(m * 60))) {
+                    if follower.mute(sd, until: real.addingTimeInterval(TimeInterval(m * 60))) {
                         record("follower clear \(k)")
                     }
                 case ("relax", let k): follower.remindLess(try side(k), relaxMin: s.notificationActions.relaxMin)
-                case ("unmute", "all"): for id in follower.unmuteAll(at: clock) { show(id) }
-                case ("unmute", let k): show(follower.unmute(try side(k), at: clock))
-                case ("unrelax", let k): show(follower.remindAsUsual(try side(k), at: clock))
+                case ("unmute", "all"): for id in follower.unmuteAll(at: real) { followerShow(id) }
+                case ("unmute", let k): followerShow(follower.unmute(try side(k), at: real))
+                case ("unrelax", let k): followerShow(follower.remindAsUsual(try side(k), at: real))
                 default: throw ScenarioError.bad("unknown event: \(ev)")
                 }
             case "set":
@@ -301,20 +382,30 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             }
         }
         if sensorOn, let r = nextReading, r <= t {
+            // stamped by the wearer's clock; the follower gets it with the wearer's own time
             let rd = GlucoseSample(at: clock.addingTimeInterval(TimeInterval(-age * 60)), mgdl: glucose, rate: rate)
             both(.reading(rd))
-            followerReading(rd)
+            followerReading(GlucoseSample(at: rd.at.addingTimeInterval(-offset), mgdl: glucose, rate: rate))
             nextReading = t + every * 60
         } else if let tm = timer, tm <= t {
             both(.tick)
             followerReading(wearer.context.latest)
+        } else if sc.mirror, let ft = followerTimer, ft <= t {
+            followerReading(wearer.context.latest)
         }
-        timer = [wearer.nextCheck(after: clock), sc.mirror ? shared.nextCheck(after: clock) : nil].compactMap { $0 }
-            .min()
-            .map { Int($0.timeIntervalSince1970.rounded(.up)) }
+        followerExpire()
+        func onScenarioTime(_ d: Date?) -> Int? { d.map { Int(($0.timeIntervalSince1970 - offset).rounded(.up)) } }
+        timer = onScenarioTime(
+            [
+                wearer.nextCheck(after: clock), sc.mirror ? shared.nextCheck(after: clock) : nil,
+                sc.mirror ? watch.due(s.escalation).flatMap { $0 > clock ? $0 : nil } : nil,
+            ]
+            .compactMap { $0 }.min())
+        followerTimer =
+            sc.mirror ? follower.nextCheck(after: real).map { Int($0.timeIntervalSince1970.rounded(.up)) } : nil
         guard
-            let next = [byTime.keys.filter({ $0 > t }).min(), sensorOn ? nextReading : nil, timer].compactMap({ $0 })
-                .min()
+            let next = [byTime.keys.filter({ $0 > t }).min(), sensorOn ? nextReading : nil, timer, followerTimer]
+                .compactMap({ $0 }).filter({ $0 > t }).min()
         else {
             break
         }

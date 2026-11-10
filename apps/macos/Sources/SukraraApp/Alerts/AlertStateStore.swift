@@ -15,6 +15,9 @@ struct AlertState: Codable, Equatable {
     var mirror: AlertMirror
     /// The wearer's newest firing per group (Unmute / Remind as usual shows it again after a relaunch).
     var mirrored: [AlertGroup: AlertFiring] = [:]
+    /// #128: readings stamped at or before this don't feed the rules (a follow or source that ended: what was still on
+    /// its way can't arm no data again); nil = no fence. Saved, so a relaunch can't drop it.
+    var fence: Date?
 }
 
 /// Loads and saves `AlertState` (tests use an in-memory one).
@@ -33,18 +36,27 @@ struct AlertStateFile: AlertStateStoring {
         url = paths.appSupport.appending(path: "alert-state.json", directoryHint: .notDirectory)
     }
 
-    func load() -> AlertState? {
+    /// An unreadable file is copied aside (`alert-state.json.corrupt-<unix s>`) before the next save replaces it, so
+    /// what went wrong can still be looked at; one of another version is simply replaced.
+    func load(now: Date) -> AlertState? {
         guard let data = try? Data(contentsOf: url) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .secondsSince1970
-        guard let state = try? decoder.decode(AlertState.self, from: data), state.v == AlertState.formatVersion,
-            state.engine.v == AlertEngine.Snapshot.formatVersion
-        else {
-            Self.log.error("alert state unreadable: starting with alerts on and nothing muted")
+        guard let state = try? decoder.decode(AlertState.self, from: data) else {
+            let issue = StoreFiles.quarantine(url, now: now)
+            Self.log.error(
+                "alert state unreadable, kept as \(issue.quarantined?.lastPathComponent ?? "nothing", privacy: .public): starting with alerts on and nothing muted"
+            )
+            return nil
+        }
+        guard state.v == AlertState.formatVersion, state.engine.v == AlertEngine.Snapshot.formatVersion else {
+            Self.log.error("alert state of another version: starting with alerts on and nothing muted")
             return nil
         }
         return state
     }
+
+    func load() -> AlertState? { load(now: Date()) }
 
     func save(_ state: AlertState) {
         let encoder = JSONEncoder()

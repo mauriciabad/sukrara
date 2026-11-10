@@ -51,12 +51,52 @@ final class FakeCenter: NotificationPosting {
         notifier(.en).post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
         notifier(.es).post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
         let en = center.added[0].content, es = center.added[1].content
-        #expect(en.title == "Low glucose · 62 mg/dL ↘")
-        #expect(en.body == "Falling. Below 70 mg/dL.")
-        #expect(es.title == "Glucosa baja · 62 mg/dL ↘")
-        #expect(es.body == "Bajando. Por debajo de 70 mg/dL.")
+        #expect(en.title == "Low glucose")
+        #expect(en.body == "62 mg/dL ↘")
+        #expect(es.title == "Glucosa baja")
+        #expect(es.body == "62 mg/dL ↘")
         #expect(center.added[0].identifier == AlertNotificationIDs.notificationID(.level))
         #expect(en.userInfo[Notifier.sideKey] as? String == "low")
+    }
+
+    /// contracts/alerts/SPEC.md §1: no threshold; fast alerts add the rate; no data says how long and the last value.
+    @Test func bodyFollowsTheSpec() {
+        let en = AlertText(language: .en), es = AlertText(language: .es)
+        let fast = firing(.fallingFast, mgdl: 120, rate: -2.4)
+        #expect(en.body(fast, now: clock.now) == "120 mg/dL ↓ · falling 2.4 mg/dL/min")
+        #expect(es.body(fast, now: clock.now) == "120 mg/dL ↓ · baja 2,4 mg/dL/min")
+        #expect(en.body(firing(.risingFast, mgdl: 150, rate: 2.0), now: clock.now).hasSuffix(" · rising 2.0 mg/dL/min"))
+        #expect(!en.body(firing(.fallingFast, rate: nil), now: clock.now).contains("·"))
+        let old = AlertFiring(
+            id: "n", kind: .noData, at: clock.now,
+            reading: GlucoseSample(at: clock.now.addingTimeInterval(-25 * 60), mgdl: 120, rate: nil), threshold: 20,
+            n: 1, treated: 0)
+        #expect(en.body(old, now: clock.now) == "No reading for 25 min · last 120 mg/dL")
+        #expect(es.body(old, now: clock.now) == "Sin lecturas desde hace 25 min · última 120 mg/dL")
+        let lo = firing(.veryLow, mgdl: 39, rate: nil)
+        #expect(en.body(lo, now: clock.now).hasPrefix("LO · below 40 mg/dL"))
+        #expect(es.headline(firing(.low, treated: 2)) == "Glucosa baja · vuelve a comer")
+    }
+
+    /// contracts/settings/units.json: in mmol/L the value, the LO bound and the rate are in the unit, the language's
+    /// decimal separator.
+    @Test func bodyInMmolWritesEveryNumberInTheUnit() {
+        var en = AlertText(language: .en), es = AlertText(language: .es)
+        en.unit = .mmol
+        es.unit = .mmol
+        let fast = firing(.fallingFast, mgdl: 69, rate: -2.4)
+        #expect(en.body(fast, now: clock.now) == "3.8 mmol/L ↓ · falling 0.13 mmol/L/min")
+        #expect(es.body(fast, now: clock.now) == "3,8 mmol/L ↓ · baja 0,13 mmol/L/min")
+        #expect(en.body(firing(.veryLow, mgdl: 39, rate: nil), now: clock.now).hasPrefix("LO · below 2.2 mmol/L"))
+        #expect(
+            es.body(firing(.extremelyHigh, mgdl: 401, rate: nil), now: clock.now).hasPrefix(
+                "HI · por encima de 22,2 mmol/L"))
+        // the notifier writes the unit it is given now
+        var s = AlertSettings()
+        s.rules[.low]?.on = true
+        let n = Notifier(center: center, sounds: nil, text: en, clock: clock, unit: { .mmol }, settings: { s })
+        n.post(firing(.low, mgdl: 62), sound: false, category: AlertNotificationIDs.alertCategory)
+        #expect(center.added.last?.content.body.hasPrefix("3.4 mmol/L") == true)
     }
 
     @Test func aSilentResumeHasNoSoundAndASoundCopyFailureRingsTheDefault() {
@@ -88,7 +128,9 @@ final class FakeCenter: NotificationPosting {
         #expect(
             Notifier.action(actionID: IDs.changeMuteAction, side: "low", typed: "45", settings: s)
                 == .mute(.low, minutes: 45))
-        #expect(Notifier.action(actionID: IDs.muteAction, side: "low", typed: "soon", settings: s) == nil)
+        #expect(Notifier.action(actionID: IDs.muteAction, side: "low", typed: "soon", settings: s) == .reshow(.low))
+        #expect(
+            Notifier.action(actionID: IDs.changeMuteAction, side: "high", typed: "0", settings: s) == .reshow(.high))
         let longest = Int(AlertLimits.longestMuteMin)
         #expect(
             Notifier.action(actionID: IDs.muteAction, side: "low", typed: "\(longest + 600)", settings: s)
@@ -119,5 +161,58 @@ final class FakeCenter: NotificationPosting {
         #expect(AlertText.preferred(["es-ES", "en"]).language == .es)
         #expect(AlertText.preferred(["fr-FR", "es"]).language == .es)
         #expect(AlertText.preferred(["de"]).language == .en)
+    }
+
+    /// #109: a Mac that stopped monitoring says so once, passively (no sound), with why; it goes when it's back.
+    @Test func theStoppedMonitoringNoteIsPassiveAndReplaceable() {
+        let n = notifier()
+        n.monitoringStopped("Not monitoring: the wearer stopped sharing")
+        n.monitoringStopped("Not monitoring: the wearer stopped sharing")
+        #expect(center.added.count == 2 && Set(center.added.map(\.identifier)) == [Notifier.monitoringStoppedID])
+        let c = center.added[0].content
+        #expect(c.title == "Sukrara stopped monitoring")
+        #expect(c.body.hasPrefix("Not monitoring: the wearer stopped sharing\n"))
+        #expect(c.interruptionLevel == .passive && c.sound == nil && c.categoryIdentifier.isEmpty)
+        n.monitoringStopped(nil)
+        #expect(center.removed == [Notifier.monitoringStoppedID])
+    }
+}
+
+/// #19: whether the alarms break through a Focus, from the build's Time Sensitive entitlement (only a provisioning
+/// profile grants it) and the system's answer; the panel warns only while a Focus can hold them back.
+@Suite struct TimeSensitiveTests {
+    @Test func aBuildWithoutTheEntitlementSaysAFocusCanHoldTheAlarms() {
+        for setting in [UNNotificationSetting.notSupported, .disabled] {
+            for permission in [NotificationPermission.notAsked, .allowed, .denied, .quiet] {
+                #expect(TimeSensitive(setting: setting, entitled: false, permission: permission) == .unavailable)
+            }
+        }
+    }
+
+    @Test func anEntitledBuildIsOnUnlessThePersonTurnedItOff() {
+        #expect(TimeSensitive(setting: .enabled, entitled: true, permission: .allowed) == .on)
+        // not asked yet: the system's answer means nothing, the alarms will be Time Sensitive
+        #expect(TimeSensitive(setting: .notSupported, entitled: true, permission: .notAsked) == .on)
+        #expect(TimeSensitive(setting: .disabled, entitled: true, permission: .notAsked) == .on)
+        #expect(TimeSensitive(setting: .disabled, entitled: true, permission: .allowed) == .turnedOff)
+        // the system says no even though the build is entitled: the truth, a Focus can hold them back
+        #expect(TimeSensitive(setting: .notSupported, entitled: true, permission: .allowed) == .unavailable)
+    }
+
+    @Test func eachStateSaysWhatItMeansAndOnlyOnIsSilentInThePanel() {
+        let states: [TimeSensitive] = [.on, .turnedOff, .unavailable]
+        #expect(Set(states.map(\.text)).count == 3)
+        let scratch = FileManager.default.temporaryDirectory.appending(path: "sukrara-ts-\(UUID().uuidString)")
+        let plan = LaunchPlan(mode: .normal, services: .none, data: .isolated(root: scratch))
+        let model = AppModel(plan: plan)
+        #expect(!model.focusCanHoldAlerts)  // nil: this run posts no notifications
+        for state in states {
+            model.timeSensitive = state
+            for permission in [NotificationPermission.notAsked, .allowed, .denied, .quiet] {
+                model.notificationPermission = permission
+                // notifications off or quiet have their own warning; a Focus matters once they reach the person
+                #expect(model.focusCanHoldAlerts == (permission == .allowed && state != .on), "\(state) \(permission)")
+            }
+        }
     }
 }

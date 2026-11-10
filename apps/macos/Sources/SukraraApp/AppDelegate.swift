@@ -22,6 +22,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windows: WindowCoordinator?
     /// The wearer's mirrored settings while following (nil otherwise).
     private var wearer: WearerSettings?
+    private var settingsPending = false
+    /// `sukrara:` links held until the windows exist (a link that launches the app arrives before them).
+    private var linkInbox = LinkInbox()
+    /// *Read Glucose Aloud* and its system-wide keys (none in a snapshot run).
+    private let readAloud = ReadAloud()
+    private var shortcut: GlobalShortcut?
 
     public init(plan: LaunchPlan) {
         let services = AppServices(plan: plan)
@@ -30,7 +36,23 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         store = DefaultsSettingsStore(defaults: services.defaults)
         model = services.model()
         model.unit = store.unit
-        model.graph = GraphConfig.load(from: store, wearer: nil)
+        model.graph = GraphConfig.load(from: store, wearer: nil, place: .menubar)
+        model.widgetGraph = GraphConfig.load(from: store, wearer: nil, place: .widget)
+        if model.lan != nil {
+            secrets = services.secrets
+            lanSecret = JugglucoModel.secret(secrets)
+        }
+    }
+
+    /// The Keychain holding Juggluco's API secret (nil when this run has no Juggluco source).
+    private var secrets: (any SecretStoring)?
+    /// Juggluco's API secret, read once from the Keychain and kept as the Settings window changes it.
+    private var lanSecret = ""
+
+    /// The Juggluco switch, address and secret (nil = off).
+    private var lanConfig: LanConfig? {
+        store.value(MacSettings.jugglucoLan)
+            ? LanConfig(address: store.value(MacSettings.jugglucoAddress), secret: lanSecret) : nil
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
@@ -39,22 +61,48 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             await services.requestNotifications()
         }
         self.windows = windows
+        let juggluco = windows.settings.juggluco
+        juggluco.secrets = secrets
+        juggluco.available = { [weak model] in model?.lan != nil }
+        juggluco.state = { [weak model] in model?.lanSnapshot.state ?? .off }
+        juggluco.pausedFor = { [weak model] in model?.lanPausedFor }
+        juggluco.retry = { [weak model] in model?.retryLan() }
+        juggluco.secretChanged = { [weak self] secret in
+            self?.lanSecret = secret
+            self?.settingsChanged()
+        }
         model.onSnapshot = { [weak self, weak windows] snapshot in
             windows?.apply(snapshot)
             self?.wearerChanged(WindowCoordinator.wearerSettings(snapshot))
         }
         contextMenu.openSettings = { [weak windows] in windows?.openSettings() }
         contextMenu.openTreatments = { [weak windows] in windows?.openTreatments() }
+        contextMenu.openReport = { [weak windows] in windows?.openReport() }
         let links = PanelLinks(
             setup: windows.setup, treatments: windows.treatments,
             openSetup: { [weak self] in self?.fromPanel { $0.openSetup() } },
             openFollow: { [weak self] in self?.fromPanel { $0.openFollow() } },
-            openAddTreatment: { [weak self] in self?.fromPanel { $0.openAddTreatment() } },
+            openAddTreatment: { [weak self] focus in self?.fromPanel { $0.openAddTreatment(focus: focus) } },
             openTreatments: { [weak self] in self?.fromPanel { $0.openTreatments() } },
-            openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } })
+            openReport: { [weak self] in self?.fromPanel { $0.openReport() } },
+            openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } },
+            openSettingsPane: { [weak self] pane in self?.fromPanel { $0.openSettings(pane: pane) } })
         let statusItem = StatusItemController(model: model, menu: contextMenu, links: links)
-        statusItem.onOpen = { [weak self] in self?.refreshNotificationPermission() }
+        statusItem.onOpen = { [weak self, weak model] in
+            self?.refreshNotificationPermission()
+            model?.loadHistory()
+        }
         self.statusItem = statusItem
+        statusItem.readAloud = { [weak self] in self?.readGlucoseAloud() }
+        contextMenu.readAloud = { [weak self] in self?.readGlucoseAloud() }
+        // only the real app takes the system-wide keys: a render, a synthetic or an offline dev run never answers them
+        // (the person's own copy may be running beside it)
+        if model.plan.mode == .normal && !model.plan.isOffline {
+            shortcut = GlobalShortcut { [weak self] in self?.readGlucoseAloud() }
+        }
+        contextMenu.shortcutOn = { [weak self] in self?.shortcut?.isOn == true }
+        shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
+        windows.statusItemFrame = { [weak statusItem] in statusItem?.screenFrame }
         if let updates = model.updates {
             // the result shows in the panel: open it once the check is done
             contextMenu.checkForUpdates = { [weak statusItem] in
@@ -68,11 +116,22 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         windows.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         services.permissionChanged = { [weak self] in self?.refreshNotificationPermission() }
         observeSystemTime()
+        observeClockStyle()
         observeNetwork()
         refreshNotificationPermission()
+        model.lanConfig = lanConfig
         model.run()
         if case .snapshot = model.plan.mode {} else { windows.showSetupIfFirstRun() }
-        AppLog.app.info("launched (offline: \(self.model.plan.isOffline, privacy: .public))")
+        // after the first-run setup window: an invite link that launched the app opens its Follow step
+        for url in linkInbox.launched() { windows.open(url) }
+        AppLog.app.info(
+            "launched (offline: \(self.model.plan.isOffline, privacy: .public); \(self.services.entitlements.summary, privacy: .public))"
+        )
+    }
+
+    /// Read Glucose Aloud (menu, VoiceOver action, ⌃⇧⌘G): what VoiceOver says for the menu bar value, said now.
+    private func readGlucoseAloud() {
+        readAloud.toggle(model.menubarTitle.accessibilityLabel, from: statusItem?.accessibilityElement)
     }
 
     /// A panel row: close the panel, then open its window.
@@ -89,18 +148,63 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationDidBecomeActive(_ notification: Notification) {
         refreshNotificationPermission()
         model.loginItem?.refresh()
+        // back from System Settings › Local Network: look for Juggluco now, not in a minute
+        if model.lanSnapshot.state == .localNetworkDenied { model.retryLan() }
     }
 
-    public func applicationWillTerminate(_ notification: Notification) {
+    /// How long Quit waits for the follower runtime and Juggluco to stop before it ends the app anyway.
+    static let quitTimeout: Duration = .seconds(2)
+    private var quitting = false
+    private var quitAnswered = false
+
+    /// Quit (menu, logout, restart) waits until the model has stopped what it started (relay sockets closed, the
+    /// runtime's state saved), at most `quitTimeout`, then ends the app.
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !quitting else { return .terminateLater }
+        quitting = true
         network.cancel()
-        model.stop()
+        services.stop()
+        Task { [weak self] in
+            await self?.model.stop()
+            self?.answerQuit()
+        }
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.quitTimeout)
+            self?.answerQuit()
+        }
+        return .terminateLater
     }
 
-    /// `sukrara:` links (Info.plist CFBundleURLTypes): invite links go to the follow step, `sukrara://treatment/new`
-    /// to Add treatment, `sukrara://open` to the panel. A link that launched the app arrives after
-    /// `applicationDidFinishLaunching`.
+    private func answerQuit() {
+        guard !quitAnswered else { return }
+        quitAnswered = true
+        NSApp.reply(toApplicationShouldTerminate: true)
+    }
+
+    public func applicationWillTerminate(_ notification: Notification) { network.cancel() }
+
+    /// `sukrara:` links (Info.plist CFBundleURLTypes) and the web invite `https://sukrara.mauri.app/join#…` (given to
+    /// the app with `open -a Sukrara <link>` or dropped on it): invite links go to the follow step's confirmation,
+    /// `sukrara://treatment/new` to Add treatment, `sukrara://open` to the panel; anything else is ignored
+    /// (`AppLink`). A link that launches the app arrives before `applicationDidFinishLaunching` made the windows: it
+    /// waits in `linkInbox` until then.
     public func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.scheme == SukraraIDs.urlScheme { windows?.open(url) }
+        for url in linkInbox.receive(urls) { windows?.open(url) }
+    }
+
+    /// A universal link: the web invite clicked in Safari, Mail, Messages… opens the app (Associated Domains,
+    /// `applinks:sukrara.mauri.app`, only in a build with a provisioning profile; the site's
+    /// `.well-known/apple-app-site-association` lists the app). It goes the way of every link: the follow step's
+    /// confirmation, waiting out a launch in `linkInbox`. Anything else isn't Sukrara's (Safari opens it).
+    public func application(
+        _ application: NSApplication, continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void
+    ) -> Bool {
+        guard let url = AppLink.universal(type: userActivity.activityType, url: userActivity.webpageURL) else {
+            return false
+        }
+        for url in linkInbox.receive([url]) { windows?.open(url) }
+        return true
     }
 
     /// Timers don't run while the Mac sleeps and a clock change moves every deadline: re-check alerts and freshness.
@@ -115,7 +219,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             NotificationCenter.default.addObserver(
                 forName: UserDefaults.didChangeNotification, object: nil, queue: .main
             ) { [weak self] _ in
-                Task { @MainActor in self?.settingsChanged() }
+                Task { @MainActor in self?.scheduleSettingsChanged() }
             })
         observers.append(
             NotificationCenter.default.addObserver(forName: .NSSystemClockDidChange, object: nil, queue: .main) {
@@ -124,9 +228,22 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             })
     }
 
+    /// System Settings › 24-hour time or the time zone changed: every time on screen and in the widgets follows.
+    private func observeClockStyle() {
+        for name in Clock.changeNotifications {
+            observers.append(
+                NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    Task { @MainActor in
+                        self?.model.clockStyleChanged()
+                        self?.windows?.treatments.clockStyle += 1
+                    }
+                })
+        }
+    }
+
     /// The network came back: reconnect the relays now instead of waiting for the pool's watchdog (up to 270 s).
     private func observeNetwork() {
-        guard model.follower != nil else { return }
+        guard model.follower != nil || model.lan != nil else { return }
         // only a transition to satisfied: the monitor's first callback (at start) reports the current path, and the
         // runtime is connecting then anyway
         network.pathUpdateHandler = { [weak self] path in
@@ -141,14 +258,28 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if satisfied && networkSatisfied == false { model.networkCameBack() }
     }
 
+    /// Many defaults written together (one Settings edit stores every card setting) are handled once.
+    private func scheduleSettingsChanged() {
+        guard !settingsPending else { return }
+        settingsPending = true
+        Task { @MainActor in
+            settingsPending = false
+            settingsChanged()
+        }
+    }
+
     /// A defaults change (Settings window, another process): the alert rules, the unit and the card follow.
     private func settingsChanged() {
         services.settingsChanged()
-        let graph = GraphConfig.load(from: store, wearer: wearer)
-        let changed = model.unit != store.unit || model.graph != graph
+        let graph = GraphConfig.load(from: store, wearer: wearer, place: .menubar)
+        let widgetGraph = GraphConfig.load(from: store, wearer: wearer, place: .widget)
+        let changed = model.unit != store.unit || model.graph != graph || model.widgetGraph != widgetGraph
         if model.unit != store.unit { model.unit = store.unit }
         if model.graph != graph { model.graph = graph }
+        if model.widgetGraph != widgetGraph { model.widgetGraph = widgetGraph }
         if changed { model.feedWidget(settingsChanged: true) }
+        model.lanConfig = lanConfig
+        shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
     }
 
     /// The wearer's mirrored settings arrived, changed or went away (stopped following).
@@ -164,7 +295,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             let permission = await center.refresh()
             model.notificationPermission = permission
-            model.focusCanHoldAlerts = permission == .allowed && !center.timeSensitiveAllowed
+            model.timeSensitive = center.timeSensitive
+            windows?.settings.timeSensitive = center.timeSensitive
         }
     }
 }

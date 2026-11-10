@@ -35,19 +35,21 @@ enum TreatmentMarks {
     /// "4.5u", "12u", "30g" (lowercase, no space: the user, 2026-10-18); nil for notes.
     static func amount(k: String, a: Double) -> String? {
         switch k {
-        case "rapid", "long": (a == a.rounded() ? String(Int(a)) : String(format: "%.1f", a)) + "u"
+        case "rapid", "long": number(a) + "u"
         case "carbs": "\(Int(a.rounded()))g"
         default: nil
         }
     }
     static func amount(_ m: GraphMark) -> String? { amount(k: m.k, a: m.a) }
 
-    /// A short duration: "now" under a minute, "12m", "1h 5m", "3h" (whole hours drop the minutes; from 6 h only
-    /// hours), "2d" from two days. `up` rounds partial minutes up (time left: "1m" until it is over).
-    static func duration(_ s: TimeInterval, up: Bool = false) -> String {
-        let sec = Int64(max(0, s))
-        let m = up ? (sec + 59) / 60 : sec / 60
-        return m < 1 ? "now" : Durations.compact(Int(m))
+    /// An amount as the card writes it: "4", "4.5".
+    static func number(_ a: Double) -> String { a == a.rounded() ? String(Int(a)) : String(format: "%.1f", a) }
+
+    /// A short duration in the card's language (`CardWords.duration`): "now" under a minute, "12m", "1h 5m", "3h"
+    /// (whole hours drop the minutes; from 6 h only hours), "2d" from two days; Spanish "ahora", "12 min", "1 h 5 min".
+    /// `up` rounds partial minutes up (time left: "1m" until it is over).
+    static func duration(_ s: TimeInterval, up: Bool = false, words: CardWords) -> String {
+        words.duration(s, up: up)
     }
 
     private static let order = ["rapid": 0, "long": 1, "carbs": 2, "note": 3]
@@ -127,9 +129,10 @@ enum TreatmentMarks {
     /// anchored mid-group; newest group first, each in the first of lane 0 / lane 1 with the time, lane 0 / lane 1
     /// without it that has a free place (`place`), else no label.
     /// Nothing else takes room in the lanes: the sensor badge is drawn over the row, masking what passes under it.
+    /// `textScale` = the chart's text scale (`GlucoseGraph.textScale`): the labels' size, not the markers' spacing.
     static func layout(
         _ marks: [GraphMark], x: (TimeInterval) -> CGFloat, now: TimeInterval?, minX: CGFloat, maxX: CGFloat,
-        lanes: Int, d: CGFloat, show: MarkShow = .defaults
+        lanes: Int, d: CGFloat, show: MarkShow = .defaults, words: CardWords, textScale: CGFloat = 1
     ) -> Layout {
         let items = marks.filter { amount($0) != nil && order[$0.k] != nil && show.label($0.k) }
             .sorted { ($0.t, order[$0.k]!, $0.a, $0.id) < ($1.t, order[$1.k]!, $1.a, $1.id) }
@@ -141,7 +144,7 @@ enum TreatmentMarks {
                 groups.append([m])
             }
         }
-        let size = labelSize * d, gap = labelGap * d
+        let size = labelSize * d * textScale, gap = labelGap * d
         var taken: [[(CGFloat, CGFloat)]] = [[], []]
         var labels: [Label] = [], dropped: [[GraphMark]] = []
         for g in groups.sorted(by: { $0.last!.t > $1.last!.t }) {
@@ -150,7 +153,7 @@ enum TreatmentMarks {
             let amounts = shownAmounts.compactMap { amount($0) }
             // the time once, since the newest member that wants it
             let timeOf = g.last { show.has($0.k, MarkShow.time) }
-            let time = timeOf.flatMap { m in now.map { duration($0 - m.t) } }
+            let time = timeOf.flatMap { m in now.map { words.duration($0 - m.t) } }
             let cx = (x(g.first!.t) + x(g.last!.t)) / 2
             var placed: Label?
             var tries: [(Int, String?)] = []
@@ -202,7 +205,8 @@ enum TreatmentMarks {
     static func draw(
         _ ctx: CGContext, _ marks: [GraphMark], x: (TimeInterval) -> CGFloat, left: CGFloat, right: CGFloat,
         bottom: CGFloat, dark: Bool, d: CGFloat, layout: Layout?, base0: CGFloat, base1: CGFloat, sep sepColor: CGColor,
-        now: TimeInterval? = nil, muteUntil: ((GraphMark) -> TimeInterval?)? = nil, show: MarkShow = .defaults
+        now: TimeInterval? = nil, muteUntil: ((GraphMark) -> TimeInterval?)? = nil, show: MarkShow = .defaults,
+        textScale: CGFloat = 1
     ) {
         let items = marks.filter { order[$0.k] != nil }.map { ($0, x($0.t)) }.filter {
             $0.1 >= left - 1 && $0.1 <= right + 1
@@ -240,7 +244,7 @@ enum TreatmentMarks {
         }
 
         guard let layout, !layout.labels.isEmpty else { return }
-        let bold = Ink.font(labelSize * d, .bold), medium = Ink.font(labelSize * d, .medium)
+        let bold = Ink.font(labelSize * d * textScale, .bold), medium = Ink.font(labelSize * d * textScale, .medium)
         // pieces (text, font, colour) and the start of the real text, centred in its modelled box
         let drawn: [(Label, [(String, CTFont, CGColor)], CGFloat)] = layout.labels.map { l in
             var pieces: [(String, CTFont, CGColor)] = []

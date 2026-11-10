@@ -44,13 +44,36 @@ public struct FollowerState: Codable, Equatable, Sendable {
         public var origin: String
     }
 
+    /// A *Pair nearby* join (PROTOCOL-v2 "Nearby pairing"): the offer's commitment `commit`, this follower's `nonce`;
+    /// `code` once the wearer opened its nonce; `confirmed` once the person saw the same code on the wearer's phone;
+    /// `held` = a key delivery that came before that (used only on confirmation).
+    public struct NearbyPair: Codable, Equatable, Sendable {
+        public var commit: String
+        public var nonce: String
+        public var code: String?
+        public var confirmed = false
+        public var held: HeldKey?
+
+        public init(commit: String, nonce: String) {
+            self.commit = commit
+            self.nonce = nonce
+        }
+    }
+
+    /// A key delivery kept until the person confirms the pairing code, with its rumor `created_at`.
+    public struct HeldKey: Codable, Equatable, Sendable {
+        public var delivery: KeyDelivery
+        public var sentAt: Int
+    }
+
     public var v: Int = Self.formatVersion
     public var follower: SecretKeyHex
     public var identity: String
     public var token: String
+    /// The match code a wearer types when its invite link was tried by more than one device.
     public var code: String
-    /// Joined over Bluetooth: the wearer types `code` to allow.
-    public var nearby: Bool
+    /// Joined over Bluetooth: both devices compare a pairing code before anything of the wearer's is used.
+    public var pair: NearbyPair?
     /// How this follower appears to the wearer.
     public var me: Profile
     /// The person followed (invite, then each roster).
@@ -75,14 +98,14 @@ public struct FollowerState: Codable, Equatable, Sendable {
     public var revokedAt: Int?
 
     public init(
-        follower: SecretKeyHex, identity: String, token: String, code: String, nearby: Bool, me: Profile,
+        follower: SecretKeyHex, identity: String, token: String, code: String, pair: NearbyPair?, me: Profile,
         wearer: Profile?, relays: [String]
     ) {
         self.follower = follower
         self.identity = identity
         self.token = token
         self.code = code
-        self.nearby = nearby
+        self.pair = pair
         self.me = me
         self.wearer = wearer
         self.relays = relays

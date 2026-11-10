@@ -27,6 +27,37 @@ settings falling_fast=on
 16                       => Low glucose · eat more; Falling fast
 17
 
+scenario Falling fast into a LO: the LO has no rate, so the fall's episode and its repeats go on (its notification goes)
+settings falling_fast=on falling_fast.repeat=10
+ 0  glucose 60 rate -3   => Low glucose; Falling fast
+ 1  glucose 39           => clear low; Very low glucose; clear falling_fast   # LO, no rate: no sign the fall stopped,
+                                                                              # but at a LO the very low is the message (#127)
+ 2  glucose 41 rate -3                                    # the same fall: no new first alert
+ 6                       => Very low glucose
+10                       => Falling fast                  # its repeat, counted from minute 0
+11                       => Very low glucose
+12
+
+scenario Carbs during a LO after falling fast: nothing stale is left up, both come back after the carbs' window
+settings falling_fast=on
+ 0  glucose 60 rate -3   => Low glucose; Falling fast
+ 1  glucose 39           => clear low; Very low glucose; clear falling_fast   # LO: the fall's notification goes (#127)
+ 2  carbs 15             => clear very_low
+ 5  glucose 41 rate -3                                                       # rated again, still falling: quiet after carbs
+17                       => Very low glucose · eat more; Falling fast
+18
+
+scenario LO readings don't end a falling-fast Mute: no rate is no sign the fall stopped
+mirror
+settings falling_fast=on escalate=off   # about the Mute alone: an unanswered very low's escalation is escalation.txt
+ 0  glucose 60 rate -3              => Low glucose; Falling fast; follower Low glucose; follower Falling fast
+ 1  mute falling_fast 2h, follower mute falling_fast 2h   => clear falling_fast; follower clear falling_fast
+ 2  glucose 39                      => clear low; Very low glucose; follower clear low; follower Very low glucose
+ 7                                  => Very low glucose; follower Very low glucose
+12                                  => Very low glucose; follower Very low glucose   # 10 min of LO: no back falling_fast
+14  glucose 41 rate -3                                                               # still falling: still muted
+15
+
 scenario Rising fast; insulin quiets it
 settings rising_fast=on
  0  glucose 150 rate 3   => Rising fast
@@ -57,6 +88,14 @@ scenario No data stays quiet once the sensor has ended; a running no-data alert 
 30  sensor ended         => clear no_data
 200                                          # no repeats: nothing more is expected from this sensor
 
+scenario A sensor past its end that keeps sending: its readings alert as usual; the card shows them with the ended pill, issue 3
+ 0  glucose 120
+ 1  sensor ended, sensor on                  # a Dexcom in its grace period, a sensor kept on past its estimated end
+ 2  glucose 62 rate -1   => Low glucose       # the reading is the sensor's call: a low still alerts
+ 7  glucose 61 rate -1   => Low glucose      # its repeat
+ 8  glucose 75           => clear low
+ 9
+
 scenario A new sensor's warm-up doesn't alert no data; a warm-up that brings nothing does, 15 min after its end
  0  glucose 120
  1  sensor ended
@@ -70,3 +109,39 @@ scenario The first reading after the warm-up: back to normal
  5  sensor started
 65  sensor on
 90
+
+scenario A source that never delivers a first reading alerts no data, counted from its start
+ 0  source started                     # a sensor paired and connecting, Juggluco reached, a follow allowed
+20                       => No glucose data
+80                       => No glucose data
+85  glucose 120          => clear no_data
+86
+
+scenario A source started after older readings: no data counts from its start, not from the older reading
+ 0  glucose 120
+ 1  sensor off
+10  source started                     # a new source, nothing from it yet
+30                       => No glucose data
+31
+
+scenario A source whose first reading arrives already old: no data counts from that reading, not from the start
+ 0  source started
+ 2  glucose 120 age 15                 # its newest reading was taken 15 min ago (history on first contact)
+ 3  sensor off
+ 7                       => No glucose data
+ 8
+
+scenario The clock set back an hour: a Mute and the repeats stay on real time
+ 0  glucose 65           => Low glucose
+ 2  mute low 10          => clear low
+ 7  clock back 1h                      # the phone's clock is set back: from now on readings carry its time
+12                       => Low glucose  # the Mute's 10 min, on real time
+17                       => Low glucose
+18
+
+scenario The clock set back an hour: no data still comes 20 min after the last reading
+ 0  glucose 120
+ 1  sensor off
+ 5  clock back 1h
+20                       => No glucose data
+21

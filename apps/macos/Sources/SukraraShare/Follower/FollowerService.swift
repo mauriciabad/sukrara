@@ -27,6 +27,10 @@ public struct FollowerSnapshot: Sendable, Equatable {
     /// This Mac still follows the wearer: `readings` are still theirs, and the app keeps alerting on them (the
     /// no-data alarm fires if it doesn't recover) instead of treating it as "not following".
     public var keychainUnreadable = false
+    /// How this Mac appears to the wearer (the name and picture sent with the request and in profile updates).
+    public var me: Profile?
+    /// The wearer's name and picture (from the invite, then the roster), nil before any.
+    public var wearer: Profile?
 
     public static let empty = FollowerSnapshot(
         link: .notFollowing, readings: [], sensor: nil, treatments: [], unsentTreatments: 0, deliveries: [:],
@@ -34,10 +38,19 @@ public struct FollowerSnapshot: Sendable, Equatable {
         storeIssues: [], nearby: nil, nearbyOffer: nil)
 }
 
-/// "Pair nearby" open on a wearer's phone in Bluetooth range.
+/// "Pair nearby" open on a wearer's phone in Bluetooth range: its invite and `commit`, the wearer's commitment to its
+/// pairing nonce. Only a name and a picture until both devices show the same pairing code.
 public struct NearbyOffer: Sendable, Equatable {
     public let invite: Invite
-    public var wearerName: String? { invite.profile?.name }
+    public let commit: String
+
+    public init(invite: Invite, commit: String) {
+        self.invite = invite
+        self.commit = commit
+    }
+
+    public var wearerName: String? { Profile.shownName(invite.profile?.name) }
+    public var wearerAvatar: Avatar? { invite.profile?.avatar }
 }
 
 public enum FollowerJoinError: Error, Equatable, Sendable {
@@ -45,6 +58,8 @@ public enum FollowerJoinError: Error, Equatable, Sendable {
     case invalidLink
     /// No invite for this link reached the relays in time (the phone may be offline, or the link was replaced).
     case notFound
+    /// No relay answered the lookup at all: this Mac couldn't reach the internet.
+    case offline
     case expired
     /// The invite was sealed by someone else than the link names.
     case fingerprintMismatch
@@ -76,11 +91,22 @@ public protocol FollowerService: Sendable {
     func stop() async
     /// The Mac woke or the network came back: reconnect now instead of waiting for the watchdog.
     func reconnect() async
-    /// Follows the wearer behind an invite link (web link, `sukrara:` link or a QR code's text).
-    func join(link: String) async throws(FollowerJoinError)
+    /// Looks up the invite behind a link (web link, `sukrara:` link or a QR code's text) on the relays. Reads only: no
+    /// key is made and nothing is sent, so the person sees who is inviting (`Invite.profile`) before asking.
+    func lookUp(link: String) async throws(FollowerJoinError) -> Invite
+    /// The person clicked *Follow* on an invite `lookUp` found: makes this Mac's follower key and asks the wearer.
+    func join(invite: Invite) async throws(FollowerJoinError)
     func cancelJoin() async
-    /// Follows the wearer whose phone offers nearby pairing.
+    /// Follows the wearer whose phone offers nearby pairing (nothing of theirs is used until `confirmNearby(same: true)`).
     func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError)
+    /// The person compared the pairing codes on both devices: `same` lets the wearer's key in (held, or the next one);
+    /// a different code ends the join (the follower key goes, nothing is sent). False when there was nothing to confirm.
+    func confirmNearby(same: Bool) async -> Bool
+    /// The wearer's stored readings since `since`, oldest first (the store keeps 31 days); empty while not following.
+    func readings(since: Date) async -> [Reading]
+    /// How this Mac appears to the wearer: used by the next join, and sent at once (end-to-end encrypted) while a
+    /// follow exists. A blank name keeps the previous one.
+    func setProfile(name: String, avatar: Avatar?) async
     /// Looks for phones offering nearby pairing while not following (the follow window is open).
     func searchNearby(_ on: Bool) async
     /// Stops following: wipes the wearer's readings, treatments, sensor and settings, then the follower key.

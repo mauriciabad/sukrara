@@ -16,6 +16,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewPort
@@ -23,15 +25,20 @@ import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInViewModel
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorPort
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorViewModel
 import app.mauri.sukrara.feature.sensor.newsensor.SensorEnv
+import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.sensor.SensorModule
+import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.libreview.SignInResult
 import app.mauri.sukrara.sensor.pairing.PairOutcome
+import app.mauri.sukrara.sensor.pairing.Pairing
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 /**
  * The sensor screens' wiring (DI: `AppGraph` composes it with one line from the [SensorModule]). Implements
@@ -45,65 +52,92 @@ class SensorUiModule(
     private val settings: SettingsRepository,
     private val clock: Clock,
     private val appScope: CoroutineScope,
+    /** The glucose hub's state (the *Sensor ready* page's first reading). */
+    private val glucose: Flow<GlucoseState>,
+    /** THE graph settings every card draws with. */
+    private val graphConfig: Flow<GraphConfig>,
     /** Starts the monitoring service (the app's start path); called in the foreground, right after a tap. */
     private val startMonitoring: suspend () -> Unit,
 ) {
     private val app = context.applicationContext
 
-    val newSensor: NewSensorPort = object : NewSensorPort {
-        override suspend fun env(): SensorEnv {
-            val nfc = NfcAdapter.getDefaultAdapter(app)
-            return SensorEnv(
-                coreAvailable = sensors.hasLibre3Core,
-                nfcAvailable = nfc != null,
-                nfcOn = nfc?.isEnabled == true,
-                signedIn = sensors.libreView.email.first() != null,
-                officialAppInstalled = OfficialApps.anyInstalled(app.packageManager),
-                bluetoothPermission = granted(Manifest.permission.BLUETOOTH_CONNECT),
-                bluetoothOn = app.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true,
-                notificationsAllowed = NotificationManagerCompat.from(app).areNotificationsEnabled(),
-            )
+    val newSensor: NewSensorPort =
+        object : NewSensorPort {
+            override suspend fun env(): SensorEnv {
+                val nfc = NfcAdapter.getDefaultAdapter(app)
+                return SensorEnv(
+                    coreAvailable = sensors.hasLibre3Core,
+                    nfcAvailable = nfc != null,
+                    nfcOn = nfc?.isEnabled == true,
+                    signedIn = sensors.libreView.email.first() != null,
+                    officialAppInstalled = OfficialApps.anyInstalled(app.packageManager),
+                    bluetoothPermission = granted(Manifest.permission.BLUETOOTH_CONNECT),
+                    bluetoothOn = app.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true,
+                    notificationsAllowed = NotificationManagerCompat.from(app).areNotificationsEnabled(),
+                    scanPermission = granted(Manifest.permission.BLUETOOTH_SCAN),
+                )
+            }
+
+            override suspend fun pair(tag: Tag): PairOutcome = sensors.nfc.pair(tag)
+
+            override suspend fun pairScanned(
+                profile: SensorProfile,
+                id: String,
+            ): String {
+                val pairing = Pairing.scanned(profile, id, clock.now().toEpochMilli())
+                sensors.pairings.saveScanned(pairing)
+                settings.set(SOURCE, SensorSourceKind.Direct.id)
+                sensors.source.retry() // the source starts over with the new pairing (scan, then connect)
+                startMonitoring()
+                return SensorStatus.Direct.keyOf(pairing)
+            }
+
+            override val detail: StateFlow<SensorStatus> get() = sensors.source.detail
+            override val sensor: StateFlow<SensorState> get() = sensors.source.sensor
+            override val latest: Flow<Reading?> get() = glucose.map { it.latest }.distinctUntilChanged()
+            override val graphConfig: Flow<GraphConfig> get() = this@SensorUiModule.graphConfig
+
+            override fun retryLink() = sensors.source.retry()
+
+            override fun useFoundSensor(startEpoch: Long) = sensors.source.useFoundSensor(startEpoch)
+
+            override fun lookForAnother() = sensors.source.lookForAnother()
+
+            override suspend fun useJuggluco() {
+                settings.set(SOURCE, SensorSourceKind.Juggluco.id)
+                startMonitoring() // Juggluco is a source to monitor even with no sensor paired here
+            }
+
+            override suspend fun onPaired() {
+                settings.set(SOURCE, SensorSourceKind.Direct.id)
+                startMonitoring()
+            }
         }
 
-        override suspend fun pair(tag: Tag): PairOutcome = sensors.nfc.pair(tag)
+    val libreView: LibreViewPort =
+        object : LibreViewPort {
+            override val email: Flow<String?> get() = sensors.libreView.email
 
-        override val detail: StateFlow<SensorStatus> get() = sensors.source.detail
-        override val sensor: StateFlow<SensorState> get() = sensors.source.sensor
+            override suspend fun signIn(email: String, password: String): SignInResult = sensors.libreView.signIn(email, password)
 
-        override fun retryLink() = sensors.source.retry()
-
-        override suspend fun useJuggluco() {
-            settings.set(SOURCE, SensorSourceKind.Juggluco.id)
-            startMonitoring() // Juggluco is a source to monitor even with no sensor paired here
+            override suspend fun signOut() = sensors.libreView.signOut()
         }
-
-        override suspend fun onPaired() {
-            settings.set(SOURCE, SensorSourceKind.Libre3.id)
-            startMonitoring()
-        }
-    }
-
-    val libreView: LibreViewPort = object : LibreViewPort {
-        override val email: Flow<String?> get() = sensors.libreView.email
-
-        override suspend fun signIn(email: String, password: String): SignInResult = sensors.libreView.signIn(email, password)
-
-        override suspend fun signOut() = sensors.libreView.signOut()
-    }
 
     /** For `viewModel(factory = …)` in the app's navigation entries. */
-    val newSensorViewModels: ViewModelProvider.Factory = viewModelFactory {
-        initializer { NewSensorViewModel(newSensor, clock, appScope) }
-    }
+    val newSensorViewModels: ViewModelProvider.Factory =
+        viewModelFactory {
+            initializer { NewSensorViewModel(newSensor, clock, appScope) }
+        }
 
-    val libreViewViewModels: ViewModelProvider.Factory = viewModelFactory {
-        initializer { LibreViewSignInViewModel(libreView) }
-    }
+    val libreViewViewModels: ViewModelProvider.Factory =
+        viewModelFactory {
+            initializer { LibreViewSignInViewModel(libreView) }
+        }
 
     private fun granted(permission: String) = ContextCompat.checkSelfPermission(app, permission) == PackageManager.PERMISSION_GRANTED
 
     private companion object {
         /** The glucose source setting (schema `source.source`); the source manager follows it. */
-        val SOURCE = SchemaSettings.text("source.source", SensorSourceKind.Libre3.id, SensorSourceKind.entries.map { it.id }.toSet())
+        val SOURCE = SchemaSettings.text("source.source", SensorSourceKind.Direct.id, SensorSourceKind.entries.map { it.id }.toSet())
     }
 }

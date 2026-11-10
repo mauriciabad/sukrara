@@ -10,7 +10,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.CorruptionLog
+import app.mauri.sukrara.core.data.StoreKind
 import app.mauri.sukrara.core.data.files.FileStore
+import app.mauri.sukrara.core.data.reasonOf
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.SettingSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -40,12 +42,14 @@ class PreferenceStores(
         return opened.getOrPut(name) {
             val file = File(dir, "$name.preferences_pb")
             PreferenceDataStoreFactory.create(
-                corruptionHandler = ReplaceFileCorruptionHandler { error ->
-                    val now = clock.now()
-                    val copy = file.takeIf { it.exists() }?.copyTo(FileStore.quarantineTarget(file, now.toEpochMilli()), overwrite = true)
-                    corruption.report(CorruptFile("settings:$name", copy, now, error.message.orEmpty()))
-                    emptyPreferences()
-                },
+                corruptionHandler =
+                    ReplaceFileCorruptionHandler { error ->
+                        val now = clock.now()
+                        val target = FileStore.quarantineTarget(file, now.toEpochMilli())
+                        val copy = file.takeIf { it.exists() }?.copyTo(target, overwrite = true)
+                        corruption.report(CorruptFile(StoreKind.Settings, name, copy, now, reasonOf(error)))
+                        emptyPreferences()
+                    },
                 scope = scope,
                 produceFile = { file },
             )
@@ -53,15 +57,22 @@ class PreferenceStores(
     }
 }
 
-/** The Android stores the schema names (`store:key` of every Android setting). */
+/** The schema's Android store of secrets: the Keystore [app.mauri.sukrara.core.model.storage.SecureStore], not a DataStore. */
+const val SECURE_STORE = "secure"
+
+/** The Preferences DataStore files the schema names (`store:key` of every Android setting but the secrets). */
 fun schemaStores(): Set<String> =
-    SettingsSpec.SETTINGS.mapNotNull { info -> info.android.substringBefore(':').takeIf { it.isNotEmpty() } }.toSet()
+    SettingsSpec.SETTINGS
+        .mapNotNull { info -> info.android.substringBefore(':').takeIf { it.isNotEmpty() && it != SECURE_STORE } }
+        .toSet()
 
 /** [SettingsRepository] on [PreferenceStores]. Accepts only [Setting]s (store and key from the schema). */
 class DataStoreSettingsRepository(private val stores: PreferenceStores) : SettingsRepository {
     override fun <T> flow(spec: SettingSpec<T>): Flow<T> {
         val setting = spec.asSetting()
-        return stores.store(setting.store).data
+        return stores
+            .store(setting.store)
+            .data
             .map { prefs -> prefs[setting.preferenceKey]?.let(setting.sanitize) ?: setting.default }
             .distinctUntilChanged()
     }

@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import AppKit
 import SukraraAlerts
+import SukraraCore
 import SukraraGraph
+import SukraraShare
 import SwiftUI
 
 /// The dropdown under the status item. Every state it shows has its way out right here: not monitoring → why (and
@@ -16,6 +18,25 @@ struct PanelView: View {
     /// The window layer's entry points (nil in a render without windows).
     var links: PanelLinks?
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+    /// The screen's pixels per point: the card is drawn at it (sharp on any display, no wasted pixels on a 1x one).
+    @Environment(\.displayScale) private var displayScale
+    /// Where the chart looks (scrolled / zoomed through time; nil end = now).
+    @State private var scroll: ChartScroll
+
+    /// `scroll`: where the chart starts looking (snapshots; the app opens on now).
+    init(model: AppModel, links: PanelLinks? = nil, scroll: ChartScroll = ChartScroll()) {
+        self.model = model
+        self.links = links
+        _scroll = State(initialValue: scroll)
+    }
+    /// Mute all's Custom… field is open: Return belongs to it, not to Add Treatment….
+    @State private var customMute = false
+    /// The chart's y range, Now pill and way back to now, gliding (`ChartEase`).
+    @State private var ease = ChartEase()
+    /// Something glides: the card redraws every frame until it settles.
+    @State private var gliding = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let cardSize = CGSize(width: 340, height: 196)
 
@@ -29,54 +50,237 @@ struct PanelView: View {
                             .foregroundStyle(.secondary)
                     }
                 #endif
-                if let reason = model.notMonitoringReason {
-                    Label(reason, systemImage: "antenna.radiowaves.left.and.right.slash")
-                        .font(.callout)
-                        .accessibilityLabel(reason)
-                } else {
+                let reason = model.noDataReason
+                // the Keychain retrying: the alerts go on over the last readings, so they stay on screen under its line
+                let retrying = model.alertingOnLastData
+                let block = reason.map { reason in
+                    ReasonBlock(
+                        text: NoDataText.of(reason, now: context.date.timeIntervalSince1970, lastData: retrying),
+                        act: links.flatMap { reasonAction(reason.action, $0) },
+                        symbol: reason.action == .follow ? "person.badge.plus" : "gearshape",
+                        icon: retrying ? "arrow.triangle.2.circlepath" : GlucoseCard.noReadingsSymbol)
+                }
+                if retrying, let block { block }
+                if model.notMonitoringReason == nil || retrying {
                     card
                 }
-                if let links { SetupRows(links: links, needsFollow: model.needsFollow) }
+                // why there's no value and what to do: in the card's place, or under a card whose value is hidden
+                if !retrying, let block { block }
+                if let links {
+                    // a reason about the link offers its own way out (Follow Someone…, Following Settings…)
+                    let linkAction = reason?.action == .follow || reason?.action == .following
+                    SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
+                }
                 if model.notificationPermission.needsAttention { notificationsWarning }
-                if model.focusCanHoldAlerts { focusNote }
-                if let alerts = model.alerts { AlertBlocks(alerts: alerts, now: context.date) }
+                if model.focusCanHoldAlerts, let state = model.timeSensitive { TimeSensitiveNote(state: state) }
+                if let alerts = model.alerts {
+                    NightRow(alerts: alerts, open: links.map { l in { l.openSettingsPane(.alerts) } })
+                    AlertBlocks(alerts: alerts, now: context.date, custom: $customMute)
+                }
                 if let updates = model.updates { UpdateRow(updates: updates) }
-                if let links { ActionRows(links: links) }
+                if let links {
+                    ActionRows(
+                        links: links, add: AddTreatmentAvailability(model), returnAdds: !customMute)
+                }
             }
             .padding(14)
             .frame(width: Self.cardSize.width + 28, alignment: .leading)
+            // the panel opens at now again
+            .onDisappear {
+                scroll = ChartScroll()
+                ease = ChartEase()
+            }
+        }
+    }
+
+    /// What a reason's button does: follow someone, or open the settings pane that holds its exit.
+    private func reasonAction(_ action: NoDataReason.Action?, _ links: PanelLinks) -> (() -> Void)? {
+        switch action {
+        case nil: nil
+        case .follow: links.openFollow
+        case .following: { links.openSettingsPane(.following) }
+        case .juggluco: { links.openSettingsPane(.general) }
         }
     }
 
     @ViewBuilder private var card: some View {
-        let data = model.cardData
-        if let image = GlucoseCard.image(
-            surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
-            dark: scheme == .dark)
-        {
-            Image(decorative: image, scale: 2)
-                .accessibilityElement()
-                .accessibilityLabel(
-                    GlucoseCard.accessibilityLabel(data, unit: model.unit, surface: .menubarCard, config: model.graph))
+        let data = model.panelData
+        let bounds = chart(data)
+        TimelineView(.animation(paused: !gliding)) { frame in
+            cardImage(
+                data,
+                view: ease.view(scroll, default: bounds.default, now: data.now, at: frame.date.timeIntervalSince1970))
+        }
+        .onChange(of: target(data), initial: true) { _, new in
+            ease.retarget(y: new.y, away: new.away, at: Date().timeIntervalSince1970, instant: reduceMotion)
+            gliding = !ease.settled(at: Date().timeIntervalSince1970)
+        }
+        .task(id: ease) {
+            try? await Task.sleep(for: .seconds(Glide.settle + 0.05))
+            if !Task.isCancelled { gliding = false }
         }
     }
 
-    /// Without Time Sensitive notifications a Focus holds Sukrara's alarms back: say so, and where to allow it.
-    private var focusNote: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                L10n.t(
-                    "A Focus (Do Not Disturb, Sleep…) can hold back Sukrara's alarms on this Mac. Allow Sukrara in each Focus, and keep the phone as the alarm."
-                ),
-                systemImage: "moon.fill"
-            )
-            .font(.callout)
-            .fixedSize(horizontal: false, vertical: true)
-            Button(L10n.t("Open Focus Settings")) {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension") {
-                    NSWorkspace.shared.open(url)
+    /// Where the chart is going: the visible window's own y range and whether it is away from now.
+    private struct Target: Equatable {
+        var y: ClosedRange<Double>?
+        var away: Bool
+    }
+
+    private func target(_ data: CardData) -> Target {
+        Target(
+            y: GlucoseCard.yRange(
+                surface: .menubarCard, config: model.graph, readings: data.readings, end: scroll.end ?? data.now,
+                span: scroll.span), away: scroll.away)
+    }
+
+    /// Back to now and the place's own window, end and length gliding there together.
+    private func goBack(_ data: CardData) {
+        guard scroll.away else { return }
+        let b = chart(data)
+        ease.goBack(
+            from: scroll.end ?? b.now, span: scroll.span(b.default), at: Date().timeIntervalSince1970,
+            instant: reduceMotion)
+        scroll = ChartScroll()
+    }
+
+    @ViewBuilder private func cardImage(_ data: CardData, view: ChartView?) -> some View {
+        let increased = contrast == .increased
+        if let image = GlucoseCard.image(
+            surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
+            dark: scheme == .dark, scale: displayScale, view: view, contrast: increased)
+        {
+            let rects = GlucoseCard.chartRects(
+                surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
+                view: view)
+            Image(decorative: image, scale: displayScale)
+                .accessibilityElement()
+                .accessibilityLabel(
+                    GlucoseCard.accessibilityLabel(data, unit: model.unit, surface: .menubarCard, config: model.graph)
+                )
+                .modifier(
+                    ChartActions(scroll: $scroll, chart: chart(data), hasChart: rects.plot != nil) { goBack(data) }
+                )
+                .overlay(alignment: .topLeading) {
+                    if let plot = rects.plot {
+                        ChartGestures(
+                            scroll: { dx, _ in moveChart(by: dx, plotWidth: plot.width, data) },
+                            zoom: { factor, x in
+                                zoomChart(factor, at: (x * Self.cardSize.width - plot.minX) / plot.width, data)
+                            },
+                            smartZoom: { x in
+                                let b = chart(data)
+                                scroll.smartZoom(
+                                    anchor: Double((x * Self.cardSize.width - plot.minX) / plot.width),
+                                    default: b.default, first: b.first, now: b.now)
+                            }
+                        )
+                        .frame(width: Self.cardSize.width, height: Self.cardSize.height)
+                    }
+                }
+                .overlay(alignment: .topLeading) { pill(data) }
+                .overlay(alignment: .topLeading) {
+                    if let now = rects.now, scroll.away {
+                        Button {
+                            goBack(data)
+                        } label: {
+                            Color.clear.contentShape(Capsule()).frame(width: now.width, height: now.height)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(L10n.t("Back to Now"))
+                        .help(L10n.t("Back to Now"))
+                        .offset(x: now.minX, y: now.minY)
+                    }
+                }
+                // the module reaches 6 pt past the card, into the panel's margin (the card keeps its size)
+                .background(Self.module(scheme: scheme, increased: increased).padding(-6))
+        }
+    }
+
+    /// The recessed module behind the card (12 pt corners; black 18 % in dark mode, white 50 % in light mode; an
+    /// outline with Increase Contrast).
+    static func module(scheme: ColorScheme, increased: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(scheme == .dark ? Color.black.opacity(0.18) : Color.white.opacity(0.5))
+            .overlay {
+                if increased {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
                 }
             }
+    }
+
+    /// The bounds a gesture works within: the place's own length, the oldest reading, now.
+    private func chart(_ data: CardData) -> ChartActions.Bounds {
+        ChartActions.Bounds(
+            default: GlucoseCard.chartSpan(surface: .menubarCard, config: model.graph) ?? 12 * 3600,
+            first: data.readings.first?.t ?? data.now, now: data.now)
+    }
+
+    private func moveChart(by dx: CGFloat, plotWidth: CGFloat, _ data: CardData) {
+        let b = chart(data)
+        let span = scroll.span(b.default)
+        // the content follows the fingers: moving it right shows earlier readings
+        scroll.by(-Double(dx) * span / Double(max(plotWidth, 1)), minEnd: b.first + span, now: b.now)
+    }
+
+    private func zoomChart(_ factor: CGFloat, at x: CGFloat, _ data: CardData) {
+        let b = chart(data)
+        scroll.zoom(Double(factor), anchor: Double(x), default: b.default, first: b.first, now: b.now)
+    }
+
+    /// The card's pill as a control over the spot the renderer drew it: Eat carbs / Take insulin opens Add Treatment
+    /// with that field focused, a mute pill opens its ways out (the same as the blocks below).
+    @ViewBuilder private func pill(_ data: CardData) -> some View {
+        let canAdd = AddTreatmentAvailability(model) == .available && links != nil
+        let action = PillAction.of(
+            data.alerts.status, canAdd: canAdd, muteAll: model.alerts?.ui.muteAllUntil != nil)
+        if action != .none,
+            let rect = GlucoseCard.pillRect(
+                surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit)
+        {
+            let spot = Color.clear.contentShape(Capsule()).frame(width: rect.width, height: rect.height)
+            Group {
+                switch action {
+                case .treat(let kind):
+                    Button {
+                        links?.openAddTreatment(kind)
+                    } label: {
+                        spot
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(kind == .carbs ? L10n.t("Eat carbs") : L10n.t("Take insulin"))
+                    .accessibilityHint(L10n.t("Add Treatment"))
+                case .quiet(let side):
+                    if let alerts = model.alerts {
+                        Menu {
+                            QuietMenu(alerts: alerts, side: side, now: Date())
+                        } label: {
+                            spot
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
+                        .accessibilityLabel(L10n.t("Show Alert Options"))
+                    }
+                case .muteAll:
+                    if let alerts = model.alerts {
+                        Menu {
+                            Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
+                            MuteAllLengths(alerts: alerts, now: Date(), custom: .constant(false), offerCustom: false)
+                        } label: {
+                            spot
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
+                        .accessibilityLabel(L10n.t("Show Alert Options"))
+                    }
+                case .none: EmptyView()
+                }
+            }
+            .help(L10n.t("Show what you can do"))
+            .offset(x: rect.minX, y: rect.minY)
         }
     }
 
@@ -89,11 +293,38 @@ struct PanelView: View {
                 systemImage: "exclamationmark.triangle.fill"
             )
             .foregroundStyle(.orange)
-            Button(L10n.t("Open Notification Settings")) {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
-                    NSWorkspace.shared.open(url)
+            Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
+        }
+    }
+}
+
+/// VoiceOver's way through the chart: Earlier, Later, Zoom Out, Zoom In and Back to Now as the card's actions.
+private struct ChartActions: ViewModifier {
+    struct Bounds { var `default`, first, now: TimeInterval }
+    @Binding var scroll: ChartScroll
+    let chart: Bounds
+    let hasChart: Bool
+    /// Back to now (gliding there).
+    let back: () -> Void
+
+    func body(content: Content) -> some View {
+        if hasChart {
+            content
+                .accessibilityAction(named: L10n.t("Earlier")) {
+                    scroll.page(forward: false, default: chart.default, first: chart.first, now: chart.now)
                 }
-            }
+                .accessibilityAction(named: L10n.t("Later")) {
+                    scroll.page(forward: true, default: chart.default, first: chart.first, now: chart.now)
+                }
+                .accessibilityAction(named: L10n.t("Zoom Out")) {
+                    scroll.step(out: true, default: chart.default, first: chart.first, now: chart.now)
+                }
+                .accessibilityAction(named: L10n.t("Zoom In")) {
+                    scroll.step(out: false, default: chart.default, first: chart.first, now: chart.now)
+                }
+                .accessibilityAction(named: L10n.t("Back to Now"), back)
+        } else {
+            content
         }
     }
 }
@@ -105,28 +336,112 @@ struct PanelLinks {
     let treatments: TreatmentsModel
     let openSetup: () -> Void
     let openFollow: () -> Void
-    let openAddTreatment: () -> Void
+    /// Add Treatment with a field focused (nil: the one the latest reading suggests).
+    let openAddTreatment: (Treatment.Kind?) -> Void
     let openTreatments: () -> Void
+    let openReport: () -> Void
     let openSettings: () -> Void
+    /// Settings on one pane (a no-data reason's way out: Following, Juggluco in General).
+    let openSettingsPane: (SettingsModel.Pane) -> Void
 }
 
-/// Whether the panel's Add Treatment… can open, and why not in words (on the row, its tooltip and VoiceOver hint).
+/// Why there's no value and what to do about it (#72; Android's no-data reasons): the reason in a line with the "no
+/// readings" symbol, why in a sentence, and its action as a button. VoiceOver reads the reason and why as one element,
+/// then the button.
+private struct ReasonBlock: View {
+    let text: NoDataText
+    var act: (() -> Void)?
+    var symbol = "person.badge.plus"
+    /// The reason's own symbol (the Keychain retrying: the circling arrows).
+    var icon = GlucoseCard.noReadingsSymbol
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Label(text.title, systemImage: icon)
+                    .font(.callout.weight(.medium))
+                if let body = text.body {
+                    Text(body)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 28)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            if let action = text.action, let act {
+                Button(action, systemImage: symbol, action: act)
+                    .padding(.leading, 28)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Whether the panel's Add Treatment… can open, and why not in words (on the row, its tooltip and VoiceOver hint):
+/// each follow state names what would change it.
 enum AddTreatmentAvailability: Equatable {
     case available
     /// Following nobody: there's no wearer to log for.
     case notFollowing
-    /// Following, but the wearer hasn't allowed this Mac to add entries.
-    case notAllowed
+    /// Access asked, the wearer hasn't allowed this Mac yet.
+    case waiting(wearer: String?)
+    /// Following, but the wearer hasn't turned on "Can add entries" for this Mac.
+    case notWriter(wearer: String?)
+    /// The wearer stopped sharing with this Mac.
+    case revoked
+    /// The link is over (declined, invite used elsewhere, broken): a new invite is needed.
+    case ended
+    /// The Keychain won't read the follower key (retrying): nothing can be signed until it does.
+    case keyUnreadable
 
-    init(isFollowing: Bool, canWrite: Bool) {
-        self = !isFollowing ? .notFollowing : canWrite ? .available : .notAllowed
+    /// The panel's: the link, or the Keychain retrying.
+    init(_ model: AppModel) {
+        self = model.keychainUnreadable ? .keyUnreadable : AddTreatmentAvailability(link: model.link)
+    }
+
+    init(link: LinkState) {
+        switch link {
+        case .following(let wearer, let canWrite): self = canWrite ? .available : .notWriter(wearer: wearer)
+        case .requested(_, let wearer, _): self = .waiting(wearer: wearer)
+        case .joining: self = .waiting(wearer: nil)
+        case .revoked: self = .revoked
+        case .declined, .inviteUsed, .broken: self = .ended
+        case .notFollowing: self = .notFollowing
+        }
     }
 
     var reason: String? {
         switch self {
         case .available: nil
         case .notFollowing: L10n.t("Follow someone to add treatments.")
-        case .notAllowed: L10n.t("Can't add treatments (the wearer decides)")
+        case .waiting(let w?): L10n.t("Waiting for \(w) to approve this Mac")
+        case .waiting(nil): L10n.t("Waiting for the wearer to approve this Mac")
+        case .notWriter(let w?): L10n.t("\(w) hasn't turned on “Can add entries” for this Mac")
+        case .notWriter(nil): L10n.t("The wearer hasn't turned on “Can add entries” for this Mac")
+        case .revoked: L10n.t("The wearer stopped sharing with this Mac")
+        case .ended: L10n.t("Not following anyone: ask for a new invite")
+        case .keyUnreadable: L10n.t("Can't add treatments until the follower key can be read")
+        }
+    }
+}
+
+/// What pressing the card's pill does: Eat carbs / Take insulin → Add Treatment with that field focused (where this
+/// Mac may log); a side's mute → its ways out; Mute all's → Unmute / Change Time.
+enum PillAction: Equatable {
+    case treat(Treatment.Kind)
+    case quiet(AlertSide)
+    case muteAll
+    case none
+
+    /// `muteAll`: Mute all is on, so a paused side's way out is Mute all's (Unmute / Change Time).
+    static func of(_ status: AlertStatus, canAdd: Bool, muteAll: Bool = false) -> PillAction {
+        if muteAll, case .paused = status { return .muteAll }
+        return switch status {
+        case .none: .none
+        case .needed(let side): canAdd ? .treat(side == .low ? .carbs : .rapid) : .none
+        case .taken(let side, _, _), .paused(let side, _): .quiet(side == .low ? .low : .high)
+        case .muted: .muteAll
         }
     }
 }
@@ -134,17 +449,20 @@ enum AddTreatmentAvailability: Equatable {
 /// The panel's menu-like rows: Add Treatment… (the default button: Return), Treatments…, Settings… ⌘,.
 private struct ActionRows: View {
     let links: PanelLinks
+    let add: AddTreatmentAvailability
+    /// Return chooses Add Treatment… (off while a text field in the panel takes Return).
+    var returnAdds = true
 
     var body: some View {
-        let add = AddTreatmentAvailability(
-            isFollowing: links.treatments.isFollowing, canWrite: links.treatments.canWrite)
         VStack(alignment: .leading, spacing: 2) {
             Divider().padding(.bottom, 4)
-            Button(action: links.openAddTreatment) {
+            Button {
+                links.openAddTreatment(nil)
+            } label: {
                 PanelRowLabel(
                     title: L10n.t("Add Treatment…"), symbol: "plus.circle", shortcut: add == .available ? "↩" : nil)
             }
-            .keyboardShortcut(add == .available ? .defaultAction : nil)
+            .keyboardShortcut(add == .available && returnAdds ? .defaultAction : nil)
             .disabled(add != .available)
             .help(add.reason ?? "")
             .accessibilityHint(add.reason ?? "")
@@ -157,6 +475,9 @@ private struct ActionRows: View {
             }
             Button(action: links.openTreatments) {
                 PanelRowLabel(title: L10n.t("Treatments…"), symbol: "list.bullet", shortcut: nil)
+            }
+            Button(action: links.openReport) {
+                PanelRowLabel(title: L10n.t("Glucose Report…"), symbol: "chart.bar.doc.horizontal", shortcut: nil)
             }
             Divider().padding(.vertical, 4)
             Button(action: links.openSettings) {
@@ -230,47 +551,190 @@ private struct SetupRows: View {
     }
 }
 
-/// Mute all and each side's quiet, with countdowns (`MuteCopy`) and their exits.
+/// While the night alerts apply (#38): "Night alerts until 7:00" with Change… (Settings › Alerts, where its switch and
+/// hours are). Nothing in the day.
+private struct NightRow: View {
+    let alerts: AlertController
+    let open: (() -> Void)?
+
+    var body: some View {
+        if let until = alerts.ui.nightUntil {
+            HStack {
+                Label(MuteCopy.nightUntil(until: Clock.time(until)), systemImage: "moon.zzz")
+                Spacer()
+                if let open {
+                    Button(L10n.t("Change…"), action: open)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel(L10n.t("Night alerts: Change"))
+                }
+            }
+        }
+    }
+}
+
+/// Mute all and each side's quiet, with countdowns (`MuteCopy`) and their exits: Unmute (a side's Mute) or Alert Me
+/// Anyway (a treatment or falling-back quiet), Remind as Usual / Remind Less, and the lengths to change or start a
+/// mute; Mute all: Unmute and Change Time, or Mute All Alerts with a typed Custom… length.
 private struct AlertBlocks: View {
     let alerts: AlertController
     let now: Date
+    @Binding var custom: Bool
 
     var body: some View {
         let ui = alerts.ui
         if let until = ui.muteAllUntil, let line = MuteCopy.allLine(until: until, now: now) {
-            HStack {
+            // the line above its exits (as a side's): beside them, "1 h left" broke between "1" and "h"
+            VStack(alignment: .leading, spacing: 4) {
                 Label(line, systemImage: "bell.slash.fill")
-                Spacer()
-                Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
+                // what it covers: nothing still sounds here, and no other device is muted
+                Text(L10n.t("Very low and no data included, on this Mac only"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
+                        .accessibilityLabel(L10n.t("Alerts: Unmute"))
+                    Menu(L10n.t("Change Time")) {
+                        MuteAllLengths(alerts: alerts, now: now, custom: $custom, offerCustom: true)
+                    }
+                    .fixedSize()
+                    .accessibilityLabel(L10n.t("Alerts: Change time"))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
         ForEach(ui.quiets, id: \.kind) { q in
-            if let reason = q.quiet, let line = MuteCopy.line(reason, side: q.side, now: now) {
-                HStack {
-                    Text(line)
-                    Spacer()
-                    if case .sideMuted = reason { Button(L10n.t("Unmute")) { alerts.perform(.unmute(q.side)) } }
+            VStack(alignment: .leading, spacing: 4) {
+                if let reason = q.quiet, let line = MuteCopy.line(reason, side: q.side, now: now) {
+                    Label(line, systemImage: "bell.slash")
                 }
-            }
-            if q.relaxMin > 0 {
-                HStack {
-                    Text(MuteCopy.sideLess(q.side, intervalMin: q.relaxMin))
-                    Spacer()
-                    Button(L10n.t("Remind as Usual")) { alerts.perform(.remindAsUsual(q.side)) }
+                if q.relaxMin > 0 {
+                    Label(MuteCopy.sideLess(q.side, intervalMin: q.relaxMin), systemImage: "bell.badge.waveform")
                 }
+                HStack {
+                    QuietMenu(alerts: alerts, side: q.side, now: now)
+                }
+                .fixedSize()
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
         if ui.muteAllUntil == nil {
             Menu(L10n.t("Mute All Alerts")) {
-                ForEach(AlertLimits.muteAllPresets, id: \.self) { minutes in
-                    Button(MuteCopy.choice(minutes)) {
-                        alerts.perform(.muteAll(until: now.addingTimeInterval(TimeInterval(minutes * 60))))
-                    }
-                }
-                Button(MuteCopy.menuForever) { alerts.perform(.muteAll(until: muteAllForever)) }
+                MuteAllLengths(alerts: alerts, now: now, custom: $custom, offerCustom: true)
             }
             .fixedSize()
         }
+        if custom { CustomMuteAll(alerts: alerts, done: { custom = false }) }
+    }
+}
+
+/// A side's ways out, as buttons (the panel) or menu items (the pill's menu): Unmute / Alert Me Anyway, Remind as
+/// Usual / Remind Less, and Change Time / Mute with the mute lengths.
+struct QuietMenu: View {
+    let alerts: AlertController
+    let side: AlertSide
+    let now: Date
+
+    var body: some View {
+        let q = alerts.ui.quiets.first { $0.side == side }
+        let sideMuted: Bool = {
+            if case .sideMuted = q?.quiet { return true }
+            return false
+        }()
+        if let q, let quiet = q.quiet, MuteCopy.line(quiet, side: side, now: now) != nil {
+            if sideMuted {
+                Button(L10n.t("Unmute")) { alerts.perform(.unmute(side)) }
+            } else if case .allMuted = quiet {
+                EmptyView()
+            } else {
+                // a treatment or falling back keeps it quiet: the engine lifts that cover for this episode
+                Button(L10n.t("Alert Me Anyway")) { alerts.perform(.unmute(side)) }
+            }
+        }
+        if let q, q.relaxMin > 0 {
+            Button(L10n.t("Remind as Usual")) { alerts.perform(.remindAsUsual(side)) }
+        } else if q?.canRelax == true {
+            Button(L10n.t("Remind Less")) { alerts.perform(.remindLess(side)) }
+        }
+        Menu(sideMuted ? L10n.t("Change Time") : L10n.t("Mute")) {
+            ForEach(AlertLimits.mutePresets, id: \.self) { minutes in
+                Button(MuteCopy.choice(minutes)) { alerts.perform(.mute(side, minutes: minutes)) }
+            }
+        }
+        .accessibilityLabel(
+            sideMuted
+                ? L10n.t("\(MuteCopy.sideName(side)) alerts: Change time")
+                : L10n.t("\(MuteCopy.sideName(side)) alerts: Mute"))
+    }
+}
+
+/// Mute all's lengths: For 30 min … For 8 h, Until You Turn It Off, and Custom… (a typed length).
+struct MuteAllLengths: View {
+    let alerts: AlertController
+    let now: Date
+    @Binding var custom: Bool
+    let offerCustom: Bool
+
+    var body: some View {
+        ForEach(AlertLimits.muteAllPresets.filter { $0 > 0 }, id: \.self) { minutes in
+            Button(MuteCopy.choice(minutes)) {
+                alerts.perform(.muteAll(until: now.addingTimeInterval(TimeInterval(minutes * 60))))
+            }
+        }
+        Button(MuteCopy.menuForever()) { alerts.perform(.muteAll(until: muteAllForever)) }
+        if offerCustom {
+            Divider()
+            Button(L10n.t("Custom…")) { custom = true }
+        }
+    }
+}
+
+/// Mute all for a typed length ("2 h 30 min", "90"), within the schema's range; Escape or Cancel closes it.
+private struct CustomMuteAll: View {
+    let alerts: AlertController
+    let done: () -> Void
+    @State private var text = ""
+    @State private var invalid = false
+    @FocusState private var focused: Bool
+
+    private var range: ClosedRange<Int> { Int(SettingsSpec.muteAll.min)...Int(SettingsSpec.muteAll.max) }
+    private var note: String {
+        L10n.t("Enter \(Durations.text(range.lowerBound))–\(Durations.text(range.upperBound)), e.g. 1 h 30 min")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                TextField(
+                    L10n.t("Mute alerts for"),
+                    text: Binding(
+                        get: { text },
+                        set: {
+                            text = $0
+                            invalid = false
+                        }), prompt: Text(verbatim: "2 h 30 min")
+                )
+                .textFieldStyle(.roundedBorder)
+                .focused($focused)
+                .onSubmit(commit)
+                .accessibilityHint(note)
+                Button(L10n.t("Mute"), action: commit).disabled(text.isEmpty)
+                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
+            }
+            Text(note).font(.caption).foregroundStyle(invalid ? Color.red : Color.secondary)
+        }
+        .onAppear { focused = true }
+    }
+
+    private func commit() {
+        guard let m = Durations.parse(text), range.contains(m) else {
+            invalid = true
+            return
+        }
+        alerts.perform(.muteAll(until: Date().addingTimeInterval(TimeInterval(m * 60))))
+        done()
     }
 }
 
@@ -284,10 +748,8 @@ private struct UpdateRow: View {
                 Label(L10n.t("Sukrara \(version.description) is available"), systemImage: "arrow.down.circle")
                 Spacer()
                 Button(L10n.t("Later")) { updates.later() }
-                Button(L10n.t("Download")) {
-                    // only the project's own release page
-                    if release.htmlURL.host() == "github.com" { NSWorkspace.shared.open(release.htmlURL) }
-                }
+                // only the project's own release pages (UpdateCheck.isReleaseURL)
+                Button(L10n.t("Download")) { NSWorkspace.shared.open(release.pageURL) }
             }
         case .failed:
             HStack {

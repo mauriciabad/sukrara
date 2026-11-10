@@ -24,12 +24,32 @@ import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.event.TreatmentCodec
 import app.mauri.sukrara.protocol.event.TreatmentPayload
 import app.mauri.sukrara.protocol.event.WriterScope
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 
 /** Where a follower stands with the wearer. */
 enum class FollowStatus { New, Requested, Active, Declined, InviteUsed, Revoked }
 
 /** A read key the follower holds: epoch [n] and its key pair (secret redacted in logs). */
 data class Epoch(val n: Int, val key: KeyPair)
+
+/**
+ * A *Pair nearby* join (PROTOCOL-v2 §Nearby pairing): the offer's [token] and commitment [commit], this follower's
+ * [nonce]; [code] once the wearer opened its nonce; [confirmed] once the person saw the same code on the wearer's
+ * phone; [held] = a key delivery that came before that (used only on confirmation).
+ */
+data class NearbyPair(
+    val token: String,
+    val commit: String,
+    val nonce: String,
+    val code: String? = null,
+    val confirmed: Boolean = false,
+    val held: HeldKey? = null,
+) {
+    override fun toString() = "NearbyPair(code=${code != null}, confirmed=$confirmed, held=${held != null})"
+}
+
+/** A key delivery kept until the person confirms the pairing code, with its rumor `created_at`. */
+data class HeldKey(val delivery: Rumor.KeyDelivery, val sentAt: Long)
 
 /**
  * Everything a follower must remember to judge the next event: who the wearer is, which keys it trusts, and the dedupe /
@@ -56,12 +76,17 @@ data class FollowerState(
     val held: Map<String, Pair<Long, String>> = emptyMap(),
     /** Alert `(id, state, n)` → its `at`, kept for [Wire.ALERT_MAX_AGE]. */
     val alertsSeen: Map<Triple<String, Boolean, Int>, Long> = emptyMap(),
-    /** Event id → expiration (or created_at + 31 d when it has none), pruned once passed. */
+    /**
+     * Event id → expiration (or created_at + 31 d when it has none), pruned once passed; at most [SEEN_LIMIT], the least
+     * recently seen dropped first (iteration order = recency).
+     */
     val seen: Map<String, Long> = emptyMap(),
     val rekeyAt: Map<String, Long> = emptyMap(),
     /** Rumor `created_at` of the newest key delivery / revoked notice: a re-approval after a revoke wins by time. */
     val lastKeyAt: Long = 0,
     val revokedAt: Long = 0,
+    /** Joined with *Pair nearby*: the numeric comparison, until and after the person confirmed it. */
+    val pair: NearbyPair? = null,
 ) {
     override fun toString() = "FollowerState(status=$status, epochs=${epochs.values.map { it.n }}, devices=${devices.size})"
 }
@@ -129,6 +154,11 @@ sealed interface Item {
     data object Declined : Item {
         override val what = "declined"
     }
+
+    /** The wearer opened its pairing nonce: both phones show [code]. */
+    data class Pair(val code: String) : Item {
+        override val what = "pair"
+    }
 }
 
 /**
@@ -146,11 +176,32 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         state = state.copy(status = FollowStatus.Requested)
     }
 
+    /**
+     * The person saw the same pairing code on the wearer's phone: a key held until now is used ([FollowResult] of that
+     * key), otherwise the next one is. Null when there is no code to confirm yet (or no nearby join).
+     */
+    fun confirmPairing(): FollowResult? {
+        val p = state.pair ?: return null
+        if (p.code == null || p.confirmed) return null
+        state = state.copy(pair = p.copy(confirmed = true, held = null))
+        val held = p.held ?: return FollowResult.Ignored("confirmed")
+        return try {
+            onKey(held.delivery, held.sentAt)
+        } catch (e: InvalidPayload) {
+            FollowResult.Rejected("invalid", e.reason)
+        }
+    }
+
     fun onEvent(ev: SignedEvent, now: Long): FollowResult {
         prune(now)
-        if (ev.id in state.seen) return FollowResult.Ignored("duplicate")
+        state.seen[ev.id]?.let { until ->
+            // seen again: the most recent now
+            state = state.copy(seen = state.seen - ev.id + (ev.id to until))
+            return FollowResult.Ignored("duplicate")
+        }
         if (!crypto.verify(ev)) return FollowResult.Rejected("bad-signature")
-        state = state.copy(seen = state.seen + (ev.id to (ev.expiration ?: (ev.createdAt + 31 * Wire.DAY))))
+        val seen = state.seen + (ev.id to (ev.expiration ?: (ev.createdAt + 31 * Wire.DAY)))
+        state = state.copy(seen = if (seen.size > SEEN_LIMIT) seen.entries.drop(seen.size - SEEN_LIMIT).associate { it.toPair() } else seen)
         if (ev.isExpired(now)) return FollowResult.Ignored("expired")
         return try {
             if (ev.kind == Wire.KIND_WRAP) onWrap(ev) else onStreamEvent(ev, now)
@@ -162,7 +213,8 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
     private fun prune(now: Long) {
         val s = state
         if (s.seen.values.any { it <= now } || s.alertsSeen.values.any { now - it > Wire.ALERT_MAX_AGE }) {
-            state = s.copy(seen = s.seen.filterValues { it > now }, alertsSeen = s.alertsSeen.filterValues { now - it <= Wire.ALERT_MAX_AGE })
+            state =
+                s.copy(seen = s.seen.filterValues { it > now }, alertsSeen = s.alertsSeen.filterValues { now - it <= Wire.ALERT_MAX_AGE })
         }
     }
 
@@ -173,13 +225,19 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         val epoch = state.epochs[gk] ?: return unknownEpoch(ev, gk, now)
         val sid = state.sid ?: return FollowResult.Ignored("no-sid")
         return when (ev.kind) {
-            Wire.KIND_DATA -> onData(ev, epoch, sid, author)
+            Wire.KIND_DATA -> {
+                onData(ev, epoch, sid, author, now)
+            }
+
             Wire.KIND_LIVE, Wire.KIND_ALERT -> {
                 if (author !in state.devices) return notInRosterYet(ev, "author-not-device")
                 val plain = decrypt(epoch, author, ev.content)
                 if (ev.kind == Wire.KIND_LIVE) onLive(ev, ReadingsCodec.decodeLive(plain), now) else onAlert(AlertCodec.decode(plain), now)
             }
-            else -> FollowResult.Ignored("unknown-kind")
+
+            else -> {
+                FollowResult.Ignored("unknown-kind")
+            }
         }
     }
 
@@ -195,7 +253,11 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         val throttled = now - (s.rekeyAt[gk] ?: Long.MIN_VALUE / 2) < Wire.REKEY_THROTTLE
         if (s.status == FollowStatus.Active && trusted && ev.createdAt > s.lastKeyAt && !throttled) {
             state = s.copy(rekeyAt = s.rekeyAt + (gk to now))
-            val have = s.epochs.maxByOrNull { it.value.n }?.key.orEmpty()
+            val have =
+                s.epochs
+                    .maxByOrNull { it.value.n }
+                    ?.key
+                    .orEmpty()
             return FollowResult.Ignored("unknown-epoch", Rumor.Rekey(have))
         }
         return FollowResult.Ignored("unknown-epoch")
@@ -215,20 +277,35 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         return crypto.decrypt(epoch.key.secret, sender, content) ?: throw InvalidPayload("does not decrypt")
     }
 
-    private fun onData(ev: SignedEvent, epoch: Epoch, sid: String, author: String): FollowResult {
+    private fun onData(ev: SignedEvent, epoch: Epoch, sid: String, author: String, now: Long): FollowResult {
         val d = ev.tag("d")
         val c = ev.tag("c")
         return when {
-            d == Wire.rosterD(sid) -> onRoster(ev, epoch, author)
-            d == Wire.settingsD(sid) -> onSettings(ev, epoch, author)
-            c == Wire.treatmentsC(sid) -> onTreatment(ev, epoch, sid, author)
+            d == Wire.rosterD(sid) -> {
+                onRoster(ev, epoch, author)
+            }
+
+            d == Wire.settingsD(sid) -> {
+                onSettings(ev, epoch, author)
+            }
+
+            c == Wire.treatmentsC(sid) -> {
+                onTreatment(ev, epoch, sid, author)
+            }
+
             c == Wire.glucoseC(sid) -> {
                 if (author !in state.devices) return notInRosterYet(ev, "author-not-device")
                 val chunk = ReadingsCodec.decodeChunk(decrypt(epoch, author, ev.content))
                 if (d != Wire.chunkD(sid, chunk.hour)) return FollowResult.Rejected("d-mismatch")
+                if (chunk.hour > now + FUTURE_TOLERANCE || chunk.readings.any { it.t > now + FUTURE_TOLERANCE }) {
+                    return FollowResult.Rejected("reading-in-future")
+                }
                 FollowResult.Accepted(Item.Chunk(chunk))
             }
-            else -> FollowResult.Ignored("unknown-30078")
+
+            else -> {
+                FollowResult.Ignored("unknown-30078")
+            }
         }
     }
 
@@ -240,14 +317,15 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         if (compareValuesBy(roster.epoch to ev.createdAt, s.rosterEpoch to s.rosterCreatedAt, { it.first }, { it.second }) <= 0) {
             return FollowResult.Ignored("roster-older")
         }
-        state = s.copy(
-            roster = roster,
-            rosterEpoch = roster.epoch,
-            rosterCreatedAt = ev.createdAt,
-            devices = roster.devices,
-            writers = roster.writers,
-            relays = roster.relays.ifEmpty { s.relays },
-        )
+        state =
+            s.copy(
+                roster = roster,
+                rosterEpoch = roster.epoch,
+                rosterCreatedAt = ev.createdAt,
+                devices = roster.devices,
+                writers = roster.writers,
+                relays = roster.relays.ifEmpty { s.relays },
+            )
         return FollowResult.Accepted(Item.Roster(roster))
     }
 
@@ -267,12 +345,13 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         if (ev.tag("d") != Wire.treatmentD(sid, tr.id)) return FollowResult.Rejected("d-mismatch")
         val creator = s.creators[tr.id]
         val held = s.held[tr.id]
-        val override = when (WriterScope.follower(author, fromDevice, tr.origin, creator, held?.second, s.devices)) {
-            WriterScope.Verdict.Ignore -> return FollowResult.Ignored("treatment-held-by-wearer")
-            WriterScope.Verdict.Reject -> return FollowResult.Rejected("writer-not-creator")
-            WriterScope.Verdict.Override -> true
-            WriterScope.Verdict.Accept -> false
-        }
+        val override =
+            when (WriterScope.follower(author, fromDevice, tr.origin, creator, held?.second, s.devices)) {
+                WriterScope.Verdict.Ignore -> return FollowResult.Ignored("treatment-held-by-wearer")
+                WriterScope.Verdict.Reject -> return FollowResult.Rejected("writer-not-creator")
+                WriterScope.Verdict.Override -> true
+                WriterScope.Verdict.Accept -> false
+            }
         val creators = if (creator == null || override) s.creators + (tr.id to author) else s.creators
         val newer = held == null || compareValuesBy(tr.u to tr.origin, held, { it.first }, { it.second }) > 0
         if (!override && !newer) {
@@ -293,7 +372,8 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
 
     private fun onAlert(alert: AlertPayload, now: Long): FollowResult {
         if (now - alert.at > Wire.ALERT_MAX_AGE) return FollowResult.Ignored("alert-stale")
-        val key = Triple(alert.id, alert.fire, alert.n)
+        // an escalated copy of a firing (#39: the same id again with `esc`) and an answer are news, not duplicates
+        val key = Triple(alert.id + (if (alert.answered) "|answered" else "") + (alert.esc?.let { "|esc$it" } ?: ""), alert.fire, alert.n)
         if (key in state.alertsSeen) return FollowResult.Ignored("alert-duplicate")
         state = state.copy(alertsSeen = state.alertsSeen + (key to alert.at))
         return FollowResult.Accepted(Item.Alert(alert))
@@ -305,31 +385,72 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         val u = crypto.unwrap(s.follower.secret, ev) ?: return FollowResult.Rejected("unwrap")
         if (u.kind != Wire.KIND_TO_FOLLOWER || u.sender != s.identity) return FollowResult.Rejected("wrap-not-from-identity")
         return when (val rumor = RumorCodec.decode(u.kind, u.content)) {
-            is Rumor.KeyDelivery -> onKey(rumor, u.createdAt)
-            Rumor.Revoked -> when {
-                u.createdAt < s.lastKeyAt -> FollowResult.Ignored("revoked-before-latest-key")
-                s.status == FollowStatus.Revoked -> FollowResult.Ignored("revoked-already")
-                else -> {
-                    state = s.copy(status = FollowStatus.Revoked, revokedAt = u.createdAt)
-                    FollowResult.Accepted(Item.Revoked)
+            is Rumor.KeyDelivery -> {
+                onKey(rumor, u.createdAt)
+            }
+
+            Rumor.Revoked -> {
+                when {
+                    u.createdAt < s.lastKeyAt -> {
+                        FollowResult.Ignored("revoked-before-latest-key")
+                    }
+
+                    s.status == FollowStatus.Revoked -> {
+                        FollowResult.Ignored("revoked-already")
+                    }
+
+                    else -> {
+                        state = s.copy(status = FollowStatus.Revoked, revokedAt = u.createdAt)
+                        FollowResult.Accepted(Item.Revoked)
+                    }
                 }
             }
+
             Rumor.InviteUsed, Rumor.Declined -> {
                 val item = if (rumor == Rumor.InviteUsed) Item.InviteUsed else Item.Declined
                 if (s.status != FollowStatus.Requested) return FollowResult.Ignored(item.what)
                 state = s.copy(status = if (rumor == Rumor.InviteUsed) FollowStatus.InviteUsed else FollowStatus.Declined)
                 FollowResult.Accepted(item)
             }
-            else -> FollowResult.Ignored("unknown-type")
+
+            is Rumor.PairNonce -> {
+                onPairNonce(rumor.nonce)
+            }
+
+            else -> {
+                FollowResult.Ignored("unknown-type")
+            }
         }
     }
 
     /**
+     * The wearer opened its nonce `nb` (only for a nearby join still waiting, once): it must match the offer's
+     * commitment, else it isn't from the phone that made the offer. Then both phones can show the code.
+     */
+    private fun onPairNonce(nonce: String): FollowResult {
+        val s = state
+        val p = s.pair
+        val identity = s.identity
+        if (p == null || identity == null || s.status != FollowStatus.Requested) return FollowResult.Ignored("pair")
+        if (p.code != null) return FollowResult.Ignored("pair-known")
+        if (NearbyPairing.commit(nonce) != p.commit) return FollowResult.Rejected("pair-commit")
+        val code = NearbyPairing.code(identity, s.follower.public, p.token, p.nonce, nonce)
+        state = s.copy(pair = p.copy(code = code))
+        return FollowResult.Accepted(Item.Pair(code))
+    }
+
+    /**
      * A key delivery sealed by I. A delivery newer than the revoked notice re-approves a removed follower (the wearer
-     * invited it again); otherwise a revoked follower stays revoked.
+     * invited it again); otherwise a revoked follower stays revoked. A nearby join holds it until the person confirmed.
      */
     private fun onKey(k: Rumor.KeyDelivery, sentAt: Long): FollowResult {
         val s = state
+        // nearby: nothing from the stream is used until the person compared the codes (PROTOCOL-v2 §Nearby pairing)
+        val p = s.pair
+        if (p != null && !p.confirmed) {
+            if (p.held == null || sentAt >= p.held.sentAt) state = s.copy(pair = p.copy(held = HeldKey(k, sentAt)))
+            return FollowResult.Ignored("unconfirmed")
+        }
         if (s.sid != null && k.sid != s.sid) return FollowResult.Rejected("sid-changed")
         val secret: SecretKey = crypto.parseNsec(k.readKeyNsec) ?: throw InvalidPayload("bad read key")
         val key = crypto.keyPair(secret) ?: throw InvalidPayload("bad read key")
@@ -346,21 +467,25 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         // A newer epoch's key outranks every roster of older epochs: a late or refreshed roster from the
         // replaced device can't bring its devices back before the new epoch's roster arrives.
         val raise = k.epoch > s.rosterEpoch
-        state = s.copy(
-            sid = k.sid,
-            epochs = s.epochs + (gk to Epoch(k.epoch, key)),
-            devices = if (latest && k.devices.isNotEmpty()) k.devices else s.devices,
-            relays = if (latest && k.relays.isNotEmpty()) k.relays else s.relays,
-            rosterEpoch = if (raise) k.epoch else s.rosterEpoch,
-            rosterCreatedAt = if (raise) -1 else s.rosterCreatedAt,
-            status = status,
-            lastKeyAt = lastKeyAt,
-        )
+        state =
+            s.copy(
+                sid = k.sid,
+                epochs = s.epochs + (gk to Epoch(k.epoch, key)),
+                devices = if (latest && k.devices.isNotEmpty()) k.devices else s.devices,
+                relays = if (latest && k.relays.isNotEmpty()) k.relays else s.relays,
+                rosterEpoch = if (raise) k.epoch else s.rosterEpoch,
+                rosterCreatedAt = if (raise) -1 else s.rosterCreatedAt,
+                status = status,
+                lastKeyAt = lastKeyAt,
+            )
         return FollowResult.Accepted(Item.Key(k.epoch))
     }
 
-    private companion object {
+    companion object {
         /** A reading more than 5 min in the future is rejected (reference follower). */
-        const val FUTURE_TOLERANCE = 300L
+        private const val FUTURE_TOLERANCE = 300L
+
+        /** The most event ids remembered as seen (PROTOCOL-v2 "Relay rules"; the Mac's `seenLimit`). */
+        const val SEEN_LIMIT = 5000
     }
 }

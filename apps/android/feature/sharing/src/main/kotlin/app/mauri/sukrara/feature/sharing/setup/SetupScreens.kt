@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,15 +43,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role as SemanticsRole
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -61,50 +63,65 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.restore.IdentityStep
-import androidx.compose.animation.AnimatedContent
+import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.share.follower.NearbyOffer
+import androidx.compose.ui.semantics.Role as SemanticsRole
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * The first-run setup (brief 24, binding order): welcome → role → permissions → sensor →
- * alert thresholds → sharing identity → home. Each step says "Step N of M" to TalkBack, has Back (except the first)
+ * alert thresholds → sharing identity → bring your history back (wearer) → home. Each step says "Step N of M" to
+ * TalkBack, has Back (except the first)
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
- * shows the same rows as Settings › Review alert thresholds); [onDone] goes home.
+ * shows the same rows as Settings › Review alert thresholds); [onExportHistory] opens the CSV export on everything
+ * this phone keeps (the role step's *Export CSV first*); [sendTestAlert] posts Settings' real test alert (the
+ * permissions step's *Send a test alert*; null = no alert is on); [onDone] goes home.
  */
 @Composable
 fun SetupScreen(
     viewModel: SetupViewModel,
     onOpenSensorSetup: () -> Unit,
     thresholdRows: ThresholdRows,
+    onExportHistory: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    sendTestAlert: (() -> Unit)? = null,
+    /** Import history (`:integrations`), opened by the history step's *Bring it back* once the step is recorded. */
+    onOpenHistoryImport: () -> Unit = {},
 ) {
     LifecycleResumeEffect(viewModel) {
         viewModel.onResume()
         onPauseOrDispose { }
     }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
-    val u = ui ?: return
+    val search by viewModel.nearbySearch.collectAsStateWithLifecycle()
+    val u = ui?.copy(nearby = search) ?: return
     val haptics = rememberHaptics()
     // opened from home after setup was finished: show the first Finish-setup row's step; finishing setup goes home
     val openedFinished = remember { u.step == null }
     if (u.step == null) {
+        val currentOnDone by rememberUpdatedState(onDone)
         LaunchedEffect(Unit) {
             if (!openedFinished || !viewModel.reopenFirstUnfinished()) {
                 haptics.confirm()
-                onDone()
+                currentOnDone()
             }
         }
         return
     }
     BackHandler { viewModel.back(onDone) }
-    SetupContent(u, viewModel.actions(onOpenSensorSetup, thresholdRows, onDone), modifier)
+    val actions = viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport)
+    SetupContent(u, actions.copy(sendTestAlert = sendTestAlert), modifier)
 }
 
 /**
@@ -117,36 +134,77 @@ typealias ThresholdRows = @Composable (settings: AlertSettings, onThreshold: (Al
 data class SetupActions(
     val back: () -> Unit = {},
     val continueWelcome: () -> Unit = {},
+    /** Continue on the role step: shows the role's confirmation ([SetupUi.roleChange]). */
+    val reviewRole: (Role) -> Unit = {},
+    /** Cancel on the role's confirmation: nothing changes. */
+    val cancelRole: () -> Unit = {},
+    /** *Export CSV first* in the role-change dialog: the CSV export on everything, the dialog stays. */
+    val exportHistory: () -> Unit = {},
     val chooseRole: (Role) -> Unit = {},
+    /** *Join*: look up the invite ([opened] = a link opened on this phone, looked up by itself). */
+    val lookUp: (link: String, opened: Boolean) -> Unit = { _, _ -> },
+    /** *Follow* on the invite shown, as the typed name. */
+    val join: (name: String) -> Unit = {},
+    /** *Cancel* on the invite shown (nothing was sent). */
+    val cancelInvite: () -> Unit = {},
+    val clearJoinError: () -> Unit = {},
+    /** *Find phones nearby* on / *Stop looking*. */
+    val findNearby: (Boolean) -> Unit = {},
+    val joinNearby: (NearbyOffer, name: String) -> Unit = { _, _ -> },
+    /** The *Pair nearby* codes on both phones: the same, or different (the join ends). */
+    val confirmNearby: (same: Boolean) -> Unit = {},
+    /** Bluetooth turned on / Nearby devices allowed: look again. */
+    val refreshNearby: () -> Unit = {},
+    val completeJoin: () -> Unit = {},
     val completePermissions: () -> Unit = {},
     val fix: (AlertRequirement) -> Unit = {},
+    val answerUnlocked: (UnlockedSound) -> Unit = {},
+    /** The real test alert ([SetupScreen]'s `sendTestAlert`); null = no alert is on, nothing to test. */
+    val sendTestAlert: (() -> Unit)? = null,
     val openSensorSetup: () -> Unit = {},
     val completeSensor: () -> Unit = {},
     val thresholdRows: ThresholdRows = { _, _ -> },
     val editThreshold: (AlertKind, Double) -> Unit = { _, _ -> },
     val confirmAlerts: () -> Unit = {},
-    val startFresh: () -> Unit = {},
+    val startFresh: (Profile) -> Unit = {},
     val completeIdentity: () -> Unit = {},
     val retryConflict: () -> Unit = {},
     val restore: (String, String?) -> Unit = { _, _ -> },
     val clearRestoreError: () -> Unit = {},
     val skip: (SetupStep) -> Unit = {},
+    /** *Bring it back* on the history step: Import history. */
+    val openHistoryImport: () -> Unit = {},
 )
 
 @Composable
 private fun SetupViewModel.actions(
     onOpenSensorSetup: () -> Unit,
     thresholdRows: ThresholdRows,
+    onExportHistory: () -> Unit,
     onDone: () -> Unit,
+    onOpenHistoryImport: () -> Unit,
 ): SetupActions {
     val context = LocalContext.current
     return remember(this) {
         SetupActions(
             back = { back(onDone) },
             continueWelcome = ::continueWelcome,
+            reviewRole = ::reviewRole,
+            cancelRole = ::cancelRole,
+            exportHistory = onExportHistory,
             chooseRole = ::chooseRole,
+            lookUp = ::lookUp,
+            join = ::join,
+            cancelInvite = ::cancelInvite,
+            clearJoinError = ::clearJoinError,
+            findNearby = ::findNearby,
+            joinNearby = ::joinNearby,
+            confirmNearby = ::confirmNearby,
+            refreshNearby = ::refreshNearby,
+            completeJoin = ::completeJoin,
             completePermissions = ::completePermissions,
             fix = { r -> readinessFix(r) },
+            answerUnlocked = { readinessAnswerUnlocked(it) },
             openSensorSetup = onOpenSensorSetup,
             completeSensor = ::completeSensor,
             thresholdRows = thresholdRows,
@@ -158,6 +216,7 @@ private fun SetupViewModel.actions(
             restore = ::restore,
             clearRestoreError = ::clearRestoreError,
             skip = ::skip,
+            openHistoryImport = { openHistoryImport(onOpenHistoryImport) },
         )
     }
 }
@@ -172,45 +231,47 @@ fun SetupContent(
     val step = u.step ?: return
     val reduced = LocalReducedMotion.current
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-    Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (u.canBack || u.single) {
-                IconButton(onClick = actions.back) {
-                    Icon(painterResource(R.drawable.sharing_ic_back), contentDescription = stringResource(R.string.sh_setup_back))
+        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (u.canBack || u.single) {
+                    IconButton(onClick = actions.back) {
+                        Icon(painterResource(R.drawable.sharing_ic_back), contentDescription = stringResource(R.string.sh_setup_back))
+                    }
+                } else {
+                    Spacer(Modifier.size(48.dp))
                 }
-            } else {
-                Spacer(Modifier.size(48.dp))
+                Text(
+                    stringResource(R.string.sh_setup_step_of, u.index, u.count),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
             }
-            Text(
-                stringResource(R.string.sh_setup_step_of, u.index, u.count),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            )
-        }
-        AnimatedContent(step, transitionSpec = { Motion.fadeThrough(reduced) }, label = "setup-step") { s ->
-            Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                when (s) {
-                    SetupStep.Welcome -> WelcomeStep(actions)
-                    SetupStep.Role -> RoleStep(u, actions)
-                    SetupStep.Permissions -> PermissionsStep(u, actions)
-                    SetupStep.Sensor -> SensorStep(u, actions)
-                    SetupStep.Alerts -> AlertConfirmStep(u, actions)
-                    SetupStep.Identity -> IdentityStep(u, actions)
+            AnimatedContent(step, transitionSpec = { Motion.fadeThrough(reduced) }, label = "setup-step") { s ->
+                Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    when (s) {
+                        SetupStep.Welcome -> WelcomeStep(actions)
+                        SetupStep.Role -> RoleStep(u, actions)
+                        SetupStep.Join -> JoinStep(u, actions)
+                        SetupStep.Permissions -> PermissionsStep(u, actions)
+                        SetupStep.Sensor -> SensorStep(u, actions)
+                        SetupStep.Alerts -> AlertConfirmStep(u, actions)
+                        SetupStep.Identity -> IdentityStep(u, actions)
+                        SetupStep.History -> HistoryStep(actions)
+                    }
+                    Spacer(Modifier.size(24.dp))
                 }
-                Spacer(Modifier.size(24.dp))
             }
         }
-    }
     }
 }
 
 /** A step's title (a heading for TalkBack) and its plain-words explanation. */
 @Composable
-internal fun StepHeader(
+internal fun ColumnScope.StepHeader(
     title: String,
     body: String?,
 ) {
@@ -227,7 +288,11 @@ internal fun StepButtons(
     secondary: List<Pair<String, () -> Unit>> = emptyList(),
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (primary != null) Button(onClick = onPrimary, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(primary) }
+        if (primary !=
+            null
+        ) {
+            Button(onClick = onPrimary, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(primary) }
+        }
         for ((label, action) in secondary) {
             TextButton(onClick = action, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label) }
         }
@@ -271,32 +336,46 @@ private fun ColumnScope.RoleStep(
     u: SetupUi,
     actions: SetupActions,
 ) {
-    var selected by rememberSaveable { mutableStateOf<Role?>(null) }
-    var confirming by rememberSaveable { mutableStateOf(false) }
+    var selected by rememberSaveable { mutableStateOf(u.roleChange?.role) }
     StepHeader(stringResource(R.string.sh_setup_role_title), stringResource(R.string.sh_setup_role_body))
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        RoleOption(stringResource(R.string.sh_setup_role_wearer), stringResource(R.string.sh_setup_role_wearer_means), selected == Role.Wearer) { selected = Role.Wearer }
-        RoleOption(stringResource(R.string.sh_setup_role_follower), stringResource(R.string.sh_setup_role_follower_means), selected == Role.Follower) {
+        RoleOption(
+            stringResource(R.string.sh_setup_role_wearer),
+            stringResource(R.string.sh_setup_role_wearer_means),
+            selected == Role.Wearer,
+        ) { selected = Role.Wearer }
+        RoleOption(
+            stringResource(R.string.sh_setup_role_follower),
+            stringResource(R.string.sh_setup_role_follower_means),
+            selected == Role.Follower,
+        ) {
             selected = Role.Follower
         }
     }
-    if (selected == Role.Follower && !u.facts.followerAvailable) {
-        NoteCard(stringResource(R.string.sh_setup_role_follower_later))
-    }
     StepButtons(
         stringResource(R.string.sh_setup_continue),
-        onPrimary = { confirming = true },
-        enabled = selected == Role.Wearer || (selected == Role.Follower && u.facts.followerAvailable),
+        onPrimary = { selected?.let(actions.reviewRole) },
+        enabled = selected != null && !u.busy,
     )
-    val role = selected
-    if (confirming && role != null) {
-        val name = stringResource(if (role == Role.Wearer) R.string.sh_setup_role_wearer else R.string.sh_setup_role_follower)
+    // nothing to delete: what the role means; else what it deletes, with Export CSV first (#125)
+    val change = u.roleChange ?: return
+    val name = stringResource(if (change.role == Role.Wearer) R.string.sh_setup_role_wearer else R.string.sh_setup_role_follower)
+    val loss = change.loss
+    if (loss == null) {
         ConfirmDialog(
             title = stringResource(R.string.sh_setup_role_confirm_title, name),
             text = stringResource(R.string.sh_setup_role_confirm_text),
             confirm = stringResource(R.string.sh_setup_role_confirm),
-            onConfirm = { actions.chooseRole(role) },
-            onDismiss = { confirming = false },
+            onConfirm = { actions.chooseRole(change.role) },
+            onDismiss = actions.cancelRole,
+        )
+    } else {
+        RoleLossDialog(
+            roleName = name,
+            loss = loss,
+            onExport = actions.exportHistory,
+            onDelete = { actions.chooseRole(change.role) },
+            onCancel = actions.cancelRole,
         )
     }
 }
@@ -309,7 +388,10 @@ private fun RoleOption(
     onClick: () -> Unit,
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+            ),
         modifier = Modifier.fillMaxWidth().selectable(selected, role = SemanticsRole.RadioButton, onClick = onClick),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -385,20 +467,28 @@ private fun ColumnScope.PermissionsStep(
     StepHeader(stringResource(R.string.sh_setup_permissions_title), stringResource(R.string.sh_setup_permissions_body))
     // runtime permissions are asked in context, the first time; after a "don't ask again" the settings page opens
     val asked = remember { mutableStateOf(setOf<AlertRequirement>()) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    val items = AlertRequirement.entries.filter { it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+    val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower) }
     for (r in items) {
         val ok = r !in u.readiness.missing
-        ChecklistRow(r, ok) {
-            val permission = runtimePermission(r)
-            if (permission != null && r !in asked.value) {
+        if (r == AlertRequirement.SoundWhenUnlocked) {
+            // Android hides this setting from apps: the person checks it and answers (no Allow to tap)
+            ChecklistRow(r, ok, onFix = null) {
+                UnlockedSoundAnswer(u.readiness.unlockedSound, { actions.fix(r) }, actions.answerUnlocked)
+            }
+            continue
+        }
+        ChecklistRow(r, ok, onFix = {
+            val permissions = runtimePermissions(r)
+            if (permissions != null && r !in asked.value) {
                 asked.value += r
-                launcher.launch(permission)
+                launcher.launch(permissions)
             } else {
                 actions.fix(r)
             }
-        }
+        })
     }
+    actions.sendTestAlert?.let { TestAlertCard(it) }
     val allOk = items.none { it in u.readiness.missing }
     StepButtons(
         stringResource(if (allOk) R.string.sh_setup_continue else R.string.sh_setup_permissions_continue_anyway),
@@ -411,11 +501,15 @@ private fun ColumnScope.PermissionsStep(
 private fun ChecklistRow(
     r: AlertRequirement,
     ok: Boolean,
-    onFix: () -> Unit,
+    onFix: (() -> Unit)?,
+    below: @Composable () -> Unit = {},
 ) {
     val title = stringResource(r.nameRes())
     val why = stringResource(r.whyRes())
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 painterResource(if (ok) R.drawable.sharing_ic_check else R.drawable.sharing_ic_todo),
@@ -426,16 +520,68 @@ private fun ChecklistRow(
                 Text(title, style = MaterialTheme.typography.titleSmall)
                 Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (!ok) OutlinedButton(onClick = onFix, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.sh_setup_allow)) }
+            if (!ok && onFix != null) {
+                OutlinedButton(
+                    onClick = onFix,
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) { Text(stringResource(R.string.sh_setup_allow)) }
+            }
+        }
+        Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) { below() }
+    }
+}
+
+/**
+ * *Send a test alert*: the real alert notification, marked as a test (Settings' own, nothing else changes), so the
+ * person hears now that it gets through, also with Do Not Disturb on. After a tap it says where to look (TalkBack hears
+ * it: a polite live region); it can be sent again.
+ */
+@Composable
+private fun TestAlertCard(send: () -> Unit) {
+    val haptics = rememberHaptics()
+    val reduced = LocalReducedMotion.current
+    var sent by rememberSaveable { mutableStateOf(false) }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painterResource(DsR.drawable.ds_ic_science),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(stringResource(R.string.sh_setup_test_title), style = MaterialTheme.typography.titleSmall)
+                AnimatedContent(sent, transitionSpec = { Motion.fadeThrough(reduced) }, label = "test-alert") { done ->
+                    Text(
+                        stringResource(if (done) R.string.sh_setup_test_sent else R.string.sh_setup_test_body),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            }
+            OutlinedButton(
+                onClick = {
+                    haptics.confirm()
+                    send()
+                    sent = true
+                },
+                modifier = Modifier.heightIn(min = 48.dp).testTag("setup-test-alert"),
+            ) { Text(stringResource(R.string.sh_setup_test_send)) }
         }
     }
 }
 
-/** The runtime permission the system dialog can grant for [r] (asked in context the first time), or null. */
-private fun runtimePermission(r: AlertRequirement): String? =
+/**
+ * The runtime permissions the system dialog can grant for [r] (asked in context the first time), or null. Nearby devices
+ * is connecting and scanning: one dialog for both, as the new-sensor flow asks (the checklist checks both).
+ */
+private fun runtimePermissions(r: AlertRequirement): Array<String>? =
     when (r) {
-        AlertRequirement.Notifications -> android.Manifest.permission.POST_NOTIFICATIONS
-        AlertRequirement.Bluetooth -> android.Manifest.permission.BLUETOOTH_CONNECT
+        AlertRequirement.Notifications -> arrayOf(android.Manifest.permission.POST_NOTIFICATIONS)
+        AlertRequirement.Bluetooth -> arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_SCAN)
         else -> null
     }
 
@@ -456,6 +602,21 @@ private fun ColumnScope.SensorStep(
             secondary = listOf(stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Sensor) }),
         )
     }
+}
+
+/**
+ * *Bring your history back*: the new app starts empty; Import history brings the last 90 days back from where they
+ * already are, never twice. Offered once: *Bring it back* (done) or *Start empty* (skipped); both are final.
+ */
+@Composable
+private fun ColumnScope.HistoryStep(actions: SetupActions) {
+    StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_body))
+    NoteCard(stringResource(R.string.sh_setup_history_note))
+    StepButtons(
+        stringResource(R.string.sh_setup_history_open),
+        actions.openHistoryImport,
+        secondary = listOf(stringResource(R.string.sh_setup_history_skip) to { actions.skip(SetupStep.History) }),
+    )
 }
 
 /** Opens [intent] if anything can handle it (a settings page some phones lack). */

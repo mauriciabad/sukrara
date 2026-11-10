@@ -14,8 +14,13 @@ public struct FollowerMessages: Sendable {
         self.follower = follower
     }
 
-    public static func requestBody(token: String, profile: Profile) -> [String: Any] {
-        ["v": Wire.version, "type": "request", "token": token, "profile": profile.wireObject()]
+    /// `nonce` = `n`, the follower's pairing nonce, only for a nearby join (PROTOCOL-v2 "Nearby pairing").
+    public static func requestBody(token: String, profile: Profile, nonce: String? = nil) -> [String: Any] {
+        var body: [String: Any] = [
+            "v": Wire.version, "type": "request", "token": token, "profile": profile.wireObject(),
+        ]
+        if let nonce { body["n"] = nonce }
+        return body
     }
 
     public static func profileBody(_ profile: Profile) -> [String: Any] {

@@ -11,26 +11,44 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
     private let follower: any FollowerService
     /// The phone offering nearby pairing in the newest snapshot ("Ask to follow" joins this one).
     private var offer: NearbyOffer?
+    /// This Mac's profile in the newest snapshot.
+    private var me: Profile?
 
     init(follower: any FollowerService) { self.follower = follower }
 
-    func join(link: String) async throws(FollowFailure) {
+    func lookUp(link: String) async throws(FollowFailure) -> Invite? {
         do {
-            try await follower.join(link: link)
+            return try await follower.lookUp(link: link)
+        } catch {
+            if let failure = Self.failure(error) { throw failure }
+            return nil
+        }
+    }
+
+    func join(invite: Invite) async throws(FollowFailure) {
+        do {
+            try await follower.join(invite: invite)
         } catch {
             if let failure = Self.failure(error) { throw failure }
         }
     }
 
-    /// The runtime names this Mac with the profile it was made with; the edited name isn't sent.
+    /// The typed name goes with the request (the runtime keeps the picture it has).
     func joinNearby(name: String) async throws(FollowFailure) {
         guard let offer else { throw .notFound }
+        await setName(name)
         do {
             try await follower.joinNearby(offer)
         } catch {
             if let failure = Self.failure(error) { throw failure }
         }
     }
+
+    func confirmNearby(same: Bool) async -> Bool { await follower.confirmNearby(same: same) }
+
+    func setProfile(name: String, avatar: Avatar?) async { await follower.setProfile(name: name, avatar: avatar) }
+
+    func setName(_ name: String) async { await follower.setProfile(name: name, avatar: me?.avatar) }
 
     func cancelJoin() async { await follower.cancelJoin() }
     func unfollow() async { await follower.unfollow() }
@@ -41,7 +59,10 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
     func searchNearby(_ on: Bool) { Task { await follower.searchNearby(on) } }
 
     /// Keeps the newest nearby offer (the follow model shows it; joining uses it).
-    func update(_ snapshot: FollowerSnapshot) { offer = snapshot.nearbyOffer }
+    func update(_ snapshot: FollowerSnapshot) {
+        offer = snapshot.nearbyOffer
+        me = snapshot.me
+    }
 
     // MARK: mapping
 
@@ -50,6 +71,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         switch error {
         case .invalidLink: .invalidLink
         case .notFound: .notFound
+        case .offline: .offline
         case .expired: .expired
         case .fingerprintMismatch: .fingerprintMismatch
         case .alreadyFollowing: .alreadyFollowing
@@ -62,7 +84,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         switch snapshot.link {
         case .notFollowing: .notFollowing
         case .joining: .joining
-        case .requested(let code, let wearer, let nearby): .waiting(wearer: wearer, code: nearby ? code : nil)
+        case .requested(_, let wearer, let pairing): .waiting(wearer: wearer, pairing: pairing)
         case .following(let wearer, let canWrite):
             .following(wearer: wearer, lastReading: snapshot.readings.last?.t, canWrite: canWrite)
         case .declined: .declined
@@ -70,6 +92,32 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         case .revoked: .revoked
         case .broken(let why): .broken(why)
         }
+    }
+
+    /// How the readings arrive while following: always over the relays, and the Bluetooth path's state when it runs.
+    static func source(_ snapshot: FollowerSnapshot) -> String? {
+        guard snapshot.link.isFollowing else { return nil }
+        let internet = L10n.t("Internet")
+        switch snapshot.nearby {
+        case nil: return internet
+        case .off: return internet + " · " + L10n.t("Bluetooth off")
+        case .unauthorized: return internet + " · " + L10n.t("Bluetooth not allowed")
+        case .searching: return internet + " · " + L10n.t("Looking for the phone over Bluetooth")
+        case .connected(let phone): return internet + " · " + L10n.t("Bluetooth: connected to \(phone)")
+        }
+    }
+
+    /// The newest problem worth a line under the source, with what to do (nil = none).
+    static func problem(_ snapshot: FollowerSnapshot) -> String? {
+        if let issue = snapshot.storeIssues.last {
+            return L10n.t("\(issue.file) couldn't be read and was moved aside; Sukrara started it again.")
+        }
+        if snapshot.link.isFollowing, snapshot.nearby == .unauthorized {
+            return L10n.t(
+                "Sukrara may not use Bluetooth: allow it in System Settings › Privacy & Security › Bluetooth to get readings from the phone nearby."
+            )
+        }
+        return nil
     }
 
     static func wearerName(_ link: LinkState) -> String? {

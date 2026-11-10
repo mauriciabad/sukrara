@@ -35,16 +35,18 @@ public struct SnapshotRequest: Equatable, Sendable {
 public enum Service: CaseIterable, Sendable {
     // notifications first: the alert notifier needs the center when `alerts` starts
     case notifications, ble, relays, alerts, widgetFeed, updateCheck, loginItem
+    /// Juggluco's web server on the home network (created idle; it connects only while the person's switch is on).
+    case lan
 }
 
 /// The services a launch MAY start: an upper limit. The app ANDs it with the user's settings
 /// (`limited(by:)`) and starts services only through `ServicesPlan.start(using:)`.
 public struct ServicesPlan: Equatable, Sendable {
-    public var ble, relays, alerts, widgetFeed, notifications, updateCheck, loginItem: Bool
+    public var ble, relays, alerts, widgetFeed, notifications, updateCheck, loginItem, lan: Bool
 
     public init(
         ble: Bool, relays: Bool, alerts: Bool, widgetFeed: Bool, notifications: Bool, updateCheck: Bool = false,
-        loginItem: Bool = false
+        loginItem: Bool = false, lan: Bool = false
     ) {
         self.ble = ble
         self.relays = relays
@@ -53,11 +55,12 @@ public struct ServicesPlan: Equatable, Sendable {
         self.notifications = notifications
         self.updateCheck = updateCheck
         self.loginItem = loginItem
+        self.lan = lan
     }
 
     public static let all = ServicesPlan(
         ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updateCheck: true,
-        loginItem: true)
+        loginItem: true, lan: true)
     public static let none = ServicesPlan(
         ble: false, relays: false, alerts: false, widgetFeed: false, notifications: false)
 
@@ -70,6 +73,7 @@ public struct ServicesPlan: Equatable, Sendable {
         case .notifications: notifications
         case .updateCheck: updateCheck
         case .loginItem: loginItem
+        case .lan: lan
         }
     }
 
@@ -85,7 +89,8 @@ public struct ServicesPlan: Equatable, Sendable {
             widgetFeed: widgetFeed && wanted.widgetFeed,
             notifications: notifications && wanted.notifications,
             updateCheck: updateCheck && wanted.updateCheck,
-            loginItem: loginItem && wanted.loginItem
+            loginItem: loginItem && wanted.loginItem,
+            lan: lan && wanted.lan
         )
     }
 
@@ -205,8 +210,11 @@ public struct LaunchPlan: Equatable, Sendable {
         home: URL,
         exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) throws(LaunchError) -> LaunchPlan {
-        // Old Finder / LaunchServices launches may add a process serial number; nothing else is accepted.
-        if let unknown = args.first(where: { !$0.hasPrefix("-psn_") }) {
+        // Old Finder / LaunchServices launches may add a process serial number; nothing else is accepted, except in a
+        // debug build the system's own language and locale overrides (`-AppleLanguages "(es)"`, `-AppleLocale es_ES`,
+        // `-NSDoubleLocalizedStrings YES`: the defaults' argument domain), so a dev run can be checked in Spanish (#77).
+        let rest = build.isDebugBuild ? Self.withoutLanguageArguments(args) : args
+        if let unknown = rest.first(where: { !$0.hasPrefix("-psn_") }) {
             throw .unknownArgument(unknown)
         }
         guard build.isDevBuild(home: home, exists: exists) else {
@@ -223,6 +231,22 @@ public struct LaunchPlan: Equatable, Sendable {
         let fixture = env["SUKRARA_FIXTURE"] == "1"
         if fixture && !build.isDebugBuild { throw .debugOnly }
         return LaunchPlan(mode: fixture ? .fixture : .normal, services: .none, data: .isolated(root: devHome))
+    }
+
+    /// `args` without the `-Apple…` / `-NS…` defaults pairs (a key and its value) the system reads for the language,
+    /// the locale and localization checks. A key without a value is left in, so it is refused.
+    static func withoutLanguageArguments(_ args: [String]) -> [String] {
+        var out: [String] = []
+        var i = 0
+        while i < args.count {
+            if i + 1 < args.count, args[i].wholeMatch(of: /-(Apple|NS)[A-Za-z]+/) != nil {
+                i += 2
+                continue
+            }
+            out.append(args[i])
+            i += 1
+        }
+        return out
     }
 
     /// The plan for an offline render: no services, data under `scratch`. Debug builds only.

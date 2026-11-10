@@ -2,9 +2,11 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import SukraraCore
+import SukraraShare
 import SwiftUI
 
-/// General: Following (wearer, data age, link state, Unfollow confirmed), units, open at login, updates, version.
+/// General: Settings from (with what's in use and Copy the wearer's settings…), units, open at login, updates,
+/// version, Quit.
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
@@ -15,13 +17,50 @@ struct GeneralPane: View {
 
     var body: some View {
         Form {
-            Section(L10n.t("Following")) { FollowingRows(follow: model.follow, openFollow: openFollow) }
-            Section(L10n.t("Glucose")) {
+            Section {
+                SettingsFromPicker(model: model)
+            } header: {
+                Text(L10n.t("Settings"))
+            } footer: {
+                Text(
+                    L10n.t(
+                        "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+                    )
+                )
+                .font(.callout).foregroundStyle(.secondary)
+            }
+            Section {
                 Picker(L10n.t("Unit"), selection: $model.unit) {
                     Text("mg/dL").tag(GlucoseUnit.mgdl)
                     Text("mmol/L").tag(GlucoseUnit.mmol)
                 }
                 .pickerStyle(.segmented)
+                Toggle(isOn: $model.readAloudShortcut) {
+                    Text(L10n.t("Read glucose aloud with \(GlobalShortcut.symbols)"))
+                    Text(
+                        L10n.t(
+                            "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu."
+                        ))
+                }
+            } header: {
+                Text(L10n.t("Glucose"))
+            }
+            Section {
+                JugglucoRows(model: model.juggluco)
+            } header: {
+                Text(L10n.t("Source"))
+            } footer: {
+                Text(
+                    L10n.t(
+                        "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
+                    )
+                )
+                .font(.callout).foregroundStyle(.secondary)
+            }
+            .onAppear(perform: model.juggluco.load)
+            .onDisappear {
+                model.juggluco.saveAddress()
+                model.juggluco.saveSecret()
             }
             Section(L10n.t("Startup")) {
                 OpenAtLoginRows(loginItem: loginItem)
@@ -33,6 +72,88 @@ struct GeneralPane: View {
                     Button(L10n.t("Check now"), action: checkForUpdates)
                 }
                 if let r = updateResult { Text(r).foregroundStyle(.secondary) }
+                HStack {
+                    Spacer()
+                    Button(L10n.t("Quit Sukrara")) { NSApp.terminate(nil) }
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+/// Settings from: Wearer, Default or Custom, the sentence saying what's in use, and in Custom the copy of the wearer's
+/// settings and the reset to Sukrara's defaults (each asked first).
+struct SettingsFromPicker: View {
+    @Bindable var model: SettingsModel
+
+    var body: some View {
+        Picker(L10n.t("Settings from"), selection: $model.settingsFrom) {
+            ForEach(SettingsFrom.allCases, id: \.self) { Text(Self.name($0, model)).tag($0) }
+        }
+        LabeledContent(L10n.t("In use")) {
+            Text(model.inUse).multilineTextAlignment(.trailing).foregroundStyle(.secondary)
+        }
+        if model.editable {
+            HStack {
+                Spacer()
+                Button(L10n.t("Copy the Wearer's Settings…")) { model.confirmingCopy = true }
+                    .disabled(model.wearer == nil)
+                    .confirmationDialog(
+                        L10n.t("Copy \(Self.who(model))'s settings?"), isPresented: $model.confirmingCopy
+                    ) {
+                        Button(L10n.t("Copy Settings")) { model.copyWearer() }
+                        Button(L10n.t("Cancel"), role: .cancel) {}
+                    } message: {
+                        Text(
+                            L10n.t(
+                                "This Mac's ranges, time shown, rings, lines, last treatment, sensor countdown and alert rules become theirs, as a starting point to change. Sounds and the other settings of this Mac stay."
+                            ))
+                    }
+                Button(L10n.t("Reset to Defaults…")) { model.confirmingReset = true }
+                    .confirmationDialog(L10n.t("Reset to Sukrara's defaults?"), isPresented: $model.confirmingReset) {
+                        Button(L10n.t("Reset to Defaults")) { model.resetToDefaults() }
+                        Button(L10n.t("Cancel"), role: .cancel) {}
+                    } message: {
+                        Text(
+                            L10n.t(
+                                "This Mac's ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules go back to Sukrara's defaults. Sounds, the no-data alert, Mute all and the notification's buttons stay."
+                            ))
+                    }
+            }
+        }
+    }
+
+    static func who(_ model: SettingsModel) -> String { model.wearer?.wearer ?? L10n.t("the wearer") }
+
+    static func name(_ f: SettingsFrom, _ model: SettingsModel) -> String {
+        switch f {
+        case .wearer:
+            model.wearer?.wearer.map { L10n.t("\($0) (wearer)") } ?? L10n.t("Wearer")
+        case .default: L10n.t("Default")
+        case .custom: L10n.t("Custom")
+        }
+    }
+}
+
+/// Following: the link with the wearer, its state in words and its exits.
+struct FollowingPane: View {
+    @Bindable var model: SettingsModel
+    var openFollow: () -> Void
+    /// Reconnect the relays and Bluetooth now (nil when this run has no follower runtime).
+    var reconnect: (() -> Void)?
+
+    var body: some View {
+        Form {
+            Section { FollowingRows(follow: model.follow, openFollow: openFollow) }
+            if case .following = model.follow.status, let reconnect {
+                Section {
+                    HStack {
+                        Spacer()
+                        Button(L10n.t("Reconnect Now"), action: reconnect)
+                            .help(L10n.t("Reconnect over the internet and to the phone over Bluetooth now"))
+                    }
+                }
             }
         }
         .formStyle(.grouped)
@@ -90,19 +211,40 @@ struct FollowingRows: View {
         case .joining:
             row(L10n.t("Looking up the invite…"), "arrow.triangle.2.circlepath")
             Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
-        case .waiting(let wearer, let code):
+        case .waiting(let wearer, let pairing?):
+            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+        case .waiting(let wearer, nil):
             row(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"), "hourglass")
-            if let code { Text(L10n.t("Code to type on the phone: \(code)")).font(.title3.monospaced()) }
             Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
         case .following(let wearer, let last, let canWrite):
-            row(L10n.t("Following \(wearer ?? L10n.t("the wearer"))"), "person.crop.circle.badge.checkmark")
+            Label {
+                Text(L10n.t("Following \(wearer ?? L10n.t("the wearer"))"))
+            } icon: {
+                AvatarView(avatar: follow.wearer?.avatar, name: wearer ?? "", size: 24)
+            }
+            .frame(minHeight: 28)
             Text(
                 last.map { L10n.t("Last reading \($0.formatted(.relative(presentation: .named)))") }
                     ?? L10n.t("No reading yet")
             )
             .foregroundStyle(.secondary)
+            if let source = follow.source { Text(source).foregroundStyle(.secondary) }
             Text(canWrite ? L10n.t("Can add treatments") : L10n.t("Can't add treatments (the wearer decides)"))
                 .foregroundStyle(.secondary)
+            if let problem = follow.problem {
+                // the colour only on the symbol: the words keep full contrast
+                Label {
+                    Text(problem)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            if let me = follow.me {
+                IdentityRow(me: me, wearer: wearer) { name, avatar in
+                    Task { await follow.saveProfile(name: name, avatar: avatar) }
+                }
+            }
             Button(L10n.t("Stop following…"), role: .destructive) { follow.confirmingUnfollow = true }
                 .confirmationDialog(
                     L10n.t("Stop following \(wearer ?? L10n.t("the wearer"))?"), isPresented: $follow.confirmingUnfollow
@@ -130,13 +272,13 @@ struct FollowingRows: View {
         case .declined: L10n.t("The wearer declined. Ask them for a new invite.")
         case .inviteUsed: L10n.t("Another device used this invite. Ask for a new one.")
         case .revoked: L10n.t("The wearer stopped sharing with this Mac.")
-        case .broken(let why): L10n.t("Following stopped: \(why)")
+        case .broken(let why): L10n.t("Following stopped: \(why.text)")
         default: ""
         }
     }
 }
 
-/// The settings window's content: two panes, the last one chosen is remembered.
+/// The settings window's content: five panes; the window reopens on the last one.
 struct SettingsView: View {
     @Bindable var model: SettingsModel
     /// Open at login (LoginItem over SMAppService.mainApp, schema `general.openAtLogin`).
@@ -145,6 +287,9 @@ struct SettingsView: View {
     var updateResult: String?
     var checkForUpdates: () -> Void
     var openFollow: () -> Void
+    var reconnect: (() -> Void)? = nil
+    /// The running alert rules (Send Test Alert, Active now); nil in an offline run.
+    var alerts: AlertController? = nil
 
     var body: some View {
         TabView(selection: $model.pane) {
@@ -154,10 +299,20 @@ struct SettingsView: View {
             )
             .tabItem { Label(L10n.t("General"), systemImage: "gearshape") }
             .tag(SettingsModel.Pane.general)
-            AlertsRangesPane(model: model)
+            GraphPane(model: model)
+                .tabItem { Label(L10n.t("Graph"), systemImage: "chart.xyaxis.line") }
+                .tag(SettingsModel.Pane.graph)
+            RingsPane(model: model)
+                .tabItem { Label(L10n.t("Rings"), systemImage: "circle.circle") }
+                .tag(SettingsModel.Pane.rings)
+            AlertsRangesPane(model: model, controller: alerts)
                 .tabItem { Label(L10n.t("Alerts"), systemImage: "bell") }
                 .tag(SettingsModel.Pane.alerts)
+            FollowingPane(model: model, openFollow: openFollow, reconnect: reconnect)
+                .tabItem { Label(L10n.t("Following"), systemImage: "person.2") }
+                .tag(SettingsModel.Pane.following)
         }
-        .frame(minWidth: 520, minHeight: 520)
+        .environment(\.glucoseUnit, model.unit)
+        .frame(minWidth: 560, minHeight: 560)
     }
 }

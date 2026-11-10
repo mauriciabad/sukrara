@@ -5,7 +5,9 @@ package app.mauri.sukrara.core.data.secure
 
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.CorruptionLog
+import app.mauri.sukrara.core.data.StoreKind
 import app.mauri.sukrara.core.data.files.FileStore
+import app.mauri.sukrara.core.data.reasonOf
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -21,11 +23,33 @@ object SecretName {
     const val IDENTITY_OWNER = "identity.owner"
     const val IDENTITY_FOLLOWER = "identity.follower"
     const val NIGHTSCOUT = "nightscout"
+    const val NIGHTSCOUT_API = "nightscout-api"
+
+    /** The Nightscout API's home-network listener's own secret (it travels over Wi-Fi in cleartext). */
+    const val NIGHTSCOUT_API_LAN = "nightscout-api-lan"
     const val TIDEPOOL = "tidepool"
+
+    /** The Tidepool account's email (the page shows it; kept out of the plain state file). */
+    const val TIDEPOOL_EMAIL = "tidepool-email"
     const val LIBREVIEW = "libreview"
     const val SENSOR = "sensor"
 
-    val ALL = setOf(IDENTITY_OWNER, IDENTITY_FOLLOWER, NIGHTSCOUT, TIDEPOOL, LIBREVIEW, SENSOR)
+    /** Juggluco's web-server API secret (schema `source.jugglucoSecret`, store `secure`). */
+    const val JUGGLUCO = "juggluco"
+
+    val ALL =
+        setOf(
+            IDENTITY_OWNER,
+            IDENTITY_FOLLOWER,
+            NIGHTSCOUT,
+            NIGHTSCOUT_API,
+            NIGHTSCOUT_API_LAN,
+            TIDEPOOL,
+            TIDEPOOL_EMAIL,
+            LIBREVIEW,
+            SENSOR,
+            JUGGLUCO,
+        )
 
     fun alias(name: String) = "sukrara.$name"
 }
@@ -49,40 +73,43 @@ class KeystoreSecureStore(
     private val lock = Mutex()
     private val reported = mutableSetOf<String>()
 
-    override suspend fun read(name: String): ByteArray? = withContext(io) {
-        lock.withLock {
-            val file = fileOf(name)
-            if (!file.exists()) return@withLock null
-            val bytes = file.readBytes()
-            if (bytes.isEmpty() || bytes[0] != FORMAT) {
-                throw unreadable(name, file, SecretOpenException(transient = false, "unknown format"))
-            }
-            try {
-                box.open(SecretName.alias(name), bytes.copyOfRange(1, bytes.size), name.encodeToByteArray())
-            } catch (e: SecretOpenException) {
-                throw unreadable(name, file, e)
+    override suspend fun read(name: String): ByteArray? =
+        withContext(io) {
+            lock.withLock {
+                val file = fileOf(name)
+                if (!file.exists()) return@withLock null
+                val bytes = file.readBytes()
+                if (bytes.isEmpty() || bytes[0] != FORMAT) {
+                    throw unreadable(name, file, SecretOpenException(transient = false, "unknown format"))
+                }
+                try {
+                    box.open(SecretName.alias(name), bytes.copyOfRange(1, bytes.size), name.encodeToByteArray())
+                } catch (e: SecretOpenException) {
+                    throw unreadable(name, file, e)
+                }
             }
         }
-    }
 
     override suspend fun write(
         name: String,
         bytes: ByteArray,
-    ): Unit = withContext(io) {
-        lock.withLock {
-            val sealed = box.seal(SecretName.alias(name), bytes, name.encodeToByteArray())
-            FileStore.writeAtomically(fileOf(name), byteArrayOf(FORMAT) + sealed)
-            reported.remove(name)
+    ): Unit =
+        withContext(io) {
+            lock.withLock {
+                val sealed = box.seal(SecretName.alias(name), bytes, name.encodeToByteArray())
+                FileStore.writeAtomically(fileOf(name), byteArrayOf(FORMAT) + sealed)
+                reported.remove(name)
+            }
         }
-    }
 
-    override suspend fun delete(name: String): Unit = withContext(io) {
-        lock.withLock {
-            val file = fileOf(name)
-            if (file.exists() && !file.delete()) throw IOException("can't delete secret $name")
-            reported.remove(name)
+    override suspend fun delete(name: String): Unit =
+        withContext(io) {
+            lock.withLock {
+                val file = fileOf(name)
+                if (file.exists() && !file.delete()) throw IOException("can't delete secret $name")
+                reported.remove(name)
+            }
         }
-    }
 
     private fun fileOf(name: String): File {
         require(name in SecretName.ALL) { "unknown secret '$name': add it to SecretName" }
@@ -98,7 +125,7 @@ class KeystoreSecureStore(
             val now = clock.now()
             val copy = file.copyTo(FileStore.quarantineTarget(file, now.toEpochMilli()), overwrite = true)
             reported.add(name)
-            corruption.report(CorruptFile(store = "secret:$name", quarantinedTo = copy, at = now, reason = error.message.orEmpty()))
+            corruption.report(CorruptFile(StoreKind.Secret, store = name, quarantinedTo = copy, at = now, reason = reasonOf(error)))
         }
         return SecretUnreadableException(name, error.transient, error)
     }

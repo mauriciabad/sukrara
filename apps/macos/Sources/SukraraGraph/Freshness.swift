@@ -11,6 +11,8 @@ public enum Freshness: Sendable {
     case fresh, late, stale, old, gone
     static let lateS: TimeInterval = 90, staleS: TimeInterval = 5 * 60, oldS: TimeInterval = 20 * 60,
         goneS: TimeInterval = 3 * 3600
+    /// From 12 h `timeText` names the day too (a bare clock time could be today's or yesterday's); after 6 days the date.
+    static let dayS: TimeInterval = 12 * 3600, dateS: TimeInterval = 6 * 86400
 
     static func of(age: TimeInterval?) -> Freshness {
         guard let a = age else { return .gone }
@@ -24,6 +26,9 @@ public enum Freshness: Sendable {
     var showTime: Bool { self != .fresh }
     var strike: Bool { self == .stale }
     var showGraph: Bool { self != .gone }
+    /// A card's value place says "now" where the time goes: a fresh value reads as live (#70; contracts/graph/freshness
+    /// `now`). Text-only places don't.
+    var saysNow: Bool { self == .fresh }
 
     /// What a card WITHOUT a value (graph-only) shows of its data's age, so it never looks current when it isn't
     /// (contracts/graph/freshness `graph_only`; Freshness.kt AgeMark): the reading's time at every age, fresh too (a
@@ -45,12 +50,13 @@ public enum Freshness: Sendable {
         }
     }
 
-    /// The next age at which `of` changes (for a one-shot timer / timeline entry).
+    /// The next age at which `of` or `timeText` changes (for a one-shot timer / timeline entry): else a widget last
+    /// drawn at 3 h still says "No reading since 7:14" the next morning.
     static func nextChange(age: TimeInterval) -> TimeInterval? {
-        [lateS, staleS, oldS, goneS].first { $0 >= age }.map { $0 + 1 }
+        [lateS, staleS, oldS, goneS, dayS, dateS].first { $0 >= age }.map { $0 + 1 }
     }
 
-    /// When the step of a reading taken at `t` changes next, seen at `now`; nil = never again / no reading.
+    /// When what a reading taken at `t` looks like changes next, seen at `now`; nil = never again / no reading.
     public static func nextChangeAt(_ t: TimeInterval?, now: TimeInterval) -> TimeInterval? {
         guard let t else { return nil }
         return nextChange(age: now - t).map { t + $0 }
@@ -58,8 +64,11 @@ public enum Freshness: Sendable {
 
     /// What every glucose surface shows for the latest reading (`sgv` at `t`, `rate` mg/dL/min) at `now`: the one
     /// decision behind the card (menubar dropdown, widgets) and the menubar title. Android's `Freshness.look`
-    /// (graph/Freshness.kt) is the same rule; both run spikes/graph-fixtures/freshness. `ended` = the sensor has ended,
-    /// `warmup` = a new sensor's warm-up time left: their own states, before any value. Surfaces ask `GlucoseCard.face`.
+    /// (graph/Freshness.kt) is the same rule; both run contracts/graph/freshness. `warmup` = a new sensor's warm-up time
+    /// left: its own state, before any value. `ended` = the sensor is past its end: while its readings keep arriving (the
+    /// value is neither struck nor gone) the value with the `GlucoseLook.ended` flag, since whether a reading is valid is
+    /// the sensor's own call and the alerts act on it (#3); once they stop, the ended state. Surfaces ask
+    /// `GlucoseCard.face`.
     /// `format` writes a value in the user's unit (mg/dL by default); LO / HI outside 40–400 mg/dL.
     static func look(
         sgv: Int?, t: TimeInterval?, rate: Double?, now: TimeInterval, ended: Bool = false, warmup: String? = nil,
@@ -69,7 +78,9 @@ public enum Freshness: Sendable {
         if let warmup {
             return GlucoseLook(state: .warmingUp, fresh: fr, text: nil, strike: false, trend: nil, warmup: warmup)
         }
-        if ended { return GlucoseLook(state: .ended, fresh: fr, text: nil, strike: false, trend: nil) }
+        if ended, sgv == nil || t == nil || !fr.showValue || fr.strike {
+            return GlucoseLook(state: .ended, fresh: fr, text: nil, strike: false, trend: nil)
+        }
         guard let sgv, t != nil else {
             return GlucoseLook(state: .none, fresh: fr, text: nil, strike: false, trend: nil)
         }
@@ -77,18 +88,36 @@ public enum Freshness: Sendable {
             return GlucoseLook(state: .noReadings, fresh: fr, text: nil, strike: false, trend: nil)
         }
         return GlucoseLook(
-            state: .value, fresh: fr, text: sgv < 40 ? "LO" : sgv > 400 ? "HI" : format(sgv), strike: fr.strike,
-            trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate)
+            state: .value, fresh: fr, text: GlucoseRange.isLo(sgv) ? "LO" : GlucoseRange.isHi(sgv) ? "HI" : format(sgv),
+            strike: fr.strike,
+            trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate, ended: ended)
     }
 
-    /// "14:05" today, "Tue 14:05" this week, "12 Oct" before; the time in the Mac's 12/24-hour setting (`Clock`).
-    /// A clock time doesn't tick.
-    static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
-        let d = Date(timeIntervalSince1970: t), n = Date(timeIntervalSince1970: now)
+    /// "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days (`timeKind`);
+    /// the time in the Mac's 12/24-hour setting (`Clock`). A clock time doesn't tick.
+    public static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
+        let d = Date(timeIntervalSince1970: t)
         let time = Clock.time(d)
-        if Calendar.current.isDate(d, inSameDayAs: n) { return time }
-        if now - t < 6 * 86400 { return d.formatted(.dateTime.weekday(.abbreviated)) + " " + time }
-        return d.formatted(.dateTime.day().month(.abbreviated))
+        switch timeKind(t, now: now) {
+        case .time: return time
+        case .day: return d.formatted(.dateTime.weekday(.abbreviated)) + " " + time
+        case .date: return d.formatted(.dateTime.day().month(.abbreviated))
+        }
+    }
+
+    /// `timeText`'s three forms ("14:05", "Tue 14:05", "12 Oct"), by their contract names (contracts/graph/freshness
+    /// `times`; Freshness.kt TimeKind).
+    enum TimeKind: String, Sendable { case time, day, date }
+
+    /// Which form `timeText` writes for `t` seen at `now`: the clock time alone while it is today's and at most 12 h
+    /// old, the day with it from then or on another day, the date after 6 days. A future time (a sensor's *Ready at*)
+    /// is a clock time unless it falls on another day.
+    static func timeKind(_ t: TimeInterval, now: TimeInterval, calendar: Calendar = .current) -> TimeKind {
+        let sameDay = calendar.isDate(
+            Date(timeIntervalSince1970: t), inSameDayAs: Date(timeIntervalSince1970: now))
+        let age = now - t
+        if sameDay && age <= dayS { return .time }
+        return age <= dateS ? .day : .date
     }
 }
 
@@ -102,22 +131,21 @@ public enum TrendMark: String, Sendable {
     static func ringStroke(_ size: CGFloat) -> CGFloat { size * 0.11 }
 }
 
-/// The trend arrow's one decision (graph/CardModel.kt TrendAngle; contracts/graph/trend): the drawn arrow's angle
-/// (±3 mg/dL/min = straight up / down, doubled from there) and THE text arrow every text place writes (the menu bar,
-/// alert titles), in Nightscout's direction bands. No place maps a rate to an arrow itself.
+/// The trend arrow's one decision (graph/CardModel.kt TrendAngle; contracts/graph/trend), one picture and one word per
+/// arrow (#4): the rate's band (`Trend`, Nightscout's ±1 / 2 / 3) gives the drawn arrow's angle, snapped to 0°, ±45°
+/// or ±90° (doubled from ±3), and THE text arrow every text place writes (the menu bar, alert titles). No place maps a
+/// rate to an arrow itself.
 public enum TrendAngle {
-    /// mg/dL per minute the arrow maps to ±90° (and doubles at).
-    public static let fullScale = Trend.fullScale
+    /// The drawn arrow's rotation in degrees, y-down (negative = up): the band's 0, ±45 or ±90.
+    public static func deg(_ rate: Double) -> Double { degrees[Trend(rate: rate).step + 3] }
 
-    /// The drawn arrow's rotation in degrees, y-down (negative = up).
-    public static func deg(_ rate: Double) -> Double { -max(-1, min(1, rate / fullScale)) * 90 }
-
-    public static func isDouble(_ rate: Double) -> Bool { abs(rate) >= fullScale }
+    public static func isDouble(_ rate: Double) -> Bool { abs(Trend(rate: rate).step) == 3 }
 
     /// The text arrow for a rate.
-    public static func symbol(_ rate: Double) -> String {
-        rate >= 3 ? "⇈" : rate >= 2 ? "↑" : rate >= 1 ? "↗" : rate > -1 ? "→" : rate > -2 ? "↘" : rate > -3 ? "↓" : "⇊"
-    }
+    public static func symbol(_ rate: Double) -> String { symbols[Trend(rate: rate).step + 3] }
+
+    private static let degrees: [Double] = [90, 90, 45, 0, -45, -90, -90]
+    private static let symbols = ["⇊", "↓", "↘", "→", "↗", "↑", "⇈"]
 
     /// `symbol` for a rate that may be missing: no rate = the "no trend" ring, as the card draws it.
     public static func text(_ rate: Double?) -> String { rate.map(symbol) ?? TrendMark.ring }
@@ -139,6 +167,9 @@ public struct GlucoseLook: Equatable, Sendable {
     /// While warming up: the time left ("42m").
     public var warmup: String? = nil
     public var rate: Double? = nil
+    /// A value whose sensor is past its end while its readings keep arriving (#3): the card adds the "Ended · Replace
+    /// sensor" pill (`StatusBadge.sensor`).
+    public var ended = false
     public var grey: Bool { strike }
     public var shown: Bool { state == .value }
     /// The trend as text for places that can only write text (the menu bar): the arrow of `rate` when the card draws

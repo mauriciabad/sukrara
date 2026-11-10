@@ -8,12 +8,24 @@ import androidx.room.RoomDatabase
 
 /**
  * The install's one database (`databases/sukrara.db`): glucose history, treatments and the sharing ledger. A phone is
- * either wearer or follower, so tables have no role column. Every schema change bumps [version], exports the schema to
- * `core/data/schemas/` and adds a migration with a `MigrationTestHelper` test (no destructive fallback).
+ * either wearer or follower, so tables have no role column.
+ *
+ * No migrations, ever (the owner, 2026-11-10: "no backwards compatibility for anything, databases included"): a schema
+ * change bumps [version] and replaces the exported `core/data/schemas/<version>.json` (only the current one is kept);
+ * a phone whose database has any other version gets a new, empty one (`DataModule.database`: destructive replace,
+ * upgrade and downgrade, every table dropped). History comes back through Import history (LibreView, Tidepool or a
+ * file, deduplicated), never through a migration. `DatabaseSchemaTest` and the `room-schema` check enforce it.
  */
 @Database(
-    entities = [ReadingEntity::class, SeenWrapEntity::class, RejectEntity::class, TreatmentEntity::class, OutboxEntity::class],
-    version = 1,
+    entities = [
+        ReadingEntity::class,
+        SeenWrapEntity::class,
+        RejectEntity::class,
+        TreatmentEntity::class,
+        OutboxEntity::class,
+        PenLedgerEntity::class,
+    ],
+    version = 3,
     exportSchema = true,
 )
 abstract class SukraraDatabase : RoomDatabase() {
@@ -26,6 +38,8 @@ abstract class SukraraDatabase : RoomDatabase() {
     abstract fun treatments(): TreatmentDao
 
     abstract fun outbox(): OutboxDao
+
+    abstract fun penLedger(): PenLedgerDao
 
     companion object {
         const val FILE = "sukrara.db"

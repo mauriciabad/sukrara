@@ -7,27 +7,49 @@ import android.content.Context
 import android.util.Log
 import app.mauri.sukrara.alerts.AlertEvent
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.alerts.SoundSettings
+import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
+import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorEndConfig
+import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.graph.GraphSettings
+import app.mauri.sukrara.monitor.lockedboot.LockedBootStore
 import app.mauri.sukrara.monitor.readiness.AndroidAlertReadiness
+import app.mauri.sukrara.monitor.readiness.NotificationCooldown
 import app.mauri.sukrara.monitor.sensorend.AndroidSensorEndPresenter
-import app.mauri.sukrara.monitor.service.AndroidAlarms
 import app.mauri.sukrara.monitor.sensorend.SensorEndMemory
 import app.mauri.sukrara.monitor.sensorend.SensorEndNotifier
+import app.mauri.sukrara.monitor.sensorend.SensorEndSettings
+import app.mauri.sukrara.monitor.service.AndroidAlarms
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * The alert runtime's wiring (the `AppGraph` composes it; the Application implements [AlertsHost]).
@@ -59,33 +81,105 @@ class AlertsModule(
     private val alarms = AndroidAlarms(ctx)
     val store = AlertStateStore(alertSettings, alertRecord)
     val soundPicker = AlertSoundPicker()
-    val notifier = AlertNotifier(ctx)
+
+    /**
+     * The sound settings as last read (null until the store first answered): what `AlertSoundProvider` reads on System
+     * UI's binder thread, so opening a sound never waits for the store (#44).
+     */
+    val sounds: StateFlow<SoundSettings?> =
+        store.settings
+            .map { it.sounds }
+            .distinctUntilChanged()
+            .catch { log("sound settings failed: ${it.javaClass.simpleName}") }
+            .stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** The person's answer about Android's *Vibrate only when unlocked* (the checklist asks; #129). */
+    private val unlockedAnswer: Flow<UnlockedSound> =
+        alertSettings
+            .flow(UNLOCKED_SOUND)
+            .map(UnlockedSound::of)
+            .distinctUntilChanged()
+            .catch { emit(UnlockedSound.Unchecked) }
+
+    /** Read at each ringing alert; null until the store answered (the first alert of a process then reads it). */
+    private val unlockedNow = unlockedAnswer.stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** The glucose unit the alert texts write numbers in (`general.unit`); mg/dL until the store answered. */
+    private val unitNow =
+        alertSettings
+            .flow(GraphSettings.GlucoseUnitSetting)
+            .map(GlucoseUnit::of)
+            .catch { emit(GlucoseUnit.MGDL) }
+            .stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MGDL)
+
+    val notifier =
+        AlertNotifier(
+            ctx,
+            UnlockedAlertSound(ctx) {
+                // a ringing alert in a process that just started may come before the store answered: read it then
+                val answer = unlockedNow.value ?: runBlocking { unlockedAnswer.first() }
+                NotificationCooldown.appPlays(NotificationCooldown.vibrateOnlyWhenUnlocked(ctx), answer)
+            },
+            unit = { unitNow.value },
+        )
+
+    /** Settings' sound preview and *Send a test alert*. */
+    val tryOut = AlertTryOut(ctx, notifier)
 
     /** THE alert runtime of this process; also every surface's [AlertControls]. */
-    val runtime = AlertRuntime(
-        store,
-        treatments,
-        notifier,
-        alarms.alertCheck(AndroidAlarms.ALERT_CHECK, clock),
-        events,
-        hub::setAlerts,
-        clock,
-        log = log,
-    )
+    val runtime =
+        AlertRuntime(
+            store,
+            treatments,
+            notifier,
+            alarms.alertCheck(AndroidAlarms.ALERT_CHECK, clock),
+            events,
+            hub::setAlerts,
+            clock,
+            log = log,
+            lockedBoot = LockedBootStore.of(ctx)::write,
+            elapsed = { android.os.SystemClock.elapsedRealtime() / 1000 },
+        )
     val controls: AlertControls get() = runtime
 
     /**
      * THE alert checklist (home's reliability row, the settings Reliability page, the setup permission step): one
      * instance so every surface agrees.
      */
-    val readiness: AlertReadinessSource = AndroidAlertReadiness(ctx, scope, dispatchers, store.settings, needsBluetooth)
+    val readiness: AlertReadinessSource =
+        AndroidAlertReadiness(
+            ctx,
+            scope,
+            dispatchers,
+            // the rules in use: on a follower, the mirrored rows *Settings from* chooses (as the runtime runs them)
+            AlertMirror.inUse(store.settings, wearerSettings),
+            needsBluetooth,
+            // the runtime publishes its failed steps to the hub; the checklist is the one place that answers for them
+            hub.state.map { it.alerts.failedSteps }.distinctUntilChanged(),
+            unlockedAnswer,
+            { alertSettings.set(UNLOCKED_SOUND, it.wire) },
+        )
 
-    val sensorEnd = SensorEndNotifier(
-        sensorEndRecord,
-        AndroidSensorEndPresenter(ctx),
-        alarms.alertCheck(AndroidAlarms.SENSOR_END_CHECK, clock),
-        clock,
-    )
+    private val sensorEndSettings: Flow<SensorEndSettings> =
+        combine(
+            SurfaceSettings.sensorEnd(alertSettings),
+            alertSettings.flow(SurfaceSettings.CountdownHours),
+            alertSettings.flow(SurfaceSettings.StatusChip),
+        ) { config, hours, chip -> SensorEndSettings(config, hours.toInt(), chip) }
+            .distinctUntilChanged()
+            // a settings store that fails must never take the service down: the defaults hold
+            .catch {
+                log("sensor-end settings failed: ${it.javaClass.simpleName}")
+                emit(SensorEndSettings(SensorEndConfig(), SettingsSpec.COUNTDOWN_HOURS.default.toInt(), chip = true))
+            }
+
+    val sensorEnd =
+        SensorEndNotifier(
+            sensorEndRecord,
+            AndroidSensorEndPresenter(ctx),
+            alarms.sensorEnd(clock),
+            clock,
+        ) { sensorEndSettings.first() }
 
     /**
      * Evaluates alerts and the sensor end now, from the saved state (the alert alarm, boot, app update, clock change):
@@ -110,15 +204,39 @@ class AlertsModule(
     /** "Start fresh" / leaving a role: alerts and their saved state go, the sensor-end notices too. */
     suspend fun reset() {
         runtime.reset()
-        sensorEnd.onSensor(app.mauri.sukrara.core.model.SensorState.None)
+        sensorEnd.update(wearer = false, SensorState.None, null, sensorEndSettings.first())
     }
 
     /** Called by the monitoring service once it runs (cancelled with its [scope]). */
     fun attach(scope: CoroutineScope) {
         AlertChannels.ensure(ctx)
         runtime.observe(scope, hub.state, wearerSettings, remoteEvents)
-        scope.launch { hub.state.map { it.sensor }.distinctUntilChanged().collect { sensorEnd.onSensor(it) } }
+        scope.launch {
+            // the sensor, its first reading and the settings re-plan; the newest reading only matters as "since the start"
+            combine(
+                hub.state
+                    // a fresh process starts at "nothing known" (no role, no sensor): that is no reason to forget the plan
+                    .filter { it.role != null && it.source != SourceStatus.NotStarted }
+                    .map { Triple(it.role == Role.Wearer, it.sensor, it.latest?.t?.epochSecond) }
+                    .distinctUntilChanged(),
+                sensorEndSettings,
+            ) { (wearer, sensor, latest), s -> SensorEndInputs(wearer, sensor, latest, s) }
+                .collect { sensorEnd.update(it.wearer, it.sensor, it.latestS, it.settings) }
+        }
     }
 }
 
+private data class SensorEndInputs(val wearer: Boolean, val sensor: SensorState, val latestS: Long?, val settings: SensorEndSettings)
+
 private const val TAG = "Sukrara.alerts"
+
+/** Schema `alerts.unlockedSound`. */
+private val UNLOCKED_SOUND =
+    SchemaSettings.text(
+        "alerts.unlockedSound",
+        UnlockedSound.Unchecked.wire,
+        UnlockedSound.entries
+            .map {
+                it.wire
+            }.toSet(),
+    )

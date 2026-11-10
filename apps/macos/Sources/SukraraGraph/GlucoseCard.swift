@@ -11,16 +11,23 @@ import SukraraCore
 /// Value + trend arrow + rings + chart in one drawing (GlucoseCard.kt), adapting to the size.
 public enum GlucoseCard {
     static let minCoverage = 0.25
+    /// Slots beside the value smaller than this (pt) are at most `crowdedMax`: three rings that small read as one
+    /// cluttered row of near-equal numbers (#71: 86/30d, 86/7d, 84/1d on the medium widget; layout/rules.json
+    /// `crowdedSlots`; GlucoseCard.kt `CROWDED_DP`).
+    static let crowdedDp: CGFloat = 56
+    static let crowdedMax = 2
 
     /// Draw `part` of the card `st` for `surface` and return what was laid out. `metricsOf` gives a slot's numbers; by
     /// default computed from `readings` (enough for windows they cover). `alerts` = what the alert rules decided (the
     /// badge, the last-treatment slot, the mute lines), computed by the caller with the alert engine's rules.
+    /// `fontScale` = a larger system text size: the chart's words grow with it up to `GlucoseGraph.maxTextScale` (the
+    /// Mac's surfaces draw at 1: macOS has no system text size for custom drawing).
     @discardableResult
     static func draw(
         _ ctx: CGContext, size: CGSize, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
         _ st: CardStyle, _ pal: GraphPalette, d: CGFloat = 1, surface: CardSurface, part: CardPart,
         metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
-        view: ChartView? = nil
+        view: ChartView? = nil, fontScale: CGFloat = 1
     ) -> CardLayout {
         let w = size.width, h = size.height
         let rec = CardLayout(surface, part, st, w: w, h: h, d: d)
@@ -28,10 +35,12 @@ public enum GlucoseCard {
         let status = alerts.status
         let last = st.last != .off ? alerts.last : nil
         let fr = Freshness.of(age: latest.map { now - $0.t })
-        let sl = SensorBadge.look(st.sensor, now: now, latest: latest?.t)
+        let words = st.words
+        let sl = SensorBadge.look(st.sensor, now: now, latest: latest?.t, words: words)
         // a zoomed chart: the same style with the window's length the surface zoomed to
         var graph = fr.showGraph ? st.graph : nil
         if let s = view?.span { graph?.window = s }
+        graph?.unit = st.unit
         let bands = st.bands.sane()
         let metrics = metricsOf ?? { r, b in GlucoseMetrics.of(readings, from: now - r.window, to: now, bands: b) }
         let spot = sensorSpot(st, sl, fr)
@@ -75,20 +84,23 @@ public enum GlucoseCard {
             }
             GlucoseGraph.draw(
                 ctx, chart, readings: readings, marks: marks, now: now, graph, pal, d: d, alerts: alerts,
-                sensor: spot == .graph ? sl : nil, rec: rec, view: view, latestT: latest?.t)
+                sensor: spot == .graph ? sl : nil, rec: rec, view: view, latestT: latest?.t, fontScale: fontScale)
             if age.dims {
                 ctx.endTransparencyLayer()
                 ctx.restoreGState()
             }
         }
         if age != .none, let latest {
-            // over the plot itself, clear of the % column and the y axis labels
-            drawAgeLabel(ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, pal, d: d, rec: rec)
+            // over the plot itself, clear of the % column and the y axis labels; a sensor that ended or is warming up
+            // says so instead of the reading's time, which would read as a gap
+            drawAgeLabel(
+                ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, sensor: sl, pal, d: d, words: words,
+                rec: rec)
         }
         // a graph-only card without its chart: the value's face alone
         if noChart && !st.value {
             drawValue(
-                ctx, chart, latest, fr, now, bands, pal, d: d, look: nil, sensor: sl, unit: st.unit,
+                ctx, chart, latest, fr, now, bands, pal, d: d, look: nil, sensor: sl, unit: st.unit, words: words,
                 rec: rec)
         }
         if st.value && part != .graph {
@@ -99,11 +111,11 @@ public enum GlucoseCard {
                 : drawRings(
                     ctx, box, st, last, now, bands, pal, d: d, metrics, countdown: countdown, rec: rec, dedicated: false
                 )
-            let look = st.badge ? StatusBadge.look(status, now: now) : nil
+            let look = st.badge ? StatusBadge.look(status, now: now, words: words) : nil
             drawValue(
                 ctx, stacked ? chart : CGRect(x: box.minX, y: box.minY, width: box.width - ringsW, height: box.height),
                 latest, fr, now,
-                bands, pal, d: d, look: look, sensor: sl, unit: st.unit, rec: rec)
+                bands, pal, d: d, look: look, sensor: sl, unit: st.unit, words: words, rec: rec)
         }
         return rec
     }
@@ -137,6 +149,35 @@ public enum GlucoseCard {
         return .none
     }
 
+    /// The user's slots with enough data (index, spec, numbers) and the ring the last-treatment slot shows while
+    /// there's no recent treatment (GlucoseCard.kt `slotInputs`).
+    private static func slotInputs(
+        _ st: CardStyle, _ last: LastTreatment.Info?, _ bands: Bands,
+        _ metricsOf: (RingSpec, Bands) -> GlucoseMetrics
+    ) -> ([(Int, RingSpec, GlucoseMetrics)], (RingSpec, GlucoseMetrics)?) {
+        let rings = st.rings.prefix(3).enumerated().compactMap { (i, spec) -> (Int, RingSpec, GlucoseMetrics)? in
+            let m = metricsOf(spec, bands)
+            return m.tir.coverage >= minCoverage ? (i, spec, m) : nil
+        }
+        let fallback: (RingSpec, GlucoseMetrics)? =
+            st.last != .off && last == nil
+            ? st.lastElse.flatMap { s in
+                let m = metricsOf(s, bands); return m.tir.coverage >= minCoverage ? (s, m) : nil
+            } : nil
+        return (rings, fallback)
+    }
+
+    /// The slots a card `st` shows for `data`, main first, at most `max`: the choice the drawn card makes, for what
+    /// VoiceOver says (`A11y`; GlucoseCard.kt `slotItems`).
+    static func slotItems(_ data: CardData, _ st: CardStyle, max: Int) -> [SlotItem] {
+        let last = st.last != .off ? data.alerts.last : nil
+        let (rings, fallback) = slotInputs(st, last, st.bands.sane(), data.metrics)
+        let items = Slots.arrange(rings, place: st.last, last: last, fallback: fallback, max: max)
+        let main = Slots.mainIndex(items)
+        guard main > 0 else { return items }
+        return [items[main]] + items.enumerated().filter { $0.offset != main }.map(\.element)
+    }
+
     /// Slots (`Slots.arrange`) right-aligned in `box` (main rightmost); returns the width used. Beside the value
     /// (`dedicated` false) they take at most 55 % of the row; in a box of their own (`.slots`) as many as fit whole.
     private static func drawRings(
@@ -150,17 +191,10 @@ public enum GlucoseCard {
         let size = min(box.height * 0.96, 84 * d)
         guard size >= 30 * d else { return 0 }
         let gap = size * 0.14
-        let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), 4)
+        let most = !dedicated && size < crowdedDp * d ? crowdedMax : 4
+        let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), most)
         guard fit >= 1 else { return 0 }
-        let rings = st.rings.prefix(3).enumerated().compactMap { (i, spec) -> (Int, RingSpec, GlucoseMetrics)? in
-            let m = metricsOf(spec, bands)
-            return m.tir.coverage >= minCoverage ? (i, spec, m) : nil
-        }
-        let fallback: (RingSpec, GlucoseMetrics)? =
-            st.last != .off && last == nil
-            ? st.lastElse.flatMap { s in
-                let m = metricsOf(s, bands); return m.tir.coverage >= minCoverage ? (s, m) : nil
-            } : nil
+        let (rings, fallback) = slotInputs(st, last, bands, metricsOf)
         let x = box.maxX
         var items = Slots.arrange(rings, place: st.last, last: last, fallback: fallback, max: fit)
         // in a box of its own every slot fits whole, the laurels' extra room included
@@ -178,11 +212,11 @@ public enum GlucoseCard {
         Slots.drawUnder(ctx, items, cx: cx, cy: box.midY, radius: size / 2, pal)
         for (i, item) in items.enumerated() {
             Slots.draw(
-                ctx, item, center: CGPoint(x: cx[i], y: box.midY), radius: size / 2, now: now, pal, d: d,
-                countdown: i == main ? countdown : nil)
+                ctx, item, center: CGPoint(x: cx[i], y: box.midY), radius: size / 2, now: now, pal, d: d, unit: st.unit,
+                words: st.words, countdown: i == main ? countdown : nil)
             rec.add(
                 "slot", CGRect(x: cx[i] - size / 2, y: box.midY - size / 2, width: size, height: size),
-                Slots.describe(item, main: i == main, countdown: i == main ? countdown : nil))
+                Slots.describe(item, main: i == main, countdown: i == main ? countdown : nil, unit: st.unit))
         }
         rec.add(
             "slots", CGRect(x: cx.last! - size / 2, y: box.minY, width: x - (cx.last! - size / 2), height: box.height),
@@ -194,20 +228,35 @@ public enum GlucoseCard {
 
     /// A card without a value: the reading's time centred over the top of the chart's `plot` on a background pill,
     /// after the "no readings" icon from 20 min (`age`, freshness.json `graph_only`; GlucoseCard.kt `drawAgeLabel`).
-    /// The text shrinks to fit the plot's width (down to 60 %) and the pill never grows past it.
+    /// The sensor's own states instead, as the value's place says them, so they never read as a gap in the readings:
+    /// once it has ended the checkered flag and "Sensor ended"; while a new one warms up its disc filling and
+    /// "Warming up · 40m" ("Almost ready" past the warm-up's end), the time left always labelled and at the pill's size,
+    /// never a figure that could pass for a value (#27). The text shrinks to fit the plot's width (down to 60 %) and the
+    /// pill never grows past it.
     private static func drawAgeLabel(
         _ ctx: CGContext, _ plot: CGRect, _ r: GraphReading, _ now: TimeInterval, _ age: Freshness.AgeMark,
-        _ pal: GraphPalette, d: CGFloat, rec: CardLayout
+        sensor: SensorBadge.Look?, _ pal: GraphPalette, d: CGFloat, words w: CardWords, rec: CardLayout
     ) {
-        let text = Freshness.timeText(r.t, now: now)
+        let warmup = sensor?.warmup
+        let ended = sensor?.ended == true && warmup == nil
+        let text =
+            if let warmup {
+                sensor?.waiting(now: now) == true ? warmup : "\(w.drawn.warmingUp) · \(warmup)"
+            } else if ended {
+                w.drawn.sensorEnded
+            } else {
+                Freshness.timeText(r.t, now: now)
+            }
+        let own = warmup != nil || ended
+        let hasIcon = own || age == .noReadings
         var size = min(max(10 * d, plot.height * 0.12), 16 * d)
         func width(_ s: CGFloat) -> CGFloat {
-            (age == .noReadings ? s * 1.45 : 0) + Ink.width(text, Ink.font(s, .semibold)) + s
+            (hasIcon ? s * 1.45 : 0) + Ink.width(text, Ink.font(s, .semibold)) + s
         }
         let room = max(0, plot.width - 4 * d)
         if width(size) > room { size *= max(0.6, room / width(size)) }
         let font = Ink.font(size, .semibold)
-        let icon = age == .noReadings ? size * 1.15 : 0
+        let icon = hasIcon ? size * 1.15 : 0
         let gap = icon > 0 ? size * 0.3 : 0
         let padX = size * 0.5, padY = size * 0.25
         let w = min(icon + gap + Ink.width(text, font) + 2 * padX, room), h = size * 1.2 + 2 * padY
@@ -219,15 +268,19 @@ public enum GlucoseCard {
         }
         ctx.saveGState()
         ctx.clip(to: box)
-        if icon > 0 {
+        if warmup != nil, let sensor {
+            SensorBadge.draw(ctx, x: box.minX + padX, y: box.midY - icon / 2, h: icon, sensor, pal, label: false)
+        } else if ended {
+            _ = SensorBadge.flag(ctx, x: box.minX + padX, y: box.midY - icon / 2, size: icon, color: pal.inkSoft)
+        } else if icon > 0 {
             _ = SensorBadge.symbol(
                 ctx, GlucoseLook.noReadingsSymbol, x: box.minX + padX, y: box.midY - icon / 2, size: icon,
                 color: pal.inkSoft)
         }
         Ink.draw(ctx, text, x: box.minX + padX + icon + gap, y: box.midY + size * 0.36, font, pal.inkSoft)
         ctx.restoreGState()
-        rec.add("graph.age", box, age.rawValue)
-        rec.add("time.text", nil, text)
+        rec.add("graph.age", box, warmup != nil ? "warmup" : ended ? "ended" : age.rawValue)
+        if own { rec.add("graph.age.text", nil, text) } else { rec.add("time.text", nil, text) }
     }
 
     /// The number + arrow, and under it the late reading's time and/or the status badge (`look`). The badge takes a
@@ -236,22 +289,20 @@ public enum GlucoseCard {
     private static func drawValue(
         _ ctx: CGContext, _ box: CGRect, _ r: GraphReading?, _ fr: Freshness, _ now: TimeInterval,
         _ bands: Bands, _ pal: GraphPalette, d: CGFloat, look: StatusBadge.Look?,
-        sensor: SensorBadge.Look?, unit: GlucoseUnit, rec: CardLayout
+        sensor: SensorBadge.Look?, unit: GlucoseUnit, words w: CardWords, rec: CardLayout
     ) {
         let small = Ink.font(max(11 * d, box.height * 0.17), .regular)
-        let face = face(r, now: now, sensor: sensor, format: unit.format)
+        let face = face(r, now: now, sensor: sensor, format: { unit.cardText($0) })
         if face.state == .warmingUp, let sensor {
             return drawWarmup(ctx, box, sensor, small, now, pal, d: d, rec: rec)
         }
         // an ended sensor says so as soon as it has ended, instead of a value or "No reading since" (not an error)
-        if face.state == .ended { return drawEnded(ctx, box, pal, d: d, rec: rec) }
+        if face.state == .ended { return drawEnded(ctx, box, pal, d: d, words: w, rec: rec) }
         guard let r, face.shown, let s = face.text else {
             // Fit the longer line into the space left of the rings; no readings for 20 min: the menubar's "no readings"
             // symbol before the words, as tall as both lines.
             let lines =
-                r.map { ["No reading since", Freshness.timeText($0.t, now: now)] } ?? [
-                    "No readings yet"
-                ]
+                r.map { [w.drawn.noReadingSince, Freshness.timeText($0.t, now: now)] } ?? [w.drawn.noReadingsYet]
             var size = min(box.height * 0.26, 20 * d)
             let iconW: (CGFloat) -> CGFloat = { r == nil ? 0 : $0 * 2.1 + $0 * 0.35 }
             let widest = lines.map { Ink.width($0, Ink.font(size, .semibold)) }.max() ?? 0
@@ -276,6 +327,8 @@ public enum GlucoseCard {
                 face.state.layoutName)
             return
         }
+        // a sensor past its end whose readings keep arriving: its pill when no alert's takes the place (#3)
+        let look = look ?? StatusBadge.sensor(face, w)
         let color = fr.strike ? pal.inkSoft : pal.at(bands, Double(r.sgv))
         // which colour, by name, for the cross-surface test (layout rules "value-color")
         rec.add(
@@ -283,9 +336,15 @@ public enum GlucoseCard {
             fr.strike ? "grey" : r.sgv >= bands.extremelyHigh ? "EXTREMELY_HIGH" : bands.of(Double(r.sgv)).name)
         // A late reading's time goes under the number (the user: beside it, it took the rings' room).
         let time = fr.showTime ? Freshness.timeText(r.t, now: now) : ""
+        // a fresh value says "now" where the time goes (#70): in the pill's row, else beside the arrow; never a row of its
+        // own. Beside a plain number + arrow it gets room unless that costs the number more than `nowKeep` of its size
+        // (ValueFace.kt).
+        let nowWord = "now"
         let smallH = fr.showTime ? CTFontGetSize(small) * 1.25 : 0
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
-        let badgeRow = look != nil && box.height - badgeH * 1.25 - smallH >= 26 * d
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
+        let range = RangeState.shown(face, sgv: r.sgv, bands: bands, pill: look)
+        let badgeRow = (look != nil || range != nil) && box.height - badgeH * 1.25 - smallH >= 26 * d
         // the late time shares the badge's row (after the badge) when there is one
         let timeH = badgeRow ? badgeH * 1.25 : smallH
         let numBox = CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - timeH)
@@ -293,6 +352,15 @@ public enum GlucoseCard {
         let arrowFactor: CGFloat = 0.62
         func need() -> CGFloat { Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * arrowFactor * 1.1 }
         for _ in 0..<3 { let n = need(); if n > box.width { numSize *= box.width / n * 0.995 } }
+        if fr.saysNow && !badgeRow && look == nil && range == nil {
+            let plain = numSize
+            func withNow() -> CGFloat {
+                Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * (0.08 + arrowFactor * 1.15)
+                    + Ink.width(nowWord, small)
+            }
+            for _ in 0..<3 { let n = withNow(); if n > box.width { numSize *= box.width / n * 0.995 } }
+            if numSize < plain * Self.nowKeep { numSize = plain }
+        }
         let num = Ink.font(numSize, .bold, rounded: true)
         // no row for the badge: its icon goes beside the arrow if there's room
         let iconH = min(numBox.height * 0.5, 24 * d)
@@ -325,21 +393,37 @@ public enum GlucoseCard {
                 "value.trend", CGRect(x: x, y: numBox.midY - arrowSize / 2, width: arrowSize, height: arrowSize), "ring"
             )
         }
-        if badgeRow, let look {
+        if badgeRow {
             let top = numBox.maxY + badgeH * 0.25
-            let bw = StatusBadge.draw(
-                ctx, x: box.minX, y: top, h: badgeH, maxW: box.width, look, dark: pal.dark, knockout: pal.knockout)
-            rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
-            if fr.showTime {
-                let t = Ink.font(badgeH * 0.56, .regular)
-                let tx = box.minX + bw + badgeH * 0.35
-                if tx + Ink.width(time, t) <= box.maxX {
-                    Ink.draw(ctx, time, x: tx, y: top + badgeH / 2 + badgeH * 0.56 * 0.36, t, pal.inkSoft)
-                    rec.add(
-                        "value.time", CGRect(x: tx, y: top, width: Ink.width(time, t), height: badgeH), "[badge row]")
-                    rec.add("time.text", nil, time)
+            var tx = box.minX
+            if let look {
+                // the pill keeps room for the range word: its short words or its icon rather than no word
+                let keep = range.map { RangeTag.width(w.rangeWord($0), h: badgeH) + badgeH * 0.35 } ?? 0
+                let maxW = box.width - keep >= badgeH ? box.width - keep : box.width
+                let bw = StatusBadge.draw(
+                    ctx, x: box.minX, y: top, h: badgeH, maxW: maxW, look, dark: pal.dark, knockout: pal.knockout)
+                rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
+                tx += bw + badgeH * 0.35
+            }
+            if let range {
+                if tx + RangeTag.width(w.rangeWord(range), h: badgeH) <= box.maxX {
+                    let b = RangeTag.draw(ctx, x: tx, y: top, h: badgeH, w.rangeWord(range), tint: color, pal)
+                    rec.add("value.range", b, "\(range.rawValue) [row]")
+                    tx = b.maxX + badgeH * 0.35
                 } else {
-                    rec.add("value.time", nil, "[badge row] (no room)")
+                    rec.add("value.range", nil, "\(range.rawValue) [row] (no room)")
+                }
+            }
+            if fr.showTime || fr.saysNow {
+                // the late time (or a fresh value's "now") shares the row
+                let t = Ink.font(badgeH * 0.56, .regular)
+                let inRow = fr.showTime ? time : nowWord, tag = fr.showTime ? "[badge row]" : "now [badge row]"
+                if tx + Ink.width(inRow, t) <= box.maxX {
+                    Ink.draw(ctx, inRow, x: tx, y: top + badgeH / 2 + badgeH * 0.56 * 0.36, t, pal.inkSoft)
+                    rec.add("value.time", CGRect(x: tx, y: top, width: Ink.width(inRow, t), height: badgeH), tag)
+                    if fr.showTime { rec.add("time.text", nil, time) }
+                } else {
+                    rec.add("value.time", nil, "\(tag) (no room)")
                 }
             }
         } else {
@@ -355,6 +439,32 @@ public enum GlucoseCard {
             } else if let look {
                 rec.add("value.status", nil, "\(look.kind) (no room)")
             }
+            // no row: the range word beside the arrow (after the pill's icon) when it fits
+            var ix = x + arrowSize * 1.15 + (iconBadge ? iconH * 1.3 : 0)
+            if let range {
+                let th = min(iconH, 20 * d)
+                if ix + RangeTag.width(w.rangeWord(range), h: th) <= box.maxX {
+                    let b = RangeTag.draw(
+                        ctx, x: ix, y: numBox.midY - th / 2, h: th, w.rangeWord(range), tint: color, pal)
+                    rec.add("value.range", b, "\(range.rawValue) [beside]")
+                    ix = b.maxX + th * 0.35
+                } else {
+                    rec.add("value.range", nil, "\(range.rawValue) (no room)")
+                }
+            }
+            if fr.saysNow {
+                // on the number's baseline after what is beside the arrow: "112 ↗ now"
+                if ix + Ink.width(nowWord, small) <= box.maxX {
+                    Ink.draw(ctx, nowWord, x: ix, y: baseY, small, pal.inkSoft)
+                    rec.add(
+                        "value.time",
+                        CGRect(
+                            x: ix, y: baseY - CTFontGetSize(small), width: Ink.width(nowWord, small),
+                            height: CTFontGetSize(small)), "now [beside]")
+                } else {
+                    rec.add("value.time", nil, "now [beside] (no room)")
+                }
+            }
             if fr.showTime {
                 Ink.draw(ctx, time, x: box.minX, y: baseY + CTFontGetSize(small) * 1.25, small, pal.inkSoft)
                 rec.add(
@@ -366,11 +476,17 @@ public enum GlucoseCard {
         }
     }
 
+    /// Room for a fresh value's "now" beside its arrow costs the number at most this share of its size (ValueFace.kt
+    /// `NOW_KEEP`).
+    static let nowKeep: CGFloat = 0.8
+
     /// The sensor has ended: "Sensor ended" in the secondary colour (a state, not an error) and under it the action pill
     /// "Replace sensor" (StatusBadge.replaceSensor, the same pill as "Eat carbs": full, short or icon only as room
     /// allows); a box too short for the pill's row gets the icon-only pill beside the words (GlucoseCard.drawEnded).
-    private static func drawEnded(_ ctx: CGContext, _ box: CGRect, _ pal: GraphPalette, d: CGFloat, rec: CardLayout) {
-        let words = "Sensor ended"
+    private static func drawEnded(
+        _ ctx: CGContext, _ box: CGRect, _ pal: GraphPalette, d: CGFloat, words w: CardWords, rec: CardLayout
+    ) {
+        let words = w.drawn.sensorEnded
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
         let row = box.height - badgeH * 1.25 >= 20 * d
         let textBox = row ? CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - badgeH * 1.25) : box
@@ -389,7 +505,7 @@ public enum GlucoseCard {
         if row {
             let pw = StatusBadge.draw(
                 ctx, x: box.minX, y: textBox.maxY + badgeH * 0.25, h: badgeH, maxW: box.width,
-                StatusBadge.replaceSensor,
+                StatusBadge.replaceSensor(w),
                 dark: pal.dark, knockout: pal.knockout)
             rec.add(
                 "value.pill", CGRect(x: box.minX, y: textBox.maxY + badgeH * 0.25, width: pw, height: badgeH), "[row]")
@@ -397,7 +513,7 @@ public enum GlucoseCard {
             let x = box.minX + size * 1.25 + Ink.width(words, f) + badgeH * 0.3
             if x + badgeH <= box.maxX {
                 _ = StatusBadge.draw(
-                    ctx, x: x, y: box.midY - badgeH / 2, h: badgeH, maxW: badgeH, StatusBadge.replaceSensor,
+                    ctx, x: x, y: box.midY - badgeH / 2, h: badgeH, maxW: badgeH, StatusBadge.replaceSensor(w),
                     dark: pal.dark, knockout: pal.knockout)
                 rec.add("value.pill", CGRect(x: x, y: box.midY - badgeH / 2, width: badgeH, height: badgeH), "[icon]")
             } else {
@@ -406,33 +522,64 @@ public enum GlucoseCard {
         }
     }
 
-    /// A new sensor warming up: the time left ("42m") where the number goes, in the secondary colour, the sensor disc
-    /// beside it filling up, and "Ready at 19:45" under it (GlucoseCard.drawWarmup on Android).
+    /// The largest a warming-up sensor's words are drawn (pt): the size of "Sensor ended", never a value's (#27).
+    static let warmupTextMax: CGFloat = 20
+
+    /// A new sensor warming up, labelled so it can never pass for a value (#27): the disc filling and "Warming up · 42m"
+    /// ("Almost ready" past the warm-up's end) at the size of "Sensor ended" (at most `warmupTextMax`, never the
+    /// number's), and under it "Ready at 19:45" / "Waiting for the first reading" when there is room. A box too narrow for
+    /// one line puts the time left on its own line under the words, at the same size (GlucoseCard.drawWarmup on Android).
     private static func drawWarmup(
         _ ctx: CGContext, _ box: CGRect, _ look: SensorBadge.Look, _ small: CTFont, _ now: TimeInterval,
         _ pal: GraphPalette, d: CGFloat, rec: CardLayout
     ) {
         guard let s = look.warmup else { return }
+        let waiting = look.waiting(now: now)
+        let warming = look.words.drawn.warmingUp
+        let title = waiting ? s : "\(warming) · \(s)"
         let line = look.warmupLine(now: now)
-        let numBox = CGRect(
-            x: box.minX, y: box.minY, width: box.width, height: box.height - CTFontGetSize(small) * 1.25)
-        var numSize = numBox.height * 1.18
-        let need = Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * 0.6
-        if need > box.width { numSize *= box.width / need }
-        let num = Ink.font(numSize, .bold, rounded: true)
-        let capH = CTFontGetCapHeight(num)
-        let baseY = numBox.midY + capH / 2
-        Ink.draw(ctx, s, x: box.minX - numSize * 0.04, y: baseY, num, pal.inkSoft)
-        let dh = capH * 0.5
-        SensorBadge.draw(
-            ctx, x: box.minX + Ink.width(s, num) + numSize * 0.12, y: numBox.midY - dh / 2, h: dh, look, pal,
-            label: false)
-        var t = small
-        let lw = Ink.width(line, t)
-        if lw > box.width, lw > 0 { t = Ink.font(CTFontGetSize(small) * box.width / lw, .regular) }
-        Ink.draw(ctx, line, x: box.minX, y: baseY + CTFontGetSize(small) * 1.25, t, pal.inkSoft)
-        if !look.waiting(now: now) { rec.add("time.text", nil, line) }
-        rec.add("value.warmup", CGRect(x: box.minX, y: numBox.midY - capH / 2, width: need, height: capH), s)
+        var subSize = min(CTFontGetSize(small), 15 * d)
+        let subH = subSize * 1.3
+        let withSub = box.height - subH >= 20 * d
+        let textBox =
+            withSub ? CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - subH) : box
+        var size = min(textBox.height * 0.5, warmupTextMax * d)
+        func width(_ t: String, _ s: CGFloat) -> CGFloat { Ink.width(t, Ink.font(s, .semibold)) }
+        // the disc before the words, as the flag before "Sensor ended"
+        let one = size * 1.3 + width(title, size)
+        let lines: [String]
+        if one <= box.width || waiting || box.width / one >= 0.6 {
+            if one > box.width { size *= max(0.45, box.width / one) }
+            lines = [title]
+        } else {
+            // two lines: the words, then the time left under them (never alone at a bigger size)
+            size = min(textBox.height / 2.6, warmupTextMax * d)
+            let widest = size * 1.3 + max(width(warming, size), width(s, size))
+            if widest > box.width { size *= max(0.45, box.width / widest) }
+            lines = [warming, s]
+        }
+        let f = Ink.font(size, .semibold)
+        let lh = size * 1.25
+        let lw = Ink.width(line, Ink.font(subSize, .regular))
+        if withSub, lw > box.width, lw > 0 { subSize *= box.width / lw }
+        // the words and the line under them as one group, centred in the box
+        let groupH = CGFloat(lines.count) * lh + (withSub ? subSize * 1.3 : 0)
+        let top = box.midY - groupH / 2
+        let base = top + lh / 2 + size * 0.36
+        let ds = size * 1.05
+        SensorBadge.draw(ctx, x: box.minX, y: base - size * 0.36 - ds / 2, h: ds, look, pal, label: false)
+        let x = box.minX + size * 1.3
+        for (i, t) in lines.enumerated() { Ink.draw(ctx, t, x: x, y: base + CGFloat(i) * lh, f, pal.inkSoft) }
+        let textW = lines.map { Ink.width($0, f) }.max() ?? 0
+        rec.add("value.warmup", CGRect(x: box.minX, y: base - size, width: x + textW - box.minX, height: size), s)
+        rec.add("value.warmup.text", nil, title)
+        if withSub {
+            Ink.draw(
+                ctx, line, x: box.minX, y: top + CGFloat(lines.count) * lh + subSize * 1.05,
+                Ink.font(subSize, .regular),
+                pal.inkSoft)
+            if !waiting { rec.add("time.text", nil, line) }
+        }
     }
 
     /// Same geometry as GlucoseNotification.drawArrow / the menubar TrendArrow: unit arrow pointing +x.
@@ -457,7 +604,7 @@ public enum GlucoseCard {
         size: CGSize, scale: CGFloat = 2, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
         _ st: CardStyle, _ pal: GraphPalette, background: CGColor? = nil, surface: CardSurface,
         metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
-        overflow: CGFloat = 0
+        overflow: CGFloat = 0, view: ChartView? = nil
     ) -> CGImage? {
         let pw = max(16, Int((size.width + 2 * overflow) * scale)),
             ph = max(16, Int((size.height + 2 * overflow) * scale))
@@ -474,7 +621,7 @@ public enum GlucoseCard {
         draw(
             ctx, size: size, readings: readings, marks: marks, now: now, st, pal, surface: surface, part: .all,
             metricsOf: metricsOf,
-            alerts: alerts)
+            alerts: alerts, view: view)
         return ctx.makeImage()
     }
 }
@@ -492,20 +639,72 @@ public struct CardData: Sendable, Equatable, Codable {
     public var sensor: SensorInfo?
     public var alerts: CardAlerts
     public var now: TimeInterval
+    /// The slots' numbers counted over the stored history (`SlotNumbers.of`), so every surface shows the same 7 / 14 /
+    /// 30-day rings whatever stretch of `readings` it draws; nil = counted from `readings`.
+    public var slots: SlotNumbers?
 
     public init(
         readings: [GraphReading], marks: [GraphMark] = [], sensor: SensorInfo? = nil, alerts: CardAlerts = .none,
-        now: TimeInterval
+        now: TimeInterval, slots: SlotNumbers? = nil
     ) {
         self.readings = readings
         self.marks = marks
         self.sensor = sensor
         self.alerts = alerts
         self.now = now
+        self.slots = slots
     }
 
     /// The newest reading, or nil.
     public var latest: GraphReading? { readings.max { $0.t < $1.t } }
+
+    /// A slot's numbers: the stored history's for a window longer than `readings` cover (counted for these ranges in
+    /// the last day), else counted from `readings` at `now` (exact, also in a widget frame hours ahead).
+    func metrics(_ spec: RingSpec, _ bands: Bands) -> GlucoseMetrics {
+        let covered = readings.map(\.t).min().map { now - $0 } ?? 0
+        if spec.window > covered + 3600, let slots, now - slots.at < 86_400, now >= slots.at - 3600,
+            let m = slots.metrics(spec.window, bands)
+        {
+            return m
+        }
+        return GlucoseMetrics.of(readings, from: now - spec.window, to: now, bands: bands)
+    }
+}
+
+/// Every slot's numbers (time in range, average, GMI, CV) over the whole stored history, counted once per new reading
+/// by the app and handed to every card surface in `CardData.slots` (the widgets get them in their snapshot instead of
+/// a month of readings). Android: `MetricsCache` over the stored days.
+public struct SlotNumbers: Sendable, Equatable, Codable {
+    struct Entry: Sendable, Equatable, Codable {
+        var window: TimeInterval
+        var bands: Bands
+        var metrics: GlucoseMetrics
+    }
+
+    var entries: [Entry]
+    /// When they were counted (epoch s): the windows end then.
+    public var at: TimeInterval
+
+    /// The numbers for every window a card with any of `configs` can show (its slots, also those beyond the ring
+    /// count a place may show, and the last-treatment slot's ring), over `history` up to `now`.
+    public static func of(_ history: [GraphReading], now: TimeInterval, configs: [GraphConfig]) -> SlotNumbers {
+        var entries: [Entry] = []
+        for config in configs {
+            let bands = config.bands.sane()
+            let windows = config.slots.map(\.window) + (config.lastElse.map { [$0.window] } ?? [])
+            for window in windows where !entries.contains(where: { $0.window == window && $0.bands == bands }) {
+                entries.append(
+                    Entry(
+                        window: window, bands: bands,
+                        metrics: GlucoseMetrics.of(history, from: now - window, to: now, bands: bands)))
+            }
+        }
+        return SlotNumbers(entries: entries, at: now)
+    }
+
+    func metrics(_ window: TimeInterval, _ bands: Bands) -> GlucoseMetrics? {
+        entries.first { $0.window == window && $0.bands == bands }?.metrics
+    }
 }
 
 extension GlucoseCard {
@@ -514,41 +713,91 @@ extension GlucoseCard {
 
     /// `surface`'s card at `size` (points) as a bitmap, `scale` px per point, with the app's graph settings `config`
     /// and the placement's `overrides`. `tinted` = a tinted widget rendering mode (accented / vibrant). `overflow`: room
-    /// around the card for what overflows it (a ring's laurel or crown).
+    /// around the card for what overflows it (a ring's laurel or crown). `words` = the language it draws in (the
+    /// person's).
     public static func image(
         surface: CardSurface, size: CGSize, config: GraphConfig, overrides: PlaceOverrides = PlaceOverrides(),
-        data: CardData, unit: GlucoseUnit, dark: Bool, tinted: Bool = false, scale: CGFloat = 2, overflow: CGFloat = 0
+        data: CardData, unit: GlucoseUnit, dark: Bool, tinted: Bool = false, scale: CGFloat = 2, overflow: CGFloat = 0,
+        view: ChartView? = nil, contrast: Bool = false, words: CardWords = .current
     ) -> CGImage? {
-        let palette = GraphPalette.of(dark: dark)
-        var style = surface.style(config, overrides, sensor: data.sensor)
+        let palette = Self.palette(surface, dark: dark, contrast: contrast)
+        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
         style.unit = unit
         return image(
             size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
             tinted ? palette.tinted() : palette,
-            surface: surface, alerts: data.alerts, overflow: overflow)
+            surface: surface, metricsOf: data.metrics, alerts: data.alerts, overflow: overflow, view: view)
+    }
+
+    /// The panel's card sits on a recessed module: its grid (and with Increase Contrast its secondary ink) is stronger.
+    static func palette(_ surface: CardSurface, dark: Bool, contrast: Bool) -> GraphPalette {
+        let p = GraphPalette.of(dark: dark)
+        return surface == .menubarCard ? p.onModule(contrast: contrast) : p
+    }
+
+    /// Where `surface`'s card at `size` draws its plot and, while `view` scrolls or zooms it, the "Now" pill (points
+    /// from the top left; nil when not drawn). The panel turns gestures over the plot into a `ChartView` and puts its
+    /// "Now" button on the pill.
+    public static func chartRects(
+        surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit,
+        view: ChartView? = nil, words: CardWords = .current
+    ) -> (plot: CGRect?, now: CGRect?) {
+        guard
+            let ctx = CGContext(
+                data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return (nil, nil) }
+        var style = surface.style(config, PlaceOverrides(), sensor: data.sensor, words: words)
+        style.unit = unit
+        let layout = draw(
+            ctx, size: size, readings: data.readings, marks: data.marks, now: data.now, style,
+            GraphPalette.of(dark: false), surface: surface, part: .all, metricsOf: data.metrics, alerts: data.alerts,
+            view: view)
+        return (layout.first("chart.plot")?.box, layout.first("chart.now")?.box)
+    }
+
+    /// The length of `surface`'s chart window (s) with `config`: what a zoom starts from (nil = no chart).
+    public static func chartSpan(surface: CardSurface, config: GraphConfig) -> TimeInterval? {
+        surface.style(config, PlaceOverrides(), sensor: nil).graph?.window
+    }
+
+    /// The y range (mg/dL) `surface`'s chart draws for the window ending at `end` with length `span` (nil = its
+    /// own): a scrolling surface eases `ChartView.y` towards it, so the scale never jumps.
+    public static func yRange(
+        surface: CardSurface, config: GraphConfig, readings: [GraphReading], end: TimeInterval, span: TimeInterval?
+    ) -> ClosedRange<Double>? {
+        guard var g = surface.style(config, PlaceOverrides(), sensor: nil).graph else { return nil }
+        if let span { g.window = span }
+        return yRange(readings, end: end, g)
     }
 
     /// Draws `part` of `surface`'s card into `ctx` (y-down, points) at `size`: for surfaces that paint into a view.
     public static func draw(
         surface: CardSurface, in ctx: CGContext, size: CGSize, part: CardPart = .all, config: GraphConfig,
-        overrides: PlaceOverrides = PlaceOverrides(), data: CardData, unit: GlucoseUnit, dark: Bool
+        overrides: PlaceOverrides = PlaceOverrides(), data: CardData, unit: GlucoseUnit, dark: Bool,
+        words: CardWords = .current
     ) {
-        var style = surface.style(config, overrides, sensor: data.sensor)
+        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
         style.unit = unit
         draw(
             ctx, size: size, readings: data.readings, marks: data.marks, now: data.now, style,
             GraphPalette.of(dark: dark), surface: surface,
-            part: part, alerts: data.alerts)
+            part: part, metricsOf: data.metrics, alerts: data.alerts)
     }
 
     /// The value's decision for text places (the menu bar title, notifications): the state, the value in `unit`, the
     /// strike and the trend mark, from the same rule the card draws with.
     /// `surface` = the registered place asking (contracts/graph/surfaces/surfaces.json; tools/check `card-surface`).
-    public static func face(_ data: CardData, unit: GlucoseUnit, surface: CardSurface) -> GlucoseLook {
+    /// `words` = the language of a warm-up's time left (`GlucoseLook.warmup`).
+    public static func face(
+        _ data: CardData, unit: GlucoseUnit, surface: CardSurface, words: CardWords = .current
+    ) -> GlucoseLook {
         let latest = data.latest
         return face(
-            latest, now: data.now, sensor: SensorBadge.look(data.sensor, now: data.now, latest: latest?.t),
-            format: unit.format)
+            latest, now: data.now,
+            sensor: SensorBadge.look(data.sensor, now: data.now, latest: latest?.t, words: words),
+            format: { unit.cardText($0) })
     }
 
     /// What VoiceOver says for `surface`'s card with the user's settings `config` (its ranges and chart window):
@@ -559,7 +808,7 @@ extension GlucoseCard {
         overrides: PlaceOverrides = PlaceOverrides(), words: CardWords = .current
     ) -> String {
         A11y.card(
-            data, unit: unit, surface: surface, style: surface.style(config, overrides, sensor: data.sensor),
-            words: words)
+            data, unit: unit, surface: surface,
+            style: surface.style(config, overrides, sensor: data.sensor, words: words), words: words)
     }
 }

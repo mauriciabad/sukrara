@@ -1,5 +1,5 @@
 {
- "note": "Profile editing (PROTOCOL-v2 'Profiles'): run by Android ProfileFixtureTest and Mac -identityselftest. names: typed + previous -> stored. v1: numbers -> normalised picture. ops: editor buttons. wire: Avatar.of (null = rejected). update: the follower's profile rumor body.",
+ "note": "Profile editing (PROTOCOL-v2 'Profiles'): run by Android ProfileFixtureTest and Mac -identityselftest. names: typed + previous -> stored. v1: numbers -> normalised picture. ops: editor buttons. wire: Avatar.of (null = rejected). update: the follower's profile rumor body. received: a profile object from the wire -> its stored name (trimmed, at most 40). shown: a stored name -> what is shown (control and format characters removed, trimmed; null = the generic word, Someone / Alguien).",
  "names": [
   {
    "typed": "  Alex  ",
@@ -211,6 +211,72 @@
      "avatar": null
     }
    }
+  }
+ ],
+ "received": [
+  {
+   "in": {
+    "name": "Bo ",
+    "avatar": null
+   },
+   "name": "Bo"
+  },
+  {
+   "in": {
+    "name": "  Ana María\t",
+    "avatar": null
+   },
+   "name": "Ana María"
+  },
+  {
+   "in": {
+    "name": "   ",
+    "avatar": null
+   },
+   "name": ""
+  },
+  {
+   "in": {
+    "avatar": null
+   },
+   "name": ""
+  },
+  {
+   "in": {
+    "name": "A name that is much longer than forty characters",
+    "avatar": null
+   },
+   "name": "A name that is much longer than forty ch"
+  }
+ ],
+ "shown": [
+  {
+   "name": "Bo ",
+   "shown": "Bo"
+  },
+  {
+   "name": "Bo",
+   "shown": "Bo"
+  },
+  {
+   "name": "",
+   "shown": null
+  },
+  {
+   "name": "   ",
+   "shown": null
+  },
+  {
+   "name": "\u202eMo\u0000m\n",
+   "shown": "Mom"
+  },
+  {
+   "name": "\u200b\u0007",
+   "shown": null
+  },
+  {
+   "name": "Núria",
+   "shown": "Núria"
   }
  ]
 }

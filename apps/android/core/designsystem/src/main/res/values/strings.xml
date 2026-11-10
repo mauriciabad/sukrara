@@ -6,7 +6,7 @@
     <string name="ds_ok">OK</string>
     <string name="ds_cancel">Cancel</string>
     <string name="ds_dismiss">Dismiss</string>
-    <string name="ds_custom">Custom</string>
+    <string name="ds_custom">Custom…</string>
     <string name="ds_custom_label">Value</string>
     <!-- %1$s lowest value, %2$s highest value, %3$s unit -->
     <string name="ds_custom_range">From %1$s to %2$s %3$s</string>
@@ -14,7 +14,15 @@
     <string name="ds_unit_d">days</string>
     <string name="ds_unit_min">min</string>
     <string name="ds_unit_s">s</string>
+    <!-- A whole number of days as a value ("1 day", "7 days"): ring windows, slot periods, day settings -->
+    <plurals name="ds_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
+    <string name="ds_req_delivery">Alert delivery</string>
+    <string name="ds_req_delivery_why">Android refused the last try to show an alert, set the next alert check or save the alerts. Sukrara tries again with every reading; the report says which step failed.</string>
+    <string name="ds_copy_report">Copy report</string>
     <string name="ds_req_notifications">Notifications</string>
     <string name="ds_req_notifications_why">Without them no alert can show or sound.</string>
     <string name="ds_req_full_screen">Full-screen alerts</string>
@@ -25,6 +33,14 @@
     <string name="ds_req_battery_why">Keeps Sukrara reading the sensor in the background.</string>
     <string name="ds_req_channel">Alert sound and Do Not Disturb</string>
     <string name="ds_req_channel_why">The alert categories must keep their sound and may break through Do Not Disturb.</string>
+    <string name="ds_req_dnd">Alarms in Do Not Disturb</string>
+    <string name="ds_req_dnd_why">Lets the alerts that ring like an alarm break through a Do Not Disturb mode that silences alarms, such as a bedtime mode.</string>
+    <string name="ds_req_unlocked">Sound while the phone is unlocked</string>
+    <string name="ds_req_unlocked_why">Android\'s Notification cooldown › Vibrate only when unlocked mutes every alert sound, alarms too, while you use the phone. Android doesn\'t let apps read it: check it once and tell Sukrara.</string>
+    <string name="ds_unlocked_open">Open the setting</string>
+    <string name="ds_unlocked_off">It\'s off</string>
+    <string name="ds_unlocked_app">Keep it on</string>
+    <string name="ds_unlocked_app_note">While the phone is unlocked, Sukrara plays the alert sound itself; Android only vibrates.</string>
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">The sensor sends readings over Bluetooth.</string>
 
@@ -46,9 +62,90 @@
     <string name="mute_all_left_one">Alerts muted · %1$s left</string>
     <string name="mute_all_left_other">Alerts muted · %1$s left</string>
     <string name="mute_all_forever">Alerts muted until you turn it off</string>
+    <string name="mute_all_scope">Very low and no data included, on this phone only</string>
     <string name="mute_notif_until">Until %1$s</string>
+    <string name="night_until">Night alerts until %1$s</string>
     <string name="mute_pill">Muted · %1$s</string>
     <string name="mute_pill_forever">Muted</string>
     <string name="mute_choice">For %1$s</string>
     <string name="mute_choice_forever">Until you turn it off</string>
+    <!-- The ways out of a quiet alert and of Mute alerts (QuietControls: home, Settings › Alerts › Active now, TalkBack) -->
+    <string name="ds_quiet_unmute">Unmute</string>
+    <string name="ds_quiet_anyway">Alert me anyway</string>
+    <string name="ds_quiet_as_usual">Remind as usual</string>
+    <string name="ds_quiet_change_to">Change to</string>
+    <string name="ds_mute_all_unmute">Unmute</string>
+    <string name="ds_mute_all_change">Change time</string>
+    <!-- TalkBack action on the card: %1$s side name ("Low"), %2$s the way out ("Unmute") -->
+    <string name="ds_quiet_a11y_action">%1$s alerts: %2$s</string>
+    <string name="ds_a11y_unmute_all">Unmute alerts</string>
+    <string name="ds_a11y_change_mute">Change how long alerts are muted</string>
+    <string name="ds_a11y_mute_all">Mute alerts</string>
+    <!-- UserErrors: why something failed, in plain words, with its next step -->
+    <string name="ds_err_no_internet">The phone isn\'t connected to the internet.</string>
+    <string name="ds_err_not_found">Can\'t find the server. Check the address and the internet connection.</string>
+    <string name="ds_err_cant_connect">Can\'t connect to the server. Check that it\'s running and the address is right.</string>
+    <string name="ds_err_timed_out">The server didn\'t answer in time.</string>
+    <string name="ds_err_secure">Couldn\'t make a secure connection. Check the address and the phone\'s date and time.</string>
+    <string name="ds_err_untrusted_cert">The site\'s certificate isn\'t trusted: it\'s self-signed or from a private authority. If it\'s your own server, give it a free certificate (Let\'s Encrypt, Tailscale) or put it behind a reverse proxy that has one.</string>
+    <string name="ds_err_sign_in">The sign-in expired or the password or secret is wrong. Sign in again.</string>
+    <string name="ds_err_server">The service has a problem right now.</string>
+    <string name="ds_err_refused">The service didn\'t accept the data.</string>
+    <string name="ds_err_address">That address doesn\'t work. Check it, including https://.</string>
+    <string name="ds_err_other">Something went wrong. Try again.</string>
+    <!-- A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
+    <string name="ds_pen_priming">Priming</string>
+    <string name="ds_pen_injected">Injected</string>
+    <!-- %1$s time, %2$s amount in words, %3$s Priming / Injected -->
+    <string name="ds_pen_dose_a11y">%1$s, %2$s, %3$s</string>
+    <string name="ds_pen_mark_injected">Mark as injected</string>
+    <string name="ds_pen_mark_priming">Mark as priming</string>
+    <string name="ds_pen_incomplete">Incomplete</string>
+    <string name="ds_pen_nothing_injected">Nothing injected</string>
+    <string name="ds_pen_from_pen">From the pen</string>
+    <string name="ds_pen_primed">%1$s primed</string>
+    <string name="ds_pen_replaced">Replaced your %1$s entry at %2$s</string>
+    <string name="ds_pen_remove">Remove from log</string>
+    <string name="ds_pen_save">Save</string>
+    <string name="ds_pen_done">Done</string>
+    <string name="ds_pen_delete">Delete</string>
+    <string name="ds_pen_kind_rapid">rapid</string>
+    <string name="ds_pen_kind_long">long-acting</string>
+    <plurals name="ds_pen_units_spoken">
+        <item quantity="one">%1$s unit</item>
+        <item quantity="other">%1$s units</item>
+    </plurals>
+    <!-- A pen question (home's card under the glucose card, the Same injection? sheet, Doses read) -->
+    <string name="ds_pen_q_doses">Priming or injected?</string>
+    <string name="ds_pen_q_same">Same injection?</string>
+    <!-- %1$s the doses ("1u and 1.5u"), %2$s their time -->
+    <string name="ds_pen_q_doses_line">%1$s at %2$s</string>
+    <string name="ds_pen_and">%1$s and %2$s</string>
+    <!-- %1$s / %2$s the pen's injection, %3$s / %4$s the entry typed by hand -->
+    <string name="ds_pen_q_same_one">Pen %1$s at %2$s · yours %3$s at %4$s</string>
+    <string name="ds_pen_q_same_line">Pen %1$s at %2$s</string>
+    <plurals name="ds_pen_q_nearby">
+        <item quantity="one">%d typed entry nearby</item>
+        <item quantity="other">%d typed entries nearby</item>
+    </plurals>
+    <plurals name="ds_pen_q_more">
+        <item quantity="one">%d more to check</item>
+        <item quantity="other">%d more to check</item>
+    </plurals>
+    <!-- Answer: log the suggested amount, e.g. Log 1.5u [CHAR LIMIT=15] -->
+    <string name="ds_pen_q_log">Log %1$s</string>
+    <string name="ds_pen_q_all_priming">All priming</string>
+    <string name="ds_pen_q_same_yes">Same injection</string>
+    <string name="ds_pen_q_different">Different injections</string>
+    <!-- Opens the sheet with the typed entries to choose from [CHAR LIMIT=15] -->
+    <string name="ds_pen_q_choose">Choose</string>
+    <string name="ds_pen_q_sheet_pen">Your pen: %1$s at %2$s</string>
+    <string name="ds_pen_q_sheet_ask">Is it one of the entries you typed? That entry becomes the pen\'s, so the dose isn\'t logged twice.</string>
+    <!-- A typed entry: amount and time -->
+    <string name="ds_pen_q_candidate">%1$s at %2$s</string>
+    <string name="ds_pen_q_by_phone">Typed on this phone</string>
+    <string name="ds_pen_q_by_mac">Typed on the Mac</string>
+    <string name="ds_pen_q_by_follower">Added by someone who follows you</string>
+    <string name="ds_pen_q_none">None of these</string>
+    <string name="ds_pen_q_none_text">Log the pen\'s dose as an injection of its own</string>
 </resources>

@@ -8,7 +8,8 @@ import Testing
 
 /// Every follower sequence in contracts/protocol/sync (written by the Android tests, cross-checked with the Python
 /// reference): each step's verdict and the final follower state must match. Owner-side files (no `steps`, e.g.
-/// owner-conflict.json) belong to the wearer's app.
+/// owner-conflict.json) and sections (replace-identity.json's `replace`: who the wearer's phone tells, and when it
+/// replaces its identity) belong to the wearer's app.
 struct SyncFixtureTests {
     static var followerSequences: [String] {
         let dir = Contracts.url("protocol/sync")
@@ -26,7 +27,7 @@ struct SyncFixtureTests {
         let now = fixture["now"] as! Int
         var state = FollowerState(
             follower: SecretKeyHex(followerKey["sec"]!)!, identity: fixture["identity"] as! String, token: "t",
-            code: "0000", nearby: false, me: Profile(name: "Mac", avatar: nil), wearer: nil,
+            code: "0000", pair: nil, me: Profile(name: "Mac", avatar: nil), wearer: nil,
             relays: Wire.defaultRelays)
         state.status = .requested
         let crypto = NostrSDKCrypto()
@@ -50,8 +51,9 @@ struct SyncFixtureTests {
             let outcome = session.receive(event, now: now)
             #expect(outcome.verdict.description == step["expect"] as? String, "\(label)")
             let have = try outcome.publish.map { wrap in
-                let body = try JSONSerialization.jsonObject(
-                    with: Data(try crypto.unwrap(wrap, with: identitySecret).content.utf8)) as? [String: Any]
+                let body =
+                    try JSONSerialization.jsonObject(
+                        with: Data(try crypto.unwrap(wrap, with: identitySecret).content.utf8)) as? [String: Any]
                 #expect(body?["type"] as? String == "rekey", "\(label)")
                 return body?["have"] as? String
             }
@@ -72,6 +74,10 @@ struct SyncFixtureTests {
         #expect(session.state.epochs.map(\.n).sorted() == expected["epochs"] as? [Int], "\(name)")
         #expect(session.state.devices == expected["devices"] as? [String], "\(name)")
         #expect(session.state.writers == expected["writers"] as? [String], "\(name)")
+        // the wearer's profile: a roster without one keeps the last one (PROTOCOL-v2 Profiles)
+        #expect(
+            session.state.wearer.map { JSONText.encode($0.wireObject()) }
+                == (expected["wearer"] as? [String: Any]).map { JSONText.encode($0) }, "\(name) wearer")
         let gotReadings = readings.values.sorted { $0.t < $1.t }.map { r -> [Double?] in
             [Double(r.t), Double(r.sgv), r.rate]
         }

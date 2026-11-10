@@ -5,22 +5,24 @@ package app.mauri.sukrara.sensor.source
 
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.juggluco.JugglucoStatus
+import app.mauri.sukrara.sensor.pairing.Pairing
 import kotlinx.serialization.Serializable
 
 /** The wearer's glucose source (setting `source.source`). */
 @Serializable
 enum class SensorSourceKind(val id: String) {
-    /** Sukrara reads the Libre 3 / 3 Plus itself (NFC + Bluetooth). The default. */
-    Libre3("libre3"),
+    /** Sukrara reads the paired sensor itself (a Libre 3 by NFC + Bluetooth, the other families by Bluetooth). The default. */
+    Direct("direct"),
 
     /** Juggluco on this phone owns the sensor; Sukrara reads its local web server. */
     Juggluco("juggluco"),
     ;
 
     companion object {
-        fun fromId(id: String?): SensorSourceKind = entries.firstOrNull { it.id == id } ?: Libre3
+        fun fromId(id: String?): SensorSourceKind = entries.firstOrNull { it.id == id } ?: Direct
     }
 }
 
@@ -31,6 +33,12 @@ enum class SensorSourceKind(val id: String) {
 sealed interface SensorStatus {
     /** What the person can do about it (null = nothing needed, the app is working on it). */
     val action: SensorAction? get() = null
+
+    /**
+     * The source isn't running: before monitoring starts, or after it stopped (the service is off). Says nothing
+     * about a pairing: Settings › Sensor reads the pairing and the service and never calls this "no sensor".
+     */
+    data object NotRunning : SensorStatus
 
     /** No sensor set up yet ("Not monitoring: no sensor yet"). */
     data object NoSensor : SensorStatus {
@@ -60,14 +68,38 @@ sealed interface SensorStatus {
      * "Try again" (`SourceManager.retry`) or stop the other app and scan the sensor (take over).
      */
     data object OwnedByAnotherApp : SensorStatus {
-        override val action get() = SensorAction.ScanSensor
+        override val action get() = SensorAction.TakeOver
     }
 
     data object BluetoothPermissionMissing : SensorStatus {
         override val action get() = SensorAction.GrantBluetooth
     }
 
-    data class Libre3(val serial: String, val link: LinkStatus) : SensorStatus
+    /**
+     * The paired sensor, read directly: its family, what the screens call it ([label]: the serial, the advertised
+     * name or the family), which pairing this is ([key]: tells two pairings of an id-less family apart), the link and
+     * how many older sensors of this family the scan found and skipped since the last reading ([skipped]: ended ones
+     * still bonded and advertising nearby).
+     */
+    data class Direct(
+        val profile: SensorProfile,
+        val label: String,
+        val key: String,
+        val link: LinkStatus,
+        val skipped: Int = 0,
+    ) : SensorStatus {
+        override val action: SensorAction?
+            get() =
+                when (link) {
+                    is LinkStatus.Failed -> SensorAction.PairAgain
+                    else -> null
+                }
+
+        companion object {
+            /** The Libre 3's serial (a re-scan of the same sensor is the same one); a scanned family's id + pairing time. */
+            fun keyOf(p: Pairing): String = if (p.profile.needsScan) "${p.profile.id}:${p.serial}:${p.pairedAt}" else p.serial
+        }
+    }
 
     data class Juggluco(val status: JugglucoStatus) : SensorStatus
 }

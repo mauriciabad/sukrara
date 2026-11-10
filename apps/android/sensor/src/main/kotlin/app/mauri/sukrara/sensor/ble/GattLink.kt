@@ -11,11 +11,12 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * A [BleLink] to one device known by address (the Libre 3's NFC tap gave it). It connects with autoConnect, discovers
+ * A [BleLink] to one device known by address (the Libre 3's NFC tap gave it, or a scan found it). It connects with autoConnect, discovers
  * services, runs GATT operations one at a time and hands everything else to the [driver].
  *
  * Reliability:
  * - every operation and the service discovery time out after [opTimeoutMs] → the driver is told and drops the link;
+ *   a bond waits [bondTimeoutMs] (the person types a PIN) and then counts as not bonded;
  * - a dropped link is closed at once and a NEW connection is made after a backoff (1 s, doubling to 30 s, reset when
  *   the sensor sends data) — never `connect()` on a stale `BluetoothGatt`;
  * - Bluetooth off → everything closed, [LinkStatus.WaitingForBluetooth], no retries (Bluetooth on: the source starts a
@@ -34,10 +35,12 @@ internal class GattLink(
     private val events: SensorEvents,
     private val scope: CoroutineScope,
     private val opTimeoutMs: Long = OP_TIMEOUT_MS,
+    private val bondTimeoutMs: Long = BOND_TIMEOUT_MS,
     private val log: (String) -> Unit = {},
 ) : BleLink {
     companion object {
         const val OP_TIMEOUT_MS = 10_000L
+        const val BOND_TIMEOUT_MS = 120_000L
         const val FIRST_BACKOFF_MS = 1_000L
         const val MAX_BACKOFF_MS = 30_000L
     }
@@ -47,7 +50,21 @@ internal class GattLink(
 
         data class Subscribe(override val characteristic: UUID) : Op
 
-        class Write(override val characteristic: UUID, val value: ByteArray) : Op
+        data class Indicate(override val characteristic: UUID) : Op
+
+        class Write(override val characteristic: UUID, val value: ByteArray) : Op {
+            override fun toString() = "Write"
+        }
+
+        class WriteNoResponse(override val characteristic: UUID, val value: ByteArray) : Op {
+            override fun toString() = "WriteNoResponse"
+        }
+
+        data class Read(override val characteristic: UUID) : Op
+
+        data object Bond : Op {
+            override val characteristic: UUID = UUID(0, 0)
+        }
     }
 
     private val inbox = Channel<GattEvent>(Channel.UNLIMITED)
@@ -60,6 +77,7 @@ internal class GattLink(
     private var timeout: Job? = null
     private val ops = ArrayDeque<Op>()
     private var opRunning = false
+    private var running: Op? = null
     private val timers = HashMap<Runnable, Job>()
     private val pump: Job = scope.launch { for (e in inbox) handle(e) }
 
@@ -76,9 +94,20 @@ internal class GattLink(
 
     // MARK: BleLink
 
+    override val isBonded: Boolean
+        get() = connection?.let { c -> runCatching { c.isBonded }.getOrDefault(false) } ?: false
+
     override fun subscribe(characteristic: UUID) = enqueue(Op.Subscribe(characteristic))
 
+    override fun indicate(characteristic: UUID) = enqueue(Op.Indicate(characteristic))
+
     override fun write(characteristic: UUID, value: ByteArray) = enqueue(Op.Write(characteristic, value))
+
+    override fun writeNoResponse(characteristic: UUID, value: ByteArray) = enqueue(Op.WriteNoResponse(characteristic, value))
+
+    override fun read(characteristic: UUID) = enqueue(Op.Read(characteristic))
+
+    override fun bond() = enqueue(Op.Bond)
 
     override fun disconnect() = drop(reconnectAfter = true)
 
@@ -96,11 +125,12 @@ internal class GattLink(
 
     override fun schedule(delayMs: Long, action: Runnable) {
         timers.remove(action)?.cancel()
-        timers[action] = scope.launch {
-            delay(delayMs)
-            timers.remove(action)
-            action.run()
-        }
+        timers[action] =
+            scope.launch {
+                delay(delayMs)
+                timers.remove(action)
+                action.run()
+            }
     }
 
     override fun cancel(action: Runnable) {
@@ -128,10 +158,11 @@ internal class GattLink(
         val wait = backoffMs
         backoffMs = (backoffMs * 2).coerceAtMost(MAX_BACKOFF_MS)
         reconnect?.cancel()
-        reconnect = scope.launch {
-            delay(wait)
-            connectNow()
-        }
+        reconnect =
+            scope.launch {
+                delay(wait)
+                connectNow()
+            }
     }
 
     /** Close the current connection now; reconnect with a new one after the backoff unless closing / Bluetooth off. */
@@ -147,6 +178,7 @@ internal class GattLink(
         timeout?.cancel()
         ops.clear()
         opRunning = false
+        running = null
         val c = connection ?: return
         connection = null
         generation++ // whatever the old connection still reports is ignored
@@ -157,7 +189,7 @@ internal class GattLink(
         val c = connection
         if (c == null || e.generation != generation) return
         when (e) {
-            is GattEvent.ConnectionChanged ->
+            is GattEvent.ConnectionChanged -> {
                 if (e.connected) {
                     events.onStatus(LinkStatus.DiscoveringServices)
                     armTimeout("service discovery") { drop(reconnectAfter = true) }
@@ -166,19 +198,41 @@ internal class GattLink(
                     log("sensor disconnected (status ${e.status})")
                     drop(reconnectAfter = true)
                 }
+            }
+
             is GattEvent.ServicesDiscovered -> {
                 timeout?.cancel()
                 driver.onConnected(this, e.characteristics, e.status)
             }
+
             is GattEvent.OperationDone -> {
+                if (running == null || running is Op.Read || running == Op.Bond) return // not what is waiting
                 timeout?.cancel()
                 if (e.status != 0) return driver.onLinkFailed("operation on ${e.characteristic} failed: ${e.status}")
                 opRunning = false
+                running = null
                 pumpOps()
             }
+
             is GattEvent.Notification -> {
                 backoffMs = FIRST_BACKOFF_MS // the sensor is talking: the next drop retries quickly again
                 driver.onNotification(e.characteristic, e.value)
+            }
+
+            is GattEvent.Read -> {
+                if (running !is Op.Read) return
+                timeout?.cancel()
+                if (e.status != 0) return driver.onLinkFailed("read of ${e.characteristic} failed: ${e.status}")
+                opRunning = false
+                running = null
+                backoffMs = FIRST_BACKOFF_MS
+                driver.onRead(e.characteristic, e.value)
+                pumpOps()
+            }
+
+            is GattEvent.BondChanged -> {
+                if (running != Op.Bond) return // a bond change nobody asked for: the next connection sees it
+                bondSettled(e.bonded)
             }
         }
     }
@@ -191,17 +245,37 @@ internal class GattLink(
         pumpOps()
     }
 
+    private fun bondSettled(bonded: Boolean) {
+        timeout?.cancel()
+        opRunning = false
+        running = null
+        driver.onBondChanged(bonded)
+        pumpOps()
+    }
+
     private fun pumpOps() {
         if (opRunning) return
         val c = connection ?: return
         val op = ops.removeFirstOrNull() ?: return
         opRunning = true
-        armTimeout(op.toString()) { driver.onLinkFailed("$op timed out") }
+        running = op
+        if (op == Op.Bond) {
+            // already bonded: nothing to wait for; else the person has [bondTimeoutMs] to type the PIN
+            if (runCatching { c.isBonded }.getOrDefault(false)) return bondSettled(true)
+            armTimeout("bond", bondTimeoutMs) { if (running == Op.Bond) bondSettled(false) }
+        } else {
+            armTimeout(op.toString()) { driver.onLinkFailed("$op timed out") }
+        }
         guarded {
-            val issued = when (op) {
-                is Op.Subscribe -> c.enableNotifications(op.characteristic)
-                is Op.Write -> c.write(op.characteristic, op.value)
-            }
+            val issued =
+                when (op) {
+                    is Op.Subscribe -> c.enableNotifications(op.characteristic)
+                    is Op.Indicate -> c.enableIndications(op.characteristic)
+                    is Op.Write -> c.write(op.characteristic, op.value)
+                    is Op.WriteNoResponse -> c.writeNoResponse(op.characteristic, op.value)
+                    is Op.Read -> c.read(op.characteristic)
+                    Op.Bond -> c.bond()
+                }
             if (!issued) {
                 timeout?.cancel()
                 driver.onLinkFailed("$op on ${op.characteristic} rejected")
@@ -209,13 +283,14 @@ internal class GattLink(
         }
     }
 
-    private fun armTimeout(what: String, onTimeout: () -> Unit) {
+    private fun armTimeout(what: String, afterMs: Long = opTimeoutMs, onTimeout: () -> Unit) {
         timeout?.cancel()
-        timeout = scope.launch {
-            delay(opTimeoutMs)
-            log("$what timed out")
-            onTimeout()
-        }
+        timeout =
+            scope.launch {
+                delay(afterMs)
+                log("$what timed out")
+                onTimeout()
+            }
     }
 
     /**
@@ -231,7 +306,11 @@ internal class GattLink(
             events.onStatus(LinkStatus.PermissionMissing)
         } catch (e: Exception) {
             log("Bluetooth call failed: ${e.javaClass.simpleName}")
-            if (connection != null) drop(reconnectAfter = true) else if (!closed && !bluetoothOff) scheduleReconnect()
+            if (connection != null) {
+                drop(reconnectAfter = true)
+            } else if (!closed && !bluetoothOff) {
+                scheduleReconnect()
+            }
         }
     }
 }

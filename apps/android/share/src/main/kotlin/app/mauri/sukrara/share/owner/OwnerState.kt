@@ -38,7 +38,13 @@ data class InviteRecord(
     val sentAt: Long = 0,
     val claimedBy: String? = null,
     val done: Boolean = false,
-)
+    /** Offered over Bluetooth by *Pair nearby* (10 min): anyone in range can ask, so both phones compare a code. */
+    val nearby: Boolean = false,
+    /** *Pair nearby*: the wearer's pairing nonce `nb` (the offer carries its commitment; the claimer gets it). */
+    val pairNonce: String? = null,
+) {
+    override fun toString() = "InviteRecord(nearby=$nearby, claimed=${claimedBy != null}, done=$done)"
+}
 
 /** An access request waiting for the wearer. [others] = later phones that tried the same invite (a leaked link). */
 @Serializable
@@ -51,7 +57,20 @@ data class PendingRequest(
     val avatarJson: String? = null,
     val label: String = "",
     val others: Int = 0,
-)
+    /** When the invite this request used was made (the approve dialog's "sent … · asked …"); 0 = unknown. */
+    val inviteSentAt: Long = 0,
+    /**
+     * Asked with the *Pair nearby* invite: [code] is the 6-digit pairing code both phones show (PROTOCOL-v2 §Nearby
+     * pairing); the wearer allows only if the follower's phone shows the same.
+     */
+    val nearby: Boolean = false,
+) {
+    /** Allow only with the match code typed from the follower's phone: other phones tried the same link. */
+    val needsTypedCode: Boolean get() = others > 0 && !nearby
+
+    /** Allow straight from the notification: an ordinary link nobody else tried (nearby needs the code compared). */
+    val allowFromNotification: Boolean get() = !needsTypedCode && !nearby
+}
 
 /** Another app publishes roster / backup as this identity; persisted so the block survives a restart. */
 @Serializable
@@ -64,6 +83,14 @@ data class ConflictRecord(val reason: IdentityCheck.Reason, val seenAt: Long, va
  */
 @Serializable
 data class PendingControl(val key: String, val eventId: String, val eventJson: String, val follower: String? = null)
+
+/**
+ * Backup › Replace this identity is telling [told] (follower keys) that this identity stopped sharing, with notices
+ * made at [at] (PROTOCOL-v2 "Replace the identity"). Saved before the notices go out: an identity that still has it
+ * when sharing starts was never replaced (the app was closed meanwhile), so those followers get the key again.
+ */
+@Serializable
+data class ReplaceRecord(val at: Long, val told: List<String>)
 
 /**
  * Everything the wearer's phone knows about sharing (a restore from the recovery code brings the identity over
@@ -85,6 +112,10 @@ data class OwnerState(
     val rosterPublishedAt: Long = 0,
     val backupPublishedAt: Long = 0,
     val recoveryExportedAt: Long = 0,
+    /** When the identity was handed to the phone's password manager (Credential Manager); 0 = never. */
+    val passwordManagerSavedAt: Long = 0,
+    /** When this phone restored the identity from a code or the password manager; 0 = created here. */
+    val restoredAt: Long = 0,
     val conflict: ConflictRecord? = null,
     val pendingControl: List<PendingControl> = emptyList(),
     /** When the whole treatment log (last 30 days) went out last (republished at least weekly: 30-day expiry). */
@@ -93,6 +124,13 @@ data class OwnerState(
     val settingsJson: String? = null,
     val settingsU: Long = 0,
     val settingsPublishedAt: Long = 0,
+    /**
+     * Followers approved from a *Pair nearby* request: Nearby devices lists them also while out of range. This phone
+     * only (never in the owner backup); Remove / Forget clears it.
+     */
+    val nearbyPaired: Set<String> = emptySet(),
+    /** Set only while Backup › Replace this identity tells the followers (see [ReplaceRecord]). */
+    val replacing: ReplaceRecord? = null,
 ) {
     val current: EpochKey get() = epochs.maxBy { it.n }
 
@@ -114,14 +152,15 @@ data class OwnerState(
     fun readKey(crypto: NostrCrypto, e: EpochKey = current): KeyPair = pair(crypto, e.secretHex)
 
     /** What [app.mauri.sukrara.protocol.owner.IdentityConflict] needs to tell our own roster / backup from another app's. */
-    fun marks(crypto: NostrCrypto): OwnerMarks = OwnerMarks(
-        identity = identity(crypto),
-        device = device(crypto).public.hex,
-        sid = sid,
-        epochsByGk = epochs.associate { e -> readKey(crypto, e).let { Wire.gk(it.public) to (e.n to it) } },
-        lastRosterAt = rosterPublishedAt,
-        lastBackupAt = backupPublishedAt,
-    )
+    fun marks(crypto: NostrCrypto): OwnerMarks =
+        OwnerMarks(
+            identity = identity(crypto),
+            device = device(crypto).public.hex,
+            sid = sid,
+            epochsByGk = epochs.associate { e -> readKey(crypto, e).let { Wire.gk(it.public) to (e.n to it) } },
+            lastRosterAt = rosterPublishedAt,
+            lastBackupAt = backupPublishedAt,
+        )
 
     override fun toString() =
         "OwnerState(epoch=${current.n}, followers=${activeFollowers().size}, pending=${pending.size}, conflict=${conflict?.reason})"

@@ -1,0 +1,91 @@
+# No answer to a very low (#39, SPEC.md §4 "No answer to a very low"; format: SPEC.md §7): when nobody answers a very
+# low on the wearer's phone for 5 min, the followers that opted in get it as "Very low glucose · no response", once
+# through their own mutes. An answer: `ack` (tap, swipe, opening the app), a notification action, Mute all, carbs.
+
+scenario An unanswered very low escalates to the followers after 5 min
+mirror
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 5               => Very low glucose; follower Very low glucose · no response    # the repeat carries it
+10               => Very low glucose; follower Very low glucose · no response
+11
+
+scenario Opening the alert on the wearer's phone is an answer: no escalation
+mirror
+ 0  glucose 50     => Very low glucose; follower Very low glucose
+ 2  ack very_low
+ 5                 => Very low glucose; follower Very low glucose
+ 6
+
+scenario The wearer's Mute is an answer
+mirror
+ 0  glucose 50       => Very low glucose; follower Very low glucose
+ 1  mute very_low    => clear very_low
+ 5                   => follower Very low glucose
+ 6
+
+scenario Answered after the escalation: the followers' alert is plain again, without sound
+mirror
+ 0  glucose 50     => Very low glucose; follower Very low glucose
+ 5                 => Very low glucose; follower Very low glucose · no response
+ 7  ack very_low   => follower answered very_low
+10                 => Very low glucose; follower Very low glucose
+11
+
+scenario Mute all set before the very low is no answer: nobody heard it
+mirror
+ 0  glucose 100, mute all 2h
+ 1  glucose 50     => follower Very low glucose
+ 6                 => follower Very low glucose · no response
+ 7
+
+scenario The escalation breaks through the follower's own Mute once
+mirror
+ 0  glucose 50                => Very low glucose; follower Very low glucose
+ 1  follower mute very_low    => follower clear very_low
+ 5                            => Very low glucose; follower Very low glucose · no response
+10                            => Very low glucose        # the follower's own Mute holds for the repeats after it
+11
+
+scenario On the timer between readings: the newest very low is sent again, escalated
+mirror
+settings very_low.repeat=15
+ 0  readings every 3, glucose 50   => Very low glucose; follower Very low glucose
+ 5                                 => follower Very low glucose · no response
+ 6
+
+scenario Better before the wait is over: no escalation
+mirror
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 3  glucose 60   => clear very_low; follower clear very_low
+ 5               => Low glucose; follower Low glucose          # the very low stretch is over
+ 6
+
+scenario A follower that turned escalations off gets the very low as usual
+mirror
+settings follower.escalate=off
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 5               => Very low glucose; follower Very low glucose
+ 6
+
+scenario The wearer turned escalations off
+mirror
+settings escalate=off
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 5               => Very low glucose; follower Very low glucose
+ 6
+
+scenario A longer wait: 10 min
+mirror
+settings escalate=10
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 5               => Very low glucose; follower Very low glucose
+10               => Very low glucose; follower Very low glucose · no response
+11
+
+scenario A restart on the wearer's phone keeps the escalation: no second one, the repeats still carry it
+mirror
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 5               => Very low glucose; follower Very low glucose · no response
+ 7  restart      => resume very_low
+10               => Very low glucose; follower Very low glucose · no response
+11

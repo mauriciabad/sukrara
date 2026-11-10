@@ -3,20 +3,33 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home
 
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
+import androidx.test.core.app.ApplicationProvider
+import app.mauri.sukrara.core.model.AlertQuietReason
+import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.StopReason
@@ -25,6 +38,8 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.graph.CardSurface
+import app.mauri.sukrara.graph.RoundedFont
+import app.mauri.sukrara.protocol.event.Avatar
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
@@ -53,7 +68,7 @@ class HomeGallery {
         withTreatments: Boolean = false,
         problems: Int = 0,
     ): HomeUiState {
-        val look = homeLook(glucose, NOW)
+        val look = homeLook(glucose, NOW, GlucoseUnit.MGDL)
         val treatments =
             if (withTreatments) {
                 listOf(Samples.treatment("a", TreatmentKind.Carbs, 30.0, 25), Samples.treatment("b", TreatmentKind.RapidInsulin, 4.5, 30))
@@ -68,11 +83,23 @@ class HomeGallery {
             banner = banner,
             firstProblem = AlertReadiness(setOf(AlertRequirement.ExactAlarm)).firstProblem,
             nextSetupStep = "Alert thresholds",
-            dataProblems = List(problems) { DataProblem("settings", "SerializationException", "settings.corrupt.json", NOW) },
+            dataProblems =
+                List(
+                    problems,
+                ) { DataProblem(DamagedStore.Settings, "settings", "SerializationException", "settings.corrupt.json", NOW) },
             treatments = treatments,
             undo = null,
         )
     }
+
+    private val quietAlerts =
+        AlertUiState(
+            quiet =
+                listOf(
+                    AlertQuietSide("low", true, AlertQuietReason.Muted, NOW.plus(Duration.ofMinutes(25)), 0, true),
+                    AlertQuietSide("falling_fast", true, null, null, 30, true),
+                ),
+        )
 
     private val states: List<Pair<String, HomeUiState>> by lazy {
         val follower = Samples.wearer().copy(role = Role.Follower, link = LinkState("Ana", NOW.minusSeconds(40)))
@@ -85,18 +112,43 @@ class HomeGallery {
             "no-sensor-yet" to ui(Samples.noSensorYet()),
             "setup-incomplete" to ui(GlucoseState.Initial),
             "warming-up" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.WarmingUp(NOW.plus(Duration.ofMinutes(42))))),
-            "sensor-ended" to ui(Samples.wearer(sensor = SensorState.Ended)),
+            // a new sensor's first 12 h: the note under the card
+            "sensor-early" to ui(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofDays(15)).minus(Duration.ofHours(3))))),
+            "sensor-ended" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.Ended)),
+            // past its end but still sending (#3): the value with the Ended · Replace sensor pill
+            "sensor-ended-sending" to ui(Samples.wearer(sensor = SensorState.Ended)),
             "bluetooth-off" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.BluetoothOff)),
             "core-missing" to ui(Samples.wearer(sensor = SensorState.CoreMissing)),
+            "clock-behind" to
+                ui(Samples.wearer(ageMin = 8).copy(clockBehind = ClockBehind(NOW.plus(Duration.ofMinutes(12)), Duration.ofMinutes(12)))),
+            "sensor-taken-over" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.TakeOver))),
+            "scan-needed" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.ScanSensor))),
             "monitoring-stopped" to
-                ui(Samples.wearer(ageMin = 25).copy(service = ServiceState.Stopped(StopReason.StartDenied)), banner = BannerKind.MonitoringStopped),
-            "wearer-silent" to ui(Samples.wearer(ageMin = 30).copy(role = Role.Follower, link = LinkState("Ana", NOW.minus(Duration.ofMinutes(30))))),
+                ui(
+                    Samples.wearer(ageMin = 25).copy(service = ServiceState.Stopped(StopReason.StartDenied)),
+                    banner = BannerKind.MonitoringStopped,
+                ),
+            "wearer-silent" to
+                ui(Samples.wearer(ageMin = 30).copy(role = Role.Follower, link = LinkState("Ana", NOW.minus(Duration.ofMinutes(30))))),
             "link-revoked" to ui(follower.copy(link = LinkState("Ana", NOW.minus(Duration.ofMinutes(5)), revoked = true))),
             "follower" to ui(follower),
             "muted" to ui(Samples.wearer().copy(alerts = AlertUiState(mutedUntil = NOW.plus(Duration.ofMinutes(72))))),
+            // a muted low side and slowed falling-fast reminders: one chip each under the card
+            "quiet-chips" to ui(Samples.wearer().copy(alerts = quietAlerts)),
             "alerts-unreliable" to ui(Samples.wearer(), banner = BannerKind.AlertsUnreliable),
             "finish-setup" to ui(Samples.wearer(), banner = BannerKind.FinishSetup),
             "data-problem" to ui(Samples.wearer(), banner = BannerKind.DataProblem, problems = 1),
+            "profile-not-backed-up" to
+                ui(Samples.wearer(), banner = BannerKind.NotBackedUp)
+                    .copy(profile = HomeProfile("Núria", Avatar.v1(0, "drop", 45, 3), followers = 2)),
+            "profile-no-name" to ui(Samples.wearer()).copy(profile = HomeProfile("", null, followers = 0)),
+            "clinic-banner" to ui(Samples.wearer(), banner = BannerKind.ShareWithClinic),
+            "widget-banner" to ui(Samples.wearer(), banner = BannerKind.AddWidget),
+            // the launcher can't place it from the app: the hand-made way, no button (Close is the exit)
+            "widget-banner-manual" to ui(Samples.wearer(), banner = BannerKind.AddWidget).copy(widgetPinnable = false),
+            "libreview-marks" to
+                ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.Uploaded, "b" to UploadMark.Pending)),
+            "libreview-stopped" to ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.Stopped)),
         )
     }
 
@@ -106,6 +158,8 @@ class HomeGallery {
         only: List<String>? = null,
         prefix: String = "",
     ) {
+        // the card's rounded face, as the app loads it at start (App.onCreate)
+        RoundedFont.init(ApplicationProvider.getApplicationContext())
         var current by mutableStateOf(states.first().second)
         compose.mainClock.autoAdvance = true
         compose.setContent {
@@ -131,21 +185,87 @@ class HomeGallery {
 
     @Test fun darkLargest() = gallery(dark = true, fontScale = 2f)
 
-    @Test @Config(qualifiers = "es")
+    @Test
+    @Config(qualifiers = "es")
     fun spanishInRange() = gallery(dark = true, fontScale = 1f, only = listOf("in-range", "no-sensor-yet"), prefix = "es-")
 
     /** A small phone at the largest font: a safety banner must be on screen without scrolling (ux-batch1 F2). */
-    @Test @Config(qualifiers = "w360dp-h640dp-xhdpi")
+    @Test
+    @Config(qualifiers = "w360dp-h640dp-xhdpi")
     fun smallPhoneSafetyBanner() =
         gallery(dark = false, fontScale = 2f, only = listOf("alerts-unreliable", "monitoring-stopped"), prefix = "360x640-")
+
+    /**
+     * A chip opens its side's ways out: the line, *Unmute*, *Change to* lengths; a length changes the mute and the
+     * card's TalkBack actions carry the same exits (and *Mute alerts*).
+     */
+    @Test fun quietSheetFromAChip() {
+        val asked = mutableListOf<HomeAlertAction>()
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                HomeContent(ui(Samples.wearer().copy(alerts = quietAlerts)), HomeCallbacks(onAlert = { asked += it }))
+            }
+        }
+        compose.onNodeWithText("Low alerts muted · 25 min left").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("quiet-sheet").assertExists()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-quiet-sheet-light-font1x.png")
+        compose.onNode(hasText("1h") or hasText("1 h")).performClick()
+        compose.onNodeWithText("Unmute").performClick()
+        check(asked == listOf(HomeAlertAction.MuteSide("low", 60), HomeAlertAction.EndQuiet("low"))) { "$asked" }
+    }
+
+    /** The home *Mute alerts* control opens the lengths; choosing one mutes for it. */
+    @Test fun muteAlertsFromHome() {
+        val asked = mutableListOf<HomeAlertAction>()
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                HomeContent(ui(Samples.wearer()), HomeCallbacks(onAlert = { asked += it }))
+            }
+        }
+        compose.onNodeWithTag("mute-alerts").performScrollTo().performClick()
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-mute-dialog-light-font1x.png")
+        compose.onNodeWithText("Until you turn it off").performClick()
+        check(asked == listOf(HomeAlertAction.MuteAll(null))) { "$asked" }
+    }
+
+    /** A failed alert step (the runtime's `failedSteps`, through the checklist) is a safety banner whose action copies the report. */
+    @Test fun aFailedAlertStepShowsTheBannerWithCopyReport() {
+        val readiness = AlertReadiness(setOf(AlertRequirement.AlertDelivery), failedSteps = setOf("Notify:level"))
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                HomeContent(
+                    ui(
+                        Samples.wearer(),
+                        banner = BannerKind.AlertsUnreliable,
+                    ).copy(firstProblem = readiness.firstProblem, readiness = readiness),
+                    HomeCallbacks(onFix = { error("a failed step has no Android screen: $it") }),
+                )
+            }
+        }
+        compose.onNodeWithText("Android refused an alert step. Sukrara tries again with every reading.").assertExists()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-alert-step-failed-light-font1x.png")
+        compose.onNodeWithText("Copy report").performClick()
+        compose.waitForIdle()
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val copied =
+            ctx
+                .getSystemService(ClipboardManager::class.java)
+                .primaryClip
+                ?.getItemAt(0)
+                ?.text
+                .toString()
+        check("Alert steps failed: Notify:level" in copied && "AlertDelivery" in copied) { copied }
+    }
 
     @Test fun dataProblemScreen() {
         compose.setContent {
             SukraraTheme(dark = true, dynamic = false) {
                 DataProblemScreen(
                     listOf(
-                        DataProblem("settings:alerts", "SerializationException", "settings.corrupt-1767.json", NOW),
-                        DataProblem("database:history", "sqlite corruption", null, NOW),
+                        DataProblem(DamagedStore.Settings, "alerts", "SerializationException", "settings.corrupt-1767.json", NOW),
+                        DataProblem(DamagedStore.History, "sukrara.db", "sqlite corruption", null, NOW),
                     ),
                     onCopyReport = {},
                     onAcknowledge = {},

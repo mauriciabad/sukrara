@@ -11,31 +11,46 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.PenAnswer
+import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PenQuestionInfo
+import app.mauri.sukrara.core.model.PensPort
+import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.ReadingHistory
+import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.protocol.event.Avatar
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * What the home screen needs from the app. `AppGraph` (`:app`) implements it from the modules it composes; home only
@@ -50,6 +65,12 @@ interface HomeDeps {
 
     /** The person's graph settings (`GraphSettings.config`): the card's ranges, time shown, rings… */
     val graphConfig: Flow<GraphConfig>
+
+    /**
+     * The stored readings of the last 31 days before the live window (oldest first, re-read hourly): home joins them
+     * with [glucose]'s recent readings to scroll and zoom back and to count the multi-day slots.
+     */
+    val storedHistory: Flow<List<Reading>> get() = flowOf(emptyList())
 
     /** The alert checklist; null = not known on this build yet (no warning is claimed either way). */
     val readiness: StateFlow<AlertReadiness?>
@@ -69,8 +90,8 @@ interface HomeDeps {
     /** Starts monitoring again after Android stopped it (a user action, so the service may start). */
     fun resumeMonitoring()
 
-    /** Ends Mute alerts now (the alert runtime). */
-    fun unmute()
+    /** Mutes, unmutes, ends a quiet or reminds as usual (the alert runtime, this phone only). */
+    fun alert(action: HomeAlertAction)
 
     /** Opens the system screen that fixes [requirement]. */
     fun fix(requirement: AlertRequirement)
@@ -87,7 +108,85 @@ interface HomeDeps {
 
     /** Whether this phone may delete treatment [id] (a follower only the entries it added). */
     suspend fun mayChangeTreatment(id: String): Boolean
+
+    /**
+     * The delivery of each of [ids] this phone wrote and nothing has taken yet (a writer's entries: [TreatmentDelivery.Pending]
+     * or [TreatmentDelivery.Failed]); the others aren't in the map.
+     */
+    suspend fun deliveries(ids: Collection<String>): Map<String, TreatmentDelivery> = emptyMap()
+
+    /** *Retry* on an entry nothing took: sent again now (`TreatmentLog.retry`). */
+    suspend fun retryTreatment(id: String) = Unit
+
+    /** How the wearer appears to followers, while this phone shares (null = no identity, or not the wearer). */
+    val profile: Flow<HomeProfile?> get() = flowOf(null)
+
+    /** What the clinic upload has of the entries (the list's cloud marks); null = its entries upload is off. */
+    val uploadMarks: Flow<UploadMarks?> get() = flowOf(null)
+
+    /**
+     * The family name of the sensor this phone reads directly while Sukrara's support for it is untested (never
+     * confirmed on a real sensor); null otherwise. Home asks the wearer for feedback while it is set.
+     */
+    val untestedSensor: Flow<String?> get() = flowOf(null)
+
+    /** Which of [ids] came from an insulin pen (their rows say *from the pen* and open the pen entry sheet). */
+    suspend fun penEntries(ids: Collection<String>): Set<String> = emptySet()
+
+    /** Pen entry [id] with its doses (any role: it is read from the synced log), or null when it isn't one. */
+    suspend fun penEntry(id: String): PenEntryInfo? = null
+
+    /** This phone corrects pen doses (the wearer's with pens); false = the sheet is read only. */
+    fun pensEditable(): Boolean = false
+
+    /** The sheet's *Save* ([PensPort.correct]): the entry as it was, or null when it changed since. */
+    suspend fun correctPen(
+        shown: PenEntryInfo,
+        primed: List<Boolean>,
+    ): PenEntryInfo? = null
+
+    /** The snackbar's *Undo* ([PensPort.restore]). */
+    suspend fun restorePen(was: PenEntryInfo): Boolean = false
+
+    /** The open pen questions while this phone reads pens (the wearer's), oldest first: home's question card. */
+    val penQuestions: Flow<List<PenQuestionInfo>> get() = flowOf(emptyList())
+
+    /** An answer from the question card or its sheet ([PensPort.answer]); false = it changed since, nothing logged. */
+    suspend fun answerPen(
+        question: PenQuestionInfo,
+        answer: PenAnswer,
+    ): Boolean = false
+
+    /** Pen reading is On with a pen known: its newest read (the hints); null = no pen hints. */
+    val penRead: Flow<PenRead?> get() = flowOf(null)
 }
+
+/** The newest read of the person's pens (the pen hints): which pen and when (epoch s). */
+data class PenRead(
+    val serial: String,
+    val at: Long,
+)
+
+/** The pen entry sheet open on home: the entry, the row it came from, and what this phone may change of it. */
+data class PenSheet(
+    val entry: PenEntryInfo,
+    val treatment: Treatment,
+    /** Doses can be set to *Priming* / *Injected* (the wearer's phone with pens). */
+    val editable: Boolean,
+    /** *Delete* (home's own delete with its *Undo*): not on a follower for the wearer's entries. */
+    val deletable: Boolean,
+)
+
+/** What home's snackbar says after a pen entry correction; [undo] = the entry as it was (the *Undo*). */
+data class PenNotice(
+    val kind: Kind,
+    val undo: PenEntryInfo? = null,
+) {
+    enum class Kind { Changed, Removed, ChangedSince, UndoFailed }
+}
+
+/** The wearer's own row on home: picture, name (blank = not set yet) and how many follow. */
+data class HomeProfile(val name: String, val avatar: Avatar?, val followers: Int)
 
 /** Everything the home screen draws, from one source. */
 data class HomeUiState(
@@ -98,16 +197,40 @@ data class HomeUiState(
     val reason: NoDataReason?,
     val banner: BannerKind?,
     val firstProblem: AlertRequirement?,
+    /** The whole alert checklist (its failed steps for *Copy report*); null until it is known. */
+    val readiness: AlertReadiness? = null,
     val nextSetupStep: String?,
     val dataProblems: List<DataProblem>,
     /** The last 24 h, newest first (deleted ones are gone; the undo brings them back). */
     val treatments: List<Treatment>,
+    /** Every reading home can scroll to (31 days), oldest first: the stored days joined with the live window. */
+    val history: List<Reading> = glucose.recent,
+    /** The treatments the chart can scroll to (31 days), newest first. */
+    val chartTreatments: List<Treatment> = treatments,
     /** A just-deleted treatment the snackbar offers to bring back. */
     val undo: Treatment?,
     /** The graph settings the card draws with. */
     val config: GraphConfig = GraphConfig(),
     /** Ids of [treatments] this phone may not delete (a follower and the wearer's entries): no Delete button. */
     val readOnly: Set<String> = emptySet(),
+    /** Ids of [treatments] that came from an insulin pen (*8.5u rapid insulin · from the pen*; a tap opens its sheet). */
+    val fromPen: Set<String> = emptySet(),
+    /** This phone's entries on their way to the wearer: *Sending…*, or *Not sent* with *Retry* ([TreatmentDelivery.Failed]). */
+    val delivery: Map<String, TreatmentDelivery> = emptyMap(),
+    /** The wearer's profile while sharing (the top bar shows it, with Share). */
+    val profile: HomeProfile? = null,
+    /** The clinic upload's cloud mark per listed entry id (empty while its entries upload is off). */
+    val marks: Map<String, UploadMark> = emptyMap(),
+    /** The just-deleted entry was in the clinic upload: the snackbar says it is removed there too. */
+    val undoInClinic: Boolean = false,
+    /** The wearer's sensor family whose support is untested: the feedback card under the card (wearer only). */
+    val untestedSensor: String? = null,
+    /** The restart card's System UI module runs an older build (else it isn't loaded yet). */
+    val systemUiUpdated: Boolean = false,
+    /** The launcher can place the widget from the app (the widget banner's *Add* button), else the hand-made way. */
+    val widgetPinnable: Boolean = true,
+    /** What the taps-blocked banner names: pen taps, sensor taps or both. */
+    val blockedTaps: BlockedTaps = BlockedTaps(),
 ) {
     val mutedUntil: Instant? get() = glucose.alerts.mutedUntil?.takeIf { it > now }
 }
@@ -116,7 +239,8 @@ class HomeViewModel(
     private val deps: HomeDeps,
 ) : ViewModel() {
     private val undo = MutableStateFlow<Treatment?>(null)
-    private var undoExpiry: Job? = null
+    private val undoInClinic = MutableStateFlow(false)
+    private val uploadMarks: StateFlow<UploadMarks?> = deps.uploadMarks.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** Ticks on each minute so ages ("3 min ago"), freshness steps and countdowns move without a new reading. */
     private val minutes: Flow<Instant> =
@@ -131,19 +255,41 @@ class HomeViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val recentTreatments: Flow<Recent> =
         minutes
-            .flatMapLatest { now -> deps.treatments.between(now - TREATMENTS_WINDOW, now + FUTURE_SLACK) }
-            .mapLatest { list -> Recent(list, list.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id }) }
+            .map { it.truncatedTo(ChronoUnit.HOURS) }
+            .distinctUntilChanged()
+            .flatMapLatest { hour -> deps.treatments.between(hour - CHART_WINDOW, hour + Duration.ofHours(1) + FUTURE_SLACK) }
+            .mapLatest { list ->
+                // only the listed (last day's) entries have a Delete button to decide
+                val listed = list.filter { it.at >= deps.clock.now() - TREATMENTS_WINDOW - Duration.ofHours(1) }
+                Recent(
+                    list,
+                    listed.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id },
+                    deps.penEntries(listed.filter { it.isInsulin }.map { it.id }),
+                    deps.deliveries(listed.map { it.id }),
+                )
+            }
 
     val state: StateFlow<HomeUiState> =
         combine(
-            deps.glucose,
+            combine(deps.glucose, deps.storedHistory) { g, stored -> Live(g, ReadingHistory.join(stored, g.recent)) },
             minutes,
             deps.readiness,
-            deps.environment,
-            combine(deps.bannerMemory.data, recentTreatments, undo, deps.dataProblems, deps.graphConfig, ::Extras),
-        ) { glucose, tick, readiness, env, (memory, recent, pendingUndo, problems, config) ->
+            combine(combine(deps.environment, deps.untestedSensor, ::Pair), deps.profile, uploadMarks, ::Triple),
+            combine(
+                deps.bannerMemory.data,
+                recentTreatments,
+                combine(undo, undoInClinic, ::Pair),
+                deps.dataProblems,
+                deps.graphConfig,
+                ::Extras,
+            ),
+        ) { (glucose, history), tick, readiness, (envUntested, profile, marks), (memory, recent, undone, problems, config) ->
+            val (env, untested) = envUntested
+            val (pendingUndo, inClinic) = undone
             val now = maxOf(tick, deps.clock.now())
-            val look = homeLook(glucose, now)
+            val chart = recent.treatments.sortedByDescending { it.at }
+            val listed = chart.filter { it.at >= now - TREATMENTS_WINDOW && it.at <= now + FUTURE_SLACK }
+            val look = homeLook(glucose, now, config.unit)
             HomeUiState(
                 glucose = glucose,
                 now = now,
@@ -151,44 +297,79 @@ class HomeViewModel(
                 reason = NoDataReason.of(glucose, look),
                 banner = HomeBanners.pick(readiness, env, glucose.service is ServiceState.Stopped, problems.size, memory, now),
                 firstProblem = readiness?.firstProblem,
+                readiness = readiness,
                 nextSetupStep = env.nextSetupStep,
+                systemUiUpdated = env.systemUiRestart == ModuleState.Update,
+                widgetPinnable = env.widgetPinnable,
+                blockedTaps = env.tapsBlocked,
                 dataProblems = problems,
-                treatments = recent.treatments.sortedByDescending { it.at },
+                treatments = listed,
+                history = history,
+                chartTreatments = chart,
                 undo = pendingUndo,
                 config = config,
                 readOnly = recent.readOnly,
+                fromPen = recent.fromPen,
+                delivery = recent.delivery,
+                profile = profile?.takeIf { glucose.role != Role.Follower },
+                marks = marks?.let { m -> listed.mapNotNull { t -> m.mark(t, now)?.let { t.id to it } }.toMap() }.orEmpty(),
+                undoInClinic = pendingUndo != null && inClinic,
+                untestedSensor = untested?.takeIf { glucose.role == Role.Wearer },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial())
 
     private fun initial(): HomeUiState {
         val now = deps.clock.now()
         val glucose = deps.glucose.value
-        val look = homeLook(glucose, now)
-        return HomeUiState(glucose, now, look, NoDataReason.of(glucose, look), null, null, null, emptyList(), emptyList(), null)
+        // the settings arrive with the first state: until then the defaults (as [HomeUiState.config])
+        val look = homeLook(glucose, now, GraphConfig().unit)
+        return HomeUiState(
+            glucose = glucose,
+            now = now,
+            look = look,
+            reason = NoDataReason.of(glucose, look),
+            banner = null,
+            firstProblem = null,
+            nextSetupStep = null,
+            dataProblems = emptyList(),
+            treatments = emptyList(),
+            undo = null,
+        )
     }
 
     fun dismiss(kind: BannerKind) {
         if (kind.safety) return
+        if (kind == BannerKind.RestartSystemUi) {
+            val key = deps.environment.value.restartKey ?: return
+            viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
+            return
+        }
         viewModelScope.launch { deps.bannerMemory.update { it.dismiss(kind, deps.clock.now()) } }
     }
 
-    fun unmute() = deps.unmute()
+    /** Undo on the "Tip closed" snackbar. */
+    fun restore(kind: BannerKind) {
+        viewModelScope.launch { deps.bannerMemory.update { it.restore(kind) } }
+    }
+
+    fun alert(action: HomeAlertAction) = deps.alert(action)
 
     fun acknowledge(problem: DataProblem) = deps.acknowledge(problem)
 
     fun fix(requirement: AlertRequirement) = deps.fix(requirement)
 
-    /** Deletes [treatment] through the treatment log and offers Undo for [UNDO_WINDOW] (none when the log refused). */
+    /**
+     * Deletes [treatment] through the treatment log and offers Undo on the snackbar (none when the log refused). The
+     * offer lasts as long as the snackbar shows (Android lengthens it for TalkBack and *Time to take action*): only
+     * [undoDelete] or [undoShown] ends it, never a timer of its own.
+     */
     fun delete(treatment: Treatment) {
+        // read before the delete: the upload retracts it from the clinic right after
+        val inClinic = uploadMarks.value?.removesOnDelete(treatment) == true
         viewModelScope.launch {
             val deleted = deps.deleteTreatment(treatment.id) ?: return@launch
+            undoInClinic.value = inClinic
             undo.value = deleted
-            undoExpiry?.cancel()
-            undoExpiry =
-                launch {
-                    delay(UNDO_WINDOW.toMillis())
-                    undo.compareAndSet(deleted, null)
-                }
         }
     }
 
@@ -196,31 +377,118 @@ class HomeViewModel(
     fun undoDelete() {
         val treatment = undo.value ?: return
         undo.value = null
-        undoExpiry?.cancel()
         viewModelScope.launch { deps.undoTreatment(treatment) }
     }
 
-    /** The snackbar went away without Undo. */
+    /** *Retry* on an entry nothing took ([TreatmentDelivery.Failed]): it is sent again now. */
+    fun retry(treatment: Treatment) {
+        viewModelScope.launch { deps.retryTreatment(treatment.id) }
+    }
+
+    /** The snackbar went away without Undo (timed out or dismissed): the offer ends. */
     fun undoShown() {
         undo.value = null
     }
 
+    private val _penSheet = MutableStateFlow<PenSheet?>(null)
+
+    /** The pen entry sheet a pen row opened (null = closed). */
+    val penSheet: StateFlow<PenSheet?> = _penSheet
+
+    private val _penNotice = MutableStateFlow<PenNotice?>(null)
+
+    /** The pen sheet's last result, for the snackbar (null once shown). */
+    val penNotice: StateFlow<PenNotice?> = _penNotice
+
+    /** The open pen questions (the card under the glucose card). */
+    val penQuestions: StateFlow<List<PenQuestionInfo>> =
+        deps.penQuestions.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The newest pen read while reading is On (the hints). */
+    val penRead: StateFlow<PenRead?> = deps.penRead.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** The question card's answer; a question that changed since says so on the snackbar (nothing was logged). */
+    fun answerPen(
+        q: PenQuestionInfo,
+        a: PenAnswer,
+    ) {
+        viewModelScope.launch {
+            val done = runCatching { deps.answerPen(q, a) }.getOrDefault(false)
+            if (!done) _penNotice.value = PenNotice(PenNotice.Kind.ChangedSince)
+        }
+    }
+
+    /** A pen row was tapped: its sheet opens with the entry as stored now (an entry deleted meanwhile opens nothing). */
+    fun openPen(treatment: Treatment) {
+        viewModelScope.launch {
+            val entry = deps.penEntry(treatment.id) ?: return@launch
+            val readOnly = treatment.id in state.value.readOnly
+            _penSheet.value = PenSheet(entry, treatment, editable = !readOnly && deps.pensEditable(), deletable = !readOnly)
+        }
+    }
+
+    fun closePen() {
+        _penSheet.value = null
+    }
+
+    /** *Save*: each dose priming or injected (every dose priming removes the entry); *Undo* follows on the snackbar. */
+    fun correctPen(primed: List<Boolean>) {
+        val sheet = _penSheet.value?.takeIf { it.editable } ?: return
+        _penSheet.value = null
+        viewModelScope.launch {
+            val was = deps.correctPen(sheet.entry, primed)
+            _penNotice.value =
+                when {
+                    was == null -> PenNotice(PenNotice.Kind.ChangedSince)
+                    primed.all { it } -> PenNotice(PenNotice.Kind.Removed, was)
+                    else -> PenNotice(PenNotice.Kind.Changed, was)
+                }
+        }
+    }
+
+    /** The snackbar's *Undo* after a correction: the entry back as it was, while nothing changed it since. */
+    fun undoPen(was: PenEntryInfo) {
+        viewModelScope.launch { if (!deps.restorePen(was)) _penNotice.value = PenNotice(PenNotice.Kind.UndoFailed) }
+    }
+
+    /** *Delete* on the sheet: home's own delete (its snackbar offers *Undo*). */
+    fun deletePen() {
+        val sheet = _penSheet.value?.takeIf { it.deletable } ?: return
+        _penSheet.value = null
+        delete(sheet.treatment)
+    }
+
+    fun penNoticeShown(notice: PenNotice) {
+        _penNotice.compareAndSet(notice, null)
+    }
+
+    private data class Live(
+        val glucose: GlucoseState,
+        val history: List<Reading>,
+    )
+
     private data class Recent(
         val treatments: List<Treatment>,
         val readOnly: Set<String>,
+        val fromPen: Set<String>,
+        val delivery: Map<String, TreatmentDelivery>,
     )
 
     private data class Extras(
         val memory: BannerMemory,
         val treatments: Recent,
-        val undo: Treatment?,
+        val undo: Pair<Treatment?, Boolean>,
         val problems: List<DataProblem>,
         val config: GraphConfig,
     )
 
+    private val Treatment.isInsulin get() = kind == TreatmentKind.RapidInsulin || kind == TreatmentKind.LongInsulin
+
     companion object {
-        val UNDO_WINDOW: Duration = Duration.ofSeconds(5)
         private val TREATMENTS_WINDOW: Duration = Duration.ofHours(24)
+
+        /** How far back the chart scrolls (the stored history's 31 days). */
+        private val CHART_WINDOW: Duration = Duration.ofDays(31)
 
         /** Entries logged a little ahead (a dose about to be taken) still show. */
         private val FUTURE_SLACK: Duration = Duration.ofHours(1)

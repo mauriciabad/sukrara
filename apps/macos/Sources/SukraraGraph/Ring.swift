@@ -1,9 +1,11 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import AppKit
 import CoreGraphics
 import CoreText
 import Foundation
+import SukraraCore
 
 // MARK: - Ring
 
@@ -370,7 +372,7 @@ enum Laurel {
 enum TirRing {
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius r: CGFloat, tir: TimeInRange, spec: RingSpec,
-        _ pal: GraphPalette, emphasis: CGFloat, countdown: Double? = nil
+        _ pal: GraphPalette, emphasis: CGFloat, countdown: Double? = nil, words w: CardWords
     ) {
         let mark = mark(tir, spec)
         let sw = r * 0.2
@@ -423,24 +425,35 @@ enum TirRing {
             ctx.endTransparencyLayer()
             ctx.restoreGState()
         }
-        let num = Ink.font(r * 0.78, .heavy, rounded: true)
+        // a share, never a reading: lighter than the value's number (.bold) and with its "%" (`slotWeight`)
         let sub = Ink.font(r * 0.34, .semibold, rounded: true)
         let v = tir.empty ? "–" : text(tir, spec)
+        let pct = tir.empty ? "" : "%"
         let base = c.y + r * 0.78 * 0.28
         // "69.7", "<0.1": the decimals fit inside the ring (TirRing.draw on Android)
         var size = v.count > 3 ? r * 0.78 * 0.7 : r * 0.78
-        // "100" too
-        size = min(size, size * (r - sw) * 1.5 / max(Ink.width(v, Ink.font(size, .heavy, rounded: true)), 1))
+        func width(_ s: CGFloat) -> CGFloat {
+            Ink.width(v, Ink.font(s, slotWeight, rounded: true))
+                + Ink.width(pct, Ink.font(s * pctSize, slotWeight, rounded: true))
+        }
+        // "100%" too
+        size = min(size, size * (r - sw) * 1.5 / max(width(size), 1))
+        let num = Ink.font(size, slotWeight, rounded: true), unit = Ink.font(size * pctSize, slotWeight, rounded: true)
+        let x0 = c.x - width(size) / 2
+        Ink.draw(ctx, v, x: x0, y: base, num, pal.ink.a(emphasis))
+        Ink.draw(ctx, pct, x: x0 + Ink.width(v, num), y: base, unit, pal.ink.a(emphasis))
         Ink.draw(
-            ctx, v, x: c.x, y: base, size == r * 0.78 ? num : Ink.font(size, .heavy, rounded: true),
-            pal.ink.a(emphasis), align: 0.5)
-        Ink.draw(
-            ctx, spec.period, x: c.x, y: base + r * 0.34 * 1.1, sub,
+            ctx, w.period(spec.window), x: c.x, y: base + r * 0.34 * 1.1, sub,
             (spec.range == .tight ? pal.tight : pal.inkSoft).a(emphasis), align: 0.5)
     }
 }
 
 extension TirRing {
+    /// The weight of a slot's number (here and `MetricGauge`): lighter than the value's (.bold), so "59" in a ring beside
+    /// "112" never reads as a second glucose value (TirRing.SLOT_WEIGHT).
+    static let slotWeight: NSFont.Weight = .semibold
+    /// The "%" after the ring's number, as a share of its size (TirRing.PCT_SIZE).
+    static let pctSize: CGFloat = 0.45
     /// The ring's `TirMark` (none without data).
     static func mark(_ tir: TimeInRange, _ spec: RingSpec) -> TirMark {
         tir.empty || !spec.marks ? .none : TirMark.of(tir, spec.range)
@@ -475,17 +488,18 @@ enum MetricGauge {
         default: Goal.cv.met(m)
         }
     }
-    static func text(_ k: SlotKind, _ m: GlucoseMetrics) -> (String, String) {
+    /// The number and its unit: the average in the card's `unit` ("141", "7.8"; the value says the unit).
+    static func text(_ k: SlotKind, _ m: GlucoseMetrics, unit: GlucoseUnit, locale: Locale) -> (String, String) {
         switch k {
         case .gmi: (String(format: "%.1f", m.gmi), "%")
-        case .average: ("\(Int(m.mean.rounded()))", "")
+        case .average: (unit.format(Int(m.mean.rounded()), locale: locale), "")
         default: ("\(Int(m.cv.rounded()))", "%")
         }
     }
 
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius: CGFloat, m: GlucoseMetrics, spec: RingSpec,
-        _ pal: GraphPalette, emphasis: CGFloat, d: CGFloat
+        _ pal: GraphPalette, emphasis: CGFloat, d: CGFloat, glucose: GlucoseUnit, words: CardWords
     ) {
         let sw = radius * 0.2, rr = radius - sw / 2
         ctx.saveGState()
@@ -513,15 +527,15 @@ enum MetricGauge {
             CGPoint(x: c.x + r1 * CGFloat(cos(ga)), y: c.y + r1 * CGFloat(sin(ga))),
         ])
         ctx.restoreGState()
-        let num = Ink.font(radius * 0.62, .heavy, rounded: true)
+        let num = Ink.font(radius * 0.62, TirRing.slotWeight, rounded: true)
         let unit = Ink.font(radius * 0.3, .semibold, rounded: true)
-        let (v, u) = m.empty ? ("–", "") : text(spec.kind, m)
+        let (v, u) = m.empty ? ("–", "") : text(spec.kind, m, unit: glucose, locale: CardWords.current.locale)
         let w = Ink.width(v, num) + Ink.width(u, unit)
         let base = c.y + radius * 0.62 * 0.3
         Ink.draw(ctx, v, x: c.x - w / 2, y: base, num, pal.ink.a(emphasis))
         Ink.draw(ctx, u, x: c.x - w / 2 + Ink.width(v, num), y: base, unit, pal.ink.a(emphasis))
         Ink.draw(
-            ctx, "\(spec.kind.short) \(spec.period)", x: c.x, y: base + radius * 0.3 * 1.25, unit,
+            ctx, "\(words.short(spec.kind)) \(words.period(spec.window))", x: c.x, y: base + radius * 0.3 * 1.25, unit,
             pal.inkSoft.a(emphasis), align: 0.5)
     }
 }

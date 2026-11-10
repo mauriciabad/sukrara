@@ -63,15 +63,26 @@ internal object ControlEvents {
 
     /** The current read key to [follower] (30501 `key`, devices = this phone only). */
     fun deliverKey(ctx: OwnerContext, s: OwnerState, follower: String, now: Long): Step {
-        val rumor = Rumor.KeyDelivery(s.sid, s.current.n, ctx.crypto.nsec(s.readKey(ctx.crypto).secret), listOf(s.device(ctx.crypto).public.hex), s.relays)
+        val rumor =
+            Rumor.KeyDelivery(
+                s.sid,
+                s.current.n,
+                ctx.crypto.nsec(s.readKey(ctx.crypto).secret),
+                listOf(s.device(ctx.crypto).public.hex),
+                s.relays,
+            )
         val ev = ctx.events.gift(s.identity(ctx.crypto), PublicKeyHex(follower), rumor, now, now + Wire.TTL_KEY_DELIVERY)
         return pending(s, "key:$follower", ev, follower)
     }
 
     /** `revoked`, `declined` or `invite-used` to [follower]. */
-    fun notice(ctx: OwnerContext, s: OwnerState, follower: String, rumor: Rumor, now: Long): Step {
-        val ev = ctx.events.gift(s.identity(ctx.crypto), PublicKeyHex(follower), rumor, now, now + Wire.TTL_REQUEST)
-        return pending(s, "${rumor.type}:$follower", ev, follower)
+    fun notice(ctx: OwnerContext, s: OwnerState, follower: String, rumor: Rumor, now: Long): Step =
+        pending(s, "${rumor.type}:$follower", noticeEvent(ctx, s, follower, rumor, now), follower)
+
+    /** The notice itself; `revoked` lives as long as a key delivery (30 d: both come back after a restart), the others 7 d. */
+    fun noticeEvent(ctx: OwnerContext, s: OwnerState, follower: String, rumor: Rumor, now: Long): SignedEvent {
+        val ttl = if (rumor == Rumor.Revoked) Wire.TTL_KEY_DELIVERY else Wire.TTL_REQUEST
+        return ctx.events.gift(s.identity(ctx.crypto), PublicKeyHex(follower), rumor, now, now + ttl)
     }
 
     private fun pending(s: OwnerState, key: String, ev: SignedEvent, follower: String?): Step {
@@ -81,15 +92,16 @@ internal object ControlEvents {
 
     fun profile(s: OwnerState): Profile? = s.profileJson?.let { Profile.of(Json.parseToJsonElement(it)) }
 
-    fun backupPayload(crypto: NostrCrypto, s: OwnerState) = BackupPayload(
-        sid = s.sid,
-        epochs = s.epochs.sortedBy { it.n }.map { BackupEpoch(it.n, crypto.nsec(SecretKey.ofHex(it.secretHex)!!)) },
-        followers = s.followers.map { BackupFollower(it.key, it.name, avatar(it.avatarJson), it.since, it.revoked) },
-        invites = s.invites.map { BackupInvite(it.token, it.expiry, it.label, false, it.sentAt, it.claimedBy, it.done) },
-        relays = s.relays,
-        writers = s.writers.toList(),
-        profile = profile(s),
-    )
+    fun backupPayload(crypto: NostrCrypto, s: OwnerState) =
+        BackupPayload(
+            sid = s.sid,
+            epochs = s.epochs.sortedBy { it.n }.map { BackupEpoch(it.n, crypto.nsec(SecretKey.ofHex(it.secretHex)!!)) },
+            followers = s.followers.map { BackupFollower(it.key, it.name, avatar(it.avatarJson), it.since, it.revoked) },
+            invites = s.invites.map { BackupInvite(it.token, it.expiry, it.label, it.nearby, it.sentAt, it.claimedBy, it.done) },
+            relays = s.relays,
+            writers = s.writers.toList(),
+            profile = profile(s),
+        )
 
     /** The state a backup describes, with this phone's new device key (restore). Null if an epoch key is unreadable. */
     fun fromBackup(crypto: NostrCrypto, identityHex: String, deviceHex: String, b: BackupPayload): OwnerState? {
@@ -101,7 +113,7 @@ internal object ControlEvents {
             sid = b.sid,
             epochs = epochs.sortedBy { it.n },
             followers = b.followers.map { FollowerRecord(it.key, it.name, it.since, it.revoked, it.avatar?.json?.toString()) },
-            invites = b.invites.map { InviteRecord(it.token, it.expiry, it.label, it.sentAt, it.claimedBy, it.done) },
+            invites = b.invites.map { InviteRecord(it.token, it.expiry, it.label, it.sentAt, it.claimedBy, it.done, nearby = it.nearby) },
             writers = b.writers.toSet(),
             profileJson = b.profile?.toJson()?.toString(),
         )

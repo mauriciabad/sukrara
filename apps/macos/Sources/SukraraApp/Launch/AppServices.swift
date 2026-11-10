@@ -20,19 +20,32 @@ final class AppServices: ServiceStarting {
     private(set) var sounds: SoundLibrary?
     /// The follower runtime (relays, and Bluetooth when the plan allows it). Created here, started by `AppModel`.
     private(set) var follower: FollowerRuntime?
+    /// Juggluco on the home network: created idle, switched on and off by `AppModel` from the person's setting.
+    private(set) var lan: JugglucoLanSource?
     /// Hands the card to the widgets (App Group file + timeline reloads). Fed by `AppModel` on every change.
     private(set) var widget: WidgetFeed?
     private let makeWidget: () -> WidgetFeed
     let responder = NotificationResponder()
+    /// The daily update check (owned here, cancelled by `stop`).
+    private var updateLoop: Task<Void, Never>?
     /// Re-read what notifications may do (after the authorization prompt).
     var permissionChanged: (() -> Void)?
     /// A tap on a notification's body: open the panel.
     var openPanel: (() -> Void)?
     let defaults: UserDefaults
+    /// What this build's provisioning profile grants (none without one): Time Sensitive alarms and the
+    /// data-protection keychain.
+    let entitlements: Entitlements
+    /// The follower key and Juggluco's secret, in the keychain this build may use (`KeychainStore.secrets`).
+    let secrets: any SecretStoring
 
     /// `widget`: creates the widget feed when the plan allows it (tests write to a scratch file).
-    init(plan: LaunchPlan, widget: @escaping () -> WidgetFeed = { WidgetFeed() }) {
+    init(
+        plan: LaunchPlan, entitlements: Entitlements = .current(), widget: @escaping () -> WidgetFeed = { WidgetFeed() }
+    ) {
         self.plan = plan
+        self.entitlements = entitlements
+        secrets = KeychainStore.secrets(service: plan.data.keychainService, entitlements: entitlements)
         makeWidget = widget
         defaults = plan.data.defaultsSuite.flatMap(UserDefaults.init(suiteName:)) ?? .standard
     }
@@ -40,11 +53,11 @@ final class AppServices: ServiceStarting {
     /// The wearer's mirrored settings while following (from the follower snapshots), nil otherwise.
     private var wearer: WearerSettings?
 
-    /// The rules this Mac runs: its own alert settings, with the wearer's mirrored values in "Settings from: Wearer".
+    /// The rules this Mac runs: its own alert settings with the mirrored values from "Settings from"
+    /// (`AlertSettings.inUse`: the wearer's, the defaults, or this Mac's own in Custom).
     var alertSettings: AlertSettings {
         let own = defaults.data(forKey: SettingsSpec.Keys.alerts).map(AlertSettings.decode) ?? AlertSettings()
-        guard own.source == .wearer, let wearer else { return own }
-        return own.mirroring(wearer)
+        return own.inUse(from: DefaultsSettingsStore(defaults: defaults).settingsFrom, wearer: wearer)
     }
 
     /// The alert settings changed (Settings window, a mirrored wearer setting): the rules and the copied sounds follow
@@ -76,7 +89,7 @@ final class AppServices: ServiceStarting {
     func start(_ service: Service) {
         switch service {
         case .notifications:
-            let center = SystemNotificationCenter()
+            let center = SystemNotificationCenter(entitled: entitlements.timeSensitive)
             self.center = center
             let un = UNUserNotificationCenter.current()
             un.delegate = responder
@@ -93,7 +106,11 @@ final class AppServices: ServiceStarting {
             let posting: any NotificationPosting = center ?? SilentCenter()
             let settings = alertSettings
             var controller: AlertController?
-            let notifier = Notifier(center: posting, sounds: sounds, clock: SystemClock()) {
+            let defaults = self.defaults
+            let notifier = Notifier(
+                center: posting, sounds: sounds, clock: SystemClock(),
+                unit: { DefaultsSettingsStore(defaults: defaults).unit }
+            ) {
                 controller?.settings ?? settings
             }
             notifier.eventLog = RotatingFileLog(directory: plan.data.paths.logs)
@@ -118,7 +135,8 @@ final class AppServices: ServiceStarting {
                 .flatMap(AppVersion.init) ?? AppVersion("0.0.0")!
             let check = UpdateCheck(installed: installed, fetcher: URLSessionFetcher(), defaults: defaults)
             updates = check
-            Task {
+            updateLoop?.cancel()
+            updateLoop = Task {
                 while !Task.isCancelled {
                     await check.check(userAsked: false)
                     try? await Task.sleep(for: .seconds(24 * 3600))
@@ -131,7 +149,7 @@ final class AppServices: ServiceStarting {
             let nearby: FollowerRuntime.NearbyFactory? =
                 plan.services.ble ? { @Sendable identity in NearbyCentral(identity: identity, crypto: crypto) } : nil
             follower = FollowerRuntime(
-                secrets: KeychainStore(service: plan.data.keychainService),
+                secrets: secrets,
                 stores: .files(plan.data.paths, clock: SystemClock()), crypto: crypto, clock: SystemClock(),
                 me: Profile(name: Host.current().localizedName ?? "Mac", avatar: nil),
                 makeRelays: { relays, key in RelayPool(relays: relays, authKey: key, crypto: crypto) },
@@ -140,7 +158,18 @@ final class AppServices: ServiceStarting {
             widget = makeWidget()
         case .ble:
             break  // Bluetooth runs inside the follower runtime (`relays`)
+        case .lan:
+            lan = JugglucoLanSource(
+                http: URLSessionLanHTTP(),
+                store: ReadingsFileStore(
+                    directory: plan.data.paths.appSupport.appending(path: "juggluco", directoryHint: .isDirectory)))
         }
+    }
+
+    /// Quit: ends the long-lived work this class started itself (the follower and Juggluco stop with the model).
+    func stop() {
+        updateLoop?.cancel()
+        updateLoop = nil
     }
 
     /// The app's model over what this run started: the follower runtime (the fixture follower in a fixture run), the
@@ -152,7 +181,7 @@ final class AppServices: ServiceStarting {
         #endif
         return AppModel(
             plan: plan, clock: clock, alerts: alerts, updates: updates, loginItem: loginItem, follower: follower,
-            widget: widget)
+            widget: widget, lan: lan)
     }
 }
 

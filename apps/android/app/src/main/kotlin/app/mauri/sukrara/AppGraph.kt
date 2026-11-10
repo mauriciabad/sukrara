@@ -4,28 +4,61 @@
 package app.mauri.sukrara
 
 import android.app.Application
+import android.nfc.Tag
+import android.view.View
+import app.mauri.sukrara.alerts.AlertEvent
+import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.alerts.AlertSettingsCodec
 import app.mauri.sukrara.core.data.DataModule
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.model.storage.UploadHold
+import app.mauri.sukrara.feature.home.PenRead
+import app.mauri.sukrara.feature.home.banners.BannerKind
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.sensor.SensorUiModule
+import app.mauri.sukrara.feature.settings.AlertPlayback
 import app.mauri.sukrara.feature.settings.AlertSettingsStore
+import app.mauri.sukrara.feature.settings.AppOutput
+import app.mauri.sukrara.feature.settings.BackupState
+import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.SharingDeps
+import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.label
-import app.mauri.sukrara.graph.Clock as ClockText
+import app.mauri.sukrara.feature.treatments.AndroidDraftNotice
+import app.mauri.sukrara.feature.treatments.DialogPen
+import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
+import app.mauri.sukrara.feature.treatments.TreatmentDraft
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
+import app.mauri.sukrara.integrations.CurrentSensor
+import app.mauri.sukrara.integrations.IntegrationsModule
+import app.mauri.sukrara.integrations.broadcasts.BcState
+import app.mauri.sukrara.integrations.broadcasts.LiveReading
+import app.mauri.sukrara.integrations.healthconnect.HcState
+import app.mauri.sukrara.integrations.libreview.LvGlucose
+import app.mauri.sukrara.integrations.libreview.LvReadings
+import app.mauri.sukrara.integrations.libreview.LvState
+import app.mauri.sukrara.integrations.libreview.LvUnsent
+import app.mauri.sukrara.integrations.localserver.LanPin
+import app.mauri.sukrara.integrations.localserver.LanState
+import app.mauri.sukrara.integrations.nightscout.NsState
+import app.mauri.sukrara.integrations.tidepool.TpState
 import app.mauri.sukrara.monitor.MonitorModule
 import app.mauri.sukrara.monitor.alerts.AlertRecord
 import app.mauri.sukrara.monitor.alerts.AlertsModule
@@ -33,13 +66,30 @@ import app.mauri.sukrara.monitor.hub.MonitorRecord
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
+import app.mauri.sukrara.monitor.notify.SharingLine
+import app.mauri.sukrara.monitor.sensorend.CalendarRecord
+import app.mauri.sukrara.monitor.sensorend.SensorCalendar
 import app.mauri.sukrara.monitor.sensorend.SensorEndMemory
 import app.mauri.sukrara.monitor.service.StartReason
+import app.mauri.sukrara.pen.PenLog
+import app.mauri.sukrara.pen.PenNotificationPorts
+import app.mauri.sukrara.pen.PenTag
+import app.mauri.sukrara.pen.PenTapHint
+import app.mauri.sukrara.pen.PensModule
+import app.mauri.sukrara.protocol.event.AlertCodec
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.sensor.SensorModule
+import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.PairingLoad
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
+import app.mauri.sukrara.sensor.pairing.ReceiverIds
 import app.mauri.sukrara.sensor.source.SensorSourceKind
+import app.mauri.sukrara.sensor.source.SensorStatus
+import app.mauri.sukrara.share.FollowerModule
 import app.mauri.sukrara.share.ShareOwnerModule
+import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.FollowerNotifications
+import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.followRole
 import app.mauri.sukrara.share.owner.requests.AndroidRequestNotifications
 import app.mauri.sukrara.widgets.WidgetPlacements
@@ -51,17 +101,27 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
+import app.mauri.sukrara.graph.Clock as ClockText
 
 /**
  * The app's object graph (manual DI, docs/ARCHITECTURE.md §Android DI, apps/android/README.md "DI").
@@ -82,9 +142,24 @@ class AppGraph(
 
     val appVersion: String = BuildConfig.VERSION_NAME
 
+    /** What this launch may reach (release: the public relays; debug: only the `RELAYS` command's choice). */
+    val launch by lazy { LaunchPlan.of(BuildConfig.DEBUG, BuildVariant.relayChoice(app)) }
+
+    /** The app's languages; [App] sets it on a language change so words made outside Compose are made again. */
+    val locales = MutableStateFlow(app.resources.configuration.locales)
+
     // ---- modules (one line each; construction does no I/O) ----
 
     val data by lazy { DataModule(app, appVersion, dispatchers, clock) }
+
+    /** Another glucose source was chosen or the sensor forgotten: the monitoring service picks its source again. */
+    private val sourceChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /**
+     * The readings as the current role sees them (`DataModule.readingsFor`): another person's never reach the hub,
+     * the history, the report, the export or an upload, even right after a role change.
+     */
+    val readings by lazy { data.readingsFor(role.data.map { it.role }) }
 
     /**
      * The phone's role, chosen in first-run setup (written with `role.update`); null = setup not done. Two
@@ -110,13 +185,13 @@ class AppGraph(
         )
     }
 
-    val monitor by lazy {
+    val monitor: MonitorModule by lazy {
         MonitorModule(
             context = app,
             scope = scope,
             dispatchers = dispatchers,
             clock = clock,
-            readings = data.readings,
+            readings = readings,
             // a damaged record keeps the no-data alarm armed (from now) instead of silently disarming it
             record =
                 data.typedStore(
@@ -127,14 +202,34 @@ class AppGraph(
                 ),
             role = role.data.map { it.role },
             source = ::readingSource,
+            settings = followerSettings.settings,
+            treatments = recentTreatments(),
+            graphConfig = graphConfig,
+            // cold: the owner engine is built when the service first draws the notification
+            sharing =
+                combine(
+                    flow {
+                        val owner = shareOwner.ownerEngine
+                        emitAll(
+                            combine(owner.state, owner.nearbyLinks) { s, links ->
+                                (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
+                            },
+                        )
+                    },
+                    // the Nightscout API open to the home Wi-Fi: said on the notification while it listens there
+                    flow { emitAll(integrations.nightscoutApi.lan) }.map { it is LanState.Listening },
+                ) { line, wifi -> if (line == null && !wifi) null else (line ?: SharingLine(0, 0)).copy(wifi = wifi) }
+                    .distinctUntilChanged(),
+            sourceChanges = sourceChanges,
+            rootFeatures = Store.rootFeatures,
         )
     }
 
-    val alerts by lazy {
+    val alerts: AlertsModule by lazy {
         AlertsModule(
             context = app,
             hub = monitor.hub,
-            alertSettings = data.settings,
+            alertSettings = followerSettings.settings,
             // a damaged record starts the machine over; the hub re-arms it as soon as the service runs
             alertRecord = data.typedStore("alert_state", AlertRecord.serializer(), AlertRecord(), whenCorrupt = AlertRecord()),
             // a damaged memory can only repeat a sensor-end warning
@@ -147,12 +242,39 @@ class AppGraph(
             scope = scope,
             dispatchers = dispatchers,
             needsBluetooth = needsBluetooth(),
+            // a follower's runtime: the mirrored values *Settings from* chooses and the wearer's `alert` events (its own
+            // mute stays here)
+            wearerSettings = followerSettings.alertMirror,
+            remoteEvents = flow { emitAll(follower.engine.alerts) }.mapNotNull { AlertEvent.decode(AlertCodec.encode(it)) },
+            // the wearer's `alert` events (what its rules decide without this phone's actions, escalations included) to
+            // every follower at once, over the relays and Bluetooth (PROTOCOL-v2 "Alerts")
+            events = { e -> scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } } },
+        )
+    }
+
+    /**
+     * A follower's *Settings from*: the settings the cards, the notification and the alerts use (the wearer's, the
+     * defaults or this phone's own for the mirrored rows). Inputs are cold, so building it builds nothing else.
+     */
+    val followerSettings: FollowerSettingsBridge by lazy {
+        FollowerSettingsBridge(
+            own = data.settings,
+            alerts =
+                object : FollowerSettingsBridge.AlertsAccess {
+                    override val settings get() = alerts.store.settings
+
+                    override suspend fun update(transform: (AlertSettings) -> AlertSettings) = alerts.store.updateSettings(transform)
+                },
+            role = role.data.map { it.role },
+            wearer = flow { emitAll(follower.engine.wearerSettings) },
+            wearerName = flow { emitAll(monitor.hub.state) }.map { it.link?.wearerName }.distinctUntilChanged(),
         )
     }
 
     val settingsUi by lazy {
         SettingsModule(
-            settings = data.settings,
+            // the pages show the settings in use (a follower's mirrored rows per *Settings from*); writes go to this phone's own
+            settings = followerSettings.settings,
             alertSettings =
                 object : AlertSettingsStore {
                     override val settings = alerts.store.settings
@@ -164,9 +286,158 @@ class AppGraph(
             readiness = alerts.readiness,
             appVersion = appVersion,
             prerelease = BuildConfig.PRERELEASE,
-            http = data.http,
-            dispatchers = dispatchers,
             clock = clock,
+            sensor = monitor.hub.state.map { it.sensor },
+            systemAccess = monitor.root?.access,
+            releases = { Store.releases(this) },
+            pensAvailable = { pens.available() },
+            pens = { pens.port.takeIf { pens.available() } },
+            clinicBanner =
+                combine(integrations.clinicUploadSet, home.bannerMemory.data) { set, memory ->
+                    set == false && !memory.dismissed(BannerKind.ShareWithClinic, clock.now())
+                },
+            dismissClinicBanner = { scope.launch { home.bannerMemory.update { it.dismiss(BannerKind.ShareWithClinic, clock.now()) } } },
+            restoreClinicBanner = { scope.launch { home.bannerMemory.update { it.restore(BannerKind.ShareWithClinic) } } },
+            closedTips = home.bannerMemory.data.map { it.closed },
+            restoreClosedTips = { scope.launch { home.bannerMemory.update { it.restoreAll() } } },
+            sensorCalendar = { sensorCalendar },
+            advanced = {
+                AppAdvanced(
+                    role.data.map { it.role },
+                    shareOwner.ownerEngine,
+                    follower.engine,
+                    shareOwner.crypto,
+                    data.diagLog,
+                    // an imported alert settings value passes their codec (SPEC §3) or is refused
+                    data.settingsTransfer(mapOf("alerts:alerts" to { t -> AlertSettingsCodec.decode(t)?.let(AlertSettingsCodec::encode) })),
+                    monitor.notification.counts,
+                    { data.readings.spanOf(setOf(SourceId.Relay)).count },
+                )
+            },
+            overviewSharing =
+                combine(role.data, shareOwner.ownerEngine.state) { r, own ->
+                    val sharing = own as? OwnerShareState.Sharing
+                    val backup =
+                        when (own) {
+                            is OwnerShareState.Sharing -> if (own.backedUp) BackupState.Saved else BackupState.NotSaved
+                            is OwnerShareState.IdentityUnreadable -> BackupState.Unreadable
+                            is OwnerShareState.AnotherAppSharingAsYou -> BackupState.Paused
+                            OwnerShareState.Loading, OwnerShareState.NoIdentity -> BackupState.NoIdentity
+                        }
+                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.profile?.avatar, backup)
+                },
+            alertPlayback =
+                object : AlertPlayback {
+                    override fun play(
+                        kind: AlertKind,
+                        pack: String,
+                        alarm: Boolean,
+                        vibrate: Boolean,
+                    ) = alerts.tryOut.play(kind, pack, alarm, vibrate)
+
+                    override fun stop() = alerts.tryOut.stop()
+
+                    override fun silenced(
+                        kind: AlertKind,
+                        alarm: Boolean,
+                    ) = alerts.tryOut.silenced(kind, alarm)
+
+                    override fun soundChosenInAndroid(
+                        kind: AlertKind,
+                        alarm: Boolean,
+                    ) = alerts.tryOut.soundChosenInAndroid(kind, alarm)
+
+                    override fun sendTest(
+                        kind: AlertKind,
+                        settings: AlertSettings,
+                    ) = alerts.tryOut.sendTest(kind, settings)
+
+                    override fun channelId(
+                        kind: AlertKind,
+                        alarm: Boolean,
+                    ) = alerts.tryOut.channelId(kind, alarm)
+                },
+            appsShared =
+                integrations.summary.map { s ->
+                    setOfNotNull(
+                        AppOutput.LibreView.takeIf { s.libreView },
+                        AppOutput.NightscoutUpload.takeIf { s.nightscoutUpload },
+                        AppOutput.XdripServer.takeIf { s.xdripServer },
+                        AppOutput.NightscoutApi.takeIf { s.nightscoutApi },
+                        AppOutput.Tidepool.takeIf { s.tidepool },
+                        AppOutput.Broadcasts.takeIf { s.broadcastApps > 0 },
+                        AppOutput.HealthConnect.takeIf { s.healthConnect },
+                    )
+                },
+            settingsFrom = followerSettings,
+        )
+    }
+
+    /** Uploads, the local xDrip+ server and export (each off until switched on in Settings › Share with apps). */
+    val integrations by lazy {
+        IntegrationsModule(
+            context = app,
+            settings = data.settings,
+            secure = data.secureStore,
+            // losing it only costs one comparison with the site (nothing is sent twice: the site is checked first)
+            nightscoutState = data.typedStore("nightscout-upload", NsState.serializer(), NsState(), whenCorrupt = NsState()),
+            // a lost state re-sends nothing old (each part starts again from now) but can't retract versions sent before
+            libreViewState = data.typedStore("libreview-upload", LvState.serializer(), LvState(), whenCorrupt = LvState()),
+            // a lost one only loses history the sensor's own backfill may bring back
+            libreViewUnsent = data.typedStore("libreview-unsent", LvUnsent.serializer(), LvUnsent(), whenCorrupt = LvUnsent()),
+            // a lost state re-sends what the phone keeps; Tidepool replaces each datum by its origin id (no duplicates)
+            tidepoolState = data.typedStore("tidepool-upload", TpState.serializer(), TpState(), whenCorrupt = TpState()),
+            // a lost state may send the current reading once more (the throttle and life count start again)
+            broadcastState = data.typedStore("broadcasts", BcState.serializer(), BcState(), whenCorrupt = BcState()),
+            // a lost state writes the stored history again (idempotent: one record per minute)
+            healthState = data.typedStore("health-connect", HcState.serializer(), HcState(), whenCorrupt = HcState()),
+            // a lost pin pauses the home-network option ("another Wi-Fi") until Allow on this Wi-Fi: never a silent move
+            nightscoutLan = data.typedStore("nightscout-lan", LanPin.serializer(), LanPin(), whenCorrupt = LanPin()),
+            appVersion = appVersion,
+            readings = readings,
+            treatments = data.treatments,
+            historyImport = data.historyImport,
+            sensor =
+                combine(
+                    sensor.source.sensorInfo,
+                    // the family the uploads name (a sensor read through Juggluco counts as a Libre 3, as before)
+                    sensor.source.detail
+                        .map { d ->
+                            when (d) {
+                                is SensorStatus.Direct -> d.profile.source
+                                else -> null
+                            }
+                        }.distinctUntilChanged(),
+                ) { info, source ->
+                    info?.let {
+                        CurrentSensor(
+                            it.serial,
+                            Instant.ofEpochSecond(it.startEpoch),
+                            Instant.ofEpochSecond(it.endEpoch),
+                            source ?: SourceId.Libre3,
+                        )
+                    }
+                },
+            libreReadings =
+                sensor.source.sensorGlucose.map { b ->
+                    fun g(x: SensorGlucose) = LvGlucose(x.lifeCount, x.mgdl, x.epochSec, x.rate)
+                    LvReadings(b.serial, b.current?.let(::g), b.history.map(::g))
+                },
+            libreLive =
+                sensor.source.sensorGlucose.mapNotNull { b ->
+                    b.current?.let { LiveReading(it.mgdl, it.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount) }
+                },
+            libreViewEmail = sensor.libreView.email,
+            sensorReceiverId = sensor.libreView.receiverId,
+            receiverIdOf = ReceiverIds::fromAccountId,
+            role = role.data.map { it.role },
+            jugglucoIsSource = data.settings.flow(SensorSource).map { SensorSourceKind.fromId(it) == SensorSourceKind.Juggluco },
+            http = data.http,
+            clock = clock,
+            dispatchers = dispatchers,
+            log = { data.diagLog.log("integrations", it) },
+            // a pen entry waits for its session to close (the pens module is built on first use)
+            uploadHold = UploadHold { pens.uploadHold.until(it) },
         )
     }
 
@@ -177,6 +448,8 @@ class AppGraph(
             data.settings,
             clock,
             scope,
+            glucose = monitor.hub.state,
+            graphConfig = graphConfig,
             startMonitoring = { startMonitoring(StartReason.App) },
         )
     }
@@ -185,9 +458,9 @@ class AppGraph(
         SetupModule(
             context = app,
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
-            roles = AppRoles(role),
+            roles = AppRoles(role, data.readings, data.treatments),
             hub = monitor.hub,
-            sharing = EngineOwnerSharing(shareOwner.ownerEngine, scope) { clock.now().epochSecond },
+            sharing = EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings) { clock.now().epochSecond },
             alertSettings = AppAlertSettings(alerts.store),
             settings = data.settings,
             resetAlerts = alerts::reset,
@@ -195,14 +468,71 @@ class AppGraph(
             // THE alert checklist: the same instance home's reliability row and Settings › Alert reliability read
             readiness = alerts.readiness,
             clock = clock,
+            follower =
+                AppFollowerSharing(
+                    follower.engine,
+                    resetMonitoring = ::resetMonitoring,
+                    startMonitoring = { startMonitoring(StartReason.App) },
+                    clearRole = { role.update { it.copy(role = null) } },
+                ),
         )
     }
 
-    val sensorSettings by lazy { SensorSettingsBridge(sensor, data.settings, SensorSource, scope) { startMonitoring(StartReason.App) } }
+    /** The follower role: joins, the wearer's stream while the service runs, Stop following. */
+    val follower by lazy {
+        val info = NotificationGroups.Group.INFO
+        val notifications =
+            FollowerNotifications(app, Channels.REQUESTS, info.key) {
+                NotificationGroups.post(app, NotificationIds.FOLLOWING, it, info, Channels.REQUESTS)
+            }
+        FollowerModule(app, data, monitor.hub, clock, dispatchers, notifications::show, launch.relays)
+    }
+
+    /**
+     * No alarm armed from what came before (a previous role, a follow that ended): alert state and "monitoring since"
+     * go. [fence]: an ending (a follow ended or stopped, nearby codes that differed): readings still on their way from
+     * it can't arm no data again (#128); never on a join.
+     */
+    private suspend fun resetMonitoring(fence: Boolean = false) {
+        alerts.reset()
+        monitor.hubImpl.resetMonitoring(fence)
+    }
+
+    /** *Sensor end in calendar*: the wearer's events and the settings rows. */
+    val sensorCalendar by lazy {
+        val record = data.typedStore("sensor-calendar", CalendarRecord.serializer(), CalendarRecord(), whenCorrupt = CalendarRecord())
+        AppSensorCalendar(
+            app,
+            SensorCalendar(app, record),
+            record,
+            data.settings,
+            role.data.map { it.role },
+            sensor.source.sensorInfo,
+            clock,
+            scope,
+            dispatchers.io,
+        )
+    }
+
+    val sensorSettings by lazy {
+        SensorSettingsBridge(
+            sensors = SensorModulePort(sensor),
+            settings = data.settings,
+            sourceSetting = SensorSource,
+            scope = scope,
+            service =
+                monitor.hub.state
+                    .map { it.service }
+                    .distinctUntilChanged(),
+            startMonitoring = { startMonitoring(StartReason.App) },
+            resetMonitoring = { monitor.hubImpl.resetMonitoring(fence = true) },
+            sourceChanged = { sourceChanges.tryEmit(Unit) },
+        )
+    }
 
     /** The person's graph settings: THE [GraphConfig] every card surface draws with (home, widgets). */
     val graphConfig: Flow<GraphConfig> by lazy {
-        GraphSettings.config(data.settings).shareIn(scope, SharingStarted.WhileSubscribed(SHARE_STOP_MS), replay = 1)
+        GraphSettings.config(followerSettings.settings).shareIn(scope, SharingStarted.WhileSubscribed(SHARE_STOP_MS), replay = 1)
     }
 
     val home by lazy {
@@ -212,16 +542,32 @@ class AppGraph(
             scope = scope,
             glucose = monitor.hub.state,
             graphConfig = graphConfig,
+            storedHistory = monitor.storedHistory,
             readinessSource = alerts.readiness,
-            unmuteAlerts = { scope.launch { alerts.controls.unmuteAll() } },
+            alertControls = alerts.controls,
             resume = { scope.launch { startMonitoring(StartReason.Resume) } },
-            nextSetupStep = setup.finishItems.map { items -> items.firstOrNull()?.label(app) },
+            nextSetupStep = combine(setup.finishItems, locales) { items, _ -> items.firstOrNull()?.label(app) },
             refreshSetup = setup::refresh,
             widgetPlaced = {
                 widgets.presence.refresh()
                 widgets.presence.placed.value
             },
+            widgetPinnable = { widgets.presence.canPin() },
             treatmentLog = { treatments.log },
+            sharing = { shareOwner.ownerEngine.state },
+            tapsBlocked = { BlockedTaps(pen = pens.tapsBlockedWhileOn(), sensor = sensor.tapLaunch.onButBlocked()) },
+            penEntryOf = { pens.port.entry(it) },
+            penPort = { pens.port.takeIf { pens.available() } },
+            penQuestionsOf = { pens.homeQuestions },
+            penReadOf = { pens.lastRead.map { r -> r?.let { PenRead(it.first, it.second) } } },
+            clinicUploadSet = { integrations.clinicUploadSet },
+            clinicMarks = { integrations.libreView.entryMarks.map { m -> m?.let(::LibreViewMarks) } },
+            untestedSensor =
+                sensor.source.detail
+                    .map { d -> (d as? SensorStatus.Direct)?.profile?.takeUnless { it.verified }?.label }
+                    .distinctUntilChanged(),
+            systemAccess = monitor.root?.access?.state ?: emptyFlow(),
+            build = BuildConfig.VERSION_CODE.toLong(),
         )
     }
 
@@ -233,6 +579,7 @@ class AppGraph(
             glucose = monitor.hub.state,
             treatments = recentTreatments(),
             graphConfig = graphConfig,
+            storedHistory = monitor.storedHistory,
             freshnessTicks = monitor.freshnessTicks,
             store = data.typedStore("widgets", WidgetPlacements.serializer(), WidgetPlacements(), whenCorrupt = WidgetPlacements()),
         )
@@ -269,10 +616,123 @@ class AppGraph(
                     post = { NotificationGroups.post(app, NotificationIds.REQUESTS, it, info, Channels.REQUESTS) },
                     remove = { NotificationGroups.cancel(app, NotificationIds.REQUESTS, info) },
                 ),
+            // what followers on *Settings from: Wearer* use (cold: the alert runtime is built when the engine reads it)
+            settings = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
+            relays = launch.relays,
+            // the live events' ss / se / sw (PROTOCOL-v2 "Sensor life"): followers see a warm-up and an end with no reading
+            sensor = sensor.source.sensorInfo.map { it?.let { i -> SensorLife(i.startEpoch, i.endEpoch, i.warmupEndEpoch) } },
         )
     }
 
-    val treatments: TreatmentsModule by lazy { TreatmentsModule(data.treatments, ShareTreatmentSync(shareOwner), clock, home.glucose, data.settings, scope) }
+    val treatments: TreatmentsModule by lazy {
+        TreatmentsModule(
+            data.treatments,
+            ShareTreatmentSync(shareOwner, follower.engine, role.data.map { it.role }, scope),
+            clock,
+            home.glucose,
+            data.settings,
+            scope,
+            hints = AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock),
+            // read when the dialog saves (the pens module is built on first use, after this one)
+            penDuplicates = PenDuplicates { kind, at -> pens.duplicates.near(kind, at) },
+            drafts =
+                data.typedStore(
+                    "treatment-draft",
+                    TreatmentDraft.serializer(),
+                    TreatmentDraft.EMPTY,
+                    whenCorrupt = TreatmentDraft.EMPTY,
+                ),
+            draftNotice =
+                AndroidDraftNotice(
+                    app,
+                    NotificationGroups.Group.INFO.let { info ->
+                        DraftNotificationPorts(
+                            channel = Channels.TREATMENT_DRAFT,
+                            group = info.key,
+                            post = { n ->
+                                NotificationGroups.post(app, NotificationIds.TREATMENT_DRAFT, n, info, Channels.TREATMENT_DRAFT)
+                            },
+                            cancel = { NotificationGroups.cancel(app, NotificationIds.TREATMENT_DRAFT, info) },
+                        )
+                    },
+                ),
+            // a pen held to the phone while the dialog is open (the wearer's phone with pens)
+            pen = { pens.takeIf { it.available() }?.let(::DialogPenOf) },
+        )
+    }
+
+    /** Add treatment's pen read over the pens module. */
+    private class DialogPenOf(
+        private val pens: PensModule,
+    ) : DialogPen {
+        override suspend fun readable() = pens.dialogReadable()
+
+        override fun mightBePen(tag: Tag) = PenTag.isPen(tag)
+
+        override suspend fun read(
+            tag: Tag,
+            view: View,
+            reading: () -> Unit,
+        ) = pens.readInDialog(tag, view, reading)
+
+        override suspend fun undo() = pens.pens.undoLast().also { if (it) pens.notices.cancelRead() }
+
+        override suspend fun tapHintDue() = pens.tapHintDue()
+
+        override fun tapHintShown() = pens.tapHintShown()
+    }
+
+    /**
+     * Insulin pens (NFC) on the wearer's phone: the ledger (in the database, written with its entries in one
+     * transaction; damaged → empty: a known pen's next tap is a first scan that continues after its newest logged
+     * entry) and its writes into the treatment log.
+     */
+    val pens: PensModule by lazy {
+        val info = NotificationGroups.Group.INFO
+
+        fun id(kind: PenNotificationPorts.Kind) =
+            if (kind == PenNotificationPorts.Kind.Read) NotificationIds.PEN_RESULTS else NotificationIds.PEN_CHECK
+
+        fun channel(kind: PenNotificationPorts.Kind) =
+            if (kind ==
+                PenNotificationPorts.Kind.Read
+            ) {
+                Channels.PEN_RESULTS
+            } else {
+                Channels.PEN_CHECK
+            }
+        PensModule(
+            context = app,
+            logChanges = data.treatments.between(Instant.EPOCH, Instant.parse("2200-01-01T00:00:00Z")),
+            // a lost one only shows *Next time, just tap your pen* again (at most 3 times)
+            tapHints = data.typedStore("pen-hints", PenTapHint.serializer(), PenTapHint(), whenCorrupt = PenTapHint()),
+            log =
+                object : PenLog {
+                    override suspend fun ledger() = data.penLedger.ledger()
+
+                    override suspend fun all() = data.penLedger.insulin()
+
+                    override fun canWrite() = treatments.log.penMayWrite()
+
+                    override suspend fun commit(
+                        ledger: String,
+                        records: List<TreatmentRecord>,
+                    ) = treatments.log.storeFromPen(records) { data.penLedger.commit(ledger, it) }
+                },
+            settings = data.settings,
+            clock = clock,
+            roleSource = role.data.map { it.role },
+            scope = scope,
+            ports =
+                PenNotificationPorts(
+                    readsChannel = Channels.PEN_RESULTS,
+                    checkChannel = Channels.PEN_CHECK,
+                    group = info.key,
+                    post = { kind, n -> NotificationGroups.post(app, id(kind), n, info, channel(kind)) },
+                    cancel = { kind -> NotificationGroups.cancel(app, id(kind), info) },
+                ),
+        )
+    }
 
     /**
      * Loads what the modules need from disk, once, off the main thread. [App] starts it; anything that reads state
@@ -283,11 +743,45 @@ class AppGraph(
             // a step that fails is logged and the next one still runs: a damaged database must not keep the hub
             // (and so the service, the notification and the alerts) from starting
             step("data") { data.ready() }
-            step("role") { role.heal() }
+            // a version change replaced the database with an empty one: Import history is offered again
+            step("history") { if (data.databaseReplaced.value) setup.offerHistoryAgain() }
+            step("role") {
+                role.heal()
+                // a reading of the previous role that landed after the role change's clean-up
+                data.readings.deleteFrom(SourceId.notOf(role.data.first().role))
+            }
             step("monitor") { monitor.ready() }
             step("widgets") { widgets.start() }
+            step("integrations") {
+                integrations.load()
+                integrations.start(scope)
+            }
+            step("pens") { pens.start() }
+            // the sensor's end in the calendar (opt-in, the wearer's phone)
+            step("calendar") { scope.launch { sensorCalendar.keepInLine() } }
+            // a Libre tap opens the new-sensor flow only on the wearer's phone reading the sensor itself (the row
+            // shows only then: never on and hidden)
+            step("sensor tap") {
+                scope.launch {
+                    combine(role.data, data.settings.flow(SensorSource)) { r, source ->
+                        r.role == Role.Wearer && SensorSourceKind.fromId(source) != SensorSourceKind.Juggluco
+                    }.distinctUntilChanged()
+                        .collect { allowed -> if (!allowed) sensor.tapLaunch.set(false) }
+                }
+            }
+            // the alerts' source follows *Settings from* (the wearer's alerts, or rules run here)
+            step("settingsFrom") { scope.launch { followerSettings.keepAlertSource() } }
             // sharing runs while this phone is the wearer (needs an identity: created / restored in Settings › Sharing)
             step("share") { scope.launch { shareOwner.ownerEngine.followRole(role.data.map { it.role }, scope) } }
+            step("follower") {
+                follower.engine.load()
+                // a follow that ended (declined, invite used, removed) arms no "no data" alarm for a stream that won't come
+                scope.launch {
+                    follower.engine.state.map { it.ended }.distinctUntilChanged().collect { ended ->
+                        if (ended && role.data.first().role == Role.Follower) resetMonitoring(fence = true)
+                    }
+                }
+            }
         }
 
     /**
@@ -298,7 +792,7 @@ class AppGraph(
     private suspend fun readingSource(role: Role): ReadingSource? =
         when (role) {
             Role.Wearer -> BuildVariant.wearerSource(this) ?: sensorSource()
-            Role.Follower -> null
+            Role.Follower -> follower.engine.takeIf { it.isFollowing() }
         }
 
     /** Whether the role's source talks to the sensor over Bluetooth: the wearer's own sensor (not Juggluco). */
@@ -342,6 +836,6 @@ class AppGraph(
 
         /** A config nobody draws with stops being read after this (a screen rotation keeps it). */
         const val SHARE_STOP_MS = 5_000L
-        val SensorSource = SchemaSettings.text("source.source", SensorSourceKind.Libre3.id, SensorSourceKind.entries.map { it.id }.toSet())
+        val SensorSource = SchemaSettings.text("source.source", SensorSourceKind.Direct.id, SensorSourceKind.entries.map { it.id }.toSet())
     }
 }

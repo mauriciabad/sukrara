@@ -3,10 +3,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home
 
+import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.StopReason
@@ -19,7 +22,7 @@ import org.junit.Test
 import java.time.Duration
 
 class NoDataReasonTest {
-    private fun reason(state: GlucoseState) = NoDataReason.of(state, homeLook(state, NOW))
+    private fun reason(state: GlucoseState) = NoDataReason.of(state, homeLook(state, NOW, GlucoseUnit.MGDL))
 
     @Test fun `a fresh value has no reason`() = assertNull(reason(Samples.wearer()))
 
@@ -40,6 +43,14 @@ class NoDataReasonTest {
         assertEquals(HomeAction.OpenSetup, r?.action)
     }
 
+    @Test fun `a forgotten sensor is not monitoring, not a sensor that will reconnect`() {
+        val state = Samples.wearer(ageMin = 25).copy(monitoringStartedAt = null)
+        val r = reason(state)
+        assertEquals(NoDataReason.NoSensorYet(follower = false, history = true), r)
+        assertEquals(HomeAction.PairSensor, r?.action)
+        assertFalse(r!!.fullPage) // the chart keeps the readings from before
+    }
+
     @Test fun `25 min without readings names the last one`() {
         val state = Samples.wearer(ageMin = 25)
         assertEquals(NoDataReason.NoReadings(state.latest!!.t), reason(state))
@@ -58,6 +69,56 @@ class NoDataReasonTest {
     }
 
     @Test fun `a fresh value wins over bluetooth just turned off`() = assertNull(reason(Samples.wearer(sensor = SensorState.BluetoothOff)))
+
+    @Test fun `a sensor another app took over says how to take it back`() {
+        val r = reason(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.TakeOver)))
+        assertEquals(NoDataReason.UsedByAnotherApp, r)
+        assertEquals(HomeAction.PairSensor, r?.action)
+        assertFalse(r!!.fullPage) // the chart keeps the readings from before
+    }
+
+    @Test fun `an unusable pairing asks for a scan of the sensor`() {
+        val r = reason(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.ScanSensor)))
+        assertEquals(NoDataReason.ScanNeeded, r)
+        assertEquals(HomeAction.PairSensor, r?.action)
+    }
+
+    @Test fun `a refused pairing of a scanned family asks to pair again, not to scan`() {
+        val r = reason(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.PairAgain)))
+        assertEquals(NoDataReason.PairAgain, r)
+        assertEquals(HomeAction.PairSensor, r?.action)
+    }
+
+    @Test fun `a fresh value wins over a sensor that needs the person`() =
+        assertNull(reason(Samples.wearer(sensor = SensorState.ActionNeeded(SensorAction.TakeOver))))
+
+    @Test fun `a stopped service comes before what the sensor needs`() {
+        val taken = SensorState.ActionNeeded(SensorAction.TakeOver)
+        val stopped = Samples.wearer(ageMin = 25, sensor = taken).copy(service = ServiceState.Stopped(StopReason.StartDenied))
+        assertEquals(NoDataReason.MonitoringStopped, reason(stopped))
+    }
+
+    @Test fun `the permission and the sign-in keep the usual reason (their own places say them)`() {
+        for (a in listOf(SensorAction.GrantBluetooth, SensorAction.SignInLibreView)) {
+            val state = Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(a))
+            assertEquals(a.name, NoDataReason.NoReadings(state.latest!!.t), reason(state))
+        }
+    }
+
+    @Test fun `a phone clock behind the readings says so even while the last value shows`() {
+        val ahead = Duration.ofMinutes(12)
+        for (state in listOf(Samples.wearer(), Samples.wearer(ageMin = 25), Samples.wearer().copy(role = Role.Follower))) {
+            val r = reason(state.copy(clockBehind = ClockBehind(NOW + ahead, ahead)))
+            assertEquals(NoDataReason.ClockBehind(ahead), r)
+            assertEquals(HomeAction.OpenDateSettings, r?.action)
+            assertFalse(r!!.fullPage)
+        }
+    }
+
+    @Test fun `an ended sensor comes before the clock`() {
+        val state = Samples.wearer(sensor = SensorState.Ended).copy(clockBehind = ClockBehind(NOW, Duration.ofMinutes(9)))
+        assertEquals(NoDataReason.SensorEnded, reason(state))
+    }
 
     @Test fun `ended and warming up replace any number`() {
         assertEquals(NoDataReason.SensorEnded, reason(Samples.wearer(sensor = SensorState.Ended)))
@@ -96,11 +157,9 @@ class NoDataReasonTest {
         for (state in underCard) assertFalse("$state", reason(state)!!.fullPage)
     }
 
-    @Test fun `a damaged store says what it means for the person`() {
-        fun kind(store: String) = DataProblem(store, "x", null, NOW).kind
-        assertEquals(DamagedStore.Settings, kind("settings:alerts"))
-        assertEquals(DamagedStore.History, kind("database:history"))
-        assertEquals(DamagedStore.Keys, kind("secret:identity"))
-        assertEquals(DamagedStore.Other, kind("home-banners.json"))
+    @Test fun `the damaged-data report names the store kind and error type only`() {
+        val text = report(DataProblem(DamagedStore.Keys, "identity.owner", "AEADBadTagException", "identity.owner.bin.corrupt-1", NOW))
+        assertTrue(text.contains("store: keys:identity.owner"))
+        assertTrue(text.contains("reason: AEADBadTagException"))
     }
 }

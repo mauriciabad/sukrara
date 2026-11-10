@@ -11,6 +11,7 @@ import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.protocol.invite.Invites
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.owner.InviteRecord
 import app.mauri.sukrara.share.owner.OwnerState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -22,7 +23,16 @@ class CreateInvite(private val ctx: OwnerContext) {
     operator fun invoke(s: OwnerState, label: String, now: Long): Created {
         val expiry = now + TTL
         val profile = ControlEvents.profile(s) ?: Profile("", null)
-        val (link, wrap) = Invites.create(ctx.crypto, s.identity(ctx.crypto), ctx.random.next(InviteLink.SECRET_LEN), now, expiry, s.relays, profile)
+        val (link, wrap) =
+            Invites.create(
+                ctx.crypto,
+                s.identity(ctx.crypto),
+                ctx.random.next(InviteLink.SECRET_LEN),
+                now,
+                expiry,
+                s.relays,
+                profile,
+            )
         val invite = InviteRecord(link.token, expiry, label.trim().take(Profile.MAX_NAME), sentAt = now)
         val next = s.copy(invites = s.invites.filter { it.expiry >= now } + invite)
         return Created(Step(next, listOf(wrap)) + { ControlEvents.backup(ctx, it, now) }, link, expiry)
@@ -30,6 +40,38 @@ class CreateInvite(private val ctx: OwnerContext) {
 
     companion object {
         const val TTL = 24 * 3600L
+    }
+}
+
+/**
+ * *Pair nearby*: a single-use invite offered only in the Bluetooth INFO for [TTL] (no link, no invite wrap on the
+ * relays); the backup records the token like any invite. A fresh pairing nonce `nb` goes with it: the offer carries
+ * only its commitment, and the request that claims the invite gets it (PROTOCOL-v2 §Nearby pairing).
+ */
+class OpenNearbyPairing(private val ctx: OwnerContext) {
+    data class Opened(val step: Step, val token: String, val expiry: Long)
+
+    operator fun invoke(s: OwnerState, now: Long): Opened {
+        val expiry = now + TTL
+        val token = InviteLink.of(s.identity(ctx.crypto).public, ctx.random.next(InviteLink.SECRET_LEN)).token
+        val nonce = NearbyPairing.nonce(ctx.random.next(NearbyPairing.NONCE_BYTES))
+        val invite = InviteRecord(token, expiry, sentAt = now, nearby = true, pairNonce = nonce)
+        // one nearby offer at a time: an earlier unclaimed one ends here
+        val kept = s.invites.filter { it.expiry >= now && !(it.nearby && it.claimedBy == null) }
+        return Opened(ControlEvents.backup(ctx, s.copy(invites = kept + invite), now), token, expiry)
+    }
+
+    companion object {
+        const val TTL = 10 * 60L
+    }
+}
+
+/** *Stop* on an open nearby pairing: its invite goes, unless someone already asked with it (the request stays). */
+class CloseNearbyPairing(private val ctx: OwnerContext) {
+    operator fun invoke(s: OwnerState, token: String, now: Long): Step? {
+        val invite = s.invites.firstOrNull { it.token == token } ?: return null
+        if (invite.claimedBy != null) return null
+        return ControlEvents.backup(ctx, s.copy(invites = s.invites - invite), now)
     }
 }
 
@@ -57,21 +99,48 @@ class HandleInbox(private val ctx: OwnerContext) {
         val sender = u.sender.hex
         val known = s.followers.lastOrNull { it.key == sender }
         return when (rumor) {
-            is Rumor.Request -> request(s, sender, rumor, now)
-            is Rumor.ProfileUpdate -> if (known?.active == true) {
-                val updated = known.copy(name = rumor.profile.name.ifBlank { known.name }, avatarJson = rumor.profile.avatar?.json?.toString())
-                val next = s.copy(followers = s.followers.map { if (it.key == sender) updated else it })
-                Handled(ControlEvents.backup(ctx, next, now))
-            } else {
+            is Rumor.Request -> {
+                request(s, sender, rumor, now)
+            }
+
+            is Rumor.ProfileUpdate -> {
+                if (known?.active == true) {
+                    val updated =
+                        known.copy(
+                            name = rumor.profile.name.ifBlank { known.name },
+                            avatarJson =
+                                rumor.profile.avatar
+                                    ?.json
+                                    ?.toString(),
+                        )
+                    val next = s.copy(followers = s.followers.map { if (it.key == sender) updated else it })
+                    Handled(ControlEvents.backup(ctx, next, now))
+                } else {
+                    none
+                }
+            }
+
+            is Rumor.Rekey -> {
+                when {
+                    known?.active == true -> Handled(ControlEvents.deliverKey(ctx, s, sender, now))
+                    known != null -> Handled(ControlEvents.notice(ctx, s, sender, Rumor.Revoked, now))
+                    else -> none
+                }
+            }
+
+            is Rumor.History -> {
+                if (known?.active == true &&
+                    now - u.createdAt <= Wire.HOUR
+                ) {
+                    Handled(Step(s), InboxSignal.HistoryWanted(rumor.since))
+                } else {
+                    none
+                }
+            }
+
+            else -> {
                 none
             }
-            is Rumor.Rekey -> when {
-                known?.active == true -> Handled(ControlEvents.deliverKey(ctx, s, sender, now))
-                known != null -> Handled(ControlEvents.notice(ctx, s, sender, Rumor.Revoked, now))
-                else -> none
-            }
-            is Rumor.History -> if (known?.active == true && now - u.createdAt <= Wire.HOUR) Handled(Step(s), InboxSignal.HistoryWanted(rumor.since)) else none
-            else -> none
         }
     }
 
@@ -84,20 +153,40 @@ class HandleInbox(private val ctx: OwnerContext) {
             return Handled(ControlEvents.notice(ctx, next, sender, Rumor.InviteUsed, now))
         }
         if (invite.done || s.pending.any { it.follower == sender }) return Handled(Step(s))
-        val request = PendingRequest(
-            follower = sender,
-            name = r.profile?.name?.ifBlank { null } ?: "?",
-            token = r.token,
-            code = Invites.matchCode(PublicKeyHex(sender), r.token),
-            at = now,
-            avatarJson = r.profile?.avatar?.json?.toString(),
-            label = invite.label,
-        )
-        val next = s.copy(
-            invites = s.invites.map { if (it.token == r.token) it.copy(claimedBy = sender) else it },
-            pending = s.pending + request,
-        )
-        return Handled(Step(next), InboxSignal.NewRequest(request))
+        // nearby: only a request with the follower's pairing nonce claims the offer; it gets the wearer's nonce at once
+        val pairNonce = invite.pairNonce
+        val code =
+            if (invite.nearby) {
+                val na = r.nonce ?: return Handled(Step(s))
+                pairNonce ?: return Handled(Step(s))
+                NearbyPairing.code(s.identity(ctx.crypto).public, PublicKeyHex(sender), r.token, na, pairNonce)
+            } else {
+                Invites.matchCode(PublicKeyHex(sender), r.token)
+            }
+        val request =
+            PendingRequest(
+                follower = sender,
+                name = Profile.shownName(r.profile?.name.orEmpty()),
+                token = r.token,
+                code = code,
+                at = now,
+                avatarJson =
+                    r.profile
+                        ?.avatar
+                        ?.json
+                        ?.toString(),
+                label = invite.label,
+                inviteSentAt = invite.sentAt,
+                nearby = invite.nearby,
+            )
+        val next =
+            s.copy(
+                invites = s.invites.map { if (it.token == r.token) it.copy(claimedBy = sender) else it },
+                pending = s.pending + request,
+            )
+        val step =
+            if (invite.nearby && pairNonce != null) ControlEvents.notice(ctx, next, sender, Rumor.PairNonce(pairNonce), now) else Step(next)
+        return Handled(step, InboxSignal.NewRequest(request))
     }
 }
 
@@ -108,11 +197,16 @@ class ApproveRequest(private val ctx: OwnerContext) {
         val invite = s.invites.firstOrNull { it.token == p.token }
         val withoutRequest = s.copy(pending = s.pending.filter { it.token != p.token })
         if (invite == null || invite.expiry < now || invite.done || invite.claimedBy != follower) return Step(withoutRequest)
-        val next = withoutRequest.copy(
-            invites = s.invites.map { if (it.token == p.token) it.copy(done = true) else it },
-            followers = s.followers.filter { it.key != follower } +
-                app.mauri.sukrara.share.owner.FollowerRecord(follower, p.name, now, avatarJson = p.avatarJson),
-        )
+        val next =
+            withoutRequest.copy(
+                invites = s.invites.map { if (it.token == p.token) it.copy(done = true) else it },
+                followers =
+                    s.followers.filter { it.key != follower } +
+                        app.mauri.sukrara.share.owner
+                            .FollowerRecord(follower, p.name, now, avatarJson = p.avatarJson),
+                // asked with *Pair nearby*: listed in Nearby devices also while out of range (this phone only)
+                nearbyPaired = if (p.nearby) s.nearbyPaired + follower else s.nearbyPaired,
+            )
         return ControlEvents.deliverKey(ctx, next, follower, now) + { ControlEvents.backup(ctx, it, now) }
     }
 }
@@ -121,10 +215,11 @@ class ApproveRequest(private val ctx: OwnerContext) {
 class DenyRequest(private val ctx: OwnerContext) {
     operator fun invoke(s: OwnerState, follower: String, now: Long): Step? {
         val p = s.pending.firstOrNull { it.follower == follower } ?: return null
-        val next = s.copy(
-            pending = s.pending.filter { it.token != p.token },
-            invites = s.invites.map { if (it.token == p.token) it.copy(done = true) else it },
-        )
+        val next =
+            s.copy(
+                pending = s.pending.filter { it.token != p.token },
+                invites = s.invites.map { if (it.token == p.token) it.copy(done = true) else it },
+            )
         return ControlEvents.notice(ctx, next, follower, Rumor.Declined, now) + { ControlEvents.backup(ctx, it, now) }
     }
 }
@@ -133,12 +228,14 @@ class DenyRequest(private val ctx: OwnerContext) {
 class RemoveFollower(private val ctx: OwnerContext) {
     operator fun invoke(s: OwnerState, follower: String, now: Long): Step? {
         if (s.followers.none { it.key == follower && it.active }) return null
-        val next = s.copy(
-            followers = s.followers.map { if (it.key == follower && it.active) it.copy(revoked = now) else it },
-            writers = s.writers - follower,
-            // a delivery still waiting for this follower must not go out after the removal
-            pendingControl = s.pendingControl.filter { it.follower != follower },
-        )
+        val next =
+            s.copy(
+                followers = s.followers.map { if (it.key == follower && it.active) it.copy(revoked = now) else it },
+                writers = s.writers - follower,
+                nearbyPaired = s.nearbyPaired - follower,
+                // a delivery still waiting for this follower must not go out after the removal
+                pendingControl = s.pendingControl.filter { it.follower != follower },
+            )
         return ControlEvents.notice(ctx, next, follower, Rumor.Revoked, now) + { Rotate(ctx)(it, now) }
     }
 }
@@ -150,5 +247,20 @@ class SetWriter(private val ctx: OwnerContext) {
         val writers = if (allowed) s.writers + follower else s.writers - follower
         if (writers == s.writers) return null
         return ControlEvents.roster(ctx, s.copy(writers = writers), now) + { ControlEvents.backup(ctx, it, now) }
+    }
+}
+
+/**
+ * "How you appear": the wearer's name and picture for followers. A blank name keeps the previous one; the picture is
+ * kept as given (a newer version is forwarded unchanged). Followers learn it from the roster, sent at once; the backup
+ * keeps it. Null when nothing changed.
+ */
+class SetProfile(private val ctx: OwnerContext) {
+    operator fun invoke(s: OwnerState, profile: Profile, now: Long): Step? {
+        val previous = ControlEvents.profile(s)
+        val next = Profile(Profile.editedName(profile.name, previous?.name.orEmpty()), profile.avatar)
+        if (next == previous) return null
+        val json = next.toJson().toString()
+        return ControlEvents.roster(ctx, s.copy(profileJson = json), now) + { ControlEvents.backup(ctx, it, now) }
     }
 }

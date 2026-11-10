@@ -43,7 +43,11 @@ public actor FollowerRuntime: FollowerService {
     static let historyInterval = 30 * 60
     static let persistInterval: TimeInterval = 300
     static let snapshotWindow: TimeInterval = 24 * 3600
-    static let nearbyLeave: Double = 60
+    /// PROTOCOL-v2 "Bluetooth link" (link-rules.json): another wearer's phone is avoided for 10 minutes.
+    public static let nearbyLeaveOther: Double = 600
+    /// A phone with nothing to pair with (it may open pairing in a moment): 5 s, as Android's *Find phones nearby*
+    /// (link-rules.json).
+    public static let nearbyLeaveNoPairing: Double = 5
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "follower")
 
     private let secrets: any SecretStoring
@@ -51,7 +55,7 @@ public actor FollowerRuntime: FollowerService {
     private let stores: FollowerStores
     private let crypto: any NostrCrypto
     private let clock: any TimeSource
-    private let me: Profile
+    private var me: Profile
     private let makeRelays: RelayFactory
     private let makeNearby: NearbyFactory?
     private let sleep: @Sendable (Double) async throws -> Void
@@ -162,7 +166,7 @@ public actor FollowerRuntime: FollowerService {
             data = try secrets.read(account: account)
         } catch {
             Self.log.error("follower state unreadable: \(String(describing: error), privacy: .public)")
-            link = .broken("Can't read the follower key from the Keychain")
+            link = .broken(.keyUnreadable)
             keychainUnreadable = true
             if keychainRetry == nil { keychainRetry = Task { await self.retryKeychain() } }
             return await publishSnapshot()
@@ -178,7 +182,7 @@ public actor FollowerRuntime: FollowerService {
             persisted = state
             persistedAt = clock.now
         } catch {
-            link = .broken("The follower state is damaged; stop following and join again")
+            link = .broken(.stateDamaged)
             return await publishSnapshot()
         }
         await serially(.connect)
@@ -244,7 +248,7 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - joining
 
-    public func join(link text: String) async throws(FollowerJoinError) {
+    public func lookUp(link text: String) async throws(FollowerJoinError) -> Invite {
         guard session == nil else { throw .alreadyFollowing }
         guard let parsed = InviteLink.parse(text) else { throw .invalidLink }
         link = .joining
@@ -256,20 +260,48 @@ public actor FollowerRuntime: FollowerService {
         joinTask = task
         let result = await task.value
         joinTask = nil
-        switch result {
-        case .success(let invite): try await begin(invite: invite, nearby: false)
-        case .failure(let why):
-            if session == nil { link = .notFollowing }
-            await publishSnapshot()
-            throw why
-        }
+        // found or not, nothing was made or sent: back to not following until the person clicks Follow
+        if session == nil { link = .notFollowing }
+        await publishSnapshot()
+        return try result.get()
+    }
+
+    public func join(invite: Invite) async throws(FollowerJoinError) {
+        guard session == nil else { throw .alreadyFollowing }
+        try await begin(invite: invite, commit: nil)
     }
 
     public func cancelJoin() { joinTask?.cancel() }
 
     public func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) {
         guard session == nil else { throw .alreadyFollowing }
-        try await begin(invite: offer.invite, nearby: true)
+        try await begin(invite: offer.invite, commit: offer.commit)
+    }
+
+    public func confirmNearby(same: Bool) async -> Bool {
+        guard let pair = session?.state.pair, !pair.confirmed else { return false }
+        guard same else {
+            // the codes differ: whoever answered isn't the phone in front of the person; nothing of it was used
+            await unfollow()
+            return true
+        }
+        guard var current = session, let outcome = current.confirmPairing() else { return false }
+        let started = generation
+        let before = current.state
+        session = current
+        persist(force: true)
+        await apply(outcome.deltas, generation: started)
+        guard generation == started else { return true }
+        if current.state.relays != relayURLs {
+            await reconnect()  // the key moved the stream to other relays
+        } else {
+            if outcome.resubscribe { await resubscribe() }
+            if before.sid != current.state.sid || before.epochs != current.state.epochs {
+                await nearby?.update(identity: nearbyIdentity)
+            }
+        }
+        await publishSnapshot()
+        return true
     }
 
     public func searchNearby(_ on: Bool) async {
@@ -291,40 +323,50 @@ public actor FollowerRuntime: FollowerService {
         await relays.start()
         await relays.subscribe("invite", RelayFilter(kinds: [Wire.kindWrap], p: [invitePub]))
         let opener = InviteOpener(crypto: crypto)
+        // what the lookup learnt: a relay answered (connected or ended its stored events), the invite's state
+        let heard = LookupState()
         let result = await withTaskGroup(of: Result<Invite, FollowerJoinError>?.self) { group in
+            // reads everything that arrives until the invite opens or the stream ends (the timeout ends it), so the
+            // verdict counts every answer that came in time
             group.addTask {
-                var failure: FollowerJoinError = .notFound
                 for await message in relays.inbound {
-                    guard case .event(let wrap, _, _) = message else { continue }
-                    switch opener.open(wrap, link: link, now: Int(clock.now.timeIntervalSince1970)) {
-                    case .success(let invite): return .success(invite)
-                    case .failure(.expired): failure = .expired
-                    case .failure(.fingerprintMismatch): failure = .fingerprintMismatch
-                    case .failure(.notAnInvite): break
+                    switch message {
+                    case .connection(.connected, _), .endOfStored: heard.answered()
+                    case .event(let wrap, _, _):
+                        heard.answered()
+                        switch opener.open(wrap, link: link, now: Int(clock.now.timeIntervalSince1970)) {
+                        case .success(let invite): return .success(invite)
+                        case .failure(.expired): heard.found(.expired)
+                        case .failure(.fingerprintMismatch): heard.found(.fingerprintMismatch)
+                        case .failure(.notAnInvite): break
+                        }
+                    default: break
                     }
                 }
-                return Task.isCancelled ? .failure(.cancelled) : .failure(failure)
+                return Task.isCancelled ? .failure(.cancelled) : .failure(heard.failure)
             }
             group.addTask {
                 do { try await sleep(joinTimeout) } catch { return .failure(.cancelled) }
+                await relays.stop()
                 return nil
             }
-            let first = await group.next() ?? nil
+            var first: Result<Invite, FollowerJoinError>?
+            while first == nil, let next = await group.next() { first = next }
             group.cancelAll()
-            return first ?? .failure(.notFound)
+            return first ?? .failure(heard.failure)
         }
         await relays.stop()
         return Task.isCancelled ? .failure(.cancelled) : result
     }
 
-    private func begin(invite: Invite, nearby: Bool) async throws(FollowerJoinError) {
+    private func begin(invite: Invite, commit: String?) async throws(FollowerJoinError) {
         guard session == nil, !beginning else { throw .alreadyFollowing }
         beginning = true
         defer { beginning = false }
         endKeychainRetry()  // following someone new: the unreadable item is overwritten
         let joined: FollowerSession
         do {
-            joined = try FollowerSession.join(invite: invite, me: me, nearby: nearby, crypto: crypto, now: now)
+            joined = try FollowerSession.join(invite: invite, me: me, commit: commit, crypto: crypto, now: now)
         } catch .expired {
             link = .notFollowing
             await publishSnapshot()
@@ -347,8 +389,33 @@ public actor FollowerRuntime: FollowerService {
         persisted = joined.state
         persistedAt = clock.now
         nearbyOffer = nil
-        Self.log.info("joined a wearer (nearby: \(nearby, privacy: .public))")
+        Self.log.info("joined a wearer (nearby: \(commit != nil, privacy: .public))")
         await serially(.reconnect)
+    }
+
+    // MARK: - history
+
+    public func readings(since: Date) async -> [Reading] {
+        guard session != nil || keychainUnreadable else { return [] }
+        return (try? await stores.readings.load(since: since)) ?? []
+    }
+
+    // MARK: - profile
+
+    public func setProfile(name: String, avatar: Avatar?) async {
+        let current = session?.state.me ?? me
+        me = Profile(name: Profile.normalisedName(typed: name, previous: current.name), avatar: avatar)
+        // the wearer applies an update only from an approved follower; a request still waiting carries the name it
+        // was sent with
+        if var active = session, active.state.status == .active,
+            let update = try? active.setProfile(typedName: name, avatar: avatar, now: now)
+        {
+            session = active
+            persist(force: true)
+            await publish(update)
+        }
+        // without a follow the snapshot doesn't show `me`: publishing would only race the join's own status
+        if session != nil { await publishSnapshot() }
     }
 
     // MARK: - unfollowing
@@ -367,7 +434,7 @@ public actor FollowerRuntime: FollowerService {
             try secrets.delete(account: account)
             link = .notFollowing
         } catch {
-            link = .broken("Can't remove the follower key from the Keychain")
+            link = .broken(.keyNotRemoved)
         }
         if searchingNearby { startNearby() }
         await publishSnapshot()
@@ -475,16 +542,17 @@ public actor FollowerRuntime: FollowerService {
         case .state(let state):
             nearbyState = state
             await publishSnapshot()
-        case .info(let info, let owner):
+        case .info(let info, let owner, let phone):
             if session == nil {
-                if let invite = info.invite, invite.expiry > now {
-                    nearbyOffer = NearbyOffer(invite: invite)
+                if let offer = info.offer(now: now) {
+                    nearbyOffer = offer
                     await publishSnapshot()
                 } else {
-                    await nearby?.leave(for: Self.nearbyLeave)  // nothing to pair with: keep both radios idle
+                    // nothing to pair with: keep both radios idle
+                    await nearby?.leave(phone: phone, for: Self.nearbyLeaveNoPairing)
                 }
             } else if owner == .other {
-                await nearby?.leave(for: Self.nearbyLeave)  // another wearer's phone
+                await nearby?.leave(phone: phone, for: Self.nearbyLeaveOther)  // another wearer's phone
             }
         }
     }
@@ -648,8 +716,11 @@ public actor FollowerRuntime: FollowerService {
         if let state = session?.state {
             switch state.status {
             case .new, .requested:
-                link = .requested(code: state.code, wearer: state.wearer?.name, nearby: state.nearby)
-            case .active: link = .following(wearer: state.wearer?.name, canWrite: session?.canWrite ?? false)
+                link = .requested(
+                    code: state.code, wearer: Profile.shownName(state.wearer?.name),
+                    pairing: state.pair.map { LinkState.PairingCheck(code: $0.code, confirmed: $0.confirmed) })
+            case .active:
+                link = .following(wearer: Profile.shownName(state.wearer?.name), canWrite: session?.canWrite ?? false)
             case .declined: link = .declined
             case .inviteUsed: link = .inviteUsed
             case .revoked: link = .revoked
@@ -666,7 +737,8 @@ public actor FollowerRuntime: FollowerService {
             sensor: await stores.sensor.load(), treatments: log.log.live.reversed(), unsentTreatments: log.unsentCount,
             deliveries: log.entries.compactMapValues(\.delivery), wearerSettings: await stores.settings.load(),
             storeIssues: issues, nearby: nearbyState,
-            nearbyOffer: session == nil ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable)
+            nearbyOffer: session == nil ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
+            me: session?.state.me ?? me, wearer: session?.state.wearer)
         guard snapshot != current else { return }
         current = snapshot
         for continuation in snapshotSubscribers.values { continuation.yield(snapshot) }
@@ -674,8 +746,10 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - conversions
 
+    /// A wire reading as stored: LO / HI normalised to the flags (the decoder already refused values outside 1…1000).
     static func reading(_ wire: WireReading) -> Reading {
-        Reading(t: Date(timeIntervalSince1970: Double(wire.t)), mgdl: wire.sgv, rate: wire.rate)
+        GlucoseRange.normalised(
+            Reading(t: Date(timeIntervalSince1970: Double(wire.t)), mgdl: wire.sgv, rate: wire.rate))
     }
 
     /// nil for an entry Core's model refuses (unknown kind or origin): it is not stored.
@@ -694,5 +768,19 @@ public actor FollowerRuntime: FollowerService {
             id: t.id, kind: t.k.rawValue, amount: t.a, t: Int(t.t), note: t.n, u: Int(t.u), deleted: t.del,
             origin: t.o.rawValue, primed: t.pr, pen: t.pen,
             doses: t.pd?.map { TreatmentPayload.Dose(t: Int($0.t), a: $0.a, primed: $0.p) })
+    }
+}
+
+/// What an invite lookup learnt, shared by its listening and timeout tasks: whether any relay answered (none = this
+/// Mac couldn't reach the internet: `offline`, not "not found") and the most telling failure seen.
+private final class LookupState: Sendable {
+    private let state = OSAllocatedUnfairLock(initialState: (answered: false, failure: FollowerJoinError?.none))
+
+    func answered() { state.withLock { $0.answered = true } }
+    func found(_ failure: FollowerJoinError) { state.withLock { $0.failure = failure } }
+
+    /// expired / mismatched when such an invite came, else not found when a relay answered, else offline.
+    var failure: FollowerJoinError {
+        state.withLock { $0.failure ?? ($0.answered ? .notFound : .offline) }
     }
 }

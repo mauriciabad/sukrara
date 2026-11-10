@@ -8,10 +8,6 @@ import app.mauri.sukrara.protocol.NostrCrypto
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.UnsignedEvent
 import app.mauri.sukrara.protocol.Wire
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.min
-import kotlin.math.pow
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,6 +32,10 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.min
+import kotlin.math.pow
 
 /**
  * Reconnect delays: 2 s doubling to 5 min, each scaled by a random 50–100 % so many phones don't reconnect in the same
@@ -49,7 +49,10 @@ data class Backoff(val baseSeconds: Double = 2.0, val capSeconds: Double = 300.0
  * The relay connection (mirrors the Mac `RelayPool`): one WebSocket per relay, reconnect with [Backoff] (a suspended
  * delay, never a busy loop), subscriptions and an outbox re-sent after every reconnect (gift wraps must reach relays
  * that were down; a newer live / addressable event replaces the older one), NIP-42 AUTH as [authKey] when a relay
- * closes a REQ with `auth-required`. All state lives on one serial dispatcher. Events are not deduped here.
+ * closes a REQ with `auth-required`. All state lives on one serial dispatcher. Events are not deduped here, but an
+ * event for a subscription that isn't open or doesn't match its filter is dropped before anyone verifies it, and a
+ * relay sending more than [EVENT_BURST] events at once or [EVENTS_PER_SECOND] after that loses its socket (PROTOCOL-v2
+ * "Relay rules"; Mac `RelayPool`, same numbers).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RelayPool(
@@ -62,8 +65,10 @@ class RelayPool(
     private val nowSeconds: () -> Long,
     private val backoff: Backoff = Backoff(),
     private val jitter: () -> Double = { 0.5 + Math.random() / 2 },
+    /** Which relays [relays] become ([RelayAccess.Public]: the secure ones; the app passes its `LaunchPlan`'s). */
+    access: RelayAccess = RelayAccess.Public,
 ) : RelayTransport {
-    private val urls = Wire.secureRelays(relays).distinct()
+    private val urls = access.connectTo(relays).distinct()
     private val serial = dispatcher.limitedParallelism(1)
     private val scope = CoroutineScope(SupervisorJob() + serial)
 
@@ -73,6 +78,10 @@ class RelayPool(
         var challenge: String? = null
         var authEventId: String? = null
         var authPending = false
+
+        /** Token bucket of EVENT messages: [EVENT_BURST] at most, refilled by [EVENTS_PER_SECOND]. */
+        var budget = EVENT_BURST.toDouble()
+        var budgetAt = 0L
     }
 
     private val connections = mutableMapOf<String, Connection>()
@@ -91,7 +100,10 @@ class RelayPool(
 
     override fun stop() {
         scope.launch {
-            connections.values.forEach { it.job.cancel(); it.socket?.cancel() }
+            connections.values.forEach {
+                it.job.cancel()
+                it.socket?.cancel()
+            }
             connections.clear()
             _status.value = urls.associateWith { RelayStatus(connected = false) }
         }
@@ -106,7 +118,10 @@ class RelayPool(
     override fun reconnectNow() {
         scope.launch {
             connections.filterValues { !it.open }.keys.forEach { url ->
-                connections.remove(url)?.let { it.job.cancel(); it.socket?.cancel() }
+                connections.remove(url)?.let {
+                    it.job.cancel()
+                    it.socket?.cancel()
+                }
                 launchRelay(url)
             }
         }
@@ -121,7 +136,13 @@ class RelayPool(
     }
 
     override fun close(id: String) {
-        scope.launch { if (subscriptions.remove(id) != null) broadcast(JsonArray(listOf(JsonPrimitive("CLOSE"), JsonPrimitive(id))).toString()) }
+        scope.launch {
+            if (subscriptions.remove(id) !=
+                null
+            ) {
+                broadcast(JsonArray(listOf(JsonPrimitive("CLOSE"), JsonPrimitive(id))).toString())
+            }
+        }
     }
 
     override fun publish(event: SignedEvent) {
@@ -140,16 +161,17 @@ class RelayPool(
         val events = linkedMapOf<String, SignedEvent>()
         val answered = mutableSetOf<String>()
         val done = Channel<Unit>(Channel.CONFLATED)
-        val collector = scope.launch {
-            inbound.onSubscription { subscribe(id, filters) }.collect { m ->
-                when {
-                    m is RelayInbound.Event && m.subscription == id -> events.putIfAbsent(m.event.id, m.event)
-                    m is RelayInbound.EndOfStored && m.subscription == id -> answered += m.relay
-                    m is RelayInbound.Closed && m.subscription == id -> answered += m.relay
+        val collector =
+            scope.launch {
+                inbound.onSubscription { subscribe(id, filters) }.collect { m ->
+                    when {
+                        m is RelayInbound.Event && m.subscription == id -> events.putIfAbsent(m.event.id, m.event)
+                        m is RelayInbound.EndOfStored && m.subscription == id -> answered += m.relay
+                        m is RelayInbound.Closed && m.subscription == id -> answered += m.relay
+                    }
+                    if (settled(answered)) done.trySend(Unit)
                 }
-                if (settled(answered)) done.trySend(Unit)
             }
-        }
         // a relay that fails also settles the query (its status changes, not inbound)
         val failures = scope.launch { status.collect { if (settled(answered)) done.trySend(Unit) } }
         withTimeoutOrNull(timeoutMs) { done.receive() }
@@ -165,9 +187,10 @@ class RelayPool(
      * Every relay has answered the query (EOSE / CLOSED) or has failed since it was asked: the newest copy may sit on
      * a relay that connects late, so one quick relay never ends a query alone.
      */
-    private fun settled(answered: Set<String>): Boolean = urls.all { url ->
-        host(url) in answered || status.value[url]?.let { !it.connected && it.lastError != null } == true
-    }
+    private fun settled(answered: Set<String>): Boolean =
+        urls.all { url ->
+            host(url) in answered || status.value[url]?.let { !it.connected && it.lastError != null } == true
+        }
 
     private fun launchRelay(url: String) {
         lateinit var connection: Connection
@@ -182,17 +205,20 @@ class RelayPool(
             // Bounded: a relay that floods faster than we handle loses its socket instead of filling memory.
             val events = Channel<SocketEvent>(INBOUND_QUEUE)
             val flooded = AtomicBoolean(false)
-            val socket = sockets.connect(url) {
-                if (events.trySend(it).isFailure && !events.isClosedForSend) {
-                    flooded.set(true)
-                    events.close()
+            val socket =
+                sockets.connect(url) {
+                    if (events.trySend(it).isFailure && !events.isClosedForSend) {
+                        flooded.set(true)
+                        events.close()
+                    }
                 }
-            }
             connection.socket = socket
             connection.open = false
             connection.challenge = null
             connection.authEventId = null
             connection.authPending = false
+            connection.budget = EVENT_BURST.toDouble()
+            connection.budgetAt = nowSeconds()
             resend(socket)
             var reason: String? = null
             for (e in events) {
@@ -208,8 +234,12 @@ class RelayPool(
                             attempt = 0
                             setStatus(url, RelayStatus(connected = true))
                         }
-                        handle(e.text, url, connection, socket)
+                        if (!handle(e.text, url, connection, socket)) {
+                            reason = TOO_MANY_EVENTS
+                            break
+                        }
                     }
+
                     is SocketEvent.Closed -> {
                         reason = e.reason
                         break
@@ -220,7 +250,7 @@ class RelayPool(
             // overwrites an earlier reason)
             val why = reason ?: if (flooded.get()) FLOODED else "closed"
             // a relay that answers and then floods / oversends doesn't win back the 2 s backoff each time
-            if (why == TOO_BIG || why == FLOODED) attempt = attemptBefore
+            if (why == TOO_BIG || why == FLOODED || why == TOO_MANY_EVENTS) attempt = attemptBefore
             events.close()
             socket.cancel()
             connection.socket = null
@@ -231,21 +261,31 @@ class RelayPool(
         }
     }
 
-    private suspend fun handle(text: String, url: String, connection: Connection, socket: RelaySocket) {
-        val msg = runCatching { Json.parseToJsonElement(text) as? JsonArray }.getOrNull() ?: return
+    /** False when the relay sent more events than its budget: its socket is dropped. */
+    private suspend fun handle(text: String, url: String, connection: Connection, socket: RelaySocket): Boolean {
+        val msg = runCatching { Json.parseToJsonElement(text) as? JsonArray }.getOrNull() ?: return true
+
         fun str(i: Int) = (msg.getOrNull(i) as? JsonPrimitive)?.takeIf { it.isString }?.content
         val relay = host(url)
         when (str(0)) {
             "EVENT" -> {
-                val sub = str(1) ?: return
-                val ev = (msg.getOrNull(2) as? JsonObject)?.let { SignedEvent.parse(it.toString()) } ?: return
-                _inbound.emit(RelayInbound.Event(ev, sub, relay))
+                if (!spend(connection)) return false
+                val filters = str(1)?.let { subscriptions[it] } ?: return true
+                val ev = (msg.getOrNull(2) as? JsonObject)?.let { SignedEvent.parse(it.toString()) } ?: return true
+                // not what we asked for: never verified, never seen by the engines
+                if (filters.none { it.matches(ev) }) return true
+                _inbound.emit(RelayInbound.Event(ev, str(1)!!, relay))
             }
-            "EOSE" -> str(1)?.let { _inbound.emit(RelayInbound.EndOfStored(it, relay)) }
+
+            "EOSE" -> {
+                str(1)?.let { _inbound.emit(RelayInbound.EndOfStored(it, relay)) }
+            }
+
             "AUTH" -> {
                 connection.challenge = str(1)
                 if (connection.authPending) authenticate(url, connection, socket)
             }
+
             "CLOSED" -> {
                 val sub = str(1).orEmpty()
                 val reason = str(2).orEmpty()
@@ -256,8 +296,9 @@ class RelayPool(
                     _inbound.emit(RelayInbound.Closed(sub, reason, relay))
                 }
             }
+
             "OK" -> {
-                val id = str(1) ?: return
+                val id = str(1) ?: return true
                 val accepted = (msg.getOrNull(2) as? JsonPrimitive)?.booleanOrNull ?: false
                 if (id == connection.authEventId) {
                     if (accepted) resend(socket)
@@ -266,6 +307,17 @@ class RelayPool(
                 }
             }
         }
+        return true
+    }
+
+    private fun spend(connection: Connection): Boolean {
+        val now = nowSeconds()
+        connection.budget =
+            min(EVENT_BURST.toDouble(), connection.budget + (now - connection.budgetAt).coerceAtLeast(0) * EVENTS_PER_SECOND)
+        connection.budgetAt = now
+        if (connection.budget < 1) return false
+        connection.budget -= 1
+        return true
     }
 
     /** NIP-42: kind 22242 with the relay URL and the challenge, signed by [authKey]; once per connection. */
@@ -294,13 +346,14 @@ class RelayPool(
     private fun eventMessage(ev: SignedEvent) = "[\"EVENT\",${ev.toJson()}]"
 
     /** A newer live event or addressable event (same author and `d`) replaces the older one in the outbox. */
-    private fun outboxKey(ev: SignedEvent): String = when {
-        ev.kind == Wire.KIND_LIVE -> "live:${ev.pubkey}"
-        ev.kind == Wire.KIND_DATA && ev.tag("d") != null -> "d:${ev.pubkey}:${ev.tag("d")}"
-        else -> ev.id
-    }
+    private fun outboxKey(ev: SignedEvent): String =
+        when {
+            ev.kind == Wire.KIND_LIVE -> "live:${ev.pubkey}"
+            ev.kind == Wire.KIND_DATA && ev.tag("d") != null -> "d:${ev.pubkey}:${ev.tag("d")}"
+            else -> ev.id
+        }
 
-    private fun host(url: String) = url.removePrefix("wss://").substringBefore('/')
+    private fun host(url: String) = url.substringAfter("://").substringBefore('/')
 
     internal companion object {
         private const val KIND_AUTH = 22242
@@ -321,5 +374,12 @@ class RelayPool(
         /** Status-line reasons (never relay content). */
         const val TOO_BIG = "message too big"
         const val FLOODED = "too many messages"
+        const val TOO_MANY_EVENTS = "too many events"
+
+        /** Events a relay may send at once (a full start: chunks, 30 days of treatments, wraps) … */
+        const val EVENT_BURST = 2000
+
+        /** … and per second after that. */
+        const val EVENTS_PER_SECOND = 20
     }
 }

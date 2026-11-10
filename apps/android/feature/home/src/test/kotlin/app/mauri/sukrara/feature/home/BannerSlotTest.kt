@@ -5,9 +5,11 @@ package app.mauri.sukrara.feature.home
 
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.feature.home.banners.SETUP_LATER
@@ -39,8 +41,29 @@ class BannerSlotTest {
         assertEquals(AlertRequirement.Notifications, broken.firstProblem)
     }
 
+    @Test fun `a failed alert step is a safety banner that can't be closed and names the step first`() {
+        val failed = AlertReadiness(setOf(AlertRequirement.AlertDelivery, AlertRequirement.ExactAlarm), failedSteps = setOf("Alarm"))
+        val closed = BannerMemory(mapOf(BannerKind.AlertsUnreliable.name to 1L))
+        assertEquals(BannerKind.AlertsUnreliable, pick(failed, everything, memory = closed))
+        assertEquals(AlertRequirement.AlertDelivery, failed.firstProblem)
+        // not a setup item: Finish setup's permission step doesn't wait for it
+        assertEquals(true, AlertReadiness(setOf(AlertRequirement.AlertDelivery)).setupReady)
+    }
+
     @Test fun `monitoring stopped outranks everything, even with a value on screen`() =
         assertEquals(BannerKind.MonitoringStopped, pick(broken, everything, problems = 1, stopped = true))
+
+    @Test fun `blocked pen taps, sensor taps or both show the one taps banner, never dismissed`() {
+        listOf(BlockedTaps(pen = true), BlockedTaps(sensor = true), BlockedTaps(pen = true, sensor = true)).forEach { taps ->
+            val env = everything.copy(tapsBlocked = taps)
+            assertEquals(BannerKind.TapsBlocked, pick(env = env))
+            // closing isn't offered, and a stored close (an older build) never hides it
+            assertEquals(BannerKind.TapsBlocked, pick(env = env, memory = BannerMemory(mapOf(BannerKind.TapsBlocked.name to 1L))))
+            // the safety banners still come first
+            assertEquals(BannerKind.DataProblem, pick(env = env, problems = 1))
+        }
+        assertEquals(BannerKind.FinishSetup, pick(env = everything.copy(tapsBlocked = BlockedTaps())))
+    }
 
     @Test fun `damaged data comes before finish setup`() =
         assertEquals(BannerKind.DataProblem, pick(env = everything, problems = 1))
@@ -63,5 +86,29 @@ class BannerSlotTest {
         val env = HomeEnvironment(backedUp = false, widgetPlaced = false)
         val memory = BannerMemory().dismiss(BannerKind.NotBackedUp, NOW)
         assertEquals(BannerKind.AddWidget, pick(env = env, memory = memory, at = NOW.plus(Duration.ofDays(30))))
+    }
+
+    @Test fun `a closed restart card stays closed for that state and build, and comes back with a new build`() {
+        val env = HomeEnvironment(backedUp = false, systemUiRestart = ModuleState.Restart, build = 7)
+        assertEquals(BannerKind.RestartSystemUi, pick(env = env))
+        val memory = BannerMemory().dismissKey(env.restartKey!!, NOW)
+        assertEquals(BannerKind.NotBackedUp, pick(env = env, memory = memory))
+        assertEquals(BannerKind.RestartSystemUi, pick(env = env.copy(build = 8), memory = memory))
+        assertEquals(BannerKind.RestartSystemUi, pick(env = env.copy(systemUiRestart = ModuleState.Update), memory = memory))
+        assertEquals(BannerKind.NotBackedUp, pick(env = env.copy(systemUiRestart = null), memory = memory))
+        assertEquals(1, memory.closed)
+        assertEquals(BannerKind.RestartSystemUi, pick(env = env, memory = memory.restore(BannerKind.RestartSystemUi)))
+    }
+
+    @Test fun `Undo and Show closed tips bring closed tips back`() {
+        val env = HomeEnvironment(backedUp = false, widgetPlaced = false)
+        val two = BannerMemory().dismiss(BannerKind.NotBackedUp, NOW).dismiss(BannerKind.AddWidget, NOW)
+        assertEquals(2, two.closed)
+        assertEquals(null, pick(env = env, memory = two))
+        assertEquals(BannerKind.AddWidget, pick(env = env, memory = two.restore(BannerKind.AddWidget)))
+        assertEquals(BannerKind.NotBackedUp, pick(env = env, memory = two.restoreAll()))
+        assertEquals(0, two.restoreAll().closed)
+        // a kind this build no longer has isn't counted
+        assertEquals(0, BannerMemory(mapOf("Gone" to 1L)).closed)
     }
 }

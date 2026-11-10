@@ -6,7 +6,8 @@ import Foundation
 /// When the widget's picture changes without the app: the dates of its WidgetKit timeline entries. The app reloads the
 /// widget only when the shown value changes (`WidgetReloadPolicy`), so between readings the timeline alone has to age
 /// the card honestly: the time appears at 90 s, the value is struck through at 5 min, hidden at 20 min, the graph goes
-/// at 3 h (`Freshness`, contracts/graph/freshness), a mute's countdown ticks and ends, a sensor's warm-up or life ends.
+/// at 3 h, the time gains its day at 12 h (`Freshness`, contracts/graph/freshness), a mute's countdown ticks and ends,
+/// a sensor's warm-up or life ends.
 /// Each entry redraws the same snapshot with `now` = the entry's date (`WidgetSnapshot.data(at:)`).
 public enum WidgetTimeline {
     /// No timeline reaches further than this or holds more entries (a snapshot with far-off ends stays small).

@@ -22,6 +22,10 @@ How the Sukrara apps are built. The rules are in
   `QWUV9H4A3G.app.mauri.sukrara`.
 - Settings: [`contracts/settings/settings.json`](../contracts/settings/settings.json) → generated `SettingsSpec`
   (Android Preferences DataStore files by area, Mac UserDefaults). Every persisted format carries a version.
+- **No backwards compatibility, no migrations** (the owner, 2026-11-10: "a new app and a fresh start"): a stored format
+  of another version (a file, a typed store, the Android database, a Mac store) is not read; it starts empty. The
+  Android database is replaced by an empty one on any version change (below). History comes back through *Import
+  history* (LibreView, Tidepool or a file, deduplicated), never through a migration or a legacy reader.
 
 ## Android (`apps/android`)
 
@@ -35,7 +39,8 @@ applies them.
   actions (`AlertControls` in `:core:model`, also the notification buttons). Per input: machine → effects applied
   (`AlertAlarm` first, then `AlertPresenter`, `AlertEventSink`) → `AlertRecord` saved (typed store) → `AlertUiState`
   published to the hub. Every step is attempted on its own: a failure is logged to `DiagLog` (step + exception class)
-  and listed as `AlertDeliveryProblem.AlertStepFailed` until that step works again. Role `null` is ignored (setup / hub
+  and listed in `AlertUiState.failedSteps` until that step works again; the alert checklist (`AndroidAlertReadiness`, THE
+  answer to "may an alert not reach the person?") reads it as `AlertRequirement.AlertDelivery`. Role `null` is ignored (setup / hub
   loading); `monitoringStartedAt == null` switches `no_data` off.
 - Alarms: one `AndroidAlarms` (`monitor/service/`) sets every alarm (health check, freshness step, alert check, sensor
   end) through `AlarmPolicy`: protective checks `setExactAndAllowWhileIdle` (72 / h Doze quota with `USE_EXACT_ALARM`;
@@ -52,11 +57,23 @@ applies them.
 - `AlertsModule` (A4) wires it; the Application implements `AlertsHost` so receivers and the provider reach it; the
   monitoring service calls `attach(scope)`.
 
+**Root status bar (`:monitor` `monitor/systemui/`).** `RootStatusBar` (built by `MonitorModule`, started in `ready()`)
+follows the hub, `SurfaceSettings.Root*`, the ranges and the freshness ticks; conflated on one background thread it
+(1) sends `HookState` to System UI (`${applicationId}.SYSTEMUI_STATE`, signature permission `…permission.SYSTEMUI_STATE`,
+sender identity shared) and (2) drives `SlotDaemon` (`su` + `app_process`, line protocol `DaemonProtocol`, own slots
+`sukrara_glucose*`, drawables `sb_*` from `tools/android/gen-slot-drawables.swift`, kept by `res/raw/keep_status_icons.xml`
+and `consumer-rules.pro`). `SystemUiHook` is the LSPosed module in the same APK (`src/main/resources/META-INF/xposed`,
+libxposed API `compileOnly`); its pure parts are `HookText`, `IconFit`, `SlotIcons`. Its hello reaches
+`HookHelloReceiver` (permission `STATUS_BAR_SERVICE`: only System UI). `SystemAccess` (root via `su`, LSPosed via the
+libxposed service, the hello's `HookCode.VERSION`) implements `:core:model`'s `SystemAccessPort` for Settings › Status bar.
+
 ### Sharing
 
 **First-run setup and wearer sharing screens: `:feature:sharing`** (package `app.mauri.sukrara.feature.sharing`).
 
-- `setup/SetupMachine` (pure): the binding step order, what completes / skips each step, the Finish-setup items.
+- `setup/SetupMachine` (pure): the binding step order, what completes / skips each step, the Finish-setup items, and the
+  history step (*Bring your history back*, wearer, last, offered once: `historyDue`; `SetupModule.offerHistoryAgain`
+  after `DataModule.databaseReplaced`; the app opens it on its own at launch when due).
   `SetupRecord` persists in the typed store `setup`; the role is a separate store owned by `AppGraph` (`RoleStore`).
 - `setup/RestoreGate` (pure): restore only with a live own-sensor reading (≤ 15 min, Libre 3 / Juggluco).
 - `:monitor`'s `AndroidAlertReadiness` implements `:core:model`'s `AlertReadinessSource` (the checklist setup, home and
@@ -66,6 +83,13 @@ applies them.
   identity step the sensor already runs and a reset would pause alerts), the alert channel ids.
 - `SetupModule` is composed by `AppGraph` (`SharingDeps.setup`) over `shareOwner`'s engine (started for a wearer by
   `followRole`); screens get callbacks for other features (the sensor flow) instead of depending on them.
+- `share/` (share screen, Settings › Sharing, `ApproveHost` — the approve dialog the app draws over its navigation,
+  `LaterRequests` in `SetupModule` — `ProfilePage`, `BackupPage`, `InviteHereScreen`), `followers/`, `profile/`
+  (`ProfileEditor`), `backup/` (`BackupScreen`, `PasswordManager` = Credential Manager). All actions go through
+  `SharingViewModel` → `OwnerSharing`; the identity secret reaches only `PasswordManager.save` (inside
+  `OwnerEngine.saveToPasswordManager`) and the recovery dialog (secure window, never saved state).
+- Pictures: `:core:designsystem` `avatar/AvatarDrawing` (pure v1 geometry, tested against
+  `contracts/protocol/identity/avatar-v1.json`) + `AvatarImage` (Compose Canvas); every face in the app goes through it.
 
 ### Card, widgets and UI
 
@@ -136,9 +160,13 @@ proven raw `swiftc` command (poc/spikes/menubar/bundle.sh), same flags.
 
 `Bundle/bundle.sh` assembles `build/Sukrara.app` (+ `Contents/PlugIns/SukraraWidget.appex`) from
 `Bundle/Info.plist.in`, `Bundle/Widget-Info.plist.in` and the entitlement templates, version from `<repo>/VERSION`
-(`CFBundleVersion` = versionCode, `--dev` appends `.<yyMMddHHmm>`), and signs inside-out with the Apple Development
-identity of team QWUV9H4A3G (hardened runtime; the app is not sandboxed, the widget is; both share the App Group).
-`--unsigned` signs ad hoc for CI. `Bundle/dmg.sh` makes the dmg and zip.
+(`CFBundleVersion` = versionCode, `--dev` appends `.<yyMMddHHmm>`), and signs inside-out with an identity of team
+QWUV9H4A3G (hardened runtime; the app is not sandboxed, the widget is; both share the App Group). With the provisioning
+profiles in `~/.apple-dev/profiles` (Developer ID) it embeds them and signs with `app-profile.entitlements.in` /
+`widget-profile.entitlements.in`: Time Sensitive, `keychain-access-groups`, Associated Domains; without them, with
+the Apple Development identity and `app.entitlements.in` / `widget.entitlements.in`. The app reads what it got at
+launch (`Entitlements.current`: alarms' interruption level, which keychain, universal links). `--unsigned` signs ad
+hoc for CI. `Bundle/dmg.sh` makes the dmg and zip.
 
 ### Ids and paths
 
@@ -163,7 +191,15 @@ the standard domain with schema keys, URL scheme `sukrara`, widget kinds `app.ma
   no services, isolated data.
 - `ServicesPlan` is an **upper limit**: the app ANDs it with the user's settings (`limited(by:)`) and starts services
   only through `ServicesPlan.start(using: some ServiceStarting)`. The app's `ServiceStarting` is the only code that
-  creates a Bluetooth central, relay pool, alert engine, widget feed or notification request.
+  creates a Bluetooth central, relay pool, alert engine, widget feed, notification request or the Juggluco source
+  (`lan`).
+
+Android's launch gate for relays is `app/…/LaunchPlan.kt` (pure, `LaunchPlanTest`): `LaunchPlan.of(debugBuild,
+relayChoice)` gives the launch's `RelayAccess`, which every `RelayPool` applies to the relays the protocol names
+(`ShareOwnerModule`, `FollowerModule`). Release builds: `Public` (the `wss://` relays named), whatever else is passed.
+Debug builds: `Off` (no relay) unless the debug `RELAYS` command (`src/debug` `DebugRelays`, read through
+`BuildVariant.relayChoice`) chose `public` or local URLs (`Local`: every pool goes only there, `ws://` allowed; the
+debug build's network security config adds cleartext to `10.0.2.2`). The local test relay is `tools/relay/relay.py`.
 
 Test fixtures: `Contracts.url("alerts/scenarios")` (`SukraraTesting`) resolves `SUKRARA_CONTRACTS` or walks up from
 the test source to `contracts/`.
@@ -221,8 +257,11 @@ WidgetFeed (SukraraApp) ── glucose.json in the App Group + WidgetReloadPolic
 - **Stores** (`SukraraCore/Stores`): `readings.csv` (`t_ms,mgdl,rate`, appended, atomic rewrite for backfill,
   31 days, first reading per `t` kept), `treatments.json` (`TreatmentLog` v1: entry + creator + delivery),
   `sensor.json`, `wearer-settings.json`. An unreadable file is copied to `<name>.corrupt-<unix s>` and reported as a
-  `StoreIssue` (never silent "no data"). `KeychainStore` uses the login keychain: the Apple Development signature has
-  no provisioning profile, so the data-protection keychain answers -34018 (TN3137); that error is tested to surface.
+  `StoreIssue` (never silent "no data"). `KeychainStore.secrets` picks the keychain from the build's entitlements:
+  the data-protection keychain in group `QWUV9H4A3G.app.mauri.sukrara` when a provisioning profile granted it
+  (`MovingSecretStore` moves an item still in the login keychain on its first read: copy, read back, compare, then
+  remove the old one), else the login keychain; without the entitlement the data-protection keychain answers -34018
+  (TN3137), which is tested to surface as an error, never as "no item".
 - **FollowerRuntime**: start reads the Keychain (missing item → wipe leftovers, not following; read error → keep
   data, `broken`), connects relays (+ Bluetooth when allowed), resubscribes when the session asks, persists trust
   changes at once and the rest ≤ every 5 min, re-sends unsent treatments, runs the missing-history check 90 s after
@@ -232,6 +271,11 @@ WidgetFeed (SukraraApp) ── glucose.json in the App Group + WidgetReloadPolic
   OGS `ble` vectors; `NearbyLink` is the per-connection protocol (HELLO, INFO proof, one write in flight, nothing
   written before the phone proved it's the wearer's); `NearbyCentral` is the CoreBluetooth adapter, an actor whose
   executor is the CB queue (delegate callbacks enter with `assumeIsolated`).
+- **Juggluco on this network** (`SukraraShare/Lan`): `JugglucoApi` (pure: URLs, `sha1hex` secret, entries / SSE
+  parsing, `LanAddress` home ranges, `LanInterface.hosts` sweep list) and the `JugglucoLanSource` actor (find → history
+  → live, backoff, its own 31-day `ReadingsFileStore` under `juggluco/`) behind `LanSourcing`; every request goes
+  through `LanHTTP` (`URLSessionLanHTTP`; tests `FakeLanHTTP`). `ServicesPlan.lan` creates it idle; `AppModel` turns
+  it on from the setting while not following and feeds its readings to the card and the alerts.
 - Tests: `FollowerRuntimeTests` (join over a fake relay hub with the OGS invite and key, outbox, unfollow, Keychain
   errors), `ProtocolCompatTests` (every sync fixture through the runtime into file stores, incl. `rotation.json` =
   restore), `NearbyTests`, `StoreTests`, `KeychainStoreTests` (temp service), `WidgetFeedTests`.
@@ -277,7 +321,13 @@ The wearer's glucose input. `SensorModule` builds it; the hub reads `SourceManag
   Bluetooth off/on, generation-tagged callbacks) → `ble/GattConnector` (`AndroidGatt` on the phone, fakes in tests).
   `libre3/Libre3Crypto` is the JNI core (`libsukrara_libre3.so`, from Juggluco at the pinned revision); a build
   without it shows *Libre 3 core missing* and release builds refuse to build (`verifyNativeCore`).
-- **Storage**: the whole pairing (address, start, PIN, authorization, ended) is one SecureStore entry `sensor`
+- **Other families** (untested on real sensors): `dexcom/G7Driver`, `dexcom/G6Driver`, `cgms/SmartGuideDriver`,
+  `aidex/AidexXDriver` extend `brand/BrandDriver` (finding rules, value range / clock / live-vs-history rules, end, fail,
+  retry) and run on the same `GattLink`. The saved pairing's `SensorProfile` picks the driver (`SourceManager.runDirect`);
+  a pairing without an address is found first by `ble/SensorScanner` (filtered windows over the `BleScanner` port,
+  `AndroidScanner` on the phone) and the found address and name are saved. The source never delivers the same reading
+  time twice as live per pairing (`SensorStatus.Direct.key`).
+- **Storage**: the whole pairing (family, address, start, PIN, authorization, ended; a scanned family: its id, found address and name, pairing time) is one SecureStore entry `sensor`
   (Keystore alias `sukrara.sensor`): one atomic write; unreadable → `PairingLoad.Corrupt` → *scan the sensor again*.
   Receiver IDs (Sukrara's own, the LibreView account's + email) in the typed DataStore `receiver-ids.json`. No password or
   token is stored.
@@ -299,11 +349,15 @@ read (new app id, no migration). Nothing is in cloud backup or device transfer (
 | What | Where | API |
 |---|---|---|
 | Settings | `datastore/<store>.preferences_pb`, one per schema store, keys from `contracts/settings/settings.json` | `SettingsRepository` + `SchemaSettings.number/bool/text(id)` |
-| Typed state (alert episodes, sensor pairing, …) | `files/state/<name>.json` (DataStore + kotlinx JSON) | `DataModule.typedStore(name, serializer, initial, whenCorrupt)` |
-| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `tidepool`, `libreview`, `sensor` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
-| History | `databases/sukrara.db` (Room v1, schema in `core/data/schemas/`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox` | `ReadingsRepository`, `TreatmentsRepository`, DAOs for the sharing ledger |
+| Typed state (alert episodes, sensor pairing, the wearer's last mirrored settings `wearer_settings`, …) | `files/state/<name>.json` (DataStore + kotlinx JSON) | `DataModule.typedStore(name, serializer, initial, whenCorrupt)` |
+| A follower's settings in use | the stored settings, the mirrored graph rows resolved per `follower.settingsFrom` (Wearer / Default / Custom) | `FollowerSettingsRepository` (`:core:data`), built by `FollowerSettingsBridge` (`:app`, also the alert runtime's mirrored values, the alert pages' values in use and `alerts.source`) |
+| The wearer's settings for its followers | this phone's mirrored graph rows under their wire keys + the whole alert settings (SPEC §3); the owner engine keeps the `"mirror": true` rows and publishes the settings event when they change | `WearerSettingsSource` (`:app`) → `MirroredSettingsSource` of `ShareOwnerModule` |
+| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview`, `sensor`, `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
+| History | `databases/sukrara.db` (Room; only the current version's schema in `core/data/schemas/`; **no migrations**: a database of any other version, older or newer, is dropped, every table, and created empty: `fallbackToDestructiveMigration(dropAllTables = true)`, which covers downgrades too, `DataModule.databaseReplaced`, `DatabaseSchemaTest`, check `room-schema`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox`, `pen_ledger` (the pen ledger, one JSON row, written with its entries in one transaction) | `ReadingsRepository`, `TreatmentsRepository`, `PenLedgerRepository`, DAOs for the sharing ledger |
+| Imported history | the same tables: readings under `SourceId.Imported` (`import-libreview`, `import-tidepool`, `import-file`), entries with `imported_from`; stored only through THE import path (`HistoryImport` rules in `:core:model`, pure and property-tested; `RoomHistoryImport`, one transaction per batch); `ReadingDao.upsertOwnFirst` lets the sensor's own reading replace an imported copy | `DataModule.historyImport` (`HistoryImportStore`) |
 | Other files | `files/<path>` atomic tmp + fsync + rename | `DataModule.fileStore(path, codec)` → `Loaded / Missing / Corrupt` |
 | Diagnostics | `files/diag/diag.log` + `.1`, 512 KB each, `Redact` scrubs keys / tokens | `DiagLog` |
+| Before the first unlock | the only file in **device-protected** storage: `/data/user_de/…/files/locked-boot.json` (times and the *No data* rule, never a value; docs/30). Everything above is credential-encrypted: unreadable after a restart until the first unlock, so `App` builds no graph then and only `LockedBootReceiver` and `AlertSoundProvider` run | `LockedBootStore` (`:monitor`), written by `AlertRuntime` |
 | Network | one OkHttp client (15 s connect, 30 s read, 60 s call, UA `Sukrara/<version>`, no body logging); one `SukraraJson` (`ignoreUnknownKeys`, `explicitNulls = false`) | `DataModule.http`, `DataModule.json` |
 
 Retention (`Retention`, applied in `ready()`): readings 90 days, seen wraps / rejects / sent outbox 14 days.
@@ -317,7 +371,13 @@ every load (never `Missing`) until a deliberate save or delete; settings read as
 `SecretUnreadableException` on every read and stays in place (an unreadable identity is never "no identity"); a
 transient Keystore error (busy after an OS update) throws `transient = true`, is not reported and deletes nothing; keys
 are never deleted by an error path. A damaged database is copied aside (with its WAL) and reported by
-`QuarantiningOpenHelperFactory` before SQLite recreates it. The database is not encrypted yet (issue: SQLCipher).
+`QuarantiningOpenHelperFactory` before SQLite recreates it.
+
+**No app-level encryption of the database** (investigation [31](31-db-encryption.md)): file-based encryption protects
+`sukrara.db` at rest. A SQLCipher key the app can use while the phone is locked (every reading arrives then) is a key
+anyone who can read the file on a running phone can use too, and it would add a way for the history to become
+unreadable. The same holds for the typed state and the device-protected plan. Secrets stay sealed by the Keystore
+(`SecureStore`).
 
 ## Android protocol (`apps/android/core/protocol`)
 
@@ -368,11 +428,69 @@ TTLs, JSON field names and number forms, invite link `https://sukrara.mauri.app/
 - `owner/` — `OwnerState` (typed state, `@Serializable`, redacted) in `OwnerIdentityStore` (SecureStore
   `identity.owner`; unreadable ≠ missing). Use-cases in `owner/usecase` are pure `(state, input, now) → Step(state,
   events)`: `CreateIdentity`, `RestoreIdentity` (+ `restoreAllowed` gate), `ExportRecovery`, `CreateInvite`,
-  `HandleInbox`, `ApproveRequest`, `DenyRequest`, `RemoveFollower`, `Rotate`, `PublishReadings`,
+  `HandleInbox`, `ApproveRequest`, `DenyRequest`, `RemoveFollower`, `SetWriter`, `SetProfile`, `Rotate`, `PublishReadings`,
   `IdentityConflictDetector`; control events (deliveries, notices, roster, backup) wait in `pendingControl` until a
   relay answers OK, so a rotation interrupted by a crash still reaches every follower. `OwnerEngine` runs them on one
   serial dispatcher, persists before publishing and exposes `StateFlow<OwnerShareState>`; `ShareOwnerModule` (A4)
   builds it for `AppGraph`.
+- `ble/` — Bluetooth share (ogs-ble). Pure protocol cores without android.bluetooth, JVM-tested with fake frames:
+  `NearbyServerCore` (wearer: per-central framing, HELLO → INFO + backlog, identity proof, pushes, B§8 limits) and
+  `NearbyLink` (follower: HELLO + proof, the which-owner gate, one write in flight). Thin adapters run them on one
+  handler thread: `AndroidNearbyServer` (the engine's `OwnerNearby`; GATT server + advertiser, Bluetooth on/off, the
+  `sharing.bleFollowers` switch) and `AndroidNearbyCentral` (the follower engine's `NearbyTransport`; scan, connect,
+  timeouts, backoff). `OwnerEngine.send` keeps the backup and the invite wrap off Bluetooth; `FollowerEngine` runs the
+  transport beside the relays while attached and feeds its events to the same `StreamFollower`. Tests:
+  `NearbyServerCoreTest`, `NearbyLinkTest`, `OwnerNearbyTest`, `FollowerNearbyTest` (fakes `FakeNearbyServer` /
+  `FakeNearbyTransport`).
+
+## Android integrations (`apps/android/integrations`)
+
+`IntegrationsModule` (built by `AppGraph.integrations`; `load()` + `start(scope)` in `ready`) owns everything that
+sends the person's data to other apps; its pages (`AppsPage`, `LibreViewPage`, `NightscoutPage`, `ExportPage`) are
+content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`, `NightscoutUploadRoute`, `ExportRoute`).
+- `upload/` — the shared upload design: no outbox (the readings / treatments stores are the queue; each uploader keeps
+  what the service has), `UploadLoop` (one cycle per kick or 5 min, on IO, never in the reading path), `UploadBackoff`,
+  `SentRanges`, one `UploadStatus` for every page.
+- `nightscout/` — `NsSite` (https, or http to loopback only), `NsClient` (the app's OkHttp without redirects; v1 / v3;
+  token → JWT), `NsDocs`, `NightscoutQueue` (pure plan + reconcile: covered minutes, another-uploader pause),
+  `NightscoutUploader` (settings JSON `apps.nightscoutUpload`, credential only in SecureStore `nightscout`, state in the
+  typed store `nightscout-upload`, device `Sukrara-<6 hex>` per site).
+- `libreview/` — `LibreViewPayload` (contracts/treatments §3, byte for byte), `LibreViewClient` (Abbott's config →
+  sign-in / measurements / sensor registration; https only, no redirects), `LibreViewQueue` (pure: entries LibreView
+  lacks from the version ledger, glucose by life count), `LibreViewUploader` (settings JSON `apps.libreview`; token +
+  profile only in SecureStore `libreview`, the password never stored; ledger, sent life counts, device id and
+  `glucoseFrom` / `entriesFrom` / AccountId in the typed store `libreview-upload`; history not sent yet in
+  `libreview-unsent`). Glucose comes from `:sensor`'s `SourceManager.sensorGlucose` (Libre 3 only, each batch tagged
+  with its serial), mapped in `AppGraph`; so does the sensor screens' receiver ID (`LibreViewAccount.receiverId`) with
+  `ReceiverIds.fromAccountId` for the other-account question.
+- `localserver/` — `LocalHttpServer` (127.0.0.1, fixed pool, bounded head and deadline), `XdripEndpoint` (Juggluco's
+  JSON, pure), `XdripServer` (follows `apps.xdrip` and the sensor source; readings from the store, "last asked" in
+  memory), `NightscoutApi` (the v1 read API, pure: routes, secret check, per-source `device` labels) and
+  `NightscoutApiServer` (`apps.nightscout` on 127.0.0.1:17581; the API secret only in SecureStore `nightscout-api`;
+  `apps.nightscoutLan` adds a second `LocalHttpServer` bound to the Wi-Fi's private address with `LanPolicy`'s subnet and
+  Host rules and its own secret in SecureStore `nightscout-api-lan`, the Wi-Fi from `LanWatcher`'s ConnectivityManager
+  callback while it is on, pinned network in the typed store `nightscout-lan`).
+- `broadcasts/` — `BroadcastPayloads` (pure extras per action), `BroadcastPlan` (pure: who gets what for one live
+  Libre 3 reading), `Broadcaster` (allowed apps + signer pins in `apps.broadcasts`; throttle / life count / activations
+  in the typed store `broadcasts`; `PlatformApps` = PackageManager + `sendBroadcast`). Input: `SourceManager.sensorGlucose`
+  `current` (Libre 3 pairings only), mapped in `AppGraph`.
+- `healthconnect/` — `HealthConnectSync` (`healthConnect.on`; readings store → written-minute runs, backoff, in the typed
+  store `health-connect`), `PlatformHealth` (platform `android.health.connect`, glucose only), `HealthConnectPage`
+  (permission sheet via `RequestMultiplePermissions`; `MainActivity` routes `VIEW_PERMISSION_USAGE` +
+  `HEALTH_PERMISSIONS` from the `.HealthPermissionsRationale` alias to it).
+- `tidepool/` — `TidepoolClient` (session login, token refresh; https, no redirects), `TidepoolData` (cbg / food /
+  insulin / notes with origin ids), `TidepoolQueue` (pure plan), `TidepoolUploader` (settings JSON `apps.tidepool`;
+  token + user id only in SecureStore `tidepool`, the email in SecureStore `tidepool-email`, the password never stored;
+  state in the typed store `tidepool-upload`).
+- `export/` — `GlucoseCsv` (`contracts/export`), `Exporter` (period → stores), `ExportViewModel` (SAF save, FileProvider
+  `${applicationId}.export` share from `cache/export/`).
+- `history/` — Import history (wearer): `HistoryCsv` (reads the `contracts/export` layout back: Sukrara's export, the
+  earlier app's, LibreView's *Download glucose data* file; columns by position, the date layout every row fits),
+  `TidepoolHistory` (Tidepool's data model back into readings / entries; `TidepoolClient.data` / `notes` read it,
+  `TidepoolUploader.withAccount` lends the signed-in session under the upload's lock), `HistoryImporter` (the last
+  90 days a week at a time through `DataModule.historyImport`, one job in the app scope, *Stop*, a 429 / 503 waits for
+  `Retry-After`; `ImportState` for the page and the Share with apps row), `ImportPage`. Imported readings / entries
+  (`SourceId.Imported`, `TreatmentRecord.importedFrom`) are left out of every upload.
 
 ## Contracts and tests
 
@@ -382,6 +500,9 @@ every app). Alert scenario expectations change only with the owner's OK.
 
 ## Release
 
-`VERSION` → every app. Android: `tools/release/android-release.sh` (assembleRelease with the release key +
-`verify-apk.sh`); Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`). 0.x versions are GitHub
-prereleases; every app's update check include prereleases only on a prerelease build.
+`VERSION` → every app. Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
+`verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
+`verify-apk.sh --play`; the play flavor has no root / LSPosed code and no update check: `app/src/play`, `Store`, and
+`:monitor`'s `RootFeatures` that only the full flavor passes); Mac: `tools/release/mac-release.sh` (bundle + dmg +
+`verify-app.sh`). 0.x versions are GitHub prereleases; every app's update check includes prereleases only on a
+prerelease build.

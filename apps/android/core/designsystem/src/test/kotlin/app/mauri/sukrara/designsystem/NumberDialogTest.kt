@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.designsystem
 
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.dialog.NumberInput.Check
 import app.mauri.sukrara.settings.NumberSpec
+import app.mauri.sukrara.settings.SettingsSpec
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -62,6 +64,30 @@ class NumberDialogTest {
         assertEquals(Check.OutOfRange, input.check("55"))
         assertEquals(Check.Rejected("Already drawn"), input.check("100"))
         assertEquals("60", input.shownMin)
+    }
+
+    /** The schema's low threshold in mmol/L: its variant's presets and range, typed and picked values stored in mg/dL. */
+    @Test fun `a glucose limit in mmol per litre is typed in its variant and stored in mg per dL`() {
+        val input = NumberInput(SettingsSpec.THRESHOLD_LOW, keep = { it < 80.0 }).inUnit(GlucoseUnit.MMOL)
+        assertEquals("mmol/L", input.spec.unit)
+        // 3.3 3.6 3.9 4.2 4.4 → 59 65 70 76 79 mg/dL, all under 80
+        assertEquals(listOf(59.0, 65.0, 70.0, 76.0, 79.0), input.options)
+        // 140 and 141 are both 7.8: a stored value is the option shown with the same number
+        assertTrue(input.isOption(70.0))
+        assertTrue(input.same(140.0, 141.0))
+        assertEquals(Check.Ok(70.0), input.check("3,9"))
+        assertEquals(Check.Ok(72.0), input.check("4.0"))
+        assertEquals(Check.OutOfRange, input.check("3.95"))
+        assertEquals(Check.OutOfRange, input.check("6.7"))
+        assertEquals("2.8", input.shownMin)
+        assertEquals("6.6", input.shownMax)
+        assertEquals("4.1", input.initialText(74.0))
+        assertEquals("3.91", input.filter("3.9.1"))
+        // a format without a variant ignores the unit
+        assertEquals(
+            NumberInput(SettingsSpec.ALERT_REPEAT).options,
+            NumberInput(SettingsSpec.ALERT_REPEAT).inUnit(GlucoseUnit.MMOL).options,
+        )
     }
 
     @Test fun `a spec without custom values is a plain choice`() {

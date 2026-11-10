@@ -9,18 +9,14 @@ import android.graphics.RectF
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.PathParser
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.settings.SettingsSpec
 
 /**
  * The sensor's remaining life, pure (contracts/graph/sensor/life.json; the Mac decides the same): the badge text, the
- * life arc, the warm-up and the countdown ring.
+ * life arc, the warm-up and the countdown ring. The warm-up rule and its numbers are [SensorTiming]'s, the alerts' too.
  */
 object SensorLife {
-    const val DEFAULT_WARMUP_MIN = 60
-
-    /** The warm-up state lasts until the first reading, at most this long past the warm-up's end. */
-    const val WARMUP_GRACE_S = 15 * 60L
-
     val DEFAULT_COUNTDOWN_HOURS: Int = SettingsSpec.COUNTDOWN_HOURS.default.toInt()
 
     /** The "sensor ended" glyph: Material Symbols Outlined `sports_score` (Apache 2.0), viewBox 0 -960 960 960. */
@@ -34,8 +30,7 @@ object SensorLife {
         info: SensorInfo,
         latestT: Long?,
         now: Long,
-    ): Boolean =
-        now >= info.startS && now < info.warmupEndS + WARMUP_GRACE_S && (latestT == null || latestT < info.startS)
+    ): Boolean = SensorTiming.warming(info.startS, info.warmupEndS, latestT, now)
 
     /** The warm-up's time left: whole minutes rounded up, from 60 of them hours; "Almost ready" once it is over. */
     fun warmupLabel(
@@ -128,18 +123,6 @@ object SensorBadge {
             )
         }
 
-    /** For screen readers: "Sensor: 13d left" / "Sensor ended. Replace sensor" / "Warming up. Ready at 19:45". */
-    fun describe(
-        look: Look,
-        now: Long,
-        w: CardWords,
-    ): String =
-        when {
-            look.warmup != null -> (if (look.waiting(now)) w.almostReady else w.warmingUp) + ". " + look.warmupLine(now, w)
-            look.ended -> w.sensorEnded + ". " + w.replaceSensor
-            else -> w.sensorLeft((look.end - now).coerceAtLeast(0) / 60)
-        }
-
     /** The ring over the main slot: the warm-up filling up, else the end countdown draining (null = none). */
     fun ring(
         look: Look?,
@@ -187,6 +170,12 @@ object SensorBadge {
         look: Look,
         pal: GraphPalette,
     ) = draw(cv, x, y, h, look, pal, label = false)
+
+    /** The drawn badge's width at [h] tall: the disc, its gap and the label as drawn (what [draw] returns). */
+    internal fun width(
+        look: Look,
+        h: Float,
+    ): Float = h + h * 0.3f + text(h, 0).measureText(look.label)
 
     /** Draws the badge [h] tall with its top-left at ([x], [y]); returns its width. */
     internal fun draw(

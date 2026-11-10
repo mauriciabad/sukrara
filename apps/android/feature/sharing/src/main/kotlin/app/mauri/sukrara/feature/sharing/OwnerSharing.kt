@@ -3,12 +3,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sharing
 
+import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.share.ShareOwnerModule
+import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerShareState
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.CreateInvite
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 
 /** A created invite: the link (also the QR) and when it stops working (epoch s). */
 data class Invite(val link: String, val label: String, val expiresAt: Long)
@@ -20,18 +28,59 @@ data class Invite(val link: String, val label: String, val expiresAt: Long)
 interface OwnerSharing {
     val state: StateFlow<OwnerShareState>
 
-    /** A new identity ("Start fresh", confirmed first). False when one exists or can't be read. */
-    suspend fun startFresh(): Boolean
+    /**
+     * A new identity ("Start fresh", confirmed first) with how the wearer appears. False when one exists (unless
+     * [replace]: Backup › Replace this identity, confirmed: every follower must be invited again) or can't be read.
+     */
+    suspend fun startFresh(
+        profile: Profile,
+        replace: Boolean = false,
+    ): Boolean
 
-    /** Restore from a recovery code; the UI calls it only when the [app.mauri.sukrara.feature.sharing.setup.RestoreGate] is open. */
+    /**
+     * Backup › Replace this identity telling the followers before the identity goes (*Telling your followers…*), null
+     * otherwise. [startFresh] / [restore] with `replace` return once it is replaced or [cancelReplace] kept it.
+     */
+    val telling: StateFlow<TellingFollowers?>
+
+    /** Cancel while the followers are told: the identity stays and they follow again. */
+    fun cancelReplace()
+
+    /** "How you appear" (name + picture) for followers. False without an identity or while another app shares as it. */
+    suspend fun setProfile(profile: Profile): Boolean
+
+    /** "Can add entries" for an active follower; false when refused (not a follower any more, another app shares as you). */
+    suspend fun setWriter(follower: String, allowed: Boolean): Boolean
+
+    /** A recovery code (the identity encrypted with [password]); null without an identity. Slow (scrypt): off the main thread. */
+    suspend fun exportRecovery(password: String): String?
+
+    /** The wearer kept the recovery code: no more "Not backed up". */
+    suspend fun recoverySaved()
+
+    /**
+     * Hands the identity to the phone's password manager: [save] gets the entry's name and the secret and says whether
+     * the password manager took it. The secret never leaves this call.
+     */
+    suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean
+
+    /**
+     * Restore from a recovery code; the UI calls it only when the [app.mauri.sukrara.feature.sharing.setup.RestoreGate] is
+     * open. Over a working identity only with [replace] (Backup › Replace this identity, confirmed first).
+     */
     suspend fun restore(
         code: String,
         password: String?,
+        replace: Boolean = false,
     ): RestoreIdentity.Result
 
     suspend fun createInvite(label: String): Invite?
 
-    suspend fun approve(follower: String)
+    /**
+     * Allow, and what happened (expired or used invite / no longer waiting, another app shares as you, or a leaked link
+     * without the right [typedCode] from the follower's phone).
+     */
+    suspend fun approve(follower: String, typedCode: String? = null): ApproveResult
 
     suspend fun deny(follower: String)
 
@@ -39,39 +88,109 @@ interface OwnerSharing {
 
     /** "I turned it off — retry" on the identity conflict screen. */
     suspend fun retryConflict()
+
+    /** How readings travel: the internet switch and interval, Bluetooth's switch, the server's state and the named links. */
+    val nearby: Flow<NearbyUi> get() = flowOf(NearbyUi())
+
+    /** *Over the internet* (Settings › Sharing). */
+    suspend fun setInternet(on: Boolean) = Unit
+
+    /** *Upload interval*, minutes; 0 = every reading. */
+    suspend fun setUploadInterval(min: Double) = Unit
+
+    /** The Bluetooth switch (Settings › Sharing). */
+    suspend fun setNearby(on: Boolean) = Unit
+
+    /** Look again (Bluetooth turned on, Nearby devices allowed). */
+    fun refreshNearby() = Unit
+
+    /** *Pair nearby* (10 min) on, or *Stop*. */
+    suspend fun pairNearby(on: Boolean) = Unit
 }
 
 /** [OwnerSharing] on the engine; [scope] = the app's process scope (the engine's relay work outlives screens). */
 class EngineOwnerSharing(
     private val engine: OwnerEngine,
     private val scope: CoroutineScope,
+    private val settings: SettingsRepository,
     private val now: () -> Long,
 ) : OwnerSharing {
     /** The app starts the engine for a wearer (`followRole`); setup only reads its state. */
     override val state: StateFlow<OwnerShareState> get() = engine.state
 
-    override suspend fun startFresh(): Boolean = engine.createIdentity(scope, profile = null)
+    override suspend fun startFresh(
+        profile: Profile,
+        replace: Boolean,
+    ): Boolean = engine.createIdentity(scope, profile, replaceExisting = replace)
+
+    override val telling: StateFlow<TellingFollowers?> get() = engine.telling
+
+    override fun cancelReplace() = engine.cancelReplace()
+
+    override suspend fun setProfile(profile: Profile): Boolean = engine.setProfile(profile)
+
+    /** Refused only while another app shares as you; a repeated tap (nothing to change) is fine. */
+    override suspend fun setWriter(follower: String, allowed: Boolean): Boolean {
+        engine.setWriter(follower, allowed)
+        return engine.state.value !is OwnerShareState.AnotherAppSharingAsYou
+    }
+
+    override suspend fun exportRecovery(password: String): String? = engine.exportRecovery(password)
+
+    override suspend fun recoverySaved() {
+        engine.markRecoverySaved()
+    }
+
+    override suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean =
+        engine.saveToPasswordManager(save)
 
     override suspend fun restore(
         code: String,
         password: String?,
-    ): RestoreIdentity.Result = engine.restore(scope, code, password)
+        replace: Boolean,
+    ): RestoreIdentity.Result = engine.restore(scope, code, password, replaceExisting = replace)
 
     override suspend fun createInvite(label: String): Invite? {
         val at = now()
         return engine.createInvite(label)?.let { Invite(it, label.trim(), at + CreateInvite.TTL) }
     }
 
-    override suspend fun approve(follower: String) {
-        engine.approve(follower)
-    }
+    override suspend fun approve(follower: String, typedCode: String?): ApproveResult = engine.approve(follower, typedCode)
 
     override suspend fun deny(follower: String) {
         engine.deny(follower)
     }
 
+    /** Remove also drops that follower's Bluetooth links (a device that connects again isn't named or trusted). */
     override suspend fun remove(follower: String) {
-        engine.remove(follower)
+        engine.forget(follower)
+    }
+
+    override val nearby: Flow<NearbyUi> =
+        combine(
+            settings.flow(ShareOwnerModule.NearbySharing),
+            engine.nearbyStatus,
+            engine.nearbyLinks,
+            engine.nearbyPairing,
+            combine(settings.flow(ShareOwnerModule.RelaySharing), settings.flow(ShareOwnerModule.RelayInterval), ::Pair),
+        ) { on, status, links, pairing, (internet, interval) ->
+            NearbyUi(on, status, links, pairing?.expiry, internet, interval)
+        }
+
+    override suspend fun setInternet(on: Boolean) = settings.set(ShareOwnerModule.RelaySharing, on)
+
+    override suspend fun setUploadInterval(min: Double) = settings.set(ShareOwnerModule.RelayInterval, min)
+
+    override suspend fun setNearby(on: Boolean) {
+        settings.set(ShareOwnerModule.NearbySharing, on)
+        // no Pair nearby row without Bluetooth sharing: it closes with the switch
+        if (!on) engine.closeNearbyPairing()
+    }
+
+    override fun refreshNearby() = engine.refreshNearby()
+
+    override suspend fun pairNearby(on: Boolean) {
+        if (on) engine.openNearbyPairing() else engine.closeNearbyPairing()
     }
 
     override suspend fun retryConflict() {

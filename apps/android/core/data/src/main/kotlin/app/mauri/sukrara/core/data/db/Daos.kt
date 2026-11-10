@@ -9,30 +9,99 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import app.mauri.sukrara.core.model.supersedes
 import kotlinx.coroutines.flow.Flow
+
+/** A count with the first and last time in epoch ms (null when the count is 0). */
+data class SpanRow(
+    val count: Int,
+    val oldest: Long?,
+    val newest: Long?,
+)
 
 @Dao
 interface ReadingDao {
-    /** The card's window: everything from [from], oldest first, live. */
-    @Query("SELECT * FROM readings WHERE t >= :from ORDER BY t")
-    fun window(from: Long): Flow<List<ReadingEntity>>
+    /** The card's window: everything from [from] not from [hidden] sources, oldest first, live. */
+    @Query("SELECT * FROM readings WHERE t >= :from AND source NOT IN (:hidden) ORDER BY t")
+    fun window(
+        from: Long,
+        hidden: List<String>,
+    ): Flow<List<ReadingEntity>>
 
-    @Query("SELECT * FROM readings ORDER BY t DESC LIMIT 1")
-    fun latest(): Flow<ReadingEntity?>
+    @Query("SELECT * FROM readings WHERE source NOT IN (:hidden) ORDER BY t DESC LIMIT 1")
+    fun latest(hidden: List<String>): Flow<ReadingEntity?>
 
-    /** Backfill / export range [from, to). */
-    @Query("SELECT * FROM readings WHERE t >= :from AND t < :to ORDER BY t")
+    /** Backfill / export range [from, to), not from [hidden] sources. */
+    @Query("SELECT * FROM readings WHERE t >= :from AND t < :to AND source NOT IN (:hidden) ORDER BY t")
     suspend fun range(
         from: Long,
         to: Long,
+        hidden: List<String>,
     ): List<ReadingEntity>
 
     @Upsert
     suspend fun upsert(readings: List<ReadingEntity>)
 
+    /**
+     * Stores [readings]; those that aren't [imported] then remove every imported reading within [tolerance] ms of them
+     * (the sensor's own reading wins over an imported copy, HistoryImport), in one transaction.
+     */
+    @Transaction
+    suspend fun upsertOwnFirst(
+        readings: List<ReadingEntity>,
+        imported: List<String>,
+        tolerance: Long,
+    ) {
+        upsert(readings)
+        val own = readings.filter { it.source !in imported }
+        if (own.isNotEmpty()) dropImportedNear(own.minOf { it.t } - tolerance, own.maxOf { it.t } + tolerance, imported, tolerance)
+    }
+
+    /** Imported readings in [from, to] with a reading from another source within [tolerance] ms. */
+    @Query(
+        "DELETE FROM readings WHERE source IN (:imported) AND t >= :from AND t <= :to AND EXISTS (SELECT 1 FROM readings AS own " +
+            "WHERE own.source NOT IN (:imported) AND own.t >= readings.t - :tolerance AND own.t <= readings.t + :tolerance)",
+    )
+    suspend fun dropImportedNear(
+        from: Long,
+        to: Long,
+        imported: List<String>,
+        tolerance: Long,
+    ): Int
+
+    /** Every reading in [from, to], any source (the import path compares with all of them). */
+    @Query("SELECT * FROM readings WHERE t >= :from AND t <= :to ORDER BY t")
+    suspend fun around(
+        from: Long,
+        to: Long,
+    ): List<ReadingEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertNew(readings: List<ReadingEntity>)
+
+    /** The import path: [plan] chooses, from what is stored in [from, to], what of the batch to add; one transaction. */
+    @Transaction
+    suspend fun importAround(
+        from: Long,
+        to: Long,
+        plan: (stored: List<ReadingEntity>) -> List<ReadingEntity>,
+    ): Int {
+        val add = plan(around(from, to))
+        if (add.isNotEmpty()) insertNew(add)
+        return add.size
+    }
+
     /** Retention. */
     @Query("DELETE FROM readings WHERE t < :cutoff")
     suspend fun deleteBefore(cutoff: Long): Int
+
+    /** What a role change would delete: how many readings from [sources], their first and last time. */
+    @Query("SELECT COUNT(*) AS count, MIN(t) AS oldest, MAX(t) AS newest FROM readings WHERE source IN (:sources)")
+    suspend fun span(sources: List<String>): SpanRow
+
+    /** A role change: another person's readings go. */
+    @Query("DELETE FROM readings WHERE source IN (:sources)")
+    suspend fun deleteFrom(sources: List<String>): Int
 }
 
 @Dao
@@ -79,11 +148,47 @@ interface TreatmentDao {
     @Upsert
     suspend fun upsert(treatment: TreatmentEntity)
 
-    /** Last writer wins: stores [treatment] only if nothing with the same or a later `modifiedAt` is stored. */
+    @Query("SELECT COUNT(*) AS count, MIN(at) AS oldest, MAX(at) AS newest FROM treatments WHERE deleted = 0")
+    suspend fun span(): SpanRow
+
+    @Query("DELETE FROM treatments")
+    suspend fun deleteAll()
+
+    /** Every entry with `at` in [from, to], tombstones included (the import path compares with all of them). */
+    @Query("SELECT * FROM treatments WHERE at >= :from AND at <= :to")
+    suspend fun around(
+        from: Long,
+        to: Long,
+    ): List<TreatmentEntity>
+
+    @Query("SELECT * FROM treatments WHERE id IN (:ids)")
+    suspend fun byIds(ids: List<String>): List<TreatmentEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertNew(treatments: List<TreatmentEntity>)
+
+    /**
+     * The import path: [plan] chooses, from what is stored in [from, to] and under [ids], what of the batch to add; one
+     * transaction.
+     */
+    @Transaction
+    suspend fun importAround(
+        from: Long,
+        to: Long,
+        ids: List<String>,
+        plan: (stored: List<TreatmentEntity>) -> List<TreatmentEntity>,
+    ): Int {
+        val stored = (around(from, to) + ids.distinct().chunked(SQL_VARIABLES).flatMap { byIds(it) }).distinctBy { it.id }
+        val add = plan(stored)
+        if (add.isNotEmpty()) insertNew(add)
+        return add.size
+    }
+
+    /** The contract's merge ([supersedes]): stores [treatment] only if it is newer by `(u, o)` than the stored version. */
     @Transaction
     suspend fun upsertIfNewer(treatment: TreatmentEntity): Boolean {
         val stored = get(treatment.id)
-        if (stored != null && stored.modifiedAt >= treatment.modifiedAt) return false
+        if (stored != null && !treatment.toRecord().treatment.supersedes(stored.toRecord().treatment)) return false
         upsert(treatment)
         return true
     }
@@ -107,3 +212,43 @@ interface OutboxDao {
     @Query("DELETE FROM outbox WHERE sent_at IS NOT NULL AND sent_at < :cutoff")
     suspend fun deleteSentBefore(cutoff: Long): Int
 }
+
+@Dao
+interface PenLedgerDao {
+    @Query("SELECT json FROM pen_ledger WHERE id = 0")
+    suspend fun ledger(): String?
+
+    @Upsert
+    suspend fun put(ledger: PenLedgerEntity)
+
+    /** Insulin and pen entries, tombstones included (the pen engine's view of the log; carbs and notes never matter). */
+    @Query("SELECT * FROM treatments WHERE kind IN ('RapidInsulin', 'LongInsulin') OR pen_json IS NOT NULL")
+    suspend fun insulin(): List<TreatmentEntity>
+
+    @Query("SELECT modified_at FROM treatments WHERE id = :id")
+    suspend fun modifiedAt(id: String): Long?
+
+    @Upsert
+    suspend fun upsertTreatment(treatment: TreatmentEntity)
+
+    /**
+     * One pen change: the ledger and every one of [treatments] newer than the stored version (last writer wins, as
+     * [TreatmentDao.upsertIfNewer]), all or nothing. Returns the ids it stored.
+     */
+    @Transaction
+    suspend fun commit(
+        ledger: PenLedgerEntity,
+        treatments: List<TreatmentEntity>,
+    ): List<String> {
+        val stored =
+            treatments.filter { t ->
+                val had = modifiedAt(t.id)
+                (had == null || had < t.modifiedAt).also { newer -> if (newer) upsertTreatment(t) }
+            }
+        put(ledger)
+        return stored.map { it.id }
+    }
+}
+
+/** Bound parameters per query, under SQLite's 999. */
+internal const val SQL_VARIABLES = 900

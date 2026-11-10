@@ -4,8 +4,16 @@
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="tile_add_treatment">Añadir tratamiento</string>
+    <string name="tile_sensor_ended">Sensor terminado</string>
+    <string name="tile_warming_up">Calentando · %1$s</string>
+    <string name="tile_no_reading_since">Sin lecturas desde las %1$s</string>
     <string name="tile_unavailable">Abre Sukrara para configurarlo</string>
     <string name="treatment_title">Añadir tratamiento</string>
+    <string name="treatment_edit_rapid">Editar insulina rápida</string>
+    <string name="treatment_edit_long">Editar insulina lenta</string>
+    <string name="treatment_edit_carbs">Editar hidratos</string>
+    <string name="treatment_edit_note">Editar nota</string>
+    <string name="treatment_edit_gone">Esta entrada ya no se puede cambiar</string>
     <string name="treatment_rapid">Rápida</string>
     <string name="treatment_long">Lenta</string>
     <string name="treatment_carbs">Carbohidratos</string>
@@ -24,14 +32,50 @@
     <string name="treatment_unlock">Desbloquear</string>
     <string name="treatment_lock_closes">Se cierra sin guardar en %1$d s</string>
     <string name="treatment_lock_not_saved">No guardado: el diálogo se cerró en la pantalla de bloqueo</string>
-    <plurals name="treatment_saved">
-        <item quantity="one">%1$d entrada guardada</item>
-        <item quantity="many">%1$d entradas guardadas</item>
-        <item quantity="other">%1$d entradas guardadas</item>
+    <string name="treatment_lock_draft_kept">Aún sin guardar: desbloquea y toca la notificación para terminar</string>
+    <!-- La confirmación tras Guardar; %1$s = las entradas en palabras, p. ej. "4.5u de insulina rápida · 30g de hidratos" -->
+    <string name="treatment_saved_snack">Guardado: %1$s</string>
+    <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
+    <string name="treatment_changed_snack">Cambiado: %1$s</string>
+    <string name="treatment_undo">Deshacer</string>
+    <string name="treatment_undone">Deshecho</string>
+    <string name="treatment_entry_rapid">%1$s de insulina rápida</string>
+    <string name="treatment_entry_long">%1$s de insulina lenta</string>
+    <string name="treatment_entry_carbs">%1$s de hidratos</string>
+    <!-- La notificación que ofrece lo que tenía el diálogo cuando se cerró en la pantalla de bloqueo; %1$s = las entradas -->
+    <string name="treatment_draft_title">Tratamiento sin guardar</string>
+    <string name="treatment_draft_text">%1$s. Toca para terminar de guardarlo.</string>
+    <string name="treatment_draft_tap">Toca para terminar de guardarlo.</string>
+    <!-- En el diálogo, sobre la entrada guardada como borrador; %1$s = la hora -->
+    <string name="treatment_draft_line">Borrador de las %1$s, aún sin guardar</string>
+    <string name="treatment_draft_discard">Descartar</string>
+    <plurals name="treatment_lock_closes_in">
+        <item quantity="one">Se cierra en %1$d segundo</item>
+        <item quantity="many">Se cierra en %1$d segundos</item>
+        <item quantity="other">Se cierra en %1$d segundos</item>
     </plurals>
-    <plurals name="treatment_sent">
-        <item quantity="one">%1$d entrada se enviará a quien lleva el sensor</item>
-        <item quantity="many">%1$d entradas se enviarán a quien lleva el sensor</item>
-        <item quantity="other">%1$d entradas se enviarán a quien lleva el sensor</item>
+    <string name="treatment_ago">Hace %1$s</string>
+    <string name="treatment_yesterday">Ayer %1$s</string>
+    <string name="treatment_mode_time">Hora</string>
+    <string name="treatment_mode_ago">Minutos antes</string>
+    <string name="treatment_unit_min">min</string>
+    <string name="treatment_quiet_highs">Altas silenciadas %1$s</string>
+    <string name="treatment_quiet_lows">Bajas silenciadas %1$s</string>
+    <string name="treatment_quiet_both">Altas silenciadas %1$s · bajas silenciadas %2$s</string>
+    <string name="treatment_pen_duplicate_title">¿Ya registrada por tu pluma?</string>
+    <string name="treatment_pen_duplicate_text">Tu pluma registró %1$s a las %2$s. ¿Registrar también esta dosis?</string>
+    <string name="treatment_pen_duplicate_log">Registrar igualmente</string>
+    <string name="treatment_pen_hint">¿Te has inyectado? Acerca la pluma al móvil.</string>
+    <string name="treatment_pen_reading">Leyendo la pluma…</string>
+    <string name="treatment_pen_logged">Registrada desde tu pluma</string>
+    <string name="treatment_pen_logged_primed">Registrada desde tu pluma · %1$s de purgado</string>
+    <plurals name="treatment_pen_also">
+        <item quantity="one">También registrada: %d inyección anterior</item>
+        <item quantity="many">También registradas: %d inyecciones anteriores</item>
+        <item quantity="other">También registradas: %d inyecciones anteriores</item>
     </plurals>
+    <string name="treatment_pen_undo">Deshacer</string>
+    <string name="treatment_pen_undone">Lectura de la pluma deshecha</string>
+    <string name="treatment_pen_undo_failed">No se pudo deshacer: algo cambió desde entonces</string>
+    <string name="treatment_saved_tap_hint">%1$s · La próxima vez, acerca la pluma</string>
 </resources>

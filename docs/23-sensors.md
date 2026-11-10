@@ -306,6 +306,7 @@ with *Pair new sensor*, *Read glucose from* *This phone* / *Juggluco*, the senso
 |---|---|
 | `SensorProfile.verified` (Libre 3 true, every new profile false) — the single switch for the *Untested* tag, the confirmation and the banner; profiles `dexcom-g7`, `dexcom-g7-15`, `accu-chek-smartguide`, `aidex-x`, `dexcom-g6` with their warm-up / lifetime / calibration | `core/SensorProfile.kt` |
 | Dexcom G7 / ONE+ / Stelo observer: only a G7 **bonded to this phone** (the Dexcom app's), waits for the app's `05 01 01`, then reads `0x4E` and passive backfill; **writes nothing** | `direct/dexcom/G7Driver.kt`, `G7Messages.kt`, `Dexcom.kt` |
+| The right G7 (#133): before a pairing has its sensor's start, an ended / failed G7 is the wrong device (skipped, scan again, as G7SensorKit rescans); one started more than an hour before the pairing is asked about (*Use it* / *Look for another sensor*, `LinkStatus.ConfirmSensor`); *Waiting for the Dexcom app* can look for another | `sensor/dexcom/G7Driver.kt`, `SourceManager.useFoundSensor` / `lookForAnother`, `feature/sensor` `newsensor/` |
 | Dexcom G6 / ONE: transmitter-id key, transmitter verified before answering, bond, `0x24` session start, `0x4E`, `0x50` backfill | `direct/dexcom/G6Driver.kt`, `G6Messages.kt` |
 | Accu-Chek SmartGuide (standard CGMS 0x181F): Android's PIN dialog → `onBondChanged`, SOCP with the E2E-CRC, CGM Status read, RACP | `direct/cgms/` |
 | Aidex X / LinX / GlucoRx: serial-derived keys, session key read, AES-CFB commands, a poll a minute, readings from the advertisement | `direct/aidex/` |
@@ -321,6 +322,7 @@ with *Pair new sensor*, *Read glucose from* *This phone* / *Juggluco*, the senso
 |---|---|
 | **Dexcom G7 own pairing** (J-PAKE + app certificate) | The certificate half needs a Dexcom-issued identity; borrowing theirs is impersonation, and the chain Juggluco embeds expired in April 2025. The J-PAKE code stays in the spike so the decision is reviewable. Observer mode covers the sensor. |
 | **Abbott Lingo** (step 6) | Out of scope for this round. |
+| Silently skipping G7 sessions started before the pairing, or always skipping the previous pairing's address (#133 A, D) | Both reject legitimate cases without a word: a first Sukrara setup on day 4 of a G7, *Pair sensor again* on the same sensor. The question costs one tap, during setup, never at night. |
 | Camera scan of the box code (Aidex X) | The data-matrix layout isn't documented in the sources we read; typing 10 characters is reliable. |
 | The spike's G6 session start from the transmitter clock, and "stopped" as a G7 end | Both would have shown a running sensor as ended (see docs/10). |
 | LibreView for the new families | LibreView takes Libre life-count readings and a Libre sensor start: only `SensorProfile.libreView` (the Libre 3) reaches it; another family clears what was buffered and sends nothing (`LibreViewUploaderTest`). |
@@ -328,6 +330,7 @@ with *Pair new sensor*, *Read glucose from* *This phone* / *Juggluco*, the senso
 | Calibration entry | All ported families are factory calibrated; the optional on-sensor calibration isn't offered. |
 | The banner for followers and on the Mac | It's about the wearer's own sensor. |
 | **CareSens Air** | mg/dL only exists inside the vendor's `libCALCULATION.so`, and the BLE key is lifted from the vendor app. Both rules. |
+| The G7 J-PAKE round vectors (`g7-jpake-rounds.txt`) in `contracts/sensor/traces` | Nothing reads them: Sukrara doesn't do the G7's own pairing (above). The driver tests read the other traces from `contracts/sensor/traces`, the only copy (#51); the vectors stay in the spike. |
 | **Sibionics GS1 / GS1Sb** | Raw counts plus a vendor algorithm library; keys recovered from the vendor binary. |
 | **Sibionics GS3** | No vendor algorithm, but vendor keys from the same binary **and** a login to `cgm.sibionics.io` for the account id baked into the auth frame. Parked, not refused: revisit if the account id can come from the user's own session. |
 | **Libre 2 / 2 Plus, Libre 1 bridges, Medtrum** | Raw values: either Abbott's library or an unvalidated reimplementation (Libre), or finger-stick calibration (Medtrum). Same decision as inv. 02. |

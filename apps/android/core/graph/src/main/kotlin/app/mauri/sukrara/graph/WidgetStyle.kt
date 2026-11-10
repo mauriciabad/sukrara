@@ -38,11 +38,12 @@ fun widgetCardStyle(
                 lastElse = config.lastElseRing(),
                 sensorTime = sensorTime,
                 bands = config.bands,
+                unit = config.unit,
             )
         }
 
         CardSurface.WIDGET_GRAPH -> {
-            CardStyle(graph = graph, rings = emptyList(), value = false, sensorTime = sensorTime, bands = config.bands)
+            CardStyle(graph = graph, rings = emptyList(), value = false, sensorTime = sensorTime, bands = config.bands, unit = config.unit)
         }
 
         CardSurface.WIDGET_COMBINED -> {
@@ -53,6 +54,7 @@ fun widgetCardStyle(
                 lastElse = config.lastElseRing(),
                 sensorTime = sensorTime,
                 bands = config.bands,
+                unit = config.unit,
             )
         }
 
@@ -61,3 +63,40 @@ fun widgetCardStyle(
         }
     }
 }
+
+/**
+ * The card style of the glucose notification's custom card (surface `notification`, drawn in two parts: the header
+ * row and the chart) from the Notification place's settings: the ONE mapping, used by `:monitor` and CardLayoutTest.
+ * On the card's range colour the value is in [valueInk] and the slots sit on discs of [slotDisc].
+ */
+fun notificationCardStyle(
+    config: GraphConfig,
+    valueInk: Int? = null,
+    slotDisc: Int? = null,
+): CardStyle =
+    CardStyle(
+        graph = config.graphStyle(config.hours(GraphPlace.NOTIFICATION)),
+        rings = config.rings(),
+        last = config.lastPlace,
+        lastElse = config.lastElseRing(),
+        sensorTime = config.sensorTime(GraphPlace.NOTIFICATION),
+        slotDisc = slotDisc,
+        valueInk = valueInk,
+        bands = config.bands,
+        unit = config.unit,
+    )
+
+/**
+ * The card style of the *Sensor ready* page's first reading (surface `sensor-ready`, drawn as the value part only) from
+ * the App place's settings: the ONE mapping, used by `:feature:sensor` and CardLayoutTest.
+ */
+fun sensorReadyCardStyle(config: GraphConfig): CardStyle =
+    CardStyle(
+        graph = null,
+        rings = config.rings(),
+        last = config.lastPlace,
+        lastElse = config.lastElseRing(),
+        sensorTime = config.sensorTime(GraphPlace.APP),
+        bands = config.bands,
+        unit = config.unit,
+    )

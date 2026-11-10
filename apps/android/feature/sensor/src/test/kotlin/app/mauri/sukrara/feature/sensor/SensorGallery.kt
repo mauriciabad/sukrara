@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
+import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInContent
 import app.mauri.sukrara.feature.sensor.libreview.SignInError
@@ -44,15 +46,16 @@ class SensorGallery {
     /** The two screens closing themselves show for a frame at most: not reviewed. */
     private val steps = Steps.all.filter { it.second != NewSensorStep.LeftRunning && it.second != NewSensorStep.Cancelled }
 
-    private val signIn = listOf(
-        "loading" to SignInUi.Loading,
-        "signed-out" to SignInUi.SignedOut(),
-        "working" to SignInUi.Working,
-        "wrong-password" to SignInUi.SignedOut(SignInError.WrongPassword),
-        "accept-terms" to SignInUi.SignedOut(SignInError.AcceptTerms),
-        "failed" to SignInUi.SignedOut(SignInError.Failed),
-        "signed-in" to SignInUi.SignedIn("ana@example.com"),
-    )
+    private val signIn =
+        listOf(
+            "loading" to SignInUi.Loading,
+            "signed-out" to SignInUi.SignedOut(),
+            "working" to SignInUi.Working,
+            "wrong-password" to SignInUi.SignedOut(SignInError.WrongPassword),
+            "accept-terms" to SignInUi.SignedOut(SignInError.AcceptTerms),
+            "failed" to SignInUi.SignedOut(SignInError.Failed),
+            "signed-in" to SignInUi.SignedIn("ana@example.com"),
+        )
 
     @Composable
     private fun Frame(dark: Boolean, fontScale: Float, content: @Composable () -> Unit) {
@@ -77,7 +80,8 @@ class SensorGallery {
                 if (showSignIn) {
                     LibreViewSignInContent(ui, canSubmit = { _, _ -> true }, onSignIn = { _, _ -> }, onSignOut = {}, onBack = {})
                 } else {
-                    NewSensorContent(step, Steps.NOW) {}
+                    // the Sensor ready page draws its first reading with the card renderer (surface sensor-ready)
+                    NewSensorContent(step, Steps.NOW, firstReading = Reading(Steps.NOW.minusSeconds(40), 112, 0.6, SourceId.Libre3)) {}
                 }
             }
         }
@@ -102,11 +106,13 @@ class SensorGallery {
 
     @Test fun darkLargest() = gallery(dark = true, fontScale = 2f)
 
-    @Test @Config(qualifiers = "+es")
-    fun spanish() = gallery(
-        dark = true,
-        fontScale = 1f,
-        prefix = "es-",
-        only = setOf("needs-libreview", "takeover-failed", "warming-up", "accept-terms", "signed-in"),
-    )
+    @Test
+    @Config(qualifiers = "+es")
+    fun spanish() =
+        gallery(
+            dark = true,
+            fontScale = 1f,
+            prefix = "es-",
+            only = setOf("needs-libreview", "takeover-failed", "warming-up", "accept-terms", "signed-in"),
+        )
 }

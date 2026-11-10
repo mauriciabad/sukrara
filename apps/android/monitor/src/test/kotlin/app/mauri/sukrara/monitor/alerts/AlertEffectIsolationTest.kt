@@ -8,7 +8,6 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -77,80 +76,101 @@ class AlertEffectIsolationTest {
     private var publishFails = false
     private var published = AlertUiState()
 
-    private fun runtime() = AlertRuntime(
-        AlertStateStore(rig.settingsRepo, record),
-        rig.treatments,
-        presenter,
-        alarm,
-        { if (mirrorFails) throw IllegalStateException("relay down") },
-        { if (publishFails) throw IllegalStateException("hub") else published = it },
-        rig.clock,
-        log = { logged += it },
-    )
+    private fun runtime() =
+        AlertRuntime(
+            AlertStateStore(rig.settingsRepo, record),
+            rig.treatments,
+            presenter,
+            alarm,
+            { if (mirrorFails) throw IllegalStateException("relay down") },
+            { if (publishFails) throw IllegalStateException("hub") else published = it },
+            rig.clock,
+            log = { logged += it },
+        )
 
     private val low get() = rig.wearerState(latest = rig.reading(60))
 
-    @Test fun aRefusedNotificationStillArmsTheAlarmAndSaves() = runTest {
-        presenter.failing = true
-        runtime().onState(low)
-        assertNotNull("the exact alarm is armed", alarm.at)
-        assertNotNull("the state is saved", rig.record.data.first().machine)
-        assertTrue(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
-        assertTrue(logged.contains("notify failed: SecurityException"))
-    }
+    @Test fun aRefusedNotificationStillArmsTheAlarmAndSaves() =
+        runTest {
+            presenter.failing = true
+            runtime().onState(low)
+            assertNotNull("the exact alarm is armed", alarm.at)
+            assertNotNull(
+                "the state is saved",
+                rig.record.data
+                    .first()
+                    .machine,
+            )
+            assertTrue("Notify:level" in published.failedSteps)
+            assertTrue(logged.contains("notify failed: SecurityException"))
+        }
 
-    @Test fun aRefusedAlarmStillPostsTheAlertAndSaves() = runTest {
-        alarm.failing = true
-        runtime().onState(low)
-        assertEquals("low", rig.presenter.slots[AlertKind.LOW.group])
-        assertNotNull(rig.record.data.first().machine)
-        assertTrue(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
-        assertTrue(logged.contains("alarm failed: SecurityException"))
-    }
+    @Test fun aRefusedAlarmStillPostsTheAlertAndSaves() =
+        runTest {
+            alarm.failing = true
+            runtime().onState(low)
+            assertEquals("low", rig.presenter.slots[AlertKind.LOW.group])
+            assertNotNull(
+                rig.record.data
+                    .first()
+                    .machine,
+            )
+            assertTrue("Alarm" in published.failedSteps)
+            assertTrue(logged.contains("alarm failed: SecurityException"))
+        }
 
-    @Test fun aStoreThatCantWriteStillPostsAndArmsTheAlarm() = runTest {
-        record.failing = true
-        runtime().onState(low)
-        assertEquals("low", rig.presenter.slots[AlertKind.LOW.group])
-        assertNotNull(alarm.at)
-        assertTrue(logged.contains("save failed: IOException"))
-    }
+    @Test fun aStoreThatCantWriteStillPostsAndArmsTheAlarm() =
+        runTest {
+            record.failing = true
+            runtime().onState(low)
+            assertEquals("low", rig.presenter.slots[AlertKind.LOW.group])
+            assertNotNull(alarm.at)
+            assertTrue(logged.contains("save failed: IOException"))
+        }
 
-    @Test fun aBrokenFollowerLinkOrHubStillArmsTheAlarmAndSaves() = runTest {
-        mirrorFails = true
-        publishFails = true
-        runtime().onState(low)
-        assertNotNull(alarm.at)
-        assertNotNull(rig.record.data.first().machine)
-        assertTrue(logged.contains("publish failed: IllegalStateException"))
-    }
+    @Test fun aBrokenFollowerLinkOrHubStillArmsTheAlarmAndSaves() =
+        runTest {
+            mirrorFails = true
+            publishFails = true
+            runtime().onState(low)
+            assertNotNull(alarm.at)
+            assertNotNull(
+                rig.record.data
+                    .first()
+                    .machine,
+            )
+            assertTrue(logged.contains("publish failed: IllegalStateException"))
+        }
 
-    @Test fun aBrokenFollowerLinkIsLoggedAndTheAlertStillPosts() = runTest {
-        mirrorFails = true
-        runtime().onState(low)
-        assertEquals("low", rig.presenter.slots[AlertKind.LOW.group])
-        assertNotNull(alarm.at)
-        assertTrue(logged.contains("mirror failed: IllegalStateException"))
-    }
+    @Test fun aBrokenFollowerLinkIsLoggedAndTheAlertStillPosts() =
+        runTest {
+            mirrorFails = true
+            runtime().onState(low)
+            assertEquals("low", rig.presenter.slots[AlertKind.LOW.group])
+            assertNotNull(alarm.at)
+            assertTrue(logged.contains("mirror failed: IllegalStateException"))
+        }
 
-    @Test fun theProblemGoesWhenTheStepWorksAgain() = runTest {
-        val runtime = runtime()
-        presenter.failing = true
-        runtime.onState(low)
-        assertTrue(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
-        presenter.failing = false
-        rig.clock.instant = rig.clock.now().plusSeconds(60)
-        runtime.onState(rig.wearerState(latest = rig.reading(58)))
-        assertEquals("the refused alert is posted on the next input, with its sound", listOf("show low"), rig.presenter.log)
-        assertFalse(AlertDeliveryProblem.AlertStepFailed in published.deliveryProblems)
-    }
+    @Test fun theProblemGoesWhenTheStepWorksAgain() =
+        runTest {
+            val runtime = runtime()
+            presenter.failing = true
+            runtime.onState(low)
+            assertTrue("Notify:level" in published.failedSteps)
+            presenter.failing = false
+            rig.clock.instant = rig.clock.now().plusSeconds(60)
+            runtime.onState(rig.wearerState(latest = rig.reading(58)))
+            assertEquals("the refused alert is posted on the next input, with its sound", listOf("show low"), rig.presenter.log)
+            assertTrue(published.failedSteps.isEmpty())
+        }
 
-    @Test fun logLinesCarryNoGlucoseValues() = runTest {
-        presenter.failing = true
-        alarm.failing = true
-        record.failing = true
-        runtime().onState(low)
-        assertTrue(logged.isNotEmpty())
-        logged.forEach { assertFalse("no digits in '$it'", it.any(Char::isDigit)) }
-    }
+    @Test fun logLinesCarryNoGlucoseValues() =
+        runTest {
+            presenter.failing = true
+            alarm.failing = true
+            record.failing = true
+            runtime().onState(low)
+            assertTrue(logged.isNotEmpty())
+            logged.forEach { assertFalse("no digits in '$it'", it.any(Char::isDigit)) }
+        }
 }

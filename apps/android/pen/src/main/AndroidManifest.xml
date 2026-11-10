@@ -4,6 +4,18 @@
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- the read card's haptics -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- reading the pen with a tap -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
+    <!-- pens through Juggluco: whether it is installed (PensModule) -->
+    <queries>
+        <package android:name="tk.glucodata" />
+    </queries>
+
     <application>
         <!-- enabled at runtime only while pens are on -->
         <activity
@@ -29,6 +41,11 @@
             android:exported="false"
             android:launchMode="singleTask"
             android:noHistory="true"
-            android:taskAffinity="" />
+            android:taskAffinity=""
+            android:theme="@style/Theme.Sukrara.PenRead" />
+        <!-- the pen notifications' buttons (only Sukrara's own PendingIntents) -->
+        <receiver
+            android:name=".PenActionReceiver"
+            android:exported="false" />
     </application>
 </manifest>
