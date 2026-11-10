@@ -35,9 +35,22 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.target = self
             button.action = #selector(clicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            // VoiceOver's actions on the value (VO-Command-Space): say it again, also after moving away
+            button.setAccessibilityCustomActions([
+                NSAccessibilityCustomAction(name: L10n.t("Read Glucose Aloud")) { [weak self] in
+                    self?.readAloud?()
+                    return self?.readAloud != nil
+                }
+            ])
         }
         render()
     }
+
+    /// Says the glucose (`ReadAloud`): the status item's VoiceOver action.
+    var readAloud: (() -> Void)?
+
+    /// What VoiceOver's announcement of the glucose comes from: the status item.
+    var accessibilityElement: Any? { item.button }
 
     /// The status item's frame in screen coordinates (nil while it has no window, e.g. hidden by the notch).
     var screenFrame: NSRect? {

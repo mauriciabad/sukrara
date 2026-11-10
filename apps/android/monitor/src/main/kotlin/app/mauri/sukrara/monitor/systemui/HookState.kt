@@ -30,6 +30,11 @@ data class HookState(
     val iconsShown: Boolean = false,
     /** The person's glucose unit: the module writes the value in it. */
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
+    /**
+     * What TalkBack says for the module's text, in the person's language (System UI can't load the app's translations):
+     * the app's sentences by [HookText.spokenKey], for the face now and the ones it reaches before the next state.
+     */
+    val spoken: Map<String, String> = emptyMap(),
 ) {
     /** The newest reading for the card's decision, or null. */
     fun latest(): GlucosePoint? = if (mgdl > 0) GlucosePoint(atS, mgdl, rate) else null
@@ -57,6 +62,8 @@ data class HookState(
             putLong(READY_AT, readyAtS)
             putBoolean(ICONS_SHOWN, iconsShown)
             putString(UNIT, unit.key)
+            putStringArray(SPOKEN_KEYS, spoken.keys.toTypedArray())
+            putStringArray(SPOKEN, spoken.values.toTypedArray())
         }
 
     companion object {
@@ -72,10 +79,17 @@ data class HookState(
         private const val READY_AT = "readyAt"
         private const val ICONS_SHOWN = "iconsShown"
         private const val UNIT = "unit"
+        private const val SPOKEN_KEYS = "spokenKeys"
+        private const val SPOKEN = "spoken"
+
+        /** At most this many sentences, each at most [MAX_SPOKEN_CHARS] long, on one line. */
+        const val MAX_SPOKEN = 12
+        const val MAX_SPOKEN_CHARS = 400
 
         /**
          * Reads a state the module received. Every value is untrusted and clamped: an unknown placement is the
-         * default, a value outside 20–600 mg/dL or a rate outside ±20 is dropped, the ranges are made sane.
+         * default, a value outside 20–600 mg/dL or a rate outside ±20 is dropped, the ranges are made sane, the
+         * sentences are at most [MAX_SPOKEN] of [MAX_SPOKEN_CHARS] characters on one line.
          */
         fun from(i: Intent): HookState {
             val b = i.extras ?: return HookState()
@@ -96,8 +110,24 @@ data class HookState(
                 readyAtS = b.getLong(READY_AT, 0).coerceAtLeast(0),
                 iconsShown = b.getBoolean(ICONS_SHOWN, false),
                 unit = GlucoseUnit.of(b.getString(UNIT)),
+                spoken = spoken(b.getStringArray(SPOKEN_KEYS), b.getStringArray(SPOKEN)),
             )
         }
+
+        /** The sentences by key, clamped ([from]). */
+        fun spoken(
+            keys: Array<String?>?,
+            values: Array<String?>?,
+        ): Map<String, String> {
+            if (keys == null || values == null || keys.size != values.size) return emptyMap()
+            return keys
+                .zip(values)
+                .take(MAX_SPOKEN)
+                .mapNotNull { (k, v) -> if (k == null || v == null) null else k.take(32) to oneLine(v).take(MAX_SPOKEN_CHARS) }
+                .toMap()
+        }
+
+        private fun oneLine(s: String) = s.replace('\n', ' ').replace('\r', ' ')
     }
 }
 

@@ -223,7 +223,8 @@
     "package:com.freestylelibre.app.at": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.freestylelibre.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.freestylelibre.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
-    "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)"
+    "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "intent:android.intent.action.TTS_SERVICE": "Read glucose aloud: the phone's text-to-speech engine (:monitor ReadAloud)"
   },
   "prerelease_ok": {
     "material3": {

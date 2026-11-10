@@ -132,4 +132,7 @@
     <string name="alert_test_text">Una prueba, no una lectura. Tu alerta real suena así.</string>
     <string name="calendar_event_title">Fin del sensor</string>
     <string name="calendar_event_description">Sensor %1$s, empezado el %2$s. Sukrara mantiene este evento al día.</string>
+    <string name="read_aloud_short">En voz alta</string>
+    <string name="read_aloud_long">Leer glucosa en voz alta</string>
+    <string name="read_aloud_unavailable">No hay voz de texto a voz para este idioma. Añade una en Ajustes › Accesibilidad › Salida de texto a voz.</string>
 </resources>

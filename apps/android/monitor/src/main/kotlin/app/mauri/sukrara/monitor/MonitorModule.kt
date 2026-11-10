@@ -21,6 +21,7 @@ import app.mauri.sukrara.monitor.hub.GlucoseHubImpl
 import app.mauri.sukrara.monitor.hub.MonitorRecord
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.SharingLine
+import app.mauri.sukrara.monitor.readaloud.ReadAloud
 import app.mauri.sukrara.monitor.service.AndroidAlarms
 import app.mauri.sukrara.monitor.service.AndroidServiceLauncher
 import app.mauri.sukrara.monitor.service.AndroidStoppedNotice
@@ -62,7 +63,7 @@ class MonitorModule(
     val source: suspend (Role) -> ReadingSource?,
     settings: SettingsRepository,
     treatments: Flow<List<Treatment>>,
-    graphConfig: Flow<GraphConfig>,
+    val graphConfig: Flow<GraphConfig>,
     /** The wearer's followers and nearby devices for the notification's sub text (null: not sharing). */
     sharing: Flow<SharingLine?> = flowOf(null),
     /** The role's reading source may have changed (Settings › Sensor): the service picks it again. */
@@ -164,6 +165,9 @@ class MonitorModule(
             ),
         )
 
+    /** *Read glucose aloud*: the sentence by text-to-speech from the app shortcut. */
+    val readAloud = ReadAloud(context)
+
     /** Channels and the hub's inputs; call from `AppGraph.ready()` (after storage is ready, off the main thread). */
     suspend fun ready() {
         Channels.create(context)
@@ -171,17 +175,19 @@ class MonitorModule(
         // starters must see the real role from disk, not the initial "setup not done"
         hubImpl.awaitInputs()
         root?.start()
+        readAloud.publish()
     }
 
     /**
      * The language changed (the phone's or Sukrara's own): every channel and group gets its name in the new language
      * (Android keeps the person's channel settings, only the name changes), the glucose notification and the widgets
-     * are redrawn.
+     * are redrawn, the *Read glucose aloud* shortcut is named again.
      */
     fun onLocaleChanged() {
         Channels.create(context)
         repost()
         ticks.tryEmit(Unit)
+        readAloud.publish()
     }
 
     /**

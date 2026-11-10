@@ -149,4 +149,8 @@
     <string name="alert_test_text">A test, not a reading. Your real alert sounds like this.</string>
     <string name="calendar_event_title">Sensor ends</string>
     <string name="calendar_event_description">Sensor %1$s, started %2$s. Sukrara keeps this event up to date.</string>
+    <!-- Read glucose aloud: the app shortcut (launcher long-press, TalkBack's actions on the app icon) -->
+    <string name="read_aloud_short">Read aloud</string>
+    <string name="read_aloud_long">Read glucose aloud</string>
+    <string name="read_aloud_unavailable">No text-to-speech voice for this language. Add one in Settings › Accessibility › Text-to-speech output.</string>
 </resources>

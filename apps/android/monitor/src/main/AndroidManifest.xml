@@ -26,6 +26,10 @@
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <queries>
         <package android:name="com.google.android.calendar" />
+        <!-- Read glucose aloud (readaloud/ReadAloud): the phone's text-to-speech engine -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <!-- The alert runtime's own needs: exact alarms and full-screen alarms. USE_EXACT_ALARM
@@ -46,6 +50,15 @@
     <uses-permission android:name="${applicationId}.permission.SYSTEMUI_STATE" />
 
     <application>
+        <!-- Read glucose aloud: the app shortcut's target, says the glucose and closes at once (no screen). Not
+             exported: the launcher starts Sukrara's own shortcut as Sukrara. -->
+        <activity
+            android:name=".readaloud.ReadAloudActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
         <!-- the one monitoring service of both roles; connectedDevice (not dataSync: capped at 6 h a day) -->
         <service
             android:name=".MonitoringService"
