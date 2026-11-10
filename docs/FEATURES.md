@@ -1038,11 +1038,15 @@ past the other app's event; blocks again if it's still running) or *Help*.
   their phone*, *Bluetooth is off* (*Turn on Bluetooth*), *Needs the Nearby devices permission* (*Allow Nearby devices*:
   scan + connect, `neverForLocation`) or *not connected* (monitoring stopped).
 - `HELLO` carries a fresh random nonce; the phone's `INFO` answers `m = H("cgm2:ble:"+sid+":"+nonce)`. A follower writes
-  nothing to a phone (requests, rekeys, history requests, treatments) until its `INFO` proves our stream (`m` over one
-  of its last 4 nonces; once the follower knows the stream id a pairing `i` never proves it). Another wearer's phone is
+  nothing to a phone (requests, rekeys, history requests, treatments) until its `INFO` proves our stream. Once the
+  follower knows the stream id, `m` is checked first: only `m` over one of its last 4 nonces proves it (a pairing `i`
+  never does) and an `i` naming another identity still makes it another wearer's; before that, the pairing `i` = our
+  wearer's identity does. One text for both apps: PROTOCOL-v2 "Bluetooth link", cases in
+  `contracts/protocol/ble/link-rules.json`. Another wearer's phone is
   avoided for 10 minutes (that phone only, by its current Bluetooth address / Mac peripheral id: never the one connected
-  since; a phone that rotates its address sooner can be tried again) and the scan goes on; on
-  the Mac, a phone with nothing to pair with (not following yet) is left for a minute. A pending request: receive only.
+  since; a phone that rotates its address sooner can be tried again) and the scan goes on; while not following yet, a
+  phone with nothing to pair with is left for a minute (Android *Find phones nearby*, the Mac). A pending request:
+  receive only.
   After a new key the follower sends `HELLO` again with its proof. Entries still pending go to the phone as soon as it
   proved it's the wearer's; one counts as delivered on a relay's OK or the wearer's echo (a bare write response doesn't).
 - Reliability (Android follower): scan by service UUID (starts spaced: at most 4 per 30 s; restarted every 25 min), one
@@ -1051,7 +1055,9 @@ past the other app's event; blocks again if it's still running) or *Help*.
   connections fail, a new `BluetoothGatt` per connection.
 - Frame sizes: every frame fits one ATT write / notification at the link's MTU (Android central: the negotiated MTU;
   Mac: CoreBluetooth's write-without-response length + 3), so a Mac at the default MTU 23 needs no long write; the
-  wearer's phone still accepts a long (Prepare/Execute) write as one frame (`contracts/protocol/ble/default-mtu.json`).
+  wearer's phone still accepts a long (Prepare/Execute) write as one frame (`contracts/protocol/ble/default-mtu.json`);
+  parts it holds for a device that never sends the Execute Write are dropped 30 s after the last one, like a reassembly
+  buffer.
 - Limits: reassembly drops a message idle for 30 s or over 256 KiB, at most 16 open at once (Android and Mac). The
   wearer's phone takes at most 8 follower devices at once (a connection counts only once it writes to the service), checks
   each write before answering (a malformed frame, a long write out of offset order or over 512 bytes, or more than

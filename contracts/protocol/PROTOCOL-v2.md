@@ -114,14 +114,6 @@ entries, deletes.
   `HELLO` without `id` is supported.
 - BLE: every treatment event is pushed to subscribed centrals like any publish; the `HELLO` backlog also carries the
   treatment events of the last 30 days (newest 200), after the chunks and before live.
-- BLE link rules (2026-10-28, refine spec/ogs-ble.md B§4.1/B§6): every frame fits one ATT Write Request /
-  notification (`min(ATT_MTU−3, 512)`; CoreBluetooth's MTU is its `.withoutResponse` write length + 3, never the
-  `.withResponse` length, which is always 512 and makes the stack send a long write). The wearer still accepts a long
-  (Prepare/Execute) write on RX from any central: parts in offset order, at most 512 bytes, then judged as one frame.
-  **Which owner:** once the follower knows `sid`, only `m` over one of its last 4 nonces proves the wearer's phone (a
-  pairing `i` is public, so it never does); before `sid`, `i` = the stream's `I` does. A phone proved to be another
-  wearer's is avoided for **10 minutes** (that phone only, by its connection id: never the one connected since).
-  Pinned by `ble/default-mtu.json` (a Mac follower ↔ Android wearer at ATT MTU 23, plain and long write).
 - Sukrara for Mac follows over v2 like any follower; while it is a writer, its entries go over v2 only (not the
   legacy Mac link), so "Can add entries" governs the Mac too. The legacy link (SPEC §2) refuses entries unless the
   wearer explicitly allows that unauthenticated path on the phone.
@@ -154,6 +146,31 @@ entries, deletes.
 Verified on Android (two emulators, 2026-10-16, `spikes/showcase-android/evidence/n1-*`): wearer entries and deletes
 reach the follower over relays and over BLE with the follower offline; writer entry accepted (echo) in < 5 s over
 relays, ≈ 0.1 s over BLE, and after 3 min when the wearer's relays were off (*not accepted yet* → *accepted*).
+
+## Bluetooth link
+
+The rules every app follows on the Bluetooth link (they refine the OGS BLE draft's B§4.1 and B§6; the messages,
+framing header and limits are in [docs/07](../../docs/07-bluetooth-followers.md)). Pinned by
+[ble/link-rules.json](ble/link-rules.json) (Android `BleLinkRulesTest` + `NearbyLinkRulesTest`, Mac
+`BleLinkRulesTests`) and [ble/default-mtu.json](ble/default-mtu.json) (a Mac follower ↔ Android wearer at ATT MTU 23,
+plain and long write).
+
+- **Frames**: every frame fits one ATT Write Request or notification: at most `min(ATT_MTU − 3, 512)` bytes, the
+  6-byte header included. CoreBluetooth's ATT MTU is its `.withoutResponse` write length + 3, never the
+  `.withResponse` length (always 512, which makes the stack send a long write).
+- **Long writes**: the wearer still accepts a long (Prepare / Execute) write on RX from any central: parts in offset
+  order, at most 512 bytes in all, each echoed in the Prepare Write Response, then judged as one frame on Execute Write
+  (same limits as a plain write; out of order or over 512 bytes = refused and the central dropped). Each central has
+  at most one such queue (≤ 512 bytes); it is dropped by an Execute Write that cancels, by the central disconnecting,
+  and **30 s after its last part** without an Execute Write, like a reassembly buffer.
+- **Which owner**: a follower writes nothing but `HELLO` until the phone's `INFO` proves it is its wearer's. Once the
+  follower knows `sid`, `m` is checked first: only `m` over one of its **last 4** `HELLO` nonces makes the phone its
+  wearer's (a recorded `INFO` answers an older nonce; a pairing `i` is public, so a copied `i` never proves anything),
+  and an `i` naming another identity still makes it another wearer's. Before `sid` (request pending), `i` = the
+  stream's `I` is its wearer's, another `i` is another wearer's, and no `i` is unknown: receive, but don't write.
+- **Leaving a phone**: a phone proved to be another wearer's is left and avoided for **10 minutes**, and the scan goes
+  on (that phone only, by its connection id: never the one connected since). While joining, a phone with nothing to
+  pair with is left for **1 minute** (it may open *Pair nearby* in a moment).
 
 ## Alerts — v2 addition, 2026-10-17 (investigation 15)
 

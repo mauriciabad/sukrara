@@ -1031,7 +1031,7 @@ class FollowerEngine(
 
         const val NEARBY_VIA = "ble"
 
-        /** B§6: another wearer's phone is avoided for 10 minutes. */
+        /** PROTOCOL-v2 "Bluetooth link": another wearer's phone is avoided for 10 minutes (link-rules.json). */
         const val LEAVE_OTHER_PHONE_S = 600L
 
         /** *Find phones nearby*: a phone offering *Pair nearby* is read again after this long. */
@@ -1040,7 +1040,7 @@ class FollowerEngine(
         /** An offer not confirmed for this long (the phone stopped advertising or went away) leaves the list. */
         const val NEARBY_OFFER_DROP_S = 12L
 
-        /** A phone offering nothing (it may open pairing in a moment) is read again after a minute. */
+        /** A phone offering nothing (it may open pairing in a moment) is read again after a minute (link-rules.json). */
         const val NEARBY_IDLE_S = 60L
 
         const val INBOX = "inbox"

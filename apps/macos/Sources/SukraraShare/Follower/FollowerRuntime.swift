@@ -43,9 +43,9 @@ public actor FollowerRuntime: FollowerService {
     static let historyInterval = 30 * 60
     static let persistInterval: TimeInterval = 300
     static let snapshotWindow: TimeInterval = 24 * 3600
-    /// B§6: another wearer's phone is avoided for 10 minutes.
+    /// PROTOCOL-v2 "Bluetooth link" (link-rules.json): another wearer's phone is avoided for 10 minutes.
     public static let nearbyLeaveOther: Double = 600
-    /// A phone with nothing to pair with (it may open pairing in a moment): a minute.
+    /// A phone with nothing to pair with (it may open pairing in a moment): a minute (link-rules.json).
     public static let nearbyLeaveNoPairing: Double = 60
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "follower")
 
