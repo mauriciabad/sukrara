@@ -49,6 +49,13 @@ data class Pairing(
      * most [MAX_SKIPPED].
      */
     val skipAddresses: List<String> = emptyList(),
+    /**
+     * Devices a scan picked that refused this pairing's id / PIN before it ever reached its sensor (another person's
+     * sensor of the family nearby: a G6 advertises only "Dexcom" + the id's last two characters, every SmartGuide
+     * "AC-…"): never picked again. One is skipped and the scan runs once more; a second refusal fails for good. A new
+     * pairing starts without them (a corrected id may be for that very device).
+     */
+    val strangers: List<String> = emptyList(),
 ) {
     /** What the screens call this sensor: its id, else its advertised name, else the family. */
     val label: String get() = serial.ifEmpty { deviceName.ifEmpty { profile.label } }
@@ -61,14 +68,14 @@ data class Pairing(
             securityVersion == other.securityVersion && wearMin == other.wearMin && warmupMin == other.warmupMin &&
             profile == other.profile && pin.contentEquals(other.pin) && kAuth.contentEquals(other.kAuth) &&
             ended == other.ended && deviceName == other.deviceName && pairedAt == other.pairedAt &&
-            failed == other.failed && skipAddresses == other.skipAddresses
+            failed == other.failed && skipAddresses == other.skipAddresses && strangers == other.strangers
 
     override fun hashCode(): Int = serial.hashCode() * 31 + startEpoch.hashCode()
 
     /** Safe for logs: no secrets. */
     override fun toString() =
         "Pairing(${profile.id}, serial=$serial, address=$address, start=$startEpoch, paired=${kAuth != null}, ended=$ended, " +
-            "failed=$failed, skipped=${skipAddresses.size})"
+            "failed=$failed, skipped=${skipAddresses.size}, strangers=${strangers.size})"
 
     /** [address] added to [skipAddresses] (kept to the newest [MAX_SKIPPED]). */
     fun skipping(address: String): List<String> = (skipAddresses - address.uppercase() + address.uppercase()).takeLast(MAX_SKIPPED)

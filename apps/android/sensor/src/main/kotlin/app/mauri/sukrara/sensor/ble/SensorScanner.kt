@@ -22,6 +22,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** One scan result: what the device advertises, and the raw advertising data. */
 internal class ScanHit(val advert: Advert, val record: ByteArray?)
 
+/** How a [SensorScanner.find] ended. */
+internal sealed interface ScanOutcome {
+    data class Found(val advert: Advert) : ScanOutcome
+
+    /** Scanning can't go on (Bluetooth off, the permission missing): the status says why. */
+    data object Stopped : ScanOutcome
+
+    /** The windows it was given went by without the sensor (a rescan after a stranger's device). */
+    data object NotFound : ScanOutcome
+}
+
 /** What [SensorScanner] needs from Android's Bluetooth LE scanner, so its windows and recovery run on the JVM. */
 internal interface BleScanner {
     val isBluetoothOn: Boolean
@@ -56,18 +67,25 @@ internal class SensorScanner(
         const val WINDOW_MS = 30_000L
         const val PAUSE_MS = 60_000L
         const val NOT_FOUND_WINDOWS = 5
+
+        /** The one rescan after a stranger's device: a sensor nearby advertises many times a window. */
+        const val RESCAN_WINDOWS = 1
     }
 
-    /** The matching device, or null when scanning can't go on (Bluetooth off, permission missing): the status says why. */
+    /**
+     * The matching device; [ScanOutcome.Stopped] when scanning can't go on (Bluetooth off, permission missing: the
+     * status says why); [ScanOutcome.NotFound] after [limit] windows without it (by default it scans on).
+     */
     suspend fun find(
         driver: BrandDriver,
         events: SensorEvents,
-    ): Advert? {
+        limit: Int = Int.MAX_VALUE,
+    ): ScanOutcome {
         var windows = 0
         while (true) {
             if (!scanner.isBluetoothOn) {
                 events.onStatus(LinkStatus.WaitingForBluetooth)
-                return null
+                return ScanOutcome.Stopped
             }
             val hits = Channel<ScanHit>(Channel.UNLIMITED)
             val started =
@@ -78,7 +96,7 @@ internal class SensorScanner(
                     })
                 } catch (_: SecurityException) {
                     events.onStatus(LinkStatus.PermissionMissing)
-                    return null
+                    return ScanOutcome.Stopped
                 }
             events.onStatus(if (windows >= NOT_FOUND_WINDOWS) LinkStatus.SensorNotFound else LinkStatus.Scanning)
             val found =
@@ -102,8 +120,9 @@ internal class SensorScanner(
                     runCatching { scanner.stop() }
                     hits.close()
                 }
-            if (found != null) return found
+            if (found != null) return ScanOutcome.Found(found)
             windows++
+            if (windows >= limit) return ScanOutcome.NotFound
             delay(PAUSE_MS)
         }
     }

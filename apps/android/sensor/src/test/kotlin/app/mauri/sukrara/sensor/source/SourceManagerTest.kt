@@ -18,6 +18,7 @@ import app.mauri.sukrara.sensor.ble.GattConnector
 import app.mauri.sukrara.sensor.ble.GattEvent
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.ble.ScanHit
+import app.mauri.sukrara.sensor.ble.SensorScanner
 import app.mauri.sukrara.sensor.brand.Advert
 import app.mauri.sukrara.sensor.brand.ScanSpec
 import app.mauri.sukrara.sensor.dexcom.Dexcom
@@ -252,6 +253,50 @@ class SourceManagerTest {
             runCurrent()
         }
 
+    /**
+     * A stranger's G6 found first (it advertises the same "Dexcom" + 2 characters) refuses the id: it is skipped and the
+     * scan runs once more; with no other transmitter nearby the pairing then fails for good (the person checks the id).
+     */
+    @Test
+    fun aStrangersTransmitterIsSkippedOnceThenThePairingFails() =
+        runTest {
+            val r = Rig(this)
+            r.store.saveScanned(Pairing.scanned(SensorProfile.DexcomG6, "8GABCD", pairedAtMs = 1L))
+            r.manager.start()
+            runCurrent()
+            r.scanner.onHit(ScanHit(Advert("aa:bb:cc:dd:ee:01", "DexcomCD"), null))
+            runCurrent()
+            val gen = r.connector.opened.last()
+            r.connector.onEvent(GattEvent.ConnectionChanged(gen, true, 0))
+            runCurrent()
+            r.connector.onEvent(GattEvent.ServicesDiscovered(gen, 0, setOf(Dexcom.AUTHENTICATION, Dexcom.CONTROL, Dexcom.BACKFILL)))
+            runCurrent()
+            r.connector.onEvent(GattEvent.OperationDone(gen, Dexcom.AUTHENTICATION, 0))
+            r.connector.onEvent(GattEvent.Notification(gen, Dexcom.AUTHENTICATION, byteArrayOf(0x03) + ByteArray(16)))
+            runCurrent()
+            val skipped = (r.store.load() as PairingLoad.Ok).pairing
+            assertEquals(listOf("AA:BB:CC:DD:EE:01"), skipped.strangers)
+            assertEquals(null, skipped.failed)
+            assertEquals(2, r.scanner.scans) // the one more scan
+            advanceTimeBy(SensorScanner.WINDOW_MS + 1)
+            runCurrent()
+            assertEquals(LinkStatus.Failed(FailReason.WrongId), (r.manager.detail.value as SensorStatus.Direct).link)
+            assertEquals(SensorState.ActionNeeded(SensorAction.PairAgain), r.manager.sensor.value)
+            assertEquals(FailReason.WrongId, (r.store.load() as PairingLoad.Ok).pairing.failed)
+            r.manager.stop()
+            runCurrent()
+        }
+
+    /** A new pairing starts without the strangers: a corrected id may be for that very transmitter. */
+    @Test
+    fun aNewPairingForgetsTheStrangers() =
+        runTest {
+            val r = Rig(this)
+            r.store.saveScanned(Pairing.scanned(SensorProfile.DexcomG6, "8GABCD", pairedAtMs = 1L).copy(strangers = listOf("AA:01")))
+            r.store.saveScanned(Pairing.scanned(SensorProfile.DexcomG6, "8GABCE", pairedAtMs = 2L))
+            assertEquals(emptyList<String>(), (r.store.load() as PairingLoad.Ok).pairing.strangers)
+        }
+
     /** A failure only the person can fix survives a restart: no scan, no connection, no PIN dialog in the background. */
     @Test
     fun aFailedPairingIsNotRetriedAfterARestart() =
@@ -261,7 +306,7 @@ class SourceManagerTest {
             r.manager.start()
             runCurrent()
             assertEquals(LinkStatus.Failed(FailReason.BondFailed), (r.manager.detail.value as SensorStatus.Direct).link)
-            assertEquals(SensorState.ActionNeeded(SensorAction.ScanSensor), r.manager.sensor.value)
+            assertEquals(SensorState.ActionNeeded(SensorAction.PairAgain), r.manager.sensor.value)
             assertEquals(0, r.scanner.scans)
             assertTrue(r.connector.opened.isEmpty())
             r.manager.retry()
@@ -447,7 +492,7 @@ class SourceManagerTest {
 
     @Test
     fun everyProblemHasItsAction() {
-        assertEquals(SensorAction.ScanSensor, SensorStatus.OwnedByAnotherApp.action)
+        assertEquals(SensorAction.TakeOver, SensorStatus.OwnedByAnotherApp.action)
         assertEquals(SensorAction.GrantBluetooth, SensorStatus.BluetoothPermissionMissing.action)
     }
 

@@ -452,7 +452,7 @@ private fun ColumnScope.PermissionsStep(
     StepHeader(stringResource(R.string.sh_setup_permissions_title), stringResource(R.string.sh_setup_permissions_body))
     // runtime permissions are asked in context, the first time; after a "don't ask again" the settings page opens
     val asked = remember { mutableStateOf(setOf<AlertRequirement>()) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower) }
     for (r in items) {
         val ok = r !in u.readiness.missing
@@ -464,10 +464,10 @@ private fun ColumnScope.PermissionsStep(
             continue
         }
         ChecklistRow(r, ok, onFix = {
-            val permission = runtimePermission(r)
-            if (permission != null && r !in asked.value) {
+            val permissions = runtimePermissions(r)
+            if (permissions != null && r !in asked.value) {
                 asked.value += r
-                launcher.launch(permission)
+                launcher.launch(permissions)
             } else {
                 actions.fix(r)
             }
@@ -515,11 +515,14 @@ private fun ChecklistRow(
     }
 }
 
-/** The runtime permission the system dialog can grant for [r] (asked in context the first time), or null. */
-private fun runtimePermission(r: AlertRequirement): String? =
+/**
+ * The runtime permissions the system dialog can grant for [r] (asked in context the first time), or null. Nearby devices
+ * is connecting and scanning: one dialog for both, as the new-sensor flow asks (the checklist checks both).
+ */
+private fun runtimePermissions(r: AlertRequirement): Array<String>? =
     when (r) {
-        AlertRequirement.Notifications -> android.Manifest.permission.POST_NOTIFICATIONS
-        AlertRequirement.Bluetooth -> android.Manifest.permission.BLUETOOTH_CONNECT
+        AlertRequirement.Notifications -> arrayOf(android.Manifest.permission.POST_NOTIFICATIONS)
+        AlertRequirement.Bluetooth -> arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_SCAN)
         else -> null
     }
 

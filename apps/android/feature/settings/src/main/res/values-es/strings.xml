@@ -203,6 +203,8 @@
     <string name="st_sensor_sign_in_needed">Inicia sesión en LibreView para que Sukrara pueda iniciar el sensor o tomar el control.</string>
     <string name="st_sensor_bluetooth_permission_text">Sukrara necesita el permiso de Dispositivos cercanos para leer el sensor. Emparejar sensor nuevo lo pide.</string>
     <string name="st_sensor_scan_again_text">Sukrara no puede usar el emparejamiento guardado. Vuelve a escanear el sensor: sigue funcionando y no se pierde nada.</string>
+    <string name="st_sensor_taken_over_text">Otra app se ha quedado con el sensor (la app oficial o Juggluco) y Sukrara ha dejado de leerlo. Cierra esa app y escanea el sensor para recuperarlo.</string>
+    <string name="st_sensor_pair_again_text">El sensor rechazó el emparejamiento (un ID o PIN incorrectos). Vuelve a emparejarlo.</string>
     <string name="st_sensor_source">Origen de las lecturas</string>
     <string name="st_sensor_source_direct">Este móvil lee el sensor</string>
     <string name="st_sensor_source_direct_why">Sukrara se conecta al sensor por Bluetooth.</string>
@@ -226,6 +228,8 @@
     <string name="st_sensor_status_connecting_juggluco">Recibiendo lecturas de Juggluco…</string>
     <string name="st_sensor_status_juggluco_unreachable">Juggluco no responde: no hay lecturas</string>
     <string name="st_sensor_status_scan_again">Hay que volver a escanear el sensor</string>
+    <string name="st_sensor_status_taken_over">Lo usa otra app</string>
+    <string name="st_sensor_status_pair_again">Hay que volver a emparejarlo</string>
     <string name="st_sensor_status_sign_in">Hay que iniciar sesión en LibreView</string>
     <string name="st_sensor_status_permission">Falta el permiso de Dispositivos cercanos</string>
     <string name="st_sensor_juggluco_unreachable_text">Juggluco no responde, así que Sukrara no recibe lecturas. Abre Juggluco y activa su servidor web (Ajustes › Servidor web), o elige Este móvil lee el sensor abajo.</string>

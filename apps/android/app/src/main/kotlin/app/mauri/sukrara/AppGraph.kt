@@ -424,6 +424,8 @@ class AppGraph(
             data.settings,
             clock,
             scope,
+            glucose = monitor.hub.state,
+            graphConfig = graphConfig,
             startMonitoring = { startMonitoring(StartReason.App) },
         )
     }

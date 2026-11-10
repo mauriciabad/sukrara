@@ -10,9 +10,11 @@ import app.mauri.sukrara.sensor.ble.NoValueReason
 import app.mauri.sukrara.sensor.brand.Advert
 import app.mauri.sukrara.sensor.brand.BrandEvents
 import app.mauri.sukrara.sensor.brand.BrandLink
+import app.mauri.sukrara.sensor.brand.Crc
 import app.mauri.sukrara.sensor.brand.Trace
 import app.mauri.sukrara.sensor.brand.epochSec
 import app.mauri.sukrara.sensor.brand.hex
+import app.mauri.sukrara.sensor.brand.u32le
 import app.mauri.sukrara.sensor.pairing.Pairing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,7 +27,7 @@ import org.junit.Test
  * must match the recorded bytes, and the decrypted replies the recorded plaintexts. Untested on a real sensor.
  */
 class AidexXDriverTest {
-    private val trace = Trace.resource("aidex-x")
+    private val trace = Trace.of("aidex-x")
     private val serial = String(trace["serial"], Charsets.US_ASCII)
     private val iv = AidexX.iv(serial)
     private var nowMs = 1_800_000_000_000L
@@ -183,6 +185,25 @@ class AidexXDriverTest {
         val other = BrandEvents()
         driver(other, "22222A532X", start = nowS).onAdvertisement(Advert("AA", "AiDEX X-22222A2WC8"), trace["advertisement"])
         assertTrue(other.readings.isEmpty())
+    }
+
+    /** Between two polls an advertisement with a status never seen with a value adds nothing and leaves the link as it is. */
+    @Test
+    fun anAdvertisementWithAnUnseenStatusLeavesTheLinkAlone() {
+        val odd = trace["advertisement"].copyOf().also { it[13] = 7 } // the record's status byte
+        val seed = (0..3).sumOf { odd.u32le(11 + it * 4) } % 0x7FA777L
+        val crc = Crc.crc32Seeded(odd, 11, 0x10, seed)
+        for (i in 0..3) odd[27 + i] = (crc shr (8 * i)).toByte()
+        assertTrue(AidexX.Advertisement.parse(odd)!!.crcOk)
+
+        val events = BrandEvents()
+        val d = driver(events, start = nowS - 21600 * 60L)
+        d.onAdvertisement(Advert("AA", "AiDEX X-22222A2WC8"), odd)
+        assertTrue(events.statuses.isEmpty())
+        assertTrue(events.readings.isEmpty())
+        // the polled record with the same status still says the sensor gives no value
+        d.onGlucose(AidexX.Glucose.parse(odd, 11)!!)
+        assertEquals(LinkStatus.NoValue(NoValueReason.SensorError), events.last())
     }
 
     @Test

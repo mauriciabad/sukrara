@@ -5,7 +5,10 @@ package app.mauri.sukrara.feature.sensor.newsensor
 
 import android.nfc.Tag
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.pairing.PairOutcome
@@ -25,9 +28,11 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -64,6 +69,8 @@ class NewSensorViewModelTest {
 
         override val detail = MutableStateFlow<SensorStatus>(SensorStatus.NoSensor)
         override val sensor = MutableStateFlow<SensorState>(SensorState.None)
+        override val latest = MutableStateFlow<Reading?>(null)
+        override val graphConfig = MutableStateFlow(GraphConfig())
 
         override fun retryLink() {
             retries++
@@ -102,6 +109,18 @@ class NewSensorViewModelTest {
             runCurrent()
             assertEquals(NewSensorStep.Ready, vm.state.value.step)
             assertEquals(listOf(NewSensorEffect.TagFound, NewSensorEffect.TapSucceeded, NewSensorEffect.Ready), effects)
+        }
+
+    @Test fun `the ready page shows the new sensor's first reading, never the previous sensor's last one`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            port.latest.value = Reading(t0 - Duration.ofMinutes(20), 140, null, SourceId.Libre3)
+            val vm = vm(port)
+            assertNull(vm.firstReading.value)
+            val first = Reading(t0 + Duration.ofMinutes(2), 112, 0.4, SourceId.Libre3)
+            port.latest.value = first
+            runCurrent()
+            assertEquals(first, vm.firstReading.value)
         }
 
     @Test fun `a tag that isn't a sensor plays the found tick, then the refusal`() =

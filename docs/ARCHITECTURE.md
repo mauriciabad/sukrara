@@ -357,7 +357,13 @@ every load (never `Missing`) until a deliberate save or delete; settings read as
 `SecretUnreadableException` on every read and stays in place (an unreadable identity is never "no identity"); a
 transient Keystore error (busy after an OS update) throws `transient = true`, is not reported and deletes nothing; keys
 are never deleted by an error path. A damaged database is copied aside (with its WAL) and reported by
-`QuarantiningOpenHelperFactory` before SQLite recreates it. The database is not encrypted yet (issue: SQLCipher).
+`QuarantiningOpenHelperFactory` before SQLite recreates it.
+
+**No app-level encryption of the database** (investigation [31](31-db-encryption.md)): file-based encryption protects
+`sukrara.db` at rest. A SQLCipher key the app can use while the phone is locked (every reading arrives then) is a key
+anyone who can read the file on a running phone can use too, and it would add a way for the history to become
+unreadable. The same holds for the typed state and the device-protected plan. Secrets stay sealed by the Keystore
+(`SecureStore`).
 
 ## Android protocol (`apps/android/core/protocol`)
 

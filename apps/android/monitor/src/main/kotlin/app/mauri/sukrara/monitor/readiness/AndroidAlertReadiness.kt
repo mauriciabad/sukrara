@@ -249,7 +249,11 @@ class AndroidAlertReadiness(
         }
     }
 
-    private fun bluetoothPermitted() = ctx.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+    /** Nearby devices: connecting and scanning (the families found by a scan need it; the new-sensor flow asks for both). */
+    private fun bluetoothPermitted() =
+        listOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN).all {
+            ctx.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+        }
 
     /** One emission at start and one per broadcast that can flip an item while the app stays open. */
     private fun systemChanges(): Flow<Unit> =

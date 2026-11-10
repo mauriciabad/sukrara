@@ -34,10 +34,11 @@ public struct AlertTreatment: Equatable, Sendable {
     }
 }
 
-/// The current sensor's life (the live event's ss / se / sw): no `no_data` alert while it has ended or warms up.
+/// The current sensor's life (the live event's ss / se / sw): no `no_data` alert while it has ended or warms up. The
+/// warm-up is the card's rule too (`SensorTiming`, contracts/sensor/life.json).
 public struct SensorWindow: Codable, Equatable, Sendable {
     /// The warm-up state lasts until the first reading, at most this long past the warm-up's end.
-    public static let warmupGrace: TimeInterval = 15 * 60
+    public static let warmupGrace = SensorTiming.warmupGrace
 
     public var start: Date
     public var end: Date
@@ -53,7 +54,9 @@ public struct SensorWindow: Codable, Equatable, Sendable {
 
     /// Warming up: started, no reading of this sensor yet, and not more than the grace past the warm-up's end.
     public func isWarmingUp(at t: Date, latestReading: Date?) -> Bool {
-        t >= start && t < warmupEnd.addingTimeInterval(Self.warmupGrace) && (latestReading.map { $0 < start } ?? true)
+        SensorTiming.warming(
+            start: start.timeIntervalSince1970, warmupEnd: warmupEnd.timeIntervalSince1970,
+            latest: latestReading?.timeIntervalSince1970, now: t.timeIntervalSince1970)
     }
 
     /// No reading is expected: the sensor has ended or is warming up.

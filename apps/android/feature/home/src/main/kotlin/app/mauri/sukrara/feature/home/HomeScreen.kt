@@ -696,8 +696,24 @@ private fun reasonText(
             stringResource(R.string.reason_stopped_title) to stringResource(R.string.reason_stopped_body)
         }
 
+        NoDataReason.UsedByAnotherApp -> {
+            stringResource(R.string.reason_taken_over_title) to stringResource(R.string.reason_taken_over_body)
+        }
+
+        NoDataReason.ScanNeeded -> {
+            stringResource(R.string.reason_scan_title) to stringResource(R.string.reason_scan_body)
+        }
+
+        NoDataReason.PairAgain -> {
+            stringResource(R.string.reason_pair_again_title) to stringResource(R.string.reason_pair_again_body)
+        }
+
         NoDataReason.SensorEnded -> {
             stringResource(R.string.reason_ended_title) to stringResource(R.string.reason_ended_body)
+        }
+
+        is NoDataReason.ClockBehind -> {
+            stringResource(R.string.reason_clock_title) to stringResource(R.string.reason_clock_body, spanText(reason.ahead.toMinutes()))
         }
 
         is NoDataReason.WarmingUp -> {
@@ -733,6 +749,10 @@ private fun actionLabel(reason: NoDataReason): String =
             is NoDataReason.NoSensorYet -> if (reason.follower) R.string.reason_no_wearer_action else R.string.reason_no_sensor_action
             NoDataReason.BluetoothOff -> R.string.reason_bluetooth_action
             NoDataReason.MonitoringStopped -> R.string.reason_stopped_action
+            NoDataReason.UsedByAnotherApp -> R.string.reason_taken_over_action
+            NoDataReason.ScanNeeded -> R.string.reason_scan_action
+            NoDataReason.PairAgain -> R.string.reason_pair_again_action
+            is NoDataReason.ClockBehind -> R.string.reason_clock_action
             NoDataReason.SensorEnded -> R.string.reason_ended_action
             NoDataReason.LinkRevoked -> R.string.reason_revoked_action
             else -> R.string.reason_no_readings_action

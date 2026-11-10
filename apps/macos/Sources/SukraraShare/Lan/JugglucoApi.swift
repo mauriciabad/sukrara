@@ -55,9 +55,10 @@ public enum JugglucoApi {
         ])
     }
 
-    /// Juggluco publishes no wear length or warm-up: the Libre 3 / 3 Plus ones, as Android's Juggluco source.
-    public static let wearSeconds = 15 * 86_400
-    public static let warmupSeconds = 60 * 60
+    /// Juggluco publishes no wear length or warm-up: the defaults (`SensorTiming`, the Libre 3 / 3 Plus ones), as
+    /// Android's Juggluco source.
+    public static let wearSeconds = Int(SensorTiming.defaultWear)
+    public static let warmupSeconds = Int(SensorTiming.defaultWarmup)
 
     /// The running sensor from `sgv.json?sensor=Y`: its start (`sensor_status` "09-10-26 08:05 (9d 3h)", the phone's
     /// local time, taken as this Mac's: they share the home network), end and warm-up. nil without one.
