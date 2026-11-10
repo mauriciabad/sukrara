@@ -433,6 +433,22 @@
         }
       }
     },
+    "Can't add treatments until the follower key can be read" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't add treatments until the follower key can be read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pueden añadir tratamientos hasta poder leer la clave de seguimiento"
+          }
+        }
+      }
+    },
     "Can't connect over the internet. Check the internet connection and try again." : {
       "localizations" : {
         "en" : {
@@ -445,6 +461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se puede conectar por internet. Revisa la conexión a internet y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Can't read the follower key from the Keychain. Retrying; alerting on the last data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read the follower key from the Keychain. Retrying; alerting on the last data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer la clave de seguimiento del Llavero. Reintentando; las alertas siguen con los últimos datos."
           }
         }
       }
@@ -1281,6 +1313,22 @@
         }
       }
     },
+    "No glucose readings or alerts until it's back." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No glucose readings or alerts until it's back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay lecturas de glucosa ni avisos hasta que vuelva."
+          }
+        }
+      }
+    },
     "No Sukrara invite QR code found in that image." : {
       "localizations" : {
         "en" : {
@@ -1421,6 +1469,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin vigilancia: %@"
+          }
+        }
+      }
+    },
+    "Not monitoring: can't read the follower key from the Keychain. Retrying…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: can't read the follower key from the Keychain. Retrying…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: no se puede leer la clave de seguimiento del Llavero. Reintentando…"
           }
         }
       }
@@ -2365,6 +2429,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara se abre al iniciar sesión, así la barra de menús siempre muestra la glucosa."
+          }
+        }
+      }
+    },
+    "Sukrara stopped monitoring" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara stopped monitoring"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara ha dejado de vigilar"
           }
         }
       }

@@ -49,12 +49,18 @@ struct PanelView: View {
                     }
                 #endif
                 if let reason = model.notMonitoringReason {
-                    Label(reason, systemImage: "antenna.radiowaves.left.and.right.slash")
-                        .font(.callout)
-                        .accessibilityLabel(reason)
-                } else {
-                    card
+                    let retrying = model.alertingOnLastData
+                    Label(
+                        reason,
+                        systemImage: retrying
+                            ? "arrow.triangle.2.circlepath" : "antenna.radiowaves.left.and.right.slash"
+                    )
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel(reason)
                 }
+                // the Keychain retrying: the alerts go on over the last readings, so they stay on screen
+                if model.notMonitoringReason == nil || model.alertingOnLastData { card }
                 if let links { SetupRows(links: links, needsFollow: model.needsFollow) }
                 if model.notificationPermission.needsAttention { notificationsWarning }
                 if model.focusCanHoldAlerts { focusNote }
@@ -62,7 +68,7 @@ struct PanelView: View {
                 if let updates = model.updates { UpdateRow(updates: updates) }
                 if let links {
                     ActionRows(
-                        links: links, add: AddTreatmentAvailability(link: model.link), returnAdds: !customMute)
+                        links: links, add: AddTreatmentAvailability(model), returnAdds: !customMute)
                 }
             }
             .padding(14)
@@ -204,7 +210,7 @@ struct PanelView: View {
     /// The card's pill as a control over the spot the renderer drew it: Eat carbs / Take insulin opens Add Treatment
     /// with that field focused, a mute pill opens its ways out (the same as the blocks below).
     @ViewBuilder private func pill(_ data: CardData) -> some View {
-        let canAdd = AddTreatmentAvailability(link: model.link) == .available && links != nil
+        let canAdd = AddTreatmentAvailability(model) == .available && links != nil
         let action = PillAction.of(
             data.alerts.status, canAdd: canAdd, muteAll: model.alerts?.ui.muteAllUntil != nil)
         if action != .none,
@@ -352,6 +358,13 @@ enum AddTreatmentAvailability: Equatable {
     case revoked
     /// The link is over (declined, invite used elsewhere, broken): a new invite is needed.
     case ended
+    /// The Keychain won't read the follower key (retrying): nothing can be signed until it does.
+    case keyUnreadable
+
+    /// The panel's: the link, or the Keychain retrying.
+    init(_ model: AppModel) {
+        self = model.keychainUnreadable ? .keyUnreadable : AddTreatmentAvailability(link: model.link)
+    }
 
     init(link: LinkState) {
         switch link {
@@ -374,6 +387,7 @@ enum AddTreatmentAvailability: Equatable {
         case .notWriter(nil): L10n.t("The wearer hasn't turned on “Can add entries” for this Mac")
         case .revoked: L10n.t("The wearer stopped sharing with this Mac")
         case .ended: L10n.t("Not following anyone: ask for a new invite")
+        case .keyUnreadable: L10n.t("Can't add treatments until the follower key can be read")
         }
     }
 }

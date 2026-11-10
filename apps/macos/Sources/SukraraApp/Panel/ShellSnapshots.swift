@@ -49,7 +49,7 @@
                 link: LinkState = .following(wearer: "Marta", canWrite: true), readings: [Reading],
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
                 mode: LaunchMode = .normal, focus: Bool = false, scroll: ChartScroll = ChartScroll(),
-                act: (AlertController) -> Void = { _ in }
+                keychainUnreadable: Bool = false, act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
                 own.source = .own
@@ -65,6 +65,7 @@
                 var snapshot = FollowerSnapshot.empty
                 snapshot.link = link
                 snapshot.readings = readings
+                snapshot.keychainUnreadable = keychainUnreadable
                 let start = Int(now.timeIntervalSince1970) - 6 * 86400
                 snapshot.sensor = WearerSensor(start: start, end: start + 14 * 86400, warmupEnd: start + 3600)
                 model.apply(snapshot)
@@ -110,6 +111,12 @@
                 ("panel-waiting-first-reading", scene(readings: [])),
                 ("panel-not-following", scene(link: .notFollowing, readings: [])),
                 ("panel-revoked", scene(link: .revoked, readings: [])),
+                (
+                    "panel-keychain-retrying",
+                    scene(
+                        link: .broken("Can't read the follower key from the Keychain"),
+                        readings: ending(112, rate: -0.4), keychainUnreadable: true)
+                ),
                 (
                     "panel-finish-setup",
                     scene(
@@ -160,6 +167,7 @@
         func removeMuted(_ side: AlertSide) {}
         func postTest(_ kind: AlertKind) {}
         func log(_ line: String) {}
+        func monitoringStopped(_ reason: String?) {}
     }
 
     private struct NoWake: WakeScheduling {

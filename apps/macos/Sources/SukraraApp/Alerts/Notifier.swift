@@ -19,6 +19,8 @@ protocol AlertNotifying {
     func postTest(_ kind: AlertKind)
     /// An `AlertLog` line for the event log (a mute, an unmute, Mute all and its end…).
     func log(_ line: String)
+    /// The passive "Sukrara stopped monitoring" note with why (`reason`, the panel's line); nil removes it.
+    func monitoringStopped(_ reason: String?)
 }
 
 /// The part of `UNUserNotificationCenter` the notifier uses (tests record requests instead of posting).
@@ -34,6 +36,8 @@ protocol NotificationPosting {
 final class Notifier: AlertNotifying {
     nonisolated static let sideKey = "side"
     nonisolated static let firingKey = "firing"
+    /// The one "Sukrara stopped monitoring" note (a new one replaces it).
+    nonisolated static let monitoringStoppedID = "app.mauri.sukrara.monitoring-stopped"
 
     private let center: any NotificationPosting
     private let sounds: SoundLibrary?
@@ -102,6 +106,22 @@ final class Notifier: AlertNotifying {
     }
 
     func log(_ line: String) { eventLog?.write(line) }
+
+    /// Passive (no sound, no banner through a Focus): a Mac that stopped monitoring can't ring, so it says so once,
+    /// in the Notification Center too. A click opens the panel (no actions), which shows the same line and its exits.
+    func monitoringStopped(_ reason: String?) {
+        guard let reason else {
+            center.removeDelivered(ids: [Self.monitoringStoppedID])
+            return
+        }
+        let content = UNMutableNotificationContent()
+        content.title = L10n.t("Sukrara stopped monitoring")
+        content.body = reason + "\n" + L10n.t("No glucose readings or alerts until it's back.")
+        content.interruptionLevel = .passive
+        content.sound = nil
+        center.add(UNNotificationRequest(identifier: Self.monitoringStoppedID, content: content, trigger: nil))
+        eventLog?.write("monitoring stopped: notice posted")
+    }
 
     func clear(_ group: AlertGroup) {
         eventLog?.write("alert \(group.rawValue) cleared")

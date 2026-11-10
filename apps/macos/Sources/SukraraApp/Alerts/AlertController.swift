@@ -192,6 +192,10 @@ final class AlertController {
     /// Settings › Alerts › Send Test Alert: a real notification titled "Test" (the engine and its mutes don't see it).
     func sendTest(_ kind: AlertKind) { notifier.postTest(kind) }
 
+    /// Monitoring dropped without the person stopping it (the wearer stopped sharing, the follow broke): a passive
+    /// notification says why. nil = monitoring is back (or the person ended it): the note goes.
+    func monitoringStopped(_ reason: String?) { notifier.monitoringStopped(reason) }
+
     /// Stopped following (or following someone new): nothing measures "no data" from the old wearer's readings any
     /// more, and their alerts go. This Mac's mutes stay (the user set them).
     func resetMonitoring() {

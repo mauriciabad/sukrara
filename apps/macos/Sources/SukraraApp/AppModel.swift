@@ -52,6 +52,11 @@ public final class AppModel {
     private(set) var link: LinkState = .notFollowing
     /// The wearer's readings feed the card and the alert rules: following, or following with the Keychain retrying.
     private var followMonitoring = false
+    /// The Keychain won't read the follower key; the runtime retries (and the alerts go on over the stored readings).
+    private(set) var keychainUnreadable = false
+    /// The Keychain retrying while the wearer's stored readings are still alerted on: the panel shows the card under
+    /// its line.
+    var alertingOnLastData: Bool { keychainUnreadable && followMonitoring }
     /// The wearer's last 24 hours (while `followMonitoring`).
     @ObservationIgnored private var followReadings: [Reading] = []
     private var wearerName: String?
@@ -134,6 +139,7 @@ public final class AppModel {
     func apply(_ snapshot: FollowerSnapshot) {
         let wasMonitoring = monitoring
         link = snapshot.link
+        keychainUnreadable = snapshot.keychainUnreadable
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         followMonitoring = link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty)
         followReadings = followMonitoring ? snapshot.readings : []
@@ -164,6 +170,15 @@ public final class AppModel {
         }
         // only a followed wearer's (or, not following, Juggluco's) readings are shown or alerted on
         apply(readings: monitoredReadings)
+        // dropped out (the wearer stopped sharing, the follow broke): say so even with the panel shut; the person's
+        // own Stop following needs no note
+        if wasMonitoring && !monitoring {
+            if case .notFollowing = link {
+                alerts?.monitoringStopped(nil)
+            } else if let reason = notMonitoringReason {
+                alerts?.monitoringStopped(reason)
+            }
+        }
         onSnapshot?(snapshot)  // first: it loads the wearer's mirrored card settings the widget draws with
         feedWidget()
     }
@@ -186,6 +201,7 @@ public final class AppModel {
     /// Monitoring started, stopped or moved to the other source: the alert rules forget the old one and the history
     /// is loaded from the new one.
     private func monitoringChanged(from wasMonitoring: Bool) {
+        if monitoring && !wasMonitoring { alerts?.monitoringStopped(nil) }  // back: the "stopped" note goes
         let source: HistorySource = followMonitoring ? .follow : lanMonitoring ? .lan : .none
         // stopped, or straight from Juggluco to a wearer (or back): the episodes were about the other readings
         if wasMonitoring && (!monitoring || (historySource != .none && source != historySource)) {
@@ -385,7 +401,13 @@ public final class AppModel {
         if plan.isOffline && plan.mode != .fixture {
             return L10n.t("Not monitoring: offline development build (no sensor, internet or alerts)")
         }
-        // shown over the stored readings too: with the Keychain unreadable no new reading can arrive
+        // shown over the stored readings too: with the Keychain unreadable no new reading can arrive, and the alerts
+        // go on over the last ones (no data included) while the runtime retries
+        if keychainUnreadable, !lanMonitoring {
+            return followMonitoring
+                ? L10n.t("Can't read the follower key from the Keychain. Retrying; alerting on the last data.")
+                : L10n.t("Not monitoring: can't read the follower key from the Keychain. Retrying…")
+        }
         if case .broken(let why) = link, !lanMonitoring { return L10n.t("Not monitoring: \(why)") }
         guard readings.isEmpty else { return nil }
         if !followMonitoring, lanSent != nil, let why = Self.lanReason(lanSnapshot.state) { return why }
