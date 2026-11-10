@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The alert sounds are looked up by name (alerts/AlertSounds.kt), so resource shrinking must keep them. -->
+<!-- The alert sounds are looked up by name (monitor AlertSoundProvider, AlertTryOut: getIdentifier), so resource
+     shrinking must keep them. tools/release/verify-sounds.sh fails a release APK that lost one. -->
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:keep="@raw/arcade_*,@raw/kart_*,@raw/quest_*,@raw/soft_*,@raw/silence" />
