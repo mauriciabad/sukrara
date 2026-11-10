@@ -79,11 +79,20 @@ fun ColumnScope.NearbyFixRow(
     }
 }
 
-/** One line for the Bluetooth link's state; [wearer] = the follower's side (one phone), else the wearer's (N devices). */
+/**
+ * One line for the Bluetooth link's state; [wearer] = the wearer's side (N devices), else the follower's (one phone).
+ * Off on the wearer's phone says where followers' readings come from instead: the internet, or nowhere while
+ * [internet] sharing is off too.
+ */
 @Composable
-fun nearbySummary(status: NearbyStatus, on: Boolean, wearer: Boolean): String =
+fun nearbySummary(
+    status: NearbyStatus,
+    on: Boolean,
+    wearer: Boolean,
+    internet: Boolean = true,
+): String =
     when {
-        !on -> stringResource(R.string.sh_nearby_off)
+        !on -> stringResource(if (internet) R.string.sh_nearby_off else R.string.sh_nearby_off_no_internet)
         status == NearbyStatus.BluetoothOff -> stringResource(R.string.sh_nearby_bluetooth_off)
         status == NearbyStatus.NeedsPermission -> stringResource(R.string.sh_nearby_permission)
         status == NearbyStatus.Unsupported -> stringResource(R.string.sh_nearby_unsupported)

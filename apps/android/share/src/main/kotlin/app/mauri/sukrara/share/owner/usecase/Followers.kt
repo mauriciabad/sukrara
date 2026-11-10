@@ -189,6 +189,8 @@ class ApproveRequest(private val ctx: OwnerContext) {
                     s.followers.filter { it.key != follower } +
                         app.mauri.sukrara.share.owner
                             .FollowerRecord(follower, p.name, now, avatarJson = p.avatarJson),
+                // asked with *Pair nearby*: listed in Nearby devices also while out of range (this phone only)
+                nearbyPaired = if (p.nearby) s.nearbyPaired + follower else s.nearbyPaired,
             )
         return ControlEvents.deliverKey(ctx, next, follower, now) + { ControlEvents.backup(ctx, it, now) }
     }
@@ -215,6 +217,7 @@ class RemoveFollower(private val ctx: OwnerContext) {
             s.copy(
                 followers = s.followers.map { if (it.key == follower && it.active) it.copy(revoked = now) else it },
                 writers = s.writers - follower,
+                nearbyPaired = s.nearbyPaired - follower,
                 // a delivery still waiting for this follower must not go out after the removal
                 pendingControl = s.pendingControl.filter { it.follower != follower },
             )

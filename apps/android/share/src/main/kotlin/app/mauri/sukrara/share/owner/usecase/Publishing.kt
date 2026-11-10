@@ -17,7 +17,8 @@ import java.util.TreeMap
 
 /**
  * Readings to followers: a live event for each new reading younger than [LIVE_MAX_AGE]; hour chunks for
- * every hour that changed — earlier hours at once, the current hour at most every [CHUNK_EVERY] — with `created_at`
+ * every hour that changed — earlier hours at once, the current hour at most every [chunkEvery] (the upload interval,
+ * [CHUNK_EVERY] by default) — with `created_at`
  * strictly increasing per hour. Keeps the last [BACKFILL_HOURS] in memory (what a new follower or a rotation gets).
  * Not thread-safe: the engine calls it on its serial dispatcher.
  */
@@ -27,6 +28,9 @@ class PublishReadings(private val ctx: OwnerContext) {
     private val chunkSentAt = mutableMapOf<Long, Long>()
     private val chunkCreatedAt = mutableMapOf<Long, Long>()
     private var newestLive = 0L
+
+    /** Seconds between two publishes of the current hour's chunk ([app.mauri.sukrara.share.owner.RelayPolicy.chunkEvery]). */
+    var chunkEvery: Long = CHUNK_EVERY
 
     /** New readings from the hub (oldest first). Returns the events to publish. */
     fun onReadings(s: OwnerState, new: List<Reading>, now: Long): List<SignedEvent> {
@@ -52,7 +56,7 @@ class PublishReadings(private val ctx: OwnerContext) {
         return flush(s, now, force = true)
     }
 
-    /** Called every [CHUNK_EVERY]: the current hour's chunk if it changed. */
+    /** Called every [CHUNK_EVERY]: the current hour's chunk if it changed and [chunkEvery] has passed. */
     fun tick(s: OwnerState, now: Long): List<SignedEvent> = flush(s, now, force = false)
 
     fun publishAlert(s: OwnerState, alert: AlertPayload, now: Long): SignedEvent =
@@ -62,7 +66,7 @@ class PublishReadings(private val ctx: OwnerContext) {
         val current = Wire.hourOf(now)
         val out = mutableListOf<SignedEvent>()
         for (h in dirty.descendingSet().toList()) {
-            if (!force && h >= current && now - (chunkSentAt[h] ?: 0) < CHUNK_EVERY) continue
+            if (!force && h >= current && now - (chunkSentAt[h] ?: 0) < chunkEvery) continue
             dirty -= h
             val rows = readings.subMap(h, h + Wire.HOUR).values
             if (rows.isEmpty()) continue

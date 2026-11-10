@@ -630,7 +630,7 @@ Settings → *Show closed tips* brings every closed tip back; nothing closed →
 - A row shows a changed value at once (switch, summary), without reopening the page (`SettingsGroupTest`).
 - **One settings schema** (round f28, the user 2026-10-21: settings must not diverge across platforms): `poc/spikes/settings/settings.json` lists every setting of both apps (store and key per platform, or the one platform with the reason), the number formats and what a follower mirrors from the wearer; `tools/settings/gen.py` generates `SettingsSpec.kt` / `SettingsSpec.swift` from it. `tools/check` rule `settings` fails on a stale generated file, an entry on one platform without a reason, a stored key without an entry (or an entry whose key isn't stored), or a number input that doesn't take its spec; `SettingsSchemaTest` (Android) and `-settingsselftest` (Mac) test the models' keys, defaults and every valid number against it.
 - **One number input** for every number setting on both platforms (schema `numbers`: presets, special values, range, step, unit): the special values (*Off*, *Once*, *None*, *Default (12 h)*, *Every reading*) and presets as choices, then *Custom…* (es *Personalizado…*, the ellipsis character because it asks for more input, like the Mac's; only where the schema allows custom values; `StringsParityTest`) with a number field: unit as its suffix, "From 1 to 48 h" under it, the same text as the error while the value isn't in range on the step; OK saves only a valid value. A custom value shows as *Custom…* selected with its value and round-trips through settings export / import. Closed lists (rings 0–3, vertical lines Off / 1 / 2 / 3 / 4 / 6 / 12 h) are plain choices. Android: the dialog (`NumberDialog`); Mac: a pop-up of the same choices plus *Custom…*, which shows a field with a stepper and the unit. No sliders: the range limits are typed exactly.
-- Number formats (stored units; custom range): ranges very low 30–80 (presets 50 / 54 / 55 / 60), low 40–120 (65 / 70 / 75 / 80), very good 80–250 (120 / 140 / 160), high 100–300 (160 / 180 / 200), very high 150–400 (220 / 250 / 300), extremely high 200–450 (300 / 350 / 400) mg/dL, kept in order by `Bands.sane`; graph time 1–48 h (3 / 6 / 12 / 24), per place the same or *Default*; ring and fallback periods 12 h / 1 / 3 / 7 / 14 / 30 days or 1–90 days; lines 40–400 mg/dL, up to 6; sensor countdown 1–24 h (2 / 4 / 8 / 12 / 24); thresholds very low 40–80, low 50–120, high 120–300, very high 150–400, extremely high 200–450 mg/dL (five presets each), rates 0.5–5.0 mg/dL/min in 0.1 steps (1 / 1.5 / 2 / 2.5 / 3), no data 5–240 min; remind *Once* / 5 / 10 / 15 / 30 / 60 / 120 or 1–240 min; quiet after insulin 10–360 min, falling 5–120, carbs 5–120; notification Mute 1–720 min, Remind less 5–120 min (only slower than every level alert's repeat), the margin 0–50 mg/dL / 0–60 min (10 / 10), Mute all 5–1440 min or until you turn it off (For 30 min / 1 h / 2 h / 4 h / 8 h / Until you turn it off); Nostr interval *Every reading* / 5 / 15 / 30 or 1–120 min; LibreView upload every 5 / 15 / 60 or 1–240 min. Values outside a format are brought back into it when the settings load.
+- Number formats (stored units; custom range): ranges very low 30–80 (presets 50 / 54 / 55 / 60), low 40–120 (65 / 70 / 75 / 80), very good 80–250 (120 / 140 / 160), high 100–300 (160 / 180 / 200), very high 150–400 (220 / 250 / 300), extremely high 200–450 (300 / 350 / 400) mg/dL, kept in order by `Bands.sane`; graph time 1–48 h (3 / 6 / 12 / 24), per place the same or *Default*; ring and fallback periods 12 h / 1 / 3 / 7 / 14 / 30 days or 1–90 days; lines 40–400 mg/dL, up to 6; sensor countdown 1–24 h (2 / 4 / 8 / 12 / 24); thresholds very low 40–80, low 50–120, high 120–300, very high 150–400, extremely high 200–450 mg/dL (five presets each), rates 0.5–5.0 mg/dL/min in 0.1 steps (1 / 1.5 / 2 / 2.5 / 3), no data 5–240 min; remind *Once* / 5 / 10 / 15 / 30 / 60 / 120 or 1–240 min; quiet after insulin 10–360 min, falling 5–120, carbs 5–120; notification Mute 1–720 min, Remind less 5–120 min (only slower than every level alert's repeat), the margin 0–50 mg/dL / 0–60 min (10 / 10), Mute all 5–1440 min or until you turn it off (For 30 min / 1 h / 2 h / 4 h / 8 h / Until you turn it off); upload interval over the internet *Every reading* / 5 / 15 / 30 / 60 or 1–240 min; LibreView upload every 5 / 15 / 60 or 1–240 min. Values outside a format are brought back into it when the settings load.
 - **Settings from** (followers, Android and Mac; schema `follower.settingsFrom`): *Wearer* (default), *Default* or *Custom*, for what a follower mirrors (`"mirror": true`: the six ranges, the graph's default time, lines, vertical lines, rings (count, kind, period, fainter, centre count, order, rewards), time in range and crown beside the graph, last treatment (place, fallback), sensor countdown hours, each alert's on / threshold / remind except no data, and the three quiet rules). The wearer's phone sends those as its settings event (PROTOCOL-v2 *Settings*; Android: whenever one of them changes, 3 s after the last change, nothing for any other setting; the same content again on start, a new epoch and weekly). Only in Custom are they shown and changed; there *Copy the wearer's settings* and *Reset to defaults* (each after a confirmation) start Custom from either. Always the follower's own: per-place times, sensor time per place, sounds, *Like an alarm* / volume, the notification's Mute / Remind less, Mute all, no data, the alerts main switch. Android: Settings › *Settings from* (on the overview of a follower, summary *Ana's settings* / *Default* / *Custom*): the three choices as radio rows; *Wearer* says when their settings last changed or *Waiting for their settings* (the defaults apply meanwhile); *Custom* adds *Copy Ana's settings* (only once theirs arrived) and *Reset to default*, each confirmed (*Replace* / *Cancel*) and acknowledged with a snackbar. Alerts, Ranges, Graph (and Treatments on the graph), an alert's page and Sensor end's countdown of a follower not in Custom show the values in use and start with *In use: Ana's settings* / *Default* (*Read only here. To change them, choose Custom*), which opens Settings from; the mirrored rows are read-only (shown at full contrast, TalkBack "disabled"; no section Reset, Reset all, line removal, ring-order dragging or threshold review), this phone's own rows stay editable (alerts main switch, Mute all, no data, *Like an alarm*, sounds, notification actions, time and sensor time per place). Mac: the same choice in General; in Custom *Copy the Wearer's Settings…* and *Reset to Defaults…* beside it, each confirmed (*Copy Settings* / *Reset to Defaults*, *Cancel*; the reset says what goes back: ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules, and what stays: sounds, the no-data alert, Mute all and the notification's buttons; `MirroringExitTests`). Wearer mode waits for the wearer's settings with the defaults (says so).
 - Ring order (Android + Mac; the user 2026-10-21: the first version fought the page's scroll and looked wrong on the Mac): rows show the segment's colour and name, no position number. States: idle → dragging → dropped (saved, the row settles with a spring) or cancelled (the order before the drag comes back, nothing saved). Android (`ReorderList`): pick up at once on touch-down on the trailing drag handle (the handle owns the touch, so the page never scrolls from it) or by a long press on the row (a swipe before that scrolls the page and never reorders); the held row lifts (8 dp elevation, 2 % larger, dragged state layer), follows the finger, and the other rows slide out of its way live (`animateItem`); the page auto-scrolls near its top / bottom edge; haptics on pick-up, each slot change and the drop; TalkBack actions *Move up* / *Move down* / *Move to top* / *Move to bottom*. Mac (`RingOrderList`): the system's reorderable list (a SwiftUI `List` with `onMove`, gap feedback as in the Finder sidebar): the drag image is the row itself, the source row leaves a gap and the others slide apart where it will land; Escape or a drop outside flies it back; *Move Up* / *Move Down* in each row's context menu and for VoiceOver. Reset beside the heading (Android) / Reset Order (Mac). Tests: `ReorderDragTest` (handle drag reorders without scrolling, a swipe on a row scrolls without reordering, long press then drag, a drop in place saves nothing), `-settingsselftest` (move logic, Move Up / Down).
 - Alerts page: Mute all's strip while it is on (*Unmute*, *Change time*), **Active now** while any side is quiet (each muted, after-treatment, falling-back or reminding-less side with its line counting down and its ways out: *Unmute* / *Alert me anyway*, *Remind as usual*, *Change to* 15 min / 30 min / 1 h / 2 h for a mute; the same rows as home's quiet sheet), main switch, then one two-target row per alert (switch = on/off, row = the alert's page), quiet rules, sounds.
@@ -897,6 +897,19 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   sharing is paused while another app shares as you).
 - **Readings**: live event per new reading (< 10 min old), hour chunks of the last 25 h (current hour at most every
   5 min), all of the last 24 h again on start, approval and rotation. **Alerts** go out at once.
+- **How readings travel** (Settings › Sharing, a group with *Over the internet*, *Upload interval* and *Over Bluetooth
+  nearby*; `RelayPolicy`): **Over the internet** (globe icon, on by default, schema `sharing.nostr`; *Encrypted,
+  through Nostr relays*). Off: the relays close and nothing more is published to them (readings, alerts, roster,
+  treatments, settings, invites); Bluetooth followers still get every event; its summary says *Off. Followers who only
+  use the internet see no new readings.* Control events wait (`pendingControl`), and turning it on again connects and
+  sends what the relays missed: the waiting control events, the last 24 h of chunks, the treatment log and settings,
+  roster / backup when due (not again over Bluetooth). **Upload interval** (schema `sharing.nostrInterval`, the one
+  number input: *Every reading* (default) / 5 / 15 / 30 min / 1 h or 1–240 min; disabled with *Sharing over the
+  internet is off* while it's off): with an interval no live events go to the relays and the current hour's chunk goes
+  out at most every N min (earlier hours at once); alerts still go at once; Bluetooth followers stay live. *Share with
+  someone* while internet sharing is off says an invite link and its request travel over the internet, offers *Turn on
+  sharing over the internet* (or Pair nearby) and doesn't create a link. The interval is in the settings export; the
+  switch isn't (who receives the data).
 - **Access request notification** (channel *Access requests*, Sukrara's info group): *Ana wants to see your glucose ·
   Asked with your invite for Ana · 14:02* with **Deny** and **Allow** (Allow only on an unlocked phone); a tap opens
   the app. When another phone also tried the same invite there are no actions: open the app and check. The
@@ -943,20 +956,27 @@ How you appear (*Save* / *Cancel* / Back; leaving drops an unsaved edit), Backup
 recovery dialog while the code is being made drops it; a code not copied isn't a backup). *Not backed up* → *Backup*
 or dismiss. *Request waiting* → the approve dialog over the app (*Later* or Back hides that request until the app
 process restarts; Settings › Sharing's request row shows it again), notification *Allow* (needs unlock) / *Deny*;
-both leave once answered. *Removed* pill → expand / *See less*. *Another app is sharing as you* (home + Settings › Sharing; says whether followers
+both leave once answered. *Removed* pill → expand / *See less*. *Over the internet* off → its switch (on again sends
+what the relays missed), or *Share with someone*'s *Turn on sharing over the internet*; *Upload interval* → its dialog
+(*Every reading* goes back to live; Cancel / Back keeps it); every row is a switch or button TalkBack reads with its
+summary. *Another app is sharing as you* (home + Settings › Sharing; says whether followers
 still get readings) → turn off sharing in the other app or uninstall it, then *I turned it off — retry* (republishes once,
 past the other app's event; blocks again if it's still running) or *Help*.
 
 ## Sharing over Bluetooth
 
-- **Wearer** (Android, Settings › Sharing): a *Bluetooth* group with *Share over Bluetooth* (on by default; schema
-  `sharing.bleFollowers`). Its line says what holds: *2 devices connected nearby*, *On · no follower device nearby*,
-  *On once someone follows you* (the phone advertises only while it has a follower, B§3), *Bluetooth is off* (row *Turn
-  on Bluetooth* → Android's Bluetooth settings), *Needs the Nearby devices permission* (row *Allow Nearby devices* →
-  the permission dialog for Bluetooth advertise + connect), *This phone can't share over Bluetooth*, or *Off. Followers
-  get readings over the internet.* The page looks again on resume and after the permission answer.
-- While the switch is on, *Nearby devices* lists the follower devices connected now (*Bea · phone* / *Sam · Mac*, their
-  picture, *Connected over Bluetooth*). A connection is named only by the identity proof in its `HELLO`
+- **Wearer** (Android, Settings › Sharing): *Over Bluetooth nearby* in the *How readings travel* group (Bluetooth icon,
+  on by default; schema `sharing.bleFollowers`). Its line says what holds: *2 devices connected nearby*, *On · no
+  follower device nearby*, *On once someone follows you* (the phone advertises only while it has a follower, B§3),
+  *Bluetooth is off* (row *Turn on Bluetooth* → Android's Bluetooth settings), *Needs the Nearby devices permission*
+  (row *Allow Nearby devices* → the permission dialog for Bluetooth advertise + connect), *This phone can't share over
+  Bluetooth*, or off: *Off. Followers get readings over the internet.* (*Off. Followers get no new readings.* while
+  sharing over the internet is off too). The page looks again on resume and after the permission answer.
+- While the switch is on, *Nearby devices* lists the follower devices connected now (*Connected*, oldest link first;
+  *Bea · phone* / *Sam · Mac*, their picture), then the followers paired with *Pair nearby* that aren't connected
+  (*Disconnected*, by name), like Android's Connected devices (`NearbyDevices.rows`, `NearbyDevicesTest`). Which
+  followers paired nearby is kept on this phone only (`OwnerState.nearbyPaired`, never in the owner backup) and cleared
+  by Remove. The follower's dialog says *Connected* / *Disconnected* for such a device. A connection is named only by the identity proof in its `HELLO`
   (poc/spec/ogs-ble.md B§5/B§6): the follower signs a kind-21080 event with content `H("cgm2:ble-id:"+sid+":"+nonce+":"+dev)`
   with its follower key, and the wearer's phone checks it against each active follower and device type
   (`HelloProof.identify`; vector `ble.hello_id`). An unnamed link is not listed (no made-up name); a replayed `HELLO`
@@ -994,11 +1014,11 @@ past the other app's event; blocks again if it's still running) or *Help*.
   256 KiB a minute → error and disconnect;
   more than 30 messages a minute → dropped), sends one backlog per device per 5 s (a sooner `HELLO` is answered when due),
   and never re-sends an expired event from its backlog.
-- **Pair nearby** (Android wearer, Settings › Sharing › Bluetooth, shown while Bluetooth can serve): a switch that opens
+- **Pair nearby** (Android wearer, Settings › Sharing › How readings travel, shown while Bluetooth can serve): a switch that opens
   a single-use invite for 10 minutes (`OwnerEngine.openNearbyPairing`; no link and no invite wrap on the relays, the
   backup records the token). While open the phone advertises even with no follower and its `INFO` carries `i`, `relays`
   and `pair` (token, expiry, the wearer's profile; B§7.3); the summary counts down (*Open · closes in 9:41*). It closes
-  at the first request with it, after 10 minutes, with the switch (*Stop*), when *Share over Bluetooth* is turned off
+  at the first request with it, after 10 minutes, with the switch (*Stop*), when *Over Bluetooth nearby* is turned off
   or when sharing stops or the app restarts; each drops the unclaimed invite (a restore keeps an invite nearby). A request made
   with it is marked nearby: the approve dialog says anyone in Bluetooth range could have asked and Allow needs the code
   typed from the follower's phone (never compare-only), and its notification has no Allow (*Open Sukrara and type the
@@ -1019,7 +1039,9 @@ past the other app's event; blocks again if it's still running) or *Help*.
 **States and exits**: wearer switch on/off (the switch itself); Bluetooth off → *Turn on Bluetooth* (Android settings,
 back returns and the page looks again); permission missing → *Allow Nearby devices* (allow → serving; deny → the row
 stays, and its next tap opens the app's Android settings page); no follower yet → serves once someone follows; unsupported → nothing to do, sharing goes on over the internet. A
-device in *Nearby devices* → its follower dialog (*Close*, *Remove* → confirm → removed and disconnected). Follower:
+device in *Nearby devices* *Connected* / *Disconnected* → it moves between the two by itself as it comes into or out of
+range; its row opens its follower dialog (*Close*, *Remove* → confirm → removed, disconnected and no longer listed;
+*Pair nearby* pairs it again from scratch). Follower:
 the Bluetooth line follows the link by itself; Bluetooth off → *Turn on Bluetooth*; permission missing → *Allow Nearby
 devices*; *Stop following* ends Bluetooth with the relays. *Pair nearby* open → its switch (*Stop*), or it closes by
 itself (first request, 10 minutes); the request it brings → the approve dialog (*Later*, *Deny*, *Allow* with the typed

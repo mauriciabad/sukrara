@@ -100,6 +100,7 @@ class SettingsPagesTest {
     private val elsewhere =
         setOf(
             "sharing.nostr",
+            "sharing.nostrInterval",
             "sharing.bleFollowers",
             "home.uploadBanner",
             "widget.overrides",

@@ -69,8 +69,14 @@ interface OwnerSharing {
     /** "I turned it off — retry" on the identity conflict screen. */
     suspend fun retryConflict()
 
-    /** Bluetooth nearby: the switch, the server's state and the named links. */
+    /** How readings travel: the internet switch and interval, Bluetooth's switch, the server's state and the named links. */
     val nearby: Flow<NearbyUi> get() = flowOf(NearbyUi())
+
+    /** *Over the internet* (Settings › Sharing). */
+    suspend fun setInternet(on: Boolean) = Unit
+
+    /** *Upload interval*, minutes; 0 = every reading. */
+    suspend fun setUploadInterval(min: Double) = Unit
 
     /** The Bluetooth switch (Settings › Sharing). */
     suspend fun setNearby(on: Boolean) = Unit
@@ -138,9 +144,14 @@ class EngineOwnerSharing(
             engine.nearbyStatus,
             engine.nearbyLinks,
             engine.nearbyPairing,
-        ) { on, status, links, pairing ->
-            NearbyUi(on, status, links, pairing?.expiry)
+            combine(settings.flow(ShareOwnerModule.RelaySharing), settings.flow(ShareOwnerModule.RelayInterval), ::Pair),
+        ) { on, status, links, pairing, (internet, interval) ->
+            NearbyUi(on, status, links, pairing?.expiry, internet, interval)
         }
+
+    override suspend fun setInternet(on: Boolean) = settings.set(ShareOwnerModule.RelaySharing, on)
+
+    override suspend fun setUploadInterval(min: Double) = settings.set(ShareOwnerModule.RelayInterval, min)
 
     override suspend fun setNearby(on: Boolean) {
         settings.set(ShareOwnerModule.NearbySharing, on)

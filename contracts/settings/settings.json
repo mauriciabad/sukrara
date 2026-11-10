@@ -71,7 +71,8 @@
     "backMgdl": {"unit": "mg/dL", "min": 0, "max": 50, "step": 1, "nudge": 5, "presets": [0, 5, 10, 15, 20], "default": 10},
     "backMin": {"unit": "min", "min": 0, "max": 60, "step": 1, "nudge": 5, "presets": [0, 5, 10, 15, 30], "default": 10},
     "muteAll": {"unit": "min", "min": 5, "max": 1440, "step": 1, "nudge": 15, "presets": [30, 60, 120, 240, 480, 0], "default": 60, "special": {"0": "until_turned_off"}},
-    "libreViewInterval": {"unit": "min", "min": 1, "max": 240, "step": 1, "nudge": 5, "presets": [5, 15, 60], "default": 5}
+    "libreViewInterval": {"unit": "min", "min": 1, "max": 240, "step": 1, "nudge": 5, "presets": [5, 15, 60], "default": 5},
+    "nostrInterval": {"unit": "min", "min": 1, "max": 240, "step": 1, "nudge": 5, "presets": [0, 5, 15, 30, 60], "default": 0, "special": {"0": "every_reading"}}
   },
   "settings": [
     {"id": "graph.band.veryLow", "section": "graph", "label": "Very low below", "type": "number", "number": "bandVeryLow", "mirror": true, "wire": "graph.veryLow", "android": {"store": "graph", "key": "bandVeryLow"}, "mac": {"store": "defaults", "key": "bandVeryLow"}},
@@ -135,6 +136,7 @@
     {"id": "report.days", "section": "report", "label": "Glucose report period (1, 7, 14, 30 d; a view control, not a setting)", "type": "enum", "mirror": false, "android": null, "mac": {"store": "defaults", "key": "reportDays"}, "only": {"platform": "mac", "reason": "Both reports offer the same 1 / 7 / 14 / 30-day choice in the report itself; the Mac's report window remembers the last one, Android's card starts at 14 days"}},
     {"id": "source.source", "section": "source", "label": "Glucose source (Sukrara reads the sensor / Juggluco)", "type": "enum", "mirror": false, "android": {"store": "settings", "key": "source"}, "mac": null, "only": {"platform": "android", "reason": "Only the wearer's phone reads a sensor; the Mac follows (its source is the follow link, Settings › General)"}},
     {"id": "sharing.nostr", "section": "sharing", "label": "Share over the internet (Nostr relays)", "type": "bool", "mirror": false, "android": {"store": "sharing", "key": "relaySharing"}, "mac": null, "only": {"platform": "android", "reason": "The wearer's phone publishes; a Mac follower only reads"}},
+    {"id": "sharing.nostrInterval", "section": "sharing", "label": "Upload interval over the internet: every reading (0) or batches every N min (Bluetooth stays live)", "type": "number", "number": "nostrInterval", "mirror": false, "android": {"store": "sharing", "key": "relayInterval"}, "mac": null, "only": {"platform": "android", "reason": "The wearer's phone publishes; a Mac follower only reads"}},
     {"id": "sharing.bleFollowers", "section": "sharing", "label": "Share over Bluetooth", "type": "bool", "mirror": false, "android": {"store": "sharing", "key": "nearbySharing"}, "mac": null, "only": {"platform": "android", "reason": "The wearer's phone is the Bluetooth peripheral; the Mac connects to it when nearby"}},
     {"id": "statusbar.chip", "section": "statusbar", "label": "Status bar Live Update chip", "type": "bool", "mirror": false, "android": {"store": "statusbar", "key": "statusChip"}, "mac": null, "only": {"platform": "android", "reason": "Android status bar; the Mac shows the value in its menu bar always"}},
     {"id": "statusbar.icon", "section": "statusbar", "label": "Number as the notification icon", "type": "bool", "mirror": false, "android": {"store": "statusbar", "key": "statusIcon"}, "mac": null, "only": {"platform": "android", "reason": "Android status bar"}},

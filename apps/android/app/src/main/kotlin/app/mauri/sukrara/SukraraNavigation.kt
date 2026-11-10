@@ -376,7 +376,14 @@ fun SukraraNavigation(
                     entry<ShareRoute> {
                         val vm: SharingViewModel = viewModel(factory = SharingViewModel.factory(graph.setup.sharing))
                         val invite by vm.invite.collectAsStateWithLifecycle()
-                        ShareScreen(invite, onCreate = vm::createInvite, onAnother = vm::newInvite)
+                        val travel by vm.nearby.collectAsStateWithLifecycle()
+                        ShareScreen(
+                            invite,
+                            onCreate = vm::createInvite,
+                            onAnother = vm::newInvite,
+                            internetOff = !travel.internet,
+                            onTurnOnInternet = { vm.setInternet(true) },
+                        )
                     }
                     entry<SetupRoute> {
                         SetupScreen(

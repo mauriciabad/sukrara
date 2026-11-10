@@ -92,8 +92,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   insulin type, forget), its *Doses read* with per-dose *Priming* / *Injected* corrections, the untested NovoPen 6's
   display check, and what Android blocks (tag intents, NFC off) with the way to fix it.
 - **Sharing core**: your sharing identity, restorable from its recovery code so existing followers keep following;
-  readings and alerts go to approved followers over Nostr relays (protocol v2). If another device is publishing as
-  the same identity, Sukrara stops and says so instead of fighting it.
+  readings and alerts go to approved followers over Nostr relays (protocol v2). *How readings travel* turns sharing over
+  the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of
+  each one. If another device is publishing as the same identity, Sukrara stops and says so instead of fighting it.
 - **First-run setup** in a calm, fixed order: role (confirmed) → what alerts need → sensor → confirm your alert
   thresholds → your followers (restore once this phone has your sensor, or start fresh) → home. Any
   step can wait; home's *Finish setup* banner brings it back.
@@ -104,7 +105,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   or a recovery code (home says *Not backed up* until then; setup restores from either), and a clear screen when another
   device is sharing as you.
 - **Bluetooth nearby**: followers' phones and Macs in range get your readings straight from your phone, even without
-  internet (on by default, *Share over Bluetooth*); Settings › Sharing lists the devices connected now, says when
+  internet (on by default, *Over Bluetooth nearby*); Settings › Sharing lists the devices connected now and the ones
+  paired nearby that are out of range, says when
   Bluetooth is off or the Nearby devices permission is missing, and offers the fix; the live notification says
   *2 followers · 1 nearby*.
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a

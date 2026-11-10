@@ -50,6 +50,7 @@ import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.owner.IdentityCheck
+import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
@@ -203,6 +204,19 @@ class SharingScreenshotTest {
                     now = { 1_761_600_000 },
                 )
             },
+            "followers-nearby-devices" to {
+                FollowersPage(
+                    sharing.copy(nearbyPaired = setOf("k2")),
+                    FollowersActions(),
+                    nearby =
+                        NearbyUi(
+                            status = NearbyStatus.Connected(1),
+                            links = listOf(NearbyServerCore.Named("k1", "phone", 1_761_600_000_000)),
+                            internet = false,
+                        ),
+                    now = { 1_761_600_000 },
+                )
+            },
             "setup-join-find-nearby" to {
                 val offer =
                     NearbyOffer(
@@ -238,7 +252,7 @@ class SharingScreenshotTest {
                 FollowersPage(OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0), FollowersActions())
             },
             "follower-dialog" to {
-                FollowerDialog(followers[0], writer = true, refused = false, onWriter = {}, onRemove = {}, onClose = {})
+                FollowerDialog(followers[0], nearby = null, writer = true, refused = false, onWriter = {}, onRemove = {}, onClose = {})
             },
             "approve" to
                 { ApproveDialog(request, working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime) },

@@ -84,6 +84,8 @@
     <string name="sh_share_create">Crear invitación</string>
     <string name="sh_share_try_again">Reintentar</string>
     <string name="sh_share_failed">No se ha podido crear la invitación. Revisa internet y que compartir esté configurado.</string>
+    <string name="sh_share_internet_off">Compartir por internet está desactivado. Un enlace de invitación y la solicitud que trae viajan por internet: actívalo para invitar a alguien, o usa Emparejar cerca en Ajustes › Compartir.</string>
+    <string name="sh_share_internet_turn_on">Activar compartir por internet</string>
     <string name="sh_share_qr_label">Código QR de la invitación. El enlace está debajo.</string>
     <string name="sh_share_scan">Envíale el enlace: lo abre en Sukrara en su teléfono o Mac. Sukrara en otro teléfono o en un Mac también puede escanear este código.</string>
     <string name="sh_share_note">Este enlace funciona una vez, hasta el %1$s. Envíalo solo a %2$s: quien lo abra primero puede pedir seguirte, y tú decides. No contiene ninguna clave de tu glucosa.</string>
@@ -334,9 +336,17 @@
     <string name="sh_following_damaged">La clave de seguidor de este teléfono está dañada. Deja de seguir y vuelve a unirte con un enlace nuevo.</string>
     <string name="sh_following_join_again">Unirme con un enlace nuevo</string>
     <!-- Bluetooth cercano (portador: Ajustes › Compartir; seguidor: página Siguiendo) -->
-    <string name="sh_nearby_group">Bluetooth</string>
-    <string name="sh_nearby_title">Compartir por Bluetooth</string>
+    <string name="sh_nearby_group">Cómo llegan las lecturas</string>
+    <string name="sh_internet_title">Por internet</string>
+    <string name="sh_internet_on">Cifrado, a través de relés Nostr</string>
+    <string name="sh_internet_off">Desactivado. Los seguidores que solo usan internet no ven lecturas nuevas.</string>
+    <string name="sh_interval_title">Intervalo de subida</string>
+    <string name="sh_interval_every_reading">Cada lectura</string>
+    <string name="sh_interval_every">Cada %1$s</string>
+    <string name="sh_interval_unavailable">Compartir por internet está desactivado</string>
+    <string name="sh_nearby_title">Por Bluetooth cerca</string>
     <string name="sh_nearby_off">Desactivado. Los seguidores reciben las lecturas por internet.</string>
+    <string name="sh_nearby_off_no_internet">Desactivado. Los seguidores no reciben lecturas nuevas.</string>
     <string name="sh_nearby_bluetooth_off">El Bluetooth está desactivado</string>
     <string name="sh_nearby_permission">Necesita el permiso de Dispositivos cercanos</string>
     <string name="sh_nearby_unsupported">Este teléfono no puede compartir por Bluetooth</string>
@@ -356,7 +366,8 @@
     <string name="sh_nearby_mac">Mac</string>
     <string name="sh_nearby_phone">teléfono</string>
     <string name="sh_nearby_device_name">%1$s · %2$s</string>
-    <string name="sh_nearby_device_connected">Conectado por Bluetooth</string>
+    <string name="sh_nearby_device_connected">Conectado</string>
+    <string name="sh_nearby_device_disconnected">Desconectado</string>
     <string name="sh_following_nearby">Bluetooth: %1$s</string>
     <string name="sh_pair_nearby">Emparejar cerca</string>
     <string name="sh_pair_nearby_off">Durante 10 minutos, un teléfono cercano puede pedir seguirte sin enlace. Escribes el código que se ve en su teléfono.</string>

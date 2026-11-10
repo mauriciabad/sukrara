@@ -29,11 +29,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.dialog.NumberDialog
+import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.rows.FooterText
@@ -41,19 +45,24 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
+import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.sharing.BLOCKED
+import app.mauri.sukrara.feature.sharing.NearbyDevices
 import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.NearbyUi
 import app.mauri.sukrara.feature.sharing.PairNearbyRow
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
 import app.mauri.sukrara.feature.sharing.share.shownName
+import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.settings.SettingsSpec
 import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
 import java.text.DateFormat
 import java.util.Date
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** What the followers page can do; each goes to the engine or another page. */
 class FollowersActions(
@@ -65,6 +74,10 @@ class FollowersActions(
     val backup: () -> Unit = {},
     /** The follower dialog closed (its refusal note goes away). */
     val closeFollower: () -> Unit = {},
+    /** *Over the internet*. */
+    val setInternet: (Boolean) -> Unit = {},
+    /** *Upload interval*, minutes (0 = every reading). */
+    val setInterval: (Double) -> Unit = {},
     /** The Bluetooth switch. */
     val setNearby: (Boolean) -> Unit = {},
     /** Bluetooth turned on / Nearby devices allowed: look again. */
@@ -90,6 +103,8 @@ fun FollowersPage(
 ) {
     var open by rememberSaveable { mutableStateOf<String?>(null) }
     var showRemoved by rememberSaveable { mutableStateOf(false) }
+    var choosingInterval by rememberSaveable { mutableStateOf(false) }
+    val everyReading = stringResource(R.string.sh_interval_every_reading)
     val active = state.followers.filter { it.active }
     val removed = state.followers.filter { !it.active }.sortedByDescending { it.revoked }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -124,10 +139,25 @@ fun FollowersPage(
         }
         SettingsGroup(title = stringResource(R.string.sh_nearby_group)) {
             SwitchRow(
+                title = stringResource(R.string.sh_internet_title),
+                checked = nearby.internet,
+                onCheckedChange = actions.setInternet,
+                summary = stringResource(if (nearby.internet) R.string.sh_internet_on else R.string.sh_internet_off),
+                icon = DsR.drawable.ds_ic_public,
+            )
+            ValueRow(
+                stringResource(R.string.sh_interval_title),
+                if (nearby.internet) intervalText(nearby.intervalMin) else stringResource(R.string.sh_interval_unavailable),
+                { choosingInterval = true },
+                icon = DsR.drawable.ds_ic_schedule,
+                enabled = nearby.internet,
+            )
+            SwitchRow(
                 title = stringResource(R.string.sh_nearby_title),
                 checked = nearby.on,
                 onCheckedChange = actions.setNearby,
-                summary = nearbySummary(nearby.status, nearby.on, wearer = true),
+                summary = nearbySummary(nearby.status, nearby.on, wearer = true, internet = nearby.internet),
+                icon = DsR.drawable.ds_ic_bluetooth,
             )
             if (nearby.on) NearbyFixRow(nearby.status, AndroidNearbyServer.PERMISSIONS, actions.refreshNearby)
             // an open pairing always keeps its switch (the way to stop it)
@@ -138,15 +168,20 @@ fun FollowersPage(
             }
         }
         // only links whose identity proof named an active follower: an unnamed one is never listed (no made-up name)
-        val devices = nearby.links.mapNotNull { l -> active.firstOrNull { it.key == l.follower }?.let { it to l } }
+        val devices = NearbyDevices.rows(state.followers, state.nearbyPaired, nearby.links)
         if (nearby.on && devices.isNotEmpty()) {
             SettingsGroup(title = stringResource(R.string.sh_nearby_devices)) {
-                for ((f, link) in devices) {
-                    val device = stringResource(if (link.device == "mac") R.string.sh_nearby_mac else R.string.sh_nearby_phone)
+                for (row in devices) {
+                    val f = row.follower
+                    val title =
+                        row.device?.let {
+                            val device = stringResource(if (it == "mac") R.string.sh_nearby_mac else R.string.sh_nearby_phone)
+                            stringResource(R.string.sh_nearby_device_name, shownName(f.name), device)
+                        } ?: f.name
                     PersonRow(
                         f.avatarJson,
-                        stringResource(R.string.sh_nearby_device_name, shownName(f.name), device),
-                        stringResource(R.string.sh_nearby_device_connected),
+                        title,
+                        stringResource(if (row.connected) R.string.sh_nearby_device_connected else R.string.sh_nearby_device_disconnected),
                     ) { open = f.key }
                 }
             }
@@ -177,9 +212,27 @@ fun FollowersPage(
         }
         FooterText(stringResource(R.string.sh_followers_footer))
     }
+    if (choosingInterval) {
+        val words = CardWords.of(LocalContext.current.resources).durations
+        NumberDialog(
+            stringResource(R.string.sh_interval_title),
+            NumberInput(SettingsSpec.NOSTR_INTERVAL),
+            nearby.intervalMin,
+            { if (it == 0.0) everyReading else Durations.text(it.toLong(), words) },
+            { choosingInterval = false },
+            onChoose = actions.setInterval,
+        )
+    }
     active.firstOrNull { it.key == open }?.let { f ->
         FollowerDialog(
             f,
+            nearby =
+                when {
+                    !nearby.on -> null
+                    nearby.links.any { it.follower == f.key } -> true
+                    f.key in state.nearbyPaired -> false
+                    else -> null
+                },
             writer = f.key in state.writers,
             refused = writerRefused == f.key,
             onWriter = { actions.setWriter(f.key, it) },
@@ -191,6 +244,15 @@ fun FollowersPage(
         )
     }
 }
+
+/** The upload interval's value: *Every reading*, or *Every 15 min* (THE duration formatter). */
+@Composable
+private fun intervalText(min: Double): String =
+    if (min <= 0.0) {
+        stringResource(R.string.sh_interval_every_reading)
+    } else {
+        stringResource(R.string.sh_interval_every, Durations.text(min.toLong(), CardWords.of(LocalContext.current.resources).durations))
+    }
 
 /** The wearer: picture, name (or "Add your name") and how many follow; opens How you appear. */
 @Composable
@@ -260,6 +322,8 @@ internal fun PersonRow(
 @Composable
 fun FollowerDialog(
     follower: FollowerRecord,
+    /** A nearby device: true = *Connected*, false = paired but *Disconnected*, null = not one (no line). */
+    nearby: Boolean?,
     writer: Boolean,
     refused: Boolean,
     onWriter: (Boolean) -> Unit,
@@ -276,6 +340,9 @@ fun FollowerDialog(
             title = { Text(name, maxLines = 2) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    nearby?.let {
+                        Text(stringResource(if (it) R.string.sh_nearby_device_connected else R.string.sh_nearby_device_disconnected))
+                    }
                     Text(stringResource(R.string.sh_followers_since, date(follower.since)))
                     SwitchRow(
                         title = stringResource(R.string.sh_followers_writer),

@@ -39,6 +39,8 @@ sealed interface OwnerShareState {
         val passwordManagerSavedAt: Long = 0,
         /** When this phone restored the identity (from a code or the password manager, so it exists elsewhere). */
         val restoredAt: Long = 0,
+        /** Followers paired with *Pair nearby* (this phone only): listed in Nearby devices also while out of range. */
+        val nearbyPaired: Set<String> = emptySet(),
     ) : OwnerShareState {
         /** The identity is somewhere besides this phone: the password manager, a recovery code kept, or where it came from. */
         val backedUp: Boolean get() = passwordManagerSavedAt > 0 || recoveryExportedAt > 0 || restoredAt > 0
