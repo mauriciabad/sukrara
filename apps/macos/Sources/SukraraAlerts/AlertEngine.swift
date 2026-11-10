@@ -105,6 +105,9 @@ public struct AlertEngine: Sendable {
         return handle(input, at: now, using: &rng)
     }
 
+    /// The firing whose notification is up in `group` (nil = none).
+    public func showing(_ group: AlertGroup) -> AlertFiring? { episodes[group]?.shown }
+
     /// Mute all's end in force at `t` (nil = off).
     public func muteAllEnd(at t: Date) -> Date? { muteAllUntil.flatMap { $0 > t ? $0 : nil } }
 

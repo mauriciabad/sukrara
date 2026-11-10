@@ -107,7 +107,9 @@ final class FakeCenter: NotificationPosting {
         #expect(
             Notifier.action(actionID: IDs.changeMuteAction, side: "low", typed: "45", settings: s)
                 == .mute(.low, minutes: 45))
-        #expect(Notifier.action(actionID: IDs.muteAction, side: "low", typed: "soon", settings: s) == nil)
+        #expect(Notifier.action(actionID: IDs.muteAction, side: "low", typed: "soon", settings: s) == .reshow(.low))
+        #expect(
+            Notifier.action(actionID: IDs.changeMuteAction, side: "high", typed: "0", settings: s) == .reshow(.high))
         let longest = Int(AlertLimits.longestMuteMin)
         #expect(
             Notifier.action(actionID: IDs.muteAction, side: "low", typed: "\(longest + 600)", settings: s)

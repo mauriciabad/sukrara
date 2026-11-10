@@ -159,9 +159,9 @@ final class Notifier: AlertNotifying {
         ]
     }
 
-    /// The user's answer to a notification as an alert action, or nil (a tap on the body, an unknown side, a typed
-    /// length that isn't one). Mute… with nothing typed mutes for the default length; a typed length is clamped to the
-    /// longest allowed.
+    /// The user's answer to a notification as an alert action, or nil (a tap on the body, an unknown side). Mute… with
+    /// nothing typed mutes for the default length; a typed length is clamped to the longest allowed; typed text that
+    /// isn't a length changes nothing and shows the notification again (`reshow`).
     static func action(actionID: String, side rawSide: String?, typed: String?, settings: AlertSettings)
         -> AlertAction?
     {
@@ -170,7 +170,7 @@ final class Notifier: AlertNotifying {
         case AlertNotificationIDs.muteAction, AlertNotificationIDs.changeMuteAction:
             let input = typed?.trimmingCharacters(in: .whitespaces) ?? ""
             let minutes = input.isEmpty ? settings.notificationActions.muteMin : Durations.parse(input)
-            guard let minutes, minutes > 0 else { return nil }
+            guard let minutes, minutes > 0 else { return .reshow(side) }
             return .mute(side, minutes: min(minutes, Int(AlertLimits.longestMuteMin)))
         case AlertNotificationIDs.remindLessAction: return .remindLess(side)
         case AlertNotificationIDs.remindAsUsualAction: return .remindAsUsual(side)

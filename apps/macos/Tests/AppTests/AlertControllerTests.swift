@@ -109,6 +109,64 @@ final class RecordingWake: WakeScheduling {
         #expect(notifier.calls.contains(.unmuted(.low)))
     }
 
+    @Test func remindLessShowsTheAlertAgainSilentlyWithRemindAsUsual() {
+        let c = controller()
+        c.reading(reading(60, rate: -0.5))
+        guard case .post(.low, let id, true, _)? = notifier.posts.first else {
+            Issue.record("no low posted: \(notifier.calls)")
+            return
+        }
+        notifier.calls = []
+        c.perform(.remindLess(.low))
+        #expect(
+            notifier.calls == [.post(.low, id: id, sound: false, category: AlertNotificationIDs.alertRelaxedCategory)])
+        notifier.calls = []
+        c.perform(.remindAsUsual(.low))
+        #expect(notifier.calls == [.post(.low, id: id, sound: false, category: AlertNotificationIDs.alertCategory)])
+    }
+
+    @Test func anUnreadableMuteReplyChangesNothingAndShowsTheAlertAgainSilently() throws {
+        let c = controller()
+        c.reading(reading(60, rate: -0.5))
+        guard case .post(.low, let id, true, let category)? = notifier.posts.first else {
+            Issue.record("no low posted: \(notifier.calls)")
+            return
+        }
+        let before = store.state
+        notifier.calls = []
+        let action = try #require(
+            Notifier.action(actionID: AlertNotificationIDs.muteAction, side: "low", typed: "soon", settings: c.settings)
+        )
+        c.perform(action)
+        #expect(notifier.calls == [.post(.low, id: id, sound: false, category: category)])
+        #expect(store.state == before && c.ui.isAlerting)
+    }
+
+    @Test func anUnreadableChangeTimeReplyShowsTheMutedNoteAgain() {
+        let c = controller()
+        c.reading(reading(60, rate: -0.5))
+        c.perform(.mute(.low, minutes: 30))
+        notifier.calls = []
+        c.perform(.reshow(.low))
+        #expect(notifier.calls == [.muted(.low)])
+    }
+
+    @Test func aMirroredAlertComesBackSilentlyAfterRemindLessAndAnUnreadableReply() throws {
+        let c = controller()
+        c.setMirroring(true)
+        c.wearerAlert(try payload(kind: "low", fires: true))
+        notifier.calls = []
+        c.perform(.remindLess(.low))
+        #expect(
+            notifier.calls == [.post(.low, id: "w1", sound: false, category: AlertNotificationIDs.alertRelaxedCategory)]
+        )
+        notifier.calls = []
+        c.perform(.reshow(.low))
+        #expect(
+            notifier.calls == [.post(.low, id: "w1", sound: false, category: AlertNotificationIDs.alertRelaxedCategory)]
+        )
+    }
+
     @Test func mirroringShowsTheWearersAlertAndRunsOnlyNoDataHere() throws {
         let c = controller()
         c.setMirroring(true)

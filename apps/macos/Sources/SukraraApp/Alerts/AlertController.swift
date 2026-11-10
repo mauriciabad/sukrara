@@ -15,6 +15,9 @@ enum AlertAction: Equatable {
     case remindAsUsual(AlertSide)
     case muteAll(until: Date)
     case unmuteAll
+    /// A *Mute…* / *Change Time…* reply that isn't a length: nothing changes, the side's notification comes back
+    /// silently (macOS removed it when the action was used).
+    case reshow(AlertSide)
 }
 
 /// Runs the alert rules on this Mac (`SukraraAlerts`) and shows what they decide through the `Notifier`.
@@ -130,19 +133,42 @@ final class AlertController {
         case .remindLess(let side):
             mirror.remindLess(side, relaxMin: settings.notificationActions.relaxMin)
             handle(.remindLess(side))
+            reshow(side)
         case .unmute(let side):
             notifier.removeMuted(side)
             showAgain(mirror.unmute(side, at: now))
             handle(.unmute(side))
         case .remindAsUsual(let side):
-            showAgain(mirror.remindAsUsual(side, at: now))
-            handle(.remindAsUsual(side))
+            let shownAgain = showAgain(mirror.remindAsUsual(side, at: now))
+            let fired = handle(.remindAsUsual(side)).contains {
+                if case .fire(let f) = $0 { f.kind.side == side } else { false }
+            }
+            if !shownAgain && !fired { reshow(side) }
         case .muteAll(let until):
             for g in mirror.muteAll(until: until) { notifier.clear(g) }
             handle(.muteAll(until: until))
         case .unmuteAll:
             for id in mirror.unmuteAll(at: now) { showAgain(id) }
             handle(.unmuteAll)
+        case .reshow(let side):
+            reshow(side)
+        }
+    }
+
+    /// Shows `side`'s notification again without sound, as it is now (SPEC §2: macOS removes a notification once one
+    /// of its actions is used): the alert still up, in its current category (after *Remind Less* with *Remind as
+    /// Usual*), this Mac's own or the wearer's; with no alert up, the muted note while the side is muted.
+    private func reshow(_ side: AlertSide) {
+        let group = side.mainKind.group
+        if let f = engine.showing(group), f.kind.side == side {
+            notifier.post(f, sound: false, category: category(f.kind))
+        } else if mirroring, mirror.isShowing(group), let f = mirrored[group], f.kind.side == side {
+            notifier.post(f, sound: false, category: category(f.kind))
+        } else if let until = [
+            engine.snoozes.muteEnd(side, at: clock.now), mirror.snoozes.muteEnd(side, at: clock.now),
+        ]
+        .compactMap({ $0 }).max() {
+            notifier.postMuted(side, until: until)
         }
     }
 
@@ -170,8 +196,11 @@ final class AlertController {
 
     // MARK: engine
 
-    private func handle(_ input: AlertInput) {
-        run(engine.handle(input, at: clock.now))
+    @discardableResult
+    private func handle(_ input: AlertInput) -> [AlertEffect] {
+        let effects = engine.handle(input, at: clock.now)
+        run(effects)
+        return effects
     }
 
     private func run(_ effects: [AlertEffect]) {
@@ -190,9 +219,12 @@ final class AlertController {
         save()
     }
 
-    private func showAgain(_ id: String?) {
-        guard mirroring, let id, let f = mirrored.values.first(where: { $0.id == id }) else { return }
+    /// Posts the wearer's firing `id` with sound (Unmute / Remind as Usual on a mirrored alert): true = posted.
+    @discardableResult
+    private func showAgain(_ id: String?) -> Bool {
+        guard mirroring, let id, let f = mirrored.values.first(where: { $0.id == id }) else { return false }
         notifier.post(f, sound: true, category: category(f.kind))
+        return true
     }
 
     /// This Mac's Mute of each side on the wearer's mirrored alerts, in force at `t`.
