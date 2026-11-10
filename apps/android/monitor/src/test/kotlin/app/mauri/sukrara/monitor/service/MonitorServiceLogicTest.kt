@@ -136,7 +136,10 @@ class MonitorServiceLogicTest {
         assertEquals(t.plusSeconds(301), FreshnessTicker.nextStep(t, t.plusSeconds(120)))
         assertEquals(t.plusSeconds(1201), FreshnessTicker.nextStep(t, t.plusSeconds(400)))
         assertEquals(t.plusSeconds(10801), FreshnessTicker.nextStep(t, t.plusSeconds(1300)))
-        assertNull(FreshnessTicker.nextStep(t, t.plusSeconds(20000)))
+        // the reading's time gains the day at 12 h and becomes the date after 6 days
+        assertEquals(t.plusSeconds(43201), FreshnessTicker.nextStep(t, t.plusSeconds(20000)))
+        assertEquals(t.plusSeconds(518401), FreshnessTicker.nextStep(t, t.plusSeconds(43201)))
+        assertNull(FreshnessTicker.nextStep(t, t.plusSeconds(518401)))
         assertNull(FreshnessTicker.nextStep(null, t))
 
         val ticker = FreshnessTicker(alarms)
@@ -144,7 +147,8 @@ class MonitorServiceLogicTest {
         ticker.plan(t, t.plusSeconds(60))
         assertEquals("no re-arm while nothing changes", listOf(t.plusSeconds(91)), alarms.steps)
         ticker.plan(t, t.plusSeconds(20000))
-        assertEquals(listOf(t.plusSeconds(91), null), alarms.steps)
+        ticker.plan(t, t.plusSeconds(600_000))
+        assertEquals(listOf(t.plusSeconds(91), t.plusSeconds(43201), null), alarms.steps)
     }
 
     @Test

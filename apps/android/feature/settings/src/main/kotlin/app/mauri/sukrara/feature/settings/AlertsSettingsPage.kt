@@ -313,7 +313,7 @@ private fun AlertsDialogs(
         dialog.startsWith("kindOff:") -> {
             val kind = AlertKind.fromWire(dialog.removePrefix("kindOff:")) ?: return close()
             ConfirmDialog(
-                stringResource(R.string.st_kind_off_title, kindName(kind)),
+                stringResource(R.string.st_kind_off_title, kindInSentence(kind)),
                 stringResource(if (kind == AlertKind.NO_DATA) R.string.st_kind_off_text_no_data else R.string.st_kind_off_text_very_low),
                 stringResource(R.string.st_turn_off),
                 close,

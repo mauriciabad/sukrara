@@ -40,6 +40,7 @@
 
     <string name="alert_action_mute">Silenciar…</string>
     <string name="alert_action_mute_for_label">Silenciar durante (p. ej. 45 min, 1 h 30)</string>
+    <string name="alert_mute_choice_a11y">Alertas %1$s: silenciar durante %2$s</string>
     <string name="alert_action_remind_less">Avisar menos</string>
     <string name="alert_action_remind_usual">Avisar como siempre</string>
     <string name="alert_action_unmute">Reactivar</string>

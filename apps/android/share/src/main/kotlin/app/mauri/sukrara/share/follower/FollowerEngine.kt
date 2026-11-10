@@ -71,6 +71,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -120,6 +121,18 @@ data class NearbyOffer(val phone: String, val pairing: BleMessages.Pairing)
 
 /** *Find phones nearby*: what limits the search ([status]) and the phones offering pairing now. */
 data class NearbySearch(val status: NearbyStatus, val offers: List<NearbyOffer>)
+
+/**
+ * An offer *Find phones nearby* holds: read at [seen] (epoch s); [tried] = when the next connection to its phone began
+ * (null = not reached again since). It stays listed until that connection goes [FollowerEngine.NEARBY_OFFER_DROP_S]
+ * without it, or its phone isn't reached for [FollowerEngine.NEARBY_OFFER_LOST_S].
+ */
+internal data class Listed(val offer: NearbyOffer, val seen: Long, val tried: Long? = null) {
+    fun listed(now: Long): Boolean =
+        offer.pairing.expiry > now &&
+            (tried == null || now - tried <= FollowerEngine.NEARBY_OFFER_DROP_S) &&
+            now - seen <= FollowerEngine.NEARBY_OFFER_LOST_S
+}
 
 /** A relay pool for [relays] that answers NIP-42 AUTH as [authKey] (F, or the invite key while joining). */
 fun interface RelayTransportFactory {
@@ -326,11 +339,14 @@ class FollowerEngine(
     /**
      * *Find phones nearby* (setup's join step): while collected, scans for wearers' phones, reads each one's INFO
      * without writing anything else (no identity yet: every phone is "unknown", B§6) and lists those offering *Pair
-     * nearby*. A phone offering is looked at again every [NEARBY_OFFER_RECHECK_S] and leaves the list once it stops
-     * (its next INFO without an offer, or [NEARBY_OFFER_DROP_S] without an answer); a phone offering nothing is left
-     * for [NEARBY_IDLE_S] (it may open pairing in a moment). Nothing is trusted: an offer is just a name and a picture
-     * until both phones show the same pairing code and the person says so ([confirmNearby]). Offers claiming to last
-     * longer than 10 minutes are not listed.
+     * nearby*. Every phone is looked at again after [NEARBY_RECHECK_S], offering or not (one that opens pairing while
+     * the list shows appears within about 10 s). An offer leaves the list once it stops: its next INFO without it, no
+     * answer within [NEARBY_OFFER_DROP_S] of the next connection to its phone ([NearbyEvent.Connecting]), or its phone
+     * not even reached for [NEARBY_OFFER_LOST_S] (gone out of range, stopped advertising). The drop counts from the
+     * connection, not from the last answer, so a re-check the scan-start budget holds back never takes an offer from
+     * under the person's finger. Nothing is trusted: an offer is just a name and a picture until both phones show the
+     * same pairing code and the person says so ([confirmNearby]). Offers claiming to last longer than 10 minutes are
+     * not listed.
      */
     fun findNearby(): Flow<NearbySearch> =
         channelFlow {
@@ -339,9 +355,9 @@ class FollowerEngine(
                 send(NearbySearch(NearbyStatus.Unsupported, emptyList()))
                 return@channelFlow
             }
-            // by token (a phone's address rotates), with when it was last seen: a phone that stopped offering or went
-            // out of range leaves the list after a missed check
-            val offers = MutableStateFlow<Map<String, Pair<NearbyOffer, Long>>>(emptyMap())
+            // by token (a phone's address rotates): a phone that stopped offering or went out of range leaves the list
+            // after a missed check
+            val offers = MutableStateFlow<Map<String, Listed>>(emptyMap())
             val ticks =
                 flow {
                     while (true) {
@@ -353,23 +369,39 @@ class FollowerEngine(
             try {
                 launch {
                     nb.events.collect { e ->
-                        if (e !is NearbyEvent.Info) return@collect
-                        val p = e.pairing
-                        val others = offers.value.filterValues { it.first.phone != e.phone }
-                        offers.value = if (p != null) others + (p.token to (NearbyOffer(e.phone, p) to now())) else others
-                        // on to the next phone; this one is looked at again soon if it offers, else in a minute
-                        nb.leave(e.phone, if (p != null) NEARBY_OFFER_RECHECK_S else NEARBY_IDLE_S)
+                        when (e) {
+                            // its offer's check starts now (the first connection since it was read)
+                            is NearbyEvent.Connecting -> {
+                                offers.update { all ->
+                                    all.mapValues { (_, l) ->
+                                        if (l.offer.phone == e.phone &&
+                                            l.tried == null
+                                        ) {
+                                            l.copy(tried = now())
+                                        } else {
+                                            l
+                                        }
+                                    }
+                                }
+                            }
+
+                            is NearbyEvent.Info -> {
+                                val p = e.pairing
+                                val others = offers.value.filterValues { it.offer.phone != e.phone }
+                                offers.value = if (p != null) others + (p.token to Listed(NearbyOffer(e.phone, p), now())) else others
+                                // on to the next phone; this one is looked at again soon, offering or not
+                                nb.leave(e.phone, NEARBY_RECHECK_S)
+                            }
+
+                            is NearbyEvent.Event -> {
+                                Unit
+                            }
+                        }
                     }
                 }
                 combine(nb.status, offers, ticks) { status, o, _ ->
                     val t = now()
-                    NearbySearch(
-                        status,
-                        o.values
-                            .filter { (offer, seen) ->
-                                offer.pairing.expiry > t && t - seen <= NEARBY_OFFER_DROP_S
-                            }.map { it.first },
-                    )
+                    NearbySearch(status, o.values.filter { it.listed(t) }.map { it.offer })
                 }.collect { send(it) }
             } finally {
                 nb.stop()
@@ -595,6 +627,10 @@ class FollowerEngine(
                         Unit
                     }
                 }
+            }
+
+            is NearbyEvent.Connecting -> {
+                Unit
             }
         }
     }
@@ -1034,14 +1070,21 @@ class FollowerEngine(
         /** B§6: another wearer's phone is avoided for 10 minutes. */
         const val LEAVE_OTHER_PHONE_S = 600L
 
-        /** *Find phones nearby*: a phone offering *Pair nearby* is read again after this long. */
-        const val NEARBY_OFFER_RECHECK_S = 5L
+        /**
+         * *Find phones nearby*: every phone is read again after this long, offering *Pair nearby* or not (one may open
+         * pairing in a moment: it is listed within about 10 s). About one scan start per read, within the app's 4 per
+         * 30 s ([app.mauri.sukrara.share.ble.ScanStartBudget]) for a phone or two.
+         */
+        const val NEARBY_RECHECK_S = 5L
 
-        /** An offer not confirmed for this long (the phone stopped advertising or went away) leaves the list. */
+        /** An offer whose phone doesn't offer it again within this long of the next connection to it leaves the list. */
         const val NEARBY_OFFER_DROP_S = 12L
 
-        /** A phone offering nothing (it may open pairing in a moment) is read again after a minute. */
-        const val NEARBY_IDLE_S = 60L
+        /**
+         * An offer whose phone isn't even reached for this long (out of range, stopped advertising) leaves the list:
+         * longer than a re-check the scan-start budget holds back (at most its 30 s window after [NEARBY_RECHECK_S]).
+         */
+        const val NEARBY_OFFER_LOST_S = 60L
 
         const val INBOX = "inbox"
         const val ROSTER = "roster"

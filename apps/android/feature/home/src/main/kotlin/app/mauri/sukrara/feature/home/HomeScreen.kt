@@ -4,8 +4,11 @@
 package app.mauri.sukrara.feature.home
 
 import android.text.format.DateUtils
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -41,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,7 +53,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -59,12 +65,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -83,6 +91,8 @@ import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
@@ -272,32 +282,8 @@ fun HomeContent(
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
-        Column(
-            Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .verticalScroll(scroll),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // glucose first: the card (or, before any reading, why there is none) is always at the top
-            GlucoseSection(state, callbacks, safetyBanner) { muteDialog = true }
-            BannerSlot(infoBanner)
-            MuteControl(state, callbacks.onAlert) { muteDialog = true }
-            Treatments(
-                state.treatments,
-                state.readOnly,
-                state.fromPen,
-                state.marks,
-                state.now,
-                { callbacks.onAction(HomeAction.OpenClinicUpload) },
-                callbacks.pen.open,
-            ) {
-                haptics.confirm()
-                callbacks.onDelete(it)
-            }
-            if (state.history.isNotEmpty()) ReportCard(state.history, state.now, state.config.bands)
-            // room for the floating button over the last row
-            Spacer(Modifier.height(88.dp))
+        BoxWithConstraints(Modifier.padding(padding).fillMaxSize()) {
+            HomeColumn(state, callbacks, scroll, safetyBanner, infoBanner, viewport = maxHeight) { muteDialog = true }
         }
     }
     pen?.let { p ->
@@ -311,6 +297,46 @@ fun HomeContent(
     }
     if (muteDialog) {
         MuteAllDialog(onClose = { muteDialog = false }) { callbacks.onAlert(HomeAlertAction.MuteAll(it)) }
+    }
+}
+
+/** Home's scrolling column; [viewport] = its visible height (a safety banner under the card must fit in it). */
+@Composable
+private fun HomeColumn(
+    state: HomeUiState,
+    callbacks: HomeCallbacks,
+    scroll: ScrollState,
+    safetyBanner: Banner?,
+    infoBanner: Banner?,
+    viewport: Dp,
+    onMuteAll: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(scroll),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // glucose first: the card (or, before any reading, why there is none) is always at the top
+        GlucoseSection(state, callbacks, safetyBanner, viewport, onMuteAll)
+        BannerSlot(infoBanner)
+        MuteControl(state, callbacks.onAlert, onMuteAll)
+        Treatments(
+            state.treatments,
+            state.readOnly,
+            state.fromPen,
+            state.marks,
+            state.now,
+            { callbacks.onAction(HomeAction.OpenClinicUpload) },
+            callbacks.pen.open,
+        ) {
+            haptics.confirm()
+            callbacks.onDelete(it)
+        }
+        if (state.history.isNotEmpty()) ReportCard(state.history, state.now, state.config.bands)
+        // room for the floating button over the last row
+        Spacer(Modifier.height(88.dp))
     }
 }
 
@@ -408,16 +434,30 @@ private fun FollowerHeader(state: HomeUiState) {
  * The card, always (its chart keeps the last trajectory and the renderer draws the stale / warm-up / ended face), then
  * a safety banner, then the compact reason with its action. Only before there is anything to draw (not set up, no
  * sensor yet, no core) a full-width reason takes the card's place; that swap cross-fades (reduced motion: snaps).
+ * While a safety banner shows, the card gives up height (down to [MIN_CARD_HEIGHT], easing) so the banner's action is
+ * on screen without scrolling in [viewport], at any font size.
  */
 @Composable
 private fun GlucoseSection(
     state: HomeUiState,
     callbacks: HomeCallbacks,
     safetyBanner: Banner?,
+    viewport: Dp,
     onMuteAll: () -> Unit,
 ) {
     val resources = LocalContext.current.resources
+    val density = LocalDensity.current
+    val reduced = LocalReducedMotion.current
     val canMute = state.glucose.role != null
+    // what sits between the card and the safety banner's bottom edge (the quiet chips and the banner), px
+    var under by remember { mutableIntStateOf(0) }
+    val fit =
+        if (safetyBanner == null) {
+            CARD_HEIGHT
+        } else {
+            (viewport - with(density) { under.toDp() } - SECTION_GAP).coerceIn(MIN_CARD_HEIGHT, CARD_HEIGHT)
+        }
+    val cardHeight by animateDpAsState(fit, Motion.defaultSpatial(reduced), label = "card height")
     Swap(state.reason?.takeIf { it.fullPage }) { fullPage ->
         if (fullPage != null) {
             Column {
@@ -455,8 +495,12 @@ private fun GlucoseSection(
                             PillAction.None -> Unit
                         }
                     },
+                    height = cardHeight,
                 )
-                QuietChips(QuietTarget.chips(state.glucose.alerts, pill), state.now) { sheet = it }
+                Column(Modifier.onSizeChanged { under = it.height }) {
+                    QuietChips(QuietTarget.chips(state.glucose.alerts, pill), state.now) { sheet = it }
+                    BannerSlot(safetyBanner)
+                }
                 sheet?.let { shown ->
                     QuietSheet(
                         target = shown,
@@ -472,7 +516,6 @@ private fun GlucoseSection(
                         },
                     )
                 }
-                BannerSlot(safetyBanner)
                 // Monitoring stopped already has its safety banner (banner 0): never say it twice
                 val compact =
                     state.reason?.takeUnless {
@@ -497,12 +540,15 @@ private fun SensorLine(
     onPair: () -> Unit,
 ) {
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return
+    val left = Duration.between(state.now, ends).seconds
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
         Text(
-            stringResource(
-                if (ends.isAfter(state.now)) R.string.home_sensor_ends else R.string.home_sensor_ended,
-                relative(ends, state.now),
-            ),
+            if (left > 0) {
+                // partial minutes up: never "in 0 min" while it still runs
+                stringResource(R.string.home_sensor_ends, spanText((left + 59) / 60))
+            } else {
+                stringResource(R.string.home_sensor_ended, spanText((-left / 60).coerceAtLeast(1)))
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -1057,6 +1103,22 @@ private fun relative(
     if (!past.isNegative && past < Duration.ofMinutes(1)) return stringResource(R.string.home_a11y_just_now)
     return DateUtils.getRelativeTimeSpanString(t.toEpochMilli(), now.toEpochMilli(), DateUtils.MINUTE_IN_MILLIS).toString()
 }
+
+/**
+ * [min] minutes as the card's spoken sentence says the sensor's time left: whole days from 24 h ("13 days"), else the
+ * shared duration words ("4 h 59 min", "45 min"; `Durations.text`), so home never says "In 4 hours" beside a "5 h".
+ */
+@Composable
+private fun spanText(min: Long): String {
+    if (min >= MINUTES_PER_DAY) return pluralStringResource(DsR.plurals.ds_days, (min / MINUTES_PER_DAY).toInt(), min / MINUTES_PER_DAY)
+    val resources = LocalContext.current.resources
+    return Durations.text(min, remember(resources) { CardWords.of(resources) }.durations)
+}
+
+private const val MINUTES_PER_DAY = 1440L
+
+/** Room kept under a safety banner at the viewport's bottom edge. */
+private val SECTION_GAP = 8.dp
 
 /** "1:24 AM" within the last 12 hours, else the date and time ("Oct 26, 11:40 PM"): when a silence began. */
 @Composable

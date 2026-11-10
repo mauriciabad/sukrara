@@ -145,9 +145,10 @@ private fun BannerCard(b: Banner) {
                 }
             }
             b.action?.let { label ->
-                // a safety action starts at the text's edge, clear of the floating button in the bottom-end corner
+                // a safety action starts at the text's edge and stops short of the floating button in the bottom-end
+                // corner (at a large font it wraps rather than slide under it)
                 Row(
-                    Modifier.fillMaxWidth().padding(start = 40.dp, end = 12.dp, top = 8.dp),
+                    Modifier.fillMaxWidth().padding(start = 40.dp, end = if (safety) FAB_CLEARANCE else 12.dp, top = 8.dp),
                     horizontalArrangement = if (safety) Arrangement.Start else Arrangement.End,
                 ) {
                     if (safety) {
@@ -166,3 +167,6 @@ private fun BannerCard(b: Banner) {
         }
     }
 }
+
+/** A floating button (56 dp) inside the screen edge (16 dp), seen from the card's inner edge (16 dp in): 56 + 8. */
+private val FAB_CLEARANCE = 64.dp

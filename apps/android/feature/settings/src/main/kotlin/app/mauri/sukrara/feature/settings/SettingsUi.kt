@@ -168,6 +168,25 @@ fun kindName(kind: AlertKind): String =
     )
 
 /**
+ * An alert kind inside a sentence, never a capitalised name mid-sentence: "Use the very low alert" / es "Usar la
+ * alerta de glucosa muy baja", "¿Desactivar la alerta sin datos?".
+ */
+@Composable
+fun kindInSentence(kind: AlertKind): String =
+    stringResource(
+        when (kind) {
+            AlertKind.VERY_LOW -> R.string.st_kind_in_very_low
+            AlertKind.LOW -> R.string.st_kind_in_low
+            AlertKind.HIGH -> R.string.st_kind_in_high
+            AlertKind.VERY_HIGH -> R.string.st_kind_in_very_high
+            AlertKind.EXTREMELY_HIGH -> R.string.st_kind_in_extremely_high
+            AlertKind.FALLING_FAST -> R.string.st_kind_in_falling_fast
+            AlertKind.RISING_FAST -> R.string.st_kind_in_rising_fast
+            AlertKind.NO_DATA -> R.string.st_kind_in_no_data
+        },
+    )
+
+/**
  * Labels number values as the dialogs and rows show them: the special word ("Once", "Until you turn it off") or
  * "70 mg/dL" / "3,9 mmol/L" (a glucose format in the screen's unit, [LocalGlucoseUnit]) / "30 min". A plain function
  * (dialog option labels aren't composable), built from this locale's strings. Values are stored ones.

@@ -34,6 +34,7 @@ object A11y {
         surface: CardSurface,
         unit: GlucoseUnit,
         badge: Boolean = true,
+        age: Boolean = true,
     ): String {
         val w = model.words
         val now = model.nowS
@@ -69,12 +70,26 @@ object A11y {
                         w.string(R.string.a11y_value_old).takeIf { face.strike },
                         w.trend(p.rate.takeIf { face.trend == TrendMark.ARROW }).takeUnless { face.strike },
                         range(p.sgv, bands, w).takeUnless { bound },
-                        ago(now - p.t, w),
+                        ago(now - p.t, w).takeIf { age },
                     ).joinToString(", ")
                 }
             }
         val alert = status(model.status, now, w).takeIf { badge && face.state == GlucoseLook.State.VALUE }
         return sentences(w, listOfNotNull(glucose, alert))
+    }
+
+    /**
+     * A new reading as a screen reader announces it (a polite live region beside the card): the glucose sentence of
+     * [model]'s latest reading as it came in, "112 milligrams per decilitre, falling, in range": no age and no alert, so
+     * the words stay the same until the next reading. Null without a reading.
+     */
+    fun reading(
+        model: CardModel,
+        style: CardStyle,
+        surface: CardSurface,
+    ): String? {
+        val r = model.latest ?: return null
+        return value(model.copy(nowS = r.t), style.bands.sane(), surface, style.unit, badge = false, age = false)
     }
 
     /** The chart summary: "Last 12 hours: 82% in range, 3% below, 15% above" (or "no data"). */

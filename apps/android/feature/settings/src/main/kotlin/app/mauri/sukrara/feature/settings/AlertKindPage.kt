@@ -90,7 +90,7 @@ fun AlertKindContent(
         header()
         SettingsGroup {
             SwitchRow(
-                stringResource(R.string.st_kind_use, kindName(kind)),
+                stringResource(R.string.st_kind_use, kindInSentence(kind)),
                 rule.on,
                 { on -> if (!on && kind in ConfirmOff) dialog = "off" else actions.edit(AlertEdits.kindOn(kind, on)) },
                 enabled = ui.settings.on,
@@ -148,7 +148,7 @@ fun AlertKindContent(
     when (dialog) {
         "off" -> {
             ConfirmDialog(
-                stringResource(R.string.st_kind_off_title, kindName(kind)),
+                stringResource(R.string.st_kind_off_title, kindInSentence(kind)),
                 stringResource(if (kind == AlertKind.NO_DATA) R.string.st_kind_off_text_no_data else R.string.st_kind_off_text_very_low),
                 stringResource(R.string.st_turn_off),
                 { dialog = null },
@@ -157,7 +157,7 @@ fun AlertKindContent(
 
         "alarmOff" -> {
             ConfirmDialog(
-                stringResource(R.string.st_alarm_off_title, kindName(kind)),
+                stringResource(R.string.st_alarm_off_title, kindInSentence(kind)),
                 stringResource(R.string.st_alarm_off_text),
                 stringResource(R.string.st_turn_off),
                 { dialog = null },

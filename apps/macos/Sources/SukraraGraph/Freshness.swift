@@ -11,6 +11,8 @@ public enum Freshness: Sendable {
     case fresh, late, stale, old, gone
     static let lateS: TimeInterval = 90, staleS: TimeInterval = 5 * 60, oldS: TimeInterval = 20 * 60,
         goneS: TimeInterval = 3 * 3600
+    /// From 12 h `timeText` names the day too (a bare clock time could be today's or yesterday's); after 6 days the date.
+    static let dayS: TimeInterval = 12 * 3600, dateS: TimeInterval = 6 * 86400
 
     static func of(age: TimeInterval?) -> Freshness {
         guard let a = age else { return .gone }
@@ -45,12 +47,13 @@ public enum Freshness: Sendable {
         }
     }
 
-    /// The next age at which `of` changes (for a one-shot timer / timeline entry).
+    /// The next age at which `of` or `timeText` changes (for a one-shot timer / timeline entry): else a widget last
+    /// drawn at 3 h still says "No reading since 7:14" the next morning.
     static func nextChange(age: TimeInterval) -> TimeInterval? {
-        [lateS, staleS, oldS, goneS].first { $0 >= age }.map { $0 + 1 }
+        [lateS, staleS, oldS, goneS, dayS, dateS].first { $0 >= age }.map { $0 + 1 }
     }
 
-    /// When the step of a reading taken at `t` changes next, seen at `now`; nil = never again / no reading.
+    /// When what a reading taken at `t` looks like changes next, seen at `now`; nil = never again / no reading.
     public static func nextChangeAt(_ t: TimeInterval?, now: TimeInterval) -> TimeInterval? {
         guard let t else { return nil }
         return nextChange(age: now - t).map { t + $0 }
@@ -82,14 +85,31 @@ public enum Freshness: Sendable {
             trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate)
     }
 
-    /// "14:05" today, "Tue 14:05" this week, "12 Oct" before; the time in the Mac's 12/24-hour setting (`Clock`).
-    /// A clock time doesn't tick.
+    /// "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days (`timeKind`);
+    /// the time in the Mac's 12/24-hour setting (`Clock`). A clock time doesn't tick.
     static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
-        let d = Date(timeIntervalSince1970: t), n = Date(timeIntervalSince1970: now)
+        let d = Date(timeIntervalSince1970: t)
         let time = Clock.time(d)
-        if Calendar.current.isDate(d, inSameDayAs: n) { return time }
-        if now - t < 6 * 86400 { return d.formatted(.dateTime.weekday(.abbreviated)) + " " + time }
-        return d.formatted(.dateTime.day().month(.abbreviated))
+        switch timeKind(t, now: now) {
+        case .time: return time
+        case .day: return d.formatted(.dateTime.weekday(.abbreviated)) + " " + time
+        case .date: return d.formatted(.dateTime.day().month(.abbreviated))
+        }
+    }
+
+    /// `timeText`'s three forms ("14:05", "Tue 14:05", "12 Oct"), by their contract names (contracts/graph/freshness
+    /// `times`; Freshness.kt TimeKind).
+    enum TimeKind: String, Sendable { case time, day, date }
+
+    /// Which form `timeText` writes for `t` seen at `now`: the clock time alone while it is today's and at most 12 h
+    /// old, the day with it from then or on another day, the date after 6 days. A future time (a sensor's *Ready at*)
+    /// is a clock time unless it falls on another day.
+    static func timeKind(_ t: TimeInterval, now: TimeInterval, calendar: Calendar = .current) -> TimeKind {
+        let sameDay = calendar.isDate(
+            Date(timeIntervalSince1970: t), inSameDayAs: Date(timeIntervalSince1970: now))
+        let age = now - t
+        if sameDay && age <= dayS { return .time }
+        return age <= dateS ? .day : .date
     }
 }
 

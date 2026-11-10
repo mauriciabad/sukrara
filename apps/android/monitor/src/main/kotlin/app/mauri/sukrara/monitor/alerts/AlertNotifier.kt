@@ -9,6 +9,9 @@ import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.TtsSpan
 import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
@@ -163,7 +166,10 @@ class AlertNotifier(
 
     private fun clockTime(epochS: Long): String = Clock.time(epochS)
 
-    /** *Mute…* / *Change time*: a direct reply with the lengths as one-tap chips (and a typed one). */
+    /**
+     * *Mute…* / *Change time*: a direct reply with the lengths as one-tap chips, shortest first (and a typed one); each
+     * chip says what it does to TalkBack ([muteChoices]).
+     */
     private fun Notification.Builder.addMuteAction(kind: AlertKind, title: String, choices: List<Int>) =
         addAction(
             Notification.Action
@@ -172,12 +178,29 @@ class AlertNotifier(
                     RemoteInput
                         .Builder(AlertActionReceiver.TYPED)
                         .setLabel(ctx.getString(R.string.alert_action_mute_for_label))
-                        .setChoices(choices.map { Durations.text(it.toLong(), words.durations) }.toTypedArray())
+                        .setChoices(muteChoices(kind, choices))
                         .setAllowFreeFormInput(true)
                         .setEditChoicesBeforeSending(RemoteInput.EDIT_CHOICES_BEFORE_SENDING_DISABLED)
                         .build(),
                 ).build(),
         )
+
+    /**
+     * The chips, shortest first ("15 min", "30 min", "1 h", "2 h"; the person's own first length among them). A chip has
+     * no label of its own, so each carries what TalkBack says as a [TtsSpan]: "Low alerts: mute for 30 min". The reply
+     * comes back as the chip's text (the span is dropped with it), which [AlertActionReceiver] parses.
+     */
+    internal fun muteChoices(kind: AlertKind, minutes: List<Int>): Array<CharSequence> {
+        val side = MuteText.sideName(kind.side, words)
+        return minutes
+            .distinct()
+            .sorted()
+            .map { min ->
+                val shown = Durations.text(min.toLong(), words.durations)
+                val spoken = ctx.getString(R.string.alert_mute_choice_a11y, side, shown)
+                SpannableString(shown).apply { setSpan(TtsSpan.TextBuilder(spoken).build(), 0, length, Spanned.SPAN_INCLUSIVE_INCLUSIVE) }
+            }.toTypedArray()
+    }
 
     private fun action(kind: AlertKind, what: String, label: Int) =
         Notification.Action.Builder(null, ctx.getString(label), broadcast(kind, what, mutable = false)).build()

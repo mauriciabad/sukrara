@@ -58,8 +58,17 @@
     <string name="st_kind_falling_fast">Bajando rápido</string>
     <string name="st_kind_rising_fast">Subiendo rápido</string>
     <string name="st_kind_no_data">Sin datos</string>
-    <string name="st_kind_use">Usar alerta de %1$s</string>
-    <string name="st_kind_off_title">¿Desactivar la alerta de %1$s?</string>
+    <!-- Un tipo de alerta dentro de una frase (st_kind_use, st_kind_off_title, st_alarm_off_title) -->
+    <string name="st_kind_in_very_low">de glucosa muy baja</string>
+    <string name="st_kind_in_low">de glucosa baja</string>
+    <string name="st_kind_in_high">de glucosa alta</string>
+    <string name="st_kind_in_very_high">de glucosa muy alta</string>
+    <string name="st_kind_in_extremely_high">de glucosa extremadamente alta</string>
+    <string name="st_kind_in_falling_fast">de bajada rápida</string>
+    <string name="st_kind_in_rising_fast">de subida rápida</string>
+    <string name="st_kind_in_no_data">sin datos</string>
+    <string name="st_kind_use">Usar la alerta %1$s</string>
+    <string name="st_kind_off_title">¿Desactivar la alerta %1$s?</string>
     <string name="st_kind_off_text_very_low">Nada te avisará cuando la glucosa baje mucho. La alerta de bajo, si está activada, sigue sonando.</string>
     <string name="st_kind_off_text_no_data">Nada te avisará cuando dejen de llegar lecturas (problemas del sensor, Bluetooth o el teléfono).</string>
     <string name="st_alert_when">Avisar cuando</string>
@@ -153,7 +162,7 @@
     <string name="st_report_problem_summary">Abre las incidencias del proyecto en GitHub</string>
     <string name="st_source_code">Código fuente</string>
     <string name="st_license">Software libre, GPL-3.0 o posterior</string>
-    <string name="st_alarm_off_title">¿Quitar la alarma de %1$s?</string>
+    <string name="st_alarm_off_title">¿Quitar la alarma %1$s?</string>
     <string name="st_alarm_off_text">Sonará como una notificación normal: más baja y sin abrirse sobre la pantalla de bloqueo.</string>
     <string name="st_threshold_between">Debe estar por encima de %1$s y por debajo de %2$s (las alertas vecinas)</string>
     <!-- Settings › Sensor -->

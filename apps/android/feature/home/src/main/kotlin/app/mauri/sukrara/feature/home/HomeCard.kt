@@ -59,11 +59,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
@@ -192,7 +195,9 @@ internal fun panelModel(
  * bottom ease towards the visible window's own (critically damped: a bouncing scale would read as the data moving).
  *
  * TalkBack reads the card as one node with the renderer's sentence ([A11y.card], the same on every surface); its
- * custom actions are [actions] plus Earlier / Later / Zoom in / Zoom out / Back to now. The status pill is a button ([pill], read as [pillWords]) that calls [onPill].
+ * custom actions are [actions] plus Earlier / Later / Zoom in / Zoom out / Back to now (the history without the drag).
+ * The status pill is a button ([pill], read as [pillWords]) that calls [onPill]. Over the drawn number a polite live
+ * region says each new reading as it comes in ([A11y.reading]). [height]: the panel's (a safety banner may take some).
  */
 @Composable
 fun PanelCard(
@@ -207,6 +212,7 @@ fun PanelCard(
     pill: PillAction = PillAction.None,
     pillWords: String? = null,
     onPill: (PillAction) -> Unit = {},
+    height: Dp = CARD_HEIGHT,
 ) {
     val resources = LocalContext.current.resources
     val words = remember(resources) { CardWords.of(resources) }
@@ -224,6 +230,10 @@ fun PanelCard(
         }
     val style = remember(config) { config.appPanelStyle() }
     val description = remember(model, style) { A11y.card(model, style, CardSurface.APP_PANEL) }
+    // a new reading, said once (politely): the same words until the next one; nothing while the card shows no value
+    val showsValue = homeLook(glucose, now, style.unit).state == GlucoseLook.State.VALUE
+    val live =
+        remember(model.latest, showsValue, words, style) { if (showsValue) A11y.reading(model, style, CardSurface.APP_PANEL) else null }
     val motion = panelMotion(glucose, now, config, palette, reduced)
     val base = style.graph
     val default = base?.windowS ?: 0L
@@ -315,7 +325,7 @@ fun PanelCard(
         Canvas(
             Modifier
                 .fillMaxWidth()
-                .height(CARD_HEIGHT)
+                .height(height)
                 .testTag("home-card")
                 .clearAndSetSemantics {
                     contentDescription = description
@@ -363,11 +373,34 @@ fun PanelCard(
                 laid.read(rec)
             }
         }
+        laid.number?.let { LiveValue(it, live.orEmpty()) }
         val box = laid.pill
         if (box != null && pill != PillAction.None) {
             PillButton(box, pillWords.orEmpty(), pillLabel(pill)) { onPill(pill) }
         }
     }
+}
+
+/**
+ * The value's polite live region over the drawn number ([box], px in the card): TalkBack says each new reading as it
+ * comes in ([text], `A11y.reading`) without moving the focus; touched, it says the value alone. Empty (silent, no stop)
+ * while the card shows no value; kept in place so a value coming back is said too.
+ */
+@Composable
+private fun LiveValue(
+    box: RectF,
+    text: String,
+) {
+    val d = LocalDensity.current
+    Box(
+        Modifier
+            .offset { IntOffset(box.left.roundToInt(), box.top.roundToInt()) }
+            .size(with(d) { box.width().toDp() }, with(d) { box.height().toDp() })
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+                if (text.isNotEmpty()) contentDescription = text
+            }.testTag("live-value"),
+    )
 }
 
 /**
@@ -534,6 +567,9 @@ private class Laid {
     /** Where the pill is drawn: a state, so its button follows it. */
     var pill by mutableStateOf<RectF?>(null)
 
+    /** Where the value's number was last drawn (kept while none is): the live region's place. */
+    var number by mutableStateOf<RectF?>(null)
+
     fun read(rec: CardLayout) {
         rec.first("chart.plot")?.box?.let { b ->
             plotW = b.width()
@@ -544,6 +580,7 @@ private class Laid {
         rec.first("chart.plot.natural")?.box?.let { b -> if (area != null) insetTarget = area.bottom - b.bottom }
         val box = (rec.all("value.status") + rec.all("value.pill")).firstNotNullOfOrNull { it.box }
         if (box != pill) pill = box?.let(::RectF)
+        rec.first("value.number")?.box?.let { if (it != number) number = RectF(it) }
     }
 }
 
@@ -551,4 +588,7 @@ private fun Pair<Float, Float>?.toOffset(): Offset = this?.let { Offset(it.first
 
 /** Stiffness of the eased y range, plot bottom and the way back to now (the spatial spring's, critically damped). */
 private const val EASE_STIFFNESS = 380f
-private val CARD_HEIGHT = 300.dp
+
+/** The panel's height; a safety banner under it may take it down to [MIN_CARD_HEIGHT] so its action stays on screen. */
+internal val CARD_HEIGHT = 300.dp
+internal val MIN_CARD_HEIGHT = 200.dp

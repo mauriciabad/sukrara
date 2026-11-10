@@ -342,7 +342,8 @@ class HomeViewModelTest {
             assertTrue(vm.state.value.undoInClinic)
         }
 
-    @Test fun `the undo offer expires after 5 s`() =
+    /** The snackbar decides how long Undo is offered (longer with TalkBack), not a timer of the view model's (#74). */
+    @Test fun `the undo offer lasts until the snackbar goes`() =
         runTest(dispatcher) {
             val deps = Deps()
             val t = Samples.treatment()
@@ -352,7 +353,10 @@ class HomeViewModelTest {
             vm.delete(t)
             runCurrent()
             assertEquals(t, vm.state.value.undo)
-            advanceTimeBy(HomeViewModel.UNDO_WINDOW.toMillis() + 1)
+            advanceTimeBy(60_000)
+            runCurrent()
+            assertEquals("a minute on, still offered while the snackbar shows", t, vm.state.value.undo)
+            vm.undoShown()
             runCurrent()
             assertNull(vm.state.value.undo)
         }

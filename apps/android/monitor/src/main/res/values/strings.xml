@@ -47,6 +47,8 @@
     <!-- Alert notification actions (work from the lock screen; nothing opens). -->
     <string name="alert_action_mute">Mute…</string>
     <string name="alert_action_mute_for_label">Mute for (e.g. 45 min, 1 h 30)</string>
+    <!-- What TalkBack says for a length chip of Mute… / Change time: %1$s = the side ("Low"), %2$s = "30 min" -->
+    <string name="alert_mute_choice_a11y">%1$s alerts: mute for %2$s</string>
     <string name="alert_action_remind_less">Remind less</string>
     <string name="alert_action_remind_usual">Remind as usual</string>
     <string name="alert_action_unmute">Unmute</string>
