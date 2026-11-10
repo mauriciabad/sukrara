@@ -11,6 +11,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.feature.sharing.RoleLoss
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.following
 import app.mauri.sukrara.protocol.event.Avatar
@@ -59,6 +60,15 @@ sealed interface JoinUi {
     data class Failed(val result: JoinResult) : JoinUi
 }
 
+/**
+ * A role picked on the role step, waiting for the person's confirmation. [loss] = the history it deletes from this
+ * phone (its own dialog, with *Export CSV first*); null = nothing to delete (the plain role confirmation).
+ */
+data class RoleChange(
+    val role: Role,
+    val loss: RoleLoss?,
+)
+
 /** Everything one setup screen shows. [step] null = setup is over: go home. */
 data class SetupUi(
     val step: SetupStep?,
@@ -83,6 +93,8 @@ data class SetupUi(
     val single: Boolean,
     /** Back shows the previous step (not on the first step, nor back into the role once chosen). */
     val canBack: Boolean,
+    /** The role step's open confirmation (null = none). */
+    val roleChange: RoleChange? = null,
 )
 
 /**
@@ -98,6 +110,9 @@ class SetupViewModel(
     private val joining = MutableStateFlow<JoinUi>(JoinUi.Idle)
     private val busy = MutableStateFlow(false)
     private val single = MutableStateFlow(false)
+
+    /** The role step's confirmation; kept while *Export CSV first* is open, so it shows again on the way back. */
+    private val roleChange = MutableStateFlow<RoleChange?>(null)
 
     /** False until [openedOn] is reopened in the record: no other step flashes and setup doesn't end before it shows. */
     private val ready = MutableStateFlow(openedOn == null)
@@ -132,8 +147,8 @@ class SetupViewModel(
             m.readiness.readiness,
             shown,
             combine(restore, busy, single, editing, ready, ::Locals),
-            combine(joining, m.pendingInvite, ::Pair),
-        ) { i, readiness, override, l, (join, invite) ->
+            combine(joining, m.pendingInvite, roleChange, ::Triple),
+        ) { i, readiness, override, l, (join, invite, change) ->
             if (!l.ready) return@combine null
             // opened on one step: nothing until this flow itself sees the reopened record (no early "setup is over")
             if (openedOn != null && !seenOpen) {
@@ -175,6 +190,7 @@ class SetupViewModel(
                 single = l.single,
                 // the join step goes back to the role (a phone that wears the sensor after all)
                 canBack = !l.single && at > 0 && (step == SetupStep.Join || !(facts.role != null && steps[at - 1] == SetupStep.Role)),
+                roleChange = change.takeIf { step == SetupStep.Role },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -254,9 +270,39 @@ class SetupViewModel(
 
     fun continueWelcome() = record(SetupMachine::completeWelcome)
 
-    /** P10: called after the person confirmed what the role means. A changed role resets the alert runtime first. */
+    /**
+     * Continue on the role step: asks what choosing [role] would delete, then shows its confirmation
+     * ([SetupUi.roleChange]). Nothing changes until the person confirms ([chooseRole]); a failed check leaves the step
+     * as it was.
+     */
+    fun reviewRole(role: Role) {
+        if (busy.value) return
+        viewModelScope.launch {
+            busy.value = true
+            try {
+                roleChange.value = RoleChange(role, m.roles.loss(role))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("Sukrara.setup", "role check failed: ${e.javaClass.simpleName}")
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    /** Cancel on the role confirmation: the role stays as it was and nothing is deleted. */
+    fun cancelRole() {
+        roleChange.value = null
+    }
+
+    /**
+     * P10: called after the person confirmed what the role means (and, when it deletes history, *Delete and
+     * continue*). A changed role resets the alert runtime first.
+     */
     fun chooseRole(role: Role) =
         act {
+            roleChange.value = null
             searching.value = null
             val facts = ui.value?.facts ?: return@act
             val chosen = SetupMachine.chooseRole(role, confirmed = true, facts) as? Result.Done ?: return@act

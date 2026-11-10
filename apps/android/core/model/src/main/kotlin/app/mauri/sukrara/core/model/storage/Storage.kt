@@ -71,6 +71,17 @@ class SecretUnreadableException(
     cause: Throwable?,
 ) : Exception("secret '$name' unreadable (transient=$transient)", cause)
 
+/** How many stored entries there are and when the oldest and newest are (null when [count] is 0). */
+data class StoredSpan(
+    val count: Int,
+    val first: Instant?,
+    val last: Instant?,
+) {
+    companion object {
+        val EMPTY = StoredSpan(0, null, null)
+    }
+}
+
 /** Glucose history (Room). Upserting the same timestamp and source replaces the value. */
 interface ReadingsRepository {
     /** Readings at or after [from], oldest first, updated as new ones arrive. */
@@ -89,6 +100,9 @@ interface ReadingsRepository {
 
     /** Retention: deletes readings older than [cutoff]; returns how many. */
     suspend fun deleteBefore(cutoff: Instant): Int
+
+    /** What [deleteFrom] would delete: how many readings from [sources] and their first and last time. */
+    suspend fun spanOf(sources: Set<SourceId>): StoredSpan
 
     /** A role change: deletes every reading from [sources] (another person's); returns how many. */
     suspend fun deleteFrom(sources: Set<SourceId>): Int
@@ -130,6 +144,9 @@ interface TreatmentsRepository {
 
     /** Stores [record] whatever is stored (the wearer's own entry over a writer's copy, a delivery mark). */
     suspend fun replace(record: TreatmentRecord)
+
+    /** The not-deleted entries [deleteAll] would remove: how many and their first and last `at`. */
+    suspend fun span(): StoredSpan
 
     /** Removes every entry (a follower stopped following: the wearer's log goes with it). */
     suspend fun deleteAll()

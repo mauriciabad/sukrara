@@ -33,6 +33,7 @@ import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
+import app.mauri.sukrara.feature.sharing.setup.RoleChange
 import app.mauri.sukrara.feature.sharing.setup.ScanInvite
 import app.mauri.sukrara.feature.sharing.setup.ScanState
 import app.mauri.sukrara.feature.sharing.setup.SetupActions
@@ -75,6 +76,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
 
@@ -180,6 +182,10 @@ class SharingScreenshotTest {
         return listOf(
             "setup-1-welcome" to { SetupContent(ui(SetupStep.Welcome, 1, facts.copy(role = null)), a) },
             "setup-2-role" to { SetupContent(ui(SetupStep.Role, 2, facts.copy(role = null)), a) },
+            "setup-2-role-delete-history" to {
+                val loss = RoleLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+                SetupContent(ui(SetupStep.Role, 2, facts.copy(role = Role.Follower)).copy(roleChange = RoleChange(Role.Wearer, loss)), a)
+            },
             "setup-3-permissions" to {
                 SetupContent(
                     ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),

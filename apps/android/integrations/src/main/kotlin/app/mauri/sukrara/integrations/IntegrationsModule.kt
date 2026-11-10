@@ -23,6 +23,7 @@ import app.mauri.sukrara.integrations.broadcasts.Broadcaster
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsViewModel
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
 import app.mauri.sukrara.integrations.broadcasts.PlatformApps
+import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportViewModel
 import app.mauri.sukrara.integrations.export.Exporter
 import app.mauri.sukrara.integrations.healthconnect.HcState
@@ -251,8 +252,11 @@ class IntegrationsModule(
     val healthConnectViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { HealthConnectViewModel(healthConnect, health) } }
 
-    fun exportViewModels(follower: Boolean): ViewModelProvider.Factory =
-        viewModelFactory { initializer { ExportViewModel(exporter, follower, dispatchers.io) } }
+    /** [start]: the period the page opens on (setup's *Export CSV first* opens on everything). */
+    fun exportViewModels(
+        follower: Boolean,
+        start: ExportPeriod = ExportPeriod.DEFAULT,
+    ): ViewModelProvider.Factory = viewModelFactory { initializer { ExportViewModel(exporter, follower, dispatchers.io, start) } }
 
     fun nightscoutViewModels(wearer: Boolean): ViewModelProvider.Factory =
         viewModelFactory { initializer { NightscoutViewModel(nightscout, wearer) { clock.now() } } }

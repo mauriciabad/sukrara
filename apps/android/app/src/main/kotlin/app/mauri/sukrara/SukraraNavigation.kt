@@ -70,6 +70,7 @@ import app.mauri.sukrara.feature.sharing.share.SharingViewModel
 import app.mauri.sukrara.integrations.AppsPage
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
 import app.mauri.sukrara.integrations.export.ExportPage
+import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectPage
 import app.mauri.sukrara.integrations.libreview.LibreViewPage
 import app.mauri.sukrara.integrations.localserver.NightscoutApiPage
@@ -134,6 +135,10 @@ data object NightscoutUploadRoute : NavKey
 /** Settings › Share with apps › Export data. */
 @Serializable
 data object ExportRoute : NavKey
+
+/** Export data on everything this phone keeps: setup's *Export CSV first* before a role change deletes it. */
+@Serializable
+data object ExportAllRoute : NavKey
 
 /** Settings › Share with apps › LibreView. */
 @Serializable
@@ -402,6 +407,7 @@ fun SukraraNavigation(
                             // the sensor step embeds the new-sensor flow; its Done / Cancel lands back on setup
                             onOpenSensorSetup = { backStack.add(NewSensorKey) },
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
+                            onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.remove(SetupRoute) },
                         )
                     }
@@ -410,6 +416,7 @@ fun SukraraNavigation(
                             viewModel = viewModel(factory = SetupViewModel.factory(graph.setup, startAt = key.step)),
                             onOpenSensorSetup = { backStack.add(NewSensorKey) },
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
+                            onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.pop(key) },
                         )
                     }
@@ -504,6 +511,16 @@ fun SukraraNavigation(
                         val role by graph.role.data.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_export_title), { backStack.pop(ExportRoute) }) {
                             role?.let { r -> ExportPage(viewModel(factory = graph.integrations.exportViewModels(r.role == Role.Follower))) }
+                        }
+                    }
+                    entry<ExportAllRoute> {
+                        val role by graph.role.data.collectAsStateWithLifecycle(null)
+                        SettingsPage(stringResource(IntegrationsR.string.in_export_title), { backStack.pop(ExportAllRoute) }) {
+                            role?.let { r ->
+                                ExportPage(
+                                    viewModel(factory = graph.integrations.exportViewModels(r.role == Role.Follower, ExportPeriod.All)),
+                                )
+                            }
                         }
                     }
                     entry<SensorSettingsKey> {

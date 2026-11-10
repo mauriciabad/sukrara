@@ -80,13 +80,15 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
  * alert thresholds → sharing identity → home. Each step says "Step N of M" to TalkBack, has Back (except the first)
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
- * shows the same rows as Settings › Review alert thresholds); [onDone] goes home.
+ * shows the same rows as Settings › Review alert thresholds); [onExportHistory] opens the CSV export on everything
+ * this phone keeps (the role step's *Export CSV first*); [onDone] goes home.
  */
 @Composable
 fun SetupScreen(
     viewModel: SetupViewModel,
     onOpenSensorSetup: () -> Unit,
     thresholdRows: ThresholdRows,
+    onExportHistory: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,7 +113,7 @@ fun SetupScreen(
         return
     }
     BackHandler { viewModel.back(onDone) }
-    SetupContent(u, viewModel.actions(onOpenSensorSetup, thresholdRows, onDone), modifier)
+    SetupContent(u, viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone), modifier)
 }
 
 /**
@@ -124,6 +126,12 @@ typealias ThresholdRows = @Composable (settings: AlertSettings, onThreshold: (Al
 data class SetupActions(
     val back: () -> Unit = {},
     val continueWelcome: () -> Unit = {},
+    /** Continue on the role step: shows the role's confirmation ([SetupUi.roleChange]). */
+    val reviewRole: (Role) -> Unit = {},
+    /** Cancel on the role's confirmation: nothing changes. */
+    val cancelRole: () -> Unit = {},
+    /** *Export CSV first* in the role-change dialog: the CSV export on everything, the dialog stays. */
+    val exportHistory: () -> Unit = {},
     val chooseRole: (Role) -> Unit = {},
     val join: (link: String, name: String) -> Unit = { _, _ -> },
     val clearJoinError: () -> Unit = {},
@@ -155,6 +163,7 @@ data class SetupActions(
 private fun SetupViewModel.actions(
     onOpenSensorSetup: () -> Unit,
     thresholdRows: ThresholdRows,
+    onExportHistory: () -> Unit,
     onDone: () -> Unit,
 ): SetupActions {
     val context = LocalContext.current
@@ -162,6 +171,9 @@ private fun SetupViewModel.actions(
         SetupActions(
             back = { back(onDone) },
             continueWelcome = ::continueWelcome,
+            reviewRole = ::reviewRole,
+            cancelRole = ::cancelRole,
+            exportHistory = onExportHistory,
             chooseRole = ::chooseRole,
             join = ::join,
             clearJoinError = ::clearJoinError,
@@ -302,8 +314,7 @@ private fun ColumnScope.RoleStep(
     u: SetupUi,
     actions: SetupActions,
 ) {
-    var selected by rememberSaveable { mutableStateOf<Role?>(null) }
-    var confirming by rememberSaveable { mutableStateOf(false) }
+    var selected by rememberSaveable { mutableStateOf(u.roleChange?.role) }
     StepHeader(stringResource(R.string.sh_setup_role_title), stringResource(R.string.sh_setup_role_body))
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         RoleOption(
@@ -321,18 +332,28 @@ private fun ColumnScope.RoleStep(
     }
     StepButtons(
         stringResource(R.string.sh_setup_continue),
-        onPrimary = { confirming = true },
-        enabled = selected != null,
+        onPrimary = { selected?.let(actions.reviewRole) },
+        enabled = selected != null && !u.busy,
     )
-    val role = selected
-    if (confirming && role != null) {
-        val name = stringResource(if (role == Role.Wearer) R.string.sh_setup_role_wearer else R.string.sh_setup_role_follower)
+    // nothing to delete: what the role means; else what it deletes, with Export CSV first (#125)
+    val change = u.roleChange ?: return
+    val name = stringResource(if (change.role == Role.Wearer) R.string.sh_setup_role_wearer else R.string.sh_setup_role_follower)
+    val loss = change.loss
+    if (loss == null) {
         ConfirmDialog(
             title = stringResource(R.string.sh_setup_role_confirm_title, name),
             text = stringResource(R.string.sh_setup_role_confirm_text),
             confirm = stringResource(R.string.sh_setup_role_confirm),
-            onConfirm = { actions.chooseRole(role) },
-            onDismiss = { confirming = false },
+            onConfirm = { actions.chooseRole(change.role) },
+            onDismiss = actions.cancelRole,
+        )
+    } else {
+        RoleLossDialog(
+            roleName = name,
+            loss = loss,
+            onExport = actions.exportHistory,
+            onDelete = { actions.chooseRole(change.role) },
+            onCancel = actions.cancelRole,
         )
     }
 }

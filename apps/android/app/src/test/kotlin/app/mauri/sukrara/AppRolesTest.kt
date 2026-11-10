@@ -13,14 +13,16 @@ import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.feature.sharing.RoleLoss
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
-/** A role change never mixes two people: the previous role's readings and treatments go. */
+/** A role change never mixes two people: the previous role's readings and treatments go, after [AppRoles.loss] said what. */
 class AppRolesTest {
     private val t0 = Instant.parse("2026-01-15T12:00:00Z")
     private val store = InMemoryStateStore(RoleRecord())
@@ -64,6 +66,29 @@ class AppRolesTest {
 
             assertTrue(all().isEmpty())
             assertTrue(treatments.between(Instant.EPOCH, t0.plusSeconds(60)).first().isEmpty())
+        }
+
+    @Test fun lossSaysWhatTheChangeWouldDelete() =
+        runTest {
+            roles.set(Role.Follower)
+            readings.upsert(listOf(reading(0, SourceId.Relay), reading(30, SourceId.Nearby), reading(40, SourceId.Libre3)))
+            addTreatment()
+
+            // to wearer: the followed person's two readings and the treatment, from the first to the last
+            assertEquals(RoleLoss(2, 1, t0, t0.plusSeconds(30 * 60)), roles.loss(Role.Wearer))
+            // the same role again: only the other role's leftover reading, the treatments stay
+            assertEquals(RoleLoss(1, 0, t0.plusSeconds(40 * 60), t0.plusSeconds(40 * 60)), roles.loss(Role.Follower))
+            // asking deletes nothing
+            assertEquals(3, all().size)
+        }
+
+    @Test fun nothingToDeleteIsNoLoss() =
+        runTest {
+            assertNull(roles.loss(Role.Wearer))
+            roles.set(Role.Wearer)
+            readings.upsert(listOf(reading(0, SourceId.Libre3)))
+            addTreatment()
+            assertNull(roles.loss(Role.Wearer))
         }
 
     @Test fun choosingTheSameRoleAgainKeepsTheHistory() =

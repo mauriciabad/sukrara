@@ -68,12 +68,13 @@ class ExportViewModel(
     private val exporter: Exporter,
     follower: Boolean,
     private val io: CoroutineDispatcher,
+    start: ExportPeriod = ExportPeriod.DEFAULT,
 ) : ViewModel() {
-    private val _ui = MutableStateFlow(ExportUi(follower = follower))
+    private val _ui = MutableStateFlow(ExportUi(period = start, follower = follower))
     val ui: StateFlow<ExportUi> = _ui.asStateFlow()
 
     init {
-        choose(ExportPeriod.DEFAULT)
+        choose(start)
     }
 
     fun choose(period: ExportPeriod) {

@@ -25,6 +25,23 @@
     <string name="sh_setup_role_confirm_title">¿%1$s?</string>
     <string name="sh_setup_role_confirm_text">Un papel por instalación. Para cambiarlo después hay que reinstalar Sukrara.</string>
     <string name="sh_setup_role_confirm">Confirmar</string>
+    <string name="sh_setup_role_delete_title">¿Borrar el historial anterior?</string>
+    <string name="sh_setup_role_delete_text">Has elegido «%1$s». Esto borra lo que este móvil guardaba de antes: %2$s, %3$s. No se puede deshacer. Para guardar una copia, exporta antes un archivo CSV.</string>
+    <plurals name="sh_setup_role_delete_readings">
+        <item quantity="one">%1$s lectura de glucosa</item>
+        <item quantity="many">%1$s lecturas de glucosa</item>
+        <item quantity="other">%1$s lecturas de glucosa</item>
+    </plurals>
+    <plurals name="sh_setup_role_delete_treatments">
+        <item quantity="one">%1$s tratamiento</item>
+        <item quantity="many">%1$s tratamientos</item>
+        <item quantity="other">%1$s tratamientos</item>
+    </plurals>
+    <string name="sh_setup_role_delete_and">%1$s y %2$s</string>
+    <string name="sh_setup_role_delete_range">del %1$s al %2$s</string>
+    <string name="sh_setup_role_delete_day">del %1$s</string>
+    <string name="sh_setup_role_delete_export">Exportar CSV antes</string>
+    <string name="sh_setup_role_delete_confirm">Borrar y continuar</string>
     <string name="sh_setup_permissions_title">Que las alertas te lleguen</string>
     <string name="sh_setup_permissions_body">Tus alertas necesitan esto. La misma lista se queda en la pantalla de inicio hasta que todo esté permitido.</string>
     <string name="sh_setup_permissions_continue_anyway">Continuar igualmente</string>
