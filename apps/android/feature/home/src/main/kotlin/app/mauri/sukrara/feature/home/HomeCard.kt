@@ -377,6 +377,7 @@ fun PanelCard(
                         CardPart.ALL,
                         motion = motion(),
                         view = view,
+                        fontScale = fontScale,
                     )
                 laid.read(rec)
             }

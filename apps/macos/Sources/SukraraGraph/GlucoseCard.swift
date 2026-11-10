@@ -15,12 +15,14 @@ public enum GlucoseCard {
     /// Draw `part` of the card `st` for `surface` and return what was laid out. `metricsOf` gives a slot's numbers; by
     /// default computed from `readings` (enough for windows they cover). `alerts` = what the alert rules decided (the
     /// badge, the last-treatment slot, the mute lines), computed by the caller with the alert engine's rules.
+    /// `fontScale` = a larger system text size: the chart's words grow with it up to `GlucoseGraph.maxTextScale` (the
+    /// Mac's surfaces draw at 1: macOS has no system text size for custom drawing).
     @discardableResult
     static func draw(
         _ ctx: CGContext, size: CGSize, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
         _ st: CardStyle, _ pal: GraphPalette, d: CGFloat = 1, surface: CardSurface, part: CardPart,
         metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
-        view: ChartView? = nil
+        view: ChartView? = nil, fontScale: CGFloat = 1
     ) -> CardLayout {
         let w = size.width, h = size.height
         let rec = CardLayout(surface, part, st, w: w, h: h, d: d)
@@ -76,7 +78,7 @@ public enum GlucoseCard {
             }
             GlucoseGraph.draw(
                 ctx, chart, readings: readings, marks: marks, now: now, graph, pal, d: d, alerts: alerts,
-                sensor: spot == .graph ? sl : nil, rec: rec, view: view, latestT: latest?.t)
+                sensor: spot == .graph ? sl : nil, rec: rec, view: view, latestT: latest?.t, fontScale: fontScale)
             if age.dims {
                 ctx.endTransparencyLayer()
                 ctx.restoreGState()
@@ -325,6 +327,10 @@ public enum GlucoseCard {
             fr.strike ? "grey" : r.sgv >= bands.extremelyHigh ? "EXTREMELY_HIGH" : bands.of(Double(r.sgv)).name)
         // A late reading's time goes under the number (the user: beside it, it took the rings' room).
         let time = fr.showTime ? Freshness.timeText(r.t, now: now) : ""
+        // a fresh value says "now" where the time goes (#70): in the pill's row, else beside the arrow; never a row of its
+        // own. Beside a plain number + arrow it gets room unless that costs the number more than `nowKeep` of its size
+        // (ValueFace.kt).
+        let nowWord = "now"
         let smallH = fr.showTime ? CTFontGetSize(small) * 1.25 : 0
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
         // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
@@ -337,6 +343,15 @@ public enum GlucoseCard {
         let arrowFactor: CGFloat = 0.62
         func need() -> CGFloat { Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * arrowFactor * 1.1 }
         for _ in 0..<3 { let n = need(); if n > box.width { numSize *= box.width / n * 0.995 } }
+        if fr.saysNow && !badgeRow && look == nil && range == nil {
+            let plain = numSize
+            func withNow() -> CGFloat {
+                Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * (0.08 + arrowFactor * 1.15)
+                    + Ink.width(nowWord, small)
+            }
+            for _ in 0..<3 { let n = withNow(); if n > box.width { numSize *= box.width / n * 0.995 } }
+            if numSize < plain * Self.nowKeep { numSize = plain }
+        }
         let num = Ink.font(numSize, .bold, rounded: true)
         // no row for the badge: its icon goes beside the arrow if there's room
         let iconH = min(numBox.height * 0.5, 24 * d)
@@ -390,16 +405,16 @@ public enum GlucoseCard {
                     rec.add("value.range", nil, "\(range.rawValue) [row] (no room)")
                 }
             }
-            if fr.showTime {
-                // the late time shares the row
+            if fr.showTime || fr.saysNow {
+                // the late time (or a fresh value's "now") shares the row
                 let t = Ink.font(badgeH * 0.56, .regular)
-                if tx + Ink.width(time, t) <= box.maxX {
-                    Ink.draw(ctx, time, x: tx, y: top + badgeH / 2 + badgeH * 0.56 * 0.36, t, pal.inkSoft)
-                    rec.add(
-                        "value.time", CGRect(x: tx, y: top, width: Ink.width(time, t), height: badgeH), "[badge row]")
-                    rec.add("time.text", nil, time)
+                let inRow = fr.showTime ? time : nowWord, tag = fr.showTime ? "[badge row]" : "now [badge row]"
+                if tx + Ink.width(inRow, t) <= box.maxX {
+                    Ink.draw(ctx, inRow, x: tx, y: top + badgeH / 2 + badgeH * 0.56 * 0.36, t, pal.inkSoft)
+                    rec.add("value.time", CGRect(x: tx, y: top, width: Ink.width(inRow, t), height: badgeH), tag)
+                    if fr.showTime { rec.add("time.text", nil, time) }
                 } else {
-                    rec.add("value.time", nil, "[badge row] (no room)")
+                    rec.add("value.time", nil, "\(tag) (no room)")
                 }
             }
         } else {
@@ -416,14 +431,28 @@ public enum GlucoseCard {
                 rec.add("value.status", nil, "\(look.kind) (no room)")
             }
             // no row: the range word beside the arrow (after the pill's icon) when it fits
+            var ix = x + arrowSize * 1.15 + (iconBadge ? iconH * 1.3 : 0)
             if let range {
-                let ix = x + arrowSize * 1.15 + (iconBadge ? iconH * 1.3 : 0)
                 let th = min(iconH, 20 * d)
                 if ix + RangeTag.width(range.words, h: th) <= box.maxX {
                     let b = RangeTag.draw(ctx, x: ix, y: numBox.midY - th / 2, h: th, range.words, tint: color, pal)
                     rec.add("value.range", b, "\(range.rawValue) [beside]")
+                    ix = b.maxX + th * 0.35
                 } else {
                     rec.add("value.range", nil, "\(range.rawValue) (no room)")
+                }
+            }
+            if fr.saysNow {
+                // on the number's baseline after what is beside the arrow: "112 ↗ now"
+                if ix + Ink.width(nowWord, small) <= box.maxX {
+                    Ink.draw(ctx, nowWord, x: ix, y: baseY, small, pal.inkSoft)
+                    rec.add(
+                        "value.time",
+                        CGRect(
+                            x: ix, y: baseY - CTFontGetSize(small), width: Ink.width(nowWord, small),
+                            height: CTFontGetSize(small)), "now [beside]")
+                } else {
+                    rec.add("value.time", nil, "now [beside] (no room)")
                 }
             }
             if fr.showTime {
@@ -436,6 +465,10 @@ public enum GlucoseCard {
             }
         }
     }
+
+    /// Room for a fresh value's "now" beside its arrow costs the number at most this share of its size (ValueFace.kt
+    /// `NOW_KEEP`).
+    static let nowKeep: CGFloat = 0.8
 
     /// The sensor has ended: "Sensor ended" in the secondary colour (a state, not an error) and under it the action pill
     /// "Replace sensor" (StatusBadge.replaceSensor, the same pill as "Eat carbs": full, short or icon only as room

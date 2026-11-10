@@ -292,9 +292,12 @@ enum Goal: CaseIterable {
 /// A time share as the number of a percentage, without the "%": "64", "5.2", "70.2" (ShareText in GlucoseMetrics.kt,
 /// cases in spikes/graph-fixtures/share). Whole percent from 10 %, one decimal under 10 %, and more decimals (up to two)
 /// whenever rounding would put the number on the other side of its goal than the value or show "100" for a share that
-/// isn't all (100 is the crown's number, TirMark); a non-zero share too small to show is "<0.1", one too close to all ">99.9". [locale] nil = "." (the Mac's texts are English, like its other numbers).
+/// isn't all (100 is the crown's number, TirMark); a non-zero share too small to show is "<0.1", one too close to all ">99.9",
+/// none at all "0" (never "0.0": a figure with a decimal beside the value can be read as a glucose value). [locale] nil =
+/// "." (the Mac's texts are English, like its other numbers).
 enum ShareText {
     private static func format(_ x: Double, _ met: ((Double) -> Bool)?, _ locale: Locale?) -> String {
+        if x <= 0 { return "0" }
         func shown(_ d: Int) -> Double { let k = pow(10.0, Double(d + 2)); return (x * k).rounded() / k }
         var d = x < 0.095 ? 1 : 0
         // more decimals while rounding crosses the goal, or turns a share that isn't all into "100" (the crown's number)

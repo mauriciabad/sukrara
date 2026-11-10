@@ -1,5 +1,5 @@
 {
- "about": "Time shares shown against a goal (ShareText in graph/GlucoseMetrics.kt; ShareText in SukraraGraph.swift): whole percent from 10 %, one decimal under 10 %, more decimals (up to 2) when rounding would cross the goal. `goal`: veryHigh | above | inRange | below | veryLow | coverage (≥ 70 %) | null. Format: ../README.md.",
+ "about": "Time shares shown against a goal (ShareText in graph/GlucoseMetrics.kt; ShareText in SukraraGraph.swift): whole percent from 10 %, one decimal under 10 %, none at all \"0\", more decimals (up to 2) when rounding would cross the goal. `goal`: veryHigh | above | inRange | below | veryLow | coverage (≥ 70 %) | null. Format: ../README.md.",
  "cases": [
   {"name": "5.2 % very high against < 5 %: not \"5\"", "x": 0.052, "goal": "veryHigh", "locale": "en-US", "expect": "5.2"},
   {"name": "4.6 % very high: met, one decimal under 10 %", "x": 0.046, "goal": "veryHigh", "locale": "en-US", "expect": "4.6"},
@@ -16,7 +16,8 @@
   {"name": "0.96 % very low: 1.0 would read as missed", "x": 0.0096, "goal": "veryLow", "locale": "en-US", "expect": "0.96"},
   {"name": "0.6 % very low", "x": 0.006, "goal": "veryLow", "locale": "en-US", "expect": "0.6"},
   {"name": "a trace: <0.1", "x": 0.0003, "goal": "veryLow", "locale": "en-US", "expect": "<0.1"},
-  {"name": "nothing: 0.0", "x": 0.0, "goal": "veryLow", "locale": "en-US", "expect": "0.0"},
+  {"name": "nothing: 0, never 0.0 (a figure with a decimal beside the value reads as a glucose value)", "x": 0.0, "goal": "veryLow", "locale": "en-US", "expect": "0"},
+  {"name": "nothing in range: 0", "x": 0.0, "goal": "inRange", "locale": "es-ES", "expect": "0"},
   {"name": "high has no goal: 24 %", "x": 0.243, "goal": null, "locale": "en-US", "expect": "24"},
   {"name": "low has no goal, under 10 %", "x": 0.0349, "goal": null, "locale": "en-US", "expect": "3.5"},
   {"name": "9.6 % rounds to 10: whole", "x": 0.096, "goal": null, "locale": "en-US", "expect": "10"},

@@ -135,7 +135,9 @@ fun renderWidget(
     val h = (bmp.height - 2 * pad).coerceAtLeast(1f)
     val model = widgetModel(context, frame)
     val style = widgetStyle(kind, frame, overrides)
-    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL)
+    // the chart's words follow the system font size (the renderer caps it)
+    val fontScale = context.resources.configuration.fontScale
+    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL, fontScale = fontScale)
     return bmp
 }
 

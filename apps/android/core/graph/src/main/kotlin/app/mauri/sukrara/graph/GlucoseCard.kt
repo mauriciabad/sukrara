@@ -34,7 +34,8 @@ object GlucoseCard {
     /**
      * Draw [part] of the card [model] for [surface] into ([w] × [h]) px at the canvas origin ([d] = px per dp) and
      * return what was laid out. [motion] = the app panel's value animation (paint only); [view] = a scrolled / zoomed
-     * chart.
+     * chart; [fontScale] = the system's font size (the surface's `Configuration.fontScale`): the chart's words grow with
+     * it up to [GlucoseGraph.MAX_TEXT_SCALE].
      */
     fun draw(
         cv: Canvas,
@@ -48,6 +49,7 @@ object GlucoseCard {
         part: CardPart,
         motion: CardMotion? = null,
         view: ChartView? = null,
+        fontScale: Float = 1f,
     ): CardLayout {
         val rec = CardLayout(surface, part, st, w, h, d)
         val nowS = model.nowS
@@ -100,7 +102,7 @@ object GlucoseCard {
                     model.words,
                     latest?.t,
                 )
-            GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view)
+            GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view, fontScale)
             dimmed?.let(cv::restoreToCount)
         }
         // a sensor that ended or is warming up says so instead of the reading's time, which would read as a gap
@@ -209,9 +211,10 @@ object GlucoseCard {
         pal: GraphPalette,
         surface: CardSurface,
         part: CardPart = CardPart.ALL,
+        fontScale: Float = 1f,
     ): Bitmap {
         val bmp = Bitmap.createBitmap((wDp * d).toInt().coerceAtLeast(1), (hDp * d).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        draw(Canvas(bmp), bmp.width.toFloat(), bmp.height.toFloat(), model, st, pal, d, surface, part)
+        draw(Canvas(bmp), bmp.width.toFloat(), bmp.height.toFloat(), model, st, pal, d, surface, part, fontScale = fontScale)
         return bmp
     }
 
