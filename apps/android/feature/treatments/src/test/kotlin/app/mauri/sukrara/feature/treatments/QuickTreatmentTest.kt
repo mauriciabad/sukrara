@@ -41,9 +41,12 @@ class TestTreatmentsApp :
     /** The pen entry *Already logged by your pen?* names (null = no pen entry near the typed dose). */
     var penNear: app.mauri.sukrara.core.model.PenNearEntry? = null
 
+    /** The log the dialog saves into. */
+    val repo = InMemoryTreatmentsRepository()
+
     override val treatments by lazy {
         TreatmentsModule(
-            InMemoryTreatmentsRepository(),
+            repo,
             LocalTreatmentSync(),
             FakeClock(),
             glucose,

@@ -8,22 +8,27 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import app.mauri.sukrara.core.data.nfc.TagIntents
+import app.mauri.sukrara.core.model.PenAnswer
+import app.mauri.sukrara.core.model.PenCandidate
 import app.mauri.sukrara.core.model.PenCheck
 import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenHeldDose
 import app.mauri.sukrara.core.model.PenInfo
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.PenReadUndo
 import app.mauri.sukrara.core.model.PenReview
 import app.mauri.sukrara.core.model.PenSessionInfo
 import app.mauri.sukrara.core.model.PenSessionStatus
 import app.mauri.sukrara.core.model.PenTaps
+import app.mauri.sukrara.core.model.PenTypedBy
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PdDose
 import app.mauri.sukrara.pen.engine.PenEngine
 import app.mauri.sukrara.pen.engine.PenEntry
+import app.mauri.sukrara.pen.engine.Question
 import app.mauri.sukrara.pen.engine.Seen
 import app.mauri.sukrara.pen.engine.Session
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +50,31 @@ class PensPortImpl(
                 .sortedBy { it.first }
                 .map { info(it.serial, l, entries) }
         }
+
+    override val questions: Flow<List<PenQuestionInfo>> =
+        kotlinx.coroutines.flow
+            .combine(pensRt.ledger.onStart { pensRt.load() }, module.logChanges) { l, _ -> l }
+            .map { l ->
+                val open = l.open().sortedBy { it.at }
+                if (open.isEmpty()) return@map emptyList()
+                val log = module.penEntries()
+                open.mapNotNull { q -> questionInfo(q, l, log) }
+            }
+
+    override suspend fun answer(
+        question: PenQuestionInfo,
+        answer: PenAnswer,
+    ): Boolean {
+        val k = keysOf(question.id, question.keys) ?: return false
+        val done =
+            when (answer) {
+                PenAnswer.Suggested -> pensRt.acceptSuggestion(question.id, k)
+                PenAnswer.AllPriming -> pensRt.allPriming(question.id, k)
+                is PenAnswer.Same -> pensRt.answerMatch(question.id, answer.entry, k)
+            }
+        module.syncNotices()
+        return done
+    }
 
     private fun info(
         serial: String,
@@ -214,34 +244,6 @@ class PensPortImpl(
             ?.keys
             ?.takeIf { it.toSet() == shown.toSet() }
 
-    override suspend fun acceptSuggestion(
-        question: String,
-        keys: List<String>,
-    ): Boolean {
-        val k = keysOf(question, keys) ?: return false
-        return pensRt.acceptSuggestion(question, k).also { module.syncNotices() }
-    }
-
-    override suspend fun allPriming(
-        question: String,
-        keys: List<String>,
-    ): Boolean {
-        val k = keysOf(question, keys) ?: return false
-        return pensRt.allPriming(question, k).also { module.syncNotices() }
-    }
-
-    override suspend fun answerMatch(
-        question: String,
-        keys: List<String>,
-        same: Boolean,
-    ): Boolean {
-        val k = keysOf(question, keys) ?: return false
-        val q = pensRt.load().questions.firstOrNull { it.id == question } ?: return false
-        // the page answers only a single-candidate question (the read card and notification offer the others)
-        val entry = if (same) q.cands.singleOrNull() ?: return false else null
-        return pensRt.answerMatch(question, entry, k).also { module.syncNotices() }
-    }
-
     override suspend fun undoRead(serial: String): PenReadUndo =
         when (pensRt.undoBig(serial)) {
             BigUndo.Done -> PenReadUndo.Done.also { module.syncNotices() }
@@ -297,3 +299,38 @@ class PensPortImpl(
             )
     }
 }
+
+/**
+ * An open question as the screens show it: its doses (the suggestion's roles), what answering logs (the suggestion,
+ * or the pen's injection a *Same injection?* asks about) and the live typed entries it may be, nearest first. Null when
+ * its doses are gone from the ledger.
+ */
+internal fun questionInfo(
+    q: Question,
+    l: Ledger,
+    log: List<PenEntry>,
+): PenQuestionInfo? {
+    val pen = l.pens[q.serial] ?: return null
+    val seen = q.keys.mapNotNull { k -> pen.doses[k]?.let { k to it } }
+    if (seen.isEmpty()) return null
+    val inj = seen.filter { !it.second.p }
+    val t = (inj.ifEmpty { seen }).minOf { it.second.t }
+    val live = log.associateBy { it.id }
+    return PenQuestionInfo(
+        id = q.id,
+        serial = q.serial,
+        same = q.type == PenEngine.MATCH_Q,
+        keys = q.keys,
+        doses = seen.map { (k, d) -> PenDoseInfo(k, d.t, d.a, d.p, d.inc) }.sortedBy { it.t },
+        units = PenEngine.r1(inj.sumOf { it.second.a }),
+        t = t,
+        candidates =
+            q.cands
+                .mapNotNull { id -> live[id]?.takeIf { !it.del } }
+                .sortedBy { kotlin.math.abs(it.t - t) }
+                .map { PenCandidate(it.id, it.a, it.t, TYPED_BY[it.o] ?: PenTypedBy.Phone) },
+        asked = q.at,
+    )
+}
+
+private val TYPED_BY = mapOf("phone" to PenTypedBy.Phone, "mac" to PenTypedBy.Mac, "follower" to PenTypedBy.Follower)

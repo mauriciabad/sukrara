@@ -109,6 +109,63 @@ class HomeViewModelTest {
             writes += "restore ${was.id}"
             return !restoreRefused
         }
+
+        override val penQuestions = MutableStateFlow<List<app.mauri.sukrara.core.model.PenQuestionInfo>>(emptyList())
+        var answerRefused = false
+
+        override suspend fun answerPen(
+            question: app.mauri.sukrara.core.model.PenQuestionInfo,
+            answer: app.mauri.sukrara.core.model.PenAnswer,
+        ): Boolean {
+            writes += "answer ${question.id} $answer"
+            if (!answerRefused) penQuestions.value -= question
+            return !answerRefused
+        }
+    }
+
+    @Test fun `the pen question card answers the oldest question, and one that changed since says so`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+
+            fun q(id: String) =
+                app.mauri.sukrara.core.model.PenQuestionInfo(
+                    id,
+                    "AB12",
+                    same = false,
+                    keys = listOf("k-$id"),
+                    doses = listOf(PenDoseInfo("k-$id", 1000, 1.5, primed = false, incomplete = false)),
+                    units = 1.5,
+                    t = 1000,
+                )
+            deps.penQuestions.value = listOf(q("a"), q("b"))
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.penQuestions.collect {} }
+            runCurrent()
+            assertEquals(listOf("a", "b"), vm.penQuestions.value.map { it.id })
+            vm.answerPen(q("a"), app.mauri.sukrara.core.model.PenAnswer.Suggested)
+            runCurrent()
+            assertEquals(listOf("b"), vm.penQuestions.value.map { it.id })
+            assertNull(vm.penNotice.value)
+            deps.answerRefused = true
+            vm.answerPen(
+                q("b"),
+                app.mauri.sukrara.core.model.PenAnswer
+                    .Same(null),
+            )
+            runCurrent()
+            assertEquals(PenNotice(PenNotice.Kind.ChangedSince), vm.penNotice.value)
+            assertEquals(listOf("answer a Suggested", "answer b Same(entry=null)"), deps.writes)
+        }
+
+    @Test fun `injected hint shows after carbs without rapid insulin near them, for an hour`() {
+        val now = Samples.NOW
+        val carbs = Samples.treatment(id = "c", minutesAgo = 10).copy(kind = app.mauri.sukrara.core.model.TreatmentKind.Carbs)
+        assertTrue(PenHints.carbsWithoutInsulin(listOf(carbs), now))
+        // rapid insulin 20 min before the carbs: nothing to hint
+        val rapid = Samples.treatment(id = "r", minutesAgo = 30)
+        assertTrue(!PenHints.carbsWithoutInsulin(listOf(carbs, rapid), now))
+        // carbs more than an hour ago: the hint is gone
+        assertTrue(!PenHints.carbsWithoutInsulin(listOf(carbs.copy(at = now.minusSeconds(3700))), now))
     }
 
     private fun penEntry(t: Treatment) =

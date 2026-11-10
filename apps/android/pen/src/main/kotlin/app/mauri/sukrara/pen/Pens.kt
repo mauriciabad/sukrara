@@ -136,6 +136,16 @@ class Pens(
     /** The read card's state (null = no card). */
     val read: StateFlow<PenReadState?> = _read.asStateFlow()
 
+    private val _progress = MutableStateFlow<Float?>(null)
+
+    /** How far the read is while the card says *Reading* (records transferred / held, 0–1; null = not known yet). */
+    val progress: StateFlow<Float?> = _progress.asStateFlow()
+
+    /** The reader moved on: the ring fills. */
+    fun progressed(p: Float) {
+        _progress.value = p.coerceIn(0f, 1f)
+    }
+
     /** Loads the ledger (idempotent). */
     suspend fun load(): Ledger = mutex.withLock { current() }
 
@@ -191,6 +201,7 @@ class Pens(
 
     /** The tag answered the pen's selection: the card says *Reading*. */
     fun startedReading() {
+        _progress.value = null
         _read.value = PenReadState(PenReadState.Stage.Reading, firstPen = _ledger.value.pens.isEmpty())
     }
 

@@ -212,6 +212,21 @@ read in between doesn't take the undo away. Kept as decided: the read logs at on
 read, row below); the 72 h threshold stays a fixed engine guard. Discarded: the unused `pen_read_big` plural (*Check N
 injections*, from the superseded "hold big reads" rule).
 
+**Rebuilt in `apps/android` (issue #116).** Added: home's question card (*Priming or injected?* / *Same injection?*
+with the read card's answers, the oldest first, *1 more to check*), the *Same injection?* sheet for several typed
+entries (radio rows, *None of these*; also from Doses read, and *Choose* on the read card and the notification opens
+home for it), the pen read into Add treatment, *Add treatment* from a read at its time with the other insulin focused,
+the hints (*Injected? Hold your pen to the phone.*, *Next time, just tap your pen*, *Pen read 2d ago*), the read
+card's wavy ring with progress, check pop, count-up and failure shake, the entry sheet's flying dose and counting
+totals, and Roborazzi goldens of every pen screen (`:pen` `PenShotsTest`, recorded by the Goldens workflow). Changed:
+the question card sits **under** the glucose card, not above it (home's rule: glucose first; a dose waiting to be named
+is never a safety banner, and the ongoing notification already makes it found); the dialog read **logs the whole read
+at once** (the owner's rule: a read is never confirmed, nothing blocks) instead of holding the newest injection until
+*Save*: the dialog shows it in the field with *Undo* and *Save* never logs it again, so closing the dialog can't lose a
+dose the pen was held for; the dialog reads only unlocked (Android reads tags unlocked only). Discarded: the PoC's
+primed chips peeling off the card (the check and the count already say it; one more motion on a card that closes by
+itself), its pen icon in the dialog title (already discarded in 0.11.52).
+
 **Rebuilt in `apps/android` (issue #117).** Changed: the ledger moved from `files/state/pens.json` into the database
 (`pen_ledger`, schema version 2) so a read's ledger and entries are one Room transaction (`PenLedgerDao.commit`; the
 old order "ledger first, then each entry" could leave a dose pointing at a missing entry after a crash); the pen reads

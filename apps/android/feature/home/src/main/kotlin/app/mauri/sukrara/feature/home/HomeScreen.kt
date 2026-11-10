@@ -36,6 +36,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,7 +66,9 @@ import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
@@ -86,6 +89,7 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
+import app.mauri.sukrara.designsystem.pen.PenQuestionCard
 import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
@@ -112,10 +116,14 @@ fun HomeScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pen by viewModel.penSheet.collectAsStateWithLifecycle()
     val penNotice by viewModel.penNotice.collectAsStateWithLifecycle()
+    val penQuestions by viewModel.penQuestions.collectAsStateWithLifecycle()
+    val penRead by viewModel.penRead.collectAsStateWithLifecycle()
     HomeContent(
         state = state,
         pen = pen,
         penNotice = penNotice,
+        penQuestions = penQuestions,
+        penRead = penRead,
         callbacks =
             HomeCallbacks(
                 onAction = onAction,
@@ -135,6 +143,7 @@ fun HomeScreen(
                         delete = viewModel::deletePen,
                         undo = viewModel::undoPen,
                         shown = viewModel::penNoticeShown,
+                        answer = viewModel::answerPen,
                     ),
             ),
         modifier = modifier,
@@ -157,7 +166,10 @@ data class HomeCallbacks(
     val pen: PenCallbacks = PenCallbacks(),
 )
 
-/** A pen row's sheet: open it, close it, *Save* the doses' roles, *Delete*, the snackbar's *Undo* and its end. */
+/**
+ * A pen row's sheet: open it, close it, *Save* the doses' roles, *Delete*, the snackbar's *Undo* and its end; and the
+ * question card's answers.
+ */
 data class PenCallbacks(
     val open: (Treatment) -> Unit = {},
     val close: () -> Unit = {},
@@ -165,6 +177,7 @@ data class PenCallbacks(
     val delete: () -> Unit = {},
     val undo: (PenEntryInfo) -> Unit = {},
     val shown: (PenNotice) -> Unit = {},
+    val answer: (PenQuestionInfo, PenAnswer) -> Unit = { _, _ -> },
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -175,6 +188,8 @@ fun HomeContent(
     modifier: Modifier = Modifier,
     pen: PenSheet? = null,
     penNotice: PenNotice? = null,
+    penQuestions: List<PenQuestionInfo> = emptyList(),
+    penRead: PenRead? = null,
 ) {
     val haptics = rememberHaptics()
     val snackbar = remember { SnackbarHostState() }
@@ -281,6 +296,8 @@ fun HomeContent(
         ) {
             // glucose first: the card (or, before any reading, why there is none) is always at the top
             GlucoseSection(state, callbacks, safetyBanner) { muteDialog = true }
+            // a pen dose waiting to be named sits right under the card (never above it: glucose stays first)
+            PenQuestionCard(penQuestions, { Clock.time(it) }, callbacks.pen.answer, Modifier.padding(horizontal = 16.dp))
             BannerSlot(infoBanner)
             MuteControl(state, callbacks.onAlert) { muteDialog = true }
             Treatments(
@@ -291,6 +308,8 @@ fun HomeContent(
                 state.now,
                 { callbacks.onAction(HomeAction.OpenClinicUpload) },
                 callbacks.pen.open,
+                penRead = penRead,
+                openPenPage = { callbacks.onAction(HomeAction.OpenPen(it)) },
             ) {
                 haptics.confirm()
                 callbacks.onDelete(it)
@@ -959,16 +978,28 @@ private fun Treatments(
     now: Instant,
     openClinicUpload: () -> Unit,
     openPen: (Treatment) -> Unit,
+    penRead: PenRead? = null,
+    openPenPage: (String) -> Unit = {},
     onDelete: (Treatment) -> Unit,
 ) {
     val resources = LocalContext.current.resources
     val words = remember(resources) { CardWords.of(resources) }
-    Reveal(treatments.isNotEmpty()) {
-        Text(
-            stringResource(R.string.home_treatments),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = 16.dp, top = 8.dp).semantics { heading() },
-        )
+    val stale = penRead?.takeIf { now.epochSecond - it.at > PEN_STALE_S }
+    Reveal(treatments.isNotEmpty() || stale != null) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.home_treatments),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f).semantics { heading() },
+            )
+            // the pen hasn't been read for a day: a quiet reminder where the doses are, opening that pen
+            if (stale != null) {
+                val ago = TreatmentMarks.duration(now.epochSecond - stale.at, words)
+                TextButton(onClick = { openPenPage(stale.serial) }) {
+                    Text(stringResource(R.string.home_pen_read_ago, ago), style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
         val openLabel = stringResource(R.string.home_pen_open)
         treatments.forEach { t ->
             val pen = t.id in fromPen
@@ -1007,7 +1038,36 @@ private fun Treatments(
             }
         }
     }
+    // carbs logged, no rapid insulin near them yet, and a pen at hand: the quiet way to log it (an hour at most)
+    Reveal(penRead != null && PenHints.carbsWithoutInsulin(treatments, now)) {
+        Text(
+            stringResource(R.string.home_pen_hint_carbs),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+    }
 }
+
+/** The pen's passive hints on home (docs/29): when they show, from the entries alone (pure, tested). */
+object PenHints {
+    /** Carbs logged in the last hour with no rapid insulin within 30 min of them. */
+    fun carbsWithoutInsulin(
+        treatments: List<Treatment>,
+        now: Instant,
+    ): Boolean {
+        val carbs =
+            treatments
+                .filter { it.kind == TreatmentKind.Carbs && !it.deleted && Duration.between(it.at, now) < Duration.ofHours(1) }
+                .maxByOrNull { it.at } ?: return false
+        return treatments.none {
+            it.kind == TreatmentKind.RapidInsulin && !it.deleted && Duration.between(it.at, carbs.at).abs() <= Duration.ofMinutes(30)
+        }
+    }
+}
+
+/** *Pen read 2d ago* shows once the newest read is older than a day. */
+private const val PEN_STALE_S = 24 * 3600L
 
 /** The clinic upload's quiet mark: the entry is in LibreView, on its way, or waiting for the upload to run again. */
 @Composable

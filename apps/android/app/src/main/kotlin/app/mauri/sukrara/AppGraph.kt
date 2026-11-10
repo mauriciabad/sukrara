@@ -4,6 +4,8 @@
 package app.mauri.sukrara
 
 import android.app.Application
+import android.nfc.Tag
+import android.view.View
 import app.mauri.sukrara.alerts.AlertEvent
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
@@ -21,6 +23,7 @@ import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.UploadHold
+import app.mauri.sukrara.feature.home.PenRead
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.sensor.SensorUiModule
@@ -35,6 +38,7 @@ import app.mauri.sukrara.feature.sharing.SharingDeps
 import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.label
+import app.mauri.sukrara.feature.treatments.DialogPen
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
@@ -64,6 +68,8 @@ import app.mauri.sukrara.monitor.sensorend.SensorEndMemory
 import app.mauri.sukrara.monitor.service.StartReason
 import app.mauri.sukrara.pen.PenLog
 import app.mauri.sukrara.pen.PenNotificationPorts
+import app.mauri.sukrara.pen.PenTag
+import app.mauri.sukrara.pen.PenTapHint
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.protocol.event.AlertCodec
 import app.mauri.sukrara.sensor.SensorModule
@@ -516,6 +522,8 @@ class AppGraph(
             tapsBlocked = { BlockedTaps(pen = pens.tapsBlockedWhileOn(), sensor = sensor.tapLaunch.onButBlocked()) },
             penEntryOf = { pens.port.entry(it) },
             penPort = { pens.port.takeIf { pens.available() } },
+            penQuestionsOf = { pens.homeQuestions },
+            penReadOf = { pens.lastRead.map { r -> r?.let { PenRead(it.first, it.second) } } },
             clinicUploadSet = { integrations.clinicUploadSet },
             clinicMarks = { integrations.libreView.entryMarks.map { m -> m?.let(::LibreViewMarks) } },
             untestedSensor =
@@ -589,7 +597,30 @@ class AppGraph(
             hints = AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock),
             // read when the dialog saves (the pens module is built on first use, after this one)
             penDuplicates = PenDuplicates { kind, at -> pens.duplicates.near(kind, at) },
+            // a pen held to the phone while the dialog is open (the wearer's phone with pens)
+            pen = { pens.takeIf { it.available() }?.let(::DialogPenOf) },
         )
+    }
+
+    /** Add treatment's pen read over the pens module. */
+    private class DialogPenOf(
+        private val pens: PensModule,
+    ) : DialogPen {
+        override suspend fun readable() = pens.dialogReadable()
+
+        override fun mightBePen(tag: Tag) = PenTag.isPen(tag)
+
+        override suspend fun read(
+            tag: Tag,
+            view: View,
+            reading: () -> Unit,
+        ) = pens.readInDialog(tag, view, reading)
+
+        override suspend fun undo() = pens.pens.undoLast().also { if (it) pens.notices.cancelRead() }
+
+        override suspend fun tapHintDue() = pens.tapHintDue()
+
+        override fun tapHintShown() = pens.tapHintShown()
     }
 
     /**
@@ -614,6 +645,8 @@ class AppGraph(
         PensModule(
             context = app,
             logChanges = data.treatments.between(Instant.EPOCH, Instant.parse("2200-01-01T00:00:00Z")),
+            // a lost one only shows *Next time, just tap your pen* again (at most 3 times)
+            tapHints = data.typedStore("pen-hints", PenTapHint.serializer(), PenTapHint(), whenCorrupt = PenTapHint()),
             log =
                 object : PenLog {
                     override suspend fun ledger() = data.penLedger.ledger()

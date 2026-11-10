@@ -16,20 +16,26 @@ import androidx.work.WorkerParameters
 import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PenEngine
 import app.mauri.sukrara.pen.engine.PenRules
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -48,6 +54,8 @@ class PensModule(
     ports: PenNotificationPorts,
     /** Emits whenever the treatment log changes (an entry edited or deleted elsewhere): *Doses read* follows it. */
     val logChanges: Flow<Any> = kotlinx.coroutines.flow.flowOf(Unit),
+    /** *Next time, just tap your pen*: how often it was shown (typed state "pen-hints"). */
+    private val tapHints: StateStore<PenTapHint>? = null,
 ) {
     private val hasNfc = context.packageManager.hasSystemFeature(PackageManager.FEATURE_NFC)
     private val log = log
@@ -197,6 +205,30 @@ class PensModule(
     /** Home's banner: reading On on the wearer's phone, and Android blocks the taps (re-read on every resume). */
     suspend fun tapsBlockedWhileOn(): Boolean = availableNow() && reading() == PenReading.On && tagsBlocked()
 
+    /** Add treatment can read a pen: the wearer's phone with pens, reading On, NFC on. */
+    suspend fun dialogReadable(): Boolean = availableNow() && reading() == PenReading.On && !nfcOff()
+
+    /** A pen held to the phone while Add treatment is open ([PenDialogRead]); null = not a pen. */
+    suspend fun readInDialog(
+        tag: android.nfc.Tag,
+        view: android.view.View,
+        reading: () -> Unit,
+    ): app.mauri.sukrara.core.model.PenFill? = PenDialogRead(this).read(tag, view, reading)
+
+    private fun today() = System.currentTimeMillis() / 86_400_000
+
+    /** *Next time, just tap your pen* is due: a pen known, reading On, not shown today, shown fewer than 3 times. */
+    suspend fun tapHintDue(): Boolean {
+        val store = tapHints ?: return false
+        return dialogReadable() && pens.load().pens.isNotEmpty() && store.data.first().due(today())
+    }
+
+    fun tapHintShown() {
+        val store = tapHints ?: return
+        val day = today()
+        scope.launch { runCatching { store.update { it.shownOn(day) } } }
+    }
+
     /** Home banner's *Turn off*: pen reading off (Settings › Insulin pens turns it on again). */
     suspend fun turnOff() = settings.set(Reading, PenReading.Off.value)
 
@@ -205,6 +237,30 @@ class PensModule(
 
     /** Settings › Insulin pens over this module. */
     val port: app.mauri.sukrara.core.model.PensPort by lazy { PensPortImpl(context, this) }
+
+    /** Pens can be read on this phone: the wearer's, with NFC (or the debug build's made-up NFC). */
+    private val readsPens: Flow<Boolean> =
+        combine(roleSource, fakeNfc) { r, fake -> r == Role.Wearer && (hasNfc || fake) }.distinctUntilChanged()
+
+    /** Home's question card: the open questions while this phone reads pens, else none (a follower has no pens). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val homeQuestions: Flow<List<PenQuestionInfo>> by lazy {
+        readsPens.flatMapLatest { on -> if (on) port.questions else flowOf(emptyList()) }
+    }
+
+    /** The pen hints: with reading On on a phone that reads pens, the newest read (serial, epoch s); else null. */
+    val lastRead: Flow<Pair<String, Long>?> by lazy {
+        combine(readsPens, readingFlow, pens.ledger.onStart { pens.load() }) { on, reading, l ->
+            if (!on || reading != PenReading.On) {
+                null
+            } else {
+                l.pens.values
+                    .filter { it.lastScan > 0 }
+                    .maxByOrNull { it.lastScan }
+                    ?.let { it.serial to it.lastScan }
+            }
+        }.distinctUntilChanged()
+    }
 
     /**
      * The treatment dialog's *Already logged by your pen?*: a live pen entry of either insulin within the match window
