@@ -261,9 +261,20 @@ class LiveNotification(
         bg: Int,
         now: Instant,
     ): NotificationArt? {
+        val quiet = frame.state.alerts.treatmentQuiet
         val key =
-            listOf(content.cardKey, content.look, bg, frame.config, frame.dark, frame.state.latest, frame.state.sensor, frame.stored.size)
-        val gKey = listOf(frame.config, frame.dark, frame.state.latest, frame.treatments, now.epochSecond / GRAPH_EVERY_S)
+            listOf(
+                content.cardKey,
+                content.look,
+                bg,
+                frame.config,
+                frame.dark,
+                frame.state.latest,
+                frame.state.sensor,
+                frame.stored.size,
+                quiet,
+            )
+        val gKey = listOf(frame.config, frame.dark, frame.state.latest, frame.treatments, quiet, now.epochSecond / GRAPH_EVERY_S)
         val cached = artCache
         if (cached != null && key == artKey && gKey == graphKey) return cached
         if (!context.getSystemService(PowerManager::class.java).isInteractive) return null

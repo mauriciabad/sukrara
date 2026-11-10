@@ -45,7 +45,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   directly or Juggluco, saying first what changes), the LibreView account (email and receiver ID, sign in / out; the
   password is never stored) and *Pair new sensor*.
 - **Home screen**, glucose first: the value, trend arrow and a 6 h chart you can scroll and pinch-zoom through the
-  last 31 days (7 / 14 / 30-day rings count them too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
+  last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
+  beside the value in a ring of its quiet time left (on the widgets and the notification too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
   focused, a mute's pill its ways out), a chip for each other quiet alert, a **Mute alerts** button (30 min … 8 h,
   until you turn it off, custom) that becomes the countdown with *Unmute* / *Change time*, the sensor's end date with *Pair new sensor* in its last day,
   one banner at a time for what needs you (monitoring stopped, alerts may not ring,

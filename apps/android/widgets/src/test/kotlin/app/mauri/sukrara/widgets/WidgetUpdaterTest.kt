@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.widgets
 
+import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
@@ -10,6 +11,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.graph.GraphConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -145,6 +147,26 @@ class WidgetUpdaterTest {
             glucose.value = glucose.value.copy(link = LinkState("Ana", t0.plusSeconds(30)))
             runCurrent()
             assertEquals(5, redraws)
+        }
+
+    @Test
+    fun `a change to the alert engine's quiet windows redraws (mute lines, last-treatment ring)`() =
+        runTest {
+            val u = updater()
+            val quiet = TreatmentQuiet(rapidS = 3600, carbsS = 900)
+            glucose.value = glucose.value.copy(alerts = AlertUiState(treatmentQuiet = quiet))
+            runCurrent()
+            assertEquals(2, redraws)
+            assertEquals(
+                quiet,
+                u.frame.value
+                    ?.glucose
+                    ?.alerts
+                    ?.treatmentQuiet,
+            )
+            glucose.value = glucose.value.copy(alerts = AlertUiState(treatmentQuiet = quiet.copy(rapidS = null)))
+            runCurrent()
+            assertEquals("insulin's quiet turned off", 3, redraws)
         }
 
     @Test

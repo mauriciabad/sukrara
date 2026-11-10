@@ -35,6 +35,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.TreatmentQuiet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -485,6 +486,7 @@ class AlertRuntime(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
                 status = m?.status(now)?.let(::cardStatusOf) ?: CardStatus.None,
+                treatmentQuiet = m?.let { treatmentQuietOf(it.settings) } ?: TreatmentQuiet(),
                 mutedUntil = instantOf(ui.muteAllUntil),
                 quiet =
                     ui.quiet.map { q ->
@@ -560,6 +562,17 @@ class AlertRuntime(
             }
 
         private val WEAR_S = Duration.ofDays(15).seconds
+
+        /**
+         * How long each treatment quiets alerts under [s], the rules the engine runs (`Rules.coveringDose`: a dose quiets
+         * while `now − t < quietSeconds`), for the cards' mute lines and last-treatment ring; a rule that's off quiets
+         * nothing (as the Mac's `CardAlertsMapping.muteEnd`).
+         */
+        fun treatmentQuietOf(s: AlertSettings): TreatmentQuiet =
+            TreatmentQuiet(
+                rapidS = s.quietSeconds(EngineTreatmentKind.RAPID).takeIf { s.afterInsulin.on },
+                carbsS = s.quietSeconds(EngineTreatmentKind.CARBS).takeIf { s.afterCarbs.on },
+            )
 
         /** The badge's answer in the card's terms (contracts/graph/status.json). */
         fun cardStatusOf(s: AlertStatus): CardStatus =

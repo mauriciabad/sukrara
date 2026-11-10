@@ -147,7 +147,13 @@ class WidgetUpdater(
                     recent = recent,
                     sensor = sensor,
                     source = SourceStatus.NotStarted,
-                    alerts = AlertUiState(firingKinds = alerts.firingKinds, status = alerts.status, mutedUntil = alerts.mutedUntil),
+                    alerts =
+                        AlertUiState(
+                            firingKinds = alerts.firingKinds,
+                            status = alerts.status,
+                            treatmentQuiet = alerts.treatmentQuiet,
+                            mutedUntil = alerts.mutedUntil,
+                        ),
                     link = link?.let { LinkState(it.wearerName, lastHeardAt = null, revoked = it.revoked) },
                 )
         }
