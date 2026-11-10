@@ -17,6 +17,7 @@ import app.mauri.sukrara.share.crypto.SdkNostrCrypto
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerIdentityStore
+import app.mauri.sukrara.share.owner.RelayPolicy
 import app.mauri.sukrara.share.owner.SeenWraps
 import app.mauri.sukrara.share.owner.requests.RequestNotifications
 import app.mauri.sukrara.share.owner.requests.RequestNotifier
@@ -26,6 +27,7 @@ import app.mauri.sukrara.share.owner.usecase.RandomBytes
 import app.mauri.sukrara.share.transport.OkHttpWebSockets
 import app.mauri.sukrara.share.transport.RelayPool
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
 
@@ -78,6 +80,10 @@ class ShareOwnerModule(
             dispatchers.default,
             settings = settings,
             nearby = nearby,
+            relayPolicy =
+                combine(data.settings.flow(RelaySharing), data.settings.flow(RelayInterval)) { on, min ->
+                    RelayPolicy(on, min.toInt())
+                },
             onRequest = { requests.onRequest(it) },
         ).also { engine ->
             watchNetwork()
@@ -107,6 +113,12 @@ class ShareOwnerModule(
     companion object {
         /** Settings › Sharing › Bluetooth (the schema's `sharing.bleFollowers`). */
         val NearbySharing = SchemaSettings.bool("sharing.bleFollowers", default = true)
+
+        /** Settings › Sharing › Over the internet (the schema's `sharing.nostr`). */
+        val RelaySharing = SchemaSettings.bool("sharing.nostr", default = true)
+
+        /** Settings › Sharing › Upload interval, minutes; 0 = every reading (the schema's `sharing.nostrInterval`). */
+        val RelayInterval = SchemaSettings.number("sharing.nostrInterval")
     }
 
     /** The network came back: reconnect relays now instead of waiting out the backoff. */

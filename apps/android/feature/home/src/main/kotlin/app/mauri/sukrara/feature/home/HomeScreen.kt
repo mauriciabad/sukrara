@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
+import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Role
@@ -85,6 +86,7 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
+import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -497,7 +499,10 @@ private fun SensorLine(
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
         Text(
-            stringResource(R.string.home_sensor_ends, relative(ends, state.now)),
+            stringResource(
+                if (ends.isAfter(state.now)) R.string.home_sensor_ends else R.string.home_sensor_ended,
+                relative(ends, state.now),
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -703,13 +708,23 @@ private fun banner(
 
         BannerKind.AlertsUnreliable -> {
             val problem = state.firstProblem ?: return null
+            // a failed alert step has no Android screen to open: its way out is the report (it goes when the step works)
+            val delivery = problem == AlertRequirement.AlertDelivery
+            val copyReport = rememberCopyAlertReport(state.readiness ?: AlertReadiness(setOf(problem)))
             Banner(
                 kind.name,
                 R.drawable.home_ic_warning,
                 stringResource(R.string.banner_alerts_title),
                 requirementText(problem),
-                stringResource(R.string.banner_alerts_action),
-                { callbacks.onFix(problem) },
+                stringResource(if (delivery) DsR.string.ds_copy_report else R.string.banner_alerts_action),
+                when (problem) {
+                    AlertRequirement.AlertDelivery -> copyReport
+
+                    // the person answers it on the reliability page (Android hides the setting from apps)
+                    AlertRequirement.SoundWhenUnlocked -> open(HomeAction.OpenAlertReliability)
+
+                    else -> ({ callbacks.onFix(problem) })
+                },
                 null,
                 severity,
             )
@@ -841,11 +856,14 @@ private fun banner(
 private fun requirementText(requirement: AlertRequirement): String =
     stringResource(
         when (requirement) {
+            AlertRequirement.AlertDelivery -> R.string.req_delivery
             AlertRequirement.Notifications -> R.string.req_notifications
             AlertRequirement.FullScreenIntent -> R.string.req_full_screen
             AlertRequirement.ExactAlarm -> R.string.req_exact_alarm
             AlertRequirement.BatteryExemption -> R.string.req_battery
             AlertRequirement.AlertChannel -> R.string.req_channel
+            AlertRequirement.AlarmsInDnd -> R.string.req_dnd
+            AlertRequirement.SoundWhenUnlocked -> R.string.req_unlocked
             AlertRequirement.Bluetooth -> R.string.req_bluetooth
         },
     )

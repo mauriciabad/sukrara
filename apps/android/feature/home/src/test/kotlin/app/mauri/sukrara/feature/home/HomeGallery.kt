@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home
 
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +18,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
+import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.AlertQuietReason
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
@@ -208,6 +211,35 @@ class HomeGallery {
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-mute-dialog-light-font1x.png")
         compose.onNodeWithText("Until you turn it off").performClick()
         check(asked == listOf(HomeAlertAction.MuteAll(null))) { "$asked" }
+    }
+
+    /** A failed alert step (the runtime's `failedSteps`, through the checklist) is a safety banner whose action copies the report. */
+    @Test fun aFailedAlertStepShowsTheBannerWithCopyReport() {
+        val readiness = AlertReadiness(setOf(AlertRequirement.AlertDelivery), failedSteps = setOf("Notify:level"))
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                HomeContent(
+                    ui(
+                        Samples.wearer(),
+                        banner = BannerKind.AlertsUnreliable,
+                    ).copy(firstProblem = readiness.firstProblem, readiness = readiness),
+                    HomeCallbacks(onFix = { error("a failed step has no Android screen: $it") }),
+                )
+            }
+        }
+        compose.onNodeWithText("Android refused an alert step. Sukrara tries again with every reading.").assertExists()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-alert-step-failed-light-font1x.png")
+        compose.onNodeWithText("Copy report").performClick()
+        compose.waitForIdle()
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val copied =
+            ctx
+                .getSystemService(ClipboardManager::class.java)
+                .primaryClip
+                ?.getItemAt(0)
+                ?.text
+                .toString()
+        check("Alert steps failed: Notify:level" in copied && "AlertDelivery" in copied) { copied }
     }
 
     @Test fun dataProblemScreen() {

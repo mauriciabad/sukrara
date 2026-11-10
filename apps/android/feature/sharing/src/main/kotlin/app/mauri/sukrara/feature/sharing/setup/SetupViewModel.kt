@@ -250,6 +250,8 @@ class SetupViewModel(
 
     fun readinessFix(r: app.mauri.sukrara.core.model.AlertRequirement) = m.readiness.fix(r)
 
+    fun readinessAnswerUnlocked(answer: app.mauri.sukrara.core.model.UnlockedSound) = m.readiness.answerUnlockedSound(answer)
+
     fun continueWelcome() = record(SetupMachine::completeWelcome)
 
     /** P10: called after the person confirmed what the role means. A changed role resets the alert runtime first. */

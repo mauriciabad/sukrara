@@ -55,11 +55,14 @@
     <!-- Banners -->
     <string name="banner_alerts_title">Alerts may not ring</string>
     <string name="banner_alerts_action">Fix</string>
+    <string name="req_delivery">Android refused an alert step. Sukrara tries again with every reading.</string>
     <string name="req_notifications">Notifications are off for Sukrara.</string>
     <string name="req_full_screen">Sukrara can\'t show alarms over the lock screen.</string>
     <string name="req_exact_alarm">Sukrara can\'t schedule exact alarms.</string>
     <string name="req_battery">Battery optimisation may stop Sukrara in the background.</string>
     <string name="req_channel">The alert sound can\'t break through Do Not Disturb.</string>
+    <string name="req_dnd">Alarms can\'t break through a Do Not Disturb mode that silences them. Allow Sukrara Do Not Disturb access.</string>
+    <string name="req_unlocked">Android may only vibrate for alerts while the phone is unlocked. Check it once.</string>
     <string name="req_bluetooth">Bluetooth or the nearby devices permission is off.</string>
     <string name="banner_data_title">Some saved data was damaged</string>
     <plurals name="banner_data_text">
@@ -93,6 +96,8 @@
     <string name="banner_systemui_action">Restart</string>
     <string name="home_no_browser">No app on this phone can open the link.</string>
     <string name="home_sensor_ends">Sensor ends %1$s</string>
+    <!-- Under the graph once the end time has passed; %1$s = "just now", "5 minutes ago" -->
+    <string name="home_sensor_ended">Sensor ended %1$s</string>
 
     <!-- Follower header -->
     <string name="home_following">Following %1$s</string>

@@ -66,7 +66,8 @@ import java.util.Date
 
 /**
  * "Share with someone": a label only the wearer sees, then a single-use invite as a QR (springs in) and a link to send
- * or copy, its expiry and what the follower will see. Every invite still needs the wearer's Allow.
+ * or copy, its expiry and what the follower will see. Every invite still needs the wearer's Allow. While
+ * [internetOff] (an invite link and its request travel over the internet) it says so and offers to turn it on.
  */
 @Composable
 fun ShareScreen(
@@ -74,6 +75,8 @@ fun ShareScreen(
     onCreate: (String) -> Unit,
     onAnother: () -> Unit,
     modifier: Modifier = Modifier,
+    internetOff: Boolean = false,
+    onTurnOnInternet: () -> Unit = {},
 ) {
     var label by rememberSaveable { mutableStateOf("") }
     Column(
@@ -96,9 +99,15 @@ fun ShareScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (invite is InviteUi.Failed) NoteCard(stringResource(R.string.sh_share_failed), error = true)
+                if (internetOff) {
+                    NoteCard(stringResource(R.string.sh_share_internet_off))
+                    OutlinedButton(onClick = onTurnOnInternet, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.sh_share_internet_turn_on))
+                    }
+                }
                 Button(
                     onClick = { onCreate(label) },
-                    enabled = invite !is InviteUi.Creating,
+                    enabled = invite !is InviteUi.Creating && !internetOff,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) { Text(stringResource(if (invite is InviteUi.Failed) R.string.sh_share_try_again else R.string.sh_share_create)) }
             }

@@ -73,6 +73,8 @@ fun SharingScreen(
                         profile = onProfile,
                         backup = onBackup,
                         closeFollower = viewModel::writerSeen,
+                        setInternet = viewModel::setInternet,
+                        setInterval = viewModel::setUploadInterval,
                         setNearby = viewModel::setNearby,
                         refreshNearby = viewModel::refreshNearby,
                         pairNearby = viewModel::pairNearby,

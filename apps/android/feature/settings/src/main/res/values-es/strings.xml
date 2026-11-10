@@ -108,6 +108,7 @@
     <string name="st_reliability_footer">Las mismas comprobaciones que la fila de fiabilidad de inicio y la configuración. Arreglar abre la pantalla de Android correspondiente; al volver, se actualiza.</string>
     <string name="st_req_ok">Activado</string>
     <string name="st_req_missing">Falta</string>
+    <string name="st_req_failed">Falló</string>
     <string name="st_fix">Arreglar</string>
     <string name="st_fix_item">Arreglar %1$s</string>
     <string name="st_overview_alerts_on">Activadas · umbrales, sonidos, Silenciar todo</string>
@@ -588,6 +589,8 @@
     <string name="st_note_all_muted">Todas las alertas silenciadas durante %1$s</string>
     <string name="st_note_all_muted_off">Todas las alertas silenciadas hasta que lo desactives</string>
     <string name="st_note_all_unmuted">Alertas activadas de nuevo</string>
+    <string name="st_note_all_back">Las alertas vuelven a sonar</string>
+    <string name="st_note_resumed">Reanudada: %1$s (sin sonido)</string>
     <string name="st_profile_add_name">Añade tu nombre</string>
     <string name="st_profile_summary">Tu perfil: el nombre y la foto que ven tus seguidores</string>
     <string name="st_backup_title">Copia de seguridad</string>

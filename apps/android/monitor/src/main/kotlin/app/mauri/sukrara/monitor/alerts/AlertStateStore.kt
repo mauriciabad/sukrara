@@ -32,6 +32,8 @@ data class AlertRecord(
     val sensor: SavedSensor? = null,
     /** The alerts' recent history, oldest first ([AlertNotes.MAX] lines). */
     val notes: List<SavedNote> = emptyList(),
+    /** When Mute all ends as [notes] last saw it (0 = off): its end by itself is noted once, also after a restart. */
+    val muteAllUntil: Long = 0,
 )
 
 /** [SensorWindow] as saved. */

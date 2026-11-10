@@ -45,12 +45,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -76,6 +79,8 @@ class OwnerEngine(
     private val dispatcher: CoroutineDispatcher,
     private val settings: MirroredSettingsSource = MirroredSettingsSource.None,
     private val nearby: OwnerNearby = OwnerNearby.None,
+    /** *Over the internet* and the upload interval (Settings › Sharing); read at start and followed while running. */
+    private val relayPolicy: Flow<RelayPolicy> = flowOf(RelayPolicy()),
     /** Called for a new access request (the notification with Allow / Deny lives in the app layer). */
     private val onRequest: (PendingRequest) -> Unit = {},
 ) {
@@ -89,6 +94,9 @@ class OwnerEngine(
     val state: StateFlow<OwnerShareState> = _state.asStateFlow()
 
     @Volatile private var owner: OwnerState? = null
+
+    /** How readings travel over the internet now ([relayPolicy]'s latest value while running). */
+    @Volatile private var policy = RelayPolicy()
 
     @Volatile private var jobs = emptyList<Job>()
 
@@ -238,6 +246,9 @@ class OwnerEngine(
         runScope = scope
         val identity = s.identity(ctx.crypto).public.hex
         identityPub = identity
+        // before anything is sent: with internet sharing off not one event reaches a relay
+        policy = relayPolicy.first()
+        readings.chunkEvery = policy.chunkEvery
         jobs =
             listOf(
                 scope.launch(serial) { transport.inbound.collect { locked { onInbound(it) } } },
@@ -253,6 +264,7 @@ class OwnerEngine(
                         }
                     }
                 },
+                scope.launch(serial) { relayPolicy.distinctUntilChanged().collect { locked { onPolicy(it) } } },
                 scope.launch(serial) {
                     settings.settings().debounce(SETTINGS_DEBOUNCE_MS).collect { w ->
                         locked { owner?.let { apply(settingsMirror.onChange(it, w, now())) } }
@@ -261,7 +273,7 @@ class OwnerEngine(
             )
         transport.subscribe(INBOX, listOf(RelayFilter(kinds = listOf(Wire.KIND_WRAP), p = listOf(identity))))
         transport.subscribe(OWN, listOf(RelayFilter(kinds = listOf(Wire.KIND_DATA), authors = listOf(identity), since = now() - Wire.DAY)))
-        transport.start()
+        if (policy.on) transport.start() else transport.stop()
         // before the first send: the Bluetooth backlog caches what goes out from here on
         nearby.start(nearbyHost)
         s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach(::send)
@@ -270,6 +282,27 @@ class OwnerEngine(
         republishShared()
         refreshControl()
         render()
+    }
+
+    /**
+     * *Over the internet* or the upload interval changed. Off: the relays close (nothing more goes to them; control
+     * events wait in `pendingControl`). On again: they connect and get what they missed (waiting control events, the
+     * last 24 h of chunks, the treatment log and settings, roster / backup when due); Bluetooth followers already have it.
+     */
+    private suspend fun onPolicy(next: RelayPolicy) {
+        val before = policy
+        if (next == before) return
+        policy = next
+        readings.chunkEvery = next.chunkEvery
+        val s = owner ?: return
+        if (before.on && !next.on) transport.stop()
+        if (!before.on && next.on) {
+            transport.start()
+            s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach { send(it, overBluetooth = false) }
+            readings.republish(s, now()).forEach { send(it, overBluetooth = false) }
+            republishShared(overBluetooth = false)
+            refreshControl()
+        }
     }
 
     private suspend fun readingsFrom(hub: GlucoseHub) {
@@ -340,12 +373,12 @@ class OwnerEngine(
         if (step.publish.isNotEmpty()) apply(step)
     }
 
-    /** The treatment log and the settings again under the current epoch (start, new epoch, weekly). */
-    private suspend fun republishShared() {
+    /** The treatment log and the settings again under the current epoch (start, new epoch, weekly, relays back on). */
+    private suspend fun republishShared(overBluetooth: Boolean = true) {
         val s = owner ?: return
         val log = treatments.republish(s, now())
         val mirrored = settingsMirror.republish(log.state, now())
-        apply(Step(mirrored.state, log.publish + mirrored.publish))
+        apply(Step(mirrored.state, log.publish + mirrored.publish), overBluetooth)
     }
 
     private suspend fun refreshShared() {
@@ -547,9 +580,12 @@ class OwnerEngine(
 
     private fun publish(events: List<SignedEvent>) = events.forEach(::send)
 
-    /** To the relays and, unless it's the owner backup (B§6) or [overBluetooth] is false, to nearby followers. */
+    /**
+     * To the relays (unless [policy] keeps it off them: internet sharing off, or a live event while the upload interval
+     * batches) and, unless it's the owner backup (B§6) or [overBluetooth] is false, to nearby followers.
+     */
     private fun send(ev: SignedEvent, overBluetooth: Boolean = true) {
-        transport.publish(ev)
+        if (policy.toRelays(ev)) transport.publish(ev)
         val identity = identityPub
         val backup = ev.kind == Wire.KIND_DATA && (identity == null || ev.tag("d") == Wire.backupD(PublicKeyHex(identity)))
         if (overBluetooth && !backup) nearby.publish(ev)
@@ -572,6 +608,7 @@ class OwnerEngine(
             writers = s.activeWriters().toSet(),
             passwordManagerSavedAt = s.passwordManagerSavedAt,
             restoredAt = s.restoredAt,
+            nearbyPaired = s.nearbyPaired,
         )
     }
 

@@ -23,7 +23,6 @@ import app.mauri.sukrara.alerts.Rules
 import app.mauri.sukrara.alerts.SensorWindow
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.AlertControls
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.AlertQuietReason
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertUiState
@@ -88,6 +87,9 @@ class AlertRuntime(
     /** The recent history (Settings › Alerts › Lately), oldest first, saved with the record. */
     private var notes: List<SavedNote> = emptyList()
 
+    /** When Mute all ends as the history last saw it (0 = off), saved: its end by itself gets one *Alerts back on*. */
+    private var muteAllSeen = 0L
+
     /** Which alert each group's notification shows (from the effects), and the muted cards up. */
     private val firing = HashMap<AlertGroup, Firing>()
     private val mutedCards = HashMap<AlertGroup, Pair<Side, Long>>()
@@ -150,6 +152,7 @@ class AlertRuntime(
             fedReadingAt = null
             failed.clear()
             notes = emptyList()
+            muteAllSeen = 0
             unposted.clear()
             attempt(Step.Alarm) { alarm.set(null) }
             attempt(Step.Save) { store.save { AlertRecord() } }
@@ -157,7 +160,7 @@ class AlertRuntime(
         }
     }
 
-    /** Publishes the alert state again (home on resume: delivery problems the person may just have fixed). */
+    /** Publishes the alert state now, without an input. */
     suspend fun refreshUi() {
         mutex.withLock { publishUi(now()) }
     }
@@ -282,6 +285,7 @@ class AlertRuntime(
         monitoring = record.monitoring
         who = record.who
         notes = record.notes
+        muteAllSeen = record.muteAllUntil
         sensor = record.sensor?.window
         val saved = record.machine ?: return emptyList()
         role = if (saved.role == AlertRole.WEARER) Role.Wearer else Role.Follower
@@ -329,7 +333,7 @@ class AlertRuntime(
      * Applies [effects], then saves and publishes. Every step is attempted on its own: a notification Android refused
      * never costs the exact alarm (the only thing that re-checks with the service dead), the saved state or the other
      * notifications. The alarm goes first for the same reason. A failed step is logged and listed in the hub's alert
-     * state ([AlertDeliveryProblem.AlertStepFailed]) until it works again; a refused alert is posted again, with its
+     * state ([AlertUiState.failedSteps]: the checklist's AlertDelivery) until it works again; a refused alert is posted again, with its
      * sound, on the next input.
      */
     private suspend fun applyAndSave(
@@ -338,7 +342,9 @@ class AlertRuntime(
         now: Long,
         input: AlertInput? = null,
     ): List<AlertEffect> {
-        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now))
+        val muteAll = m.uiState(now).muteAllUntil
+        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll))
+        muteAllSeen = muteAll
         effects.filterIsInstance<AlertEffect.Schedule>().forEach { e -> attempt(Step.Alarm) { alarm.set(e.at) } }
         val firedNow = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
         retryUnposted(m, now, skip = firedNow)
@@ -474,14 +480,21 @@ class AlertRuntime(
 
     private suspend fun save() {
         val snapshot = machine?.snapshot()
-        store.save { it.copy(machine = snapshot, monitoring = monitoring, who = who, sensor = sensor?.let(::SavedSensor), notes = notes) }
+        store.save {
+            it.copy(
+                machine = snapshot,
+                monitoring = monitoring,
+                who = who,
+                sensor = sensor?.let(::SavedSensor),
+                notes = notes,
+                muteAllUntil = muteAllSeen,
+            )
+        }
     }
 
     private fun publishUi(now: Long) {
         val m = machine
         val ui = m?.uiState(now) ?: EngineUiState()
-        val settings = m?.settings ?: own
-        val alarmKinds = AlertKind.entries.filter { settings.on && settings.rule(it).on && settings.rule(it).alarm }.toSet()
         publish(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
@@ -506,12 +519,7 @@ class AlertRuntime(
                             canRemindLess = q.canRelax,
                         )
                     },
-                deliveryProblems =
-                    when {
-                        m == null -> emptySet()
-                        failed.isEmpty() -> presenter.deliveryProblems(alarmKinds)
-                        else -> presenter.deliveryProblems(alarmKinds) + AlertDeliveryProblem.AlertStepFailed
-                    },
+                failedSteps = if (m == null) emptySet() else failed.toSet(),
                 lately = notes.asReversed().mapNotNull { it.note() },
             ),
         )

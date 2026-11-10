@@ -25,6 +25,8 @@ dependencies {
     implementation(project(":core:data"))
     // the alert settings the alert step confirms
     implementation(project(":core:alerts"))
+    // THE duration formatter's words (the upload interval)
+    implementation(project(":core:graph"))
     // the wearer's sharing engine
     implementation(project(":share"))
     implementation(libs.androidx.core.ktx)

@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Lists Sukrara under Do Not Disturb access, so the person can let the alarm-level channels override a mode that
+         silences alarms (setBypassDnd only takes effect with that access; readiness/AndroidAlertReadiness). -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <!-- Only this app may feed the System UI module (systemui/RootStatusBar → systemui/SystemUiHook): System UI's
          receiver requires it of the sender. -->

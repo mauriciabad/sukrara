@@ -164,6 +164,8 @@
     <string name="sh_share_try_again">Try again</string>
     <!-- Error creating invite -->
     <string name="sh_share_failed">Couldn\'t create the invite. Check the internet and that sharing is set up.</string>
+    <string name="sh_share_internet_off">Sharing over the internet is off. An invite link and the request it brings travel over the internet: turn it on to invite someone, or use Pair nearby in Settings › Sharing.</string>
+    <string name="sh_share_internet_turn_on">Turn on sharing over the internet</string>
     <!-- TalkBack label of the invite QR -->
     <string name="sh_share_qr_label">Invite QR code. The link is below.</string>
     <!-- Share: instructions -->
@@ -444,9 +446,17 @@
     <string name="sh_following_damaged">The follower key on this phone is damaged. Stop following, then join again with a new link.</string>
     <string name="sh_following_join_again">Join with a new link</string>
     <!-- Bluetooth nearby (wearer: Settings › Sharing; follower: Following page) -->
-    <string name="sh_nearby_group">Bluetooth</string>
-    <string name="sh_nearby_title">Share over Bluetooth</string>
+    <string name="sh_nearby_group">How readings travel</string>
+    <string name="sh_internet_title">Over the internet</string>
+    <string name="sh_internet_on">Encrypted, through Nostr relays</string>
+    <string name="sh_internet_off">Off. Followers who only use the internet see no new readings.</string>
+    <string name="sh_interval_title">Upload interval</string>
+    <string name="sh_interval_every_reading">Every reading</string>
+    <string name="sh_interval_every">Every %1$s</string>
+    <string name="sh_interval_unavailable">Sharing over the internet is off</string>
+    <string name="sh_nearby_title">Over Bluetooth nearby</string>
     <string name="sh_nearby_off">Off. Followers get readings over the internet.</string>
+    <string name="sh_nearby_off_no_internet">Off. Followers get no new readings.</string>
     <string name="sh_nearby_bluetooth_off">Bluetooth is off</string>
     <string name="sh_nearby_permission">Needs the Nearby devices permission</string>
     <string name="sh_nearby_unsupported">This phone can\'t share over Bluetooth</string>
@@ -466,7 +476,8 @@
     <string name="sh_nearby_mac">Mac</string>
     <string name="sh_nearby_phone">phone</string>
     <string name="sh_nearby_device_name">%1$s · %2$s</string>
-    <string name="sh_nearby_device_connected">Connected over Bluetooth</string>
+    <string name="sh_nearby_device_connected">Connected</string>
+    <string name="sh_nearby_device_disconnected">Disconnected</string>
     <string name="sh_following_nearby">Bluetooth: %1$s</string>
     <string name="sh_pair_nearby">Pair nearby</string>
     <string name="sh_pair_nearby_off">For 10 minutes, a phone nearby can ask to follow you without a link. You type the code shown on their phone.</string>

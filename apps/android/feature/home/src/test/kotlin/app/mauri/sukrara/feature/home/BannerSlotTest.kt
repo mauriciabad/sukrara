@@ -41,6 +41,15 @@ class BannerSlotTest {
         assertEquals(AlertRequirement.Notifications, broken.firstProblem)
     }
 
+    @Test fun `a failed alert step is a safety banner that can't be closed and names the step first`() {
+        val failed = AlertReadiness(setOf(AlertRequirement.AlertDelivery, AlertRequirement.ExactAlarm), failedSteps = setOf("Alarm"))
+        val closed = BannerMemory(mapOf(BannerKind.AlertsUnreliable.name to 1L))
+        assertEquals(BannerKind.AlertsUnreliable, pick(failed, everything, memory = closed))
+        assertEquals(AlertRequirement.AlertDelivery, failed.firstProblem)
+        // not a setup item: Finish setup's permission step doesn't wait for it
+        assertEquals(true, AlertReadiness(setOf(AlertRequirement.AlertDelivery)).setupReady)
+    }
+
     @Test fun `monitoring stopped outranks everything, even with a value on screen`() =
         assertEquals(BannerKind.MonitoringStopped, pick(broken, everything, problems = 1, stopped = true))
 

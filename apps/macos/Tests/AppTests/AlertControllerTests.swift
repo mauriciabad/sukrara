@@ -29,6 +29,9 @@ final class RecordingNotifier: AlertNotifying {
     func clear(_ group: AlertGroup) { calls.append(.clear(group)) }
     func postMuted(_ side: AlertSide, until: Date) { calls.append(.muted(side)) }
     func removeMuted(_ side: AlertSide) { calls.append(.unmuted(side)) }
+    /// The event log's alert-state lines, in order.
+    var lines: [String] = []
+    func log(_ line: String) { lines.append(line) }
 }
 
 final class MemoryAlertStore: AlertStateStoring {
@@ -97,6 +100,56 @@ final class RecordingWake: WakeScheduling {
         // the alert that was up shows again silently, nothing rings
         #expect(!notifier.posts.contains { if case .post(_, _, true, _) = $0 { true } else { false } })
         #expect(relaunched.ui.muteAllUntil != nil)
+    }
+
+    @Test func everyMuteActionHasItsLogLine() {
+        let c = controller()
+        c.reading(reading(60, rate: -0.5))
+        c.perform(.mute(.low, minutes: 30))
+        c.perform(.unmute(.low))
+        c.perform(.remindLess(.low))
+        c.perform(.remindAsUsual(.low))
+        c.perform(.muteAll(until: clock.now.addingTimeInterval(7200)))
+        c.perform(.unmuteAll)
+        c.perform(.muteAll(until: muteAllForever))
+        c.perform(.unmuteAll)
+        c.perform(.reshow(.low))
+        let relax = AlertSettings().notificationActions.relaxMin
+        #expect(
+            notifier.lines == [
+                "Low alerts muted for 30 min",
+                "Low alerts unmuted",
+                "Low reminders every \(Durations.text(relax))",
+                "Low reminders as usual",
+                "All alerts muted for 2 h",
+                "Alerts unmuted",
+                "All alerts muted until you turn it off",
+                "Alerts unmuted",
+            ])
+    }
+
+    @Test func aTimedMuteAllEndingByItselfIsLoggedOnceBeforeWhatItLetsRing() {
+        let c = controller()
+        c.reading(reading(110))
+        c.perform(.muteAll(until: clock.now.addingTimeInterval(1800)))
+        clock.advance(by: 1800)
+        c.reading(reading(60, rate: -0.5))
+        #expect(notifier.lines == ["All alerts muted for 30 min", "Alerts back on"])
+        #expect(notifier.posts.contains { if case .post(.low, _, true, _) = $0 { true } else { false } })
+        clock.advance(by: 60)
+        c.tick()
+        #expect(notifier.lines.filter { $0 == "Alerts back on" }.count == 1)
+    }
+
+    @Test func backInRangeByTheMarginIsLogged() {
+        var s = AlertSettings()
+        s.notificationActions.backMin = 0
+        let c = controller(s)
+        c.reading(reading(60, rate: -0.5))
+        c.perform(.mute(.low, minutes: 60))
+        clock.advance(by: 300)
+        c.reading(reading(110))
+        #expect(notifier.lines.last == "Low back in range: alerts as usual")
     }
 
     @Test func muteActionPostsTheMutedNoteAndUnmuteRemovesIt() {

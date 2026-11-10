@@ -29,6 +29,8 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <!-- full-screen urgent-low alarm over the lock screen -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Do Not Disturb access, which the person grants: the alarm-level alerts override a mode that silences alarms -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- the battery-optimisation exemption request in setup (monitoring must not be killed) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />

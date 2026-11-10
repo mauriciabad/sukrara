@@ -106,6 +106,11 @@ data class OwnerState(
     val settingsJson: String? = null,
     val settingsU: Long = 0,
     val settingsPublishedAt: Long = 0,
+    /**
+     * Followers approved from a *Pair nearby* request: Nearby devices lists them also while out of range. This phone
+     * only (never in the owner backup); Remove / Forget clears it.
+     */
+    val nearbyPaired: Set<String> = emptySet(),
 ) {
     val current: EpochKey get() = epochs.maxBy { it.n }
 

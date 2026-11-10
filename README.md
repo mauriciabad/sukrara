@@ -62,9 +62,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root).
 - **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,
   "like an alarm" ones pass Do Not Disturb; alerts that come close together still ring in full (Android's notification
-  cooldown doesn't quieten them). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
+  cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
-  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted and what you muted in the last day. The no-data check runs from an exact alarm,
+  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
   independent of the monitoring service.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
@@ -82,7 +82,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   *Add treatment*.
 - **Settings** for daily use (searchable, accents optional; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
-  (notifications, alarms, full-screen, battery, Do Not Disturb, Bluetooth), ranges and the whole graph (lines, time
+  (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with
+  *Copy report*), ranges and the whole graph (lines, time
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
@@ -96,8 +97,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   it. A read that brings injections older than 3 days (the pen not read for days) logs them and asks you to *Review*
   them, with *Undo this read*.
 - **Sharing core**: your sharing identity, restorable from its recovery code so existing followers keep following;
-  readings and alerts go to approved followers over Nostr relays (protocol v2). If another device is publishing as
-  the same identity, Sukrara stops and says so instead of fighting it.
+  readings and alerts go to approved followers over Nostr relays (protocol v2). *How readings travel* turns sharing over
+  the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of
+  each one. If another device is publishing as the same identity, Sukrara stops and says so instead of fighting it.
 - **First-run setup** in a calm, fixed order: role (confirmed) → what alerts need → sensor → confirm your alert
   thresholds → your followers (restore once this phone has your sensor, or start fresh) → home. Any
   step can wait; home's *Finish setup* banner brings it back.
@@ -108,7 +110,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   or a recovery code (home says *Not backed up* until then; setup restores from either), and a clear screen when another
   device is sharing as you.
 - **Bluetooth nearby**: followers' phones and Macs in range get your readings straight from your phone, even without
-  internet (on by default, *Share over Bluetooth*); Settings › Sharing lists the devices connected now, says when
+  internet (on by default, *Over Bluetooth nearby*); Settings › Sharing lists the devices connected now and the ones
+  paired nearby that are out of range, says when
   Bluetooth is off or the Nearby devices permission is missing, and offers the fix; the live notification says
   *2 followers · 1 nearby*.
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a

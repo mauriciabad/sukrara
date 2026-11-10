@@ -114,6 +114,14 @@ class SharingViewModel(private val sharing: OwnerSharing) : ViewModel() {
     /** Bluetooth nearby (switch, state, named links) while the sharing page shows. */
     val nearby: StateFlow<NearbyUi> = sharing.nearby.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), NearbyUi())
 
+    fun setInternet(on: Boolean) {
+        viewModelScope.launch { sharing.setInternet(on) }
+    }
+
+    fun setUploadInterval(min: Double) {
+        viewModelScope.launch { sharing.setUploadInterval(min) }
+    }
+
     fun setNearby(on: Boolean) {
         viewModelScope.launch { sharing.setNearby(on) }
     }
