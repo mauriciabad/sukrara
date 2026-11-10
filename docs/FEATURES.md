@@ -431,8 +431,10 @@ person's actions (dismiss, delete, undo, unmute, a quiet's way out); passive upd
 number). The card always stays, with its chart (the renderer draws *No reading since …* + `sensors_off`, the warm-up
 countdown or *Sensor ended* + *Replace sensor*), and the reason sits **under** it, compact: title, one explanation, the
 action, no icon. Only when there is nothing to draw (not set up, no sensor yet, core missing) a full-width reason takes
-the card's place. Reasons: *Sukrara isn't set up yet* → Set up; *Not monitoring: no sensor yet* before the first reading ever
-(no "no data" alarm is armed in this state; follower: *not following anyone yet* → Join) → Pair sensor; *This build
+the card's place. Reasons: *Sukrara isn't set up yet* → Set up; *Not monitoring: no sensor yet* before the first reading ever, and on
+the wearer after *Forget this sensor* (under the card, which keeps the older readings; never *No readings from the
+sensor*, which says it reconnects) (no "no data" alarm is armed in this state; follower: *not following anyone yet*
+→ Join) → Pair sensor; *This build
 can't read Libre 3 sensors* (no action); *Sensor ended* → Pair new sensor; *Sensor warming up* (first reading at …);
 *You no longer follow this person* → Join with a new invite; *Monitoring stopped* → Resume monitoring; *Bluetooth is
 off* → Turn on Bluetooth; follower *No readings from the wearer's phone* (last heard …); wearer *No readings from the

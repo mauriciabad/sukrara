@@ -40,6 +40,14 @@ class NoDataReasonTest {
         assertEquals(HomeAction.OpenSetup, r?.action)
     }
 
+    @Test fun `a forgotten sensor is not monitoring, not a sensor that will reconnect`() {
+        val state = Samples.wearer(ageMin = 25).copy(monitoringStartedAt = null)
+        val r = reason(state)
+        assertEquals(NoDataReason.NoSensorYet(follower = false, history = true), r)
+        assertEquals(HomeAction.PairSensor, r?.action)
+        assertFalse(r!!.fullPage) // the chart keeps the readings from before
+    }
+
     @Test fun `25 min without readings names the last one`() {
         val state = Samples.wearer(ageMin = 25)
         assertEquals(NoDataReason.NoReadings(state.latest!!.t), reason(state))
