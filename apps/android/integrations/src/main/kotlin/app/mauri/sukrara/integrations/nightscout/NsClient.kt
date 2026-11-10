@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.nightscout
 
+import app.mauri.sukrara.designsystem.errors.Trouble
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -18,18 +20,18 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.net.URLEncoder
 
-/** One call's result, already classified for the uploader. */
+/** One call's result, already classified for the uploader ([reason] is for the log; [trouble] for the screen). */
 sealed interface Outcome {
     data class Ok(val body: String = "", val code: Int = 200) : Outcome
 
     /** Network, 5xx, 429, 408 or an unexpected redirect: try again later ([afterMs] from `Retry-After`). */
-    data class Retry(val reason: String, val afterMs: Long? = null) : Outcome
+    data class Retry(val reason: String, val afterMs: Long? = null, val trouble: Trouble = Trouble.Other) : Outcome
 
     /** 401 / 403: stop until the person fixes the token / secret or its role. */
     data class AuthFailed(val reason: String) : Outcome
 
     /** Another 4xx: this document will never be accepted; drop it so it doesn't block the rest. */
-    data class Rejected(val reason: String) : Outcome
+    data class Rejected(val reason: String, val trouble: Trouble = Trouble.Refused) : Outcome
 }
 
 /**
@@ -54,7 +56,7 @@ class NsClient(
     private var jwt: String? = null
     private var jwtExpMs = 0L
 
-    private class Answer(val code: Int, val body: String, val retryAfter: String?, val error: String?)
+    private class Answer(val code: Int, val body: String, val retryAfter: String?, val trouble: Trouble?, val error: String?)
 
     private fun send(
         method: String,
@@ -70,11 +72,11 @@ class NsClient(
                     .header("Accept", "application/json")
             headers.forEach { (k, v) -> b.header(k, v) }
             b.method(method, body?.toRequestBody(JSON))
-            http.newCall(b.build()).execute().use { r -> Answer(r.code, r.body?.string().orEmpty(), r.header("Retry-After"), null) }
+            http.newCall(b.build()).execute().use { r -> Answer(r.code, r.body?.string().orEmpty(), r.header("Retry-After"), null, null) }
         } catch (e: IOException) {
-            Answer(0, "", null, e.javaClass.simpleName)
+            Answer(0, "", null, UserErrors.of(e), e.javaClass.simpleName)
         } catch (e: IllegalArgumentException) {
-            Answer(0, "", null, "bad address")
+            Answer(0, "", null, Trouble.BadAddress, "bad address")
         }
 
     private fun authHeaders(forceRefresh: Boolean = false): Pair<Map<String, String>, Outcome?> =
@@ -286,7 +288,7 @@ class NsClient(
         ): Outcome =
             when {
                 r.code == 0 -> {
-                    Outcome.Retry("$what: ${r.error}")
+                    Outcome.Retry("$what: ${r.error}", trouble = r.trouble ?: Trouble.Other)
                 }
 
                 r.code in 200..299 && treatOkAs != null -> {
@@ -298,7 +300,7 @@ class NsClient(
                 }
 
                 r.code in 300..399 -> {
-                    Outcome.Retry("$what: redirected (HTTP ${r.code}), check the address")
+                    Outcome.Retry("$what: redirected (HTTP ${r.code}), check the address", trouble = Trouble.BadAddress)
                 }
 
                 r.code == 401 || r.code == 403 -> {
@@ -312,6 +314,7 @@ class NsClient(
                             ?.trim()
                             ?.toLongOrNull()
                             ?.times(1000),
+                        UserErrors.ofHttp(r.code),
                     )
                 }
 

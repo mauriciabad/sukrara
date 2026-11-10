@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -88,7 +89,7 @@ class LibreViewViewModel(
             signIn = { email, password, takeOver ->
                 _signIn.value = LvSignInUi.Busy
                 viewModelScope.launch {
-                    val r = runCatching { uploader.signIn(email, password, takeOver) }.getOrElse { LvSignIn.Failed("not saved") }
+                    val r = runCatching { uploader.signIn(email, password, takeOver) }.getOrElse { LvSignIn.Failed(UserErrors.of(it)) }
                     _signIn.value = LvSignInUi.Done(r)
                 }
             },
@@ -318,7 +319,7 @@ private fun SignInDialog(
                             when (val r = ui.result) {
                                 LvSignIn.Done, LvSignIn.OtherDevice -> null
                                 LvSignIn.BadCredentials -> stringResource(R.string.in_lv_bad_credentials)
-                                is LvSignIn.Failed -> stringResource(R.string.in_lv_failed, r.why)
+                                is LvSignIn.Failed -> stringResource(R.string.in_lv_failed, stringResource(r.why.text))
                             }
                         }
                     }

@@ -12,6 +12,8 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.designsystem.errors.Trouble
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.UploadBackoff
 import app.mauri.sukrara.integrations.upload.UploadLoop
@@ -92,7 +94,7 @@ sealed interface LvSignIn {
 
     data object BadCredentials : LvSignIn
 
-    data class Failed(val why: String) : LvSignIn
+    data class Failed(val why: Trouble) : LvSignIn
 }
 
 /**
@@ -312,7 +314,7 @@ class LibreViewUploader(
             } catch (e: Exception) {
                 // an answer we can't read: retried later with backoff, never a tight loop
                 log("libreview cycle: ${e.javaClass.simpleName}")
-                save(failed(store.data.first(), clock.now().toEpochMilli(), e.javaClass.simpleName))
+                save(failed(store.data.first(), clock.now().toEpochMilli(), UserErrors.of(e)))
             }
         }
 
@@ -337,7 +339,7 @@ class LibreViewUploader(
             try {
                 secure.read(NAME)?.let { json.decodeFromString(LvSession.serializer(), it.decodeToString()) }
             } catch (e: SecretUnreadableException) {
-                save(failed(state, nowMs, "secure storage"))
+                save(failed(state, nowMs, Trouble.Other))
                 return
             } ?: return
 
@@ -374,7 +376,7 @@ class LibreViewUploader(
                     log("libreview: sensor not registered (${r.why})")
                     state =
                         state
-                            .copy(sensors = LibreViewQueue.registrationRefused(state.sensors, batch.serial), lastError = r.why)
+                            .copy(sensors = LibreViewQueue.registrationRefused(state.sensors, batch.serial), lastError = Trouble.Refused)
                             .also { save(it) }
                     sensorPart = null
                 }
@@ -416,7 +418,16 @@ class LibreViewUploader(
             is LvPost.Rejected -> {
                 log("libreview: upload refused (${r.why})")
                 // refused entries wait for a change (glucose goes on without them); refused glucose backs off
-                save(if (entries.isNotEmpty()) state.copy(refused = true, lastError = r.why) else failed(state, nowMs, r.why))
+                save(
+                    if (entries.isNotEmpty()) {
+                        state.copy(
+                            refused = true,
+                            lastError = Trouble.Refused,
+                        )
+                    } else {
+                        failed(state, nowMs, Trouble.Refused)
+                    },
+                )
                 if (entries.isNotEmpty() && sensorPart != null) loop.kick()
             }
         }
@@ -448,7 +459,7 @@ class LibreViewUploader(
     private fun failed(
         st: LvState,
         nowMs: Long,
-        why: String,
+        why: Trouble,
     ): LvState {
         val n = st.failures + 1
         return st.copy(failures = n, nextAttemptMs = nowMs + UploadBackoff.ms(n, 30_000, 15 * 60_000L, Random), lastError = why)

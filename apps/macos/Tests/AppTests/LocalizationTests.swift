@@ -58,6 +58,19 @@ import Testing
         #expect(missing.isEmpty, "Add these keys (with en + es) to Localizable.xcstrings: \(missing)")
     }
 
+    /// What people read is in plain words: no protocol terms (#144). Logs may use them; the catalog may not.
+    @Test func noProtocolTermsInWhatPeopleRead() throws {
+        let terms = [/(?i)relay/, /(?i)\bv2\b/, /(?i)roster/, /(?i)\bwriter/, /(?i)epoch/, /\bBLE\b/]
+        var failing: [String] = []
+        for (key, byLanguage) in try catalogValues() {
+            for (language, value) in byLanguage + [("key", key)]
+            where terms.contains(where: { value.contains($0) }) || value.contains("relé") {
+                failing.append("\(language): \(value)")
+            }
+        }
+        #expect(failing.isEmpty, "Protocol terms in Localizable.xcstrings: \(failing.sorted())")
+    }
+
     /// Every specifier as "%@", so an interpolation matches whatever type the catalog key uses.
     static func normalized(_ key: String) -> String { key.replacing(/%(?:\d+\$)?(lld|lf|@|d)/, with: "%@") }
 

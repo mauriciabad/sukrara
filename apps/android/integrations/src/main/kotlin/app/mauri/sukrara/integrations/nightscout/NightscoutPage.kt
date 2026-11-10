@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -86,7 +87,7 @@ class NightscoutViewModel(
             save = { url, kind, cred, api ->
                 viewModelScope.launch {
                     runCatching { uploader.configure(url, kind, cred, api) }
-                        .onFailure { _test.value = NsTestUi.Done(NsTestResult.Failed(it.message ?: "not saved")) }
+                        .onFailure { _test.value = NsTestUi.Done(NsTestResult.Failed(UserErrors.of(it))) }
                     close()
                 }
             },
@@ -330,7 +331,7 @@ private fun SiteDialog(
                                 }
 
                                 is NsTestResult.Failed -> {
-                                    stringResource(R.string.in_ns_test_failed, r.why)
+                                    stringResource(R.string.in_ns_test_failed, stringResource(r.why.text))
                                 }
                             }
                         }

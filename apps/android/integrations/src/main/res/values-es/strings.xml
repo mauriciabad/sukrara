@@ -85,7 +85,7 @@
         <item quantity="one">Última subida %1$s · %2$d elemento</item>
         <item quantity="other">Última subida %1$s · %2$d elementos</item>
     </plurals>
-    <string name="in_status_failing">Se reintentará pronto · %1$s</string>
+    <string name="in_status_failing">%1$s Se reintentará pronto.</string>
     <string name="in_status_follower">Solo sube datos el móvil que lleva el sensor</string>
 
     <!-- Nightscout upload -->
@@ -131,7 +131,7 @@
     <string name="in_ns_test_ok">Conectado · Nightscout %1$s</string>
     <string name="in_ns_test_ok_plain">Conectado</string>
     <string name="in_ns_test_auth">El sitio ha rechazado este token o secreto</string>
-    <string name="in_ns_test_failed">No se ha podido conectar con el sitio (%1$s)</string>
+    <string name="in_ns_test_failed">No se ha podido conectar. %1$s</string>
     <string name="in_ns_problem_https">Usa https://: Sukrara solo envía tus datos cifrados</string>
     <string name="in_ns_problem_url">Esto no es una dirección web</string>
 
@@ -160,7 +160,7 @@
     <string name="in_lv_sign_in_action">Iniciar sesión</string>
     <string name="in_lv_signing_in">Iniciando sesión…</string>
     <string name="in_lv_bad_credentials">LibreView no aceptó este email y contraseña</string>
-    <string name="in_lv_failed">No se pudo iniciar sesión (%1$s)</string>
+    <string name="in_lv_failed">No se pudo iniciar sesión. %1$s</string>
     <string name="in_lv_take_over_title">Otro dispositivo sube datos a esta cuenta</string>
     <string name="in_lv_take_over_text">LibreView acepta datos de un dispositivo por cuenta, ahora otro (LibreLink, la app Libre 3 o Juggluco). Si Sukrara toma el relevo, ese dispositivo deja de subir a LibreView. Hazlo solo si Sukrara debe ser quien sube.</string>
     <string name="in_lv_take_over">Tomar el relevo</string>
@@ -191,7 +191,7 @@
     <string name="in_tp_sign_in_action">Iniciar sesión</string>
     <string name="in_tp_signing_in">Iniciando sesión…</string>
     <string name="in_tp_bad_credentials">Tidepool no ha aceptado este correo y contraseña</string>
-    <string name="in_tp_failed">No se ha podido iniciar sesión (%1$s)</string>
+    <string name="in_tp_failed">No se ha podido iniciar sesión. %1$s</string>
     <string name="in_bc_title">Enviar la glucosa a apps</string>
     <string name="in_bc_intro">Las apps de este móvil que leen la glucosa de los avisos de xDrip+, LibreLink o Juggluco (AndroidAPS, GlucoDataHandler, apps de reloj) pueden recibir cada lectura nueva del Libre 3 de este móvil. Solo la reciben las apps que actives.</string>
     <string name="in_bc_status">Estado</string>

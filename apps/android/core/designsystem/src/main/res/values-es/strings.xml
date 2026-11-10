@@ -61,4 +61,15 @@
     <string name="ds_a11y_unmute_all">Reactivar alertas</string>
     <string name="ds_a11y_change_mute">Cambiar cuánto tiempo están silenciadas las alertas</string>
     <string name="ds_a11y_mute_all">Silenciar alertas</string>
+    <!-- UserErrors: why something failed, in plain words, with its next step -->
+    <string name="ds_err_no_internet">El móvil no tiene conexión a internet.</string>
+    <string name="ds_err_not_found">No se encuentra el servidor. Revisa la dirección y la conexión a internet.</string>
+    <string name="ds_err_cant_connect">No se puede conectar con el servidor. Comprueba que funciona y que la dirección es correcta.</string>
+    <string name="ds_err_timed_out">El servidor no ha respondido a tiempo.</string>
+    <string name="ds_err_secure">No se ha podido establecer una conexión segura. Revisa la dirección y la fecha y hora del móvil.</string>
+    <string name="ds_err_sign_in">La sesión ha caducado o la contraseña o el secreto no son correctos. Vuelve a iniciar sesión.</string>
+    <string name="ds_err_server">El servicio tiene un problema ahora mismo.</string>
+    <string name="ds_err_refused">El servicio no ha aceptado los datos.</string>
+    <string name="ds_err_address">Esa dirección no funciona. Revísala, incluido https://.</string>
+    <string name="ds_err_other">Algo ha fallado. Inténtalo de nuevo.</string>
 </resources>

@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.libreview
 
+import app.mauri.sukrara.designsystem.errors.Trouble
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -51,8 +53,8 @@ sealed interface LvAuth {
 
     data object BadCredentials : LvAuth
 
-    /** Network or server trouble; [why] never holds a secret. */
-    data class Failed(val why: String) : LvAuth
+    /** Network or server trouble, in plain words. */
+    data class Failed(val why: Trouble) : LvAuth
 }
 
 /** One upload's answer. */
@@ -62,10 +64,10 @@ sealed interface LvPost {
     /** The token no longer works (another device took over, or it expired): sign in again. */
     data object SignInAgain : LvPost
 
-    /** Try again later (network, 5xx, 408, 429). */
-    data class Retry(val why: String) : LvPost
+    /** Try again later (network, 5xx, 408, 429), [why] in plain words. */
+    data class Retry(val why: Trouble) : LvPost
 
-    /** LibreView refused it ([why] = its status and reason). */
+    /** LibreView refused it ([why] = its status and reason, for the log). */
     data class Rejected(val why: String) : LvPost
 }
 
@@ -118,7 +120,7 @@ class LibreViewClient internal constructor(
             try {
                 config()
             } catch (e: IOException) {
-                return LvAuth.Failed(e.message ?: e.javaClass.simpleName)
+                return LvAuth.Failed(UserErrors.of(e))
             }
         val body =
             buildJsonObject {
@@ -134,17 +136,17 @@ class LibreViewClient internal constructor(
             try {
                 call("POST", base, "/api/nisperson/getauthentication", body, apiKey, token = "")
             } catch (e: IOException) {
-                return LvAuth.Failed(e.javaClass.simpleName)
+                return LvAuth.Failed(UserErrors.of(e))
             }
         if (code == 401 || code == 403) return LvAuth.BadCredentials
-        if (code != 200 || o == null) return LvAuth.Failed("HTTP $code")
+        if (code != 200 || o == null) return LvAuth.Failed(if (code == 200) Trouble.Other else UserErrors.ofHttp(code))
         val status = o["status"]?.jsonPrimitive?.intOrNull
         val reason = o["reason"]?.jsonPrimitive?.contentOrNull.orEmpty()
         if (status == 20 && "wrongDeviceForUser" in reason) return LvAuth.OtherDevice
         if (status == 2) return LvAuth.BadCredentials
         val r = (o["result"] as? JsonObject)
         val token = r?.get("UserToken")?.jsonPrimitive?.contentOrNull
-        if (status != 0 || token.isNullOrEmpty()) return LvAuth.Failed("status $status")
+        if (status != 0 || token.isNullOrEmpty()) return LvAuth.Failed(Trouble.Other)
 
         fun field(k: String) = r[k]?.jsonPrimitive?.contentOrNull
         return LvAuth.SignedIn(
@@ -199,7 +201,7 @@ class LibreViewClient internal constructor(
             try {
                 call(method, base, path, body, s.apiKey, s.token)
             } catch (e: IOException) {
-                return LvPost.Retry(e.javaClass.simpleName)
+                return LvPost.Retry(UserErrors.of(e))
             }
         return when {
             code == 401 || code == 403 -> {
@@ -207,7 +209,7 @@ class LibreViewClient internal constructor(
             }
 
             code == 408 || code == 425 || code == 429 || code >= 500 -> {
-                LvPost.Retry("HTTP $code")
+                LvPost.Retry(UserErrors.ofHttp(code))
             }
 
             code != 200 || o == null -> {

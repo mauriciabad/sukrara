@@ -13,6 +13,8 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.designsystem.errors.Trouble
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.integrations.upload.UploadLoop
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.CancellationException
@@ -69,7 +71,7 @@ sealed interface TpSignIn {
 
     data object BadCredentials : TpSignIn
 
-    data class Failed(val why: String) : TpSignIn
+    data class Failed(val why: Trouble) : TpSignIn
 }
 
 /**
@@ -228,7 +230,7 @@ class TidepoolUploader(
                 throw e
             } catch (e: Exception) {
                 log("tidepool cycle: ${e.javaClass.simpleName}")
-                store.update { TidepoolQueue.failed(it, clock.now().toEpochMilli(), e.javaClass.simpleName) }
+                store.update { TidepoolQueue.failed(it, clock.now().toEpochMilli(), UserErrors.of(e)) }
             }
         }
 
@@ -244,7 +246,7 @@ class TidepoolUploader(
             try {
                 client.session ?: readSession()?.also { client.session = it }
             } catch (e: SecretUnreadableException) {
-                store.update { TidepoolQueue.failed(it, nowMs, "secure storage") }
+                store.update { TidepoolQueue.failed(it, nowMs, Trouble.Other) }
                 return
             } ?: return
 
@@ -291,7 +293,7 @@ class TidepoolUploader(
                 // the upload record was deleted on Tidepool: a new one is made next time
                 val cur = it.role(r)
                 val kept = if (e.dataSetGone) cur.copy(dataSet = "") else cur
-                TidepoolQueue.failed(it.withRole(r, kept), nowMs, e.message ?: "HTTP ${e.code}")
+                TidepoolQueue.failed(it.withRole(r, kept), nowMs, e.trouble)
             }
         } finally {
             // a refreshed token is kept

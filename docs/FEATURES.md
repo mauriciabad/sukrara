@@ -270,8 +270,8 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
 ## Readings and backfill
 
 - Wearer phone (`:sensor` `SourceManager`, the hub's one `ReadingSource`): readings come only from the Libre 3 (one live value a minute plus its 5-minute historic point, 24 h backfill on every connection) or Juggluco (history of 1600 entries at start, 180 after a reconnect, then its live stream; backoff 5 s → 60 s; entries marked `device: Sukrara` are refused so the app never re-reads its own values as fresh). Nothing is invented, repeated as new or extrapolated; values outside 39–501 mg/dL are dropped. Plain `http://` is allowed only to this phone (127.0.0.1 / localhost: Juggluco); every other connection is https / wss (`network_security_config`). The source is the setting `source.source` (Libre 3 directly by default, or Juggluco); a switch, a new pairing, *Try again* or Bluetooth coming back fully closes the old source before the new one starts.
-- Android user-facing errors are sentences in the app's language (`ui/UserErrors`, round 22; `UserErrorsTest`), never an exception's class or a socket address: the home panel's and the source page's source line (*Can't reach Juggluco. Open it and check that its web server is on.*, *Juggluco stopped sending readings. Reconnecting…*, *Bluetooth is off*, *No sensor paired*, *The sensor has ended. Pair a new one.*, *This sensor isn't supported*, *Lost the sensor. Reconnecting…*, the Nearby devices permission, else *Can't get readings from the sensor. Retrying…*), and the failures of LibreView / Tidepool sign-in, the Nightscout test, settings export / import, CSV export, invite lookup and password-manager restore (network failures by kind: can't find the server / can't connect / didn't answer in time / secure connection failed; our own short messages as written; else *Something went wrong. Try again.*). The technical text stays in the log and the DebugReceiver state. The home panel shows the newest of the engine's and the source's reading and takes the current time again when the app comes back to the front (round 22: it once showed a 3-min-old value).
-- Mac user-facing words never use protocol terms (v2, relay, roster, writer, epoch, BLE): the data source reads `Internet`, `Bluetooth · <phone>` or `Wi-Fi · Juggluco`; the follow state `Following Ana`; logs stay technical.
+- Android user-facing errors are sentences in the app's language (one mapper, `:core:designsystem` `errors/UserErrors` → `Trouble`, en + es; `UserErrorsTest`), never an exception's class, an HTTP code or a socket address: the home panel's and the source page's source line (*Can't reach Juggluco. Open it and check that its web server is on.*, *Juggluco stopped sending readings. Reconnecting…*, *Bluetooth is off*, *No sensor paired*, *The sensor has ended. Pair a new one.*, *This sensor isn't supported*, *Lost the sensor. Reconnecting…*, the Nearby devices permission, else *Can't get readings from the sensor. Retrying…*), and the failures of LibreView / Tidepool sign-in, the Nightscout test, the Nightscout / Tidepool / LibreView upload status lines (*<reason> Trying again soon.*), the status-bar page's root / LSPosed actions, settings export / import, CSV export, invite lookup and password-manager restore (failures by kind, each with its next step: no internet / can't find the server / can't connect / didn't answer in time / secure connection failed / sign-in expired or wrong password or secret / the service has a problem / the service didn't accept the data / the address doesn't work; our own and LSPosed's short messages as written; else *Something went wrong. Try again.*). The technical text stays in the log and the DebugReceiver state. The home panel shows the newest of the engine's and the source's reading and takes the current time again when the app comes back to the front (round 22: it once showed a 3-min-old value).
+- Mac user-facing words never use protocol terms (v2, relay, roster, writer, epoch, BLE): the data source reads `Internet` or `Internet · Bluetooth: connected to <phone>`, `Bluetooth · <phone>` or `Wi-Fi · Juggluco`; the follow state `Following Ana`; logs stay technical (`LocalizationTests.noProtocolTermsInWhatPeopleRead` checks the catalog).
 - Mac: every backfilled reading (v2 hour chunks over relays or Bluetooth, the BLE backlog, v1 Nostr, Juggluco's Wi-Fi history) goes into the 31-day readings store as it arrives, whatever its age; only the live 3 h working window is trimmed (a chunk older than 3 h before the newest reading used to be dropped, which left gaps in the graph after every launch, wake or reconnect).
 - Mac follower (protocol v2): the chunk subscription starts 1 h before the newest stored reading, at least 13 h and at most 7 days back (the chunks' expiry); recomputed on every reconnect (wake, manual reconnect).
 - Mac follower: 90 s after the chunk subscription starts (and again 90 s later) it checks the last 12 whole hours of the store; hours still empty while the stream is fresh (newest reading ≤ 15 min old) send one `history` request (`since` = the first empty hour) to the wearer over relays and Bluetooth, at most every 30 min (PROTOCOL-v2 "Missing history", as Android's follower).
@@ -1171,7 +1171,7 @@ Android (`apps/android/pen`: `opennov/` reader, `engine/PenEngine`, `Pens` runti
 - One upload record per account, install and role (found again by device id, made when missing; if Tidepool deleted
   it, a new one is made). Every datum has an origin id, so sending it again replaces it (no duplicates); an edited
   entry is sent again, a deleted one deleted. Every 5 minutes and at once on an entry or setting change; failures retry
-  with backoff up to an hour ("Trying again soon · <reason>"); a session Tidepool ended shows "Signed out by Tidepool:
+  with backoff up to an hour ("<reason> Trying again soon."); a session Tidepool ended shows "Signed out by Tidepool:
   sign in again" (the switch stays on). *Sign out* (confirmed) forgets the session; what Tidepool has stays there.
 - The Share with apps row shows the status; the overview summary names *Tidepool* while it uploads.
 
@@ -1197,7 +1197,7 @@ without a notification. Back leaves the page.
   uploading) or *Cancel*: Sukrara never takes over by itself.
 - *Upload to LibreView* (enabled once signed in; turning it off always works, also after signing out or on a follower
   phone, which sees "Only the phone that wears the sensor uploads"), *Status* ("Last upload 4 min ago · 3 items", "On ·
-  nothing sent yet", "Trying again soon · <reason>", "LibreView asks you to sign in again (another app may have taken
+  nothing sent yet", "<reason> Trying again soon.", "LibreView asks you to sign in again (another app may have taken
   over the account)" — tapping it opens the sign-in).
 - *What to send*: *Glucose* ("From a Libre 3 connected to this phone, since <date time>") and *Insulin, carbs and
   notes* (entries made or changed from now on; edits and deletes correct what LibreView has); both on, disabled while
@@ -1242,16 +1242,16 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   it is on.
 - *Site* opens a dialog: address, *Access token* or *API secret*, the token / secret field (empty keeps the saved one of
   the same kind for the same address: a saved token is never sent to a new address), *Test* (read-only: the site's status with that credential; "Connected · Nightscout <version>", "The
-  site refused this token or secret", "Couldn't reach the site (…)") and *Save*. The token or secret lives only in the
+  site refused this token or secret", "Couldn't connect. <reason>") and *Save*. The token or secret lives only in the
   Keystore-encrypted secure store (`nightscout`), never in settings, logs or backups, and is never shown again.
 - Addresses: `https://` with a certificate from a public authority (user-installed / private CAs aren't trusted, so a
   self-signed home server fails *Test* with a TLS error); `http://` only to this phone (`localhost`, `127.0.0.1`),
   the only cleartext the network security config allows. Any other `http://`, home network included, shows "Use
   https://: Sukrara sends your data only encrypted" (issue filed: a home-network `http://` site needs a network-config
   and local-network-permission decision). A redirect is never followed (it could carry the secret elsewhere): it shows as
-  a retry with "redirected, check the address".
+  a retry with "That address doesn't work. Check it, including https://.".
 - *Upload to my Nightscout* (enabled once a site is saved; a follower phone sees "Only the phone that wears the sensor
-  uploads"), *Status* ("Last upload 3 min ago · 12 items", "On · nothing sent yet", "Trying again soon · <reason>",
+  uploads"), *Status* ("Last upload 3 min ago · 12 items", "On · nothing sent yet", "<reason> Trying again soon.",
   "The site refused the token or secret: change it" — tapping it opens the site dialog —, "Paused: another app
   (<device>) uploads to this site" with *Upload anyway*).
 - *What to send*: *Glucose readings* (every reading, the last 30 days included), *Insulin, carbs and notes* (edits and

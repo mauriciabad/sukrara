@@ -132,7 +132,7 @@ struct FollowingPane: View {
                     HStack {
                         Spacer()
                         Button(L10n.t("Reconnect Now"), action: reconnect)
-                            .help(L10n.t("Reconnect to the relays and to the phone over Bluetooth now"))
+                            .help(L10n.t("Reconnect over the internet and to the phone over Bluetooth now"))
                     }
                 }
             }

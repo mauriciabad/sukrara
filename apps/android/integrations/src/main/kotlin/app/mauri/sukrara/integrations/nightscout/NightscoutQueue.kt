@@ -6,6 +6,7 @@ package app.mauri.sukrara.integrations.nightscout
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.SentRanges
 import app.mauri.sukrara.integrations.upload.Span
@@ -44,8 +45,8 @@ data class NsState(
     val authFailed: Boolean = false,
     val lastOkMs: Long = 0,
     val lastCount: Int = 0,
-    /** Why the last cycle failed (no secrets), null after a good one. */
-    val lastError: String? = null,
+    /** Why the last cycle failed, null after a good one. */
+    val lastError: Trouble? = null,
 ) {
     val paused: Boolean get() = conflict != null && !conflictAccepted
 }
@@ -168,7 +169,7 @@ object NightscoutQueue {
     fun failed(
         state: NsState,
         nowMs: Long,
-        why: String,
+        why: Trouble,
         retryAfterMs: Long? = null,
         random: Random = Random.Default,
     ): NsState {

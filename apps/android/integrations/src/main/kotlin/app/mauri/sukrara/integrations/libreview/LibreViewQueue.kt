@@ -6,6 +6,7 @@ package app.mauri.sukrara.integrations.libreview
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.upload.SentRanges
 import app.mauri.sukrara.integrations.upload.Span
 import kotlinx.serialization.Serializable
@@ -54,7 +55,7 @@ data class LvState(
     val nextAttemptMs: Long = 0,
     val lastOkMs: Long = 0,
     val lastCount: Int = 0,
-    val lastError: String? = null,
+    val lastError: Trouble? = null,
 )
 
 /** Where an entry stands with LibreView ([LibreViewQueue.mark]). */

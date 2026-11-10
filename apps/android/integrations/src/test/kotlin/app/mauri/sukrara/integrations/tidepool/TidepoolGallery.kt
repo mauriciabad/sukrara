@@ -20,6 +20,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -53,7 +54,10 @@ class TidepoolGallery {
         listOf(
             "signed-out" to page(TpPageState(TpSettings(), false, "", UploadStatus.Off, Role.Wearer)),
             "ok" to page(TpPageState(on, true, email, UploadStatus.Ok(now - Duration.ofMinutes(3), 14), Role.Wearer)),
-            "error" to page(TpPageState(on, true, email, UploadStatus.Failing("HTTP 503", now - Duration.ofHours(2)), Role.Wearer)),
+            "error" to
+                page(
+                    TpPageState(on, true, email, UploadStatus.Failing(Trouble.ServerError, now - Duration.ofHours(2)), Role.Wearer),
+                ),
             "signed-out-by-tidepool" to page(TpPageState(on, false, email, UploadStatus.AuthFailed, Role.Wearer)),
             "follower-choice" to page(TpPageState(on, true, email, UploadStatus.Off, Role.Follower)),
         )
