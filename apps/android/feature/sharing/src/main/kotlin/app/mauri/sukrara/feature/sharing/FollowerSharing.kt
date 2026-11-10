@@ -5,8 +5,10 @@ package app.mauri.sukrara.feature.sharing
 
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.InviteLookup
 import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
@@ -23,9 +25,12 @@ import kotlinx.coroutines.flow.flowOf
 interface FollowerSharing {
     val state: StateFlow<FollowState>
 
-    /** Opens the invite behind [link] and asks the wearer for access as [me]. */
+    /** Opens the invite behind [link] (reads only): who is inviting, for the person to confirm before anything is sent. */
+    suspend fun lookUp(link: String): InviteLookup
+
+    /** The person tapped *Follow* on [invite]: asks the wearer for access as [me]. */
     suspend fun join(
-        link: String,
+        invite: Invite,
         me: Profile?,
     ): JoinResult
 
@@ -59,8 +64,10 @@ interface FollowerSharing {
             object : FollowerSharing {
                 override val state = MutableStateFlow<FollowState>(FollowState.NotFollowing)
 
+                override suspend fun lookUp(link: String) = InviteLookup.Failed(JoinResult.NotFound)
+
                 override suspend fun join(
-                    link: String,
+                    invite: Invite,
                     me: Profile?,
                 ) = JoinResult.NotFound
 

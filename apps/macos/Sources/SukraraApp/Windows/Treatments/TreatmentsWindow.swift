@@ -339,11 +339,15 @@ struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
 }
 
 /// The Treatments window: the last 7 days grouped by day, newest first, each entry with its kind's symbol, time,
-/// time since, delivery state (Retry), who logged it (tooltip), and delete with a 10 s undo toast / ⌘Z.
+/// time since, delivery state (Retry), who logged it (tooltip), and for the entries this Mac wrote Edit… and Delete
+/// (buttons and the context menu) with a 10 s undo toast / ⌘Z. Arriving entries slide in.
 public struct TreatmentsView: View {
     @Bindable var model: TreatmentsModel
     var add: () -> Void
     var now: () -> Date = Date.init
+    /// The entry Edit… opened (the sheet over the window).
+    @State private var editing: TreatmentsModel.Row?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(model: TreatmentsModel, add: @escaping () -> Void) {
         self.model = model
@@ -362,10 +366,14 @@ public struct TreatmentsView: View {
                     List {
                         ForEach(days, id: \.day) { group in
                             Section(Self.dayTitle(group.day, now: context.date)) {
-                                ForEach(group.rows) { row in rowView(row, now: context.date) }
+                                ForEach(group.rows) { row in
+                                    rowView(row, now: context.date)
+                                        .transition(.move(edge: .top).combined(with: .opacity))
+                                }
                             }
                         }
                     }
+                    .animation(reduceMotion ? nil : .snappy, value: model.rows.map(\.id))
                 }
                 .id(model.clockStyle)
             }
@@ -383,18 +391,31 @@ public struct TreatmentsView: View {
             }
             if model.undoAvailable, let u = model.undo {
                 HStack {
-                    Text(L10n.t("Deleted \(Self.title(u.row.treatment))"))
+                    Text(
+                        u.kind == .deleted
+                            ? L10n.t("Deleted \(Self.title(u.shown))") : L10n.t("Changed to \(Self.title(u.shown))"))
                     Spacer()
-                    Button(L10n.t("Undo")) { Task { await model.undoDelete() } }
+                    Button(L10n.t("Undo")) { Task { await model.undoLast() } }
                         .keyboardShortcut("z", modifiers: .command)
                 }
                 .padding(10)
                 .background(.thinMaterial)
-                .task(id: u.row.id) {
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task(id: u.until) {
                     try? await Task.sleep(for: .seconds(TreatmentsModel.undoSeconds))
                     model.dismissUndo()
                 }
             }
+        }
+        .animation(reduceMotion ? nil : .snappy, value: model.undo)
+        .sheet(item: $editing) { row in
+            EditTreatmentView(
+                treatment: row.treatment,
+                save: { amount, note, at in
+                    editing = nil
+                    Task { await model.edit(row, amount: amount, note: note, at: at) }
+                },
+                cancel: { editing = nil })
         }
         .toolbar {
             Button(action: add) { Label(L10n.t("Add treatment"), systemImage: "plus") }
@@ -406,21 +427,30 @@ public struct TreatmentsView: View {
         .frame(minWidth: 460, minHeight: 380)
     }
 
+    /// One entry. VoiceOver reads the entry's lines as one element (who logged it as the hint); the doses, the
+    /// delivery's Retry, Edit and Delete stay elements of their own, so each can be reached and used.
     private func rowView(_ row: TreatmentsModel.Row, now: Date) -> some View {
         let t = row.treatment
         let at = Date(timeIntervalSince1970: TimeInterval(t.t))
+        let loggedBy = Self.loggedBy(t, mine: model.isMine(row), wearer: model.wearer)
         return HStack(spacing: 10) {
             Image(systemName: TreatmentKindLook.symbol(t.k))
                 .frame(width: 20)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(Self.title(t)).contentTransition(.numericText())
-                if let pen = Self.penLine(t) { Text(pen).font(.callout).foregroundStyle(.secondary) }
-                if t.k != .note, !t.n.isEmpty { Text(t.n).font(.callout).foregroundStyle(.secondary) }
-                Text(Clock.time(at) + " · " + Self.since(at, now: now))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Self.title(t)).contentTransition(.numericText())
+                    if let pen = Self.penLine(t) { Text(pen).font(.callout).foregroundStyle(.secondary) }
+                    if t.k != .note, !t.n.isEmpty { Text(t.n).font(.callout).foregroundStyle(.secondary) }
+                    Text(Clock.time(at) + " · " + Self.since(at, now: now))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(loggedBy)
+                // the separator under the row starts at the text, not at a delivery label further right
+                .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
                 if let doses = t.pd, doses.count > 1 {
                     DisclosureGroup(L10n.t("Doses")) {
                         ForEach(Array(doses.enumerated()), id: \.offset) { _, d in
@@ -442,18 +472,32 @@ public struct TreatmentsView: View {
             delivery(row)
             if model.canChange(row) {
                 Button {
+                    editing = row
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.t("Edit…"))
+                .accessibilityLabel(L10n.t("Edit \(Self.title(t))"))
+                Button {
                     Task { await model.delete(row) }
                 } label: {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(.borderless)
+                .help(L10n.t("Delete"))
                 .accessibilityLabel(L10n.t("Delete \(Self.title(t))"))
             }
         }
         .frame(minHeight: 30)
-        .help(Self.loggedBy(t))
-        .accessibilityElement(children: .combine)
-        .accessibilityHint(Self.loggedBy(t))
+        .help(loggedBy)
+        .accessibilityElement(children: .contain)
+        .contextMenu {
+            if model.canChange(row) {
+                Button(L10n.t("Edit…")) { editing = row }
+                Button(L10n.t("Delete"), role: .destructive) { Task { await model.delete(row) } }
+            }
+        }
     }
 
     @ViewBuilder private func delivery(_ row: TreatmentsModel.Row) -> some View {
@@ -494,11 +538,17 @@ public struct TreatmentsView: View {
         a.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(a)) : String(format: "%.1f", a)
     }
 
-    /// "Logged on the phone", "Logged on this Mac", "Logged by a follower", "Read from the pen on the wearer's phone".
-    static func loggedBy(_ t: Treatment) -> String {
-        if t.fromPen { return L10n.t("Read from the pen on the wearer's phone") }
+    /// "Logged on Ana's phone", "Logged on this Mac", "Logged by a follower", "Read from the pen on Ana's phone";
+    /// `mine` = this Mac wrote it, `wearer` = the followed person's name (nil: "the wearer's phone").
+    static func loggedBy(_ t: Treatment, mine: Bool = false, wearer: String? = nil) -> String {
+        if t.fromPen {
+            return wearer.map { L10n.t("Read from the pen on \($0)'s phone") }
+                ?? L10n.t("Read from the pen on the wearer's phone")
+        }
+        if mine { return L10n.t("Logged on this Mac") }
         switch t.o {
-        case .phone: return L10n.t("Logged on the wearer's phone")
+        case .phone:
+            return wearer.map { L10n.t("Logged on \($0)'s phone") } ?? L10n.t("Logged on the wearer's phone")
         case .mac: return L10n.t("Logged on a Mac")
         case .follower: return L10n.t("Logged by a follower")
         }
@@ -507,7 +557,7 @@ public struct TreatmentsView: View {
     /// "now", "12m ago", "3h 5m ago".
     static func since(_ at: Date, now: Date) -> String {
         let min = Int(max(0, now.timeIntervalSince(at)) / 60)
-        return min < 1 ? L10n.t("just now") : L10n.t("\(Durations.compact(min)) ago")
+        return min < 1 ? L10n.t("just now") : L10n.t("\(Durations.compact(min, .current)) ago")
     }
 
     /// "Today", "Yesterday", "Monday 26 Oct".

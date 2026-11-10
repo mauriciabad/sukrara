@@ -19,6 +19,12 @@ sealed interface AlertInput {
     /** The sensor started, ended or was replaced (null = none known). */
     data class Sensor(val sensor: SensorWindow?) : AlertInput
 
+    /**
+     * The reading source started at [startedAt] (epoch s; null = none): no data counts from it until a newer reading,
+     * so a source that never delivers a first reading alerts too.
+     */
+    data class Source(val startedAt: Long?) : AlertInput
+
     /** This device's actions (SPEC §2): never shared with the followers. */
     data class Mute(val kind: AlertKind, val minutes: Int) : AlertInput
 
@@ -78,6 +84,9 @@ class AlertMachine(
     private var mirror = if (role == AlertRole.FOLLOWER_MIRROR) WearerMirror() else null
     private var lastNow = 0L
 
+    /** [lastNow]'s moment on the monotonic clock (null = not seen in this process). */
+    private var lastElapsed: Long? = null
+
     /** The rules [local] runs: a mirroring follower checks only `no_data` itself. */
     private val localSettings: AlertSettings
         get() =
@@ -108,7 +117,13 @@ class AlertMachine(
      * [sensor], then evaluates once (whatever came due while the process was down; a stale reading never alerts).
      * Returns the notifications to show again silently, what alerts now, and the timer.
      */
-    fun start(saved: AlertState?, seed: AlertReading?, sensor: SensorWindow?, now: Long): List<AlertEffect> {
+    fun start(
+        saved: AlertState?,
+        seed: AlertReading?,
+        sensor: SensorWindow?,
+        now: Long,
+        elapsed: Long? = null,
+    ): List<AlertEffect> {
         val state = saved?.takeIf { it.role == role }
         local.sensor = sensor
         shared?.sensor = sensor
@@ -116,7 +131,7 @@ class AlertMachine(
         state?.shared?.let { shared?.restore(it, settings, now) }
         state?.mirror?.let { if (role == AlertRole.FOLLOWER_MIRROR) mirror = WearerMirror(it) }
         lastNow = state?.lastNow ?: 0
-        observe(now) // a clock set back while the process was down
+        observe(now, elapsed) // a clock set back while the process was down
         local.seed(seed?.notAfter(now))
         shared?.seed(seed?.notAfter(now))
         // what came due while the process was down (no data, a repeat, a mute's end) alerts now; stale readings can't
@@ -127,9 +142,9 @@ class AlertMachine(
     fun uiState(now: Long): AlertUiState {
         val own = AlertUiState.of(local, localSettings, doses, now)
         val m = mirror ?: return own
-        return AlertUiState(
-            own.quiet + AlertUiState.ofMirror(m, settings, now).quiet,
-            maxOf(own.muteAllUntil, m.muteAllUntil.takeIf { it > now } ?: 0),
+        return own.copy(
+            quiet = own.quiet + AlertUiState.ofMirror(m, settings, now).quiet,
+            muteAllUntil = maxOf(own.muteAllUntil, m.muteAllUntil.takeIf { it > now } ?: 0),
         )
     }
 
@@ -139,19 +154,27 @@ class AlertMachine(
     fun snapshot(): AlertState =
         AlertState(role = role, local = local.snapshot(), shared = shared?.snapshot(), mirror = mirror?.snapshot(), lastNow = lastNow)
 
-    /** Notes [now]; a clock set back (beyond NTP noise) moves every kept time back with it ([AlertEngine.shiftBack]). */
-    private fun observe(now: Long) {
-        val delta = lastNow - now
+    /**
+     * Notes [now] at [elapsed] (the monotonic clock in s, `SystemClock.elapsedRealtime`; null = unknown). A clock set
+     * back (beyond NTP noise) moves every kept time back with it ([AlertEngine.shiftBack]): by exactly the jump when
+     * the monotonic clock says how much time passed since the last input, else (the first input after a restart) as if
+     * none had, so what was due comes at most that long later.
+     */
+    private fun observe(now: Long, elapsed: Long?) {
+        val passed = lastElapsed?.let { prev -> elapsed?.minus(prev)?.takeIf { it >= 0 } }
+        val delta = lastNow + (passed ?: 0) - now
         if (delta > Rules.CLOCK_BACK_TOLERANCE_S) {
             local.shiftBack(delta)
             shared?.shiftBack(delta)
             mirror?.shiftBack(delta)
         }
-        if (delta > Rules.CLOCK_BACK_TOLERANCE_S || now > lastNow) lastNow = now
+        if (passed != null || delta > Rules.CLOCK_BACK_TOLERANCE_S || now > lastNow) lastNow = now
+        if (elapsed != null) lastElapsed = elapsed
     }
 
-    fun handle(input: AlertInput, now: Long): List<AlertEffect> {
-        observe(now)
+    /** Runs [input] at [now] (epoch s); [elapsed] = the monotonic clock in s, so a clock set back is measured exactly. */
+    fun handle(input: AlertInput, now: Long, elapsed: Long? = null): List<AlertEffect> {
+        observe(now, elapsed)
         val out = mutableListOf<AlertEffect>()
         when (input) {
             is AlertInput.Reading -> {
@@ -162,7 +185,6 @@ class AlertMachine(
 
             AlertInput.Tick -> {
                 out += published(shared?.evaluate(settings, doses, now))
-                mirror?.let { m -> m.expire(now).forEach { out += AlertEffect.Fire(it) } }
                 out += mirrorReading(local.last, now)
                 out += own(local.evaluate(localSettings, doses, now))
             }
@@ -184,6 +206,11 @@ class AlertMachine(
                 out += reevaluate(now)
             }
 
+            is AlertInput.Source -> {
+                out += published(shared?.sourceStarted(input.startedAt, settings, doses, now))
+                out += own(local.sourceStarted(input.startedAt, localSettings, doses, now))
+            }
+
             is AlertInput.Remote -> {
                 out += remote(input.event, now)
             }
@@ -192,6 +219,9 @@ class AlertMachine(
                 out += action(input, now)
             }
         }
+        // a follower's Mute all over by its time (the timer, or any input that comes first): the wearer's newest alert
+        // still up shows at once — after the input, so a firing arriving at that moment shows once
+        mirror?.let { m -> m.expire(now).forEach { out += AlertEffect.Fire(it) } }
         return out + schedule(now)
     }
 

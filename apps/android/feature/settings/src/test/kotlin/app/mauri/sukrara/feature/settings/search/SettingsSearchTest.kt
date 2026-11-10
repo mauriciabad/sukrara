@@ -4,12 +4,20 @@
 package app.mauri.sukrara.feature.settings.search
 
 import android.content.Context
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
+import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,6 +27,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class SettingsSearchTest {
+    @get:Rule val compose = createComposeRule()
+
     private val alerts = SearchTarget.Page(SettingsRoute.Alerts)
     private val graph = SearchTarget.Page(SettingsRoute.Graph)
 
@@ -78,10 +88,112 @@ class SettingsSearchTest {
                 SettingsRoute.About,
                 SettingsRoute.ThresholdReview,
                 SettingsRoute.Advanced,
+                SettingsRoute.SettingsFrom,
             ) + AlertKind.entries.map(SettingsRoute::AlertKindPage)
         val targets = SettingsIndex.entries.map { it.target }.toSet()
         for (p in pages) assertTrue("$p has no search entries", SearchTarget.Page(p) in targets)
         for (o in OtherPage.entries) assertTrue("$o has no search entry", SearchTarget.Other(o) in targets)
+    }
+
+    /** #134: Profile and Backup are the wearer's rows, Settings from a follower's; pens only where pens are read. */
+    @Test
+    fun rowsAreFilteredByRole() {
+        fun targets(
+            pens: Boolean,
+            wearer: Boolean,
+        ) = SettingsIndex.entries
+            .filter { it.shownOn(pens, wearer) }
+            .map { it.target }
+            .toSet()
+        val wearer = targets(pens = false, wearer = true)
+        val follower = targets(pens = false, wearer = false)
+        val profile = SearchTarget.Other(OtherPage.Profile)
+        val backup = SearchTarget.Other(OtherPage.Backup)
+        val from = SearchTarget.Page(SettingsRoute.SettingsFrom)
+        assertTrue(profile in wearer && backup in wearer && from !in wearer)
+        assertTrue(profile !in follower && backup !in follower && from in follower)
+        assertFalse(SearchTarget.Page(SettingsRoute.Pens) in wearer)
+        assertTrue(SearchTarget.Page(SettingsRoute.Pens) in targets(pens = true, wearer = true))
+    }
+
+    /** The Google Play build (no root features, no update check) finds none of their rows; both find the privacy policy. */
+    @Test
+    fun rowsOfTheOtherBuildAreNotFound() {
+        fun titles(
+            build: Set<BuildFeature>,
+        ) = SettingsIndex.entries.filter { it.shownOn(pens = true, wearer = true, build) }.map { it.title }
+        val play = titles(emptySet())
+        val full = titles(BuildFeature.entries.toSet())
+        val onlyFull =
+            listOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon) +
+                R.string.st_update_check_again
+        for (t in onlyFull) assertTrue(t !in play && t in full)
+        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_chip, R.string.st_about_version)) assertTrue(t in play && t in full)
+    }
+
+    /** #134: a hit on an alert's own row opens that alert's page ("Remind every · In Alerts › Low"), not the list. */
+    @Test
+    fun alertRowsOpenTheirAlert() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val items =
+            SettingsIndex.entries.map { e ->
+                val page = listOfNotNull(e.parent, e.page).joinToString(" › ") { context.getString(it) }
+                SearchItem(context.getString(e.title), e.summary?.let(context::getString), page, e.target)
+            }
+        val hits = SettingsSearch.match("low remind", items)
+        val low = hits.single { it.target == SearchTarget.Page(SettingsRoute.AlertKindPage(AlertKind.LOW)) }
+        assertEquals("Remind every", low.title)
+        assertEquals("Alerts › Low", low.page)
+        // the list's own rows still lead to the list
+        assertEquals(alerts, SettingsSearch.match("sound pack", items).first().target)
+    }
+
+    @Test
+    fun recentSearchesKeepTheNewestFiveOnce() {
+        var recent = emptyList<String>()
+        for (q in listOf("alarma", " Vibración ", "graph", "ALARMA", "lock", "pens", "sound")) recent = RecentSearches.add(recent, q)
+        // the same query again (case, accents, spaces aside) moves to the top instead of repeating
+        assertEquals(listOf("sound", "pens", "lock", "ALARMA", "graph"), recent)
+        assertEquals(
+            listOf("vibracion", "sound"),
+            RecentSearches.add(listOf("Vibración", "sound"), "  vibracion  ").let {
+                it.map(SettingsSearch::fold)
+            },
+        )
+        assertEquals(recent, RecentSearches.decode(RecentSearches.encode(recent)))
+        assertEquals(emptyList<String>(), RecentSearches.decode(""))
+        assertEquals(recent, RecentSearches.add(recent, "   "))
+    }
+
+    /** The field: focused and empty it offers the recent searches; a chip searches again, Clear empties them. */
+    @Test
+    fun recentSearchesShowOnTheEmptyField() {
+        val remembered = mutableListOf<String>()
+        var cleared = 0
+        val opened = mutableListOf<SettingsRoute>()
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                SettingsSearchBar(
+                    onOpen = { opened += it },
+                    onOpenOther = {},
+                    recent = RecentSearch(listOf("sound pack"), remember = { remembered += it }, clear = { cleared++ }),
+                )
+            }
+        }
+        compose.onNodeWithText("Recent searches").assertDoesNotExist()
+        compose.onNodeWithText("Search settings").performClick()
+        compose.onNodeWithText("Recent searches").assertIsDisplayed()
+        compose.onNodeWithText("sound pack").performClick()
+        // the chip's query is typed: its results show, the chips go
+        compose.onNodeWithText("Recent searches").assertDoesNotExist()
+        compose.onNodeWithText("Sound pack").performClick()
+        assertEquals(listOf(SettingsRoute.Alerts), opened)
+        assertEquals(listOf("sound pack"), remembered)
+        // Clear empties them
+        compose.onNodeWithContentDescription("Clear search").performClick()
+        compose.onNodeWithText("Search settings").performClick()
+        compose.onNodeWithText("Clear").performClick()
+        assertEquals(1, cleared)
     }
 
     /** The index's texts read as the pages show them: no format arguments left in (en and es). */

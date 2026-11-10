@@ -19,6 +19,9 @@ enum class CardSurface(
     WIDGET_COMBINED("widget-combined", Kind.CARD),
     APP_PANEL("app-panel", Kind.CARD),
     NOTIFICATION("notification", Kind.CARD),
+
+    /** The new-sensor flow's *Sensor ready* page: the first reading, value and arrow only. */
+    SENSOR_READY("sensor-ready", Kind.CARD),
     NOTIFICATION_TEXT("notification-text", Kind.GLYPH),
     WIDGET_DESCRIPTION("widget-description", Kind.GLYPH),
     STATUS_ICONS("status-icons", Kind.GLYPH),

@@ -5,6 +5,7 @@ package app.mauri.sukrara.share.follower
 
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
@@ -25,9 +26,11 @@ import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.RumorCodec
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.SettingsCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
@@ -41,6 +44,7 @@ import app.mauri.sukrara.share.owner.usecase.HandleInbox
 import app.mauri.sukrara.share.owner.usecase.PublishReadings
 import app.mauri.sukrara.share.owner.usecase.RemoveFollower
 import app.mauri.sukrara.share.owner.usecase.SetWriter
+import app.mauri.sukrara.share.owner.usecase.SyncTreatments
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -105,6 +109,9 @@ class FollowerEngineTest {
 
     private var lookupFirst = true
 
+    /** A writer entry's id (the wire wants a UUID). */
+    private val entryId = "6f1c2b9a-0d3e-4c5f-8a7b-0123456789ab"
+
     private val received = mutableListOf<List<Reading>>()
 
     private fun TestScope.attach(e: FollowerEngine) {
@@ -112,11 +119,20 @@ class FollowerEngineTest {
         runCurrent()
     }
 
-    /** Joins, connects, and returns the request the follower sent. */
-    private fun TestScope.joined(e: FollowerEngine): SignedEvent {
+    /** Looks up the invite (its wrap is on the relays) and returns what the person is shown. */
+    private fun TestScope.lookedUp(e: FollowerEngine): Invite {
         lookup.stored += inviteWrap
+        var found: InviteLookup? = null
+        backgroundScope.launch { found = e.lookUp(created.link.link) }
+        runCurrent()
+        return (found as InviteLookup.Found).invite
+    }
+
+    /** Looks up, taps Follow, connects, and returns the request the follower sent. */
+    private fun TestScope.joined(e: FollowerEngine): SignedEvent {
+        val invite = lookedUp(e)
         var result: JoinResult? = null
-        backgroundScope.launch { result = e.join(created.link.link, Profile("Bea", null)) }
+        backgroundScope.launch { result = e.join(invite, Profile("Bea", null)) }
         runCurrent()
         assertEquals(JoinResult.Joined, result)
         attach(e)
@@ -163,14 +179,39 @@ class FollowerEngineTest {
             assertEquals(setOf(FollowerEngine.INBOX), relay.subscriptions.keys)
         }
 
+    @Test fun lookingUpShowsWhoIsInvitingAndSavesOrSendsNothing() =
+        runTest {
+            val e = engine()
+            val invite = lookedUp(e)
+            assertEquals("Ana", invite.profile?.name)
+            assertEquals(created.link.token, invite.token)
+            assertFalse(lookup.started)
+            // no key, no record, no request until the person taps Follow
+            assertNull(secure.read(FollowerStore.NAME))
+            assertEquals(FollowState.NotFollowing, e.state.value)
+            assertTrue(lookup.published.isEmpty())
+            assertTrue(relay.published.isEmpty())
+        }
+
+    @Test fun anInviteThatExpiredWhileThePersonDecidedIsRefused() =
+        runTest {
+            val e = engine()
+            val invite = lookedUp(e)
+            var result: JoinResult? = null
+            backgroundScope.launch { result = e.join(invite.copy(expiry = NOW - 1), null) }
+            runCurrent()
+            assertEquals(JoinResult.Expired, result)
+            assertNull(secure.read(FollowerStore.NAME))
+        }
+
     @Test fun anInviteThatNeverAppearsIsNotFoundAndNothingIsSaved() =
         runTest {
             val e = engine(timeoutMs = 10_000)
-            var result: JoinResult? = null
-            backgroundScope.launch { result = e.join(created.link.link, null) }
+            var result: InviteLookup? = null
+            backgroundScope.launch { result = e.lookUp(created.link.link) }
             advanceTimeBy(30_000)
             runCurrent()
-            assertEquals(JoinResult.NotFound, result)
+            assertEquals(InviteLookup.Failed(JoinResult.NotFound), result)
             assertNull(secure.read(FollowerStore.NAME))
             assertEquals(FollowState.NotFollowing, e.state.value)
         }
@@ -178,10 +219,10 @@ class FollowerEngineTest {
     @Test fun anythingButAnInviteLinkIsRefusedAtOnce() =
         runTest {
             val e = engine()
-            var result: JoinResult? = null
-            backgroundScope.launch { result = e.join("https://example.com/join#abc", null) }
+            var result: InviteLookup? = null
+            backgroundScope.launch { result = e.lookUp("https://example.com/join#abc") }
             runCurrent()
-            assertEquals(JoinResult.InvalidLink, result)
+            assertEquals(InviteLookup.Failed(JoinResult.InvalidLink), result)
         }
 
     @Test fun approvedFollowerGetsTheKeyRosterAndReadings() =
@@ -204,6 +245,27 @@ class FollowerEngineTest {
             assertEquals(SourceId.Relay, received.flatten().single().source)
             assertEquals(SourceStatus.Live(Instant.ofEpochSecond(NOW - 30)), e.status.value)
             assertEquals(Instant.ofEpochSecond(NOW - 30), links.last()?.lastHeardAt)
+        }
+
+    /** #55: the wearer's new sensor reaches the follower while it warms up, before any reading (and its end after). */
+    @Test fun aWarmUpAndASensorEndArriveWithoutAReading() =
+        runTest {
+            val e = engine()
+            val (wearer, published) = approve(joined(e))
+            deliverAll(published)
+            runCurrent()
+            val publisher = PublishReadings(ctx)
+            val fresh = SensorLife(NOW - 60, NOW + 15 * Wire.DAY, NOW + 3540)
+            deliverAll(publisher.onSensor(wearer, fresh, NOW))
+            runCurrent()
+            assertEquals(SensorState.WarmingUp(Instant.ofEpochSecond(NOW + 3540)), e.sensor.value)
+            assertTrue(received.isEmpty())
+            // it never gave a reading and ended early, after its warm-up
+            clock.instant = Instant.ofEpochSecond(NOW + 3600)
+            deliverAll(publisher.onSensor(wearer, fresh.copy(end = NOW + 3590), NOW + 3600))
+            runCurrent()
+            assertEquals(SensorState.Ended, e.sensor.value)
+            assertTrue(received.isEmpty())
         }
 
     @Test fun aStrangerSigningLiveEventsIsNotBelieved() =
@@ -297,6 +359,81 @@ class FollowerEngineTest {
             assertEquals(TreatmentDelivery.Delivered, treatments.get("t1")!!.delivery)
         }
 
+    /** A writer that may add entries, connected, with entry [entryId] stored pending: the engine and the wearer's state. */
+    private suspend fun TestScope.writerWithEntry(): Triple<FollowerEngine, OwnerState, TreatmentRecord> {
+        val e = engine()
+        val (wearer, published) = approve(joined(e))
+        deliverAll(published)
+        runCurrent()
+        val follower = wearer.activeFollowers().single().key
+        val writer = SetWriter(ctx)(wearer, follower, true, NOW + 1)!!
+        clock.instant = (Instant.ofEpochSecond(NOW + 2))
+        deliverAll(writer.publish.filter { it.kind == Wire.KIND_DATA })
+        runCurrent()
+        val entry =
+            TreatmentRecord(
+                Treatment(
+                    entryId,
+                    TreatmentKind.Carbs,
+                    20.0,
+                    Instant.ofEpochSecond(NOW),
+                    "",
+                    Instant.ofEpochSecond(NOW + 2),
+                    false,
+                    TreatmentOrigin.Follower,
+                ),
+                creator = follower,
+                delivery = TreatmentDelivery.Pending,
+            )
+        treatments.upsertIfNewer(entry)
+        relay.published.clear()
+        return Triple(e, writer.state, entry)
+    }
+
+    /** #75: nothing took it in 2 minutes → *Not sent*; *Retry* sends it again (pending); a late OK still delivers it. */
+    @Test fun aWriterEntryNothingTookIsNotSentUntilRetriedOrAccepted() =
+        runTest {
+            val (e, _, entry) = writerWithEntry()
+            e.publishTreatment(entry)
+            runCurrent()
+            val first = relay.published.single()
+            advanceTimeBy(FollowerEngine.UNSENT_MS - 1_000)
+            runCurrent()
+            assertEquals(TreatmentDelivery.Pending, treatments.get(entryId)!!.delivery)
+            advanceTimeBy(2_000)
+            runCurrent()
+            assertEquals(TreatmentDelivery.Failed, treatments.get(entryId)!!.delivery)
+            // Retry (TreatmentLog.retry): pending again and sent at once as a new event
+            val again = treatments.get(entryId)!!.copy(delivery = TreatmentDelivery.Pending)
+            treatments.replace(again)
+            e.publishTreatment(again)
+            runCurrent()
+            assertEquals(2, relay.published.size)
+            assertEquals(TreatmentDelivery.Pending, treatments.get(entryId)!!.delivery)
+            // the first send's OK arrives late: the same version, so it counts
+            relay.ok(first.id)
+            runCurrent()
+            assertEquals(TreatmentDelivery.Delivered, treatments.get(entryId)!!.delivery)
+            // and a delivered entry never turns into Not sent afterwards
+            advanceTimeBy(FollowerEngine.UNSENT_MS + 1_000)
+            runCurrent()
+            assertEquals(TreatmentDelivery.Delivered, treatments.get(entryId)!!.delivery)
+        }
+
+    /** The wearer's echo of our entry (same version, e.g. over Bluetooth with no relay) means the wearer has it. */
+    @Test fun theWearersEchoDeliversOurEntry() =
+        runTest {
+            val (e, wearer, entry) = writerWithEntry()
+            e.publishTreatment(entry)
+            runCurrent()
+            relay.published.single()
+            // the wearer merged it and publishes the same version from its log, signed by its device key (the echo)
+            val echo = SyncTreatments(ctx, InMemoryTreatmentsRepository()).publish(wearer, entry, NOW + 3)
+            deliverAll(listOf(echo))
+            runCurrent()
+            assertEquals(TreatmentDelivery.Delivered, treatments.get(entryId)!!.delivery)
+        }
+
     @Test fun stopFollowingWipesTheWearersDataAndTheKey() =
         runTest {
             val e = engine()
@@ -368,9 +505,9 @@ class FollowerEngineTest {
             settingsCache.update { WearerSettingsCache("{}") }
             cacheWritesFail = true
             val e = engine()
-            lookup.stored += inviteWrap
+            val invite = lookedUp(e)
             var failed: Throwable? = null
-            backgroundScope.launch { runCatching { e.join(created.link.link, null) }.onFailure { failed = it } }
+            backgroundScope.launch { runCatching { e.join(invite, null) }.onFailure { failed = it } }
             runCurrent()
             assertTrue(failed is java.io.IOException)
             // no record: nothing can later open as "unreadable" and fall back to the previous wearer's thresholds

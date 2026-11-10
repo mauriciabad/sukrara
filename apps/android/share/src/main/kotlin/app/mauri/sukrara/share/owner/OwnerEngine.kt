@@ -14,6 +14,7 @@ import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.AlertPayload
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.owner.usecase.ApproveRequest
@@ -55,6 +56,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -63,7 +65,7 @@ import app.mauri.sukrara.protocol.invite.NearbyPairing as PairingCode
 
 /**
  * The wearer's sharing coordinator: loads the identity, keeps the relay subscriptions, feeds readings from the
- * [GlucoseHub] to [PublishReadings], the treatment log and the mirrored settings to followers ([SyncTreatments],
+ * [GlucoseHub] and the wearer's sensor to [PublishReadings], the treatment log and the mirrored settings to followers ([SyncTreatments],
  * [PublishSettingsMirror]), runs every use-case one at a time (serial dispatcher + one lock held across the
  * suspending store / ledger calls, so no update overwrites another), persists before publishing, and
  * exposes [state]. Relay failures stay in the per-relay status. Logs nothing that holds keys or glucose values.
@@ -82,6 +84,8 @@ class OwnerEngine(
     private val nearby: OwnerNearby = OwnerNearby.None,
     /** *Over the internet* and the upload interval (Settings › Sharing); read at start and followed while running. */
     private val relayPolicy: Flow<RelayPolicy> = flowOf(RelayPolicy()),
+    /** The wearer's current sensor (null = none known): every live event carries it (PROTOCOL-v2 "Sensor life"). */
+    private val sensor: Flow<SensorLife?> = flowOf(null),
     /** Called for a new access request (the notification with Allow / Deny lives in the app layer). */
     private val onRequest: (PendingRequest) -> Unit = {},
 ) {
@@ -93,6 +97,11 @@ class OwnerEngine(
     private val settingsMirror = PublishSettingsMirror(ctx)
     private val _state = MutableStateFlow<OwnerShareState>(OwnerShareState.Loading)
     val state: StateFlow<OwnerShareState> = _state.asStateFlow()
+
+    private val _sent = MutableStateFlow(SentCounts())
+
+    /** The live readings and hour chunks handed to the relays / nearby followers since the app started (Settings › Advanced). */
+    val sent: StateFlow<SentCounts> = _sent.asStateFlow()
 
     @Volatile private var owner: OwnerState? = null
 
@@ -262,12 +271,15 @@ class OwnerEngine(
             listOf(
                 scope.launch(serial) { transport.inbound.collect { locked { onInbound(it) } } },
                 scope.launch(serial) { readingsFrom(hub) },
+                scope.launch(serial) {
+                    sensor.distinctUntilChanged().collect { w -> locked { owner?.let { publish(readings.onSensor(it, w, now())) } } }
+                },
                 scope.launch(serial) { transport.status.collect { render() } },
                 scope.launch(serial) {
                     while (true) {
                         delay(PublishReadings.CHUNK_EVERY * 1000)
                         locked {
-                            owner?.let { publish(readings.tick(it, now())) }
+                            owner?.let { publishReadings(readings.tick(it, now())) }
                             refreshControl()
                             refreshShared()
                         }
@@ -286,7 +298,7 @@ class OwnerEngine(
         // before the first send: the Bluetooth backlog caches what goes out from here on
         nearby.start(nearbyHost)
         s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach(::send)
-        publish(readings.republish(s, now()))
+        publishReadings(readings.republish(s, now()))
         subscribeWriters(s)
         republishShared()
         refreshControl()
@@ -308,7 +320,7 @@ class OwnerEngine(
         if (!before.on && next.on) {
             transport.start()
             s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach { send(it, overBluetooth = false) }
-            readings.republish(s, now()).forEach { send(it, overBluetooth = false) }
+            publishReadings(readings.republish(s, now()), overBluetooth = false)
             republishShared(overBluetooth = false)
             refreshControl()
         }
@@ -319,7 +331,7 @@ class OwnerEngine(
             .filter { it.role == Role.Wearer }
             .map { it.recent }
             .distinctUntilChanged()
-            .collect { recent -> locked { owner?.let { publish(readings.onReadings(it, recent, now())) } } }
+            .collect { recent -> locked { owner?.let { publishReadings(readings.onReadings(it, recent, now())) } } }
     }
 
     private suspend fun onInbound(m: RelayInbound) {
@@ -407,20 +419,28 @@ class OwnerEngine(
         locked { owner?.let { send(treatments.publish(it, record, now())) } }
     }
 
-    /** First-run "share with followers": a new identity. Refuses while an identity exists or is unreadable. */
-    suspend fun createIdentity(scope: CoroutineScope, profile: Profile?): Boolean =
+    /**
+     * A new identity with how the wearer appears: setup's *Start fresh*, or over the working one with [replaceExisting]
+     * (Backup › Replace this identity, after the person confirmed that every follower must be invited again: the old
+     * identity stops publishing at once). Never over an identity that can't be read; nothing changes when the new one
+     * can't be saved.
+     */
+    suspend fun createIdentity(scope: CoroutineScope, profile: Profile?, replaceExisting: Boolean = false): Boolean =
         locked {
-            if (owner != null || store.load() !is OwnerIdentityStore.Load.Missing) return@locked false
+            val replacing = owner != null
+            if (replacing && !replaceExisting) return@locked false
+            if (!replacing && store.load() !is OwnerIdentityStore.Load.Missing) return@locked false
             val step = CreateIdentity(ctx)(profile, now())
             if (!store.save(step.state)) return@locked false
+            if (replacing) halt()
             run(scope, step.state)
             true
         }
 
     /**
      * Restore from a recovery code. The UI gates it (setup's `RestoreGate`: this phone's sensor runs). Replaces an unreadable
-     * identity only on success, and a working one only with [replaceExisting] (the UI confirms first); nothing
-     * changes on any error.
+     * identity only on success, and a working one only with [replaceExisting] (Backup › Replace this identity confirms
+     * first); the identity this phone already shares as is never "replaced" by itself. Nothing changes on any error.
      */
     suspend fun restore(scope: CoroutineScope, code: String, password: String?, replaceExisting: Boolean = false): RestoreIdentity.Result =
         locked {
@@ -428,6 +448,7 @@ class OwnerEngine(
             val use = RestoreIdentity(ctx)
             val (identity, error) = use.parse(code, password)
             if (identity == null) return@locked error!!
+            if (owner?.identity(ctx.crypto)?.public == identity.public) return@locked RestoreIdentity.Result.SameIdentity
             transport.start()
             val found = transport.fetch(use.identityEventsFilter(identity), FETCH_TIMEOUT_MS)
             val result = use.restore(identity, found.events, found.answered, now())
@@ -606,6 +627,16 @@ class OwnerEngine(
     }
 
     private fun publish(events: List<SignedEvent>) = events.forEach(::send)
+
+    /** Readings' live events and hour chunks, counted for Settings › Advanced (counts only, nothing personal). */
+    private fun publishReadings(
+        events: List<SignedEvent>,
+        overBluetooth: Boolean = true,
+    ) {
+        if (events.isEmpty()) return
+        events.forEach { send(it, overBluetooth) }
+        _sent.update { it.plus(events) }
+    }
 
     /**
      * To the relays (unless [policy] keeps it off them: internet sharing off, or a live event while the upload interval

@@ -157,11 +157,14 @@ open testing at once, with no *Apply for production* step) and no new fee.
   blockable, invited friends only, no location; result all ages / PEGI 3 / ESRB E / USK 0).
 - **App content still open** (the remaining Play work is
   [#142](https://github.com/mauriciabad/sukrara/issues/142), the reviewer-access decision
-  [#141](https://github.com/mauriciabad/sukrara/issues/141)): Privacy policy (needs the page on the site), **Sign in details** (open question: the app
-  shows nothing without a sensor or a follow invite from another phone, and debug fakes are compiled out of release, so
-  reviewers need instructions and probably a demo video; answering "No restrictions" risks a rejection), Target
-  audience (blocked until Sign in details is done; plan: 13+), Data safety, Health apps; the sensitive-permission
-  declarations (exact alarm, foreground service…) appear after the first upload.
+  [#141](https://github.com/mauriciabad/sukrara/issues/141)): Privacy policy (the page exists:
+  https://sukrara.mauri.app/privacy, from `docs/privacy.md`, linked in Settings › About), **Sign in details** (open
+  question: the app shows nothing without a sensor or a follow invite from another phone, and debug fakes are compiled
+  out of release, so reviewers need instructions and probably a demo video; answering "No restrictions" risks a
+  rejection), Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
+  drafted in [Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts));
+  the sensitive-permission declarations (foreground service, full-screen intent, Health Connect) appear after the
+  first upload. The bundle to upload comes from `tools/release/play-bundle.sh` ([Flavors](#flavors)).
 
 ### Google Play: a brand-new personal account (research, 2026-10-18)
 
@@ -292,7 +295,7 @@ falls back to the debug key), runs `verify-apk.sh` (signer = `android-cert.sha25
 not debuggable, Libre 3 core inside, R8 full mode with the mapping that belongs to this APK, no debug classes or
 debug-tool strings, no exported component without a permission beyond the launcher and the alert sound provider,
 `POST_PROMOTED_NOTIFICATIONS` declared), then installs it fresh and launches it (see `docs/QA.md` Q10
-for every assertion). Keep the mapping (`apps/android/app/build/outputs/mapping/release/mapping.txt`) with the
+for every assertion). Keep the mapping (`apps/android/app/build/outputs/mapping/fullRelease/mapping.txt`) with the
 release: crash stack traces from the owner's phone are unreadable without it. Keep-rule fixes go to the owning
 module's `consumer-rules.pro` (the module that uses the reflective / JNI library), never to a blanket `-keep`.
 
@@ -321,15 +324,122 @@ takes over once a Developer ID exists.
 
 ### Flavors
 
-| Flavor | Package | Channel | Contents |
+Built (2026-11-10, #142): the app module has two product flavors in the `store` dimension, with the same package
+`app.mauri.sukrara`, version and release key (`AndroidApplicationConventionPlugin`):
+
+| Flavor | Channel | Build | Contents |
 |---|---|---|---|
-| `play` | `app.mauri.sukrara` | Google Play | everything except LSPosed module/hooks, root status bar, `DUMP`, in-app GitHub update check; `SCHEDULE_EXACT_ALARM` instead of `USE_EXACT_ALARM` |
-| `full` | `app.mauri.sukrara` (same key) | GitHub/Obtainium, IzzyOnDroid, F-Droid | everything, including root/LSPosed features and the update check |
+| `full` (default) | GitHub releases, Obtainium, IzzyOnDroid, later F-Droid | `tools/release/android-release.sh` (`:app:assembleFullRelease`, APK) | everything |
+| `play` | Google Play | `tools/release/play-bundle.sh` (`:app:bundlePlayRelease`, app bundle) | everything except the rows below |
+
+Left out of `play`, each because of a Play policy (`app/src/play`: `Store.kt` and `AndroidManifest.xml`):
+
+| Left out | Why | How |
+|---|---|---|
+| The root status bar (slot daemon through `su`), the LSPosed module in System UI (`SystemUiHook`, `META-INF/xposed`, `XposedProvider`, `HookHelloReceiver`, the `SYSTEMUI_STATE` permission), the *Restart System UI* card | Device and Network Abuse: no interfering with the system or other apps [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | `Store.rootFeatures` is null, so nothing reaches `:monitor` `systemui/` and R8 drops it (the keep rules in `monitor/consumer-rules.pro` apply only `-if` `SystemAccess` is in the app); the manifest removes the components and the permission; `META-INF/xposed/**` isn't packaged. Settings › Status bar has no *With root* section, search none of its rows |
+| The update check in About (the GitHub releases API, *Update available* → the release page, the other-device files) | An app on Play may not update itself, or send people to updates, other than through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | `Store.releases()` returns null: About has no update rows; `GitHubReleases` and its URL aren't in the bundle |
+| `USE_EXACT_ALARM`, replaced by `SCHEDULE_EXACT_ALARM` | Play allows `USE_EXACT_ALARM` only for alarm-clock and calendar apps [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | The manifest swaps them (`tools/check/allow.json` `play_permissions`). Android doesn't grant it at install: the alert checklist already asks for *Alarms and reminders*, and the checks use inexact while-idle alarms until it is allowed (FEATURES.md › Google Play build) |
+
+Not in either release build, so there is nothing to leave out: `DUMP` (only the debug build's `DebugReceiver` declares
+it), `REQUEST_INSTALL_PACKAGES` (the update check opens the release page in the browser; Sukrara never installs
+APKs), the lock-screen widget hook (not in the app yet, #66), `QUERY_ALL_PACKAGES` (the queries are listed one by one
+in `allow.json`).
+
+The bundle has no language splits (`bundle.language.enableSplit = false`): Sukrara has its own language setting, and a
+split that Play didn't install would leave that choice without strings. arm64 only, like the APK.
+
+**Checks.** `ManifestTest` also reads the play flavor's merged manifest (the permissions are `allow.json`'s with
+`play_permissions` applied; no module components). `tools/release/play-bundle.sh` builds the bundle signed with the
+release key (password from the Keychain, `--no-daemon`) and checks it: signer = `android-cert.sha256`, base module
+only, arm64 only, the Libre 3 core, the R8 mapping in `BUNDLE-METADATA` (Play deobfuscates crash reports with it), no
+`META-INF/xposed`. Then `bundletool validate` and `verify-apk.sh --play` on bundletool's universal APK when bundletool
+is there (`$BUNDLETOOL` = the `bundletool-all` jar from its GitHub releases, or `bundletool` on PATH); without it,
+`verify-apk.sh --play` on the play APK that Gradle builds from the same R8 output. It copies `Sukrara-<version>-play.aab`
+to `apps/android/app/build/dist/` and archives the mapping in `~/.android/sukrara-mappings/<version>-play-mapping.txt`.
+CI's `android-play` job runs it with `--unsigned` (no key, no Juggluco checkout: every check except the signer and the
+Libre 3 core).
+
+**Uploading** isn't scripted yet: the first upload to internal testing is the owner's (Play Console › Test and release
+› Internal testing › Create new release, the `.aab`). A script for later releases can use the service account
+(`~/.android/sukrara-play.json`, testing tracks only) with the Android Publisher API (`edits.insert` →
+`edits.bundles.upload` → `edits.tracks.update` → `edits.commit`).
 
 Same package and key means a user can switch channels without reinstalling, but Play will "update" a full install
 to the play build (losing root features) if Play auto-update owns it. Alternative: `app.mauri.sukrara.full` as its
-own package (both installable, but two registrations and a confusing choice). **Recommendation: same package;
-document that root users install from GitHub/Obtainium and turn off Play updates for Sukrara.**
+own package (both installable, but two registrations and a confusing choice). **Decision: same package; root users
+install from GitHub / Obtainium and turn off Play updates for Sukrara.**
+
+### Google Play: Data safety, Health apps and permission declarations (drafts)
+
+Derived from the code on 2026-11-10 for the play build (the facts are the privacy page's, `docs/privacy.md`); only the
+owner submits them, in Play Console › App content. Play's rules used here [[G14]](https://support.google.com/googleplay/android-developer/answer/10787469): data the app sends off the
+device is *collected* (Sukrara has no server, so everything below goes to services the person signs in to); data that
+is end-to-end encrypted, so no one in between can read it, doesn't need to be disclosed; a transfer the person starts
+to a service they chose isn't *sharing*; data that never leaves the device isn't collected.
+
+**Data safety › Data collection and security**
+
+| Question | Answer | Why |
+|---|---|---|
+| Does your app collect or share any of the required user data types? | **Yes** | The opt-in uploads (LibreView, Tidepool, Nightscout) send health data off the phone |
+| Is all of the user data collected by your app encrypted in transit? | **Yes** | Every connection is https / wss, platform CAs only (`network_security_config.xml`: cleartext only to 127.0.0.1); Nightscout takes only `https://` sites. The opt-in *Nightscout API › Also on this Wi-Fi* serves plain http to the person's own devices on their network: the phone serving its owner, not collection (say so if Play asks) |
+| Do you provide a way for users to request that their data is deleted? | **Yes** | Everything is on the phone (uninstall or *Clear storage*; deleting a treatment also deletes it upstream); uploaded data is deleted in the person's own LibreView / Tidepool / Nightscout account; the developer holds nothing. The privacy policy explains it |
+| Account creation | **My app does not allow users to create an account** | No account with the developer; the sharing identity is a key pair made on the phone; LibreView and Tidepool are sign-ins to existing accounts. So no account-deletion URL |
+
+**Data types** (everything not listed: not collected, not shared)
+
+| Category › type | Collected | Shared | Optional | Ephemeral | Purposes | What and where |
+|---|---|---|---|---|---|---|
+| Health and fitness › Health info | Yes | No | Yes | No | App functionality | Glucose readings, insulin, carbs, treatment notes, sensor starts / changes: LibreView, Tidepool, Nightscout, each only after the person turns it on and signs in |
+| Personal info › Email address | Yes | No | Yes | No | App functionality, Account management | LibreView and Tidepool sign-in (also LibreView's sign-in for a new Libre 3 sensor) |
+| Personal info › Name | Yes | No | Yes | No | App functionality | The LibreView upload resends the account's own first and last name (which came from LibreView) |
+| Personal info › Other info | Yes | No | Yes | No | App functionality | The LibreView upload resends the account's date of birth (which came from LibreView) |
+| Personal info › User IDs | Yes | No | Yes | No | App functionality, Account management | The LibreView account and receiver ID, the Tidepool user ID, in those services' requests |
+| Device or other IDs | Yes | No | Yes | No | App functionality | A random ID per install (LibreView device ID, Tidepool / Nightscout device name) and the sensor's serial number (LibreView, Nightscout) |
+| App info and performance › Diagnostics | Yes | No | Yes | No | App functionality | The phone's battery level and charging state in Nightscout's device status (Nightscout upload only) |
+
+Not collected, and why: sharing with followers (NIP-44 end-to-end encrypted to the followers' keys, relays can't read
+it; the profile name and picture travel the same way); Bluetooth sharing (the same encrypted events; *Pair nearby*
+shows the wearer's name and an invite code to nearby phones for up to 10 minutes, phone to phone, never to the
+developer or a service); Health Connect (written on the device); the calendar event (written to a calendar on the
+device; an account calendar the person picks is synced by that account, not by Sukrara); broadcasts and the local
+xDrip+ / Nightscout servers (to apps and devices the person picks); the camera (QR codes decoded on the device); the
+export file and the password-manager backup (the person's own transfers). No location, contacts, messages, photos,
+audio, files, app activity, web history, financial info, advertising ID, analytics or crash logs.
+
+*Judgement calls for the owner*: (1) To not rely on the user-initiated exemption, mark Health info, Email address,
+Name, Other info, User IDs and Device or other IDs as **Shared** too (purpose App functionality): the listing only gets
+more cautious. (2) A follower's opt-in *Upload the person you follow* sends the wearer's readings to the Tidepool
+account the follower signs in to; it is the follower's own transfer of what they received, covered by the Health info
+row.
+
+**Security practices**: data encrypted in transit: yes. Independent security review: no. Play Families Policy: no
+(not a children's app).
+
+**Health apps declaration** (App content › Health apps): **Diseases and conditions management** (diabetes: glucose
+display, alerts, insulin and carbs log). Not *Medical device apps*: Sukrara isn't cleared or certified as a medical
+device and the listing says so. The description must carry "Sukrara is not a medical device and does not diagnose,
+treat, cure, or prevent any medical condition. Don't make treatment decisions from it.", the hardware it needs
+("Reads FreeStyle Libre 3 sensors, or follows someone who uses Sukrara.") and the Abbott disclaimer ("FreeStyle Libre
+and LibreView are trademarks of Abbott. Sukrara is not affiliated with or endorsed by Abbott.") [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511). Privacy
+policy URL: https://sukrara.mauri.app/privacy (in the app: Settings › About › *Privacy policy*).
+
+**Health Connect** (App content, after the upload): `WRITE_BLOOD_GLUCOSE` only. Purpose: "Writes the glucose
+readings of the person's own sensor to Health Connect, once a minute, so other health apps they choose can use them.
+Off until the person turns it on in Share with apps. Sukrara reads nothing from Health Connect." The rationale screen
+is the app's `HealthPermissionsRationale` alias of MainActivity.
+
+**Permission declarations that appear after the first upload**
+
+| Declaration | Answer |
+|---|---|
+| Foreground service, type `connectedDevice` | Monitoring the person's glucose sensor, or the phone they follow: the service keeps the Bluetooth link to the CGM sensor (wearer) or the connection to the wearer's phone (follower) so readings and low / high alerts arrive within a minute while the app is closed. If deferred or stopped, urgent-low alerts are missed. It starts when a sensor is paired or someone is followed, its notification shows the current glucose, and it stops when the sensor is forgotten or following stops. Demo video: the emulator with synthetic data, showing the start (pairing or following), the notification and the stop |
+| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | Core use: **alarms**. The very-low alarm (and any alert the person sets to ring like an alarm) shows over the lock screen like an alarm clock until it is dismissed |
+| Exact alarms | Nothing to declare: the play build uses `SCHEDULE_EXACT_ALARM`, which the person grants |
+
+Not a form, but a policy to keep in mind: `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (the alert checklist's *No battery
+restrictions*, which opens Android's own dialog). Play allows it where the core function breaks under Doze; an alerting
+glucose monitor is that case, and the listing should say why.
 
 ## Garmin
 
@@ -356,10 +466,12 @@ The planned own watch app (watch face / data field / app, investigation 08) goes
 - **Channels**: `stable` (Play production, Sparkle `appcast.xml`, cask) and `beta` (Play closed/open test, Sparkle
   `appcast-beta.xml` via `sparkle:channel`, GitHub pre-releases). The closed test needed for production access
   becomes the permanent beta channel.
-- **Privacy page** `sukrara.mauri.app/privacy` (HTML, not PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511)): what stays on the device, what goes to Nostr
-  relays (E2E-encrypted events, public keys, timing, IP), to LibreView (only when the user signs in; glucose,
-  treatments, credentials, to Abbott), to Blossom/relays (none in 0.11), crash data (none), contact address. The same
-  page serves Play, Garmin and the Mac app.
+- **Privacy page** https://sukrara.mauri.app/privacy (`docs/privacy.md`, HTML, not PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511); since 2026-11-10):
+  what stays on the device, what each opt-in feature sends where (Nostr relays: end-to-end encrypted events, public
+  keys, timing, IP; LibreView, Tidepool, Nightscout: what each upload carries; Health Connect, apps on the phone, the
+  calendar, the password manager, the export), followers, the Mac app, how long things last and how to delete them, no
+  analytics / ads / crash data, the contact address. Linked from the site's home page and Settings › About. The same
+  page serves Play, Garmin and the Mac app; a feature that sends something new changes it in the same commit.
 
 ## Cross-cutting
 
@@ -429,10 +541,14 @@ root features; register the package and key for developer verification in the sa
    created, our key set for Play App Signing, API access set up ([as set up](#google-play-the-account-and-app-as-set-up-2026-11-10)).
 6. *(user)* Generate and back up the release keystore (an agent can script it; the user owns the file and passwords).
 7. *(agent)* Rename to `app.mauri.sukrara`, `play`/`full` flavors, `SCHEDULE_EXACT_ALARM` in `play`, migration screen
-   in the last `.poc` build, settings export/import, Juggluco core pinned.
+   in the last `.poc` build, settings export/import, Juggluco core pinned. Done: the rename, settings export / import,
+   the pinned core, the flavors and `tools/release/play-bundle.sh` (2026-11-10, [Flavors](#flavors)); the migration
+   screen was dropped (the app starts clean).
 8. *(agent)* Privacy page, store listing (with the not-a-medical-device statement and Abbott disclaimer), synthetic
    screenshots, Fastlane metadata, FGS demo video script; drafts of the Health apps, data safety, FGS and exact-alarm
-   answers. *(user)* submits the forms (only the account owner can).
+   answers. *(user)* submits the forms (only the account owner can). Done: the privacy page and the drafts
+   ([Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts)).
+   Open: the store listing, screenshots, the FGS demo video, an upload script.
 9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; use internal testing for
    the first builds, then open testing as the permanent beta.
 10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows

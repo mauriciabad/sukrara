@@ -6,25 +6,15 @@ import CoreText
 import Foundation
 
 /// A value's range in words, so no place says it by colour alone (#26, WCAG 1.4.1: low red and very high orange look
-/// alike to protan / deutan eyes). The raw value is the contracts/graph/range fixtures' key; `words` what the card draws.
-/// Extremely high from its own bound up, like the value's colour (RangeState.kt on Android is the same rule).
+/// alike to protan / deutan eyes). The raw value is the contracts/graph/range fixtures' key; the card draws it in its
+/// language (`CardWords.rangeWord`: "Low", "Baja"). Extremely high from its own bound up, like the value's colour
+/// (RangeState.kt on Android is the same rule).
 public enum RangeState: String, CaseIterable, Sendable {
     case veryLow = "very_low"
     case low
     case high
     case veryHigh = "very_high"
     case extremelyHigh = "extremely_high"
-
-    /// The card's words (English, like the rest of the drawn card).
-    public var words: String {
-        switch self {
-        case .veryLow: "Very low"
-        case .low: "Low"
-        case .high: "High"
-        case .veryHigh: "Very high"
-        case .extremelyHigh: "Extremely high"
-        }
-    }
 
     /// The range of `sgv` in the person's `bands`; nil in range (very good included).
     public static func of(_ sgv: Int, _ bands: Bands) -> RangeState? {

@@ -29,6 +29,21 @@ import Testing
         #expect(WidgetSnapshot.decode(Data("{}".utf8)) == nil)
     }
 
+    /// The no-data reason reaches the widget as the app decided it (#72), every kind with its payload.
+    @Test func widgetSnapshotCarriesTheNoDataReason() throws {
+        let reasons: [NoDataReason?] = [
+            nil, .notFollowing, .waitingApproval, .broken(.stateDamaged), .wearerSilent(since: now - 3000),
+            .wearerSilent(since: nil), .juggluco(.unreachable(host: "192.168.1.23")),
+            .juggluco(.notHomeNetwork(typed: "example.com")),
+        ]
+        for reason in reasons {
+            let snap = WidgetSnapshot(
+                writtenAt: now, data: CardData(readings: [], now: now), config: GraphConfig(), unit: .mgdl,
+                reason: reason)
+            #expect(WidgetSnapshot.decode(try snap.encoded())?.reason == reason)
+        }
+    }
+
     @Test func faceIsInTheUsersUnit() {
         let data = CardData(readings: [reading], now: now)
         #expect(GlucoseCard.face(data, unit: .mgdl, surface: .menubarTitle).text == "112")

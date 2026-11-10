@@ -5,9 +5,39 @@ import Foundation
 import SukraraAlerts
 import SukraraCore
 import SukraraShare
+import SukraraTesting
 import Testing
 
 @testable import SukraraApp
+
+/// A follower that answers like `inner` and records `stop`, which takes a moment (as closing sockets does): a caller
+/// that doesn't wait for it sees `stopped` false.
+actor StopRecordingFollower: FollowerService {
+    private let inner: any FollowerService
+    private(set) var stopped = false
+
+    init(_ inner: any FollowerService) { self.inner = inner }
+
+    func snapshots() async -> AsyncStream<FollowerSnapshot> { await inner.snapshots() }
+    func alerts() async -> AsyncStream<AlertPayload> { await inner.alerts() }
+    func start() async { await inner.start() }
+    func stop() async {
+        try? await Task.sleep(for: .milliseconds(50))
+        await inner.stop()
+        stopped = true
+    }
+    func reconnect() async {}
+    func lookUp(link: String) async throws(FollowerJoinError) -> Invite { throw .alreadyFollowing }
+    func join(invite: Invite) async throws(FollowerJoinError) { throw .alreadyFollowing }
+    func cancelJoin() async {}
+    func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) { throw .alreadyFollowing }
+    func confirmNearby(same: Bool) async -> Bool { false }
+    func searchNearby(_ on: Bool) async {}
+    func setProfile(name: String, avatar: Avatar?) async {}
+    func readings(since: Date) async -> [Reading] { await inner.readings(since: since) }
+    func unfollow() async {}
+    func send(_ treatment: Treatment) async -> TreatmentSendResult { .notAllowed }
+}
 
 /// The app's wiring: the fixture launch, mirrored alert settings, the runtime → windows mapping.
 @Suite struct IntegrationTests {
@@ -50,6 +80,27 @@ import Testing
         // an offline dev run without the fixture still says why nothing is shown
         let offline = AppModel(plan: LaunchPlan(mode: .normal, services: .none, data: .isolated(root: home)))
         #expect(offline.notMonitoringReason?.contains("offline") == true)
+    }
+
+    /// The fixture launch through the app's own wiring with an alert controller: the synthetic wearer's snapshot runs
+    /// in, the controller mirrors the wearer's alerts (its own engine only checks no data) and posts nothing, the
+    /// card gets its decision from it, and quitting stops the follower before it returns.
+    @Test func fixtureRunsWithAnAlertController() async throws {
+        let notifier = RecordingNotifier()
+        let alerts = AlertController(
+            settings: AlertSettings(), clock: SystemClock(), store: MemoryAlertStore(), notifier: notifier,
+            wake: RecordingWake())
+        let follower = StopRecordingFollower(FixtureFollower())
+        let plan = LaunchPlan(mode: .fixture, services: .none, data: .isolated(root: home))
+        let model = AppModel(plan: plan, alerts: alerts, follower: follower)
+        model.run()
+        for _ in 0..<300 where !model.link.isFollowing { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(model.link.isFollowing && model.notMonitoringReason == nil)
+        #expect(alerts.mirroring)
+        #expect(model.cardData.marks.map(\.id) == ["fixture-1", "fixture-2"])
+        #expect(notifier.posts.isEmpty)
+        await model.stop()
+        #expect(await follower.stopped)
     }
 
     // MARK: mirrored alert settings
@@ -104,6 +155,10 @@ import Testing
         #expect(FollowerAdapter.failure(.cancelled) == nil)
         #expect(FollowerAdapter.failure(.keyFailed) == .keychain)
         #expect(FollowerAdapter.failure(.alreadyFollowing) == .alreadyFollowing)
+        // the invite lookup's own outcomes: each says what to do next
+        #expect(FollowerAdapter.failure(.offline) == .offline)
+        #expect(FollowerAdapter.failure(.notFound) == .notFound && FollowerAdapter.failure(.expired) == .expired)
+        #expect(FollowerAdapter.failure(.offline)?.message.contains("internet") == true)
     }
 
     @Test func anInviteWhileFollowingKeepsTheStatus() async {
@@ -111,7 +166,7 @@ import Testing
         let model = FollowModel(status: following, actions: nil)
         model.linkText = Wire.inviteScheme + String(repeating: "a", count: 32)
         #expect(InviteLink.parse(model.linkText) != nil)
-        await model.follow()
+        await model.lookUp()
         #expect(model.status == following)
         #expect(model.failure == .alreadyFollowing)
     }

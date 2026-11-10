@@ -125,6 +125,7 @@ class AlertsModule(
             clock,
             log = log,
             lockedBoot = LockedBootStore.of(ctx)::write,
+            elapsed = { android.os.SystemClock.elapsedRealtime() / 1000 },
         )
     val controls: AlertControls get() = runtime
 
@@ -137,7 +138,8 @@ class AlertsModule(
             ctx,
             scope,
             dispatchers,
-            store.settings,
+            // the rules in use: on a follower, the mirrored rows *Settings from* chooses (as the runtime runs them)
+            AlertMirror.inUse(store.settings, wearerSettings),
             needsBluetooth,
             // the runtime publishes its failed steps to the hub; the checklist is the one place that answers for them
             hub.state.map { it.alerts.failedSteps }.distinctUntilChanged(),

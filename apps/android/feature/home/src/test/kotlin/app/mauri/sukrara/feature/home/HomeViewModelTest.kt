@@ -10,6 +10,7 @@ import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -109,6 +110,77 @@ class HomeViewModelTest {
             writes += "restore ${was.id}"
             return !restoreRefused
         }
+
+        override suspend fun deliveries(ids: Collection<String>) =
+            ids
+                .mapNotNull { id ->
+                    treatments.get(id)?.delivery?.takeIf { it != TreatmentDelivery.Local && it != TreatmentDelivery.Delivered }?.let {
+                        id to
+                            it
+                    }
+                }.toMap()
+
+        override suspend fun retryTreatment(id: String) {
+            writes += "retry $id"
+            treatments.get(id)?.let { treatments.replace(it.copy(delivery = TreatmentDelivery.Pending)) }
+        }
+
+        override val penQuestions = MutableStateFlow<List<app.mauri.sukrara.core.model.PenQuestionInfo>>(emptyList())
+        var answerRefused = false
+
+        override suspend fun answerPen(
+            question: app.mauri.sukrara.core.model.PenQuestionInfo,
+            answer: app.mauri.sukrara.core.model.PenAnswer,
+        ): Boolean {
+            writes += "answer ${question.id} $answer"
+            if (!answerRefused) penQuestions.value -= question
+            return !answerRefused
+        }
+    }
+
+    @Test fun `the pen question card answers the oldest question, and one that changed since says so`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+
+            fun q(id: String) =
+                app.mauri.sukrara.core.model.PenQuestionInfo(
+                    id,
+                    "AB12",
+                    same = false,
+                    keys = listOf("k-$id"),
+                    doses = listOf(PenDoseInfo("k-$id", 1000, 1.5, primed = false, incomplete = false)),
+                    units = 1.5,
+                    t = 1000,
+                )
+            deps.penQuestions.value = listOf(q("a"), q("b"))
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.penQuestions.collect {} }
+            runCurrent()
+            assertEquals(listOf("a", "b"), vm.penQuestions.value.map { it.id })
+            vm.answerPen(q("a"), app.mauri.sukrara.core.model.PenAnswer.Suggested)
+            runCurrent()
+            assertEquals(listOf("b"), vm.penQuestions.value.map { it.id })
+            assertNull(vm.penNotice.value)
+            deps.answerRefused = true
+            vm.answerPen(
+                q("b"),
+                app.mauri.sukrara.core.model.PenAnswer
+                    .Same(null),
+            )
+            runCurrent()
+            assertEquals(PenNotice(PenNotice.Kind.ChangedSince), vm.penNotice.value)
+            assertEquals(listOf("answer a Suggested", "answer b Same(entry=null)"), deps.writes)
+        }
+
+    @Test fun `injected hint shows after carbs without rapid insulin near them, for an hour`() {
+        val now = Samples.NOW
+        val carbs = Samples.treatment(id = "c", minutesAgo = 10).copy(kind = app.mauri.sukrara.core.model.TreatmentKind.Carbs)
+        assertTrue(PenHints.carbsWithoutInsulin(listOf(carbs), now))
+        // rapid insulin 20 min before the carbs: nothing to hint
+        val rapid = Samples.treatment(id = "r", minutesAgo = 30)
+        assertTrue(!PenHints.carbsWithoutInsulin(listOf(carbs, rapid), now))
+        // carbs more than an hour ago: the hint is gone
+        assertTrue(!PenHints.carbsWithoutInsulin(listOf(carbs.copy(at = now.minusSeconds(3700))), now))
     }
 
     private fun penEntry(t: Treatment) =
@@ -249,6 +321,25 @@ class HomeViewModelTest {
             vm.acknowledge(problem)
             runCurrent()
             assertNull(vm.state.value.banner)
+        }
+
+    /** #75: a writer's entry says *Sending…*, then *Not sent* with *Retry*; Retry sends it again. */
+    @Test fun `entries on their way show their delivery and Retry sends again`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val sending = Samples.treatment("s")
+            val failed = Samples.treatment("f", minutesAgo = 10)
+            deps.treatments.upsertIfNewer(TreatmentRecord(sending, delivery = TreatmentDelivery.Pending))
+            deps.treatments.upsertIfNewer(TreatmentRecord(failed, delivery = TreatmentDelivery.Failed))
+            deps.treatments.upsertIfNewer(TreatmentRecord(Samples.treatment("d", minutesAgo = 20), delivery = TreatmentDelivery.Delivered))
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            assertEquals(mapOf("s" to TreatmentDelivery.Pending, "f" to TreatmentDelivery.Failed), vm.state.value.delivery)
+            vm.retry(failed)
+            runCurrent()
+            assertEquals(listOf("retry f"), deps.writes)
+            assertEquals(mapOf("s" to TreatmentDelivery.Pending, "f" to TreatmentDelivery.Pending), vm.state.value.delivery)
         }
 
     @Test fun `delete and undo go through the treatment log, a refused delete offers no undo`() =

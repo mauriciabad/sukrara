@@ -81,6 +81,28 @@ object TreatmentForm {
         }
     }
 
+    /**
+     * The one entry an edit of a [kind] entry saves (the kind never changes: contracts/treatments SPEC §1): its amount
+     * from [amount] and [note] as its text; a note needs text. Null = the amount is invalid; empty = nothing to save.
+     */
+    fun edited(
+        kind: TreatmentKind,
+        amount: String,
+        note: String,
+    ): List<NewEntry>? {
+        val text = clip(note.trim(), NOTE_BYTES)
+        if (kind == TreatmentKind.Note) return if (text.isEmpty()) emptyList() else listOf(NewEntry(kind, 0.0, text))
+        return when (val a = parse(amount, grams = kind == TreatmentKind.Carbs)) {
+            Amount.Empty -> emptyList()
+            Amount.Invalid -> null
+            is Amount.Valid -> listOf(NewEntry(kind, a.value, text))
+        }
+    }
+
+    /** An amount as the edit field starts with it: `4.5`, `12`, `30` (no unit, the field has it). */
+    fun amountText(amount: Double): String =
+        if (amount % 1.0 == 0.0) "${amount.toLong()}" else String.format(java.util.Locale.ROOT, "%.1f", amount)
+
     /** [text] cut to at most [maxBytes] UTF-8 bytes without splitting a character. */
     fun clip(
         text: String,

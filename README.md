@@ -49,14 +49,17 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account (email and receiver ID, sign in / out; the
   password is never stored) and *Pair new sensor*.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
-  every card: never by colour alone) and a 6 h chart you can scroll and pinch-zoom through the
+  every card: never by colour alone; a live reading says *now*) and a 6 h chart (its words follow a larger system font)
+  you can scroll and pinch-zoom through the
   last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
   beside the value in a ring of its quiet time left (on the widgets and the notification too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
   focused, a mute's pill its ways out), a chip for each other quiet alert, a **Mute alerts** button (30 min … 8 h,
   until you turn it off, custom) that becomes the countdown with *Unmute* / *Change time*, the sensor's end date with *Pair new sensor* in its last day,
   one banner at a time for what needs you (monitoring stopped, alerts may not ring,
-  damaged saved data, finish setup), the last 24 h of treatments with delete + undo, and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
-  there's no value it says why and what to do.
+  damaged saved data, finish setup), the last 24 h of treatments (tap one to edit its amount, time or note, with
+  *Undo*; delete + undo; a follower's entry nothing took yet says *Not sent* with *Retry*), and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
+  there's no value it says why and what to do (Bluetooth off, the sensor used by another app, a scan or a new pairing
+  needed, the phone's clock behind the readings, the sensor warming up or ended…).
 - A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
   freshness steps as the card: from 5 min the number is struck through, from 20 min it's gone. Tap → *Add treatment*.
   Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status
@@ -69,12 +72,14 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
   (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
-  independent of the monitoring service. After a restart, before you first unlock the phone, Sukrara can't read your
+  independent of the monitoring service; it also rings for a sensor (or follow) that never sends a first reading, and
+  keeps real time when the phone's clock is set back. After a restart, before you first unlock the phone, Sukrara can't read your
   sensor (Android keeps its storage locked): it says *Unlock to resume monitoring* on the lock screen and rings as *No
   data* when that alert would have.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
-  ready*, *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
+  ready*, a note on home in a new sensor's first 12 hours (readings can be less accurate: check a surprising one with a
+  meter), *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
   your night until you start a new sensor), and optionally the sensor's end as an event in Sukrara's own calendar or
   one you pick (Settings › Sensor end).
 - **Monitoring** in one foreground service that comes back by itself (boot, update, a 15 min health check); before the
@@ -82,29 +87,35 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Treatments**: a quick dialog for rapid / long insulin, carbs and a note (from the notification, the Quick
   Settings tile *Add treatment*, which also shows your glucose, or home), *now*, a time or *minutes ago*, a line saying which alerts it quiets and for
   how long, and a short countdown when opened on the lock screen (a ring on *Cancel*, also in the *When?* picker, and
-  one spoken *Closes in 10 seconds* with TalkBack).
+  one spoken *Closes in 10 seconds* with TalkBack). After *Save* a snackbar says what was saved, with *Undo*; what the
+  countdown closes on is kept as a draft and offered after the unlock (*Treatment not saved*, *Discard*).
 - **Home-screen widgets** (*Glucose*, *Glucose graph*, *Glucose and graph*) drawn by the same card renderer at the
   widget's real size (*Glucose* down to one cell), with the same card as their picker preview; home offers *Add
-  widget* until a graph widget is placed (or says how to add it by hand when the launcher can't), and a tap opens
-  *Add treatment*.
-- **Settings** for daily use (searchable, accents optional; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
+  widget* until a graph widget is placed (or says how to add it by hand when the launcher can't) and then opens its
+  settings; a tap opens *Add treatment* (a new sensor once yours has ended); they switch to the dark theme with the
+  phone.
+- **Settings** for daily use (every row searchable, accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
   (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with
-  *Copy report*), ranges and the whole graph (lines, time
+  *Copy report*) and the same real test alert to check it gets through Do Not Disturb (also in first-run setup), ranges and the whole graph (lines, time
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
-  now*, the log, your sharing identity), and About with an update check against this repo's releases.
+  now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with an update check
+  against this repo's releases and the [privacy policy](https://sukrara.mauri.app/privacy).
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
-  by your pen?*), with *Undo*; it asks when unsure. Settings › Insulin pens lists your pens: each pen's page (name,
+  by your pen?*), with *Undo*; it asks when unsure, on a card under the glucose card (*Priming or injected?*, *Same
+  injection?* with your typed entries to choose from). Holding the pen while Add treatment is open fills the dose and
+  its time in the dialog (already logged, with *Undo*). Uploads wait until the pen's session is over. Settings › Insulin pens lists your pens: each pen's page (name,
   insulin type, forget), its *Doses read* with per-dose *Priming* / *Injected* corrections (also from the entry's row
   on home, *from the pen*, read only on a follower), the untested NovoPen 6's display check, where this phone's NFC
   antenna is, and what gets in the way (tag intents blocked, NFC off, Juggluco also reading pens) with the way to fix
   it. A read that brings injections older than 3 days (the pen not read for days) logs them and asks you to *Review*
   them, with *Undo this read*.
 - **Sharing core**: your sharing identity, restorable from its recovery code so existing followers keep following;
-  readings and alerts go to approved followers over Nostr relays (protocol v2). *How readings travel* turns sharing over
+  readings, alerts and your sensor (a new one warming up, its end) go to approved followers over Nostr relays
+  (protocol v2), the sensor even before its first reading. *How readings travel* turns sharing over
   the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of
   each one. If another device is publishing as the same identity, Sukrara stops and says so instead of fighting it.
 - **First-run setup** in a calm, fixed order: role (confirmed) → what alerts need → sensor → confirm your alert
@@ -114,15 +125,17 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   that springs in, link to send or copy, works once for 24 h), allow or deny their request after comparing a 4-digit
   code (the dialog shows over any screen, with their picture and the invite they used), see followers with their
   pictures, let one *add entries*, remove them (confirmed; removed ones fold away), **Backup** to your password manager
-  or a recovery code (home says *Not backed up* until then; setup restores from either), and a clear screen when another
-  device is sharing as you.
+  or a recovery code (home says *Not backed up* until then; setup restores from either), **Replace this identity**
+  without reinstalling (restore another one or start fresh, confirmed with the followers who lose your readings named),
+  and a clear screen when another device is sharing as you.
 - **Bluetooth nearby**: followers' phones and Macs in range get your readings straight from your phone, even without
   internet (on by default, *Over Bluetooth nearby*); Settings › Sharing lists the devices connected now and the ones
   paired nearby that are out of range, says when
   Bluetooth is off or the Nearby devices permission is missing, and offers the fix; the live notification says
-  *2 followers · 1 nearby*.
+  *2 followers · 1 nearby* (and *Nightscout API on Wi-Fi* while devices on your home Wi-Fi can read it).
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a
-  picture of it, read on the phone), or find their phone nearby over
+  picture of it, read on the phone), see who is inviting (their name and picture from the invite) and tap *Follow* or
+  *Cancel*, or find their phone nearby over
   Bluetooth while they have *Pair nearby* on (Settings › Sharing; both phones show the same 6-digit code and you each
   confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the 4-digit
   code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
@@ -138,7 +151,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   never doubled), to **Tidepool** (both roles; a follower only after its own
   choice; password used once), an **xDrip+-compatible server** on this phone for **Garmin** watches (off until you
   switch it on; loopback only), a **Nightscout API on this phone** for apps like xDrip+ and GlucoDataHandler (off by
-  default, API secret required; an extra opt-in also serves devices on your home Wi-Fi, with a plain warning),
+  default, API secret required; an extra opt-in also serves devices on your home Wi-Fi with a plain warning and its
+  own Wi-Fi secret you can replace any time),
   **glucose broadcasts** to the apps you allow (AndroidAPS, GlucoDataHandler, xDrip+: the Libre 3 read by this phone
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
   readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.
@@ -155,8 +169,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   card and chart (drawn by the same renderer rules as Android, tested against the same fixtures); scroll, pinch or
   two-finger double tap the chart through the stored 31 days. The card's pill is
   pressable (Eat carbs / Take insulin open Add Treatment; a mute opens its ways out).
-- **Follow** a wearer with an invite link, a QR code image or **nearby** Bluetooth pairing (the Mac and the phone show
-  the same 6-digit code to confirm before anything is followed); readings, alerts and
+- **Follow** a wearer with an invite link (pasted, dropped or opened, `https://sukrara.mauri.app/join#…` or
+  `sukrara:`), a QR code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
+  confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*; readings,
+  alerts and
   treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
   (*How you appear*); the wearer's picture shows in Following and the nearby dialog. A setup window walks Welcome → Follow → Alerts → Notifications → Open at
   login.
@@ -167,7 +183,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Alerts** with sound packs and the same rules and timeline scenarios as Android; mute, change the time, a custom
   length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert.
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
-  7 days by day with the phone's entries, delete your own with undo.
+  7 days by day with the phone's entries, edit or delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
 - **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, update check,
   Quit), Graph (time shown per place, treatments on the graph, lines, ranges, sensor countdown and time left), Rings
@@ -177,9 +193,14 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   a pill that counts down while a treatment quiets the alert; the widgets too.
 - **Desktop widgets** (Glucose, Glucose graph, Glucose + graph) with the same card; they age by themselves (struck
   through at 5 min, the graph dimmed with the reading's time, no value at 20 min) and a tap opens Add treatment.
+- **No value never goes unexplained**: the panel and the widgets say why (not following anyone, waiting for the
+  wearer to allow this Mac, no readings from the wearer's phone since 9:50, Juggluco not found…) and the panel offers
+  the way out (*Follow Someone…*, *Following Settings…*, *Juggluco Settings…*).
 - VoiceOver reads the card as the same sentence as Android's TalkBack (value, trend, range in words, age, the alert
   or mute, the slots, the chart summary) in the menu bar, the panel and the widgets; every card writes the range
   under an out-of-range value (*Low*, *Very high*) and the status item's tooltip says it.
+- English and Spanish (Spain) by the Mac's language: the windows, the panel's lines and every word the card draws
+  (*Come hidratos*, *quedan 45 min*, *Calentando · 40 min*), the same words as Android's.
 - **Read Glucose Aloud** from any app with ⌃⇧⌘G (switch it off in Settings › General), from the menu bar value's
   right-click menu or its VoiceOver action: the same sentence, in VoiceOver's voice when VoiceOver is on.
 
@@ -192,7 +213,12 @@ watch. Upload uses a new device name per install (`Sukrara-…`), so a Nightscou
 
 ## Install
 
-Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases).
+Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases). What Sukrara keeps and what it
+sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
+
+The Google Play build is the same app and key without the root and LSPosed features (the status bar with root, the
+System UI module) and without the update check, and it asks for Android's *Alarms and reminders* permission instead
+of having it from install; the GitHub build has everything ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With
@@ -233,12 +259,12 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 |---|---|
 | Repo rules (run before committing; the git hooks run it after `tools/hooks/install.sh`) | `tools/check/run.sh` |
 | Android: one module's tests | `cd apps/android && ./gradlew :core:alerts:test` |
-| Android: debug APK | `cd apps/android && ./gradlew :app:assembleDebug` |
+| Android: debug APK (GitHub build; `assemblePlayDebug` for the Google Play build) | `cd apps/android && ./gradlew :app:assembleFullDebug` |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
-| Release builds | `tools/release/android-release.sh`, `tools/release/mac-release.sh` |
+| Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh` |
 
 Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: [CHANGELOG.md](CHANGELOG.md). The investigations, one
 report each: `docs/NN-*.md`.

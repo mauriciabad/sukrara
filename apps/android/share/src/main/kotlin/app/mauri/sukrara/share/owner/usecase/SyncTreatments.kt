@@ -114,12 +114,6 @@ object TreatmentWire {
             TreatmentKind.Carbs to "carbs",
             TreatmentKind.Note to "note",
         )
-    private val ORIGINS =
-        mapOf(
-            TreatmentOrigin.Phone to "phone",
-            TreatmentOrigin.Mac to "mac",
-            TreatmentOrigin.Follower to TreatmentCodec.ORIGIN_FOLLOWER,
-        )
 
     fun toPayload(r: TreatmentRecord): TreatmentPayload {
         val t = r.treatment
@@ -132,7 +126,7 @@ object TreatmentWire {
             note = t.note,
             u = t.modifiedAt.toEpochMilli(),
             deleted = t.deleted,
-            origin = ORIGINS.getValue(t.origin),
+            origin = t.origin.wire,
             primed = pen?.get("pr")?.jsonPrimitive?.doubleOrNull,
             pen = pen?.get("pen")?.jsonPrimitive?.contentOrNull,
             penDoses = pen?.get("pd") as? JsonArray,
@@ -148,7 +142,7 @@ object TreatmentWire {
             note = p.note,
             modifiedAt = Instant.ofEpochMilli(p.u),
             deleted = p.deleted,
-            origin = ORIGINS.entries.firstOrNull { it.value == p.origin }?.key ?: TreatmentOrigin.Follower,
+            origin = TreatmentOrigin.entries.firstOrNull { it.wire == p.origin } ?: TreatmentOrigin.Follower,
         )
 
     /**

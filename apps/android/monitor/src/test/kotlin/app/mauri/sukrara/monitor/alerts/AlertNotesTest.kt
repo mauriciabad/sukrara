@@ -50,6 +50,21 @@ class AlertNotesTest {
             )
         }
 
+    /** Low → very low inside one alert: the very low gets its own line; its repeats don't. */
+    @Test fun aLevelChangeInsideOneAlertGetsALine() =
+        runBlocking {
+            val rig = AlertRig()
+            val runtime = rig.runtime()
+            runtime.onState(rig.wearerState(rig.reading(65)))
+            rig.clock.instant = rig.clock.instant + Duration.ofMinutes(1)
+            runtime.onState(rig.wearerState(rig.reading(50)))
+            rig.clock.instant = rig.clock.instant + Duration.ofMinutes(5)
+            runtime.onState(rig.wearerState(rig.reading(50)))
+            val fired = rig.published.lately.filter { it.type == AlertNoteType.Fired }
+            assertEquals(listOf("very_low" to 50, "low" to 65), fired.map { it.kind to it.mgdl })
+            assertEquals(0, rig.published.lately.count { it.type == AlertNoteType.Cleared })
+        }
+
     @Test fun aTimedMuteAllEndingByItselfIsAlertsBackOnOnceAlsoAcrossARestart() =
         runBlocking {
             val rig = AlertRig()

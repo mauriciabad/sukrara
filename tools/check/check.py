@@ -44,14 +44,22 @@ Checks
               drawText / Text with sgv or mgdl, LO / HI literals): it shows the look's text (GlucoseCard.face), so a
               new surface that skips the renderer fails too. Data and event text (CSV, logs, an alert's reading) is
               listed in the registry's value_text_ok with the reason; a single line is marked '// card-ok: <why>'.
-  clock       every clock time goes through Clock with the one 24-hour setting (Android :core:model Clock.kt, Mac
+  clock       every clock time goes through Clock with the one 24-hour setting (Android :core:graph Clock.kt, Mac
               SukraraCore Clock.swift; no own hour24 flag or time formatter elsewhere)
   debug       debug code is compiled out of release builds: Android DebugReceiver / DebugFakes / DebugRelays / Synthetic* in
               src/debug (never named in src/main or src/release, manifests included); Mac debugsend / DebugFakes /
               Synthetic* only inside #if DEBUG or in the snapshot / test targets
+  debug-docs  docs/FEATURES.md, docs/QA.md and docs/DEVELOPMENT.md name only debug commands the code has (#111: they
+              kept `cmd sensorEnd`, `--es stage`, … long after the code dropped them): every `--e<type> <extra>` is one
+              a command in Android src/debug reads, with that type; every command (`debug.NAME`, `NAME --e…`,
+              `NAME …`, `DebugReceiver NAME`, a bare `NAME` in a sentence about debug commands) is one of DebugFakes'
+              actions, and each doc names all of them; every `sukrara-snap <surface>` is one of its surfaces (`-es` =
+              Spanish); every SUKRARA_* switch is read by some code or tool. A line that isn't about these is marked
+              debug-docs-ok. Whole files.
   settings    THE settings schema contracts/settings/settings.json (the user, 2026-10-21: settings must not diverge
               across platforms): generated SettingsSpec.kt/.swift up to date; every entry on both platforms or 'only'
-              with the reason; alert 'path's are fields of contracts/alerts/SPEC.md §3; no stored key written by hand
+              with the reason; alert 'path's are fields of contracts/alerts/SPEC.md §3 and options 'alertKind' its
+              kinds; 'mirrorExcept' only on mirrored '{kind}' rows; no stored key written by hand
               (Android *PreferencesKey("…"), Mac forKey: "…" / @AppStorage("…")): keys come from SettingsSpec.Keys;
               number settings only through the one input pattern (NumberDialog / NumberSettingRow; NumberSpec values
               only from the generated file). Whole tree.
@@ -76,6 +84,13 @@ Checks
               will do (#81: a beta UI library shipped in a release candidate). A listed entry that is stable now, or
               names a version the catalog doesn't have, fails too (take it off the list). android-release.sh prints the
               list for the release notes. Whole file.
+  paths       every file and folder these checks name (Clock, Durations, SettingsSpec, the registries, …) is tracked: a
+              check pointed at a moved file guards nothing (#88: the durations check named a model path that no
+              longer existed). A pending file while tools/check/strict is absent, a failure once it exists. The
+              folders / globs they scan and qa.json's paths match a tracked file. Whole tree.
+  room-schema a committed Room schema (apps/android/*/schemas/<database>/<version>.json) never changes or goes: phones
+              have databases at that version. A schema change bumps the version, exports a new file and adds a
+              migration (DatabaseSchemaTest opens every exported version through the app's builder).
   qa          prints the docs/QA.md sections the change touches
 """
 import fnmatch
@@ -99,7 +114,7 @@ STRICT = "tools/check/strict"
 ANDROID_MAIN = ANDROID + "*/src/main/*"  # fnmatch: '*' crosses '/'
 ANDROID_KT = ANDROID + "*/src/main/kotlin/*.kt"
 MAC_SOURCES = MAC + "Sources/"
-KT_MODEL = ANDROID + "core/model/src/main/kotlin/app/mauri/sukrara/model/"
+KT_MODEL = ANDROID + "core/model/src/main/kotlin/app/mauri/sukrara/core/model/"
 
 
 def git(*args, binary=False, ok=False):
@@ -119,6 +134,39 @@ def match(path, globs):
 
 
 RENAMES = ("-M", "-l0")
+
+
+class Blobs:
+    """File contents through one `git cat-file --batch` process, each blob read once: the whole-tree checks read every
+    app file several times, and a process per read took minutes. Specs are `<rev>:<path>`, `:<path>` the index
+    (GIT_INDEX_FILE included, as the self-tests use)."""
+
+    def __init__(self):
+        self.proc = None
+        self.cache = {}
+
+    def get(self, spec):
+        if spec not in self.cache:
+            if self.proc is None:
+                self.proc = subprocess.Popen(["git", "cat-file", "--batch"], cwd=ROOT, stdin=subprocess.PIPE,
+                                             stdout=subprocess.PIPE)
+            self.proc.stdin.write(spec.encode() + b"\n")
+            self.proc.stdin.flush()
+            line = self.proc.stdout.readline()
+            head = line.split()
+            data = None
+            if line.endswith((b" missing\n", b" ambiguous\n")) or len(head) != 3 or not head[2].isdigit():
+                pass  # no such file at that revision (the spec, which may hold spaces, is echoed back)
+            elif head[1] == b"blob":
+                data = self.proc.stdout.read(int(head[2]))
+                self.proc.stdout.read(1)  # the newline after the contents
+            else:  # a tree / commit: not a file
+                self.proc.stdout.read(int(head[2]) + 1)
+            self.cache[spec] = data
+        return self.cache[spec]
+
+
+BLOBS = Blobs()
 
 
 class Change:
@@ -163,7 +211,11 @@ class Change:
         return [p for p, (s, mode) in self.files.items() if s != "D" and mode.startswith("100")]
 
     def blob(self, path, binary=False):
-        return git("cat-file", "blob", "%s:%s" % (self.rev, path), binary=binary, ok=True)
+        data = BLOBS.get("%s:%s" % (self.rev, path))
+        if binary:
+            return data or b""
+        # as text mode read it: UTF-8 with universal newlines
+        return (data or b"").decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
 
     def size(self, path):
         """Blob size; all changed files' sizes come from one `git cat-file --batch-check` (a tree move has thousands)."""
@@ -360,6 +412,96 @@ def check_debug(ch, rep):
                             "builds (wrap it in #if DEBUG, or move it to the sukrara-snap / test targets)." % (p, n, m.group(1)))
 
 
+# The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).
+DEBUG_DOCS = ("docs/FEATURES.md", "docs/QA.md", "docs/DEVELOPMENT.md")
+SNAP_MAIN = MAC_SOURCES + "sukrara-snap/main.swift"
+# code: DebugFakes' actions (`PREFIX + "SYNTHETIC" to ::synthetic`) and the extras its commands read
+CODE_COMMAND = re.compile(r'\bPREFIX\s*\+\s*"([A-Z][A-Z0-9_]*)"')
+CODE_EXTRA = re.compile(r'\bget(String|Int|Long|Boolean|Float|Double)Extra\(\s*"(\w+)"')
+SNAP_CASE = re.compile(r'^\s*case\s+"([a-z][a-z-]*)"\s*:', re.M)
+EXTRA_TYPE = {"s": "String", "i": "Int", "l": "Long", "z": "Boolean", "f": "Float", "d": "Double"}
+# docs: `am broadcast` extras, the action, a command written as `NAME --e…` / `NAME …` / `DebugReceiver NAME`, a bare
+# `NAME` on a line about debug commands, `sukrara-snap <surface>|…`, SUKRARA_* environment switches
+DOC_EXTRA = re.compile(r"--e([szilfd])\s+([A-Za-z_]\w*)")
+DOC_ACTION = re.compile(r"\bdebug\.([A-Z][A-Z0-9_]*)\b")
+DOC_COMMAND = re.compile(r"`(?:DebugReceiver\s+)?([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)(?=\s+(?:\[?--e[szilfd]\b|…))")
+DOC_BARE = re.compile(r"`([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)`")
+DOC_DEBUG_MARK = re.compile(r"DebugReceiver|DebugFakes|[Dd]ebug commands?\b|[Dd]ebug builds?:")
+# the end of a sentence (outside code spans), a paragraph or a list item
+SENTENCE_END = re.compile(r"`[^`\n]*(?:\n[^`\n]*)?`|\.\s|\n\s*\n|\n\s*- ")
+
+
+def sentence_ends(text):
+    """Where each sentence of a Markdown text ends (scanned from the start, so code spans pair up)."""
+    return [m.start() for m in SENTENCE_END.finditer(text) if not m.group(0).startswith("`")] + [len(text)]
+DOC_SNAP = re.compile(r"\bsukrara-snap\s+([a-z][a-z-]*(?:\|[a-z][a-z-]*)*)")
+DOC_ENV = re.compile(r"\bSUKRARA_[A-Z0-9_]*[A-Z0-9]\b")
+
+
+def check_debug_docs(ch, rep):
+    """debug-docs: see the module doc. The three docs and the code at the change's revision."""
+    files = tree_files(ch)
+    android = "\n".join(ch.blob(p) or "" for p in files
+                        if p.startswith(ANDROID) and "/src/debug/" in p and p.endswith(".kt"))
+    commands = set(CODE_COMMAND.findall(android))
+    extras = {}
+    for kind, name in CODE_EXTRA.findall(android):
+        extras.setdefault(name, set()).add(kind)
+    snap = ch.blob(SNAP_MAIN) or ""
+    surfaces = set(SNAP_CASE.findall(snap))
+    found = git("grep", "-h", "-o", "-I", "-E", *(["--cached"] if not ch.rev else []), "-e", "SUKRARA_[A-Z0-9_]+",
+                *([ch.rev] if ch.rev else []), "--", "apps", "tools", ".github", ok=True)
+    env = set(DOC_ENV.findall(found))
+    if not commands:
+        return rep.add("FAIL", "debug-docs", "can't find DebugFakes' commands (PREFIX + \"NAME\") in %s*/src/debug/." % ANDROID)
+    known = "known: %s" % ", ".join(sorted(commands))
+    for doc in DEBUG_DOCS:
+        text = ch.blob(doc)
+        if not text:
+            continue
+        lines = text.splitlines()
+
+        def at(i):
+            n = text.count("\n", 0, i) + 1
+            return n, "debug-docs-ok" in lines[n - 1]
+
+        def fail(i, what):
+            n, ok = at(i)
+            if not ok:
+                rep.add("FAIL", "debug-docs", "%s:%d %s. Fix the doc to what the code has, or add it to the code first\n"
+                        "(Android app/src/debug DebugFakes, Mac sukrara-snap / LaunchMode); a line that isn't about these\n"
+                        "commands is marked debug-docs-ok." % (doc, n, what))
+        for m in DOC_EXTRA.finditer(text):
+            flag, name = m.groups()
+            if name not in extras:
+                fail(m.start(), "names the debug extra '--e%s %s', which no debug command reads (%s)"
+                     % (flag, name, ", ".join(sorted(extras))))
+            elif EXTRA_TYPE[flag] not in extras[name]:
+                fail(m.start(), "passes '%s' as --e%s, but the code reads it with get%sExtra"
+                     % (name, flag, "/".join(sorted(extras[name]))))
+        named = {(m.start(1), m.group(1)) for rx in (DOC_ACTION, DOC_COMMAND) for m in rx.finditer(text)}
+        ends = sentence_ends(text)
+        for mark in DOC_DEBUG_MARK.finditer(text):
+            end = next(e for e in ends if e > mark.start())
+            named |= {(m.start(1), m.group(1)) for m in DOC_BARE.finditer(text, mark.start(), end)}
+        for i, name in sorted(named):
+            if name not in commands:
+                fail(i, "names the debug command %s, which DebugFakes doesn't have (%s)" % (name, known))
+        missing = commands - {name for _, name in named}
+        if missing:
+            rep.add("FAIL", "debug-docs", "%s doesn't name the debug command(s) %s: each of %s lists every command\n"
+                    "DebugFakes has (FEATURES.md 'Sensor reminders and countdowns', QA.md 'Emulator', DEVELOPMENT.md\n"
+                    "'Debug and test code')." % (doc, ", ".join(sorted(missing)), ", ".join(DEBUG_DOCS)))
+        for m in DOC_SNAP.finditer(text):
+            for s in m.group(1).split("|"):
+                base = s[:-3] if s.endswith("-es") and '"-es"' in snap else s
+                if base not in surfaces:
+                    fail(m.start(), "names sukrara-snap's surface '%s', which it doesn't have (%s)" % (s, ", ".join(sorted(surfaces))))
+        for m in DOC_ENV.finditer(text):
+            if m.group(0) not in env:
+                fail(m.start(), "names the switch %s, which no code or tool reads" % m.group(0))
+
+
 CLEARTEXT = re.compile(r"""["'](?:http|ws)(?:["':])""", re.I)
 NETWORK = re.compile(r"openConnection\(|newWebSocket\(|Request\.Builder\(|\.toURL\(")
 MAC_NETWORK = re.compile(r"URLSession\(|URLSession\.shared|webSocketTask\(")
@@ -379,7 +521,7 @@ def check_cleartext(ch, rep):
     files = set(tree_files(ch))
     for e in clear_ok + net_ok:
         rep.pending(files, e["path"], "cleartext", "allow.json entry")
-    nsc = "apps/android/app/src/main/res/xml/network_security_config.xml"
+    nsc = NSC
     xml = ch.blob(nsc)  # the index when checking staged changes
     if re.search(r'<base-config[^>]*cleartextTrafficPermitted="true"', xml):
         rep.add("FAIL", "cleartext", "%s permits cleartext app-wide. Keep the base config off and allow cleartext\n"
@@ -415,8 +557,10 @@ RENDER_CALL = re.compile(r"\bGlucoseCard\.(draw|image|face)\s*\(")
 
 def tree_files(ch):
     """Every tracked file at the change's revision (the index for --staged)."""
-    out = git("ls-files", "--cached", ok=True) if not ch.rev else git("ls-tree", "-r", "--name-only", ch.rev, ok=True)
-    return out.splitlines()
+    if getattr(ch, "_tree", None) is None:
+        out = git("ls-files", "--cached", ok=True) if not ch.rev else git("ls-tree", "-r", "--name-only", ch.rev, ok=True)
+        ch._tree = out.splitlines()
+    return list(ch._tree)
 
 
 def code_lines(text):
@@ -683,8 +827,9 @@ SWIFT_LITERAL_KEY = re.compile(r"\bforKey:\s*\"|@AppStorage\(\s*\"")
 KT_NUMBER_INPUT = re.compile(r"\b(NumberRange|IntChoiceDialog|NumberChoiceDialog|Slider)\(|KeyboardType\.(Number|Decimal)\b"
                              r"|\blistOf\(\s*-?\d+(?:\.\d+)?\s*[,)]")
 SWIFT_NUMBER_INPUT = re.compile(r"\bStepper\(|TextField\([^)]*\bvalue:|ForEach\(\s*(\d+\s*\.\.[.<]\s*\d|\[\s*-?\d)")
-KT_SETTINGS_SCREENS = ANDROID + "feature/settings/src/main/*"
-SWIFT_SETTINGS_SCREENS = MAC_SOURCES + "SukraraApp/Settings/*"
+# the settings screens: every page of :feature:settings and a placed widget's own settings
+KT_SETTINGS_SCREENS = [ANDROID + "feature/settings/src/main/*", ANDROID + "widgets/src/main/*/WidgetConfigActivity.kt"]
+SWIFT_SETTINGS_SCREENS = MAC_SOURCES + "SukraraApp/Windows/Settings/*"
 
 
 def alert_fields(spec):
@@ -780,6 +925,11 @@ def check_settings(ch, rep):
             rep.add("FAIL", "settings", "setting %s is on both platforms but says 'only' %s." % (sid, only.get("platform")))
         if s.get("mirror") and not s.get("wire"):
             rep.add("FAIL", "settings", "setting %s is mirrored from the wearer but has no 'wire' key." % sid)
+        if "mirrorExcept" in s:
+            bad = [k for k in s["mirrorExcept"] if kinds is not None and k not in kinds]
+            if not s.get("mirror") or "{kind}" not in (s.get("wire") or "") or not s["mirrorExcept"] or bad:
+                rep.add("FAIL", "settings", "setting %s: 'mirrorExcept' lists alert kinds (%s §1) a mirrored '{kind}' row\n"
+                        "doesn't take from the wearer%s." % (sid, ALERT_SPEC, ": not kinds %s" % ", ".join(bad) if bad else ""))
         for p in on:
             for k in s[p]["key"].split(","):
                 if s[p]["store"] != "system" and not KEY_NAME.match(k):
@@ -797,13 +947,17 @@ def check_settings(ch, rep):
     else:
         for f in sorted(fields - paths):
             rep.add("FAIL", "settings", "%s §3 field '%s' has no entry in %s." % (ALERT_SPEC, f, SETTINGS_SCHEMA))
+        listed = (schema.get("options", {}).get("alertKind") or {}).get("values") or []
+        if set(listed) != kinds:
+            rep.add("FAIL", "settings", "%s options 'alertKind' (%s) aren't the alert kinds of %s §3 (%s)."
+                    % (SETTINGS_SCHEMA, ", ".join(listed), ALERT_SPEC, ", ".join(sorted(kinds))))
     for p in tree_files(ch):
         lang = app_code(p)
         if not lang or p in (SETTINGS_KT, SETTINGS_SWIFT):
             continue
         src = ch.blob(p) or ""
         kt = lang == "kt"
-        screen = match(p, [KT_SETTINGS_SCREENS]) and "fun NumberDialog(" not in src if kt else \
+        screen = match(p, KT_SETTINGS_SCREENS) and "fun NumberDialog(" not in src if kt else \
             match(p, [SWIFT_SETTINGS_SCREENS]) and "struct NumberSettingRow" not in src
         for n, l in code_lines(src):
             if re.search(r"\bNumberSpec\(", l) and "class NumberSpec" not in l and "struct NumberSpec" not in l:
@@ -817,6 +971,43 @@ def check_settings(ch, rep):
                 rep.add("FAIL", "settings", "%s:%d a number setting's input outside the one pattern (%s). Use %s with its\n"
                         "SettingsSpec number, or mark a non-number line // settings-ok: <why>."
                         % (p, n, bad.group(0).strip(), "NumberDialog" if kt else "NumberSettingRow"))
+
+
+NSC = ANDROID + "app/src/main/res/xml/network_security_config.xml"
+
+
+def check_paths(ch, rep):
+    """paths: see the module doc. The files these checks read or exempt by name, and the folders / globs they scan."""
+    files = tree_files(ch)
+    present = set(files)
+    named = [CLOCK_KT, CLOCK_SWIFT, DURATIONS_KT, DURATIONS_SWIFT, SETTINGS_SCHEMA, SETTINGS_KT, SETTINGS_SWIFT, ALERT_SPEC,
+             SURFACES, CATALOG, NSC, "docs/FEATURES.md", "contracts/settings/durations.json"]
+    named += sorted(load("allow.json").get("durations_ok", {}))
+    named += sorted(CLOCK_OK)
+    for p in named:
+        rep.pending(present, p, "paths", "named by tools/check/check.py")
+    for glob in (ANDROID_KT, KT_MODEL + "*.kt", MAC_SOURCES + "*.swift", *KT_SETTINGS_SCREENS, SWIFT_SETTINGS_SCREENS,
+                 *SWIFT_FORMATTED, *(d + "*" for d in MAC_DEBUG_TARGETS)):
+        if not any(fnmatch.fnmatchcase(p, glob) for p in files):
+            rep.add("FAIL", "paths", "tools/check/check.py scans '%s', which matches no tracked file: point it at the\n"
+                    "real files (a check that reads nothing passes silently)." % glob)
+    for entry in load("qa.json")["map"]:
+        for glob in entry["paths"]:
+            if not any(fnmatch.fnmatchcase(p, glob) for p in files):
+                rep.add("FAIL", "paths", "tools/check/qa.json '%s' (%s) matches no tracked file: the QA reminder never\n"
+                        "shows for that code. Point it at the real files." % (glob, "; ".join(entry["qa"])))
+
+
+ROOM_SCHEMAS = ANDROID + "*/schemas/*/*.json"
+
+
+def check_room_schema(ch, rep):
+    """room-schema: see the module doc."""
+    for p, (st, _) in sorted(ch.files.items()):
+        if match(p, [ROOM_SCHEMAS]) and st in "MDR":
+            rep.add("FAIL", "room-schema", "%s %s: a committed database schema is what phones have. Keep it, bump the\n"
+                    "@Database version, commit the new <version>.json and add the migration (DatabaseSchemaTest)."
+                    % (p, {"M": "changed", "D": "deleted", "R": "moved"}[st]))
 
 
 def check_static(ch, rep):
@@ -1027,8 +1218,11 @@ def main(argv):
         check_features(ch, messages, strict, rep)
     if only in (None, "static"):
         check_static(ch, rep)
+        check_paths(ch, rep)
+        check_room_schema(ch, rep)
         check_parity_globs(ch, rep)
         check_debug(ch, rep)
+        check_debug_docs(ch, rep)
         check_cleartext(ch, rep)
         check_card(ch, rep)
         check_clock(ch, rep)

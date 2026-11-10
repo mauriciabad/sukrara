@@ -16,6 +16,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewPort
@@ -23,6 +25,7 @@ import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInViewModel
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorPort
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorViewModel
 import app.mauri.sukrara.feature.sensor.newsensor.SensorEnv
+import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.libreview.SignInResult
@@ -33,7 +36,9 @@ import app.mauri.sukrara.sensor.source.SensorStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 /**
  * The sensor screens' wiring (DI: `AppGraph` composes it with one line from the [SensorModule]). Implements
@@ -47,6 +52,10 @@ class SensorUiModule(
     private val settings: SettingsRepository,
     private val clock: Clock,
     private val appScope: CoroutineScope,
+    /** The glucose hub's state (the *Sensor ready* page's first reading). */
+    private val glucose: Flow<GlucoseState>,
+    /** THE graph settings every card draws with. */
+    private val graphConfig: Flow<GraphConfig>,
     /** Starts the monitoring service (the app's start path); called in the foreground, right after a tap. */
     private val startMonitoring: suspend () -> Unit,
 ) {
@@ -85,6 +94,8 @@ class SensorUiModule(
 
             override val detail: StateFlow<SensorStatus> get() = sensors.source.detail
             override val sensor: StateFlow<SensorState> get() = sensors.source.sensor
+            override val latest: Flow<Reading?> get() = glucose.map { it.latest }.distinctUntilChanged()
+            override val graphConfig: Flow<GraphConfig> get() = this@SensorUiModule.graphConfig
 
             override fun retryLink() = sensors.source.retry()
 

@@ -13,7 +13,7 @@
     <string name="reason_setup_body">Elige si este móvil lleva el sensor o sigue a alguien que lo lleva.</string>
     <string name="reason_setup_action">Configurar</string>
     <string name="reason_no_sensor_title">Sin monitorizar: aún no hay sensor</string>
-    <string name="reason_no_sensor_body">Empareja un sensor para ver tu glucosa aquí. Ninguna alerta suena hasta que llegue la primera lectura.</string>
+    <string name="reason_no_sensor_body">Empareja un sensor para ver tu glucosa aquí. Ninguna alerta suena hasta que esté emparejado.</string>
     <string name="reason_no_sensor_action">Emparejar sensor</string>
     <string name="reason_no_wearer_title">Sin monitorizar: aún no sigues a nadie</string>
     <string name="reason_no_wearer_body">Abre el enlace de invitación de la persona a la que sigues. Ninguna alerta suena hasta que llegue su primera lectura.</string>
@@ -26,9 +26,21 @@
     <string name="reason_stopped_title">Monitorización detenida</string>
     <string name="reason_stopped_body">Android detuvo Sukrara en segundo plano. Las lecturas y las alertas están en pausa hasta que la reanudes.</string>
     <string name="reason_stopped_action">Reanudar monitorización</string>
+    <string name="reason_taken_over_title">Otra app está usando el sensor</string>
+    <string name="reason_taken_over_body">Otra app (la app oficial o Juggluco) se ha quedado con el sensor y Sukrara no recibe lecturas. Cierra esa app y recupera el sensor escaneándolo con este móvil.</string>
+    <string name="reason_taken_over_action">Recuperar el sensor</string>
+    <string name="reason_scan_title">Vuelve a escanear el sensor</string>
+    <string name="reason_scan_body">Sukrara no puede usar el emparejamiento guardado y no recibe lecturas. Acerca el móvil al sensor para leerlo de nuevo: el sensor sigue funcionando y no se pierde nada.</string>
+    <string name="reason_scan_action">Escanear sensor</string>
+    <string name="reason_pair_again_title">Vuelve a emparejar el sensor</string>
+    <string name="reason_pair_again_body">El sensor rechazó el emparejamiento (un ID o PIN incorrectos) y Sukrara no recibe lecturas. Vuelve a emparejarlo.</string>
+    <string name="reason_pair_again_action">Emparejar de nuevo</string>
     <string name="reason_ended_title">El sensor ha terminado</string>
     <string name="reason_ended_body">Este sensor ha llegado a su fin. Ponte uno nuevo y emparéjalo.</string>
     <string name="reason_ended_action">Emparejar sensor nuevo</string>
+    <string name="reason_clock_title">El reloj del móvil va atrasado</string>
+    <string name="reason_clock_body">Las lecturas llegan %1$s por delante de la hora de este móvil, así que Sukrara no puede mostrarlas y las alertas pueden decir que no hay datos. Pon la fecha y la hora en automático.</string>
+    <string name="reason_clock_action">Ajustes de fecha y hora</string>
     <string name="reason_warmup_title">El sensor se está calentando</string>
     <string name="reason_warmup_body">La primera lectura llega hacia las %1$s. No hace falta hacer nada hasta entonces.</string>
     <string name="reason_revoked_title">Ya no sigues a esta persona</string>
@@ -86,6 +98,8 @@
     <string name="home_no_browser">Ninguna app de este móvil puede abrir el enlace.</string>
     <string name="home_sensor_ends">El sensor termina en %1$s</string>
     <string name="home_sensor_ended">El sensor terminó hace %1$s</string>
+    <!-- Las primeras 12 horas de un sensor nuevo; %1$s = cuándo terminan (hora del día) -->
+    <string name="home_sensor_early">Sensor nuevo: las lecturas pueden ser menos precisas hasta las %1$s. Si una no cuadra con cómo te sientes, compruébala con un glucómetro.</string>
 
     <string name="home_following">Siguiendo a %1$s</string>
     <string name="home_following_unnamed">Siguiendo</string>
@@ -106,6 +120,12 @@
     <string name="home_pen_changed_since">Esta entrada cambió mientras tanto. No se guardó nada.</string>
     <string name="home_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
     <string name="home_treatment_delete">Borrar %1$s de las %2$s</string>
+    <!-- TalkBack: lo que hace tocar una fila de tratamiento -->
+    <string name="home_treatment_edit">editar</string>
+    <string name="home_treatment_sending">Enviando…</string>
+    <string name="home_treatment_not_sent">No enviado</string>
+    <string name="home_treatment_retry">Reintentar</string>
+    <string name="home_treatment_retry_label">Reintentar el envío de %1$s</string>
     <string name="home_treatment_deleted">Tratamiento borrado</string>
     <string name="home_treatment_deleted_clinic">Tratamiento borrado. También se quitará de LibreView.</string>
     <string name="home_treatment_in_clinic">En LibreView</string>
@@ -196,4 +216,6 @@
     <string name="report_goal_met">objetivo cumplido</string>
     <string name="report_goal_missed">objetivo no cumplido</string>
     <string name="report_footer">Datos del sensor durante el %1$s %% del periodo. Rangos y objetivos del consenso internacional.</string>
+    <string name="home_pen_read_ago">Pluma leída hace %1$s</string>
+    <string name="home_pen_hint_carbs">¿Te has inyectado? Acerca la pluma al móvil.</string>
 </resources>

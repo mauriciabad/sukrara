@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.alerts
 
+import app.mauri.sukrara.core.model.SensorTiming
 import kotlinx.serialization.Serializable
 
 /**
@@ -35,20 +36,20 @@ data class Doses(val carbs: List<Long> = emptyList(), val rapid: List<Long> = em
 /**
  * The current sensor's life (epoch s), so no `no_data` alerts while no reading is expected: the sensor has ended or
  * is warming up (SPEC §1 `no_data`). A warm-up counts until [WARMUP_GRACE_S] past its end, or until a reading of this
- * sensor arrives. Same numbers as the Mac's SensorLife (parity: contracts/alerts scenarios `sensor ended|started`).
+ * sensor arrives: the one rule the card's badge uses too ([SensorTiming], contracts/sensor/life.json; parity with the
+ * Mac: contracts/alerts scenarios `sensor ended|started`).
  */
 data class SensorWindow(val startEpoch: Long, val endEpoch: Long, val warmupEndEpoch: Long) {
     fun ended(now: Long): Boolean = now >= endEpoch
 
-    fun warming(latestT: Long?, now: Long): Boolean =
-        now >= startEpoch && now < warmupEndEpoch + WARMUP_GRACE_S && (latestT == null || latestT < startEpoch)
+    fun warming(latestT: Long?, now: Long): Boolean = SensorTiming.warming(startEpoch, warmupEndEpoch, latestT, now)
 
     /** No reading is expected at [now]. */
     fun silent(latestT: Long?, now: Long): Boolean = ended(now) || warming(latestT, now)
 
     companion object {
-        const val WARMUP_GRACE_S = 15 * 60L
-        const val DEFAULT_WARMUP_MIN = 60
+        const val WARMUP_GRACE_S = SensorTiming.WARMUP_GRACE_S
+        const val DEFAULT_WARMUP_MIN = SensorTiming.DEFAULT_WARMUP_MIN
 
         /** A sensor started at [startEpoch] lasting [wearMin] minutes with a [warmupMin] warm-up. */
         fun started(startEpoch: Long, wearMin: Int, warmupMin: Int = DEFAULT_WARMUP_MIN) =

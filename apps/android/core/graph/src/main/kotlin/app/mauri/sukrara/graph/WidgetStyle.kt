@@ -85,3 +85,18 @@ fun notificationCardStyle(
         bands = config.bands,
         unit = config.unit,
     )
+
+/**
+ * The card style of the *Sensor ready* page's first reading (surface `sensor-ready`, drawn as the value part only) from
+ * the App place's settings: the ONE mapping, used by `:feature:sensor` and CardLayoutTest.
+ */
+fun sensorReadyCardStyle(config: GraphConfig): CardStyle =
+    CardStyle(
+        graph = null,
+        rings = config.rings(),
+        last = config.lastPlace,
+        lastElse = config.lastElseRing(),
+        sensorTime = config.sensorTime(GraphPlace.APP),
+        bands = config.bands,
+        unit = config.unit,
+    )

@@ -118,11 +118,11 @@ class ManifestTest {
                 tag,
             ).let { list -> (0 until list.length).map { list.item(it) as Element } }
 
+    private val allowJson by lazy { Json.parseToJsonElement(File("../../../tools/check/allow.json").readText()).jsonObject }
+
     /** tools/check/allow.json's `permissions` / `queries` keys: the one list of what the app may declare, with why. */
     private fun allowed(key: String): Set<String> =
-        Json
-            .parseToJsonElement(File("../../../tools/check/allow.json").readText())
-            .jsonObject
+        allowJson
             .getValue(key)
             .jsonObject.keys
             .toSortedSet()
@@ -134,6 +134,44 @@ class ManifestTest {
         // Bluetooth finds the sensor and phones nearby, never the person's location
         val scan = elements("uses-permission").single { it.attr("name") == "android.permission.BLUETOOTH_SCAN" }
         assertEquals("neverForLocation", scan.attr("usesPermissionFlags"))
+    }
+
+    /** The Google Play build's merged manifest (play flavor, app/src/play): what Play's policies don't allow is gone. */
+    private val play: Element by lazy {
+        DocumentBuilderFactory
+            .newInstance()
+            .apply { isNamespaceAware = true }
+            .newDocumentBuilder()
+            .parse(File(System.getProperty("sukrara.playManifest") ?: error("sukrara.playManifest not set")))
+            .documentElement
+    }
+
+    private fun Element.names(tag: String) =
+        getElementsByTagName(tag).let { l ->
+            (0 until l.length).map {
+                (l.item(it) as Element).attr("name")
+            }
+        }
+
+    @Test
+    fun `the Play build's permissions are allow-json's with play_permissions applied`() {
+        val change = allowJson.getValue("play_permissions").jsonObject
+        val remove = change.getValue("remove").jsonObject.keys
+        val add = change.getValue("add").jsonObject.keys
+        assertEquals((allowed("permissions") - remove + add).toSortedSet(), play.names("uses-permission").toSortedSet())
+        assertTrue("android.permission.USE_EXACT_ALARM" in remove && "android.permission.SCHEDULE_EXACT_ALARM" in add)
+    }
+
+    @Test
+    fun `the Play build has no LSPosed module and no System UI hello`() {
+        val components = listOf("provider", "receiver").flatMap { play.names(it) }
+        assertFalse("io.github.libxposed.service.XposedProvider" in components)
+        assertFalse("app.mauri.sukrara.monitor.systemui.HookHelloReceiver" in components)
+        assertTrue(play.names("permission").none { it.endsWith(".permission.SYSTEMUI_STATE") })
+        // the rest is the same app: the launcher, the monitor, the alert sounds
+        for (c in listOf("app.mauri.sukrara.monitor.MonitoringService", "app.mauri.sukrara.monitor.AlertSoundProvider")) {
+            assertTrue("$c missing from the Play build", c in play.names("service") + components)
+        }
     }
 
     @Test

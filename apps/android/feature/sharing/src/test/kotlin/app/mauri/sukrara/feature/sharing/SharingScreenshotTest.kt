@@ -22,6 +22,12 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
+import app.mauri.sukrara.feature.sharing.backup.FreshUi
+import app.mauri.sukrara.feature.sharing.backup.ReplaceActions
+import app.mauri.sukrara.feature.sharing.backup.ReplaceConfirmDialog
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityScreen
+import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
+import app.mauri.sukrara.feature.sharing.backup.ReplaceUi
 import app.mauri.sukrara.feature.sharing.backup.SaveOutcome
 import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
 import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
@@ -189,7 +195,7 @@ class SharingScreenshotTest {
             "setup-3-permissions" to {
                 SetupContent(
                     ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
-                    a,
+                    a.copy(sendTestAlert = {}),
                 )
             },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
@@ -277,6 +283,17 @@ class SharingScreenshotTest {
                     a,
                 )
             },
+            "setup-join-confirm" to {
+                val invite =
+                    app.mauri.sukrara.protocol.invite.Invite(
+                        PublicKeyHex("ab".repeat(32)),
+                        "t".repeat(22),
+                        1_761_600_000,
+                        emptyList(),
+                        me,
+                    )
+                SetupContent(ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Confirm(invite)), a)
+            },
             "setup-join-scan-why" to { ScanScene(ScanState.Rationale) },
             "setup-join-scan-off" to { ScanScene(ScanState.Denied) },
             "setup-join-scan-no-camera" to { ScanScene(ScanState.NoCamera) },
@@ -312,6 +329,19 @@ class SharingScreenshotTest {
             "profile" to { ProfileScreen(me, ProfileSave.Idle, {}, {}) },
             "profile-failed" to { ProfileScreen(Profile("", null), ProfileSave.Failed, {}, {}) },
             "backup-missing" to { BackupScreen(sharing, { SaveOutcome.Saved }, { null }, {}) },
+            "replace-choose" to { ReplaceIdentityScreen(sharing, ReplaceUi(), ReplaceActions()) },
+            "replace-restore" to { ReplaceIdentityScreen(sharing, ReplaceUi(step = ReplaceStep.Restore), ReplaceActions()) },
+            "replace-confirm" to {
+                ReplaceConfirmDialog(
+                    "Start fresh?",
+                    "Start fresh",
+                    listOf("Dad", "Marta"),
+                    backedUp = false,
+                    onConfirm = {},
+                    onDismiss = {},
+                )
+            },
+            "replace-done-fresh" to { ReplaceIdentityScreen(null, ReplaceUi(fresh = FreshUi.Done), ReplaceActions()) },
             "backup-done" to {
                 BackupScreen(
                     sharing.copy(passwordManagerSavedAt = 1_761_450_000, recoveryExportedAt = 1_761_460_000),

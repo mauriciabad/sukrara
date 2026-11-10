@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -74,6 +75,7 @@ import app.mauri.sukrara.feature.sharing.restore.IdentityStep
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.follower.NearbyOffer
 import androidx.compose.ui.semantics.Role as SemanticsRole
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * The first-run setup (brief 24, binding order): welcome → role → permissions → sensor →
@@ -81,7 +83,8 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
  * shows the same rows as Settings › Review alert thresholds); [onExportHistory] opens the CSV export on everything
- * this phone keeps (the role step's *Export CSV first*); [onDone] goes home.
+ * this phone keeps (the role step's *Export CSV first*); [sendTestAlert] posts Settings' real test alert (the
+ * permissions step's *Send a test alert*; null = no alert is on); [onDone] goes home.
  */
 @Composable
 fun SetupScreen(
@@ -91,6 +94,7 @@ fun SetupScreen(
     onExportHistory: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    sendTestAlert: (() -> Unit)? = null,
 ) {
     LifecycleResumeEffect(viewModel) {
         viewModel.onResume()
@@ -113,7 +117,8 @@ fun SetupScreen(
         return
     }
     BackHandler { viewModel.back(onDone) }
-    SetupContent(u, viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone), modifier)
+    val actions = viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone)
+    SetupContent(u, actions.copy(sendTestAlert = sendTestAlert), modifier)
 }
 
 /**
@@ -133,7 +138,12 @@ data class SetupActions(
     /** *Export CSV first* in the role-change dialog: the CSV export on everything, the dialog stays. */
     val exportHistory: () -> Unit = {},
     val chooseRole: (Role) -> Unit = {},
-    val join: (link: String, name: String) -> Unit = { _, _ -> },
+    /** *Join*: look up the invite ([opened] = a link opened on this phone, looked up by itself). */
+    val lookUp: (link: String, opened: Boolean) -> Unit = { _, _ -> },
+    /** *Follow* on the invite shown, as the typed name. */
+    val join: (name: String) -> Unit = {},
+    /** *Cancel* on the invite shown (nothing was sent). */
+    val cancelInvite: () -> Unit = {},
     val clearJoinError: () -> Unit = {},
     /** *Find phones nearby* on / *Stop looking*. */
     val findNearby: (Boolean) -> Unit = {},
@@ -146,6 +156,8 @@ data class SetupActions(
     val completePermissions: () -> Unit = {},
     val fix: (AlertRequirement) -> Unit = {},
     val answerUnlocked: (UnlockedSound) -> Unit = {},
+    /** The real test alert ([SetupScreen]'s `sendTestAlert`); null = no alert is on, nothing to test. */
+    val sendTestAlert: (() -> Unit)? = null,
     val openSensorSetup: () -> Unit = {},
     val completeSensor: () -> Unit = {},
     val thresholdRows: ThresholdRows = { _, _ -> },
@@ -175,7 +187,9 @@ private fun SetupViewModel.actions(
             cancelRole = ::cancelRole,
             exportHistory = onExportHistory,
             chooseRole = ::chooseRole,
+            lookUp = ::lookUp,
             join = ::join,
+            cancelInvite = ::cancelInvite,
             clearJoinError = ::clearJoinError,
             findNearby = ::findNearby,
             joinNearby = ::joinNearby,
@@ -445,7 +459,7 @@ private fun ColumnScope.PermissionsStep(
     StepHeader(stringResource(R.string.sh_setup_permissions_title), stringResource(R.string.sh_setup_permissions_body))
     // runtime permissions are asked in context, the first time; after a "don't ask again" the settings page opens
     val asked = remember { mutableStateOf(setOf<AlertRequirement>()) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower) }
     for (r in items) {
         val ok = r !in u.readiness.missing
@@ -457,15 +471,16 @@ private fun ColumnScope.PermissionsStep(
             continue
         }
         ChecklistRow(r, ok, onFix = {
-            val permission = runtimePermission(r)
-            if (permission != null && r !in asked.value) {
+            val permissions = runtimePermissions(r)
+            if (permissions != null && r !in asked.value) {
                 asked.value += r
-                launcher.launch(permission)
+                launcher.launch(permissions)
             } else {
                 actions.fix(r)
             }
         })
     }
+    actions.sendTestAlert?.let { TestAlertCard(it) }
     val allOk = items.none { it in u.readiness.missing }
     StepButtons(
         stringResource(if (allOk) R.string.sh_setup_continue else R.string.sh_setup_permissions_continue_anyway),
@@ -508,11 +523,57 @@ private fun ChecklistRow(
     }
 }
 
-/** The runtime permission the system dialog can grant for [r] (asked in context the first time), or null. */
-private fun runtimePermission(r: AlertRequirement): String? =
+/**
+ * *Send a test alert*: the real alert notification, marked as a test (Settings' own, nothing else changes), so the
+ * person hears now that it gets through, also with Do Not Disturb on. After a tap it says where to look (TalkBack hears
+ * it: a polite live region); it can be sent again.
+ */
+@Composable
+private fun TestAlertCard(send: () -> Unit) {
+    val haptics = rememberHaptics()
+    val reduced = LocalReducedMotion.current
+    var sent by rememberSaveable { mutableStateOf(false) }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painterResource(DsR.drawable.ds_ic_science),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(stringResource(R.string.sh_setup_test_title), style = MaterialTheme.typography.titleSmall)
+                AnimatedContent(sent, transitionSpec = { Motion.fadeThrough(reduced) }, label = "test-alert") { done ->
+                    Text(
+                        stringResource(if (done) R.string.sh_setup_test_sent else R.string.sh_setup_test_body),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            }
+            OutlinedButton(
+                onClick = {
+                    haptics.confirm()
+                    send()
+                    sent = true
+                },
+                modifier = Modifier.heightIn(min = 48.dp).testTag("setup-test-alert"),
+            ) { Text(stringResource(R.string.sh_setup_test_send)) }
+        }
+    }
+}
+
+/**
+ * The runtime permissions the system dialog can grant for [r] (asked in context the first time), or null. Nearby devices
+ * is connecting and scanning: one dialog for both, as the new-sensor flow asks (the checklist checks both).
+ */
+private fun runtimePermissions(r: AlertRequirement): Array<String>? =
     when (r) {
-        AlertRequirement.Notifications -> android.Manifest.permission.POST_NOTIFICATIONS
-        AlertRequirement.Bluetooth -> android.Manifest.permission.BLUETOOTH_CONNECT
+        AlertRequirement.Notifications -> arrayOf(android.Manifest.permission.POST_NOTIFICATIONS)
+        AlertRequirement.Bluetooth -> arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_SCAN)
         else -> null
     }
 

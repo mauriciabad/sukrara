@@ -208,7 +208,9 @@ fun AlertKindContent(
                     SettingsSpec.OPTIONS.getValue("soundPack").map {
                         Choice<String?>(packName(it), it, trailing = soundPreview(kind, it, alarm, playback))
                     }
-            ChoiceDialog(stringResource(R.string.st_sound), options, ui.settings.sounds.perKind[kind], { dialog = null }) {
+            // a sound chosen in the channel's Android settings plays whatever the pack: every ▶ sounds the same, say why
+            val android = stringResource(R.string.st_sound_chosen_in_android).takeIf { playback.soundChosenInAndroid(kind, alarm) }
+            ChoiceDialog(stringResource(R.string.st_sound), options, ui.settings.sounds.perKind[kind], { dialog = null }, android) {
                 actions.edit(AlertEdits.sound(kind, it))
             }
         }
@@ -230,7 +232,6 @@ private fun TryOutGroup(
     val rule = settings.rule(kind)
     val pack = settings.sounds.soundOf(kind)
     var vibrate by rememberSaveable { mutableStateOf(true) }
-    var sent by rememberSaveable { mutableStateOf(false) }
     DisposableEffect(playback) { onDispose { playback.stop() } }
     val volume = stringResource(if (rule.alarm) R.string.st_volume_alarm else R.string.st_volume_notification)
     SettingsGroup(title = stringResource(R.string.st_try_title)) {
@@ -243,15 +244,12 @@ private fun TryOutGroup(
             enabled = pack != "none" || vibrate,
         )
         SwitchRow(stringResource(R.string.st_play_vibrate), vibrate, { vibrate = it }, icon = DsR.drawable.ds_ic_vibration)
-        ValueRow(
-            stringResource(R.string.st_send_test),
-            stringResource(if (sent) R.string.st_send_test_sent else R.string.st_send_test_summary),
-            {
-                playback.sendTest(kind, settings)
-                sent = true
-            },
-            icon = DsR.drawable.ds_ic_science,
-            enabled = settings.on,
+        TestAlertRow(
+            settings,
+            playback,
+            kind.takeIf { settings.on },
+            summary = stringResource(R.string.st_send_test_summary),
+            disabledSummary = stringResource(R.string.st_send_test_alerts_off),
         )
         playback.channelId(kind, rule.alarm)?.let { channel ->
             NavigationRow(

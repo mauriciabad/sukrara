@@ -61,6 +61,7 @@ enum class SaveOutcome { Saved, Cancelled, Failed, NoIdentity }
  * Backup: the sharing identity somewhere besides this phone, so a new phone keeps the followers. Save to the password
  * manager (recommended; the system's sheet asks first), a recovery code for people who keep their own copy, and
  * whether the relays hold the encrypted follower list. Leaving needs nothing: an unsaved code is simply not a backup.
+ * Last, *Replace this identity* ([onReplace]): restore another one or start fresh without reinstalling.
  */
 @Composable
 fun BackupScreen(
@@ -69,6 +70,7 @@ fun BackupScreen(
     recoveryCode: suspend (password: String) -> String?,
     onRecoveryKeep: () -> Unit,
     modifier: Modifier = Modifier,
+    onReplace: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
@@ -138,6 +140,13 @@ fun BackupScreen(
             }
         }
         FooterText(stringResource(R.string.sh_backup_footer))
+        SettingsGroup {
+            NavigationRow(
+                title = stringResource(R.string.sh_replace_title),
+                summary = stringResource(R.string.sh_replace_summary),
+                onClick = onReplace,
+            )
+        }
     }
     if (showRecovery) {
         RecoveryDialog(recoveryCode, onKeep = onRecoveryKeep, onClose = { showRecovery = false })

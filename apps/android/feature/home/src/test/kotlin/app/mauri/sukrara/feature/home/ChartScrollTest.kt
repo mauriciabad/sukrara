@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home
 
+import androidx.compose.runtime.saveable.SaverScope
 import app.mauri.sukrara.graph.ChartView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -70,6 +71,41 @@ class ChartScrollTest {
         s.set(now.toDouble(), default.toDouble(), default, now)
         assertFalse(s.away)
         assertEquals(default, s.span(default))
+    }
+
+    @Test fun canZoomOnlyWhileAStepChangesTheWindow() {
+        val s = ChartScroll()
+        assertTrue(s.canZoom(out = true, default, first, now))
+        assertTrue(s.canZoom(out = false, default, first, now))
+        s.zoom(100.0, 1.0, default, first, now)
+        assertFalse(s.canZoom(out = false, default, first, now))
+        assertTrue(s.canZoom(out = true, default, first, now))
+        // a history as long as the place's window: nothing to zoom out to
+        assertFalse(ChartScroll().canZoom(out = true, default, now - default, now))
+    }
+
+    private fun ChartScroll.restored(keep: Boolean): ChartScroll {
+        val saver = ChartScroll.saver { keep }
+        return saver.restore(with(saver) { SaverScope { true }.save(this@restored) }!!)!!
+    }
+
+    @Test fun aRotationKeepsTheExactWindow() {
+        val s = ChartScroll()
+        s.by(-3600.5, first + default, now)
+        s.zoom(2.0, 0.5, default, first, now)
+        val back = s.restored(keep = true)
+        assertEquals(s.endS, back.endS)
+        assertEquals(s.spanS, back.spanS)
+        // the exact (sub-second) end carries on: the same step lands on the same second
+        assertEquals(s.by(-0.5, first + default, now), back.by(-0.5, first + default, now), 0.0)
+        assertEquals(s.endS, back.endS)
+        // following now and not zoomed stays so
+        assertFalse(ChartScroll().restored(keep = true).away)
+    }
+
+    @Test fun leavingHomeOpensAtNow() {
+        val s = ChartScroll(endS = now - day, spanS = 7 * day)
+        assertFalse(s.restored(keep = false).away)
     }
 
     @Test fun limits() {

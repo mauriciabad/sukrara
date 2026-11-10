@@ -15,20 +15,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.Category
 import app.mauri.sukrara.designsystem.rows.CategoryIcon
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
+import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.OtherPage
+import app.mauri.sukrara.feature.settings.search.RecentSearch
 import app.mauri.sukrara.feature.settings.search.SettingsSearchBar
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -50,6 +55,8 @@ class OverviewActions(
     val restoreClosedTips: () -> Unit = {},
     /** Settings › Insulin pens is offered (the wearer's phone with NFC). */
     val pens: Boolean = false,
+    /** What this build has: both in the GitHub build, neither in the Google Play build (search shows only those rows). */
+    val build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     /** The sharing profile (name and picture followers see). */
     val openProfile: () -> Unit = {},
     /** Backup of the sharing identity (password manager, recovery code). */
@@ -72,6 +79,9 @@ fun SettingsOverviewContent(
     sharing: OverviewSharing = OverviewSharing(),
     /** A follower's *Settings from* (null on the wearer's phone: no row). */
     settingsFrom: SettingsFromState? = null,
+    /** The search's recent queries; [searchQuery] = what the field starts with (the gallery's search states). */
+    recent: RecentSearch = RecentSearch(),
+    searchQuery: String = "",
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -95,6 +105,10 @@ fun SettingsOverviewContent(
                 }
             },
             pens = actions.pens,
+            wearer = sharing.wearer,
+            build = actions.build,
+            recent = recent,
+            initialQuery = searchQuery,
             onActiveChange = { searching = it },
         )
         // while searching, the results replace the rows
@@ -138,11 +152,13 @@ fun SettingsOverviewContent(
         )
         if (sharing.wearer) {
             SettingsGroup {
+                val name = sharing.name?.takeIf { it.isNotBlank() }
                 NavigationRow(
-                    sharing.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.st_profile_add_name),
+                    name ?: stringResource(R.string.st_profile_add_name),
                     actions.openProfile,
                     summary = stringResource(R.string.st_profile_summary),
-                    leading = { CategoryIcon(DsR.drawable.ds_ic_account_circle, Category.Grey) },
+                    // the picture followers see (the grey initial until one is chosen), decorative: the name says who
+                    leading = { AvatarImage(sharing.avatar, name.orEmpty(), size = 40.dp) },
                 )
             }
         }
@@ -275,13 +291,25 @@ fun SettingsOverviewContent(
                     actions.openBackup,
                     summary =
                         stringResource(
-                            when (sharing.backedUp) {
-                                true -> R.string.st_backup_saved
-                                false -> R.string.st_backup_not_saved
-                                null -> R.string.st_backup_no_identity
+                            when (sharing.backup) {
+                                BackupState.Saved -> R.string.st_backup_saved
+                                BackupState.NotSaved -> R.string.st_backup_not_saved
+                                BackupState.NoIdentity -> R.string.st_backup_no_identity
+                                BackupState.Unreadable -> R.string.st_backup_unreadable
+                                BackupState.Paused -> R.string.st_backup_paused
                             },
                         ),
-                    leading = { CategoryIcon(DsR.drawable.ds_ic_backup, if (sharing.backedUp == false) Category.Red else Category.Green) },
+                    leading = {
+                        val needsYou = sharing.backup == BackupState.NotSaved || sharing.backup == BackupState.Unreadable
+                        CategoryIcon(
+                            DsR.drawable.ds_ic_backup,
+                            when {
+                                needsYou -> Category.Red
+                                sharing.backup == BackupState.Paused -> Category.Orange
+                                else -> Category.Green
+                            },
+                        )
+                    },
                 )
             }
             NavigationRow(
@@ -293,7 +321,8 @@ fun SettingsOverviewContent(
         }
         SettingsGroup {
             if (closedTips > 0) {
-                NavigationRow(
+                // brings the tips back here and on home (nothing opens): an action, confirmed by the haptic and the snackbar
+                ActionRow(
                     stringResource(R.string.st_show_closed_tips),
                     {
                         haptics.confirm()

@@ -5,6 +5,9 @@ package app.mauri.sukrara.monitor.alerts
 
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * The settings a follower's alerts run with: [mirrored] = the values *Settings from* chooses for the mirrored rows (the
@@ -27,4 +30,12 @@ object AlertMirror {
             source = own.source,
         )
     }
+
+    /**
+     * The rules this phone's alerts run with: [own] with the [mirrored] rows over it ([effective]; [mirrored] is null on
+     * the wearer's phone and for Custom). What the alert checklist judges, so a follower mirroring the wearer is asked
+     * about the channels and alarms of the wearer's rules, not of the ones it stores.
+     */
+    fun inUse(own: Flow<AlertSettings>, mirrored: Flow<AlertSettings?>): Flow<AlertSettings> =
+        combine(own, mirrored, ::effective).distinctUntilChanged()
 }

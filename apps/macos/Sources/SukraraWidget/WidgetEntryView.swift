@@ -34,7 +34,13 @@ struct WidgetEntryView: View {
 
     var body: some View {
         Group {
-            if let snapshot = entry.snapshot, let data = entry.data {
+            if let snapshot = entry.snapshot, let data = entry.data, let reason = snapshot.reason,
+                GlucoseCard.face(data, unit: snapshot.unit, surface: kind.surface).state == .none
+            {
+                // nothing to draw yet: why, and where to go, instead of a bare "No readings yet" (#72)
+                why(reason)
+                    .widgetURL(URL(string: SukraraIDs.Link.panel))
+            } else if let snapshot = entry.snapshot, let data = entry.data {
                 card(snapshot, data)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(
@@ -67,6 +73,30 @@ struct WidgetEntryView: View {
         }
         // the renderer's tinted palette already maps the card to luminance: no accent split on top
         .widgetAccentable(false)
+    }
+
+    /// The app has no value and says why (`NoDataReason`): the "no readings" symbol, the reason and where to go; a click
+    /// opens the panel, which has the reason's action. VoiceOver reads it as one sentence.
+    private func why(_ reason: NoDataReason) -> some View {
+        let words = WidgetWords.current
+        let (title, next) = words.reason(reason)
+        return VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: GlucoseCard.noReadingsSymbol)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.headline)
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+            Text(next)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: "\(words.noData) \(title). \(next)."))
     }
 
     /// No snapshot (the app isn't running or set up, or wrote another format): no number at all, and where to go.

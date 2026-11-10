@@ -26,7 +26,7 @@ private let now = GraphFixtures.now
         let face = Freshness.look(sgv: sgv, t: now - (c.number("age") ?? 60), rate: 0, now: now)
         let got = RangeState.shown(face, sgv: sgv, bands: bands, pill: pill)
         #expect(got?.rawValue == c.expect.string("range"))
-        if let got { #expect(got.words == c.expect.string("text")) }
+        if let got { #expect(CardWords.en.rangeWord(got) == c.expect.string("text")) }
     }
 }
 

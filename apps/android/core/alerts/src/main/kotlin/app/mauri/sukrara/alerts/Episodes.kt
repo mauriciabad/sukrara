@@ -90,7 +90,8 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
 /**
  * Everything one [AlertEngine] must keep across a process restart: open episodes (so an ongoing alert isn't taken for
  * a new one and rings again: "two sounds at once" after an update), this device's mutes / Remind less, its
- * Mute all, and the last reading (no data counts from it, also from the alarm receiver with the service dead).
+ * Mute all, the last reading and when the reading source started (no data counts from the newer of the two, also
+ * from the alarm receiver with the service dead).
  */
 @Serializable
 data class AlertMemory(
@@ -98,6 +99,8 @@ data class AlertMemory(
     val snoozes: Map<Side, Snooze> = emptyMap(),
     val muteAllUntil: Long = 0,
     val last: AlertReading? = null,
+    val sourceStart: Long = 0,
+    val sourceDelivered: Boolean = false,
 )
 
 /** Which rules a device runs (SPEC §2/§3): the wearer, or a follower with its own rules or mirroring the wearer. */

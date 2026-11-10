@@ -13,6 +13,10 @@
     <string name="sh_setup_continue">Continue</string>
     <!-- Setup: leave this step for later (goes to the Finish setup card) -->
     <string name="sh_setup_later">Later</string>
+    <string name="sh_setup_test_title">Send a test alert</string>
+    <string name="sh_setup_test_body">The real alert, marked as a test. Try it with Do Not Disturb on.</string>
+    <string name="sh_setup_test_sent">Sent: check your notifications. It goes away by itself in 2 min.</string>
+    <string name="sh_setup_test_send">Send</string>
     <!-- Setup: skip this step (goes to the Finish setup card) -->
     <string name="sh_setup_skip">Skip</string>
     <!-- Setup: first button on the welcome screen -->
@@ -149,7 +153,7 @@
     <!-- Start fresh confirmation title -->
     <string name="sh_fresh_confirm_title">Start fresh?</string>
     <!-- Start fresh confirmation text -->
-    <string name="sh_fresh_confirm_text">Your followers (and your Mac) will need a new invite. Your old identity can\'t be brought to this phone later without reinstalling.</string>
+    <string name="sh_fresh_confirm_text">Your followers (and your Mac) will need a new invite. To use your old identity again later, restore it in Settings › Sharing › Backup › Replace this identity.</string>
     <!-- Start fresh confirmation button -->
     <string name="sh_fresh_confirm">Start fresh</string>
     <!-- Identity conflict: title -->
@@ -388,6 +392,34 @@
     <string name="sh_backup_no_identity">There\'s no sharing identity to save yet.</string>
     <!-- Backup footer -->
     <string name="sh_backup_footer">The relays only hold your follower list, encrypted. Without the password manager entry or the recovery code nobody can restore it, not even you.</string>
+    <!-- Backup › Replace this identity (restore another or start fresh over a working one) -->
+    <string name="sh_replace_title">Replace this identity</string>
+    <string name="sh_replace_summary">Restore another identity or start fresh. Every follower needs a new invite.</string>
+    <string name="sh_replace_intro">This phone shares your glucose as one identity. Replacing it ends sharing as this one, for every phone and Mac that follows it.</string>
+    <string name="sh_replace_lose_title">What your followers lose</string>
+    <string name="sh_replace_lose_named">Your glucose stops reaching %1$s right away.</string>
+    <string name="sh_replace_lose_none">No one follows this identity now.</string>
+    <string name="sh_replace_lose_invite">Each one needs a new invite from you to follow you again. Until then their Sukrara warns that no data arrives.</string>
+    <string name="sh_replace_lose_pending">Requests waiting for you and unused invites stop working.</string>
+    <string name="sh_replace_not_backed_up">This identity isn\'t backed up: once replaced, it\'s gone for good.</string>
+    <string name="sh_replace_back_up_first">Back up first</string>
+    <string name="sh_replace_restore">Restore another identity</string>
+    <string name="sh_replace_restore_summary">From its recovery code or your password manager. Its followers move to this phone.</string>
+    <string name="sh_replace_fresh">Start fresh</string>
+    <string name="sh_replace_fresh_summary">A new identity with how you appear now. No one follows it until you invite them.</string>
+    <string name="sh_replace_restore_action">Replace with this identity</string>
+    <string name="sh_replace_back">Back</string>
+    <string name="sh_replace_confirm_title_restore">Replace this identity?</string>
+    <string name="sh_replace_confirm_title_fresh">Start fresh?</string>
+    <string name="sh_replace_confirm_check">I understand they must be invited again</string>
+    <string name="sh_replace_confirm_restore">Replace</string>
+    <string name="sh_replace_fresh_busy">Making the new identity…</string>
+    <string name="sh_replace_fresh_failed">Couldn\'t make the new identity. Nothing changed: try again.</string>
+    <string name="sh_replace_done_restore">Replaced. %1$d followers of the restored identity follow this phone now.</string>
+    <string name="sh_replace_done_fresh">Started fresh. No one follows this phone yet: invite your followers again.</string>
+    <string name="sh_replace_invite">Invite someone</string>
+    <string name="sh_replace_done">Done</string>
+    <string name="sh_restore_err_same">That code is for the identity this phone already shares as. Nothing changed.</string>
     <!-- Recovery dialog text -->
     <string name="sh_recovery_text">Choose a password. The code only works with it; keep both apart.</string>
     <!-- Field -->
@@ -452,6 +484,11 @@
     <string name="sh_join_err_wrong">This invite doesn\'t match its link. Ask for a new link.</string>
     <string name="sh_join_err_already">This phone already follows someone. Stop following first in Settings › Sharing.</string>
     <string name="sh_join_err_store">Couldn\'t save the key on this phone. Try again.</string>
+    <!-- The invite was found: who is inviting, before anything is sent -->
+    <string name="sh_join_confirm_title">Follow %1$s?</string>
+    <string name="sh_join_confirm_body">%1$s invited you to see their glucose. Follow asks %1$s to allow this phone; nothing is shared until they do.</string>
+    <string name="sh_join_confirm_note">This name and picture come from the invite. Follow only if you know who sent you this link.</string>
+    <string name="sh_join_follow">Follow</string>
     <string name="sh_following_title">Following</string>
     <string name="sh_following_waiting">Waiting for %1$s to allow you</string>
     <string name="sh_following_active">You follow %1$s</string>

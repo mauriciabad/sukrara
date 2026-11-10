@@ -22,8 +22,16 @@ data class QuietSide(
     val canRelax: Boolean,
 )
 
-/** What every surface shows about alerts: the quiet sides and Mute all (0 = off, [Rules.NEVER] = until turned off). */
-data class AlertUiState(val quiet: List<QuietSide> = emptyList(), val muteAllUntil: Long = 0) {
+/**
+ * What every surface shows about alerts: the quiet sides, Mute all (0 = off, [Rules.NEVER] = until turned off) and
+ * [lifted]: side → when *Unmute* / *Alert me anyway* lifted its open episode's quiet (the treatments logged up to then
+ * no longer quiet it, [Rules.coveringDose]'s `after`), so the badge and the cards' mute lines drop it at once too.
+ */
+data class AlertUiState(
+    val quiet: List<QuietSide> = emptyList(),
+    val muteAllUntil: Long = 0,
+    val lifted: Map<Side, Long> = emptyMap(),
+) {
     /** Side → muted until (this device's Mute, and Mute all on every side): the badge's [AlertStatus.Paused]. */
     fun paused(): Map<Side, Long> {
         val m = quiet.filter { it.reason == QuietReason.NOTIFICATION }.associate { it.kind.side to it.until }.toMutableMap()
@@ -103,7 +111,13 @@ data class AlertUiState(val quiet: List<QuietSide> = emptyList(), val muteAllUnt
                         sn.relaxMin == 0 && s.canRelax(k),
                     )
             }
-            return AlertUiState(out, allMuted)
+            val lifted =
+                engine
+                    .episodes()
+                    .values
+                    .filter { it.lifted > 0 }
+                    .associate { it.side to it.lifted }
+            return AlertUiState(out, allMuted, lifted)
         }
     }
 }
@@ -111,7 +125,7 @@ data class AlertUiState(val quiet: List<QuietSide> = emptyList(), val muteAllUnt
 /**
  * What the glucose needs from the user now, for the badge under the value (every surface draws the same answer):
  * [None] in range, [Needed] act, [Taken] a treatment's window covers it, [Paused] muted on this device, [Muted]
- * in range while Mute all is on. Same treatment rules as [AlertEngine].
+ * in range while Mute all is on. Same treatment rules as [AlertEngine] (a quiet lifted by *Alert me anyway* is gone).
  */
 sealed interface AlertStatus {
     data object None : AlertStatus
@@ -129,7 +143,7 @@ sealed interface AlertStatus {
             val all = ui.muteAllUntil.takeIf { it > now } ?: 0
             val k = Rules.levelOf(r, s, now) ?: return if (all > 0 && s.on) Muted(all) else None
             val by = s.mutedBy(k)
-            val dose = Rules.coveringDose(k, s, d, now)
+            val dose = Rules.coveringDose(k, s, d, now, ui.lifted[k.side] ?: 0)
             if (by != null && dose != null) return Taken(k, by, dose, dose + s.quietSeconds(by))
             val until = maxOf(ui.paused()[k.side] ?: 0, all).takeIf { it > now }
             return if (until != null) Paused(k, until) else Needed(k)

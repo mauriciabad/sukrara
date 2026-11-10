@@ -16,6 +16,7 @@ import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.supersedes
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -152,7 +153,7 @@ class InMemoryTreatmentsRepository : TreatmentsRepository {
 
     override suspend fun upsertIfNewer(record: TreatmentRecord): Boolean {
         val stored = records.value[record.treatment.id]
-        if (stored != null && stored.treatment.modifiedAt >= record.treatment.modifiedAt) return false
+        if (stored != null && !record.treatment.supersedes(stored.treatment)) return false
         records.update { it + (record.treatment.id to record) }
         return true
     }

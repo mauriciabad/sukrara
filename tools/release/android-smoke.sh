@@ -9,7 +9,9 @@
 # 2. fresh install: launches, renders its first screen, survives being recreated from saved state, stays alive
 # 3. before setup nothing starts: no notification at all, and no alert also after the clock jumps 3 h ahead (past
 #    every no-data delay)
-# 4. logcat of the app's uid has no crash and no R8 / JNI / JNA / UniFFI / serialization / Room breakage
+# 4. every screen up to two taps from home opens and the app survives it (tools/release/ui-walk.py: R8 can break a
+#    screen the first launch never opens)
+# 5. logcat of the app's uid has no crash and no R8 / JNI / JNA / UniFFI / serialization / Room breakage
 # --final (the release gate at the end): every WARN (a feature not wired yet) is a FAIL.
 # Logs, dumps and screenshots (fresh install, no data) stay in $TMPDIR/sukrara-smoke.<time>/. Exit 0 only when
 # nothing FAILed.
@@ -25,7 +27,7 @@ while [ $# -gt 0 ]; do
     --no-build) build=0 ;;
     --keep-emulator) keep=1 ;;
     --wait) wait_s="${2:?--wait SECONDS}"; shift ;;
-    -h | --help) sed -n '5,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) sed -n '5,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option $1 (--help)" >&2; exit 2 ;;
   esac
   shift
@@ -129,8 +131,8 @@ cleanup() {
 trap cleanup EXIT
 
 # --- 1. build + verify ----------------------------------------------------------------------------------------------
-apk="$root/apps/android/app/build/outputs/apk/release/app-release.apk"
-mapping="$root/apps/android/app/build/outputs/mapping/release/mapping.txt"
+apk="$root/apps/android/app/build/outputs/apk/full/release/app-full-release.apk"
+mapping="$root/apps/android/app/build/outputs/mapping/fullRelease/mapping.txt"
 
 start_emulator   # boots while Gradle works
 
@@ -141,11 +143,11 @@ if [ "$build" = 1 ]; then
   export SUKRARA_KEYSTORE_PASSWORD
   echo "building the release APK (log: $out/build-release.log)"
   # --no-daemon: the password must not live on in a background daemon's environment
-  (cd "$root/apps/android" && ./gradlew --no-daemon :app:assembleRelease --console=plain) > "$out/build-release.log" 2>&1 ||
-    die "assembleRelease failed (tail of $out/build-release.log):
+  (cd "$root/apps/android" && ./gradlew --no-daemon :app:assembleFullRelease --console=plain) > "$out/build-release.log" 2>&1 ||
+    die "assembleFullRelease failed (tail of $out/build-release.log):
 $(tail -25 "$out/build-release.log")"
   unset SUKRARA_KEYSTORE_PASSWORD
-  ok "assembleRelease"
+  ok "assembleFullRelease"
 fi
 "$here/verify-apk.sh" "$apk" "$mapping" || fail=1
 
@@ -201,8 +203,6 @@ if become_root; then
 fi
 [ "$clock_jumped" = 1 ] || warn "couldn't move the emulator clock (adb root?): the 3 h no-alert check didn't run"
 restore_device
-adb logcat -d --uid="$uid" > "$out/logcat.txt"
-adb logcat -d -b crash > "$out/logcat-crash.txt"
 
 [ -n "$(pid_of "$APP")" ] && ok "$APP still running after the window" || bad "$APP died in the window (logcat: $out/logcat.txt)"
 
@@ -228,7 +228,20 @@ channels() { awk -v p="AppSettings: $1 " 'index($0,"AppSettings: "){on=index($0,
 channels "$APP" > "$out/app-channels.txt"
 [ -s "$out/app-channels.txt" ] && ok "$APP channels: $(tr '\n' ' ' < "$out/app-channels.txt")" || warn "$APP has no notification channels yet"
 
-# --- 4. logcat ------------------------------------------------------------------------------------------------------
+# --- 4. the screens -------------------------------------------------------------------------------------------------
+# After the notification checks: a tap may start something (setup's steps), and the walk force-stops the app.
+echo "walking the screens up to two taps from home (log: $out/walk.txt, shots: $out/walk/)"
+if python3 -I "$here/ui-walk.py" --adb "$adb_bin" --serial "$SERIAL" --package "$APP" --out "$out/walk" > "$out/walk.txt" 2>&1; then
+  ok "screen walk: $(tail -1 "$out/walk.txt" | sed 's/^ok   walk: //')"
+else
+  bad "screen walk: $(grep '^FAIL' "$out/walk.txt" | head -3)"
+fi
+walk_warn="$(sed -n 's/^WARN walk: //p' "$out/walk.txt")"
+[ -z "$walk_warn" ] || warn "screen walk: $walk_warn"
+adb logcat -d --uid="$uid" > "$out/logcat.txt"
+adb logcat -d -b crash > "$out/logcat-crash.txt"
+
+# --- 5. logcat ------------------------------------------------------------------------------------------------------
 crash="$(grep -h "FATAL EXCEPTION" "$out/logcat.txt" || true; grep -h "Process: $APP," "$out/logcat-crash.txt" || true)"
 [ -z "$crash" ] && ok "no crash in logcat" || bad "crash in logcat: $(printf '%s' "$crash" | head -3)"
 r8="ClassNotFoundException|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|UnsatisfiedLinkError|AbstractMethodError"

@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -51,14 +52,30 @@ class HomeA11yTest {
     private var glucose by mutableStateOf(Samples.wearer())
     private var now by mutableStateOf(NOW)
 
+    private val restoration = StateRestorationTester(compose)
+
+    /** Whether the next save is a configuration change (a rotation) rather than leaving home. */
+    private var rotating = true
+
     private fun showCard() {
-        compose.setContent {
+        restoration.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 // a day of history: the default window can go back
                 val history = glucose.recent.map { it.copy(t = it.t.minus(Duration.ofHours(12))) } + glucose.recent
-                PanelCard(glucose, history, emptyList(), now, GraphConfig())
+                PanelCard(glucose, history, emptyList(), now, GraphConfig(), scroll = rememberChartScroll { rotating })
             }
         }
+        draw()
+    }
+
+    private fun act(label: String) {
+        val action =
+            compose
+                .onNodeWithTag("home-card")
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+                .first { it.label == label }
+        compose.runOnIdle { action.action() }
         draw()
     }
 
@@ -126,15 +143,41 @@ class HomeA11yTest {
     @Test fun `the history without the drag - earlier, later, zoom and back to now`() {
         showCard()
         assertEquals(listOf("Show earlier", "Zoom out", "Zoom in"), actions())
-        val earlier =
-            compose
-                .onNodeWithTag("home-card")
-                .fetchSemanticsNode()
-                .config[SemanticsActions.CustomActions]
-                .first { it.label == "Show earlier" }
-        compose.runOnIdle { earlier.action() }
-        draw()
+        act("Show earlier")
         assertEquals(listOf("Show earlier", "Show later", "Zoom out", "Zoom in", "Back to now"), actions())
+    }
+
+    /** #126: an action that would change nothing isn't offered (the history is a day, 2 h is the shortest window). */
+    @Test fun `earlier and zoom are offered only while they change the window`() {
+        showCard()
+        // 12 h → the whole day: nothing older to show, no longer window
+        act("Zoom out")
+        assertEquals(listOf("Zoom in", "Back to now"), actions())
+        // 24 h → 12 h → 6 h → 3 h → 2 h: the shortest
+        repeat(3) { act("Zoom in") }
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Back to now"), actions())
+        act("Zoom in")
+        assertEquals(listOf("Show earlier", "Zoom out", "Back to now"), actions())
+    }
+
+    /** #126: rotating (the activity recreated) keeps the window the person scrolled and zoomed to. */
+    @Test fun `the scrolled window survives a rotation`() {
+        showCard()
+        // 6 h back, then zoomed in to the shortest window (12 h → 6 h → 3 h → 2 h): no Zoom in left
+        act("Show earlier")
+        repeat(3) { act("Zoom in") }
+        val before = actions()
+        assertEquals(listOf("Show earlier", "Show later", "Zoom out", "Back to now"), before)
+        restoration.emulateSavedInstanceStateRestore()
+        draw()
+        // still scrolled back (Show later) and still at 2 h (no Zoom in)
+        assertEquals(before, actions())
+
+        // leaving home (not a configuration change): back at now with the place's window
+        rotating = false
+        restoration.emulateSavedInstanceStateRestore()
+        draw()
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in"), actions())
     }
 
     @Test fun `turning Remove animations on applies at once`() {

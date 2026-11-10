@@ -23,6 +23,7 @@ import app.mauri.sukrara.monitor.alerts.AlertAlarm
 import app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationIds
+import app.mauri.sukrara.monitor.notify.SoundGap
 import app.mauri.sukrara.monitor.sensorend.SensorEndAlarm
 import java.time.Duration
 import java.time.Instant
@@ -72,9 +73,12 @@ class AndroidStoppedNotice(
                 .addAction(Notification.Action.Builder(null, context.getString(R.string.monitor_action_resume), resume).build())
                 .setAutoCancel(true)
                 .build()
-        // at once, not through SoundGap: Android is stopping the service, a waiting post could die with the process
-        runCatching { nm.notify(NotificationIds.MONITORING_STOPPED, notification) }
-            .onFailure { Log.w(TAG, "stopped notice: ${it.javaClass.simpleName}") }
+        // at once, never waiting in SoundGap: Android is stopping the service, a waiting post could die with the process.
+        // Its sound holds back an alert that comes within the second (it waits the rest instead of ringing muted)
+        SoundGap.shared.postNow(NotificationIds.MONITORING_STOPPED, SoundGap.sounds(context, Channels.STATUS)) {
+            runCatching { nm.notify(NotificationIds.MONITORING_STOPPED, notification) }
+                .onFailure { Log.w(TAG, "stopped notice: ${it.javaClass.simpleName}") }
+        }
     }
 
     override fun cancel() = nm.cancel(NotificationIds.MONITORING_STOPPED)

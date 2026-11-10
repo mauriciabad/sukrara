@@ -109,6 +109,7 @@ func fixtureSetHasCases(_ set: String) {
         #expect(l.strike == (e.bool("strike") ?? false))
         #expect(l.trend?.rawValue == e.string("trend"))
         #expect(l.fresh.showTime == (e.bool("time") ?? false))
+        #expect((l.state == .value && l.fresh.saysNow) == (e.bool("now") ?? false))
         #expect(l.fresh.showGraph == (e.bool("graph") ?? false))
     }
 
@@ -135,7 +136,10 @@ func fixtureSetHasCases(_ set: String) {
         case "value":
             #expect(lay.all("value.number").map(\.info) == [(e.string("text") ?? "") + (strike ? " struck" : "")])
             #expect((lay.first("value.trend")?.info == "ring") == (e.string("trend") == "none"))
-            #expect((lay.first("value.time") != nil) == (e.bool("time") ?? false))
+            // the late time, or a fresh value's "now" (beside the arrow or in the pill's row)
+            let time = lay.first("value.time")
+            #expect((time != nil) == (e.bool("time") ?? false || e.bool("now") ?? false))
+            #expect((time?.info.hasPrefix("now") ?? false) == (e.bool("now") ?? false))
         case "no_readings": #expect(lay.first("value.none")?.info == "NO_READINGS")
         case "none": #expect(lay.first("value.none")?.info == "NONE")
         case "ended": #expect(lay.first("value.ended") != nil)
@@ -283,14 +287,15 @@ func fixtureSetHasCases(_ set: String) {
             start: start, end: now + (c.number("end") ?? 0),
             warmupEnd: c.number("warmup").map { now + $0 } ?? start + 3600)
         let e = c.expect
-        let look = try #require(SensorBadge.look(info, now: now, latest: c.number("latest").map { now + $0 }))
+        let look = try #require(
+            SensorBadge.look(info, now: now, latest: c.number("latest").map { now + $0 }, words: .en))
         let ring = SensorBadge.ring(look, info, now: now, hours: Int(c.number("countdownHours") ?? 8))
         #expect(look.label == e.string("label"))
         #expect(look.ended == e.bool("ended"))
         #expect(abs(look.life - (e.number("life") ?? .nan)) <= 0.001)
         #expect(look.warmup == e.string("warmup"))
         if let want = e.number("ring") { #expect(abs((ring ?? .nan) - want) <= 0.001) } else { #expect(ring == nil) }
-        let pill = look.ended ? StatusBadge.replaceSensor : nil
+        let pill = look.ended ? StatusBadge.replaceSensor(.en) : nil
         let wp = e.child("pill")
         #expect(pill?.kind == wp.string("kind") && pill?.text == wp.string("text") && pill?.short == wp.string("short"))
     }
@@ -324,7 +329,7 @@ func fixtureSetHasCases(_ set: String) {
             case "ended": SensorInfo(start: now - 15 * 86400 - 3600, end: now - 3600, warmupEnd: now - 15 * 86400)
             default: nil
             }
-        let look = SensorBadge.look(info, now: now, latest: kind == "warmup" ? nil : latest)
+        let look = SensorBadge.look(info, now: now, latest: kind == "warmup" ? nil : latest, words: .en)
         #expect(GlucoseCard.sensorSpot(st, look, Freshness.of(age: now - latest)).rawValue == c.expect.string("spot"))
         let chart = c.child("chart")
         if let h = chart.number("h") {
@@ -372,7 +377,7 @@ func fixtureSetHasCases(_ set: String) {
     }
 }
 
-/// The treatment amounts of the status fixtures (the status / last-treatment decision itself is the alert engine's).
+/// The treatment amounts of the status fixtures (the status, badge and slot: AppTests `StatusFixtureTests`).
 @Suite struct AmountFixtureTests {
     @Test(arguments: GraphFixtures.cases("status.json"))
     func amounts(_ c: JSON) {
@@ -419,8 +424,10 @@ func fixtureSetHasCases(_ set: String) {
         let chart = c.child("chart")
         let w = CGFloat(chart.number("w") ?? 0), h = CGFloat(chart.number("h") ?? 0)
         let window = (c.number("hours") ?? 12) * 3600
+        // a large system font: the labels and the side columns' widest labels grow, the geometry doesn't
+        let scale = GlucoseGraph.textScale(CGFloat(c.number("fontScale") ?? 1))
         let (left, right) = GlucoseGraph.plotX(
-            0, w, pct: c.bool("pct") ?? true, labels: true, d: 1, pctW: widths.pct, valW: widths.value)
+            0, w, pct: c.bool("pct") ?? true, labels: true, d: 1, pctW: widths.pct * scale, valW: widths.value * scale)
         let from = now - window
         let marks = (c["treatments"] as? [[String: Any]] ?? []).map {
             GraphMark(
@@ -431,10 +438,11 @@ func fixtureSetHasCases(_ set: String) {
         let lay = TreatmentMarks.layout(
             marks, x: { left + CGFloat(($0 - from) / window) * (right - left) }, now: now, minX: 0, maxX: w,
             lanes: lanes,
-            d: 1, show: Self.marksOf(c["marks"]))
+            d: 1, show: Self.marksOf(c["marks"]), words: c.string("locale") == "es" ? .es : .en, textScale: scale)
         let got = lay.labels.sorted { $0.left + $0.w / 2 < $1.left + $1.w / 2 }
         // the width model holds the real text (SF Pro) of every label
-        let bold = Ink.font(TreatmentMarks.labelSize, .bold), medium = Ink.font(TreatmentMarks.labelSize, .medium)
+        let bold = Ink.font(TreatmentMarks.labelSize * scale, .bold)
+        let medium = Ink.font(TreatmentMarks.labelSize * scale, .medium)
         for l in got {
             let real =
                 l.amounts.reduce(0) { $0 + Ink.width($1, bold) }

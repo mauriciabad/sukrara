@@ -5,6 +5,27 @@ package app.mauri.sukrara.core.model
 
 import kotlinx.coroutines.flow.Flow
 
+/** What a pen read into the open Add treatment dialog shows (everything new of the read is logged at once). */
+sealed interface PenFill {
+    /**
+     * The read logged [units] of [kind] (`rapid` / `long`) at [t] (epoch s): its newest injection, [primed] units
+     * primed before it; [also] = the other injections the same read logged.
+     */
+    data class Logged(
+        val kind: String,
+        val units: Double,
+        val primed: Double,
+        val t: Long,
+        val also: Int,
+    ) : PenFill
+
+    /** Nothing to fill: the read card's words (*Nothing new*, *Couldn't read the pen*, a question's title). */
+    data class Said(
+        val text: String,
+        val error: Boolean,
+    ) : PenFill
+}
+
 /** Whether an untested pen model's display check was done (it logs nothing until [Ok]). */
 enum class PenCheck { None, Ok, Failed }
 
@@ -105,6 +126,52 @@ data class PenEntryInfo(
     val replaced: Pair<Double, Long>?,
 )
 
+/** Where a hand-typed entry came from (the *Same injection?* rows say it). */
+enum class PenTypedBy { Phone, Mac, Follower }
+
+/** A hand-typed entry a pen injection may be (*Same injection?*); epoch s. */
+data class PenCandidate(
+    val id: String,
+    val units: Double,
+    val t: Long,
+    val by: PenTypedBy,
+)
+
+/** An open pen question as home's question card and *Doses read* show it (times epoch s). */
+data class PenQuestionInfo(
+    val id: String,
+    val serial: String,
+    /** *Same injection?* (else *Priming or injected?*). */
+    val same: Boolean,
+    /** Its doses' keys as shown: an answer carries them, so a question that grew since isn't answered. */
+    val keys: List<String>,
+    val doses: List<PenDoseInfo>,
+    /**
+     * What answering logs: *Priming or injected?*'s suggestion (the last dose injected; 0 = nothing to suggest), or
+     * the pen's injection a *Same injection?* asks about, at [t].
+     */
+    val units: Double,
+    val t: Long,
+    /** *Same injection?*: the live typed entries it may be, nearest first. */
+    val candidates: List<PenCandidate> = emptyList(),
+    /** When it was asked (oldest first on home). */
+    val asked: Long = 0,
+)
+
+/** An answer to a pen question (home's card and sheet, *Doses read*, the read card). */
+sealed interface PenAnswer {
+    /** *Log 1.5u*: the suggestion (the last dose injected, the ones before it priming). */
+    data object Suggested : PenAnswer
+
+    /** *All priming*: nothing of it is logged. */
+    data object AllPriming : PenAnswer
+
+    /** *Same injection?*: the typed entry it is ([entry]), or null: different injections (*None of these*). */
+    data class Same(
+        val entry: String?,
+    ) : PenAnswer
+}
+
 /** A hand-typed or pen entry near a pen injection (units, epoch s). */
 data class PenNearEntry(
     val id: String,
@@ -130,6 +197,15 @@ data class PenTaps(
  */
 interface PensPort {
     val pens: Flow<List<PenInfo>>
+
+    /** The open questions, oldest first (home's question card); follows the ledger and the log. */
+    val questions: Flow<List<PenQuestionInfo>>
+
+    /** Answers [question] as it was shown (refused, false, when it changed or was answered since). */
+    suspend fun answer(
+        question: PenQuestionInfo,
+        answer: PenAnswer,
+    ): Boolean
 
     /** The pen's sessions, newest first; follows the ledger and the log. */
     fun sessions(serial: String): Flow<List<PenSessionInfo>>
@@ -187,23 +263,6 @@ interface PensPort {
 
     /** The snackbar's *Undo*: [was] back as it was, only while nothing changed the entry since. */
     suspend fun restore(was: PenEntryInfo): Boolean
-
-    /** The answers a waiting session's question offers; [keys] = its doses as shown (a question that grew isn't answered). */
-    suspend fun acceptSuggestion(
-        question: String,
-        keys: List<String>,
-    ): Boolean
-
-    suspend fun allPriming(
-        question: String,
-        keys: List<String>,
-    ): Boolean
-
-    suspend fun answerMatch(
-        question: String,
-        keys: List<String>,
-        same: Boolean,
-    ): Boolean
 
     /**
      * *Undo this read* (Review of the pen's last big read): its entries back as they were, its doses *Not logged*.

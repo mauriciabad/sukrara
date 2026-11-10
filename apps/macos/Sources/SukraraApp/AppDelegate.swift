@@ -85,7 +85,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             openAddTreatment: { [weak self] focus in self?.fromPanel { $0.openAddTreatment(focus: focus) } },
             openTreatments: { [weak self] in self?.fromPanel { $0.openTreatments() } },
             openReport: { [weak self] in self?.fromPanel { $0.openReport() } },
-            openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } })
+            openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } },
+            openSettingsPane: { [weak self] pane in self?.fromPanel { $0.openSettings(pane: pane) } })
         let statusItem = StatusItemController(model: model, menu: contextMenu, links: links)
         statusItem.onOpen = { [weak self, weak model] in
             self?.refreshNotificationPermission()
@@ -149,14 +150,42 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.lanSnapshot.state == .localNetworkDenied { model.retryLan() }
     }
 
-    public func applicationWillTerminate(_ notification: Notification) {
+    /// How long Quit waits for the follower runtime and Juggluco to stop before it ends the app anyway.
+    static let quitTimeout: Duration = .seconds(2)
+    private var quitting = false
+    private var quitAnswered = false
+
+    /// Quit (menu, logout, restart) waits until the model has stopped what it started (relay sockets closed, the
+    /// runtime's state saved), at most `quitTimeout`, then ends the app.
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !quitting else { return .terminateLater }
+        quitting = true
         network.cancel()
-        model.stop()
+        services.stop()
+        Task { [weak self] in
+            await self?.model.stop()
+            self?.answerQuit()
+        }
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.quitTimeout)
+            self?.answerQuit()
+        }
+        return .terminateLater
     }
 
-    /// `sukrara:` links (Info.plist CFBundleURLTypes): invite links go to the follow step, `sukrara://treatment/new`
-    /// to Add treatment, `sukrara://open` to the panel. A link that launches the app arrives before
-    /// `applicationDidFinishLaunching` made the windows: it waits in `linkInbox` until then.
+    private func answerQuit() {
+        guard !quitAnswered else { return }
+        quitAnswered = true
+        NSApp.reply(toApplicationShouldTerminate: true)
+    }
+
+    public func applicationWillTerminate(_ notification: Notification) { network.cancel() }
+
+    /// `sukrara:` links (Info.plist CFBundleURLTypes) and the web invite `https://sukrara.mauri.app/join#…` (given to
+    /// the app with `open -a Sukrara <link>` or dropped on it): invite links go to the follow step's confirmation,
+    /// `sukrara://treatment/new` to Add treatment, `sukrara://open` to the panel; anything else is ignored
+    /// (`AppLink`). A link that launches the app arrives before `applicationDidFinishLaunching` made the windows: it
+    /// waits in `linkInbox` until then.
     public func application(_ application: NSApplication, open urls: [URL]) {
         for url in linkInbox.receive(urls) { windows?.open(url) }
     }

@@ -12,6 +12,8 @@ plugins {
 }
 
 dependencies {
+    // SensorTiming: the warm-up numbers the card uses too
+    implementation(project(":core:model"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(project(":core:testing"))
     testFixturesImplementation(project(":core:testing"))

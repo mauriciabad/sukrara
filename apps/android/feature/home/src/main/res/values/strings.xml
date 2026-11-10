@@ -15,7 +15,7 @@
     <string name="reason_setup_body">Choose whether this phone wears the sensor or follows someone who does.</string>
     <string name="reason_setup_action">Set up</string>
     <string name="reason_no_sensor_title">Not monitoring: no sensor yet</string>
-    <string name="reason_no_sensor_body">Pair a sensor to see your glucose here. No alerts ring until the first reading arrives.</string>
+    <string name="reason_no_sensor_body">Pair a sensor to see your glucose here. No alerts ring until it is paired.</string>
     <string name="reason_no_sensor_action">Pair sensor</string>
     <string name="reason_no_wearer_title">Not monitoring: not following anyone yet</string>
     <string name="reason_no_wearer_body">Open the invite link from the person you follow. No alerts ring until their first reading arrives.</string>
@@ -28,9 +28,21 @@
     <string name="reason_stopped_title">Monitoring stopped</string>
     <string name="reason_stopped_body">Android stopped Sukrara in the background. Readings and alerts are paused until you resume.</string>
     <string name="reason_stopped_action">Resume monitoring</string>
+    <string name="reason_taken_over_title">Sensor used by another app</string>
+    <string name="reason_taken_over_body">Another app (the official app or Juggluco) took over the sensor, so Sukrara gets no readings. Close that app, then take the sensor back by scanning it with this phone.</string>
+    <string name="reason_taken_over_action">Take over sensor</string>
+    <string name="reason_scan_title">Scan the sensor again</string>
+    <string name="reason_scan_body">Sukrara can\'t use the saved pairing, so it gets no readings. Hold the phone to the sensor to read it again: the sensor keeps running and nothing is lost.</string>
+    <string name="reason_scan_action">Scan sensor</string>
+    <string name="reason_pair_again_title">Pair the sensor again</string>
+    <string name="reason_pair_again_body">The sensor refused the pairing (a wrong ID or PIN), so Sukrara gets no readings. Pair it again.</string>
+    <string name="reason_pair_again_action">Pair sensor again</string>
     <string name="reason_ended_title">Sensor ended</string>
     <string name="reason_ended_body">This sensor has reached its end. Apply a new one and pair it.</string>
     <string name="reason_ended_action">Pair new sensor</string>
+    <string name="reason_clock_title">Phone clock is behind</string>
+    <string name="reason_clock_body">Readings arrive %1$s ahead of this phone\'s time, so Sukrara can\'t show them and alerts may say there is no data. Set the date and time to automatic.</string>
+    <string name="reason_clock_action">Date &amp; time settings</string>
     <string name="reason_warmup_title">Sensor warming up</string>
     <string name="reason_warmup_body">The first reading comes at about %1$s. Nothing to do until then.</string>
     <string name="reason_revoked_title">You no longer follow this person</string>
@@ -90,6 +102,8 @@
     <string name="home_sensor_ends">Sensor ends in %1$s</string>
     <!-- Under the graph once the end time has passed; %1$s = "5 min", "2 h 10 min", "3 days" -->
     <string name="home_sensor_ended">Sensor ended %1$s ago</string>
+    <!-- A new sensor's first 12 hours; %1$s = when they end (time of day) -->
+    <string name="home_sensor_early">New sensor: readings can be less accurate until %1$s. If one doesn\'t match how you feel, check with a meter.</string>
 
     <!-- Follower header -->
     <string name="home_following">Following %1$s</string>
@@ -112,6 +126,12 @@
     <string name="home_pen_changed_since">This entry changed meanwhile. Nothing was saved.</string>
     <string name="home_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
     <string name="home_treatment_delete">Delete %1$s at %2$s</string>
+    <!-- TalkBack: what a tap on a treatment row does -->
+    <string name="home_treatment_edit">edit</string>
+    <string name="home_treatment_sending">Sending…</string>
+    <string name="home_treatment_not_sent">Not sent</string>
+    <string name="home_treatment_retry">Retry</string>
+    <string name="home_treatment_retry_label">Retry sending %1$s</string>
     <string name="home_treatment_deleted">Treatment deleted</string>
     <string name="home_treatment_deleted_clinic">Treatment deleted. It will be removed from LibreView too.</string>
     <string name="home_treatment_in_clinic">In LibreView</string>
@@ -204,4 +224,8 @@
     <string name="report_goal_met">goal met</string>
     <string name="report_goal_missed">goal not met</string>
     <string name="report_footer">Sensor data for %1$s %% of the period. Ranges and goals of the international consensus.</string>
+    <!-- The treatments title: the pen was last read long ago, e.g. Pen read 2d ago; opens the pen [CHAR LIMIT=30] -->
+    <string name="home_pen_read_ago">Pen read %1$s ago</string>
+    <!-- Under the treatments: carbs logged without rapid insulin near them, while a pen is read -->
+    <string name="home_pen_hint_carbs">Injected? Hold your pen to the phone.</string>
 </resources>

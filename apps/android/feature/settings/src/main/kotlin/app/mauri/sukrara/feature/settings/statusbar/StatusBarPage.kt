@@ -42,18 +42,23 @@ data class StatusBarPrefs(
 
 class StatusBarViewModel(
     private val settings: SettingsRepository,
-    private val systemAccess: SystemAccessPort,
+    /** null: this build has no root features (Google Play), so the page has no *With root* section. */
+    private val systemAccess: SystemAccessPort?,
 ) : ViewModel() {
     val root: StateFlow<RootSettings?> =
-        combine(
-            settings.flow(SurfaceSettings.RootValue),
-            settings.flow(SurfaceSettings.RootPosition),
-            settings.flow(SurfaceSettings.RootColor),
-            settings.flow(SurfaceSettings.HideNotificationIcon),
-            ::RootSettings,
-        ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        if (systemAccess == null) {
+            MutableStateFlow(null)
+        } else {
+            combine(
+                settings.flow(SurfaceSettings.RootValue),
+                settings.flow(SurfaceSettings.RootPosition),
+                settings.flow(SurfaceSettings.RootColor),
+                settings.flow(SurfaceSettings.HideNotificationIcon),
+                ::RootSettings,
+            ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        }
 
-    val access: StateFlow<SystemAccessState> get() = systemAccess.state
+    val access: StateFlow<SystemAccessState> = systemAccess?.state ?: MutableStateFlow(SystemAccessState())
 
     /** A root / LSPosed action is running; [problem] = why the last one failed (shown in the banner). */
     val busy = MutableStateFlow(false)
@@ -64,19 +69,19 @@ class StatusBarViewModel(
             setOn = { on ->
                 set(SurfaceSettings.RootValue, on)
                 // turning it on is the moment to ask for root
-                if (on) viewModelScope.launch { runCatching { systemAccess.checkRoot() } }
+                if (on) viewModelScope.launch { runCatching { systemAccess?.checkRoot() } }
             },
             setPosition = { set(SurfaceSettings.RootPosition, it) },
             setColor = { set(SurfaceSettings.RootColor, it) },
             setHideIcon = { set(SurfaceSettings.HideNotificationIcon, it) },
             checkRoot = {
                 run {
-                    systemAccess.checkRoot()
+                    systemAccess?.checkRoot()
                     null
                 }
             },
-            requestScope = { run { systemAccess.requestScope() } },
-            restart = { run { systemAccess.restartSystemUi() } },
+            requestScope = { run { systemAccess?.requestScope() } },
+            restart = { run { systemAccess?.restartSystemUi() } },
         )
 
     /**
@@ -84,10 +89,11 @@ class StatusBarViewModel(
      * prompt; someone who never turned it on isn't asked).
      */
     fun refresh() {
+        val access = systemAccess ?: return
         viewModelScope.launch {
-            if (settings.flow(SurfaceSettings.RootValue).first()) runCatching { systemAccess.checkRoot() }
+            if (settings.flow(SurfaceSettings.RootValue).first()) runCatching { access.checkRoot() }
         }
-        systemAccess.refresh()
+        access.refresh()
     }
 
     private fun <T> set(

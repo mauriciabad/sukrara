@@ -36,6 +36,8 @@ internal class SmartGuideDriver(
 
     override val validMgdl = 40..400
 
+    override val strangerFailure get() = FailReason.BondFailed
+
     override val scan = listOf(ScanSpec(service = CgmService.SERVICE))
 
     override fun matches(advert: Advert) = advert.name?.startsWith("AC-") == true && CgmService.SERVICE in advert.serviceUuids
@@ -60,7 +62,7 @@ internal class SmartGuideDriver(
 
     override fun onBondChanged(bonded: Boolean) {
         val link = link ?: return
-        if (bonded) subscribe(link) else fail(FailReason.BondFailed, "Bluetooth pairing was cancelled or the PIN didn't match")
+        if (bonded) subscribe(link) else refusedByDevice(FailReason.BondFailed, "Bluetooth pairing was cancelled or the PIN didn't match")
     }
 
     private fun subscribe(link: BleLink) {

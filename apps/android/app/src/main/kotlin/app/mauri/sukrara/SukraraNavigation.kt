@@ -49,11 +49,15 @@ import app.mauri.sukrara.feature.home.PanelPreview
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInRoute
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorRoute
 import app.mauri.sukrara.feature.settings.AlertThresholdRows
+import app.mauri.sukrara.feature.settings.SettingsDeps
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import app.mauri.sukrara.feature.settings.SettingsScreen
+import app.mauri.sukrara.feature.settings.TestAlert
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityPage
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityViewModel
 import app.mauri.sukrara.feature.sharing.follower.FollowingPage
 import app.mauri.sukrara.feature.sharing.follower.FollowingViewModel
 import app.mauri.sukrara.feature.sharing.following
@@ -114,6 +118,10 @@ data object ProfileRoute : NavKey
 /** Backup: password manager, recovery code, relay backup (home's "Not backed up" card, Settings › Sharing). */
 @Serializable
 data object BackupRoute : NavKey
+
+/** Backup › Replace this identity: restore another or start fresh over the working one (confirmed). */
+@Serializable
+data object ReplaceIdentityRoute : NavKey
 
 /** Setup opened on one [step] (Settings › Sharing's Set up opens the identity step); Back returns where it was opened. */
 @Serializable
@@ -386,6 +394,23 @@ fun SukraraNavigation(
                             BackupPage(
                                 viewModel = viewModel(factory = SharingViewModel.factory(graph.setup.sharing)),
                                 onSetUpSharing = { backStack.push(SetupStepRoute(SetupStep.Identity)) },
+                                onReplace = { backStack.push(ReplaceIdentityRoute) },
+                            )
+                        }
+                    }
+                    entry<ReplaceIdentityRoute> {
+                        val vm: ReplaceIdentityViewModel = viewModel(factory = ReplaceIdentityViewModel.factory(graph.setup))
+                        val close = { backStack.pop(ReplaceIdentityRoute) }
+                        SettingsPage(stringResource(SharingR.string.sh_replace_title), { vm.back(close) }) {
+                            ReplaceIdentityPage(
+                                viewModel = vm,
+                                onClose = close,
+                                // back to Backup (it is under this page)
+                                onBackUp = close,
+                                onInvite = {
+                                    backStack.pop(ReplaceIdentityRoute)
+                                    backStack.push(ShareRoute)
+                                },
                             )
                         }
                     }
@@ -409,6 +434,7 @@ fun SukraraNavigation(
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.remove(SetupRoute) },
+                            sendTestAlert = rememberSendTestAlert(graph.settingsUi.deps),
                         )
                     }
                     entry<SetupStepRoute> { key ->
@@ -418,6 +444,7 @@ fun SukraraNavigation(
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.pop(key) },
+                            sendTestAlert = rememberSendTestAlert(graph.settingsUi.deps),
                         )
                     }
                     entry<NewSensorKey> {
@@ -559,6 +586,18 @@ private fun NavBackStack<NavKey>.push(key: NavKey) {
     if (lastOrNull() != key) add(key)
 }
 
+/**
+ * Setup's *Send a test alert*: Settings' real test alert ([TestAlert.kind], the same notification as an alert's page and
+ * Alert reliability); null while alerts are off or none is on.
+ */
+@Composable
+private fun rememberSendTestAlert(deps: SettingsDeps): (() -> Unit)? {
+    val alerts by deps.alertSettings.settings.collectAsStateWithLifecycle(null)
+    val settings = alerts ?: return null
+    val kind = TestAlert.kind(settings) ?: return null
+    return remember(settings, kind) { { deps.alertPlayback.sendTest(kind, settings) } }
+}
+
 /** Removes the top-most [key] (equal keys can be lower in the stack; never pop one of those). */
 private fun NavBackStack<NavKey>.pop(key: NavKey) {
     val i = lastIndexOf(key)
@@ -594,6 +633,10 @@ private fun route(
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT)) {}
         }
 
+        is HomeAction.EditTreatment -> {
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id)) {}
+        }
+
         is HomeAction.Treat -> {
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs)) {}
         }
@@ -608,6 +651,10 @@ private fun route(
 
         HomeAction.EnableBluetooth -> {
             open(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) {}
+        }
+
+        HomeAction.OpenDateSettings -> {
+            open(context, Intent(Settings.ACTION_DATE_SETTINGS)) {}
         }
 
         HomeAction.ResumeMonitoring -> {
@@ -647,6 +694,11 @@ private fun route(
             TagIntents.openAllow(context)
         }
 
+        is HomeAction.OpenPen -> {
+            backStack.push(SettingsKey("pens"))
+            backStack.push(SettingsKey("pen", serial = action.serial))
+        }
+
         // the module's state changes by itself once System UI says hello again; a failure is said in a toast
         HomeAction.RestartSystemUi -> {
             val graph = context.graph
@@ -656,7 +708,9 @@ private fun route(
                 graph.scope.launch {
                     val problem =
                         try {
-                            graph.monitor.systemAccess.restartSystemUi()
+                            graph.monitor.root
+                                ?.access
+                                ?.restartSystemUi()
                         } finally {
                             restartingSystemUi.set(false)
                         } ?: return@launch

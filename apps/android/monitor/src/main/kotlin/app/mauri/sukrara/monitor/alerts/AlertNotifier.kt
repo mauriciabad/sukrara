@@ -28,6 +28,7 @@ import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.SoundGap
+import kotlinx.coroutines.delay
 
 /**
  * The alert notifications ([AlertPresenter]): one slot per [AlertGroup] (level, rate, no data), all in the `alerts`
@@ -46,16 +47,17 @@ class AlertNotifier(
 ) : AlertPresenter {
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
-    // read on every use: a language change renames the alerts at once
-    private val words get() = AlertWords.of(ctx)
+    /** The app's words now, read once per post: a language change renames the next alert at once. */
+    private fun words(): AlertWords = AlertWords.of(ctx)
 
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         val kind = firing.kind
         val alarm = settings.rule(kind).alarm
+        val words = words()
         val b =
             base(kind, alarm, silent)
-                .setContentTitle(headline(kind, firing.treated))
-                .setContentText(text(firing))
+                .setContentTitle(AlertCopy.headline(kind, firing.treated, words))
+                .setContentText(AlertCopy.body(firing, words, unit()))
                 .setWhen(firing.at * 1000)
                 .setShowWhen(true)
                 .setAutoCancel(true)
@@ -65,7 +67,7 @@ class AlertNotifier(
                     it > 0
                 }?.let { ctx.getString(R.string.alert_relaxed_subtext, Durations.text(it.toLong(), words.durations)) }
         listOfNotNull(who, relaxed).takeIf { it.isNotEmpty() }?.let { b.setSubText(it.joinToString(" · ")) }
-        b.addMuteAction(kind, ctx.getString(R.string.alert_action_mute), settings.muteChoices())
+        b.addMuteAction(kind, ctx.getString(R.string.alert_action_mute), settings.muteChoices(), words)
         when {
             relaxedMin > 0 -> b.addAction(action(kind, AlertActionReceiver.REMIND_AS_USUAL, R.string.alert_action_remind_usual))
             settings.canRelax(kind) -> b.addAction(action(kind, AlertActionReceiver.REMIND_LESS, R.string.alert_action_remind_less))
@@ -79,8 +81,12 @@ class AlertNotifier(
         }
     }
 
+    /** An info notification sounded less than a second ago: its sound would mute this alert's, so it waits the rest. */
+    override suspend fun beforeRing() = delay(SoundGap.shared.alertWaitMs())
+
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
         val alarm = settings.rule(kind).alarm
+        val words = words()
         val b =
             base(kind, alarm, silent = true)
                 .setContentTitle(MuteText.line(MuteLine.SideMuted(side, null), words))
@@ -92,7 +98,7 @@ class AlertNotifier(
                 .setOnlyAlertOnce(true)
                 .setTimeoutAfter(((until - now) * 1000).coerceAtLeast(1_000))
                 .addAction(action(kind, AlertActionReceiver.UNMUTE, R.string.alert_action_unmute))
-        b.addMuteAction(kind, ctx.getString(R.string.alert_action_change), settings.muteChoices())
+        b.addMuteAction(kind, ctx.getString(R.string.alert_action_change), settings.muteChoices(), words)
         unlocked?.stop(group)
         post(group, b.build(), AlertChannels.id(kind, alarm))
     }
@@ -108,7 +114,7 @@ class AlertNotifier(
         val alarm = settings.rule(kind).alarm
         val n =
             base(kind, alarm, silent = false)
-                .setContentTitle(ctx.getString(R.string.alert_test_title, words.get("alert_headline_${kind.wire}")))
+                .setContentTitle(ctx.getString(R.string.alert_test_title, words().get("alert_headline_${kind.wire}")))
                 .setContentText(ctx.getString(R.string.alert_test_text))
                 .setShowWhen(true)
                 .setAutoCancel(true)
@@ -151,26 +157,13 @@ class AlertNotifier(
             // alerts (GROUP_ALERT_CHILDREN); a ringing alert keeps GROUP_ALERT_ALL and rings as a child
             .apply { if (silent) setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY) }
 
-    private fun headline(kind: AlertKind, treated: Int): String {
-        val base = words.get("alert_headline_${kind.wire}")
-        val context =
-            when {
-                treated <= 0 || !kind.isLevel -> return base
-                kind.side == Side.LOW -> if (treated == 1) R.string.alert_context_eat_more else R.string.alert_context_eat_more_again
-                else -> if (treated == 1) R.string.alert_context_after_insulin else R.string.alert_context_after_more_insulin
-            }
-        return ctx.getString(R.string.alert_headline_with_context, base, ctx.getString(context))
-    }
-
-    private fun text(f: Firing): String = AlertCopy.body(f, words, unit())
-
     private fun clockTime(epochS: Long): String = Clock.time(epochS)
 
     /**
      * *Mute…* / *Change time*: a direct reply with the lengths as one-tap chips, shortest first (and a typed one); each
      * chip says what it does to TalkBack ([muteChoices]).
      */
-    private fun Notification.Builder.addMuteAction(kind: AlertKind, title: String, choices: List<Int>) =
+    private fun Notification.Builder.addMuteAction(kind: AlertKind, title: String, choices: List<Int>, words: AlertWords) =
         addAction(
             Notification.Action
                 .Builder(null, title, broadcast(kind, AlertActionReceiver.MUTE, mutable = true))
@@ -178,7 +171,7 @@ class AlertNotifier(
                     RemoteInput
                         .Builder(AlertActionReceiver.TYPED)
                         .setLabel(ctx.getString(R.string.alert_action_mute_for_label))
-                        .setChoices(muteChoices(kind, choices))
+                        .setChoices(muteChoices(kind, choices, words))
                         .setAllowFreeFormInput(true)
                         .setEditChoicesBeforeSending(RemoteInput.EDIT_CHOICES_BEFORE_SENDING_DISABLED)
                         .build(),
@@ -190,13 +183,14 @@ class AlertNotifier(
      * no label of its own, so each carries what TalkBack says as a [TtsSpan]: "Low alerts: mute for 30 min". The reply
      * comes back as the chip's text (the span is dropped with it), which [AlertActionReceiver] parses.
      */
-    internal fun muteChoices(kind: AlertKind, minutes: List<Int>): Array<CharSequence> {
+    internal fun muteChoices(kind: AlertKind, minutes: List<Int>, words: AlertWords = words()): Array<CharSequence> {
         val side = MuteText.sideName(kind.side, words)
+        val durations = words.durations
         return minutes
             .distinct()
             .sorted()
             .map { min ->
-                val shown = Durations.text(min.toLong(), words.durations)
+                val shown = Durations.text(min.toLong(), durations)
                 val spoken = ctx.getString(R.string.alert_mute_choice_a11y, side, shown)
                 SpannableString(shown).apply { setSpan(TtsSpan.TextBuilder(spoken).build(), 0, length, Spanned.SPAN_INCLUSIVE_INCLUSIVE) }
             }.toTypedArray()

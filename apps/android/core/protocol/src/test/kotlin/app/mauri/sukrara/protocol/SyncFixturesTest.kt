@@ -52,7 +52,8 @@ class SyncFixturesTest {
     private val relays = listOf("wss://relay.example.org")
     private val g3 = throwaway("sukrara/sync/G3")
     private val g4 = throwaway("sukrara/sync/G4")
-    private val names = listOf("join-readings", "treatments-writer", "settings-mirror", "rotation", "revoke-reapprove", "conflict-rotation")
+    private val names =
+        listOf("join-readings", "sensor-life", "treatments-writer", "settings-mirror", "rotation", "revoke-reapprove", "conflict-rotation")
 
     /**
      * One fixture step: feed [event] and expect [expect] (and, when [rekey] is set, a rekey request whose `have` is that
@@ -119,6 +120,10 @@ class SyncFixturesTest {
                         ),
                         step("live-outsider", live(v.key("X"), g1, now - 20, 300, null), "rejected:author-not-device"),
                     )
+            }
+
+            "sensor-life" -> {
+                base + sensorLife()
             }
 
             "treatments-writer" -> {
@@ -198,6 +203,28 @@ class SyncFixturesTest {
                 error(name)
             }
         }
+    }
+
+    /**
+     * The wearer's sensor without readings (#55): the old sensor ends early and is removed, a new one warms up (no
+     * reading for an hour, so reading-less live events carry it), its first reading carries it too, and a late backlog
+     * copy of an old reading adds the reading but can't bring the old sensor back (the newest `created_at` wins).
+     */
+    private fun sensorLife(): List<Step> {
+        val old = SensorLife(now - 14 * Wire.DAY, now + Wire.DAY, now - 14 * Wire.DAY + 3600)
+        val fresh = SensorLife(now - 3200, now - 3200 + 15 * Wire.DAY, now - 200)
+
+        fun sensorOnly(sensor: SensorLife?, at: Long) = f.live(d, g1.public, LivePayload(null, sensor), at)
+        return listOf(
+            step("roster-1", roster(1, g1, listOf(d)), "accepted:roster"),
+            step("live-old-sensor", live(d, g1, now - 3400, 140, 0.5, old), "accepted:live"),
+            step("sensor-ended-early", sensorOnly(old.copy(end = now - 3300), now - 3300), "accepted:sensor"),
+            step("sensor-removed", sensorOnly(null, now - 3250), "accepted:sensor"),
+            step("sensor-new-warming", sensorOnly(fresh, now - 3200), "accepted:sensor"),
+            step("sensor-warming-tick", sensorOnly(fresh, now - 2900), "accepted:sensor"),
+            step("live-first-reading", live(d, g1, now - 60, 101, null, fresh), "accepted:live"),
+            step("live-old-backlog", live(d, g1, now - 3350, 138, -0.5, old), "accepted:live"),
+        )
     }
 
     /**

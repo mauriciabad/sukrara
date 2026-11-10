@@ -45,7 +45,7 @@ struct NearbyRuntimeTests {
         let nearby = FakeNearby()
         let runtime = runtime(h, nearby)
         await runtime.start()
-        try await runtime.join(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        try await runtime.lookUpAndFollow(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
         let phone = UUID()
         nearby.info(stranger, .other, phone: phone)
         #expect(await eventually { nearby.left == ["\(phone) 600"] })
@@ -178,7 +178,7 @@ struct NearbyRuntimeTests {
         return state.code
     }
 
-    @Test func aPhoneWithNothingToPairWithIsLeftForAMinute() async {
+    @Test func aPhoneWithNothingToPairWithIsLeftFor5Seconds() async {
         let h = RuntimeHarness(now: v.now)
         let nearby = FakeNearby()
         let runtime = runtime(h, nearby)
@@ -186,7 +186,7 @@ struct NearbyRuntimeTests {
         await runtime.searchNearby(true)
         let phone = UUID()
         nearby.info(stranger, .unknown, phone: phone)
-        #expect(await eventually { nearby.left == ["\(phone) 60"] })
+        #expect(await eventually { nearby.left == ["\(phone) 5"] })
         await runtime.stop()
     }
 }

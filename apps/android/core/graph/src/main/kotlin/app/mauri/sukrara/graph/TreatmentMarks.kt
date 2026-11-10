@@ -321,7 +321,8 @@ object TreatmentMarks {
      * The label layout (docs/FEATURES.md "Treatment labels"): entries with a shown label are grouped (≤ [MERGE_S]
      * after the group's last, or markers < [MERGE_DP] from its first), each group's label is its shown amounts plus the
      * time since its newest timed member, and groups are placed newest first in the first free of: lane 0 with time,
-     * lane 1 with time, lane 0 without, lane 1 without ([place]). A group with none gets no label.
+     * lane 1 with time, lane 0 without, lane 1 without ([place]). A group with none gets no label. [textScale] = the
+     * chart's text scale (`GlucoseGraph.textScale`): the labels' size, not the markers' spacing.
      */
     fun layout(
         list: List<Treatment>,
@@ -333,6 +334,7 @@ object TreatmentMarks {
         d: Float,
         w: CardWords,
         show: MarkShow = MarkShow.DEFAULT,
+        textScale: Float = 1f,
     ): Layout {
         val items =
             list
@@ -349,7 +351,7 @@ object TreatmentMarks {
                 groups += mutableListOf(tr)
             }
         }
-        val size = LABEL_DP * d
+        val size = LABEL_DP * d * textScale
         val gap = LABEL_GAP_DP * d
         val taken = List(2) { ArrayList<Pair<Float, Float>>() }
         val labels = ArrayList<Label>()
@@ -428,6 +430,7 @@ object TreatmentMarks {
         nowS: Long?,
         muteUntil: ((Treatment) -> Long?)?,
         show: MarkShow,
+        textScale: Float = 1f,
     ) {
         val pal = palette(dark)
         val items = list.filter { !it.deleted && it.k in ORDER }.map { it to x(it.t) }.filter { (_, px) -> px in (left - 1)..(right + 1) }
@@ -469,7 +472,7 @@ object TreatmentMarks {
         }
         for ((tr, px) in back) if (show.has(tr.k, MarkShow.POINT)) marker(cv, tr.k, px, cy, 4.5f * d, color(pal, tr.k))
         if (layout == null || layout.labels.isEmpty()) return
-        drawLabels(cv, layout, pal, d, base0, base1, sep)
+        drawLabels(cv, layout, pal, d, textScale, base0, base1, sep)
     }
 
     private class Piece(
@@ -483,13 +486,14 @@ object TreatmentMarks {
         layout: Layout,
         pal: Palette,
         d: Float,
+        textScale: Float,
         base0: Float,
         base1: Float,
         sep: Int,
     ) {
         val bold =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textSize = LABEL_DP * d
+                textSize = LABEL_DP * d * textScale
                 typeface = Typeface.DEFAULT_BOLD
             }
         val medium = Paint(bold).apply { typeface = Typeface.create(Typeface.DEFAULT, 500, false) }

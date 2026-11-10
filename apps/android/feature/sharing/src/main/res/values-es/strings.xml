@@ -8,6 +8,10 @@
     <string name="sh_setup_cancel">Cancelar</string>
     <string name="sh_setup_continue">Continuar</string>
     <string name="sh_setup_later">Más tarde</string>
+    <string name="sh_setup_test_title">Enviar una alerta de prueba</string>
+    <string name="sh_setup_test_body">La alerta real, marcada como prueba. Pruébala con No molestar activado.</string>
+    <string name="sh_setup_test_sent">Enviada: mira tus notificaciones. Se va sola en 2 min.</string>
+    <string name="sh_setup_test_send">Enviar</string>
     <string name="sh_setup_skip">Omitir</string>
     <string name="sh_setup_start">Empezar</string>
     <string name="sh_setup_allow">Permitir</string>
@@ -81,7 +85,7 @@
     <string name="sh_fresh_body">Una identidad nueva para este móvil. Vuelves a invitar a tus seguidores.</string>
     <string name="sh_fresh_action">Empezar de cero</string>
     <string name="sh_fresh_confirm_title">¿Empezar de cero?</string>
-    <string name="sh_fresh_confirm_text">Tus seguidores (y tu Mac) necesitarán una invitación nueva. Tu identidad anterior no se podrá traer a este móvil después sin reinstalar.</string>
+    <string name="sh_fresh_confirm_text">Tus seguidores (y tu Mac) necesitarán una invitación nueva. Para volver a usar tu identidad anterior, restáurala en Ajustes › Compartir › Copia de seguridad › Sustituir esta identidad.</string>
     <string name="sh_fresh_confirm">Empezar de cero</string>
     <string name="sh_conflict_title">Otra app está compartiendo como tú</string>
     <string name="sh_conflict_body">Otro móvil sigue compartiendo con tu identidad. Sukrara ha pausado los cambios en tus seguidores para que no se deshagan entre sí. Tus lecturas y alertas siguen funcionando aquí.</string>
@@ -271,6 +275,34 @@
     <string name="sh_backup_no_identity">Aún no hay identidad para compartir que guardar.</string>
     <!-- Backup footer -->
     <string name="sh_backup_footer">Los relays solo guardan tu lista de seguidores, cifrada. Sin la entrada del gestor de contraseñas o el código de recuperación nadie puede restaurarla, ni siquiera tú.</string>
+    <!-- Backup › Replace this identity (restore another or start fresh over a working one) -->
+    <string name="sh_replace_title">Sustituir esta identidad</string>
+    <string name="sh_replace_summary">Restaura otra identidad o empieza de cero. Cada seguidor necesitará una invitación nueva.</string>
+    <string name="sh_replace_intro">Este móvil comparte tu glucosa como una identidad. Sustituirla termina de compartir como esta, para cada móvil y Mac que la sigue.</string>
+    <string name="sh_replace_lose_title">Lo que pierden tus seguidores</string>
+    <string name="sh_replace_lose_named">Tu glucosa deja de llegar a %1$s al instante.</string>
+    <string name="sh_replace_lose_none">Ahora nadie sigue esta identidad.</string>
+    <string name="sh_replace_lose_invite">Cada uno necesita una invitación nueva tuya para volver a seguirte. Hasta entonces su Sukrara avisa de que no llegan datos.</string>
+    <string name="sh_replace_lose_pending">Las solicitudes pendientes y las invitaciones sin usar dejan de funcionar.</string>
+    <string name="sh_replace_not_backed_up">Esta identidad no tiene copia de seguridad: una vez sustituida, se pierde para siempre.</string>
+    <string name="sh_replace_back_up_first">Hacer copia primero</string>
+    <string name="sh_replace_restore">Restaurar otra identidad</string>
+    <string name="sh_replace_restore_summary">Desde su código de recuperación o tu gestor de contraseñas. Sus seguidores pasan a este móvil.</string>
+    <string name="sh_replace_fresh">Empezar de cero</string>
+    <string name="sh_replace_fresh_summary">Una identidad nueva con tu nombre e imagen actuales. Nadie la sigue hasta que invites a alguien.</string>
+    <string name="sh_replace_restore_action">Sustituir por esta identidad</string>
+    <string name="sh_replace_back">Atrás</string>
+    <string name="sh_replace_confirm_title_restore">¿Sustituir esta identidad?</string>
+    <string name="sh_replace_confirm_title_fresh">¿Empezar de cero?</string>
+    <string name="sh_replace_confirm_check">Entiendo que habrá que volver a invitarlos</string>
+    <string name="sh_replace_confirm_restore">Sustituir</string>
+    <string name="sh_replace_fresh_busy">Creando la identidad nueva…</string>
+    <string name="sh_replace_fresh_failed">No se ha podido crear la identidad nueva. No ha cambiado nada: vuelve a intentarlo.</string>
+    <string name="sh_replace_done_restore">Sustituida. %1$d seguidores de la identidad restaurada siguen ahora este móvil.</string>
+    <string name="sh_replace_done_fresh">Has empezado de cero. Nadie sigue este móvil todavía: vuelve a invitar a tus seguidores.</string>
+    <string name="sh_replace_invite">Invitar a alguien</string>
+    <string name="sh_replace_done">Listo</string>
+    <string name="sh_restore_err_same">Ese código es de la identidad con la que este móvil ya comparte. No ha cambiado nada.</string>
     <!-- Recovery dialog text -->
     <string name="sh_recovery_text">Elige una contraseña. El código solo funciona con ella; guárdalos por separado.</string>
     <!-- Field -->
@@ -335,6 +367,11 @@
     <string name="sh_join_err_wrong">Esta invitación no coincide con su enlace. Pide un enlace nuevo.</string>
     <string name="sh_join_err_already">Este teléfono ya sigue a alguien. Deja de seguirle primero en Ajustes › Compartir.</string>
     <string name="sh_join_err_store">No se ha podido guardar la clave en este teléfono. Vuelve a intentarlo.</string>
+    <!-- The invite was found: who is inviting, before anything is sent -->
+    <string name="sh_join_confirm_title">¿Seguir a %1$s?</string>
+    <string name="sh_join_confirm_body">%1$s te ha invitado a ver su glucosa. Seguir pide a %1$s que dé acceso a este teléfono; no se comparte nada hasta que lo haga.</string>
+    <string name="sh_join_confirm_note">Este nombre y esta imagen vienen de la invitación. Sigue solo si sabes quién te ha enviado este enlace.</string>
+    <string name="sh_join_follow">Seguir</string>
     <string name="sh_following_title">Siguiendo</string>
     <string name="sh_following_waiting">Esperando a que %1$s te dé acceso</string>
     <string name="sh_following_active">Sigues a %1$s</string>

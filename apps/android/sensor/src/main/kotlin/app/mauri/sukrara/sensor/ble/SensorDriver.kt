@@ -94,6 +94,12 @@ internal interface SensorEvents {
     /** The device the scan picked isn't this pairing's sensor (an old one still bonded): skip it, scan again. */
     fun onWrongDevice() {}
 
+    /**
+     * The device the scan picked refused this pairing's id / PIN before the pairing ever reached its sensor: maybe
+     * another person's sensor of the family. Skip it and scan once more (`Pairing.strangers`).
+     */
+    fun onStranger() {}
+
     /** The sensor has ended and will not be connected again until a new sensor is scanned: persist it. */
     fun onEndedForGood(serial: String) {}
 

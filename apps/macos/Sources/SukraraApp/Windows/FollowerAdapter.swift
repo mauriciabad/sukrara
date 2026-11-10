@@ -16,9 +16,18 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
 
     init(follower: any FollowerService) { self.follower = follower }
 
-    func join(link: String) async throws(FollowFailure) {
+    func lookUp(link: String) async throws(FollowFailure) -> Invite? {
         do {
-            try await follower.join(link: link)
+            return try await follower.lookUp(link: link)
+        } catch {
+            if let failure = Self.failure(error) { throw failure }
+            return nil
+        }
+    }
+
+    func join(invite: Invite) async throws(FollowFailure) {
+        do {
+            try await follower.join(invite: invite)
         } catch {
             if let failure = Self.failure(error) { throw failure }
         }
@@ -62,6 +71,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         switch error {
         case .invalidLink: .invalidLink
         case .notFound: .notFound
+        case .offline: .offline
         case .expired: .expired
         case .fingerprintMismatch: .fingerprintMismatch
         case .alreadyFollowing: .alreadyFollowing

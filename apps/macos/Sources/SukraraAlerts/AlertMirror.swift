@@ -120,7 +120,32 @@ public struct AlertMirror: Codable, Equatable, Sendable {
     public mutating func unmuteAll(at t: Date) -> [String] {
         guard muteAllEnd(at: t) != nil else { return [] }
         muteAllUntil = nil
-        return AlertGroup.allCases.compactMap { g in
+        return showNewest(at: t)
+    }
+
+    /// Mute all's time is over at `t` (the timer, or any input that comes first): like `unmuteAll`, the ids of the
+    /// wearer's newest firings still up to show at once; nothing while it lasts or when off.
+    public mutating func expire(at t: Date) -> [String] {
+        guard let all = muteAllUntil, all <= t else { return [] }
+        muteAllUntil = nil
+        return showNewest(at: t)
+    }
+
+    /// When a Mute or Mute all of this device ends next (the timer), or nil.
+    public func nextCheck(after t: Date) -> Date? {
+        (snoozes.all.values.compactMap(\.until) + [muteAllUntil].compactMap { $0 })
+            .filter { $0 > t && $0 < muteAllForever }.min()
+    }
+
+    /// The clock was set back by `d`: this device's mutes keep their length.
+    public mutating func shiftBack(_ d: TimeInterval) {
+        snoozes.shiftBack(d)
+        muteAllUntil = muteAllUntil?.shiftedBack(d)
+        for g in Array(lastShown.keys) { lastShown[g]?.at.addTimeInterval(-d) }
+    }
+
+    private mutating func showNewest(at t: Date) -> [String] {
+        AlertGroup.allCases.compactMap { g in
             guard let n = newest[g], snoozes[n.kind.side]?.isMuted(at: t) != true else { return nil }
             return showAgain(g, side: n.kind.side, at: t)
         }

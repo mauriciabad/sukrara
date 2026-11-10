@@ -1,5 +1,5 @@
 {
-  "about": "Card decisions shared by Android (GraphFixtureTest.kt) and Mac (Sukrara -graphselftest). Format: README.md.",
+  "about": "Card decisions shared by Android (GraphFixtureTest.status) and Mac (StatusFixtureTests: the alert engine and the mirroring path through CardAlertsMapping; AmountFixtureTests). Format: README.md.",
   "cases": [
     {"name": "low muted from the notification: the same faded badge, carbs colour",
      "reading": {"t": -60, "sgv": 65}, "treatments": [], "paused": {"low": 600},

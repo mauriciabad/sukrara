@@ -67,7 +67,10 @@ sealed interface NsApiState {
  * wearer's readings or the followed person's, labelled per entry ([NightscoutApi.device]). Every data request needs
  * the API secret: any app on the phone can open a loopback port, and this answers doses and notes too. The secret is a
  * random 128-bit value made when the API is first switched on, kept in the secure store (`nightscout-api`) and kept
- * when the API is switched off; *New secret* replaces it. Requests are never logged: only "last asked" in memory.
+ * when the API is switched off; *New secret* replaces it. The home-network listener takes only its own secret
+ * (`nightscout-api-lan`, made when that option is first turned on): it travels over Wi-Fi in cleartext, so the phone's
+ * apps never share it and *New Wi-Fi secret* replaces it alone. Requests are never logged: only "last asked" (and, on
+ * Wi-Fi, the last caller's address) in memory.
  */
 class NightscoutApiServer(
     private val settings: SettingsRepository,
@@ -91,9 +94,15 @@ class NightscoutApiServer(
 
     @Volatile private var secret: String = ""
 
+    /** The home-network listener's own secret; empty until read (or while the API is off). */
+    @Volatile private var lanSecret: String = ""
+
     @Volatile private var recent: List<Reading> = emptyList()
 
     @Volatile private var recentTreatments: List<Treatment> = emptyList()
+
+    /** Whose data [recent] is (a follower's treatments are labelled as the followed person's). */
+    @Volatile private var servedRole: Role? = null
     private val lock = Mutex()
 
     private val _lan = MutableStateFlow<LanState>(LanState.Off)
@@ -111,7 +120,16 @@ class NightscoutApiServer(
         }
     }
 
-    private val server = LocalHttpServer(port, ::answer, asked)
+    /** A device on the Wi-Fi read with the Wi-Fi secret: "last asked" and, for the page, its address. */
+    private val lanAsked: (HttpRequest, HttpAnswer) -> Unit = { req, answer ->
+        if (answer.status.startsWith("200") && NightscoutApi.authorized(lanSecret, req)) {
+            val at = clock.now()
+            _state.update { if (it is NsApiState.Listening) it.copy(lastAsked = at) else it }
+            _lan.update { if (it is LanState.Listening) it.copy(lastCaller = req.caller, lastAsked = at) else it }
+        }
+    }
+
+    private val server = LocalHttpServer(port, { answer(it, secret) }, asked)
 
     val on: Flow<Boolean> = settings.flow(SETTING)
 
@@ -132,7 +150,11 @@ class NightscoutApiServer(
         }
         // pinned to the Wi-Fi the person confirmed on, now: never to a network the phone joins later
         val refused = pinHere()
-        if (refused == null) settings.set(LAN_SETTING, true)
+        if (refused == null) {
+            // its own secret exists before anything listens (the page can show it at once); a failure shows as paused
+            runCatching { withContext(io) { readOrMake(LAN_SECRET) } }
+            settings.set(LAN_SETTING, true)
+        }
         recheckLan()
         return refused
     }
@@ -196,6 +218,7 @@ class NightscoutApiServer(
             combine(on.distinctUntilChanged(), role) { o, r -> if (o) r else null }
                 .distinctUntilChanged()
                 .flatMapLatest { r ->
+                    servedRole = r
                     if (r == null) {
                         flowOf(emptyList())
                     } else {
@@ -235,12 +258,13 @@ class NightscoutApiServer(
                     server.stop()
                     stopLan(LanState.Off)
                     secret = ""
+                    lanSecret = ""
                     _state.value = NsApiState.Off
                     return@withContext
                 }
                 val s =
                     try {
-                        readOrMakeSecret()
+                        readOrMake(SECRET)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -266,15 +290,31 @@ class NightscoutApiServer(
             }
         }
 
-    private suspend fun readOrMakeSecret(): String {
-        secure.read(SECRET)?.let { return String(it, Charsets.UTF_8) }
+    private suspend fun readOrMake(name: String): String {
+        secure.read(name)?.let { return String(it, Charsets.UTF_8) }
         val made = newSecret()
-        secure.write(SECRET, made.toByteArray(Charsets.UTF_8))
+        secure.write(name, made.toByteArray(Charsets.UTF_8))
         return made
     }
 
     /** The API secret for the page (null when none was made yet); throws [SecretUnreadableException]. */
     suspend fun secret(): String? = withContext(io) { secure.read(SECRET)?.let { String(it, Charsets.UTF_8) } }
+
+    /** The home-network listener's secret for the page (null when none was made yet); throws [SecretUnreadableException]. */
+    suspend fun lanSecret(): String? = withContext(io) { secure.read(LAN_SECRET)?.let { String(it, Charsets.UTF_8) } }
+
+    /**
+     * *New Wi-Fi secret*: devices on the Wi-Fi that use the old one stop reading; the phone's apps keep theirs. Also the
+     * way out of [LanState.SecretUnreadable].
+     */
+    suspend fun renewLanSecret(): String =
+        withContext(NonCancellable + io) {
+            val made = newSecret()
+            secure.write(LAN_SECRET, made.toByteArray(Charsets.UTF_8))
+            lock.withLock { if (lanSecret.isNotEmpty()) lanSecret = made }
+            recheckLan()
+            made
+        }
 
     /** *New secret*: apps that use the old one stop reading. Also the way out of [NsApiState.SecretUnreadable]. */
     suspend fun renewSecret(): String =
@@ -308,6 +348,11 @@ class NightscoutApiServer(
                         stopLan(LanState.ApiStopped)
                     }
 
+                    // never the phone apps' secret: one that can't be read pauses this until *New Wi-Fi secret*
+                    lanSecret.isEmpty() && !readLanSecret() -> {
+                        stopLan(LanState.SecretUnreadable)
+                    }
+
                     // no pin (it was lost): paused until Allow on this Wi-Fi, never pinned on its own
                     input.pin == null -> {
                         stopLan(LanState.OtherWifi)
@@ -332,6 +377,16 @@ class NightscoutApiServer(
             }
         }
 
+    private suspend fun readLanSecret(): Boolean =
+        try {
+            lanSecret = readOrMake(LAN_SECRET)
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
+        }
+
     private fun listenLan(t: LanTarget) {
         val ip = t.address.hostAddress ?: return stopLan(LanState.NotPrivate)
         if (lanServer?.running == true && lanServer?.boundAddress == t.address && lanAddress == ip) return
@@ -339,8 +394,8 @@ class NightscoutApiServer(
         val s =
             LocalHttpServer(
                 port,
-                ::answer,
-                asked,
+                { answer(it, lanSecret) },
+                lanAsked,
                 bindAddress = t.address,
                 allowCaller = { it.isLoopbackAddress || LanPolicy.sameSubnet(it, t.address, t.prefix) },
                 hostOk = { LanPolicy.hostOk(it, t.address, port) },
@@ -372,11 +427,21 @@ class NightscoutApiServer(
         lanServer?.stop()
     }
 
-    private fun answer(req: HttpRequest): HttpAnswer =
-        NightscoutApi.route(req, secret) {
+    /** Answers [req] with the listener's own [key]: the phone's apps and the Wi-Fi devices never share a secret. */
+    internal fun answer(
+        req: HttpRequest,
+        key: String,
+    ): HttpAnswer =
+        NightscoutApi.route(req, key) {
             val now = clock.now()
-            NightscoutApi.Snapshot(recent.filter { it.t >= now - WINDOW }, recentTreatments, now, clock.zone)
+            NightscoutApi.Snapshot(recent.filter { it.t >= now - WINDOW }, recentTreatments, now, clock.zone, servedRole)
         }
+
+    /** Answers as the home-network listener does (tests: that listener can't bind here). */
+    internal fun answerLan(req: HttpRequest): HttpAnswer = answer(req, lanSecret)
+
+    /** Answers as the phone's own listener does. */
+    internal fun answerLocal(req: HttpRequest): HttpAnswer = answer(req, secret)
 
     companion object {
         val SETTING = SchemaSettings.bool("apps.nightscout", default = false)
@@ -385,6 +450,9 @@ class NightscoutApiServer(
         /** How long switching on waits for Android to report the current Wi-Fi. */
         const val WIFI_LOOKUP_MS = 3_000L
         const val SECRET = "nightscout-api"
+
+        /** The home-network listener's own secret. */
+        const val LAN_SECRET = "nightscout-api-lan"
         val WINDOW: Duration = Duration.ofDays(7)
         val TREATMENTS_WINDOW: Duration = Duration.ofDays(30)
 

@@ -26,6 +26,13 @@ object GlucoseCard {
     /** A slot is only drawn when its window has at least this much data. */
     const val MIN_COVERAGE = 0.25
 
+    /**
+     * Slots beside the value smaller than this (dp) are at most [CROWDED_MAX]: three rings that small read as one
+     * cluttered row of near-equal numbers (#71; layout/rules.json `crowdedSlots`).
+     */
+    const val CROWDED_DP = 56f
+    const val CROWDED_MAX = 2
+
     /** Tests: every [CardLayout] drawn and every [GlucoseLook] decided, as it happens (null in the app). */
     @Volatile var observer: ((CardLayout) -> Unit)? = null
 
@@ -34,7 +41,8 @@ object GlucoseCard {
     /**
      * Draw [part] of the card [model] for [surface] into ([w] × [h]) px at the canvas origin ([d] = px per dp) and
      * return what was laid out. [motion] = the app panel's value animation (paint only); [view] = a scrolled / zoomed
-     * chart.
+     * chart; [fontScale] = the system's font size (the surface's `Configuration.fontScale`): the chart's words grow with
+     * it up to [GlucoseGraph.MAX_TEXT_SCALE].
      */
     fun draw(
         cv: Canvas,
@@ -48,6 +56,7 @@ object GlucoseCard {
         part: CardPart,
         motion: CardMotion? = null,
         view: ChartView? = null,
+        fontScale: Float = 1f,
     ): CardLayout {
         val rec = CardLayout(surface, part, st, w, h, d)
         val nowS = model.nowS
@@ -100,7 +109,7 @@ object GlucoseCard {
                     model.words,
                     latest?.t,
                 )
-            GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view)
+            GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view, fontScale)
             dimmed?.let(cv::restoreToCount)
         }
         // a sensor that ended or is warming up says so instead of the reading's time, which would read as a gap
@@ -209,9 +218,10 @@ object GlucoseCard {
         pal: GraphPalette,
         surface: CardSurface,
         part: CardPart = CardPart.ALL,
+        fontScale: Float = 1f,
     ): Bitmap {
         val bmp = Bitmap.createBitmap((wDp * d).toInt().coerceAtLeast(1), (hDp * d).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        draw(Canvas(bmp), bmp.width.toFloat(), bmp.height.toFloat(), model, st, pal, d, surface, part)
+        draw(Canvas(bmp), bmp.width.toFloat(), bmp.height.toFloat(), model, st, pal, d, surface, part, fontScale = fontScale)
         return bmp
     }
 
@@ -333,7 +343,8 @@ object GlucoseCard {
         val size = if (st.slotDisc != null) min(box.height(), 84 * d) else min(box.height() * 0.96f, 84 * d)
         if (size < 30 * d) return 0f
         val gap = if (st.slotDisc != null) 6 * d else size * 0.14f
-        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(4)
+        val most = if (!dedicated && size < CROWDED_DP * d) CROWDED_MAX else 4
+        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(most)
         if (fit < 1) return 0f
         val (rings, fallback) = slotInputs(st, last, model, bands)
         var items = Slots.arrange(rings, st.last, last, fallback, fit, st.unit)

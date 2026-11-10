@@ -21,9 +21,12 @@ final class IdentityDraft: Identifiable {
         self.avatar = avatar
     }
 
-    var editable: Avatar { avatar.flatMap { $0.isKnown ? $0 : nil } ?? fresh }
-    var shape: String { editable.object["s"] as? String ?? "cube" }
-    var colors: Int { editable.object["c"] as? Int ?? 0 }
+    var editable: Avatar { shown ?? fresh }
+    /// The picture as drawn; nil while it is the grey initial (no picture, or one from a newer version).
+    var shown: Avatar? { avatar.flatMap { $0.isKnown ? $0 : nil } }
+    /// The drawn picture's shape and colours, for the Customize controls: nil (nothing selected) for the grey initial.
+    var shape: String? { shown.map { $0.object["s"] as? String ?? "cube" } }
+    var colors: Int? { shown.map { $0.object["c"] as? Int ?? 0 } }
     var canSave: Bool { !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     func shuffle() { avatar = .random() }
@@ -37,7 +40,8 @@ final class IdentityDraft: Identifiable {
 }
 
 /// Name + picture: Shuffle draws a new random picture; Customize shows the shape (a segmented control) and the colours
-/// (circular swatches like System Settings › Appearance), and Turn the Colours. Same options as Android.
+/// (circular swatches like System Settings › Appearance), and Turn the Colours. Same options as Android. While the
+/// picture is the grey initial no shape or colour is selected; picking one starts a picture from it.
 struct IdentityEditor: View {
     @Bindable var draft: IdentityDraft
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -65,9 +69,10 @@ struct IdentityEditor: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Picker(
                         L10n.t("Shape"),
-                        selection: Binding(get: { draft.shape }, set: { s in change { draft.setShape(s) } })
+                        selection: Binding(
+                            get: { draft.shape }, set: { s in if let s { change { draft.setShape(s) } } })
                     ) {
-                        ForEach(Self.shapes, id: \.0) { Text($0.1).tag($0.0) }
+                        ForEach(Self.shapes, id: \.0) { Text($0.1).tag(Optional($0.0)) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
