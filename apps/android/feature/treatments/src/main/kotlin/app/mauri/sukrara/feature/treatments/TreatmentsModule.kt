@@ -10,6 +10,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
@@ -31,7 +32,7 @@ import java.time.Instant
  * glucose state that decides the focused field, and the lock-screen countdown setting.
  */
 class TreatmentsModule(
-    repository: TreatmentsRepository,
+    private val repository: TreatmentsRepository,
     val sync: TreatmentSync,
     val clock: Clock,
     val glucose: StateFlow<GlucoseState>,
@@ -73,6 +74,27 @@ class TreatmentsModule(
             // a newer deleted version of each, synced like any delete (Undo on home's list works the same way)
             scope.launch { runCatching { added.await().forEach { log.delete(it.id) } } }
         }
+    }
+
+    /** Stored entry [id] while this phone may change it (home's list opens its edit), else null. */
+    suspend fun editable(id: String): Treatment? =
+        runCatching {
+            if (log.mayChange(id)) repository.get(id)?.treatment?.takeUnless { it.deleted } else null
+        }.getOrNull()
+
+    /**
+     * Saves [original] changed to [entry]'s amount and note at [at] (null = now; the kind never changes), in the app's
+     * scope; [Saved.undo] brings the version it replaced back. Null when this phone may not add entries.
+     */
+    fun edit(
+        original: Treatment,
+        entry: NewEntry,
+        at: Instant?,
+    ): Saved? {
+        if (!canAdd()) return null
+        val changed = original.copy(amount = entry.amount, note = entry.note, at = at ?: clock.now())
+        val previous = scope.async { runCatching { log.edit(changed) }.getOrNull() }
+        return Saved { scope.launch { runCatching { previous.await()?.let { log.undo(it) } } } }
     }
 
     /** The draft the lock-screen countdown kept, while it is offered ([TreatmentDraft.offered]); else null. */

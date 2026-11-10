@@ -9,6 +9,11 @@
     <string name="tile_no_reading_since">No reading since %1$s</string>
     <string name="tile_unavailable">Open Sukrara to set up</string>
     <string name="treatment_title">Add treatment</string>
+    <string name="treatment_edit_rapid">Edit rapid insulin</string>
+    <string name="treatment_edit_long">Edit long insulin</string>
+    <string name="treatment_edit_carbs">Edit carbs</string>
+    <string name="treatment_edit_note">Edit note</string>
+    <string name="treatment_edit_gone">This entry can\'t be changed any more</string>
     <string name="treatment_rapid">Rapid</string>
     <string name="treatment_long">Long</string>
     <string name="treatment_carbs">Carbs</string>
@@ -31,6 +36,7 @@
     <!-- The confirmation after Save; %1$s = the entries in words, e.g. "4.5u rapid insulin · 30g carbs" -->
     <string name="treatment_saved_snack">Saved: %1$s</string>
     <string name="treatment_sent_snack">Will be sent to the wearer: %1$s</string>
+    <string name="treatment_changed_snack">Changed: %1$s</string>
     <string name="treatment_undo">Undo</string>
     <string name="treatment_undone">Undone</string>
     <string name="treatment_entry_rapid">%1$s rapid insulin</string>

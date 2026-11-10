@@ -114,6 +114,12 @@
     <string name="home_pen_changed_since">This entry changed meanwhile. Nothing was saved.</string>
     <string name="home_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
     <string name="home_treatment_delete">Delete %1$s at %2$s</string>
+    <!-- TalkBack: what a tap on a treatment row does -->
+    <string name="home_treatment_edit">edit</string>
+    <string name="home_treatment_sending">Sending…</string>
+    <string name="home_treatment_not_sent">Not sent</string>
+    <string name="home_treatment_retry">Retry</string>
+    <string name="home_treatment_retry_label">Retry sending %1$s</string>
     <string name="home_treatment_deleted">Treatment deleted</string>
     <string name="home_treatment_deleted_clinic">Treatment deleted. It will be removed from LibreView too.</string>
     <string name="home_treatment_in_clinic">In LibreView</string>

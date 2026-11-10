@@ -610,6 +610,10 @@ private fun route(
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT)) {}
         }
 
+        is HomeAction.EditTreatment -> {
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id)) {}
+        }
+
         is HomeAction.Treat -> {
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs)) {}
         }

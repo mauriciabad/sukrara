@@ -108,6 +108,12 @@
     <string name="home_pen_changed_since">Esta entrada cambió mientras tanto. No se guardó nada.</string>
     <string name="home_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
     <string name="home_treatment_delete">Borrar %1$s de las %2$s</string>
+    <!-- TalkBack: lo que hace tocar una fila de tratamiento -->
+    <string name="home_treatment_edit">editar</string>
+    <string name="home_treatment_sending">Enviando…</string>
+    <string name="home_treatment_not_sent">No enviado</string>
+    <string name="home_treatment_retry">Reintentar</string>
+    <string name="home_treatment_retry_label">Reintentar el envío de %1$s</string>
     <string name="home_treatment_deleted">Tratamiento borrado</string>
     <string name="home_treatment_deleted_clinic">Tratamiento borrado. También se quitará de LibreView.</string>
     <string name="home_treatment_in_clinic">En LibreView</string>

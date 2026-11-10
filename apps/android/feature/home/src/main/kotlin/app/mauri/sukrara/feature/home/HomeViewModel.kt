@@ -21,6 +21,7 @@ import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
@@ -106,6 +107,15 @@ interface HomeDeps {
     /** Whether this phone may delete treatment [id] (a follower only the entries it added). */
     suspend fun mayChangeTreatment(id: String): Boolean
 
+    /**
+     * The delivery of each of [ids] this phone wrote and nothing has taken yet (a writer's entries: [TreatmentDelivery.Pending]
+     * or [TreatmentDelivery.Failed]); the others aren't in the map.
+     */
+    suspend fun deliveries(ids: Collection<String>): Map<String, TreatmentDelivery> = emptyMap()
+
+    /** *Retry* on an entry nothing took: sent again now (`TreatmentLog.retry`). */
+    suspend fun retryTreatment(id: String) = Unit
+
     /** How the wearer appears to followers, while this phone shares (null = no identity, or not the wearer). */
     val profile: Flow<HomeProfile?> get() = flowOf(null)
 
@@ -185,6 +195,8 @@ data class HomeUiState(
     val readOnly: Set<String> = emptySet(),
     /** Ids of [treatments] that came from an insulin pen (*8.5u rapid insulin · from the pen*; a tap opens its sheet). */
     val fromPen: Set<String> = emptySet(),
+    /** This phone's entries on their way to the wearer: *Sending…*, or *Not sent* with *Retry* ([TreatmentDelivery.Failed]). */
+    val delivery: Map<String, TreatmentDelivery> = emptyMap(),
     /** The wearer's profile while sharing (the top bar shows it, with Share). */
     val profile: HomeProfile? = null,
     /** The clinic upload's cloud mark per listed entry id (empty while its entries upload is off). */
@@ -233,6 +245,7 @@ class HomeViewModel(
                     list,
                     listed.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id },
                     deps.penEntries(listed.filter { it.isInsulin }.map { it.id }),
+                    deps.deliveries(listed.map { it.id }),
                 )
             }
 
@@ -277,6 +290,7 @@ class HomeViewModel(
                 config = config,
                 readOnly = recent.readOnly,
                 fromPen = recent.fromPen,
+                delivery = recent.delivery,
                 profile = profile?.takeIf { glucose.role != Role.Follower },
                 marks = marks?.let { m -> listed.mapNotNull { t -> m.mark(t, now)?.let { t.id to it } }.toMap() }.orEmpty(),
                 undoInClinic = pendingUndo != null && inClinic,
@@ -344,6 +358,11 @@ class HomeViewModel(
         val treatment = undo.value ?: return
         undo.value = null
         viewModelScope.launch { deps.undoTreatment(treatment) }
+    }
+
+    /** *Retry* on an entry nothing took ([TreatmentDelivery.Failed]): it is sent again now. */
+    fun retry(treatment: Treatment) {
+        viewModelScope.launch { deps.retryTreatment(treatment.id) }
     }
 
     /** The snackbar went away without Undo (timed out or dismissed): the offer ends. */
@@ -414,6 +433,7 @@ class HomeViewModel(
         val treatments: List<Treatment>,
         val readOnly: Set<String>,
         val fromPen: Set<String>,
+        val delivery: Map<String, TreatmentDelivery>,
     )
 
     private data class Extras(

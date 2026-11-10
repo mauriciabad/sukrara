@@ -76,6 +76,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Reveal
@@ -97,6 +99,8 @@ class TreatmentFormState(
     note: String = "",
     at: Instant? = null,
     ago: Int? = null,
+    /** Editing one stored entry of this kind (home's list): one amount field and its note, one entry; null = adding. */
+    val editing: TreatmentKind? = null,
 ) {
     var rapid by mutableStateOf(rapid)
     var long by mutableStateOf(long)
@@ -111,7 +115,15 @@ class TreatmentFormState(
     fun whenAt(now: Instant): Instant? = ago?.let { TreatmentForm.agoTime(now, it) } ?: at
 
     /** null = an amount is invalid. */
-    val entries: List<NewEntry>? get() = TreatmentForm.entries(rapid, long, carbs, note)
+    val entries: List<NewEntry>?
+        get() =
+            when (editing) {
+                null -> TreatmentForm.entries(rapid, long, carbs, note)
+                TreatmentKind.RapidInsulin -> TreatmentForm.edited(editing, rapid, note)
+                TreatmentKind.LongInsulin -> TreatmentForm.edited(editing, long, note)
+                TreatmentKind.Carbs -> TreatmentForm.edited(editing, carbs, note)
+                TreatmentKind.Note -> TreatmentForm.edited(editing, "", note)
+            }
     val canSave: Boolean get() = entries?.isNotEmpty() == true
     val hasInput: Boolean get() = listOf(rapid, long, carbs, note).any { it.isNotBlank() }
 
@@ -128,7 +140,7 @@ class TreatmentFormState(
     companion object {
         val Saver: Saver<TreatmentFormState, Any> =
             listSaver(
-                save = { listOf(it.rapid, it.long, it.carbs, it.note, it.at?.toEpochMilli(), it.ago) },
+                save = { listOf(it.rapid, it.long, it.carbs, it.note, it.at?.toEpochMilli(), it.ago, it.editing?.name) },
                 restore = {
                     TreatmentFormState(
                         it[0] as String,
@@ -137,14 +149,33 @@ class TreatmentFormState(
                         it[3] as String,
                         (it[4] as Long?)?.let(Instant::ofEpochMilli),
                         it[5] as Int?,
+                        (it[6] as String?)?.let(TreatmentKind::valueOf),
                     )
                 },
             )
+
+        /** The form for editing [t]: its amount in its kind's field, its note and its time. */
+        fun editing(t: Treatment): TreatmentFormState {
+            val amount = TreatmentForm.amountText(t.amount)
+            return TreatmentFormState(
+                rapid = if (t.kind == TreatmentKind.RapidInsulin) amount else "",
+                long = if (t.kind == TreatmentKind.LongInsulin) amount else "",
+                carbs = if (t.kind == TreatmentKind.Carbs) amount else "",
+                note = t.note,
+                at = t.at,
+                editing = t.kind,
+            )
+        }
     }
 }
 
 @Composable
 fun rememberTreatmentFormState(): TreatmentFormState = rememberSaveable(saver = TreatmentFormState.Saver) { TreatmentFormState() }
+
+/** The edit form for [t], kept across a configuration change. */
+@Composable
+fun rememberEditFormState(t: Treatment): TreatmentFormState =
+    rememberSaveable(t.id, saver = TreatmentFormState.Saver) { TreatmentFormState.editing(t) }
 
 /**
  * The quick dialog's countdown over the lock screen: [seconds] left (the ring's digits), [spokenSeconds] (TalkBack's
@@ -193,6 +224,7 @@ fun TreatmentDialogContent(
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
     val carbsFocus = remember { FocusRequester() }
+    val noteFocus = remember { FocusRequester() }
     var picking by remember { mutableStateOf(false) }
     val entries = form.entries
     val save = {
@@ -204,7 +236,15 @@ fun TreatmentDialogContent(
             onSave(list, form.whenAt(now()))
         }
     }
-    LaunchedEffect(Unit) { runCatching { (if (focusCarbs) carbsFocus else first).requestFocus() } }
+    LaunchedEffect(Unit) {
+        runCatching {
+            when {
+                form.editing == TreatmentKind.Note -> noteFocus.requestFocus()
+                form.editing == TreatmentKind.Carbs || (form.editing == null && focusCarbs) -> carbsFocus.requestFocus()
+                else -> first.requestFocus()
+            }
+        }
+    }
 
     Surface(
         modifier = modifier.widthIn(min = 280.dp, max = 560.dp).testTag("treatment-dialog"),
@@ -213,24 +253,35 @@ fun TreatmentDialogContent(
         tonalElevation = 6.dp,
     ) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(stringResource(R.string.treatment_title), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(editTitle(form.editing)), style = MaterialTheme.typography.headlineSmall)
             DraftRow(draft, zone)
-            // side by side; stacked at large font sizes so labels and units never truncate
+            // side by side; stacked at large font sizes so labels and units never truncate. Editing: its kind's field
+            // only (a note has none)
             val stacked = LocalDensity.current.fontScale > STACK_FONT_SCALE
+            val shown = form.editing?.let { setOf(it) } ?: setOf(TreatmentKind.RapidInsulin, TreatmentKind.LongInsulin, TreatmentKind.Carbs)
             val fields: @Composable (Modifier) -> Unit = { fieldModifier ->
-                AmountField(
-                    form.rapid,
-                    { form.rapid = it },
-                    R.string.treatment_rapid,
-                    R.string.treatment_unit_u,
-                    fieldModifier.focusRequester(first),
-                )
-                AmountField(form.long, { form.long = it }, R.string.treatment_long, R.string.treatment_unit_u, fieldModifier)
-                AmountField(form.carbs, {
-                    form.carbs = it
-                }, R.string.treatment_carbs, R.string.treatment_unit_g, fieldModifier.focusRequester(carbsFocus))
+                if (TreatmentKind.RapidInsulin in shown) {
+                    AmountField(
+                        form.rapid,
+                        { form.rapid = it },
+                        R.string.treatment_rapid,
+                        R.string.treatment_unit_u,
+                        fieldModifier.focusRequester(first),
+                    )
+                }
+                if (TreatmentKind.LongInsulin in shown) {
+                    val focus = if (form.editing == null) fieldModifier else fieldModifier.focusRequester(first)
+                    AmountField(form.long, { form.long = it }, R.string.treatment_long, R.string.treatment_unit_u, focus)
+                }
+                if (TreatmentKind.Carbs in shown) {
+                    AmountField(form.carbs, {
+                        form.carbs = it
+                    }, R.string.treatment_carbs, R.string.treatment_unit_g, fieldModifier.focusRequester(carbsFocus))
+                }
             }
-            if (stacked) {
+            if (form.editing == TreatmentKind.Note) {
+                Unit
+            } else if (stacked || form.editing != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { fields(Modifier.fillMaxWidth()) }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { fields(Modifier.weight(1f)) }
@@ -242,7 +293,7 @@ fun TreatmentDialogContent(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { save() }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(noteFocus),
             )
             if (entries == null) {
                 Text(
@@ -651,6 +702,16 @@ private fun WhenDialog(
         modifier = Modifier.testTag("treatment-time"),
     )
 }
+
+/** *Add treatment*, or *Edit rapid insulin* / *Edit carbs* / … while editing one entry. */
+private fun editTitle(kind: TreatmentKind?): Int =
+    when (kind) {
+        null -> R.string.treatment_title
+        TreatmentKind.RapidInsulin -> R.string.treatment_edit_rapid
+        TreatmentKind.LongInsulin -> R.string.treatment_edit_long
+        TreatmentKind.Carbs -> R.string.treatment_edit_carbs
+        TreatmentKind.Note -> R.string.treatment_edit_note
+    }
 
 /** The *Minutes ago* one-tap lengths. */
 private val AGO_CHIPS = listOf(5, 15, 30, 60)

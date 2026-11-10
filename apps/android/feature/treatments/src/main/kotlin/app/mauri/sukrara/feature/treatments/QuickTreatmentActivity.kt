@@ -62,7 +62,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import kotlinx.coroutines.delay
@@ -81,6 +83,9 @@ import java.time.Instant
  *
  * After Save the dialog goes and a snackbar at the bottom says what was saved, with *Undo* ([SavedSnackbar]); the
  * window then covers only the snackbar and lets touches elsewhere through, so the app behind stays usable.
+ *
+ * With [NavTargets.EXTRA_TREATMENT_ID] (a row of home's list) it edits that stored entry instead: its kind's amount,
+ * its time and its note, Save changes it (a newer version, synced) and *Undo* brings the old one back.
  */
 class QuickTreatmentActivity : ComponentActivity() {
     private val module by lazy { treatmentsModule }
@@ -97,6 +102,10 @@ class QuickTreatmentActivity : ComponentActivity() {
     /** The countdown left before a configuration change: a recreated activity never gets more time. */
     private var carriedMs: Long? = null
     private var saved = false
+
+    /** The stored entry this dialog edits (home's list), once read; null = adding (or still reading it). */
+    private var editing by mutableStateOf<Treatment?>(null)
+    private val editId by lazy { intent.getStringExtra(NavTargets.EXTRA_TREATMENT_ID) }
 
     /** The form holds the kept draft (when it was kept), with *Discard*; null = an ordinary form. */
     private var draftAt by mutableStateOf<Instant?>(null)
@@ -140,7 +149,10 @@ class QuickTreatmentActivity : ComponentActivity() {
         carriedMs = savedInstanceState?.getLong(KEY_LEFT, -1L)?.takeIf { it >= 0 }
         draftAt = savedInstanceState?.getLong(KEY_DRAFT, -1L)?.takeIf { it >= 0 }?.let(Instant::ofEpochMilli)
         setContent {
-            form = rememberTreatmentFormState()
+            val edited = editing
+            // editing: nothing until the entry is read (a moment), then its own form
+            if (editId != null && edited == null) return@setContent
+            form = if (edited != null) rememberEditFormState(edited) else rememberTreatmentFormState()
             SukraraTheme {
                 val c = confirmation
                 if (c != null) {
@@ -150,8 +162,20 @@ class QuickTreatmentActivity : ComponentActivity() {
                 }
             }
         }
-        // the kept draft fills a fresh form (a recreated one keeps what is typed)
-        offerDraft = savedInstanceState == null
+        editId?.let { id ->
+            lifecycleScope.launch {
+                val t = module.editable(id)
+                if (t == null) {
+                    // deleted meanwhile, or no longer this phone's to change
+                    Toast.makeText(this@QuickTreatmentActivity, R.string.treatment_edit_gone, Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    editing = t
+                }
+            }
+        }
+        // the kept draft fills a fresh form (a recreated one keeps what is typed); never an edit's
+        offerDraft = savedInstanceState == null && editId == null
     }
 
     /** Look for a kept draft once the form exists (a fresh dialog only). */
@@ -202,8 +226,8 @@ class QuickTreatmentActivity : ComponentActivity() {
                     now = module.clock::now,
                     onSave = ::save,
                     onCancel = ::finish,
-                    // over the lock screen Unlock takes Open Sukrara's place
-                    onOpenApp = if (cd == null) ::openApp else null,
+                    // over the lock screen Unlock takes Open Sukrara's place; an edit was opened from the app
+                    onOpenApp = if (cd == null && editId == null) ::openApp else null,
                     lock = cd?.let { lockInfo(it) },
                     quiet = quiet,
                     draft = draftAt?.let { DraftLine(it, ::discardDraft) },
@@ -282,6 +306,10 @@ class QuickTreatmentActivity : ComponentActivity() {
     ) {
         if (saved) return
         saved = true
+        editing?.let { t ->
+            storeEdit(t, entries.single(), at)
+            return
+        }
         lifecycleScope.launch {
             val d = module.penDuplicate(entries, at)
             if (d != null) {
@@ -315,6 +343,20 @@ class QuickTreatmentActivity : ComponentActivity() {
         val text =
             getString(if (outbox) R.string.treatment_sent_snack else R.string.treatment_saved_snack, EntryWords.of(resources, entries))
         leave(Confirmation(text, saved))
+    }
+
+    /** Save on an edit: [t] becomes [entry] at [at]; the snackbar's *Undo* brings [t] back. */
+    private fun storeEdit(
+        t: Treatment,
+        entry: NewEntry,
+        at: Instant?,
+    ) {
+        val saved = module.edit(t, entry, at)
+        if (saved == null) {
+            finish()
+            return
+        }
+        leave(Confirmation(getString(R.string.treatment_changed_snack, EntryWords.one(resources, entry)), saved))
     }
 
     /** The dialog leaves (the countdown ends with it, the keyboard goes), then [c] shows. */
@@ -377,7 +419,7 @@ class QuickTreatmentActivity : ComponentActivity() {
             if (cd.expired(now)) {
                 // nothing is saved (no haptic: from a pocket it means nothing). Entries that could be saved are kept as a
                 // draft, offered after the unlock; anything else typed only gets the toast
-                val draft = TreatmentDraft.of(form, module.clock.now())?.takeIf { form.canSave }
+                val draft = TreatmentDraft.of(form, module.clock.now())?.takeIf { form.canSave && editId == null }
                 if (draft != null) {
                     module.keepDraft(draft, EntryWords.of(resources, form.entries.orEmpty()))
                     Toast.makeText(this, R.string.treatment_lock_draft_kept, Toast.LENGTH_LONG).show()
@@ -484,7 +526,7 @@ class QuickTreatmentActivity : ComponentActivity() {
  * *Log anyway* saves what was typed (a second injection is the person's call).
  */
 @Composable
-private fun PenDuplicateDialog(
+internal fun PenDuplicateDialog(
     pen: PenNearEntry,
     onCancel: () -> Unit,
     onLog: () -> Unit,

@@ -9,6 +9,11 @@
     <string name="tile_no_reading_since">Sin lecturas desde las %1$s</string>
     <string name="tile_unavailable">Abre Sukrara para configurarlo</string>
     <string name="treatment_title">Añadir tratamiento</string>
+    <string name="treatment_edit_rapid">Editar insulina rápida</string>
+    <string name="treatment_edit_long">Editar insulina lenta</string>
+    <string name="treatment_edit_carbs">Editar hidratos</string>
+    <string name="treatment_edit_note">Editar nota</string>
+    <string name="treatment_edit_gone">Esta entrada ya no se puede cambiar</string>
     <string name="treatment_rapid">Rápida</string>
     <string name="treatment_long">Lenta</string>
     <string name="treatment_carbs">Carbohidratos</string>
@@ -31,6 +36,7 @@
     <!-- La confirmación tras Guardar; %1$s = las entradas en palabras, p. ej. "4.5u de insulina rápida · 30g de hidratos" -->
     <string name="treatment_saved_snack">Guardado: %1$s</string>
     <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
+    <string name="treatment_changed_snack">Cambiado: %1$s</string>
     <string name="treatment_undo">Deshacer</string>
     <string name="treatment_undone">Deshecho</string>
     <string name="treatment_entry_rapid">%1$s de insulina rápida</string>

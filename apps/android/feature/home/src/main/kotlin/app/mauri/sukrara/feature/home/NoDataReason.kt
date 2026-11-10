@@ -144,6 +144,11 @@ sealed interface HomeAction {
 
     data object AddTreatment : HomeAction
 
+    /** A row of the treatment list: the treatment dialog edits that entry (amount, time, note). */
+    data class EditTreatment(
+        val id: String,
+    ) : HomeAction
+
     /** Add treatment with Carbs ([carbs]) or Rapid focused: the card's *Eat carbs* / *Take insulin* pill. */
     data class Treat(
         val carbs: Boolean,

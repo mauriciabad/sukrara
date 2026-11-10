@@ -108,8 +108,13 @@ interface ReadingsRepository {
     suspend fun deleteFrom(sources: Set<SourceId>): Int
 }
 
-/** How a treatment reached this phone and whether the wearer has it (followers write through an outbox). */
-enum class TreatmentDelivery { Local, Pending, Delivered }
+/**
+ * How a treatment reached this phone and whether the wearer has it (followers write through an outbox): [Local] = the
+ * wearer's own, [Pending] = a writer's version on its way, [Delivered] = a relay or the wearer's phone has it, [Failed]
+ * = nothing took it within 2 minutes (or it couldn't be sent at all): shown as *Not sent* with *Retry*, and still sent
+ * again on every connect.
+ */
+enum class TreatmentDelivery { Local, Pending, Delivered, Failed }
 
 /**
  * A stored treatment with what sharing needs: [creator] (the key that created it; writers may change only their

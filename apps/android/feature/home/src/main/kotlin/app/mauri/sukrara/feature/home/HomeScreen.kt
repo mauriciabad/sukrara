@@ -39,6 +39,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +62,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -78,6 +80,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.designsystem.alerts.MuteAllState
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.designsystem.alerts.QuietExits
@@ -136,6 +139,7 @@ fun HomeScreen(
                 onDelete = viewModel::delete,
                 onUndo = viewModel::undoDelete,
                 onUndoGone = viewModel::undoShown,
+                onRetry = viewModel::retry,
                 onOpenDataProblems = onOpenDataProblems,
                 pen =
                     PenCallbacks(
@@ -163,6 +167,8 @@ data class HomeCallbacks(
     val onDelete: (Treatment) -> Unit = {},
     val onUndo: () -> Unit = {},
     val onUndoGone: () -> Unit = {},
+    /** *Retry* on an entry nothing took (a writer's *Not sent*). */
+    val onRetry: (Treatment) -> Unit = {},
     val onOpenDataProblems: () -> Unit = {},
     val pen: PenCallbacks = PenCallbacks(),
 )
@@ -323,13 +329,14 @@ private fun HomeColumn(
         BannerSlot(infoBanner)
         MuteControl(state, callbacks.onAlert, onMuteAll)
         Treatments(
-            state.treatments,
-            state.readOnly,
-            state.fromPen,
-            state.marks,
-            state.now,
+            state,
             { callbacks.onAction(HomeAction.OpenClinicUpload) },
             callbacks.pen.open,
+            onEdit = { callbacks.onAction(HomeAction.EditTreatment(it.id)) },
+            onRetry = {
+                haptics.confirm()
+                callbacks.onRetry(it)
+            },
         ) {
             haptics.confirm()
             callbacks.onDelete(it)
@@ -1009,17 +1016,25 @@ private fun MuteAllDialog(
     ) { m -> onChoose(if (m <= 0.0) null else m.roundToInt()) }
 }
 
+/**
+ * The last 24 h of entries. A row this phone may change is one button that opens the treatment dialog on it (amount,
+ * time, note; TalkBack *edit*), a pen's row opens its sheet; Delete stays a button of its own. A writer's entry nothing
+ * took yet says *Sending…* under it, then *Not sent* with *Retry*.
+ */
 @Composable
 private fun Treatments(
-    treatments: List<Treatment>,
-    readOnly: Set<String>,
-    fromPen: Set<String>,
-    marks: Map<String, UploadMark>,
-    now: Instant,
+    state: HomeUiState,
     openClinicUpload: () -> Unit,
     openPen: (Treatment) -> Unit,
+    onEdit: (Treatment) -> Unit,
+    onRetry: (Treatment) -> Unit,
     onDelete: (Treatment) -> Unit,
 ) {
+    val treatments = state.treatments
+    val readOnly = state.readOnly
+    val fromPen = state.fromPen
+    val marks = state.marks
+    val now = state.now
     val resources = LocalContext.current.resources
     val words = remember(resources) { CardWords.of(resources) }
     Reveal(treatments.isNotEmpty()) {
@@ -1029,12 +1044,19 @@ private fun Treatments(
             modifier = Modifier.padding(start = 16.dp, top = 8.dp).semantics { heading() },
         )
         val openLabel = stringResource(R.string.home_pen_open)
+        val editLabel = stringResource(R.string.home_treatment_edit)
         treatments.forEach { t ->
             val pen = t.id in fromPen
             val label = treatmentLabel(t, pen)
             val time = clockTime(t.at)
-            // a pen row is one button (its sheet: the doses, Priming / Injected); its Delete stays a button of its own
-            val open = if (pen) Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp) else Modifier
+            // a pen row is one button (its sheet: the doses, Priming / Injected), any other row this phone may change
+            // opens its edit; Delete stays a button of its own
+            val open =
+                when {
+                    pen -> Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp)
+                    t.id !in readOnly -> Modifier.clickable(onClickLabel = editLabel) { onEdit(t) }.heightIn(min = 48.dp)
+                    else -> Modifier
+                }
             Row(
                 Modifier.fillMaxWidth().then(open).padding(start = 16.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1062,6 +1084,48 @@ private fun Treatments(
                             contentDescription = stringResource(R.string.home_treatment_delete, label, time),
                         )
                     }
+                }
+            }
+            DeliveryLine(state.delivery[t.id], label) { onRetry(t) }
+        }
+    }
+}
+
+/**
+ * A writer's entry on its way (#75): *Sending…* while a relay or the wearer's phone hasn't taken it, *Not sent* in the
+ * error colour with *Retry* once 2 minutes passed without (it is still sent again on every connect). Slides in and out;
+ * the line is a polite live region, *Retry* names the entry for TalkBack.
+ */
+@Composable
+private fun DeliveryLine(
+    delivery: TreatmentDelivery?,
+    label: String,
+    onRetry: () -> Unit,
+) {
+    var last by remember { mutableStateOf(delivery) }
+    if (delivery != null) last = delivery
+    Reveal(delivery != null) {
+        val failed = last == TreatmentDelivery.Failed
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp).testTag("treatment-delivery"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(if (failed) DsR.drawable.ds_ic_error else DsR.drawable.ds_ic_send),
+                contentDescription = null,
+                tint = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                stringResource(if (failed) R.string.home_treatment_not_sent else R.string.home_treatment_sending),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(start = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            if (failed) {
+                val retryLabel = stringResource(R.string.home_treatment_retry_label, label)
+                TextButton(onClick = onRetry, modifier = Modifier.semantics { contentDescription = retryLabel }) {
+                    Text(stringResource(R.string.home_treatment_retry))
                 }
             }
         }
