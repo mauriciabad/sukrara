@@ -106,6 +106,14 @@
     <string name="home_treatment_long">%1$s long insulin</string>
     <string name="home_treatment_carbs">%1$s carbs</string>
     <string name="home_treatment_note">Note</string>
+    <!-- %1$s = "8.5u rapid insulin": an entry an insulin pen logged -->
+    <string name="home_treatment_from_pen">%1$s · from the pen</string>
+    <!-- TalkBack: what tapping a pen entry's row does -->
+    <string name="home_pen_open">show its doses</string>
+    <string name="home_pen_changed">Entry changed</string>
+    <string name="home_pen_removed">Removed from your log</string>
+    <string name="home_pen_changed_since">This entry changed meanwhile. Nothing was saved.</string>
+    <string name="home_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
     <string name="home_treatment_delete">Delete %1$s at %2$s</string>
     <string name="home_treatment_deleted">Treatment deleted</string>
     <string name="home_treatment_deleted_clinic">Treatment deleted. It will be removed from LibreView too.</string>
@@ -160,10 +168,14 @@
         <item quantity="one">%1$d follower</item>
         <item quantity="other">%1$d followers</item>
     </plurals>
-    <string name="banner_pens_title">Pen taps are blocked</string>
-    <string name="banner_pens_text">Android doesn\'t let pen taps reach Sukrara, so your pen doses aren\'t read or logged.</string>
-    <string name="banner_pens_allow">Allow</string>
-    <string name="banner_pens_turn_off">Turn off</string>
+    <string name="banner_taps_pen_title">Pen taps are blocked</string>
+    <string name="banner_taps_pen_text">Android doesn\'t let Sukrara open when you tap your pen, so your pen doses aren\'t read or logged.</string>
+    <string name="banner_taps_sensor_title">Sensor taps are blocked</string>
+    <string name="banner_taps_sensor_text">Android doesn\'t let Sukrara open when you scan a sensor.</string>
+    <string name="banner_taps_both_title">Pen and sensor taps are blocked</string>
+    <string name="banner_taps_both_text">Android doesn\'t let Sukrara open when you tap your pen or scan a sensor, so your pen doses aren\'t read or logged.</string>
+    <string name="banner_taps_allow">Allow</string>
+    <string name="banner_taps_turn_off">Turn off</string>
     <!-- Glucose report card on home -->
     <string name="report_title">Glucose report</string>
     <string name="report_days_short">%1$d d</string>

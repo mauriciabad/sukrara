@@ -151,6 +151,10 @@ class SensorSettingsBridge(
         recheck.update { it + 1 }
     }
 
+    override fun allowTaps() {
+        tap.openAllow()
+    }
+
     override fun forget() {
         scope.launch {
             sensors.pairings.forget()

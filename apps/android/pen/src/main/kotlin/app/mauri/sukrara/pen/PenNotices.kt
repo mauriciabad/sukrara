@@ -68,6 +68,7 @@ class PenNotices(
             is PenAction.AllPriming -> ctx.getString(R.string.pen_all_priming)
             is PenAction.Same -> ctx.getString(if (a.entry != null) R.string.pen_m_same else R.string.pen_m_different)
             is PenAction.OpenPen -> ctx.getString(R.string.pen_check_it)
+            is PenAction.Review -> ctx.getString(R.string.pen_review)
         }
 
     /** One read's result, only when [enabled] (Settings → Insulin pens → *Notification after each read*). */
@@ -94,7 +95,24 @@ class PenNotices(
                         .setGroup(ports.group)
                         .build(),
                 )
-        if (st.entries.isNotEmpty()) {
+        val review = card.actions.filterIsInstance<PenAction.Review>().firstOrNull()
+        if (review != null) {
+            // a big read: *Review* opens its entries in Doses read (with *Undo this read*), as on the card
+            b.addAction(
+                Notification.Action
+                    .Builder(
+                        null,
+                        ctx.getString(R.string.pen_review),
+                        PendingIntent.getActivity(
+                            ctx,
+                            402,
+                            penPage(ctx, review.serial, review = true),
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                        ),
+                    ).build(),
+            )
+            if (canUndo) b.addAction(action(PenAction.Undo, label(PenAction.Undo)))
+        } else if (st.entries.isNotEmpty()) {
             b.addAction(
                 Notification.Action
                     .Builder(
@@ -164,15 +182,17 @@ class PenNotices(
         fun addTreatment(ctx: Context): Intent =
             Intent(NavTargets.ACTION_QUICK_TREATMENT).setPackage(ctx.packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        /** Settings › Insulin pens › this pen (the app's main screen). */
+        /** Settings › Insulin pens › this pen (the app's main screen); [review]: its last big read in Doses read. */
         fun penPage(
             ctx: Context,
             serial: String,
+            review: Boolean = false,
         ): Intent =
             // the app's own main activity, explicitly (no intent filter: nothing else can open it this way)
             (ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: Intent().setPackage(ctx.packageName))
                 .setAction(NavTargets.ACTION_PEN_PAGE)
                 .putExtra(NavTargets.EXTRA_PEN_SERIAL, serial)
+                .putExtra(NavTargets.EXTRA_PEN_REVIEW, review)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }
 }

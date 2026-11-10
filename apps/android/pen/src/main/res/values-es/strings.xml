@@ -43,10 +43,6 @@
         <item quantity="one">%1$d sustituye tu entrada</item>
         <item quantity="other">%1$d sustituyen tus entradas</item>
     </plurals>
-    <plurals name="pen_read_big">
-        <item quantity="one">Revisa %1$d inyección</item>
-        <item quantity="other">Revisa %1$d inyecciones</item>
-    </plurals>
     <plurals name="pen_q_several">
         <item quantity="one">%1$d dosis de la pluma por revisar</item>
         <item quantity="other">%1$d dosis de la pluma por revisar</item>
@@ -62,7 +58,8 @@
     <string name="pen_untested_added_line">%1$s · compruébala una vez para que Sukrara la registre</string>
     <string name="pen_set_up">Configurar</string>
     <string name="pen_matches_short">Coincide con tu entrada de %1$s</string>
-    <string name="pen_read_big_line">Desde el %1$s · %2$s</string>
+    <string name="pen_read_big_since">Desde el %1$s</string>
+    <string name="pen_review">Revisar</string>
     <string name="pen_kind_rapid_lower">rápida</string>
     <string name="pen_kind_long_lower">lenta</string>
     <plurals name="pen_older_left_out">

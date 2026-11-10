@@ -43,10 +43,6 @@
         <item quantity="one">%1$d replaced your entry</item>
         <item quantity="other">%1$d replaced your entries</item>
     </plurals>
-    <plurals name="pen_read_big">
-        <item quantity="one">Check %1$d injection</item>
-        <item quantity="other">Check %1$d injections</item>
-    </plurals>
     <plurals name="pen_q_several">
         <item quantity="one">%1$d pen dose to check</item>
         <item quantity="other">%1$d pen doses to check</item>
@@ -62,7 +58,8 @@
     <string name="pen_untested_added_line">%1$s · check it once before Sukrara logs it</string>
     <string name="pen_set_up">Set up</string>
     <string name="pen_matches_short">Matches your %1$s entry</string>
-    <string name="pen_read_big_line">Since %1$s · %2$s</string>
+    <string name="pen_read_big_since">Since %1$s</string>
+    <string name="pen_review">Review</string>
     <string name="pen_kind_rapid_lower">rapid</string>
     <string name="pen_kind_long_lower">long</string>
     <plurals name="pen_older_left_out">

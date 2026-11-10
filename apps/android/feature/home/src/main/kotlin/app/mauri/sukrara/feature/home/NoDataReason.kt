@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceStatus
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.graph.GlucoseLook
 import java.time.Instant
 
@@ -150,11 +151,16 @@ sealed interface HomeAction {
     /** The Tidepool upload's page (the clinic banner's *Tidepool*). */
     data object OpenTidepool : HomeAction
 
-    /** Pen taps blocked by Android: its screen that allows them. */
-    data object AllowPenTaps : HomeAction
+    /** NFC taps blocked by Android: its screen that allows them. */
+    data object AllowTaps : HomeAction
 
-    /** Pen taps blocked by Android: turn pen reading off (the honest exit for someone who doesn't want taps). */
-    data object TurnOffPens : HomeAction
+    /**
+     * NFC taps blocked by Android: turn off what is blocked ([taps]: pen reading, *Open Sukrara when you scan a
+     * sensor*), the honest exit for someone who doesn't want taps.
+     */
+    data class TurnOffTaps(
+        val taps: BlockedTaps,
+    ) : HomeAction
 
     /** Sukrara's System UI module waits for a restart: restart System UI with root. */
     data object RestartSystemUi : HomeAction

@@ -3,15 +3,27 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings.pens
 
+import android.nfc.NfcAdapter
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -27,6 +39,8 @@ import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
+import app.mauri.sukrara.designsystem.nfc.AntennaArt
+import app.mauri.sukrara.designsystem.nfc.antennaSpot
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
@@ -34,8 +48,10 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.feature.settings.BlockedTapsKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
+import app.mauri.sukrara.feature.settings.TapsBlockedCard
 import app.mauri.sukrara.feature.settings.numberLabeler
 import app.mauri.sukrara.settings.NumberSpec
 import app.mauri.sukrara.settings.SettingsSpec
@@ -131,6 +147,10 @@ class PensViewModel(
         port?.openNotifySettings()
     }
 
+    fun openJuggluco() {
+        port?.openJugglucoInfo()
+    }
+
     fun setNotify(on: Boolean) {
         viewModelScope.launch { settings.set(Notify, on) }
     }
@@ -181,7 +201,9 @@ fun PensContent(
         )
     SettingsPage(stringResource(R.string.st_pens_title), onBack) {
         // Android blocks the taps (reading Ask or On): every tap does nothing until allowed
-        if (ui.reading != "off" && ui.taps.blocked) TapsBlockedCard(vm::allowTaps)
+        if (ui.reading != "off" && ui.taps.blocked) TapsBlockedCard(BlockedTapsKind.Pen, vm::allowTaps)
+        // where to touch: this phone's NFC antenna (its own spot when Android knows it)
+        AntennaIntro()
         SettingsGroup {
             ValueRow(stringResource(R.string.st_pens_reading), readingLabels.getValue(ui.reading), {
                 choosing = true
@@ -192,6 +214,15 @@ fun PensContent(
                     vm::openNfc,
                     summary = stringResource(R.string.st_pens_nfc_off_summary),
                     icon = DsR.drawable.ds_ic_nfc_off,
+                )
+            }
+            if (ui.reading == "on" && ui.taps.juggluco) {
+                // both apps answer the same tap: a dose could be logged twice (re-checked on resume)
+                NavigationRow(
+                    stringResource(R.string.st_pens_juggluco),
+                    vm::openJuggluco,
+                    summary = stringResource(R.string.st_pens_juggluco_summary),
+                    icon = DsR.drawable.ds_ic_warning,
                 )
             }
             if (ui.notify && ui.taps.notifyBlocked) {
@@ -274,6 +305,26 @@ fun PensContent(
                     androidx.compose.material3.Text(stringResource(android.R.string.cancel))
                 }
             },
+        )
+    }
+}
+
+/** The pens page's intro: the back of this phone with a circle on its NFC antenna, and how to hold the pen there. */
+@Composable
+private fun AntennaIntro() {
+    val context = LocalContext.current
+    val spot = remember(context) { antennaSpot(NfcAdapter.getDefaultAdapter(context)) }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        AntennaArt(spot, stringResource(R.string.st_pens_antenna_desc), Modifier.size(width = 56.dp, height = 96.dp))
+        Text(
+            stringResource(R.string.st_pens_antenna),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
         )
     }
 }

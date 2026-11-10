@@ -12,15 +12,19 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingHistory
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.graph.GlucoseLook
@@ -114,6 +118,42 @@ interface HomeDeps {
      * confirmed on a real sensor); null otherwise. Home asks the wearer for feedback while it is set.
      */
     val untestedSensor: Flow<String?> get() = flowOf(null)
+
+    /** Which of [ids] came from an insulin pen (their rows say *from the pen* and open the pen entry sheet). */
+    suspend fun penEntries(ids: Collection<String>): Set<String> = emptySet()
+
+    /** Pen entry [id] with its doses (any role: it is read from the synced log), or null when it isn't one. */
+    suspend fun penEntry(id: String): PenEntryInfo? = null
+
+    /** This phone corrects pen doses (the wearer's with pens); false = the sheet is read only. */
+    fun pensEditable(): Boolean = false
+
+    /** The sheet's *Save* ([PensPort.correct]): the entry as it was, or null when it changed since. */
+    suspend fun correctPen(
+        shown: PenEntryInfo,
+        primed: List<Boolean>,
+    ): PenEntryInfo? = null
+
+    /** The snackbar's *Undo* ([PensPort.restore]). */
+    suspend fun restorePen(was: PenEntryInfo): Boolean = false
+}
+
+/** The pen entry sheet open on home: the entry, the row it came from, and what this phone may change of it. */
+data class PenSheet(
+    val entry: PenEntryInfo,
+    val treatment: Treatment,
+    /** Doses can be set to *Priming* / *Injected* (the wearer's phone with pens). */
+    val editable: Boolean,
+    /** *Delete* (home's own delete with its *Undo*): not on a follower for the wearer's entries. */
+    val deletable: Boolean,
+)
+
+/** What home's snackbar says after a pen entry correction; [undo] = the entry as it was (the *Undo*). */
+data class PenNotice(
+    val kind: Kind,
+    val undo: PenEntryInfo? = null,
+) {
+    enum class Kind { Changed, Removed, ChangedSince, UndoFailed }
 }
 
 /** The wearer's own row on home: picture, name (blank = not set yet) and how many follow. */
@@ -142,6 +182,8 @@ data class HomeUiState(
     val config: GraphConfig = GraphConfig(),
     /** Ids of [treatments] this phone may not delete (a follower and the wearer's entries): no Delete button. */
     val readOnly: Set<String> = emptySet(),
+    /** Ids of [treatments] that came from an insulin pen (*8.5u rapid insulin · from the pen*; a tap opens its sheet). */
+    val fromPen: Set<String> = emptySet(),
     /** The wearer's profile while sharing (the top bar shows it, with Share). */
     val profile: HomeProfile? = null,
     /** The clinic upload's cloud mark per listed entry id (empty while its entries upload is off). */
@@ -154,6 +196,8 @@ data class HomeUiState(
     val systemUiUpdated: Boolean = false,
     /** The launcher can place the widget from the app (the widget banner's *Add* button), else the hand-made way. */
     val widgetPinnable: Boolean = true,
+    /** What the taps-blocked banner names: pen taps, sensor taps or both. */
+    val blockedTaps: BlockedTaps = BlockedTaps(),
 ) {
     val mutedUntil: Instant? get() = glucose.alerts.mutedUntil?.takeIf { it > now }
 }
@@ -185,7 +229,11 @@ class HomeViewModel(
             .mapLatest { list ->
                 // only the listed (last day's) entries have a Delete button to decide
                 val listed = list.filter { it.at >= deps.clock.now() - TREATMENTS_WINDOW - Duration.ofHours(1) }
-                Recent(list, listed.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id })
+                Recent(
+                    list,
+                    listed.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id },
+                    deps.penEntries(listed.filter { it.isInsulin }.map { it.id }),
+                )
             }
 
     val state: StateFlow<HomeUiState> =
@@ -219,6 +267,7 @@ class HomeViewModel(
                 nextSetupStep = env.nextSetupStep,
                 systemUiUpdated = env.systemUiRestart == ModuleState.Update,
                 widgetPinnable = env.widgetPinnable,
+                blockedTaps = env.tapsBlocked,
                 dataProblems = problems,
                 treatments = listed,
                 history = history,
@@ -226,6 +275,7 @@ class HomeViewModel(
                 undo = pendingUndo,
                 config = config,
                 readOnly = recent.readOnly,
+                fromPen = recent.fromPen,
                 profile = profile?.takeIf { glucose.role != Role.Follower },
                 marks = marks?.let { m -> listed.mapNotNull { t -> m.mark(t, now)?.let { t.id to it } }.toMap() }.orEmpty(),
                 undoInClinic = pendingUndo != null && inClinic,
@@ -302,6 +352,60 @@ class HomeViewModel(
         undo.value = null
     }
 
+    private val _penSheet = MutableStateFlow<PenSheet?>(null)
+
+    /** The pen entry sheet a pen row opened (null = closed). */
+    val penSheet: StateFlow<PenSheet?> = _penSheet
+
+    private val _penNotice = MutableStateFlow<PenNotice?>(null)
+
+    /** The pen sheet's last result, for the snackbar (null once shown). */
+    val penNotice: StateFlow<PenNotice?> = _penNotice
+
+    /** A pen row was tapped: its sheet opens with the entry as stored now (an entry deleted meanwhile opens nothing). */
+    fun openPen(treatment: Treatment) {
+        viewModelScope.launch {
+            val entry = deps.penEntry(treatment.id) ?: return@launch
+            val readOnly = treatment.id in state.value.readOnly
+            _penSheet.value = PenSheet(entry, treatment, editable = !readOnly && deps.pensEditable(), deletable = !readOnly)
+        }
+    }
+
+    fun closePen() {
+        _penSheet.value = null
+    }
+
+    /** *Save*: each dose priming or injected (every dose priming removes the entry); *Undo* follows on the snackbar. */
+    fun correctPen(primed: List<Boolean>) {
+        val sheet = _penSheet.value?.takeIf { it.editable } ?: return
+        _penSheet.value = null
+        viewModelScope.launch {
+            val was = deps.correctPen(sheet.entry, primed)
+            _penNotice.value =
+                when {
+                    was == null -> PenNotice(PenNotice.Kind.ChangedSince)
+                    primed.all { it } -> PenNotice(PenNotice.Kind.Removed, was)
+                    else -> PenNotice(PenNotice.Kind.Changed, was)
+                }
+        }
+    }
+
+    /** The snackbar's *Undo* after a correction: the entry back as it was, while nothing changed it since. */
+    fun undoPen(was: PenEntryInfo) {
+        viewModelScope.launch { if (!deps.restorePen(was)) _penNotice.value = PenNotice(PenNotice.Kind.UndoFailed) }
+    }
+
+    /** *Delete* on the sheet: home's own delete (its snackbar offers *Undo*). */
+    fun deletePen() {
+        val sheet = _penSheet.value?.takeIf { it.deletable } ?: return
+        _penSheet.value = null
+        delete(sheet.treatment)
+    }
+
+    fun penNoticeShown(notice: PenNotice) {
+        _penNotice.compareAndSet(notice, null)
+    }
+
     private data class Live(
         val glucose: GlucoseState,
         val history: List<Reading>,
@@ -310,6 +414,7 @@ class HomeViewModel(
     private data class Recent(
         val treatments: List<Treatment>,
         val readOnly: Set<String>,
+        val fromPen: Set<String>,
     )
 
     private data class Extras(
@@ -319,6 +424,8 @@ class HomeViewModel(
         val problems: List<DataProblem>,
         val config: GraphConfig,
     )
+
+    private val Treatment.isInsulin get() = kind == TreatmentKind.RapidInsulin || kind == TreatmentKind.LongInsulin
 
     companion object {
         val UNDO_WINDOW: Duration = Duration.ofSeconds(5)

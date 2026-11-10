@@ -89,8 +89,11 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
   by your pen?*), with *Undo*; it asks when unsure. Settings › Insulin pens lists your pens: each pen's page (name,
-  insulin type, forget), its *Doses read* with per-dose *Priming* / *Injected* corrections, the untested NovoPen 6's
-  display check, and what Android blocks (tag intents, NFC off) with the way to fix it.
+  insulin type, forget), its *Doses read* with per-dose *Priming* / *Injected* corrections (also from the entry's row
+  on home, *from the pen*, read only on a follower), the untested NovoPen 6's display check, where this phone's NFC
+  antenna is, and what gets in the way (tag intents blocked, NFC off, Juggluco also reading pens) with the way to fix
+  it. A read that brings injections older than 3 days (the pen not read for days) logs them and asks you to *Review*
+  them, with *Undo this read*.
 - **Sharing core**: your sharing identity, restorable from its recovery code so existing followers keep following;
   readings and alerts go to approved followers over Nostr relays (protocol v2). *How readings travel* turns sharing over
   the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of

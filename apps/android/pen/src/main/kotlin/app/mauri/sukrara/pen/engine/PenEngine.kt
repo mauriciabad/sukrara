@@ -68,6 +68,22 @@ data class Pen(
     val wrote: Map<String, Long> = emptyMap(), // entry id → the `u` the engine last wrote
     val replaced: Map<String, PenEntry> = emptyMap(), // entry id → the hand-typed entry a merge replaced
     val opened: Boolean = false, // the pen's page was opened once (app-side: Settings › Insulin pens' hint)
+    val big: BigRead? = null, // app-side: the last big read of this pen (Review, *Undo this read*)
+)
+
+/**
+ * A read that logged an injection older than 72 h ([Report.bigSince]), kept so *Review* can list it and *Undo this
+ * read* can take it back later (also after a restart): [wrote] = each entry it wrote and the `u` it wrote, so an entry
+ * changed since (a later read, a correction, a delete) refuses the undo instead of overwriting the change.
+ */
+@Serializable
+data class BigRead(
+    val at: Long,
+    val since: Long,
+    val entries: List<String>,
+    val merged: Int,
+    val wrote: Map<String, Long>,
+    val undo: UndoRecord,
 )
 
 /** A question: what some doses were (`doses`), or whether an injection is a hand-typed entry (`match`). */
@@ -116,6 +132,7 @@ data class Report(
 )
 
 /** What [PenEngine.undo] needs to take one read back: the doses it decided and the entries as they were before. */
+@Serializable
 data class UndoRecord(val serial: String, val keys: List<String>, val before: Map<String, PenEntry?>)
 
 data class Outcome(val ledger: Ledger, val writes: List<PenEntry>, val report: Report, val undo: UndoRecord? = null)

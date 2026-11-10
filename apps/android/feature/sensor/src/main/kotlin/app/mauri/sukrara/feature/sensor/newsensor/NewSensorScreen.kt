@@ -71,6 +71,8 @@ import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
+import app.mauri.sukrara.designsystem.nfc.DefaultAntenna
+import app.mauri.sukrara.designsystem.nfc.antennaSpot
 import app.mauri.sukrara.feature.sensor.R
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.sensor.SensorProfile

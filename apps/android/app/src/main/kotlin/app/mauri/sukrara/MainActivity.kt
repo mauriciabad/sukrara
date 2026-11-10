@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
     private var openNewSensor by mutableStateOf(false)
 
     /** The pen whose page a pen read card asked for, until the navigation has opened it. */
-    private var openPen by mutableStateOf<String?>(null)
+    private var openPen by mutableStateOf<PenTarget?>(null)
 
     /** Health Connect asked for the privacy rationale, until the navigation has opened the Health Connect page. */
     private var openHealth by mutableStateOf(false)
@@ -100,9 +100,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** The pen page a pen read card's *Check it* asks for (only the wearer's phone has pens; Settings checks again). */
-private fun penPage(i: Intent?): String? =
-    i?.takeIf { it.action == NavTargets.ACTION_PEN_PAGE }?.getStringExtra(NavTargets.EXTRA_PEN_SERIAL)?.takeIf { it.isNotBlank() }
+/**
+ * The pen page a pen read card's *Check it* / *Review* asks for (only the wearer's phone has pens; Settings checks
+ * again).
+ */
+private fun penPage(i: Intent?): PenTarget? =
+    i
+        ?.takeIf { it.action == NavTargets.ACTION_PEN_PAGE }
+        ?.getStringExtra(NavTargets.EXTRA_PEN_SERIAL)
+        ?.takeIf { it.isNotBlank() }
+        ?.let { PenTarget(it, i.getBooleanExtra(NavTargets.EXTRA_PEN_REVIEW, false)) }
 
 /** Health Connect's link to this app's privacy rationale (the manifest's `.HealthPermissionsRationale` alias). */
 private fun healthRationale(i: Intent?): Boolean =
