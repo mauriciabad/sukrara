@@ -322,6 +322,12 @@ survive it) → the app's logcat has no crash and no R8 / JNA / UniFFI / seriali
       file opens in Numbers.
 - [ ] Import check (optional): `poc/spikes/export-fixtures/tidepool-check` runs Tidepool Uploader's LibreView driver on a
       file and prints the records it would upload.
+- [ ] Damaged database (emulator wearer, debug build; never a phone; `DatabaseSchemaTest` covers the same on the JVM):
+      with some history, `adb shell am force-stop app.mauri.sukrara`, then `adb shell run-as app.mauri.sukrara sh -c
+      'head -c 8192 /dev/urandom > databases/sukrara.db; rm -f databases/sukrara.db-wal databases/sukrara.db-shm'`.
+      Open the app: no crash, an empty history that `SYNTHETIC` readings fill again, home's *Some saved data was
+      damaged* banner → *Damaged data* lists the database, and `adb shell run-as app.mauri.sukrara ls databases/` shows
+      the kept `sukrara.db.corrupt-<time>` beside the new file.
 
 ## Q16 Tidepool upload
 

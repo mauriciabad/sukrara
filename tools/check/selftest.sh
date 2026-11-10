@@ -118,6 +118,11 @@ case_ "an image in the frozen PoC passes" pass "" poc/spikes/brand/assets/x/icon
 case_ "an nsec in app code fails" fail secrets apps/android/x/src/main/kotlin/K.kt "$HDR
 val k = \"nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\""
 
+case_ "a changed committed Room schema fails" fail room-schema \
+  apps/android/core/data/schemas/app.mauri.sukrara.core.data.db.SukraraDatabase/1.json '{"formatVersion": 1}'
+case_ "a new Room schema version passes" pass "" \
+  apps/android/core/data/schemas/app.mauri.sukrara.core.data.db.SukraraDatabase/99.json '{"formatVersion": 1}'
+
 case_ "an unlisted beta library fails" fail prerelease apps/android/gradle/libs.versions.toml '[versions]
 foo = "2.0.0-beta03"'
 case_ "a listed pre-release that is stable now fails" fail prerelease apps/android/gradle/libs.versions.toml '[versions]

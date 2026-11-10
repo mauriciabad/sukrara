@@ -77,7 +77,11 @@ Checks
               list for the release notes. Whole file.
   paths       every file and folder these checks name (Clock, Durations, SettingsSpec, the registries, …) is tracked: a
               check pointed at a moved file guards nothing (#88: the durations check named a model path that no
-              longer existed). A pending file while tools/check/strict is absent, a failure once it exists. Whole tree.
+              longer existed). A pending file while tools/check/strict is absent, a failure once it exists. The
+              folders / globs they scan and qa.json's paths match a tracked file. Whole tree.
+  room-schema a committed Room schema (apps/android/*/schemas/<database>/<version>.json) never changes or goes: phones
+              have databases at that version. A schema change bumps the version, exports a new file and adds a
+              migration (DatabaseSchemaTest opens every exported version through the app's builder).
   qa          prints the docs/QA.md sections the change touches
 """
 import fnmatch
@@ -875,6 +879,23 @@ def check_paths(ch, rep):
         if not any(fnmatch.fnmatchcase(p, glob) for p in files):
             rep.add("FAIL", "paths", "tools/check/check.py scans '%s', which matches no tracked file: point it at the\n"
                     "real files (a check that reads nothing passes silently)." % glob)
+    for entry in load("qa.json")["map"]:
+        for glob in entry["paths"]:
+            if not any(fnmatch.fnmatchcase(p, glob) for p in files):
+                rep.add("FAIL", "paths", "tools/check/qa.json '%s' (%s) matches no tracked file: the QA reminder never\n"
+                        "shows for that code. Point it at the real files." % (glob, "; ".join(entry["qa"])))
+
+
+ROOM_SCHEMAS = ANDROID + "*/schemas/*/*.json"
+
+
+def check_room_schema(ch, rep):
+    """room-schema: see the module doc."""
+    for p, (st, _) in sorted(ch.files.items()):
+        if match(p, [ROOM_SCHEMAS]) and st in "MDR":
+            rep.add("FAIL", "room-schema", "%s %s: a committed database schema is what phones have. Keep it, bump the\n"
+                    "@Database version, commit the new <version>.json and add the migration (DatabaseSchemaTest)."
+                    % (p, {"M": "changed", "D": "deleted", "R": "moved"}[st]))
 
 
 def check_static(ch, rep):
@@ -1086,6 +1107,7 @@ def main(argv):
     if only in (None, "static"):
         check_static(ch, rep)
         check_paths(ch, rep)
+        check_room_schema(ch, rep)
         check_parity_globs(ch, rep)
         check_debug(ch, rep)
         check_cleartext(ch, rep)

@@ -94,6 +94,14 @@ jobs:
         run: >-
           ./gradlew --no-daemon check
           :core:graph:verifyRoborazziDebug :widgets:verifyRoborazziDebug :monitor:verifyRoborazziDebug
+      # Room exports each schema version while compiling; one the build changed but nobody committed would ship a
+      # database that old installs can't open (tools/check room-schema keeps committed versions unchanged).
+      - name: Room schemas the build exported are committed
+        run: |
+          git diff --exit-code -- 'apps/android/*/schemas' ||
+            { echo "::error::Room schema changed by the build: bump @Database version, commit the new schema, add a migration"; exit 1; }
+          test -z "$(git ls-files --others --exclude-standard -- 'apps/android/*/schemas')" ||
+            { echo "::error::a new Room schema the build exported isn't committed"; exit 1; }
       # The alert sounds are looked up by name, so only keep_alert_sounds.xml stops resource shrinking from removing
       # them (a silent alarm on release builds only). An unsigned release build is shrunk exactly like the signed one.
       - name: Alert sounds survive release resource shrinking
