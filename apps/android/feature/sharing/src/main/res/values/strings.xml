@@ -13,6 +13,10 @@
     <string name="sh_setup_continue">Continue</string>
     <!-- Setup: leave this step for later (goes to the Finish setup card) -->
     <string name="sh_setup_later">Later</string>
+    <string name="sh_setup_test_title">Send a test alert</string>
+    <string name="sh_setup_test_body">The real alert, marked as a test. Try it with Do Not Disturb on.</string>
+    <string name="sh_setup_test_sent">Sent: check your notifications. It goes away by itself in 2 min.</string>
+    <string name="sh_setup_test_send">Send</string>
     <!-- Setup: skip this step (goes to the Finish setup card) -->
     <string name="sh_setup_skip">Skip</string>
     <!-- Setup: first button on the welcome screen -->

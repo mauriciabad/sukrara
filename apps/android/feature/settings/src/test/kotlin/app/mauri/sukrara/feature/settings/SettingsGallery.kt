@@ -266,7 +266,13 @@ class SettingsGallery {
             "graph-marks" to { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             "lock" to { LockScreenContent(20.0, {}, {}) },
             "reliability" to
-                { ReliabilityContent(AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), {}) {} },
+                {
+                    ReliabilityContent(
+                        AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
+                        {},
+                        alerts = AlertSettings(),
+                    ) {}
+                },
             // a failed alert step (Copy report) and the unanswered Vibrate only when unlocked
             "reliability-delivery-unlocked" to {
                 ReliabilityContent(

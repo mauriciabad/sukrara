@@ -8,6 +8,10 @@
     <string name="sh_setup_cancel">Cancelar</string>
     <string name="sh_setup_continue">Continuar</string>
     <string name="sh_setup_later">Más tarde</string>
+    <string name="sh_setup_test_title">Enviar una alerta de prueba</string>
+    <string name="sh_setup_test_body">La alerta real, marcada como prueba. Pruébala con No molestar activado.</string>
+    <string name="sh_setup_test_sent">Enviada: mira tus notificaciones. Se va sola en 2 min.</string>
+    <string name="sh_setup_test_send">Enviar</string>
     <string name="sh_setup_skip">Omitir</string>
     <string name="sh_setup_start">Empezar</string>
     <string name="sh_setup_allow">Permitir</string>

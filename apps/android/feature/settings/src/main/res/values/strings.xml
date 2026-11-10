@@ -115,6 +115,9 @@
     <string name="st_reliability_title">Alert reliability</string>
     <string name="st_reliability_ready">Everything alerts need is on</string>
     <string name="st_reliability_footer">The same checks as home\'s reliability row and the setup. Fix opens the Android screen for it; come back and the check updates.</string>
+    <string name="st_reliability_test_title">Check it now</string>
+    <string name="st_reliability_test_summary">The real %1$s alert, marked as a test. Try it with Do Not Disturb on.</string>
+    <string name="st_reliability_test_none">No alert is on: turn one on in Alerts to test it</string>
     <string name="st_req_ok">On</string>
     <string name="st_req_missing">Missing</string>
     <string name="st_req_failed">Failed</string>
@@ -448,6 +451,7 @@
     <string name="st_send_test">Send a test alert</string>
     <string name="st_send_test_summary">The real notification, marked as a test · not sent to followers</string>
     <string name="st_send_test_sent">Sent: check your notifications. It goes away by itself in 2 min.</string>
+    <string name="st_send_test_alerts_off">Alerts are off: turn them on to test one</string>
     <string name="st_channel_settings">Notification channel</string>
     <string name="st_channel_settings_summary">This alert\'s sound, vibration and Do Not Disturb in Android\'s settings</string>
     <string name="st_silenced_by_android">Silenced in Android\'s settings: open Notification channel below to turn its sound on</string>
