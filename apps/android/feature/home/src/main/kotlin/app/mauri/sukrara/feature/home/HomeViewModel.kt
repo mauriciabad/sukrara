@@ -31,7 +31,6 @@ import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.protocol.event.Avatar
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -210,7 +209,6 @@ class HomeViewModel(
     private val undo = MutableStateFlow<Treatment?>(null)
     private val undoInClinic = MutableStateFlow(false)
     private val uploadMarks: StateFlow<UploadMarks?> = deps.uploadMarks.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    private var undoExpiry: Job? = null
 
     /** Ticks on each minute so ages ("3 min ago"), freshness steps and countdowns move without a new reading. */
     private val minutes: Flow<Instant> =
@@ -325,7 +323,11 @@ class HomeViewModel(
 
     fun fix(requirement: AlertRequirement) = deps.fix(requirement)
 
-    /** Deletes [treatment] through the treatment log and offers Undo for [UNDO_WINDOW] (none when the log refused). */
+    /**
+     * Deletes [treatment] through the treatment log and offers Undo on the snackbar (none when the log refused). The
+     * offer lasts as long as the snackbar shows (Android lengthens it for TalkBack and *Time to take action*): only
+     * [undoDelete] or [undoShown] ends it, never a timer of its own.
+     */
     fun delete(treatment: Treatment) {
         // read before the delete: the upload retracts it from the clinic right after
         val inClinic = uploadMarks.value?.removesOnDelete(treatment) == true
@@ -333,12 +335,6 @@ class HomeViewModel(
             val deleted = deps.deleteTreatment(treatment.id) ?: return@launch
             undoInClinic.value = inClinic
             undo.value = deleted
-            undoExpiry?.cancel()
-            undoExpiry =
-                launch {
-                    delay(UNDO_WINDOW.toMillis())
-                    undo.compareAndSet(deleted, null)
-                }
         }
     }
 
@@ -346,11 +342,10 @@ class HomeViewModel(
     fun undoDelete() {
         val treatment = undo.value ?: return
         undo.value = null
-        undoExpiry?.cancel()
         viewModelScope.launch { deps.undoTreatment(treatment) }
     }
 
-    /** The snackbar went away without Undo. */
+    /** The snackbar went away without Undo (timed out or dismissed): the offer ends. */
     fun undoShown() {
         undo.value = null
     }
@@ -431,7 +426,6 @@ class HomeViewModel(
     private val Treatment.isInsulin get() = kind == TreatmentKind.RapidInsulin || kind == TreatmentKind.LongInsulin
 
     companion object {
-        val UNDO_WINDOW: Duration = Duration.ofSeconds(5)
         private val TREATMENTS_WINDOW: Duration = Duration.ofHours(24)
 
         /** How far back the chart scrolls (the stored history's 31 days). */

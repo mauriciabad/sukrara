@@ -3,6 +3,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.designsystem.motion
 
+import android.content.ContentResolver
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.CubicBezierEasing
@@ -16,7 +20,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 
@@ -61,11 +69,28 @@ val LocalReducedMotion = staticCompositionLocalOf { false }
 /** Whether an animator duration scale means "no animations". */
 fun isReducedMotion(animatorDurationScale: Float): Boolean = animatorDurationScale == 0f
 
-/** Reads the system animator duration scale once per composition entry (it rarely changes while a screen is open). */
+/**
+ * The system animator duration scale as "reduced motion", observed: turning *Remove animations* on or off (Quick
+ * Settings, Accessibility) while a screen is open applies at once, not only on the next screen.
+ */
 @Composable
 fun rememberReducedMotion(): Boolean {
     val resolver = LocalContext.current.contentResolver
-    return remember(resolver) {
-        isReducedMotion(Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f))
+    var reduced by remember(resolver) { mutableStateOf(readReducedMotion(resolver)) }
+    DisposableEffect(resolver) {
+        val observer =
+            object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    reduced = readReducedMotion(resolver)
+                }
+            }
+        resolver.registerContentObserver(Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE), false, observer)
+        // a change between the first read and the registration
+        reduced = readReducedMotion(resolver)
+        onDispose { resolver.unregisterContentObserver(observer) }
     }
+    return reduced
 }
+
+private fun readReducedMotion(resolver: ContentResolver): Boolean =
+    isReducedMotion(Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f))

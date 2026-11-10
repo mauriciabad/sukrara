@@ -160,4 +160,25 @@ class SpokenFixtureTest {
         assertEquals("200 milligrams per decilitre, steady, high, 1 min ago", A11y.value(m, Bands(), CardSurface.TEST))
         assertEquals("200 milligrams per decilitre, steady, in range, 1 min ago", A11y.value(m, Bands().copy(high = 220), CardSurface.TEST))
     }
+
+    /** A new reading's live announcement (home's polite live region): as it came in, with no age or alert. */
+    @Test
+    fun aReadingIsSaidAsItCame() {
+        val style = CardStyle(sensorTime = false)
+        val m =
+            Scenes
+                .model(listOf(GlucosePoint(now - 420, 112, -1.5)), Scenes.words(), sensor = null)
+                .copy(status = CardStatus.Needed(lowSide = true))
+        // seven minutes on, the card says "old reading"; the announcement stays what came in
+        assertEquals("112 milligrams per decilitre, falling, in range", A11y.reading(m, style, CardSurface.APP_PANEL))
+        assertEquals(
+            "60 milligrams per decilitre, steady, low",
+            A11y.reading(
+                Scenes.model(listOf(GlucosePoint(now - 60, 60, 0.0)), Scenes.words(), sensor = null),
+                style,
+                CardSurface.APP_PANEL,
+            ),
+        )
+        assertNull(A11y.reading(Scenes.model(emptyList(), Scenes.words(), sensor = null), style, CardSurface.APP_PANEL))
+    }
 }

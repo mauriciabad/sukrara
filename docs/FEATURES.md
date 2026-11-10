@@ -420,6 +420,12 @@ in the card's spoken words (*Sensor ends in 13 days*, *… in 4 h 59 min* in the
 sensor's last day, the wearer gets a tonal *Pair new sensor* button there). The chart scrolls through the
 stored 31 days (drag, fling, stretch at the ends) and two fingers zoom its time axis from 2 h to 31 days; the y range
 and the plot's bottom ease to the visible window; the renderer's *Now* pill (tap, or TalkBack *Back to now*) returns.
+TalkBack (#74, `HomeA11yTest`): the card is one node with the renderer's sentence and custom actions
+for the history without the drag (*Show earlier*, *Show later* once moved, *Zoom out*, *Zoom in*, *Back to now*) besides
+the alert ones; over the drawn number a polite live region says each new reading once as it came in (`A11y.reading`:
+*112 milligrams per decilitre, falling, in range*, no age or alert, so the minute's tick says nothing; silent while the
+card shows no value). *Remove animations* (animator duration scale 0) is observed: turned on or off while home is open,
+motion stops or comes back at once (`rememberReducedMotion`).
 The history is `:monitor` `GlucoseHistory`: the stored days before the live 24 h window, read once an hour, joined with
 the hub's live readings (so a new reading never re-reads the month); the 7 / 14 / 30-day slots on home and on the
 widgets count it (each window once per reading, `MetricsCache`). The pill under the value is a button: *Eat carbs* /
@@ -432,7 +438,8 @@ mute **Change to** 15 min / 30 min / 1 h / 2 h), and *Alert settings*; it closes
 most **one** non-glucose banner; the **Mute alerts** control (anyone with a role): an outlined *Mute alerts* button that
 opens the lengths (*For 30 min* … *For 8 h*, *Until you turn it off*, Custom: the one number input, schema `muteAll`),
 and while Mute all is on its tonal state (*Alerts muted · 1 h 12 min left*, counting down) with **Unmute** and
-**Change time**; the last 24 h of treatments (delete → *Treatment deleted* snackbar with *Undo* for 5 s; the
+**Change time**; the last 24 h of treatments (delete → *Treatment deleted* snackbar with *Undo* for as long as it shows: about 4 s, longer with TalkBack or
+Android's *Time to take action*, the offer ending only with the snackbar; the
 delete and Undo go through the treatment log like the Treatments screen: a tombstone version so sync carries it, Undo a newer version; a follower can delete only the entries it added — on the wearer's rows the delete does nothing and no Undo shows); *Add treatment* (floating pill, opens chunk
 19's quick dialog). Follower: the header says *Following <name>* and, from the same decision as the card's reason, *Last heard just now* / *Last heard 2 minutes ago* (never "0 minutes"), *Not hearing from <name> since 1:24 AM* (error colour; the date too after 12 h) or *No longer following*. TalkBack reads the
 card as one sentence (*112 milligrams per decilitre, falling, in range, 2 minutes ago*, *Old reading: …* when struck)
@@ -500,7 +507,7 @@ leaves when the quiet ends); *sensor's
 last day* → *Pair new sensor* (or keep the sensor; it leaves when the new one runs); *no data* → the reason's action (or wait: warming up,
 core missing explains why); *banner* → its action, or close (non-safety), safety banners leave when fixed (*Alerts may not ring* for a failed alert step → *Copy report*; it leaves when the step works again, tried with every reading); *not muted* → *Mute alerts*
 (button or TalkBack action) → a length or Cancel; *muted* → Unmute or Change time (button, sheet and TalkBack action),
-or its end; *treatment deleted* → Undo (5 s) or let it go; *damaged data* → Review → Got it /
+or its end; *treatment deleted* → Undo (while the snackbar shows; TalkBack: its action) or let it go; *damaged data* → Review → Got it /
 Back; *not set up* → the reason panel's Set up; invite links open setup over home (Back returns home). *Glucose report* → another period (the picker), or scroll past it; nothing to undo (it changes nothing).
 
 ## Untested sensor banner
