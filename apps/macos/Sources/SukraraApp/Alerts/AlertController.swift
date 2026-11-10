@@ -221,17 +221,26 @@ final class AlertController {
     /// notification says why. nil = monitoring is back (or the person ended it): the note goes.
     func monitoringStopped(_ reason: String?) { notifier.monitoringStopped(reason) }
 
-    /// Stopped following (or following someone new): nothing measures "no data" from the old wearer's readings any
-    /// more, and their alerts go. This Mac's mutes stay (the user set them).
+    /// Stopped following, following someone new, or moved between a wearer and Juggluco: the readings this Mac watches
+    /// are someone else's (#6), so it starts fresh: nothing measures "no data" from the old readings, their alerts go,
+    /// and this Mac's Mute all and side mutes end too (a "Mute all until you turn it off" set for one person must not
+    /// silence the next one's very lows). A *Settings from* change is the same person: `setMirroring` keeps them.
     func resetMonitoring() {
         for g in AlertGroup.allCases { notifier.clear(g) }
+        for side in AlertSide.allCases { notifier.removeMuted(side) }
+        if engine.muteAllEnd(at: clock.now) != nil || mirror.muteAllEnd(at: clock.now) != nil
+            || !engine.snoozes.active(at: clock.now).isEmpty || !mirror.snoozes.active(at: clock.now).isEmpty
+        {
+            notifier.log(AlertLog.freshState)
+        }
         let snapshot = AlertEngine.Snapshot(
-            episodes: [], snoozes: engine.snoozes, muteAllUntil: engine.muteAllUntil, lastNow: engine.snapshot.lastNow)
+            episodes: [], snoozes: SideSnoozes(), muteAllUntil: nil, lastNow: engine.snapshot.lastNow)
         let (fresh, effects) = AlertEngine.restore(
             snapshot, context: AlertContext(settings: settings, scope: engine.context.scope), at: clock.now)
         engine = fresh
-        mirror.forgetShown()
+        mirror = AlertMirror()
         mirrored = [:]
+        muteAllSeen = nil
         run(effects)
     }
 

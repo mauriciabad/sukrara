@@ -158,7 +158,11 @@ low would be muted, and we don't want that … I don't want muting to stop when 
 **Mute all** (round f30; the user: "a global mute button with a time option for when alerts turn back on
 automatically (Never is also an option)"; round f31: "the Never option makes no sense, it should be always"): from the Android home screen and the Mac's dropdown, on that device only.
 Lengths *For 30 min* / *For 1 h* / *For 2 h* / *For 4 h* / *For 8 h* / **Until you turn it off** (round f31, after AOSP Do Not Disturb's "Until you turn off"; es *Hasta que lo desactives*) / custom (5 min–24 h, schema `muteAll`). It
-quiets every kind, no data included; when it ends whatever still matches alerts at once. It is visible wherever alerts
+quiets every kind, no data included; when it ends whatever still matches alerts at once. **Whose glucose the device
+watches changed → a fresh alert state** (#6, both apps): a role change, following someone new, *Stop following* (and
+on the Mac a move between a wearer and Juggluco) end Mute all and every side's Mute / Remind less on that device — a
+Mute all "until you turn it off" set for one person must not silence the next person's very lows (Dexcom and Libre cap
+silence at 6 h and keep urgent low on). A *Settings from* change is the same person: they carry over. It is visible wherever alerts
 show: the home control / dropdown row ("Alerts muted · 1 h 12 min left", counting down; "Alerts muted until you turn it off"), the card's pill on
 every surface (`muted`, "Muted · 1h 20m" in range; the paused badge out of range), the Mac menu bar.
 

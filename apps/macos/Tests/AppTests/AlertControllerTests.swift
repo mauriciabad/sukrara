@@ -245,6 +245,20 @@ final class RecordingWake: WakeScheduling {
         #expect(notifier.posts.isEmpty)
     }
 
+    /// #6: following someone else (or stopping) starts fresh: this Mac's Mute all and side mutes end; a *Settings from*
+    /// change (mirroring on / off) keeps them.
+    @Test func whoseReadingsChangedEndsTheMutesSettingsFromKeepsThem() {
+        let c = controller()
+        c.perform(.muteAll(until: clock.now.addingTimeInterval(3600)))
+        c.perform(.mute(.low, minutes: 60))
+        c.setMirroring(true)
+        c.setMirroring(false)
+        #expect(c.ui.muteAllUntil != nil)
+        c.resetMonitoring()
+        #expect(c.ui.muteAllUntil == nil)
+        #expect(c.ui.quiets.isEmpty)
+    }
+
     @Test func stoppingFollowingDisarmsNoData() {
         let c = controller()
         c.reading(reading(110))

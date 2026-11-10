@@ -147,7 +147,7 @@ class AlertMachine(
         now: Long,
         elapsed: Long? = null,
     ): List<AlertEffect> {
-        val state = saved?.takeIf { it.role == role }
+        val state = saved?.let { if (it.role == role) it else carried(it) }
         local.sensor = sensor
         shared?.sensor = sensor
         val shown = state?.let { local.restore(it.local, localSettings(now), now) }.orEmpty()
@@ -160,6 +160,31 @@ class AlertMachine(
         shared?.seed(seed?.notAfter(now))
         // what came due while the process was down (no data, a repeat, a mute's end) alerts now; stale readings can't
         return shown.map { AlertEffect.Fire(it, silent = true) } + reevaluate(now) + schedule(now)
+    }
+
+    /**
+     * #6: a *Settings from* change (mirroring the wearer ↔ own rules) still watches the same person, so this device's
+     * Mute all and side mutes carry over to the new role (and its own no data); any other role change, a new follow or
+     * *Stop following* starts fresh (null).
+     */
+    private fun carried(s: AlertState): AlertState? {
+        val followers = setOf(AlertRole.FOLLOWER_OWN, AlertRole.FOLLOWER_MIRROR)
+        if (s.role !in followers || role !in followers) return null
+        val m = s.mirror ?: MirrorMemory()
+        val noData = s.local.episodes.filterKeys { it == AlertGroup.NO_DATA }
+        return if (role == AlertRole.FOLLOWER_OWN) {
+            val local =
+                s.local.copy(
+                    episodes = noData,
+                    snoozes = m.snoozes + s.local.snoozes,
+                    muteAllUntil = maxOf(s.local.muteAllUntil, m.muteAllUntil),
+                )
+            AlertState(role = role, local = local, lastNow = s.lastNow)
+        } else {
+            val local = s.local.copy(episodes = noData, snoozes = s.local.snoozes.filterKeys { it == Side.NO_DATA })
+            val mirror = MirrorMemory(snoozes = s.local.snoozes.filterKeys { it != Side.NO_DATA }, muteAllUntil = s.local.muteAllUntil)
+            AlertState(role = role, local = local, mirror = mirror, lastNow = s.lastNow)
+        }
     }
 
     /** What every surface shows about this device's alerts (the mirror's mutes on a mirroring follower). */

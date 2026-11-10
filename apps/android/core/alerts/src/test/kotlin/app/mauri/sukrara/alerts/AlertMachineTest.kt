@@ -55,6 +55,29 @@ class AlertMachineTest {
         assertTrue(again.snapshot().escalation.answered)
     }
 
+    /** #6: mirroring ↔ own rules is the same person: Mute all and side mutes carry over; a wearer starts fresh. */
+    @Test fun settingsFromKeepsTheMutesAWearerStartsFresh() {
+        val mirror = machine(AlertRole.FOLLOWER_MIRROR)
+        mirror.start(null, null, null, t0)
+        mirror.handle(AlertInput.MuteAll(t0 + 3600), t0)
+        mirror.handle(AlertInput.Mute(AlertKind.LOW, 60), t0)
+        val saved = AlertStateCodec.decode(AlertStateCodec.encode(mirror.snapshot()))
+
+        val own = machine(AlertRole.FOLLOWER_OWN)
+        own.start(saved, null, null, t0 + 60)
+        assertEquals(t0 + 3600, own.uiState(t0 + 60).muteAllUntil)
+        assertEquals(t0 + 3600, own.engine.snoozes(t0 + 60)[Side.LOW]?.until)
+
+        val back = machine(AlertRole.FOLLOWER_MIRROR)
+        back.start(AlertStateCodec.decode(AlertStateCodec.encode(own.snapshot())), null, null, t0 + 120)
+        assertEquals(t0 + 3600, back.uiState(t0 + 120).muteAllUntil)
+        assertEquals(t0 + 3600, back.wearerMirror!!.snoozes(t0 + 120)[Side.LOW]?.until)
+
+        val wearer = machine(AlertRole.WEARER)
+        wearer.start(AlertStateCodec.decode(AlertStateCodec.encode(own.snapshot())), null, null, t0 + 180)
+        assertEquals(0L, wearer.uiState(t0 + 180).muteAllUntil)
+    }
+
     @Test fun scheduleIsAlwaysTheLastEffect() {
         val m = machine()
         m.start(null, null, null, t0)
