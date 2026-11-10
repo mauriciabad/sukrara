@@ -6,6 +6,39 @@ import SukraraAlerts
 import SukraraCore
 import SukraraGraph
 
+/// The title's inks on the menu bar (#8): red below the range, orange above, grey when stale or warming up, each with
+/// at least `minContrast` (WCAG 4.5:1, 13 pt text) on the bar it's drawn on. The system red and orange are about 3.6:1
+/// and 2.2:1 on a light bar, so a light bar gets darker ones and a dark bar lighter ones; the status item picks them
+/// from the button's appearance when it draws (`StatusItemController.color`). `lightBars` / `darkBars` are the
+/// lightest and darkest a bar of that appearance gets, plain or over a wallpaper (grey levels, 0–1).
+enum MenubarInk {
+    static let minContrast = 4.5
+    static let lightBars: [Double] = [1.0, 0.85]
+    static let darkBars: [Double] = [0.0, 0.12, 0.2]
+
+    /// The ink (sRGB, 0–1) of `tint` on a light or dark bar; nil = the bar's own ink (in range).
+    static func rgb(_ tint: MenubarTitle.Tint, dark: Bool) -> (r: Double, g: Double, b: Double)? {
+        switch tint {
+        case .plain: nil
+        case .below: dark ? (1.0, 0.478, 0.439) : (0.69, 0.0, 0.125)
+        case .above: dark ? (1.0, 0.624, 0.039) : (0.604, 0.271, 0.0)
+        case .grey: dark ? (0.659, 0.659, 0.659) : (0.373, 0.373, 0.373)
+        }
+    }
+
+    /// WCAG relative luminance of an sRGB colour.
+    static func luminance(_ c: (r: Double, g: Double, b: Double)) -> Double {
+        func lin(_ v: Double) -> Double { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+    }
+
+    /// WCAG contrast ratio of two sRGB colours (1…21).
+    static func contrast(_ a: (r: Double, g: Double, b: Double), _ b: (r: Double, g: Double, b: Double)) -> Double {
+        let (la, lb) = (luminance(a), luminance(b))
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+}
+
 /// What the status item shows: the value's decision from the one renderer (`GlucoseCard.face`, surface
 /// `.menubarTitle`: value, strike when stale, the trend, warm-up / ended / no readings), its range colour
 /// (`GlucoseCard.rangeSide`), the mute bell and the tooltip. It adds no freshness or value logic of its own.
@@ -21,7 +54,7 @@ struct MenubarTitle: Equatable {
         case none
     }
 
-    /// The value's ink.
+    /// The value's ink (its colours on each bar: `MenubarInk`).
     enum Tint: Equatable {
         /// The menu bar's own ink (in range).
         case plain
@@ -111,6 +144,8 @@ struct MenubarTitle: Equatable {
                         L10n.t("Sukrara · reading at \(readAt)")
                     }
             }
+            // a sensor past its end that keeps sending (#3): the value, and the tooltip says it ended (the card's pill)
+            if look.ended { tooltip = L10n.t("Sensor ended — replace sensor") }
         case .warmingUp:
             let waiting = data?.sensor.map { now.timeIntervalSince1970 >= $0.warmupEnd } ?? false
             value = waiting ? L10n.t("Almost ready") : look.warmup ?? ""

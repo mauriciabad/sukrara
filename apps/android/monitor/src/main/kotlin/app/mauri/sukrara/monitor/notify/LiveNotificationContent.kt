@@ -38,6 +38,8 @@ data class NotificationPrefs(
     val bands: Bands = Bands(),
     /** The person's glucose unit: the title's value and unit (`general.unit`). */
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
+    /** The value shows on the lock screen (`statusbar.lockScreen`, #94); off = private, a public "Monitoring" there. */
+    val lockScreen: Boolean = true,
 )
 
 /**
@@ -84,6 +86,8 @@ data class LiveNotificationContent(
      * role; null with none of it.
      */
     val sharing: SharingLine? = null,
+    /** [NotificationPrefs.lockScreen]: public on the lock screen, else private with a public "Monitoring". */
+    val lockScreen: Boolean = true,
 ) {
     /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value itself; the others are the states' icons. */
     enum class Icon { TREND, NO_TREND, NUMBER, NO_READINGS, SENSOR_ENDED, APP }
@@ -113,6 +117,7 @@ data class LiveNotificationContent(
     companion object {
         private val LOW_KINDS = setOf("low", "very_low")
         private val OPEN_APP = Action(UiText(R.string.monitor_action_open_app), Target.OpenApp)
+        private val REPLACE_SENSOR = Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup)
 
         /**
          * The notification for [state] at [now]. Order: setup not done → the sensor's own states (ended, warming up)
@@ -124,14 +129,14 @@ data class LiveNotificationContent(
             face: (GlucoseState, Instant, GlucoseUnit) -> GlucoseLook,
             prefs: NotificationPrefs = NotificationPrefs(),
         ): LiveNotificationContent {
-            if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state)
+            if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state).copy(lockScreen = prefs.lockScreen)
             val sharing =
                 prefs.sharing?.let { s ->
                     // followers are the wearer's; the API on the Wi-Fi is either role's
                     val line = if (state.role == Role.Wearer) s else s.copy(followers = 0, nearby = 0)
                     line.takeIf { state.role != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
                 }
-            return content(state, now, face, prefs).copy(sharing = sharing)
+            return content(state, now, face, prefs).copy(sharing = sharing, lockScreen = prefs.lockScreen)
         }
 
         private fun content(
@@ -153,7 +158,7 @@ data class LiveNotificationContent(
                             if (state.role ==
                                 Role.Wearer
                             ) {
-                                listOf(Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup))
+                                listOf(REPLACE_SENSOR)
                             } else {
                                 emptyList()
                             },
@@ -227,14 +232,20 @@ data class LiveNotificationContent(
                             listOf(look.text!!, prefs.unit.symbol, look.arrowText!!, UiText(it.words)),
                         )
                     } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, prefs.unit.symbol, look.arrowText!!)),
-                text = if (look.fresh.showTime) UiText(R.string.monitor_notif_reading_at, listOf(reading.t)) else detail,
+                // a sensor past its end whose readings keep arriving (#3): the value, and under it that it has ended
+                text =
+                    when {
+                        look.ended -> UiText(R.string.monitor_notif_sensor_ended_line)
+                        look.fresh.showTime -> UiText(R.string.monitor_notif_reading_at, listOf(reading.t))
+                        else -> detail
+                    },
                 strike = look.strike,
                 chip = chip,
                 icon = icon,
                 trendRate = look.rate.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
                 tap = quickTreatment(state),
-                actions = listOf(OPEN_APP),
+                actions = if (look.ended && state.role == Role.Wearer) listOf(OPEN_APP, REPLACE_SENSOR) else listOf(OPEN_APP),
                 layout = if (live) Layout.LIVE_UPDATE else Layout.CARD,
                 look = look,
                 mgdl = reading.mgdl,

@@ -7,7 +7,6 @@ import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
 import java.util.Locale
-import kotlin.math.roundToInt
 
 /**
  * The root status bar's system icons: two slots System UI draws itself (tinted like Wi-Fi and the battery) from
@@ -111,12 +110,11 @@ object SlotIcons {
             }
         }
 
-    /** The arrow for [rate] (mg/dL/min): `sb_t00` straight up … `sb_t36` straight down, double arrows from ±3. */
-    fun trendDrawable(rate: Double): String =
-        when {
-            TrendAngle.isDouble(rate) -> if (rate > 0) "sb_t_up2" else "sb_t_down2"
-            else -> "sb_t%02d".format(Locale.ROOT, ((TrendAngle.deg(rate) + 90) / 5).roundToInt().coerceIn(0, 36))
-        }
+    /** The arrow for [rate] (mg/dL/min): one drawable per band ([TrendAngle.step]), as the card draws it. */
+    fun trendDrawable(rate: Double): String = TREND_DRAWABLES[TrendAngle.step(rate) + 3]
+
+    /** The band's drawable, ⇊ … ⇈ (tools/android/gen-slot-drawables.swift). */
+    val TREND_DRAWABLES = listOf("sb_t_down2", "sb_t_down", "sb_t_down45", "sb_t_flat", "sb_t_up45", "sb_t_up", "sb_t_up2")
 
     /**
      * The slot daemon's commands for [plan] ([resId] resolves a drawable name), in the order to send them: System UI

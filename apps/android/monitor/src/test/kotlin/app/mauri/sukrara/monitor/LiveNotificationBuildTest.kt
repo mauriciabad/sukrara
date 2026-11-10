@@ -71,7 +71,7 @@ class LiveNotificationBuildTest {
         (text as? Spanned)?.getSpans(0, text.length, StrikethroughSpan::class.java)?.isNotEmpty() == true
 
     @Test fun `the ongoing silent status of the glucose channel, outside every group, put back when swiped`() {
-        for (s in listOf(state(), state(mgdl = null), state(sensor = SensorState.Ended))) {
+        for (s in listOf(state(), state(mgdl = null), state(ageS = 6 * 60, sensor = SensorState.Ended))) {
             val n = build(s)
             assertEquals(Channels.GLUCOSE, n.channelId)
             assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
@@ -81,6 +81,20 @@ class LiveNotificationBuildTest {
             assertNull(n.group)
             assertNotNull("a tap opens something", n.contentIntent)
             assertTrue("a swipe tells the app, which posts it again", shadowOf(n.deleteIntent).isBroadcast)
+        }
+    }
+
+    /** #94: the value on the lock screen by default; with the setting off, private behind "Sukrara · Monitoring". */
+    @Test fun `the lock screen shows the value unless the person turned it off`() {
+        for (s in listOf(state(), state(mgdl = null), state(ageS = 6 * 60, sensor = SensorState.Ended))) {
+            assertEquals(Notification.VISIBILITY_PUBLIC, build(s).visibility)
+            val private = build(s, card.copy(lockScreen = false))
+            assertEquals(Notification.VISIBILITY_PRIVATE, private.visibility)
+            val public = private.publicVersion!!
+            assertEquals(ctx.getString(R.string.monitor_notif_public_title), title(public).toString())
+            val text = public.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+            assertEquals(ctx.getString(R.string.monitor_notif_public_text), text)
+            assertEquals(Channels.GLUCOSE, public.channelId)
         }
     }
 
@@ -105,7 +119,7 @@ class LiveNotificationBuildTest {
     }
 
     @Test fun `without a value it stays text, uncoloured, with its state's icon`() {
-        for (s in listOf(state(mgdl = null), state(ageS = 25 * 60), state(sensor = SensorState.Ended))) {
+        for (s in listOf(state(mgdl = null), state(ageS = 25 * 60), state(ageS = 6 * 60, sensor = SensorState.Ended))) {
             val n = build(s)
             assertFalse(n.extras.getBoolean(Notification.EXTRA_COLORIZED))
             assertEquals(Icon.TYPE_RESOURCE, n.smallIcon.type)
@@ -113,7 +127,7 @@ class LiveNotificationBuildTest {
     }
 
     @Test fun `the content's actions are the notification's, each with somewhere to go`() {
-        val ended = build(state(sensor = SensorState.Ended))
+        val ended = build(state(ageS = 6 * 60, sensor = SensorState.Ended))
         assertEquals(listOf(ctx.getString(R.string.monitor_action_replace_sensor)), ended.actions.map { it.title.toString() })
         assertTrue(shadowOf(ended.actions.single().actionIntent).isActivity)
 

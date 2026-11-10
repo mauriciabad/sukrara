@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.sensor.newsensor
 
 import androidx.annotation.StringRes
 import app.mauri.sukrara.feature.sensor.R
+import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.sensor.IdKind
 import app.mauri.sukrara.sensor.SensorSetup
 import app.mauri.sukrara.sensor.ble.LinkStatus
@@ -25,6 +26,12 @@ enum class NewSensorAction(
     Pair(R.string.newsensor_action_pair),
     NotNow(R.string.newsensor_action_not_now),
     UseJuggluco(R.string.newsensor_action_use_juggluco),
+
+    /** The sensor the scan found is the one the person wears (#133). */
+    UseIt(R.string.newsensor_action_use_it),
+
+    /** Skip the device the scan found and look on (#133): an old sensor still bonded, or one never authenticated. */
+    LookForAnother(R.string.newsensor_action_look_for_another),
     Cancel(R.string.newsensor_action_cancel),
     Close(R.string.newsensor_action_close),
     Done(R.string.newsensor_action_done),
@@ -44,7 +51,7 @@ data class NewSensorPage(
     val actions: List<NewSensorAction>,
     @param:StringRes val note: Int? = null,
     val busy: Boolean = false,
-    /** Filled into the title's and the text's `%1$s` (a family's brand name, not translated). */
+    /** Filled into the title's and the text's `%1$s` (a family's brand name, not translated; a found sensor's start). */
     val arg: String? = null,
     /** The warning look (the untested-sensor confirmation). */
     val warning: Boolean = false,
@@ -227,6 +234,16 @@ fun NewSensorStep.page(): NewSensorPage =
             )
         }
 
+        // the scan found a sensor started well before this pairing (#133): is it the one being worn?
+        is NewSensorStep.ConnectingBle if link is LinkStatus.ConfirmSensor -> {
+            NewSensorPage(
+                R.string.newsensor_confirm_title,
+                R.string.newsensor_confirm_text,
+                listOf(NewSensorAction.UseIt, NewSensorAction.LookForAnother, NewSensorAction.Close),
+                arg = Freshness.timeText(link.startEpoch, since.epochSecond),
+            )
+        }
+
         is NewSensorStep.ConnectingBle -> {
             NewSensorPage(
                 R.string.newsensor_connecting_title,
@@ -240,7 +257,12 @@ fun NewSensorStep.page(): NewSensorPage =
                     activated -> R.string.newsensor_connecting_started_text
                     else -> R.string.newsensor_connecting_paired_text
                 },
-                listOf(NewSensorAction.Close),
+                // a G7 the Dexcom app never authenticates (it moved to the new sensor): a way to look for that one (#133)
+                if (link == LinkStatus.WaitingForVendorApp) {
+                    listOf(NewSensorAction.LookForAnother, NewSensorAction.Close)
+                } else {
+                    listOf(NewSensorAction.Close)
+                },
                 note = R.string.newsensor_keeps_going,
                 busy = true,
             )

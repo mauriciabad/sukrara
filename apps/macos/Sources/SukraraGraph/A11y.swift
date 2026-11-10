@@ -18,7 +18,10 @@ public struct CardWords: Sendable {
     /// `card_*` strings).
     struct Drawn: Sendable {
         let durations: DurationWords
-        let eatCarbs, carbsShort, takeInsulin, insulinShort, muted, replaceSensor, replaceSensorShort, backToNow: String
+        let eatCarbs, carbsShort, takeInsulin, insulinShort, muted, replaceSensor, replaceSensorShort: String
+        /// The pill beside an ended sensor's value while its readings keep arriving (#3).
+        let sensorEndedPill, sensorEndedPillShort: String
+        let backToNow: String
         /// "now" for a duration under a minute (a treatment logged this minute).
         let now: String
         /// "Muted · 1h 20m" (Mute all, timed).
@@ -35,8 +38,12 @@ public struct CardWords: Sendable {
     let below, above: @Sendable (String) -> String
     let old, inRange, justNow: String
     let ago: @Sendable (String) -> String
+    /// One word per arrow (contracts/graph/trend `words`).
     let trend:
-        (unknown: String, steady: String, rising: String, risingFast: String, falling: String, fallingFast: String)
+        (
+            unknown: String, steady: String, rising: String, risingFast: String, risingVeryFast: String,
+            falling: String, fallingFast: String, fallingVeryFast: String
+        )
     /// The range words the card draws (`RangeState`), in the sentence's lower case.
     let range: (veryLow: String, low: String, high: String, veryHigh: String, extremelyHigh: String)
     let noReadings: String
@@ -70,7 +77,8 @@ public struct CardWords: Sendable {
         drawn: Drawn(
             durations: .en, eatCarbs: "Eat carbs", carbsShort: "Carbs", takeInsulin: "Take insulin",
             insulinShort: "Insulin", muted: "Muted", replaceSensor: "Replace sensor", replaceSensorShort: "Sensor",
-            backToNow: "Now", now: "now", mutedFor: { "Muted · \($0)" }, timeLeft: { left, _ in "\(left) left" },
+            sensorEndedPill: "Ended · Replace sensor", sensorEndedPillShort: "Ended", backToNow: "Now", now: "now",
+            mutedFor: { "Muted · \($0)" }, timeLeft: { left, _ in "\(left) left" },
             periodDays: { "\($0)d" }, periodHours: { "\($0)h" }, average: "avg", gmi: "GMI", cv: "CV",
             noReadingsYet: "No readings yet", noReadingSince: "No reading since", sensorEnded: "Sensor ended",
             warmingUp: "Warming up", almostReady: "Almost ready", waitingReading: "Waiting for the first reading",
@@ -78,7 +86,10 @@ public struct CardWords: Sendable {
         unit: ("milligrams per decilitre", "millimoles per litre"),
         below: { "below \($0)" }, above: { "above \($0)" }, old: "old reading", inRange: "in range",
         justNow: "just now", ago: { "\($0) ago" },
-        trend: ("trend unknown", "steady", "rising", "rising fast", "falling", "falling fast"),
+        trend: (
+            "trend unknown", "steady", "rising", "rising fast", "rising very fast", "falling", "falling fast",
+            "falling very fast"
+        ),
         range: ("very low", "low", "high", "very high", "extremely high"),
         noReadings: "Glucose: no readings yet", noReadingSince: { "Glucose: no reading since \($0)" },
         lastReading: { "Glucose: last reading \($0)" },
@@ -107,7 +118,9 @@ public struct CardWords: Sendable {
         drawn: Drawn(
             durations: .es, eatCarbs: "Come hidratos", carbsShort: "Hidratos", takeInsulin: "Ponte insulina",
             insulinShort: "Insulina", muted: "Silenciadas", replaceSensor: "Cambiar sensor",
-            replaceSensorShort: "Sensor", backToNow: "Ahora", now: "ahora", mutedFor: { "Silenciadas · \($0)" },
+            replaceSensorShort: "Sensor", sensorEndedPill: "Terminado · Cambiar sensor",
+            sensorEndedPillShort: "Terminado",
+            backToNow: "Ahora", now: "ahora", mutedFor: { "Silenciadas · \($0)" },
             timeLeft: { "\(queda($1)) \($0)" }, periodDays: { "\($0) d" }, periodHours: { "\($0) h" },
             average: "media", gmi: "GMI", cv: "CV", noReadingsYet: "Aún no hay lecturas",
             noReadingSince: "Sin lecturas desde", sensorEnded: "Sensor terminado", warmingUp: "Calentando",
@@ -115,7 +128,10 @@ public struct CardWords: Sendable {
         unit: ("miligramos por decilitro", "milimoles por litro"),
         below: { "por debajo de \($0)" }, above: { "por encima de \($0)" }, old: "lectura antigua",
         inRange: "en rango", justNow: "ahora mismo", ago: { "hace \($0)" },
-        trend: ("tendencia desconocida", "estable", "subiendo", "subiendo rápido", "bajando", "bajando rápido"),
+        trend: (
+            "tendencia desconocida", "estable", "subiendo", "subiendo rápido", "subiendo muy rápido", "bajando",
+            "bajando rápido", "bajando muy rápido"
+        ),
         range: ("muy baja", "baja", "alta", "muy alta", "extremadamente alta"),
         noReadings: "Glucosa: aún no hay lecturas", noReadingSince: { "Glucosa: sin lecturas desde \($0)" },
         lastReading: { "Glucosa: última lectura \($0)" },
@@ -203,14 +219,17 @@ extension GlucoseUnit {
 
 extension CardWords {
 
+    /// The trend in words, one word per arrow (`Trend`'s band; nil = unknown).
     func trend(_ rate: Double?) -> String {
         guard let rate else { return trend.unknown }
         return switch Trend(rate: rate) {
+        case .risingVeryFast: trend.risingVeryFast
         case .risingFast: trend.risingFast
         case .rising: trend.rising
         case .steady: trend.steady
         case .falling: trend.falling
         case .fallingFast: trend.fallingFast
+        case .fallingVeryFast: trend.fallingVeryFast
         }
     }
 
@@ -278,7 +297,9 @@ enum A11y {
         }
         let alert =
             style.badge && look.state == .value ? status(data.alerts.status, now: data.now, words: w) : nil
-        return sentences([glucose, alert].compactMap { $0 }, w)
+        // a sensor past its end whose readings keep arriving: its pill's words after the value (#3)
+        let ended = look.ended ? w.sensorEnded : nil
+        return sentences([glucose, alert, ended].compactMap { $0 }, w)
     }
 
     /// "Last 12 hours: 82% in range, 3% below, 15% above" (or "no data"): the window the chart shows.
@@ -320,9 +341,10 @@ enum A11y {
     /// 9:50" at every age, "old reading" too from 5 min, "no reading since 9:50" from 20 min (and once the chart is
     /// gone), "no readings yet" without any; a sensor that ended or is warming up says so, as the value's place does.
     static func age(_ data: CardData, surface: CardSurface, words w: CardWords) -> String? {
-        switch GlucoseCard.face(data, unit: .mgdl, surface: surface).state {
+        let face = GlucoseCard.face(data, unit: .mgdl, surface: surface)
+        switch face.state {
         case .ended, .warmingUp: return sensorState(data, words: w)
-        default: break
+        default: if face.ended { return sensorState(data, words: w) }
         }
         guard let t = data.latest?.t else { return w.noReadings }
         let time = Freshness.timeText(t, now: data.now)

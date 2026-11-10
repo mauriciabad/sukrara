@@ -278,6 +278,7 @@ object SettingsIndex {
                     SettingsRoute.StatusBar,
                     R.string.st_statusbar_chip to R.string.st_statusbar_chip_summary,
                     R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary,
+                    R.string.st_statusbar_lock_screen to R.string.st_statusbar_lock_screen_on,
                 ),
             )
             addAll(

@@ -164,6 +164,8 @@
     <string name="home_chart_later">Show later</string>
     <string name="home_chart_zoom_in">Zoom in</string>
     <string name="home_chart_zoom_out">Zoom out</string>
+    <!-- TalkBack's way to the double tap's close look: the last 3 hours -->
+    <string name="home_chart_three_hours">Show 3 hours</string>
     <string name="home_pill_replace_sensor">Pair new sensor</string>
     <string name="home_pill_alert_options">Alert options</string>
     <!-- %1$s the side's name ("Low", "Falling fast") -->

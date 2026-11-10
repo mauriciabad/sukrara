@@ -93,6 +93,11 @@ The LSPosed lock-screen widget isn't in the app yet (#66); this section covers w
 
 - [ ] Emulator: pull down the shade; collapsed (value + slots) and expanded (card) in light and dark.
 - [ ] Lock screen version (public/redacted) shows what the settings say.
+- [ ] *Glucose on the lock screen* (#94; real phone): on, the value and arrow show locked with the phone's *Hide silent
+  notifications* on and off and with *Sensitive notifications* off, and on the always-on display; off, only *Sukrara ·
+  Monitoring* shows locked, also on the Live Update chip, and the value is back after unlocking.
+- [ ] A sensor past its end that keeps sending (#3; emulator, synthetic sensor ended a few minutes ago): the value with
+  *Sensor ended · Replace sensor* under it; once the readings stop, *Sensor ended* with *Replace sensor*.
 - [ ] Live Update chip / status bar value if the change touched them (phone).
 
 ## Q5b Root status bar in a full row

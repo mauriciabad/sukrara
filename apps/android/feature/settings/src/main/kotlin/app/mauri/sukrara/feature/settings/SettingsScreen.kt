@@ -323,7 +323,7 @@ fun SettingsScreen(
                 vm.refresh()
             }
             prefs?.let {
-                StatusBarContent(it, allowed, vm::setChip, vm::setNumberIcon, context::openLiveUpdateSettings, onBack) {
+                StatusBarContent(it, allowed, vm::setChip, vm::setNumberIcon, context::openLiveUpdateSettings, onBack, vm::setLockScreen) {
                     root?.let { r -> RootStatusBarSection(r, access, busy, problem, choosing, { c -> choosing = c }, vm.actions) }
                 }
             }

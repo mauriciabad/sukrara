@@ -108,6 +108,33 @@ class ChartScrollTest {
         assertFalse(s.restored(keep = false).away)
     }
 
+    /** #95: a double tap goes from the place's window to 3 h around the tapped moment, and from 3 h back. */
+    @Test fun aDoubleTapIsThreeHoursAndBack() {
+        val twelve = 12 * 3600L
+        val s = ChartScroll()
+        assertTrue(s.closeLookIn(twelve))
+        // at the right edge (now): 3 h up to now, still following now
+        val (end, span) = s.closeLook(1.0, twelve, first, now)!!
+        assertEquals(now.toDouble(), end, 0.0)
+        assertEquals(3 * 3600.0, span, 0.0)
+        s.set(end, span, twelve, now)
+        assertEquals(3 * 3600L, s.spanS)
+        assertFalse(s.closeLookIn(twelve))
+        // in the middle: the tapped moment stays under the finger
+        val (end2, span2) = s.closeLook(0.5, twelve, first, now)!!
+        assertEquals(twelve.toDouble(), span2, 0.0)
+        assertEquals(now.toDouble(), end2, 0.0) // the window can't pass now: it follows now again
+        s.set(end2, span2, twelve, now)
+        assertFalse(s.away)
+        // zoomed to a day by a pinch: the close look again
+        s.set(now.toDouble(), day.toDouble(), twelve, now)
+        assertEquals(3 * 3600.0, s.closeLook(0.0, twelve, first, now)!!.second, 0.0)
+        // a place that shows 3 h or less: only back to its own length, nothing from there
+        assertFalse(ChartScroll().closeLookIn(2 * 3600L))
+        assertNull(ChartScroll().closeLook(1.0, 2 * 3600L, first, now))
+        assertNull(ChartScroll().closeLook(1.0, 3 * 3600L, first, now))
+    }
+
     @Test fun limits() {
         assertEquals(ChartView.MIN_SPAN_S.toDouble() to (31 * day).toDouble(), ChartScroll.spanLimits(default, first - day, now))
         // a place showing 1 h: zooming in never goes below it

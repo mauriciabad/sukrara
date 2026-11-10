@@ -50,7 +50,9 @@ class TileSubtitleTest {
 
     @Test fun `the sensor's words and since when, nothing before a first reading`() {
         assertEquals(true, subtitle(state(25 * 60))!!.startsWith("since "))
-        assertEquals("ended", subtitle(state(30, SensorState.Ended)))
+        assertEquals("ended", subtitle(state(6 * 60, SensorState.Ended)))
+        // past its end but still sending (#3): the value, as the card shows it
+        assertEquals(true, subtitle(state(30, SensorState.Ended))!!.startsWith("123 "))
         assertEquals(true, subtitle(state(null, SensorState.WarmingUp(Instant.ofEpochSecond(nowS + 600))))!!.startsWith("warming "))
         assertNull(subtitle(state(null)))
     }

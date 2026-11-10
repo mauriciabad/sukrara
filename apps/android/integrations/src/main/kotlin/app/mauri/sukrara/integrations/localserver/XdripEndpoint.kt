@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.localserver
 
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.integrations.CurrentSensor
 import java.time.Instant
 import java.time.ZoneId
@@ -145,19 +146,8 @@ object XdripEndpoint {
         return "${STATUS_TIME.format(s.start.atZone(zone))} (${age / 86400}d ${age % 86400 / 3600}h)"
     }
 
-    /** Nightscout trend names from a 5-minute delta (thresholds per minute: 1, 2, 3 mg/dL). */
-    fun direction(delta5: Double?): String {
-        val m = (delta5 ?: return "NONE") / 5
-        return when {
-            m > 3 -> "DoubleUp"
-            m > 2 -> "SingleUp"
-            m > 1 -> "FortyFiveUp"
-            m >= -1 -> "Flat"
-            m >= -2 -> "FortyFiveDown"
-            m >= -3 -> "SingleDown"
-            else -> "DoubleDown"
-        }
-    }
+    /** Nightscout trend names from a 5-minute delta: the card's arrow band for its rate per minute (contracts/graph/trend). */
+    fun direction(delta5: Double?): String = TrendAngle.nightscout(delta5?.div(5))
 
     private fun trend(delta5: Double?): Int =
         when (direction(delta5)) {

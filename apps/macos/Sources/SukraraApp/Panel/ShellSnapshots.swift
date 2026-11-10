@@ -92,7 +92,40 @@
                         }))
             }
 
+            // the title alone, as a following Mac draws it for a reading (#8: its inks on every kind of bar)
+            func title(_ readings: [Reading]) -> MenubarTitle {
+                let controller = AlertController(
+                    settings: AlertSettings(), clock: SystemClock(), store: MemoryAlertState(),
+                    notifier: SilentNotifier(),
+                    wake: NoWake())
+                let plan = LaunchPlan(
+                    mode: .normal, services: .all,
+                    data: .isolated(root: FileManager.default.temporaryDirectory.appending(path: suite)))
+                let model = AppModel(plan: plan, alerts: controller)
+                var snapshot = FollowerSnapshot.empty
+                snapshot.link = .following(wearer: "Marta", canWrite: true)
+                snapshot.readings = readings
+                model.apply(snapshot)
+                controller.refreshUI()
+                return model.menubarTitle
+            }
+            let titles = [
+                ending(112, rate: -0.4), ending(62, rate: -1.6), ending(246, rate: 1.2),
+                ending(131, rate: 0, age: 12 * 60),
+            ].map(title)
+            let inks = Scene(
+                view: AnyView(
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(MenubarStrip.Ground.allCases, id: \.self) { ground in
+                            HStack(spacing: 0) {
+                                ForEach(titles.indices, id: \.self) { MenubarStrip(title: titles[$0], ground: ground) }
+                            }
+                        }
+                    }))
+
             return [
+                // in range, low, high and stale on the bar, over a wallpaper and with Reduce Transparency
+                ("menubar-inks", inks),
                 ("panel-following", scene(readings: ending(112, rate: -0.4))),
                 ("panel-low", scene(readings: ending(62, rate: -1.6))),
                 ("panel-high", scene(readings: ending(246, rate: 1.2))),
@@ -144,9 +177,12 @@
         }
     }
 
-    /// The status item's title as the menu bar draws it (the same attributed string and bell), on a bar-like strip.
+    /// The status item's title as the menu bar draws it (the same attributed string and bell), on a bar-like strip:
+    /// the bar's material, the material over a colourful wallpaper, or a solid bar (Reduce Transparency).
     private struct MenubarStrip: View {
+        enum Ground: CaseIterable { case bar, wallpaper, solid }
         let title: MenubarTitle
+        var ground = Ground.bar
 
         var body: some View {
             HStack(spacing: 3) {
@@ -157,7 +193,18 @@
             }
             .padding(.horizontal, 10)
             .frame(height: 24)
-            .background(.bar)
+            .background {
+                switch ground {
+                case .bar: Rectangle().fill(.bar)
+                case .wallpaper:
+                    ZStack {
+                        LinearGradient(
+                            colors: [.indigo, .orange, .teal, .pink], startPoint: .leading, endPoint: .trailing)
+                        Rectangle().fill(.bar)
+                    }
+                case .solid: Color(nsColor: .windowBackgroundColor)
+                }
+            }
             .accessibilityLabel(title.accessibilityLabel)
         }
     }

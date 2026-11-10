@@ -48,7 +48,7 @@ object Channels {
         val silent: Boolean = false,
     )
 
-    const val GLUCOSE = "glucose"
+    const val GLUCOSE = "glucose.live"
     const val STATUS = "status"
     const val REQUESTS = "requests"
     const val SENSOR = "sensor"
@@ -58,11 +58,11 @@ object Channels {
     const val TREATMENT_DRAFT = "treatment.draft"
 
     /**
-     * Channels that were replaced, deleted by [create]: `sensor.countdown` was low importance, which the phone's "hide
-     * silent notifications" lock-screen option hides (#148); its importance can't be raised, so [SENSOR_COUNTDOWN] is a
-     * new id.
+     * Channels that were replaced, deleted by [create]: `sensor.countdown` and `glucose` were low importance, which the
+     * phone's "hide silent notifications" lock-screen option hides (#148, #94); a channel's importance can't be raised,
+     * so [SENSOR_COUNTDOWN] and [GLUCOSE] are new ids.
      */
-    val DELETED = listOf("sensor.countdown")
+    val DELETED = listOf("sensor.countdown", "glucose")
 
     /** The alert kinds of `contracts/alerts/SPEC.md`, in its order. */
     val ALERT_KINDS =
@@ -74,8 +74,9 @@ object Channels {
 
     val ALL: List<Spec> =
         listOf(
-            // the ongoing glucose notification: silent, no badge (it changes every minute)
-            Spec(GLUCOSE, R.string.monitor_channel_glucose, NotificationManager.IMPORTANCE_LOW, Group.INFO, Kind.INFO),
+            // the ongoing glucose notification: default importance so it shows on the lock screen (also with "hide
+            // silent notifications" on, #94), but never a sound, a vibration or a badge (it changes every minute)
+            Spec(GLUCOSE, R.string.monitor_channel_glucose, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO, silent = true),
             Spec(STATUS, R.string.monitor_channel_status, NotificationManager.IMPORTANCE_HIGH, Group.INFO, Kind.INFO),
             Spec(REQUESTS, R.string.monitor_channel_requests, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO),
             Spec(SENSOR, R.string.monitor_channel_sensor, NotificationManager.IMPORTANCE_HIGH, Group.INFO, Kind.INFO),

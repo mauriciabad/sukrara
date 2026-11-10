@@ -32,6 +32,8 @@ import Testing
         case "badge_muted_for": d.mutedFor("X")
         case "badge_replace_sensor": d.replaceSensor
         case "badge_replace_sensor_short": d.replaceSensorShort
+        case "badge_sensor_ended": d.sensorEndedPill
+        case "badge_sensor_ended_short": d.sensorEndedPillShort
         case "chart_back_to_now": d.backToNow
         case "duration_now": d.now
         case "duration_minutes": d.durations.minutes(7)

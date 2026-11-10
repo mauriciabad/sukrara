@@ -385,6 +385,10 @@ class SettingsGallery {
                 { StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) { root(rootOn, noRoot) } },
             "statusbar-live-updates-off" to { StatusBarContent(StatusBarPrefs(chip = true, numberIcon = false), false, {}, {}, {}, {}) },
             "statusbar-chip-off" to { StatusBarContent(StatusBarPrefs(chip = false, numberIcon = true), true, {}, {}, {}, {}) },
+            // #94: the value hidden on the lock screen
+            "statusbar-lock-screen-off" to {
+                StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true, lockScreen = false), true, {}, {}, {}, {})
+            },
             "statusbar-root-icons" to {
                 StatusBarContent(StatusBarPrefs(chip = false, numberIcon = true), true, {}, {}, {}, {}) {
                     root(rootOn, SystemAccessState(root = true, module = ModuleState.Missing, framework = null))

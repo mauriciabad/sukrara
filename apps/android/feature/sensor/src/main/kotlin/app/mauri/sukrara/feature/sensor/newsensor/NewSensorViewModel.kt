@@ -11,6 +11,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.sensor.SensorProfile
+import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.pairing.PairOutcome
 import app.mauri.sukrara.sensor.source.SensorStatus
 import kotlinx.coroutines.CancellationException
@@ -61,6 +62,12 @@ interface NewSensorPort {
 
     /** Make Juggluco the glucose source (Sukrara stops reading the sensor directly). */
     suspend fun useJuggluco()
+
+    /** *Use it*: the sensor the scan found (its session started at [startEpoch]) is the one being worn (#133). */
+    fun useFoundSensor(startEpoch: Long)
+
+    /** *Look for another sensor*: skip the device the scan found and scan on (#133). */
+    fun lookForAnother()
 
     /**
      * A sensor was just paired: make the Libre 3 the glucose source (Juggluco may have been it) and start monitoring
@@ -170,6 +177,20 @@ class NewSensorViewModel(
         send(NewSensorEvent.Retry)
         // a wrong id / refused / failed PIN goes back to the setup: reconnecting would only repeat it
         if (step is NewSensorStep.BleFailed && !step.cause.needsSetup) port.retryLink()
+    }
+
+    /** *Use it* on the question about the sensor the scan found (#133). */
+    fun onUseFound() {
+        val link = (_state.value.step as? NewSensorStep.ConnectingBle)?.link as? LinkStatus.ConfirmSensor ?: return
+        port.useFoundSensor(link.startEpoch)
+        send(NewSensorEvent.SensorAnswered)
+    }
+
+    /** *Look for another sensor* (#133): the question's other answer, or a G7 the Dexcom app never authenticates. */
+    fun onLookForAnother() {
+        if (_state.value.step !is NewSensorStep.ConnectingBle) return
+        port.lookForAnother()
+        send(NewSensorEvent.SensorAnswered)
     }
 
     fun onUseJuggluco() {

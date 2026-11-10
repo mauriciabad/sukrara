@@ -200,8 +200,8 @@ struct Case: @unchecked Sendable, CustomTestStringConvertible {
 
     @Test func trendThresholdsMatchAndroid() {
         #expect(Trend(rate: 0.99) == .steady && Trend(rate: -0.99) == .steady)
-        #expect(Trend(rate: 1) == .rising && Trend(rate: 2) == .risingFast)
-        #expect(Trend(rate: -1.5) == .falling && Trend(rate: -2) == .fallingFast)
+        #expect(Trend(rate: 1) == .rising && Trend(rate: 2) == .risingFast && Trend(rate: 3) == .risingVeryFast)
+        #expect(Trend(rate: -1.5) == .falling && Trend(rate: -2) == .fallingFast && Trend(rate: -3) == .fallingVeryFast)
         #expect(Trend.words(rate: nil) == "trend unknown")
     }
 

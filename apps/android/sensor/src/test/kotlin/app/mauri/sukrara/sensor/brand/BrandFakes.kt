@@ -133,6 +133,12 @@ internal class BrandEvents : SensorEvents {
         strangers++
     }
 
+    var wrongDevices = 0
+
+    override fun onWrongDevice() {
+        wrongDevices++
+    }
+
     fun last() = statuses.last()
 }
 

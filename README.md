@@ -49,8 +49,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account (email and receiver ID, sign in / out; the
   password is never stored) and *Pair new sensor*.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
-  every card: never by colour alone; a live reading says *now*) and a 6 h chart (its words follow a larger system font)
-  you can scroll and pinch-zoom through the
+  every card: never by colour alone; a live reading says *now*) and a chart of your *Time shown* (12 h by default; its
+  words follow a larger system font; a double tap shows 3 h and back) you can scroll and pinch-zoom through the
   last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
   beside the value in a ring of its quiet time left (on the widgets and the notification too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
   focused, a mute's pill its ways out), a chip for each other quiet alert, a **Mute alerts** button (30 min … 8 h,
@@ -59,9 +59,11 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   damaged saved data, finish setup), the last 24 h of treatments (tap one to edit its amount, time or note, with
   *Undo*; delete + undo; a follower's entry nothing took yet says *Not sent* with *Retry*), and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
   there's no value it says why and what to do (Bluetooth off, the sensor used by another app, a scan or a new pairing
-  needed, the phone's clock behind the readings, the sensor warming up or ended…).
+  needed, the phone's clock behind the readings, the sensor warming up or ended…). A sensor past its end that keeps
+  sending (a Dexcom's grace period) keeps its value with an *Ended · Replace sensor* pill, and its lows still alert.
 - A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
   freshness steps as the card: from 5 min the number is struck through, from 20 min it's gone. Tap → *Add treatment*.
+  It shows on the lock screen without unlocking (Settings › Status bar › *Glucose on the lock screen* turns that off).
   Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status
   bar); on Android 17 the Live Update expands to the value styled by range.
 - **On a rooted phone** (KernelSU / Magisk): the value and its arrow as **system icons** beside Wi-Fi and the battery;

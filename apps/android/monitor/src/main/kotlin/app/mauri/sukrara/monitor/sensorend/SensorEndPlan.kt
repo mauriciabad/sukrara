@@ -79,7 +79,8 @@ data class Slot(
  * - Words: the evening slot says "tonight"; on the end day an end outside the night says to take the spare along.
  * - Slots that passed before the planner knew them (a new sensor, edited settings) never fire; a slot missed while
  *   the phone was off fires late if the sensor hasn't ended, and of several missed only the latest one.
- * - The end countdown runs from end − countdownHours to the end (0 h = none), unless dismissed for this sensor.
+ * - The end countdown runs from end − countdownHours (1–24 h) to the end while its switch is on, unless dismissed for
+ *   this sensor.
  * - The countdown takes the place of a reminder shown before its window (it says the same, #140); one that comes
  *   during the window stays.
  * - At the end one "Sensor ended", at most [ENDED_GRACE] after it (not days later after a reboot); then, with

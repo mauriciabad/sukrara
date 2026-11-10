@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import AppKit
 import Foundation
 import SukraraAlerts
 import SukraraCore
@@ -64,6 +65,40 @@ import Testing
         }
     }
 
+    /// #8: the title keeps its colour but every ink passes 4.5:1 on every bar it can be drawn on, light or dark, plain or
+    /// over a wallpaper (the system orange was about 2.2:1 and the red 3.6:1 on a light bar).
+    @Test func inksAreReadableOnLightAndDarkBars() throws {
+        for tint in [MenubarTitle.Tint.below, .above, .grey] {
+            for dark in [false, true] {
+                let ink = try #require(MenubarInk.rgb(tint, dark: dark))
+                for g in dark ? MenubarInk.darkBars : MenubarInk.lightBars {
+                    let ratio = MenubarInk.contrast(ink, (g, g, g))
+                    #expect(ratio >= MenubarInk.minContrast, "\(tint) on \(dark ? "dark" : "light") \(g): \(ratio)")
+                }
+            }
+        }
+        #expect(MenubarInk.contrast((1, 0.584, 0), (1, 1, 1)) < MenubarInk.minContrast, "systemOrange on white")
+        #expect(MenubarInk.rgb(.plain, dark: false) == nil && MenubarInk.rgb(.plain, dark: true) == nil)
+    }
+
+    /// The status item resolves the ink from the appearance the bar draws in (the button's), never one for both.
+    @Test func theInkFollowsTheBarsAppearance() throws {
+        for tint in [MenubarTitle.Tint.below, .above, .grey] {
+            let color = try #require(StatusItemController.color(tint))
+            for (name, dark) in [(NSAppearance.Name.aqua, false), (.darkAqua, true)] {
+                var got: NSColor?
+                try #require(NSAppearance(named: name)).performAsCurrentDrawingAppearance {
+                    got = color.usingColorSpace(.sRGB)
+                }
+                let want = try #require(MenubarInk.rgb(tint, dark: dark))
+                let c = try #require(got)
+                #expect(abs(c.redComponent - want.r) < 0.01 && abs(c.greenComponent - want.g) < 0.01)
+                #expect(abs(c.blueComponent - want.b) < 0.01, "\(tint) \(name.rawValue)")
+            }
+        }
+        #expect(StatusItemController.color(.plain) == nil)
+    }
+
     @Test func staleValueIsStruck() {
         let t = title(minutesAgo: 10)
         #expect(t.strike && t.text.hasPrefix("112"))
@@ -107,9 +142,13 @@ import Testing
             minutesAgo: nil, sensor: SensorInfo(start: now - 600, end: now + 14 * 86400, warmupEnd: now + 42 * 60))
         #expect(warm.value == "42m" && warm.tint == .grey && warm.mark == .symbol(MenubarTitle.warmupSymbol))
         #expect(warm.tooltip.hasPrefix("Sukrara · ready at "))
-        let ended = title(minutesAgo: 1, sensor: SensorInfo(start: now - 15 * 86400, end: now - 60, warmupEnd: now))
+        let past = SensorInfo(start: now - 15 * 86400, end: now - 60, warmupEnd: now)
+        let ended = title(minutesAgo: 6, sensor: past)
         #expect(ended.value.isEmpty && ended.mark == .symbol(MenubarTitle.endedSymbol))
         #expect(ended.tooltip == "Sensor ended — replace sensor")
+        // past its end but still sending (#3): the value, and the tooltip says it ended
+        let sending = title(minutesAgo: 1, sensor: past)
+        #expect(sending.value == "112" && sending.tooltip == "Sensor ended — replace sensor")
         let muted = title(minutesAgo: 1, alerts: engineState(.muteAll(until: muteAllForever)))
         #expect(muted.muted && muted.tooltip.hasSuffix("Alerts muted until you turn it off"))
     }

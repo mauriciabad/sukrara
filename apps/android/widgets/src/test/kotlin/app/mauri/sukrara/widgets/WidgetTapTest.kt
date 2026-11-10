@@ -76,7 +76,15 @@ class WidgetTapTest {
     @Test
     fun `the wearer's ended sensor opens the new-sensor flow, a follower's the app`() {
         assertEquals(WidgetTap.NewSensor, widgetTap(context, frame(120, Duration.ofMinutes(25), sensor = SensorState.Ended)))
-        assertEquals(WidgetTap.NewSensor, widgetTap(context, frame(120, sensor = SensorState.Active(now.minus(Duration.ofHours(1))))))
+        assertEquals(
+            WidgetTap.NewSensor,
+            widgetTap(context, frame(120, Duration.ofMinutes(6), sensor = SensorState.Active(now.minus(Duration.ofHours(1))))),
+        )
+        // past its end but still sending (#3): a value, so the tap logs a treatment as with any value
+        assertEquals(
+            WidgetTap.QuickTreatment(false),
+            widgetTap(context, frame(120, sensor = SensorState.Active(now.minus(Duration.ofHours(1))))),
+        )
         assertEquals(
             WidgetTap.OpenApp,
             widgetTap(context, frame(120, Duration.ofMinutes(25), role = Role.Follower, sensor = SensorState.Ended)),
@@ -91,13 +99,16 @@ class WidgetTapTest {
     /** The source's *ended* carries no dates: the widget still draws *Sensor ended* (not the last value or its age). */
     @Test
     fun `an ended sensor without dates says so on the widget`() {
-        for (age in listOf(Duration.ofMinutes(1), Duration.ofMinutes(25))) {
+        for (age in listOf(Duration.ofMinutes(6), Duration.ofMinutes(25))) {
             val f = frame(120, age, sensor = SensorState.Ended)
             val model = widgetModel(context, f)
             assertEquals(GlucoseLook.State.ENDED, widgetLook(model, f.config.unit).state)
             assertTrue(SensorLife.ended(model.sensor!!.endS, model.nowS))
         }
-        val follower = frame(120, role = Role.Follower, sensor = SensorState.Ended)
+        // still sending (#3): the value with the ended flag (the card's "Ended · Replace sensor" pill)
+        val sending = frame(120, Duration.ofMinutes(1), sensor = SensorState.Ended)
+        assertTrue(widgetLook(widgetModel(context, sending), sending.config.unit).ended)
+        val follower = frame(120, Duration.ofMinutes(6), role = Role.Follower, sensor = SensorState.Ended)
         assertEquals(GlucoseLook.State.ENDED, widgetLook(widgetModel(context, follower), follower.config.unit).state)
     }
 

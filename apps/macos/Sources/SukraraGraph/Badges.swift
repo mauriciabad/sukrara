@@ -15,9 +15,21 @@ enum StatusBadge {
     /// `kind` = the treatment kind whose colour and marker the badge uses; `tonal` = taken.
     struct Look: Equatable { var kind: String; var text: String; var short: String; var tonal: Bool }
 
-    /// The action pill on an ended sensor (round sensor-life): the same pill, kind "sensor" (neutral colour, sensor disc).
+    /// The action pill on an ended sensor whose readings have stopped (round sensor-life), under "Sensor ended": the
+    /// same pill, kind "sensor" (neutral colour, sensor disc).
     static func replaceSensor(_ w: CardWords) -> Look {
         Look(kind: "sensor", text: w.drawn.replaceSensor, short: w.drawn.replaceSensorShort, tonal: false)
+    }
+    /// The pill beside the value of a sensor past its end whose readings keep arriving (#3): "Ended · Replace sensor".
+    /// An alert's pill wins over it (the action that matters now); it comes back once that one is gone.
+    static func sensorEnded(_ w: CardWords) -> Look {
+        Look(kind: "sensor", text: w.drawn.sensorEndedPill, short: w.drawn.sensorEndedPillShort, tonal: false)
+    }
+    /// The sensor's pill for `face` (contracts/graph/sensor `pill`; StatusBadge.sensor on Android): ended with a value,
+    /// ended without one, or none.
+    static func sensor(_ face: GlucoseLook, _ w: CardWords) -> Look? {
+        if face.state == .ended { return replaceSensor(w) }
+        return face.ended ? sensorEnded(w) : nil
     }
     /// The pill over a scrolled chart (GlucoseGraph, `ChartView.now`): the same pill, kind "now" (neutral colour, arrow).
     static func backToNow(_ w: CardWords) -> Look {

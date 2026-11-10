@@ -24,6 +24,8 @@ class CardWords private constructor(
     val muted: String = r.getString(R.string.badge_muted_short)
     val replaceSensor: String = r.getString(R.string.badge_replace_sensor)
     val replaceSensorShort: String = r.getString(R.string.badge_replace_sensor_short)
+    val sensorEndedPill: String = r.getString(R.string.badge_sensor_ended)
+    val sensorEndedPillShort: String = r.getString(R.string.badge_sensor_ended_short)
     val backToNow: String = r.getString(R.string.chart_back_to_now)
     val slotAverage: String = r.getString(R.string.slot_average_short)
     val slotGmi: String = r.getString(R.string.slot_gmi_short)
@@ -81,14 +83,18 @@ class CardWords private constructor(
         return if (m < 1) durationNow else Durations.compact(m, durations)
     }
 
-    /** The trend in words for [rate] mg/dL/min (null = unknown). */
+    /** The trend in words for [rate] mg/dL/min (null = unknown): one word per arrow ([TrendAngle.step]). */
     fun trend(rate: Double?): String =
         r.getString(
-            when {
-                rate == null -> R.string.trend_unknown
-                kotlin.math.abs(rate) < 1 -> R.string.trend_steady
-                rate > 0 -> if (rate >= 2) R.string.trend_rising_fast else R.string.trend_rising
-                else -> if (rate <= -2) R.string.trend_falling_fast else R.string.trend_falling
+            when (rate?.let(TrendAngle::step)) {
+                null -> R.string.trend_unknown
+                3 -> R.string.trend_rising_very_fast
+                2 -> R.string.trend_rising_fast
+                1 -> R.string.trend_rising
+                0 -> R.string.trend_steady
+                -1 -> R.string.trend_falling
+                -2 -> R.string.trend_falling_fast
+                else -> R.string.trend_falling_very_fast
             },
         )
 

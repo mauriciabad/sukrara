@@ -76,7 +76,7 @@ class SystemUiWordsTest {
         val since = Freshness.timeText(nowS - 25 * 60, nowS)
         assertEquals("Sukrara. Glucose: no reading since $since", icons(state(ageS = 25 * 60), en).desc)
         assertEquals("Sukrara. Glucosa: sin lecturas desde $since", icons(state(ageS = 25 * 60), es).desc)
-        assertEquals("Sukrara. Sensor ended. Replace sensor", icons(state(sensor = SensorState.Ended), en).desc)
+        assertEquals("Sukrara. Sensor ended. Replace sensor", icons(state(ageS = 6 * 60, sensor = SensorState.Ended), en).desc)
     }
 
     private fun hook(

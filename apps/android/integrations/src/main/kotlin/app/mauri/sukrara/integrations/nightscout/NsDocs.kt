@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -64,19 +65,8 @@ object NsDocs {
 
     const val FAMILY_SEPARATOR = " · "
 
-    /** Nightscout's trend name for a per-minute rate (1 / 2 / 3 mg/dL per minute steps). */
-    fun direction(ratePerMin: Double?): String {
-        val m = ratePerMin ?: return "NONE"
-        return when {
-            m > 3 -> "DoubleUp"
-            m > 2 -> "SingleUp"
-            m > 1 -> "FortyFiveUp"
-            m >= -1 -> "Flat"
-            m >= -2 -> "FortyFiveDown"
-            m >= -3 -> "SingleDown"
-            else -> "DoubleDown"
-        }
-    }
+    /** Nightscout's trend name for a per-minute rate: the card's arrow band (contracts/graph/trend `nightscout`). */
+    fun direction(ratePerMin: Double?): String = TrendAngle.nightscout(ratePerMin)
 
     fun isoUtc(t: Instant): String = UTC.format(t)
 

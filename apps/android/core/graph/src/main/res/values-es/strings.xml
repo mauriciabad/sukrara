@@ -16,6 +16,8 @@
     </plurals>
     <string name="badge_replace_sensor">Cambiar sensor</string>
     <string name="badge_replace_sensor_short">Sensor</string>
+    <string name="badge_sensor_ended">Terminado · Cambiar sensor</string>
+    <string name="badge_sensor_ended_short">Terminado</string>
     <string name="chart_back_to_now">Ahora</string>
     <string name="duration_now">ahora</string>
     <string name="duration_minutes">%1$d min</string>
@@ -49,8 +51,10 @@
     <string name="trend_steady">estable</string>
     <string name="trend_rising">subiendo</string>
     <string name="trend_rising_fast">subiendo rápido</string>
+    <string name="trend_rising_very_fast">subiendo muy rápido</string>
     <string name="trend_falling">bajando</string>
     <string name="trend_falling_fast">bajando rápido</string>
+    <string name="trend_falling_very_fast">bajando muy rápido</string>
     <string name="a11y_unit_mgdl">miligramos por decilitro</string>
     <string name="a11y_unit_mmol">milimoles por litro</string>
     <string name="a11y_value">%1$s %2$s</string>

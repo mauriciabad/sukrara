@@ -100,7 +100,7 @@ class LiveNotificationContentTest {
     fun `states without a value are text whatever the settings`() {
         for (prefs in listOf(NotificationPrefs(chip = false), NotificationPrefs(chip = true, promotionAllowed = true))) {
             assertEquals(LiveNotificationContent.Layout.TEXT, content(state(mgdl = null), prefs).layout)
-            assertEquals(LiveNotificationContent.Layout.TEXT, content(state(sensor = SensorState.Ended), prefs).layout)
+            assertEquals(LiveNotificationContent.Layout.TEXT, content(state(ageS = 6 * 60, sensor = SensorState.Ended), prefs).layout)
             assertEquals(LiveNotificationContent.Layout.TEXT, content(state(ageS = 25 * 60), prefs).layout)
         }
     }
@@ -193,8 +193,17 @@ class LiveNotificationContentTest {
     }
 
     @Test
-    fun `sensor ended asks the wearer to replace it`() {
+    fun `an ended sensor that keeps sending shows its value and says under it that it ended`() {
         val c = content(state(sensor = SensorState.Ended))
+        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", "↗")), c.title)
+        assertEquals(UiText(R.string.monitor_notif_sensor_ended_line), c.text)
+        assertEquals(listOf(Target.OpenApp, Target.SensorSetup), c.actions.map { it.target })
+        assertEquals(listOf(Target.OpenApp), content(state(sensor = SensorState.Ended, role = Role.Follower)).actions.map { it.target })
+    }
+
+    @Test
+    fun `sensor ended asks the wearer to replace it`() {
+        val c = content(state(ageS = 6 * 60, sensor = SensorState.Ended))
         assertEquals(R.string.monitor_notif_sensor_ended, c.title.res)
         assertEquals(Target.SensorSetup, c.tap)
         assertEquals(Icon.SENSOR_ENDED, c.icon)
@@ -245,13 +254,23 @@ class LiveNotificationContentTest {
         }
     }
 
+    /** #94: *Glucose on the lock screen* reaches the notification in every state (on by default). */
+    @Test
+    fun `the lock-screen setting reaches the notification in every state`() {
+        val off = NotificationPrefs(lockScreen = false)
+        for (s in listOf(state(), state(mgdl = null), state(ageS = 6 * 60, sensor = SensorState.Ended), state(started = false))) {
+            assertEquals(true, content(s).lockScreen)
+            assertEquals(false, content(s, off).lockScreen)
+        }
+    }
+
     @Test
     fun `a wearer with followers gets the followers and nearby sub text in every state, a follower never`() {
         val line = SharingLine(followers = 2, nearby = 1)
         val prefs = NotificationPrefs(chip = true, promotionAllowed = true, sharing = line)
         assertEquals(line, content(state(), prefs).sharing)
         assertEquals(line, content(state(mgdl = null), prefs).sharing)
-        assertEquals(line, content(state(sensor = SensorState.Ended), prefs).sharing)
+        assertEquals(line, content(state(ageS = 6 * 60, sensor = SensorState.Ended), prefs).sharing)
         assertNull(content(state(role = Role.Follower), prefs).sharing)
         assertNull(content(state(), NotificationPrefs()).sharing)
         assertNull(content(state(role = null), prefs).sharing)

@@ -133,6 +133,12 @@ class LiveNotification(
                 .setStyle(Notification.BigTextStyle().bigText(text))
         content.readingAt?.let { builder.setWhen(it.toEpochMilli()) }
         content.sharing?.let { builder.setSubText(sharingText(it)) }
+        // the lock screen (#94): the value, or with the setting off only "Sukrara · Monitoring" until the phone is unlocked
+        if (content.lockScreen) {
+            builder.setVisibility(Notification.VISIBILITY_PUBLIC)
+        } else {
+            builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicVersion())
+        }
         content.actions.forEach { builder.addAction(Notification.Action.Builder(null, resolve(it.label, now), pending(it.target)).build()) }
         when (content.layout) {
             Layout.LIVE_UPDATE -> liveUpdate(builder, content, now, frame)
@@ -141,6 +147,17 @@ class LiveNotification(
         }
         return builder.build()
     }
+
+    /** What the lock screen shows of the notification with *Glucose on the lock screen* off: that Sukrara is monitoring. */
+    private fun publicVersion(): Notification =
+        Notification
+            .Builder(context, Channels.GLUCOSE)
+            .setSmallIcon(R.drawable.monitor_ic_app)
+            .setContentTitle(context.getString(R.string.monitor_notif_public_title))
+            .setContentText(context.getString(R.string.monitor_notif_public_text))
+            .setOngoing(true)
+            .setCategory(Notification.CATEGORY_STATUS)
+            .build()
 
     /**
      * The chip; on Android 17 the expanded card is a MetricStyle (the value by range, the late reading's time, then the

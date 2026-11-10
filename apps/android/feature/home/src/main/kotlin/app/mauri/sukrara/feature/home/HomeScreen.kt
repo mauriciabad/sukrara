@@ -109,6 +109,8 @@ import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.StatusBadge
 import app.mauri.sukrara.graph.TreatmentMarks
 import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.launch
@@ -610,16 +612,25 @@ internal fun lastDay(state: HomeUiState): Boolean {
 
 /** What the card's pill does for [state] (only the wearer pairs a sensor; anyone with a role may add a treatment). */
 internal fun pillAction(state: HomeUiState): PillAction {
+    val sensor = sensorPill(state)
     // the card draws *Replace sensor* there: only the wearer can act on it
-    if (state.glucose.sensor == SensorState.Ended && state.glucose.role != Role.Wearer) return PillAction.None
+    if (sensor && state.glucose.role != Role.Wearer) return PillAction.None
     return PillAction.of(
         state.glucose.alerts.status,
         state.now.epochSecond,
         canAdd = state.glucose.role != null,
-        ended = state.glucose.sensor == SensorState.Ended,
+        ended = sensor,
         muteAll = state.mutedUntil != null,
     )
 }
+
+/**
+ * The card draws the ended sensor's pill where the status pill goes ([StatusBadge.sensor]): *Replace sensor* once its
+ * readings stop, *Ended · Replace sensor* beside a value while they keep arriving, unless an alert's pill takes the place.
+ */
+internal fun sensorPill(state: HomeUiState): Boolean =
+    state.look.state == GlucoseLook.State.ENDED ||
+        (state.look.ended && !StatusBadge.shows(state.glucose.alerts.status, state.now.epochSecond))
 
 /** TalkBack's words for the pill: what it shows, as the card's sentence says it ([A11y.status]). */
 internal fun pillWords(
@@ -627,7 +638,7 @@ internal fun pillWords(
     resources: android.content.res.Resources,
 ): String {
     val words = CardWords.of(resources)
-    if (state.glucose.sensor == SensorState.Ended) return words.replaceSensor
+    if (sensorPill(state)) return StatusBadge.sensor(state.look, words)?.text.orEmpty()
     return A11y.status(state.glucose.alerts.status, state.now.epochSecond, words).orEmpty()
 }
 

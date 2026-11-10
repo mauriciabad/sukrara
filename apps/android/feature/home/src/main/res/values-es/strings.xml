@@ -157,6 +157,7 @@
     <string name="home_chart_later">Ver después</string>
     <string name="home_chart_zoom_in">Acercar</string>
     <string name="home_chart_zoom_out">Alejar</string>
+    <string name="home_chart_three_hours">Ver 3 horas</string>
     <string name="home_pill_replace_sensor">Vincular sensor nuevo</string>
     <string name="home_pill_alert_options">Opciones de alertas</string>
     <string name="home_quiet_side">Alertas %1$s</string>

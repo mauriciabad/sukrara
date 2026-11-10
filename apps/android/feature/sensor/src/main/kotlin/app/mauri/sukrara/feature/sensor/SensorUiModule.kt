@@ -99,6 +99,10 @@ class SensorUiModule(
 
             override fun retryLink() = sensors.source.retry()
 
+            override fun useFoundSensor(startEpoch: Long) = sensors.source.useFoundSensor(startEpoch)
+
+            override fun lookForAnother() = sensors.source.lookForAnother()
+
             override suspend fun useJuggluco() {
                 settings.set(SOURCE, SensorSourceKind.Juggluco.id)
                 startMonitoring() // Juggluco is a source to monitor even with no sensor paired here

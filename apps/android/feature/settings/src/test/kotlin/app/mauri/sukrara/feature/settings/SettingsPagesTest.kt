@@ -87,6 +87,7 @@ class SettingsPagesTest {
             // Settings › Status bar and Settings › Sensor end
             "statusbar.chip",
             "statusbar.icon",
+            "statusbar.lockScreen",
             "statusbar.hook",
             "statusbar.hookPosition",
             "statusbar.hookColor",

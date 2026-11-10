@@ -160,6 +160,13 @@ sealed interface LinkStatus {
     /** The transmitter runs but no sensor session is started (the Dexcom app or receiver starts it). */
     data object NoSession : LinkStatus
 
+    /**
+     * The scan found a sensor whose session started at [startEpoch], well before this pairing (#133: maybe a sensor pulled
+     * early, still bonded): the person says whether it's the one they wear (`SourceManager.useFoundSensor` /
+     * `lookForAnother`). Nothing from it is shown or alerted on until then.
+     */
+    data class ConfirmSensor(val startEpoch: Long) : LinkStatus
+
     data object Live : LinkStatus
 
     data class WarmingUp(val minutesLeft: Int) : LinkStatus

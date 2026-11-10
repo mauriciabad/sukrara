@@ -55,7 +55,7 @@ class SystemUiTest {
     @Test fun `a fresh value is its number and its arrow`() {
         val p = icons(state(138, rate = 0.0))
         assertEquals("sb_n138", p.number)
-        assertEquals("sb_t18", p.trend) // flat: straight right, the middle of 37 steps
+        assertEquals("sb_t_flat", p.trend) // flat: straight right
         assertEquals("Sukrara: the sentence", p.desc)
         assertEquals("Sukrara, the trend", p.trendDesc)
         assertTrue(SlotIcons.isValue(p.desc))
@@ -96,8 +96,11 @@ class SystemUiTest {
         assertEquals("set ${SlotIcons.SLOT_TREND} 3 0 Sukrara. the sentence", SlotIcons.commands(p) { 3 }[0])
     }
 
-    @Test fun `an ended sensor is the flag and a warm-up shows nothing`() {
-        assertEquals(SlotIcons.Plan("monitor_ic_sensor_ended", null, "Sukrara. the sentence"), icons(state(sensor = SensorState.Ended)))
+    @Test fun `an ended sensor is the flag once its readings stop and a warm-up shows nothing`() {
+        val ended = state(ageS = 6 * 60, sensor = SensorState.Ended)
+        assertEquals(SlotIcons.Plan("monitor_ic_sensor_ended", null, "Sukrara. the sentence"), icons(ended))
+        // past its end but still sending (#3): its value, as every surface shows it
+        assertEquals("sb_n138", icons(state(sensor = SensorState.Ended)).number)
         val warming = state(mgdl = null, sensor = SensorState.WarmingUp(now.plusSeconds(1800)))
         assertEquals(SlotIcons.Plan.EMPTY, icons(warming))
         assertEquals(SlotIcons.Plan.EMPTY, icons(state(mgdl = null)))
@@ -109,10 +112,12 @@ class SystemUiTest {
         assertEquals("sb_shi", icons(state(501, ageS = 6 * 60)).number)
     }
 
-    @Test fun `the arrow steps by 5 degrees and doubles from 3`() {
-        assertEquals("sb_t00", SlotIcons.trendDrawable(2.99))
-        assertEquals("sb_t36", SlotIcons.trendDrawable(-2.99))
-        assertEquals("sb_t09", SlotIcons.trendDrawable(1.5))
+    @Test fun `the arrow is the band's, as the card draws it, and doubles from 3`() {
+        assertEquals("sb_t_up", SlotIcons.trendDrawable(2.99))
+        assertEquals("sb_t_down", SlotIcons.trendDrawable(-2.0))
+        assertEquals("sb_t_up45", SlotIcons.trendDrawable(1.0))
+        assertEquals("sb_t_down45", SlotIcons.trendDrawable(-1.99))
+        assertEquals("sb_t_flat", SlotIcons.trendDrawable(-0.99))
         assertEquals("sb_t_up2", SlotIcons.trendDrawable(3.0))
         assertEquals("sb_t_down2", SlotIcons.trendDrawable(-4.0))
     }
@@ -125,13 +130,13 @@ class SystemUiTest {
             names += "sb_s$v"
         }
         names += listOf("sb_lo", "sb_hi", "sb_slo", "sb_shi", "sb_t_none", "sb_t_none_s", "sb_t_up2", "sb_t_down2")
-        names += (0..36).map { "sb_t%02d".format(it) }
+        names += SlotIcons.TREND_DRAWABLES
         names += listOf("monitor_ic_no_readings", "monitor_ic_sensor_ended")
         for (n in names) assertTrue("missing drawable $n", java.io.File(res, "$n.xml").isFile)
     }
 
     @Test fun `commands send the trend first, then the number, and remove what is gone`() {
-        val ids = mapOf("sb_t18" to 7, "sb_n138" to 9)
+        val ids = mapOf("sb_t_flat" to 7, "sb_n138" to 9)
         val cmds = SlotIcons.commands(icons(state(138, rate = 0.0)), { ids.getValue(it) })
         assertEquals("set ${SlotIcons.SLOT_TREND} 7 0 Sukrara, the trend", cmds[0])
         assertEquals("set ${SlotIcons.SLOT_NUMBER} 9 0 Sukrara: the sentence", cmds[1])
@@ -205,7 +210,9 @@ class SystemUiTest {
         assertEquals("value", key(hook()))
         assertEquals("old", key(hook(ageS = 6 * 60)))
         assertEquals("since:time", key(hook(ageS = 25 * 60)))
-        assertEquals("ended", key(hook(ended = true)))
+        assertEquals("ended", key(hook(ageS = 6 * 60, ended = true)))
+        // past its end but still sending (#3): the value, as the face shows it
+        assertEquals("value", key(hook(ended = true)))
         // a warm-up's minutes left, rounded up as the sentence says them; 0 = almost ready
         assertEquals("warmup:30", key(hook(mgdl = 0, readyAt = nowS + 1790)))
         assertEquals("warmup:0", key(hook(mgdl = 0, readyAt = nowS - 60)))
@@ -214,7 +221,7 @@ class SystemUiTest {
         val later = nowS + 6 * 60
         assertEquals("Sukrara: 138 old", HookText.spoken(s, HookText.face(s, later), later))
         assertEquals(SlotIcons.VALUE, HookText.mark(HookText.face(s, nowS)))
-        assertEquals(SlotIcons.SINGLE, HookText.mark(HookText.face(hook(ended = true), nowS)))
+        assertEquals(SlotIcons.SINGLE, HookText.mark(HookText.face(hook(ageS = 6 * 60, ended = true), nowS)))
     }
 
     @Test fun `the sentences from the app are clamped`() {
@@ -237,7 +244,9 @@ class SystemUiTest {
         assertEquals(white, struck.color) // struck: never the range colour
         assertEquals(HookText.Mark.RING, struck.mark)
         assertEquals(HookText.Mark.NO_READINGS, HookText.of(HookText.face(hook(ageS = 25 * 60), nowS), true, null, white).mark)
-        assertEquals(HookText.Mark.FLAG, HookText.of(HookText.face(hook(ended = true), nowS), true, null, white).mark)
+        assertEquals(HookText.Mark.FLAG, HookText.of(HookText.face(hook(ageS = 6 * 60, ended = true), nowS), true, null, white).mark)
+        // past its end but still sending (#3): the value, as every surface shows it
+        assertEquals(HookText.Mark.ARROW, HookText.of(HookText.face(hook(ended = true), nowS), true, null, white).mark)
         val warm = HookText.face(hook(mgdl = 0, readyAt = nowS + 1800), nowS)
         assertEquals(GlucoseLook.State.WARMING_UP, warm.state)
         assertTrue(CardSurface.STATUS_HOOK in seen)
@@ -274,7 +283,7 @@ class SystemUiTest {
                 GlucoseUnit.MGDL,
             )
         assertEquals(nowS + 60, w.readyAtS)
-        assertTrue(RootStatusBar.hookState(state(sensor = SensorState.Ended), p, Bands(), GlucoseUnit.MGDL).sensorEnded)
+        assertTrue(RootStatusBar.hookState(state(ageS = 6 * 60, sensor = SensorState.Ended), p, Bands(), GlucoseUnit.MGDL).sensorEnded)
     }
 
     @Test fun `the value never vanishes from the bar when the icons can't show`() {

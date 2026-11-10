@@ -104,6 +104,34 @@ class ChartScroll(
         now: Long,
     ) = zoom(if (out) 0.5 else 2.0, 1.0, default, first, now)
 
+    /**
+     * Where a double tap takes the window (#95; the Mac's two-finger double tap, `ChartEase.smartZoom`): from the place's
+     * own length (or any other) to [CLOSE_S] for the close look before a bolus, and from 3 h back to the place's own
+     * (always, on a place that shows 3 h or less), keeping the moment at [anchor] (0 = the plot's left edge, 1 = its
+     * right edge) in place as [zoom] does. The new end and length; null when the window is already there.
+     */
+    fun closeLook(
+        anchor: Double,
+        default: Long,
+        first: Long,
+        now: Long,
+    ): Pair<Double, Double>? {
+        val current = exactSpan ?: default.toDouble()
+        val target = if (abs(current - CLOSE_S) < SAME_SPAN_S || default <= CLOSE_S) default.toDouble() else CLOSE_S.toDouble()
+        if (abs(target - current) < SAME_SPAN_S) return null
+        val (lo, hi) = spanLimits(default, first, now)
+        val span1 = target.coerceIn(lo, hi)
+        val end0 = exactEnd ?: now.toDouble()
+        val a = anchor.coerceIn(0.0, 1.0)
+        val at = end0 - current * (1 - a)
+        val end1 = (at + span1 * (1 - a)).coerceIn(minOf(first + span1, now.toDouble()), now.toDouble())
+        return end1 to span1
+    }
+
+    /** Whether a double tap would show [CLOSE_S] (else it goes back to the place's own length, or does nothing). */
+    fun closeLookIn(default: Long): Boolean =
+        default > CLOSE_S && abs((spanS?.let { exactSpan } ?: default.toDouble()) - CLOSE_S) >= SAME_SPAN_S
+
     /** Puts the window at [end] with length [span] (the way back to now animates through this). */
     fun set(
         end: Double,
@@ -120,6 +148,9 @@ class ChartScroll(
     companion object {
         /** A length within this of the place's own counts as not zoomed (the pill goes away). */
         private const val SAME_SPAN_S = 30.0
+
+        /** The double tap's close look (#95): 3 h, as on the Mac. */
+        const val CLOSE_S = 3 * 3600L
 
         /** A length within this of a limit is at it (no further zoom step). */
         private const val LIMIT_S = 1.0

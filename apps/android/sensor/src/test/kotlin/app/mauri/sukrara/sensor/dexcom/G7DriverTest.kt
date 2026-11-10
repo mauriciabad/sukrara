@@ -191,6 +191,56 @@ class G7DriverTest {
         assertEquals(listOf(Dexcom.ADVERTISEMENT), d.scan.map { it.service })
     }
 
+    /**
+     * #133: a G7 that says it ended (or failed) before this pairing ever had its sensor's start is an old one still bonded
+     * (pulled early, stopped in the Dexcom app): skipped, the scan goes on; it never ends the new pairing for good.
+     */
+    @Test
+    fun endedBeforeTheFirstReadingIsTheWrongDevice() {
+        val events = BrandEvents()
+        val link = BrandLink()
+        streaming(events, link).onNotification(Dexcom.CONTROL, trace["life-8"])
+        assertEquals(1, events.wrongDevices)
+        assertTrue(events.ended.isEmpty())
+        assertFalse(LinkStatus.SensorEnded in events.statuses)
+        assertEquals(1, link.closed)
+    }
+
+    /**
+     * #133: a session that started more than an hour (+ drift) before the pairing may be a sensor pulled early: the
+     * person is asked; nothing is adopted or shown until then. A start the pairing already knows (the answer *Use it*)
+     * is read as usual, and a session started within the hour is adopted without a question.
+     */
+    @Test
+    fun aSessionStartedLongBeforeThePairingIsAskedAbout() {
+        val fourDays = 4 * 86_400L
+        val asked = BrandEvents()
+        val d = G7Driver(Pairing.scanned(SensorProfile.DexcomG7, "", nowMs), asked, clockMs = { nowMs })
+        d.onConnected(BrandLink(), chars, 0)
+        d.onNotification(Dexcom.AUTHENTICATION, byteArrayOf(0x05, 0x01, 0x01))
+        d.onEgv(G7Messages.Egv(fourDays, 10, 5, mgdl = 120, state = 6, trend = null))
+        assertEquals(LinkStatus.ConfirmSensor(nowS - fourDays), asked.statuses.last())
+        assertTrue(asked.readings.isEmpty() && asked.starts.isEmpty())
+
+        val used = BrandEvents()
+        val known = Pairing.scanned(SensorProfile.DexcomG7, "", nowMs).copy(startEpoch = nowS - fourDays)
+        G7Driver(known, used, clockMs = { nowMs }).also {
+            it.onConnected(BrandLink(), chars, 0)
+            it.onNotification(Dexcom.AUTHENTICATION, byteArrayOf(0x05, 0x01, 0x01))
+            it.onEgv(G7Messages.Egv(fourDays, 10, 5, mgdl = 120, state = 6, trend = null))
+        }
+        assertEquals(listOf(120), used.readings.map { it.mgdl })
+
+        val fresh = BrandEvents()
+        G7Driver(Pairing.scanned(SensorProfile.DexcomG7, "", nowMs), fresh, clockMs = { nowMs }).also {
+            it.onConnected(BrandLink(), chars, 0)
+            it.onNotification(Dexcom.AUTHENTICATION, byteArrayOf(0x05, 0x01, 0x01))
+            it.onEgv(G7Messages.Egv(3600, 10, 5, mgdl = 120, state = 6, trend = null)) // warm-up + setup: no question
+        }
+        assertEquals(listOf(nowS - 3600), fresh.starts)
+        assertFalse(fresh.statuses.any { it is LinkStatus.ConfirmSensor })
+    }
+
     @Test
     fun fifteenDayProfile() {
         assertEquals(15 * 24 * 60, driver(profile = SensorProfile.DexcomG7Long).profile.wearMin)

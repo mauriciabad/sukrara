@@ -278,6 +278,9 @@
     <string name="st_statusbar_number_icon">Número como icono de notificación</string>
     <string name="st_statusbar_number_icon_summary">La barra de estado muestra el valor como icono de la notificación</string>
     <string name="st_statusbar_number_icon_chip">El chip ya muestra el valor</string>
+    <string name="st_statusbar_lock_screen">Glucosa en la pantalla de bloqueo</string>
+    <string name="st_statusbar_lock_screen_on">El valor y su flecha, sin desbloquear</string>
+    <string name="st_statusbar_lock_screen_off">La pantalla de bloqueo solo dice que Sukrara está monitorizando</string>
     <string name="st_statusbar_footer">Con el chip, la notificación de glucosa es una Actualización en vivo: el valor y su flecha aparecen junto al reloj. Sin él, la notificación es una tarjeta del color de tu rango con la gráfica, y su icono puede ser el número. El chip necesita Android 16 o posterior.</string>
     <string name="st_root_group">Con root</string>
     <string name="st_root_value">Valor en la barra de estado</string>

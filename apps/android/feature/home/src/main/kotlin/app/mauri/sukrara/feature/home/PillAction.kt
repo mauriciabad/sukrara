@@ -11,7 +11,7 @@ import app.mauri.sukrara.core.model.TreatmentKind
  *  - *Eat carbs* / *Take insulin* → Add treatment with that field focused, where this phone may add entries.
  *  - a side quiet after a treatment (*45m left*) or muted (*Muted*) → that side's ways out ([Quiet]).
  *  - *Muted · 1h* (Mute all) → its ways out ([MuteAll]).
- *  - *Replace sensor* (the sensor ended, the wearer) → pair the new sensor.
+ *  - *Replace sensor* / *Ended · Replace sensor* (the sensor ended, the wearer) → pair the new sensor.
  */
 sealed interface PillAction {
     data class Treat(
@@ -33,7 +33,7 @@ sealed interface PillAction {
     companion object {
         /**
          * The action of the pill for [status] at [nowS]; [canAdd] = this phone may add entries; [ended] = the card shows
-         * the ended sensor's *Replace sensor* pill and this phone wears it; [muteAll] = *Mute all* is on (a muted side's
+         * the ended sensor's pill (*Replace sensor*, *Ended · Replace sensor*) and this phone wears it; [muteAll] = *Mute all* is on (a muted side's
          * pill then also stands for Mute all, whose Unmute is what ends it).
          */
         fun of(

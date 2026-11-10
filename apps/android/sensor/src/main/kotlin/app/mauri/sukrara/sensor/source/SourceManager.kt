@@ -173,6 +173,26 @@ class SourceManager internal constructor(
         restarts.value++
     }
 
+    /** The running sensor's events (null while no sensor is read directly): the person's answers go through it. */
+    @Volatile private var running: DirectEvents? = null
+
+    /**
+     * The person's *Use it* on [LinkStatus.ConfirmSensor] (#133): the found sensor is the one they wear. Its session start
+     * becomes the pairing's, and the link starts over (the driver then adopts it).
+     */
+    fun useFoundSensor(startEpoch: Long) {
+        val events = running ?: return
+        scope.launch { events.adopt(startEpoch) }
+    }
+
+    /**
+     * The person's *Look for another sensor* (#133): the found device isn't theirs (an old sensor still bonded, or one
+     * the Dexcom app never authenticates because it moved to the new one). Skipped for this pairing; the scan goes on.
+     */
+    fun lookForAnother() {
+        running?.onWrongDevice()
+    }
+
     override fun onBluetoothOn() = retry()
 
     override fun onBluetoothOff() {
@@ -214,6 +234,7 @@ class SourceManager internal constructor(
             return publish(SensorStatus.Direct(pairing.profile, pairing.label, SensorStatus.Direct.keyOf(pairing), LinkStatus.Failed(why)))
         }
         val events = DirectEvents(pairing)
+        running = events
         events.onStatus(LinkStatus.Connecting)
         _status.value = SourceStatus.Connecting
         coroutineScope {
@@ -350,6 +371,12 @@ class SourceManager internal constructor(
             }
         }
 
+        /** The person said the found sensor is theirs: its start is the pairing's, and the link starts over. */
+        suspend fun adopt(startEpoch: Long) {
+            pairings.setStart(pairing, startEpoch)
+            retry()
+        }
+
         override fun onStranger() {
             val stranger = address
             scope.launch {
@@ -440,6 +467,7 @@ class SourceManager internal constructor(
 
     private fun resetState() {
         info = null
+        running = null
         latestReading = null
         _status.value = SourceStatus.NotStarted
     }
