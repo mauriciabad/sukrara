@@ -23,6 +23,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The wearer's mirrored settings while following (nil otherwise).
     private var wearer: WearerSettings?
     private var settingsPending = false
+    /// `sukrara:` links held until the windows exist (a link that launches the app arrives before them).
+    private var linkInbox = LinkInbox()
 
     public init(plan: LaunchPlan) {
         let services = AppServices(plan: plan)
@@ -107,6 +109,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.lanConfig = lanConfig
         model.run()
         if case .snapshot = model.plan.mode {} else { windows.showSetupIfFirstRun() }
+        // after the first-run setup window: an invite link that launched the app opens its Follow step
+        for url in linkInbox.launched() { windows.open(url) }
         AppLog.app.info("launched (offline: \(self.model.plan.isOffline, privacy: .public))")
     }
 
@@ -132,10 +136,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// `sukrara:` links (Info.plist CFBundleURLTypes): invite links go to the follow step, `sukrara://treatment/new`
-    /// to Add treatment, `sukrara://open` to the panel. A link that launched the app arrives after
-    /// `applicationDidFinishLaunching`.
+    /// to Add treatment, `sukrara://open` to the panel. A link that launches the app arrives before
+    /// `applicationDidFinishLaunching` made the windows: it waits in `linkInbox` until then.
     public func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.scheme == SukraraIDs.urlScheme { windows?.open(url) }
+        for url in linkInbox.receive(urls) { windows?.open(url) }
     }
 
     /// Timers don't run while the Mac sleeps and a clock change moves every deadline: re-check alerts and freshness.

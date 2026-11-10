@@ -35,6 +35,19 @@ func scratchStore() -> DefaultsSettingsStore {
         #expect(AppLink(URL(string: invite)!) == .invite(invite))
         #expect(AppLink(URL(string: "sukrara://treatment/old")!) == .invite("sukrara://treatment/old"))
     }
+
+    /// #110: a link that launches the app arrives before the windows exist; it waits and opens once launch is done.
+    @Test func aLinkThatArrivesDuringLaunchOpensAfterIt() {
+        var inbox = LinkInbox()
+        let invite = URL(string: "sukrara:join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!
+        let add = URL(string: SukraraIDs.Link.newTreatment)!
+        #expect(inbox.receive([invite, URL(string: "https://example.com")!]).isEmpty)
+        #expect(inbox.receive([add]).isEmpty)
+        #expect(inbox.pending == [invite, add])  // only sukrara: links, in order
+        #expect(inbox.launched() == [invite, add])
+        #expect(inbox.pending.isEmpty && inbox.launched().isEmpty)  // each opens once
+        #expect(inbox.receive([add]) == [add])  // after launch: at once
+    }
 }
 
 /// Open at login over a fake `SMAppService` (never the real login items).
