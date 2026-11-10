@@ -35,8 +35,12 @@ public struct CardWords: Sendable {
     let below, above: @Sendable (String) -> String
     let old, inRange, justNow: String
     let ago: @Sendable (String) -> String
+    /// One word per arrow (contracts/graph/trend `words`).
     let trend:
-        (unknown: String, steady: String, rising: String, risingFast: String, falling: String, fallingFast: String)
+        (
+            unknown: String, steady: String, rising: String, risingFast: String, risingVeryFast: String,
+            falling: String, fallingFast: String, fallingVeryFast: String
+        )
     /// The range words the card draws (`RangeState`), in the sentence's lower case.
     let range: (veryLow: String, low: String, high: String, veryHigh: String, extremelyHigh: String)
     let noReadings: String
@@ -78,7 +82,10 @@ public struct CardWords: Sendable {
         unit: ("milligrams per decilitre", "millimoles per litre"),
         below: { "below \($0)" }, above: { "above \($0)" }, old: "old reading", inRange: "in range",
         justNow: "just now", ago: { "\($0) ago" },
-        trend: ("trend unknown", "steady", "rising", "rising fast", "falling", "falling fast"),
+        trend: (
+            "trend unknown", "steady", "rising", "rising fast", "rising very fast", "falling", "falling fast",
+            "falling very fast"
+        ),
         range: ("very low", "low", "high", "very high", "extremely high"),
         noReadings: "Glucose: no readings yet", noReadingSince: { "Glucose: no reading since \($0)" },
         lastReading: { "Glucose: last reading \($0)" },
@@ -115,7 +122,10 @@ public struct CardWords: Sendable {
         unit: ("miligramos por decilitro", "milimoles por litro"),
         below: { "por debajo de \($0)" }, above: { "por encima de \($0)" }, old: "lectura antigua",
         inRange: "en rango", justNow: "ahora mismo", ago: { "hace \($0)" },
-        trend: ("tendencia desconocida", "estable", "subiendo", "subiendo rápido", "bajando", "bajando rápido"),
+        trend: (
+            "tendencia desconocida", "estable", "subiendo", "subiendo rápido", "subiendo muy rápido", "bajando",
+            "bajando rápido", "bajando muy rápido"
+        ),
         range: ("muy baja", "baja", "alta", "muy alta", "extremadamente alta"),
         noReadings: "Glucosa: aún no hay lecturas", noReadingSince: { "Glucosa: sin lecturas desde \($0)" },
         lastReading: { "Glucosa: última lectura \($0)" },
@@ -203,14 +213,17 @@ extension GlucoseUnit {
 
 extension CardWords {
 
+    /// The trend in words, one word per arrow (`Trend`'s band; nil = unknown).
     func trend(_ rate: Double?) -> String {
         guard let rate else { return trend.unknown }
         return switch Trend(rate: rate) {
+        case .risingVeryFast: trend.risingVeryFast
         case .risingFast: trend.risingFast
         case .rising: trend.rising
         case .steady: trend.steady
         case .falling: trend.falling
         case .fallingFast: trend.fallingFast
+        case .fallingVeryFast: trend.fallingVeryFast
         }
     }
 

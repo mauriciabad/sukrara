@@ -53,7 +53,7 @@ class SystemUiTest {
     @Test fun `a fresh value is its number and its arrow`() {
         val p = icons(state(138, rate = 0.0))
         assertEquals("sb_n138", p.number)
-        assertEquals("sb_t18", p.trend) // flat: straight right, the middle of 37 steps
+        assertEquals("sb_t_flat", p.trend) // flat: straight right
         assertTrue(SlotIcons.isValue(p.desc))
         assertTrue(SlotIcons.isTrend(p.trendDesc))
         assertFalse(SlotIcons.isValue(p.trendDesc))
@@ -89,10 +89,12 @@ class SystemUiTest {
         assertEquals("sb_shi", icons(state(501, ageS = 6 * 60)).number)
     }
 
-    @Test fun `the arrow steps by 5 degrees and doubles from 3`() {
-        assertEquals("sb_t00", SlotIcons.trendDrawable(2.99))
-        assertEquals("sb_t36", SlotIcons.trendDrawable(-2.99))
-        assertEquals("sb_t09", SlotIcons.trendDrawable(1.5))
+    @Test fun `the arrow is the band's, as the card draws it, and doubles from 3`() {
+        assertEquals("sb_t_up", SlotIcons.trendDrawable(2.99))
+        assertEquals("sb_t_down", SlotIcons.trendDrawable(-2.0))
+        assertEquals("sb_t_up45", SlotIcons.trendDrawable(1.0))
+        assertEquals("sb_t_down45", SlotIcons.trendDrawable(-1.99))
+        assertEquals("sb_t_flat", SlotIcons.trendDrawable(-0.99))
         assertEquals("sb_t_up2", SlotIcons.trendDrawable(3.0))
         assertEquals("sb_t_down2", SlotIcons.trendDrawable(-4.0))
     }
@@ -105,13 +107,13 @@ class SystemUiTest {
             names += "sb_s$v"
         }
         names += listOf("sb_lo", "sb_hi", "sb_slo", "sb_shi", "sb_t_none", "sb_t_none_s", "sb_t_up2", "sb_t_down2")
-        names += (0..36).map { "sb_t%02d".format(it) }
+        names += SlotIcons.TREND_DRAWABLES
         names += listOf("monitor_ic_no_readings", "monitor_ic_sensor_ended")
         for (n in names) assertTrue("missing drawable $n", java.io.File(res, "$n.xml").isFile)
     }
 
     @Test fun `commands send the trend first, then the number, and remove what is gone`() {
-        val ids = mapOf("sb_t18" to 7, "sb_n138" to 9)
+        val ids = mapOf("sb_t_flat" to 7, "sb_n138" to 9)
         val cmds = SlotIcons.commands(icons(state(138, rate = 0.0)), { ids.getValue(it) })
         assertEquals("set ${SlotIcons.SLOT_TREND} 7 0 Sukrara glucose trend →", cmds[0])
         assertEquals("set ${SlotIcons.SLOT_NUMBER} 9 0 Sukrara glucose 138 mg/dL →", cmds[1])

@@ -126,22 +126,21 @@ public enum TrendMark: String, Sendable {
     static func ringStroke(_ size: CGFloat) -> CGFloat { size * 0.11 }
 }
 
-/// The trend arrow's one decision (graph/CardModel.kt TrendAngle; contracts/graph/trend): the drawn arrow's angle
-/// (±3 mg/dL/min = straight up / down, doubled from there) and THE text arrow every text place writes (the menu bar,
-/// alert titles), in Nightscout's direction bands. No place maps a rate to an arrow itself.
+/// The trend arrow's one decision (graph/CardModel.kt TrendAngle; contracts/graph/trend), one picture and one word per
+/// arrow (#4): the rate's band (`Trend`, Nightscout's ±1 / 2 / 3) gives the drawn arrow's angle, snapped to 0°, ±45°
+/// or ±90° (doubled from ±3), and THE text arrow every text place writes (the menu bar, alert titles). No place maps a
+/// rate to an arrow itself.
 public enum TrendAngle {
-    /// mg/dL per minute the arrow maps to ±90° (and doubles at).
-    public static let fullScale = Trend.fullScale
+    /// The drawn arrow's rotation in degrees, y-down (negative = up): the band's 0, ±45 or ±90.
+    public static func deg(_ rate: Double) -> Double { degrees[Trend(rate: rate).step + 3] }
 
-    /// The drawn arrow's rotation in degrees, y-down (negative = up).
-    public static func deg(_ rate: Double) -> Double { -max(-1, min(1, rate / fullScale)) * 90 }
-
-    public static func isDouble(_ rate: Double) -> Bool { abs(rate) >= fullScale }
+    public static func isDouble(_ rate: Double) -> Bool { abs(Trend(rate: rate).step) == 3 }
 
     /// The text arrow for a rate.
-    public static func symbol(_ rate: Double) -> String {
-        rate >= 3 ? "⇈" : rate >= 2 ? "↑" : rate >= 1 ? "↗" : rate > -1 ? "→" : rate > -2 ? "↘" : rate > -3 ? "↓" : "⇊"
-    }
+    public static func symbol(_ rate: Double) -> String { symbols[Trend(rate: rate).step + 3] }
+
+    private static let degrees: [Double] = [90, 90, 45, 0, -45, -90, -90]
+    private static let symbols = ["⇊", "↓", "↘", "→", "↗", "↑", "⇈"]
 
     /// `symbol` for a rate that may be missing: no rate = the "no trend" ring, as the card draws it.
     public static func text(_ rate: Double?) -> String { rate.map(symbol) ?? TrendMark.ring }

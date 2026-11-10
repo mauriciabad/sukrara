@@ -49,8 +49,10 @@
     <string name="trend_steady">steady</string>
     <string name="trend_rising">rising</string>
     <string name="trend_rising_fast">rising fast</string>
+    <string name="trend_rising_very_fast">rising very fast</string>
     <string name="trend_falling">falling</string>
     <string name="trend_falling_fast">falling fast</string>
+    <string name="trend_falling_very_fast">falling very fast</string>
     <string name="a11y_unit_mgdl">milligrams per decilitre</string>
     <string name="a11y_unit_mmol">millimoles per litre</string>
     <string name="a11y_value">%1$s %2$s</string>

@@ -5,7 +5,8 @@
 // Generates the resource drawables that the *system icon slot* output hands to SystemUI.
 // SystemUI can only show a resource Icon there (no bitmaps, no text), and on Android 17's Compose
 // status bar it ignores the icon level, so every value gets its own vector: sb_n40 … sb_n400,
-// sb_lo/sb_hi, and the trend arrow in 5° steps (sb_t00 = straight up … sb_t36 = straight down).
+// sb_lo/sb_hi, and one trend arrow per direction band (sb_t_up, sb_t_up45, sb_t_flat, sb_t_down45, sb_t_down, doubled
+// sb_t_up2 / sb_t_down2: the card snaps its arrow to the same bands, contracts/graph/trend).
 //
 // Freshness (the user, 2026-10-21; apps/android/core/graph Freshness.kt): every number also gets a struck-through, half-strength variant
 // sb_s40 … sb_s400 / sb_slo / sb_shi (from 5 min; SystemUI tints it, so half alpha reads grey), and the "no trend"
@@ -137,8 +138,10 @@ if args.count == 3 {
     }
     let shaftPts = [(-0.42, -0.085), (0.25, -0.085), (0.25, 0.085), (-0.42, 0.085)]
     func headPts(_ tip: Double) -> [(Double, Double)] { [(tip, 0), (tip - 0.40, -0.30), (tip - 0.30, 0), (tip - 0.40, 0.30)] }
-    // One arrow per 5° from straight up (-90°) to straight down (+90°): sb_t00 … sb_t36, plus double arrows.
-    for i in 0...36 { write("sb_t\(String(format: "%02d", i))", arrow(Double(i * 5 - 90), shaftPts, headPts(0.46))) }
+    // One arrow per direction band (TrendAngle.step: 0°, ±45°, ±90°), plus the double arrows.
+    for (name, deg) in [("sb_t_up", -90.0), ("sb_t_up45", -45), ("sb_t_flat", 0), ("sb_t_down45", 45), ("sb_t_down", 90)] {
+        write(name, arrow(deg, shaftPts, headPts(0.46)))
+    }
     write("sb_t_up2", arrow(-90, shaftPts, headPts(0.46), headPts(0.12)))
     write("sb_t_down2", arrow(90, shaftPts, headPts(0.46), headPts(0.12)))
 }

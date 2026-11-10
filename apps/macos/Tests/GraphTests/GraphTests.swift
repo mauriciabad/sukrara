@@ -66,6 +66,9 @@ func fixtureSetHasCases(_ set: String) {
         #expect(fresh.arrowText == e.string("text"))
         let stale = Freshness.look(sgv: 100, t: now - 6 * 60, rate: rate, now: now, ended: false)
         #expect(stale.arrowText == "○")
+        // one word per arrow, in both languages (VoiceOver)
+        #expect(CardWords.en.trend(rate) == e.child("words").string("en"))
+        #expect(CardWords.es.trend(rate) == e.child("words").string("es"))
     }
 }
 
