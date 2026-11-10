@@ -35,6 +35,7 @@ class HookCodeTest {
             "$graph/stats/Bands.kt",
             "../core/data/src/main/kotlin/app/mauri/sukrara/core/data/settings/SurfaceSettings.kt",
             "../core/model/src/main/kotlin/app/mauri/sukrara/core/model/GlucoseUnit.kt",
+            "../core/model/src/main/kotlin/app/mauri/sukrara/core/model/SensorTiming.kt",
         )
 
     @Test fun `the fingerprint matches the System UI code`() {
