@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
@@ -75,6 +76,7 @@ import app.mauri.sukrara.designsystem.nfc.DefaultAntenna
 import app.mauri.sukrara.designsystem.nfc.antennaSpot
 import app.mauri.sukrara.feature.sensor.R
 import app.mauri.sukrara.graph.CardWords
+import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.sensor.SensorProfile
 import kotlinx.coroutines.delay
 import java.time.Duration
@@ -94,6 +96,8 @@ fun NewSensorRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val firstReading by viewModel.firstReading.collectAsStateWithLifecycle()
+    val graphConfig by viewModel.graphConfig.collectAsStateWithLifecycle()
     val step = state.step
     val context = LocalContext.current
     val haptics = rememberHaptics()
@@ -158,6 +162,8 @@ fun NewSensorRoute(
         modifier,
         chosen = state.profile,
         antenna = antenna,
+        firstReading = firstReading,
+        graphConfig = graphConfig,
         onChoose = viewModel::onChoose,
         onIdChange = viewModel::onIdChange,
     ) { action ->
@@ -221,7 +227,8 @@ fun NewSensorRoute(
  * The step bar over one page per step, cross-faded (snaps with reduced motion). Stateless but for the tips (open after
  * [TIPS_AFTER] on the tap page, or [tipsOpen] for screenshots): screenshots render it directly. [chosen] is the family
  * picked on the first step (the bar says "Set up" instead of "Scan" for a family found by a scan), [antenna] where
- * this phone's NFC antenna is.
+ * this phone's NFC antenna is, [firstReading] what the *Sensor ready* page shows (drawn in [graphConfig]'s unit and
+ * ranges).
  */
 @Composable
 fun NewSensorContent(
@@ -231,6 +238,8 @@ fun NewSensorContent(
     chosen: SensorProfile? = null,
     antenna: Offset = DefaultAntenna,
     tipsOpen: Boolean = false,
+    firstReading: Reading? = null,
+    graphConfig: GraphConfig = GraphConfig(),
     onChoose: (SensorProfile) -> Unit = {},
     onIdChange: (String) -> Unit = {},
     onAction: (NewSensorAction) -> Unit = {},
@@ -247,7 +256,10 @@ fun NewSensorContent(
         // pages change only on real transitions (the countdown, the choice and the typed id move inside a page)
         Swap(Paged(step), Modifier.weight(1f).fillMaxWidth()) { shown ->
             // the page on its way out keeps its own step; the current one follows every change
-            StepPage(if (shown == Paged(step)) step else shown.step, now, antenna, tipsOpen, onChoose, onIdChange, onAction)
+            val page = if (shown == Paged(step)) step else shown.step
+            StepPage(page, now, antenna, tipsOpen, onChoose, onIdChange, onAction) {
+                if (page == NewSensorStep.Ready) firstReading?.let { FirstReadingCard(it, now, graphConfig) }
+            }
         }
     }
 }
@@ -281,6 +293,7 @@ private fun StepPage(
     onChoose: (SensorProfile) -> Unit,
     onIdChange: (String) -> Unit,
     onAction: (NewSensorAction) -> Unit = {},
+    extra: @Composable () -> Unit = {},
 ) {
     val page = step.page()
     val arg = page.arg.orEmpty()
@@ -311,6 +324,7 @@ private fun StepPage(
             color = if (page.warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        extra()
         if (step is NewSensorStep.ChooseSensor) SensorChoices(step.selected, onChoose)
         if (step is NewSensorStep.SensorSetupStep) step.typedId?.let { IdField(step.id, it.length, step.canPair, onIdChange) }
         if (step is NewSensorStep.ConnectingBle) {
