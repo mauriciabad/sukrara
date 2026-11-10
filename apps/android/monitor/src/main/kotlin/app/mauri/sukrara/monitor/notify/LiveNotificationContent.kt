@@ -38,6 +38,8 @@ data class NotificationPrefs(
     val bands: Bands = Bands(),
     /** The person's glucose unit: the title's value and unit (`general.unit`). */
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
+    /** The value shows on the lock screen (`statusbar.lockScreen`, #94); off = private, a public "Monitoring" there. */
+    val lockScreen: Boolean = true,
 )
 
 /**
@@ -84,6 +86,8 @@ data class LiveNotificationContent(
      * role; null with none of it.
      */
     val sharing: SharingLine? = null,
+    /** [NotificationPrefs.lockScreen]: public on the lock screen, else private with a public "Monitoring". */
+    val lockScreen: Boolean = true,
 ) {
     /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value itself; the others are the states' icons. */
     enum class Icon { TREND, NO_TREND, NUMBER, NO_READINGS, SENSOR_ENDED, APP }
@@ -125,14 +129,14 @@ data class LiveNotificationContent(
             face: (GlucoseState, Instant, GlucoseUnit) -> GlucoseLook,
             prefs: NotificationPrefs = NotificationPrefs(),
         ): LiveNotificationContent {
-            if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state)
+            if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state).copy(lockScreen = prefs.lockScreen)
             val sharing =
                 prefs.sharing?.let { s ->
                     // followers are the wearer's; the API on the Wi-Fi is either role's
                     val line = if (state.role == Role.Wearer) s else s.copy(followers = 0, nearby = 0)
                     line.takeIf { state.role != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
                 }
-            return content(state, now, face, prefs).copy(sharing = sharing)
+            return content(state, now, face, prefs).copy(sharing = sharing, lockScreen = prefs.lockScreen)
         }
 
         private fun content(

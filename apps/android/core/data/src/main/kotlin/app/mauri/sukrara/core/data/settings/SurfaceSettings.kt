@@ -24,6 +24,12 @@ object SurfaceSettings {
     /** Without the chip, the notification's small icon is the number itself. */
     val NumberIcon = SchemaSettings.bool("statusbar.icon", default = true)
 
+    /**
+     * The glucose notification shows its value on the lock screen (#94; public). Off: private, the lock screen says only
+     * "Sukrara · Monitoring" until the phone is unlocked.
+     */
+    val LockScreen = SchemaSettings.bool("statusbar.lockScreen", default = true)
+
     /** The value drawn in the status bar with root: system icons (root) or the System UI module's text. */
     val RootValue = SchemaSettings.bool("statusbar.hook", default = false)
 

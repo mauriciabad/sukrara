@@ -84,6 +84,20 @@ class LiveNotificationBuildTest {
         }
     }
 
+    /** #94: the value on the lock screen by default; with the setting off, private behind "Sukrara · Monitoring". */
+    @Test fun `the lock screen shows the value unless the person turned it off`() {
+        for (s in listOf(state(), state(mgdl = null), state(ageS = 6 * 60, sensor = SensorState.Ended))) {
+            assertEquals(Notification.VISIBILITY_PUBLIC, build(s).visibility)
+            val private = build(s, card.copy(lockScreen = false))
+            assertEquals(Notification.VISIBILITY_PRIVATE, private.visibility)
+            val public = private.publicVersion!!
+            assertEquals(ctx.getString(R.string.monitor_notif_public_title), title(public).toString())
+            val text = public.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+            assertEquals(ctx.getString(R.string.monitor_notif_public_text), text)
+            assertEquals(Channels.GLUCOSE, public.channelId)
+        }
+    }
+
     @Test fun `a fresh value is the plain title without a time, a late one is struck through at its reading's time`() {
         val fresh = build(state())
         assertFalse(struck(title(fresh)))

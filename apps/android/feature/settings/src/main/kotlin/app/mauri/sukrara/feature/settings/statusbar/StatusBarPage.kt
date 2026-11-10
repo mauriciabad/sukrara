@@ -38,6 +38,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 data class StatusBarPrefs(
     val chip: Boolean,
     val numberIcon: Boolean,
+    /** The glucose notification's value on the lock screen (#94). */
+    val lockScreen: Boolean = true,
 )
 
 class StatusBarViewModel(
@@ -118,8 +120,16 @@ class StatusBarViewModel(
     }
 
     val prefs: StateFlow<StatusBarPrefs?> =
-        combine(settings.flow(SurfaceSettings.StatusChip), settings.flow(SurfaceSettings.NumberIcon), ::StatusBarPrefs)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        combine(
+            settings.flow(SurfaceSettings.StatusChip),
+            settings.flow(SurfaceSettings.NumberIcon),
+            settings.flow(SurfaceSettings.LockScreen),
+            ::StatusBarPrefs,
+        ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setLockScreen(on: Boolean) {
+        viewModelScope.launch { settings.set(SurfaceSettings.LockScreen, on) }
+    }
 
     fun setChip(on: Boolean) {
         viewModelScope.launch { settings.set(SurfaceSettings.StatusChip, on) }
@@ -147,7 +157,8 @@ fun Context.openLiveUpdateSettings() {
 /**
  * The page: *Live Update chip* (the value next to the clock), *Allow Live Updates for Sukrara* while the chip is on and
  * Android refuses it (the way to fix it, not a dead switch), *Number icon* (only meaningful without the chip: its
- * summary says so). The footer explains what each one changes.
+ * summary says so), *Glucose on the lock screen* (#94: on by default; its summary says what the lock screen shows). The
+ * footer explains what each one changes.
  */
 @Composable
 fun StatusBarContent(
@@ -157,6 +168,7 @@ fun StatusBarContent(
     onNumberIcon: (Boolean) -> Unit,
     onAllowLiveUpdates: () -> Unit,
     onBack: () -> Unit,
+    onLockScreen: (Boolean) -> Unit = {},
     rootSection: @Composable () -> Unit = {},
 ) {
     SettingsPage(stringResource(R.string.st_statusbar_title), onBack) {
@@ -187,6 +199,14 @@ fun StatusBarContent(
                     ),
                 enabled = !chipShows,
                 icon = DsR.drawable.ds_ic_notifications,
+            )
+            SwitchRow(
+                stringResource(R.string.st_statusbar_lock_screen),
+                prefs.lockScreen,
+                onLockScreen,
+                summary =
+                    stringResource(if (prefs.lockScreen) R.string.st_statusbar_lock_screen_on else R.string.st_statusbar_lock_screen_off),
+                icon = DsR.drawable.ds_ic_screen_lock_portrait,
             )
         }
         FooterText(stringResource(R.string.st_statusbar_footer))

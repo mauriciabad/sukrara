@@ -15,7 +15,7 @@ class ChannelsTest {
     @Test
     fun `every channel id exists exactly once`() {
         val expected =
-            listOf("glucose", "status", "requests", "sensor", "sensor.countdowns", "pen.results", "pen.check", "treatment.draft") +
+            listOf("glucose.live", "status", "requests", "sensor", "sensor.countdowns", "pen.results", "pen.check", "treatment.draft") +
                 Channels.ALERT_KINDS.map { "alert.$it" } + Channels.ALERT_KINDS.map { "alert_alarm.$it" }
         assertEquals(expected.sorted(), ids.sorted())
         assertEquals(ids.size, ids.toSet().size)
@@ -41,10 +41,14 @@ class ChannelsTest {
         assertEquals(listOf("alerts", "alerts_alarm", "info"), Channels.Group.entries.map { it.id })
     }
 
+    /** #94: the glucose notification shows on the lock screen (not "silent" to the system), yet never sounds. */
     @Test
-    fun `alert channels are high importance, the glucose one is silent`() {
+    fun `alert channels are high importance, the glucose one default importance without sound, the old one deleted`() {
         Channels.ALL.filter { it.kind != Channels.Kind.INFO }.forEach { assertEquals(it.id, 4, it.importance) }
-        assertEquals(2, Channels.ALL.single { it.id == Channels.GLUCOSE }.importance)
+        val glucose = Channels.ALL.single { it.id == Channels.GLUCOSE }
+        assertEquals(3, glucose.importance)
+        assertTrue(glucose.silent)
+        assertTrue("glucose" in Channels.DELETED)
     }
 
     /** #148: the countdowns show on the lock screen (not "silent" to the system), yet never sound or vibrate. */
@@ -53,8 +57,11 @@ class ChannelsTest {
         val countdown = Channels.ALL.single { it.id == Channels.SENSOR_COUNTDOWN }
         assertEquals(3, countdown.importance)
         assertTrue(countdown.silent)
-        assertEquals(listOf(Channels.SENSOR_COUNTDOWN, Channels.TREATMENT_DRAFT), Channels.ALL.filter { it.silent }.map { it.id })
-        assertEquals(listOf("sensor.countdown"), Channels.DELETED)
+        assertEquals(
+            listOf(Channels.GLUCOSE, Channels.SENSOR_COUNTDOWN, Channels.TREATMENT_DRAFT),
+            Channels.ALL.filter { it.silent }.map { it.id },
+        )
+        assertEquals(listOf("sensor.countdown", "glucose"), Channels.DELETED)
         assertTrue(Channels.DELETED.none { it in ids })
     }
 

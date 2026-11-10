@@ -810,7 +810,9 @@ leads to them.
 
 Android (`:monitor`, `LiveNotification` = registered surface `notification-text`; content decided by the pure
 `LiveNotificationContent` from the hub state and the card's face rule, tests `LiveNotificationContentTest`).
-- One ongoing notification on channel `glucose` (silent, no badge), which is also the monitoring service's foreground
+- One ongoing notification on channel `glucose.live` (default importance so it shows on the lock screen also with the
+  phone's *Hide silent notifications* on, yet no sound, no vibration and no badge; the old low-importance `glucose`
+  channel is deleted, #94: a channel's importance can't be raised), which is also the monitoring service's foreground
   notification. Title `138 mg/dL ↗` (`7.7 mmol/L ↗` in mmol/L; value struck through from 5 min, the "no trend" ring instead of an arrow); text
   *Reading at 14:05* once the reading is late; *No readings since 14:05* from 20 min (no value, the no-readings icon).
   Small icon = the renderer's trend arrow (`ValueGlyphs.trendIcon`), the ring, no-readings, sensor-ended or Sukrara's drop.
@@ -852,12 +854,18 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   *4.5u* · *12m ago*), only while the value is a reading.
 - Settings › **Status bar**: *Live Update chip* (default on), *Allow Live Updates for Sukrara* (shown while the chip
   is on and Android refuses it; opens Android's per-app Live Updates setting, re-read on return), *Number as
-  notification icon* (default on; disabled with "The chip already shows the value" while the chip shows).
+  notification icon* (default on; disabled with "The chip already shows the value" while the chip shows), *Glucose on
+  the lock screen* (#94, default on: the night glance and the hurry before a meal, driving, are when unlocking gets in
+  the way; the notification is public, so the lock screen shows the value, its arrow and the chip. Off, for a phone
+  lying on a desk at school or work: private, and the lock screen shows only *Sukrara · Monitoring* until the phone is
+  unlocked; its summary says which. Android's lock-screen choice *Don't show any notifications* still hides it; QA checks a
+  real phone with *Hide silent notifications* on / off, sensitive content off and the always-on display).
 - **States and exits**: *Live Update chip* → turn off in Settings › Status bar (or Android's per-app Live Updates
   setting, or demote it from the chip) → the colorized card; back on in the same places (*Allow Live Updates* row when
   Android refuses it). *Number icon* → Settings › Status bar. *Notification swiped away* → it comes back (it is the
-  monitoring service's; turning off the `glucose` channel in Android's settings hides it, the app's home still shows
-  the value). *Not monitoring* → *Set up sensor* (notification action, home) → sensor setup; leaves on the first reading.
+  monitoring service's; turning off the `glucose.live` channel in Android's settings hides it, the app's home still shows
+  the value). *Value on the lock screen* (default) ↔ *Monitoring only* → Settings › Status bar › *Glucose on the lock
+  screen*, either way at any time (TalkBack reads the switch and its summary); the next post follows it. *Not monitoring* → *Set up sensor* (notification action, home) → sensor setup; leaves on the first reading.
   *Sensor ended* → *Replace sensor*. *Bluetooth off* → turn Bluetooth on (Quick Settings) → readings resume on their
   own. TalkBack reads the title (value, unit, arrow) and the text.
 

@@ -181,6 +181,7 @@ object SettingsSpec {
         SettingInfo("sharing.bleFollowers", "bool", null, false, null, "sharing:nearbySharing", "", null, "android", "The wearer's phone is the Bluetooth peripheral; the Mac connects to it when nearby", listOf()),
         SettingInfo("statusbar.chip", "bool", null, false, null, "statusbar:statusChip", "", null, "android", "Android status bar; the Mac shows the value in its menu bar always", listOf()),
         SettingInfo("statusbar.icon", "bool", null, false, null, "statusbar:statusIcon", "", null, "android", "Android status bar", listOf()),
+        SettingInfo("statusbar.lockScreen", "bool", null, false, null, "statusbar:lockScreen", "", null, "android", "The Android glucose notification's lock-screen visibility; the Mac has no lock-screen notification of the value", listOf()),
         SettingInfo("statusbar.hook", "bool", null, false, null, "statusbar:statusHook", "", null, "android", "Android status bar (root / LSPosed)", listOf()),
         SettingInfo("statusbar.hookPosition", "enum", null, false, null, "statusbar:statusHookPosition", "", null, "android", "Android status bar (root / LSPosed)", listOf()),
         SettingInfo("statusbar.hookColor", "bool", null, false, null, "statusbar:statusHookColor", "", null, "android", "Android status bar (LSPosed); the Mac menu bar colours by range always", listOf()),
@@ -270,6 +271,7 @@ object SettingsSpec {
         const val NEARBY_SHARING = "nearbySharing"
         const val STATUS_CHIP = "statusChip"
         const val STATUS_ICON = "statusIcon"
+        const val LOCK_SCREEN = "lockScreen"
         const val STATUS_HOOK = "statusHook"
         const val STATUS_HOOK_POSITION = "statusHookPosition"
         const val STATUS_HOOK_COLOR = "statusHookColor"

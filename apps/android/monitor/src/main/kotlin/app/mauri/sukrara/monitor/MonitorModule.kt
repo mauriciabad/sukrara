@@ -127,6 +127,7 @@ class MonitorModule(
             graphConfig,
             sharing.catch { emit(null) },
         ) { chip, icon, list, config, line -> NotificationInputs(chip, icon, list, config, line) }
+            .combine(settings.flow(SurfaceSettings.LockScreen)) { inputs, lock -> inputs.copy(lockScreen = lock) }
             .combine(storedHistory.onStart { emit(emptyList()) }) { inputs, stored -> inputs.copy(stored = stored) }
             .distinctUntilChanged()
             // a failing store must never stop the foreground notification: it goes on with the defaults
@@ -212,6 +213,8 @@ data class NotificationInputs(
     val sharing: SharingLine? = null,
     /** The stored days before the live window (the multi-day slots count them). */
     val stored: List<Reading> = emptyList(),
+    /** The value shows on the lock screen ([SurfaceSettings.LockScreen]). */
+    val lockScreen: Boolean = true,
 )
 
 /** The `Application` gives the monitor's Android components (service, receivers) their module. */

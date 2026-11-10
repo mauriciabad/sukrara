@@ -63,6 +63,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   sending (a Dexcom's grace period) keeps its value with an *Ended · Replace sensor* pill, and its lows still alert.
 - A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
   freshness steps as the card: from 5 min the number is struck through, from 20 min it's gone. Tap → *Add treatment*.
+  It shows on the lock screen without unlocking (Settings › Status bar › *Glucose on the lock screen* turns that off).
   Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status
   bar); on Android 17 the Live Update expands to the value styled by range.
 - **On a rooted phone** (KernelSU / Magisk): the value and its arrow as **system icons** beside Wi-Fi and the battery;

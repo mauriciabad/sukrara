@@ -254,6 +254,16 @@ class LiveNotificationContentTest {
         }
     }
 
+    /** #94: *Glucose on the lock screen* reaches the notification in every state (on by default). */
+    @Test
+    fun `the lock-screen setting reaches the notification in every state`() {
+        val off = NotificationPrefs(lockScreen = false)
+        for (s in listOf(state(), state(mgdl = null), state(ageS = 6 * 60, sensor = SensorState.Ended), state(started = false))) {
+            assertEquals(true, content(s).lockScreen)
+            assertEquals(false, content(s, off).lockScreen)
+        }
+    }
+
     @Test
     fun `a wearer with followers gets the followers and nearby sub text in every state, a follower never`() {
         val line = SharingLine(followers = 2, nearby = 1)
