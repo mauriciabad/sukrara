@@ -8,7 +8,7 @@ others.
   python3 -I tools/release/ui-walk.py --adb ADB --serial emulator-5600 --package app.mauri.sukrara --out DIR
       [--depth 2] [--max-taps 40] [--skip REGEX]
 
-From a fresh start (force-stopped, launched, Back once: setup's first step leaves to home) it taps every labelled
+From a fresh start (data cleared, launched, Back once: setup's first step leaves to home) it taps every labelled
 clickable of each screen it reaches, breadth first, up to --depth taps deep. After each tap the app must still run
 and something must be on screen; each screen it reaches is saved as <n>.png / <n>.xml in --out. Prints one line per
 tap ("ok   …" / "FAIL …"); exits 1 when a tap killed the app. Only ever talks to --serial, and refuses a device that
@@ -44,9 +44,13 @@ class Device:
         return self.shell("pidof", self.package).strip()
 
     def start(self):
-        """A fresh start at the root screen: force-stopped, launched, Back once (setup's first step leaves to home);
-        when Back leaves the app instead, launched again and the first screen is the root."""
-        self.shell("am", "start", "-S", "-W", "-n", "%s/.MainActivity" % self.package)
+        """A fresh start at the root screen: the app's data cleared (a tap can save state that a force-stop keeps, e.g.
+        setup's *Start* records its first step, after which Back no longer leads home), the notification permission
+        granted again as android-smoke.sh grants it, launched, Back once (setup's first step leaves to home); when Back
+        leaves the app instead, launched again and the first screen is the root."""
+        self.shell("pm", "clear", self.package)
+        self.shell("pm", "grant", self.package, "android.permission.POST_NOTIFICATIONS")
+        self.shell("am", "start", "-W", "-n", "%s/.MainActivity" % self.package)
         time.sleep(4)
         self.shell("input", "keyevent", "KEYCODE_BACK")
         time.sleep(2)

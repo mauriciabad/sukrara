@@ -114,7 +114,14 @@ restore_device() {
   adb shell settings put global always_finish_activities 0 > /dev/null 2>&1 || true
   adb shell date "$(date +%m%d%H%M%Y.%S)" > /dev/null 2>&1 || true
   adb shell settings put global auto_time 1 > /dev/null 2>&1 || true
-  adb unroot > /dev/null 2>&1 || true
+  # adb unroot restarts adbd: wait until the shell answers again as the shell user, or the next adb call finds no
+  # device (on a busy Mac the "still running" check and the walk's emulator guard failed that way)
+  if adb unroot 2> /dev/null | grep -q restarting; then
+    i=0
+    until [ "$(adb shell id -u 2> /dev/null | tr -d '\r')" = 2000 ]; do
+      i=$((i + 1)); [ $i -lt 30 ] || break; sleep 1
+    done
+  fi
 }
 # adb root restarts adbd: wait until the shell answers as root.
 become_root() {
@@ -229,7 +236,8 @@ channels "$APP" > "$out/app-channels.txt"
 [ -s "$out/app-channels.txt" ] && ok "$APP channels: $(tr '\n' ' ' < "$out/app-channels.txt")" || warn "$APP has no notification channels yet"
 
 # --- 4. the screens -------------------------------------------------------------------------------------------------
-# After the notification checks: a tap may start something (setup's steps), and the walk force-stops the app.
+# After the notification checks: a tap may start something (setup's steps), and the walk clears the app's data before
+# every visit (each path starts from the same fresh root).
 echo "walking the screens up to two taps from home (log: $out/walk.txt, shots: $out/walk/)"
 if python3 -I "$here/ui-walk.py" --adb "$adb_bin" --serial "$SERIAL" --package "$APP" --out "$out/walk" > "$out/walk.txt" 2>&1; then
   ok "screen walk: $(tail -1 "$out/walk.txt" | sed 's/^ok   walk: //')"

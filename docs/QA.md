@@ -247,7 +247,7 @@ its own AVD `release_smoke` (API 37, port 5600; it refuses anything that isn't a
 `verify-apk.sh` → fresh install → the app launches, renders,
 survives an activity recreation (saved state) → 3 min watch + a 3 h clock jump with no alert (no sensor) → a walk
 of every screen up to two taps from home (`tools/release/ui-walk.py`: taps each labelled control, the app must
-survive it) → the app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error. Output in
+survive it; the app's data is cleared before each path, so every path starts from the same fresh home) → the app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error. Output in
 `$TMPDIR/sukrara-smoke.*` (the walk's screenshots in `walk/`).
 
 - [ ] The smoke exits 0 (`--final` before a release). Look at its screenshots, the walk's too.
