@@ -4,8 +4,10 @@
 package app.mauri.sukrara.protocol
 
 import app.mauri.sukrara.core.testing.Contracts
+import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.EventFactory
 import app.mauri.sukrara.protocol.event.LivePayload
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.RosterPayload
 import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.SensorLife
@@ -54,6 +56,7 @@ class SyncFixturesTest {
     private val g4 = throwaway("sukrara/sync/G4")
     private val f2 = throwaway("sukrara/sync/F2")
     private val f3 = throwaway("sukrara/sync/F3")
+    private val wearer = Profile("Alex", Avatar.v1(0, "cube", 45, 1497950029))
     private val names =
         listOf(
             "join-readings",
@@ -88,8 +91,14 @@ class SyncFixturesTest {
             now + Wire.TTL_KEY_DELIVERY,
         )
 
-    private fun roster(epoch: Int, g: KeyPair, devices: List<KeyPair>, writers: List<KeyPair> = emptyList(), at: Long = now - 100) =
-        f.roster(i, g.public, v.sid, RosterPayload(epoch, devices.map { it.public.hex }, writers.map { it.public.hex }, relays, null), at)
+    private fun roster(
+        epoch: Int,
+        g: KeyPair,
+        devices: List<KeyPair>,
+        writers: List<KeyPair> = emptyList(),
+        at: Long = now - 100,
+        profile: Profile? = null,
+    ) = f.roster(i, g.public, v.sid, RosterPayload(epoch, devices.map { it.public.hex }, writers.map { it.public.hex }, relays, profile), at)
 
     private fun live(dev: KeyPair, g: KeyPair, t: Long, sgv: Int, rate: Double?, sensor: SensorLife? = null) =
         f.live(dev, g.public, LivePayload(WireReading(t, sgv, rate, "libre3"), sensor), t + 5)
@@ -106,10 +115,11 @@ class SyncFixturesTest {
                 step("key-1", keyTo(1, g1, listOf(d)), "accepted:key"),
             )
         return when (name) {
+            // a roster without a profile keeps the wearer's last one
             "join-readings" -> {
                 base +
                     listOf(
-                        step("roster-1", roster(1, g1, listOf(d)), "accepted:roster"),
+                        step("roster-1", roster(1, g1, listOf(d), profile = wearer), "accepted:roster"),
                         step(
                             "chunk",
                             f.chunk(
@@ -130,6 +140,7 @@ class SyncFixturesTest {
                             "accepted:sensor",
                         ),
                         step("live-outsider", live(v.key("X"), g1, now - 20, 300, null), "rejected:author-not-device"),
+                        step("roster-no-profile", roster(1, g1, listOf(d), at = now - 5), "accepted:roster"),
                     )
             }
 
@@ -223,7 +234,8 @@ class SyncFixturesTest {
     /**
      * The wearer's sensor without readings (#55): the old sensor ends early and is removed, a new one warms up (no
      * reading for an hour, so reading-less live events carry it), its first reading carries it too, and a late backlog
-     * copy of an old reading adds the reading but can't bring the old sensor back (the newest `created_at` wins).
+     * copy of an old reading adds the reading but can't bring the old sensor back (the newest `created_at` wins). A live
+     * event from a wearer clock more than 5 min ahead is rejected whole: its sensor fields don't end the sensor either.
      */
     private fun sensorLife(): List<Step> {
         val old = SensorLife(now - 14 * Wire.DAY, now + Wire.DAY, now - 14 * Wire.DAY + 3600)
@@ -239,6 +251,11 @@ class SyncFixturesTest {
             step("sensor-warming-tick", sensorOnly(fresh, now - 2900), "accepted:sensor"),
             step("live-first-reading", live(d, g1, now - 60, 101, null, fresh), "accepted:live"),
             step("live-old-backlog", live(d, g1, now - 3350, 138, -0.5, old), "accepted:live"),
+            step(
+                "live-future-sensor",
+                live(d, g1, now + 400, 150, 0.0, fresh.copy(end = now + 400)),
+                "rejected:reading-in-future",
+            ),
         )
     }
 
