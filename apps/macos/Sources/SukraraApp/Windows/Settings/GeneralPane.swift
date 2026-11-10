@@ -74,7 +74,7 @@ struct GeneralPane: View {
 }
 
 /// Settings from: Wearer, Default or Custom, the sentence saying what's in use, and in Custom the copy of the wearer's
-/// settings (asked first).
+/// settings and the reset to Sukrara's defaults (each asked first).
 struct SettingsFromPicker: View {
     @Bindable var model: SettingsModel
 
@@ -99,6 +99,16 @@ struct SettingsFromPicker: View {
                         Text(
                             L10n.t(
                                 "This Mac's ranges, time shown, rings, lines, last treatment, sensor countdown and alert rules become theirs, as a starting point to change. Sounds and the other settings of this Mac stay."
+                            ))
+                    }
+                Button(L10n.t("Reset to Defaults…")) { model.confirmingReset = true }
+                    .confirmationDialog(L10n.t("Reset to Sukrara's defaults?"), isPresented: $model.confirmingReset) {
+                        Button(L10n.t("Reset to Defaults")) { model.resetToDefaults() }
+                        Button(L10n.t("Cancel"), role: .cancel) {}
+                    } message: {
+                        Text(
+                            L10n.t(
+                                "This Mac's ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules go back to Sukrara's defaults. Sounds, the no-data alert, Mute all and the notification's buttons stay."
                             ))
                     }
             }

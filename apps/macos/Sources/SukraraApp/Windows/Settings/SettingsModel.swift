@@ -24,8 +24,9 @@ public final class SettingsModel {
     public var pane: Pane {
         didSet { store.set(pane.rawValue, for: MacSettings.settingsPane) }
     }
-    /// "Copy the wearer's settings…" and "Reset all graph settings…" are asked first.
+    /// "Copy the wearer's settings…", "Reset to Defaults…" and "Reset all graph settings…" are asked first.
     public var confirmingCopy = false
+    public var confirmingReset = false
     public var confirmingResetAll = false
     public let version: String
     private var revision = 0
@@ -73,6 +74,16 @@ public final class SettingsModel {
         let copied = alerts.settings.withMirroredDefaults().mirroring(wearer)
         alerts.update { $0 = copied }
         settingsFrom = .custom
+    }
+
+    /// "Reset to Defaults" (after the confirmation, Custom only): this Mac's own mirrored settings (ranges, graph,
+    /// rings, lines, last treatment, sensor countdown, alert rules and quiet rules) become Sukrara's defaults. Sounds,
+    /// the no-data alert, Mute all, the notification actions and each place's own time stay.
+    public func resetToDefaults() {
+        guard editable else { return }
+        writeGraph(GraphConfig())
+        let reset = alerts.settings.withMirroredDefaults()
+        alerts.update { $0 = reset }
     }
 
     /// Who the mirrored settings come from now, in one sentence (General › Settings › In use).
