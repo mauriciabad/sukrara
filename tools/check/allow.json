@@ -1,5 +1,5 @@
 {
-  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason.",
+  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
   "header_exts": [
     ".kt",
     ".swift",
@@ -157,5 +157,69 @@
       "section": "Languages",
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     }
-  ]
+  ],
+  "permissions": {
+    "android.permission.INTERNET": "relays (wss), uploads (https), LibreView sign-in, Juggluco on loopback (:share, :sensor, :integrations)",
+    "android.permission.ACCESS_NETWORK_STATE": "reconnect when the network comes back; the Nightscout API serves only on Wi-Fi (:share, :integrations)",
+    "android.permission.ACCESS_LOCAL_NETWORK": "Android 17: home-network devices may reach the opt-in Nightscout API (:integrations)",
+    "android.permission.FOREGROUND_SERVICE": "MonitoringService, the one monitoring service (:monitor; also androidx.work)",
+    "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE": "MonitoringService type connectedDevice, not dataSync (capped at 6 h a day) (:monitor)",
+    "android.permission.CHANGE_NETWORK_STATE": "the connectedDevice FGS prerequisite granted at install: a follower without Nearby devices still monitors (:monitor)",
+    "android.permission.POST_NOTIFICATIONS": "the glucose notification, alerts, reminders, access requests (:monitor)",
+    "android.permission.POST_PROMOTED_NOTIFICATIONS": "the Live Update chip and the sensor-end countdown (:monitor; verify-apk.sh requires it)",
+    "android.permission.RECEIVE_BOOT_COMPLETED": "monitoring and the alert check start again after a reboot (:monitor; also androidx.work)",
+    "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS": "the alert checklist's No battery restrictions: monitoring must not be killed (:monitor)",
+    "android.permission.USE_EXACT_ALARM": "the alert check rings on time in Doze with the service dead (:monitor)",
+    "android.permission.USE_FULL_SCREEN_INTENT": "the urgent-low alarm over the lock screen (:monitor)",
+    "android.permission.ACCESS_NOTIFICATION_POLICY": "Do Not Disturb access: alarm-level alerts override a mode that silences alarms (:monitor)",
+    "android.permission.VIBRATE": "alert and pen-read haptics (:monitor, :pen)",
+    "android.permission.WAKE_LOCK": "androidx.work (the pen sync worker); Sukrara takes no wake lock itself",
+    "android.permission.READ_CALENDAR": "sensor end in the calendar, opt-in (:monitor SensorCalendar)",
+    "android.permission.WRITE_CALENDAR": "sensor end in the calendar, opt-in (:monitor SensorCalendar)",
+    "android.permission.BLUETOOTH_CONNECT": "the sensor link and nearby sharing (:sensor, :share)",
+    "android.permission.BLUETOOTH_SCAN": "finding a sensor and a wearer's phone nearby, neverForLocation (:sensor, :share)",
+    "android.permission.BLUETOOTH_ADVERTISE": "the wearer's phone offers nearby sharing (:share AndroidNearbyServer)",
+    "android.permission.CAMERA": "scanning the invite QR on the join step (:feature:sharing ScanInvite)",
+    "android.permission.NFC": "starting / taking over a Libre 3 and reading a pen with a tap (:sensor, :pen)",
+    "android.permission.health.WRITE_BLOOD_GLUCOSE": "Health Connect blood glucose, opt-in (:integrations PlatformHealth)",
+    "app.mauri.sukrara.permission.SYSTEMUI_STATE": "our own signature permission: only Sukrara feeds the System UI module (:monitor)",
+    "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
+  },
+  "queries": {
+    "package:com.google.android.calendar": "open the sensor-end event in Google Calendar (:monitor, :app, :feature:settings)",
+    "package:tk.glucodata": "Juggluco: pens through Juggluco and Settings › Sensor's Open Juggluco (:pen, :feature:settings)",
+    "package:com.garmin.android.apps.connectmobile": "Share with apps: Garmin Connect reads the xDrip+ server (:integrations)",
+    "package:com.garmin.connectiq": "Share with apps: Connect IQ reads the xDrip+ server (:integrations)",
+    "intent:com.eveningoutpost.dexdrip.BgEstimate": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "intent:com.librelink.app.ThirdPartyIntegration.GLUCOSE_READING": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "intent:com.librelink.app.ThirdPartyIntegration.SENSOR_ACTIVATE": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "intent:glucodata.Minute": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",
+    "package:com.freestylelibre3.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.de": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.gb": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.fr": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.it": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.es": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.nl": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.at": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre3.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.de": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.gb": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.fr": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.it": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.es": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.nl": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.at": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.freestylelibre.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)"
+  },
+  "prerelease_ok": {
+    "material3": {
+      "version": "1.5.0-rc01",
+      "reason": "Settings and setup rows are Material 3 Expressive SegmentedListItems, which exist only in 1.5 (1.4.0, the newest stable and the Compose BOM 2026.09.00 one, has none). 1.5.0-rc01 (2026-11-04) has no API changes since beta01, only fixes. The owner prefers the newest libraries (#81): move to 1.5.0 as soon as it is stable, then drop this entry."
+    }
+  }
 }

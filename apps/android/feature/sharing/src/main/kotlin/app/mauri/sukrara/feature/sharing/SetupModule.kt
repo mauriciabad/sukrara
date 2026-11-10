@@ -11,6 +11,7 @@ import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
 import app.mauri.sukrara.feature.sharing.setup.FinishItem
@@ -32,7 +33,35 @@ import java.time.Instant
 interface RoleStore {
     val role: Flow<Role?>
 
+    /** What [set] with [role] would delete from this phone; null = nothing (no confirmation needed). */
+    suspend fun loss(role: Role): RoleLoss?
+
+    /** Stores [role]; the other role's readings (and, when the role changed, every treatment) are deleted. */
     suspend fun set(role: Role)
+}
+
+/**
+ * The history a role change deletes (the previous person's): [readings] glucose readings and [treatments] logged
+ * treatments, together spanning [from]..[to]. The role step asks before deleting it (#125).
+ */
+data class RoleLoss(
+    val readings: Int,
+    val treatments: Int,
+    val from: Instant,
+    val to: Instant,
+) {
+    companion object {
+        /** Null when both spans are empty: nothing to ask about. */
+        fun of(
+            readings: StoredSpan,
+            treatments: StoredSpan,
+        ): RoleLoss? {
+            val firsts = listOfNotNull(readings.first, treatments.first)
+            val lasts = listOfNotNull(readings.last, treatments.last)
+            if (readings.count + treatments.count == 0 || firsts.isEmpty() || lasts.isEmpty()) return null
+            return RoleLoss(readings.count, treatments.count, firsts.min(), lasts.max())
+        }
+    }
 }
 
 /**

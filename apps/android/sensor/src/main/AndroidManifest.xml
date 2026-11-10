@@ -5,8 +5,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- The sensor link. The Libre 3 connects by the address from the NFC tap; the other families are found by a
-         filtered scan (BLUETOOTH_SCAN, declared neverForLocation in the app's manifest). -->
+         filtered scan (ble/SensorScanner; never used for location). -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
     <!-- Starting / taking over a Libre 3 with one tap. -->
     <uses-permission android:name="android.permission.NFC" />
     <!-- LibreView sign-in (receiver ID) and Juggluco's local web server (loopback). -->

@@ -6,6 +6,15 @@
 
     <!-- the read card's haptics -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- reading the pen with a tap -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
+    <!-- pens through Juggluco: whether it is installed (PensModule) -->
+    <queries>
+        <package android:name="tk.glucodata" />
+    </queries>
 
     <application>
         <!-- enabled at runtime only while pens are on -->

@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
+import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
@@ -43,6 +44,9 @@ class RoomReadingsRepository(
         to: Instant,
     ): List<Reading> = dao.range(from.toEpochMilli(), to.toEpochMilli(), hiddenIds.first()).map { it.toReading() }
 
+    override suspend fun spanOf(sources: Set<SourceId>): StoredSpan =
+        if (sources.isEmpty()) StoredSpan.EMPTY else dao.span(sources.map { it.id }).toSpan()
+
     override suspend fun deleteFrom(sources: Set<SourceId>): Int = if (sources.isEmpty()) 0 else dao.deleteFrom(sources.map { it.id })
 
     override suspend fun upsert(readings: List<Reading>) {
@@ -66,8 +70,12 @@ class RoomTreatmentsRepository(private val dao: TreatmentDao) : TreatmentsReposi
 
     override suspend fun replace(record: TreatmentRecord) = dao.upsert(record.toEntity())
 
+    override suspend fun span(): StoredSpan = dao.span().toSpan()
+
     override suspend fun deleteAll() = dao.deleteAll()
 }
+
+internal fun SpanRow.toSpan() = StoredSpan(count, oldest?.let(Instant::ofEpochMilli), newest?.let(Instant::ofEpochMilli))
 
 internal fun ReadingEntity.toReading() = Reading(Instant.ofEpochMilli(t), mgdl, rate, SourceId(source))
 

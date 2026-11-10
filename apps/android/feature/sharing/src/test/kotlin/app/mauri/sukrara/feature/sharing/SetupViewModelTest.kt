@@ -25,6 +25,7 @@ import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
+import app.mauri.sukrara.feature.sharing.setup.RoleChange
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupViewModel
@@ -51,6 +52,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -120,6 +122,52 @@ class SetupViewModelTest {
             vm.chooseRole(Role.Wearer)
             assertEquals(listOf("reset", "role:Wearer", "start"), events)
             assertEquals(SetupStep.Permissions, vm.ui.first { it?.step == SetupStep.Permissions }!!.step)
+        }
+
+    @Test
+    fun `with nothing to delete, Continue shows the plain role confirmation`() =
+        runTest {
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            vm.continueWelcome()
+            vm.ui.first { it?.step == SetupStep.Role }
+            vm.reviewRole(Role.Wearer)
+            assertEquals(RoleChange(Role.Wearer, null), vm.ui.first { it?.roleChange != null }!!.roleChange)
+            assertTrue(events.isEmpty())
+            vm.chooseRole(Role.Wearer)
+            assertEquals(listOf("reset", "role:Wearer", "start"), events)
+            assertEquals(null, vm.ui.first { it?.step == SetupStep.Permissions }!!.roleChange)
+        }
+
+    @Test
+    fun `a role change that deletes history asks first, and Cancel changes nothing`() =
+        runTest {
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            vm.ui.first { it != null }
+            vm.chooseRole(Role.Follower)
+            vm.ui.first { it?.step == SetupStep.Join }
+            events.clear()
+            // the join step's Back to the role, with the followed person's history on the phone by then
+            val loss = RoleLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+            roles.loss = loss
+            vm.back {}
+            vm.ui.first { it?.step == SetupStep.Role }
+
+            vm.reviewRole(Role.Wearer)
+            assertEquals(RoleChange(Role.Wearer, loss), vm.ui.first { it?.roleChange != null }!!.roleChange)
+            vm.cancelRole()
+            val after = vm.ui.first { it?.roleChange == null }!!
+            assertEquals(SetupStep.Role, after.step)
+            assertEquals(Role.Follower, roles.role.value)
+            assertTrue(events.isEmpty())
+
+            // Delete and continue
+            vm.reviewRole(Role.Wearer)
+            vm.ui.first { it?.roleChange != null }
+            vm.chooseRole(Role.Wearer)
+            assertEquals(listOf("reset", "role:Wearer", "start"), events)
+            assertEquals(null, vm.ui.first { it?.step != SetupStep.Role }!!.roleChange)
         }
 
     @Test
@@ -271,6 +319,11 @@ class SetupViewModelTest {
 
     private inner class FakeRoles : RoleStore {
         override val role = MutableStateFlow<Role?>(null)
+
+        /** What choosing a role would delete (the same for every role here). */
+        var loss: RoleLoss? = null
+
+        override suspend fun loss(role: Role): RoleLoss? = loss
 
         override suspend fun set(role: Role) {
             events += "role:$role"

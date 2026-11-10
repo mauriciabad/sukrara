@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -120,6 +121,12 @@ class InMemoryReadingsRepository : ReadingsRepository {
         return before - readings.value.size
     }
 
+    override suspend fun spanOf(sources: Set<SourceId>): StoredSpan =
+        readings.value
+            .filter { it.source in sources }
+            .map { it.t }
+            .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
+
     override suspend fun deleteFrom(sources: Set<SourceId>): Int {
         val before = readings.value.size
         readings.update { all -> all.filterNot { it.source in sources } }
@@ -156,6 +163,13 @@ class InMemoryTreatmentsRepository : TreatmentsRepository {
             .sortedBy { it.treatment.modifiedAt }
 
     override suspend fun replace(record: TreatmentRecord) = records.update { it + (record.treatment.id to record) }
+
+    override suspend fun span(): StoredSpan =
+        records.value.values
+            .map { it.treatment }
+            .filter { !it.deleted }
+            .map { it.at }
+            .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
 
     override suspend fun deleteAll() = records.update { emptyMap() }
 }

@@ -11,6 +11,13 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
+/** A count with the first and last time in epoch ms (null when the count is 0). */
+data class SpanRow(
+    val count: Int,
+    val oldest: Long?,
+    val newest: Long?,
+)
+
 @Dao
 interface ReadingDao {
     /** The card's window: everything from [from] not from [hidden] sources, oldest first, live. */
@@ -37,6 +44,10 @@ interface ReadingDao {
     /** Retention. */
     @Query("DELETE FROM readings WHERE t < :cutoff")
     suspend fun deleteBefore(cutoff: Long): Int
+
+    /** What a role change would delete: how many readings from [sources], their first and last time. */
+    @Query("SELECT COUNT(*) AS count, MIN(t) AS oldest, MAX(t) AS newest FROM readings WHERE source IN (:sources)")
+    suspend fun span(sources: List<String>): SpanRow
 
     /** A role change: another person's readings go. */
     @Query("DELETE FROM readings WHERE source IN (:sources)")
@@ -86,6 +97,9 @@ interface TreatmentDao {
 
     @Upsert
     suspend fun upsert(treatment: TreatmentEntity)
+
+    @Query("SELECT COUNT(*) AS count, MIN(at) AS oldest, MAX(at) AS newest FROM treatments WHERE deleted = 0")
+    suspend fun span(): SpanRow
 
     @Query("DELETE FROM treatments")
     suspend fun deleteAll()

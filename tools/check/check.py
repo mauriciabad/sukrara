@@ -70,6 +70,11 @@ Checks
               `swift format --in-place`). Skipped with a NOTE where no Swift toolchain is installed (the Linux CI
               rules job: the mac job lints the whole package). Kotlin formatting is Spotless in `./gradlew check`;
               `run.sh --format` runs both platforms over the whole tree.
+  prerelease  every alpha / beta / rc / dev version in the Android version catalog (apps/android/gradle/libs.versions.toml
+              [versions]) is listed in allow.json 'prerelease_ok' with that exact version and the reason no stable one
+              will do (#81: a beta UI library shipped in a release candidate). A listed entry that is stable now, or
+              names a version the catalog doesn't have, fails too (take it off the list). android-release.sh prints the
+              list for the release notes. Whole file.
   qa          prints the docs/QA.md sections the change touches
 """
 import fnmatch
@@ -894,6 +899,35 @@ def check_states(ch, rep):
             rep.add("FAIL", "states", "tools/check/allow.json states_pending lists '## %s', which docs/FEATURES.md doesn't have." % name)
 
 
+CATALOG = ANDROID + "gradle/libs.versions.toml"
+PRERELEASE = re.compile(r"(?i)-(alpha|beta|rc|dev|eap|snapshot)")
+
+
+def check_prerelease(ch, rep):
+    """prerelease: see the module doc."""
+    text = ch.blob(CATALOG)
+    if not text:
+        return
+    section = re.search(r"(?ms)^\[versions\][ \t]*$(.*?)(?=^\[|\Z)", text)
+    versions = dict(re.findall(r'(?m)^[ \t]*([\w.-]+)[ \t]*=[ \t]*"([^"]+)"', section.group(1))) if section else {}
+    allowed = load("allow.json").get("prerelease_ok", {})
+    for name, version in sorted(versions.items()):
+        entry = allowed.get(name)
+        if PRERELEASE.search(version):
+            if entry is None:
+                rep.add("FAIL", "prerelease", "%s: %s = \"%s\" is a pre-release. Use the newest stable version, or list it in\n"
+                        "tools/check/allow.json prerelease_ok as \"%s\": {\"version\": \"%s\", \"reason\": \"why no stable one will do\"}\n"
+                        "(android-release.sh prints the list for the release notes)." % (CATALOG, name, version, name, version))
+            elif entry.get("version") != version or not entry.get("reason"):
+                rep.add("FAIL", "prerelease", "tools/check/allow.json prerelease_ok '%s' must name the catalog's version %s and say\n"
+                        "why (it names %s)." % (name, version, entry.get("version")))
+        elif entry is not None:
+            rep.add("FAIL", "prerelease", "%s: %s = \"%s\" is stable now: take it off tools/check/allow.json prerelease_ok."
+                    % (CATALOG, name, version))
+    for name in sorted(set(allowed) - set(versions)):
+        rep.add("FAIL", "prerelease", "tools/check/allow.json prerelease_ok lists '%s', which %s doesn't have." % (name, CATALOG))
+
+
 SWIFT_FORMATTED = ("apps/macos/Sources/*.swift", "apps/macos/Tests/*.swift")
 
 
@@ -997,6 +1031,7 @@ def main(argv):
         check_settings(ch, rep)
         check_states(ch, rep)
         check_durations(ch, rep)
+        check_prerelease(ch, rep)
         check_format(ch, rep)
     rep.show()
     if only in (None, "coupling"):

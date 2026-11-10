@@ -93,6 +93,11 @@ tasks.withType<Test>().configureEach {
             },
         ).withPropertyName("moduleStrings")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // ManifestTest compares the merged manifest's permissions and queries with this list
+    inputs
+        .file(rootDir.resolve("../../tools/check/allow.json"))
+        .withPropertyName("allowJson")
+        .withPathSensitivity(PathSensitivity.NONE)
 }
 
 androidComponents {

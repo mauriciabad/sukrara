@@ -12,6 +12,8 @@
 # - cleartext only to loopback: the network security config is src/main's, not the debug one (+ 10.0.2.2, a test relay)
 # - no exported component without a permission except the launcher activity, the alert sound provider and widgets
 # - every alert sound of contracts/alerts/sounds/android survived resource shrinking (verify-sounds.sh)
+# - the uses-permission list and the <queries> entries are exactly tools/check/allow.json `permissions` / `queries`
+#   (#36: a new library or module permission fails until the list says why)
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
@@ -87,6 +89,43 @@ else bad "exported without a permission: $(printf '%s' "$open_components" | tr '
 # The Live Update chip (P0): the promoted glucose notification needs this install-time permission.
 if printf '%s\n' "$manifest" | grep -q '"android.permission.POST_PROMOTED_NOTIFICATIONS"'; then ok "POST_PROMOTED_NOTIFICATIONS declared (Live Update chip)"
 else bad "POST_PROMOTED_NOTIFICATIONS missing: no Live Update chip"; fi
+
+# #36: exactly the permissions and package-visibility queries the shipped features use (allow.json, each with why).
+allow="$here/../check/allow.json"
+declared="$(printf '%s\n' "$manifest" | python3 -I -c '
+import re, sys
+stack, items, name = [], [], re.compile(r":name\([^)]*\)=\"([^\"]*)\"")
+for line in sys.stdin:
+    m = re.match(r"( *)(E|A): (\S+)", line)
+    if not m:
+        continue
+    depth, kind, what = len(m.group(1)), m.group(2), m.group(3)
+    if kind == "E":
+        while stack and stack[-1][0] >= depth:
+            stack.pop()
+        stack.append([depth, what, None])
+    elif stack and name.search(line):
+        stack[-1][2] = name.search(line).group(1)
+        tags = [t for _, t, _ in stack]
+        if tags[-1] == "uses-permission" and len(tags) == 2:
+            items.append("permission " + stack[-1][2])
+        elif tags[-2:] == ["queries", "package"]:
+            items.append("query package:" + stack[-1][2])
+        elif tags[-3:] == ["queries", "intent", "action"]:
+            items.append("query intent:" + stack[-1][2])
+print("\n".join(sorted(set(items))))
+')"
+wanted="$(python3 -I -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+print("\n".join(sorted(["permission " + k for k in d["permissions"]] + ["query " + k for k in d["queries"]])))
+' "$allow")"
+if [ "$declared" = "$wanted" ]; then ok "permissions and queries are allow.json's ($(printf '%s\n' "$declared" | grep -c '^permission') permissions, $(printf '%s\n' "$declared" | grep -c '^query') queries)"
+else
+  extra="$(printf '%s\n' "$declared" | grep -vxF "$wanted" | tr '\n' ' ')"
+  missing="$(printf '%s\n' "$wanted" | grep -vxF "$declared" | tr '\n' ' ')"
+  bad "permissions / queries differ from tools/check/allow.json: in the APK only: ${extra:-none}; in allow.json only: ${missing:-none}"
+fi
 
 # R8 full mode, release compilation, and the mapping belongs to THIS APK (a stale mapping would hide debug classes).
 marker="$(unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -ao '~~R8{[^}]*}' | head -1)"

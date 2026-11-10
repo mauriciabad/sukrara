@@ -48,6 +48,30 @@
     <string name="sh_setup_role_confirm_text">One role per install. Changing it later means reinstalling Sukrara.</string>
     <!-- Setup role confirmation button -->
     <string name="sh_setup_role_confirm">Confirm</string>
+    <!-- Setup role change that deletes history: dialog title -->
+    <string name="sh_setup_role_delete_title">Delete the earlier history?</string>
+    <!-- Setup role change that deletes history: %1$s = the chosen option, %2$s = what is deleted ("1,204 glucose readings and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
+    <string name="sh_setup_role_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone. To keep a copy, export a CSV file first.</string>
+    <!-- Setup role change: how many glucose readings are deleted; %1$s = the number -->
+    <plurals name="sh_setup_role_delete_readings">
+        <item quantity="one">%1$s glucose reading</item>
+        <item quantity="other">%1$s glucose readings</item>
+    </plurals>
+    <!-- Setup role change: how many treatments (insulin, carbs) are deleted; %1$s = the number -->
+    <plurals name="sh_setup_role_delete_treatments">
+        <item quantity="one">%1$s treatment</item>
+        <item quantity="other">%1$s treatments</item>
+    </plurals>
+    <!-- Setup role change: readings and treatments together; %1$s = readings, %2$s = treatments -->
+    <string name="sh_setup_role_delete_and">%1$s and %2$s</string>
+    <!-- Setup role change: the deleted history's dates; %1$s = first day, %2$s = last day -->
+    <string name="sh_setup_role_delete_range">from %1$s to %2$s</string>
+    <!-- Setup role change: the deleted history is from one day; %1$s = the day -->
+    <string name="sh_setup_role_delete_day">from %1$s</string>
+    <!-- Setup role change: opens the CSV export (all of the history) before deleting -->
+    <string name="sh_setup_role_delete_export">Export CSV first</string>
+    <!-- Setup role change: deletes the history and stores the new role -->
+    <string name="sh_setup_role_delete_confirm">Delete and continue</string>
     <!-- Setup checklist: title -->
     <string name="sh_setup_permissions_title">Let alerts reach you</string>
     <!-- Setup checklist: explanation -->

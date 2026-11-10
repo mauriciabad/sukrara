@@ -212,6 +212,8 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
 - [ ] Not checkable on an emulator (phone, by the owner): the Live Update chip on the status bar with a real sensor,
   the NFC tag chooser and the `https://sukrara.mauri.app/join` App Link.
 - [ ] The version in `VERSION` matches what the release notes say.
+- [ ] The release notes list every pre-release library `android-release.sh` printed (`tools/check/allow.json`
+  `prerelease_ok`), each with its reason.
 
 ## Q11 Sensor reminders and countdowns
 

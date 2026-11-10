@@ -16,6 +16,7 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,6 +71,9 @@ class SukraraDatabaseTest {
             assertEquals(200, scoped.latest().first()?.mgdl)
             assertEquals(listOf(200), scoped.range(t0, t0.plusSeconds(3600)).map { it.mgdl })
 
+            // what the change will delete, asked before deleting (setup's confirmation)
+            assertEquals(StoredSpan(2, t0, t0.plusSeconds(300)), readings.spanOf(SourceId.notOf(Role.Follower)))
+            assertEquals(StoredSpan.EMPTY, readings.spanOf(SourceId.notOf(null)))
             assertEquals(2, scoped.deleteFrom(SourceId.notOf(Role.Follower)))
             assertEquals(listOf(200), readings.window(t0).first().map { it.mgdl })
             assertEquals("no role yet hides and deletes nothing", 0, readings.deleteFrom(SourceId.notOf(null)))
@@ -152,6 +156,9 @@ class SukraraDatabaseTest {
             assertTrue(treatments.between(t0.minusSeconds(60), t0.plusSeconds(60)).first().isEmpty())
             assertEquals(1, treatments.changedSince(t0).size)
             assertNull(treatments.get("missing"))
+            assertEquals("a tombstone isn't counted", StoredSpan.EMPTY, treatments.span())
+            treatments.upsertIfNewer(record(3, 4.0))
+            assertEquals(StoredSpan(1, t0, t0), treatments.span())
         }
 
     @Test
