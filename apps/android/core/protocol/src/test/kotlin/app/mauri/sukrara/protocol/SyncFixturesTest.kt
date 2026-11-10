@@ -98,7 +98,13 @@ class SyncFixturesTest {
         writers: List<KeyPair> = emptyList(),
         at: Long = now - 100,
         profile: Profile? = null,
-    ) = f.roster(i, g.public, v.sid, RosterPayload(epoch, devices.map { it.public.hex }, writers.map { it.public.hex }, relays, profile), at)
+    ) = f.roster(
+        i,
+        g.public,
+        v.sid,
+        RosterPayload(epoch, devices.map { it.public.hex }, writers.map { it.public.hex }, relays, profile),
+        at,
+    )
 
     private fun live(dev: KeyPair, g: KeyPair, t: Long, sgv: Int, rate: Double?, sensor: SensorLife? = null) =
         f.live(dev, g.public, LivePayload(WireReading(t, sgv, rate, "libre3"), sensor), t + 5)
