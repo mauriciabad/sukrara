@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -57,6 +59,8 @@ class AlertsActions(
     val quietExit: (AlertQuietSide, QuietExit) -> Unit = { _, _ -> },
     /** A muted side's *Change to* length: kind (wire name), minutes. */
     val muteSide: (String, Int) -> Unit = { _, _ -> },
+    /** Settings › Alerts › Night alerts (#38). */
+    val openNight: () -> Unit = {},
 )
 
 /** The alert rows' groups: lows, highs, rates, signal. */
@@ -188,6 +192,43 @@ fun AlertsSettingsContent(
                 }
             }
         }
+        // #38: a second set of the rules for the night, with its hours; says when it is on now
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_night_title),
+                actions.openNight,
+                summary = nightSummary(ui),
+                icon = DsR.drawable.ds_ic_bedtime,
+            )
+        }
+        // #39: a very low nobody answers: the wearer tells the followers; a follower takes those escalations
+        SettingsGroup(title = stringResource(R.string.st_escalation_title)) {
+            if (ui.follower) {
+                SwitchRow(
+                    stringResource(R.string.st_escalation_follow),
+                    s.escalation.follow,
+                    { on -> actions.edit { it.copy(escalation = it.escalation.copy(follow = on)) } },
+                    summary = stringResource(R.string.st_escalation_follow_summary),
+                    icon = DsR.drawable.ds_ic_group,
+                )
+            } else {
+                SwitchRow(
+                    stringResource(R.string.st_escalation_on),
+                    s.escalation.on,
+                    { on -> actions.edit { it.copy(escalation = it.escalation.copy(on = on)) } },
+                    summary = stringResource(R.string.st_escalation_on_summary),
+                    icon = DsR.drawable.ds_ic_group,
+                )
+                ValueRow(
+                    stringResource(R.string.st_escalation_min),
+                    numberLabel(SchemaPrefs.spec("alerts.escalation.min"), s.escalation.min.toDouble()),
+                    { dialog = "escalateMin" },
+                    icon = DsR.drawable.ds_ic_timer,
+                    enabled = s.escalation.on,
+                )
+            }
+        }
+        FooterText(stringResource(R.string.st_escalation_footer))
         // the review edits the thresholds: only where this phone's own are in use
         if (!ui.mirrored) {
             SettingsGroup {
@@ -227,6 +268,21 @@ fun AlertsSettingsContent(
                 }
             }
         }
+
+        // #37: a low or high waits before its first alert; bounces inside the margin stay one episode
+        SettingsGroup(title = stringResource(R.string.st_wait_title)) {
+            for (which in WaitKind.entries) {
+                val spec = SchemaPrefs.spec(which.specId)
+                ValueRow(
+                    stringResource(which.title),
+                    numberLabel(spec, which.value(s).toDouble()),
+                    { dialog = "wait:${which.name}" },
+                    icon = which.icon,
+                    readOnly = ui.mirrored,
+                )
+            }
+        }
+        FooterText(stringResource(R.string.st_wait_footer))
 
         SettingsGroup(title = stringResource(R.string.st_actions_title)) {
             ValueRow(
@@ -350,6 +406,27 @@ private fun AlertsDialogs(
             }
         }
 
+        dialog.startsWith("wait:") -> {
+            val which = WaitKind.valueOf(dialog.removePrefix("wait:"))
+            val spec = SchemaPrefs.spec(which.specId)
+            NumberDialog(stringResource(which.title), NumberInput(spec), which.value(s).toDouble(), { label(spec, it) }, close) { v ->
+                actions.edit { which.set(it, spec.coerce(v).toInt()) }
+            }
+        }
+
+        dialog == "escalateMin" -> {
+            val spec = SchemaPrefs.spec("alerts.escalation.min")
+            NumberDialog(
+                stringResource(R.string.st_escalation_min),
+                NumberInput(spec),
+                s.escalation.min.toDouble(),
+                { label(spec, it) },
+                close,
+            ) { v ->
+                actions.edit { it.copy(escalation = it.escalation.copy(min = spec.coerce(v).toInt())) }
+            }
+        }
+
         dialog == "actionMute" -> {
             val spec = SchemaPrefs.spec("alerts.actions.muteMin")
             NumberDialog(
@@ -430,4 +507,33 @@ fun ConfirmDialog(
         },
         dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.st_cancel)) } },
     )
+}
+
+/** The rows of *Near a threshold* (SPEC §1 #37): the low and high waits and the margin, each one schema number. */
+enum class WaitKind(
+    val specId: String,
+    @StringRes val title: Int,
+    @DrawableRes val icon: Int,
+) {
+    Low("alerts.persistence.lowMin", R.string.st_wait_low, DsR.drawable.ds_ic_timer),
+    High("alerts.persistence.highMin", R.string.st_wait_high, DsR.drawable.ds_ic_timer),
+    Margin("alerts.persistence.marginMgdl", R.string.st_wait_margin, DsR.drawable.ds_ic_trending_down),
+    ;
+
+    fun value(s: AlertSettings): Int =
+        when (this) {
+            Low -> s.persistence.lowMin
+            High -> s.persistence.highMin
+            Margin -> s.persistence.marginMgdl
+        }
+
+    fun set(s: AlertSettings, v: Int): AlertSettings =
+        s.copy(
+            persistence =
+                when (this) {
+                    Low -> s.persistence.copy(lowMin = v)
+                    High -> s.persistence.copy(highMin = v)
+                    Margin -> s.persistence.copy(marginMgdl = v)
+                },
+        )
 }

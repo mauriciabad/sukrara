@@ -205,6 +205,9 @@ sealed interface HomeAction {
     /** Settings › Alerts (the quiet sheet's way to the rules). */
     data object OpenAlertSettings : HomeAction
 
+    /** Settings › Alerts › Night alerts (home's night line, #38). */
+    data object OpenNightAlerts : HomeAction
+
     /** Settings › Alert reliability: an item the person answers there (*Sound while the phone is unlocked*). */
     data object OpenAlertReliability : HomeAction
 

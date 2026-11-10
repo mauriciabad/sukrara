@@ -47,6 +47,8 @@ final class AlertController {
     @ObservationIgnored private let wake: any WakeScheduling
     /// When Mute all ends as last seen (nil = off): its end by itself gets one "Alerts back on" log line.
     @ObservationIgnored private var muteAllSeen: Date?
+    /// #128: readings stamped at or before this don't feed the rules (set when monitoring ends, gone when a source starts).
+    @ObservationIgnored private var fence: Date?
 
     init(
         settings: AlertSettings, clock: any TimeSource, store: any AlertStateStoring, notifier: any AlertNotifying,
@@ -65,6 +67,7 @@ final class AlertController {
             mirror = m
             mirrored = saved?.mirrored ?? [:]
         }
+        fence = saved?.fence
         run(effects)
     }
 
@@ -74,6 +77,8 @@ final class AlertController {
 
     /// The newest reading the Mac has (also an old one at launch: "no data" is measured from it).
     func reading(_ r: Reading) {
+        // still on its way from a follow or source that ended: it can't arm no data again (#128)
+        if let fence, r.t <= fence { return }
         let sample = GlucoseSample(at: r.t, mgdl: Double(r.mgdl), rate: r.rate)
         noteClock()
         if mirroring {
@@ -88,6 +93,8 @@ final class AlertController {
     /// The reading source started (following someone, Juggluco reached): no data counts from now until a reading, also
     /// with none ever. A source already running keeps its start (also across relaunches); `resetMonitoring` forgets it.
     func sourceStarted() {
+        // a new source (a join, Juggluco reached): its backfill counts, so no fence (#128)
+        fence = nil
         guard engine.context.sourceStart == nil else { return }
         handle(.source(since: clock.now))
     }
@@ -124,7 +131,20 @@ final class AlertController {
                 },
                 threshold: p.threshold ?? settings[kind].threshold, n: p.count, treated: p.treatments)
             mirrored[kind.group] = firing
-            if mirror.fire(kind, id: p.id, at: at) { notifier.post(firing, sound: true, category: category(kind)) }
+            // #39: the wearer's very low nobody answered there, when this Mac takes escalations
+            let escalated = p.esc != nil && settings.escalation.follow
+            if mirror.fire(kind, id: p.id, at: at, escalated: escalated) {
+                if escalated { notifier.log(AlertLog.escalated(kind)) }
+                notifier.post(
+                    firing, sound: true, category: category(kind),
+                    escalated: escalated || mirror.isEscalated(kind.group))
+            }
+        } else if p.answered {
+            // answered on the wearer's phone: shown again plain, without sound
+            if let id = mirror.answered(kind), let f = mirrored[kind.group], f.id == id {
+                notifier.log(AlertLog.answered(kind))
+                notifier.post(f, sound: false, category: category(kind), escalated: false)
+            }
         } else if mirror.clear(kind, id: p.id) {
             notifier.clear(kind.group)
         }
@@ -208,17 +228,28 @@ final class AlertController {
     /// notification says why. nil = monitoring is back (or the person ended it): the note goes.
     func monitoringStopped(_ reason: String?) { notifier.monitoringStopped(reason) }
 
-    /// Stopped following (or following someone new): nothing measures "no data" from the old wearer's readings any
-    /// more, and their alerts go. This Mac's mutes stay (the user set them).
+    /// Stopped following, following someone new, or moved between a wearer and Juggluco: the readings this Mac watches
+    /// are someone else's (#6), so it starts fresh: nothing measures "no data" from the old readings, their alerts go,
+    /// and this Mac's Mute all and side mutes end too (a "Mute all until you turn it off" set for one person must not
+    /// silence the next one's very lows). A *Settings from* change is the same person: `setMirroring` keeps them.
     func resetMonitoring() {
         for g in AlertGroup.allCases { notifier.clear(g) }
+        for side in AlertSide.allCases { notifier.removeMuted(side) }
+        if engine.muteAllEnd(at: clock.now) != nil || mirror.muteAllEnd(at: clock.now) != nil
+            || !engine.snoozes.active(at: clock.now).isEmpty || !mirror.snoozes.active(at: clock.now).isEmpty
+        {
+            notifier.log(AlertLog.freshState)
+        }
         let snapshot = AlertEngine.Snapshot(
-            episodes: [], snoozes: engine.snoozes, muteAllUntil: engine.muteAllUntil, lastNow: engine.snapshot.lastNow)
+            episodes: [], snoozes: SideSnoozes(), muteAllUntil: nil, lastNow: engine.snapshot.lastNow)
         let (fresh, effects) = AlertEngine.restore(
             snapshot, context: AlertContext(settings: settings, scope: engine.context.scope), at: clock.now)
         engine = fresh
-        mirror.forgetShown()
+        mirror = AlertMirror()
         mirrored = [:]
+        muteAllSeen = nil
+        // what is still on its way from the old source can't arm no data again (#128); the next source's start clears it
+        fence = clock.now
         run(effects)
     }
 
@@ -305,7 +336,7 @@ final class AlertController {
     }
 
     private func save() {
-        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored))
+        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored, fence: fence))
     }
 }
 

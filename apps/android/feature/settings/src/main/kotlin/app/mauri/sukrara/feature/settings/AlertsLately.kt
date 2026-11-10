@@ -101,5 +101,18 @@ private fun noteText(
         AlertNoteType.Resumed -> {
             stringResource(R.string.st_note_resumed, name)
         }
+
+        // #39: a very low nobody answered on the wearer's phone (here: told the followers; a follower: shown here)
+        AlertNoteType.Escalated -> {
+            if (n.remote) {
+                stringResource(R.string.st_note_escalated_remote, name)
+            } else {
+                stringResource(R.string.st_note_escalated, name, Durations.text((n.minutes ?: 0).toLong(), w.durations))
+            }
+        }
+
+        AlertNoteType.Answered -> {
+            stringResource(if (n.remote) R.string.st_note_answered_remote else R.string.st_note_answered, name)
+        }
     }
 }

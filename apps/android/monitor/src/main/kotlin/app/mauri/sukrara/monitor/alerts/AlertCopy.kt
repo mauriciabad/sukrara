@@ -28,8 +28,11 @@ object AlertCopy {
         kind: AlertKind,
         treated: Int,
         w: AlertWords,
+        /** #39: a follower's very low nobody answered on the wearer's phone ("Very low glucose · no response"). */
+        escalated: Boolean = false,
     ): String {
         val base = w.get("alert_headline_${kind.wire}")
+        if (escalated) return w.get("alert_headline_with_context").format(base, w.get("alert_context_no_response"))
         val context =
             when {
                 treated <= 0 || !kind.isLevel -> return base

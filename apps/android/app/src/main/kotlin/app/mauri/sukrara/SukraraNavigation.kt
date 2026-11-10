@@ -187,6 +187,8 @@ data class SettingsKey(
             "pendoses" -> serial?.let { SettingsRoute.PenDoses(it, review) } ?: SettingsRoute.Pens
             "alerts" -> SettingsRoute.Alerts
             "kind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::AlertKindPage) ?: SettingsRoute.Alerts
+            "night" -> SettingsRoute.NightAlerts
+            "nightkind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::NightKindPage) ?: SettingsRoute.NightAlerts
             "ranges" -> SettingsRoute.Ranges
             "graph" -> SettingsRoute.Graph
             "marks" -> SettingsRoute.GraphMarks
@@ -209,6 +211,8 @@ data class SettingsKey(
                 SettingsRoute.Overview -> SettingsKey("overview")
                 SettingsRoute.Alerts -> SettingsKey("alerts")
                 is SettingsRoute.AlertKindPage -> SettingsKey("kind", route.kind.wire)
+                SettingsRoute.NightAlerts -> SettingsKey("night")
+                is SettingsRoute.NightKindPage -> SettingsKey("nightkind", route.kind.wire)
                 SettingsRoute.Ranges -> SettingsKey("ranges")
                 SettingsRoute.Graph -> SettingsKey("graph")
                 SettingsRoute.GraphMarks -> SettingsKey("marks")
@@ -667,6 +671,10 @@ private fun route(
 
         is HomeAction.Treat -> {
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs)) {}
+        }
+
+        HomeAction.OpenNightAlerts -> {
+            backStack.push(SettingsKey.of(SettingsRoute.NightAlerts))
         }
 
         HomeAction.OpenAlertSettings -> {

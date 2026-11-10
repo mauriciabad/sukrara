@@ -35,20 +35,7 @@ object AlertSettingsCodec {
         buildJsonObject {
             put("v", VERSION)
             put("on", s.on)
-            putJsonObject("alerts") {
-                for (kind in AlertKind.entries) {
-                    val rule = s.rule(kind)
-                    putJsonObject(kind.wire) {
-                        put("on", rule.on)
-                        when (thresholdKey(kind)) {
-                            RATE -> put(RATE, rule.threshold)
-                            else -> put(thresholdKey(kind), rule.threshold.toInt())
-                        }
-                        put("repeatMin", rule.repeatMin)
-                        put("alarm", rule.alarm)
-                    }
-                }
-            }
+            put("alerts", rulesJson(s::rule))
             putQuiet("muteAfterInsulin", s.afterInsulin)
             putQuiet("muteFallingHigh", s.fallingHigh)
             putQuiet("muteAfterCarbs", s.afterCarbs)
@@ -63,27 +50,37 @@ object AlertSettingsCodec {
                 put("backMgdl", s.actions.backMgdl)
                 put("backMin", s.actions.backMin)
             }
+            putJsonObject("escalation") {
+                put("on", s.escalation.on)
+                put("min", s.escalation.min)
+                put("follow", s.escalation.follow)
+            }
+            putJsonObject("night") {
+                put("on", s.night.on)
+                put("from", s.night.fromMin)
+                put("to", s.night.toMin)
+                put("alerts", rulesJson(s.night::rule))
+            }
+            putJsonObject("persistence") {
+                put("lowMin", s.persistence.lowMin)
+                put("highMin", s.persistence.highMin)
+                put("marginMgdl", s.persistence.marginMgdl)
+            }
             put("source", s.source.wire)
         }
 
     fun fromJson(j: JsonObject): AlertSettings {
         val d = AlertSettings()
-        val alerts = j.obj("alerts")
-        val rules =
-            AlertKind.entries.associateWith { kind ->
-                val def = d.rule(kind)
-                val o = alerts?.obj(kind.wire) ?: return@associateWith def
-                KindRule(
-                    on = o.bool("on") ?: def.on,
-                    threshold = AlertLimits.threshold(kind).coerce(o.num(thresholdKey(kind)) ?: def.threshold),
-                    repeatMin = AlertLimits.ALERT_REPEAT.coerce(o.num("repeatMin")?.toInt() ?: def.repeatMin),
-                    alarm = o.bool("alarm") ?: def.alarm,
-                )
-            }
+        val rules = rulesOf(j.obj("alerts"))
+        val night = j.obj("night")
+        val escalation = j.obj("escalation")
         val sounds = j.obj("sounds")
         val actions = j.obj("notificationActions")
+        val persistence = j.obj("persistence")
 
         fun action(key: String, limit: NumberLimit, def: Int) = limit.coerce(actions?.num(key)?.toInt() ?: def)
+
+        fun persist(key: String, limit: NumberLimit, def: Int) = limit.coerce(persistence?.num(key)?.toInt() ?: def)
         return AlertSettings(
             on = j.bool("on") ?: d.on,
             rules = rules,
@@ -114,11 +111,67 @@ object AlertSettingsCodec {
                     backMgdl = action("backMgdl", AlertLimits.BACK_MGDL, d.actions.backMgdl),
                     backMin = action("backMin", AlertLimits.BACK_MIN, d.actions.backMin),
                 ),
+            escalation =
+                Escalation(
+                    on = escalation?.bool("on") ?: d.escalation.on,
+                    min = AlertLimits.ESCALATE_MIN.coerce(escalation?.num("min")?.toInt() ?: d.escalation.min),
+                    follow = escalation?.bool("follow") ?: d.escalation.follow,
+                ),
+            night =
+                NightProfile(
+                    on = night?.bool("on") ?: d.night.on,
+                    fromMin = night?.num("from")?.toInt()?.takeIf { it in 0 until MINUTES_A_DAY } ?: d.night.fromMin,
+                    toMin = night?.num("to")?.toInt()?.takeIf { it in 0 until MINUTES_A_DAY } ?: d.night.toMin,
+                    // never off at night
+                    rules =
+                        rulesOf(
+                            night?.obj("alerts"),
+                        ).let { it + (AlertKind.VERY_LOW to it.getValue(AlertKind.VERY_LOW).copy(on = true)) },
+                ),
+            persistence =
+                Persistence(
+                    lowMin = persist("lowMin", AlertLimits.PERSIST_LOW, d.persistence.lowMin),
+                    highMin = persist("highMin", AlertLimits.PERSIST_HIGH, d.persistence.highMin),
+                    marginMgdl = persist("marginMgdl", AlertLimits.PERSIST_MARGIN, d.persistence.marginMgdl),
+                ),
             source = AlertSource.entries.firstOrNull { it.wire == j.str("source") } ?: d.source,
         )
     }
 
     private const val RATE = "rate"
+
+    /** Minutes in a day: a night window's ends are 0 until this. */
+    const val MINUTES_A_DAY = 24 * 60
+
+    /** Every kind's rule as the SPEC §3 `alerts` object (also the night set's). */
+    private fun rulesJson(rule: (AlertKind) -> KindRule): JsonObject =
+        buildJsonObject {
+            for (kind in AlertKind.entries) {
+                val r = rule(kind)
+                putJsonObject(kind.wire) {
+                    put("on", r.on)
+                    when (thresholdKey(kind)) {
+                        RATE -> put(RATE, r.threshold)
+                        else -> put(thresholdKey(kind), r.threshold.toInt())
+                    }
+                    put("repeatMin", r.repeatMin)
+                    put("alarm", r.alarm)
+                }
+            }
+        }
+
+    /** An `alerts` object's rules, each missing or bad field at its default. */
+    private fun rulesOf(alerts: JsonObject?): Map<AlertKind, KindRule> =
+        AlertKind.entries.associateWith { kind ->
+            val def = AlertSettings.DEFAULT_RULES.getValue(kind)
+            val o = alerts?.obj(kind.wire) ?: return@associateWith def
+            KindRule(
+                on = o.bool("on") ?: def.on,
+                threshold = AlertLimits.threshold(kind).coerce(o.num(thresholdKey(kind)) ?: def.threshold),
+                repeatMin = AlertLimits.ALERT_REPEAT.coerce(o.num("repeatMin")?.toInt() ?: def.repeatMin),
+                alarm = o.bool("alarm") ?: def.alarm,
+            )
+        }
 
     private fun thresholdKey(kind: AlertKind) =
         when (kind.group) {

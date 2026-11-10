@@ -33,6 +33,8 @@ public struct AlertUIState: Equatable, Sendable {
     /// Side → when *Unmute* / *Alert me anyway* lifted its open episode's quiet: the treatments logged up to then no
     /// longer quiet it, so the card's mute lines and last-treatment ring end there too.
     public var lifted: [AlertSide: Date] = [:]
+    /// The night alerts apply until then (SPEC §1 "Night alerts", #38); nil = the day rules.
+    public var nightUntil: Date?
 
     /// Nothing active, nothing quiet.
     public static let idle = AlertUIState(active: [:], quiets: [], muteAllUntil: nil)
@@ -44,7 +46,7 @@ public struct AlertUIState: Equatable, Sendable {
 extension AlertEngine {
     /// The UI state at `t`.
     public func uiState(at t: Date) -> AlertUIState {
-        let s = settings
+        let s = settingsInForce(at: t)
         var active: [AlertGroup: AlertUIState.Active] = [:]
         var quiets: [AlertUIState.Quiet] = []
         var seen: Set<AlertSide> = []
@@ -80,6 +82,10 @@ extension AlertEngine {
                     kind: k, isOn: false, quiet: until.map { .sideMuted(until: $0) }, relaxMin: sn.relaxMin,
                     canRelax: canRelax(k, sn.relaxMin)))
         }
-        return AlertUIState(active: active, quiets: quiets, muteAllUntil: muteAllEnd(at: t), lifted: lifted)
+        let night = context.settings.night
+        let nightUntil =
+            night.isActive(at: t, in: context.timeZone) ? night.nextSwitch(after: t, in: context.timeZone) : nil
+        return AlertUIState(
+            active: active, quiets: quiets, muteAllUntil: muteAllEnd(at: t), lifted: lifted, nightUntil: nightUntil)
     }
 }

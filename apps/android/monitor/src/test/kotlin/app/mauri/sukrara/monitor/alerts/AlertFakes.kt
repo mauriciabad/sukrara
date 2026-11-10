@@ -24,6 +24,7 @@ import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.monitor.lockedboot.LockedBootPlan
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.Instant
+import java.time.ZoneOffset
 
 /** What a test's fake notification shade shows: one entry per group slot. */
 class FakePresenter : AlertPresenter {
@@ -94,6 +95,7 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
             newId = { "id${++ids}" },
             lockedBoot = { lockedBoot = it },
             elapsed = { elapsed },
+            zone = { ZoneOffset.UTC },
         )
 
     fun reading(mgdl: Int, at: Instant = clock.now()) = Reading(at, mgdl, null, SourceId.Libre3)

@@ -246,6 +246,9 @@ class AppGraph(
             // mute stays here)
             wearerSettings = followerSettings.alertMirror,
             remoteEvents = flow { emitAll(follower.engine.alerts) }.mapNotNull { AlertEvent.decode(AlertCodec.encode(it)) },
+            // the wearer's `alert` events (what its rules decide without this phone's actions, escalations included) to
+            // every follower at once, over the relays and Bluetooth (PROTOCOL-v2 "Alerts")
+            events = { e -> scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } } },
         )
     }
 
@@ -485,10 +488,14 @@ class AppGraph(
         FollowerModule(app, data, monitor.hub, clock, dispatchers, notifications::show, launch.relays)
     }
 
-    /** No alarm armed from what came before (a previous role, a follow that ended): alert state and "monitoring since" go. */
-    private suspend fun resetMonitoring() {
+    /**
+     * No alarm armed from what came before (a previous role, a follow that ended): alert state and "monitoring since"
+     * go. [fence]: an ending (a follow ended or stopped, nearby codes that differed): readings still on their way from
+     * it can't arm no data again (#128); never on a join.
+     */
+    private suspend fun resetMonitoring(fence: Boolean = false) {
         alerts.reset()
-        monitor.hubImpl.resetMonitoring()
+        monitor.hubImpl.resetMonitoring(fence)
     }
 
     /** *Sensor end in calendar*: the wearer's events and the settings rows. */
@@ -518,7 +525,7 @@ class AppGraph(
                     .map { it.service }
                     .distinctUntilChanged(),
             startMonitoring = { startMonitoring(StartReason.App) },
-            resetMonitoring = { monitor.hubImpl.resetMonitoring(sensorForgotten = true) },
+            resetMonitoring = { monitor.hubImpl.resetMonitoring(fence = true) },
             sourceChanged = { sourceChanges.tryEmit(Unit) },
         )
     }
@@ -771,7 +778,7 @@ class AppGraph(
                 // a follow that ended (declined, invite used, removed) arms no "no data" alarm for a stream that won't come
                 scope.launch {
                     follower.engine.state.map { it.ended }.distinctUntilChanged().collect { ended ->
-                        if (ended && role.data.first().role == Role.Follower) resetMonitoring()
+                        if (ended && role.data.first().role == Role.Follower) resetMonitoring(fence = true)
                     }
                 }
             }

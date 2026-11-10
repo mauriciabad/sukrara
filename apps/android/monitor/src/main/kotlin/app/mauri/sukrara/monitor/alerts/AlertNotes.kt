@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor.alerts
 
 import app.mauri.sukrara.alerts.AlertEffect
+import app.mauri.sukrara.alerts.AlertEvent
 import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertInput
 import app.mauri.sukrara.alerts.AlertKind
@@ -99,6 +100,9 @@ object AlertNotes {
                     val before = rang.put(k.group, k)
                     if (e.silent) {
                         out += AlertNote(at, AlertNoteType.Resumed, k.wire, remote = remote)
+                    } else if (e.firing.escalated) {
+                        // #39: the wearer's very low nobody answered there (once through this phone's quiet states)
+                        out += AlertNote(at, AlertNoteType.Escalated, k.wire, e.firing.reading?.mgdl, remote = true)
                     } else if (e.firing.n <= 1 || (before != null && before != k)) {
                         out += AlertNote(at, AlertNoteType.Fired, k.wire, e.firing.reading?.mgdl, remote = remote)
                     }
@@ -112,6 +116,19 @@ object AlertNotes {
 
                 is AlertEffect.Back -> {
                     AlertKind.entries.firstOrNull { it.side == e.side }?.let { out += AlertNote(at, AlertNoteType.Back, it.wire) }
+                }
+
+                // #39: the wearer escalated a very low to the followers / it was answered after that
+                is AlertEffect.Escalated -> {
+                    out += AlertNote(at, AlertNoteType.Escalated, AlertKind.VERY_LOW.wire, minutes = e.minutes)
+                }
+
+                is AlertEffect.Answered -> {
+                    out += AlertNote(at, AlertNoteType.Answered, e.firing.kind.wire, remote = true)
+                }
+
+                is AlertEffect.Mirror -> {
+                    if (e.event.state == AlertEvent.State.ANSWERED) out += AlertNote(at, AlertNoteType.Answered, e.event.k.wire)
                 }
 
                 else -> {

@@ -160,6 +160,8 @@ data class AlertUiState(
     val treatmentQuiet: TreatmentQuiet = TreatmentQuiet(),
     val mutedUntil: Instant? = null,
     val quiet: List<AlertQuietSide> = emptyList(),
+    /** The night alerts apply until then (contracts/alerts/SPEC.md §1 "Night alerts", #38); null = the day rules. */
+    val nightUntil: Instant? = null,
     /**
      * The runtime's steps that failed on their last attempt (`Notify:level`, `Alarm`, `Save`…; the diagnostic log has
      * the exception class), each until it works again. The alert checklist ([AlertReadiness]) reads it: home shows it
@@ -221,7 +223,25 @@ data class AlertNote(
 )
 
 /** [AllBack]: a timed Mute all ended by itself; [Resumed]: an alert shown again without sound after a restart. */
-enum class AlertNoteType { Fired, Cleared, Muted, Unmuted, RemindLess, RemindAsUsual, Back, AllMuted, AllUnmuted, AllBack, Resumed }
+enum class AlertNoteType {
+    Fired,
+    Cleared,
+    Muted,
+    Unmuted,
+    RemindLess,
+    RemindAsUsual,
+    Back,
+    AllMuted,
+    AllUnmuted,
+    AllBack,
+    Resumed,
+
+    /** #39: a very low nobody answered on the wearer's phone (the wearer told its followers; a follower showed it). */
+    Escalated,
+
+    /** #39: it was answered on the wearer's phone after that. */
+    Answered,
+}
 
 /** Why a side is quiet (contracts/alerts/SPEC.md §2 "States and exits"). */
 enum class AlertQuietReason {

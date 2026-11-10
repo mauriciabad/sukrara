@@ -23,7 +23,7 @@ final class RecordingNotifier: AlertNotifying {
     var calls: [Call] = []
     var posts: [Call] { calls.filter { if case .post = $0 { true } else { false } } }
 
-    func post(_ f: AlertFiring, sound: Bool, category: String) {
+    func post(_ f: AlertFiring, sound: Bool, category: String, escalated: Bool) {
         calls.append(.post(f.kind, id: f.id, sound: sound, category: category))
     }
     func clear(_ group: AlertGroup) { calls.append(.clear(group)) }
@@ -245,6 +245,37 @@ final class RecordingWake: WakeScheduling {
         #expect(notifier.posts.isEmpty)
     }
 
+    /// #6: following someone else (or stopping) starts fresh: this Mac's Mute all and side mutes end; a *Settings from*
+    /// change (mirroring on / off) keeps them.
+    @Test func whoseReadingsChangedEndsTheMutesSettingsFromKeepsThem() {
+        let c = controller()
+        c.perform(.muteAll(until: clock.now.addingTimeInterval(3600)))
+        c.perform(.mute(.low, minutes: 60))
+        c.setMirroring(true)
+        c.setMirroring(false)
+        #expect(c.ui.muteAllUntil != nil)
+        c.resetMonitoring()
+        #expect(c.ui.muteAllUntil == nil)
+        #expect(c.ui.quiets.isEmpty)
+    }
+
+    /// #128: after an ending, a reading still on its way (stamped before it) can't arm no data again, also after a
+    /// relaunch; the next source's start clears the fence, so a join's backfill counts.
+    @Test func anEndingFencesQueuedReadingsAJoinDoesNot() {
+        let c = controller()
+        c.reading(reading(110))
+        c.resetMonitoring()
+        clock.advance(by: 60)
+        c.reading(reading(111, minutesAgo: 2))  // queued before the ending
+        #expect(c.nextWake == nil)
+        let relaunched = controller()
+        relaunched.reading(reading(112, minutesAgo: 1.5))
+        #expect(relaunched.nextWake == nil)
+        relaunched.sourceStarted()  // a join: its backfill counts
+        relaunched.reading(reading(113, minutesAgo: 5))
+        #expect(relaunched.nextWake != nil)
+    }
+
     @Test func stoppingFollowingDisarmsNoData() {
         let c = controller()
         c.reading(reading(110))
@@ -253,6 +284,44 @@ final class RecordingWake: WakeScheduling {
         clock.advance(by: 3 * 3600)
         c.tick()
         #expect(!notifier.posts.contains { if case .post(.noData, _, _, _) = $0 { true } else { false } })
+    }
+
+    /// #39: the wearer's very low nobody answered there shows through this Mac's own Mute once, and its answer shows it
+    /// plain again without sound; this Mac can turn escalations off.
+    @Test func anEscalatedVeryLowBreaksThroughThisMacsMuteOnceAndAnAnswerShowsItPlain() throws {
+        let c = controller()
+        c.setMirroring(true)
+        c.perform(.mute(.low, minutes: 60))
+        notifier.calls = []
+        c.wearerAlert(try veryLow(state: "fire", esc: nil))
+        #expect(notifier.posts.isEmpty)
+        c.wearerAlert(try veryLow(state: "fire", esc: 5))
+        #expect(notifier.posts.contains { if case .post(.veryLow, "v1", true, _) = $0 { true } else { false } })
+        notifier.calls = []
+        c.wearerAlert(try veryLow(state: "fire", esc: 5))  // the same escalated copy again (another relay): nothing new
+        #expect(notifier.posts.isEmpty)
+        c.wearerAlert(try veryLow(state: "answered", esc: nil))
+        #expect(notifier.posts.contains { if case .post(.veryLow, "v1", false, _) = $0 { true } else { false } })
+    }
+
+    @Test func aMacThatTurnedEscalationsOffKeepsItsMute() throws {
+        var s = AlertSettings()
+        s.escalation.follow = false
+        let c = controller()
+        c.settings(s)
+        c.setMirroring(true)
+        c.perform(.mute(.low, minutes: 60))
+        notifier.calls = []
+        c.wearerAlert(try veryLow(state: "fire", esc: 5))
+        #expect(notifier.posts.isEmpty)
+    }
+
+    func veryLow(state: String, esc: Int?) throws -> AlertPayload {
+        let at = Int(clock.now.timeIntervalSince1970)
+        let extra = esc.map { #","esc":\#($0)"# } ?? ""
+        let json =
+            #"{"v":2,"type":"alert","k":"very_low","state":"\#(state)","id":"v1","at":\#(at),"t":\#(at),"sgv":50,"th":55,"n":1\#(extra)}"#
+        return try AlertPayload.decode(json)
     }
 
     func payload(kind: String, fires: Bool) throws -> AlertPayload {

@@ -27,6 +27,7 @@
     <string name="alert_headline_no_data">No glucose data</string>
     <string name="alert_headline_with_context">%1$s · %2$s</string>
     <string name="alert_context_eat_more">eat more</string>
+    <string name="alert_context_no_response">no response</string>
     <string name="alert_context_eat_more_again">eat more again</string>
     <string name="alert_context_after_insulin">still high after insulin</string>
     <string name="alert_context_after_more_insulin">still high after more insulin</string>

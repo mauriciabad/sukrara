@@ -226,7 +226,9 @@ import Testing
         #expect(AlertSettings.mirroredKinds == AlertKind.allCases.filter { $0 != .noData })
         let json = #"""
             {"graph":{"low":65},"alerts":{"alerts":{"low":{"on":false,"mgdl":72,"repeatMin":30},
-            "no_data":{"on":false,"min":200,"repeatMin":240}}}}
+            "no_data":{"on":false,"min":200,"repeatMin":240}},"persistence":{"lowMin":10,"highMin":30,"marginMgdl":5},
+            "night":{"on":true,"from":1380,"to":420,"alerts":{"low":{"on":true,"mgdl":80,"repeatMin":10,"alarm":true},
+            "no_data":{"on":false,"min":200}}}}}
             """#
         let w = try #require(WearerSettings(json: json, wearer: "Ana"))
         #expect(w.bool("alerts.kind.on", kind: "low") == false)
@@ -238,6 +240,15 @@ import Testing
         let inUse = own.inUse(from: .wearer, wearer: w)
         #expect(inUse[.low].on == false && inUse[.low].threshold == 72 && inUse[.low].repeatMin == 30)
         #expect(inUse[.noData] == own[.noData])
+        // #37: the waits and the margin near a threshold are rules: the wearer's, back to the defaults in Default
+        #expect(inUse.persistence == PersistenceSettings(lowMin: 10, highMin: 30, marginMgdl: 5))
+        // #38: the night set and its hours too; like an alarm and no data's night rule stay this Mac's
+        #expect(inUse.night.on && inUse.night.from == 1380 && inUse.night.to == 420)
+        #expect(inUse.night[.low].threshold == 80 && inUse.night[.low].repeatMin == 10 && !inUse.night[.low].alarm)
+        #expect(inUse.night[.noData] == own.night[.noData])
+        var custom = own
+        custom.persistence.lowMin = 15
+        #expect(custom.inUse(from: .default, wearer: w).persistence == PersistenceSettings())
     }
 }
 

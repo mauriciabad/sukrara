@@ -37,18 +37,32 @@ public struct AlertMirror: Codable, Equatable, Sendable {
     private var newest: [AlertGroup: Newest] = [:]
     /// groups whose newest firing the wearer has cleared.
     private var newestCleared: Set<AlertGroup> = []
+    /// #39: groups whose escalation already showed here (it breaks through this device's quiet states once).
+    private var escalated: Set<AlertGroup> = []
 
     public init() {}
 
     public func muteAllEnd(at t: Date) -> Date? { muteAllUntil.flatMap { $0 > t ? $0 : nil } }
     public func isShowing(_ group: AlertGroup) -> Bool { shown[group] != nil }
+    /// #39: the wearer's very low of `group` shows here escalated (nobody answered it on the wearer's phone).
+    public func isEscalated(_ group: AlertGroup) -> Bool { escalated.contains(group) }
 
-    /// The wearer fired `kind` (firing `id`) at `at`: true = show it here.
-    public mutating func fire(_ kind: AlertKind, id: String, at: Date) -> Bool {
+    /// The wearer fired `kind` (firing `id`) at `at`: true = show it here. `escalated` (#39: nobody answered the very low
+    /// on the wearer's phone and this device takes escalations): its first escalation shows whatever this device's Mute,
+    /// Remind less or Mute all say; the escalated repeats after it follow them again.
+    public mutating func fire(_ kind: AlertKind, id: String, at: Date, escalated esc: Bool = false) -> Bool {
         let side = kind.side
         let g = kind.group
+        let breaks = esc && !escalated.contains(g)
+        if newest[g]?.id == id && !breaks { return false }  // the same firing again (BLE and several relays)
         newest[g] = Newest(id: id, kind: kind)
         newestCleared.remove(g)
+        if breaks {
+            escalated.insert(g)
+            shown[g] = Newest(id: id, kind: kind)
+            lastShown[g] = Shown(at: at, kind: kind)
+            return true
+        }
         let sn = snoozes[side]
         let muted = (sn?.isMuted(at: at) ?? false) || muteAllEnd(at: at) != nil
         let relaxed =
@@ -70,10 +84,21 @@ public struct AlertMirror: Codable, Equatable, Sendable {
     /// changes nothing.
     public mutating func clear(_ kind: AlertKind, id: String) -> Bool {
         let g = kind.group
-        if newest[g]?.id == id { newestCleared.insert(g) }
+        if newest[g]?.id == id {
+            newestCleared.insert(g)
+            escalated.remove(g)
+        }
         guard let cur = shown[g], cur.id == id || newest[g]?.id == id else { return false }
         shown[g] = nil
         return true
+    }
+
+    /// #39: the wearer answered the escalated very low of `kind`'s group: the id of the notification shown here, to show
+    /// again plain and without sound (nil: none escalated here, or it isn't showing).
+    public mutating func answered(_ kind: AlertKind) -> String? {
+        let g = kind.group
+        guard escalated.remove(g) != nil else { return nil }
+        return shown[g]?.id
     }
 
     /// A reading this device got at `t` (nil = none recent): ends a side's Mute / Remind less back by the margin.

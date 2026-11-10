@@ -66,6 +66,7 @@ mirror
 
 scenario A follower's mute covers very low and ends by the margin, not with the wearer's episode
 mirror
+settings escalate=off             # about the follower's Mute alone: an unanswered very low's escalation is escalation.txt
  0  glucose 65            => Low glucose; follower Low glucose
  2  follower mute low 2h  => follower clear low
  4  glucose 50            => clear low; Very low glucose     # dropped here: the mute covers very low (user, 2026-10-21)
@@ -101,3 +102,13 @@ mirror
 12                                 => follower Low glucose   # its own timer: the wearer's alert of minute 10
 15                                 => Low glucose; follower Low glucose
 16
+
+scenario Carbs quiet a very low on the wearer's phone only: the followers keep alerting until it is really over (#2)
+mirror
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 2  carbs 15     => clear very_low                 # an answer on the wearer's phone too: no escalation (#39)
+ 5               => follower Very low glucose · eat more
+10               => follower Very low glucose · eat more
+15               => follower Very low glucose · eat more
+17               => Very low glucose · eat more     # the carbs' window ends on the wearer's phone
+18

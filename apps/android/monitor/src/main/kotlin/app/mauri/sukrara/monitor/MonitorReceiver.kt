@@ -20,7 +20,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  *    the health check, start the service once (each is an allowed background start); a time / time-zone change (also
  *    Settings' 12/24-hour switch) redraws the widgets' times;
  *  - language change → channel names, the glucose notification and the widgets in the new language;
- *  - exact-alarm permission changed → reschedule;
+ *  - exact-alarm permission changed → check alerts (which arms the alert alarm again) and reschedule the health check;
  *  - the health check alarm → start the service if it should run, schedule the next check;
  *  - the freshness step → redraw the glucose surfaces;
  *  - the glucose notification was swiped away → post it again.
@@ -42,7 +42,7 @@ abstract class MonitorReceiver : BroadcastReceiver() {
         context: Context,
         action: String,
     ) = coroutineScope {
-        if (action in SYSTEM_EVENTS) launch { checkAlerts(context) }
+        if (checksAlerts(action)) launch { checkAlerts(context) }
         // a failing start or health check must not cancel the alert check running alongside
         try {
             handleMonitor(context, action)
@@ -114,14 +114,21 @@ abstract class MonitorReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "Sukrara.monitor"
 
-        /** Boot, app update, clock and time-zone changes: the alert check's other triggers besides its own alarm. */
+        /**
+         * Boot, app update, clock and time-zone changes and the exact-alarm permission's change: the alert check's other
+         * triggers besides its own alarm (it arms that alarm again). USE_EXACT_ALARM can't be revoked today, but should the
+         * app ever hold SCHEDULE_EXACT_ALARM instead, a permission granted again must re-arm the alert check too (#44).
+         */
         private val SYSTEM_EVENTS =
             setOf(
                 Intent.ACTION_BOOT_COMPLETED,
                 Intent.ACTION_MY_PACKAGE_REPLACED,
                 Intent.ACTION_TIME_CHANGED,
                 Intent.ACTION_TIMEZONE_CHANGED,
+                AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
             )
+
+        internal fun checksAlerts(action: String) = action in SYSTEM_EVENTS
 
         const val ACTION_HEALTH_CHECK = "app.mauri.sukrara.monitor.HEALTH_CHECK"
         const val ACTION_FRESHNESS_STEP = "app.mauri.sukrara.monitor.FRESHNESS_STEP"

@@ -7,6 +7,7 @@ import android.content.Context
 import android.util.Log
 import app.mauri.sukrara.alerts.AlertEvent
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.alerts.SoundSettings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.AlertControls
@@ -37,6 +38,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -79,6 +81,17 @@ class AlertsModule(
     private val alarms = AndroidAlarms(ctx)
     val store = AlertStateStore(alertSettings, alertRecord)
     val soundPicker = AlertSoundPicker()
+
+    /**
+     * The sound settings as last read (null until the store first answered): what `AlertSoundProvider` reads on System
+     * UI's binder thread, so opening a sound never waits for the store (#44).
+     */
+    val sounds: StateFlow<SoundSettings?> =
+        store.settings
+            .map { it.sounds }
+            .distinctUntilChanged()
+            .catch { log("sound settings failed: ${it.javaClass.simpleName}") }
+            .stateIn(scope, SharingStarted.Eagerly, null)
 
     /** The person's answer about Android's *Vibrate only when unlocked* (the checklist asks; #129). */
     private val unlockedAnswer: Flow<UnlockedSound> =

@@ -19,10 +19,15 @@ public struct AlertContext: Equatable, Sendable {
     /// When the reading source started (following someone, Juggluco reached; nil = none): until it delivers a reading no
     /// data counts from it (or from a newer reading), so a source that never delivers a first reading alerts too.
     public var sourceStart: Date?
+    /// This Mac's time zone: the night alerts' window is read in it (SPEC §1 "Night alerts").
+    public var timeZone: TimeZone
+    /// The run is the wearer's own phone's: carbs may quiet very low there only (#2, SPEC §2). The Mac never is.
+    public var wearersOwn: Bool
 
     public init(
         settings: AlertSettings = AlertSettings(), treatments: [AlertTreatment] = [], sensor: SensorWindow? = nil,
-        latest: GlucoseSample? = nil, scope: AlertScope = .all, sourceStart: Date? = nil
+        latest: GlucoseSample? = nil, scope: AlertScope = .all, sourceStart: Date? = nil,
+        timeZone: TimeZone = .current, wearersOwn: Bool = false
     ) {
         self.settings = settings
         self.treatments = treatments
@@ -30,6 +35,8 @@ public struct AlertContext: Equatable, Sendable {
         self.latest = latest
         self.scope = scope
         self.sourceStart = sourceStart
+        self.timeZone = timeZone
+        self.wearersOwn = wearersOwn
     }
 }
 
@@ -95,9 +102,22 @@ public struct AlertEngine: Sendable {
     /// A reading came since the source started: no data counts from the readings alone (also an old first one).
     var sourceDelivered = false
 
-    public init(context: AlertContext) { self.context = context }
+    public init(context: AlertContext) {
+        self.context = context
+        inForce = context.settings
+        inForce.veryLowQuietByCarbs = context.wearersOwn
+    }
 
     public var settings: AlertSettings { context.settings }
+    /// The rules in force at the moment being handled: the night set inside its window (SPEC §1 "Night alerts").
+    var inForce = AlertSettings()
+
+    /// The settings with the rules in force at `t`.
+    public func settingsInForce(at t: Date) -> AlertSettings {
+        var s = context.settings.at(t, in: context.timeZone)
+        s.veryLowQuietByCarbs = context.wearersOwn
+        return s
+    }
 
     /// Handles `input` at `now` (`monotonic`: a clock that never jumps, in s, so a clock set back is measured exactly);
     /// firing ids come from `rng`.
@@ -106,7 +126,9 @@ public struct AlertEngine: Sendable {
     ) -> [AlertEffect] {
         var out: [AlertEffect] = []
         observeClock(now, monotonic: monotonic)
+        inForce = settingsInForce(at: now)
         apply(input, at: now)
+        inForce = settingsInForce(at: now)
         evaluate(at: now, rng: &rng, out: &out)
         out.append(.schedule(nextCheck(after: now)))
         return out
@@ -213,7 +235,7 @@ public struct AlertEngine: Sendable {
     }
 
     private mutating func evaluate(at t: Date, rng: inout some RandomNumberGenerator, out: inout [AlertEffect]) {
-        let s = settings
+        let s = inForce
         guard s.on else {
             for g in AlertGroup.allCases {
                 if var e = episodes[g] { hide(&e, at: t, out: &out) }
@@ -245,10 +267,19 @@ public struct AlertEngine: Sendable {
             }
         }
         out += backSides.map(AlertEffect.back)
-        step(.level, rules ? Self.level(of: r, s, at: t) : nil, at: t, rng: &rng, out: &out)
+        let level = rules ? Self.level(of: r, s, at: t) : nil
+        // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
+        let holding = level == nil && (episodes[.level].map { isOutOfRange($0.side, r, s, at: t) } ?? false)
+        step(.level, level, holding: holding, at: t, rng: &rng, out: &out)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
-        // episode stays as it is: its alert showing, its repeat due, its hold not running down (SPEC §1)
-        if !(rules && fresh && r?.rate == nil) { step(.rate, rate, at: t, rng: &rng, out: &out) }
+        // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
+        // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
+        if !(rules && fresh && r?.rate == nil) {
+            step(.rate, rate, at: t, rng: &rng, out: &out)
+        } else if var e = episodes[.rate] {
+            hide(&e, at: t, out: &out)
+            episodes[.rate] = e
+        }
         step(.noData, noData ? .noData : nil, at: t, rng: &rng, out: &out)
     }
 
@@ -261,14 +292,22 @@ public struct AlertEngine: Sendable {
     }
 
     private mutating func step(
-        _ g: AlertGroup, _ want: AlertKind?, at t: Date, rng: inout some RandomNumberGenerator, out: inout [AlertEffect]
+        _ g: AlertGroup, _ want: AlertKind?, holding: Bool = false, at t: Date, rng: inout some RandomNumberGenerator,
+        out: inout [AlertEffect]
     ) {
-        let s = settings
+        let s = inForce
         guard let want else {
             guard var e = episodes[g] else { return }
             hide(&e, at: t, out: &out)
             e.isOn = false
             e.quiet = nil
+            if holding {
+                // between the threshold and the margin: nothing alerts, but the episode holds and a wait keeps counting
+                e.lastIn = t
+                episodes[g] = e
+                return
+            }
+            e.outSince = nil
             episodes[g] = t.timeIntervalSince(e.lastIn) >= e.holdTime(s) ? nil : e
             return
         }
@@ -279,6 +318,8 @@ public struct AlertEngine: Sendable {
         }
         var e = found ?? Episode(want, at: t)
         defer { episodes[g] = e }
+        // out of range again: a waiting first alert counts from here
+        if e.outSince == nil { e.outSince = t }
         e.isOn = true
         e.lastIn = t
         e.kind = want
@@ -308,6 +349,13 @@ public struct AlertEngine: Sendable {
             return
         }
         e.quiet = nil
+        // the episode's first alert waits until the side has been out of range long enough (never very low, #37)
+        let wait = TimeInterval(s.persistence.waitMin(want, context.latest) * 60)
+        let waitUntil = (e.outSince ?? t).addingTimeInterval(wait)
+        if e.firedAt == nil, t < waitUntil {
+            e.next = waitUntil
+            return
+        }
         e.next = due(e, want, at: t)
         guard let next = e.next, t >= next else { return }
         e.n += 1
@@ -327,7 +375,7 @@ public struct AlertEngine: Sendable {
 
     /// The newest treatment that quiets `k` in `e` at `t` (logged after an *Alert me anyway*), or nil.
     func cover(_ e: Episode, _ k: AlertKind, at t: Date) -> Date? {
-        let s = settings
+        let s = inForce
         guard let tk = s.quietedBy(k) else { return nil }
         return times(tk).filter { x in
             x <= t && t.timeIntervalSince(x) < s.quietDuration(tk) && (e.liftedAt.map { x > $0 } ?? true)
@@ -336,7 +384,7 @@ public struct AlertEngine: Sendable {
 
     /// When `e` alerts next for `k` (nil = never).
     private func due(_ e: Episode, _ k: AlertKind, at t: Date) -> Date? {
-        let s = settings
+        let s = inForce
         guard let fired = e.firedAt else { return e.start }
         if k.side == e.firedKind.side, k.severity > e.firedKind.severity { return t }
         if e.liftPending { return t }
@@ -359,13 +407,13 @@ public struct AlertEngine: Sendable {
     /// Entries of the answering treatment logged in the episode or within the quiet length before it: 0, 1, 2 (2+).
     private func treated(_ e: Episode, _ k: AlertKind, at t: Date) -> Int {
         guard k.group == .level, let tk = k.treatment else { return 0 }
-        let from = e.start.addingTimeInterval(-settings.quietDuration(tk))
+        let from = e.start.addingTimeInterval(-inForce.quietDuration(tk))
         return min(2, times(tk).filter { $0 >= from && $0 <= t }.count)
     }
 
     /// Minutes until back below the high threshold, if the current fall gets there within the falling rule's window.
     private func fallingBackMinutes(_ k: AlertKind) -> Int? {
-        let s = settings
+        let s = inForce
         // a HI's real value is unknown: no prediction from it
         guard let r = context.latest, let v = r.rate, !r.isHi, s.muteFallingHigh.on, k == .high || k == .veryHigh, v < 0
         else {
@@ -378,9 +426,11 @@ public struct AlertEngine: Sendable {
 
     /// When the next timer check is useful (no-data deadline, freshness end, a repeat, a mute ending, the margin), or nil.
     public func nextCheck(after now: Date) -> Date? {
-        let s = settings
+        let s = settingsInForce(at: now)
         guard s.on else { return nil }
         var c: [Date] = []
+        // the rules switch at the night window's edges: what matches changes
+        if let n = context.settings.night.nextSwitch(after: now, in: context.timeZone) { c.append(n) }
         let nd = s[.noData]
         if let since = noDataSince, nd.on, episodes[.noData]?.isOn != true {
             c.append(since.addingTimeInterval(nd.threshold * 60))

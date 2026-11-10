@@ -40,4 +40,15 @@ enum AlertLog {
 
     /// A side's Mute / Remind Less ended by the back-in-range margin: "Low back in range: alerts as usual".
     static func back(_ side: AlertSide) -> String { "\(MuteCopy.sideName(side, .en)) back in range: alerts as usual" }
+
+    /// #6: this Mac watches someone else's readings now: its mutes and Mute all ended.
+    static let freshState = "Watching other readings: mutes and Mute all ended"
+
+    /// #39: the wearer's very low nobody answered there showed here: "Very low: no response on the wearer's phone".
+    static func escalated(_ kind: AlertKind) -> String {
+        "\(kind.headline(treated: 0)): no response on the wearer's phone"
+    }
+
+    /// #39: it was answered there after all.
+    static func answered(_ kind: AlertKind) -> String { "\(kind.headline(treated: 0)): answered on the wearer's phone" }
 }

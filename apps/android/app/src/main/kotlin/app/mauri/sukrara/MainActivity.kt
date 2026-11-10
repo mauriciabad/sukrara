@@ -109,6 +109,8 @@ class MainActivity : ComponentActivity() {
             graph.ready.await()
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) graph.startMonitoring(StartReason.App)
         }
+        // opening the app while a very low rings is an answer on this phone: the followers' escalation is withdrawn (#39)
+        lifecycleScope.launch { graph.alerts.runtime.acknowledge() }
     }
 }
 

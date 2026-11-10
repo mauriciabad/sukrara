@@ -28,6 +28,12 @@ struct AlertText: Equatable {
     /// The notification title: the headline only (the same words on every platform, contracts/alerts/SPEC.md §1).
     func title(_ f: AlertFiring) -> String { headline(f) }
 
+    /// A follower's title for the wearer's very low nobody answered on the wearer's phone (#39).
+    func title(_ f: AlertFiring, escalated: Bool) -> String {
+        guard escalated else { return headline(f) }
+        return headline(f) + (language == .en ? " · no response" : " · sin respuesta")
+    }
+
     /// The body: the value and arrow (`69 mg/dL ↘`), with the rate for falling / rising fast (`· falling 2.4
     /// mg/dL/min`, `· falling 0.13 mmol/L/min`), and for no data how long and the last value. Never the threshold, never a made-up number: the
     /// sensor's LO / HI as such (not its stored 39 / 401), and without a reading it says so.

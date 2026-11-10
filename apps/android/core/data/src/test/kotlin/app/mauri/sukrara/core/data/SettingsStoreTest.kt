@@ -8,8 +8,12 @@ import app.mauri.sukrara.core.data.settings.PreferenceStores
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.testing.FakeClock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -67,6 +71,24 @@ class SettingsStoreTest {
             repo.set(graphHours, 3.0)
             repo.reset(graphHours)
             assertEquals(12.0, repo.flow(graphHours).first(), 0.0)
+        }
+
+    /**
+     * #44: two screens editing the alert settings at once (each a read-modify-write of the one JSON value) both land:
+     * `update` is one DataStore `updateData`, never a read then a write.
+     */
+    @Test
+    fun `concurrent updates of one value all land`() =
+        runTest {
+            val repo = repo(backgroundScope)
+            val alerts = SchemaSettings.text("alerts.on", default = "")
+            withContext(Dispatchers.Default) {
+                (1..40)
+                    .map { i -> async { repo.update(alerts) { it + "[$i]" } } }
+                    .awaitAll()
+            }
+            val stored = repo.flow(alerts).first()
+            for (i in 1..40) assertTrue("edit $i lost: $stored", "[$i]" in stored)
         }
 
     @Test

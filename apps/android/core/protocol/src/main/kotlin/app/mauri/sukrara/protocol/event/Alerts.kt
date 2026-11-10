@@ -17,6 +17,8 @@ import kotlinx.serialization.json.put
 /**
  * A glucose alert the wearer fired or cleared (PROTOCOL-v2 §Alerts, kind 21079). [id] is random per firing and a
  * clear repeats it; [n] counts the episode's alerts; [tr] = treatments the headline acknowledges (0, 1, 2 = more).
+ * #39: [esc] on a very low's fire = minutes nobody answered it on the wearer's phone (null = not escalated);
+ * [answered] = state `answered` (the escalated very low [id] was answered there).
  */
 data class AlertPayload(
     val id: String,
@@ -29,9 +31,20 @@ data class AlertPayload(
     val threshold: Double?,
     val n: Int,
     val tr: Int,
+    val esc: Int? = null,
+    val answered: Boolean = false,
 ) {
+    val state: String get() =
+        if (fire) {
+            "fire"
+        } else if (answered) {
+            "answered"
+        } else {
+            "clear"
+        }
+
     /** Health data: never in logs. */
-    override fun toString() = "AlertPayload($kind ${if (fire) "fire" else "clear"})"
+    override fun toString() = "AlertPayload($kind $state)"
 }
 
 object AlertCodec {
@@ -43,7 +56,7 @@ object AlertCodec {
             put("type", "alert")
             put("id", a.id)
             put("k", a.kind)
-            put("state", if (a.fire) "fire" else "clear")
+            put("state", a.state)
             put("at", a.at)
             put("t", a.t?.let(::JsonPrimitive) ?: JsonNull)
             put("sgv", a.sgv?.let(::JsonPrimitive) ?: JsonNull)
@@ -51,6 +64,7 @@ object AlertCodec {
             put("th", a.threshold?.let(::threshold) ?: JsonNull)
             put("n", a.n)
             put("tr", a.tr)
+            a.esc?.let { put("esc", it) }
         }.toString()
 
     /** Whole thresholds go out as integers (`"th":180`). */
@@ -61,17 +75,12 @@ object AlertCodec {
         o.requireV(Wire.V)
         if (o.string("type") != "alert") throw InvalidPayload("type must be alert")
         val kind = o.string("k")?.takeIf { it in KINDS } ?: throw InvalidPayload("unknown alert kind")
-        val fire =
-            when (o.string("state")) {
-                "fire" -> true
-                "clear" -> false
-                else -> throw InvalidPayload("state must be fire|clear")
-            }
+        val state = o.string("state")?.takeIf { it in STATES } ?: throw InvalidPayload("state must be fire|clear|answered")
         val id = o.string("id")?.takeIf { it.isNotEmpty() } ?: throw InvalidPayload("missing id")
         return AlertPayload(
             id = id,
             kind = kind,
-            fire = fire,
+            fire = state == "fire",
             at = o.long("at"),
             t = o.longOrNull("t"),
             sgv = o.longOrNull("sgv")?.toInt(),
@@ -79,6 +88,10 @@ object AlertCodec {
             threshold = o.numberOrNull("th"),
             n = o.longOrNull("n")?.toInt() ?: 1,
             tr = o.longOrNull("tr")?.toInt() ?: 0,
+            esc = if (state == "fire") o.longOrNull("esc")?.toInt() else null,
+            answered = state == "answered",
         )
     }
+
+    private val STATES = setOf("fire", "clear", "answered")
 }

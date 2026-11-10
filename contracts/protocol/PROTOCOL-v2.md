@@ -179,7 +179,7 @@ settings: [`spikes/alerts/SPEC.md`](../alerts/SPEC.md); report: [docs/15](../../
 
 | Event | kind | signed by | tags | content (decrypted) |
 |---|---|---|---|---|
-| **alert** | 21079 (ephemeral) | `D` | `["gk", gk_n]`, exp now+1 h | `{"v":2,"type":"alert","id","k","state":"fire"\|"clear","at","t","sgv","r","th","n","tr"}` → `G_n` |
+| **alert** | 21079 (ephemeral) | `D` | `["gk", gk_n]`, exp now+1 h | `{"v":2,"type":"alert","id","k","state":"fire"\|"clear"\|"answered","at","t","sgv","r","th","n","tr","esc"}` → `G_n` |
 
 - `k` ∈ `very_low|low|high|very_high|extremely_high|falling_fast|rising_fast|no_data`; `id` is random per firing and a `clear`
   repeats it; `n` counts the episode's alerts; `tr` = treatments the headline acknowledges (0, 1, 2 = two or more:
@@ -191,6 +191,12 @@ settings: [`spikes/alerts/SPEC.md`](../alerts/SPEC.md); report: [docs/15](../../
   `alert`, next to `live`).
 - Followers subscribe with `kinds: [21078, 21079]` in the live REQ, apply the live acceptance rules, dedupe by event
   id, drop `type ≠ "alert"` and anything with `at` older than 10 min.
+- **No answer to a very low** (#39, [alerts SPEC §4](../alerts/SPEC.md)): a `fire` of `very_low` carries `esc` (minutes)
+  once nobody answered it on the wearer's phone for `escalation.min` minutes (default 5): the repeat due then, or the
+  newest firing sent again with the same `id` and a new `at`. Followers that take escalations show it through their own
+  quiet states once; a copy with `esc` of a firing they already had is news, not a duplicate (Mac dedupe key
+  `id|state|n|esc`). `answered` (`id` = the escalated firing, `k` = `very_low`) says it was answered there after all:
+  followers show it again without the escalation and without sound.
 
 ## Sensor life — v2 addition, 2026-10-18 (round sensor-life)
 
@@ -235,7 +241,9 @@ per-place windows and sensor time, the alerts main switch) is per device and nev
   (`"100,120"`), `gridHours` (h, 0 = off), `lastPlace` (`OFF` / `NEAR_VALUE` / `END`), `lastElse` (one slot, `""` =
   nothing), plus `countdownHours` (the sensor countdown, h).
 - `alerts`: the [alerts SPEC §3](../alerts/SPEC.md) shape with only `alerts.<kind>.{on, mgdl|rate, repeatMin}` for the 7
-  kinds other than `no_data`, and `muteAfterInsulin`, `muteFallingHigh`, `muteAfterCarbs` (`{on, min}`).
+  kinds other than `no_data`, `muteAfterInsulin`, `muteFallingHigh`, `muteAfterCarbs` (`{on, min}`),
+  `persistence` (`{lowMin, highMin, marginMgdl}`, #37) and `night` (`{on, from, to, alerts.<kind>.{on, mgdl|rate,
+  repeatMin}}` for the same 7 kinds, #38).
 - Values follow the schema's number formats (`numbers`); a receiver coerces anything out of spec to a valid value
   and takes a missing key as the default.
 - **Published** by the wearer's phone on a change (debounced 3 s; only when the mirrored content changed), on a new

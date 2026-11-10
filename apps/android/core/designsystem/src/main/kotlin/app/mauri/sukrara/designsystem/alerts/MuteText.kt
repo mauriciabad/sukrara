@@ -65,6 +65,13 @@ interface AlertWords {
  * notifications, home's Mute all strip and the Settings strips all word them here (one formatter, en + es).
  */
 object MuteText {
+    /** "Night alerts until 7:00" (#38): the night alerts apply until [until] (epoch s), worded by [clockTime]. */
+    fun night(
+        until: Long,
+        w: AlertWords,
+        clockTime: (Long) -> String,
+    ): String = line(MuteLine.NightUntil(until), w, clockTime)
+
     fun sideName(
         side: Side,
         w: AlertWords,
@@ -113,6 +120,10 @@ object MuteText {
 
             is MuteLine.NotifUntil -> {
                 w.get("mute_notif_until").format(clockTime(l.until))
+            }
+
+            is MuteLine.NightUntil -> {
+                w.get("night_until").format(clockTime(l.until))
             }
 
             is MuteLine.Pill -> {

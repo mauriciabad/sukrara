@@ -20,6 +20,8 @@ data class Firing(
     val threshold: Double,
     val at: Long,
     val treated: Int = 0,
+    /** A follower shows the wearer's very low escalated: nobody answered it on the wearer's phone (#39). */
+    val escalated: Boolean = false,
 )
 
 /**
@@ -61,6 +63,12 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
     /** Lifted since the last alert: the next match alerts at once. */
     var liftPending: Boolean = false
 
+    /**
+     * Since when the side has been out of range in a row (by the margin, SPEC §1 #37; 0 = it is back): a waiting first
+     * alert counts from here.
+     */
+    var outSince: Long = start
+
     /** The clock was set back by [delta] s: every time moves with it (what is due stays as far away as it was). */
     fun shiftBack(delta: Long) {
         start = start.shiftedBack(delta)
@@ -69,6 +77,7 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
         quietUntil = quietUntil.shiftedBack(delta)
         next = next.shiftedBack(delta)
         lifted = lifted.shiftedBack(delta)
+        outSince = outSince.shiftedBack(delta)
     }
 
     fun copy(): Episode =
@@ -84,6 +93,7 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
             it.next = next
             it.lifted = lifted
             it.liftPending = liftPending
+            it.outSince = outSince
         }
 }
 
@@ -122,11 +132,21 @@ data class AlertState(
     val mirror: MirrorMemory? = null,
     /** The newest `now` the machine has seen: a later `now` before it means the clock was set back. */
     val lastNow: Long = 0,
+    /** The wearer's wait for an answer to a very low (#39): kept, so a restart neither escalates twice nor forgets it. */
+    val escalation: EscalationMemory = EscalationMemory(),
 ) {
     companion object {
         const val VERSION = 1
     }
 }
+
+/**
+ * The wearer's escalation of a very low (SPEC §4 "No answer to a very low", #39): [id] = the newest very-low firing the
+ * followers got in this stretch (null = none), [since] = the stretch's first very-low firing, [sent] = escalated,
+ * [answered] = answered on this phone since [since].
+ */
+@Serializable
+data class EscalationMemory(val id: String? = null, val since: Long = 0, val sent: Boolean = false, val answered: Boolean = false)
 
 /** [AlertState] ⇄ JSON. */
 object AlertStateCodec {

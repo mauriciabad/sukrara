@@ -72,6 +72,7 @@ object SettingsIndex {
             SettingsRoute.Overview, is SettingsRoute.Pen, is SettingsRoute.PenDoses -> null
             SettingsRoute.Alerts -> R.string.st_alerts_title
             is SettingsRoute.AlertKindPage -> kindNames.getValue(route.kind)
+            SettingsRoute.NightAlerts, is SettingsRoute.NightKindPage -> R.string.st_night_title
             SettingsRoute.Ranges -> R.string.st_ranges_title
             SettingsRoute.Graph -> R.string.st_graph_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
@@ -175,6 +176,13 @@ object SettingsIndex {
                     R.string.st_quiet_carbs to null,
                     R.string.st_quiet_falling to null,
                     R.string.st_quiet_length to null,
+                    R.string.st_night_title to R.string.st_night_use_summary,
+                    R.string.st_escalation_on to R.string.st_escalation_on_summary,
+                    R.string.st_escalation_min to R.string.st_escalation_footer,
+                    R.string.st_escalation_follow to R.string.st_escalation_follow_summary,
+                    R.string.st_wait_low to R.string.st_wait_footer,
+                    R.string.st_wait_high to R.string.st_wait_footer,
+                    R.string.st_wait_margin to R.string.st_wait_footer,
                     R.string.st_action_mute to null,
                     R.string.st_action_relax to null,
                     R.string.st_action_back_mgdl to null,
@@ -202,6 +210,14 @@ object SettingsIndex {
                     ),
                 )
             }
+            addAll(
+                page(
+                    SettingsRoute.NightAlerts,
+                    R.string.st_night_title to R.string.st_night_use_summary,
+                    R.string.st_night_from to null,
+                    R.string.st_night_to to null,
+                ),
+            )
             addAll(
                 page(
                     SettingsRoute.Ranges,

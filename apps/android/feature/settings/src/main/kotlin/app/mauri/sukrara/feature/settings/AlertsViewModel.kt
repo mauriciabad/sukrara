@@ -28,6 +28,8 @@ data class AlertsUi(
     val settings: AlertSettings,
     val alerts: AlertUiState,
     val mirrored: Boolean = false,
+    /** This phone follows someone (its *Settings from* exists): it takes escalations instead of sending them (#39). */
+    val follower: Boolean = false,
 ) {
     /** [kind]'s on / threshold / remind come from *Settings from* (read-only here). */
     fun mirrors(kind: AlertKind): Boolean = mirrored && kind != AlertKind.NO_DATA
@@ -128,7 +130,7 @@ class AlertsViewModel(
             deps.alertState,
             deps.settingsFrom.state,
         ) { own, inUse, st, from ->
-            AlertsUi(inUse ?: own, st, mirrored = from.readOnly)
+            AlertsUi(inUse ?: own, st, mirrored = from.readOnly, follower = from != null)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), null)
 
     fun edit(transform: (AlertSettings) -> AlertSettings) {

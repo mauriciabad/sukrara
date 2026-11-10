@@ -27,6 +27,8 @@ data class AlertEvent(
     val th: Double? = null,
     val n: Int = 0,
     val tr: Int = 0,
+    /** #39: nobody has answered this very low on the wearer's phone for [esc] minutes (`fire` only; null = not escalated). */
+    val esc: Int? = null,
 ) {
     @Serializable
     enum class State {
@@ -35,10 +37,15 @@ data class AlertEvent(
 
         @SerialName("clear")
         CLEAR,
+
+        /** #39: the escalated very low [id] was answered on the wearer's phone. */
+        @SerialName("answered")
+        ANSWERED,
     }
 
-    /** The firing a follower shows for a `fire` event. */
-    fun toFiring(): Firing = Firing(k, id, n, if (t != null && sgv != null) AlertReading(t, sgv, r) else null, th ?: 0.0, at, tr)
+    /** The firing a follower shows for a `fire` event ([escalated]: the follower takes the wearer's escalations). */
+    fun toFiring(escalated: Boolean = false): Firing =
+        Firing(k, id, n, if (t != null && sgv != null) AlertReading(t, sgv, r) else null, th ?: 0.0, at, tr, escalated && esc != null)
 
     companion object {
         const val TYPE = "alert"
@@ -77,6 +84,8 @@ data class AlertEvent(
                 sgv = last?.mgdl,
                 r = last?.rate,
             )
+
+        fun answered(kind: AlertKind, id: String, at: Long) = AlertEvent(id = id, k = kind, state = State.ANSWERED, at = at)
 
         fun encode(e: AlertEvent): String = json.encodeToString(serializer(), e)
 

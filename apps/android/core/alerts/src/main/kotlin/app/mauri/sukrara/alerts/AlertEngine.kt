@@ -4,6 +4,7 @@
 package app.mauri.sukrara.alerts
 
 import java.security.SecureRandom
+import java.time.ZoneId
 import java.util.EnumMap
 
 /** What one run of the rules decided (SPEC §1–§2). */
@@ -29,7 +30,17 @@ sealed interface RuleAction {
  * still matches); the falling-high mute only postpones. This device's *Mute* / *Remind less* act on a side, outlive
  * the episode and end at their time or once back by the margin; *Mute all* quiets everything until its end.
  */
-class AlertEngine(private val newId: () -> String = ::randomId) {
+class AlertEngine(
+    /** The local time zone the night window is read in (SPEC §1 "Night alerts"). */
+    private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    /** This run is the wearer's own phone's: carbs may quiet very low here, nowhere else (#2, SPEC §2). */
+    private val wearersOwn: Boolean = true,
+    private val newId: () -> String = ::randomId,
+) {
+    /** [settings] as this run applies them at [now]: the night set inside its window, carbs and very low (#2). */
+    private fun inForce(settings: AlertSettings, now: Long): AlertSettings =
+        settings.at(now, zone()).let { if (it.veryLowQuietByCarbs == wearersOwn) it else it.copy(veryLowQuietByCarbs = wearersOwn) }
+
     private val episodes = EnumMap<AlertGroup, Episode>(AlertGroup::class.java)
     private val snoozes = EnumMap<Side, Snooze>(Side::class.java)
 
@@ -76,7 +87,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
      * Back to [m] (episodes over by [now] dropped, an expired Mute all off). Returns the firings whose notification was
      * up: the runtime shows them again without sound. The next [evaluate] goes on from there.
      */
-    fun restore(m: AlertMemory, s: AlertSettings, now: Long): List<Firing> {
+    fun restore(m: AlertMemory, settings: AlertSettings, now: Long): List<Firing> {
+        val s = inForce(settings, now)
         episodes.clear()
         snoozes.clear()
         snoozes.putAll(m.snoozes.filterValues { !it.isEmpty })
@@ -107,7 +119,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
      * *Unmute* / *Alert me anyway*: the side's Mute ends and what quiets its episode now (treatments so far, the
      * falling mute) is lifted for the rest of the episode; still matching → alerts at once. Nothing quiet → nothing.
      */
-    fun unmute(kind: AlertKind, s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+    fun unmute(kind: AlertKind, settings: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+        val s = inForce(settings, now)
         val side = kind.side
         val sn = snoozes[side]
         val muted = sn != null && sn.until > now
@@ -195,8 +208,12 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         sourceStart = sourceStart.shiftedBack(delta)
     }
 
-    /** Re-check everything against the newest reading at [now]: no data, repeats, windows ending, the margin. */
-    fun evaluate(s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+    /**
+     * Re-check everything against the newest reading at [now]: no data, repeats, windows ending, the margin. [settings]'s
+     * night set applies inside its window.
+     */
+    fun evaluate(settings: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+        val s = inForce(settings, now)
         val out = mutableListOf<RuleAction>()
         if (!s.on) {
             episodes.values.forEach { e -> e.shown?.let { out += RuleAction.Clear(it.kind, it.id, now) } }
@@ -233,18 +250,29 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
                 snoozes[side] = cur.copy(backSince = since)
             }
         }
-        step(AlertGroup.LEVEL, level, s, d, now, out)
+        // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
+        val holding = level == null && episodes[AlertGroup.LEVEL]?.let { Rules.outOfRange(it.side, r, s, now) } == true
+        step(AlertGroup.LEVEL, level, s, d, now, out, holding)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
-        // episode stays as it is: its alert showing, its repeat due, its hold not running down (SPEC §1)
-        if (!fresh || r?.rate != null) step(AlertGroup.RATE, rateKind, s, d, now, out)
+        // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
+        // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
+        if (!fresh ||
+            r?.rate != null
+        ) {
+            step(AlertGroup.RATE, rateKind, s, d, now, out)
+        } else {
+            episodes[AlertGroup.RATE]?.let { hide(it, now, out) }
+        }
         step(AlertGroup.NO_DATA, if (noData) AlertKind.NO_DATA else null, s, d, now, out)
         return out
     }
 
     /** When a timer check is next useful (no-data deadline, a repeat, a window or mute ending, the margin), or null. */
-    fun nextCheckAt(s: AlertSettings, now: Long): Long? {
-        if (!s.on) return null
+    fun nextCheckAt(settings: AlertSettings, now: Long): Long? {
+        if (!settings.on) return null
+        val s = inForce(settings, now)
         val c = mutableListOf<Long>()
+        settings.night.nextSwitch(now, zone())?.let { c += it } // the rules switch: what matches changes
         val r = last
         val nd = s.rule(AlertKind.NO_DATA)
         val since = noDataSince()
@@ -273,13 +301,27 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         e.shown = null
     }
 
-    private fun step(group: AlertGroup, want: AlertKind?, s: AlertSettings, d: Doses, now: Long, out: MutableList<RuleAction>) {
+    private fun step(
+        group: AlertGroup,
+        want: AlertKind?,
+        s: AlertSettings,
+        d: Doses,
+        now: Long,
+        out: MutableList<RuleAction>,
+        holding: Boolean = false,
+    ) {
         var e = episodes[group]
         if (want == null) {
             if (e == null) return
             hide(e, now, out)
             e.on = false
             e.quiet = null
+            if (holding) {
+                // between the threshold and the margin: nothing alerts, but the episode holds and a wait keeps counting
+                e.lastIn = now
+                return
+            }
+            e.outSince = 0
             if (now - e.lastIn >= hold(e, s)) episodes.remove(group)
             return
         }
@@ -288,6 +330,7 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
             e = null
         }
         val ep = e ?: Episode(want.side, now, want).also { episodes[group] = it }
+        if (ep.outSince == 0L) ep.outSince = now // out of range again: a waiting first alert counts from here
         ep.on = true
         ep.lastIn = now
         ep.kind = want
@@ -318,6 +361,12 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         }
         ep.quiet = null
         ep.quietUntil = 0
+        // the episode's first alert waits until the side has been out of range long enough (never very low, #37)
+        val waitUntil = ep.outSince + s.persistence.waitMin(want, last) * 60L
+        if (ep.firedAt == null && now < waitUntil) {
+            ep.next = waitUntil
+            return
+        }
         ep.next = due(ep, want, s, d, now)
         if (now < ep.next) return
         ep.n++

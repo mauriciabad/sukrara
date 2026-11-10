@@ -126,10 +126,7 @@ class AlertTryOut(
 
             else -> {
                 val name = "${pack.takeIf { it in AlertSoundPicker.PACKS } ?: AlertSoundPicker.DEFAULT_PACK}_${kind.wire}_1"
-                ctx.resources
-                    .getIdentifier(name, "raw", ctx.packageName)
-                    .takeIf { it != 0 }
-                    ?.let { Uri.parse("android.resource://${ctx.packageName}/$it") }
+                AlertSoundFiles.of(name)?.let { Uri.parse("android.resource://${ctx.packageName}/$it") }
             }
         }
     }

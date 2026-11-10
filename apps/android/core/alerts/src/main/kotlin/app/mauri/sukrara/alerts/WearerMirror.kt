@@ -18,6 +18,8 @@ data class MirrorMemory(
     val newest: Map<AlertGroup, Firing> = emptyMap(),
     /** groups whose newest firing the wearer cleared. */
     val newestCleared: Set<AlertGroup> = emptySet(),
+    /** #39: groups whose escalation already showed here (it breaks through this device's quiet states once). */
+    val escalated: Set<AlertGroup> = emptySet(),
 )
 
 @Serializable
@@ -40,16 +42,37 @@ class WearerMirror(memory: MirrorMemory = MirrorMemory()) {
     private val shown = memory.shown.toMutableMap()
     private val newest = memory.newest.toMutableMap()
     private val newestCleared = memory.newestCleared.toMutableSet()
+    private val escalated = memory.escalated.toMutableSet()
 
-    fun snapshot() = MirrorMemory(snoozes.toMap(), muteAllUntil, lastShown.toMap(), shown.toMap(), newest.toMap(), newestCleared.toSet())
+    fun snapshot() =
+        MirrorMemory(
+            snoozes.toMap(),
+            muteAllUntil,
+            lastShown.toMap(),
+            shown.toMap(),
+            newest.toMap(),
+            newestCleared.toSet(),
+            escalated.toSet(),
+        )
 
-    /** The wearer fired [f]: true = show it here. */
+    /**
+     * The wearer fired [f]: true = show it here. Its first escalation (#39, [Firing.escalated]: nobody answered the very
+     * low on the wearer's phone) shows whatever this device's Mute, Remind less or Mute all say; the escalated repeats
+     * after it follow them again.
+     */
     fun fire(f: Firing): Boolean {
         val side = f.kind.side
         val group = f.kind.group
-        if (newest[group]?.id == f.id) return false // the same firing again (BLE and several relays)
+        val breaks = f.escalated && group !in escalated
+        if (newest[group]?.id == f.id && !breaks) return false // the same firing again (BLE and several relays)
         newest[group] = f
         newestCleared.remove(group)
+        if (breaks) {
+            escalated += group
+            shown[group] = f
+            lastShown[group] = ShownAt(f.at, f.kind)
+            return true
+        }
         val sn = snoozes[side]
         val muted = (sn != null && sn.until > f.at) || muteAllUntil > f.at
         val relaxed =
@@ -69,10 +92,25 @@ class WearerMirror(memory: MirrorMemory = MirrorMemory()) {
      */
     fun clear(kind: AlertKind, id: String): Firing? {
         val g = kind.group
-        if (newest[g]?.id == id) newestCleared += g
+        if (newest[g]?.id == id) {
+            newestCleared += g
+            escalated -= g
+        }
         val cur = shown[g] ?: return null
         if (cur.id != id && newest[g]?.id != id) return null
         return shown.remove(g)
+    }
+
+    /**
+     * #39: the wearer answered the escalated very low of [kind]'s group: the notification shown here, to show again plain
+     * and without sound (null: none escalated here, or it isn't showing).
+     */
+    fun answered(kind: AlertKind): Firing? {
+        val g = kind.group
+        if (!escalated.remove(g)) return null
+        newest[g]?.let { if (it.escalated) newest[g] = it.copy(escalated = false) }
+        val cur = shown[g]?.takeIf { it.escalated } ?: return null
+        return cur.copy(escalated = false).also { shown[g] = it }
     }
 
     /** A reading this device got at [now] (null = none recent): sides whose Mute / Remind less end by the margin. */

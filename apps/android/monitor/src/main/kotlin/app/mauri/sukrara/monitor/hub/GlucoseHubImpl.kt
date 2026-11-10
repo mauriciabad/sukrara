@@ -47,6 +47,11 @@ import java.time.Instant
 data class MonitorRecord(
     /** [GlucoseState.monitoringStartedAt] in epoch ms; null = not monitoring yet. */
     val startedAtEpochMs: Long? = null,
+    /**
+     * Readings stamped at or before this (epoch ms) don't arm monitoring ([GlucoseHubImpl.resetMonitoring] with a
+     * fence: a forgotten sensor, a follow that ended); saved, so a restart can't drop it (#128). null = no fence.
+     */
+    val armAfterEpochMs: Long? = null,
 )
 
 /**
@@ -79,9 +84,6 @@ class GlucoseHubImpl(
     private var attachedJob: Job? = null
 
     @Volatile private var attachedSource: ReadingSource? = null
-
-    /** Readings stamped at or before this don't arm monitoring ([resetMonitoring] after a forgotten sensor). */
-    @Volatile private var armAfter: Instant? = null
 
     private val inputsLoaded = CompletableDeferred<Unit>()
 
@@ -159,14 +161,16 @@ class GlucoseHubImpl(
     override fun setLink(link: LinkState?) = mutableState.update { it.copy(link = link) }
 
     /**
-     * Back to "Not monitoring" after the person removed the sensor or changed the role (an explicit action only: a
-     * source glitch never disarms the no-data alarm). With [sensorForgotten] a reading of the old sensor still on its
-     * way (queued in the source before it stopped) is stored but doesn't arm monitoring again: only a reading stamped
-     * after this moment does (the next sensor's).
+     * Back to "Not monitoring" after the person removed the sensor, changed the role or a follow ended (an explicit
+     * action or ending only: a source glitch never disarms the no-data alarm). With [fence] (a forgotten sensor; a
+     * follow that ended, was stopped or whose nearby codes differed, #128) a reading still on its way (queued in the
+     * source, a relay or Bluetooth before it stopped) is stored but doesn't arm monitoring again: only a reading
+     * stamped after this moment does. Without (a join: its backfill is stamped before the join, and must arm no data)
+     * any earlier fence goes. The fence is saved with the record.
      */
-    suspend fun resetMonitoring(sensorForgotten: Boolean = false) {
-        if (sensorForgotten) armAfter = clock.now()
-        record.update { MonitorRecord() }
+    suspend fun resetMonitoring(fence: Boolean = false) {
+        val at = if (fence) clock.now().toEpochMilli() else null
+        record.update { MonitorRecord(armAfterEpochMs = at) }
     }
 
     fun setService(service: ServiceState) = mutableState.update { it.copy(service = service) }
@@ -190,10 +194,10 @@ class GlucoseHubImpl(
         readings.upsert(valid)
         val startedAt = now.toEpochMilli()
         record.update {
-            // the fence is read inside the update: a reset landing meanwhile still holds
-            val fence = armAfter
+            // the fence is read inside the update (and saved with it): a reset landing meanwhile still holds
+            val fence = it.armAfterEpochMs?.let(Instant::ofEpochMilli)
             val arms = fence == null || valid.any { r -> r.t.isAfter(fence) }
-            if (it.startedAtEpochMs == null && arms) it.copy(startedAtEpochMs = startedAt) else it
+            if (it.startedAtEpochMs == null && arms) it.copy(startedAtEpochMs = startedAt, armAfterEpochMs = null) else it
         }
     }
 

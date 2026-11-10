@@ -18,6 +18,66 @@ class AlertMachineTest {
 
     private fun List<AlertEffect>.fires() = filterIsInstance<AlertEffect.Fire>().map { it.firing.kind }
 
+    /** #39: the escalation's wire form (`esc` on a very low's fire, `answered`) survives encode / decode. */
+    @Test fun escalationEventsRoundTrip() {
+        val f = Firing(AlertKind.VERY_LOW, "a1", 2, AlertReading(t0, 52), 55.0, t0)
+        val fire = AlertEvent.fire(f).copy(esc = 5)
+        assertEquals(fire, AlertEvent.decode(AlertEvent.encode(fire)))
+        assertTrue(fire.toFiring(escalated = true).escalated)
+        assertTrue(!fire.toFiring(escalated = false).escalated)
+        assertTrue(!AlertEvent.fire(f).toFiring(escalated = true).escalated)
+        val answered = AlertEvent.answered(AlertKind.VERY_LOW, "a1", t0 + 60)
+        assertEquals(answered, AlertEvent.decode(AlertEvent.encode(answered)))
+    }
+
+    /** #39: the wait counts on the timer, and the escalation goes out with the newest firing when no repeat is due. */
+    @Test fun theEscalationIsScheduledAndSentOnTheTimer() {
+        val m = machine(s = AlertSettings().withRule(AlertKind.VERY_LOW, KindRule(true, 55.0, 15, alarm = true)))
+        m.start(null, null, null, t0)
+        val first = m.handle(AlertInput.Reading(AlertReading(t0, 50)), t0)
+        assertEquals(t0 + 5 * 60, (first.last() as AlertEffect.Schedule).at)
+        val due = m.handle(AlertInput.Tick, t0 + 5 * 60)
+        val sent = due.filterIsInstance<AlertEffect.Mirror>().single().event
+        assertEquals(AlertKind.VERY_LOW, sent.k)
+        assertEquals(5, sent.esc)
+        assertTrue(due.any { it is AlertEffect.Escalated })
+        val answered = m.handle(AlertInput.Acknowledge(AlertKind.VERY_LOW), t0 + 6 * 60)
+        assertEquals(
+            AlertEvent.State.ANSWERED,
+            answered
+                .filterIsInstance<AlertEffect.Mirror>()
+                .single()
+                .event.state,
+        )
+        // kept across a restart: no second escalation
+        val again = machine()
+        again.start(AlertStateCodec.decode(AlertStateCodec.encode(m.snapshot())), null, null, t0 + 7 * 60)
+        assertTrue(again.snapshot().escalation.answered)
+    }
+
+    /** #6: mirroring ↔ own rules is the same person: Mute all and side mutes carry over; a wearer starts fresh. */
+    @Test fun settingsFromKeepsTheMutesAWearerStartsFresh() {
+        val mirror = machine(AlertRole.FOLLOWER_MIRROR)
+        mirror.start(null, null, null, t0)
+        mirror.handle(AlertInput.MuteAll(t0 + 3600), t0)
+        mirror.handle(AlertInput.Mute(AlertKind.LOW, 60), t0)
+        val saved = AlertStateCodec.decode(AlertStateCodec.encode(mirror.snapshot()))
+
+        val own = machine(AlertRole.FOLLOWER_OWN)
+        own.start(saved, null, null, t0 + 60)
+        assertEquals(t0 + 3600, own.uiState(t0 + 60).muteAllUntil)
+        assertEquals(t0 + 3600, own.engine.snoozes(t0 + 60)[Side.LOW]?.until)
+
+        val back = machine(AlertRole.FOLLOWER_MIRROR)
+        back.start(AlertStateCodec.decode(AlertStateCodec.encode(own.snapshot())), null, null, t0 + 120)
+        assertEquals(t0 + 3600, back.uiState(t0 + 120).muteAllUntil)
+        assertEquals(t0 + 3600, back.wearerMirror!!.snoozes(t0 + 120)[Side.LOW]?.until)
+
+        val wearer = machine(AlertRole.WEARER)
+        wearer.start(AlertStateCodec.decode(AlertStateCodec.encode(own.snapshot())), null, null, t0 + 180)
+        assertEquals(0L, wearer.uiState(t0 + 180).muteAllUntil)
+    }
+
     @Test fun scheduleIsAlwaysTheLastEffect() {
         val m = machine()
         m.start(null, null, null, t0)

@@ -139,6 +139,10 @@ class AlertCopyTest {
                 MuteLine.NotifUntil(0)
             }
 
+            "night" -> {
+                MuteLine.NightUntil(0)
+            }
+
             "pill" -> {
                 MuteLine.Pill(c.long("leftMin"))
             }
@@ -190,6 +194,10 @@ class AlertCopyTest {
         return when (c.str("state")) {
             "headline" -> {
                 AlertCopy.headline(kind(), c.long("treated").toInt(), w)
+            }
+
+            "headline_escalated" -> {
+                AlertCopy.headline(kind(), 0, w, escalated = true)
             }
 
             "body" -> {

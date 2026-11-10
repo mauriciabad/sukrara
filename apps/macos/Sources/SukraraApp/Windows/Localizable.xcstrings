@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ alert at night" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ alert at night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerta de %@ de noche"
+          }
+        }
+      }
+    },
     "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do." : {
       "localizations" : {
         "en" : {
@@ -113,6 +129,22 @@
         }
       }
     },
+    "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una alerta de glucosa baja o alta solo suena cuando la glucosa lleva este tiempo seguido fuera de rango. Muy baja y extremadamente alta nunca esperan. Un rebote hacia el rango menor que el margen es el mismo episodio: no hay una nueva primera alerta y sus tratamientos siguen contando."
+          }
+        }
+      }
+    },
     "A phone" : {
       "localizations" : {
         "en" : {
@@ -221,6 +253,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Los avisos o los sonidos de las alertas están desactivados: puede que no las notes."
+          }
+        }
+      }
+    },
+    "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono: «Glucosa muy baja · sin respuesta»."
           }
         }
       }
@@ -353,6 +401,22 @@
         }
       }
     },
+    "Always on" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Always on"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siempre activa"
+          }
+        }
+      }
+    },
     "Another device used this invite. Ask for a new one." : {
       "localizations" : {
         "en" : {
@@ -365,6 +429,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Otro dispositivo ha usado esta invitación. Pide una nueva."
+          }
+        }
+      }
+    },
+    "Applies only between the night alerts' start and end." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applies only between the night alerts' start and end."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se aplica entre el inicio y el fin de las alertas de noche."
           }
         }
       }
@@ -897,6 +977,22 @@
         }
       }
     },
+    "Ends" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminan"
+          }
+        }
+      }
+    },
     "Enter %@–%@ %@" : {
       "localizations" : {
         "en" : {
@@ -1313,6 +1409,22 @@
         }
       }
     },
+    "High alerts wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High alerts wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas de glucosa alta esperan"
+          }
+        }
+      }
+    },
     "High from" : {
       "localizations" : {
         "en" : {
@@ -1325,6 +1437,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alta desde"
+          }
+        }
+      }
+    },
+    "If a very low gets no answer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If a very low gets no answer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si nadie responde a una muy baja"
+          }
+        }
+      }
+    },
+    "Ignore bounces within" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore bounces within"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorar rebotes de hasta"
           }
         }
       }
@@ -1537,6 +1681,22 @@
         }
       }
     },
+    "Low alerts wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low alerts wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas de glucosa baja esperan"
+          }
+        }
+      }
+    },
     "Low below" : {
       "localizations" : {
         "en" : {
@@ -1549,6 +1709,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Baja por debajo de"
+          }
+        }
+      }
+    },
+    "Near a threshold" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Near a threshold"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca de un umbral"
+          }
+        }
+      }
+    },
+    "Night alerts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night alerts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas de noche"
+          }
+        }
+      }
+    },
+    "Night alerts: Change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night alerts: Change"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertas de noche: cambiar"
+          }
+        }
+      }
+    },
+    "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otros umbrales, avisos y alarmas cada noche. La alerta de muy baja siempre suena de noche. Los silencios, las esperas cerca de un umbral, los botones de la notificación y los sonidos son los mismos de día y de noche."
+          }
+        }
+      }
+    },
+    "Starts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "When they don't answer a very low" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When they don't answer a very low"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si no responde a una muy baja"
           }
         }
       }

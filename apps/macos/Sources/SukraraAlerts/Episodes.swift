@@ -27,6 +27,9 @@ public struct Episode: Codable, Equatable, Sendable {
     public var liftedAt: Date?
     /// Lifted since the last alert: the next match alerts at once.
     public var liftPending = false
+    /// Since when the side has been out of range in a row (by the margin, SPEC §1 #37; nil = it is back): a waiting
+    /// first alert counts from here.
+    public var outSince: Date?
 
     init(_ kind: AlertKind, at t: Date) {
         side = kind.side
@@ -35,6 +38,7 @@ public struct Episode: Codable, Equatable, Sendable {
         lastIn = t
         firedKind = kind
         next = t
+        outSince = t
     }
 
     /// Minimum hold time: an episode lasts at least this long after its side last matched.
@@ -49,6 +53,7 @@ public struct Episode: Codable, Equatable, Sendable {
         firedAt = firedAt?.shiftedBack(d)
         next = next?.shiftedBack(d)
         liftedAt = liftedAt?.shiftedBack(d)
+        outSince = outSince?.shiftedBack(d)
         switch quiet {
         case .treatment(let k, let at, let until): quiet = .treatment(k, at: at, until: until.shiftedBack(d))
         case .sideMuted(let until): quiet = .sideMuted(until: until.shiftedBack(d))
@@ -135,8 +140,9 @@ extension AlertEngine {
                 ? nil
                 : all >= muteAllForever ? muteAllForever : min(all, t.addingTimeInterval(SettingsSpec.muteAll.max * 60))
         }
+        e.inForce = e.settingsInForce(at: t)
         e.episodes = e.episodes.filter { _, ep in
-            ep.lastIn <= t && t.timeIntervalSince(ep.lastIn) < ep.holdTime(context.settings)
+            ep.lastIn <= t && t.timeIntervalSince(ep.lastIn) < ep.holdTime(e.inForce)
         }
         let resumed = AlertGroup.allCases.compactMap { e.episodes[$0]?.shown }.map(AlertEffect.resume)
         return (e, resumed + [.schedule(e.nextCheck(after: t))])

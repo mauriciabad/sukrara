@@ -9,7 +9,8 @@ import SukraraCore
 /// What the alert controller asks of the notification layer.
 protocol AlertNotifying {
     /// Posts `firing`, replacing its group's notification. `sound` false = a silent re-show after a relaunch.
-    func post(_ firing: AlertFiring, sound: Bool, category: String)
+    /// `escalated` (#39): the wearer's very low nobody answered there: "· no response", Time Sensitive when entitled.
+    func post(_ firing: AlertFiring, sound: Bool, category: String, escalated: Bool)
     func clear(_ group: AlertGroup)
     /// The silent "Low alerts muted / Until 10:42" note with Unmute and Change Time…
     func postMuted(_ side: AlertSide, until: Date)
@@ -21,6 +22,12 @@ protocol AlertNotifying {
     func log(_ line: String)
     /// The passive "Sukrara stopped monitoring" note with why (`reason`, the panel's line); nil removes it.
     func monitoringStopped(_ reason: String?)
+}
+
+extension AlertNotifying {
+    func post(_ firing: AlertFiring, sound: Bool, category: String) {
+        post(firing, sound: sound, category: category, escalated: false)
+    }
 }
 
 /// The part of `UNUserNotificationCenter` the notifier uses (tests record requests instead of posting).
@@ -62,17 +69,18 @@ final class Notifier: AlertNotifying {
         self.settings = settings
     }
 
-    func post(_ f: AlertFiring, sound: Bool, category: String) {
+    func post(_ f: AlertFiring, sound: Bool, category: String, escalated: Bool) {
         let s = settings()
         let content = UNMutableNotificationContent()
-        content.title = text.title(f)
+        content.title = text.title(f, escalated: escalated)
         var words = text
         words.unit = unit()
         content.body = words.body(f, now: clock.now)
         content.categoryIdentifier = category
         content.threadIdentifier = AlertNotificationIDs.alertCategory
         content.userInfo = [Self.sideKey: f.kind.side.rawValue, Self.firingKey: f.id]
-        content.interruptionLevel = s[f.kind].alarm && center.timeSensitiveAllowed ? .timeSensitive : .active
+        content.interruptionLevel =
+            (s[f.kind].alarm || escalated) && center.timeSensitiveAllowed ? .timeSensitive : .active
         content.sound = sound ? notificationSound(f.kind, s) : nil
         center.add(
             UNNotificationRequest(

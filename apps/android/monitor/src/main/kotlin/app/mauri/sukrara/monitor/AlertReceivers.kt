@@ -58,6 +58,8 @@ class AlertActionReceiver : BroadcastReceiver() {
                 }
 
                 TIDY -> {
+                    // a swipe is an answer on this phone (#39), then the group's tidy-up
+                    runtime.acknowledge(kind)
                     NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
                 }
             }

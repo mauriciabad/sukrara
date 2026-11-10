@@ -64,6 +64,7 @@
     <string name="mute_all_forever">Alerts muted until you turn it off</string>
     <string name="mute_all_scope">Very low and no data included, on this phone only</string>
     <string name="mute_notif_until">Until %1$s</string>
+    <string name="night_until">Night alerts until %1$s</string>
     <string name="mute_pill">Muted · %1$s</string>
     <string name="mute_pill_forever">Muted</string>
     <string name="mute_choice">For %1$s</string>

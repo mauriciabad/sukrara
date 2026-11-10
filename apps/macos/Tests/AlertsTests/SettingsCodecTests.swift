@@ -100,12 +100,64 @@ import Testing
         #expect(!s[.veryLow].alarm && s[.low].alarm && s[.low].threshold == 70)
     }
 
+    /// #37: the waits and the margin are read and coerced into the schema (a low may wait at most 15 min).
+    @Test func persistenceIsReadAndCoerced() {
+        let s = AlertSettings.decode(
+            Data(#"{"v":1,"persistence":{"lowMin":40,"highMin":30,"marginMgdl":5}}"#.utf8))
+        #expect(s.persistence == PersistenceSettings(lowMin: 15, highMin: 30, marginMgdl: 5))
+        #expect(AlertSettings.decode(Data(#"{"v":1}"#.utf8)).persistence == PersistenceSettings())
+        let lo = GlucoseSample(at: Date(), mgdl: 39)
+        let low = GlucoseSample(at: Date(), mgdl: 65)
+        #expect(s.persistence.waitMin(.low, low) == 15)
+        #expect(s.persistence.waitMin(.veryLow, low) == 0)
+        #expect(s.persistence.waitMin(.low, lo) == 0)
+        #expect(s.persistence.waitMin(.extremelyHigh, GlucoseSample(at: Date(), mgdl: 320)) == 0)
+        #expect(s.persistence.waitMin(.veryHigh, GlucoseSample(at: Date(), mgdl: 260)) == 30)
+    }
+
+    /// #38: the night set is read like the day's (each field at its default when missing), very low always on.
+    @Test func nightIsReadAndVeryLowStaysOn() {
+        let s = AlertSettings.decode(
+            Data(
+                #"{"v":1,"night":{"on":true,"from":1380,"to":2000,"alerts":{"very_low":{"on":false,"mgdl":60},"high":{"mgdl":260,"repeatMin":60}}}}"#
+                    .utf8))
+        #expect(s.night.on && s.night.from == 1380 && s.night.to == NightSettings.defaultTo)
+        #expect(s.night[.veryLow].on && s.night[.veryLow].threshold == 60)
+        #expect(s.night[.high].threshold == 260 && s.night[.high].repeatMin == 60)
+        #expect(s.night[.low] == AlertRule.defaults(.low))
+        #expect(AlertSettings.decode(s.encoded()) == s)
+    }
+
+    /// #38: the window, also across midnight, and when the rules switch next.
+    @Test func nightWindow() throws {
+        let utc = try #require(TimeZone(identifier: "UTC"))
+        var n = NightSettings()
+        n.on = true
+        func at(_ h: Int, _ m: Int, day: Int = 0) -> Date {
+            Date(timeIntervalSince1970: TimeInterval(1_759_968_000 + day * 86400 + h * 3600 + m * 60))
+        }
+        #expect(n.isActive(at: at(23, 0), in: utc) && n.isActive(at: at(6, 59), in: utc))
+        #expect(!n.isActive(at: at(7, 0), in: utc) && !n.isActive(at: at(21, 59), in: utc))
+        #expect(n.nextSwitch(after: at(21, 0), in: utc) == at(22, 0))
+        #expect(n.nextSwitch(after: at(23, 0), in: utc) == at(7, 0, day: 1))
+        n.from = 13 * 60
+        n.to = 14 * 60
+        #expect(n.isActive(at: at(13, 30), in: utc) && !n.isActive(at: at(14, 0), in: utc))
+        n.to = n.from
+        #expect(!n.isActive(at: at(13, 0), in: utc) && n.nextSwitch(after: at(0, 0), in: utc) == nil)
+        var s = AlertSettings()
+        s.night = n
+        s.night.to = 14 * 60
+        s.night[.high] = AlertRule(on: false, threshold: 180, repeatMin: 15)
+        #expect(!s.at(at(13, 30), in: utc)[.high].on && s.at(at(15, 0), in: utc)[.high].on)
+    }
+
     @Test func writtenJSONHasTheSpecKeys() throws {
         let out = try #require(try JSONSerialization.jsonObject(with: AlertSettings().encoded()) as? [String: Any])
         #expect(
             Set(out.keys) == [
                 "v", "on", "alerts", "muteAfterInsulin", "muteFallingHigh", "muteAfterCarbs", "sounds",
-                "notificationActions", "source",
+                "notificationActions", "persistence", "night", "escalation", "source",
             ])
         let alerts = try #require(out["alerts"] as? [String: [String: Any]])
         #expect(Set(alerts.keys) == Set(AlertKind.allCases.map(\.rawValue)))

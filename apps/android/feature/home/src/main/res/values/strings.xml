@@ -171,6 +171,7 @@
     <!-- %1$s the side's name ("Low", "Falling fast") -->
     <string name="home_quiet_side">%1$s alerts</string>
     <string name="home_mute_alerts">Mute alerts</string>
+    <string name="home_night_change">Change</string>
     <string name="home_quiet_all">All alerts</string>
     <string name="home_quiet_taken">Quiet after your treatment, so they don\'t ring while it works.</string>
     <string name="home_quiet_muted">You muted them on this phone.</string>

@@ -117,11 +117,11 @@ object Rules {
      * [r] is back in range by the margin for [side] (SPEC §2 "Scope and end"): lows at least `backMgdl` above the highest
      * enabled low threshold, highs below the lowest enabled high threshold minus it, a rate side when [r]'s rate
      * doesn't match it. No data is judged by the caller (readings coming). Null = [r] can't tell: a rate side and a
-     * reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1).
+     * reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1). [margin]: the
+     * notification actions' by default; a level episode's own end uses `persistence.marginMgdl` ([outOfRange]).
      */
-    fun backBy(side: Side, r: AlertReading, s: AlertSettings): Boolean? {
-        val margin = s.actions.backMgdl
-        return when (side) {
+    fun backBy(side: Side, r: AlertReading, s: AlertSettings, margin: Int = s.actions.backMgdl): Boolean? =
+        when (side) {
             // a LO / HI is beyond every threshold: never back in range, whatever the margin's edge
             Side.LOW -> {
                 !r.isLo &&
@@ -151,7 +151,13 @@ object Rules {
                 true
             }
         }
-    }
+
+    /**
+     * [r] keeps a level episode of [side] out of range (SPEC §1 "Back by the margin", #37): fresh, and not yet
+     * `persistence.marginMgdl` inside the side's threshold. No margin (0, the default): never, today's behaviour.
+     */
+    fun outOfRange(side: Side, r: AlertReading?, s: AlertSettings, now: Long): Boolean =
+        s.persistence.marginMgdl > 0 && r != null && s.on && fresh(r, now) && backBy(side, r, s, s.persistence.marginMgdl) == false
 
     /** The doses of [kind] that quiet it at [now] (`now − min < t ≤ now`), logged after [after]: the newest, or null. */
     fun coveringDose(kind: AlertKind, s: AlertSettings, d: Doses, now: Long, after: Long = 0): Long? {

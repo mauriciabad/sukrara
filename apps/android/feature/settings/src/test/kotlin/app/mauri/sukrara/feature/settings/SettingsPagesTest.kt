@@ -73,6 +73,29 @@ class SettingsPagesTest {
             "alerts.muteFallingHigh.min",
             "alerts.muteAfterCarbs.on",
             "alerts.muteAfterCarbs.min",
+            // Settings › Alerts › If a very low gets no answer (#39: the wearer's two rows, a follower's switch)
+            "alerts.escalation.on",
+            "alerts.escalation.min",
+            "alerts.escalation.follow",
+            // Settings › Alerts › Night alerts and each alert's night page (#38)
+            "alerts.night.on",
+            "alerts.night.from",
+            "alerts.night.to",
+            "alerts.night.kind.on",
+            "alerts.night.kind.repeat",
+            "alerts.night.kind.alarm",
+            "alerts.night.threshold.very_low",
+            "alerts.night.threshold.low",
+            "alerts.night.threshold.high",
+            "alerts.night.threshold.very_high",
+            "alerts.night.threshold.extremely_high",
+            "alerts.night.threshold.falling_fast",
+            "alerts.night.threshold.rising_fast",
+            "alerts.night.threshold.no_data",
+            // Settings › Alerts › Near a threshold (#37)
+            "alerts.persistence.lowMin",
+            "alerts.persistence.highMin",
+            "alerts.persistence.marginMgdl",
             "alerts.actions.muteMin",
             "alerts.actions.relaxMin",
             "alerts.actions.backMgdl",
@@ -152,6 +175,7 @@ class SettingsPagesTest {
     fun `every number the pages show has its schema format`() {
         for (kind in AlertKind.entries) assertNotNull(SchemaPrefs.thresholdSpec(kind))
         for (which in QuietKind.entries) assertNotNull(SchemaPrefs.spec(AlertEdits.quietSpecId(which)))
+        for (which in WaitKind.entries) assertNotNull(SchemaPrefs.spec(which.specId))
         for (band in SchemaPrefs.Bands) assertEquals(band.default, SchemaPrefs.bandSpec(band).default, 0.0)
         listOf(
             "alerts.actions.muteMin",

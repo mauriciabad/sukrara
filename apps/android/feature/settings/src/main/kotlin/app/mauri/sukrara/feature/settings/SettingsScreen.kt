@@ -65,6 +65,12 @@ sealed interface SettingsRoute {
 
     data class AlertKindPage(val kind: AlertKind) : SettingsRoute
 
+    /** Settings › Alerts › Night alerts (#38). */
+    data object NightAlerts : SettingsRoute
+
+    /** Settings › Alerts › Night alerts › one alert's night rule. */
+    data class NightKindPage(val kind: AlertKind) : SettingsRoute
+
     data object Ranges : SettingsRoute
 
     data object Graph : SettingsRoute
@@ -188,7 +194,7 @@ fun SettingsScreen(
                     clock,
                     AlertsActions(vm::edit, vm::muteAll, vm::unmuteAll, { k -> navigate(SettingsRoute.AlertKindPage(k)) }, {
                         navigate(SettingsRoute.ThresholdReview)
-                    }, deps.alertPlayback, vm::quietExit, vm::muteSide),
+                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }),
                     header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
                 )
@@ -209,6 +215,27 @@ fun SettingsScreen(
                     onBack = onBack,
                 )
             }
+        }
+
+        SettingsRoute.NightAlerts -> {
+            val vm = alertsViewModel(deps)
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            ui?.let {
+                NightAlertsContent(
+                    it,
+                    vm::edit,
+                    { k -> navigate(SettingsRoute.NightKindPage(k)) },
+                    header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                    onBack = onBack,
+                )
+            }
+        }
+
+        is SettingsRoute.NightKindPage -> {
+            val vm = alertsViewModel(deps)
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            ui?.let { NightKindContent(route.kind, it, vm::edit, onBack) }
         }
 
         SettingsRoute.Ranges -> {

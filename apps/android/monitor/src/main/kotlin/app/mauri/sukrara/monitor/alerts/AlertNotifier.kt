@@ -52,11 +52,12 @@ class AlertNotifier(
 
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         val kind = firing.kind
-        val alarm = settings.rule(kind).alarm
+        // #39: the wearer's very low nobody answered rings like an alarm here, whatever this kind's setting
+        val alarm = settings.rule(kind).alarm || firing.escalated
         val words = words()
         val b =
             base(kind, alarm, silent)
-                .setContentTitle(AlertCopy.headline(kind, firing.treated, words))
+                .setContentTitle(AlertCopy.headline(kind, firing.treated, words, firing.escalated))
                 .setContentText(AlertCopy.body(firing, words, unit()))
                 .setWhen(firing.at * 1000)
                 .setShowWhen(true)
