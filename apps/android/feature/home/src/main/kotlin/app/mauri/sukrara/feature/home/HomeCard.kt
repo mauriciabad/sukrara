@@ -198,6 +198,10 @@ internal fun panelModel(
  * custom actions are [actions] plus Earlier / Later / Zoom in / Zoom out / Back to now (the history without the drag).
  * The status pill is a button ([pill], read as [pillWords]) that calls [onPill]. Over the drawn number a polite live
  * region says each new reading as it comes in ([A11y.reading]). [height]: the panel's (a safety banner may take some).
+ *
+ * The scrolled / zoomed window survives a rotation ([rememberChartScroll]); leaving home opens it at now again. Scrolling, zooming and the value's motion are
+ * read in the draw block (or through `derivedStateOf` for the actions), so a frame of them redraws the card without
+ * recomposing it; Earlier / Zoom in / Zoom out are offered only while a step changes the window.
  */
 @Composable
 fun PanelCard(
@@ -208,7 +212,7 @@ fun PanelCard(
     config: GraphConfig,
     modifier: Modifier = Modifier,
     actions: List<CustomAccessibilityAction> = emptyList(),
-    scroll: ChartScroll = remember { ChartScroll() },
+    scroll: ChartScroll = rememberChartScroll(),
     pill: PillAction = PillAction.None,
     pillWords: String? = null,
     onPill: (PillAction) -> Unit = {},
@@ -252,6 +256,10 @@ fun PanelCard(
     val scope = rememberCoroutineScope()
     val fling = ScrollableDefaults.flingBehavior()
     val away by remember(scroll) { derivedStateOf { scroll.away } }
+    val scrolledBack by remember(scroll) { derivedStateOf { scroll.endS != null } }
+    val olderLeft by remember(scroll, default) { derivedStateOf { (scroll.endS ?: latestNow) > first + scroll.span(default) } }
+    val canZoomIn by remember(scroll, default) { derivedStateOf { scroll.canZoom(out = false, default, first, latestNow) } }
+    val canZoomOut by remember(scroll, default) { derivedStateOf { scroll.canZoom(out = true, default, first, latestNow) } }
     val nowPill = animateFloatAsState(if (away) 1f else 0f, Motion.defaultEffects(reduced), label = "now pill")
     val pointsNow by rememberUpdatedState(points)
 
@@ -314,10 +322,10 @@ fun PanelCard(
             emptyList()
         } else {
             buildList {
-                add(CustomAccessibilityAction(earlier) { true.also { page(forward = false) } })
-                if (scroll.endS != null) add(CustomAccessibilityAction(later) { true.also { page(forward = true) } })
-                add(CustomAccessibilityAction(zoomOut) { true.also { scroll.step(out = true, default, first, latestNow) } })
-                add(CustomAccessibilityAction(zoomIn) { true.also { scroll.step(out = false, default, first, latestNow) } })
+                if (olderLeft) add(CustomAccessibilityAction(earlier) { true.also { page(forward = false) } })
+                if (scrolledBack) add(CustomAccessibilityAction(later) { true.also { page(forward = true) } })
+                if (canZoomOut) add(CustomAccessibilityAction(zoomOut) { true.also { scroll.step(out = true, default, first, latestNow) } })
+                if (canZoomIn) add(CustomAccessibilityAction(zoomIn) { true.also { scroll.step(out = false, default, first, latestNow) } })
                 if (away) add(CustomAccessibilityAction(backToNow) { true.also { back() } })
             }
         }
@@ -367,7 +375,7 @@ fun PanelCard(
                         density,
                         CardSurface.APP_PANEL,
                         CardPart.ALL,
-                        motion = motion,
+                        motion = motion(),
                         view = view,
                     )
                 laid.read(rec)
@@ -406,6 +414,7 @@ private fun LiveValue(
 /**
  * The panel's value motion (paint only, never layout): a new number rolls in from the previous one (up for a rising
  * value), the arrow turns to the new rate and the value's range colour fades. Reduced motion: drawn still (null).
+ * Returned as a function the draw block calls, so the animations' frames redraw the card without recomposing it.
  */
 @Composable
 private fun panelMotion(
@@ -414,7 +423,7 @@ private fun panelMotion(
     config: GraphConfig,
     palette: GraphPalette,
     reduced: Boolean,
-): CardMotion? {
+): () -> CardMotion? {
     val look = homeLook(glucose, now, config.unit)
     val number = look.text.takeIf { look.state == GlucoseLook.State.VALUE && !look.strike }
     val roll = remember { Animatable(1f) }
@@ -439,12 +448,13 @@ private fun panelMotion(
         }
     }
     val rate = glucose.latest?.rateMgdlPerMin
-    val angle by animateFloatAsState(rate?.let { TrendAngle.deg(it) } ?: 0f, Motion.defaultSpatial(reduced), label = "trend")
+    val angle = animateFloatAsState(rate?.let { TrendAngle.deg(it) } ?: 0f, Motion.defaultSpatial(reduced), label = "trend")
     val latest = glucose.latest
     val target = if (latest == null || look.strike) palette.inkSoft else palette.at(config.bands, latest.mgdl)
-    val color by animateColorAsState(Color(target), Motion.defaultEffects(reduced), label = "range")
-    if (reduced) return null
-    return CardMotion(from, roll.value, up, rate?.let { angle }, color.toArgb())
+    val color = animateColorAsState(Color(target), Motion.defaultEffects(reduced), label = "range")
+    if (reduced) return { null }
+    val turns = rate != null
+    return { CardMotion(from, roll.value, up, if (turns) angle.value else null, color.value.toArgb()) }
 }
 
 /** TalkBack's "double-tap to …" for [action]. */
