@@ -788,6 +788,7 @@ class FollowerEngine(
                 via = relay,
                 receivedAt = clock.now(),
                 delivery = TreatmentDelivery.Delivered,
+                penJson = TreatmentWire.penJson(p),
             )
         if (item.override && stored != null) treatments.replace(record) else treatments.upsertIfNewer(record)
     }

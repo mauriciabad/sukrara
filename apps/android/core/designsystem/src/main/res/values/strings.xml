@@ -74,4 +74,26 @@
     <string name="ds_err_refused">The service didn\'t accept the data.</string>
     <string name="ds_err_address">That address doesn\'t work. Check it, including https://.</string>
     <string name="ds_err_other">Something went wrong. Try again.</string>
+    <!-- A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
+    <string name="ds_pen_priming">Priming</string>
+    <string name="ds_pen_injected">Injected</string>
+    <!-- %1$s time, %2$s amount in words, %3$s Priming / Injected -->
+    <string name="ds_pen_dose_a11y">%1$s, %2$s, %3$s</string>
+    <string name="ds_pen_mark_injected">Mark as injected</string>
+    <string name="ds_pen_mark_priming">Mark as priming</string>
+    <string name="ds_pen_incomplete">Incomplete</string>
+    <string name="ds_pen_nothing_injected">Nothing injected</string>
+    <string name="ds_pen_from_pen">From the pen</string>
+    <string name="ds_pen_primed">%1$s primed</string>
+    <string name="ds_pen_replaced">Replaced your %1$s entry at %2$s</string>
+    <string name="ds_pen_remove">Remove from log</string>
+    <string name="ds_pen_save">Save</string>
+    <string name="ds_pen_done">Done</string>
+    <string name="ds_pen_delete">Delete</string>
+    <string name="ds_pen_kind_rapid">rapid</string>
+    <string name="ds_pen_kind_long">long-acting</string>
+    <plurals name="ds_pen_units_spoken">
+        <item quantity="one">%1$s unit</item>
+        <item quantity="other">%1$s units</item>
+    </plurals>
 </resources>

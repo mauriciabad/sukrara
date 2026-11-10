@@ -6,6 +6,7 @@ package app.mauri.sukrara.pen
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.pen.engine.BigRead
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.Outcome
 import app.mauri.sukrara.pen.engine.PdDose
@@ -40,6 +41,9 @@ interface PenLog {
      */
     suspend fun store(record: TreatmentRecord)
 }
+
+/** How *Undo this read* went: undone, refused because its entries changed since, or nothing (left) to undo. */
+enum class BigUndo { Done, Changed, Gone }
 
 /** Whether reading is asked for at the first tap, on, or off (schema `pens.reading`). */
 enum class PenReading(
@@ -269,7 +273,19 @@ class Pens(
         val (entries, stored) = entries()
         val o = apply(engine().scan(current(), scanOf(r), entries, nowMs()), stored)
         if (current().pens[r.serial]?.model.isNullOrEmpty()) save(engine().update(current(), r.serial) { it.copy(model = profile.id) })
+        bigOf(r.scanTime, o)?.let { big -> save(engine().update(current(), r.serial) { it.copy(big = big) }) }
         return done(r.serial, o.report, o.undo, r)
+    }
+
+    /** What a big read (an injection older than 72 h) keeps for *Review* and *Undo this read*; null for any other read. */
+    private fun bigOf(
+        at: Long,
+        o: Outcome,
+    ): BigRead? {
+        val since = o.report.bigSince ?: return null
+        val undo = o.undo ?: return null
+        val ids = (o.report.created + o.report.merged + o.report.updated).distinct()
+        return BigRead(at, since, ids, o.report.merged.size, o.writes.associate { it.id to it.u }, undo)
     }
 
     private suspend fun done(
@@ -331,9 +347,30 @@ class Pens(
             if (r != lastUndo || !allowed()) return@withLock false
             val (entries, stored) = entries()
             apply(engine().undo(current(), r, entries, nowMs()), stored)
+            // a big read undone from its card: nothing is left for its Review to undo
+            if (current().pens[r.serial]?.big?.undo == r) save(engine().update(current(), r.serial) { it.copy(big = null) })
             lastUndo = null
             _read.value = _read.value?.let { if (it.undo == r) it.copy(undone = true) else it }
             true
+        }
+
+    /**
+     * *Undo this read* (Review of a big read): every entry it wrote back as it was, its doses *Not logged*. Refused
+     * ([BigUndo.Changed]) when any of those entries changed since (a later read grew it, a correction, a delete): the
+     * change is never overwritten; each entry is then fixed in its own sheet.
+     */
+    suspend fun undoBig(serial: String): BigUndo =
+        mutex.withLock {
+            val big = current().pens[serial]?.big ?: return@withLock BigUndo.Gone
+            if (!allowed()) return@withLock BigUndo.Gone
+            val (entries, stored) = entries()
+            val byId = entries.associateBy { it.id }
+            if (big.wrote.any { (id, u) -> byId[id]?.u != u }) return@withLock BigUndo.Changed
+            apply(engine().undo(current(), big.undo, entries, nowMs()), stored)
+            save(engine().update(current(), serial) { it.copy(big = null) })
+            changed(current())
+            _read.value = _read.value?.let { if (it.undo == big.undo) it.copy(undone = true) else it }
+            BigUndo.Done
         }
 
     /** The timer: pending small doses whose wait ended become a question. */

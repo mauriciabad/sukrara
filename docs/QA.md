@@ -394,10 +394,22 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
 - [ ] Type 8u rapid within 45 min of a pen entry → *Already logged by your pen?*; carbs in the same save are saved.
 - [ ] On Android 17 a pen tap from another app opens the card (no `does not have DISPATCH_NFC_MESSAGE permission` in
       logcat `NfcDispatcher`); a Libre tap with Sukrara closed opens the New sensor screen (0.11.47).
-- [ ] Taps blocked (`DebugReceiver --es cmd tagIntents --ez blocked true` on the emulator; on a phone, Android's own
-      tag-intent screen): home banner names what's blocked (pen / sensor / both) with *Turn off* and *Allow*; the
-      pens and Glucose source pages show the card on top and a warning row; *Allow* opens Android's screen; back
-      allowed → everything gone. Ask state: no home banner, pens page card only. Light and dark.
+- [ ] Taps blocked (the debug `PEN_TAGS --ez blocked true` command on the emulator, with *Open Sukrara when you scan
+      a sensor* on for the sensor part; on a phone, Android's own tag-intent screen): home banner names what's blocked (pen / sensor / both) with *Turn off* and *Allow*; the
+      pens and Glucose source pages show the card on top (the sensor page also turns its *Open Sukrara when you scan a
+      sensor* row into a warning row); *Allow* opens Android's screen; back allowed → everything gone. Ask state: no
+      home banner, pens page card only. Light and dark.
+- [ ] Big read (`PEN_READ --ez first true --el firstAgo 7200 --es doses "-6000:6,-3000:5,-30:4"`): the card says *3
+      injections logged · Since <day> <time>* with *Review* first and *Undo*; the doses are on the graph. *Review* →
+      *Review read* with *3 injections logged on <today>*, only that read's rows; a row opens its sheet. *Undo this
+      read* → dialog → *Undo read* → snackbar *Read undone*, the rows stay as *Not logged*, the graph loses them. Again
+      with a row's entry deleted first (sheet *Delete*) → *Couldn't undo: some of these entries changed since…*,
+      nothing else changes. The pen page shows *Review the last read* until undone. An everyday read (`-30:4` alone)
+      has no *Review*. With *Notification after each read* on, the notification has *Review* and *Undo*. Spanish.
+- [ ] Pens page intro: the phone's back with the circle on this phone's NFC antenna (the same spot as the new-sensor
+      scan) and *Touch the back of the phone with the end of your pen…*; TalkBack reads the drawing's description and
+      the sentence. `PEN_JUGGLUCO --ez installed true` with reading On → warning row *Juggluco also reads pens* (opens
+      Juggluco's App info; on the emulator Android's App info page for a missing app); `false` + resume → gone.
 - [ ] A bank / transit card or a passport held to the phone (reading on): nothing at all (no card, no vibration, no
       notification); only a pen tap shows the card (the filter is IsoDep + NfcA since 0.11.46).
 - [ ] Failed read → red card, REJECT haptic, nothing logged; a second one within 2 min adds the tips.

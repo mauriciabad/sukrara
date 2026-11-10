@@ -109,6 +109,9 @@ interface SensorSettingsPort {
     /** The page is shown again: read what can change outside the app (Android blocking Sukrara's NFC taps). */
     fun recheck() = Unit
 
+    /** Android's screen that allows Sukrara's NFC taps (the blocked card's *Allow*, the warning row). */
+    fun allowTaps() = Unit
+
     /**
      * *Forget this sensor*: the saved pairing goes and the link stops; no "no data" alarm follows (monitoring counts
      * again from the next sensor's first reading). Runs to the end in the app's scope.
@@ -131,6 +134,8 @@ class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel(
     fun setOpenOnScan(on: Boolean) = port.setOpenOnScan(on)
 
     fun recheck() = port.recheck()
+
+    fun allowTaps() = port.allowTaps()
 
     fun forget() = port.forget()
 

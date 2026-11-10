@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -64,6 +62,8 @@ import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenInfo
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.PenReadUndo
+import app.mauri.sukrara.core.model.PenReview
 import app.mauri.sukrara.core.model.PenSessionInfo
 import app.mauri.sukrara.core.model.PenSessionStatus
 import app.mauri.sukrara.core.model.PensPort
@@ -71,6 +71,8 @@ import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.pen.PenDoseRow
+import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -84,6 +86,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -97,34 +100,26 @@ private const val CHECK_FRESH_S = 600L
 
 private val Offer = SchemaSettings.number("pens.offer")
 
+/** The pen page offers *Review the last read* for this long after a big read (later it is everyday history). */
+private const val REVIEW_SHOWN_S = 7 * 86400L
+
 /**
- * Android blocks the pen taps (reading Ask or On): a tonal card with the warning in the error colour (nothing failed,
- * the user has to act), *Allow* opens Android's screen. Home shows the same card with *Turn off*.
+ * *Review* of the pen's last big read: what it logged ([review], null once undone or gone) and its sessions. The
+ * read's dose [keys] are kept once seen, so after *Undo this read* its sessions stay listed (as *Not logged*).
  */
-@Composable
-internal fun TapsBlockedCard(onAllow: () -> Unit) {
-    val haptics = rememberHaptics()
-    Card(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    stringResource(R.string.st_pens_blocked),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                Text(
-                    stringResource(R.string.st_pens_blocked_text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Button(onClick = {
-                haptics.confirm()
-                onAllow()
-            }, Modifier.align(Alignment.End)) { Text(stringResource(R.string.st_pens_allow)) }
+data class ReviewUi(
+    val review: PenReview?,
+    val keys: Set<String>,
+    val sessions: List<PenSessionInfo>,
+) {
+    companion object {
+        fun next(
+            prev: ReviewUi?,
+            review: PenReview?,
+            sessions: List<PenSessionInfo>,
+        ): ReviewUi {
+            val keys = review?.keys ?: prev?.keys.orEmpty()
+            return ReviewUi(review, keys, sessions.filter { s -> s.doses.any { it.key in keys } })
         }
     }
 }
@@ -172,6 +167,12 @@ class PenViewModel(
                 ?.filter { it.status == PenSessionStatus.Before && it.units > 0 && now - it.t < (h * 3600).toLong() }
                 ?.maxByOrNull { it.t }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** *Review* (the read card's, the notification's, the pen page's row): the last big read and its sessions. */
+    val review: StateFlow<ReviewUi?> =
+        combine(pen, sessions) { p, s -> p?.review to s }
+            .scan(null as ReviewUi?) { prev, (r, s) -> if (s == null) prev else ReviewUi.next(prev, r, s) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** What the page's parts do (the sheets and cards get this, never the ViewModel). */
     val actions = PenActions(port, serial, viewModelScope)
@@ -250,6 +251,19 @@ class PenActions(
 
     fun restore(was: PenEntryInfo) = launch { if (!port.restore(was)) snack.value = PenSnack(R.string.st_pen_undo_failed) }
 
+    /** *Undo this read*: says how it went (refused with the reason when its entries changed since). */
+    fun undoRead() =
+        launch {
+            snack.value =
+                PenSnack(
+                    when (port.undoRead(serial)) {
+                        PenReadUndo.Done -> R.string.st_pen_read_undone
+                        PenReadUndo.Changed -> R.string.st_pen_undo_read_changed
+                        PenReadUndo.Gone -> R.string.st_pen_undo_read_gone
+                    },
+                )
+        }
+
     fun accept(
         q: String,
         keys: List<String>,
@@ -309,6 +323,7 @@ fun PenPage(
     onBack: () -> Unit,
     openDoses: () -> Unit,
     modifier: Modifier = Modifier,
+    openReview: () -> Unit = {},
 ) {
     val p by vm.pen.collectAsStateWithLifecycle()
     val offer by vm.offer.collectAsStateWithLifecycle()
@@ -376,6 +391,14 @@ fun PenPage(
                 { choosingKind = true },
                 icon = DsR.drawable.ds_ic_dia_insulin_rapid,
             )
+            pen.review?.takeIf { System.currentTimeMillis() / 1000 - it.at < REVIEW_SHOWN_S }?.let { r ->
+                NavigationRow(
+                    stringResource(R.string.st_pen_review_row),
+                    openReview,
+                    summary = pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, Clock.dayLabel(r.at)),
+                    icon = DsR.drawable.ds_ic_history,
+                )
+            }
             NavigationRow(stringResource(R.string.st_pen_doses_read), openDoses, icon = DsR.drawable.ds_ic_history)
             if (pen.untested && pen.check != PenCheck.None) {
                 NavigationRow(
@@ -539,13 +562,14 @@ private fun OfferCard(
 /**
  * *Doses read*: every session the pen holds, newest first, grouped by day, with its status; the doses from before
  * Sukrara folded behind a count. A tap opens the entry's sheet (correct each dose), the question's answers, or what
- * logging the session would do.
+ * logging the session would do. [review]: only the last big read's sessions under its card with *Undo this read*.
  */
 @Composable
 fun DosesReadPage(
     vm: PenViewModel,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    review: Boolean = false,
 ) {
     val sessions by vm.sessions.collectAsStateWithLifecycle()
     val pen by vm.pen.collectAsStateWithLifecycle()
@@ -553,6 +577,12 @@ fun DosesReadPage(
     var open by remember { mutableStateOf<PenSessionInfo?>(null) }
     val host = remember { SnackbarHostState() }
     PenSnackbar(vm.actions, host)
+    if (review) {
+        val ui by vm.review.collectAsStateWithLifecycle()
+        ReviewPage(ui, pen, host, vm.actions::undoRead, onBack, { open = it }, modifier)
+        open?.let { s -> SessionSheet(s, vm.actions) { open = null } }
+        return
+    }
     val all = sessions.orEmpty()
     val (before, rest) = all.partition { it.status == PenSessionStatus.Before }
     SettingsPage(stringResource(R.string.st_pen_doses_read), onBack, modifier, snackbar = host) {
@@ -583,13 +613,87 @@ fun DosesReadPage(
             }
         }
     }
-    open?.let { s ->
-        val close = { open = null }
-        when {
-            s.entry != null && s.status != PenSessionStatus.NotLogged -> EntrySheet(s.entry!!, vm.actions, close)
-            s.status == PenSessionStatus.Waiting && s.question != null -> QuestionSheet(s, vm.actions, close)
-            else -> LogSheet(s, vm.actions, close)
+    open?.let { s -> SessionSheet(s, vm.actions) { open = null } }
+}
+
+/** The sheet a session opens: its entry's (correct each dose), its question's answers, or what logging it would do. */
+@Composable
+private fun SessionSheet(
+    s: PenSessionInfo,
+    actions: PenActions,
+    close: () -> Unit,
+) {
+    when {
+        s.entry != null && s.status != PenSessionStatus.NotLogged -> EntrySheet(s.entry!!, actions, close)
+        s.status == PenSessionStatus.Waiting && s.question != null -> QuestionSheet(s, actions, close)
+        else -> LogSheet(s, actions, close)
+    }
+}
+
+/**
+ * *Review* of a big read (a read that logged an injection older than 72 h): *23 injections logged on 23 Oct*, the
+ * oldest one's day, *Undo this read* (asks first: it takes every entry of the read out of the log), and the read's
+ * sessions by day, each opening its sheet. Once undone the sessions stay listed as *Not logged* (each can be logged
+ * again); Back leaves.
+ */
+@Composable
+private fun ReviewPage(
+    ui: ReviewUi?,
+    pen: PenInfo?,
+    host: SnackbarHostState,
+    onUndo: () -> Unit,
+    onBack: () -> Unit,
+    onOpen: (PenSessionInfo) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var undoing by rememberSaveable { mutableStateOf(false) }
+    val haptics = rememberHaptics()
+    val r = ui?.review
+    SettingsPage(stringResource(R.string.st_pen_review_title), onBack, modifier, snackbar = host) {
+        if (r != null) {
+            SettingsGroup {
+                CardRow {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, Clock.dayLabel(r.at)),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            stringResource(R.string.st_pen_review_text, Clock.dayTime(r.since)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        FilledTonalButton(
+                            onClick = { undoing = true },
+                            enabled = pen?.let { usable(it) } == true,
+                            modifier = Modifier.align(Alignment.End),
+                        ) { Text(stringResource(R.string.st_pen_undo_read)) }
+                    }
+                }
+            }
         }
+        val list = ui?.sessions.orEmpty()
+        if (ui != null && list.isEmpty()) SettingsGroup { InfoRow(stringResource(R.string.st_pen_review_none)) }
+        list.groupBy { dayOf(it.t) }.forEach { (day, l) ->
+            SettingsGroup(title = dayTitle(day)) {
+                for (s in l) SessionRow(s, enabled = s.status != PenSessionStatus.Ignored && pen?.let { usable(it) } == true) { onOpen(s) }
+            }
+        }
+    }
+    if (undoing && r != null) {
+        AlertDialog(
+            onDismissRequest = { undoing = false },
+            title = { Text(stringResource(R.string.st_pen_undo_read_title)) },
+            text = { Text(pluralStringResource(R.plurals.st_pen_undo_read_text, r.entries, r.entries)) },
+            confirmButton = {
+                Button(onClick = {
+                    undoing = false
+                    haptics.confirm()
+                    onUndo()
+                }) { Text(stringResource(R.string.st_pen_undo_read_confirm)) }
+            },
+            dismissButton = { TextButton({ undoing = false }) { Text(stringResource(android.R.string.cancel)) } },
+        )
     }
 }
 
@@ -682,80 +786,9 @@ private fun SessionRow(
 }
 
 /**
- * One dose: time, amount, *Incomplete*, and *Priming* / *Injected* (an M3 segmented button). TalkBack reads the row as
- * one node ("13:10, 1 unit, priming") with a custom action that flips it.
+ * A pen entry's sheet (the shared [PenEntrySheet]): each dose's *Priming* / *Injected*; *Save* corrects it (the
+ * snackbar's *Undo* puts it back).
  */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DoseRow(
-    d: PenDoseInfo,
-    primed: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
-    val haptics = rememberHaptics()
-    val set = { p: Boolean ->
-        if (p != primed) {
-            haptics.tick()
-            onChange(p)
-        }
-    }
-    val role = stringResource(if (primed) R.string.st_pen_seg_priming else R.string.st_pen_seg_injected)
-    val spoken = pluralStringResource(R.plurals.st_pen_units_spoken, if (d.units == 1.0) 1 else 2, units(d.units).dropLast(1))
-    val desc = stringResource(R.string.st_pen_dose_a11y, Clock.time(d.t), spoken, role)
-    val flip = stringResource(if (primed) R.string.st_pen_mark_injected else R.string.st_pen_mark_priming)
-    Row(
-        Modifier.fillMaxWidth().clearAndSetSemantics {
-            contentDescription = desc
-            customActions = listOf(CustomAccessibilityAction(flip) { set(!primed).let { true } })
-        },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            Clock.time(d.t),
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier.widthIn(min = 56.dp),
-        )
-        Column(Modifier.widthIn(min = 48.dp)) {
-            Text(units(d.units), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            if (d.incomplete) {
-                Text(stringResource(R.string.st_pen_incomplete), style = MaterialTheme.typography.labelSmall, maxLines = 1)
-            }
-        }
-        Box(Modifier.weight(1f))
-        SingleChoiceSegmentedButtonRow {
-            SegmentedButton(primed, {
-                set(true)
-            }, SegmentedButtonDefaults.itemShape(0, 2), icon = {}, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                Text(
-                    stringResource(R.string.st_pen_seg_priming),
-                    maxLines = 1,
-                    softWrap = false,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-            SegmentedButton(!primed, {
-                set(false)
-            }, SegmentedButtonDefaults.itemShape(1, 2), icon = {}, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                Text(
-                    stringResource(R.string.st_pen_seg_injected),
-                    maxLines = 1,
-                    softWrap = false,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-        }
-    }
-}
-
-/**
- * A pen entry's sheet: the amount and time, *From the pen · 1.5u primed*, each dose with *Priming* / *Injected*, the
- * note and the entry it replaced. Once a dose changed: *Cancel* / *Save* (*Remove from log* when every dose is
- * priming); the snackbar's *Undo* puts it back.
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EntrySheet(
     id: String,
@@ -772,61 +805,7 @@ private fun EntrySheet(
         }
     }
     val entry = e ?: return
-    val roles = remember(entry) { mutableStateListOf(*entry.doses.map { it.primed }.toTypedArray()) }
-    val changed = roles.toList() != entry.doses.map { it.primed }
-    val inj = entry.doses.filterIndexed { i, _ -> !roles[i] }
-    val a = round1(inj.sumOf { it.units })
-    val pr = round1(entry.doses.filterIndexed { i, _ -> roles[i] }.sumOf { it.units })
-    val t = inj.minOfOrNull { it.t } ?: entry.t
-    val kind = stringResource(if (entry.kind == "long") R.string.st_pen_kind_long else R.string.st_pen_kind_rapid)
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (inj.isEmpty()) stringResource(R.string.st_pen_nothing_injected) else "${units(a)} $kind",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                Text(Clock.time(t), style = MaterialTheme.typography.titleMedium)
-            }
-            Text(
-                listOfNotNull(
-                    stringResource(R.string.st_pen_from_pen),
-                    pr.takeIf { it > 0 }?.let { stringResource(R.string.st_pen_primed, units(it)) },
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            HorizontalDivider()
-            entry.doses.forEachIndexed { i, d -> DoseRow(d, roles[i]) { roles[i] = it } }
-            HorizontalDivider()
-            if (entry.note.isNotEmpty()) Text(entry.note, style = MaterialTheme.typography.bodyMedium)
-            entry.replaced?.let { (ra, rt) ->
-                Text(
-                    stringResource(R.string.st_pen_replaced, units(ra), Clock.time(rt)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                if (changed) {
-                    TextButton(onClick = {
-                        roles.clear()
-                        roles.addAll(entry.doses.map { it.primed })
-                    }) { Text(stringResource(android.R.string.cancel)) }
-                    Button(onClick = {
-                        vm.correct(entry, roles.toList())
-                        onDismiss()
-                    }) { Text(stringResource(if (inj.isEmpty()) R.string.st_pen_remove else R.string.st_pen_save)) }
-                } else {
-                    Button(onClick = onDismiss) { Text(stringResource(R.string.st_pen_done)) }
-                }
-            }
-        }
-    }
+    PenEntrySheet(entry, { Clock.time(it) }, onSave = { vm.correct(entry, it) }, onDismiss = onDismiss)
 }
 
 /**
@@ -869,7 +848,7 @@ private fun LogSheet(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
             HorizontalDivider()
-            s.doses.forEachIndexed { i, d -> DoseRow(d, roles[i]) { roles[i] = it } }
+            s.doses.forEachIndexed { i, d -> PenDoseRow(d, roles[i], { Clock.time(it) }, { roles[i] = it }) }
             HorizontalDivider()
             match?.let {
                 Text(

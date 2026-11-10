@@ -20,9 +20,11 @@ import app.mauri.sukrara.share.transport.RelayFilter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.time.Instant
 
 /**
@@ -148,4 +150,18 @@ object TreatmentWire {
             deleted = p.deleted,
             origin = ORIGINS.entries.firstOrNull { it.value == p.origin }?.key ?: TreatmentOrigin.Follower,
         )
+
+    /**
+     * The pen keys (`pr`, `pen`, `pd`) as the store keeps them ([TreatmentRecord.penJson], the inverse of [toPayload]'s),
+     * so a follower's copy of a pen entry knows its doses (home's pen entry sheet, read-only there); null = not a pen
+     * entry.
+     */
+    fun penJson(p: TreatmentPayload): String? {
+        val pen = p.pen ?: return null
+        return buildJsonObject {
+            p.primed?.let { put("pr", it) }
+            put("pen", pen)
+            p.penDoses?.let { put("pd", it) }
+        }.toString()
+    }
 }

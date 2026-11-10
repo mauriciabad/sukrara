@@ -105,6 +105,8 @@ private fun RowFrame(
     enabled: Boolean,
     modifier: Modifier = Modifier,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    /** A state that needs the person (taps blocked by Android): icon and summary in the error colour. */
+    warning: Boolean = false,
     leading: (@Composable () -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
@@ -121,13 +123,21 @@ private fun RowFrame(
             leading()
             Spacer(Modifier.width(16.dp))
         } else if (icon != null) {
-            Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                painterResource(icon),
+                contentDescription = null,
+                tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.width(16.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, color = titleColor, style = MaterialTheme.typography.bodyLarge)
             if (!summary.isNullOrEmpty()) {
-                Text(summary, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    summary,
+                    color = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
         trailing()
@@ -171,7 +181,8 @@ fun SwitchRow(
 
 /**
  * Two targets in one row (AOSP's primary switch preference): the row opens [onClick]'s page, the switch after the
- * divider turns the thing on or off. TalkBack reads them as two nodes: a button and a switch.
+ * divider turns the thing on or off. TalkBack reads them as two nodes: a button and a switch. [warning]: the thing is
+ * on but something outside the app stops it (icon and summary in the error colour; the row opens the fix).
  */
 @Composable
 fun SplitSwitchRow(
@@ -184,13 +195,21 @@ fun SplitSwitchRow(
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
     switchEnabled: Boolean = enabled,
+    warning: Boolean = false,
 ) {
     val haptics = rememberHaptics()
     Row(
         modifier.fillMaxWidth().height(IntrinsicSize.Min).background(MaterialTheme.colorScheme.surfaceBright),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RowFrame(title, summary, icon, enabled, Modifier.weight(1f).clickable(enabled, role = Role.Button, onClick = onClick))
+        RowFrame(
+            title,
+            summary,
+            icon,
+            enabled,
+            Modifier.weight(1f).clickable(enabled, role = Role.Button, onClick = onClick),
+            warning = warning,
+        )
         VerticalDivider(Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outlineVariant)
         Box(
             Modifier

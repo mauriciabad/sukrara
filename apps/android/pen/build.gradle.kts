@@ -22,4 +22,12 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(project(":core:testing"))
+    // the read card's words from the real resources (en + es)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+}
+
+tasks.withType<Test>().configureEach {
+    // Robolectric on SDK 36 reaches into FileDescriptor internals
+    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }

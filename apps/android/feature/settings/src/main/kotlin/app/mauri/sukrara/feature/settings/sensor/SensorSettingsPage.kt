@@ -4,7 +4,6 @@
 package app.mauri.sukrara.feature.settings.sensor
 
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,11 +41,14 @@ import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
+import app.mauri.sukrara.feature.settings.BlockedTapsKind
 import app.mauri.sukrara.feature.settings.ConfirmDialog
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.StateStrip
+import app.mauri.sukrara.feature.settings.TapsBlockedCard
 import app.mauri.sukrara.graph.CardWords
 import kotlinx.coroutines.delay
 import java.time.Duration
@@ -63,6 +65,7 @@ class SensorSettingsActions(
     val signOut: () -> Unit = {},
     val setOpenOnScan: (Boolean) -> Unit = {},
     val forget: () -> Unit = {},
+    val allowTaps: () -> Unit = {},
 )
 
 /** Settings › Sensor with its ViewModel; the "ends in" time moves every minute. */
@@ -97,6 +100,7 @@ fun SensorSettingsScreen(
             viewModel::signOut,
             viewModel::setOpenOnScan,
             viewModel::forget,
+            viewModel::allowTaps,
         ),
         onBack,
     )
@@ -118,6 +122,10 @@ fun SensorSettingsContent(
         if (state == null) return@SettingsPage
         var confirming by rememberSaveable { mutableStateOf<SourceChoice?>(null) }
         StateNotice(state, actions) { confirming = SourceChoice.Juggluco }
+        // Android blocks the sensor taps while *Open Sukrara when you scan a sensor* is on: the pens page's card
+        if (state.source == SourceChoice.Libre3Direct && state.openOnScan?.let { it.on && it.blocked } == true) {
+            TapsBlockedCard(BlockedTapsKind.Sensor, actions.allowTaps)
+        }
         SensorGroup(state, now, zone, actions)
         if (state.source == SourceChoice.Libre3Direct) ThisPhoneGroup(state, actions)
         SourceGroup(state.source) { confirming = it }
@@ -278,8 +286,9 @@ private fun SensorGroup(
 }
 
 /**
- * What this phone does with the sensor: open Sukrara when a sensor is scanned (NFC; blocked by Android → the switch
- * opens Sukrara's app page, where tag intents are allowed again) and *Forget this sensor* (asks first).
+ * What this phone does with the sensor: open Sukrara when a sensor is scanned (NFC; blocked by Android → a warning
+ * row that opens Android's screen allowing the taps, its switch still turns it off) and *Forget this sensor* (asks
+ * first).
  */
 @Composable
 private fun ThisPhoneGroup(
@@ -288,26 +297,26 @@ private fun ThisPhoneGroup(
 ) {
     val scan = state.openOnScan
     if (scan == null && !state.paired) return
-    val context = LocalContext.current
     SettingsGroup(title = stringResource(R.string.st_sensor_this_phone)) {
         scan?.let {
-            val blocked = it.on && it.blocked
-            SwitchRow(
-                stringResource(R.string.st_sensor_open_on_scan),
-                it.on,
-                actions.setOpenOnScan,
-                summary =
-                    stringResource(if (blocked) R.string.st_sensor_open_on_scan_blocked else R.string.st_sensor_open_on_scan_summary),
-                icon = if (blocked) DsR.drawable.ds_ic_nfc_off else DsR.drawable.ds_ic_nfc,
-            )
-            if (blocked) {
-                NavigationRow(
-                    stringResource(R.string.st_sensor_open_on_scan_allow),
-                    {
-                        context.startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
-                        )
-                    },
+            if (it.on && it.blocked) {
+                // a warning row: the row opens Android's screen, the switch still turns it off
+                SplitSwitchRow(
+                    stringResource(R.string.st_sensor_open_on_scan),
+                    true,
+                    actions.setOpenOnScan,
+                    actions.allowTaps,
+                    summary = stringResource(R.string.st_sensor_open_on_scan_blocked),
+                    icon = DsR.drawable.ds_ic_warning,
+                    warning = true,
+                )
+            } else {
+                SwitchRow(
+                    stringResource(R.string.st_sensor_open_on_scan),
+                    it.on,
+                    actions.setOpenOnScan,
+                    summary = stringResource(R.string.st_sensor_open_on_scan_summary),
+                    icon = DsR.drawable.ds_ic_nfc,
                 )
             }
         }

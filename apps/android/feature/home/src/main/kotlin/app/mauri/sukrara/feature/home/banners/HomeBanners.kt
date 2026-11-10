@@ -24,10 +24,11 @@ enum class BannerKind(val safety: Boolean) {
     DataProblem(safety = true),
 
     /**
-     * Pen reading is On but Android blocks Sukrara's tag intents: every pen tap does nothing. *Allow* opens Android's
-     * screen, *Turn off* turns pen reading off; it goes by itself once allowed (checked on every resume).
+     * Pen reading is On and/or *Open Sukrara when you scan a sensor* is on, but Android blocks Sukrara's tag intents:
+     * every such tap does nothing. One banner names what is blocked ([BlockedTaps]). *Allow* opens Android's screen,
+     * *Turn off* turns the blocked features off; it goes by itself once allowed (checked on every resume).
      */
-    PenTapsBlocked(safety = false),
+    TapsBlocked(safety = false),
 
     /**
      * Sukrara's System UI module is enabled but System UI doesn't run it yet (or runs an older build): *Restart System
@@ -51,8 +52,8 @@ data class HomeEnvironment(
     /** The launcher can place the widget from the app; false = the banner says how to add it by hand (no button). */
     val widgetPinnable: Boolean = true,
     val clinicUploadSet: Boolean? = null,
-    /** Pen reading is On and Android blocks the taps. */
-    val penTapsBlocked: Boolean = false,
+    /** What Android blocks of the taps that are on (pen reading On, *Open Sukrara when you scan a sensor*). */
+    val tapsBlocked: BlockedTaps = BlockedTaps(),
     /** The System UI module needs a restart ([ModuleState.Restart] / [ModuleState.Update]); null = it doesn't. */
     val systemUiRestart: ModuleState? = null,
     /** This app's build (its version code): a closed restart card comes back with a new build. */
@@ -60,6 +61,17 @@ data class HomeEnvironment(
 ) {
     /** What a closed restart card is remembered under: the module's state and the build. */
     val restartKey: String? get() = systemUiRestart?.let { "${BannerKind.RestartSystemUi.name}:$it:$build" }
+}
+
+/**
+ * The NFC taps Android blocks while they are on: [pen] = pen reading On (never in *Ask*: the banner would nag people
+ * without pens), [sensor] = *Open Sukrara when you scan a sensor* on.
+ */
+data class BlockedTaps(
+    val pen: Boolean = false,
+    val sensor: Boolean = false,
+) {
+    val any: Boolean get() = pen || sensor
 }
 
 /** When each banner was dismissed (epoch ms); stored in the typed state file "home-banners". */
@@ -136,7 +148,7 @@ object HomeBanners {
                     BannerKind.MonitoringStopped -> monitoringStopped
                     BannerKind.AlertsUnreliable -> readiness?.ready == false
                     BannerKind.DataProblem -> dataProblems > 0
-                    BannerKind.PenTapsBlocked -> env.penTapsBlocked
+                    BannerKind.TapsBlocked -> env.tapsBlocked.any
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.FinishSetup -> env.nextSetupStep != null
                     BannerKind.NotBackedUp -> env.backedUp == false
@@ -144,6 +156,6 @@ object HomeBanners {
                     BannerKind.ShareWithClinic -> env.clinicUploadSet == false
                 }
             wanted &&
-                (kind.safety || kind == BannerKind.PenTapsBlocked || kind == BannerKind.RestartSystemUi || !memory.dismissed(kind, now))
+                (kind.safety || kind == BannerKind.TapsBlocked || kind == BannerKind.RestartSystemUi || !memory.dismissed(kind, now))
         }
 }

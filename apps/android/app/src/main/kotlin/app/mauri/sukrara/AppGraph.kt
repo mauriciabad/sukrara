@@ -21,6 +21,7 @@ import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.feature.home.banners.BannerKind
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.sensor.SensorUiModule
 import app.mauri.sukrara.feature.settings.AlertPlayback
 import app.mauri.sukrara.feature.settings.AlertSettingsStore
@@ -475,7 +476,9 @@ class AppGraph(
             widgetPinnable = { widgets.presence.canPin() },
             treatmentLog = { treatments.log },
             sharing = { shareOwner.ownerEngine.state },
-            penTapsBlocked = { pens.tapsBlockedWhileOn() },
+            tapsBlocked = { BlockedTaps(pen = pens.tapsBlockedWhileOn(), sensor = sensor.tapLaunch.onButBlocked()) },
+            penEntryOf = { pens.port.entry(it) },
+            penPort = { pens.port.takeIf { pens.available() } },
             clinicUploadSet = { integrations.clinicUploadSet },
             clinicMarks = { integrations.libreView.entryMarks.map { m -> m?.let(::LibreViewMarks) } },
             untestedSensor =
