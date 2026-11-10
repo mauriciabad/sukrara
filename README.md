@@ -125,7 +125,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   **Settings from** (Settings): use the wearer's ranges, graph and alert rules (kept up to date), Sukrara's defaults,
   or your own (start them by copying the wearer's or from the defaults); sounds and no-data alerts are always yours.
 - **Share with apps**: upload your Libre 3 glucose and entries to **LibreView** for your clinic (password used once,
-  never saved; asks before taking over another uploading device; only from the moment you switch it on; a cloud on each
+  never saved; asks before taking over another uploading device or uploading to another account than your sensor's; readings not sent yet survive a restart; only from the moment you switch it on; a cloud on each
   entry on home says whether LibreView has it, every 5 / 15 / 60 min or your own interval; a home banner suggests LibreView or Tidepool until one is set up), to your own **Nightscout** site (https, access token kept encrypted; 30-day catch-up,
   pauses when another app uploads to the same site; an entry another app already put there, like an AndroidAPS bolus, is
   never doubled), to **Tidepool** (both roles; a follower only after its own

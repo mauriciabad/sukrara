@@ -28,6 +28,7 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,6 +44,10 @@ class LibreViewUploaderTest {
     private val settings = InMemorySettingsRepository()
     private val secure = InMemorySecureStore()
     private val store = InMemoryStateStore(LvState())
+    private val unsent = InMemoryStateStore(LvUnsent())
+
+    /** The receiver ID of the sensor screens' LibreView account (null: not signed in there). */
+    private val sensorReceiverId = MutableStateFlow<Long?>(null)
     private val treatments = InMemoryTreatmentsRepository()
     private val role = MutableStateFlow<Role?>(Role.Wearer)
     private val sensor = MutableStateFlow<CurrentSensor?>(null)
@@ -84,8 +89,10 @@ class LibreViewUploaderTest {
                             } else if ("\"Password\":\"secret-pw\"" !in body) {
                                 MockResponse().setBody("""{"status":2}""")
                             } else {
+                                val user = Regex("\"UserName\":\"([^\"]*)\"").find(body)!!.groupValues[1]
                                 MockResponse().setBody(
-                                    """{"status":0,"result":{"UserToken":"tok-1","DateOfBirth":"1990-01-01","FirstName":"A","LastName":"B"}}""",
+                                    """{"status":0,"result":{"UserToken":"tok-1","AccountId":"${accountOf(user)}",""" +
+                                        """"DateOfBirth":"1990-01-01","FirstName":"A","LastName":"B"}}""",
                                 )
                             }
                         }
@@ -105,20 +112,32 @@ class LibreViewUploaderTest {
                 }
             }
         server.start()
-        uploader =
-            LibreViewUploader(
-                settings,
-                secure,
-                store,
-                treatments,
-                emptyFlow(),
-                sensor,
-                role,
-                LibreViewClient(OkHttpClient(), server.url("/assets").toString(), allowLoopbackHttp = true),
-                clock,
-                Dispatchers.Unconfined,
-            )
+        uploader = newUploader()
     }
+
+    /** A fresh uploader over the same stores (as after a process death). */
+    private fun newUploader() =
+        LibreViewUploader(
+            settings,
+            secure,
+            store,
+            unsent,
+            treatments,
+            emptyFlow(),
+            sensor,
+            sensorReceiverId,
+            ::receiverId,
+            role,
+            LibreViewClient(OkHttpClient(), server.url("/assets").toString(), allowLoopbackHttp = true),
+            clock,
+            Dispatchers.Unconfined,
+        )
+
+    /** The fake's accounts: an alias of "me" is the same account. */
+    private fun accountOf(email: String) =
+        if (email.startsWith("me")) "01234567-89ab-cdef-0123-456789abcdef" else "fedcba98-7654-3210-fedc-ba9876543210"
+
+    private fun receiverId(accountId: String) = accountId.hashCode().toLong() and 0xffffffffL
 
     @After
     fun tearDown() = server.shutdown()
@@ -468,5 +487,86 @@ class LibreViewUploaderTest {
             assertEquals(emptyMap<String, LvSent>(), store.data.first().ledger)
             assertEquals("other@example.com", store.data.first().email)
             assertEquals("the device id stays", device, store.data.first().deviceId)
+        }
+
+    @Test
+    fun `the same account is decided by its AccountId, not the email`() =
+        runBlocking {
+            signedInAndOn()
+            clock.advance(Duration.ofMinutes(1))
+            treatments.upsertIfNewer(treatment("a", 5, modified = clock.now()))
+            uploader.cycle()
+            assertEquals(accountOf("me@example.com"), store.data.first().accountId)
+            // another email of the same LibreView account keeps what LibreView has
+            assertEquals(LvSignIn.Done, uploader.signIn("me.too@example.com", "secret-pw", takeOver = false))
+            assertEquals(
+                1,
+                store.data
+                    .first()
+                    .ledger.size,
+            )
+            assertEquals("me.too@example.com", store.data.first().email)
+        }
+
+    @Test
+    fun `another account than the sensor's asks first, Cancel saves nothing`() =
+        runBlocking {
+            sensorReceiverId.value = receiverId(accountOf("me@example.com"))
+            assertEquals(LvSignIn.OtherAccount, uploader.signIn("other@example.com", "secret-pw", takeOver = false))
+            assertNull(secure.read(LibreViewUploader.NAME))
+            assertEquals("", store.data.first().email)
+            uploader.dropOtherAccount()
+            assertTrue(uploader.useOtherAccount() is LvSignIn.Failed)
+            assertNull(secure.read(LibreViewUploader.NAME))
+
+            assertEquals(LvSignIn.OtherAccount, uploader.signIn("other@example.com", "secret-pw", takeOver = false))
+            assertEquals(LvSignIn.Done, uploader.useOtherAccount())
+            assertTrue(secure.read(LibreViewUploader.NAME) != null)
+            uploader.load()
+            assertTrue("the page keeps saying so", uploader.page.first().otherAccount)
+
+            // the sensor's own account: no question, no warning
+            assertEquals(LvSignIn.Done, uploader.signIn("me@example.com", "secret-pw", takeOver = false))
+            assertFalse(uploader.page.first().otherAccount)
+        }
+
+    @Test
+    fun `no receiver ID known on this phone means nothing to compare and no question`() =
+        runBlocking {
+            assertEquals(LvSignIn.Done, uploader.signIn("other@example.com", "secret-pw", takeOver = false))
+            uploader.load()
+            assertFalse(uploader.page.first().otherAccount)
+        }
+
+    @Test
+    fun `history not sent yet survives a process death and goes up after it`() =
+        runBlocking {
+            signedInAndOn()
+            clock.advance(Duration.ofMinutes(10))
+            val t = clock.now().epochSecond
+            sensor.value = CurrentSensor("3MH000ABCD", now - Duration.ofDays(2), now + Duration.ofDays(12))
+            measurements = MockResponse().setResponseCode(503)
+            assertTrue(uploader.buffer(LvReadings("3MH000ABCD", null, listOf(LvGlucose(2870, 118, t - 300), LvGlucose(2875, 120, t)))))
+            uploader.keepUnsent()
+            uploader.cycle()
+            assertEquals(
+                listOf(2870, 2875),
+                unsent.data
+                    .first()
+                    .history
+                    .map { it.lifeCount },
+            )
+
+            // the process dies: a new uploader has only the stores
+            measurements = null
+            clock.advance(Duration.ofMinutes(20))
+            uploader = newUploader()
+            uploader.load()
+            uploader.cycle()
+            val h = LibreViewPayload.histor("3MH000ABCD")
+            val body = uploads().last()
+            assertTrue("\"recordNumber\":${h or 2870L}," in body)
+            assertTrue("\"recordNumber\":${h or 2875L}," in body)
+            assertEquals("sent: nothing kept", LvUnsent(), unsent.data.first())
         }
 }

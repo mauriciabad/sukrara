@@ -5,6 +5,7 @@ package app.mauri.sukrara.integrations.libreview
 
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import kotlinx.serialization.Serializable
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneId
@@ -42,6 +43,7 @@ data class LvEntry(
 }
 
 /** One Libre 3 reading: [lifeCount] = minutes since the sensor started, the sensor's own record id. */
+@Serializable
 data class LvGlucose(
     val lifeCount: Int,
     val mgdl: Int,

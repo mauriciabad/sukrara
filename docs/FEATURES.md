@@ -1271,7 +1271,14 @@ without a notification. Back leaves the page.
   the Keystore-encrypted secure store (`libreview`); the password never leaves the dialog's memory and that request.
   Wrong password: "LibreView didn't accept this email and password". If another device uploads for the account
   (LibreLink, the Libre 3 app, Juggluco), the dialog says so and offers *Take over* (`SetDevice:true`, that device stops
-  uploading) or *Cancel*: Sukrara never takes over by itself.
+  uploading) or *Cancel*: Sukrara never takes over by itself. "The same account" as the last sign-in (what LibreView
+  has stays remembered) is decided by LibreView's AccountId (kept in `libreview-upload`), by the email only when one
+  side has no AccountId. If the account isn't the one Sukrara starts and takes over sensors with (Settings › Sensor ›
+  LibreView account: its receiver ID ≠ `ReceiverIds.fromAccountId(AccountId)`), nothing is saved yet and the dialog
+  asks *Not your sensor's LibreView account* (glucose and entries would go to this account; the clinic won't see them
+  in the other one) with *Upload to this account* or *Cancel* (that sign-in is forgotten; a take-over already made stays,
+  LibreView gives no AccountId before it). While signed in to such an account the *Account* group says *Not the account
+  in Settings › Sensor* (warning icon). No receiver ID on the phone (Settings › Sensor not signed in): no question.
 - *Upload to LibreView* (enabled once signed in; turning it off always works, also after signing out or on a follower
   phone, which sees "Only the phone that wears the sensor uploads"), *Status* ("Last upload 4 min ago · 3 items", "On ·
   nothing sent yet", "<reason> Trying again soon.", "LibreView asks you to sign in again (another app may have taken
@@ -1290,8 +1297,9 @@ without a notification. Back leaves the page.
   another device wait 2 min. Glucose: only readings Sukrara takes from a Libre 3 itself (the sensor link tags each
   batch with its serial; Juggluco's readings never go up), record number = the serial's base | life count; the newest
   reading as current (< 5 min old), the 5-minute history, `sensorstart` once per sensor after `PUT /api/nisperson`
-  registered it (skipped if sign-in didn't return the profile, so it can't blank it). Unsent history is kept in memory
-  (3 days): readings lost to a restart come back with the sensor's backfill.
+  registered it (skipped if sign-in didn't return the profile, so it can't blank it). History LibreView hasn't got yet
+  is also kept in the typed store `libreview-unsent` (one sensor, at most 3 days, only what would go up; rewritten
+  when it changes and after each upload), so a restart or a process death never loses it: the next cycle sends it.
 - When: after each new Libre 3 reading, entry change or setting change, and every 5 minutes. At most 100 entries and
   288 readings per upload; a bigger catch-up continues at once. Network or server trouble retries after 30 s doubling
   to 15 min (±20 %); a token LibreView no longer accepts (401 / 403 / `wrongDeviceInToken`) stops until the person
@@ -1309,7 +1317,8 @@ without a notification. Back leaves the page.
   too." in the Undo snackbar; Undo sends it up again as a new record (a retracted entry has no live record to retract).
 
 **States and exits**: *Signed out* → *Account* → dialog (*Cancel* keeps nothing). *Another device uploads* → *Take
-over* or *Cancel*. *Off* (default) → main switch. *On · nothing sent yet / last upload* → main switch off, *Sign out*.
+over* or *Cancel*. *Not your sensor's LibreView account* → *Upload to this account*, or *Cancel* / back (nothing saved).
+*Signed in to another account than the sensor's* → *Account* (sign in with the sensor's) or *Sign out*. *Off* (default) → main switch. *On · nothing sent yet / last upload* → main switch off, *Sign out*.
 *Trying again* → retries by itself; switch off to stop. *Sign in again* → the status row or *Account*. *Refused* → change
 or switch off. *Follower phone* → switch shown off and disabled with the reason. Back leaves the page.
 

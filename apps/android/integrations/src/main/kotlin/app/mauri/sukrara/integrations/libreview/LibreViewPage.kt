@@ -100,7 +100,17 @@ class LibreViewViewModel(
                 }
             },
             signOut = { viewModelScope.launch { runCatching { uploader.signOut() } } },
-            reset = { _signIn.value = LvSignInUi.Idle },
+            reset = {
+                _signIn.value = LvSignInUi.Idle
+                viewModelScope.launch { uploader.dropOtherAccount() }
+            },
+            useOtherAccount = {
+                _signIn.value = LvSignInUi.Busy
+                viewModelScope.launch {
+                    val r = runCatching { uploader.useOtherAccount() }.getOrElse { LvSignIn.Failed(UserErrors.of(it)) }
+                    _signIn.value = LvSignInUi.Done(r)
+                }
+            },
             setInterval = { min -> viewModelScope.launch { uploader.setInterval(min) } },
         )
 
@@ -113,7 +123,10 @@ class LibreViewActions(
     val change: ((LvSettings) -> LvSettings) -> Unit = {},
     val signIn: (String, String, Boolean) -> Unit = { _, _, _ -> },
     val signOut: () -> Unit = {},
+    /** Resets the dialog; an other-account sign-in waiting for a choice is forgotten. */
     val reset: () -> Unit = {},
+    /** *Upload to this account* after [LvSignIn.OtherAccount]. */
+    val useOtherAccount: () -> Unit = {},
     val setInterval: (Double) -> Unit = {},
 )
 
@@ -191,6 +204,13 @@ fun LibreViewContent(
             },
             enabled = wearer,
         )
+        if (state.otherAccount) {
+            InfoRow(
+                stringResource(R.string.in_lv_other_row),
+                summary = stringResource(R.string.in_lv_other_row_summary),
+                icon = DsR.drawable.ds_ic_warning,
+            )
+        }
     }
     SettingsGroup {
         SwitchRow(
@@ -283,7 +303,10 @@ private fun glucoseSummary(state: LvPageState): String {
     return stringResource(R.string.in_lv_glucose_from, at)
 }
 
-/** Email + password (the password stays in this dialog only), then *Take over* if another device uploads. */
+/**
+ * Email + password (the password stays in this dialog only), then *Take over* if another device uploads, and *Upload to
+ * this account* if it isn't the sensor's account.
+ */
 @Composable
 private fun SignInDialog(
     initialEmail: String,
@@ -302,14 +325,32 @@ private fun SignInDialog(
     LaunchedEffect(ui) { if (ui is LvSignInUi.Done && ui.result == LvSignIn.Done) close() }
     val busy = ui == LvSignInUi.Busy
     val otherDevice = ui is LvSignInUi.Done && ui.result == LvSignIn.OtherDevice
+    val otherAccount = ui is LvSignInUi.Done && ui.result == LvSignIn.OtherAccount
     val ready = email.isNotBlank() && password.isNotEmpty() && !busy
+    // closing the other-account question forgets that sign-in (nothing was saved)
+    val dismiss = {
+        if (otherAccount) actions.reset()
+        onClose()
+    }
     AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(stringResource(if (otherDevice) R.string.in_lv_take_over_title else R.string.in_lv_dialog_title)) },
+        onDismissRequest = dismiss,
+        title = {
+            Text(
+                stringResource(
+                    when {
+                        otherDevice -> R.string.in_lv_take_over_title
+                        otherAccount -> R.string.in_lv_other_title
+                        else -> R.string.in_lv_dialog_title
+                    },
+                ),
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (otherDevice) {
                     Text(stringResource(R.string.in_lv_take_over_text), style = MaterialTheme.typography.bodyMedium)
+                } else if (otherAccount) {
+                    Text(stringResource(R.string.in_lv_other_text), style = MaterialTheme.typography.bodyMedium)
                 } else {
                     OutlinedTextField(
                         email,
@@ -348,7 +389,7 @@ private fun SignInDialog(
 
                         is LvSignInUi.Done -> {
                             when (val r = ui.result) {
-                                LvSignIn.Done, LvSignIn.OtherDevice -> null
+                                LvSignIn.Done, LvSignIn.OtherDevice, LvSignIn.OtherAccount -> null
                                 LvSignIn.BadCredentials -> stringResource(R.string.in_lv_bad_credentials)
                                 is LvSignIn.Failed -> stringResource(R.string.in_lv_failed, stringResource(r.why.text))
                             }
@@ -370,6 +411,10 @@ private fun SignInDialog(
                     TextButton(onClick = { actions.signIn(email, password, true) }, enabled = ready) {
                         Text(stringResource(R.string.in_lv_take_over))
                     }
+                } else if (otherAccount) {
+                    TextButton(onClick = actions.useOtherAccount) {
+                        Text(stringResource(R.string.in_lv_other_action))
+                    }
                 } else {
                     TextButton(onClick = { actions.signIn(email, password, false) }, enabled = ready) {
                         Text(stringResource(R.string.in_lv_sign_in_action))
@@ -377,6 +422,6 @@ private fun SignInDialog(
                 }
             }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.in_cancel)) } },
+        dismissButton = { TextButton(onClick = dismiss) { Text(stringResource(R.string.in_cancel)) } },
     )
 }

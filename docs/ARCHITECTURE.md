@@ -438,8 +438,10 @@ content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`,
   sign-in / measurements / sensor registration; https only, no redirects), `LibreViewQueue` (pure: entries LibreView
   lacks from the version ledger, glucose by life count), `LibreViewUploader` (settings JSON `apps.libreview`; token +
   profile only in SecureStore `libreview`, the password never stored; ledger, sent life counts, device id and
-  `glucoseFrom` / `entriesFrom` in the typed store `libreview-upload`). Glucose comes from `:sensor`'s
-  `SourceManager.sensorGlucose` (Libre 3 only, each batch tagged with its serial), mapped in `AppGraph`.
+  `glucoseFrom` / `entriesFrom` / AccountId in the typed store `libreview-upload`; history not sent yet in
+  `libreview-unsent`). Glucose comes from `:sensor`'s `SourceManager.sensorGlucose` (Libre 3 only, each batch tagged
+  with its serial), mapped in `AppGraph`; so does the sensor screens' receiver ID (`LibreViewAccount.receiverId`) with
+  `ReceiverIds.fromAccountId` for the other-account question.
 - `localserver/` — `LocalHttpServer` (127.0.0.1, fixed pool, bounded head and deadline), `XdripEndpoint` (Juggluco's
   JSON, pure), `XdripServer` (follows `apps.xdrip` and the sensor source; readings from the store, "last asked" in
   memory), `NightscoutApi` (the v1 read API, pure: routes, secret check, per-source `device` labels) and

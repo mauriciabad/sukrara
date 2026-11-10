@@ -165,6 +165,11 @@
     <string name="in_lv_take_over_title">Otro dispositivo sube datos a esta cuenta</string>
     <string name="in_lv_take_over_text">LibreView acepta datos de un dispositivo por cuenta, ahora otro (LibreLink, la app Libre 3 o Juggluco). Si Sukrara toma el relevo, ese dispositivo deja de subir a LibreView. Hazlo solo si Sukrara debe ser quien sube.</string>
     <string name="in_lv_take_over">Tomar el relevo</string>
+    <string name="in_lv_other_title">No es la cuenta de LibreView de tu sensor</string>
+    <string name="in_lv_other_text">Tu sensor se inició con la cuenta de LibreView de Ajustes › Sensor, no con esta. Tu glucosa y tus entradas irán a esta cuenta, y tu clínica no las verá en la otra.</string>
+    <string name="in_lv_other_action">Subir a esta cuenta</string>
+    <string name="in_lv_other_row">No es la cuenta de Ajustes › Sensor</string>
+    <string name="in_lv_other_row_summary">Tu clínica ve estas subidas solo en esta cuenta. Inicia sesión con la cuenta del sensor para cambiarlo.</string>
     <!-- Tidepool upload -->
     <string name="in_tp_intro">Tidepool reúne tus datos de diabetes en un solo sitio, para ti y tu clínica. Sukrara puede subir tu glucosa y tu insulina, carbohidratos y notas a tu cuenta de Tidepool.</string>
     <string name="in_tp_intro_follower">Tidepool reúne los datos de diabetes en un solo sitio. Si lo eliges, Sukrara puede subir la glucosa y los registros de la persona a la que sigues a una cuenta de Tidepool.</string>
