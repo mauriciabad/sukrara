@@ -241,6 +241,30 @@ class TidepoolUploader(
 
     fun kick() = loop.kick()
 
+    /**
+     * Runs [block] with the signed-in client under the upload's lock (Import history reads the account back): one
+     * session for both, a refreshed token is kept, and a session Tidepool ended signs out here as in a cycle. Null when
+     * no one is signed in.
+     */
+    suspend fun <T> withAccount(block: suspend (TidepoolClient) -> T): T? =
+        mutex.withLock {
+            val session =
+                client.session ?: readSession()?.also { client.session = it } ?: return@withLock null
+            try {
+                block(client)
+            } catch (e: TpSignedOut) {
+                log("tidepool: signed out by Tidepool")
+                client.session = null
+                secure.delete(NAME)
+                signedIn.value = false
+                store.update { it.copy(signedOutByTidepool = true, lastError = null, failures = 0, nextAttemptMs = 0) }
+                throw e
+            } finally {
+                val now = client.session
+                if (now != null && now != session) withContext(NonCancellable) { writeSession(now) }
+            }
+        }
+
     // MARK: the cycle
 
     internal suspend fun cycle() =
@@ -284,12 +308,17 @@ class TidepoolUploader(
         val windowStart = Instant.ofEpochSecond(maxOf(rs.from, nowS - TidepoolQueue.WINDOW_S))
         val full = nowMs - fullScanMs >= FULL_SCAN_EVERY_MS
         val start = if (full) windowStart else maxOf(windowStart, clock.now() - RECENT)
-        // only this role's readings: never the person followed earlier (or one's own readings while following)
+        // only this role's readings: never the person followed earlier (or one's own readings while following), and
+        // never imported history (Tidepool has it already or got it from the same place: it would count twice)
         val own = SourceId.of(r)
         val rd =
-            if (s.glucose) readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own } else emptyList()
+            if (s.glucose) {
+                readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own && !it.imported }
+            } else {
+                emptyList()
+            }
         if (full) fullScanMs = nowMs
-        val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)) else emptyList()
+        val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)).filterNot { it.imported } else emptyList()
         val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS, hold = hold)
         if (plan.count == 0) {
             if (!plan.isEmpty) rs = TidepoolQueue.applied(rs, plan, emptyMap(), nowS)

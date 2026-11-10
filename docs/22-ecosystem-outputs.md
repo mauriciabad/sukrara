@@ -399,3 +399,13 @@ dates only; the page in Spanish.
 | mmol/L in the apps | neither app has a unit setting; the writer supports it (tested) for when one exists |
 | A UTF-8 BOM | Tidepool and Juggluco don't use one; Excel on Windows may show accents in notes wrongly |
 
+
+**Read back (Import history, 2026-11-10).** The same layout is the file Import history reads (`history/HistoryCsv.kt`,
+its test reads every `contracts/export` case back), so a fresh install gets its history from this app's export, from
+LibreView's *Download glucose data* file and from the earlier app's *Export data* (All time). The earlier app's export
+(`poc/spikes/showcase-android` `export/Export.kt` + `GlucoseCsv.kt`, the same writer) already carries what a fresh
+start needs: its readings (one every 5 minutes, the 31 days it keeps), every live treatment (rapid / long insulin,
+carbs, notes, with `Entered By`) and its pen doses as insulin entries with their priming. So the frozen PoC needed no
+*Export everything for Sukrara* feature. What it doesn't carry, and why that's fine: entry ids and versions (entries
+match by kind, time and amount instead), the pen ledger (the pen rebuilds it at its next read, docs/29; doses before
+that read are history, not new entries), the 1-minute readings (5-minute history is what reports use).

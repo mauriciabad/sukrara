@@ -27,6 +27,7 @@ enum class CardSurface(
     STATUS_ICONS("status-icons", Kind.GLYPH),
     STATUS_HOOK("status-hook", Kind.GLYPH),
     QUICK_TILE("quick-tile", Kind.GLYPH),
+    READ_ALOUD("read-aloud", Kind.GLYPH),
 
     /** Picture sheets and fixtures (tests only; tools/check keeps it out of the app). */
     TEST("test", Kind.CARD),

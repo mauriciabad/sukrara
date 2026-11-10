@@ -17,7 +17,9 @@ import app.mauri.sukrara.graph.stats.Bands
 /**
  * What the System UI module shows for the state the app sent ([HookState]): the card's decision
  * ([GlucoseCard.face] for [CardSurface.STATUS_HOOK]) turned into the text beside the clock and the range colour of
- * our system icons. Plain Kotlin, so the JVM tests run it without the Xposed API. English: it runs in System UI.
+ * our system icons. Plain Kotlin, so the JVM tests run it without the Xposed API. TalkBack hears the app's sentence
+ * for the face shown ([spoken], in the person's language); [Render.desc] is a short English line for a face the app
+ * sent no sentence for (it runs in System UI, which can't load the app's translations).
  */
 object HookText {
     /** The mark after the value: the arrow, the "no trend" ring, the sensor-ended flag, the "no readings" icon. */
@@ -108,6 +110,35 @@ object HookText {
 
     /** The range of the state's value, for the words (null in range or without a value). */
     fun range(s: HookState): RangeState? = s.mgdl.takeIf { it > 0 }?.let { RangeState.of(it, s.bands) }
+
+    /**
+     * Which sentence TalkBack says for [look], the face of [s] at [nowS]: the same key on both sides of the link, made
+     * of the face and numbers only (the app's and System UI's languages and clock formats may differ). The words change
+     * at these keys: the value, struck (no trend), no reading since a time (its form: the time, the day, the date),
+     * the minutes a warm-up has left, ended, no reading at all.
+     */
+    fun spokenKey(
+        s: HookState,
+        look: GlucoseLook,
+        nowS: Long,
+    ): String =
+        when (look.state) {
+            GlucoseLook.State.VALUE -> if (look.strike) "old" else "value"
+            GlucoseLook.State.NO_READINGS -> "since:" + Freshness.timeKind(s.atS, nowS).key
+            GlucoseLook.State.WARMING_UP -> "warmup:" + ((s.readyAtS - nowS).coerceAtLeast(0) + 59) / 60
+            GlucoseLook.State.ENDED -> "ended"
+            GlucoseLook.State.NONE -> "none"
+        }
+
+    /** What TalkBack says for [look] at [nowS]: the app's sentence for it, or null (none sent: [Render.desc]). */
+    fun spoken(
+        s: HookState,
+        look: GlucoseLook,
+        nowS: Long,
+    ): String? = s.spoken[spokenKey(s, look, nowS)]
+
+    /** The mark before the text's sentence, as on our icons: "Sukrara: " before a value, "Sukrara. " before the rest. */
+    fun mark(look: GlucoseLook): String = if (look.state == GlucoseLook.State.VALUE) SlotIcons.VALUE else SlotIcons.SINGLE
 
     /**
      * The range colour of [mgdl] on a status bar whose own ink is [base]: null in range (the clock's colour, like the

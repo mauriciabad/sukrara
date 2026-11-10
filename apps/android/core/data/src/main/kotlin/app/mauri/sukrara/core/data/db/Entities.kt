@@ -52,6 +52,8 @@ data class TreatmentEntity(
     @ColumnInfo(name = "received_at") val receivedAt: Long?,
     val delivery: String,
     @ColumnInfo(name = "pen_json") val penJson: String?,
+    /** `ImportSource.id` for an entry Import history brought back, else null. */
+    @ColumnInfo(name = "imported_from") val importedFrom: String?,
 )
 
 /** A signed event waiting to be published (follower writes, wearer re-publishes); [sentAt] null until a relay took it. */

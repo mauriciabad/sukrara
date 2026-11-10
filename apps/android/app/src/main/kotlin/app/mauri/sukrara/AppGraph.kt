@@ -393,6 +393,7 @@ class AppGraph(
             appVersion = appVersion,
             readings = readings,
             treatments = data.treatments,
+            historyImport = data.historyImport,
             sensor =
                 combine(
                     sensor.source.sensorInfo,
@@ -735,6 +736,8 @@ class AppGraph(
             // a step that fails is logged and the next one still runs: a damaged database must not keep the hub
             // (and so the service, the notification and the alerts) from starting
             step("data") { data.ready() }
+            // a version change replaced the database with an empty one: Import history is offered again
+            step("history") { if (data.databaseReplaced.value) setup.offerHistoryAgain() }
             step("role") {
                 role.heal()
                 // a reading of the previous role that landed after the role change's clean-up

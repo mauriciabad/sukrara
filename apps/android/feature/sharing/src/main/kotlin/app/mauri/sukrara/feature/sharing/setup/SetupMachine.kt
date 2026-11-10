@@ -22,6 +22,13 @@ enum class SetupStep {
     Sensor,
     Alerts,
     Identity,
+
+    /**
+     * Wearer only, last: *Bring your history back* (Import history: LibreView, Tidepool or a file). Offered once: done
+     * or skipped, it never comes back (not on the Finish-setup card); Settings › Share with apps › Import history
+     * stays. Offered again on its own after an update replaced the database (`historyDue`).
+     */
+    History,
     ;
 
     /** Welcome and Role can't be skipped: the app does nothing useful without a role. Every other step can. */
@@ -79,9 +86,20 @@ enum class RoleRefusal {
 object SetupMachine {
     fun steps(facts: SetupFacts): List<SetupStep> =
         when (facts.role) {
+            // a follower's history is the wearer's (it comes from their phone): nothing to import
             Role.Follower -> listOf(SetupStep.Welcome, SetupStep.Role, SetupStep.Join, SetupStep.Permissions, SetupStep.Alerts)
+
             Role.Wearer, null -> SetupStep.entries - SetupStep.Join
         }
+
+    /** *Bring it back* opens Import history: the step is done (offered once). */
+    fun completeHistory(record: SetupRecord): SetupRecord = record.done(SetupStep.History)
+
+    /** The history step still to offer on its own (after setup, an update or a replaced database): wearer, neither done nor skipped. */
+    fun historyDue(
+        record: SetupRecord,
+        role: Role?,
+    ): Boolean = role == Role.Wearer && SetupStep.History !in record.completed && SetupStep.History !in record.skipped
 
     /** The step to show now, or null when setup is over (home). Resumes exactly where the person left. */
     fun next(

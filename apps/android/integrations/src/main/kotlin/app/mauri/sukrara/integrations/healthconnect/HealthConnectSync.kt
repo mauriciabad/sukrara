@@ -126,7 +126,8 @@ sealed interface HcStatus {
  * Writes the wearer's readings to Health Connect as blood glucose (interstitial fluid), opt-in (`healthConnect.on`,
  * off by default; turning it on asks Health Connect's own permission sheet first). Switched on, the stored history (up
  * to [BACKFILL]) goes in once, then each new reading. Only this phone's own sensor readings ([SourceId.Wearer], by the
- * reading's stored source, so a follower feed kept from another role never goes in) and never LO / HI (no number).
+ * reading's stored source, so a follower feed kept from another role never goes in, nor imported history: Health
+ * Connect has it already or got it from the same place) and never LO / HI (no number).
  *
  * Idempotent: each record's clientRecordId is its minute ([clientId]), so writing a minute again updates it. The
  * written minutes are remembered ([MinuteRuns]), so each pass writes only new minutes: a new reading, or readings a

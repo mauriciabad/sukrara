@@ -277,4 +277,60 @@
     <string name="in_bc_reallow_action">Volver a permitir</string>
     <!-- LibreView: Upload every (apps.libreviewInterval) -->
     <string name="in_lv_interval">Subir cada</string>
+    <!-- Import history (Ajustes › Compartir con apps › Importar historial, y el paso de la configuración) -->
+    <string name="in_import_title">Importar historial</string>
+    <string name="in_import_row_summary">Los últimos 90 días desde Tidepool, LibreView o un archivo</string>
+    <string name="in_import_intro">Sukrara empieza con el historial vacío. Recupera los últimos 90 días de donde ya están. Nada se añade dos veces: lo que hay en este móvil manda, e importar otra vez solo añade lo que falta.</string>
+    <string name="in_import_follower">Tu historial es el de la persona a la que sigues: llega desde su móvil, así que aquí no hay nada que importar.</string>
+    <string name="in_import_accounts_group">Desde tus cuentas</string>
+    <string name="in_import_tidepool_summary">Descargar los últimos 90 días de %1$s</string>
+    <string name="in_import_tidepool_summary_plain">Descargar los últimos 90 días de tu cuenta de Tidepool</string>
+    <string name="in_import_tidepool_sign_in">Primero inicia sesión en Tidepool</string>
+    <string name="in_import_tidepool_sign_in_action">Iniciar sesión en Tidepool</string>
+    <string name="in_import_action">importar</string>
+    <string name="in_import_libreview_summary">LibreView da tu historial como archivo: descárgalo allí y elígelo aquí</string>
+    <string name="in_import_libreview_title">Historial desde LibreView</string>
+    <string name="in_import_libreview_steps">1. Abre LibreView e inicia sesión.\n2. Historial de glucosa › Descargar datos de glucosa.\n3. Elige ese archivo aquí.\n\nLibreView no deja que las apps descarguen tu historial, así que este paso es tuyo.</string>
+    <string name="in_import_libreview_open">Abrir LibreView</string>
+    <string name="in_import_libreview_choose">Elegir el archivo</string>
+    <string name="in_import_cancel">Cancelar</string>
+    <string name="in_import_file">Elegir un archivo</string>
+    <string name="in_import_file_summary">Una exportación de Sukrara (Exportar datos con Todo el historial en la app anterior, o Todo lo que hay en este móvil) o el archivo de LibreView</string>
+    <string name="in_import_footer">El historial importado se ve en la gráfica y en los informes, se guarda 90 días y llega a quienes te siguen como el resto. Nunca va a LibreView, Tidepool, Nightscout ni Health Connect: ya lo tienen o les llegó del mismo sitio, y una segunda copia contaría doble. Las lecturas de los últimos 15 minutos son cosa de tu sensor.</string>
+    <string name="in_import_running_tidepool">Importando desde Tidepool…</string>
+    <string name="in_import_running_libreview">Importando el archivo de LibreView…</string>
+    <string name="in_import_running_file">Importando el archivo…</string>
+    <string name="in_import_done_tidepool">Importado desde Tidepool</string>
+    <string name="in_import_done_libreview">Importado el archivo de LibreView</string>
+    <string name="in_import_done_file">Importado el archivo</string>
+    <string name="in_import_stopped">Importación detenida</string>
+    <string name="in_import_stopped_body">Lo añadido se queda. Importar otra vez solo añade lo que falta.</string>
+    <string name="in_import_failed">No se pudo importar</string>
+    <string name="in_import_stop">Detener</string>
+    <string name="in_import_ok">Vale</string>
+    <string name="in_import_added">Añadidas %1$s y %2$s</string>
+    <plurals name="in_import_readings">
+        <item quantity="one">%d lectura</item>
+        <item quantity="other">%d lecturas</item>
+    </plurals>
+    <plurals name="in_import_entries">
+        <item quantity="one">%d anotación</item>
+        <item quantity="other">%d anotaciones</item>
+    </plurals>
+    <plurals name="in_import_already">
+        <item quantity="one">%d ya estaba aquí</item>
+        <item quantity="other">%d ya estaban aquí</item>
+    </plurals>
+    <plurals name="in_import_outside">
+        <item quantity="one">%d de hace más de 90 días o de los últimos 15 minutos se queda fuera</item>
+        <item quantity="other">%d de hace más de 90 días o de los últimos 15 minutos se quedan fuera</item>
+    </plurals>
+    <plurals name="in_import_skipped">
+        <item quantity="one">%d fila que Sukrara no guarda se queda fuera (glucemias capilares, cetonas)</item>
+        <item quantity="other">%d filas que Sukrara no guarda se quedan fuera (glucemias capilares, cetonas)</item>
+    </plurals>
+    <string name="in_import_err_not_glucose">Esto no es un archivo de glucosa. Elige una exportación de Sukrara o el archivo de Descargar datos de glucosa de LibreView.</string>
+    <string name="in_import_err_dates">Las fechas de este archivo tienen un formato que Sukrara no sabe leer. No se ha añadido nada.</string>
+    <string name="in_import_err_unreadable">No se pudo abrir el archivo. Elígelo otra vez.</string>
+    <string name="in_import_err_signed_out">No has iniciado sesión en Tidepool. Inicia sesión e importa otra vez.</string>
 </resources>
