@@ -22,10 +22,14 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import java.time.Duration
 import java.time.Instant
+import java.util.Locale
+import java.util.TimeZone
+import app.mauri.sukrara.graph.Clock as GraphClock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WidgetUpdaterTest {
@@ -103,6 +107,52 @@ class WidgetUpdaterTest {
             ticks.emit(Unit)
             runCurrent()
             assertEquals("hidden at 20 min", 3, redraws)
+        }
+
+    /** #148: no widget keeps `08:59` beside the notification's `8:59 AM` after Settings' 12/24-hour or zone change. */
+    @Test
+    fun `the key changes with the 24-hour setting, the zone and the language`() {
+        val inputs = WidgetInputs(glucose.value, emptyList(), GraphConfig(), WidgetPlacements())
+        val zone = TimeZone.getDefault()
+        val locale = Locale.getDefault()
+        val source = GraphClock.hour24Source
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Europe/Madrid"))
+            GraphClock.hour24Source = { true }
+            val h24 = WidgetUpdater.DrawKey.of(inputs, t0, false)
+            assertEquals(h24, WidgetUpdater.DrawKey.of(inputs, t0, false))
+            GraphClock.hour24Source = { false }
+            val h12 = WidgetUpdater.DrawKey.of(inputs, t0, false)
+            assertNotEquals("12/24-hour", h24, h12)
+            TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"))
+            assertNotEquals("time zone", h12, WidgetUpdater.DrawKey.of(inputs, t0, false))
+            val ny = WidgetUpdater.DrawKey.of(inputs, t0, false)
+            Locale.setDefault(Locale.forLanguageTag(if (locale.language == "es") "en-US" else "es-ES"))
+            assertNotEquals("language", ny, WidgetUpdater.DrawKey.of(inputs, t0, false))
+        } finally {
+            TimeZone.setDefault(zone)
+            Locale.setDefault(locale)
+            GraphClock.hour24Source = source
+        }
+    }
+
+    @Test
+    fun `a tick after a 12-24-hour change redraws at once`() =
+        runTest {
+            val source = GraphClock.hour24Source
+            try {
+                GraphClock.hour24Source = { true }
+                updater()
+                ticks.emit(Unit)
+                runCurrent()
+                assertEquals("nothing changed", 1, redraws)
+                GraphClock.hour24Source = { false }
+                ticks.emit(Unit)
+                runCurrent()
+                assertEquals(2, redraws)
+            } finally {
+                GraphClock.hour24Source = source
+            }
         }
 
     @Test

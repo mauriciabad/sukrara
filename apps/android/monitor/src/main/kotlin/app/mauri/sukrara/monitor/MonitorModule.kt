@@ -101,7 +101,10 @@ class MonitorModule(
 
     private val ticks = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    /** A freshness step passed without a new reading: surfaces that show the value redraw (notification, widgets). */
+    /**
+     * A freshness step passed without a new reading, or how a time is written changed (12/24-hour, time zone,
+     * language): surfaces that show the value redraw (notification, widgets) if their picture changed.
+     */
     val freshnessTicks: SharedFlow<Unit> = ticks
 
     private val screenOn = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -166,11 +169,18 @@ class MonitorModule(
 
     /**
      * The language changed (the phone's or Sukrara's own): every channel and group gets its name in the new language
-     * (Android keeps the person's channel settings, only the name changes) and the glucose notification is redrawn.
+     * (Android keeps the person's channel settings, only the name changes), the glucose notification and the widgets
+     * are redrawn.
      */
     fun onLocaleChanged() {
         Channels.create(context)
         repost()
+        ticks.tryEmit(Unit)
+    }
+
+    /** Settings' 12/24-hour or the time zone changed: the widgets redraw their times at once (the notification too). */
+    internal fun onClockChanged() {
+        ticks.tryEmit(Unit)
     }
 
     internal fun onFreshnessStep() {
