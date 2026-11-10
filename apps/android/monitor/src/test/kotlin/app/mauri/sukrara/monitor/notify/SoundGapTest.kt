@@ -69,6 +69,28 @@ class SoundGapTest {
         assertTrue(posts.isEmpty())
     }
 
+    @Test fun `an alert right after an info sound waits the rest of the gap, never longer`() {
+        info("sensor ended")
+        advance(1_500) // it sounded at 1.1 s, 0.4 s ago
+        assertEquals(SoundGap.GAP_MS - 400, gap.alertWaitMs())
+        advance(SoundGap.GAP_MS - 400)
+        assertEquals(0L, gap.alertWaitMs())
+    }
+
+    @Test fun `a notice that can't wait posts at once and holds the next alert back`() {
+        gap.postNow(2, sounds = true) { posts += "monitoring stopped" to now }
+        assertEquals(listOf("monitoring stopped" to 50_000L), posts)
+        assertEquals(SoundGap.GAP_MS, gap.alertWaitMs())
+        advance(700)
+        assertEquals(SoundGap.GAP_MS - 700, gap.alertWaitMs())
+    }
+
+    @Test fun `silent info posts never hold an alert back`() {
+        info("countdown", sounds = false)
+        gap.postNow(2, sounds = false) { posts += "quiet notice" to now }
+        assertEquals(0L, gap.alertWaitMs())
+    }
+
     @Test fun `different notifications wait on their own`() {
         info("a", id = 1)
         info("b", id = 2)

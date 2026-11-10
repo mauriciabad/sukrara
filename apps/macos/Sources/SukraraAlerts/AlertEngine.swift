@@ -16,16 +16,20 @@ public struct AlertContext: Equatable, Sendable {
     public var sensor: SensorWindow?
     public var latest: GlucoseSample?
     public var scope: AlertScope
+    /// When the reading source started (following someone, Juggluco reached; nil = none): until it delivers a reading no
+    /// data counts from it (or from a newer reading), so a source that never delivers a first reading alerts too.
+    public var sourceStart: Date?
 
     public init(
         settings: AlertSettings = AlertSettings(), treatments: [AlertTreatment] = [], sensor: SensorWindow? = nil,
-        latest: GlucoseSample? = nil, scope: AlertScope = .all
+        latest: GlucoseSample? = nil, scope: AlertScope = .all, sourceStart: Date? = nil
     ) {
         self.settings = settings
         self.treatments = treatments
         self.sensor = sensor
         self.latest = latest
         self.scope = scope
+        self.sourceStart = sourceStart
     }
 }
 
@@ -36,6 +40,8 @@ public enum AlertInput: Equatable, Sendable {
     /// The treatment log changed (live carbs / rapid insulin entries, no deleted ones).
     case treatments([AlertTreatment])
     case sensor(SensorWindow?)
+    /// The reading source started then (nil = none any more).
+    case source(since: Date?)
     case settings(AlertSettings)
     case scope(AlertScope)
     /// The timer (`schedule`), a wake from sleep, or anything else that only needs a re-check.
@@ -79,30 +85,60 @@ public struct AlertEngine: Sendable {
     /// Readings older than this never alert (backfill, a late chunk).
     public static let freshness: TimeInterval = 15 * 60
 
-    public private(set) var context: AlertContext
+    public internal(set) var context: AlertContext
     var episodes: [AlertGroup: Episode] = [:]
     public internal(set) var snoozes = SideSnoozes()
     /// *Mute all* until then (nil = off, `muteAllForever` = until turned off).
     public internal(set) var muteAllUntil: Date?
+    /// The device's clock as last seen: a clock set back moves every time kept here back with it.
+    var clock = ClockWatch()
+    /// A reading came since the source started: no data counts from the readings alone (also an old first one).
+    var sourceDelivered = false
 
     public init(context: AlertContext) { self.context = context }
 
     public var settings: AlertSettings { context.settings }
 
-    /// Handles `input` at `now`; firing ids come from `rng`.
-    public mutating func handle(_ input: AlertInput, at now: Date, using rng: inout some RandomNumberGenerator)
-        -> [AlertEffect]
-    {
+    /// Handles `input` at `now` (`monotonic`: a clock that never jumps, in s, so a clock set back is measured exactly);
+    /// firing ids come from `rng`.
+    public mutating func handle(
+        _ input: AlertInput, at now: Date, monotonic: TimeInterval? = nil, using rng: inout some RandomNumberGenerator
+    ) -> [AlertEffect] {
         var out: [AlertEffect] = []
+        observeClock(now, monotonic: monotonic)
         apply(input, at: now)
         evaluate(at: now, rng: &rng, out: &out)
         out.append(.schedule(nextCheck(after: now)))
         return out
     }
 
-    public mutating func handle(_ input: AlertInput, at now: Date) -> [AlertEffect] {
+    public mutating func handle(_ input: AlertInput, at now: Date, monotonic: TimeInterval? = nil) -> [AlertEffect] {
         var rng = SystemRandomNumberGenerator()
-        return handle(input, at: now, using: &rng)
+        return handle(input, at: now, monotonic: monotonic, using: &rng)
+    }
+
+    /// Notes `now` (`ClockWatch`): a clock set back (beyond NTP noise) moves every time this engine keeps back with it,
+    /// so a repeat, a window, a Mute or Mute all stays as far away as it was and the last reading keeps its age (a
+    /// forward jump needs nothing: what came due alerts at once). Returns how far it was set back (0 = not), so the
+    /// caller moves its own kept times too (the follower's mirror).
+    @discardableResult
+    public mutating func observeClock(_ now: Date, monotonic: TimeInterval?) -> TimeInterval {
+        let back = clock.observe(now, monotonic: monotonic)
+        if back > 0 { shiftBack(back) }
+        return back
+    }
+
+    private mutating func shiftBack(_ d: TimeInterval) {
+        for g in Array(episodes.keys) { episodes[g]?.shiftBack(d) }
+        snoozes.shiftBack(d)
+        muteAllUntil = muteAllUntil?.shiftedBack(d)
+        context.latest?.at.addTimeInterval(-d)
+        context.sourceStart = context.sourceStart?.shiftedBack(d)
+    }
+
+    /// Since when no data counts: the newer of the last reading and the source's start; nil = nothing to count from.
+    public var noDataSince: Date? {
+        sourceDelivered ? context.latest?.at : [context.latest?.at, context.sourceStart].compactMap { $0 }.max()
     }
 
     /// The firing whose notification is up in `group` (nil = none).
@@ -126,10 +162,19 @@ public struct AlertEngine: Sendable {
 
     private mutating func apply(_ input: AlertInput, at t: Date) {
         switch input {
-        case .reading(let r):
+        case .reading(var r):
+            // dated after now (the source's clock ahead, or this Mac's set back): counts as taken now, else it would
+            // hide every reading until the clock caught up
+            r.at = min(r.at, t)
             if context.latest.map({ r.at > $0.at }) ?? true { context.latest = r }
+            sourceDelivered = true
         case .treatments(let list): context.treatments = list
         case .sensor(let s): context.sensor = s
+        case .source(let since):
+            // the start already known changes nothing
+            guard since != context.sourceStart else { return }
+            context.sourceStart = since
+            sourceDelivered = false
         case .settings(let s): context.settings = s
         case .scope(let s): context.scope = s
         case .tick: break
@@ -189,7 +234,8 @@ public struct AlertEngine: Sendable {
         }
         let nd = s[.noData]
         let noData =
-            (r.map { nd.on && t.timeIntervalSince($0.at) >= nd.threshold * 60 } ?? false) && !expectsNoReading(at: t)
+            (noDataSince.map { nd.on && t.timeIntervalSince($0) >= nd.threshold * 60 } ?? false)
+            && !expectsNoReading(at: t)
         let backSides = snoozes.advance(at: t, backMin: s.notificationActions.backMin) { side -> Bool? in
             switch side {
             case .noData: return !noData
@@ -335,11 +381,11 @@ public struct AlertEngine: Sendable {
         let s = settings
         guard s.on else { return nil }
         var c: [Date] = []
-        if let r = context.latest {
-            let nd = s[.noData]
-            if nd.on, episodes[.noData]?.isOn != true { c.append(r.at.addingTimeInterval(nd.threshold * 60)) }
-            c.append(r.at.addingTimeInterval(Self.freshness + 1))
+        let nd = s[.noData]
+        if let since = noDataSince, nd.on, episodes[.noData]?.isOn != true {
+            c.append(since.addingTimeInterval(nd.threshold * 60))
         }
+        if let r = context.latest { c.append(r.at.addingTimeInterval(Self.freshness + 1)) }
         if let w = context.sensor, w.isWarmingUp(at: now, latestReading: context.latest?.at) {
             c.append(w.warmupEnd.addingTimeInterval(SensorWindow.warmupGrace))
         }

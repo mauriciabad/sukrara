@@ -24,8 +24,9 @@ enum AlertAction: Equatable {
 ///
 /// - Own rules, or (`mirroring`) the wearer's alerts through `AlertMirror` plus this Mac's own no-data rule.
 /// - The no-data rule is timed by the engine's `schedule` effect (a wake), never by the next reading, and re-checked on
-///   wake from sleep and clock changes (`tick`). Before the first reading ever, nothing is armed: the engine has no
-///   reading to measure "no data" from, so a Mac that never followed anyone never rings.
+///   wake from sleep and clock changes (`tick`). No data counts from the last reading or the source's start
+///   (`sourceStarted`), whichever is newer: a Mac that never followed anyone (nor reached Juggluco) never rings, a source
+///   that started but never delivers a reading does.
 /// - Every change is saved (`AlertStateStoring`), so a relaunch resumes the alerts that were up, silently, and keeps
 ///   the mutes.
 @Observable
@@ -74,6 +75,7 @@ final class AlertController {
     /// The newest reading the Mac has (also an old one at launch: "no data" is measured from it).
     func reading(_ r: Reading) {
         let sample = GlucoseSample(at: r.t, mgdl: Double(r.mgdl), rate: r.rate)
+        noteClock()
         if mirroring {
             for side in mirror.reading(sample, settings, at: clock.now) { notifier.removeMuted(side) }
         }
@@ -82,6 +84,13 @@ final class AlertController {
 
     func treatments(_ list: [AlertTreatment]) { handle(.treatments(list)) }
     func sensor(_ window: SensorWindow?) { handle(.sensor(window)) }
+
+    /// The reading source started (following someone, Juggluco reached): no data counts from now until a reading, also
+    /// with none ever. A source already running keeps its start (also across relaunches); `resetMonitoring` forgets it.
+    func sourceStarted() {
+        guard engine.context.sourceStart == nil else { return }
+        handle(.source(since: clock.now))
+    }
 
     func settings(_ s: AlertSettings) {
         guard s != engine.settings else { return }
@@ -103,6 +112,8 @@ final class AlertController {
     /// An alert event of the wearer's phone (PROTOCOL-v2 "Alerts"). No data is always this Mac's own.
     func wearerAlert(_ p: AlertPayload) {
         guard mirroring, settings.on, let kind = AlertKind(rawValue: p.kind), kind != .noData else { return }
+        noteClock()
+        defer { expireMirror() }
         let at = Date(timeIntervalSince1970: TimeInterval(p.at))
         if p.fires {
             let firing = AlertFiring(
@@ -126,6 +137,7 @@ final class AlertController {
     /// A user action from a notification, the panel or the menu.
     func perform(_ action: AlertAction) {
         let now = clock.now
+        noteClock()
         if let line = Self.logLine(action, settings: settings, now: now) { notifier.log(line) }
         switch action {
         case .mute(let side, let minutes):
@@ -200,7 +212,8 @@ final class AlertController {
     /// more, and their alerts go. This Mac's mutes stay (the user set them).
     func resetMonitoring() {
         for g in AlertGroup.allCases { notifier.clear(g) }
-        let snapshot = AlertEngine.Snapshot(episodes: [], snoozes: engine.snoozes, muteAllUntil: engine.muteAllUntil)
+        let snapshot = AlertEngine.Snapshot(
+            episodes: [], snoozes: engine.snoozes, muteAllUntil: engine.muteAllUntil, lastNow: engine.snapshot.lastNow)
         let (fresh, effects) = AlertEngine.restore(
             snapshot, context: AlertContext(settings: settings, scope: engine.context.scope), at: clock.now)
         engine = fresh
@@ -219,9 +232,25 @@ final class AlertController {
 
     @discardableResult
     private func handle(_ input: AlertInput) -> [AlertEffect] {
-        let effects = engine.handle(input, at: clock.now)
+        noteClock()
+        let effects = engine.handle(input, at: clock.now, monotonic: clock.monotonic)
         run(effects)
+        expireMirror()
         return effects
+    }
+
+    /// A clock set back moves the engine's kept times and this Mac's mutes on the wearer's alerts alike.
+    private func noteClock() {
+        let back = engine.observeClock(clock.now, monotonic: clock.monotonic)
+        if back > 0 { mirror.shiftBack(back) }
+    }
+
+    /// This Mac's Mute all on the wearer's alerts ran out (the timer, or any input that comes first): the wearer's
+    /// newest alerts still up show at once.
+    private func expireMirror() {
+        let shown = mirror.expire(at: clock.now)
+        for id in shown { showAgain(id) }
+        if !shown.isEmpty { save() }
     }
 
     private func run(_ effects: [AlertEffect]) {

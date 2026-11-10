@@ -10,6 +10,7 @@ import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.alerts.TreatmentKind
 import app.mauri.sukrara.core.model.DurationWords
+import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.designsystem.alerts.AlertWords
@@ -28,8 +29,9 @@ import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * Every mute / remind-less line of contracts/alerts/copy.json, worded by [MuteText] from the en and es strings
- * (`:core:designsystem`'s mute lines, this module's alert texts).
+ * Every Android case of contracts/alerts/copy.json in en and es, from the strings (`:core:designsystem`'s mute lines,
+ * this module's alert texts): the mute / remind-less lines ([MuteText]), the notification's title and body
+ * ([AlertCopy], in mg/dL and mmol/L), its actions and Mute all's scope. The Mac checks the same file.
  */
 class AlertCopyTest {
     private fun strings(file: String): Map<String, String> {
@@ -70,6 +72,22 @@ class AlertCopyTest {
 
     private val en = words("values")
     private val es = words("values-es")
+
+    private companion object {
+        /** When the copy.json bodies fire (a whole minute). */
+        const val AT = 1_000_020L
+
+        /** copy.json's notification actions → this module's strings. */
+        val ACTIONS =
+            mapOf(
+                "mute" to "alert_action_mute",
+                "remind_less" to "alert_action_remind_less",
+                "remind_as_usual" to "alert_action_remind_usual",
+                "unmute" to "alert_action_unmute",
+                "change_time" to "alert_action_change",
+                "mute_input" to "alert_action_mute_for_label",
+            )
+    }
 
     private fun side(o: JsonObject) = Side.entries.first { it.wire == o.str("side") }
 
@@ -149,12 +167,71 @@ class AlertCopyTest {
                 .jsonObject
                 .getValue("cases")
                 .jsonArray
+        var checked = 0
         for (c in cases.map { it.jsonObject }) {
-            val clock = { _: Long -> c["until"]?.jsonPrimitive?.content ?: "" }
-            assertEquals("en $c", c.str("en"), MuteText.line(lineOf(c), en, clock))
-            assertEquals("es $c", c.str("es"), MuteText.line(lineOf(c), es, clock))
+            val enText = word(c, en, Locale.ENGLISH) ?: continue
+            assertEquals("en $c", c.str("en"), enText)
+            assertEquals("es $c", c.str("es"), word(c, es, Locale.forLanguageTag("es")))
+            checked++
+        }
+        assertTrue("every Android case", checked >= 50)
+    }
+
+    /** [c] worded on Android in [w] (numbers in [locale]), or null: a case of the Mac's alone. */
+    private fun word(
+        c: JsonObject,
+        w: AlertWords,
+        locale: Locale,
+    ): String? {
+        if (c["platform"]?.jsonPrimitive?.content == "mac" || c["device"]?.jsonPrimitive?.content == "mac") return null
+        val clock = { _: Long -> c["until"]?.jsonPrimitive?.content ?: "" }
+
+        fun kind() = AlertKind.fromWire(c.str("kind"))!!
+        return when (c.str("state")) {
+            "headline" -> {
+                AlertCopy.headline(kind(), c.long("treated").toInt(), w)
+            }
+
+            "body" -> {
+                val reading =
+                    c["mgdl"]?.let {
+                        AlertReading(
+                            AT - (c["ageMin"]?.jsonPrimitive?.int ?: 0) * 60L,
+                            it.jsonPrimitive.int,
+                            c.rate(),
+                        )
+                    }
+                val f = Firing(kind(), "e1", 1, reading, if (kind() == AlertKind.NO_DATA) 20.0 else 70.0, AT)
+                AlertCopy.body(f, w, if (c.str("unit") == "mmol") GlucoseUnit.MMOL else GlucoseUnit.MGDL, locale)
+            }
+
+            "action" -> {
+                w.get(ACTIONS.getValue(c.str("action")))
+            }
+
+            "mute_choice_spoken" -> {
+                w.get("alert_mute_choice_a11y").format(MuteText.sideName(side(c), w), Durations.text(c.long("min"), w.durations))
+            }
+
+            "relaxed" -> {
+                w.get("alert_relaxed_subtext").format(Durations.text(c.long("intervalMin"), w.durations))
+            }
+
+            "test_title" -> {
+                w.get("alert_test_title").format(w.get("alert_headline_${c.str("kind")}"))
+            }
+
+            "all_scope" -> {
+                w.get("mute_all_scope")
+            }
+
+            else -> {
+                MuteText.line(lineOf(c), w, clock)
+            }
         }
     }
+
+    private fun JsonObject.rate(): Double? = get("rate")?.jsonPrimitive?.content?.toDouble()
 
     private fun firing(kind: AlertKind, reading: AlertReading?) =
         Firing(kind = kind, id = "e1", n = 1, reading = reading, threshold = 70.0, at = 1_000_000)

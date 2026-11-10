@@ -208,7 +208,9 @@ fun AlertKindContent(
                     SettingsSpec.OPTIONS.getValue("soundPack").map {
                         Choice<String?>(packName(it), it, trailing = soundPreview(kind, it, alarm, playback))
                     }
-            ChoiceDialog(stringResource(R.string.st_sound), options, ui.settings.sounds.perKind[kind], { dialog = null }) {
+            // a sound chosen in the channel's Android settings plays whatever the pack: every ▶ sounds the same, say why
+            val android = stringResource(R.string.st_sound_chosen_in_android).takeIf { playback.soundChosenInAndroid(kind, alarm) }
+            ChoiceDialog(stringResource(R.string.st_sound), options, ui.settings.sounds.perKind[kind], { dialog = null }, android) {
                 actions.edit(AlertEdits.sound(kind, it))
             }
         }

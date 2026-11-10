@@ -144,6 +144,12 @@ interface AlertPlayback {
         alarm: Boolean,
     ): Boolean
 
+    /** The person chose this alert's sound in Android's settings: it plays that one, whatever the pack (every ▶ too). */
+    fun soundChosenInAndroid(
+        kind: AlertKind,
+        alarm: Boolean,
+    ): Boolean = false
+
     fun sendTest(
         kind: AlertKind,
         settings: AlertSettings,

@@ -7,8 +7,9 @@ import SukraraCore
 import SukraraTesting
 import Testing
 
-/// Every case of `contracts/alerts/copy.json` in English and Spanish, the file Android's MuteCopyTest reads too. The
-/// card's pill cases (`pill`, `pill_forever`) are the renderer's (GraphTests `BadgeCopyTests`).
+/// Every state-line case of `contracts/alerts/copy.json` in English and Spanish, the file Android's AlertCopyTest reads
+/// too. The card's pill cases (`pill`, `pill_forever`) are the renderer's (GraphTests `BadgeCopyTests`); the
+/// notification's own words are AppTests `AlertCopyTests`.
 @Suite struct MuteCopyTests {
     struct Case: Decodable, Sendable, CustomTestStringConvertible {
         var state: String
@@ -54,7 +55,13 @@ import Testing
         }
     }
 
-    @Test(arguments: cases().filter { !$0.state.hasPrefix("pill") })
+    static let lines: Set<String> = [
+        "side_muted", "side_after", "side_falling", "side_less", "all_timed", "all_forever", "notif_title",
+        "notif_text",
+        "choice", "choice_forever",
+    ]
+
+    @Test(arguments: cases().filter { lines.contains($0.state) })
     func line(_ c: Case) throws {
         #expect(Self.line(c, .en) == c.en)
         #expect(Self.line(c, .es) == c.es)

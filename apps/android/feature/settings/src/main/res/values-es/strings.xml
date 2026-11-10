@@ -84,6 +84,7 @@
     <string name="st_alarm_summary">Suena con el volumen de alarma y se abre sobre la pantalla de bloqueo</string>
     <string name="st_sound">Sonido</string>
     <string name="st_sound_same">Como el paquete (%1$s)</string>
+    <string name="st_sound_chosen_in_android">Android reproduce el sonido elegido en sus ajustes</string>
     <string name="st_kind_footer_level">Un episodio avisa una vez y luego recuerda con el intervalo indicado hasta que el valor vuelve al rango.</string>
     <string name="st_kind_footer_other">Recuerda con el intervalo indicado mientras dure.</string>
     <string name="st_alert_anyway">Avisarme igualmente</string>

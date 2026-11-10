@@ -6,10 +6,11 @@ import SukraraAlerts
 import SukraraCore
 import SukraraGraph
 
-/// The words of an alert notification in the user's language (English, Spanish). Self-contained: the value, the
-/// direction and what it means, readable on the lock screen without opening the app.
+/// The words of an alert notification in the user's language (English, Spanish): every Mac case of
+/// `contracts/alerts/copy.json`, the words Android writes too (`AlertCopyTests`; the state lines are `MuteCopy`'s).
+/// Self-contained: the value, the direction and what it means, readable on the lock screen without opening the app.
 struct AlertText: Equatable {
-    enum Language: String { case en, es }
+    typealias Language = AppLanguage
 
     let language: Language
     /// The unit every number is written in (`general.unit`; contracts/settings/units.json).
@@ -33,9 +34,9 @@ struct AlertText: Equatable {
     func body(_ f: AlertFiring, now: Date) -> String {
         let en = language == .en
         if f.kind == .noData {
-            let since = Durations.text(
-                max(Int(f.threshold.rounded()), Int(now.timeIntervalSince(f.reading?.at ?? now) / 60)))
-            guard let r = f.reading else { return en ? "No reading for \(since)" : "Sin lecturas desde hace \(since)" }
+            // a source that never delivered a reading: nothing to count from but its start, nothing to show
+            guard let r = f.reading else { return en ? "No reading yet" : "Aún no hay lecturas" }
+            let since = Durations.text(max(Int(f.threshold.rounded()), Int(now.timeIntervalSince(r.at) / 60)))
             return en
                 ? "No reading for \(since) · last \(value(r))" : "Sin lecturas desde hace \(since) · última \(value(r))"
         }
@@ -78,8 +79,8 @@ struct AlertText: Equatable {
         case .high: base = "Glucosa alta"
         case .veryHigh: base = "Glucosa muy alta"
         case .extremelyHigh: base = "Glucosa extremadamente alta"
-        case .fallingFast: base = "Bajando rápido"
-        case .risingFast: base = "Subiendo rápido"
+        case .fallingFast: base = "Bajada rápida"
+        case .risingFast: base = "Subida rápida"
         case .noData: base = "Sin datos de glucosa"
         }
         guard f.treated > 0, f.kind.group == .level else { return base }
@@ -88,18 +89,19 @@ struct AlertText: Equatable {
     }
 
     /// The muted note: "Low alerts muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
-    func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, appLanguage) }
+    func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, language) }
 
-    func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, appLanguage) }
+    func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, language) }
 
-    private var appLanguage: AppLanguage { language == .en ? .en : .es }
+    /// Settings › Alerts › Send Test Alert: "Test · Low glucose".
+    func testTitle(_ f: AlertFiring) -> String { "\(language == .en ? "Test" : "Prueba") · \(title(f))" }
 
     // Action titles (HIG title case in English; the ellipsis = more input follows).
     var mute: String { language == .en ? "Mute…" : "Silenciar…" }
     var muteButton: String { language == .en ? "Mute" : "Silenciar" }
     var mutePlaceholder: String { language == .en ? "30 min, 1 h, 2 h…" : "30 min, 1 h, 2 h…" }
-    var remindLess: String { language == .en ? "Remind Less" : "Recordar menos" }
-    var remindAsUsual: String { language == .en ? "Remind as Usual" : "Recordar como siempre" }
+    var remindLess: String { language == .en ? "Remind Less" : "Avisar menos" }
+    var remindAsUsual: String { language == .en ? "Remind as Usual" : "Avisar como siempre" }
     var unmute: String { language == .en ? "Unmute" : "Reactivar" }
-    var changeTime: String { language == .en ? "Change Time…" : "Cambiar hora…" }
+    var changeTime: String { language == .en ? "Change Time…" : "Cambiar duración…" }
 }

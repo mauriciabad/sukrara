@@ -39,9 +39,10 @@ class AlertRuntimeTest(private val name: String, private val sc: AlertScenarios.
             }
         }
 
-        override fun handle(input: AlertInput, t: Long): List<AlertEffect> =
+        override fun handle(input: AlertInput, t: Long, elapsed: Long): List<AlertEffect> =
             runBlocking {
                 clock.instant = Instant.ofEpochSecond(t)
+                rig.elapsed = elapsed
                 when (input) {
                     is AlertInput.Settings -> rig.store.setSettings(input.settings)
                     is AlertInput.Treatments -> rig.treatments.value = treatmentsOf(input.doses)
@@ -50,9 +51,10 @@ class AlertRuntimeTest(private val name: String, private val sc: AlertScenarios.
                 runtime.process(input)
             }
 
-        override fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long): List<AlertEffect> =
+        override fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect> =
             runBlocking {
                 clock.instant = Instant.ofEpochSecond(t)
+                rig.elapsed = elapsed
                 // a process death: a new runtime over the same stores (settings, treatments, saved record)
                 runtime = rig.runtime()
                 runtime.start()

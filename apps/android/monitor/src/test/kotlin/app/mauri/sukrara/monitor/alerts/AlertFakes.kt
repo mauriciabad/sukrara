@@ -33,6 +33,13 @@ class FakePresenter : AlertPresenter {
     /** Whose alert each [show] was (the wearer's name on a follower). */
     val who = mutableListOf<String?>()
 
+    /** How many times an alert waited for its turn to ring ([beforeRing]: every loud post, never a silent one). */
+    var waits = 0
+
+    override suspend fun beforeRing() {
+        waits++
+    }
+
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         slots[firing.kind.group] = firing.kind.wire
         log += (if (silent) "resume " else "show ") + firing.kind.wire
@@ -70,13 +77,24 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
 
     /** The last plan the runtime saved for the time before the first unlock (lockedboot). */
     var lockedBoot: LockedBootPlan? = null
+
+    /** The monotonic clock the runtime reads (s; null = none, as a test that never moves the wall clock back). */
+    var elapsed: Long? = null
     private var ids = 0
 
     fun runtime() =
-        AlertRuntime(store, treatments, presenter, alarm, { }, { published = it }, clock, newId = { "id${++ids}" }, lockedBoot = {
-            lockedBoot =
-                it
-        })
+        AlertRuntime(
+            store,
+            treatments,
+            presenter,
+            alarm,
+            { },
+            { published = it },
+            clock,
+            newId = { "id${++ids}" },
+            lockedBoot = { lockedBoot = it },
+            elapsed = { elapsed },
+        )
 
     fun reading(mgdl: Int, at: Instant = clock.now()) = Reading(at, mgdl, null, SourceId.Libre3)
 

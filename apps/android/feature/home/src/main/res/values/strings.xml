@@ -15,7 +15,7 @@
     <string name="reason_setup_body">Choose whether this phone wears the sensor or follows someone who does.</string>
     <string name="reason_setup_action">Set up</string>
     <string name="reason_no_sensor_title">Not monitoring: no sensor yet</string>
-    <string name="reason_no_sensor_body">Pair a sensor to see your glucose here. No alerts ring until the first reading arrives.</string>
+    <string name="reason_no_sensor_body">Pair a sensor to see your glucose here. No alerts ring until it is paired.</string>
     <string name="reason_no_sensor_action">Pair sensor</string>
     <string name="reason_no_wearer_title">Not monitoring: not following anyone yet</string>
     <string name="reason_no_wearer_body">Open the invite link from the person you follow. No alerts ring until their first reading arrives.</string>

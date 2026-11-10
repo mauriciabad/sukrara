@@ -581,6 +581,10 @@ private struct AlertBlocks: View {
             // the line above its exits (as a side's): beside them, "1 h left" broke between "1" and "h"
             VStack(alignment: .leading, spacing: 4) {
                 Label(line, systemImage: "bell.slash.fill")
+                // what it covers: nothing still sounds here, and no other device is muted
+                Text(L10n.t("Very low and no data included, on this Mac only"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 HStack {
                     Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
                         .accessibilityLabel(L10n.t("Alerts: Unmute"))

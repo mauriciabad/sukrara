@@ -38,8 +38,22 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
     var last: AlertReading? = null
         private set
 
+    /**
+     * When the reading source started (epoch s, 0 = none known): a sensor paired and connecting, Juggluco chosen, a
+     * follow the wearer allowed. Until it delivers a reading no data counts from it (or from a newer reading), so a
+     * source that never delivers a first reading still alerts (SPEC §1 "The source's start").
+     */
+    var sourceStart: Long = 0
+        private set
+
+    /** A reading came since the source started: no data counts from the readings alone (also an old first one). */
+    private var sourceDelivered = false
+
     /** The current sensor: no `no_data` while it has ended or warms up (a running one clears). */
     var sensor: SensorWindow? = null
+
+    /** Since when no data counts: the newer of the last reading and the source's start; null = nothing to count from. */
+    fun noDataSince(): Long? = (if (sourceDelivered) last?.t ?: 0 else maxOf(last?.t ?: 0, sourceStart)).takeIf { it > 0 }
 
     private fun sensorSilent(now: Long) = sensor?.silent(last?.t, now) ?: false
 
@@ -54,6 +68,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
             snoozes = snoozes.toMap(),
             muteAllUntil = muteAllUntil,
             last = last,
+            sourceStart = sourceStart,
+            sourceDelivered = sourceDelivered,
         )
 
     /**
@@ -65,6 +81,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         snoozes.clear()
         snoozes.putAll(m.snoozes.filterValues { !it.isEmpty })
         muteAllUntil = m.muteAllUntil.takeIf { it > now } ?: 0
+        sourceStart = m.sourceStart
+        sourceDelivered = m.sourceDelivered
         seed(m.last)
         for ((g, e) in m.episodes) if (e.kind.group == g && now - e.lastIn < hold(e, s)) episodes[g] = e.copy()
         return episodes.values.mapNotNull { it.shown }
@@ -151,6 +169,16 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
      */
     fun reading(r: AlertReading, s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
         seed(r.notAfter(now))
+        sourceDelivered = true
+        return evaluate(s, d, now)
+    }
+
+    /** The reading source started at [at] (null = none any more; the start already known changes nothing), then [evaluate]. */
+    fun sourceStarted(at: Long?, s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
+        if ((at ?: 0) != sourceStart) {
+            sourceStart = at ?: 0
+            sourceDelivered = false
+        }
         return evaluate(s, d, now)
     }
 
@@ -164,6 +192,7 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         snoozes.replaceAll { _, sn -> sn.copy(until = sn.until.shiftedBack(delta), backSince = sn.backSince.shiftedBack(delta)) }
         muteAllUntil = muteAllUntil.shiftedBack(delta)
         last = last?.let { it.copy(t = it.t - delta) }
+        sourceStart = sourceStart.shiftedBack(delta)
     }
 
     /** Re-check everything against the newest reading at [now]: no data, repeats, windows ending, the margin. */
@@ -179,7 +208,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         val level = Rules.levelOf(r, s, now)
         val rateKind = Rules.rateOf(r, s, now)
         val noDataRule = s.rule(AlertKind.NO_DATA)
-        val noData = r != null && noDataRule.on && now - r.t >= noDataRule.threshold * 60 && !sensorSilent(now)
+        val since = noDataSince()
+        val noData = since != null && noDataRule.on && now - since >= noDataRule.threshold * 60 && !sensorSilent(now)
         for (side in snoozes.keys.toList()) {
             val sn = snoozes.getValue(side)
             if (sn.until in 1..now) putSnooze(side, sn.copy(until = 0)) // the Mute's time is over
@@ -217,7 +247,8 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         val c = mutableListOf<Long>()
         val r = last
         val nd = s.rule(AlertKind.NO_DATA)
-        if (r != null && nd.on && episodes[AlertGroup.NO_DATA]?.on != true) c += r.t + (nd.threshold * 60).toLong()
+        val since = noDataSince()
+        if (since != null && nd.on && episodes[AlertGroup.NO_DATA]?.on != true) c += since + (nd.threshold * 60).toLong()
         if (r != null) c += r.t + Rules.FRESH_S + 1 // level/rate alerts end when the reading goes stale
         sensor?.let { if (it.warming(r?.t, now)) c += it.warmupEndEpoch + SensorWindow.WARMUP_GRACE_S }
         for (e in episodes.values) if (e.on && e.next != Long.MAX_VALUE) c += e.next

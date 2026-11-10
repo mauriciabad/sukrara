@@ -338,6 +338,11 @@ class AppGraph(
                         alarm: Boolean,
                     ) = alerts.tryOut.silenced(kind, alarm)
 
+                    override fun soundChosenInAndroid(
+                        kind: AlertKind,
+                        alarm: Boolean,
+                    ) = alerts.tryOut.soundChosenInAndroid(kind, alarm)
+
                     override fun sendTest(
                         kind: AlertKind,
                         settings: AlertSettings,

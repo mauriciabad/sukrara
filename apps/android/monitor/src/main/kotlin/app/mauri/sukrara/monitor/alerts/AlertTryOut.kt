@@ -66,6 +66,18 @@ class AlertTryOut(
         alarm: Boolean,
     ): Boolean = channel(kind, alarm)?.let { it.sound == null || !audible(it) } ?: false
 
+    /**
+     * The person chose this alert's sound in its channel's system settings: the alert plays that one whatever the pack,
+     * and so does every ▶ of the sound dialog (which says so).
+     */
+    fun soundChosenInAndroid(
+        kind: AlertKind,
+        alarm: Boolean,
+    ): Boolean {
+        val own = channel(kind, alarm)?.sound ?: return false
+        return !silenced(kind, alarm) && own != AlertChannels.soundUri(ctx, kind)
+    }
+
     private fun audible(c: NotificationChannel) = c.importance >= NotificationManager.IMPORTANCE_DEFAULT
 
     private fun channel(
@@ -101,10 +113,8 @@ class AlertTryOut(
         pack: String,
         alarm: Boolean,
     ): Uri? {
-        val channel = channel(kind, alarm)
-        if (channel != null && silenced(kind, alarm)) return null
-        val own = channel?.sound
-        if (own != null && own != AlertChannels.soundUri(ctx, kind)) return own
+        if (silenced(kind, alarm)) return null
+        if (soundChosenInAndroid(kind, alarm)) return channel(kind, alarm)?.sound
         return when (pack) {
             AlertSoundPicker.NONE -> {
                 null

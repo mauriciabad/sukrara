@@ -8,26 +8,27 @@ import java.io.File
 
 /**
  * The wearer under test in a scenario: the bare [AlertMachine] ([MachineDevice], `:core:alerts`) or the Android alert
- * runtime around it (`:monitor`). [handle] returns the effects the device applied; [restart] is a process restart: the
- * device resumes from what it saved.
+ * runtime around it (`:monitor`). [handle] returns the effects the device applied at its clock's [t] (epoch s) and the
+ * monotonic [elapsed] (s: the scenario's own time, so a `clock back` is measurable); [restart] is a process restart:
+ * the device resumes from what it saved.
  */
 interface ScenarioDevice {
-    fun handle(input: AlertInput, t: Long): List<AlertEffect>
+    fun handle(input: AlertInput, t: Long, elapsed: Long): List<AlertEffect>
 
-    fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long): List<AlertEffect>
+    fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect>
 }
 
 /** The machine alone; a restart goes through the saved state's JSON like the runtime's store. */
 class MachineDevice(settings: AlertSettings, t0: Long) : ScenarioDevice {
-    private var machine = AlertMachine(AlertRole.WEARER, settings).also { it.start(null, null, null, t0) }
+    private var machine = AlertMachine(AlertRole.WEARER, settings).also { it.start(null, null, null, t0, t0) }
 
-    override fun handle(input: AlertInput, t: Long) = machine.handle(input, t)
+    override fun handle(input: AlertInput, t: Long, elapsed: Long) = machine.handle(input, t, elapsed)
 
-    override fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long): List<AlertEffect> {
+    override fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect> {
         val saved = AlertStateCodec.decode(AlertStateCodec.encode(machine.snapshot()))
         val last = machine.engine.last
         machine = AlertMachine(AlertRole.WEARER, settings, doses)
-        return machine.start(saved, last, sensor, t)
+        return machine.start(saved, last, sensor, t, elapsed)
     }
 }
 
@@ -201,7 +202,11 @@ object AlertScenarios {
     fun run(sc: Scenario, device: (AlertSettings, Long) -> ScenarioDevice = ::MachineDevice): List<String> {
         var s = sc.settings.fold(AlertSettings()) { acc, kv -> set(acc, kv) }
         val got = HashMap<Int, MutableList<String>>()
+        // the scenario's time (the monotonic clock); the wearer's own clock is `wall()`, moved by `clock back`
         var t = T0
+        var offset = 0L
+
+        fun wall() = t + offset
 
         fun note(what: String) {
             got.getOrPut(((t - T0) / 60).toInt()) { mutableListOf() } += what
@@ -211,11 +216,14 @@ object AlertScenarios {
 
         // the follower's own no_data isn't run (SPEC §7)
         fun followerSettings() = s.withRule(AlertKind.NO_DATA, s.rule(AlertKind.NO_DATA).copy(on = false))
-        val follower = AlertMachine(AlertRole.FOLLOWER_MIRROR, followerSettings()).also { it.start(null, null, null, T0) }
+        val follower = AlertMachine(AlertRole.FOLLOWER_MIRROR, followerSettings()).also { it.start(null, null, null, T0, T0) }
         val doses = mutableListOf<Pair<TreatmentKind, Long>>()
         val deleted = mutableSetOf<Int>()
         var sensor: SensorWindow? = null
+
+        // when each device asked to be woken, on the scenario's time
         var timer: Long? = null
+        var followerTimer: Long? = null
 
         fun followerSaw(effects: List<AlertEffect>) =
             effects.forEach { e ->
@@ -224,13 +232,16 @@ object AlertScenarios {
                     is AlertEffect.Clear -> note("follower clear ${e.kind.wire}")
                     is AlertEffect.Back -> note("follower back ${e.side.wire}")
                     is AlertEffect.Mirror -> error("a follower never publishes")
-                    is AlertEffect.Schedule -> Unit
+                    is AlertEffect.Schedule -> followerTimer = e.at
                 }
             }
 
+        // the follower is another device: its clock is the scenario's
         fun follow(input: AlertInput) {
-            if (sc.mirror) followerSaw(follower.handle(input, t))
+            if (sc.mirror) followerSaw(follower.handle(input, t, t))
         }
+
+        fun wearer(input: AlertInput) = wearer.handle(input, wall(), t)
 
         fun wearerDid(effects: List<AlertEffect>) =
             effects.forEach { e ->
@@ -254,7 +265,7 @@ object AlertScenarios {
                     }
 
                     is AlertEffect.Schedule -> {
-                        timer = e.at
+                        timer = e.at?.let { it - offset }
                     }
                 }
             }
@@ -274,8 +285,8 @@ object AlertScenarios {
         val byTime = sc.lines.associateBy { T0 + it.at }
         val stop = T0 + (sc.end + 1) * 60L
 
-        fun allEnd(w: List<String>, from: Int): Long =
-            if (w.getOrNull(from) == "never") Rules.NEVER else t + minutes(w.drop(from).joinToString(" ")) * 60L
+        fun allEnd(w: List<String>, from: Int, now: Long = wall()): Long =
+            if (w.getOrNull(from) == "never") Rules.NEVER else now + minutes(w.drop(from).joinToString(" ")) * 60L
 
         fun kind(word: String) = requireNotNull(AlertKind.fromWire(word)) { "unknown kind $word" }
 
@@ -305,14 +316,14 @@ object AlertScenarios {
                         when (w[1]) {
                             "ended" -> {
                                 sensorOn = false
-                                sensor = SensorWindow(t - 15 * 86_400L, t, t - 15 * 86_400L + 3600)
-                                wearerDid(wearer.handle(AlertInput.Sensor(sensor), t))
+                                sensor = SensorWindow(wall() - 15 * 86_400L, wall(), wall() - 15 * 86_400L + 3600)
+                                wearerDid(wearer(AlertInput.Sensor(sensor)))
                             }
 
                             "started" -> {
                                 sensorOn = false
-                                sensor = SensorWindow.started(t, 15 * 1440)
-                                wearerDid(wearer.handle(AlertInput.Sensor(sensor), t))
+                                sensor = SensorWindow.started(wall(), 15 * 1440)
+                                wearerDid(wearer(AlertInput.Sensor(sensor)))
                             }
 
                             "on", "off" -> {
@@ -326,20 +337,31 @@ object AlertScenarios {
                         }
                     }
 
+                    "source" -> {
+                        require(w.getOrNull(1) == "started") { "unknown event: $ev" }
+                        wearerDid(wearer(AlertInput.Source(wall())))
+                    }
+
+                    "clock" -> {
+                        require(w.getOrNull(1) == "back") { "unknown event: $ev" }
+                        offset -= minutes(w.drop(2).joinToString(" ")) * 60L
+                        wearerDid(wearer(AlertInput.Tick)) // the system's clock-change notice (TIME_SET)
+                    }
+
                     "carbs", "insulin" -> {
-                        doses += (if (w[0] == "carbs") TreatmentKind.CARBS else TreatmentKind.RAPID) to t
-                        wearerDid(wearer.handle(AlertInput.Treatments(doses()), t))
+                        doses += (if (w[0] == "carbs") TreatmentKind.CARBS else TreatmentKind.RAPID) to wall()
+                        wearerDid(wearer(AlertInput.Treatments(doses())))
                     }
 
                     "delete" -> {
                         val k = if (w[1] == "carbs") TreatmentKind.CARBS else TreatmentKind.RAPID
                         deleted += doses.indices.last { it !in deleted && doses[it].first == k }
-                        wearerDid(wearer.handle(AlertInput.Treatments(doses()), t))
+                        wearerDid(wearer(AlertInput.Treatments(doses())))
                     }
 
                     "mute" -> {
                         wearerDid(
-                            wearer.handle(
+                            wearer(
                                 if (w[1] ==
                                     "all"
                                 ) {
@@ -347,32 +369,51 @@ object AlertScenarios {
                                 } else {
                                     AlertInput.Mute(kind(w[1]), length(w, 2))
                                 },
-                                t,
                             ),
                         )
                     }
 
                     "relax" -> {
-                        wearerDid(wearer.handle(AlertInput.RemindLess(kind(w[1])), t))
+                        wearerDid(wearer(AlertInput.RemindLess(kind(w[1]))))
                     }
 
                     "unmute" -> {
-                        wearerDid(wearer.handle(if (w[1] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[1])), t))
+                        wearerDid(wearer(if (w[1] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[1]))))
                     }
 
                     "unrelax" -> {
-                        wearerDid(wearer.handle(AlertInput.RemindAsUsual(kind(w[1])), t))
+                        wearerDid(wearer(AlertInput.RemindAsUsual(kind(w[1]))))
                     }
 
                     "follower" -> {
                         require(sc.mirror) { "follower event without mirror: $ev" }
                         follow(
                             when (w[1]) {
-                                "mute" -> if (w[2] == "all") AlertInput.MuteAll(allEnd(w, 3)) else AlertInput.Mute(kind(w[2]), length(w, 3))
-                                "relax" -> AlertInput.RemindLess(kind(w[2]))
-                                "unmute" -> if (w[2] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[2]))
-                                "unrelax" -> AlertInput.RemindAsUsual(kind(w[2]))
-                                else -> error("unknown event: $ev")
+                                "mute" -> {
+                                    if (w[2] ==
+                                        "all"
+                                    ) {
+                                        AlertInput.MuteAll(allEnd(w, 3, t))
+                                    } else {
+                                        AlertInput.Mute(kind(w[2]), length(w, 3))
+                                    }
+                                }
+
+                                "relax" -> {
+                                    AlertInput.RemindLess(kind(w[2]))
+                                }
+
+                                "unmute" -> {
+                                    if (w[2] == "all") AlertInput.UnmuteAll else AlertInput.Unmute(kind(w[2]))
+                                }
+
+                                "unrelax" -> {
+                                    AlertInput.RemindAsUsual(kind(w[2]))
+                                }
+
+                                else -> {
+                                    error("unknown event: $ev")
+                                }
                             },
                         )
                     }
@@ -380,12 +421,12 @@ object AlertScenarios {
                     "set" -> {
                         s = w.drop(1).fold(s) { acc, kv -> set(acc, kv) }
                         follow(AlertInput.Settings(followerSettings()))
-                        wearerDid(wearer.handle(AlertInput.Settings(s), t))
+                        wearerDid(wearer(AlertInput.Settings(s)))
                     }
 
                     // the process restarts: the device resumes from its saved state and last reading
                     "restart" -> {
-                        wearerDid(wearer.restart(s, doses(), sensor, t))
+                        wearerDid(wearer.restart(s, doses(), sensor, wall(), t))
                     }
 
                     else -> {
@@ -395,12 +436,15 @@ object AlertScenarios {
             }
             val due = nextReading
             if (sensorOn && due != null && due <= t) {
-                val r = AlertReading(t - age * 60L, glucose, rate)
-                wearerDid(wearer.handle(AlertInput.Reading(r), t))
-                follow(AlertInput.Reading(r))
+                // stamped by the wearer's clock; the follower gets it with the wearer's own time
+                val r = AlertReading(wall() - age * 60L, glucose, rate)
+                wearerDid(wearer(AlertInput.Reading(r)))
+                follow(AlertInput.Reading(r.copy(t = t - age * 60L)))
                 nextReading = t + every * 60L
             } else if (timer.let { it != null && it <= t }) {
-                wearerDid(wearer.handle(AlertInput.Tick, t))
+                wearerDid(wearer(AlertInput.Tick))
+                follow(AlertInput.Tick)
+            } else if (sc.mirror && followerTimer.let { it != null && it <= t }) {
                 follow(AlertInput.Tick)
             }
             t =
@@ -408,6 +452,7 @@ object AlertScenarios {
                     byTime.keys.filter { it > t }.minOrNull(),
                     nextReading?.takeIf { sensorOn },
                     timer,
+                    followerTimer?.takeIf { sc.mirror },
                 ).filter { it > t }.minOrNull()
                     ?: break
         }

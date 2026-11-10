@@ -125,6 +125,7 @@ class AlertsModule(
             clock,
             log = log,
             lockedBoot = LockedBootStore.of(ctx)::write,
+            elapsed = { android.os.SystemClock.elapsedRealtime() / 1000 },
         )
     val controls: AlertControls get() = runtime
 

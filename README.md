@@ -72,7 +72,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
   (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
-  independent of the monitoring service. After a restart, before you first unlock the phone, Sukrara can't read your
+  independent of the monitoring service; it also rings for a sensor (or follow) that never sends a first reading, and
+  keeps real time when the phone's clock is set back. After a restart, before you first unlock the phone, Sukrara can't read your
   sensor (Android keeps its storage locked): it says *Unlock to resume monitoring* on the lock screen and rings as *No
   data* when that alert would have.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the

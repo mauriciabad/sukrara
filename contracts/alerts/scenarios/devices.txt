@@ -91,3 +91,13 @@ mirror
 18               => Low glucose · eat more; follower Low glucose · eat more
 23               => Low glucose · eat more; follower Low glucose · eat more
 24
+
+scenario The follower's Mute all ends at its time: the wearer's alert still up shows at once
+mirror
+ 0  readings every 5, glucose 65   => Low glucose; follower Low glucose
+ 2  follower mute all 10           => follower clear low
+ 5                                 => Low glucose
+10                                 => Low glucose
+12                                 => follower Low glucose   # its own timer: the wearer's alert of minute 10
+15                                 => Low glucose; follower Low glucose
+16
