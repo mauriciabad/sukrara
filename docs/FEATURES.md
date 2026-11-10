@@ -806,8 +806,10 @@ Wearer only (`sensorend/`; rules in `SensorEndPlan`, tests `SensorEndPlanTest`);
   `AndroidSensorEndPresenter`; page `:feature:settings` `sensorend/SensorEndPage`; settings `sensor.reminders` JSON +
   `sensor.countdownHours`; tests `SensorEndPlanTest`, `SensorEndNotifierTest`). Differences from the description
   below: reminders and *Sensor ended* use channel `sensor`; both countdowns and *Sensor ready* (silent) use
-  `sensor.countdowns`; the sensor's start is derived from its end (15 d) or ready time (60 min); a sensor whose start
-  moves by more than a day is a new one. Swiping a countdown away goes to `AlertCheckReceiver` (kept away for that
+  `sensor.countdowns`; the sensor's start is derived from its end (15 d) or ready time (60 min); a sensor is a new one
+  when the source names another one (its serial: Libre 3 / Juggluco; the debug synthetic source makes a new one per
+  `SYNTHETIC`), so one replaced on its first day gets its own warm-up countdown, *Sensor ready* and reminders; a
+  source without a serial falls back to a start and an end that both move by more than a day. Swiping a countdown away goes to `AlertCheckReceiver` (kept away for that
   sensor). States and exits: each reminder (tap opens the app, swipe); countdowns (swipe = gone for this sensor, or
   the switches on the page); *Sensor ended* (*Replace sensor* → new-sensor flow; a new sensor clears it); turning a
   switch off removes what it shows on the next re-plan.

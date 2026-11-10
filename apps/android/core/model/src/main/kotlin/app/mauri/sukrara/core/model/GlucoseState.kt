@@ -58,9 +58,11 @@ sealed interface SensorState {
     /** No sensor set up yet ("Not monitoring: no sensor yet"). */
     data object None : SensorState
 
-    data class WarmingUp(val readyAt: Instant) : SensorState
+    /** [id]: the source's identity of the sensor (its serial; null = the source doesn't know one). */
+    data class WarmingUp(val readyAt: Instant, val id: String? = null) : SensorState
 
-    data class Active(val endsAt: Instant?) : SensorState
+    /** [id]: the source's identity of the sensor (its serial; null = the source doesn't know one). */
+    data class Active(val endsAt: Instant?, val id: String? = null) : SensorState
 
     data object Ended : SensorState
 

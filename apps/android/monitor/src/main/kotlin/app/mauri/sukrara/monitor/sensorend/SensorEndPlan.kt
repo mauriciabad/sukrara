@@ -14,8 +14,9 @@ import java.time.temporal.ChronoUnit
 
 /**
  * What the sensor-end notifier remembers (typed DataStore `sensor_end`), all epoch seconds. The sensor it planned for
- * ([start], [end], [warmupEnd]; 0 = none): a sensor whose start moves by more than [SensorEndPlan.SAME_SENSOR_S] is a
- * new one; an end that moves (an early end) keeps the rest. [lastReminder] = the last reminder slot shown (a slot's
+ * ([start], [end], [warmupEnd]; 0 = none; [id] = the source's identity, its serial, "" = unknown): another [id] is a new
+ * sensor; without one on both sides a sensor whose start and end both move by more than [SensorEndPlan.SAME_SENSOR_S]
+ * is; an end that moves (an early end) keeps the rest. [lastReminder] = the last reminder slot shown (a slot's
  * *time*, so one an unlock brought forward isn't shown again at its time); the countdowns dismissed (swiped away);
  * the notices shown; [firstReading] = the first reading since the start (a restart must not bring the warm-up back);
  * [lastUnlock] = the latest unlock that brings a reminder forward; [config] = the settings the slots were planned
@@ -35,6 +36,7 @@ data class SensorEndMemory(
     val firstReading: Long = 0,
     val lastUnlock: Long = 0,
     val config: Int = 0,
+    val id: String = "",
 ) {
     val known: Boolean get() = end > 0
 }
@@ -302,9 +304,10 @@ object SensorEndPlan {
     }
 
     /**
-     * The memory for the sensor ([start], [end], [warmupEnd]) at [now]: a new sensor (or none before) starts fresh with
-     * the slots already past not firing; the same sensor keeps what was shown with its end updated; a changed
-     * [configHash] makes the slots already past not fire and brings a dismissed countdown back.
+     * The memory for the sensor ([start], [end], [warmupEnd], [id]: the source's serial, null = unknown) at [now]: a new
+     * sensor (or none before) starts fresh with the slots already past not firing; the same sensor keeps what was shown
+     * with its end updated; a changed [configHash] makes the slots already past not fire and brings a dismissed
+     * countdown back.
      */
     fun remember(
         mem: SensorEndMemory,
@@ -313,16 +316,28 @@ object SensorEndPlan {
         warmupEnd: Long,
         configHash: Int,
         now: Long,
+        id: String? = null,
     ): SensorEndMemory {
-        // the start is derived (end − wear length, ready − warm-up): the same end also means the same sensor
-        val same = mem.known && (kotlin.math.abs(mem.start - start) <= SAME_SENSOR_S || kotlin.math.abs(mem.end - end) <= SAME_SENSOR_S)
+        val same =
+            mem.known &&
+                if (!id.isNullOrEmpty() && mem.id.isNotEmpty()) {
+                    // the source knows the sensor: a replacement on its first day is a new one too
+                    id == mem.id
+                } else {
+                    // the start is derived (end − wear length, ready − warm-up): the same end also means the same sensor
+                    kotlin.math.abs(mem.start - start) <= SAME_SENSOR_S || kotlin.math.abs(mem.end - end) <= SAME_SENSOR_S
+                }
         val m =
             if (same) {
                 // an early end already past stays: a source still reporting the planned end can't bring the countdown back
                 val stays = mem.end < end && mem.end <= now
-                mem.copy(end = if (stays) mem.end else end, warmupEnd = if (mem.firstReading > 0) mem.warmupEnd else warmupEnd)
+                mem.copy(
+                    end = if (stays) mem.end else end,
+                    warmupEnd = if (mem.firstReading > 0) mem.warmupEnd else warmupEnd,
+                    id = mem.id.ifEmpty { id.orEmpty() },
+                )
             } else {
-                SensorEndMemory(start = start, end = end, warmupEnd = warmupEnd, lastReminder = now, config = configHash)
+                SensorEndMemory(start = start, end = end, warmupEnd = warmupEnd, lastReminder = now, config = configHash, id = id.orEmpty())
             }
         return if (m.config != configHash) {
             m.copy(lastReminder = maxOf(m.lastReminder, now), countdownDismissed = false, config = configHash)

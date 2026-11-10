@@ -122,6 +122,24 @@ class SensorEndNotifierTest {
             assertEquals("ready", shown.last())
         }
 
+    /** A sensor that failed on its first day, replaced 3 h after it started: the new one warms up and gets ready (#157). */
+    @Test fun aReplacementOnTheFirstDayWarmsUpAgain() =
+        runTest {
+            val firstReady = clock.now().plus(Duration.ofMinutes(60))
+            hub(SensorState.WarmingUp(firstReady, id = "A"), latest = clock.now().minus(Duration.ofDays(1)))
+            clock.instant = firstReady.plusSeconds(60)
+            hub(SensorState.Active(firstReady.plus(Duration.ofDays(15)), id = "A"), latest = clock.now())
+            assertEquals("ready", shown.last())
+            clock.instant = clock.now().plus(Duration.ofHours(2))
+            shown.clear()
+            val readyAt = clock.now().plus(Duration.ofMinutes(60))
+            hub(SensorState.WarmingUp(readyAt, id = "B"), latest = clock.now().minus(Duration.ofMinutes(5)))
+            assertEquals(listOf("warmup"), shown)
+            clock.instant = readyAt.plusSeconds(60)
+            hub(SensorState.Active(readyAt.plus(Duration.ofDays(15)), id = "B"), latest = clock.now())
+            assertEquals("ready", shown.last())
+        }
+
     @Test fun aFollowerGetsNothingAndForgets() =
         runTest {
             hub()
