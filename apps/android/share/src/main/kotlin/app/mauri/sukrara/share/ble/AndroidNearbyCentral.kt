@@ -230,6 +230,7 @@ class AndroidNearbyCentral(
         mtu = 23
         gatt = guarded { d.connectGatt(context, false, callback(g), BluetoothDevice.TRANSPORT_LE) }
         if (gatt == null) return reconnectLater()
+        channel.trySend(NearbyEvent.Connecting(d.address))
         armTimeout(CONNECT_TIMEOUT_MS) {
             device?.let { skip[it] = now() + SKIP_MS }
         }

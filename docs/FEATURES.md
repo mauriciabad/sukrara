@@ -1061,12 +1061,15 @@ past the other app's event; blocks again if it's still running) or *Help*.
   Vectors: `contracts/protocol/ble/nearby-pairing.json` (`NearbyPairingVectorsTest`, Mac `NearbyPairingVectorsTests`).
 - **Find phones nearby** (Android follower, setup's join step, under the link field): looks over Bluetooth while the list
   shows (`FollowerEngine.findNearby`): each phone found is connected in turn, sent a `HELLO` without a proof, its `INFO`
-  read and the phone left (nothing else is written: with no identity every phone is "unknown", B§6): a phone offering
-  nothing for a minute, one offering for 5 s. Phones with an open `pair` that carries a commitment `c` and expires
-  within the next 10 minutes plus 2 minutes of clock skew are listed with the wearer's picture and name (by invite; an
-  offer claiming to last longer is ignored, so a fake one can't stay listed); one that stops offering leaves the list
-  at its next read, one that stops answering after 12 s. Scans share the app's scan-start budget with the follow link
-  (Android allows 5 starts per 30 s). A follow that ended never asks again over Bluetooth. A tap joins with that offer
+  read and the phone left for 5 s, offering or not (nothing else is written: with no identity every phone is
+  "unknown", B§6), so a wearer who opens *Pair nearby* while the list shows appears within about 10 s. Phones with an
+  open `pair` that carries a commitment `c` and expires within the next 10 minutes plus 2 minutes of clock skew are
+  listed with the wearer's picture and name (by invite; an offer claiming to last longer is ignored, so a fake one
+  can't stay listed); one that stops offering leaves the list at its next read, one that doesn't answer 12 s after the
+  next connection to it starts leaves then, and one not even reached for a minute (out of range) leaves too. Scans
+  share the app's scan-start budget with the follow link (Android allows 5 starts per 30 s); a read the budget holds
+  back never takes an offer from under the person's finger, as the 12 s count from the connection, not the last
+  answer. A follow that ended never asks again over Bluetooth. A tap joins with that offer
   (no relay lookup) as the name typed above, with a fresh pairing nonce `n` made then; the follow's own Bluetooth link
   then sends the request to the phone whose `INFO` names that identity, and to the relays. The name and picture prove
   nothing: the join step (and the Following page) shows *Asking Ana's phone…*, then the 6-digit code with *Does Ana's

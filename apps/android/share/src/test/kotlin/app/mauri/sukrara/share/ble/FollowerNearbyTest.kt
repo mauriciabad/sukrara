@@ -167,12 +167,11 @@ class FollowerNearbyTest {
             finder.info(BleMessages.Owner.Unknown, phone = "other")
             runCurrent()
             assertEquals(listOf(NearbyOffer("ana", pairing)), search!!.offers)
-            // each phone is left so the scan moves on to the next: one offering is looked at again soon, one offering
-            // nothing only in a minute
-            assertEquals(listOf("ana" to FollowerEngine.NEARBY_OFFER_RECHECK_S, "other" to FollowerEngine.NEARBY_IDLE_S), finder.left)
-            // the phone stops answering (it stopped advertising): gone after a missed check, not minutes later
-            clock.advance(Duration.ofSeconds(FollowerEngine.NEARBY_OFFER_DROP_S + 1))
-            advanceTimeBy(1_100)
+            // each phone is left so the scan moves on to the next, and looked at again soon, offering or not
+            assertEquals(listOf("ana" to FollowerEngine.NEARBY_RECHECK_S, "other" to FollowerEngine.NEARBY_RECHECK_S), finder.left)
+            // the next connection to the phone gets no answer (it stopped advertising): gone after that missed check
+            finder.connecting("ana")
+            pass(FollowerEngine.NEARBY_OFFER_DROP_S + 1)
             assertTrue(search!!.offers.isEmpty())
             // back in range, still offering
             finder.info(BleMessages.Owner.Unknown, phone = "ana", pairing = pairing)
@@ -209,6 +208,72 @@ class FollowerNearbyTest {
             runCurrent()
             assertEquals(PairingCheck(pending.code, confirmed = false), (e.state.value as FollowState.Following).pairing)
         }
+
+    /**
+     * #114: a re-check the scan-start budget holds back (Android's 5 starts per 30 s) never takes a listed offer away;
+     * only a connection to its phone that gets no offer back does, or the phone not reached for a minute.
+     */
+    @Test fun aListedOfferWaitsForItsNextCheckWhileTheScanBudgetHoldsItBack() =
+        runTest {
+            val e = engine()
+            val (_, pairing) = openPairing()
+            val offer = NearbyOffer("ana", pairing)
+            var search: NearbySearch? = null
+            backgroundScope.launch { e.findNearby().collect { search = it } }
+            runCurrent()
+            val finder = nearbys.single()
+            finder.info(BleMessages.Owner.Unknown, phone = "ana", pairing = pairing)
+            runCurrent()
+            // due again after 5 s, but no scan may start for up to the budget's 30 s window: still listed
+            pass(FollowerEngine.NEARBY_RECHECK_S + 30)
+            assertEquals(listOf(offer), search!!.offers)
+            // the scan runs and connects: the phone's check starts now and it answers in time
+            finder.connecting("ana")
+            pass(FollowerEngine.NEARBY_OFFER_DROP_S)
+            assertEquals(listOf(offer), search!!.offers)
+            finder.info(BleMessages.Owner.Unknown, phone = "ana", pairing = pairing)
+            runCurrent()
+            assertEquals(listOf(offer), search!!.offers)
+            // a connection to another phone isn't this offer's check
+            finder.connecting("other")
+            pass(FollowerEngine.NEARBY_OFFER_DROP_S + 1)
+            assertEquals(listOf(offer), search!!.offers)
+            // never reached again (gone out of range): it leaves the list after a minute
+            pass(FollowerEngine.NEARBY_OFFER_LOST_S - FollowerEngine.NEARBY_OFFER_DROP_S)
+            assertTrue(search!!.offers.isEmpty())
+        }
+
+    /** #114: a wearer who opens *Pair nearby* while the list shows is listed at the phone's next read, within ~10 s. */
+    @Test fun aPhoneThatOpensPairNearbyWhileTheListShowsIsListedWithinTenSeconds() =
+        runTest {
+            val e = engine()
+            val (_, pairing) = openPairing()
+            var search: NearbySearch? = null
+            backgroundScope.launch { e.findNearby().collect { search = it } }
+            runCurrent()
+            val finder = nearbys.single()
+            // the wearer's phone before *Pair nearby* opens: read, then left for a moment
+            finder.info(BleMessages.Owner.Unknown, phone = "ana")
+            runCurrent()
+            assertTrue(search!!.offers.isEmpty())
+            val (phone, seconds) = finder.left.single()
+            assertEquals("ana", phone)
+            // pairing opens right after that read; the finder reads the phone again once it may, plus the connection
+            pass(seconds)
+            finder.connecting("ana")
+            pass(CONNECTION_S)
+            finder.info(BleMessages.Owner.Unknown, phone = "ana", pairing = pairing)
+            runCurrent()
+            assertEquals(listOf(NearbyOffer("ana", pairing)), search!!.offers)
+            assertTrue("listed ${seconds + CONNECTION_S} s after pairing opened", seconds + CONNECTION_S <= 10)
+        }
+
+    /** What was sent is handled now, then [seconds] go by on the engine's clock and its timers. */
+    private fun TestScope.pass(seconds: Long) {
+        runCurrent()
+        clock.advance(Duration.ofSeconds(seconds))
+        advanceTimeBy(seconds * 1_000 + 100)
+    }
 
     /**
      * #20 / #113: whoever answers (the real wearer or a phone posing as it), its key is not used until the person said
@@ -319,4 +384,9 @@ class FollowerNearbyTest {
             // the link itself refuses to write it until the phone proved it's the wearer's (NearbyLinkTest)
             assertTrue(request in nb.sent)
         }
+
+    private companion object {
+        /** A connection to a phone and its INFO (connect, MTU, services, notifications, HELLO): a couple of seconds. */
+        const val CONNECTION_S = 3L
+    }
 }

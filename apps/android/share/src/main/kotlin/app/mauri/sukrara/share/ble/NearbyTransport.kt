@@ -17,6 +17,13 @@ sealed interface NearbyEvent {
      * connection it came on, so leaving it never hits a phone connected since. [pairing] = its *Pair nearby* offer.
      */
     data class Info(val owner: BleMessages.Owner, val phone: String, val pairing: BleMessages.Pairing? = null) : NearbyEvent
+
+    /**
+     * A connection to [phone] begins (a scan found it and it isn't being left): the moment it is really looked at
+     * again, which a scan start the budget holds back ([ScanStartBudget]) only delays. *Find phones nearby* counts an
+     * offer's missed check from here.
+     */
+    data class Connecting(val phone: String) : NearbyEvent
 }
 
 /**
