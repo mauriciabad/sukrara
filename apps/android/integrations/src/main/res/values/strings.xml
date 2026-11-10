@@ -80,6 +80,7 @@
     <string name="in_status_off">Off</string>
     <string name="in_status_setup">Set up the site first</string>
     <string name="in_status_auth">The site refused the token or secret: change it</string>
+    <string name="in_status_unreadable">The saved token can\'t be read: enter it again</string>
     <string name="in_status_paused">Paused: another app (%1$s) uploads to this site</string>
     <string name="in_status_waiting">On · nothing sent yet</string>
     <plurals name="in_status_ok">

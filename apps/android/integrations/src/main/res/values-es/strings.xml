@@ -79,6 +79,7 @@
     <string name="in_status_off">Desactivado</string>
     <string name="in_status_setup">Primero configura el sitio</string>
     <string name="in_status_auth">El sitio ha rechazado el token o el secreto: cámbialo</string>
+    <string name="in_status_unreadable">No se puede leer el token guardado: vuelve a introducirlo</string>
     <string name="in_status_paused">En pausa: otra app (%1$s) sube datos a este sitio</string>
     <string name="in_status_waiting">Activado · aún no se ha enviado nada</string>
     <plurals name="in_status_ok">

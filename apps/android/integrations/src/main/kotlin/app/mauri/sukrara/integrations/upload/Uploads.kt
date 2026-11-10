@@ -38,6 +38,9 @@ sealed interface UploadStatus {
     /** The service refused the credential: nothing is sent until it's changed. */
     data object AuthFailed : UploadStatus
 
+    /** The saved token can't be read on this phone any more (damaged): nothing is sent until it's entered again. */
+    data object CredentialUnreadable : UploadStatus
+
     /** Waiting for the person's confirmation: [other] (another uploader) writes to the same place. */
     data class Paused(val other: String) : UploadStatus
 

@@ -121,8 +121,8 @@ fun NightscoutPage(
 
 /**
  * Settings › Share with apps › Nightscout upload: the site (dialog with Test), the main switch, the status with its
- * exit (*Upload anyway* when paused, the site dialog when the token was refused), what to send, the API, *Remove this
- * site*. A follower phone sees why it can't upload.
+ * exit (*Upload anyway* when paused, the site dialog when the token was refused or can't be read), what to send, the
+ * API, *Remove this site*. A follower phone sees why it can't upload.
  */
 @Composable
 fun NightscoutContent(
@@ -160,7 +160,7 @@ fun NightscoutContent(
         )
         if (on) {
             val status = state.status
-            if (status == UploadStatus.AuthFailed) {
+            if (status == UploadStatus.AuthFailed || status == UploadStatus.CredentialUnreadable) {
                 ValueRow(stringResource(R.string.in_ns_status), uploadStatusText(status, now), {
                     actions.resetTest()
                     editing = true

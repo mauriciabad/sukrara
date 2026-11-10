@@ -9,6 +9,8 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.storage.SecretUnreadableException
+import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
@@ -48,7 +50,22 @@ class NightscoutUploaderTest {
     private val now = Instant.parse("2026-10-28T12:00:00Z")
     private val clock = FakeClock(now, ZoneOffset.UTC)
     private val settings = InMemorySettingsRepository()
-    private val secure = InMemorySecureStore()
+
+    /** The secure store, made to fail reads like the Keystore can (damaged or busy) while [unreadable] is set. */
+    private var unreadable: SecretUnreadableException? = null
+    private val secure =
+        object : SecureStore {
+            private val inner = InMemorySecureStore()
+
+            override suspend fun read(name: String): ByteArray? = unreadable?.let { throw it } ?: inner.read(name)
+
+            override suspend fun write(
+                name: String,
+                bytes: ByteArray,
+            ) = inner.write(name, bytes)
+
+            override suspend fun delete(name: String) = inner.delete(name)
+        }
     private val store = InMemoryStateStore(NsState())
     private val readings = InMemoryReadingsRepository()
     private val treatments = InMemoryTreatmentsRepository()
@@ -208,6 +225,48 @@ class NightscoutUploaderTest {
             uploader.configure(url, NsCredentialKind.Token, "upload-fedcba9876543210", NsApi.V1)
             uploader.cycle()
             assertTrue(requests.any { it.path == "/api/v1/entries" })
+        }
+
+    @Test
+    fun `a damaged saved token asks for it again instead of Set up the site, and a new one resumes`() =
+        runBlocking {
+            readings.upsert(listOf(reading(5)))
+            setUpSite()
+            unreadable = SecretUnreadableException(NightscoutUploader.NAME, transient = false, cause = null)
+            uploader.load()
+            val page = uploader.page.first()
+            assertEquals(UploadStatus.CredentialUnreadable, page.status)
+            assertTrue("the switch and Remove stay usable", page.configured)
+            requests.clear()
+            uploader.cycle()
+            assertTrue(requests.isEmpty())
+            assertEquals(0, store.data.first().failures)
+            unreadable = null
+            uploader.configure(url, NsCredentialKind.Token, "upload-fedcba9876543210", NsApi.V1)
+            assertEquals(NsSaved.Readable, uploader.page.first().saved)
+            uploader.cycle()
+            assertTrue(requests.any { it.path == "/api/v1/entries" })
+        }
+
+    @Test
+    fun `a busy Keystore retries later and never reads as not set up`() =
+        runBlocking {
+            readings.upsert(listOf(reading(5)))
+            setUpSite()
+            unreadable = SecretUnreadableException(NightscoutUploader.NAME, transient = true, cause = null)
+            uploader.load()
+            assertTrue(uploader.page.first().configured)
+            requests.clear()
+            uploader.cycle()
+            assertTrue(requests.isEmpty())
+            assertTrue(uploader.page.first().status is UploadStatus.Failing)
+            unreadable = null
+            clock.advance(Duration.ofMinutes(1))
+            uploader.cycle()
+            assertTrue(requests.any { it.path == "/api/v1/entries" })
+            val page = uploader.page.first()
+            assertEquals(NsCredentialKind.Token, page.credential)
+            assertTrue(page.status is UploadStatus.Ok)
         }
 
     @Test

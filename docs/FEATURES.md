@@ -1331,8 +1331,11 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   a retry with "That address doesn't work. Check it, including https://.".
 - *Upload to my Nightscout* (enabled once a site is saved; a follower phone sees "Only the phone that wears the sensor
   uploads"), *Status* ("Last upload 3 min ago · 12 items", "On · nothing sent yet", "<reason> Trying again soon.",
-  "The site refused the token or secret: change it" — tapping it opens the site dialog —, "Paused: another app
-  (<device>) uploads to this site" with *Upload anyway*).
+  "The site refused the token or secret: change it" — tapping it opens the site dialog —, "The saved token can't be read:
+  enter it again" when the secure store can't decrypt it any more — tapping it opens the site dialog, which then needs
+  the token or secret typed again — (a Keystore that is only busy is never shown as "Set up the site first": it reads as
+  "<reason> Trying again soon." and is tried again with the backoff), "Paused: another app (<device>) uploads to this
+  site" with *Upload anyway*).
 - *What to send*: *Glucose readings* (every reading, the last 30 days included), *Insulin, carbs and notes* (edits and
   deletions too), *Sensor changes*, *Phone battery*; all on, disabled while the upload is off. *Advanced*: *API* (v1
   recommended; v3 only with an access token, a secret keeps v1) and *Remove this site* (confirmation; forgets the site,
@@ -1370,7 +1373,9 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
 
 **States and exits**: *Not set up* → *Site* → dialog (Cancel keeps nothing). *Off* (default) → main switch. *On ·
 nothing sent yet / last upload* → main switch off, *Remove this site*. *Trying again* → retries by itself; switch off to
-stop. *Token refused* → the status row or *Site* opens the dialog; saving a new token resumes. *Paused (another
+stop. *Token refused* → the status row or *Site* opens the dialog; saving a new token resumes. *Saved token can't be
+read* → the status row or *Site* opens the dialog; entering the token again resumes; the switch and *Remove this site*
+still work. *Keystore busy* → retries by itself; switch off to stop. *Paused (another
 uploader)* → *Upload anyway*, or switch off. *Entry linked to another app's* (no state of its own: it shows as sent) →
 change it in Sukrara so it no longer matches (it goes up as Sukrara's own), or change / delete it in the app that
 uploaded it. *Follower phone* → the switch is disabled with the reason. Back leaves the page.

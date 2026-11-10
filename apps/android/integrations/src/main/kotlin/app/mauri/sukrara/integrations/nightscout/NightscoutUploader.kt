@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
+import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
@@ -55,13 +56,28 @@ data class NsSettings(
 /** Which kind of credential is saved (its value never leaves the uploader). */
 enum class NsCredentialKind { Token, Secret }
 
+/** The saved token / secret as the secure store gives it. */
+enum class NsSaved {
+    None,
+    Readable,
+
+    /** Saved but damaged: it never reads again, the person enters it again. */
+    Unreadable,
+
+    /** Saved, but the Keystore couldn't give it just now: the next cycle tries again. */
+    Busy,
+}
+
 /** What the Nightscout page shows. */
 data class NsPageState(
     val settings: NsSettings,
+    /** The saved credential's kind, null when there is none or it can't be read now ([saved]). */
     val credential: NsCredentialKind?,
     val status: UploadStatus,
+    val saved: NsSaved = if (credential != null) NsSaved.Readable else NsSaved.None,
 ) {
-    val configured: Boolean get() = settings.url.isNotEmpty() && credential != null
+    /** A site and a saved credential (even one that can't be read: the switch and *Remove* stay usable). */
+    val configured: Boolean get() = settings.url.isNotEmpty() && saved != NsSaved.None
 }
 
 /** The result of *Test connection*. */
@@ -98,6 +114,7 @@ class NightscoutUploader(
     private val log: (String) -> Unit = {},
 ) {
     private val credential = MutableStateFlow<NsCredentialKind?>(null)
+    private val saved = MutableStateFlow(NsSaved.None)
     private val loop = UploadLoop({ INTERVAL_MS }, io, { e -> log("nightscout cycle: ${e.javaClass.simpleName}") }) { cycle() }
     private var client: Pair<NsConfig, NsClient>? = null
 
@@ -110,13 +127,27 @@ class NightscoutUploader(
     val settingsFlow: Flow<NsSettings> = settings.flow(SETTING).map(::decode)
 
     val page: Flow<NsPageState> =
-        combine(settingsFlow, credential, store.data, role) { s, c, st, r ->
-            NsPageState(s, c, status(s, c, st, r))
+        combine(settingsFlow, credential, saved, store.data, role) { s, c, sv, st, r ->
+            NsPageState(s, c, status(s, sv, st, r), sv)
         }
 
-    /** Reads which credential is saved (the page and the loop need it); call once from the app's load step. */
+    /**
+     * Reads which credential is saved (the page and the loop need it); call once from the app's load step. One that
+     * exists but can't be read is never shown as "not set up": damaged → *enter it again*, busy → tried again.
+     */
     suspend fun load() {
-        credential.value = readAuth()?.let { if (it is NsAuth.AccessToken) NsCredentialKind.Token else NsCredentialKind.Secret }
+        try {
+            remember(readAuth())
+        } catch (e: SecretUnreadableException) {
+            log("nightscout: saved credential unreadable (transient=${e.transient})")
+            credential.value = null
+            saved.value = if (e.transient) NsSaved.Busy else NsSaved.Unreadable
+        }
+    }
+
+    private fun remember(auth: NsAuth?) {
+        credential.value = auth?.let { if (it is NsAuth.AccessToken) NsCredentialKind.Token else NsCredentialKind.Secret }
+        saved.value = if (auth == null) NsSaved.None else NsSaved.Readable
     }
 
     /** Starts the loop: a cycle now, on every new reading / entry change / setting change, and every 5 minutes. */
@@ -193,7 +224,7 @@ class NightscoutUploader(
     suspend fun remove() =
         mutex.withLock {
             secure.delete(NAME)
-            credential.value = null
+            remember(null)
             settings.set(SETTING, encode(NsSettings()))
             store.update { NsState() }
             client = null
@@ -210,7 +241,7 @@ class NightscoutUploader(
             val site = NsSite.parse(url)
             if (site.problem != null) return@withContext NsTestResult.Failed(Trouble.BadAddress)
             // the saved token only for the site it was saved for
-            val saved = if (site.root == settingsFlow.first().url) readAuth() else null
+            val saved = if (site.root == settingsFlow.first().url) runCatching { readAuth() }.getOrNull() else null
             val auth = credential?.trim()?.takeIf { it.isNotEmpty() }?.let { authOf(kind, it) } ?: saved
             if (auth == null) return@withContext NsTestResult.Failed(Trouble.SignIn)
             val chosenApi = if (auth is NsAuth.AccessToken) api else NsApi.V1
@@ -233,7 +264,16 @@ class NightscoutUploader(
     private suspend fun cycleLocked() {
         val s = settingsFlow.first()
         if (!s.on || role.first() != Role.Wearer) return
-        val auth = readAuth() ?: return
+        val auth =
+            try {
+                readAuth()?.also { if (saved.value != NsSaved.Readable) remember(it) }
+            } catch (e: SecretUnreadableException) {
+                log("nightscout cycle: saved credential unreadable (transient=${e.transient})")
+                saved.value = if (e.transient) NsSaved.Busy else NsSaved.Unreadable
+                // busy: back off and try again; damaged: nothing goes up until it's entered again
+                if (e.transient) store.update { NightscoutQueue.failed(it, clock.now().toEpochMilli(), Trouble.Other) }
+                return
+            } ?: return
         val site = NsSite.parse(s.url)
         if (site.problem != null) return
         var state = store.data.first()
@@ -304,9 +344,15 @@ class NightscoutUploader(
         return NightscoutQueue.reconciled(state, server, fromS, toS, nowMs)
     }
 
+    /** The saved credential, null when none was saved; throws [SecretUnreadableException] when it exists but can't be read. */
     private suspend fun readAuth(): NsAuth? {
-        val bytes = runCatching { secure.read(NAME) }.getOrNull() ?: return null
-        val c = runCatching { Json.decodeFromString(StoredCredential.serializer(), bytes.decodeToString()) }.getOrNull() ?: return null
+        val bytes = secure.read(NAME) ?: return null
+        val c =
+            try {
+                Json.decodeFromString(StoredCredential.serializer(), bytes.decodeToString())
+            } catch (e: IllegalArgumentException) {
+                throw SecretUnreadableException(NAME, transient = false, cause = e)
+            }
         return authOf(c.kind, c.value)
     }
 
@@ -317,13 +363,14 @@ class NightscoutUploader(
 
     private fun status(
         s: NsSettings,
-        c: NsCredentialKind?,
+        saved: NsSaved,
         st: NsState,
         r: Role?,
     ): UploadStatus =
         when {
             !s.on || r != Role.Wearer -> UploadStatus.Off
-            s.url.isEmpty() || c == null -> UploadStatus.Setup
+            s.url.isEmpty() || saved == NsSaved.None -> UploadStatus.Setup
+            saved == NsSaved.Unreadable -> UploadStatus.CredentialUnreadable
             st.authFailed -> UploadStatus.AuthFailed
             st.paused -> UploadStatus.Paused(st.conflict.orEmpty())
             st.lastError != null -> UploadStatus.Failing(st.lastError, st.lastOkMs.takeIf { it > 0 }?.let(Instant::ofEpochMilli))
