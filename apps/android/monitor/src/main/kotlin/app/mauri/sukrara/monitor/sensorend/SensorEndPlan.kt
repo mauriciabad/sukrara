@@ -19,7 +19,8 @@ import java.time.temporal.ChronoUnit
  * *time*, so one an unlock brought forward isn't shown again at its time); the countdowns dismissed (swiped away);
  * the notices shown; [firstReading] = the first reading since the start (a restart must not bring the warm-up back);
  * [lastUnlock] = the latest unlock that brings a reminder forward; [config] = the settings the slots were planned
- * with (a change means the slots already past never fire).
+ * with (a change means the slots already past never fire); [parked] = the hub has no sensor right now (forgotten, or
+ * not read yet): nothing is shown or planned, and the same sensor coming back keeps what was announced (#102).
  */
 @Serializable
 data class SensorEndMemory(
@@ -35,6 +36,7 @@ data class SensorEndMemory(
     val firstReading: Long = 0,
     val lastUnlock: Long = 0,
     val config: Int = 0,
+    val parked: Boolean = false,
 ) {
     val known: Boolean get() = end > 0
 }
@@ -193,6 +195,7 @@ object SensorEndPlan {
         zone: ZoneId,
     ): Boolean =
         mem.known &&
+            !mem.parked &&
             now < mem.end &&
             slots(mem.start, mem.end, cfg, zone).any { s ->
                 s.unlockFrom != null && now in s.unlockFrom until s.at &&
@@ -320,7 +323,11 @@ object SensorEndPlan {
             if (same) {
                 // an early end already past stays: a source still reporting the planned end can't bring the countdown back
                 val stays = mem.end < end && mem.end <= now
-                mem.copy(end = if (stays) mem.end else end, warmupEnd = if (mem.firstReading > 0) mem.warmupEnd else warmupEnd)
+                mem.copy(
+                    end = if (stays) mem.end else end,
+                    warmupEnd = if (mem.firstReading > 0) mem.warmupEnd else warmupEnd,
+                    parked = false,
+                )
             } else {
                 SensorEndMemory(start = start, end = end, warmupEnd = warmupEnd, lastReminder = now, config = configHash)
             }

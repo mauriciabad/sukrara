@@ -59,7 +59,9 @@ class SensorEndNotifier(
 
     /**
      * The hub's [sensor] and the newest reading's time ([latestS]); [wearer] false (a follower, no role) clears
-     * everything: only the phone that wears the sensor reminds.
+     * everything: only the phone that wears the sensor reminds. No sensor ([SensorState.None]: forgotten, or not read
+     * yet after a restart or before the first unlock) takes every notice down but keeps what was announced for the
+     * sensor, so the same sensor coming back never announces it again (#102).
      */
     suspend fun update(
         wearer: Boolean,
@@ -69,7 +71,8 @@ class SensorEndNotifier(
     ) = mutex.withLock {
         val now = clock.now().epochSecond
         val before = store.data.first()
-        if (!wearer || sensor == SensorState.None) return@withLock forget(before)
+        if (!wearer) return@withLock forget(before)
+        if (sensor == SensorState.None) return@withLock park(before)
         val info = sensor.cardInfo()
         val mem =
             when {
@@ -82,8 +85,9 @@ class SensorEndNotifier(
                     SensorEndPlan.remember(before, before.start, minOf(before.end, now), before.warmupEnd, s.config.hashCode(), now)
                 }
 
-                // Bluetooth off, a missing core, a step for the person: the planned sensor still holds
-                before.known -> {
+                // Bluetooth off, a missing core, a step for the person: the planned sensor still holds (a parked one
+                // waits for the sensor itself: Juggluco's first state says nothing about the sensor that was forgotten)
+                before.known && !before.parked -> {
                     SensorEndPlan.remember(before, before.start, before.end, before.warmupEnd, s.config.hashCode(), now)
                 }
 
@@ -99,7 +103,7 @@ class SensorEndNotifier(
     suspend fun check() =
         mutex.withLock {
             val before = store.data.first()
-            if (!before.known) return@withLock alarm.set(null, true)
+            if (!before.known || before.parked) return@withLock alarm.set(null, true)
             val s = settings()
             val now = clock.now().epochSecond
             apply(SensorEndPlan.remember(before, before.start, before.end, before.warmupEnd, s.config.hashCode(), now), null, s, now)
@@ -128,31 +132,41 @@ class SensorEndNotifier(
         alarm.set(null, true)
     }
 
+    /** No sensor now: nothing shows or is planned, what was announced for the sensor stays ([SensorEndMemory.parked]). */
+    private suspend fun park(before: SensorEndMemory) {
+        SensorNotice.entries.forEach(presenter::cancel)
+        if (before.known && !before.parked) store.update { it.copy(parked = true) }
+        alarm.set(null, true)
+    }
+
+    /**
+     * Shows what [SensorEndPlan.plan] says for [m0] at [now]. The memory is saved **before** anything is posted: a
+     * process killed in between (an app update, Android) never announces the same step twice (#102).
+     */
     private suspend fun apply(
         m0: SensorEndMemory,
         first: Long?,
         s: SensorEndSettings,
         now: Long,
     ) {
+        val p = SensorEndPlan.plan(s.config, s.countdownHours, now, clock.zone, m0, first)
         var mem = m0
-        val p = SensorEndPlan.plan(s.config, s.countdownHours, now, clock.zone, mem, first)
+        if (p.warmup) mem = mem.copy(warmupShown = true)
+        if (p.ready) mem = mem.copy(readyShown = true)
+        // remembered: after a restart the warm-up must not come back before the next reading
+        if (first != null && mem.firstReading == 0L) mem = mem.copy(firstReading = first)
+        p.remind?.let { mem = mem.copy(lastReminder = it) }
+        if (p.ended) mem = mem.copy(endedShown = true)
+        store.update { mem }
+
         if (p.warmup) {
             presenter.warmup(mem.start, mem.warmupEnd, now, p.warmupWaiting)
-            mem = mem.copy(warmupShown = true)
         } else {
             // the first reading (or the give-up) ends it, whatever it shows
             presenter.cancel(SensorNotice.WARMUP)
         }
-        if (p.ready) {
-            presenter.ready()
-            mem = mem.copy(readyShown = true)
-        }
-        // remembered: after a restart the warm-up must not come back before the next reading
-        if (first != null && mem.firstReading == 0L) mem = mem.copy(firstReading = first)
-        p.remind?.let {
-            presenter.remind(mem.end, now, p.remindText)
-            mem = mem.copy(lastReminder = it)
-        }
+        if (p.ready) presenter.ready()
+        if (p.remind != null) presenter.remind(mem.end, now, p.remindText)
         if (p.countdown) {
             presenter.countdown(
                 mem.end,
@@ -166,9 +180,7 @@ class SensorEndNotifier(
         if (p.ended) {
             presenter.cancel(SensorNotice.REMINDER)
             presenter.ended()
-            mem = mem.copy(endedShown = true)
         }
-        store.update { mem }
         alarm.set(p.next, p.nextExact)
     }
 }

@@ -122,6 +122,79 @@ class SensorEndNotifierTest {
             assertEquals("ready", shown.last())
         }
 
+    /** A new process on the same saved memory (an app update, Android's kill), as the app builds it. */
+    private fun restarted(p: SensorEndPresenter = presenter) =
+        SensorEndNotifier(store, p, { at, exact -> alarm = at to exact }, clock) { settings }
+
+    /**
+     * #102: what was announced is saved, so a restart never announces it again, also when the hub knows no sensor at
+     * first (not read yet) and then the same one.
+     */
+    @Test fun aRestartNeverAnnouncesAStepAgain() =
+        runTest {
+            hub()
+            wake()
+            assertEquals(listOf("remind:ENDS"), shown)
+            val again = restarted()
+            again.update(true, SensorState.None, null, settings)
+            again.update(true, SensorState.Active(end), clock.now().epochSecond, settings)
+            again.check()
+            assertEquals(1, shown.count { it.startsWith("remind") })
+
+            clock.instant = end
+            again.check()
+            assertEquals("ended", shown.last())
+            val third = restarted()
+            third.update(true, SensorState.None, null, settings)
+            third.update(true, SensorState.Ended, null, settings)
+            third.check()
+            assertEquals(1, shown.count { it == "ended" })
+        }
+
+    @Test fun aSwipedCountdownStaysAwayThroughARestart() =
+        runTest {
+            clock.instant = end - Duration.ofHours(2)
+            hub()
+            notifier.dismissed(warmup = false)
+            shown.clear()
+            val again = restarted()
+            again.update(true, SensorState.None, null, settings)
+            again.update(true, SensorState.Active(end), clock.now().epochSecond, settings)
+            assertFalse(shown.any { it.startsWith("countdown") })
+        }
+
+    /** Saved before it is posted: a process killed while posting loses at most that post, it never rings twice. */
+    @Test fun aStepIsSavedBeforeItIsPosted() =
+        runTest {
+            hub()
+            clock.instant = end
+            val killed =
+                object : SensorEndPresenter by presenter {
+                    override fun ended() = throw IllegalStateException("process killed")
+                }
+            runCatching { restarted(killed).check() }
+            assertTrue(store.data.first().endedShown)
+            restarted().check()
+            assertFalse("ended" in shown)
+        }
+
+    /** No sensor right now: nothing shows and nothing is planned, also from the alarm, until a sensor is back. */
+    @Test fun noSensorShowsNothingUntilASensorIsBack() =
+        runTest {
+            clock.instant = end - Duration.ofHours(2)
+            hub()
+            shown.clear()
+            hub(SensorState.None)
+            notifier.check()
+            notifier.unlocked()
+            assertTrue(shown.isEmpty())
+            assertEquals(null, alarm?.first)
+            hub(SensorState.Active(null)) // Juggluco before it knows its sensor: says nothing about this one
+            assertTrue(shown.isEmpty())
+            hub()
+            assertTrue(shown.last().startsWith("countdown"))
+        }
+
     @Test fun aFollowerGetsNothingAndForgets() =
         runTest {
             hub()
