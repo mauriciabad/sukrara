@@ -141,6 +141,19 @@ public struct NightSettings: Equatable, Sendable {
     }
 }
 
+/// SPEC §4 "No answer to a very low" (#39), each device's own: the wearer escalates a very low nobody answered on its
+/// phone for `min` minutes (`on`); a follower shows those escalations (`follow`).
+public struct EscalationSettings: Codable, Equatable, Sendable {
+    public var on: Bool
+    public var min: Int
+    public var follow: Bool
+    public init(on: Bool = true, min: Int = 5, follow: Bool = true) {
+        self.on = on
+        self.min = min
+        self.follow = follow
+    }
+}
+
 /// Sound choice: the pack every kind uses, per-kind overrides (`system` / `none` allowed), shuffle variants.
 public struct AlertSoundSettings: Codable, Equatable, Sendable {
     public static let packs = ["arcade", "kart", "quest", "soft"]
@@ -174,6 +187,7 @@ public struct AlertSettings: Equatable, Sendable {
     public var notificationActions = NotificationActionSettings()
     public var persistence = PersistenceSettings()
     public var night = NightSettings()
+    public var escalation = EscalationSettings()
     public var source = AlertSource.wearer
 
     public init() {}
@@ -238,7 +252,7 @@ public struct AlertSettings: Equatable, Sendable {
 extension AlertSettings: Codable {
     private enum Key: String, CodingKey {
         case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteAfterCarbs, sounds, notificationActions, persistence
-        case night, source
+        case night, escalation, source
     }
 
     private struct DynamicKey: CodingKey {
@@ -358,6 +372,12 @@ extension AlertSettings: Codable {
                 highMin: int("highMin", SettingsSpec.persistHigh, d.highMin),
                 marginMgdl: int("marginMgdl", SettingsSpec.persistMargin, d.marginMgdl))
         }
+        if let e = root["escalation"] {
+            escalation = EscalationSettings(
+                on: e["on"]?.bool ?? escalation.on,
+                min: e["min"]?.number.map { Int(SettingsSpec.escalateMin.coerce($0)) } ?? escalation.min,
+                follow: e["follow"]?.bool ?? escalation.follow)
+        }
         if let s = root["source"]?.string.flatMap(AlertSource.init(rawValue:)) { source = s }
     }
 
@@ -378,6 +398,7 @@ extension AlertSettings: Codable {
         try n.encode(night.to, forKey: DynamicKey("to"))
         try encodeRules(into: &n, { night[$0] })
         try c.encode(persistence, forKey: .persistence)
+        try c.encode(escalation, forKey: .escalation)
         try c.encode(source, forKey: .source)
     }
 

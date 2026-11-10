@@ -101,6 +101,12 @@ data class NightProfile(
     }
 }
 
+/**
+ * SPEC §4 "No answer to a very low" (#39), each device's own: the wearer escalates a very low nobody answered on its
+ * phone for [min] minutes to its followers ([on]); a follower shows those escalations ([follow]).
+ */
+data class Escalation(val on: Boolean = true, val min: Int = 5, val follow: Boolean = true)
+
 /** Followers: mirror the wearer's `alert` events, or run these rules on the followed data (SPEC §3 `source`). */
 enum class AlertSource(val wire: String) { WEARER("wearer"), OWN("own") }
 
@@ -115,6 +121,7 @@ data class AlertSettings(
     val actions: NotificationActions = NotificationActions(),
     val persistence: Persistence = Persistence(),
     val night: NightProfile = NightProfile(),
+    val escalation: Escalation = Escalation(),
     val source: AlertSource = AlertSource.WEARER,
 ) {
     fun rule(kind: AlertKind): KindRule = rules[kind] ?: DEFAULT_RULES.getValue(kind)

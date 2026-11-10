@@ -157,7 +157,7 @@ import Testing
         #expect(
             Set(out.keys) == [
                 "v", "on", "alerts", "muteAfterInsulin", "muteFallingHigh", "muteAfterCarbs", "sounds",
-                "notificationActions", "persistence", "night", "source",
+                "notificationActions", "persistence", "night", "escalation", "source",
             ])
         let alerts = try #require(out["alerts"] as? [String: [String: Any]])
         #expect(Set(alerts.keys) == Set(AlertKind.allCases.map(\.rawValue)))

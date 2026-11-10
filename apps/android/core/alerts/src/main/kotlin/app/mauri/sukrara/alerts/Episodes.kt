@@ -20,6 +20,8 @@ data class Firing(
     val threshold: Double,
     val at: Long,
     val treated: Int = 0,
+    /** A follower shows the wearer's very low escalated: nobody answered it on the wearer's phone (#39). */
+    val escalated: Boolean = false,
 )
 
 /**
@@ -130,11 +132,21 @@ data class AlertState(
     val mirror: MirrorMemory? = null,
     /** The newest `now` the machine has seen: a later `now` before it means the clock was set back. */
     val lastNow: Long = 0,
+    /** The wearer's wait for an answer to a very low (#39): kept, so a restart neither escalates twice nor forgets it. */
+    val escalation: EscalationMemory = EscalationMemory(),
 ) {
     companion object {
         const val VERSION = 1
     }
 }
+
+/**
+ * The wearer's escalation of a very low (SPEC §4 "No answer to a very low", #39): [id] = the newest very-low firing the
+ * followers got in this stretch (null = none), [since] = the stretch's first very-low firing, [sent] = escalated,
+ * [answered] = answered on this phone since [since].
+ */
+@Serializable
+data class EscalationMemory(val id: String? = null, val since: Long = 0, val sent: Boolean = false, val answered: Boolean = false)
 
 /** [AlertState] ⇄ JSON. */
 object AlertStateCodec {

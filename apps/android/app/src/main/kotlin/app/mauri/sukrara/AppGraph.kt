@@ -240,6 +240,9 @@ class AppGraph(
             // mute stays here)
             wearerSettings = followerSettings.alertMirror,
             remoteEvents = flow { emitAll(follower.engine.alerts) }.mapNotNull { AlertEvent.decode(AlertCodec.encode(it)) },
+            // the wearer's `alert` events (what its rules decide without this phone's actions, escalations included) to
+            // every follower at once, over the relays and Bluetooth (PROTOCOL-v2 "Alerts")
+            events = { e -> scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } } },
         )
     }
 

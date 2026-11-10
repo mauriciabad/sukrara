@@ -73,7 +73,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   or a high can wait a few minutes out of range before its first alert, and bounces just inside the threshold can count
   as the same alert (Settings › Alerts › *Near a threshold*; off by default; very low and extremely high never wait).
   *Night alerts*: other thresholds, reminders and alarms every night between the hours you choose, with *Night alerts
-  until 7:00* on home while they apply (very low always rings). Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
+  until 7:00* on home while they apply (very low always rings). When nobody answers a very low on your phone for 5 min, your
+  followers get it as *Very low glucose · no response*, through their own mutes (each follower can turn that off; you
+  can too, or wait longer). Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
   independent of the monitoring service; it also rings for a sensor (or follow) that never sends a first reading, and
   keeps real time when the phone's clock is set back. After a restart, before you first unlock the phone, Sukrara can't read your
   sensor (Android keeps its storage locked): it says *Unlock to resume monitoring* on the lock screen and rings as *No
@@ -177,7 +179,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   same card, rings, sensor life and alerts. Plain http, to home-network addresses only; says so when macOS's Local
   Network permission is off, with the way to turn it on.
 - **Alerts** with sound packs and the same rules and timeline scenarios as Android (also the waits and margin *Near a
-  threshold* and *Night Alerts*, with their line in the panel while they apply); mute, change the time, a custom length, Alert Me Anyway, Remind Less and unmute from the panel; Send
+  threshold* and *Night Alerts*, with their line in the panel while they apply; the wearer's very low nobody answered
+  shows as *Very low glucose · no response*, through this Mac's mutes, unless you turn that off); mute, change the time, a custom length, Alert Me Anyway, Remind Less and unmute from the panel; Send
   Test Alert.
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
   7 days by day with the phone's entries, delete your own with undo.

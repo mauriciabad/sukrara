@@ -49,6 +49,13 @@
     <string name="st_night_kind_title">%1$s at night</string>
     <string name="st_night_footer">Very low always alerts at night. The quiet rules, the waits near a threshold, the notification buttons and the sounds are the same day and night. Followers who use your alerts get the night alerts too.</string>
     <string name="st_night_kind_footer">Applies only between the night alerts\' start and end; the rest of the day this alert follows its own page.</string>
+    <string name="st_escalation_title">If a very low gets no answer</string>
+    <string name="st_escalation_on">Tell my followers</string>
+    <string name="st_escalation_on_summary">Those who follow you get “Very low glucose · no response” when nobody answers it on this phone</string>
+    <string name="st_escalation_min">After</string>
+    <string name="st_escalation_follow">When they don\'t answer a very low</string>
+    <string name="st_escalation_follow_summary">Alert me, also when muted here, if nobody answers it on their phone</string>
+    <string name="st_escalation_footer">An answer is a tap or a swipe on the alert, opening the app, a button on it, Mute all or carbs logged.</string>
     <string name="st_actions_title">Notification buttons</string>
     <string name="st_action_mute">Mute for</string>
     <string name="st_action_relax">Remind less: every</string>
@@ -632,6 +639,10 @@
     <string name="st_note_all_unmuted">Alerts unmuted</string>
     <string name="st_note_all_back">Alerts back on</string>
     <string name="st_note_resumed">Resumed %1$s (no sound)</string>
+    <string name="st_note_escalated">%1$s: no answer for %2$s, your followers were told</string>
+    <string name="st_note_escalated_remote">%1$s · no response (from the wearer)</string>
+    <string name="st_note_answered">%1$s answered: your followers were told</string>
+    <string name="st_note_answered_remote">%1$s answered on the wearer\'s phone</string>
     <string name="st_profile_add_name">Add your name</string>
     <string name="st_profile_summary">Your profile: the name and picture your followers see</string>
     <string name="st_backup_title">Backup</string>

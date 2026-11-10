@@ -56,6 +56,7 @@ object AlertLimits {
     val PERSIST_LOW = NumberLimit(1.0, 15.0, 1.0, 0.0, listOf(0.0, 5.0, 10.0, 15.0), setOf(0.0))
     val PERSIST_HIGH = NumberLimit(5.0, 240.0, 5.0, 0.0, listOf(0.0, 15.0, 30.0, 60.0, 120.0, 240.0), setOf(0.0))
     val PERSIST_MARGIN = NumberLimit(0.0, 20.0, 1.0, 0.0, listOf(0.0, 5.0, 10.0, 15.0, 20.0))
+    val ESCALATE_MIN = NumberLimit(5.0, 30.0, 1.0, 5.0, listOf(5.0, 10.0, 15.0, 20.0, 30.0))
 
     /** *Mute all*: a custom length's minutes; preset 0 = until turned off. */
     val MUTE_ALL = NumberLimit(5.0, 1440.0, 1.0, 60.0, listOf(30.0, 60.0, 120.0, 240.0, 480.0, 0.0), setOf(0.0))
@@ -81,6 +82,7 @@ object AlertLimits {
             "persistLow" to PERSIST_LOW,
             "persistHigh" to PERSIST_HIGH,
             "persistMargin" to PERSIST_MARGIN,
+            "escalateMin" to ESCALATE_MIN,
             "muteAll" to MUTE_ALL,
         )
 

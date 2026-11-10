@@ -372,7 +372,8 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
 
     private fun onAlert(alert: AlertPayload, now: Long): FollowResult {
         if (now - alert.at > Wire.ALERT_MAX_AGE) return FollowResult.Ignored("alert-stale")
-        val key = Triple(alert.id, alert.fire, alert.n)
+        // an escalated copy of a firing (#39: the same id again with `esc`) and an answer are news, not duplicates
+        val key = Triple(alert.id + (if (alert.answered) "|answered" else "") + (alert.esc?.let { "|esc$it" } ?: ""), alert.fire, alert.n)
         if (key in state.alertsSeen) return FollowResult.Ignored("alert-duplicate")
         state = state.copy(alertsSeen = state.alertsSeen + (key to alert.at))
         return FollowResult.Accepted(Item.Alert(alert))

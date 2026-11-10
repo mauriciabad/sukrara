@@ -49,6 +49,27 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
 - Episodes: one per group and side; a brief exit (back in range for less than the repeat interval, at least 5 min)
   clears the notification but keeps the episode, its repeat count and its treatments; no new "first" alert.
 - Repeats count from the last alert of the episode; repeat 0 = once per episode.
+- **No answer to a very low** (#39, SPEC §4; scenarios `escalation.txt`; PROTOCOL-v2 "Alerts" `esc` / `answered`):
+  followers already get every very low at once; when nobody answers a very low on the wearer's phone for 5 min (the
+  safest reasonable default: the very low's own 5-min repeat and Libre's re-alarm; Medtronic CareLink Connect texts a
+  care partner after 0–30 min, Nightscout's Pushover retries urgent alarms every 2 min), the wearer's phone sends it
+  escalated and every follower that takes escalations (Android and Mac, on by default) shows **Very low glucose · no
+  response** (es *Glucosa muy baja · sin respuesta*, `copy.json` `headline_escalated`) at alarm volume / Time
+  Sensitive, through its own Mute, Remind less and Mute all, once (its own quiet states apply to the escalated repeats
+  after it). An answer on the wearer's phone: tapping or swiping the alert, opening the app, any of its buttons
+  (*Mute…*, *Remind less*, *Unmute*), *Mute all* or carbs logged after it fired; a Mute or Mute all set before it is no
+  answer (nobody heard it). Answered after the escalation: the followers' alert turns plain again without sound. It
+  ends with the very low. Settings: the wearer's Settings › Alerts › *If a very low gets no answer* › **Tell my
+  followers** (on) and **After** (5–30 min, the one number input); a follower's (Android and Mac) **When they don't
+  answer a very low** (on). Followers with their own rules (*Settings from* Default / Custom) don't get escalations
+  (their own very low runs). Lately / the Mac log: *Very low: no answer for 5 min, your followers were told*, *Very low
+  answered: your followers were told*; a follower's *Very low · no response (from the wearer)*, *Very low answered on
+  the wearer's phone*. *States and exits*: *waiting for an answer* (no surface: the very low rings on both sides; out:
+  any answer above, the very low ending); *escalated*: the followers' *no response* notification (out: the wearer
+  answers → plain, the very low ends → gone, the follower's *Mute…* on it, turning *When they don't answer a very low*
+  off); on the wearer, its Lately line (out: answering, which tells the followers). The Android wearer's phone now
+  really sends its `alert` events to the followers (relays and Bluetooth, `OwnerEngine.publishAlert`): the rules
+  decided them but the publisher was never connected, so followers in *Wearer* mode only had their own no data.
 - **Night alerts** (#38, SPEC §1 "Night alerts"; scenarios `night.txt`; Android Settings › Alerts › *Night alerts*
   (es *Alertas de noche*) and each alert's night page, Mac Settings › Alerts › *Night Alerts* with a Details… sheet per
   alert): a second set of every alert's rule (on, threshold, remind every, like an alarm) that applies every day

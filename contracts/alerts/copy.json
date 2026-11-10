@@ -20,6 +20,7 @@
     "rule's 20 min) or 'No reading yet' when the source never delivered one, 'No recent reading' when a level alert has",
     "no reading. 'action' = the notification's buttons; 'mute_choice_spoken' = what TalkBack says for a Mute chip.",
     "'all_scope' (#42, UX review: 'Mute all copy should say what it covers'): under Mute all's line on the device.",
+    "'headline_escalated' (#39): a follower's title for the wearer's very low nobody answered on the wearer's phone.",
     "'night' (#38): while the night alerts apply, the line every surface that shows alert states says, with the clock",
     "time they end (the platform's clock formatter)."
   ],
@@ -59,6 +60,7 @@
     {"state": "headline", "kind": "high", "treated": 1, "en": "High glucose · still high after insulin", "es": "Glucosa alta · sigue alta tras la insulina"},
     {"state": "headline", "kind": "extremely_high", "treated": 2, "en": "Extremely high glucose · still high after more insulin", "es": "Glucosa extremadamente alta · sigue alta tras más insulina"},
     {"state": "headline", "kind": "falling_fast", "treated": 1, "en": "Falling fast", "es": "Bajada rápida"},
+    {"state": "headline_escalated", "kind": "very_low", "en": "Very low glucose · no response", "es": "Glucosa muy baja · sin respuesta"},
     {"state": "body", "kind": "low", "mgdl": 69, "rate": -1.5, "unit": "mgdl", "en": "69 mg/dL ↘", "es": "69 mg/dL ↘"},
     {"state": "body", "kind": "high", "mgdl": 192, "unit": "mgdl", "en": "192 mg/dL ○", "es": "192 mg/dL ○"},
     {"state": "body", "kind": "falling_fast", "mgdl": 120, "rate": -2.4, "unit": "mgdl", "en": "120 mg/dL ↓ · falling 2.4 mg/dL/min", "es": "120 mg/dL ↓ · baja 2,4 mg/dL/min"},

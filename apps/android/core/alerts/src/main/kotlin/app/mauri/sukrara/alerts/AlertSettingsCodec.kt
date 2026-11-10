@@ -50,6 +50,11 @@ object AlertSettingsCodec {
                 put("backMgdl", s.actions.backMgdl)
                 put("backMin", s.actions.backMin)
             }
+            putJsonObject("escalation") {
+                put("on", s.escalation.on)
+                put("min", s.escalation.min)
+                put("follow", s.escalation.follow)
+            }
             putJsonObject("night") {
                 put("on", s.night.on)
                 put("from", s.night.fromMin)
@@ -68,6 +73,7 @@ object AlertSettingsCodec {
         val d = AlertSettings()
         val rules = rulesOf(j.obj("alerts"))
         val night = j.obj("night")
+        val escalation = j.obj("escalation")
         val sounds = j.obj("sounds")
         val actions = j.obj("notificationActions")
         val persistence = j.obj("persistence")
@@ -104,6 +110,12 @@ object AlertSettingsCodec {
                     relaxMin = action("relaxMin", AlertLimits.ACTION_RELAX, d.actions.relaxMin),
                     backMgdl = action("backMgdl", AlertLimits.BACK_MGDL, d.actions.backMgdl),
                     backMin = action("backMin", AlertLimits.BACK_MIN, d.actions.backMin),
+                ),
+            escalation =
+                Escalation(
+                    on = escalation?.bool("on") ?: d.escalation.on,
+                    min = AlertLimits.ESCALATE_MIN.coerce(escalation?.num("min")?.toInt() ?: d.escalation.min),
+                    follow = escalation?.bool("follow") ?: d.escalation.follow,
                 ),
             night =
                 NightProfile(

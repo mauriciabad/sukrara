@@ -124,7 +124,20 @@ final class AlertController {
                 },
                 threshold: p.threshold ?? settings[kind].threshold, n: p.count, treated: p.treatments)
             mirrored[kind.group] = firing
-            if mirror.fire(kind, id: p.id, at: at) { notifier.post(firing, sound: true, category: category(kind)) }
+            // #39: the wearer's very low nobody answered there, when this Mac takes escalations
+            let escalated = p.esc != nil && settings.escalation.follow
+            if mirror.fire(kind, id: p.id, at: at, escalated: escalated) {
+                if escalated { notifier.log(AlertLog.escalated(kind)) }
+                notifier.post(
+                    firing, sound: true, category: category(kind),
+                    escalated: escalated || mirror.isEscalated(kind.group))
+            }
+        } else if p.answered {
+            // answered on the wearer's phone: shown again plain, without sound
+            if let id = mirror.answered(kind), let f = mirrored[kind.group], f.id == id {
+                notifier.log(AlertLog.answered(kind))
+                notifier.post(f, sound: false, category: category(kind), escalated: false)
+            }
         } else if mirror.clear(kind, id: p.id) {
             notifier.clear(kind.group)
         }

@@ -213,6 +213,15 @@ class AlertRuntime(
     }
 
     /**
+     * #39: the person tapped or swiped an alert, or opened the app: an answer to a very low showing on this phone (the
+     * followers' escalation doesn't come, or is withdrawn). [kind] null = whatever alert is up (the app opened).
+     */
+    suspend fun acknowledge(kind: String? = null) {
+        val k = kind?.let(AlertKind::fromWire) ?: firing[AlertGroup.LEVEL]?.kind ?: return
+        if (machine?.role == AlertRole.WEARER) process(AlertInput.Acknowledge(k))
+    }
+
+    /**
      * Shows [kind]'s notification again without sound: a *Mute…* reply that wasn't a length changes nothing, and the
      * re-post takes the reply's spinner away.
      */
@@ -414,6 +423,20 @@ class AlertRuntime(
                 // the history line is the (it reads the state)
                 is AlertEffect.Mirror -> {
                     attempt(Step.Mirror) { events.publish(e.event) }
+                }
+
+                // #39: the wearer answered the escalated very low: shown again plain, without sound
+                is AlertEffect.Answered -> {
+                    val group = e.firing.kind.group
+                    if (firing[group]?.id == e.firing.id) {
+                        firing[group] = e.firing
+                        post(m, group, e.firing, silent = true, relaxedMin(m, group, now))
+                    }
+                }
+
+                // the history line (above)
+                is AlertEffect.Escalated -> {
+                    Unit
                 }
 
                 is AlertEffect.Schedule -> {

@@ -196,6 +196,10 @@ class AlertCopyTest {
                 AlertCopy.headline(kind(), c.long("treated").toInt(), w)
             }
 
+            "headline_escalated" -> {
+                AlertCopy.headline(kind(), 0, w, escalated = true)
+            }
+
             "body" -> {
                 val reading =
                     c["mgdl"]?.let {

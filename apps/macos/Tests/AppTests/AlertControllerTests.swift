@@ -23,7 +23,7 @@ final class RecordingNotifier: AlertNotifying {
     var calls: [Call] = []
     var posts: [Call] { calls.filter { if case .post = $0 { true } else { false } } }
 
-    func post(_ f: AlertFiring, sound: Bool, category: String) {
+    func post(_ f: AlertFiring, sound: Bool, category: String, escalated: Bool) {
         calls.append(.post(f.kind, id: f.id, sound: sound, category: category))
     }
     func clear(_ group: AlertGroup) { calls.append(.clear(group)) }
@@ -253,6 +253,44 @@ final class RecordingWake: WakeScheduling {
         clock.advance(by: 3 * 3600)
         c.tick()
         #expect(!notifier.posts.contains { if case .post(.noData, _, _, _) = $0 { true } else { false } })
+    }
+
+    /// #39: the wearer's very low nobody answered there shows through this Mac's own Mute once, and its answer shows it
+    /// plain again without sound; this Mac can turn escalations off.
+    @Test func anEscalatedVeryLowBreaksThroughThisMacsMuteOnceAndAnAnswerShowsItPlain() throws {
+        let c = controller()
+        c.setMirroring(true)
+        c.perform(.mute(.low, minutes: 60))
+        notifier.calls = []
+        c.wearerAlert(try veryLow(state: "fire", esc: nil))
+        #expect(notifier.posts.isEmpty)
+        c.wearerAlert(try veryLow(state: "fire", esc: 5))
+        #expect(notifier.posts.contains { if case .post(.veryLow, "v1", true, _) = $0 { true } else { false } })
+        notifier.calls = []
+        c.wearerAlert(try veryLow(state: "fire", esc: 5))  // the same escalated copy again (another relay): nothing new
+        #expect(notifier.posts.isEmpty)
+        c.wearerAlert(try veryLow(state: "answered", esc: nil))
+        #expect(notifier.posts.contains { if case .post(.veryLow, "v1", false, _) = $0 { true } else { false } })
+    }
+
+    @Test func aMacThatTurnedEscalationsOffKeepsItsMute() throws {
+        var s = AlertSettings()
+        s.escalation.follow = false
+        let c = controller()
+        c.settings(s)
+        c.setMirroring(true)
+        c.perform(.mute(.low, minutes: 60))
+        notifier.calls = []
+        c.wearerAlert(try veryLow(state: "fire", esc: 5))
+        #expect(notifier.posts.isEmpty)
+    }
+
+    func veryLow(state: String, esc: Int?) throws -> AlertPayload {
+        let at = Int(clock.now.timeIntervalSince1970)
+        let extra = esc.map { #","esc":\#($0)"# } ?? ""
+        let json =
+            #"{"v":2,"type":"alert","k":"very_low","state":"\#(state)","id":"v1","at":\#(at),"t":\#(at),"sgv":50,"th":55,"n":1\#(extra)}"#
+        return try AlertPayload.decode(json)
     }
 
     func payload(kind: String, fires: Bool) throws -> AlertPayload {

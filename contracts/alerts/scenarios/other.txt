@@ -39,7 +39,7 @@ settings falling_fast=on falling_fast.repeat=10
 
 scenario LO readings don't end a falling-fast Mute: no rate is no sign the fall stopped
 mirror
-settings falling_fast=on
+settings falling_fast=on escalate=off   # about the Mute alone: an unanswered very low's escalation is escalation.txt
  0  glucose 60 rate -3              => Low glucose; Falling fast; follower Low glucose; follower Falling fast
  1  mute falling_fast 2h, follower mute falling_fast 2h   => clear falling_fast; follower clear falling_fast
  2  glucose 39                      => clear low; Very low glucose; follower clear low; follower Very low glucose

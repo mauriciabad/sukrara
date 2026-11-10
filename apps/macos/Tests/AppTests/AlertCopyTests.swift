@@ -33,7 +33,9 @@ import Testing
 
     nonisolated struct File: Decodable { var cases: [Case] }
 
-    nonisolated static let notification: Set<String> = ["headline", "body", "action", "test_title", "all_scope"]
+    nonisolated static let notification: Set<String> = [
+        "headline", "headline_escalated", "body", "action", "test_title", "all_scope",
+    ]
 
     nonisolated static func cases() -> [Case] {
         guard let data = try? Data(contentsOf: Contracts.url("alerts/copy.json")) else { return [] }
@@ -67,6 +69,7 @@ import Testing
         }
         switch c.state {
         case "headline": return firing().map(text.title)
+        case "headline_escalated": return firing().map { text.title($0, escalated: true) }
         case "body": return firing().map { text.body($0, now: at) }
         case "test_title": return firing().map(text.testTitle)
         case "all_scope": return try catalog("Very low and no data included, on this Mac only", lang.rawValue)

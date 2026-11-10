@@ -238,6 +238,7 @@ at once: no after-treatment pill, and the mute line and ring of the entries logg
   "sounds": {"pack": "quest", "kinds": {}, "shuffle": true},
   "notificationActions": {"muteMin": 30, "relaxMin": 30, "backMgdl": 10, "backMin": 10},
   "persistence": {"lowMin": 0, "highMin": 0, "marginMgdl": 0},
+  "escalation": {"on": true, "min": 5, "follow": true},
   "night": {"on": false, "from": 1320, "to": 420,
     "alerts": {
       "very_low":     {"on": true,  "mgdl": 55,  "repeatMin": 5,  "alarm": true},
@@ -257,6 +258,9 @@ at once: no after-treatment pill, and the mute line and ring of the entries logg
   07:00), `alerts` = every kind's night rule in the `alerts` shape (the day's defaults until changed; `very_low.on` is
   always read as on). Mirrored like the day rules (`on`, `from`, `to`, each kind's `on` / threshold / `repeatMin` but no
   data's); `alarm` and no data's are each device's.
+- `escalation` (#39, §4 "No answer to a very low"; each device's, never mirrored): `on` and `min` (5–30, default 5)
+  are the wearer's (tell the followers when nobody answers a very low on this phone, after `min` minutes), `follow` a
+  follower's (show those escalations here; default on).
 - `persistence` (#37, §1 "Waiting before the first alert", "Back by the margin"; rules like the thresholds, so the
   wearer's run for the followers uses them and a follower in *Wearer* mode shows them): `lowMin` (0–15) for low,
   `highMin` (0–240) for high and very high, `marginMgdl` (0–20, both sides).
@@ -290,18 +294,21 @@ expiration now + 1 h, content NIP-44 `D → G_n`:
 ```json
 {"v": 2, "type": "alert", "id": "<16 hex>", "k": "high", "state": "fire", "at": 1760650000,
  "t": 1760649990, "sgv": 192, "r": -0.4, "th": 180, "n": 2, "tr": 1}
+{"v": 2, "type": "alert", "id": "<16 hex>", "k": "very_low", "state": "fire", "at": 1760650300,
+ "t": 1760650290, "sgv": 52, "th": 55, "n": 2, "tr": 0, "esc": 5}
 ```
 
 | Field | Meaning |
 |---|---|
 | `id` | random per firing; a `clear` repeats the `id` of the firing it ends |
 | `k` | alert kind (§1) |
-| `state` | `fire` (the rules alert, including re-alerts; the wearer's own notification actions don't change it, §2) or `clear` (condition left: remove it) |
+| `state` | `fire` (the rules alert, including re-alerts; the wearer's own notification actions don't change it, §2), `clear` (condition left: remove it) or `answered` (#39: the very low `id` escalated with `esc` was answered on the wearer's phone) |
 | `at` | when the wearer fired/cleared (unix s) |
 | `t`, `sgv`, `r` | the reading that triggered it (`no_data`: the last reading, may be null) |
 | `th` | the threshold that matched (mg/dL, mg/dL/min, or minutes for `no_data`) |
 | `n` | 1 for the first firing of the episode, 2… for the next ones |
 | `tr` | treatments acknowledged in the headline (§1): 0, 1, or 2 for two or more; 0 for rate and no-data alerts |
+| `esc` | (#39, `fire` of `very_low` only; absent = not escalated) nobody has answered this very low on the wearer's phone for `esc` minutes |
 
 - Published on **relays** (Lane LIVE, follows the "Nostr" switch, ignores the batching interval: alerts are always
   sent at once) and over **BLE** to subscribed followers (backlog key `alert`, so a follower that connects within
@@ -312,6 +319,28 @@ expiration now + 1 h, content NIP-44 `D → G_n`:
   actions quiet it, §2); `clear` removes it.
   In `"own"` mode `alert` events are ignored.
 - Followers subscribe with `{"kinds":[21078,21079], "authors": roster.devices, "since": now − 120}`.
+
+**No answer to a very low** (#39, `escalation`; scenarios `escalation.txt`). The followers already get every very low at
+once. When the wearer's phone shows a very low and **nobody answers it there for `escalation.min` minutes (default 5)**,
+the wearer escalates it: its `fire` events for that very low carry `esc` (the minutes without an answer) — the repeat
+due then, or the newest firing sent again with the same `id` when no repeat is due. A follower that opted in
+(`escalation.follow`, default on) shows it as **"Very low glucose · no response"** at alarm volume (Android the
+alarm channel; Mac Time Sensitive when entitled), **through its own Mute, Remind less and Mute all, once**; that
+follower's own quiet states apply to the escalated repeats after it (still worded as escalated while shown). The
+default is the safest reasonable one: a very low repeats every 5 min (Libre's re-alarm interval too); Nightscout's
+Pushover retries urgent alarms every 2 min; Medtronic CareLink Connect texts the care partner after a low isn't cleared
+within 0–30 min (0 by default); xDrip+'s experimental emergency SMS waits 60 min; Dexcom Follow only teased "missed
+alert" labels.
+- **An answer on the wearer's phone**: tapping or swiping the alert, opening the app, any of its notification actions
+  (*Mute…*, *Remind less*, *Unmute*), *Mute all*, or logging carbs, after the very low first fired. Not an answer: a
+  Mute or Mute all set before it (nobody heard this alert, so it escalates all the same). The wait counts from the
+  first very-low firing of the stretch (what the followers got, §2), checked on the timer.
+- **Answered after the escalation**: the wearer sends `answered` with the escalated `id`; followers show that very low
+  again without the escalation and without sound ("follower answered very_low").
+- It ends with the very low: the wearer's `clear` of it, or a less severe kind (the stretch is over). One escalation
+  per stretch; a later very low starts a new wait.
+- The wearer can turn sending off (`escalation.on`) or wait longer (`min`, 5–30); followers with their own rules
+  (*Settings from* Default / Custom) ignore `alert` events, escalations included (their own very low alerts run).
 
 ## 5. Sound packs
 
@@ -366,6 +395,7 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
   Alert me anyway), `unrelax <kind>` (Remind as usual), `mute all <length>|never` (Mute all), `unmute all` (Turn alerts
   back on), `follower mute|relax|unmute|unrelax <kind> [<length>]` and `follower mute all …` / `follower unmute all`
   (the same on the mirroring follower, `mirror` only),
+  `ack <kind>` (#39: the wearer taps, swipes or opens the alert of that kind: an answer on the wearer's phone),
   `restart` (the app process restarts: a new engine, seeded with the last reading, restores the old one's snapshot).
 - `at HH:MM` (a line of its own, like `settings`): the wearer's local time at minute 0 (the drivers run in UTC on the
   same day; without it minute 0 is 08:54), for the night window.
@@ -377,9 +407,11 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
 - Settings keys: `alerts=on|off`, `<kind>=on|off|<threshold>`, `<kind>.repeat=<min>`,
   `carbs.mute|insulin.mute|falling.mute=off|<min>`, `mute.min=<min>`, `relax.min=<min>`, `back.mgdl=<mg/dL>`,
   `back.min=<min>`, `persist.low=<min>`, `persist.high=<min>`, `persist.margin=<mg/dL>`, `night=on|off`,
-  `night.from=HH:MM`, `night.to=HH:MM`, `night.<kind>=on|off|<threshold>`, `night.<kind>.repeat=<min>`.
-- Expectations: the fired headline (§1), `clear <kind>`, `back <side>` (the side's Mute / Remind less ended: back by the
-  margin), or `resume <kind>` (a `restart` shows that alert again without sound), in the order they happen; `nothing` (or none) = no
+  `night.from=HH:MM`, `night.to=HH:MM`, `night.<kind>=on|off|<threshold>`, `night.<kind>.repeat=<min>`,
+  `escalate=off|<min>` (the wearer's), `follower.escalate=on|off` (the follower's opt-in).
+- Expectations: the fired headline (§1; a follower's escalated very low is `Very low glucose · no response`, #39),
+  `clear <kind>`, `back <side>` (the side's Mute / Remind less ended: back by the margin), `follower answered <kind>`
+  (the escalation answered on the wearer's phone: shown again plain, without sound), or `resume <kind>` (a `restart` shows that alert again without sound), in the order they happen; `nothing` (or none) = no
   action. **Strict**: every minute without a line must have no action, and every action must be listed.
 - Driver (same on both platforms): time starts on a whole minute. At each instant, first the line's events in order
   (a treatment, a deletion or a `set` re-evaluates at once, like the apps do when the log or the settings change),

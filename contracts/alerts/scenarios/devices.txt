@@ -66,6 +66,7 @@ mirror
 
 scenario A follower's mute covers very low and ends by the margin, not with the wearer's episode
 mirror
+settings escalate=off             # about the follower's Mute alone: an unanswered very low's escalation is escalation.txt
  0  glucose 65            => Low glucose; follower Low glucose
  2  follower mute low 2h  => follower clear low
  4  glucose 50            => clear low; Very low glucose     # dropped here: the mute covers very low (user, 2026-10-21)

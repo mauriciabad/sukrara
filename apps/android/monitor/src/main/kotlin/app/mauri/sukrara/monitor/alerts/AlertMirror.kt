@@ -36,6 +36,8 @@ object AlertMirror {
                 ),
             sounds = own.sounds,
             actions = own.actions,
+            // whether this phone takes the wearer's escalations is its own choice (#39)
+            escalation = own.escalation,
             source = own.source,
         )
     }

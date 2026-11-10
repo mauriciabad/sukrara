@@ -49,6 +49,13 @@
     <string name="st_night_kind_title">%1$s de noche</string>
     <string name="st_night_footer">La alerta de muy baja siempre suena de noche. Las reglas de silencio, las esperas cerca de un umbral, los botones de la notificación y los sonidos son los mismos de día y de noche. Quien siga tus alertas también recibe las de noche.</string>
     <string name="st_night_kind_footer">Solo se aplica entre el inicio y el fin de las alertas de noche; el resto del día esta alerta sigue su propia página.</string>
+    <string name="st_escalation_title">Si nadie responde a una muy baja</string>
+    <string name="st_escalation_on">Avisar a quien me sigue</string>
+    <string name="st_escalation_on_summary">Quien te sigue recibe «Glucosa muy baja · sin respuesta» si nadie la responde en este teléfono</string>
+    <string name="st_escalation_min">Tras</string>
+    <string name="st_escalation_follow">Si no responde a una muy baja</string>
+    <string name="st_escalation_follow_summary">Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono</string>
+    <string name="st_escalation_footer">Responder es tocar o deslizar la alerta, abrir la app, usar uno de sus botones, Silenciar alertas o anotar hidratos.</string>
     <string name="st_actions_title">Botones de la notificación</string>
     <string name="st_action_mute">Silenciar durante</string>
     <string name="st_action_relax">Recordar menos: cada</string>
@@ -640,6 +647,10 @@
     <string name="st_note_all_unmuted">Alertas activadas de nuevo</string>
     <string name="st_note_all_back">Las alertas vuelven a sonar</string>
     <string name="st_note_resumed">Reanudada: %1$s (sin sonido)</string>
+    <string name="st_note_escalated">%1$s: sin respuesta en %2$s, se avisó a quien te sigue</string>
+    <string name="st_note_escalated_remote">%1$s · sin respuesta (de quien sigues)</string>
+    <string name="st_note_answered">%1$s respondida: se avisó a quien te sigue</string>
+    <string name="st_note_answered_remote">%1$s respondida en el teléfono de quien sigues</string>
     <string name="st_profile_add_name">Añade tu nombre</string>
     <string name="st_profile_summary">Tu perfil: el nombre y la foto que ven tus seguidores</string>
     <string name="st_backup_title">Copia de seguridad</string>

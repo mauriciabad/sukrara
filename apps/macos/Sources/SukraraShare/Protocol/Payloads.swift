@@ -177,20 +177,27 @@ public struct AlertPayload: Equatable, Sendable {
     public let threshold: Double?
     public let count: Int
     public let treatments: Int
+    /// #39: the escalated very low `id` was answered on the wearer's phone (state `answered`).
+    public var answered = false
+    /// #39 (`fire` of very low): nobody answered it on the wearer's phone for `esc` minutes; nil = not escalated.
+    public var esc: Int?
 
     public static func decode(_ json: String) throws(PayloadError) -> AlertPayload {
         let o = try JSONObject(json: json)
         try o.requireVersion(Wire.version)
         guard o.string("type") == "alert" else { throw PayloadError("type must be alert") }
         guard let kind = o.string("k"), kinds.contains(kind) else { throw PayloadError("unknown alert kind") }
-        guard let state = o.string("state"), state == "fire" || state == "clear" else {
-            throw PayloadError("state must be fire|clear")
+        guard let state = o.string("state"), ["fire", "clear", "answered"].contains(state) else {
+            throw PayloadError("state must be fire|clear|answered")
         }
         guard let id = o.string("id"), !id.isEmpty else { throw PayloadError("missing id") }
-        return AlertPayload(
+        var p = AlertPayload(
             id: id, kind: kind, fires: state == "fire", at: try o.int("at"), t: try o.optionalInt("t"),
             sgv: try o.optionalInt("sgv"), rate: try o.optionalNumber("r"), threshold: try o.optionalNumber("th"),
             count: try o.optionalInt("n") ?? 1, treatments: try o.optionalInt("tr") ?? 0)
+        p.answered = state == "answered"
+        p.esc = state == "fire" ? try o.optionalInt("esc") : nil
+        return p
     }
 }
 

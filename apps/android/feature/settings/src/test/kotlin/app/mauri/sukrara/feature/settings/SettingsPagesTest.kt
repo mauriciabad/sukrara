@@ -73,6 +73,10 @@ class SettingsPagesTest {
             "alerts.muteFallingHigh.min",
             "alerts.muteAfterCarbs.on",
             "alerts.muteAfterCarbs.min",
+            // Settings › Alerts › If a very low gets no answer (#39: the wearer's two rows, a follower's switch)
+            "alerts.escalation.on",
+            "alerts.escalation.min",
+            "alerts.escalation.follow",
             // Settings › Alerts › Night alerts and each alert's night page (#38)
             "alerts.night.on",
             "alerts.night.from",

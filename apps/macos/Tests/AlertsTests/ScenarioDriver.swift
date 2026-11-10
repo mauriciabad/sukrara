@@ -131,6 +131,9 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
     case "persist.low": s.persistence.lowMin = try int()
     case "persist.high": s.persistence.highMin = try int()
     case "persist.margin": s.persistence.marginMgdl = try int()
+    case "escalate":
+        if v == "off" { s.escalation.on = false } else { s.escalation.on = true; s.escalation.min = try int() }
+    case "follower.escalate": s.escalation.follow = v == "on"
     case "night": s.night.on = v == "on"
     case "night.from", "night.to":
         guard let m = Scenario.clockMinutes(v) else { throw ScenarioError.bad("not a time: \(kv)") }
@@ -192,15 +195,21 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             }
         }
     }
-    func publishedEffects(_ effects: [AlertEffect]) {
-        for e in effects {
+    // the wearer's run for the followers, with its escalation of an unanswered very low (#39)
+    var watch = EscalationWatch()
+    func publishedEvents(_ events: [EscalationWatch.Event]) {
+        for e in events {
             switch e {
-            case .fire(let f):
+            case .fire(let f, let esc):
                 published[f.id] = f
-                if follower.fire(f.kind, id: f.id, at: f.at) { record("follower \(f.headline)") }
+                let escalated = esc != nil && s.escalation.follow
+                if follower.fire(f.kind, id: f.id, at: f.at, escalated: escalated) {
+                    record("follower \(f.headline)" + (escalated ? " · no response" : ""))
+                }
             case .clear(let f):
                 if follower.clear(f.kind, id: f.id) { record("follower clear \(f.kind.rawValue)") }
-            case .back, .resume, .schedule: break
+            case .answered(let kind, _):
+                if follower.answered(kind) != nil { record("follower answered \(kind.rawValue)") }
             }
         }
     }
@@ -209,10 +218,24 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     // mirror: the wearer's shared engine (no notification actions: what it publishes), feeding `follower`
     var shared = AlertEngine(context: AlertContext(settings: s, timeZone: utc))
     var mono: TimeInterval { real.timeIntervalSince1970 }
-    func wearerDo(_ input: AlertInput) { wearerEffects(wearer.handle(input, at: clock, monotonic: mono)) }
+    /// What the followers get after a wearer input: the shared run's `effects`, `answer` = an answer on the wearer's phone.
+    func share(_ effects: [AlertEffect], answer: Bool) {
+        guard sc.mirror else { return }
+        publishedEvents(
+            watch.step(
+                shared: effects, answer: answer, newest: shared.showing(.level), settings: s.escalation, at: clock))
+    }
+    /// A wearer's own action (never shared): `answer` = it answers a very low on the wearer's phone.
+    func wearerDo(_ input: AlertInput, answer: Bool = false) {
+        wearerEffects(wearer.handle(input, at: clock, monotonic: mono))
+        share([], answer: answer)
+    }
     func both(_ input: AlertInput) {
         wearerEffects(wearer.handle(input, at: clock, monotonic: mono))
-        if sc.mirror { publishedEffects(shared.handle(input, at: clock, monotonic: mono)) }
+        guard sc.mirror else { return }
+        var answer = false
+        if case .treatments(let list) = input { answer = watch.answeredBy(list) }
+        share(shared.handle(input, at: clock, monotonic: mono), answer: answer)
     }
     // the follower is another device: its clock is the scenario's
     func followerReading(_ r: GlucoseSample?) {
@@ -297,6 +320,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 }
                 offset -= TimeInterval(m * 60)
                 clock = real.addingTimeInterval(offset)
+                watch.shiftBack(TimeInterval(m * 60))
                 both(.tick)  // the system's clock-change notice (the app ticks the alerts)
             case "carbs", "insulin":
                 treatments.append((w[0] == "carbs" ? .carbs : .rapidInsulin, clock, false))
@@ -307,14 +331,22 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 both(.treatments(live()))
             case "mute":
                 if w[1] == "all" {
-                    wearerDo(.muteAll(until: try allEnd(w, 2, from: clock)))
+                    wearerDo(.muteAll(until: try allEnd(w, 2, from: clock)), answer: true)
                 } else {
                     let m = try minutes(w, 2) ?? s.notificationActions.muteMin
-                    wearerDo(.mute(try side(w[1]), minutes: m))
+                    let sd = try side(w[1])
+                    wearerDo(.mute(sd, minutes: m), answer: sd == .low)
                 }
-            case "relax": wearerDo(.remindLess(try side(w[1])))
-            case "unmute": wearerDo(w[1] == "all" ? .unmuteAll : .unmute(try side(w[1])))
-            case "unrelax": wearerDo(.remindAsUsual(try side(w[1])))
+            case "relax": wearerDo(.remindLess(try side(w[1])), answer: try side(w[1]) == .low)
+            case "unmute":
+                if w[1] == "all" {
+                    wearerDo(.unmuteAll, answer: true)
+                } else {
+                    wearerDo(.unmute(try side(w[1])), answer: try side(w[1]) == .low)
+                }
+            case "unrelax": wearerDo(.remindAsUsual(try side(w[1])), answer: try side(w[1]) == .low)
+            // the wearer taps, swipes or opens the alert: an answer on the wearer's phone (#39)
+            case "ack": share([], answer: try side(w[1]) == .low)
             case "follower":
                 switch (w[1], w.count > 2 ? w[2] : "") {
                 case ("mute", "all"):
@@ -364,7 +396,11 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         followerExpire()
         func onScenarioTime(_ d: Date?) -> Int? { d.map { Int(($0.timeIntervalSince1970 - offset).rounded(.up)) } }
         timer = onScenarioTime(
-            [wearer.nextCheck(after: clock), sc.mirror ? shared.nextCheck(after: clock) : nil].compactMap { $0 }.min())
+            [
+                wearer.nextCheck(after: clock), sc.mirror ? shared.nextCheck(after: clock) : nil,
+                sc.mirror ? watch.due(s.escalation).flatMap { $0 > clock ? $0 : nil } : nil,
+            ]
+            .compactMap { $0 }.min())
         followerTimer =
             sc.mirror ? follower.nextCheck(after: real).map { Int($0.timeIntervalSince1970.rounded(.up)) } : nil
         guard

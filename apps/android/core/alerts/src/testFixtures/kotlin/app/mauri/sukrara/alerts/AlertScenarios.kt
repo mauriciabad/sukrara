@@ -193,6 +193,14 @@ object AlertScenarios {
                 s.copy(night = s.night.copy(on = v == "on"))
             }
 
+            "escalate" -> {
+                s.copy(escalation = if (v == "off") s.escalation.copy(on = false) else s.escalation.copy(on = true, min = v.toInt()))
+            }
+
+            "follower.escalate" -> {
+                s.copy(escalation = s.escalation.copy(follow = v == "on"))
+            }
+
             "night.from" -> {
                 s.copy(night = s.night.copy(fromMin = clockMinutes(v)))
             }
@@ -277,7 +285,9 @@ object AlertScenarios {
         fun followerSaw(effects: List<AlertEffect>) =
             effects.forEach { e ->
                 when (e) {
-                    is AlertEffect.Fire -> note("follower ${Headlines.english(e.firing.kind, e.firing.treated)}")
+                    is AlertEffect.Fire -> note("follower ${Headlines.english(e.firing.kind, e.firing.treated, e.firing.escalated)}")
+                    is AlertEffect.Answered -> note("follower answered ${e.firing.kind.wire}")
+                    is AlertEffect.Escalated -> error("a follower never escalates")
                     is AlertEffect.Clear -> note("follower clear ${e.kind.wire}")
                     is AlertEffect.Back -> note("follower back ${e.side.wire}")
                     is AlertEffect.Mirror -> error("a follower never publishes")
@@ -311,6 +321,15 @@ object AlertScenarios {
 
                     is AlertEffect.Mirror -> {
                         follow(AlertInput.Remote(e.event))
+                    }
+
+                    is AlertEffect.Answered -> {
+                        error("a wearer never shows an answered escalation")
+                    }
+
+                    // the wearer's history line only: what the followers show is compared on their side
+                    is AlertEffect.Escalated -> {
+                        Unit
                     }
 
                     is AlertEffect.Schedule -> {
@@ -434,6 +453,11 @@ object AlertScenarios {
                         wearerDid(wearer(AlertInput.RemindAsUsual(kind(w[1]))))
                     }
 
+                    // the wearer taps, swipes or opens the alert: an answer on the wearer's phone (#39)
+                    "ack" -> {
+                        wearerDid(wearer(AlertInput.Acknowledge(kind(w[1]))))
+                    }
+
                     "follower" -> {
                         require(sc.mirror) { "follower event without mirror: $ev" }
                         follow(
@@ -537,7 +561,7 @@ object Headlines {
             AlertKind.NO_DATA -> "No data"
         }
 
-    fun english(k: AlertKind, treated: Int): String {
+    fun english(k: AlertKind, treated: Int, escalated: Boolean = false): String {
         val base =
             when {
                 k.isLevel -> "${label(k)} glucose"
@@ -550,6 +574,8 @@ object Headlines {
                 k.side == Side.LOW -> if (treated == 1) "eat more" else "eat more again"
                 else -> if (treated == 1) "still high after insulin" else "still high after more insulin"
             }
+        // #39: a follower's very low that nobody answered on the wearer's phone
+        if (escalated) return "$base · no response"
         return if (more == null) base else "$base · $more"
     }
 }

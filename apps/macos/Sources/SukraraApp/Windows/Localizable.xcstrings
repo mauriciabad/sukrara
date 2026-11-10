@@ -241,6 +241,22 @@
         }
       }
     },
+    "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono: «Glucosa muy baja · sin respuesta»."
+          }
+        }
+      }
+    },
     "Alert settings couldn't be read. Sukrara keeps using the last ones it read." : {
       "localizations" : {
         "en" : {
@@ -1345,6 +1361,22 @@
         }
       }
     },
+    "If a very low gets no answer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If a very low gets no answer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si nadie responde a una muy baja"
+          }
+        }
+      }
+    },
     "Ignore bounces within" : {
       "localizations" : {
         "en" : {
@@ -1645,6 +1677,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "When they don't answer a very low" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When they don't answer a very low"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si no responde a una muy baja"
           }
         }
       }
