@@ -176,6 +176,7 @@ object SettingsIndex {
                     R.string.st_quiet_carbs to null,
                     R.string.st_quiet_falling to null,
                     R.string.st_quiet_length to null,
+                    R.string.st_night_title to R.string.st_night_use_summary,
                     R.string.st_escalation_on to R.string.st_escalation_on_summary,
                     R.string.st_escalation_min to R.string.st_escalation_footer,
                     R.string.st_escalation_follow to R.string.st_escalation_follow_summary,
