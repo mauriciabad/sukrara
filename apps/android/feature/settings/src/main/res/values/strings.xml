@@ -203,6 +203,8 @@
     <string name="st_sensor_sign_in_needed">Sign in to LibreView so Sukrara can start or take over the sensor.</string>
     <string name="st_sensor_bluetooth_permission_text">Sukrara needs the Nearby devices permission to read the sensor. Pair new sensor asks for it.</string>
     <string name="st_sensor_scan_again_text">Sukrara can’t use the saved pairing. Scan the sensor again: it keeps running and nothing is lost.</string>
+    <string name="st_sensor_taken_over_text">Another app took over the sensor (the official app or Juggluco), so Sukrara stopped reading it. Close that app, then scan the sensor to take it back.</string>
+    <string name="st_sensor_pair_again_text">The sensor refused the pairing (a wrong ID or PIN). Pair it again.</string>
     <string name="st_sensor_source">Reading source</string>
     <string name="st_sensor_source_direct">This phone reads the sensor</string>
     <string name="st_sensor_source_direct_why">Sukrara connects to the sensor itself over Bluetooth.</string>
@@ -226,6 +228,8 @@
     <string name="st_sensor_status_connecting_juggluco">Getting readings from Juggluco…</string>
     <string name="st_sensor_status_juggluco_unreachable">Juggluco isn’t answering: no readings</string>
     <string name="st_sensor_status_scan_again">Needs a new scan of the sensor</string>
+    <string name="st_sensor_status_taken_over">Used by another app</string>
+    <string name="st_sensor_status_pair_again">Needs pairing again</string>
     <string name="st_sensor_status_sign_in">Needs the LibreView sign-in</string>
     <string name="st_sensor_status_permission">Needs the Nearby devices permission</string>
     <string name="st_sensor_juggluco_unreachable_text">Juggluco doesn’t answer, so Sukrara gets no readings. Open Juggluco and turn on its web server (Settings › Web server), or choose This phone reads the sensor below.</string>

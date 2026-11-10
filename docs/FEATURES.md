@@ -471,9 +471,15 @@ sensor*, which says it reconnects) (no "no data" alarm is armed in this state; f
 → Join) → Pair sensor; *This build
 can't read Libre 3 sensors* (no action); *Sensor ended* → Pair new sensor; *Sensor warming up* (first reading at …);
 *You no longer follow this person* → Join with a new invite; *Monitoring stopped* → Resume monitoring; *Bluetooth is
-off* → Turn on Bluetooth; follower *No readings from the wearer's phone* (last heard …); wearer *No readings from the
-sensor* (last reading …) → Sensor details. No "NFC scan needed" banner
-(the hub has no such state).
+off* → Turn on Bluetooth; wearer, when the sensor needs the person (#48, hub `SensorState.ActionNeeded`, never "it
+reconnects on its own"): *Sensor used by another app* (the official app or Juggluco took it over and keeps refusing
+Sukrara; close that app, then scan the sensor) → Take over sensor (the new-sensor flow, whose tap takes it over), *Scan
+the sensor again* (the saved pairing can't be used; the sensor keeps running) → Scan sensor, *Pair the sensor again* (a
+scanned family refused the pairing: wrong ID or PIN) → Pair sensor again (Settings › Sensor says the same: *Used by
+another app*, *Needs a new scan of the sensor*, *Needs pairing again*, each with *Pair new sensor*); follower *No
+readings from the wearer's phone* (last heard …); wearer *No readings from the sensor* (last reading …) → Sensor
+details. The Nearby devices permission and the LibreView sign-in keep *No readings from the sensor*: the alert checklist
+and Settings › Sensor ask for them.
 
 **One banner slot**, by priority: (0) *Monitoring stopped* (Android stopped the service; shown even while the last value is on screen) → Resume monitoring; (1) *Alerts may not ring* + the alert checklist's first problem (`AlertReadiness`,
 the same items and order as setup's permission step) → Fix; (2) *Some saved data was damaged*
@@ -518,7 +524,9 @@ pill or a chip) → *Unmute* / *Alert me anyway* / *Remind as usual* / *Change t
 *Change time*, *Alert settings*, or back / swipe down / tap outside (nothing changes); a quiet chip → its sheet (it
 leaves when the quiet ends); *sensor's
 last day* → *Pair new sensor* (or keep the sensor; it leaves when the new one runs); *no data* → the reason's action (or wait: warming up,
-core missing explains why); *banner* → its action, or close (non-safety), safety banners leave when fixed (*Alerts may not ring* for a failed alert step → *Copy report*; it leaves when the step works again, tried with every reading); *not muted* → *Mute alerts*
+core missing explains why); *sensor used by another app* / *scan the sensor again* / *pair the sensor again* → the
+reason's action opens the new-sensor flow (*Cancel* there leaves everything as it was); the reason leaves with the next
+reading; *banner* → its action, or close (non-safety), safety banners leave when fixed (*Alerts may not ring* for a failed alert step → *Copy report*; it leaves when the step works again, tried with every reading); *not muted* → *Mute alerts*
 (button or TalkBack action) → a length or Cancel; *muted* → Unmute or Change time (button, sheet and TalkBack action),
 or its end; *treatment deleted* → Undo (while the snackbar shows; TalkBack: its action) or let it go; *damaged data* → Review → Got it /
 Back; *not set up* → the reason panel's Set up; invite links open setup over home (Back returns home). *Glucose report* → another period (the picker), or scroll past it; nothing to undo (it changes nothing).

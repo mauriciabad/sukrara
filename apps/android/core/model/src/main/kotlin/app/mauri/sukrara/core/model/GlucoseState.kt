@@ -73,10 +73,19 @@ sealed interface SensorState {
     data class ActionNeeded(val action: SensorAction) : SensorState
 }
 
-/** What the person has to do so the sensor can be read again. */
+/** What the person has to do so the sensor can be read again (home's no-data reason and Settings › Sensor say it). */
 enum class SensorAction {
-    /** Scan the sensor with the phone (NFC): a new sensor, a lost or unreadable pairing, or taking it over. */
+    /** Scan the sensor with the phone (NFC): a lost or unreadable pairing, a sensor this version can't read. */
     ScanSensor,
+
+    /**
+     * Another app took the sensor over (Abbott's app, Juggluco: it keeps refusing Sukrara): close that app, then scan
+     * the sensor (NFC) to take it back.
+     */
+    TakeOver,
+
+    /** A sensor found by a scan refused the pairing (wrong id, refused, PIN not entered): pair it again. */
+    PairAgain,
 
     /** Sign in to LibreView so Sukrara can start / take over the sensor with the account's receiver ID. */
     SignInLibreView,

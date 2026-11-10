@@ -261,7 +261,7 @@ class SourceManagerTest {
             r.manager.start()
             runCurrent()
             assertEquals(LinkStatus.Failed(FailReason.BondFailed), (r.manager.detail.value as SensorStatus.Direct).link)
-            assertEquals(SensorState.ActionNeeded(SensorAction.ScanSensor), r.manager.sensor.value)
+            assertEquals(SensorState.ActionNeeded(SensorAction.PairAgain), r.manager.sensor.value)
             assertEquals(0, r.scanner.scans)
             assertTrue(r.connector.opened.isEmpty())
             r.manager.retry()
@@ -447,7 +447,7 @@ class SourceManagerTest {
 
     @Test
     fun everyProblemHasItsAction() {
-        assertEquals(SensorAction.ScanSensor, SensorStatus.OwnedByAnotherApp.action)
+        assertEquals(SensorAction.TakeOver, SensorStatus.OwnedByAnotherApp.action)
         assertEquals(SensorAction.GrantBluetooth, SensorStatus.BluetoothPermissionMissing.action)
     }
 

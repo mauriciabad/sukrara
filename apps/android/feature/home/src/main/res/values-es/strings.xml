@@ -26,6 +26,15 @@
     <string name="reason_stopped_title">Monitorización detenida</string>
     <string name="reason_stopped_body">Android detuvo Sukrara en segundo plano. Las lecturas y las alertas están en pausa hasta que la reanudes.</string>
     <string name="reason_stopped_action">Reanudar monitorización</string>
+    <string name="reason_taken_over_title">Otra app está usando el sensor</string>
+    <string name="reason_taken_over_body">Otra app (la app oficial o Juggluco) se ha quedado con el sensor y Sukrara no recibe lecturas. Cierra esa app y recupera el sensor escaneándolo con este móvil.</string>
+    <string name="reason_taken_over_action">Recuperar el sensor</string>
+    <string name="reason_scan_title">Vuelve a escanear el sensor</string>
+    <string name="reason_scan_body">Sukrara no puede usar el emparejamiento guardado y no recibe lecturas. Acerca el móvil al sensor para leerlo de nuevo: el sensor sigue funcionando y no se pierde nada.</string>
+    <string name="reason_scan_action">Escanear sensor</string>
+    <string name="reason_pair_again_title">Vuelve a emparejar el sensor</string>
+    <string name="reason_pair_again_body">El sensor rechazó el emparejamiento (un ID o PIN incorrectos) y Sukrara no recibe lecturas. Vuelve a emparejarlo.</string>
+    <string name="reason_pair_again_action">Emparejar de nuevo</string>
     <string name="reason_ended_title">El sensor ha terminado</string>
     <string name="reason_ended_body">Este sensor ha llegado a su fin. Ponte uno nuevo y emparéjalo.</string>
     <string name="reason_ended_action">Emparejar sensor nuevo</string>

@@ -28,6 +28,15 @@
     <string name="reason_stopped_title">Monitoring stopped</string>
     <string name="reason_stopped_body">Android stopped Sukrara in the background. Readings and alerts are paused until you resume.</string>
     <string name="reason_stopped_action">Resume monitoring</string>
+    <string name="reason_taken_over_title">Sensor used by another app</string>
+    <string name="reason_taken_over_body">Another app (the official app or Juggluco) took over the sensor, so Sukrara gets no readings. Close that app, then take the sensor back by scanning it with this phone.</string>
+    <string name="reason_taken_over_action">Take over sensor</string>
+    <string name="reason_scan_title">Scan the sensor again</string>
+    <string name="reason_scan_body">Sukrara can\'t use the saved pairing, so it gets no readings. Hold the phone to the sensor to read it again: the sensor keeps running and nothing is lost.</string>
+    <string name="reason_scan_action">Scan sensor</string>
+    <string name="reason_pair_again_title">Pair the sensor again</string>
+    <string name="reason_pair_again_body">The sensor refused the pairing (a wrong ID or PIN), so Sukrara gets no readings. Pair it again.</string>
+    <string name="reason_pair_again_action">Pair sensor again</string>
     <string name="reason_ended_title">Sensor ended</string>
     <string name="reason_ended_body">This sensor has reached its end. Apply a new one and pair it.</string>
     <string name="reason_ended_action">Pair new sensor</string>

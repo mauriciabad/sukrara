@@ -227,6 +227,14 @@ private fun StateNotice(
                 SensorAction.ScanSensor -> {
                     StateStrip(stringResource(R.string.st_sensor_scan_again_text), listOf(pair))
                 }
+
+                SensorAction.TakeOver -> {
+                    StateStrip(stringResource(R.string.st_sensor_taken_over_text), listOf(pair))
+                }
+
+                SensorAction.PairAgain -> {
+                    StateStrip(stringResource(R.string.st_sensor_pair_again_text), listOf(pair))
+                }
             }
         }
 
@@ -477,6 +485,8 @@ private fun statusText(
             stringResource(
                 when (s.action) {
                     SensorAction.ScanSensor -> R.string.st_sensor_status_scan_again
+                    SensorAction.TakeOver -> R.string.st_sensor_status_taken_over
+                    SensorAction.PairAgain -> R.string.st_sensor_status_pair_again
                     SensorAction.SignInLibreView -> R.string.st_sensor_status_sign_in
                     SensorAction.GrantBluetooth -> R.string.st_sensor_status_permission
                 },

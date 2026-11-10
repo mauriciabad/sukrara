@@ -457,7 +457,7 @@ class SourceManager internal constructor(
                 is SensorStatus.Direct -> {
                     when (d.link) {
                         LinkStatus.WaitingForBluetooth -> SensorState.BluetoothOff
-                        is LinkStatus.Failed -> SensorState.ActionNeeded(SensorAction.ScanSensor)
+                        is LinkStatus.Failed -> SensorState.ActionNeeded(SensorAction.PairAgain)
                         else -> lifeState()
                     }
                 }

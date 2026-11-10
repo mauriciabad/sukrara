@@ -6,6 +6,7 @@ package app.mauri.sukrara.feature.home
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceStatus
@@ -56,6 +57,24 @@ sealed interface NoDataReason {
         override val action = HomeAction.EnableBluetooth
     }
 
+    /**
+     * Another app took the sensor over (the official app, Juggluco: it keeps refusing Sukrara): close that app, then
+     * take the sensor back with a scan (the new-sensor flow's takeover).
+     */
+    data object UsedByAnotherApp : NoDataReason {
+        override val action = HomeAction.PairSensor
+    }
+
+    /** The saved pairing can't be used: scan the sensor with the phone (NFC) again; the sensor keeps running. */
+    data object ScanNeeded : NoDataReason {
+        override val action = HomeAction.PairSensor
+    }
+
+    /** A sensor found by a scan refused the pairing (wrong id, PIN not entered): pair it again. */
+    data object PairAgain : NoDataReason {
+        override val action = HomeAction.PairSensor
+    }
+
     /** Android refused to start monitoring in the background. */
     data object MonitoringStopped : NoDataReason {
         override val action = HomeAction.ResumeMonitoring
@@ -98,6 +117,7 @@ sealed interface NoDataReason {
             val latest = state.latest
             val valueShown = look.shown
             val sensor = state.sensor
+            val needed = (sensor as? SensorState.ActionNeeded)?.action?.reason()
             return when {
                 state.notMonitoring == NotMonitoringReason.SetupIncomplete -> SetupIncomplete
 
@@ -120,6 +140,9 @@ sealed interface NoDataReason {
 
                 latest == null && state.notMonitoring == NotMonitoringReason.NoSensorYet -> NoSensorYet(follower)
 
+                // nothing comes until the person acts: say what to do, never "it reconnects on its own"
+                !follower && needed != null -> needed
+
                 follower -> WearerSilent(state.link?.lastHeardAt ?: latest?.t)
 
                 else -> NoReadings((state.source as? SourceStatus.Interrupted)?.since ?: latest?.t)
@@ -127,6 +150,15 @@ sealed interface NoDataReason {
         }
     }
 }
+
+/** The no-data reason for what the sensor needs, or null: the others have their own place (permission, sign-in). */
+private fun SensorAction.reason(): NoDataReason? =
+    when (this) {
+        SensorAction.TakeOver -> NoDataReason.UsedByAnotherApp
+        SensorAction.ScanSensor -> NoDataReason.ScanNeeded
+        SensorAction.PairAgain -> NoDataReason.PairAgain
+        SensorAction.SignInLibreView, SensorAction.GrantBluetooth -> null
+    }
 
 /** Something the home screen asks the app to do (routed by `:app`; home never navigates by itself). */
 sealed interface HomeAction {

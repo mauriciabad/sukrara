@@ -68,7 +68,7 @@ sealed interface SensorStatus {
      * "Try again" (`SourceManager.retry`) or stop the other app and scan the sensor (take over).
      */
     data object OwnedByAnotherApp : SensorStatus {
-        override val action get() = SensorAction.ScanSensor
+        override val action get() = SensorAction.TakeOver
     }
 
     data object BluetoothPermissionMissing : SensorStatus {
@@ -91,7 +91,7 @@ sealed interface SensorStatus {
         override val action: SensorAction?
             get() =
                 when (link) {
-                    is LinkStatus.Failed -> SensorAction.ScanSensor
+                    is LinkStatus.Failed -> SensorAction.PairAgain
                     else -> null
                 }
 
