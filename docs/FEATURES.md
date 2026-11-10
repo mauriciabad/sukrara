@@ -956,7 +956,10 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   *Close*; it blocks only the sharing area — readings and alerts keep running).
 - **Another app sharing as you**: a newer roster / backup signed by this identity from another device (the
   old phone still running after a restore) blocks roster, backup, rotation and follower changes instead of
-  republishing back and forth; readings and alerts continue.
+  republishing back and forth; readings and alerts continue. The retry first reads the other app's newest roster and
+  backup from the relays; when the other app moved its followers to an epoch this phone doesn't hold, it rotates above
+  the other app's newest (read from its backup, or 100 past the newest known when that can't be read), so followers
+  take this phone's readings again (PROTOCOL-v2 "Two apps as one identity").
 
 **States and exits**: *No identity* → *Share with followers* (create) or *Restore from recovery code*. *Restore*
 errors → *Needs password* (type it), *Wrong password* / *Not a recovery code* (edit and retry), *Relays unreachable*

@@ -46,17 +46,19 @@ class CreateIdentity(private val ctx: OwnerContext) {
 }
 
 /**
- * A new epoch: key deliveries to every active follower first (so they hold the key before they see the roster), then
- * the roster naming this phone only, then the backup. The engine republishes the last 24 h of readings afterwards.
+ * A new epoch ([epoch]: the next one, or above another app's newest after a conflict): key deliveries to every active
+ * follower first (so they hold the key before they see the roster), then the roster naming this phone only, then the
+ * backup. The engine republishes the last 24 h of readings afterwards.
  */
 class Rotate(private val ctx: OwnerContext) {
-    operator fun invoke(s: OwnerState, now: Long): Step {
+    operator fun invoke(s: OwnerState, now: Long, epoch: Int = s.current.n + 1): Step {
+        require(epoch > s.current.n) { "an epoch only goes up" }
         val next =
             s.copy(
                 epochs =
                     s.epochs +
                         EpochKey(
-                            s.current.n + 1,
+                            epoch,
                             ctx.crypto
                                 .generate()
                                 .secret

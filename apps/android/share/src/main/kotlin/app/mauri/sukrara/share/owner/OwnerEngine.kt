@@ -553,8 +553,26 @@ class OwnerEngine(
     /** Connected follower devices named by their identity proof. */
     val nearbyLinks: StateFlow<List<NearbyServerCore.Named>> get() = nearby.links
 
-    /** "I turned it off — retry". */
-    suspend fun retryConflict() = locked { owner?.let { apply(conflicts.retry(it, now())) } }
+    /**
+     * "I turned it off — retry": first reads what the relays hold signed by our identity (the other app's newest roster
+     * and backup), so a rotation goes above the other app's epoch.
+     */
+    suspend fun retryConflict() =
+        locked {
+            val s = owner?.takeIf { it.conflict != null } ?: return@locked
+            val identity = s.identity(ctx.crypto)
+            val found =
+                if (policy.on) {
+                    transport
+                        .fetch(
+                            RestoreIdentity(ctx).identityEventsFilter(identity),
+                            FETCH_TIMEOUT_MS,
+                        ).events
+                } else {
+                    emptyList()
+                }
+            owner?.let { apply(conflicts.retry(it, found, now())) }
+        }
 
     /** A fired or cleared alert, to every follower at once. Continues during a conflict (readings do too). */
     suspend fun publishAlert(alert: AlertPayload) = locked { owner?.let { send(readings.publishAlert(it, alert, now())) } }

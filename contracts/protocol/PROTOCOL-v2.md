@@ -348,6 +348,17 @@ follower's open `#c` subscription picks the chunks up. Older followers/owners ig
 **Missed rotation**: a follower that sees an unknown `gk` sends a *rekey request*; the owner app answers with the
 current key if `F` is still approved.
 
+**Two apps as one identity** (e.g. the old phone still running after a restore): the owner app watches the rosters and
+backups signed by `I` that come back from the relays. A newer roster naming other devices or under an epoch it doesn't
+hold, or a newer backup listing epochs it doesn't hold (or missing its newest), is another app: it stops publishing
+roster, backup, rotations and follower changes (readings and alerts go on) until the wearer retries
+([sync/owner-conflict.json](sync/owner-conflict.json) `checks`). The retry first fetches the newest roster and backup
+signed by `I` and decrypts the backup (it is encrypted to `I`): followers rank rosters and keys by epoch number, so
+when the other app holds an epoch this app doesn't, the retry rotates to `max(own newest, every epoch in that backup)
++ 1`; when it holds one no readable backup names (its backup isn't on the relays, or no relay answered), to that
+`+ 100` (a number it can't have reached). Otherwise roster and backup are republished. Either way their `created_at`
+is past every event of the other app (`retries`; follower side: [sync/conflict-rotation.json](sync/conflict-rotation.json)).
+
 **Lost identity key** (no backup): unrecoverable by design — followers must be re-invited. (Key-migration NIPs are
 all unmerged as of 2026-10.)
 

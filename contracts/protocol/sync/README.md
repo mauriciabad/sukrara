@@ -15,7 +15,8 @@ test keys (the OGS draft-1 vector keys plus `D2` = sha256("sukrara/sync/D2")); a
 | `settings-mirror.json` | mirrored settings: newest `u` wins, only from a roster device; the payload holds every mirrored setting (graph + alerts) |
 | `rotation.json` | phone change / revoke: epoch 2 with a new device, old device and old epoch rejected, late epoch-1 roster ignored. Also the identity-restore case (same wire sequence: new device key, new epoch delivered to every follower, roster with only the new device); Mac `ProtocolCompatTests` replays it through the runtime |
 | `revoke-reapprove.json` | the wearer removes the follower, then re-approves the same follower key; across app restarts the relays replay the old revoked notice and both key deliveries: the older notice is ignored, a newer one removes it again. Also: no rekey for an old backfill under an unknown epoch, a rekey with `have` = newest held gk (throttled), a writer's entry rejected before the roster lists it and accepted after |
-| `owner-conflict.json` | A3, owner side: the wearer's own echoes, its own rotation and late old events are `fine`; a newer roster or backup from another app publishing as the same identity is a `conflict` |
+| `owner-conflict.json` | A3, owner side: the wearer's own echoes, its own rotation and late old events are `fine`; a newer roster or backup from another app publishing as the same identity is a `conflict`; the epoch the wearer's retry rotates to (above the other app's) |
+| `conflict-rotation.json` | the follower side of that retry: the old phone rotates to epoch 3 naming itself (the new phone's readings rejected), the new phone's retry rotates to epoch 4 (accepted again), the old phone's epoch-3 events rejected / ignored |
 
 ## Format (`v` 1)
 
@@ -37,7 +38,9 @@ ids and rekey throttles forgotten), `expected`:
 
 `owner-conflict.json`: `marks` (what the wearer's phone persists: its identity, its device key, the epochs it holds,
 `lastRosterAt` / `lastBackupAt` = `created_at` of the last roster / backup it published), `events`, `checks`
-(`[{event, expect}]`, `expect` = `fine` | `conflict:<RosterFromOtherDevice|RosterUnknownEpoch|BackupFromElsewhere>`).
+(`[{event, expect}]`, `expect` = `fine` | `conflict:<RosterFromOtherDevice|RosterUnknownEpoch|BackupFromElsewhere>`),
+`retries` (`[{found, unknownEpoch, rotateTo}]`: the events the relays return to the retry's fetch, whether a roster under
+an unknown epoch was seen, and the epoch the retry rotates to, `null` = republish roster + backup only).
 
 ## Changing them
 
