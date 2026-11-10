@@ -64,6 +64,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
@@ -205,6 +206,7 @@ fun PanelCard(
     pill: PillAction = PillAction.None,
     pillWords: String? = null,
     onPill: (PillAction) -> Unit = {},
+    height: Dp = CARD_HEIGHT,
 ) {
     val resources = LocalContext.current.resources
     val words = remember(resources) { CardWords.of(resources) }
@@ -313,7 +315,7 @@ fun PanelCard(
         Canvas(
             Modifier
                 .fillMaxWidth()
-                .height(CARD_HEIGHT)
+                .height(height)
                 .testTag("home-card")
                 .clearAndSetSemantics {
                     contentDescription = description
@@ -549,4 +551,7 @@ private fun Pair<Float, Float>?.toOffset(): Offset = this?.let { Offset(it.first
 
 /** Stiffness of the eased y range, plot bottom and the way back to now (the spatial spring's, critically damped). */
 private const val EASE_STIFFNESS = 380f
-private val CARD_HEIGHT = 300.dp
+
+/** The panel's height; a safety banner under it may take it down to [MIN_CARD_HEIGHT] so its action stays on screen. */
+internal val CARD_HEIGHT = 300.dp
+internal val MIN_CARD_HEIGHT = 200.dp

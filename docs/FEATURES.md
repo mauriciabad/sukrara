@@ -601,8 +601,11 @@ into one memory. Every close shows a snackbar *Tip closed. Settings › Show clo
 once. The Settings overview (wearer and follower, above *About*) shows *Show closed tips* with *2 tips closed* while any
 tip is closed (Finish setup's *Later* doesn't count: it comes back after a day by itself); a tap brings every closed tip
 back (snackbar *Closed tips will show again where they apply*) and the row goes away. A tip that comes back shows only
-where its own conditions hold (no clinic upload set up, no widget placed, …). Safety banners can't be closed. Mac: none
-(the dropdown has no closable tips).
+where its own conditions hold (no clinic upload set up, no widget placed, …). Safety banners can't be closed. A safety
+banner's action is always on screen without scrolling (#73): while one shows, the card gives up height for it (300 dp
+down to 200 dp, easing with the spatial spring; reduced motion: at once) and takes it back when the banner goes; its
+action stops short of the floating button and wraps at a large font (`SafetyBannerFitTest`: 360 × 640 dp at 2×
+font). Mac: none (the dropdown has no closable tips).
 
 **States and exits**: *Tip shown* → its close button (TalkBack *Dismiss*) closes it. *Just closed* → the snackbar's
 *Undo* (a TalkBack-focusable button) brings it back; the snackbar leaves by itself or with its close button. *Closed* →
