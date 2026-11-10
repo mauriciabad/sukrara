@@ -95,14 +95,26 @@ internal class G7Driver(
         if (G7Messages.isBackfillFinished(value)) flushBackfill()
     }
 
-    /** One 0x4E message → the session start, then a reading, a wait (warming up), no value or the end. */
+    /**
+     * One 0x4E message → the session start, then a reading, a wait (warming up), no value or the end. Before this
+     * pairing has its sensor's session start (no `knownStart`: nothing adopted yet) the bonded device may be an old
+     * sensor (#133): one past its wear, or ended or failed, is the wrong device (skipped, the scan goes on, as LoopKit's
+     * G7SensorKit rescans), never allowed to end the new pairing; one started more than [CONFIRM_AFTER_S] before the
+     * pairing is asked about ([LinkStatus.ConfirmSensor]: the person answers *Use it* or *Look for another sensor*).
+     */
     fun onEgv(egv: G7Messages.Egv) {
+        val first = knownStart == null
         // A sensor already past its wear before this pairing ever saw it is an old one still bonded to this phone
         // (ended, or in its 12 h grace period): never adopted, never allowed to end the new pairing.
-        val old = knownStart == null && egv.secondsSinceStart >= profile.wearMin * 60L
+        val old = first && egv.secondsSinceStart >= profile.wearMin * 60L
         when (Dexcom.state(egv.state)) {
             Dexcom.State.Ended -> {
-                return if (old) wrongDevice("ended, ${egv.secondsSinceStart / 3600} h old") else ended("algorithm state ${egv.state}")
+                return when {
+                    old -> wrongDevice("ended, ${egv.secondsSinceStart / 3600} h old")
+                    // ended or failed before this pairing's first reading: a sensor pulled early, still bonded
+                    first -> wrongDevice("ended before this pairing's first reading (state ${egv.state})")
+                    else -> ended("algorithm state ${egv.state}")
+                }
             }
 
             // before the Dexcom app starts the session: its clock means nothing yet
@@ -114,7 +126,13 @@ internal class G7Driver(
                 if (old) return wrongDevice("${egv.secondsSinceStart / 3600} h old, past its wear")
             }
         }
-        val s = sessionStart(now() - egv.secondsSinceStart)
+        val found = now() - egv.secondsSinceStart
+        // started well before this pairing (more than a warm-up and a setup ago): maybe a sensor pulled early, still
+        // bonded; the person says whether it's the one they wear, until then nothing is adopted or delivered
+        if (first && pairing.pairedAt > 0 && found < pairing.pairedAt / 1000 - CONFIRM_AFTER_S) {
+            return events.onStatus(LinkStatus.ConfirmSensor(found))
+        }
+        val s = sessionStart(found)
         start = s
         when (Dexcom.state(egv.state)) {
             Dexcom.State.WarmingUp -> {
@@ -172,5 +190,8 @@ internal class G7Driver(
 
         /** 24 h of 5-minute records: a bound on what one backfill can hold. */
         const val MAX_BACKFILL = 288
+
+        /** A session that started this long before the pairing (s: about the warm-up and the setup, plus drift) is asked about. */
+        const val CONFIRM_AFTER_S = 3600L + 30
     }
 }

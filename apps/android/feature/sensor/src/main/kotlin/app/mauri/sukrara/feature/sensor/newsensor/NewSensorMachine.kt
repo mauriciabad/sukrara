@@ -190,6 +190,12 @@ sealed interface NewSensorEvent {
     data object Retry : NewSensorEvent
 
     data object UseJuggluco : NewSensorEvent
+
+    /**
+     * The person answered about the sensor the scan found (#133): *Use it* (it's theirs) or *Look for another sensor*
+     * (an old one still bonded, or one the Dexcom app never authenticates). Either way connecting starts over.
+     */
+    data object SensorAnswered : NewSensorEvent
 }
 
 /** The flow's whole state: the step plus what the gates need. */
@@ -256,6 +262,11 @@ object NewSensorMachine {
 
             NewSensorEvent.UseJuggluco -> {
                 if (step == NewSensorStep.ReadingNfc) state else state.copy(step = NewSensorStep.UsingJuggluco)
+            }
+
+            // the source starts over with the answer: connecting again, its clock from now
+            NewSensorEvent.SensorAnswered -> {
+                if (step is NewSensorStep.ConnectingBle) state.copy(step = step.copy(since = now, link = null)) else state
             }
 
             is NewSensorEvent.Start -> {
@@ -482,7 +493,7 @@ object NewSensorMachine {
 
             // a scanned family's page explains where it is (scanning, the PIN, the Dexcom app, no session)
             LinkStatus.Scanning, LinkStatus.SensorNotFound, LinkStatus.EnterPin, LinkStatus.WaitingForVendorApp,
-            LinkStatus.NoSession,
+            LinkStatus.NoSession, is LinkStatus.ConfirmSensor,
             -> {
                 if (step is NewSensorStep.ConnectingBle) step.copy(link = link) else step
             }
@@ -518,7 +529,8 @@ object NewSensorMachine {
         }
 
     private fun afterTick(step: NewSensorStep, now: Instant): NewSensorStep =
-        if (step is NewSensorStep.ConnectingBle &&
+        // a question to the person (is this your sensor?) waits for them: no timeout
+        if (step is NewSensorStep.ConnectingBle && step.link !is LinkStatus.ConfirmSensor &&
             !now.isBefore(step.since.plus(if (step.profile.needsScan) SCANNED_TIMEOUT else BLE_TIMEOUT))
         ) {
             NewSensorStep.BleFailed(step.serial, BleFailure.Timeout)

@@ -83,6 +83,17 @@ class NewSensorViewModelTest {
         override suspend fun onPaired() {
             libre3++
         }
+
+        val used = ArrayList<Long>()
+        var lookedFurther = 0
+
+        override fun useFoundSensor(startEpoch: Long) {
+            used += startEpoch
+        }
+
+        override fun lookForAnother() {
+            lookedFurther++
+        }
     }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
@@ -198,6 +209,21 @@ class NewSensorViewModelTest {
             runCurrent()
             assertEquals(1, port.retries)
             assertTrue(vm.state.value.step is NewSensorStep.ConnectingBle)
+        }
+
+    /** #133: the person's answers about the sensor the scan found reach the source. */
+    @Test fun `use it and look for another reach the source`() =
+        runTest(dispatcher) {
+            val port = FakePort()
+            val question = NewSensorStep.ConnectingBle("k", clock.now(), false, SensorProfile.DexcomG7, LinkStatus.ConfirmSensor(42L))
+            val vm = NewSensorViewModel(port, clock, backgroundScope, NewSensorState(step = question, profile = SensorProfile.DexcomG7))
+            vm.onUseFound()
+            runCurrent()
+            assertEquals(listOf(42L), port.used)
+            assertEquals(null, (vm.state.value.step as NewSensorStep.ConnectingBle).link)
+            vm.onLookForAnother()
+            runCurrent()
+            assertEquals(1, port.lookedFurther)
         }
 
     @Test fun `use Juggluco switches the source`() =

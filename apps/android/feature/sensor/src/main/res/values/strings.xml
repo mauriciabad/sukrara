@@ -110,6 +110,12 @@
     <string name="newsensor_enter_pin_text">Type the PIN from the sensor\'s cap in Android\'s pairing dialog.</string>
     <string name="newsensor_vendor_app_text">Connected. Waiting for the Dexcom app: open it so it connects to the sensor.</string>
     <string name="newsensor_no_session_text">The sensor has no session running. Start it in the Dexcom app or receiver.</string>
+    <!-- #133: the scan found a Dexcom sensor whose session started well before this pairing (maybe one pulled early) -->
+    <string name="newsensor_confirm_title">Is this your sensor?</string>
+    <!-- %1$s = when the found sensor started ("Mon 14:05") -->
+    <string name="newsensor_confirm_text">Found a Dexcom sensor started %1$s. Is it the one you\'re wearing? If you put on a new one since, look for that one.</string>
+    <string name="newsensor_action_use_it">Use it</string>
+    <string name="newsensor_action_look_for_another">Look for another sensor</string>
     <string name="newsensor_pair_failed_title">Pairing didn\'t work</string>
     <string name="newsensor_wrong_id_text">The ID doesn\'t belong to this sensor. Check it and pair again.</string>
     <string name="newsensor_refused_text">The sensor refused the connection. Pair again; if it keeps refusing, the official app may be holding it.</string>

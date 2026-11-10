@@ -352,6 +352,31 @@ class NewSensorMachineTest {
         assertEquals(NewSensorStep.Ready, run(direct(LinkStatus.Live), from = connecting).step)
     }
 
+    /**
+     * #133: the question about a sensor started long before the pairing waits for the person (no timeout), offers *Use
+     * it* and *Look for another sensor*, and either answer connects again with a fresh clock; a G7 the Dexcom app never
+     * authenticates offers *Look for another sensor* too.
+     */
+    @Test fun `the found-sensor question waits for an answer and either answer connects again`() {
+        val asked =
+            NewSensorState(
+                step = NewSensorStep.ConnectingBle("k", t0, false, SensorProfile.DexcomG7, LinkStatus.ConfirmSensor(1L)),
+                profile = SensorProfile.DexcomG7,
+            )
+        assertEquals(asked, run(Tick(t0.plus(NewSensorMachine.SCANNED_TIMEOUT)), from = asked))
+        assertEquals(
+            listOf(NewSensorAction.UseIt, NewSensorAction.LookForAnother, NewSensorAction.Close),
+            asked.step.page().actions,
+        )
+        val later = t0.plusSeconds(600)
+        assertEquals(
+            NewSensorStep.ConnectingBle("k", later, false, SensorProfile.DexcomG7, null),
+            run(NewSensorEvent.SensorAnswered, from = asked, now = later).step,
+        )
+        val vendor = NewSensorStep.ConnectingBle("k", t0, false, SensorProfile.DexcomG7, LinkStatus.WaitingForVendorApp)
+        assertEquals(listOf(NewSensorAction.LookForAnother, NewSensorAction.Close), vendor.page().actions)
+    }
+
     @Test fun `a scanned family gets longer before the not-answering page`() {
         val connecting =
             NewSensorState(step = NewSensorStep.ConnectingBle("k", t0, false, SensorProfile.DexcomG7), profile = SensorProfile.DexcomG7)

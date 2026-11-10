@@ -212,6 +212,14 @@ fun NewSensorRoute(
                 viewModel.onUseJuggluco()
             }
 
+            NewSensorAction.UseIt -> {
+                viewModel.onUseFound()
+            }
+
+            NewSensorAction.LookForAnother -> {
+                viewModel.onLookForAnother()
+            }
+
             NewSensorAction.Cancel, NewSensorAction.Close -> {
                 viewModel.onCancel()
             }

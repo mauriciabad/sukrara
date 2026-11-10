@@ -107,6 +107,10 @@
     <string name="newsensor_enter_pin_text">Escribe el PIN de la tapa del sensor en el diálogo de emparejamiento de Android.</string>
     <string name="newsensor_vendor_app_text">Conectado. Esperando a la app de Dexcom: ábrela para que se conecte al sensor.</string>
     <string name="newsensor_no_session_text">El sensor no tiene ninguna sesión en marcha. Iníciala en la app de Dexcom o en el receptor.</string>
+    <string name="newsensor_confirm_title">¿Es este tu sensor?</string>
+    <string name="newsensor_confirm_text">Se encontró un sensor Dexcom iniciado el %1$s. ¿Es el que llevas puesto? Si te has puesto uno nuevo desde entonces, búscalo.</string>
+    <string name="newsensor_action_use_it">Usarlo</string>
+    <string name="newsensor_action_look_for_another">Buscar otro sensor</string>
     <string name="newsensor_pair_failed_title">No se ha podido emparejar</string>
     <string name="newsensor_wrong_id_text">El ID no es de este sensor. Compruébalo y vuelve a emparejar.</string>
     <string name="newsensor_refused_text">El sensor ha rechazado la conexión. Vuelve a emparejar; si sigue rechazándola, puede que la app oficial lo esté usando.</string>

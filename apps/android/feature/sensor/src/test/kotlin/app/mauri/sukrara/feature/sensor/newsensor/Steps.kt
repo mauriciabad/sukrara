@@ -32,6 +32,15 @@ internal object Steps {
                 NewSensorStep.ConnectingBle("k", NOW, activated = false, SensorProfile.DexcomG7, LinkStatus.WaitingForVendorApp),
             "connecting-no-session" to
                 NewSensorStep.ConnectingBle("k", NOW, activated = false, SensorProfile.DexcomG6, LinkStatus.NoSession),
+            // #133: a G7 started well before the pairing: is it the one being worn?
+            "connecting-confirm-sensor" to
+                NewSensorStep.ConnectingBle(
+                    "k",
+                    NOW,
+                    activated = false,
+                    SensorProfile.DexcomG7,
+                    LinkStatus.ConfirmSensor(NOW.minus(Duration.ofDays(2)).epochSecond),
+                ),
             "ble-failed-wrong-id" to NewSensorStep.BleFailed("k", BleFailure.WrongId),
             "ble-failed-refused" to NewSensorStep.BleFailed("k", BleFailure.Refused),
             "ble-failed-bond" to NewSensorStep.BleFailed("k", BleFailure.BondFailed),

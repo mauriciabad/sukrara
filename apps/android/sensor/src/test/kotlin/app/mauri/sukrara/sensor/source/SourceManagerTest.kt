@@ -213,6 +213,64 @@ class SourceManagerTest {
             runCurrent()
         }
 
+    /** The last connection's G7 session up to one EGV message ([egv]): connected, the Dexcom app's session, the value. */
+    private fun TestScope.g7Message(
+        r: Rig,
+        egv: ByteArray,
+    ) {
+        val gen = r.connector.opened.last()
+        r.connector.onEvent(GattEvent.ConnectionChanged(gen, true, 0))
+        runCurrent()
+        r.connector.onEvent(GattEvent.ServicesDiscovered(gen, 0, setOf(Dexcom.AUTHENTICATION, Dexcom.CONTROL, Dexcom.BACKFILL)))
+        runCurrent()
+        r.connector.onEvent(GattEvent.OperationDone(gen, Dexcom.AUTHENTICATION, 0))
+        r.connector.onEvent(GattEvent.Notification(gen, Dexcom.AUTHENTICATION, byteArrayOf(5, 1, 1)))
+        runCurrent()
+        r.connector.onEvent(GattEvent.OperationDone(gen, Dexcom.CONTROL, 0))
+        r.connector.onEvent(GattEvent.OperationDone(gen, Dexcom.BACKFILL, 0))
+        r.connector.onEvent(GattEvent.Notification(gen, Dexcom.CONTROL, egv))
+        runCurrent()
+    }
+
+    /**
+     * #133: a G7 whose session started two days before a pairing made now (pulled early, still bonded) is asked about,
+     * never adopted on its own: *Look for another sensor* skips it and scans on; *Use it* makes its start the pairing's,
+     * and the next connection reads it.
+     */
+    @Test
+    fun aG7StartedLongBeforeThePairingIsAskedAbout() =
+        runTest {
+            val r = Rig(this)
+            r.store.saveScanned(Pairing.scanned(SensorProfile.DexcomG7, "", pairedAtMs = r.clock.now().toEpochMilli()))
+            val received = ArrayList<Reading>()
+            backgroundScope.launch { r.manager.readings.collect { received += it } }
+            r.manager.start()
+            runCurrent()
+            r.scanner.onHit(ScanHit(Advert("aa:bb:cc:dd:ee:01", "DXCMPREV", bonded = true), null))
+            runCurrent()
+            g7Message(r, EGV_2D)
+            val start = r.clock.now().epochSecond - 172_800
+            assertEquals(LinkStatus.ConfirmSensor(start), (r.manager.detail.value as SensorStatus.Direct).link)
+            assertTrue(received.isEmpty())
+
+            r.manager.lookForAnother()
+            runCurrent()
+            assertEquals(listOf("AA:BB:CC:DD:EE:01"), (r.store.load() as PairingLoad.Ok).pairing.skipAddresses)
+            assertEquals(2, r.scanner.scans) // scanning again, without it
+
+            r.scanner.onHit(ScanHit(Advert("aa:bb:cc:dd:ee:02", "DXCMWORN", bonded = true), null))
+            runCurrent()
+            g7Message(r, EGV_2D)
+            assertEquals(LinkStatus.ConfirmSensor(start), (r.manager.detail.value as SensorStatus.Direct).link)
+            r.manager.useFoundSensor(start)
+            runCurrent()
+            assertEquals(start, (r.store.load() as PairingLoad.Ok).pairing.startEpoch)
+            g7Message(r, EGV_2D)
+            assertEquals(listOf(97), received.map { it.mgdl })
+            r.manager.stop()
+            runCurrent()
+        }
+
     /**
      * An old G7 still bonded (past its 10 days: ended or in its grace period) found first: it is never adopted, its
      * address is kept out of every later scan, and the scan goes on to the new sensor.
@@ -502,5 +560,8 @@ class SourceManagerTest {
 
         /** The same message from a sensor 900 000 s (10.4 days) into its session: an old one. */
         val EGV_OLD = "4e00a0bb0d0009000001050061000601ffff0e".hexToByteArray()
+
+        /** The same message 172 800 s (2 days) into its session: within its wear, started long before a pairing made now. */
+        val EGV_2D = "4e0000a3020009000001050061000601ffff0e".hexToByteArray()
     }
 }
