@@ -128,18 +128,6 @@ object SensorBadge {
             )
         }
 
-    /** For screen readers: "Sensor: 13d left" / "Sensor ended. Replace sensor" / "Warming up. Ready at 19:45". */
-    fun describe(
-        look: Look,
-        now: Long,
-        w: CardWords,
-    ): String =
-        when {
-            look.warmup != null -> (if (look.waiting(now)) w.almostReady else w.warmingUp) + ". " + look.warmupLine(now, w)
-            look.ended -> w.sensorEnded + ". " + w.replaceSensor
-            else -> w.sensorLeft((look.end - now).coerceAtLeast(0) / 60)
-        }
-
     /** The ring over the main slot: the warm-up filling up, else the end countdown draining (null = none). */
     fun ring(
         look: Look?,

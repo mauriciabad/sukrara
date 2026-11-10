@@ -170,7 +170,8 @@ object TreatmentMarks {
             .takeIf { noteChars > 0 && it.isNotEmpty() }
             ?.let { if (it.length > noteChars) it.take(noteChars - 1).trimEnd() + "…" else it }
 
-    private fun number(a: Double) = if (a % 1.0 == 0.0) "${a.toLong()}" else String.format(Locale.ROOT, "%.1f", a)
+    /** An amount as the card writes it: "4", "4.5". */
+    internal fun number(a: Double) = if (a % 1.0 == 0.0) "${a.toLong()}" else String.format(Locale.ROOT, "%.1f", a)
 
     /** A short duration ("now", "12m", "1h 5m", "3h", "2d"); [up] rounds partial minutes up (time left). */
     fun duration(

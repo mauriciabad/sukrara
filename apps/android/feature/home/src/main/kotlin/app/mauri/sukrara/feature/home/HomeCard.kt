@@ -73,6 +73,7 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardLayout
 import app.mauri.sukrara.graph.CardModel
 import app.mauri.sukrara.graph.CardMotion
@@ -188,8 +189,8 @@ internal fun panelModel(
  * the renderer's *Now* pill (or TalkBack's *Back to now*) returns to the usual window. The y range and the plot's
  * bottom ease towards the visible window's own (critically damped: a bouncing scale would read as the data moving).
  *
- * TalkBack reads [description] as one node; its custom actions are [actions] plus Earlier / Later / Zoom in / Zoom out
- * / Back to now. The status pill is a button ([pill], read as [pillWords]) that calls [onPill].
+ * TalkBack reads the card as one node with the renderer's sentence ([A11y.card], the same on every surface); its
+ * custom actions are [actions] plus Earlier / Later / Zoom in / Zoom out / Back to now. The status pill is a button ([pill], read as [pillWords]) that calls [onPill].
  */
 @Composable
 fun PanelCard(
@@ -198,7 +199,6 @@ fun PanelCard(
     treatments: List<Treatment>,
     now: Instant,
     config: GraphConfig,
-    description: String,
     modifier: Modifier = Modifier,
     actions: List<CustomAccessibilityAction> = emptyList(),
     scroll: ChartScroll = remember { ChartScroll() },
@@ -221,6 +221,7 @@ fun PanelCard(
             panelModel(glucose, points, treatments, now, words, sensor)
         }
     val style = remember(config) { config.appPanelStyle() }
+    val description = remember(model, style) { A11y.card(model, style, CardSurface.APP_PANEL) }
     val motion = panelMotion(glucose, now, config, palette, reduced)
     val base = style.graph
     val default = base?.windowS ?: 0L
@@ -549,42 +550,3 @@ private fun Pair<Float, Float>?.toOffset(): Offset = this?.let { Offset(it.first
 /** Stiffness of the eased y range, plot bottom and the way back to now (the spatial spring's, critically damped). */
 private const val EASE_STIFFNESS = 380f
 private val CARD_HEIGHT = 300.dp
-
-/**
- * What TalkBack reads for the card: the value sentence ("112 milligrams per decilitre, falling slowly, in range,
- * 2 minutes ago"; an old value says so first) and the chart summary. Without a value only the chart summary (the reason
- * under the card speaks for the missing value); empty when the chart has nothing either.
- */
-fun cardDescription(
-    state: HomeUiState,
-    resources: Resources,
-): String {
-    val bands = state.config.bands
-    val hours = state.config.hours(GraphPlace.APP)
-    val window = state.glucose.recent.filter { it.t >= state.now.minusSeconds(hours * 3600L) }
-    val chart =
-        if (window.isEmpty()) {
-            null
-        } else {
-            val inRange = window.count { bands.of(it.mgdl).group == 0 } * 100 / window.size
-            resources.getString(R.string.home_a11y_chart, hours, inRange)
-        }
-    val reading = state.glucose.latest
-    val text = state.look.text
-    if (!state.look.shown || reading == null || text == null) return chart.orEmpty()
-    val words = CardWords.of(resources)
-    val range =
-        when (bands.of(reading.mgdl)) {
-            Band.VERY_LOW -> R.string.home_a11y_range_very_low
-            Band.LOW -> R.string.home_a11y_range_low
-            Band.TIGHT, Band.TARGET -> R.string.home_a11y_range_in
-            Band.HIGH -> R.string.home_a11y_range_high
-            Band.VERY_HIGH -> R.string.home_a11y_range_very_high
-        }
-    val minutes = Duration.between(reading.t, state.now).toMinutes().coerceAtLeast(0)
-    val age = if (minutes == 0L) resources.getString(R.string.home_a11y_just_now) else words.ago(Durations.text(minutes, words.durations))
-    val trend = words.trend(state.look.rate.takeIf { state.look.trend == TrendMark.ARROW })
-    val sentence = resources.getString(R.string.home_a11y_value, text, trend, resources.getString(range), age)
-    val value = if (state.look.strike) resources.getString(R.string.home_a11y_stale, sentence) else sentence
-    return if (chart == null) value else "$value. $chart"
-}

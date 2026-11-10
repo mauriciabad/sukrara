@@ -138,6 +138,35 @@ public enum GlucoseCard {
         return .none
     }
 
+    /// The user's slots with enough data (index, spec, numbers) and the ring the last-treatment slot shows while
+    /// there's no recent treatment (GlucoseCard.kt `slotInputs`).
+    private static func slotInputs(
+        _ st: CardStyle, _ last: LastTreatment.Info?, _ bands: Bands,
+        _ metricsOf: (RingSpec, Bands) -> GlucoseMetrics
+    ) -> ([(Int, RingSpec, GlucoseMetrics)], (RingSpec, GlucoseMetrics)?) {
+        let rings = st.rings.prefix(3).enumerated().compactMap { (i, spec) -> (Int, RingSpec, GlucoseMetrics)? in
+            let m = metricsOf(spec, bands)
+            return m.tir.coverage >= minCoverage ? (i, spec, m) : nil
+        }
+        let fallback: (RingSpec, GlucoseMetrics)? =
+            st.last != .off && last == nil
+            ? st.lastElse.flatMap { s in
+                let m = metricsOf(s, bands); return m.tir.coverage >= minCoverage ? (s, m) : nil
+            } : nil
+        return (rings, fallback)
+    }
+
+    /// The slots a card `st` shows for `data`, main first, at most `max`: the choice the drawn card makes, for what
+    /// VoiceOver says (`A11y`; GlucoseCard.kt `slotItems`).
+    static func slotItems(_ data: CardData, _ st: CardStyle, max: Int) -> [SlotItem] {
+        let last = st.last != .off ? data.alerts.last : nil
+        let (rings, fallback) = slotInputs(st, last, st.bands.sane(), data.metrics)
+        let items = Slots.arrange(rings, place: st.last, last: last, fallback: fallback, max: max)
+        let main = Slots.mainIndex(items)
+        guard main > 0 else { return items }
+        return [items[main]] + items.enumerated().filter { $0.offset != main }.map(\.element)
+    }
+
     /// Slots (`Slots.arrange`) right-aligned in `box` (main rightmost); returns the width used. Beside the value
     /// (`dedicated` false) they take at most 55 % of the row; in a box of their own (`.slots`) as many as fit whole.
     private static func drawRings(
@@ -153,15 +182,7 @@ public enum GlucoseCard {
         let gap = size * 0.14
         let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), 4)
         guard fit >= 1 else { return 0 }
-        let rings = st.rings.prefix(3).enumerated().compactMap { (i, spec) -> (Int, RingSpec, GlucoseMetrics)? in
-            let m = metricsOf(spec, bands)
-            return m.tir.coverage >= minCoverage ? (i, spec, m) : nil
-        }
-        let fallback: (RingSpec, GlucoseMetrics)? =
-            st.last != .off && last == nil
-            ? st.lastElse.flatMap { s in
-                let m = metricsOf(s, bands); return m.tir.coverage >= minCoverage ? (s, m) : nil
-            } : nil
+        let (rings, fallback) = slotInputs(st, last, bands, metricsOf)
         let x = box.maxX
         var items = Slots.arrange(rings, place: st.last, last: last, fallback: fallback, max: fit)
         // in a box of its own every slot fits whole, the laurels' extra room included

@@ -282,14 +282,20 @@ object GlucoseCard {
         model: CardModel,
         st: CardStyle,
         max: Int,
-    ): List<Pair<String, String>> {
+    ): List<Pair<String, String>> = slotItems(model, st, max).mapNotNull { Slots.text(it, model.nowS, model.words) }
+
+    /** The slots a card [st] shows for [model], main first, at most [max] (what [slotTexts] and [A11y] say). */
+    internal fun slotItems(
+        model: CardModel,
+        st: CardStyle,
+        max: Int,
+    ): List<SlotItem> {
         val bands = st.bands.sane()
         val last = if (st.last != LastPlace.OFF) LastTreatment.of(model.treatments, model.muteRule, model.status, model.nowS) else null
         val (rings, fallback) = slotInputs(st, last, model, bands)
         val items = Slots.arrange(rings, st.last, last, fallback, max)
         val main = Slots.mainIndex(items)
-        val ordered = if (main > 0) listOf(items[main]) + items.filterIndexed { i, _ -> i != main } else items
-        return ordered.mapNotNull { Slots.text(it, model.nowS, model.words) }
+        return if (main > 0) listOf(items[main]) + items.filterIndexed { i, _ -> i != main } else items
     }
 
     /**

@@ -35,12 +35,15 @@ enum TreatmentMarks {
     /// "4.5u", "12u", "30g" (lowercase, no space: the user, 2026-10-18); nil for notes.
     static func amount(k: String, a: Double) -> String? {
         switch k {
-        case "rapid", "long": (a == a.rounded() ? String(Int(a)) : String(format: "%.1f", a)) + "u"
+        case "rapid", "long": number(a) + "u"
         case "carbs": "\(Int(a.rounded()))g"
         default: nil
         }
     }
     static func amount(_ m: GraphMark) -> String? { amount(k: m.k, a: m.a) }
+
+    /// An amount as the card writes it: "4", "4.5".
+    static func number(_ a: Double) -> String { a == a.rounded() ? String(Int(a)) : String(format: "%.1f", a) }
 
     /// A short duration: "now" under a minute, "12m", "1h 5m", "3h" (whole hours drop the minutes; from 6 h only
     /// hours), "2d" from two days. `up` rounds partial minutes up (time left: "1m" until it is over).

@@ -7,10 +7,13 @@ import android.app.PendingIntent
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardSurface
+import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.cardModelOf
 import app.mauri.sukrara.graph.face
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,13 +23,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 /**
  * The Quick Settings tile "Add treatment" (surface `quick-tile`): Quick Settings open from the lock screen and the
  * quick dialog shows over it, so an entry needs no unlock (developer.android.com/develop/ui/views/quicksettings-tiles).
  * An action tile, not a toggle: inactive when this phone can add entries, unavailable when it can't (a follower without
  * "Can add entries"). Its subtitle is the glucose as the card shows it ([subtitle]), kept current while the shade is
- * open.
+ * open; TalkBack hears the card's sentence ([A11y.value]) as its state.
  */
 class TreatmentTileService : TileService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -63,9 +67,14 @@ class TreatmentTileService : TileService() {
         tile.state = if (canAdd) Tile.STATE_INACTIVE else Tile.STATE_UNAVAILABLE
         val nowS = System.currentTimeMillis() / 1000
         val look = GlucoseCard.face(state, nowS, CardSurface.QUICK_TILE)
-        // TalkBack: a struck value is read as late, not as its combining characters
+        // TalkBack: the card's one sentence (#25), never the subtitle's arrow or struck digits
         tile.stateDescription =
-            if (canAdd && look.state == GlucoseLook.State.VALUE && look.strike) getString(R.string.tile_late, look.text) else null
+            if (canAdd && look.state != GlucoseLook.State.NONE) {
+                val model = cardModelOf(state, emptyList(), Instant.ofEpochSecond(nowS), CardWords.of(resources))
+                A11y.value(model, treatmentsModule.bands.value, CardSurface.QUICK_TILE, badge = false)
+            } else {
+                null
+            }
         tile.subtitle =
             if (!canAdd) {
                 getString(R.string.tile_unavailable)

@@ -81,13 +81,6 @@ object StatusBadge {
     /** The pill over a scrolled chart. */
     fun backToNow(w: CardWords) = Look("now", w.backToNow, w.backToNow, false)
 
-    /** For screen readers: the pill's full words (the alert runtime adds its own mute lines where it has them). */
-    fun describe(
-        s: CardStatus,
-        now: Long,
-        w: CardWords,
-    ): String? = look(s, now, w)?.text
-
     /** Minutes left of a mute ending at [until]: partial minutes round up ("1m" to the end). */
     private fun leftMin(
         until: Long,

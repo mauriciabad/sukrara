@@ -113,6 +113,22 @@ default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, 
 absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
 `text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
 
+## Spoken sentence (`spoken/*.json`)
+
+THE sentence TalkBack and VoiceOver say for the card on every surface (#25; docs/FEATURES.md, "Spoken sentence"): `A11y`
+on both platforms. Run by `SpokenFixtureTest` (Android) and `SpokenFixtureTests` (Mac). Every case's `expect` is
+`{en, es}`, the exact sentence; `{time}` stands for `Freshness.timeText` of the reading (the clock's own format).
+
+`card.json` (`A11y.card`): optional `reading` `{age, sgv, rate?}` (absent = none yet), `history` `{sgv, hours}` (a reading
+every 5 min before it at that value), `sensor` `{start, end}` (s from now; warm-up ends an hour after the start),
+`status` (`needed:low|high`, `taken:carbs|rapid:<end>`, `paused:low|high:<end>`, `muted:<end>`; `<end>` = s from now or
+`never`), `unit` (`mmol`; default mg/dL), `only` (`mac`: Android's card writes mg/dL) and `card` (the place's style:
+`value` (default true), `graph` (the chart's hours; absent = no chart), `badge` (default true), `rings`
+`[{kind, window, range?}]`, `sensorTime` (default false), `countdownHours`).
+
+`slots.json` (`A11y.metric` / `A11y.last`): `slot` `{kind, range?, window, text}` (`text` = the number the slot draws,
+`<0.1` / `>99.9` included) or `last` `{k, a, age}` with an optional `with` (the carbs drawn inside running insulin).
+
 ## Trend arrow (`trend/trend.json`)
 
 The one trend arrow per platform (`TrendAngle`): a case is `rate` (mg/dL/min, null = no trend) and `expect`

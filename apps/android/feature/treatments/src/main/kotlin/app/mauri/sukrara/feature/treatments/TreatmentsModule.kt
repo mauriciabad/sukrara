@@ -12,9 +12,12 @@ import app.mauri.sukrara.core.model.PenNearEntry
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.graph.GraphSettings
+import app.mauri.sukrara.graph.stats.Bands
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -39,6 +42,9 @@ class TreatmentsModule(
 
     /** Seconds the quick dialog stays over the lock screen (schema `lock.treatmentTime`). */
     val lockSeconds: StateFlow<Double> = settings.flow(LockTreatmentTime).stateIn(scope, SharingStarted.Eagerly, LockTreatmentTime.default)
+
+    /** The person's glucose ranges (the tile says the value's range in words, as the card shows it). */
+    val bands: StateFlow<Bands> = GraphSettings.config(settings).map { it.bands }.stateIn(scope, SharingStarted.Eagerly, Bands())
 
     /**
      * Saves [entries] at [at] (null = now) in the app's scope, so it completes after the quick dialog has closed.

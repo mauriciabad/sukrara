@@ -134,6 +134,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
   readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.
 - English and Spanish (Spain) everywhere.
+- **TalkBack hears one sentence** for the glucose card everywhere (home, widgets, the notification card, the Quick
+  Settings tile): the value, trend, range in words and age, the alert or mute, the slots and the chart summary, the
+  same words as the Mac's VoiceOver.
 
 **Mac (you follow someone, from the menu bar)**
 - The value in its range colour, the card's trend arrow at its angle and the mute bell in the **menu bar**, struck
@@ -161,8 +164,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   a pill that counts down while a treatment quiets the alert; the widgets too.
 - **Desktop widgets** (Glucose, Glucose graph, Glucose + graph) with the same card; they age by themselves (struck
   through at 5 min, the graph dimmed with the reading's time, no value at 20 min) and a tap opens Add treatment.
-- VoiceOver reads the value as one sentence with the range in words; every card writes it under an out-of-range value
-  (*Low*, *Very high*) and the status item's tooltip says it.
+- VoiceOver reads the card as the same sentence as Android's TalkBack (value, trend, range in words, age, the alert
+  or mute, the slots, the chart summary) in the menu bar, the panel and the widgets; every card writes the range
+  under an out-of-range value (*Low*, *Very high*) and the status item's tooltip says it.
 
 **Not included**: the LSPosed lock-screen widget, Dexcom / Aidex / SmartGuide (untested) sensors, and the pen list and
 dose review.

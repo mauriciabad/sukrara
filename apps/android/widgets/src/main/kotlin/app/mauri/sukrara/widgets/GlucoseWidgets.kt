@@ -140,8 +140,8 @@ fun widgetLook(
 }
 
 /**
- * What a widget says to TalkBack: the value sentence (value, trend, range, age; or why there's none) and, with a chart,
- * its summary. A follower's widget starts with the wearer's name.
+ * What a widget says to TalkBack: the card's one sentence ([A11y.card]: the value, its alert, the slots, the chart
+ * summary; a graph-only widget how old its chart is). A follower's widget starts with the wearer's name.
  */
 fun describeCard(
     context: Context,
@@ -151,8 +151,7 @@ fun describeCard(
 ): String {
     val model = widgetModel(context, frame)
     val style = widgetStyle(kind, frame, overrides)
-    val value = A11y.value(model, style.bands, CardSurface.WIDGET_DESCRIPTION, badge = style.value && style.badge)
-    val sentence = listOfNotNull(value, style.graph?.let { A11y.chart(model, it) }).joinToString(". ")
+    val sentence = A11y.card(model, style, CardSurface.WIDGET_DESCRIPTION)
     val name =
         frame.glucose.link
             ?.wearerName
