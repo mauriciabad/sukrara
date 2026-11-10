@@ -144,7 +144,8 @@ on that device only:
   alerts at once if it matches again within the episode. Nothing quiet → nothing happens.
 - **Change** = a new *Mute* on a muted side: the end becomes now + the new length (shorter or longer).
 - **Remind as usual** (`unrelax`): the kind's own interval again; a repeat already due under it alerts at once.
-- **Unmute** (`unmute all`): Mute all ends; whatever matches and isn't muted otherwise alerts at once.
+- **Unmute** (`unmute all`): Mute all ends; whatever matches and isn't muted otherwise alerts at once, however recent
+  its last alert (as when Mute all ends at its time).
 - On a **follower that mirrors the wearer** Unmute / Remind as usual / Unmute (Mute all) show the wearer's newest
   alert at once if the wearer still has it up (it was dropped or skipped here). A treatment mute can't be lifted there:
   the wearer's phone decides (the sheet says so and links to the alert settings, where *Settings from* Default /
