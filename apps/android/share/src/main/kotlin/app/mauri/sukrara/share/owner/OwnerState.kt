@@ -85,6 +85,14 @@ data class ConflictRecord(val reason: IdentityCheck.Reason, val seenAt: Long, va
 data class PendingControl(val key: String, val eventId: String, val eventJson: String, val follower: String? = null)
 
 /**
+ * Backup › Replace this identity is telling [told] (follower keys) that this identity stopped sharing, with notices
+ * made at [at] (PROTOCOL-v2 "Replace the identity"). Saved before the notices go out: an identity that still has it
+ * when sharing starts was never replaced (the app was closed meanwhile), so those followers get the key again.
+ */
+@Serializable
+data class ReplaceRecord(val at: Long, val told: List<String>)
+
+/**
  * Everything the wearer's phone knows about sharing (a restore from the recovery code brings the identity over
  * from another phone). Encrypted at rest by [OwnerIdentityStore]; holds I, D and
  * every G_n, so [toString] is redacted. The owner backup carries the subset in `BackupPayload` (never D).
@@ -121,6 +129,8 @@ data class OwnerState(
      * only (never in the owner backup); Remove / Forget clears it.
      */
     val nearbyPaired: Set<String> = emptySet(),
+    /** Set only while Backup › Replace this identity tells the followers (see [ReplaceRecord]). */
+    val replacing: ReplaceRecord? = null,
 ) {
     val current: EpochKey get() = epochs.maxBy { it.n }
 

@@ -27,6 +27,7 @@ import app.mauri.sukrara.share.owner.usecase.ExportRecovery
 import app.mauri.sukrara.share.owner.usecase.HandleInbox
 import app.mauri.sukrara.share.owner.usecase.IdentityConflictDetector
 import app.mauri.sukrara.share.owner.usecase.InboxSignal
+import app.mauri.sukrara.share.owner.usecase.KeepIdentity
 import app.mauri.sukrara.share.owner.usecase.MirroredSettingsSource
 import app.mauri.sukrara.share.owner.usecase.OpenNearbyPairing
 import app.mauri.sukrara.share.owner.usecase.OwnerContext
@@ -38,18 +39,22 @@ import app.mauri.sukrara.share.owner.usecase.SetProfile
 import app.mauri.sukrara.share.owner.usecase.SetWriter
 import app.mauri.sukrara.share.owner.usecase.Step
 import app.mauri.sukrara.share.owner.usecase.SyncTreatments
+import app.mauri.sukrara.share.owner.usecase.TellFollowers
 import app.mauri.sukrara.share.transport.RelayFilter
 import app.mauri.sukrara.share.transport.RelayInbound
 import app.mauri.sukrara.share.transport.RelayTransport
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -61,6 +66,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import app.mauri.sukrara.protocol.invite.NearbyPairing as PairingCode
 
 /**
@@ -298,6 +304,9 @@ class OwnerEngine(
         // before the first send: the Bluetooth backlog caches what goes out from here on
         nearby.start(nearbyHost)
         s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach(::send)
+        // a replace that never finished (the app closed while telling the followers): they get the key again. Not
+        // while this process still tells them (sharing stopped and started again meanwhile): that replace goes on
+        if (!replaceBusy) KeepIdentity(ctx)(s, now())?.let { apply(it) }
         publishReadings(readings.republish(s, now()))
         subscribeWriters(s)
         republishShared()
@@ -338,6 +347,11 @@ class OwnerEngine(
         val s = owner ?: return
         when (m) {
             is RelayInbound.Ok -> {
+                // a replace's notice reached a relay: one follower more is told
+                val t = tellingNow
+                if (m.accepted && t != null && t.notices.values.any { it.id == m.eventId } && t.acked.add(m.eventId)) {
+                    _telling.value = t.ui()
+                }
                 if (m.accepted && s.pendingControl.any { it.eventId == m.eventId }) {
                     commit(s.copy(pendingControl = s.pendingControl.filter { it.eventId != m.eventId }))
                 }
@@ -421,47 +435,144 @@ class OwnerEngine(
 
     /**
      * A new identity with how the wearer appears: setup's *Start fresh*, or over the working one with [replaceExisting]
-     * (Backup › Replace this identity, after the person confirmed that every follower must be invited again: the old
-     * identity stops publishing at once). Never over an identity that can't be read; nothing changes when the new one
-     * can't be saved.
+     * (Backup › Replace this identity, after the person confirmed that every follower must be invited again: its
+     * followers are told first, see [replaceWith]). Never over an identity that can't be read; nothing changes when
+     * the new one can't be saved. False also when the replace was cancelled.
      */
-    suspend fun createIdentity(scope: CoroutineScope, profile: Profile?, replaceExisting: Boolean = false): Boolean =
-        locked {
-            val replacing = owner != null
-            if (replacing && !replaceExisting) return@locked false
-            if (!replacing && store.load() !is OwnerIdentityStore.Load.Missing) return@locked false
+    suspend fun createIdentity(scope: CoroutineScope, profile: Profile?, replaceExisting: Boolean = false): Boolean {
+        if (replaceExisting && owner != null) return replaceWith(scope) { CreateIdentity(ctx)(profile, now()).state } == Replace.Done
+        return locked {
+            if (owner != null || store.load() !is OwnerIdentityStore.Load.Missing) return@locked false
             val step = CreateIdentity(ctx)(profile, now())
             if (!store.save(step.state)) return@locked false
-            if (replacing) halt()
             run(scope, step.state)
             true
         }
+    }
 
     /**
      * Restore from a recovery code. The UI gates it (setup's `RestoreGate`: this phone's sensor runs). Replaces an unreadable
      * identity only on success, and a working one only with [replaceExisting] (Backup › Replace this identity confirms
-     * first); the identity this phone already shares as is never "replaced" by itself. Nothing changes on any error.
+     * first; its followers are told once the restore is sure to work, see [replaceWith]); the identity this phone
+     * already shares as is never "replaced" by itself. Nothing changes on any error or when cancelled.
      */
-    suspend fun restore(scope: CoroutineScope, code: String, password: String?, replaceExisting: Boolean = false): RestoreIdentity.Result =
-        locked {
-            if (owner != null && !replaceExisting) return@locked RestoreIdentity.Result.AlreadySharing
-            val use = RestoreIdentity(ctx)
-            val (identity, error) = use.parse(code, password)
-            if (identity == null) return@locked error!!
-            if (owner?.identity(ctx.crypto)?.public == identity.public) return@locked RestoreIdentity.Result.SameIdentity
-            transport.start()
-            val found = transport.fetch(use.identityEventsFilter(identity), FETCH_TIMEOUT_MS)
-            val result = use.restore(identity, found.events, found.answered, now())
-            if (result is RestoreIdentity.Result.Restored) {
-                halt()
-                // the code that restored it is somewhere besides this phone: no "Not backed up" card
-                val restored = result.step.state.copy(restoredAt = now())
-                store.save(restored, replaceUnreadable = true)
-                // run() publishes the rotation from pendingControl (deliveries before the roster)
-                run(scope, restored)
+    suspend fun restore(scope: CoroutineScope, code: String, password: String?, replaceExisting: Boolean = false): RestoreIdentity.Result {
+        var replacing = false
+        val result =
+            locked {
+                if (owner != null && !replaceExisting) return@locked RestoreIdentity.Result.AlreadySharing
+                val use = RestoreIdentity(ctx)
+                val (identity, error) = use.parse(code, password)
+                if (identity == null) return@locked error!!
+                if (owner?.identity(ctx.crypto)?.public == identity.public) return@locked RestoreIdentity.Result.SameIdentity
+                transport.start()
+                val found = transport.fetch(use.identityEventsFilter(identity), FETCH_TIMEOUT_MS)
+                val result = use.restore(identity, found.events, found.answered, now())
+                if (result is RestoreIdentity.Result.Restored) {
+                    if (owner != null) {
+                        replacing = true
+                    } else {
+                        halt()
+                        // the code that restored it is somewhere besides this phone: no "Not backed up" card
+                        val restored = result.step.state.copy(restoredAt = now())
+                        store.save(restored, replaceUnreadable = true)
+                        // run() publishes the rotation from pendingControl (deliveries before the roster)
+                        run(scope, restored)
+                    }
+                }
+                result
             }
-            result
+        if (!replacing) return result
+        val restored = (result as RestoreIdentity.Result.Restored).step.state
+        return if (replaceWith(scope) { restored.copy(restoredAt = now()) } == Replace.Done) result else RestoreIdentity.Result.Cancelled
+    }
+
+    private enum class Replace { Done, Kept }
+
+    /** A replace telling the followers: each one's notice, the ids a relay accepted (under the lock), Cancel. */
+    private class Telling(val notices: Map<String, SignedEvent>) {
+        val acked = mutableSetOf<String>()
+        val cancelled = MutableStateFlow(false)
+
+        fun ui() = TellingFollowers(notices.size, acked.size)
+    }
+
+    @Volatile private var tellingNow: Telling? = null
+
+    @Volatile private var replaceBusy = false
+
+    private val _telling = MutableStateFlow<TellingFollowers?>(null)
+
+    /** Backup › Replace this identity telling the followers (*Telling your followers…* with Cancel); null otherwise. */
+    val telling: StateFlow<TellingFollowers?> = _telling.asStateFlow()
+
+    /** Cancel while the followers are told: the identity stays and they follow again. Too late once it is replaced. */
+    fun cancelReplace() {
+        tellingNow?.cancelled?.value = true
+    }
+
+    /**
+     * Backup › Replace this identity (PROTOCOL-v2 "Replace the identity"): a `revoked` notice from this identity to
+     * every active follower, so their apps say the wearer stopped sharing instead of warning that no data arrives;
+     * then, once a relay accepted every notice or after [NOTICE_TIMEOUT_MS] (at once with internet sharing off), [next]
+     * replaces the identity: its own events go out and the notices no relay took go out again with them. Cancel (or a
+     * failure) before that keeps the identity and sends the told followers the key again. During a conflict nobody is
+     * told: the other app still shares as this identity. One replace at a time.
+     */
+    private suspend fun replaceWith(scope: CoroutineScope, next: () -> OwnerState): Replace {
+        val t =
+            locked {
+                val s = owner?.takeIf { !replaceBusy } ?: return@locked null
+                replaceBusy = true
+                val told = if (s.conflict == null) TellFollowers(ctx)(s, now()) else null
+                told?.let { apply(it.step) }
+                Telling(told?.notices.orEmpty()).also {
+                    tellingNow = it
+                    _telling.value = it.ui().takeIf { u -> u.followers > 0 }
+                }
+            } ?: return Replace.Kept
+        try {
+            if (t.notices.isNotEmpty() && policy.on) {
+                withTimeoutOrNull(NOTICE_TIMEOUT_MS) {
+                    combine(_telling, t.cancelled) { u, cancelled -> cancelled || u == null || u.told >= u.followers }.first { it }
+                }
+            }
+        } catch (e: CancellationException) {
+            withContext(NonCancellable) { locked { endTelling(keep = true) } }
+            throw e
         }
+        return locked {
+            if (t.cancelled.value) return@locked endTelling(keep = true)
+            val s = owner ?: return@locked endTelling(keep = false)
+            // followers approved while waiting are told too (no wait: they go out with the new identity's events)
+            val late = if (s.conflict == null) TellFollowers(ctx)(s, now(), except = t.notices.keys) else null
+            late?.let { apply(it.step) }
+            val unacked = t.notices.filterValues { it.id !in t.acked } + late?.notices.orEmpty()
+            val state = TellFollowers.carry(next(), unacked)
+            val saved =
+                try {
+                    store.save(state, replaceUnreadable = true)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    false
+                }
+            if (!saved) return@locked endTelling(keep = true)
+            endTelling(keep = false)
+            halt()
+            run(scope, state)
+            Replace.Done
+        }
+    }
+
+    /** The replace ends here; [keep]: the identity stays and the followers told get the key again. */
+    private suspend fun endTelling(keep: Boolean): Replace {
+        tellingNow = null
+        replaceBusy = false
+        _telling.value = null
+        if (keep) owner?.let { s -> KeepIdentity(ctx)(s, now())?.let { apply(it) } }
+        return Replace.Kept
+    }
 
     /** The identity the last recovery code was made for: [markRecoverySaved] counts only for that one. */
     @Volatile private var exportedFor: String? = null
@@ -679,6 +790,9 @@ class OwnerEngine(
         const val CONTROL_REFRESH = 6 * Wire.DAY
         const val HISTORY_MIN_GAP = 600L
         const val FETCH_TIMEOUT_MS = 12_000L
+
+        /** Backup › Replace this identity waits this long for a relay to accept every follower's notice. */
+        const val NOTICE_TIMEOUT_MS = 15_000L
         const val NPUB_HEAD = 12
         const val NPUB_TAIL = 4
     }

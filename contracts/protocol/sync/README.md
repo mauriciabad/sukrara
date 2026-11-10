@@ -18,6 +18,7 @@ test keys (the OGS draft-1 vector keys plus `D2` = sha256("sukrara/sync/D2")); a
 | `revoke-reapprove.json` | the wearer removes the follower, then re-approves the same follower key; across app restarts the relays replay the old revoked notice and both key deliveries: the older notice is ignored, a newer one removes it again. Also: no rekey for an old backfill under an unknown epoch, a rekey with `have` = newest held gk (throttled), a writer's entry rejected before the roster lists it and accepted after |
 | `owner-conflict.json` | A3, owner side: the wearer's own echoes, its own rotation and late old events are `fine`; a newer roster or backup from another app publishing as the same identity is a `conflict`; the epoch the wearer's retry rotates to (above the other app's) |
 | `conflict-rotation.json` | the follower side of that retry: the old phone rotates to epoch 3 naming itself (the new phone's readings rejected), the new phone's retry rotates to epoch 4 (accepted again), the old phone's epoch-3 events rejected / ignored |
+| `replace-identity.json` | the wearer replaces its identity (PROTOCOL-v2 "Replace the identity"). `steps`: a replace cancelled (the revoked notice, then the same key one second newer: following again), then a real one (the notice: removed; the old phone's late reading ignored); after a restart the relays replay it all and the follower stays removed. `replace` (the wearer's side, Android `ReplaceIdentityTest`): who is told and when the identity is replaced for each way the relays answer |
 
 ## Format (`v` 1)
 
@@ -42,6 +43,14 @@ ids and rekey throttles forgotten), `expected`:
 (`[{event, expect}]`, `expect` = `fine` | `conflict:<RosterFromOtherDevice|RosterUnknownEpoch|BackupFromElsewhere>`),
 `retries` (`[{found, unknownEpoch, rotateTo}]`: the events the relays return to the retry's fetch, whether a roster under
 an unknown epoch was seen, and the epoch the retry rotates to, `null` = republish roster + backup only).
+
+`replace-identity.json` `replace`: `followers` (`[{f, removed?}]`, key names: the wearer's followers before the
+replace, a removed one gets nothing), `timeoutS` (how long the wearer waits for the relays), `runs`
+(`[{name, internet, acks, cancelAt, replacedAt, resent, keyAgain}]`): `internet` = internet sharing on; `acks` =
+`{follower: s}`, when after the notices went out a relay accepted that follower's (`OK true`); `cancelAt` = when the
+wearer cancels (s, `null` = never); `replacedAt` = when the new identity's first event goes out (s after the notices,
+`null` = kept); `resent` = followers whose notice goes out again with the new identity (no relay took it); `keyAgain`
+= followers that get the key again, newer than their notice (cancelled).
 
 ## Changing them
 
