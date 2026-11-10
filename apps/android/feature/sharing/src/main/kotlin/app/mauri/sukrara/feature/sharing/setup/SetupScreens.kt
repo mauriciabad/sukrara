@@ -62,9 +62,11 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
 import app.mauri.sukrara.feature.sharing.R
@@ -133,6 +135,7 @@ data class SetupActions(
     val completeJoin: () -> Unit = {},
     val completePermissions: () -> Unit = {},
     val fix: (AlertRequirement) -> Unit = {},
+    val answerUnlocked: (UnlockedSound) -> Unit = {},
     val openSensorSetup: () -> Unit = {},
     val completeSensor: () -> Unit = {},
     val thresholdRows: ThresholdRows = { _, _ -> },
@@ -166,6 +169,7 @@ private fun SetupViewModel.actions(
             completeJoin = ::completeJoin,
             completePermissions = ::completePermissions,
             fix = { r -> readinessFix(r) },
+            answerUnlocked = { readinessAnswerUnlocked(it) },
             openSensorSetup = onOpenSensorSetup,
             completeSensor = ::completeSensor,
             thresholdRows = thresholdRows,
@@ -421,7 +425,14 @@ private fun ColumnScope.PermissionsStep(
     val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower) }
     for (r in items) {
         val ok = r !in u.readiness.missing
-        ChecklistRow(r, ok) {
+        if (r == AlertRequirement.SoundWhenUnlocked) {
+            // Android hides this setting from apps: the person checks it and answers (no Allow to tap)
+            ChecklistRow(r, ok, onFix = null) {
+                UnlockedSoundAnswer(u.readiness.unlockedSound, { actions.fix(r) }, actions.answerUnlocked)
+            }
+            continue
+        }
+        ChecklistRow(r, ok, onFix = {
             val permission = runtimePermission(r)
             if (permission != null && r !in asked.value) {
                 asked.value += r
@@ -429,7 +440,7 @@ private fun ColumnScope.PermissionsStep(
             } else {
                 actions.fix(r)
             }
-        }
+        })
     }
     val allOk = items.none { it in u.readiness.missing }
     StepButtons(
@@ -443,7 +454,8 @@ private fun ColumnScope.PermissionsStep(
 private fun ChecklistRow(
     r: AlertRequirement,
     ok: Boolean,
-    onFix: () -> Unit,
+    onFix: (() -> Unit)?,
+    below: @Composable () -> Unit = {},
 ) {
     val title = stringResource(r.nameRes())
     val why = stringResource(r.whyRes())
@@ -461,13 +473,14 @@ private fun ChecklistRow(
                 Text(title, style = MaterialTheme.typography.titleSmall)
                 Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (!ok) {
+            if (!ok && onFix != null) {
                 OutlinedButton(
                     onClick = onFix,
                     modifier = Modifier.heightIn(min = 48.dp),
                 ) { Text(stringResource(R.string.sh_setup_allow)) }
             }
         }
+        Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) { below() }
     }
 }
 

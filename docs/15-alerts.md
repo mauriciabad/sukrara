@@ -313,7 +313,7 @@ build signed with that entitlement; today's builds show it as a normal notificat
   Limits: the exemption is behind the `polite_notifications_attn_update` flag (on in that build; a build without it
   quietens every category); Android 17's policy also has hidden per-category sound / vibration allowances, so a Priority
   mode that lets reminders through silently but alarms with sound would ring a notification-volume alert (louder, not
-  quieter); "Vibrate only when unlocked" (`notification_cooldown_vibrate_unlocked`) drops every notification sound
+  quieter); "Vibrate only when unlocked" (`notification_cooldown_vibrate_unlocked`, see #129 below) drops every notification sound
   while the phone is unlocked, alarms included.
 - **One sound per app per second** (`NotificationUsageStats` / `AlertRateLimiter`, years old, any category): a second
   sounding notification within 1 s is muted (`MUTE_REASON_RATE_LIMIT`, 4096 on the emulator) and still shows; a newer
@@ -329,6 +329,21 @@ build signed with that entitlement; today's builds show it as a normal notificat
   *Monitoring stopped* notice posts at once (Android is stopping the service, a waiting post could die with it), and an
   unrelated alert that comes within 1 s *after* an info sound landed is still muted (rare: the info already waited
   1.1 s past every alert).
+- **"Vibrate only when unlocked" (#129, 2026-11-10, from the AOSP source, main).** NotificationAttentionHelper:
+  `vibrateOnly = hasValidVibrate && mNotificationCooldownVibrateUnlocked && mUserPresent`, then the sound plays only
+  `if (hasValidSound && !vibrateOnly)`; `mUserPresent` is set on ACTION_USER_PRESENT and cleared on SCREEN_OFF. No
+  category is exempt, so every alert only vibrates while the person uses the phone; a channel without vibration still
+  sounds. The value (`Settings.System.notification_cooldown_vibrate_unlocked`) is `@hide` without `@Readable`, so an
+  app targeting S+ gets a SecurityException reading it, and the cooldown page has no public action (Settings declares
+  `android.settings.MANAGE_ADAPTIVE_NOTIFICATIONS` for `PoliteNotificationsPreferenceFragment`). In Sukrara: the
+  checklist item *Sound while the phone is unlocked* (`NotificationCooldown` tries the read; null → the person opens the
+  page and answers *It's off* / *Keep it on*, schema `alerts.unlockedSound`, Android-only); with *Keep it on* (or Android
+  saying it's on) `UnlockedAlertSound` plays the channel's own sound itself while the user is present (screen on, past
+  the keyguard), only for a ringing post on a channel that sounds and vibrates and only where Do Not Disturb lets the
+  alert through, one per second, stopped by Clear / Mute. Left out: playing the sound when nobody answered (it would
+  ring twice for everyone with the setting off, the 2026-10-18 double-sound bug); following later changes to the setting
+  (Android sends nothing an app may read; the answer stays changeable in Settings › Alert reliability). Not checked on
+  a device yet (QA Q8: setting on, phone unlocked, *Send a test alert*).
 - **The alarm channels' Do Not Disturb override needs access (#15, 2026-11-10, from the AOSP source, main).**
   `PreferencesHelper.createNotificationChannel` keeps an app's `setBypassDnd(true)` only when the app holds Do Not
   Disturb access as the channel is created or updated (`if (existing.getUserLockedFields() == 0 && hasDndAccess)`), so

@@ -27,6 +27,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.monitor.alerts.AlertChannels
 import app.mauri.sukrara.monitor.notify.Channels
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * THE alert checklist of the app: home's reliability row, the settings Reliability page and the setup
@@ -57,21 +59,31 @@ import kotlinx.coroutines.flow.stateIn
  */
 class AndroidAlertReadiness(
     context: Context,
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     dispatchers: DispatcherProvider,
     private val alertSettings: Flow<AlertSettings>,
     private val needsBluetooth: Flow<Boolean>,
     private val failedSteps: Flow<Set<String>>,
+    /** The person's answer about *Vibrate only when unlocked* (schema `alerts.unlockedSound`) and how to store it. */
+    private val unlockedSound: Flow<UnlockedSound>,
+    private val saveUnlockedSound: suspend (UnlockedSound) -> Unit,
 ) : AlertReadinessSource {
     private val ctx = context.applicationContext
     private val nm = ctx.getSystemService(NotificationManager::class.java)
     private val refreshes = MutableStateFlow(0L)
 
-    @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false, failedSteps = emptySet())
+    // until the stored answer is read (a moment), no claim either way about it
+    @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false, failedSteps = emptySet(), unlocked = UnlockedSound.Off)
 
     override val readiness: StateFlow<AlertReadiness> by lazy {
-        combine(alertSettings, needsBluetooth, failedSteps, refreshes, systemChanges()) { settings, bluetooth, failed, _, _ ->
-            last = Inputs(settings, bluetooth, failed)
+        combine(
+            combine(alertSettings, unlockedSound, ::Pair),
+            needsBluetooth,
+            failedSteps,
+            refreshes,
+            systemChanges(),
+        ) { (settings, unlocked), bluetooth, failed, _, _ ->
+            last = Inputs(settings, bluetooth, failed, unlocked)
             facts(last).readiness()
         }.flowOn(dispatchers.default)
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), facts(last).readiness())
@@ -79,6 +91,10 @@ class AndroidAlertReadiness(
 
     override fun refresh() {
         refreshes.value++
+    }
+
+    override fun answerUnlockedSound(answer: UnlockedSound) {
+        scope.launch { saveUnlockedSound(answer) }
     }
 
     override fun fix(requirement: AlertRequirement) {
@@ -124,6 +140,12 @@ class AndroidAlertReadiness(
                     }
                 }
 
+                // *Vibrate only when unlocked* is on Android's cooldown page (no public action: then the notifications page)
+                AlertRequirement.SoundWhenUnlocked -> {
+                    if (NotificationCooldown.PAGES.any(::start)) return
+                    appNotificationSettings()
+                }
+
                 // the channel page holds both the importance and "Override Do Not Disturb"
                 AlertRequirement.AlertChannel -> {
                     channelsInUse(last.settings).firstOrNull { it.silenced() || it.blockedByDnd() }?.let { channelSettings(it.id) }
@@ -147,6 +169,7 @@ class AndroidAlertReadiness(
         val settings: AlertSettings,
         val needsBluetooth: Boolean,
         val failedSteps: Set<String>,
+        val unlocked: UnlockedSound,
     )
 
     private fun facts(inputs: Inputs): ReadinessFacts {
@@ -167,6 +190,8 @@ class AndroidAlertReadiness(
             alertChannelSilenced = alertGroupBlocked || channels.any { it.silenced() },
             dndSilencesAlarms = channels.any { it.blockedByDnd() },
             alarmsBypassDnd = alarmsBypassDnd(inputs.settings),
+            vibrateOnlyUnlocked = NotificationCooldown.vibrateOnlyWhenUnlocked(ctx),
+            unlockedSound = inputs.unlocked,
             needsBluetooth = inputs.needsBluetooth,
             bluetoothOn = bluetooth?.isEnabled == true,
             bluetoothPermitted = bluetoothPermitted(),

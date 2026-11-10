@@ -5,6 +5,7 @@ package app.mauri.sukrara.monitor.readiness
 
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.UnlockedSound
 
 /**
  * What the phone (and the alert runtime) answered for each item of the alert checklist, read by
@@ -28,6 +29,10 @@ data class ReadinessFacts(
     val dndSilencesAlarms: Boolean,
     /** Every alarm-level channel in use overrides Do Not Disturb (needs Do Not Disturb access; #15). */
     val alarmsBypassDnd: Boolean = true,
+    /** Android's *Vibrate only when unlocked*, when it says ([NotificationCooldown]); null = it won't (#129). */
+    val vibrateOnlyUnlocked: Boolean? = false,
+    /** The person's answer about it. */
+    val unlockedSound: UnlockedSound = UnlockedSound.Unchecked,
     /** The role's source talks to the sensor over Bluetooth (the wearer's own sensor, not Juggluco or a follower). */
     val needsBluetooth: Boolean,
     val bluetoothOn: Boolean,
@@ -43,8 +48,10 @@ data class ReadinessFacts(
                 if (!batteryExempt || backgroundRestricted) add(AlertRequirement.BatteryExemption)
                 if (alertChannelSilenced || dndSilencesAlarms) add(AlertRequirement.AlertChannel)
                 if (anyAlarmKind && !alarmsBypassDnd) add(AlertRequirement.AlarmsInDnd)
+                if (NotificationCooldown.unanswered(vibrateOnlyUnlocked, unlockedSound)) add(AlertRequirement.SoundWhenUnlocked)
                 if (needsBluetooth && !(bluetoothOn && bluetoothPermitted)) add(AlertRequirement.Bluetooth)
             },
             failedSteps,
+            unlockedSound,
         )
 }

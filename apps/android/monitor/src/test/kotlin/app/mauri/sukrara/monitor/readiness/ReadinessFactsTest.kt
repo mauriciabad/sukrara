@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor.readiness
 
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.UnlockedSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -65,6 +66,20 @@ class ReadinessFactsTest {
         // no access: creating again changes nothing; all overriding already: nothing to do
         assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = false, alarmChannelsBypass = listOf(false)))
         assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, true)))
+    }
+
+    @Test fun vibrateOnlyWhenUnlockedIsAskedOnceWhenAndroidWontSay() {
+        val hidden = allGood.copy(vibrateOnlyUnlocked = null)
+        assertEquals(setOf(AlertRequirement.SoundWhenUnlocked), hidden.readiness().missing)
+        // either answer settles it (Keep it on: Sukrara plays the sound itself), and the answer travels with the checklist
+        for (answer in listOf(UnlockedSound.Off, UnlockedSound.AppPlays)) {
+            val r = hidden.copy(unlockedSound = answer).readiness()
+            assertTrue(r.ready)
+            assertEquals(answer, r.unlockedSound)
+        }
+        // Android said: on (Sukrara plays it) or off, nothing to ask
+        assertTrue(allGood.copy(vibrateOnlyUnlocked = true).readiness().ready)
+        assertTrue(allGood.copy(vibrateOnlyUnlocked = false).readiness().ready)
     }
 
     @Test fun fullScreenOnlyMattersWhenAKindRingsLikeAnAlarm() =

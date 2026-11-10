@@ -34,17 +34,45 @@ enum class AlertRequirement(
      */
     AlarmsInDnd,
 
+    /**
+     * Android's *Notification cooldown › Vibrate only when unlocked* doesn't silence the alerts: it drops every
+     * notification sound while the phone is unlocked, alarms included. Android hides it from apps, so the person checks
+     * it once and answers ([UnlockedSound]); missing until they do (or when Android says it is on and Sukrara doesn't
+     * play the sound itself).
+     */
+    SoundWhenUnlocked,
+
     /** Bluetooth on and the nearby-devices permission (wearer only: the sensor talks over Bluetooth). */
     Bluetooth,
 }
 
 /**
- * The checklist's current answers: every requirement in [AlertRequirement] order with whether it is met, and the alert
- * runtime's steps that failed on their last attempt (step names like `Notify:level`, never values: *Copy report*).
+ * The person's answer about Android's *Vibrate only when unlocked* (schema `alerts.unlockedSound`): [Unchecked] = not
+ * answered yet; [Off] = it's off; [AppPlays] = it stays on, and Sukrara plays the alert sound itself while the phone is
+ * unlocked (Android only vibrates then).
+ */
+enum class UnlockedSound(
+    val wire: String,
+) {
+    Unchecked("unchecked"),
+    Off("off"),
+    AppPlays("app"),
+    ;
+
+    companion object {
+        fun of(wire: String): UnlockedSound = entries.firstOrNull { it.wire == wire } ?: Unchecked
+    }
+}
+
+/**
+ * The checklist's current answers: every requirement in [AlertRequirement] order with whether it is met, the alert
+ * runtime's steps that failed on their last attempt (step names like `Notify:level`, never values: *Copy report*) and
+ * the person's answer about *Vibrate only when unlocked* ([unlockedSound]).
  */
 data class AlertReadiness(
     val missing: Set<AlertRequirement> = emptySet(),
     val failedSteps: Set<String> = emptySet(),
+    val unlockedSound: UnlockedSound = UnlockedSound.Unchecked,
 ) {
     val ready: Boolean get() = missing.isEmpty()
 
@@ -82,4 +110,7 @@ interface AlertReadinessSource {
 
     /** Opens the system screen that fixes [requirement] (notification settings, battery exemption, …). */
     fun fix(requirement: AlertRequirement)
+
+    /** Stores the person's answer about *Vibrate only when unlocked* ([AlertRequirement.SoundWhenUnlocked]). */
+    fun answerUnlockedSound(answer: UnlockedSound)
 }

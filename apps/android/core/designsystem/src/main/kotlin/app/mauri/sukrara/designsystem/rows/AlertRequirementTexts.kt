@@ -21,6 +21,7 @@ fun AlertRequirement.nameRes(): Int =
         AlertRequirement.BatteryExemption -> R.string.ds_req_battery
         AlertRequirement.AlertChannel -> R.string.ds_req_channel
         AlertRequirement.AlarmsInDnd -> R.string.ds_req_dnd
+        AlertRequirement.SoundWhenUnlocked -> R.string.ds_req_unlocked
         AlertRequirement.Bluetooth -> R.string.ds_req_bluetooth
     }
 
@@ -35,5 +36,6 @@ fun AlertRequirement.whyRes(): Int =
         AlertRequirement.BatteryExemption -> R.string.ds_req_battery_why
         AlertRequirement.AlertChannel -> R.string.ds_req_channel_why
         AlertRequirement.AlarmsInDnd -> R.string.ds_req_dnd_why
+        AlertRequirement.SoundWhenUnlocked -> R.string.ds_req_unlocked_why
         AlertRequirement.Bluetooth -> R.string.ds_req_bluetooth_why
     }

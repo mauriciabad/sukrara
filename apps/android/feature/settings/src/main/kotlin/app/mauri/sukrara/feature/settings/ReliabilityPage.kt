@@ -15,9 +15,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.rows.whyRes
@@ -32,6 +34,7 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 internal fun ReliabilityContent(
     readiness: AlertReadiness,
     onFix: (AlertRequirement) -> Unit,
+    onAnswerUnlockedSound: (UnlockedSound) -> Unit = {},
     onBack: () -> Unit,
 ) {
     SettingsPage(stringResource(R.string.st_reliability_title), onBack) {
@@ -43,7 +46,14 @@ internal fun ReliabilityContent(
             // a failed alert step is a state of the moment, not a setting: listed only while it lasts
             for (requirement in AlertRequirement.entries.filter { it.inSetup || it in readiness.missing }) {
                 val missing = requirement in readiness.missing
-                val state = stringResource(if (missing) R.string.st_req_missing else R.string.st_req_ok)
+                val state =
+                    stringResource(
+                        when {
+                            !missing -> R.string.st_req_ok
+                            requirement == AlertRequirement.AlertDelivery -> R.string.st_req_failed
+                            else -> R.string.st_req_missing
+                        },
+                    )
                 val titleText = stringResource(requirement.nameRes())
                 CardRow {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -59,7 +69,10 @@ internal fun ReliabilityContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (missing && requirement == AlertRequirement.AlertDelivery) {
+                    if (requirement == AlertRequirement.SoundWhenUnlocked) {
+                        // answered or not, the answer stays changeable here
+                        UnlockedSoundAnswer(readiness.unlockedSound, { onFix(requirement) }, onAnswerUnlockedSound)
+                    } else if (missing && requirement == AlertRequirement.AlertDelivery) {
                         FilledTonalButton(onClick = copyReport) { Text(stringResource(DsR.string.ds_copy_report)) }
                     } else if (missing) {
                         val fixLabel = stringResource(R.string.st_fix_item, titleText)

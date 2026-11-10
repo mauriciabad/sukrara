@@ -714,7 +714,14 @@ private fun banner(
                 stringResource(R.string.banner_alerts_title),
                 requirementText(problem),
                 stringResource(if (delivery) DsR.string.ds_copy_report else R.string.banner_alerts_action),
-                if (delivery) copyReport else ({ callbacks.onFix(problem) }),
+                when (problem) {
+                    AlertRequirement.AlertDelivery -> copyReport
+
+                    // the person answers it on the reliability page (Android hides the setting from apps)
+                    AlertRequirement.SoundWhenUnlocked -> open(HomeAction.OpenAlertReliability)
+
+                    else -> ({ callbacks.onFix(problem) })
+                },
                 null,
                 severity,
             )
@@ -853,6 +860,7 @@ private fun requirementText(requirement: AlertRequirement): String =
             AlertRequirement.BatteryExemption -> R.string.req_battery
             AlertRequirement.AlertChannel -> R.string.req_channel
             AlertRequirement.AlarmsInDnd -> R.string.req_dnd
+            AlertRequirement.SoundWhenUnlocked -> R.string.req_unlocked
             AlertRequirement.Bluetooth -> R.string.req_bluetooth
         },
     )

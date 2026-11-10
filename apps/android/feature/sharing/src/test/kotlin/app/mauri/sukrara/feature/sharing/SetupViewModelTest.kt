@@ -285,6 +285,8 @@ class SetupViewModelTest {
         override fun refresh() = Unit
 
         override fun fix(requirement: AlertRequirement) = Unit
+
+        override fun answerUnlockedSound(answer: app.mauri.sukrara.core.model.UnlockedSound) = Unit
     }
 
     private class FakeAlerts : AlertSettingsAccess {

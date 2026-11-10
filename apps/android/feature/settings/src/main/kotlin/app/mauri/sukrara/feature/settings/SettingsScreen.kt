@@ -281,7 +281,7 @@ fun SettingsScreen(
         SettingsRoute.Reliability -> {
             val readiness by deps.readiness.readiness.collectAsStateWithLifecycle()
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
-            ReliabilityContent(readiness, deps.readiness::fix, onBack)
+            ReliabilityContent(readiness, deps.readiness::fix, deps.readiness::answerUnlockedSound, onBack)
         }
 
         SettingsRoute.StatusBar -> {

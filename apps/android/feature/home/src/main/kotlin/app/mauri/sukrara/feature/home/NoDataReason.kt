@@ -135,6 +135,9 @@ sealed interface HomeAction {
     /** Settings › Alerts (the quiet sheet's way to the rules). */
     data object OpenAlertSettings : HomeAction
 
+    /** Settings › Alert reliability: an item the person answers there (*Sound while the phone is unlocked*). */
+    data object OpenAlertReliability : HomeAction
+
     data object AddWidget : HomeAction
 
     data object OpenBackup : HomeAction

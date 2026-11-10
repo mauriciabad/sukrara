@@ -33,7 +33,11 @@ import app.mauri.sukrara.monitor.notify.SoundGap
  * Android allows it ([NotificationManager.canUseFullScreenIntent]; otherwise it is a heads-up and the reliability row
  * says so). The tap opens the app.
  */
-class AlertNotifier(private val ctx: Context) : AlertPresenter {
+class AlertNotifier(
+    private val ctx: Context,
+    /** The alert sound Sukrara plays itself while Android only vibrates (*Vibrate only when unlocked*). */
+    private val unlocked: UnlockedAlertSound? = null,
+) : AlertPresenter {
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
     // read on every use: a language change renames the alerts at once
@@ -63,7 +67,10 @@ class AlertNotifier(private val ctx: Context) : AlertPresenter {
         if (alarm && !silent && nm.canUseFullScreenIntent()) b.setFullScreenIntent(openApp(), true)
         post(kind.group, b.build(), AlertChannels.id(kind, alarm))
         // the app's info notifications wait until Android's one-sound-per-second limit can't mute this one
-        if (!silent) SoundGap.shared.alertRang()
+        if (!silent) {
+            SoundGap.shared.alertRang()
+            unlocked?.ringing(kind.group, AlertChannels.id(kind, alarm), alarm)
+        }
     }
 
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
@@ -80,6 +87,7 @@ class AlertNotifier(private val ctx: Context) : AlertPresenter {
                 .setTimeoutAfter(((until - now) * 1000).coerceAtLeast(1_000))
                 .addAction(action(kind, AlertActionReceiver.UNMUTE, R.string.alert_action_unmute))
         b.addMuteAction(kind, ctx.getString(R.string.alert_action_change), settings.muteChoices())
+        unlocked?.stop(group)
         post(group, b.build(), AlertChannels.id(kind, alarm))
     }
 
@@ -102,9 +110,13 @@ class AlertNotifier(private val ctx: Context) : AlertPresenter {
                 .build()
         post(NotificationIds.ALERT_TEST, n, AlertChannels.id(kind, alarm))
         SoundGap.shared.alertRang()
+        unlocked?.ringing(kind.group, AlertChannels.id(kind, alarm), alarm)
     }
 
-    override fun clear(group: AlertGroup) = NotificationGroups.cancel(ctx, idOf(group), NotificationGroups.Group.ALERTS)
+    override fun clear(group: AlertGroup) {
+        unlocked?.stop(group)
+        NotificationGroups.cancel(ctx, idOf(group), NotificationGroups.Group.ALERTS)
+    }
 
     @Volatile private var channelsReady = false
 

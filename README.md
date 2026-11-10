@@ -61,7 +61,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root).
 - **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,
   "like an alarm" ones pass Do Not Disturb; alerts that come close together still ring in full (Android's notification
-  cooldown doesn't quieten them). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
+  cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
   (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted and what you muted in the last day. The no-data check runs from an exact alarm,
   independent of the monitoring service.
@@ -81,7 +81,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   *Add treatment*.
 - **Settings** for daily use (searchable, accents optional; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
-  (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, Bluetooth; an alert Android refused shows on home with
+  (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with
   *Copy report*), ranges and the whole graph (lines, time
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data

@@ -30,6 +30,12 @@
     <string name="ds_req_channel_why">The alert categories must keep their sound and may break through Do Not Disturb.</string>
     <string name="ds_req_dnd">Alarms in Do Not Disturb</string>
     <string name="ds_req_dnd_why">Lets the alerts that ring like an alarm break through a Do Not Disturb mode that silences alarms, such as a bedtime mode.</string>
+    <string name="ds_req_unlocked">Sound while the phone is unlocked</string>
+    <string name="ds_req_unlocked_why">Android\'s Notification cooldown › Vibrate only when unlocked mutes every alert sound, alarms too, while you use the phone. Android doesn\'t let apps read it: check it once and tell Sukrara.</string>
+    <string name="ds_unlocked_open">Open the setting</string>
+    <string name="ds_unlocked_off">It\'s off</string>
+    <string name="ds_unlocked_app">Keep it on</string>
+    <string name="ds_unlocked_app_note">While the phone is unlocked, Sukrara plays the alert sound itself; Android only vibrates.</string>
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">The sensor sends readings over Bluetooth.</string>
 
