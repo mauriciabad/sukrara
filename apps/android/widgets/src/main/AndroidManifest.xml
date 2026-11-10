@@ -48,6 +48,10 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <!-- the widgets' own redraw alarm at the picture's next freshness step (explicit PendingIntent from this app) -->
+        <receiver
+            android:name="app.mauri.sukrara.widgets.WidgetRedrawReceiver"
+            android:exported="false" />
         <!-- requestPinAppWidget's success callback (explicit PendingIntent from this app) -->
         <receiver
             android:name="app.mauri.sukrara.widgets.WidgetPresence$PinnedReceiver"

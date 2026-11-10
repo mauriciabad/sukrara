@@ -571,6 +571,14 @@ TalkBack reads the renderer's value sentence plus, with a chart, its summary.
   non-waking `FreshnessTicker` alarm), the sensor, *Mute all*, treatments, settings, the theme or the follower's
   name. Nothing is drawn while the screen is off; one redraw catches up when it comes on. Pictures are sized to the
   cell and capped at 1400 px on the long side (RemoteViews memory).
+- **Never fresh-looking with the app gone** (#98): the launcher keeps a widget's picture after the app's process dies,
+  and the monitor's ticker is armed only while its service posts, so a value could look current for up to the 15-min
+  health check. Every picture now plans its own redraw at its reading's next freshness step (time shown at 90 s,
+  struck through at 5 min, *no reading since* at 20 min, graph gone at 3 h): the widgets' own non-waking alarm
+  (`WidgetRedrawAlarm`, `RTC`, exact when allowed, else within a minute; only while a widget is placed), whose
+  private receiver (`WidgetRedrawReceiver`) starts the process if needed and redraws from the reading's age at that
+  moment, also with the screen off (the process may be gone again by the time it comes on). A sleeping phone delivers
+  it as it wakes. `WidgetUpdaterTest`, `WidgetManifestTest`.
 - **Picker preview** (`WidgetPreview.kt`): on Android 15+ the picker shows each widget drawn by the renderer over a
   sample day (`previewFrame`: in range, 120 and rising, source `widget-preview`; never the person's readings, and
   only in the picker and the pin dialog), composed at two sizes per widget (`CardWidget.providePreview`,

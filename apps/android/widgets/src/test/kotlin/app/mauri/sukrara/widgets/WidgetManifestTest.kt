@@ -55,5 +55,8 @@ class WidgetManifestTest {
         assertTrue(config.children("action").any { it.a("name") == "android.appwidget.action.APPWIDGET_CONFIGURE" })
         val pinned = app.children("receiver").single { it.a("name").endsWith("PinnedReceiver") }
         assertEquals("false", pinned.a("exported"))
+        // the redraw alarm's receiver (#98): only this app's explicit alarm reaches it
+        val redraw = app.children("receiver").single { it.a("name") == WidgetRedrawReceiver::class.java.name }
+        assertEquals("false", redraw.a("exported"))
     }
 }

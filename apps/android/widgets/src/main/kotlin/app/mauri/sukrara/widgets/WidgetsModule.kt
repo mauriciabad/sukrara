@@ -44,6 +44,8 @@ class WidgetsModule(
 
     val presence = WidgetPresence(context, scope)
 
+    private val redrawAlarm = WidgetRedrawAlarm(context)
+
     val updater =
         WidgetUpdater(
             scope = scope,
@@ -57,6 +59,7 @@ class WidgetsModule(
             screenOn = screenOn(context),
             dark = { isDark(context) },
             redraw = ::redrawPlaced,
+            nextRedraw = redrawAlarm::set,
         )
 
     fun start() {

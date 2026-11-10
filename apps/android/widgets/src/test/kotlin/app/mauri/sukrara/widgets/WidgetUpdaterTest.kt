@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.core.testing.FakeClock
+import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GraphConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -43,6 +44,7 @@ class WidgetUpdaterTest {
     private val screen = MutableStateFlow(true)
     private var dark = false
     private var redraws = 0
+    private var nextRedraw: Instant? = null
 
     private fun reading(
         at: Instant,
@@ -65,6 +67,7 @@ class WidgetUpdaterTest {
             screen,
             { dark },
             { redraws++ },
+            { nextRedraw = it },
         ).also {
             it.start()
             runCurrent()
@@ -107,6 +110,39 @@ class WidgetUpdaterTest {
             ticks.emit(Unit)
             runCurrent()
             assertEquals("hidden at 20 min", 3, redraws)
+        }
+
+    /** #98: every picture asks for its own next freshness step, so a widget never stays "fresh" with the app gone. */
+    @Test
+    fun `each picture schedules its own next step`() =
+        runTest {
+            updater()
+            assertEquals(Instant.ofEpochSecond(Freshness.nextChangeAt(t0.epochSecond, t0.epochSecond)!!), nextRedraw)
+            clock.advance(Duration.ofMinutes(1))
+            glucose.value = state(reading(clock.now(), 118))
+            runCurrent()
+            assertEquals(Instant.ofEpochSecond(Freshness.nextChangeAt(clock.now().epochSecond, clock.now().epochSecond)!!), nextRedraw)
+        }
+
+    /** #98: the widgets' alarm redraws at the step, also with the screen off (the process may be gone by screen-on). */
+    @Test
+    fun `the redraw alarm draws the struck picture, also with the screen off`() =
+        runTest {
+            val u = updater()
+            screen.value = false
+            runCurrent()
+            clock.advance(Duration.ofMinutes(5).plusSeconds(1))
+            u.tick()
+            assertEquals(2, redraws)
+            assertEquals(clock.now(), u.frame.value?.now)
+            assertEquals(Freshness.STALE, Freshness.of(Duration.between(t0, u.frame.value!!.now).seconds))
+            // the next step (no reading since, at 20 min) is planned in turn
+            assertEquals(
+                Instant.ofEpochSecond(Freshness.nextChangeAt(t0.epochSecond, clock.now().epochSecond)!!),
+                nextRedraw,
+            )
+            u.tick()
+            assertEquals("same step: nothing new", 2, redraws)
         }
 
     /** #148: no widget keeps `08:59` beside the notification's `8:59 AM` after Settings' 12/24-hour or zone change. */
