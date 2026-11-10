@@ -46,8 +46,8 @@ HEAD=$(git rev-parse --short HEAD)
 if [ "$TARGET" = phone ]; then
   # 2a. Signed release APK, verified, in-place update (keeps identity, followers, settings). Gradle reads the key's
   # password only from the environment; it comes from the Keychain here and never goes on a command line.
-  APK=apps/android/app/build/outputs/apk/release/app-release.apk
-  MAPPING=apps/android/app/build/outputs/mapping/release/mapping.txt
+  APK=apps/android/app/build/outputs/apk/full/release/app-full-release.apk
+  MAPPING=apps/android/app/build/outputs/mapping/fullRelease/mapping.txt
   if [ $DRY = 0 ]; then
     SUKRARA_KEYSTORE_PASSWORD=$(release_password) || die "no release key password (Keychain item sukrara-android-release, docs/20-publishing.md)."
     export SUKRARA_KEYSTORE_PASSWORD
@@ -56,7 +56,7 @@ if [ "$TARGET" = phone ]; then
   JAVA_HOME="$(dirname "$(dirname "$(jdk_tool java)")")"
   ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
   export JAVA_HOME ANDROID_HOME
-  run sh -c "cd apps/android && ./gradlew -q :app:assembleRelease"
+  run sh -c "cd apps/android && ./gradlew -q :app:assembleFullRelease"
   run tools/release/verify-apk.sh "$APK" "$MAPPING"
   run adb -s "$SERIAL" install -r "$APK"
   if [ $DRY = 1 ]; then GOT="$VERSION (dry run)"; else

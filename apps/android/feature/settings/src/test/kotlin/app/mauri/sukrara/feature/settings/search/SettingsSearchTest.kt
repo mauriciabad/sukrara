@@ -6,6 +6,7 @@ package app.mauri.sukrara.feature.settings.search
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
+import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -82,6 +83,22 @@ class SettingsSearchTest {
         val targets = SettingsIndex.entries.map { it.target }.toSet()
         for (p in pages) assertTrue("$p has no search entries", SearchTarget.Page(p) in targets)
         for (o in OtherPage.entries) assertTrue("$o has no search entry", SearchTarget.Other(o) in targets)
+    }
+
+    /** The Google Play build (no root features, no update check) and a phone without pens find none of those rows. */
+    @Test
+    fun rowsOfMissingFeaturesAreNotFound() {
+        val titles = { needs: Set<RowNeeds> -> SettingsIndex.available(needs).map { it.title }.toSet() }
+        val play = titles(emptySet())
+        val full = titles(RowNeeds.entries.toSet())
+        val root = setOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon)
+        for (t in root + R.string.st_update_check_again + R.string.st_pens_title) {
+            assertFalse(t in play)
+            assertTrue(t in full)
+        }
+        // both builds link the privacy policy and keep the status bar's own rows
+        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_chip)) assertTrue(t in play && t in full)
+        assertEquals(SettingsIndex.entries, SettingsIndex.available(RowNeeds.entries.toSet()))
     }
 
     /** The index's texts read as the pages show them: no format arguments left in (en and es). */

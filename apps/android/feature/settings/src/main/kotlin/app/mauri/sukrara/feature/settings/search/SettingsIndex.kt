@@ -18,17 +18,21 @@ sealed interface SearchTarget {
     data class Other(val page: OtherPage) : SearchTarget
 }
 
+/** What a row needs besides the page: a phone that reads pens, or a build with root features / the update check. */
+enum class RowNeeds { Pens, Root, UpdateCheck }
+
 /**
  * One row the search finds: its [title] and [summary] as the page shows them (string resources, no format
- * arguments), the [page] it is on (the breadcrumb) and where tapping it leads. [pensOnly] rows exist only on a phone
- * that reads insulin pens.
+ * arguments), the [page] it is on (the breadcrumb) and where tapping it leads. A row with [needs] exists only where
+ * that is there: [RowNeeds.Pens] on a phone that reads insulin pens, [RowNeeds.Root] and [RowNeeds.UpdateCheck] in the
+ * full build (the Google Play build has neither).
  */
 data class SearchEntry(
     @StringRes val title: Int,
     @StringRes val page: Int,
     val target: SearchTarget,
     @StringRes val summary: Int? = null,
-    val pensOnly: Boolean = false,
+    val needs: RowNeeds? = null,
 )
 
 /**
@@ -62,19 +66,19 @@ object SettingsIndex {
     private fun page(
         route: SettingsRoute,
         vararg rows: Pair<Int, Int?>,
-        pensOnly: Boolean = false,
+        needs: RowNeeds? = null,
     ): List<SearchEntry> {
         val title = checkNotNull(pageTitle(route)) { "$route has no page title" }
         val target = SearchTarget.Page(route)
-        return rows.map { (t, s) -> SearchEntry(t, title, target, s, pensOnly) }
+        return rows.map { (t, s) -> SearchEntry(t, title, target, s, needs) }
     }
 
     private fun overview(
         title: Int,
         summary: Int?,
         target: SearchTarget,
-        pensOnly: Boolean = false,
-    ) = SearchEntry(title, R.string.st_settings_title, target, summary, pensOnly)
+        needs: RowNeeds? = null,
+    ) = SearchEntry(title, R.string.st_settings_title, target, summary, needs)
 
     private val kindNames =
         mapOf(
@@ -87,6 +91,9 @@ object SettingsIndex {
             AlertKind.RISING_FAST to R.string.st_kind_rising_fast,
             AlertKind.NO_DATA to R.string.st_kind_no_data,
         )
+
+    /** The rows a phone and build with [available] show (a row that needs something else isn't on its page). */
+    fun available(available: Set<RowNeeds>): List<SearchEntry> = entries.filter { it.needs == null || it.needs in available }
 
     val entries: List<SearchEntry> =
         buildList {
@@ -101,7 +108,7 @@ object SettingsIndex {
             add(overview(R.string.st_sensorend_title, R.string.st_overview_sensorend, SearchTarget.Page(SettingsRoute.SensorEnd)))
             add(overview(R.string.st_sharing, R.string.st_sharing_summary, SearchTarget.Other(OtherPage.Sharing)))
             add(overview(R.string.st_apps, R.string.st_apps_summary, SearchTarget.Other(OtherPage.Apps)))
-            add(overview(R.string.st_pens_title, R.string.st_overview_pens, SearchTarget.Page(SettingsRoute.Pens), pensOnly = true))
+            add(overview(R.string.st_pens_title, R.string.st_overview_pens, SearchTarget.Page(SettingsRoute.Pens), RowNeeds.Pens))
             add(overview(R.string.st_backup_title, null, SearchTarget.Other(OtherPage.Backup)))
             add(overview(R.string.st_export_title, R.string.st_export_summary, SearchTarget.Other(OtherPage.Export)))
             add(overview(R.string.st_adv_title, R.string.st_adv_overview_summary, SearchTarget.Page(SettingsRoute.Advanced)))
@@ -210,7 +217,7 @@ object SettingsIndex {
                     R.string.st_pens_match_units to null,
                     R.string.st_pens_match_share to null,
                     R.string.st_pens_reset to R.string.st_pens_reset_summary,
-                    pensOnly = true,
+                    needs = RowNeeds.Pens,
                 ),
             )
             addAll(page(SettingsRoute.Reliability, R.string.st_reliability_title to R.string.st_reliability_ready))
@@ -219,10 +226,16 @@ object SettingsIndex {
                     SettingsRoute.StatusBar,
                     R.string.st_statusbar_chip to R.string.st_statusbar_chip_summary,
                     R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary,
+                ),
+            )
+            addAll(
+                page(
+                    SettingsRoute.StatusBar,
                     R.string.st_root_value to null,
                     R.string.st_root_colour to null,
                     R.string.st_root_placement to null,
                     R.string.st_root_hide_icon to R.string.st_root_hide_icon_summary,
+                    needs = RowNeeds.Root,
                 ),
             )
             addAll(
@@ -245,9 +258,15 @@ object SettingsIndex {
                 page(
                     SettingsRoute.About,
                     R.string.st_about_version to null,
-                    R.string.st_update_check_again to null,
+                ),
+            )
+            addAll(page(SettingsRoute.About, R.string.st_update_check_again to null, needs = RowNeeds.UpdateCheck))
+            addAll(
+                page(
+                    SettingsRoute.About,
                     R.string.st_report_problem to R.string.st_report_problem_summary,
                     R.string.st_source_code to R.string.st_license,
+                    R.string.st_privacy to R.string.st_privacy_summary,
                 ),
             )
             addAll(page(SettingsRoute.ThresholdReview, R.string.st_review_confirm to null))

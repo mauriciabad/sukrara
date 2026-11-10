@@ -98,14 +98,15 @@ object SettingsSearch {
 /**
  * The search field at the top of the settings overview, with its results below it: "Page › row" rows that open the
  * page ([onOpen]) or another feature's page ([onOpenOther]). [onActiveChange] tells the overview to hide its rows
- * while a query is typed. Exits: the clear button, Back (clears the query first), opening a result.
+ * while a query is typed. Exits: the clear button, Back (clears the query first), opening a result. Only rows whose
+ * [RowNeeds] are in [available] are found (the pages show the others only there too).
  */
 @Composable
 fun SettingsSearchBar(
     onOpen: (SettingsRoute) -> Unit,
     onOpenOther: (OtherPage) -> Unit,
     modifier: Modifier = Modifier,
-    pens: Boolean = false,
+    available: Set<RowNeeds> = emptySet(),
     onActiveChange: (Boolean) -> Unit = {},
 ) {
     val res = LocalResources.current
@@ -113,8 +114,8 @@ fun SettingsSearchBar(
     val haptics = rememberHaptics()
     var query by rememberSaveable { mutableStateOf("") }
     val items =
-        remember(res, pens) {
-            SettingsIndex.entries.filter { pens || !it.pensOnly }.map { e ->
+        remember(res, available) {
+            SettingsIndex.available(available).map { e ->
                 SearchItem(res.getString(e.title), e.summary?.let(res::getString), res.getString(e.page), e.target)
             }
         }

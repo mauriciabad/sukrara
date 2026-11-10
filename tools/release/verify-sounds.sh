@@ -10,7 +10,7 @@
 # raw/<name> and that the file it points at is in the APK with the contract file's exact size (the shrinker can keep
 # the entry and replace the file with an empty stub; path shortening renames the file, so it is found via the table).
 # Needs no signing key: verify-apk.sh calls it, and it runs on an unsigned build too
-#   (cd apps/android && ./gradlew :app:assembleRelease -x verifyReleaseSigning).
+#   (cd apps/android && ./gradlew :app:assembleFullRelease -x verifyReleaseSigning).
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"

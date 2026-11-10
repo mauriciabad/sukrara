@@ -37,6 +37,9 @@ fun Project.sukraraNamespace(): String =
 /** The repo root (apps/android/../..): contracts/, VERSION, third_party/. */
 val Project.repoRoot get() = rootProject.layout.projectDirectory.dir("../..")
 
+/** `preFullReleaseBuild`, `prePlayReleaseBuild`: the first task of every release output (assemble, bundle, install). */
+val RELEASE_ROOT = Regex("pre[A-Z][A-Za-z]*ReleaseBuild")
+
 /** Shared Android settings for the application and library plugins. */
 fun Project.configureAndroid(android: CommonExtension) {
     android.apply {

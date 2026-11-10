@@ -98,6 +98,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -203,6 +204,7 @@ class AppGraph(
                     )
                 }.distinctUntilChanged(),
             sourceChanges = sourceChanges,
+            rootFeatures = Store.rootFeatures,
         )
     }
 
@@ -264,11 +266,10 @@ class AppGraph(
             readiness = alerts.readiness,
             appVersion = appVersion,
             prerelease = BuildConfig.PRERELEASE,
-            http = data.http,
-            dispatchers = dispatchers,
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
-            systemAccess = monitor.systemAccess,
+            systemAccess = monitor.root?.access,
+            releases = { Store.releases(this) },
             pensAvailable = { pens.available() },
             pens = { pens.port.takeIf { pens.available() } },
             clinicBanner =
@@ -520,7 +521,7 @@ class AppGraph(
                 sensor.source.detail
                     .map { d -> (d as? SensorStatus.Direct)?.profile?.takeUnless { it.verified }?.label }
                     .distinctUntilChanged(),
-            systemAccess = monitor.systemAccess.state,
+            systemAccess = monitor.root?.access?.state ?: emptyFlow(),
             build = BuildConfig.VERSION_CODE.toLong(),
         )
     }

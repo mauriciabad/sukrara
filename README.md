@@ -94,7 +94,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
-  now*, the log, your sharing identity), and About with an update check against this repo's releases.
+  now*, the log, your sharing identity), and About with an update check against this repo's releases and the
+  [privacy policy](https://sukrara.mauri.app/privacy).
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
   by your pen?*), with *Undo*; it asks when unsure. Settings › Insulin pens lists your pens: each pen's page (name,
@@ -188,7 +189,12 @@ watch. Upload uses a new device name per install (`Sukrara-…`), so a Nightscou
 
 ## Install
 
-Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases).
+Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases). What Sukrara keeps and what it
+sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
+
+The Google Play build is the same app and key without the root and LSPosed features (the status bar with root, the
+System UI module) and without the update check, and it asks for Android's *Alarms and reminders* permission instead
+of having it from install; the GitHub build has everything ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With
@@ -229,12 +235,12 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 |---|---|
 | Repo rules (run before committing; the git hooks run it after `tools/hooks/install.sh`) | `tools/check/run.sh` |
 | Android: one module's tests | `cd apps/android && ./gradlew :core:alerts:test` |
-| Android: debug APK | `cd apps/android && ./gradlew :app:assembleDebug` |
+| Android: debug APK (GitHub build; `assemblePlayDebug` for the Google Play build) | `cd apps/android && ./gradlew :app:assembleFullDebug` |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
-| Release builds | `tools/release/android-release.sh`, `tools/release/mac-release.sh` |
+| Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh` |
 
 Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: [CHANGELOG.md](CHANGELOG.md). The investigations, one
 report each: `docs/NN-*.md`.

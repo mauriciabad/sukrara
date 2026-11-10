@@ -11,7 +11,7 @@
     {"paths": ["apps/android/monitor/*"], "qa": ["Q5 Glucose notification", "Q8 Alerts on a device"]},
     {"paths": ["apps/android/core/alerts/*", "apps/macos/Sources/SukraraAlerts/*", "apps/macos/Sources/SukraraApp/Alerts/*", "contracts/alerts/*"], "qa": ["Q8 Alerts on a device"]},
     {"paths": ["apps/android/*/src/main/res/values*/strings.xml"], "qa": ["Q9 Translations"]},
-    {"paths": ["apps/android/*build.gradle.kts", "apps/android/*proguard-rules.pro", "apps/android/build-logic/*", "tools/release/*", "VERSION"], "qa": ["Q10 Release build"]},
+    {"paths": ["apps/android/*build.gradle.kts", "apps/android/*proguard-rules.pro", "apps/android/*consumer-rules.pro", "apps/android/build-logic/*", "apps/android/app/src/play/*", "apps/android/app/src/full/*", "tools/release/*", "VERSION"], "qa": ["Q10 Release build"]},
     {"paths": ["apps/android/feature/sensor/*"], "qa": ["Q11 Sensor reminders and countdowns", "Q12 Sensor scan"]},
     {"paths": ["apps/android/sensor/*"], "qa": ["Q12 Sensor scan"]},
     {"paths": ["apps/android/integrations/*/calendar/*"], "qa": ["Q13 Sensor end in calendar"]},

@@ -29,6 +29,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
 import app.mauri.sukrara.feature.settings.search.OtherPage
+import app.mauri.sukrara.feature.settings.search.RowNeeds
 import app.mauri.sukrara.feature.settings.search.SettingsSearchBar
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -50,13 +51,25 @@ class OverviewActions(
     val restoreClosedTips: () -> Unit = {},
     /** Settings › Insulin pens is offered (the wearer's phone with NFC). */
     val pens: Boolean = false,
+    /** This build has root features and the update check (the full build; the Google Play build has neither). */
+    val root: Boolean = false,
+    val updateCheck: Boolean = false,
     /** The sharing profile (name and picture followers see). */
     val openProfile: () -> Unit = {},
     /** Backup of the sharing identity (password manager, recovery code). */
     val openBackup: () -> Unit = {},
     /** Export data (CSV / Nightscout JSON). */
     val openExport: () -> Unit = {},
-)
+) {
+    /** The search rows this phone and build have. */
+    val rowNeeds: Set<RowNeeds>
+        get() =
+            buildSet {
+                if (pens) add(RowNeeds.Pens)
+                if (root) add(RowNeeds.Root)
+                if (updateCheck) add(RowNeeds.UpdateCheck)
+            }
+}
 
 /** The settings overview (wearer): *Share your data with your clinic* until set up, Mute all's state with Unmute, then one row per page. */
 @Composable
@@ -94,7 +107,7 @@ fun SettingsOverviewContent(
                     OtherPage.Export -> actions.openExport()
                 }
             },
-            pens = actions.pens,
+            available = actions.rowNeeds,
             onActiveChange = { searching = it },
         )
         // while searching, the results replace the rows

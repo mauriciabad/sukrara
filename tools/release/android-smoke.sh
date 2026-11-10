@@ -129,8 +129,8 @@ cleanup() {
 trap cleanup EXIT
 
 # --- 1. build + verify ----------------------------------------------------------------------------------------------
-apk="$root/apps/android/app/build/outputs/apk/release/app-release.apk"
-mapping="$root/apps/android/app/build/outputs/mapping/release/mapping.txt"
+apk="$root/apps/android/app/build/outputs/apk/full/release/app-full-release.apk"
+mapping="$root/apps/android/app/build/outputs/mapping/fullRelease/mapping.txt"
 
 start_emulator   # boots while Gradle works
 
@@ -141,11 +141,11 @@ if [ "$build" = 1 ]; then
   export SUKRARA_KEYSTORE_PASSWORD
   echo "building the release APK (log: $out/build-release.log)"
   # --no-daemon: the password must not live on in a background daemon's environment
-  (cd "$root/apps/android" && ./gradlew --no-daemon :app:assembleRelease --console=plain) > "$out/build-release.log" 2>&1 ||
-    die "assembleRelease failed (tail of $out/build-release.log):
+  (cd "$root/apps/android" && ./gradlew --no-daemon :app:assembleFullRelease --console=plain) > "$out/build-release.log" 2>&1 ||
+    die "assembleFullRelease failed (tail of $out/build-release.log):
 $(tail -25 "$out/build-release.log")"
   unset SUKRARA_KEYSTORE_PASSWORD
-  ok "assembleRelease"
+  ok "assembleFullRelease"
 fi
 "$here/verify-apk.sh" "$apk" "$mapping" || fail=1
 
