@@ -9,8 +9,9 @@
 # that signed the app, named by its SHA-1 (after a renewal two valid identities share a name), and checked by mounting
 # it and verifying the app inside. Images are made and mounted with `diskutil image` (hdiutil's attach / create /
 # detach are deprecated since macOS 27; dmgbuild still calls hdiutil itself).
-# NOTARY_PROFILE=<profile>: notarize + staple the dmg (needs a Developer ID build). Without it,
-# Gatekeeper asks on first launch (System Settings → Privacy & Security → Open Anyway).
+# NOTARY_PROFILE=<profile>: notarize + staple the dmg (needs a Developer ID build); its window then has no first-launch
+# help. Without it, Gatekeeper asks on first launch (System Settings → Privacy & Security → Open Anyway), and the window
+# says so.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 OUT=$(dirname "$HERE")/build
@@ -44,7 +45,7 @@ if [ -n "$ID" ]; then
     die "the identity that signed $APP ($ID, SHA-1 $SHA) isn't a valid code-signing identity in the keychain"
 fi
 if command -v dmgbuild >/dev/null; then
-  swift "$HERE/dmg/background.swift" "$W"
+  swift "$HERE/dmg/background.swift" "$W" ${NOTARY_PROFILE:+--notarized}
   tiffutil -cathidpicheck "$W/background.png" "$W/background@2x.png" -out "$W/background.tiff" >/dev/null
   dmgbuild -s "$HERE/dmg/settings.py" -D app="$APP" -D background="$W/background.tiff" Sukrara "$DMG"
 else

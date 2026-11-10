@@ -63,8 +63,9 @@ verifies it (`tools/release/verify-apk.sh` / `verify-app.sh`), installs in place
   the release scripts export it from the Keychain item.
   Its public SHA-256 is `tools/release/android-cert.sha256`. Backup procedure: [docs/20](20-publishing.md#the-android-release-key).
   Debug builds use `~/.android/debug.keystore` (`tools/release/android-debug-cert.sha256`, also in assetlinks).
-- **Mac**: the Apple Development identity of team `QWUV9H4A3G` (no notarization yet: `tools/release/mac-release.sh`
-  switches to Developer ID and notarization by itself once the owner's credentials exist, docs/20-publishing.md);
+- **Mac**: the *Developer ID Application* identity of team `QWUV9H4A3G` with the Developer ID provisioning profiles in
+  `~/.apple-dev/profiles`; `tools/release/mac-release.sh` notarizes and staples the app and the dmg with the notarytool
+  keychain profile `sukrara` (since 0.12.0; docs/20-publishing.md › Mac release: Developer ID and notarization).
   App Group `QWUV9H4A3G.app.mauri.sukrara`.
 
 ## Strings (Android, English + Spain Spanish)

@@ -3,11 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // Draws the Sukrara installer window background (640×400 pt) at 1× and 2×:
-//   swift dmg/background.swift <out-dir>   → background.png, background@2x.png
+//   swift dmg/background.swift <out-dir> [--notarized]   → background.png, background@2x.png
+// --notarized (dmg.sh with NOTARY_PROFILE): no first-launch help, Gatekeeper opens a notarized app without asking.
 // Light on purpose: Finder draws the icon labels in black on a light window.
 import AppKit
 
-let out = CommandLine.arguments.dropFirst().first ?? "."
+let args = Array(CommandLine.arguments.dropFirst())
+let out = args.first ?? "."
+let notarized = args.contains("--notarized")
 let size = NSSize(width: 640, height: 400)
 func hex(_ s: String) -> NSColor {
     let v = Int(s.dropFirst(), radix: 16)!
@@ -45,9 +48,11 @@ func render(scale: CGFloat, to path: String) {
     head.move(to: NSPoint(x: x1, y: y)); head.line(to: NSPoint(x: x1 - 22, y: y + 15)); head.line(to: NSPoint(x: x1 - 22, y: y - 15)); head.close()
     top.setFill(); head.fill()
 
-    // First-launch help, for builds Apple hasn't notarized.
-    text("First launch: if macOS blocks Sukrara, open System Settings → Privacy & Security", y: 58, size: 11.5, weight: .regular, color: bottom.withAlphaComponent(0.7))
-    text("and click “Open Anyway”. You only do this once.", y: 40, size: 11.5, weight: .regular, color: bottom.withAlphaComponent(0.7))
+    // First-launch help, only for builds Apple hasn't notarized.
+    if !notarized {
+        text("First launch: if macOS blocks Sukrara, open System Settings → Privacy & Security", y: 58, size: 11.5, weight: .regular, color: bottom.withAlphaComponent(0.7))
+        text("and click “Open Anyway”. You only do this once.", y: 40, size: 11.5, weight: .regular, color: bottom.withAlphaComponent(0.7))
+    }
 
     NSGraphicsContext.restoreGraphicsState()
     try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: path))

@@ -224,8 +224,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Read Glucose Aloud** from any app with ⌃⇧⌘G (switch it off in Settings › General), from the menu bar value's
   right-click menu or its VoiceOver action: the same sentence, in VoiceOver's voice when VoiceOver is on.
 
-**Not included**: the LSPosed lock-screen widget, Dexcom / Aidex / SmartGuide (untested) sensors, and the pen list and
-dose review.
+**Not included**: the LSPosed lock-screen widget, carbs and insulin in Health Connect, and Nightscout upload over plain
+`http://` ([docs/FEATURES.md › Not included](docs/FEATURES.md#not-included), with the reasons).
 
 **Garmin watch:** switch on *Settings › Share with apps › xDrip+ server*; watch faces and data fields made for xDrip+
 read it through Garmin Connect. While **Juggluco** is Sukrara's source, Juggluco keeps its own server and feeds the
@@ -243,10 +243,10 @@ of having it from install; the GitHub build has everything ([docs/20-publishing.
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With
   [Obtainium](https://obtainium.imranr.dev/), turn on *Include prereleases*.
-- **Mac** (Apple Silicon, macOS 15+): download `Sukrara-<version>.dmg` and drag **Sukrara** onto **Applications**. The
-  app isn't notarized yet: the first open is stopped; click **Done**, then **System Settings → Privacy & Security →
-  Open Anyway** ([Apple: open a Mac app from an unknown developer](https://support.apple.com/guide/mac-help/mh40616/mac)).
-  Sukrara lives in the menu bar (no Dock icon). Homebrew (`mauriciabad/tap`) installs stable releases only.
+- **Mac** (Apple Silicon, macOS 15+): download `Sukrara-<version>.dmg` and drag **Sukrara** onto **Applications**.
+  It's signed with a Developer ID and notarized by Apple, so it opens like any other app. Sukrara lives in the menu
+  bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`; the cask follows every release
+  (`brew upgrade --cask sukrara`).
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
   link handler.

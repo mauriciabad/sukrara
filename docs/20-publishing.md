@@ -74,8 +74,11 @@ unverified binary. **Recommendation: publish the tap only together with the firs
 mauriciabad/tap/sukrara`. No quarantine stripping: the cask's caveats explain the one-time **Open Anyway** step, the
 same as the dmg (tested 2026-10-18 on macOS 27: brew-installed app blocked with *"Sukrara" Not Opened*, runs after the
 approval). `brew audit --cask --strict` and `brew style` pass. `.github/workflows/homebrew-tap.yml` bumps `version` +
-`sha256` in the tap on every published release; it pushes with a write **deploy key** of the tap, stored here as the
-secret `HOMEBREW_TAP_DEPLOY_KEY`. One-time setup (the repo owner):
+`sha256` in the tap on every published release (0.x prereleases included: while the version is 0.x every release is a
+prerelease, and the cask follows them like a 0.x install's update check; from 1.0.0 a prerelease is skipped); it
+pushes with a write **deploy key** of the tap, stored here as the secret `HOMEBREW_TAP_DEPLOY_KEY`. **Since 0.12.0**
+(#112) the cask installs the notarized `app.mauri.sukrara` dmg from this repo, without the *Open Anyway* caveat, and
+its `uninstall` / `zap` name `app.mauri.sukrara`. One-time setup (the repo owner):
 
 ```sh
 ssh-keygen -t ed25519 -N '' -C 'release workflow → homebrew-tap' -f /tmp/tapkey
@@ -143,8 +146,9 @@ timestamp, submits the app to notarytool (`--wait`) and staples it. `verify-app.
 the widget, the Developer ID authority, the hardened runtime, the secure timestamp, the stapled ticket and Gatekeeper's
 verdict (`spctl`: *Notarized Developer ID*). `dmg.sh` signs, notarizes and staples the dmg, and `mac-release.sh` checks
 its ticket and Gatekeeper's verdict. A rejected submission stops the release (`apps/macos/build/notary.log`; details with
-`xcrun notarytool log <submission id> --keychain-profile sukrara`). After the first notarized release: README › Install
-and docs/DEVELOPMENT.md drop *Open Anyway* / "no notarization yet", and the cask can aim at the official tap.
+`xcrun notarytool log <submission id> --keychain-profile sukrara`). 0.12.0 was the first notarized release: README ›
+Install, the site, docs/DEVELOPMENT.md, the dmg window and the cask no longer mention *Open Anyway* (the dmg window
+shows its first-launch help only for a build that isn't notarized), and the cask can aim at the official tap.
 
 **Sparkle next (prepared, not built).** The owner's part: download Sparkle 2's release archive
 (github.com/sparkle-project/Sparkle/releases), run `./bin/generate_keys` once (the EdDSA private key goes into the login
@@ -470,11 +474,11 @@ mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). A
 release with that allowlist goes up without the mapping (installs older than it list every non-APK file as a download;
 its mapping stays in `~/.android/sukrara-mappings/`); attach the mapping from the release after it on. Play builds need no
 separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
-crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never
-bumps the Homebrew cask (`homebrew-tap.yml` skips it, also when dispatched by hand) and never becomes *Latest*. **Mac
-notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on the release
-Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); until then the dmg is
-Apple Development signed and the first open needs *Open Anyway* (README › Install).
+crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never becomes *Latest*; a 0.x one
+bumps the Homebrew cask (`homebrew-tap.yml` on *published*), a 1.x+ prerelease never does (also when dispatched by
+hand). **Mac notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on
+the release Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); they do
+since 0.12.0, and a Developer ID build is never released unnotarized.
 
 ### Alternatives to Play
 
