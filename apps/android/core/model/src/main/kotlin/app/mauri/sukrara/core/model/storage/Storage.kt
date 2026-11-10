@@ -4,6 +4,7 @@
 package app.mauri.sukrara.core.model.storage
 
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -88,6 +89,9 @@ interface ReadingsRepository {
 
     /** Retention: deletes readings older than [cutoff]; returns how many. */
     suspend fun deleteBefore(cutoff: Instant): Int
+
+    /** A role change: deletes every reading from [sources] (another person's); returns how many. */
+    suspend fun deleteFrom(sources: Set<SourceId>): Int
 }
 
 /** How a treatment reached this phone and whether the wearer has it (followers write through an outbox). */

@@ -6,6 +6,7 @@ package app.mauri.sukrara.core.testing
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -116,6 +117,12 @@ class InMemoryReadingsRepository : ReadingsRepository {
     override suspend fun deleteBefore(cutoff: Instant): Int {
         val before = readings.value.size
         readings.update { all -> all.filter { it.t >= cutoff } }
+        return before - readings.value.size
+    }
+
+    override suspend fun deleteFrom(sources: Set<SourceId>): Int {
+        val before = readings.value.size
+        readings.update { all -> all.filterNot { it.source in sources } }
         return before - readings.value.size
     }
 }

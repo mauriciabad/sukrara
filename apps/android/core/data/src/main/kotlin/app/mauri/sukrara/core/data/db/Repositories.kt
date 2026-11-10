@@ -12,19 +12,38 @@ import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 
-class RoomReadingsRepository(private val dao: ReadingDao) : ReadingsRepository {
-    override fun window(from: Instant): Flow<List<Reading>> = dao.window(from.toEpochMilli()).map { rows -> rows.map { it.toReading() } }
+/**
+ * Readings in Room. Every read leaves out the [hidden] sources: `DataModule.readingsFor` passes the other role's
+ * ([SourceId.notOf]), so the history, the report, the rings, the export and every upload show only the current
+ * person's readings, even one of the previous role still on its way when the role changed.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class RoomReadingsRepository(
+    private val dao: ReadingDao,
+    private val hidden: Flow<Set<SourceId>> = flowOf(emptySet()),
+) : ReadingsRepository {
+    private val hiddenIds = hidden.map { set -> set.map { it.id } }.distinctUntilChanged()
 
-    override fun latest(): Flow<Reading?> = dao.latest().map { it?.toReading() }
+    override fun window(from: Instant): Flow<List<Reading>> =
+        hiddenIds.flatMapLatest { ids -> dao.window(from.toEpochMilli(), ids) }.map { rows -> rows.map { it.toReading() } }
+
+    override fun latest(): Flow<Reading?> = hiddenIds.flatMapLatest { ids -> dao.latest(ids) }.map { it?.toReading() }
 
     override suspend fun range(
         from: Instant,
         to: Instant,
-    ): List<Reading> = dao.range(from.toEpochMilli(), to.toEpochMilli()).map { it.toReading() }
+    ): List<Reading> = dao.range(from.toEpochMilli(), to.toEpochMilli(), hiddenIds.first()).map { it.toReading() }
+
+    override suspend fun deleteFrom(sources: Set<SourceId>): Int = if (sources.isEmpty()) 0 else dao.deleteFrom(sources.map { it.id })
 
     override suspend fun upsert(readings: List<Reading>) {
         if (readings.isNotEmpty()) dao.upsert(readings.map { it.toEntity() })

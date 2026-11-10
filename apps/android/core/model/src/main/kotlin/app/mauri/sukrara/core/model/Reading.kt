@@ -92,6 +92,28 @@ value class SourceId(val id: String) {
 
         /** The wearer's phone nearby over Bluetooth (follower). */
         val Nearby = SourceId("nearby")
+
+        /** Every source that is the followed person's feed. */
+        val Follower: Set<SourceId> = setOf(Relay, Nearby)
+
+        /** The sources whose readings are [role]'s person: the phone's own sensor, or the followed person's feed. */
+        fun of(role: Role): Set<SourceId> =
+            when (role) {
+                Role.Wearer -> Wearer
+                Role.Follower -> Follower
+            }
+
+        /**
+         * The sources of the other role: another person's readings while [role] is this phone's role (the person
+         * followed earlier, or one's own sensor while following). Never shown, exported or sent; deleted at a role
+         * change. No role yet hides nothing (setup isn't done; the role chosen next cleans up).
+         */
+        fun notOf(role: Role?): Set<SourceId> =
+            when (role) {
+                null -> emptySet()
+                Role.Wearer -> Follower
+                Role.Follower -> Wearer
+            }
     }
 }
 

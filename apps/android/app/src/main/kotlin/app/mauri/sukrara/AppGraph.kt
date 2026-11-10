@@ -133,6 +133,12 @@ class AppGraph(
     val data by lazy { DataModule(app, appVersion, dispatchers, clock) }
 
     /**
+     * The readings as the current role sees them (`DataModule.readingsFor`): another person's never reach the hub,
+     * the history, the report, the export or an upload, even right after a role change.
+     */
+    val readings by lazy { data.readingsFor(role.data.map { it.role }) }
+
+    /**
      * The phone's role, chosen in first-run setup (written with `role.update`); null = setup not done. Two
      * copies, so one damaged file (reported on home) never stops monitoring ([RoleStore]).
      */
@@ -162,7 +168,7 @@ class AppGraph(
             scope = scope,
             dispatchers = dispatchers,
             clock = clock,
-            readings = data.readings,
+            readings = readings,
             // a damaged record keeps the no-data alarm armed (from now) instead of silently disarming it
             record =
                 data.typedStore(
@@ -340,7 +346,7 @@ class AppGraph(
             // a lost pin pauses the home-network option ("another Wi-Fi") until Allow on this Wi-Fi: never a silent move
             nightscoutLan = data.typedStore("nightscout-lan", LanPin.serializer(), LanPin(), whenCorrupt = LanPin()),
             appVersion = appVersion,
-            readings = data.readings,
+            readings = readings,
             treatments = data.treatments,
             sensor =
                 combine(
@@ -397,7 +403,7 @@ class AppGraph(
         SetupModule(
             context = app,
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
-            roles = AppRoles(role),
+            roles = AppRoles(role, data.readings, data.treatments),
             hub = monitor.hub,
             sharing = EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings) { clock.now().epochSecond },
             alertSettings = AppAlertSettings(alerts.store),
@@ -612,7 +618,11 @@ class AppGraph(
             // a step that fails is logged and the next one still runs: a damaged database must not keep the hub
             // (and so the service, the notification and the alerts) from starting
             step("data") { data.ready() }
-            step("role") { role.heal() }
+            step("role") {
+                role.heal()
+                // a reading of the previous role that landed after the role change's clean-up
+                data.readings.deleteFrom(SourceId.notOf(role.data.first().role))
+            }
             step("monitor") { monitor.ready() }
             step("widgets") { widgets.start() }
             step("integrations") {
