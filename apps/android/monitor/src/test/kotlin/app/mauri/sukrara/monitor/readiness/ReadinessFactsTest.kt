@@ -43,6 +43,17 @@ class ReadinessFactsTest {
         for ((facts, item) in cases) assertEquals(facts.toString(), setOf(item), facts.readiness().missing)
     }
 
+    @Test fun aFailedAlertStepIsTheChecklistsFirstProblemWithItsReport() {
+        val r = allGood.copy(failedSteps = setOf("Notify:level", "Alarm"), notificationsEnabled = false).readiness()
+        assertEquals(AlertRequirement.AlertDelivery, r.firstProblem)
+        assertEquals(setOf(AlertRequirement.AlertDelivery, AlertRequirement.Notifications), r.missing)
+        val report = r.report("1.2.3", 37)
+        assertTrue(report, report.contains("Alarm, Notify:level") && report.contains("AlertDelivery, Notifications"))
+        assertTrue(report, report.contains("Sukrara 1.2.3 · Android API 37"))
+    }
+
+    @Test fun theStepThatWorksAgainLeavesTheChecklist() = assertTrue(allGood.copy(failedSteps = emptySet()).readiness().ready)
+
     @Test fun fullScreenOnlyMattersWhenAKindRingsLikeAnAlarm() =
         assertTrue(allGood.copy(anyAlarmKind = false, fullScreenAllowed = false).readiness().ready)
 

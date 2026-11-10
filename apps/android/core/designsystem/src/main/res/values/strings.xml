@@ -15,6 +15,9 @@
     <string name="ds_unit_min">min</string>
     <string name="ds_unit_s">s</string>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
+    <string name="ds_req_delivery">Alert delivery</string>
+    <string name="ds_req_delivery_why">Android refused the last try to show an alert, set the next alert check or save the alerts. Sukrara tries again with every reading; the report says which step failed.</string>
+    <string name="ds_copy_report">Copy report</string>
     <string name="ds_req_notifications">Notifications</string>
     <string name="ds_req_notifications_why">Without them no alert can show or sound.</string>
     <string name="ds_req_full_screen">Full-screen alerts</string>

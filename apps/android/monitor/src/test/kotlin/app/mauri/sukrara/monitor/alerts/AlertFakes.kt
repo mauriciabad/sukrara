@@ -9,7 +9,6 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Doses
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
@@ -32,7 +31,6 @@ class FakePresenter : AlertPresenter {
 
     /** Whose alert each [show] was (the wearer's name on a follower). */
     val who = mutableListOf<String?>()
-    var problems: Set<AlertDeliveryProblem> = emptySet()
 
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         slots[firing.kind.group] = firing.kind.wire
@@ -49,8 +47,6 @@ class FakePresenter : AlertPresenter {
         slots.remove(group)
         log += "clear ${group.wire}"
     }
-
-    override fun deliveryProblems(alarmKinds: Set<AlertKind>) = problems
 }
 
 class FakeAlarm : AlertAlarm {

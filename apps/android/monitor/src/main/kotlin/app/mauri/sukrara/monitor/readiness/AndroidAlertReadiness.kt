@@ -48,10 +48,11 @@ import kotlinx.coroutines.flow.stateIn
  * it, on the system broadcasts that flip an item without leaving the app (Bluetooth, Do Not Disturb, a blocked
  * channel, the exact-alarm grant).
  *
- * Items: notifications on; the full-screen intent when a kind rings like an alarm; exact alarms; the battery
- * exemption (and not "Restricted"); the alert channels in use not blocked or silenced, and Do Not Disturb not
- * silencing the alarm-level ones (a non-alarm alert in Do Not Disturb is the person's choice: "Like an alarm" is the
- * way through); Bluetooth on and allowed when [needsBluetooth].
+ * Items: the alert runtime's last steps worked ([failedSteps], the hub's alert state); notifications on; the
+ * full-screen intent when a kind rings like an alarm; exact alarms; the battery exemption (and not "Restricted"); the
+ * alert channels in use not blocked or silenced, and Do Not Disturb not silencing the alarm-level ones (a non-alarm
+ * alert in Do Not Disturb is the person's choice: "Like an alarm" is the way through); Bluetooth on and allowed when
+ * [needsBluetooth].
  */
 class AndroidAlertReadiness(
     context: Context,
@@ -59,16 +60,17 @@ class AndroidAlertReadiness(
     dispatchers: DispatcherProvider,
     private val alertSettings: Flow<AlertSettings>,
     private val needsBluetooth: Flow<Boolean>,
+    private val failedSteps: Flow<Set<String>>,
 ) : AlertReadinessSource {
     private val ctx = context.applicationContext
     private val nm = ctx.getSystemService(NotificationManager::class.java)
     private val refreshes = MutableStateFlow(0L)
 
-    @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false)
+    @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false, failedSteps = emptySet())
 
     override val readiness: StateFlow<AlertReadiness> by lazy {
-        combine(alertSettings, needsBluetooth, refreshes, systemChanges()) { settings, bluetooth, _, _ ->
-            last = Inputs(settings, bluetooth)
+        combine(alertSettings, needsBluetooth, failedSteps, refreshes, systemChanges()) { settings, bluetooth, failed, _, _ ->
+            last = Inputs(settings, bluetooth, failed)
             facts(last).readiness()
         }.flowOn(dispatchers.default)
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), facts(last).readiness())
@@ -82,6 +84,11 @@ class AndroidAlertReadiness(
         val pkg = "package:${ctx.packageName}".toUri()
         val intent =
             when (requirement) {
+                // its way out is Copy report (on the screens); here, the app's page (storage, battery, notifications)
+                AlertRequirement.AlertDelivery -> {
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
+                }
+
                 AlertRequirement.Notifications -> {
                     appNotificationSettings()
                 }
@@ -125,6 +132,7 @@ class AndroidAlertReadiness(
     private data class Inputs(
         val settings: AlertSettings,
         val needsBluetooth: Boolean,
+        val failedSteps: Set<String>,
     )
 
     private fun facts(inputs: Inputs): ReadinessFacts {
@@ -133,6 +141,7 @@ class AndroidAlertReadiness(
             listOf(Channels.Group.ALERTS, Channels.Group.ALERTS_ALARM).any { nm.getNotificationChannelGroup(it.id)?.isBlocked == true }
         val bluetooth = ctx.getSystemService(BluetoothManager::class.java)?.adapter
         return ReadinessFacts(
+            failedSteps = inputs.failedSteps,
             notificationsEnabled = nm.areNotificationsEnabled(),
             anyAlarmKind = alarmKinds(inputs.settings).isNotEmpty(),
             fullScreenAllowed = nm.canUseFullScreenIntent(),

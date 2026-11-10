@@ -122,7 +122,7 @@ class SetupModule(
                     ownSensorLive = RestoreGate.ownSensorLive(glucose, clock.now()),
                     hasIdentity = share is OwnerShareState.Sharing || share is OwnerShareState.AnotherAppSharingAsYou,
                     alertsConfirmed = confirmed != null,
-                    alertsReady = checklist.ready,
+                    alertsReady = checklist.setupReady,
                 )
             SetupMachine.finishItems(record, facts)
         }

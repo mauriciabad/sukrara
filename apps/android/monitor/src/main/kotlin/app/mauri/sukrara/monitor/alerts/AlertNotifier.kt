@@ -15,7 +15,6 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
@@ -106,14 +105,6 @@ class AlertNotifier(private val ctx: Context) : AlertPresenter {
     }
 
     override fun clear(group: AlertGroup) = NotificationGroups.cancel(ctx, idOf(group), NotificationGroups.Group.ALERTS)
-
-    override fun deliveryProblems(alarmKinds: Set<AlertKind>): Set<AlertDeliveryProblem> =
-        buildSet {
-            if (!nm.areNotificationsEnabled()) add(AlertDeliveryProblem.NotificationsOff)
-            val blocked = AlertChannels.ALL.any { id -> nm.getNotificationChannel(id)?.importance == NotificationManager.IMPORTANCE_NONE }
-            if (blocked) add(AlertDeliveryProblem.AlertChannelBlocked)
-            if (alarmKinds.isNotEmpty() && !nm.canUseFullScreenIntent()) add(AlertDeliveryProblem.FullScreenDenied)
-        }
 
     @Volatile private var channelsReady = false
 

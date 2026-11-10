@@ -52,6 +52,7 @@
 
     <string name="banner_alerts_title">Puede que las alertas no suenen</string>
     <string name="banner_alerts_action">Arreglar</string>
+    <string name="req_delivery">Android rechazó un paso de las alertas. Sukrara lo vuelve a intentar con cada lectura.</string>
     <string name="req_notifications">Las notificaciones de Sukrara están desactivadas.</string>
     <string name="req_full_screen">Sukrara no puede mostrar alarmas sobre la pantalla de bloqueo.</string>
     <string name="req_exact_alarm">Sukrara no puede programar alarmas exactas.</string>

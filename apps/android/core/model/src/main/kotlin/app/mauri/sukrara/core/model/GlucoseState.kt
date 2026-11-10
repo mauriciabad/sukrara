@@ -134,8 +134,12 @@ data class AlertUiState(
     val treatmentQuiet: TreatmentQuiet = TreatmentQuiet(),
     val mutedUntil: Instant? = null,
     val quiet: List<AlertQuietSide> = emptyList(),
-    /** What stops alerts from ringing as set up right now (home shows a banner with the fix). */
-    val deliveryProblems: Set<AlertDeliveryProblem> = emptySet(),
+    /**
+     * The runtime's steps that failed on their last attempt (`Notify:level`, `Alarm`, `Save`…; the diagnostic log has
+     * the exception class), each until it works again. The alert checklist ([AlertReadiness]) reads it: home shows it
+     * as [AlertRequirement.AlertDelivery].
+     */
+    val failedSteps: Set<String> = emptySet(),
     /** What alerted and what the person did lately on this phone, newest first (Settings › Alerts › Lately). */
     val lately: List<AlertNote> = emptyList(),
 ) {
@@ -183,24 +187,6 @@ data class AlertNote(
 )
 
 enum class AlertNoteType { Fired, Cleared, Muted, Unmuted, RemindLess, RemindAsUsual, Back, AllMuted, AllUnmuted }
-
-/** A reason an alert would not reach the person as set up; each has a fix in the reliability row. */
-enum class AlertDeliveryProblem {
-    /** The app's notifications are off. */
-    NotificationsOff,
-
-    /** An alert channel is blocked in the system settings. */
-    AlertChannelBlocked,
-
-    /** Alarm-level alerts can't open over the lock screen (full-screen intent not allowed). */
-    FullScreenDenied,
-
-    /**
-     * The last attempt to post an alert, arm the alert check, tell the followers or save the alert state failed (the
-     * diagnostic log names the step). Goes when that step next works; "Copy report" carries the details.
-     */
-    AlertStepFailed,
-}
 
 /** Why a side is quiet (contracts/alerts/SPEC.md §2 "States and exits"). */
 enum class AlertQuietReason {

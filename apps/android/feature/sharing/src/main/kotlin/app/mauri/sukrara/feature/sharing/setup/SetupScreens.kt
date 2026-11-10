@@ -418,7 +418,7 @@ private fun ColumnScope.PermissionsStep(
     // runtime permissions are asked in context, the first time; after a "don't ask again" the settings page opens
     val asked = remember { mutableStateOf(setOf<AlertRequirement>()) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    val items = AlertRequirement.entries.filter { it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower }
+    val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower) }
     for (r in items) {
         val ok = r !in u.readiness.missing
         ChecklistRow(r, ok) {

@@ -93,7 +93,16 @@ class AlertsModule(
      * THE alert checklist (home's reliability row, the settings Reliability page, the setup permission step): one
      * instance so every surface agrees.
      */
-    val readiness: AlertReadinessSource = AndroidAlertReadiness(ctx, scope, dispatchers, store.settings, needsBluetooth)
+    val readiness: AlertReadinessSource =
+        AndroidAlertReadiness(
+            ctx,
+            scope,
+            dispatchers,
+            store.settings,
+            needsBluetooth,
+            // the runtime publishes its failed steps to the hub; the checklist is the one place that answers for them
+            hub.state.map { it.alerts.failedSteps }.distinctUntilChanged(),
+        )
 
     private val sensorEndSettings: Flow<SensorEndSettings> =
         combine(

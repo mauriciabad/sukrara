@@ -23,7 +23,6 @@ import app.mauri.sukrara.alerts.Rules
 import app.mauri.sukrara.alerts.SensorWindow
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.AlertControls
-import app.mauri.sukrara.core.model.AlertDeliveryProblem
 import app.mauri.sukrara.core.model.AlertQuietReason
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertUiState
@@ -157,7 +156,7 @@ class AlertRuntime(
         }
     }
 
-    /** Publishes the alert state again (home on resume: delivery problems the person may just have fixed). */
+    /** Publishes the alert state now, without an input. */
     suspend fun refreshUi() {
         mutex.withLock { publishUi(now()) }
     }
@@ -329,7 +328,7 @@ class AlertRuntime(
      * Applies [effects], then saves and publishes. Every step is attempted on its own: a notification Android refused
      * never costs the exact alarm (the only thing that re-checks with the service dead), the saved state or the other
      * notifications. The alarm goes first for the same reason. A failed step is logged and listed in the hub's alert
-     * state ([AlertDeliveryProblem.AlertStepFailed]) until it works again; a refused alert is posted again, with its
+     * state ([AlertUiState.failedSteps]: the checklist's AlertDelivery) until it works again; a refused alert is posted again, with its
      * sound, on the next input.
      */
     private suspend fun applyAndSave(
@@ -480,8 +479,6 @@ class AlertRuntime(
     private fun publishUi(now: Long) {
         val m = machine
         val ui = m?.uiState(now) ?: EngineUiState()
-        val settings = m?.settings ?: own
-        val alarmKinds = AlertKind.entries.filter { settings.on && settings.rule(it).on && settings.rule(it).alarm }.toSet()
         publish(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
@@ -506,12 +503,7 @@ class AlertRuntime(
                             canRemindLess = q.canRelax,
                         )
                     },
-                deliveryProblems =
-                    when {
-                        m == null -> emptySet()
-                        failed.isEmpty() -> presenter.deliveryProblems(alarmKinds)
-                        else -> presenter.deliveryProblems(alarmKinds) + AlertDeliveryProblem.AlertStepFailed
-                    },
+                failedSteps = if (m == null) emptySet() else failed.toSet(),
                 lately = notes.asReversed().mapNotNull { it.note() },
             ),
         )

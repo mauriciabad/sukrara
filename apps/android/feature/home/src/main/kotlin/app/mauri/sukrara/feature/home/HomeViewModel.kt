@@ -168,6 +168,8 @@ data class HomeUiState(
     val reason: NoDataReason?,
     val banner: BannerKind?,
     val firstProblem: AlertRequirement?,
+    /** The whole alert checklist (its failed steps for *Copy report*); null until it is known. */
+    val readiness: AlertReadiness? = null,
     val nextSetupStep: String?,
     val dataProblems: List<DataProblem>,
     /** The last 24 h, newest first (deleted ones are gone; the undo brings them back). */
@@ -264,6 +266,7 @@ class HomeViewModel(
                 reason = NoDataReason.of(glucose, look),
                 banner = HomeBanners.pick(readiness, env, glucose.service is ServiceState.Stopped, problems.size, memory, now),
                 firstProblem = readiness?.firstProblem,
+                readiness = readiness,
                 nextSetupStep = env.nextSetupStep,
                 systemUiUpdated = env.systemUiRestart == ModuleState.Update,
                 widgetPinnable = env.widgetPinnable,

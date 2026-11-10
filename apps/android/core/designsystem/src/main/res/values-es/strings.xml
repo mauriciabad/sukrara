@@ -14,6 +14,9 @@
     <string name="ds_unit_min">min</string>
     <string name="ds_unit_s">s</string>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
+    <string name="ds_req_delivery">Entrega de alertas</string>
+    <string name="ds_req_delivery_why">Android rechazó el último intento de mostrar una alerta, programar la próxima comprobación o guardar las alertas. Sukrara lo vuelve a intentar con cada lectura; el informe dice qué paso falló.</string>
+    <string name="ds_copy_report">Copiar informe</string>
     <string name="ds_req_notifications">Notificaciones</string>
     <string name="ds_req_notifications_why">Sin ellas ninguna alerta puede mostrarse ni sonar.</string>
     <string name="ds_req_full_screen">Alertas a pantalla completa</string>

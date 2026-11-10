@@ -7,10 +7,13 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 
 /**
- * What the phone answered for each item of the alert checklist, read by [AndroidAlertReadiness]. Kept apart from the
- * reads so the rule ([readiness]) is a plain function with JVM tests.
+ * What the phone (and the alert runtime) answered for each item of the alert checklist, read by
+ * [AndroidAlertReadiness]. Kept apart from the reads so THE rule ([readiness]: may an alert not reach the person?) is a
+ * plain function with JVM tests.
  */
 data class ReadinessFacts(
+    /** The alert runtime's steps that failed on their last attempt (`AlertUiState.failedSteps`). */
+    val failedSteps: Set<String> = emptySet(),
     val notificationsEnabled: Boolean,
     /** At least one alert kind rings "like an alarm" (only then the full-screen intent matters). */
     val anyAlarmKind: Boolean,
@@ -31,6 +34,7 @@ data class ReadinessFacts(
     fun readiness(): AlertReadiness =
         AlertReadiness(
             buildSet {
+                if (failedSteps.isNotEmpty()) add(AlertRequirement.AlertDelivery)
                 if (!notificationsEnabled) add(AlertRequirement.Notifications)
                 if (anyAlarmKind && !fullScreenAllowed) add(AlertRequirement.FullScreenIntent)
                 if (!exactAlarmAllowed) add(AlertRequirement.ExactAlarm)
@@ -38,5 +42,6 @@ data class ReadinessFacts(
                 if (alertChannelSilenced || dndSilencesAlarms) add(AlertRequirement.AlertChannel)
                 if (needsBluetooth && !(bluetoothOn && bluetoothPermitted)) add(AlertRequirement.Bluetooth)
             },
+            failedSteps,
         )
 }

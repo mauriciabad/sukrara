@@ -55,6 +55,7 @@
     <!-- Banners -->
     <string name="banner_alerts_title">Alerts may not ring</string>
     <string name="banner_alerts_action">Fix</string>
+    <string name="req_delivery">Android refused an alert step. Sukrara tries again with every reading.</string>
     <string name="req_notifications">Notifications are off for Sukrara.</string>
     <string name="req_full_screen">Sukrara can\'t show alarms over the lock screen.</string>
     <string name="req_exact_alarm">Sukrara can\'t schedule exact alarms.</string>

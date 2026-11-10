@@ -35,7 +35,8 @@ applies them.
   actions (`AlertControls` in `:core:model`, also the notification buttons). Per input: machine → effects applied
   (`AlertAlarm` first, then `AlertPresenter`, `AlertEventSink`) → `AlertRecord` saved (typed store) → `AlertUiState`
   published to the hub. Every step is attempted on its own: a failure is logged to `DiagLog` (step + exception class)
-  and listed as `AlertDeliveryProblem.AlertStepFailed` until that step works again. Role `null` is ignored (setup / hub
+  and listed in `AlertUiState.failedSteps` until that step works again; the alert checklist (`AndroidAlertReadiness`, THE
+  answer to "may an alert not reach the person?") reads it as `AlertRequirement.AlertDelivery`. Role `null` is ignored (setup / hub
   loading); `monitoringStartedAt == null` switches `no_data` off.
 - Alarms: one `AndroidAlarms` (`monitor/service/`) sets every alarm (health check, freshness step, alert check, sensor
   end) through `AlarmPolicy`: protective checks `setExactAndAllowWhileIdle` (72 / h Doze quota with `USE_EXACT_ALARM`;

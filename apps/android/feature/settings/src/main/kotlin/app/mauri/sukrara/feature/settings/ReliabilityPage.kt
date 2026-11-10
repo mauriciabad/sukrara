@@ -19,11 +19,14 @@ import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.nameRes
+import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.rows.whyRes
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * Alert reliability: the same checklist as home's row and the setup step, every item with its state
- * and, while missing, a Fix button that opens the system screen for it. The page refreshes when it comes back.
+ * and, while missing, a Fix button that opens the system screen for it (a failed alert step: *Copy report*). The page
+ * refreshes when it comes back.
  */
 @Composable
 internal fun ReliabilityContent(
@@ -35,8 +38,10 @@ internal fun ReliabilityContent(
         if (readiness.ready) {
             StateStrip(stringResource(R.string.st_reliability_ready), emptyList())
         }
+        val copyReport = rememberCopyAlertReport(readiness)
         SettingsGroup {
-            for (requirement in AlertRequirement.entries) {
+            // a failed alert step is a state of the moment, not a setting: listed only while it lasts
+            for (requirement in AlertRequirement.entries.filter { it.inSetup || it in readiness.missing }) {
                 val missing = requirement in readiness.missing
                 val state = stringResource(if (missing) R.string.st_req_missing else R.string.st_req_ok)
                 val titleText = stringResource(requirement.nameRes())
@@ -54,7 +59,9 @@ internal fun ReliabilityContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (missing) {
+                    if (missing && requirement == AlertRequirement.AlertDelivery) {
+                        FilledTonalButton(onClick = copyReport) { Text(stringResource(DsR.string.ds_copy_report)) }
+                    } else if (missing) {
                         val fixLabel = stringResource(R.string.st_fix_item, titleText)
                         FilledTonalButton(
                             onClick = { onFix(requirement) },
