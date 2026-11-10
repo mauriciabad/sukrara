@@ -1441,7 +1441,7 @@ digit by digit).
   it" link opens this page. Turning it off stops writing; records stay in Health Connect. A follower's page says nothing
   is written on a follower's phone; a phone without Health Connect says so (both still show the switch to turn it off
   when it was left on). A history copy cut short (rate limit, process stop) is finished on the next passes; a new
-  reading never cancels a running pass.
+  reading never cancels a running pass. Glucose only: carbs and insulin aren't written (see *Not included*).
 
 **States and exits**: *xDrip+ server off* (default) → switch on. *On / listening* → switch off stops it at once.
 *Port in use* → turn the other app's server off, then the switch off and on. *Left to Juggluco* → change the source in
@@ -1725,6 +1725,12 @@ home-network address* → fix or clear the address, switch off. *macOS doesn't l
   Nightscout API, Health Connect and Tidepool name untested families.
 - Sensors: the Libre 3 experiment preferences (minimal subscription set, connection priority, screen-off skip). Reason: no hardware to test them, the owner uses a Libre 3.
 - The LSPosed lock-screen widget (#66; [Lock screen widget](#lock-screen-widget)). Reason: not ported from the PoC yet; the root status bar and the LSPosed status-bar text are.
+- Health Connect: carbs and insulin (#124; [Share with apps on this phone](#share-with-apps-on-this-phone-investigation-22)).
+  Only blood glucose is written. Reason: Health Connect has no insulin or dose record, and carbs without insulin are
+  half the picture for any app that reads them; nutrition apps would show each 15 g hypo treatment as a snack and
+  count carbs twice for people who also log food there; neither Juggluco nor xDrip+ writes carbs there; and it would
+  add a data type to the Play health declaration. Revisit (as its own opt-in row) if someone asks or once Health
+  Connect has an insulin record.
 - Nightscout upload over plain `http://` on the home network (#93; [Nightscout upload](#nightscout-upload-docs25)).
   Reason: the token or API secret goes with every request, so anyone on that Wi-Fi could capture it, and a private
   address is a stranger's machine on a café or hotel Wi-Fi; a free certificate (Let's Encrypt, Tailscale) solves it.
