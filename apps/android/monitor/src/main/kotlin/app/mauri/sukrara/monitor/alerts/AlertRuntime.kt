@@ -104,6 +104,8 @@ class AlertRuntime(
     /** Which alert each group's notification shows (from the effects), and the muted cards up. */
     private val firing = HashMap<AlertGroup, Firing>()
 
+    /** The kind each group last rang (shown or not since): a level change inside one alert gets its history line. */
+    private val lastFired = HashMap<AlertGroup, AlertKind>()
     private val mutedCards = HashMap<AlertGroup, Pair<Side, Long>>()
     private val shownRelax = HashMap<AlertGroup, Int>()
 
@@ -155,6 +157,7 @@ class AlertRuntime(
             started = true
             (firing.keys + mutedCards.keys).forEach { g -> attempt(Step.Notify, g) { presenter.clear(g) } }
             firing.clear()
+            lastFired.clear()
             mutedCards.clear()
             shownRelax.clear()
             machine = null
@@ -326,6 +329,7 @@ class AlertRuntime(
         // a new role: the old role's notifications go; the machine drops a saved state of another role
         firing.keys.toList().forEach { g -> attempt(Step.Notify, g) { presenter.clear(g) } }
         firing.clear()
+        lastFired.clear()
         mutedCards.clear()
         unposted.clear()
         if (alertRole == null) {
@@ -369,8 +373,9 @@ class AlertRuntime(
         input: AlertInput? = null,
     ): List<AlertEffect> {
         val muteAll = m.uiState(now).muteAllUntil
-        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll))
+        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll, lastFired))
         muteAllSeen = muteAll
+        effects.filterIsInstance<AlertEffect.Fire>().forEach { lastFired[it.firing.kind.group] = it.firing.kind }
         effects.filterIsInstance<AlertEffect.Schedule>().forEach { e -> attempt(Step.Alarm) { alarm.set(e.at) } }
         val firedNow = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
         retryUnposted(m, now, skip = firedNow)

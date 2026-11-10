@@ -84,6 +84,7 @@
     <string name="st_alarm_summary">Rings at alarm volume and opens over the lock screen</string>
     <string name="st_sound">Sound</string>
     <string name="st_sound_same">Same as the pack (%1$s)</string>
+    <string name="st_sound_chosen_in_android">Android plays the sound chosen in its settings</string>
     <string name="st_kind_footer_level">An episode alerts once and then reminds at the interval above until the value is back in range.</string>
     <string name="st_kind_footer_other">Reminds at the interval above while it lasts.</string>
     <string name="st_alert_anyway">Alert me anyway</string>

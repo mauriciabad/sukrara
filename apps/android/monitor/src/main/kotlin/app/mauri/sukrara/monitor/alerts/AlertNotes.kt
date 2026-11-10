@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor.alerts
 
 import app.mauri.sukrara.alerts.AlertEffect
+import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertInput
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.Rules
@@ -35,9 +36,10 @@ data class SavedNote(
 
 /**
  * The alerts' recent history (Settings › Alerts › Lately): what one input to the rules and its effects add, newest
- * last, kept to [MAX] lines. Only the first ring of an alert counts (not its repeats); a silent re-post after a
- * restart is its own *Resumed* line. [muteAllBefore] / [muteAllAfter] = when Mute all ends (0 = off), as last seen
- * and after this input: a timed one that ran out by itself is *Alerts back on* (before what it lets ring).
+ * last, kept to [MAX] lines. Only the first ring of an alert counts (not its repeats), and a change of level inside
+ * it (low → very low: a different kind than [lastFired] says its group last rang); a silent re-post after a restart is
+ * its own *Resumed* line. [muteAllBefore] / [muteAllAfter] = when Mute all ends (0 = off), as last seen and after this
+ * input: a timed one that ran out by itself is *Alerts back on* (before what it lets ring).
  */
 object AlertNotes {
     const val MAX = 20
@@ -48,6 +50,7 @@ object AlertNotes {
         now: Long,
         muteAllBefore: Long = 0,
         muteAllAfter: Long = 0,
+        lastFired: Map<AlertGroup, AlertKind> = emptyMap(),
     ): List<AlertNote> {
         val at = Instant.ofEpochSecond(now)
         val remote = input is AlertInput.Remote
@@ -88,13 +91,16 @@ object AlertNotes {
         if (endedByItself && input !is AlertInput.MuteAll && input !is AlertInput.UnmuteAll) {
             out += AlertNote(at, AlertNoteType.AllBack)
         }
+        val rang = lastFired.toMutableMap()
         for (e in effects) {
             when (e) {
                 is AlertEffect.Fire -> {
+                    val k = e.firing.kind
+                    val before = rang.put(k.group, k)
                     if (e.silent) {
-                        out += AlertNote(at, AlertNoteType.Resumed, e.firing.kind.wire, remote = remote)
-                    } else if (e.firing.n <= 1) {
-                        out += AlertNote(at, AlertNoteType.Fired, e.firing.kind.wire, e.firing.reading?.mgdl, remote = remote)
+                        out += AlertNote(at, AlertNoteType.Resumed, k.wire, remote = remote)
+                    } else if (e.firing.n <= 1 || (before != null && before != k)) {
+                        out += AlertNote(at, AlertNoteType.Fired, k.wire, e.firing.reading?.mgdl, remote = remote)
                     }
                 }
 
