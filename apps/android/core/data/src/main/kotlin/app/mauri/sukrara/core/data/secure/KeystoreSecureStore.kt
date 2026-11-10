@@ -21,11 +21,12 @@ object SecretName {
     const val IDENTITY_OWNER = "identity.owner"
     const val IDENTITY_FOLLOWER = "identity.follower"
     const val NIGHTSCOUT = "nightscout"
+    const val NIGHTSCOUT_API = "nightscout-api"
     const val TIDEPOOL = "tidepool"
     const val LIBREVIEW = "libreview"
     const val SENSOR = "sensor"
 
-    val ALL = setOf(IDENTITY_OWNER, IDENTITY_FOLLOWER, NIGHTSCOUT, TIDEPOOL, LIBREVIEW, SENSOR)
+    val ALL = setOf(IDENTITY_OWNER, IDENTITY_FOLLOWER, NIGHTSCOUT, NIGHTSCOUT_API, TIDEPOOL, LIBREVIEW, SENSOR)
 
     fun alias(name: String) = "sukrara.$name"
 }

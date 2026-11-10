@@ -22,6 +22,7 @@
     {"paths": ["apps/android/integrations/*/upload/*"], "qa": ["Q16 Tidepool upload", "Q17 Nightscout upload"]},
     {"paths": ["contracts/settings/*", "apps/android/feature/settings/*", "apps/android/core/designsystem/*NumberDialog*", "apps/macos/Sources/SukraraApp/Settings/*"], "qa": ["Q18 Settings: numbers, Settings from, ring order"]},
     {"paths": ["apps/android/pen/*", "apps/android/feature/treatments/*Pen*", "contracts/pens/*"], "qa": ["Q21 Insulin pens"]},
+    {"paths": ["apps/android/share/*", "apps/android/feature/sharing/*", "apps/android/app/src/debug/*", "apps/android/app/src/main/kotlin/app/mauri/sukrara/LaunchPlan.kt", "tools/relay/*"], "qa": ["Q22 Follower over a local relay"]},
     {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]}
   ]
 }

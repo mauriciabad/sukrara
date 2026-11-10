@@ -13,6 +13,7 @@ class ReleaseVariantTest {
     @Test fun releaseHasNoTestSource() {
         val release = File(src, "release/kotlin/app/mauri/sukrara/BuildVariant.kt").readText()
         check("wearerSource(graph: AppGraph): ReadingSource? = null" in release) { "release BuildVariant must return no source" }
+        check("relayChoice(context: Context): String? = null" in release) { "release BuildVariant must have no relay choice" }
         check(
             "Synthetic" !in release && "debug" !in release.substringAfter("internal object"),
         ) { "release BuildVariant names a test source" }

@@ -62,8 +62,10 @@ class RelayPool(
     private val nowSeconds: () -> Long,
     private val backoff: Backoff = Backoff(),
     private val jitter: () -> Double = { 0.5 + Math.random() / 2 },
+    /** Which relays [relays] become ([RelayAccess.Public]: the secure ones; the app passes its `LaunchPlan`'s). */
+    access: RelayAccess = RelayAccess.Public,
 ) : RelayTransport {
-    private val urls = Wire.secureRelays(relays).distinct()
+    private val urls = access.connectTo(relays).distinct()
     private val serial = dispatcher.limitedParallelism(1)
     private val scope = CoroutineScope(SupervisorJob() + serial)
 
@@ -324,7 +326,7 @@ class RelayPool(
             else -> ev.id
         }
 
-    private fun host(url: String) = url.removePrefix("wss://").substringBefore('/')
+    private fun host(url: String) = url.substringAfter("://").substringBefore('/')
 
     internal companion object {
         private const val KIND_AUTH = 22242

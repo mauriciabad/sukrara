@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import app.mauri.sukrara.LaunchPlan
 import app.mauri.sukrara.RoleRecord
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertReading
@@ -53,6 +54,7 @@ object DebugFakes {
             PREFIX + "PEN_TAGS" to ::penTags,
             PREFIX + "PEN_JUGGLUCO" to ::penJuggluco,
             PREFIX + "ALERTS" to ::alerts,
+            PREFIX + "RELAYS" to ::relays,
         )
 
     /** Runs [action] when it is a known fake; false otherwise. */
@@ -100,6 +102,28 @@ object DebugFakes {
             context.stopService(Intent(context, MonitoringService::class.java))
             graph.monitor.starter.start(StartReason.App)
         }
+    }
+
+    /**
+     * `RELAYS --es urls ws://10.0.2.2:7447[,…]|public|off`: where this debug build's relay connections go, for both
+     * roles (`LaunchPlan`; nothing saved = off: no relay). URLs = only those (a local test relay, tools/relay; the
+     * emulator reaches the computer's `127.0.0.1` as `10.0.2.2`), whatever relays the wearer's invite names;
+     * `public` = the public relays on purpose. Saved, then the app process ends so every relay connection is made
+     * again from it on the next start (open the app). A choice that isn't one is refused and nothing changes.
+     */
+    private fun relays(
+        context: Context,
+        intent: Intent,
+    ) {
+        val choice = intent.getStringExtra("urls")?.trim().orEmpty()
+        val access = LaunchPlan.relays(choice)
+        if (access == null) {
+            Log.w("SukraraDebug", "RELAYS: '$choice' isn't off, public or ws:// / wss:// URLs; nothing changed")
+            return
+        }
+        DebugRelays.save(context, choice)
+        Log.i("SukraraDebug", "RELAYS: $access from the next start; ending the app process now")
+        android.os.Process.killProcess(android.os.Process.myPid())
     }
 
     /**

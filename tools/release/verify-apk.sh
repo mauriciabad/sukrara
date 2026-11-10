@@ -8,7 +8,8 @@
 # - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh, not debuggable
 # - the Libre 3 native core lib/arm64-v8a/libsukrara_libre3.so is inside
 # - no debug code: the merged manifest names no DebugReceiver, and (R8 renames classes, so the dex names prove
-#   nothing) the build's R8 mapping lists no DebugReceiver / DebugFakes / Synthetic* class
+#   nothing) the build's R8 mapping lists no DebugReceiver / DebugFakes / DebugRelays / Synthetic* class
+# - cleartext only to loopback: the network security config is src/main's, not the debug one (+ 10.0.2.2, a test relay)
 # - no exported component without a permission except the launcher activity, the alert sound provider and widgets
 # - every alert sound of contracts/alerts/sounds/android survived resource shrinking (verify-sounds.sh)
 set -eu
@@ -50,8 +51,16 @@ if unzip -l "$apk" | grep -q 'lib/arm64-v8a/libsukrara_libre3.so$'; then ok "Lib
 else bad "lib/arm64-v8a/libsukrara_libre3.so missing (third_party/Juggluco not built in)"; fi
 
 manifest="$("$aapt2" dump xmltree --file AndroidManifest.xml "$apk")"
-if printf '%s\n' "$manifest" | grep -Eq 'DebugReceiver|DebugFakes|Synthetic'; then bad "the manifest registers debug components"
+if printf '%s\n' "$manifest" | grep -Eq 'DebugReceiver|DebugFakes|DebugRelays|Synthetic'; then bad "the manifest registers debug components"
 else ok "manifest has no debug components"; fi
+
+# Cleartext only to this phone's loopback: the debug build's config also allows 10.0.2.2 (a local test relay).
+nsc_file="$("$aapt2" dump resources "$apk" | grep -A1 ' xml/network_security_config$' | sed -n 's/.*(file) \([^ ]*\) type=XML.*/\1/p' | head -1)"
+nsc="$([ -n "$nsc_file" ] && "$aapt2" dump xmltree --file "$nsc_file" "$apk")"
+nsc_hosts="$(printf '%s\n' "$nsc" | sed -n "s/.*T: '\([^']*\)'.*/\1/p" | sort | tr '\n' ' ')"
+nsc_base="$(printf '%s\n' "$nsc" | grep -A1 'E: base-config' | sed -n 's/.*cleartextTrafficPermitted=\([a-z]*\).*/\1/p')"
+if [ "$nsc_base" = false ] && [ "$nsc_hosts" = "127.0.0.1 localhost " ]; then ok "cleartext only to loopback (network security config)"
+else bad "network security config: base cleartext '${nsc_base:-?}', cleartext hosts '${nsc_hosts:-none}' (want false; 127.0.0.1 localhost only)"; fi
 
 # Exported components without a permission (the merged manifest: libraries' components too). Allowed, by exact name:
 # the launcher / App Link activity, and the alert sound provider (System UI reads channel sounds from it and can hold
@@ -92,7 +101,7 @@ else
   map_id="$(sed -n 's/^# pg_map_id: //p' "$mapping" | head -1)"
   if [ -n "$map_id" ] && [ "$map_id" = "$dex_map_id" ]; then ok "mapping matches the APK (pg_map_id $map_id)"
   else bad "mapping pg_map_id '$map_id' isn't the APK's '$dex_map_id' (stale mapping)"; fi
-  if grep -Eq '^[^ ].*\.(DebugReceiver|DebugFakes|Synthetic[A-Za-z]*)(\$[^ ]*)? ->' "$mapping"; then bad "R8 mapping lists debug classes"
+  if grep -Eq '^[^ ].*\.(DebugReceiver|DebugFakes|DebugRelays|Synthetic[A-Za-z]*)(\$[^ ]*)? ->' "$mapping"; then bad "R8 mapping lists debug classes"
   else ok "R8 mapping lists no debug classes"; fi
 fi
 # A second net that survives renaming: the debug tools' log tag and registry name are string constants.

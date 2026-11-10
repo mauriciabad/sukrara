@@ -25,6 +25,7 @@ import app.mauri.sukrara.share.owner.usecase.MirroredSettingsSource
 import app.mauri.sukrara.share.owner.usecase.OwnerContext
 import app.mauri.sukrara.share.owner.usecase.RandomBytes
 import app.mauri.sukrara.share.transport.OkHttpWebSockets
+import app.mauri.sukrara.share.transport.RelayAccess
 import app.mauri.sukrara.share.transport.RelayPool
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
@@ -45,6 +46,8 @@ class ShareOwnerModule(
     val scope: CoroutineScope,
     val requestNotifications: RequestNotifications,
     private val settings: MirroredSettingsSource = MirroredSettingsSource.None,
+    /** Where the relay connections go (the app's `LaunchPlan`; release: the public relays). */
+    private val relays: RelayAccess = RelayAccess.Public,
 ) {
     val crypto by lazy { SdkNostrCrypto() }
 
@@ -57,9 +60,15 @@ class ShareOwnerModule(
 
     /** Relays read gift wraps addressed to the identity only after NIP-42 AUTH as it: the pool gets I when known. */
     private val transport by lazy {
-        RelayPool(Wire.DEFAULT_RELAYS, authKey = {
-            ownerEngine.identityKey()
-        }, crypto, OkHttpWebSockets(data.http), dispatchers.io, { clock.now().epochSecond })
+        RelayPool(
+            Wire.DEFAULT_RELAYS,
+            authKey = { ownerEngine.identityKey() },
+            crypto,
+            OkHttpWebSockets(data.http),
+            dispatchers.io,
+            { clock.now().epochSecond },
+            access = relays,
+        )
     }
 
     private val requests by lazy { RequestNotifier(requestNotifications) }

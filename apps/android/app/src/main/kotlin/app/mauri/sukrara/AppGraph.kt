@@ -125,6 +125,9 @@ class AppGraph(
 
     val appVersion: String = BuildConfig.VERSION_NAME
 
+    /** What this launch may reach (release: the public relays; debug: only the `RELAYS` command's choice). */
+    val launch by lazy { LaunchPlan.of(BuildConfig.DEBUG, BuildVariant.relayChoice(app)) }
+
     /** The app's languages; [App] sets it on a language change so words made outside Compose are made again. */
     val locales = MutableStateFlow(app.resources.configuration.locales)
 
@@ -424,7 +427,7 @@ class AppGraph(
             FollowerNotifications(app, Channels.REQUESTS, info.key) {
                 NotificationGroups.post(app, NotificationIds.FOLLOWING, it, info, Channels.REQUESTS)
             }
-        FollowerModule(app, data, monitor.hub, clock, dispatchers, notifications::show)
+        FollowerModule(app, data, monitor.hub, clock, dispatchers, notifications::show, launch.relays)
     }
 
     /** No alarm armed from what came before (a previous role, a follow that ended): alert state and "monitoring since" go. */
@@ -541,6 +544,7 @@ class AppGraph(
                 ),
             // what followers on *Settings from: Wearer* use (cold: the alert runtime is built when the engine reads it)
             settings = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
+            relays = launch.relays,
         )
     }
 

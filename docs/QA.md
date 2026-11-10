@@ -18,7 +18,9 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   45 to 215 mg/dL; `cycle 135` = its lowest point now, `cycle 45` its highest, `cycle 0` 130 and rising; a sensor that
   ends in N min; a new one warming up for W min), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder
   true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …` and `PEN_TAGS --ez blocked
-  true|false` (docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"). Treatments are added in the app.
+  true|false` (docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"), `RELAYS --es urls
+  ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: Q22). Treatments are
+  added in the app.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
 - **Phone** (`62240DLCH0005W`): only after `tools/install.sh phone`; read-only adb, `adb exec-out screencap -p`
@@ -451,6 +453,26 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
 - [ ] Follower: no Insulin pens row; pen entries open read-only.
 - [ ] LibreView / Nightscout / Tidepool / CSV / graph / insulin mute: `a` only; CSV column 23 *Primed Insulin*.
 - [ ] Spanish: *pluma*, *purgado*, amounts `8.5u`.
+
+## Q22 Follower over a local relay
+
+Two emulators with fresh debug installs (`medium_phone` wearer, `small_phone` follower; never a physical device) and
+the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays in debug builds").
+
+1. `python3 tools/relay/relay.py --port 7447` on the computer (its log shows every connection, REQ and EVENT).
+2. Before pointing anywhere: wearer `SYNTHETIC --ez on true`, open the app, Settings › Sharing › *Set up sharing* →
+   *Start fresh*. The app's uid has **no** socket in `/proc/net/tcp` / `tcp6` (a debug build reaches no relay).
+3. `RELAYS --es urls ws://10.0.2.2:7447` on both emulators (the app process ends; open it again). The wearer's log
+   lines appear in the relay (`REQ inbox`, kind 30078 / 21078 events) and its uid's only socket is
+   `…0202000A:1D17` (10.0.2.2:7447). `RELAYS --es urls http://x` is refused in logcat (`SukraraDebug`) and changes
+   nothing.
+4. Wearer: *Share with someone* → *Create invite*. Follower: `adb shell am start -a android.intent.action.VIEW -d
+   '<link>' -p app.mauri.sukrara` → *I follow someone* → *Join*: the relay logs the invite lookup (`REQ q-…`, 1
+   stored) and the request (kind 1059); the follower shows *Waiting for <name> to allow you* with a 4-digit code.
+5. Wearer: the request (notification and Sharing) shows the same code → *Allow*. Follower: *You follow <name>*, then
+   home shows the wearer's value and graph; the next minute's reading arrives on both. Both uids still have only the
+   10.0.2.2 socket.
+6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
 
 ## Q20 The person and the feel
 
