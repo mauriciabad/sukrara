@@ -202,9 +202,10 @@ struct FollowingRows: View {
         case .joining:
             row(L10n.t("Looking up the invite…"), "arrow.triangle.2.circlepath")
             Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
-        case .waiting(let wearer, let code):
+        case .waiting(let wearer, let pairing?):
+            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+        case .waiting(let wearer, nil):
             row(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"), "hourglass")
-            if let code { Text(L10n.t("Code to type on the phone: \(code)")).font(.title3.monospaced()) }
             Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
         case .following(let wearer, let last, let canWrite):
             Label {

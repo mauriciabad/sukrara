@@ -24,12 +24,32 @@ import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.event.TreatmentCodec
 import app.mauri.sukrara.protocol.event.TreatmentPayload
 import app.mauri.sukrara.protocol.event.WriterScope
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 
 /** Where a follower stands with the wearer. */
 enum class FollowStatus { New, Requested, Active, Declined, InviteUsed, Revoked }
 
 /** A read key the follower holds: epoch [n] and its key pair (secret redacted in logs). */
 data class Epoch(val n: Int, val key: KeyPair)
+
+/**
+ * A *Pair nearby* join (PROTOCOL-v2 §Nearby pairing): the offer's [token] and commitment [commit], this follower's
+ * [nonce]; [code] once the wearer opened its nonce; [confirmed] once the person saw the same code on the wearer's
+ * phone; [held] = a key delivery that came before that (used only on confirmation).
+ */
+data class NearbyPair(
+    val token: String,
+    val commit: String,
+    val nonce: String,
+    val code: String? = null,
+    val confirmed: Boolean = false,
+    val held: HeldKey? = null,
+) {
+    override fun toString() = "NearbyPair(code=${code != null}, confirmed=$confirmed, held=${held != null})"
+}
+
+/** A key delivery kept until the person confirms the pairing code, with its rumor `created_at`. */
+data class HeldKey(val delivery: Rumor.KeyDelivery, val sentAt: Long)
 
 /**
  * Everything a follower must remember to judge the next event: who the wearer is, which keys it trusts, and the dedupe /
@@ -62,6 +82,8 @@ data class FollowerState(
     /** Rumor `created_at` of the newest key delivery / revoked notice: a re-approval after a revoke wins by time. */
     val lastKeyAt: Long = 0,
     val revokedAt: Long = 0,
+    /** Joined with *Pair nearby*: the numeric comparison, until and after the person confirmed it. */
+    val pair: NearbyPair? = null,
 ) {
     override fun toString() = "FollowerState(status=$status, epochs=${epochs.values.map { it.n }}, devices=${devices.size})"
 }
@@ -129,6 +151,11 @@ sealed interface Item {
     data object Declined : Item {
         override val what = "declined"
     }
+
+    /** The wearer opened its pairing nonce: both phones show [code]. */
+    data class Pair(val code: String) : Item {
+        override val what = "pair"
+    }
 }
 
 /**
@@ -144,6 +171,22 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
     /** The follower sent its access request: waits for a key, `invite-used` or `declined`. */
     fun requested() {
         state = state.copy(status = FollowStatus.Requested)
+    }
+
+    /**
+     * The person saw the same pairing code on the wearer's phone: a key held until now is used ([FollowResult] of that
+     * key), otherwise the next one is. Null when there is no code to confirm yet (or no nearby join).
+     */
+    fun confirmPairing(): FollowResult? {
+        val p = state.pair ?: return null
+        if (p.code == null || p.confirmed) return null
+        state = state.copy(pair = p.copy(confirmed = true, held = null))
+        val held = p.held ?: return FollowResult.Ignored("confirmed")
+        return try {
+            onKey(held.delivery, held.sentAt)
+        } catch (e: InvalidPayload) {
+            FollowResult.Rejected("invalid", e.reason)
+        }
     }
 
     fun onEvent(ev: SignedEvent, now: Long): FollowResult {
@@ -358,6 +401,10 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
                 FollowResult.Accepted(item)
             }
 
+            is Rumor.PairNonce -> {
+                onPairNonce(rumor.nonce)
+            }
+
             else -> {
                 FollowResult.Ignored("unknown-type")
             }
@@ -365,11 +412,33 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
     }
 
     /**
+     * The wearer opened its nonce `nb` (only for a nearby join still waiting, once): it must match the offer's
+     * commitment, else it isn't from the phone that made the offer. Then both phones can show the code.
+     */
+    private fun onPairNonce(nonce: String): FollowResult {
+        val s = state
+        val p = s.pair
+        val identity = s.identity
+        if (p == null || identity == null || s.status != FollowStatus.Requested) return FollowResult.Ignored("pair")
+        if (p.code != null) return FollowResult.Ignored("pair-known")
+        if (NearbyPairing.commit(nonce) != p.commit) return FollowResult.Rejected("pair-commit")
+        val code = NearbyPairing.code(identity, s.follower.public, p.token, p.nonce, nonce)
+        state = s.copy(pair = p.copy(code = code))
+        return FollowResult.Accepted(Item.Pair(code))
+    }
+
+    /**
      * A key delivery sealed by I. A delivery newer than the revoked notice re-approves a removed follower (the wearer
-     * invited it again); otherwise a revoked follower stays revoked.
+     * invited it again); otherwise a revoked follower stays revoked. A nearby join holds it until the person confirmed.
      */
     private fun onKey(k: Rumor.KeyDelivery, sentAt: Long): FollowResult {
         val s = state
+        // nearby: nothing from the stream is used until the person compared the codes (PROTOCOL-v2 §Nearby pairing)
+        val p = s.pair
+        if (p != null && !p.confirmed) {
+            if (p.held == null || sentAt >= p.held.sentAt) state = s.copy(pair = p.copy(held = HeldKey(k, sentAt)))
+            return FollowResult.Ignored("unconfirmed")
+        }
         if (s.sid != null && k.sid != s.sid) return FollowResult.Rejected("sid-changed")
         val secret: SecretKey = crypto.parseNsec(k.readKeyNsec) ?: throw InvalidPayload("bad read key")
         val key = crypto.keyPair(secret) ?: throw InvalidPayload("bad read key")

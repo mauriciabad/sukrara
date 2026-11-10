@@ -74,15 +74,19 @@ public struct FollowerSession: Sendable {
     }
 
     /// A new follower for an opened invite: makes the follower key `F` (never printed or logged). Status `new`.
-    public static func join(invite: Invite, me: Profile, nearby: Bool, crypto: any NostrCrypto, now: Int)
-        throws(JoinError) -> FollowerSession
-    {
+    /// `commit`: a nearby offer's commitment; the join then makes its pairing nonce now, after the offer was read
+    /// (PROTOCOL-v2 "Nearby pairing").
+    public static func join(
+        invite: Invite, me: Profile, commit: String?, crypto: any NostrCrypto, now: Int,
+        nonce: String = NearbyPairing.nonce()
+    ) throws(JoinError) -> FollowerSession {
         guard invite.expiry > now else { throw .expired }
         let secret = crypto.generateSecret()
         guard let pub = try? crypto.publicKey(of: secret) else { throw .keyFailed }
         let state = FollowerState(
             follower: secret, identity: invite.identity, token: invite.token,
-            code: Wire.matchCode(followerPublicKey: pub, token: invite.token), nearby: nearby, me: me,
+            code: Wire.matchCode(followerPublicKey: pub, token: invite.token),
+            pair: commit.map { FollowerState.NearbyPair(commit: $0, nonce: nonce) }, me: me,
             wearer: invite.profile, relays: invite.relays.isEmpty ? Wire.defaultRelays : invite.relays)
         guard let session = try? FollowerSession(state: state, crypto: crypto) else { throw .keyFailed }
         return session
@@ -105,8 +109,8 @@ public struct FollowerSession: Sendable {
     /// retry while still waiting).
     public mutating func requestAccess(now: Int) throws(CryptoError) -> SignedEvent {
         let wrap = try messages.toOwner(
-            FollowerMessages.requestBody(token: state.token, profile: state.me), identity: state.identity,
-            ttl: Wire.ttlRequest, now: now)
+            FollowerMessages.requestBody(token: state.token, profile: state.me, nonce: state.pair?.nonce),
+            identity: state.identity, ttl: Wire.ttlRequest, now: now)
         if state.status == .new {
             state.status = .requested
             state.requestedAt = now
@@ -360,13 +364,51 @@ public struct FollowerSession: Sendable {
             var outcome = Outcome(.accepted(name))
             outcome.deltas = [.status(state.status)]
             return outcome
+        case .pair(let nonce): return receivePairNonce(nonce)
         case .unknown: return Outcome(.ignored("unknown-type"))
         }
     }
 
+    /// The wearer opened its nonce `nb` (only for a nearby join still waiting, once): it must match the offer's
+    /// commitment, else it isn't from the phone that made the offer. Then both devices can show the code.
+    private mutating func receivePairNonce(_ nonce: String) -> Outcome {
+        guard var pair = state.pair, state.status == .requested else { return Outcome(.ignored("pair")) }
+        guard pair.code == nil else { return Outcome(.ignored("pair-known")) }
+        guard NearbyPairing.commit(nonce) == pair.commit else { return Outcome(.rejected("pair-commit")) }
+        pair.code = NearbyPairing.code(
+            identity: state.identity, follower: followerPublic, token: state.token, followerNonce: pair.nonce,
+            wearerNonce: nonce)
+        state.pair = pair
+        var outcome = Outcome(.accepted("pair"))
+        outcome.deltas = [.status(state.status)]
+        return outcome
+    }
+
+    /// The person saw the same pairing code on the wearer's phone: a key held until now is used (the outcome of that
+    /// key), otherwise the next one is. nil when there is no code to confirm yet (or no nearby join).
+    public mutating func confirmPairing() -> Outcome? {
+        guard var pair = state.pair, pair.code != nil, !pair.confirmed else { return nil }
+        let held = pair.held
+        pair.confirmed = true
+        pair.held = nil
+        state.pair = pair
+        guard let held else {
+            var outcome = Outcome(.ignored("confirmed"))
+            outcome.deltas = [.status(state.status)]
+            return outcome
+        }
+        return receiveKey(held.delivery, sentAt: held.sentAt)
+    }
+
     /// A key delivery sealed by the identity. One newer than the revoked notice re-approves a removed follower (the
     /// wearer invited it again), even when it carries a key already held; otherwise a removed follower stays removed.
+    /// A nearby join holds it until the person confirmed the pairing code.
     private mutating func receiveKey(_ delivery: KeyDelivery, sentAt: Int) -> Outcome {
+        if var pair = state.pair, !pair.confirmed {
+            if sentAt >= (pair.held?.sentAt ?? Int.min) { pair.held = .init(delivery: delivery, sentAt: sentAt) }
+            state.pair = pair
+            return Outcome(.ignored("unconfirmed"))
+        }
         if let sid = state.sid, sid != delivery.sid { return Outcome(.rejected("sid-changed")) }
         guard let g = try? crypto.nsecDecode(delivery.nsec), let gPub = try? crypto.publicKey(of: g) else {
             return Outcome(.rejected("invalid"))

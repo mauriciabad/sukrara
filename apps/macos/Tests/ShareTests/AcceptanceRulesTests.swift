@@ -12,7 +12,7 @@ struct AcceptanceRulesTests {
 
     func session(status: LinkStatus = .requested) throws -> FollowerSession {
         var state = FollowerState(
-            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", nearby: false,
+            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
             me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
         state.status = status
         return try FollowerSession(state: state, crypto: crypto)

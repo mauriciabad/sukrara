@@ -39,6 +39,7 @@ import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.FollowerSharing
 import app.mauri.sukrara.feature.sharing.NearbyFixRow
+import app.mauri.sukrara.feature.sharing.PairingCodeCard
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
 import app.mauri.sukrara.feature.sharing.setup.NoteCard
@@ -58,6 +59,8 @@ class FollowingViewModel(
     suspend fun stop(): Boolean = follower.stopFollowing()
 
     fun refreshNearby() = follower.refreshNearby()
+
+    suspend fun confirmNearby(same: Boolean): Boolean = follower.confirmNearby(same)
 
     companion object {
         fun factory(follower: FollowerSharing) = viewModelFactory { initializer { FollowingViewModel(follower) } }
@@ -82,9 +85,14 @@ fun FollowingPage(
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
     var failed by rememberSaveable { mutableStateOf(false) }
+    var mismatch by rememberSaveable { mutableStateOf(false) }
     FollowingContent(
         state = state,
         failed = failed,
+        mismatch = mismatch,
+        onConfirmNearby = { same ->
+            scope.launch { mismatch = viewModel.confirmNearby(same) && !same }
+        },
         onStop = {
             scope.launch {
                 val ok = viewModel.stop()
@@ -112,6 +120,9 @@ fun FollowingContent(
     modifier: Modifier = Modifier,
     nearby: NearbyStatus = NearbyStatus.Stopped,
     onRefreshNearby: () -> Unit = {},
+    /** A *Pair nearby* join ended because the codes differed (said once the page shows "not following"). */
+    mismatch: Boolean = false,
+    onConfirmNearby: (same: Boolean) -> Unit = {},
 ) {
     var confirming by rememberSaveable { mutableStateOf(false) }
     val someone = stringResource(R.string.sh_join_someone)
@@ -126,6 +137,7 @@ fun FollowingContent(
             }
 
             FollowState.NotFollowing -> {
+                if (mismatch) NoteCard(stringResource(R.string.sh_join_err_mismatch), error = true)
                 OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.sh_join_title)) }
             }
 
@@ -164,7 +176,12 @@ fun FollowingContent(
                     }
 
                     FollowStatus.New, FollowStatus.Requested -> {
-                        NoteCard(stringResource(R.string.sh_following_code, state.code.toList().joinToString(" ")))
+                        val pairing = state.pairing
+                        if (pairing != null) {
+                            PairingCodeCard(pairing, name, onSame = { onConfirmNearby(true) }, onDifferent = { onConfirmNearby(false) })
+                        } else {
+                            NoteCard(stringResource(R.string.sh_following_code, state.code.toList().joinToString(" ")))
+                        }
                     }
 
                     FollowStatus.Active -> {

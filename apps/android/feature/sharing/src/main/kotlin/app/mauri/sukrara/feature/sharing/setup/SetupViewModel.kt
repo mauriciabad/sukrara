@@ -344,6 +344,14 @@ class SetupViewModel(
         }
     }
 
+    /** *Same code* uses the wearer's key; *Different code* ends the join and says why (back to the link and the list). */
+    fun confirmNearby(same: Boolean) {
+        viewModelScope.launch {
+            val done = m.follower.confirmNearby(same)
+            if (done && !same) joining.value = JoinUi.Failed(JoinResult.CodesDiffered)
+        }
+    }
+
     private fun profileFor(name: String) =
         name
             .trim()

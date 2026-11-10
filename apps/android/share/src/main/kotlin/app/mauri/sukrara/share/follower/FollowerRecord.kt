@@ -8,14 +8,19 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.protocol.NostrCrypto
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.SecretKey
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.RosterCodec
+import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.SettingsCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.follow.Epoch
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.follow.FollowerState
+import app.mauri.sukrara.protocol.follow.HeldKey
+import app.mauri.sukrara.protocol.follow.NearbyPair
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -170,6 +175,7 @@ internal object FollowerCodec {
             )
             put("lastKeyAt", s.lastKeyAt)
             put("revokedAt", s.revokedAt)
+            put("pair", s.pair?.let(::pair) ?: JsonNull)
             put("token", r.token)
             put("code", r.code)
             put("me", r.me?.toJson() ?: JsonNull)
@@ -238,6 +244,7 @@ internal object FollowerCodec {
                             }.orEmpty(),
                     lastKeyAt = o.long("lastKeyAt") ?: 0,
                     revokedAt = o.long("revokedAt") ?: 0,
+                    pair = (o["pair"] as? JsonObject)?.let(::pair),
                 )
             val sensor =
                 (o["sensor"] as? JsonObject)?.let { SensorLife(it.long("s")!!, it.long("e")!!, it.long("w")!!) }
@@ -257,6 +264,41 @@ internal object FollowerCodec {
         }.getOrNull()
 
     private fun strings(list: List<String>) = buildJsonArray { list.forEach { add(JsonPrimitive(it)) } }
+
+    /** A *Pair nearby* join; a held key keeps its rumor JSON (it holds the read key: the record is secret anyway). */
+    private fun pair(p: NearbyPair) =
+        buildJsonObject {
+            put("t", p.token)
+            put("c", p.commit)
+            put("n", p.nonce)
+            put("code", p.code)
+            put("confirmed", p.confirmed)
+            put(
+                "held",
+                p.held?.let {
+                    buildJsonObject {
+                        put("key", RumorCodec.encode(it.delivery))
+                        put("at", it.sentAt)
+                    }
+                } ?: JsonNull,
+            )
+        }
+
+    private fun pair(o: JsonObject): NearbyPair {
+        val held =
+            (o["held"] as? JsonObject)?.let { h ->
+                val key = RumorCodec.decode(Wire.KIND_TO_FOLLOWER, h.str("key")!!) as Rumor.KeyDelivery
+                HeldKey(key, h.long("at")!!)
+            }
+        return NearbyPair(
+            token = o.str("t")!!,
+            commit = o.str("c")!!,
+            nonce = o.str("n")!!,
+            code = o.str("code"),
+            confirmed = (o["confirmed"] as? JsonPrimitive)?.booleanOrNull ?: false,
+            held = held,
+        )
+    }
 
     private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.contentOrNull
 

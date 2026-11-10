@@ -190,7 +190,7 @@ class NearbyServerCoreTest {
         val closed = finder.received.first { it.type == "INFO" }.body as kotlinx.serialization.json.JsonObject
         assertEquals(null, BleMessages.pairing(closed, nowS))
 
-        pairing = BleMessages.Pairing(identity, listOf("wss://relay.example"), "AAAAAAAAAAAAAAAAAAAAAA", nowS + 600, null)
+        pairing = BleMessages.Pairing(identity, listOf("wss://relay.example"), "AAAAAAAAAAAAAAAAAAAAAA", nowS + 600, null, "c".repeat(64))
         val other = Device("other", follower = false)
         other.connect()
         val open = other.received.first { it.type == "INFO" }.body as kotlinx.serialization.json.JsonObject

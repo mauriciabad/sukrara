@@ -130,6 +130,8 @@ data class SetupActions(
     /** *Find phones nearby* on / *Stop looking*. */
     val findNearby: (Boolean) -> Unit = {},
     val joinNearby: (NearbyOffer, name: String) -> Unit = { _, _ -> },
+    /** The *Pair nearby* codes on both phones: the same, or different (the join ends). */
+    val confirmNearby: (same: Boolean) -> Unit = {},
     /** Bluetooth turned on / Nearby devices allowed: look again. */
     val refreshNearby: () -> Unit = {},
     val completeJoin: () -> Unit = {},
@@ -165,6 +167,7 @@ private fun SetupViewModel.actions(
             clearJoinError = ::clearJoinError,
             findNearby = ::findNearby,
             joinNearby = ::joinNearby,
+            confirmNearby = ::confirmNearby,
             refreshNearby = ::refreshNearby,
             completeJoin = ::completeJoin,
             completePermissions = ::completePermissions,

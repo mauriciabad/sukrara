@@ -49,6 +49,7 @@
         func join(link: String) async throws(FollowerJoinError) { throw .alreadyFollowing }
         func cancelJoin() async {}
         func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) { throw .alreadyFollowing }
+        func confirmNearby(same: Bool) async -> Bool { false }
         func searchNearby(_ on: Bool) async {}
         func setProfile(name: String, avatar: Avatar?) async {}
         func readings(since: Date) async -> [Reading] { history.filter { $0.t >= since } }

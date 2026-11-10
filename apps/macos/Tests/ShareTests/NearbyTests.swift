@@ -70,9 +70,8 @@ struct NearbyTests {
         #expect(pairing.owner(identity: v.pub("I"), sid: m["sid"], nonces: [m["nonce"]!]) == .ours)
         #expect(pairing.owner(identity: v.pub("I"), sid: m["sid"], nonces: ["00"]) == .other)
         #expect(info.owner(identity: v.pub("I"), sid: nil, nonces: [m["nonce"]!]) == .unknown)
-        let invite = try #require(pairing.invite)
-        #expect(invite.identity == v.pub("I") && invite.token == "C_TX2IzrmRf7hg8cATyckQ")
-        #expect(invite.profile?.name == "Alex")
+        // draft 1's offer carries no commitment `c`: never listed (Sukrara's offer: NearbyPairingVectorsTests)
+        #expect(pairing.pairing == nil && pairing.offer(now: v.now) == nil)
     }
 
     @Test func helloProofVerifiesWithTheFollowerKey() throws {

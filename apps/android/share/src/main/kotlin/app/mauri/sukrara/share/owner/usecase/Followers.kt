@@ -11,6 +11,7 @@ import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.protocol.invite.Invites
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.owner.InviteRecord
 import app.mauri.sukrara.share.owner.OwnerState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -44,7 +45,8 @@ class CreateInvite(private val ctx: OwnerContext) {
 
 /**
  * *Pair nearby*: a single-use invite offered only in the Bluetooth INFO for [TTL] (no link, no invite wrap on the
- * relays); the backup records the token like any invite. A request with it always needs the typed code.
+ * relays); the backup records the token like any invite. A fresh pairing nonce `nb` goes with it: the offer carries
+ * only its commitment, and the request that claims the invite gets it (PROTOCOL-v2 §Nearby pairing).
  */
 class OpenNearbyPairing(private val ctx: OwnerContext) {
     data class Opened(val step: Step, val token: String, val expiry: Long)
@@ -52,7 +54,8 @@ class OpenNearbyPairing(private val ctx: OwnerContext) {
     operator fun invoke(s: OwnerState, now: Long): Opened {
         val expiry = now + TTL
         val token = InviteLink.of(s.identity(ctx.crypto).public, ctx.random.next(InviteLink.SECRET_LEN)).token
-        val invite = InviteRecord(token, expiry, sentAt = now, nearby = true)
+        val nonce = NearbyPairing.nonce(ctx.random.next(NearbyPairing.NONCE_BYTES))
+        val invite = InviteRecord(token, expiry, sentAt = now, nearby = true, pairNonce = nonce)
         // one nearby offer at a time: an earlier unclaimed one ends here
         val kept = s.invites.filter { it.expiry >= now && !(it.nearby && it.claimedBy == null) }
         return Opened(ControlEvents.backup(ctx, s.copy(invites = kept + invite), now), token, expiry)
@@ -150,12 +153,22 @@ class HandleInbox(private val ctx: OwnerContext) {
             return Handled(ControlEvents.notice(ctx, next, sender, Rumor.InviteUsed, now))
         }
         if (invite.done || s.pending.any { it.follower == sender }) return Handled(Step(s))
+        // nearby: only a request with the follower's pairing nonce claims the offer; it gets the wearer's nonce at once
+        val pairNonce = invite.pairNonce
+        val code =
+            if (invite.nearby) {
+                val na = r.nonce ?: return Handled(Step(s))
+                pairNonce ?: return Handled(Step(s))
+                NearbyPairing.code(s.identity(ctx.crypto).public, PublicKeyHex(sender), r.token, na, pairNonce)
+            } else {
+                Invites.matchCode(PublicKeyHex(sender), r.token)
+            }
         val request =
             PendingRequest(
                 follower = sender,
                 name = r.profile?.name?.ifBlank { null } ?: "?",
                 token = r.token,
-                code = Invites.matchCode(PublicKeyHex(sender), r.token),
+                code = code,
                 at = now,
                 avatarJson =
                     r.profile
@@ -171,7 +184,9 @@ class HandleInbox(private val ctx: OwnerContext) {
                 invites = s.invites.map { if (it.token == r.token) it.copy(claimedBy = sender) else it },
                 pending = s.pending + request,
             )
-        return Handled(Step(next), InboxSignal.NewRequest(request))
+        val step =
+            if (invite.nearby && pairNonce != null) ControlEvents.notice(ctx, next, sender, Rumor.PairNonce(pairNonce), now) else Step(next)
+        return Handled(step, InboxSignal.NewRequest(request))
     }
 }
 

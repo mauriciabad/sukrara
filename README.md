@@ -116,8 +116,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   *2 followers · 1 nearby*.
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a
   picture of it, read on the phone), or find their phone nearby over
-  Bluetooth while they have *Pair nearby* on (Settings › Sharing; they type the code your phone shows), wait for them to allow you (with
-  the 4-digit code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
+  Bluetooth while they have *Pair nearby* on (Settings › Sharing; both phones show the same 6-digit code and you each
+  confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the 4-digit
+  code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
   home, widgets, the live notification and your own alerts (including *no data*); near their phone they also arrive over
   Bluetooth, without internet. Add entries when they let you;
   notifications say when an invite was used, declined or your access removed; *Stop following* in Settings › Sharing.
@@ -141,7 +142,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   card and chart (drawn by the same renderer rules as Android, tested against the same fixtures); scroll, pinch or
   two-finger double tap the chart through the stored 31 days. The card's pill is
   pressable (Eat carbs / Take insulin open Add Treatment; a mute opens its ways out).
-- **Follow** a wearer with an invite link, a QR code image or **nearby** Bluetooth pairing; readings, alerts and
+- **Follow** a wearer with an invite link, a QR code image or **nearby** Bluetooth pairing (the Mac and the phone show
+  the same 6-digit code to confirm before anything is followed); readings, alerts and
   treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
   (*How you appear*); the wearer's picture shows in Following and the nearby dialog. A setup window walks Welcome → Follow → Alerts → Notifications → Open at
   login.

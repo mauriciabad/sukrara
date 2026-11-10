@@ -33,11 +33,13 @@ import app.mauri.sukrara.protocol.follow.FollowResult
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.follow.Item
+import app.mauri.sukrara.protocol.follow.NearbyPair
 import app.mauri.sukrara.protocol.follow.StreamFollower
 import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.protocol.invite.InviteFailure
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.protocol.invite.Invites
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.ble.NearbyEvent
 import app.mauri.sukrara.share.ble.NearbyLink
 import app.mauri.sukrara.share.ble.NearbyStatus
@@ -73,6 +75,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.security.SecureRandom
 import java.time.Instant
 
 /** Following as the person sees it. */
@@ -95,10 +98,19 @@ sealed interface FollowState {
         val canWrite: Boolean,
         val lastHeardAt: Instant?,
         val relays: Map<String, RelayStatus>,
+        /** Joined with *Pair nearby* and not following yet: the code both phones compare. */
+        val pairing: PairingCheck? = null,
     ) : FollowState
 }
 
-enum class JoinResult { Joined, InvalidLink, NotFound, Offline, Expired, WrongWearer, AlreadyFollowing, KeyStoreFailed }
+/**
+ * A *Pair nearby* join waiting (PROTOCOL-v2 §Nearby pairing): [code] = the 6 digits both phones show (null until the
+ * wearer's phone answered); [confirmed] = the person said the wearer's phone shows the same.
+ */
+data class PairingCheck(val code: String?, val confirmed: Boolean)
+
+/** How a join went. [CodesDiffered]: a *Pair nearby* join the person ended because the two phones showed different codes. */
+enum class JoinResult { Joined, InvalidLink, NotFound, Offline, Expired, WrongWearer, AlreadyFollowing, KeyStoreFailed, CodesDiffered }
 
 /** What the wearer told this follower (a notification on the info channel). */
 enum class FollowerNotice { InviteUsed, Declined, Revoked }
@@ -198,8 +210,11 @@ class FollowerEngine(
     private var relayUrls = emptyList<String>()
     private var historyScheduled = false
     private val treatmentCreatedAt = HashMap<String, Long>()
+    private val secureRandom = SecureRandom()
 
     private fun now() = clock.now().epochSecond
+
+    private fun randomBytes(n: Int) = ByteArray(n).also(secureRandom::nextBytes)
 
     private suspend fun <T> locked(block: suspend () -> T): T = withContext(serial) { lock.withLock { block() } }
 
@@ -313,8 +328,9 @@ class FollowerEngine(
      * without writing anything else (no identity yet: every phone is "unknown", B§6) and lists those offering *Pair
      * nearby*. A phone offering is looked at again every [NEARBY_OFFER_RECHECK_S] and leaves the list once it stops
      * (its next INFO without an offer, or [NEARBY_OFFER_DROP_S] without an answer); a phone offering nothing is left
-     * for [NEARBY_IDLE_S] (it may open pairing in a moment). Nothing is trusted: joining sends a request the wearer
-     * still allows with the typed code.
+     * for [NEARBY_IDLE_S] (it may open pairing in a moment). Nothing is trusted: an offer is just a name and a picture
+     * until both phones show the same pairing code and the person says so ([confirmNearby]). Offers claiming to last
+     * longer than 10 minutes are not listed.
      */
     fun findNearby(): Flow<NearbySearch> =
         channelFlow {
@@ -360,19 +376,50 @@ class FollowerEngine(
             }
         }
 
-    /** Joins the wearer whose phone offered *Pair nearby* (no relay lookup: the offer is the invite). */
+    /**
+     * Joins the wearer whose phone offered *Pair nearby* (no relay lookup: the offer is the invite). The request
+     * carries a fresh pairing nonce made now, after the offer's commitment was read (PROTOCOL-v2 §Nearby pairing).
+     */
     suspend fun joinNearby(offer: NearbyOffer, me: Profile?): JoinResult {
         val p = offer.pairing
         if (p.expiry <= now()) return JoinResult.Expired
         if (!canJoin()) return JoinResult.AlreadyFollowing
-        return joinWith(Invite(p.identity, p.token, p.expiry, p.relays, p.profile), me)
+        return joinWith(Invite(p.identity, p.token, p.expiry, p.relays, p.profile), me, p.commit)
     }
 
-    private suspend fun joinWith(invite: Invite, me: Profile?): JoinResult =
+    /**
+     * The person compared the codes on both phones: [same] uses the wearer's key (held, or the next one); a different
+     * code ends this follow (the key F goes, nothing is sent). False when there was nothing to confirm.
+     */
+    suspend fun confirmNearby(same: Boolean): Boolean {
+        if (!same) {
+            val waiting = locked { record?.stream?.pair?.let { !it.confirmed } == true }
+            return waiting && unfollow()
+        }
+        return locked {
+            val f = follower ?: return@locked false
+            val r = record ?: return@locked false
+            val before = f.state
+            val result = f.confirmPairing() ?: return@locked false
+            val next = r.copy(stream = f.state)
+            commit(next, force = true)
+            if (result is FollowResult.Accepted) afterKey(before, next)
+            true
+        }
+    }
+
+    private suspend fun joinWith(invite: Invite, me: Profile?, commit: String? = null): JoinResult =
         locked {
             if (!canJoinLocked()) return@locked JoinResult.AlreadyFollowing
             val f = crypto.generate()
-            val stream = FollowerState(follower = f, identity = invite.identity, relays = invite.relays.ifEmpty { Wire.DEFAULT_RELAYS })
+            val pair = commit?.let { NearbyPair(invite.token, it, NearbyPairing.nonce(randomBytes(NearbyPairing.NONCE_BYTES))) }
+            val stream =
+                FollowerState(
+                    follower = f,
+                    identity = invite.identity,
+                    relays = invite.relays.ifEmpty { Wire.DEFAULT_RELAYS },
+                    pair = pair,
+                )
             val r =
                 FollowerRecord(
                     stream = stream,
@@ -598,7 +645,8 @@ class FollowerEngine(
     private suspend fun sendRequest() {
         val r = record ?: return
         val identity = r.stream.identity ?: return
-        val wrap = events.gift(r.stream.follower, identity, Rumor.Request(r.token, r.me), now(), now() + Wire.TTL_REQUEST)
+        val request = Rumor.Request(r.token, r.me, r.stream.pair?.nonce)
+        val wrap = events.gift(r.stream.follower, identity, request, now(), now() + Wire.TTL_REQUEST)
         send(wrap)
         val f = follower ?: return
         f.requested()
@@ -737,6 +785,11 @@ class FollowerEngine(
                     Item.Declined -> {
                         onNotice(FollowerNotice.Declined, next.wearer)
                     }
+
+                    // the code shows on the page; the record is saved below (trust changed)
+                    is Item.Pair -> {
+                        Unit
+                    }
                 }
             }
         }
@@ -744,7 +797,15 @@ class FollowerEngine(
             before.copy(seen = emptyMap(), rekeyAt = emptyMap(), alertsSeen = emptyMap(), sensorCreatedAt = 0) !=
                 f.state.copy(seen = emptyMap(), rekeyAt = emptyMap(), alertsSeen = emptyMap(), sensorCreatedAt = 0)
         commit(next, force = trustChanged || next.wearer != r.wearer || next.settings != r.settings || next.sensor != r.sensor)
-        // a first key or a new epoch: the Bluetooth link proves who we are and checks the phone with it
+        afterKey(before, next, resubscribe)
+    }
+
+    /**
+     * After [next] was committed: a first key or a new epoch makes the Bluetooth link prove who we are; other relays
+     * reconnect; changed filters resubscribe.
+     */
+    private suspend fun afterKey(before: FollowerState, next: FollowerRecord, resubscribe: Boolean = true) {
+        val f = follower ?: return
         if (before.sid != f.state.sid || before.epochs.keys != f.state.epochs.keys) nearby?.update(nearbyIdentity(next))
         val out = sink
         if (out != null && transport != null && next.stream.relays.isNotEmpty() && next.stream.relays != relayUrls) {
@@ -940,6 +1001,10 @@ class FollowerEngine(
                 canWrite = r.canWrite,
                 lastHeardAt = r.lastHeardAt?.let(Instant::ofEpochSecond),
                 relays = transport?.status?.value.orEmpty(),
+                pairing =
+                    r.stream.pair
+                        ?.takeIf { r.stream.status == FollowStatus.New || r.stream.status == FollowStatus.Requested }
+                        ?.let { PairingCheck(it.code, it.confirmed) },
             )
         setLink(LinkState(r.wearer?.name, r.lastHeardAt?.let(Instant::ofEpochSecond), revoked))
     }

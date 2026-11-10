@@ -60,8 +60,14 @@
             out.append(("setup-done-skipped", AnyView(SetupView(model: doneModel, close: {}))))
             let nearbyModel = follow(.notFollowing, nearby: true)
             out.append(("follow-nearby", AnyView(FollowStep(follow: nearbyModel).padding().frame(width: 520))))
-            let waiting = follow(.waiting(wearer: "Marta", code: nil), nearby: true)
-            out.append(("follow-nearby-waiting", AnyView(FollowStep(follow: waiting).padding().frame(width: 520))))
+            for (name, check) in [
+                ("follow-nearby-waiting", LinkState.PairingCheck(code: nil, confirmed: false)),
+                ("follow-nearby-compare", LinkState.PairingCheck(code: "021472", confirmed: false)),
+                ("follow-nearby-confirmed", LinkState.PairingCheck(code: "021472", confirmed: true)),
+            ] {
+                let waiting = follow(.waiting(wearer: "Marta", pairing: check))
+                out.append((name, AnyView(FollowStep(follow: waiting).padding().frame(width: 520))))
+            }
             let draft = IdentityDraft(name: "Ana's MacBook", avatar: .v1(c: 5, s: "drop", a: 45, n: 7))
             out.append(
                 (

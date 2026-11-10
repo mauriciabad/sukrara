@@ -38,9 +38,17 @@ public struct FollowerSnapshot: Sendable, Equatable {
         storeIssues: [], nearby: nil, nearbyOffer: nil)
 }
 
-/// "Pair nearby" open on a wearer's phone in Bluetooth range.
+/// "Pair nearby" open on a wearer's phone in Bluetooth range: its invite and `commit`, the wearer's commitment to its
+/// pairing nonce. Only a name and a picture until both devices show the same pairing code.
 public struct NearbyOffer: Sendable, Equatable {
     public let invite: Invite
+    public let commit: String
+
+    public init(invite: Invite, commit: String) {
+        self.invite = invite
+        self.commit = commit
+    }
+
     public var wearerName: String? { invite.profile?.name }
     public var wearerAvatar: Avatar? { invite.profile?.avatar }
 }
@@ -84,8 +92,11 @@ public protocol FollowerService: Sendable {
     /// Follows the wearer behind an invite link (web link, `sukrara:` link or a QR code's text).
     func join(link: String) async throws(FollowerJoinError)
     func cancelJoin() async
-    /// Follows the wearer whose phone offers nearby pairing.
+    /// Follows the wearer whose phone offers nearby pairing (nothing of theirs is used until `confirmNearby(same: true)`).
     func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError)
+    /// The person compared the pairing codes on both devices: `same` lets the wearer's key in (held, or the next one);
+    /// a different code ends the join (the follower key goes, nothing is sent). False when there was nothing to confirm.
+    func confirmNearby(same: Bool) async -> Bool
     /// The wearer's stored readings since `since`, oldest first (the store keeps 31 days); empty while not following.
     func readings(since: Date) async -> [Reading]
     /// How this Mac appears to the wearer: used by the next join, and sent at once (end-to-end encrypted) while a

@@ -141,8 +141,8 @@ follower mirrors the wearer's alerts), the limits line, *Open Sukrara*, and the 
 
 - Mac launch guard (`LaunchPlan`, `LaunchError`; `LaunchModeTests`): the app takes no arguments (snapshots are `sukrara-snap`'s); any argument but the system's `-psn_…` prints why and exits 2 without starting anything; a dev build (the `swift build` executable, or an app inside a git checkout such as `build/Sukrara.app`) starts the full app only with `SUKRARA_DEV=1` (else exit 3), so it can't share the installed app's Keychain item, data files and settings by accident. Installed and downloaded copies start as before.
 
-- Mac following (runtime, `FollowerRuntime`): the follower key and trust state live in the login Keychain (service `app.mauri.sukrara`, account `follower`); readings (`readings.csv`, 31 days), treatments (`treatments.json`, with each entry's delivery *sending → sent → accepted*), the wearer's sensor and mirrored settings in `~/Library/Application Support/app.mauri.sukrara/`. The Mac starts empty: the owner follows once through the follow window. Joining: invite link / QR text (looked up on the relays for up to 25 s) or a phone nearby with *Pair nearby* open (Bluetooth; the Mac shows the 4-digit code the wearer types). When the wearer restores their identity on a new phone, the Mac takes the new key and keeps following with no action; late messages from the old phone are ignored. *Stop following* wipes the wearer's readings, treatments, sensor and settings before the key, so two people's data never mix (a crash in between is healed at the next start). An unreadable Keychain (e.g. not unlocked yet at a login-item launch) keeps the history as the wearer’s and shows why (*Not monitoring: Can’t read the follower key from the Keychain*, also over the stored card); the Mac keeps alerting on the stored readings, so the no-data alarm fires if it doesn’t recover, and reads the Keychain again after 5 s doubling to 5 min and at every wake, network change or panel open. The relay watchdog drops a relay silent for 270 s and pings the ones silent for 150 s all at once, dropping any that doesn’t answer within 10 s. The widget gets `glucose.json` in the App Group on every follower update, alert badge change and unit / card settings change (`WidgetFeed`, started with the follower services, never in a dev or snapshot run) and is reloaded only when its value (at most every 5 min), state, badge or settings change.
-- Mac following states and exits: *Not following* → Follow with Invite Link / QR / nearby; *Looking up the invite* → Cancel; *Waiting for the wearer* (code shown for nearby) → Cancel request (= Stop following); *Following* → Stop following (warns when entries written here aren't sent yet); *Declined* / *Invite used* / *Removed by the wearer* / *Broken (Keychain, damaged state)* → Stop following, then follow again. *Removed by the wearer* also ends by itself when the wearer approves this same Mac again (a key delivery newer than the removal notice), also after a relaunch while the relays still replay the old notice; an older notice never removes it again (PROTOCOL-v2 Acceptance rules, `contracts/protocol/sync/revoke-reapprove.json`, Android and Mac).
+- Mac following (runtime, `FollowerRuntime`): the follower key and trust state live in the login Keychain (service `app.mauri.sukrara`, account `follower`); readings (`readings.csv`, 31 days), treatments (`treatments.json`, with each entry's delivery *sending → sent → accepted*), the wearer's sensor and mirrored settings in `~/Library/Application Support/app.mauri.sukrara/`. The Mac starts empty: the owner follows once through the follow window. Joining: invite link / QR text (looked up on the relays for up to 25 s) or a phone nearby with *Pair nearby* open (Bluetooth; the Mac and the phone show the same 6-digit pairing code, and the Mac uses nothing of the wearer's until the person clicks *Same Code*: PROTOCOL-v2 §Nearby pairing). When the wearer restores their identity on a new phone, the Mac takes the new key and keeps following with no action; late messages from the old phone are ignored. *Stop following* wipes the wearer's readings, treatments, sensor and settings before the key, so two people's data never mix (a crash in between is healed at the next start). An unreadable Keychain (e.g. not unlocked yet at a login-item launch) keeps the history as the wearer’s and shows why (*Not monitoring: Can’t read the follower key from the Keychain*, also over the stored card); the Mac keeps alerting on the stored readings, so the no-data alarm fires if it doesn’t recover, and reads the Keychain again after 5 s doubling to 5 min and at every wake, network change or panel open. The relay watchdog drops a relay silent for 270 s and pings the ones silent for 150 s all at once, dropping any that doesn’t answer within 10 s. The widget gets `glucose.json` in the App Group on every follower update, alert badge change and unit / card settings change (`WidgetFeed`, started with the follower services, never in a dev or snapshot run) and is reloaded only when its value (at most every 5 min), state, badge or settings change.
+- Mac following states and exits: *Not following* → Follow with Invite Link / QR / nearby; *Looking up the invite* → Cancel; *Waiting for the wearer* → Cancel request (= Stop following); nearby: *Asking Marta's phone…* → Cancel (ends the join), then the pairing code → *Same Code* (→ waiting for Marta's Allow, Cancel) / *Different Code* (→ *Not following* with *The codes didn't match, so nothing was shared*), in the follow window and Settings › General; *Following* → Stop following (warns when entries written here aren't sent yet); *Declined* / *Invite used* / *Removed by the wearer* / *Broken (Keychain, damaged state)* → Stop following, then follow again. *Removed by the wearer* also ends by itself when the wearer approves this same Mac again (a key delivery newer than the removal notice), also after a relaunch while the relays still replay the old notice; an older notice never removes it again (PROTOCOL-v2 Acceptance rules, `contracts/protocol/sync/revoke-reapprove.json`, Android and Mac).
 
 **States and exits** (Settings): *Settings from Wearer / Default* → the panes show what's in use read-only with *Use my own settings* and *Change…*; choose Custom in General to edit (nothing was overwritten). *Custom* → choose Wearer or Default again; Copy the Wearer's Settings… and Reset All Graph Settings… ask first (Cancel leaves everything). *A place with its own time shown* → *Same as default*. *Lines, ranges, treatments, ring order changed* → their Reset buttons. *Ring order dragged* → drag back, Move Up / Move Down, Reset Order. Closing the window keeps the last pane for next time. Every row works with VoiceOver (the ring order rows read their place and offer Move Up / Move Down).
 
@@ -1028,21 +1028,35 @@ past the other app's event; blocks again if it's still running) or *Help*.
 - **Pair nearby** (Android wearer, Settings › Sharing › How readings travel, shown while Bluetooth can serve): a switch that opens
   a single-use invite for 10 minutes (`OwnerEngine.openNearbyPairing`; no link and no invite wrap on the relays, the
   backup records the token). While open the phone advertises even with no follower and its `INFO` carries `i`, `relays`
-  and `pair` (token, expiry, the wearer's profile; B§7.3); the summary counts down (*Open · closes in 9:41*). It closes
-  at the first request with it, after 10 minutes, with the switch (*Stop*), when *Over Bluetooth nearby* is turned off
-  or when sharing stops or the app restarts; each drops the unclaimed invite (a restore keeps an invite nearby). A request made
-  with it is marked nearby: the approve dialog says anyone in Bluetooth range could have asked and Allow needs the code
-  typed from the follower's phone (never compare-only), and its notification has no Allow (*Open Sukrara and type the
-  code*).
+  and `pair` (token, expiry, the wearer's profile and `c`, the commitment to a fresh pairing nonce; PROTOCOL-v2
+  §Nearby pairing); the summary counts down (*Open · closes in 9:41*). It closes at the first request with it (one that
+  carries the follower's nonce `n`; one without claims nothing), after 10 minutes, with the switch (*Stop*), when *Over
+  Bluetooth nearby* is turned off or when sharing stops or the app restarts; each drops the unclaimed invite (a restore
+  keeps an invite nearby). The request that claims it gets the wearer's nonce at once (`pair`, over the relays and
+  Bluetooth), so both phones show the same **6-digit pairing code** (`021 472`; a numeric comparison as in Bluetooth LE
+  Secure Connections pairing: a phone in the middle can't make the two codes match). The approve dialog says anyone in
+  Bluetooth range can ask and shows the code big (*Allow only if their phone shows this same code*; TalkBack reads it
+  digit by digit); its notification has no Allow (*Open Sukrara and check that their phone shows the same code*).
+  Vectors: `contracts/protocol/ble/nearby-pairing.json` (`NearbyPairingVectorsTest`, Mac `NearbyPairingVectorsTests`).
 - **Find phones nearby** (Android follower, setup's join step, under the link field): looks over Bluetooth while the list
   shows (`FollowerEngine.findNearby`): each phone found is connected in turn, sent a `HELLO` without a proof, its `INFO`
   read and the phone left (nothing else is written: with no identity every phone is "unknown", B§6): a phone offering
-  nothing for a minute, one offering for 5 s. Phones with an open, unexpired `pair` are listed with the wearer's
-  picture and name (by invite); one that stops offering leaves the list at its next read, one that stops answering
-  after 12 s. Scans share the app's scan-start budget with the follow link (Android allows 5 starts per 30 s). A follow that ended never asks again over Bluetooth. A tap joins with that offer (no relay lookup)
-  as the name typed above; the follow's own Bluetooth link then sends the request to the phone whose `INFO` names that
-  identity, and to the relays. The join step shows the match code as for a link. The Mac follower does the same from its
-  follow window.
+  nothing for a minute, one offering for 5 s. Phones with an open `pair` that carries a commitment `c` and expires
+  within the next 10 minutes plus 2 minutes of clock skew are listed with the wearer's picture and name (by invite; an
+  offer claiming to last longer is ignored, so a fake one can't stay listed); one that stops offering leaves the list
+  at its next read, one that stops answering after 12 s. Scans share the app's scan-start budget with the follow link
+  (Android allows 5 starts per 30 s). A follow that ended never asks again over Bluetooth. A tap joins with that offer
+  (no relay lookup) as the name typed above, with a fresh pairing nonce `n` made then; the follow's own Bluetooth link
+  then sends the request to the phone whose `INFO` names that identity, and to the relays. The name and picture prove
+  nothing: the join step (and the Following page) shows *Asking Ana's phone…*, then the 6-digit code with *Does Ana's
+  phone show this code?* and *Same code* / *Different code* (a tick when it arrives; TalkBack reads it digit by digit).
+  A wearer's nonce that doesn't open the offer's commitment is refused (not the phone that made the offer). Nothing of
+  the wearer's is used before *Same code*: a key that arrives first is held (kept in the follower record) and used on
+  *Same code*, so a phone posing as the wearer that approves at once still shows only a code nobody confirms. *Different
+  code* ends the join (the follower key goes, nothing is sent) and says *The codes didn't match, so nothing was shared*.
+  The Mac follower does the same from its follow window and Settings › General (*Same Code* / *Different Code*,
+  *Cancel*; the code counts in with a spring, not with Reduce Motion, a trackpad tap marks its arrival, VoiceOver reads
+  it digit by digit).
 - Mac follower: gift wraps (access request, rekey, history request) carry an absolute expiration (7 d; history 1 d); a key
   delivery naming another stream id is rejected; a chunk whose `c`/`d` tags don't match its hour is rejected; a rekey
   request goes out only for an unknown key on an event from the wearer's identity or device.
@@ -1055,9 +1069,13 @@ range; its row opens its follower dialog (*Close*, *Remove* → confirm → remo
 *Pair nearby* pairs it again from scratch). Follower:
 the Bluetooth line follows the link by itself; Bluetooth off → *Turn on Bluetooth*; permission missing → *Allow Nearby
 devices*; *Stop following* ends Bluetooth with the relays. *Pair nearby* open → its switch (*Stop*), or it closes by
-itself (first request, 10 minutes); the request it brings → the approve dialog (*Later*, *Deny*, *Allow* with the typed
-code). *Find phones nearby* → *Stop looking*, a phone (asks to follow → waiting with the code), Bluetooth off / permission
-missing → the same fix rows; leaving the join step stops looking. Every state works with TalkBack (rows are buttons with text).
+itself (first request, 10 minutes); the request it brings → the approve dialog with the pairing code (*Later*, *Deny*,
+*Allow* once their phone shows the same code). *Find phones nearby* → *Stop looking*, a phone (asks to follow →
+*Asking Ana's phone…* → the code with *Same code* (→ waiting for Ana's Allow, then following) / *Different code* (→ the
+join ends with the reason, back to the link and the list); *Continue* leaves the join step meanwhile and the Following
+page shows the same card; *Stop following* ends it in every state), Bluetooth off / permission missing → the same fix
+rows; leaving the join step stops looking. Every state works with TalkBack (rows are buttons with text, the code is read
+digit by digit).
 
 ## Share with apps on this phone (investigation 22)
 

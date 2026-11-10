@@ -47,6 +47,12 @@ interface FollowerSharing {
         me: Profile?,
     ): JoinResult = JoinResult.NotFound
 
+    /**
+     * The person compared the *Pair nearby* codes: [same] lets the wearer's key in; a different code ends the join
+     * (nothing is sent; the role stays, so they can try again). False when there was nothing to confirm.
+     */
+    suspend fun confirmNearby(same: Boolean): Boolean = false
+
     companion object {
         /** Not following anyone (screenshot tests, a wearer). */
         val None: FollowerSharing =

@@ -25,7 +25,7 @@ struct FakeRelayTests {
         let stored = ["key-1", "roster-1", "chunk", "live", "alert", "treatment-owner"].map(v.event)
         let relay = FakeRelay(stored: stored)
         var state = FollowerState(
-            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", nearby: false,
+            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
             me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
         state.status = .requested
         var session = try FollowerSession(state: state, crypto: crypto)
@@ -64,7 +64,7 @@ struct FakeRelayTests {
         let invite = Invite(
             identity: v.pub("I"), token: "tok", expiry: v.now + 3600, relays: [], profile: nil)
         var session = try FollowerSession.join(
-            invite: invite, me: Profile(name: "Mac", avatar: Avatar.random()), nearby: false, crypto: crypto,
+            invite: invite, me: Profile(name: "Mac", avatar: Avatar.random()), commit: nil, crypto: crypto,
             now: v.now)
         #expect(session.state.status == .new)
         #expect(session.state.relays == Wire.defaultRelays)
@@ -81,13 +81,13 @@ struct FakeRelayTests {
         let invite = Invite(identity: v.pub("I"), token: "t", expiry: v.now - 1, relays: [], profile: nil)
         #expect(throws: FollowerSession.JoinError.expired) {
             try FollowerSession.join(
-                invite: invite, me: Profile(name: "Mac", avatar: nil), nearby: false, crypto: crypto, now: v.now)
+                invite: invite, me: Profile(name: "Mac", avatar: nil), commit: nil, crypto: crypto, now: v.now)
         }
     }
 
     @Test func writerTreatmentIsAcceptedBySessionsAndEchoTracked() throws {
         var state = FollowerState(
-            follower: v.secret("W"), identity: v.pub("I"), token: "t", code: "0000", nearby: false,
+            follower: v.secret("W"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
             me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
         // W already holds epoch 1 (its key delivery isn't in the vectors)
         state.status = .active

@@ -353,6 +353,22 @@
         }
       }
     },
+    "Asking %@'s phone…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asking %@'s phone…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preguntando al móvil de %@…"
+          }
+        }
+      }
+    },
     "Back" : {
       "localizations" : {
         "en" : {
@@ -497,18 +513,18 @@
         }
       }
     },
-    "Code to type on the phone: %@" : {
+    "Click Same Code only if every digit matches: another phone nearby could pretend to be %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Code to type on the phone: %@"
+            "value" : "Click Same Code only if every digit matches: another phone nearby could pretend to be %@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Código para escribir en el móvil: %@"
+            "value" : "Haz clic en Mismo código solo si coinciden todas las cifras: otro móvil cercano podría hacerse pasar por %@."
           }
         }
       }
@@ -621,6 +637,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eliminado: %@"
+          }
+        }
+      }
+    },
+    "Different Code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Different Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código distinto"
+          }
+        }
+      }
+    },
+    "Does %@'s phone show this code?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Does %@'s phone show this code?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿El móvil de %@ muestra este código?"
           }
         }
       }
@@ -1857,6 +1905,38 @@
         }
       }
     },
+    "Same Code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mismo código"
+          }
+        }
+      }
+    },
+    "Same code. Waiting for %@ to allow this Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same code. Waiting for %@ to allow this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mismo código. Esperando a que %@ permita este Mac."
+          }
+        }
+      }
+    },
     "Save" : {
       "localizations" : {
         "en" : {
@@ -2285,6 +2365,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eso no es un enlace de invitación de Sukrara. Copia el enlace entero del móvil y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "The codes didn't match, so nothing was shared. Try again next to the wearer's phone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The codes didn't match, so nothing was shared. Try again next to the wearer's phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los códigos no coincidían, así que no se ha compartido nada. Vuelve a probar junto al móvil de la persona a la que sigues."
           }
         }
       }
