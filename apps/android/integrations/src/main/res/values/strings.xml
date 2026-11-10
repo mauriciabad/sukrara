@@ -86,7 +86,7 @@
         <item quantity="one">Last upload %1$s · %2$d item</item>
         <item quantity="other">Last upload %1$s · %2$d items</item>
     </plurals>
-    <string name="in_status_failing">Trying again soon · %1$s</string>
+    <string name="in_status_failing">%1$s Trying again soon.</string>
     <string name="in_status_follower">Only the phone that wears the sensor uploads</string>
 
     <!-- Nightscout upload -->
@@ -132,7 +132,7 @@
     <string name="in_ns_test_ok">Connected · Nightscout %1$s</string>
     <string name="in_ns_test_ok_plain">Connected</string>
     <string name="in_ns_test_auth">The site refused this token or secret</string>
-    <string name="in_ns_test_failed">Couldn\'t reach the site (%1$s)</string>
+    <string name="in_ns_test_failed">Couldn\'t connect. %1$s</string>
     <string name="in_ns_problem_https">Use https://: Sukrara sends your data only encrypted</string>
     <string name="in_ns_problem_url">This isn\'t a web address</string>
 
@@ -162,7 +162,7 @@
     <string name="in_lv_sign_in_action">Sign in</string>
     <string name="in_lv_signing_in">Signing in…</string>
     <string name="in_lv_bad_credentials">LibreView didn\'t accept this email and password</string>
-    <string name="in_lv_failed">Couldn\'t sign in (%1$s)</string>
+    <string name="in_lv_failed">Couldn\'t sign in. %1$s</string>
     <string name="in_lv_take_over_title">Another device uploads for this account</string>
     <string name="in_lv_take_over_text">LibreView takes data from one device per account, today another one (LibreLink, the Libre 3 app or Juggluco). If Sukrara takes over, that device stops uploading to LibreView. Take over only if Sukrara should be the one that uploads.</string>
     <string name="in_lv_take_over">Take over</string>
@@ -194,7 +194,7 @@
     <string name="in_tp_sign_in_action">Sign in</string>
     <string name="in_tp_signing_in">Signing in…</string>
     <string name="in_tp_bad_credentials">Tidepool didn\'t accept this email and password</string>
-    <string name="in_tp_failed">Couldn\'t sign in (%1$s)</string>
+    <string name="in_tp_failed">Couldn\'t sign in. %1$s</string>
     <string name="in_bc_title">Send glucose to apps</string>
     <string name="in_bc_intro">Apps on this phone that take glucose from xDrip+, LibreLink or Juggluco broadcasts (AndroidAPS, GlucoDataHandler, watch apps) can get each new reading from this phone\'s Libre 3. Only the apps you switch on get it.</string>
     <string name="in_bc_status">Status</string>
@@ -259,4 +259,6 @@
     <string name="in_bc_reallow_title">Allow %1$s again?</string>
     <string name="in_bc_reallow_text">%1$s (%2$s) is signed with a different key than when you allowed it. That happens when it was reinstalled from another source, and it can also be a different app using the same name. Allow it again only if you installed it yourself from a source you trust: an app like AndroidAPS may dose insulin from these readings.</string>
     <string name="in_bc_reallow_action">Allow again</string>
+    <!-- LibreView: Upload every (apps.libreviewInterval) -->
+    <string name="in_lv_interval">Upload every</string>
 </resources>

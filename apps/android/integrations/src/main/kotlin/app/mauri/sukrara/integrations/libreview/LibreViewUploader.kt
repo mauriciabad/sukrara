@@ -12,6 +12,8 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.designsystem.errors.Trouble
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.UploadBackoff
 import app.mauri.sukrara.integrations.upload.UploadLoop
@@ -62,6 +64,8 @@ data class LvPageState(
     val status: UploadStatus,
     /** Sensor glucose goes up from here (null: it isn't uploading). */
     val glucoseFrom: Instant?,
+    /** *Upload every* (`apps.libreviewInterval`), minutes. */
+    val intervalMin: Double = LibreViewUploader.INTERVAL.default,
 )
 
 /**
@@ -92,7 +96,7 @@ sealed interface LvSignIn {
 
     data object BadCredentials : LvSignIn
 
-    data class Failed(val why: String) : LvSignIn
+    data class Failed(val why: Trouble) : LvSignIn
 }
 
 /**
@@ -119,7 +123,10 @@ class LibreViewUploader(
 ) {
     /** Null until [load] read the secure store: nothing claims "signed out" before that (no clinic banner flash). */
     private val signedIn = MutableStateFlow<Boolean?>(null)
-    private val loop = UploadLoop(INTERVAL_MS, io, { e -> log("libreview cycle: ${e.javaClass.simpleName}") }) { cycle() }
+
+    /** *Upload every*, ms: the loop's wait, and how often new glucose wakes it. */
+    @Volatile private var intervalMs = (INTERVAL.default * 60_000).toLong()
+    private val loop = UploadLoop({ intervalMs }, io, { e -> log("libreview cycle: ${e.javaClass.simpleName}") }) { cycle() }
     private val mutex = Mutex()
 
     /** Libre 3 readings of the current sensor, kept in memory (3 days). */
@@ -129,10 +136,13 @@ class LibreViewUploader(
 
     val settingsFlow: Flow<LvSettings> = settings.flow(SETTING).map(::decode)
 
+    val intervalFlow: Flow<Double> = settings.flow(INTERVAL)
+
     val page: Flow<LvPageState> =
-        combine(settingsFlow, signedIn, store.data, role) { s, known, st, r ->
+        combine(settingsFlow, signedIn, store.data, role, intervalFlow) { s, known, st, r, every ->
             val signed = known == true
-            LvPageState(s, signed, st.email, status(s, signed, st, r), st.glucoseFrom.takeIf { it > 0 }?.let(Instant::ofEpochSecond))
+            val from = st.glucoseFrom.takeIf { it > 0 }?.let(Instant::ofEpochSecond)
+            LvPageState(s, signed, st.email, status(s, signed, st, r), from, every)
         }
 
     /** What LibreView has of the entries while the upload runs (home's cloud marks); null while it's off. */
@@ -164,7 +174,15 @@ class LibreViewUploader(
         scope.launch {
             readings.collect { r ->
                 buffer(r)
-                if (settingsFlow.first().glucose) loop.kick()
+                // new glucose goes up once an interval has passed since the last upload (entries go at once)
+                val since = clock.now().toEpochMilli() - store.data.first().lastOkMs
+                if (settingsFlow.first().glucose && since >= intervalMs) loop.kick()
+            }
+        }
+        scope.launch {
+            intervalFlow.distinctUntilChanged().collect { min ->
+                intervalMs = (min * 60_000).toLong()
+                loop.kick()
             }
         }
         scope.launch {
@@ -195,6 +213,9 @@ class LibreViewUploader(
     }
 
     // MARK: page actions
+
+    /** *Upload every* [min] minutes. */
+    suspend fun setInterval(min: Double) = settings.set(INTERVAL, min)
 
     /**
      * Signs in with the LibreView app login; the password is used for this request only. [takeOver] = the person chose
@@ -312,7 +333,7 @@ class LibreViewUploader(
             } catch (e: Exception) {
                 // an answer we can't read: retried later with backoff, never a tight loop
                 log("libreview cycle: ${e.javaClass.simpleName}")
-                save(failed(store.data.first(), clock.now().toEpochMilli(), e.javaClass.simpleName))
+                save(failed(store.data.first(), clock.now().toEpochMilli(), UserErrors.of(e)))
             }
         }
 
@@ -337,7 +358,7 @@ class LibreViewUploader(
             try {
                 secure.read(NAME)?.let { json.decodeFromString(LvSession.serializer(), it.decodeToString()) }
             } catch (e: SecretUnreadableException) {
-                save(failed(state, nowMs, "secure storage"))
+                save(failed(state, nowMs, Trouble.Other))
                 return
             } ?: return
 
@@ -374,7 +395,7 @@ class LibreViewUploader(
                     log("libreview: sensor not registered (${r.why})")
                     state =
                         state
-                            .copy(sensors = LibreViewQueue.registrationRefused(state.sensors, batch.serial), lastError = r.why)
+                            .copy(sensors = LibreViewQueue.registrationRefused(state.sensors, batch.serial), lastError = Trouble.Refused)
                             .also { save(it) }
                     sensorPart = null
                 }
@@ -416,7 +437,16 @@ class LibreViewUploader(
             is LvPost.Rejected -> {
                 log("libreview: upload refused (${r.why})")
                 // refused entries wait for a change (glucose goes on without them); refused glucose backs off
-                save(if (entries.isNotEmpty()) state.copy(refused = true, lastError = r.why) else failed(state, nowMs, r.why))
+                save(
+                    if (entries.isNotEmpty()) {
+                        state.copy(
+                            refused = true,
+                            lastError = Trouble.Refused,
+                        )
+                    } else {
+                        failed(state, nowMs, Trouble.Refused)
+                    },
+                )
                 if (entries.isNotEmpty() && sensorPart != null) loop.kick()
             }
         }
@@ -448,7 +478,7 @@ class LibreViewUploader(
     private fun failed(
         st: LvState,
         nowMs: Long,
-        why: String,
+        why: Trouble,
     ): LvState {
         val n = st.failures + 1
         return st.copy(failures = n, nextAttemptMs = nowMs + UploadBackoff.ms(n, 30_000, 15 * 60_000L, Random), lastError = why)
@@ -472,7 +502,7 @@ class LibreViewUploader(
         }
 
     companion object {
-        const val INTERVAL_MS = 5 * 60_000L
+        val INTERVAL = SchemaSettings.number("apps.libreviewInterval")
         const val NAME = "libreview"
         val SETTING = SchemaSettings.text("apps.libreview", default = "")
         private val json = Json { ignoreUnknownKeys = true }

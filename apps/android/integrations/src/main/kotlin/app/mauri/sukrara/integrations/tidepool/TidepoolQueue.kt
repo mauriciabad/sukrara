@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.upload.SentRanges
 import app.mauri.sukrara.integrations.upload.Span
 import app.mauri.sukrara.integrations.upload.UploadBackoff
@@ -57,7 +58,7 @@ data class TpState(
     val nextAttemptMs: Long = 0,
     val lastOkMs: Long = 0,
     val lastCount: Int = 0,
-    val lastError: String? = null,
+    val lastError: Trouble? = null,
 ) {
     fun role(r: Role): TpRoleState = roles[r.name] ?: TpRoleState()
 
@@ -204,7 +205,7 @@ object TidepoolQueue {
     fun failed(
         state: TpState,
         nowMs: Long,
-        why: String,
+        why: Trouble,
     ): TpState {
         val f = state.failures + 1
         return state.copy(failures = f, nextAttemptMs = nowMs + backoffMs(f), lastError = why)

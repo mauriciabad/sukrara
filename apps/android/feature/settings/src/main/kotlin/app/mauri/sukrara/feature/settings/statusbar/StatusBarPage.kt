@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,7 @@ import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.storage.SettingSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
@@ -55,7 +57,7 @@ class StatusBarViewModel(
 
     /** A root / LSPosed action is running; [problem] = why the last one failed (shown in the banner). */
     val busy = MutableStateFlow(false)
-    val problem = MutableStateFlow<String?>(null)
+    val problem = MutableStateFlow<AccessProblem?>(null)
 
     val actions =
         RootActions(
@@ -100,7 +102,11 @@ class StatusBarViewModel(
         busy.value = true
         problem.value = null
         viewModelScope.launch {
-            problem.value = runCatching { action() }.getOrElse { it.javaClass.simpleName }
+            problem.value =
+                runCatching { action()?.let(AccessProblem::Said) }.getOrElse {
+                    Log.w("Sukrara", "status bar action: ${it.javaClass.simpleName}")
+                    AccessProblem.Failed(UserErrors.of(it))
+                }
             busy.value = false
         }
     }

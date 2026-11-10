@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.nightscout
 
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.integrations.CurrentSensor
@@ -30,6 +31,31 @@ object NsDocs {
     private val NS_NAMESPACE = "NightscoutRocks!".toByteArray(Charsets.US_ASCII)
     private val UTC = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).withZone(ZoneOffset.UTC)
     private val LOCAL = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US)
+
+    /** An untested family's name as downstream apps see it ("Dexcom G7 (untested)"); null for a verified source. */
+    fun untested(source: SourceId): String? =
+        when (source) {
+            SourceId.DexcomG7 -> "Dexcom G7 (untested)"
+            SourceId.DexcomG6 -> "Dexcom G6 (untested)"
+            SourceId.SmartGuide -> "Accu-Chek SmartGuide (untested)"
+            SourceId.AidexX -> "Aidex X (untested)"
+            else -> null
+        }
+
+    /**
+     * An entry's `device`: this install's name, plus the family for an untested one (`Sukrara-1a2b3c · Dexcom G7
+     * (untested)`), so a downstream app can tell those readings apart. [NightscoutQueue.ours] still knows both.
+     */
+    fun entryDevice(
+        device: String,
+        source: SourceId,
+    ): String = untested(source)?.let { "$device$FAMILY_SEPARATOR$it" } ?: device
+
+    /** The sensor family the Sensor Change / Start notes name. */
+    fun family(source: SourceId): String =
+        untested(source) ?: "Libre 3"
+
+    const val FAMILY_SEPARATOR = " · "
 
     /** Nightscout's trend name for a per-minute rate (1 / 2 / 3 mg/dL per minute steps). */
     fun direction(ratePerMin: Double?): String {
@@ -178,7 +204,7 @@ object NsDocs {
                 put("enteredBy", APP)
                 put("app", APP)
                 put("device", device)
-                put("notes", "Libre 3 ${s.serial}")
+                put("notes", "${family(s.source)} ${s.serial}")
             }
         }
 

@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.tidepool
 
+import app.mauri.sukrara.designsystem.errors.Trouble
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -36,8 +38,8 @@ sealed interface TpLogin {
 
     data object BadCredentials : TpLogin
 
-    /** Network or server trouble; [why] never holds a secret. */
-    data class Failed(val why: String) : TpLogin
+    /** Network or server trouble, in plain words. */
+    data class Failed(val why: Trouble) : TpLogin
 }
 
 /** The session stopped working and couldn't be refreshed: the person has to sign in again. */
@@ -50,6 +52,9 @@ class TpFailure(
     /** The request's path without the user id (a 404 there says which thing is gone). */
     val path: String = "",
 ) : Exception(why) {
+    /** [code] in plain words (the message stays in the log). */
+    val trouble: Trouble get() = if (code == 0) Trouble.Other else UserErrors.ofHttp(code)
+
     /** Tidepool no longer has this install's upload record (deleted by the person): a new one is made next time. */
     val dataSetGone: Boolean get() = code == 404 && (path.startsWith("/v1/data_sets/") || path.startsWith("/v1/datasets/"))
 }
@@ -107,7 +112,7 @@ class TidepoolClient(
             try {
                 http("POST", "/auth/login", null, auth = "Basic $basic")
             } catch (e: IOException) {
-                return TpLogin.Failed(e.javaClass.simpleName)
+                return TpLogin.Failed(UserErrors.of(e))
             }
         if (r.code == 401 || r.code == 403) return TpLogin.BadCredentials
         val userId =
@@ -118,7 +123,11 @@ class TidepoolClient(
                     ?.jsonPrimitive
                     ?.contentOrNull
             }.getOrNull()
-        if (r.code != 200 || r.token == null || userId.isNullOrEmpty()) return TpLogin.Failed("HTTP ${r.code}")
+        if (r.code != 200 || r.token == null ||
+            userId.isNullOrEmpty()
+        ) {
+            return TpLogin.Failed(if (r.code == 200) Trouble.Other else UserErrors.ofHttp(r.code))
+        }
         return TpLogin.SignedIn(TpSession(r.token, userId).also { session = it })
     }
 

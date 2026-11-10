@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.UploadLoop
 import app.mauri.sukrara.integrations.upload.UploadStatus
@@ -69,7 +70,7 @@ sealed interface NsTestResult {
 
     data object AuthFailed : NsTestResult
 
-    data class Failed(val why: String) : NsTestResult
+    data class Failed(val why: Trouble) : NsTestResult
 }
 
 /**
@@ -97,7 +98,7 @@ class NightscoutUploader(
     private val log: (String) -> Unit = {},
 ) {
     private val credential = MutableStateFlow<NsCredentialKind?>(null)
-    private val loop = UploadLoop(INTERVAL_MS, io, { e -> log("nightscout cycle: ${e.javaClass.simpleName}") }) { cycle() }
+    private val loop = UploadLoop({ INTERVAL_MS }, io, { e -> log("nightscout cycle: ${e.javaClass.simpleName}") }) { cycle() }
     private var client: Pair<NsConfig, NsClient>? = null
 
     /** One writer of [store] at a time: a cycle's network calls never overwrite a newer *Upload anyway*, token or removal. */
@@ -207,18 +208,18 @@ class NightscoutUploader(
     ): NsTestResult =
         withContext(io) {
             val site = NsSite.parse(url)
-            if (site.problem != null) return@withContext NsTestResult.Failed("address")
+            if (site.problem != null) return@withContext NsTestResult.Failed(Trouble.BadAddress)
             // the saved token only for the site it was saved for
             val saved = if (site.root == settingsFlow.first().url) readAuth() else null
             val auth = credential?.trim()?.takeIf { it.isNotEmpty() }?.let { authOf(kind, it) } ?: saved
-            if (auth == null) return@withContext NsTestResult.Failed("no token")
+            if (auth == null) return@withContext NsTestResult.Failed(Trouble.SignIn)
             val chosenApi = if (auth is NsAuth.AccessToken) api else NsApi.V1
             val (version, o) = NsClient(NsConfig(site, auth, chosenApi, "test"), http) { clock.now().toEpochMilli() }.status()
             when (o) {
                 is Outcome.Ok -> NsTestResult.Ok(version)
                 is Outcome.AuthFailed -> NsTestResult.AuthFailed
-                is Outcome.Retry -> NsTestResult.Failed(o.reason)
-                is Outcome.Rejected -> NsTestResult.Failed(o.reason)
+                is Outcome.Retry -> NsTestResult.Failed(o.trouble).also { log("nightscout test: ${o.reason}") }
+                is Outcome.Rejected -> NsTestResult.Failed(o.trouble).also { log("nightscout test: ${o.reason}") }
             }
         }
 
@@ -280,7 +281,9 @@ class NightscoutUploader(
                     log("nightscout: credential refused")
                     state.copy(authFailed = true, lastError = null)
                 } else {
-                    NightscoutQueue.failed(state, nowMs, e.message.orEmpty(), (o as? Outcome.Retry)?.afterMs)
+                    log("nightscout: ${e.message}")
+                    val why = (o as? Outcome.Retry)?.trouble ?: (o as? Outcome.Rejected)?.trouble ?: Trouble.Other
+                    NightscoutQueue.failed(state, nowMs, why, (o as? Outcome.Retry)?.afterMs)
                 }
             save(state)
         }
@@ -396,7 +399,7 @@ object NightscoutSync {
         readings.sortedBy { it.t }.zipWithNext { a, b -> prevOf[b.t] = a }
         val entries = if (cfg.api == NsApi.V3) plan.entries.takeLast(NightscoutQueue.V3_MAX_PER_CYCLE) else plan.entries
         for (chunk in entries.chunked(NightscoutQueue.BATCH)) {
-            val docs = chunk.map { NsDocs.entry(it, prevOf[it.t], cfg.device, zone, cfg.api) }
+            val docs = chunk.map { NsDocs.entry(it, prevOf[it.t], NsDocs.entryDevice(cfg.device, it.source), zone, cfg.api) }
             when (val o = client.postEntries(docs)) {
                 is Outcome.Ok -> {
                     val bad = if (cfg.api == NsApi.V3) client.lastRejected else 0

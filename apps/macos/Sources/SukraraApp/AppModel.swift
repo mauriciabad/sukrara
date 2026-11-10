@@ -383,7 +383,7 @@ public final class AppModel {
     /// first reading the app says so instead of "no data" — and no no-data alarm is armed.
     public var notMonitoringReason: String? {
         if plan.isOffline && plan.mode != .fixture {
-            return L10n.t("Not monitoring: offline dev build (no sensor, relays or alerts)")
+            return L10n.t("Not monitoring: offline development build (no sensor, internet or alerts)")
         }
         // shown over the stored readings too: with the Keychain unreadable no new reading can arrive
         if case .broken(let why) = link, !lanMonitoring { return L10n.t("Not monitoring: \(why)") }

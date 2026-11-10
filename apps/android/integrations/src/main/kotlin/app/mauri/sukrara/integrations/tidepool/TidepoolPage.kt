@@ -35,6 +35,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -76,7 +77,7 @@ class TidepoolViewModel(
             signIn = { email, password ->
                 _signIn.value = TpSignInUi.Busy
                 viewModelScope.launch {
-                    val r = runCatching { uploader.signIn(email, password) }.getOrElse { TpSignIn.Failed("not saved") }
+                    val r = runCatching { uploader.signIn(email, password) }.getOrElse { TpSignIn.Failed(UserErrors.of(it)) }
                     _signIn.value = TpSignInUi.Done(r)
                 }
             },
@@ -282,7 +283,7 @@ private fun SignInDialog(
                             when (val r = ui.result) {
                                 TpSignIn.Done -> null
                                 TpSignIn.BadCredentials -> stringResource(R.string.in_tp_bad_credentials)
-                                is TpSignIn.Failed -> stringResource(R.string.in_tp_failed, r.why)
+                                is TpSignIn.Failed -> stringResource(R.string.in_tp_failed, stringResource(r.why.text))
                             }
                         }
                     }

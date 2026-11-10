@@ -1,0 +1,95 @@
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+package app.mauri.sukrara.designsystem.errors
+
+import androidx.annotation.StringRes
+import app.mauri.sukrara.core.designsystem.R
+import java.io.InterruptedIOException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.SocketException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
+
+/**
+ * Why something failed, in the person's words: the small set every error or status line on screen is worded from.
+ * Each [text] is a sentence with its next step where there is one; never an exception name, an HTTP code or an
+ * address (those go to the log only).
+ */
+enum class Trouble(
+    @StringRes val text: Int,
+) {
+    /** The phone has no network at all. */
+    NoInternet(R.string.ds_err_no_internet),
+
+    /** The name didn't resolve: a typo in the address, or no internet. */
+    ServerNotFound(R.string.ds_err_not_found),
+
+    /** The server is there but nothing answered on that address. */
+    CantConnect(R.string.ds_err_cant_connect),
+
+    TimedOut(R.string.ds_err_timed_out),
+
+    /** TLS failed: a wrong address, a bad certificate or the phone's clock. */
+    SecureConnection(R.string.ds_err_secure),
+
+    /** The service refused the sign-in, token or secret. */
+    SignIn(R.string.ds_err_sign_in),
+
+    /** The service failed or is busy (5xx, 408, 429): it is tried again. */
+    ServerError(R.string.ds_err_server),
+
+    /** The service answered but didn't accept what was sent. */
+    Refused(R.string.ds_err_refused),
+
+    /** The address can't be used (not a web address, or not https where it must be). */
+    BadAddress(R.string.ds_err_address),
+
+    Other(R.string.ds_err_other),
+}
+
+/** The one mapper from exceptions and HTTP answers to a [Trouble] (CLAUDE.md: plain words, technical detail in logs). */
+object UserErrors {
+    /** The kind of [e], looking through its causes (OkHttp and coroutines wrap them). */
+    fun of(e: Throwable): Trouble {
+        var t: Throwable? = e
+        var depth = 0
+        while (t != null && depth < 8) {
+            kind(t)?.let { return it }
+            t = t.cause.takeIf { it !== t }
+            depth++
+        }
+        return Trouble.Other
+    }
+
+    /** The kind of a non-2xx HTTP status [code]. */
+    fun ofHttp(code: Int): Trouble =
+        when {
+            code == 401 || code == 403 -> Trouble.SignIn
+            code == 408 -> Trouble.TimedOut
+            code == 429 || code >= 500 -> Trouble.ServerError
+            code in 300..399 -> Trouble.BadAddress
+            code in 400..499 -> Trouble.Refused
+            else -> Trouble.Other
+        }
+
+    private fun kind(t: Throwable): Trouble? {
+        val m = t.message.orEmpty()
+        val offline = "ENETUNREACH" in m || "Network is unreachable" in m
+        return when (t) {
+            is UnknownHostException -> Trouble.ServerNotFound
+
+            is SSLException -> Trouble.SecureConnection
+
+            // SocketTimeoutException is one; a call's own timeout is a plain InterruptedIOException
+            is InterruptedIOException -> Trouble.TimedOut
+
+            is ConnectException, is NoRouteToHostException -> if (offline) Trouble.NoInternet else Trouble.CantConnect
+
+            is SocketException -> if (offline) Trouble.NoInternet else null
+
+            else -> null
+        }
+    }
+}

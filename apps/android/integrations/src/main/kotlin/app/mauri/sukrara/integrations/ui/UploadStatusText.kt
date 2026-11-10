@@ -30,5 +30,5 @@ fun uploadStatusText(
         is UploadStatus.Paused -> stringResource(R.string.in_status_paused, status.other)
         UploadStatus.Waiting -> stringResource(R.string.in_status_waiting)
         is UploadStatus.Ok -> pluralStringResource(R.plurals.in_status_ok, status.count, ago(status.at, now), status.count)
-        is UploadStatus.Failing -> stringResource(R.string.in_status_failing, status.why)
+        is UploadStatus.Failing -> stringResource(R.string.in_status_failing, stringResource(status.why.text))
     }

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
@@ -45,6 +46,13 @@ data class RootSettings(
     val color: Boolean,
     val hideIcon: Boolean,
 )
+
+/** Why the last root / LSPosed action failed: what LSPosed or `su` said, or a failure in plain words. */
+sealed interface AccessProblem {
+    data class Said(val text: String) : AccessProblem
+
+    data class Failed(val why: Trouble) : AccessProblem
+}
 
 /** What the root section can do; [busy] = a root / LSPosed action is running, [problem] = why the last one failed. */
 class RootActions(
@@ -82,7 +90,7 @@ fun RootStatusBarSection(
     s: RootSettings,
     access: SystemAccessState,
     busy: Boolean,
-    problem: String?,
+    problem: AccessProblem?,
     choosing: Boolean,
     onChoosing: (Boolean) -> Unit,
     actions: RootActions,
@@ -216,7 +224,7 @@ fun AccessBanner(
     access: SystemAccessState,
     valueOn: Boolean,
     busy: Boolean,
-    problem: String?,
+    problem: AccessProblem?,
     actions: RootActions,
     modifier: Modifier = Modifier,
 ) {
@@ -277,7 +285,10 @@ fun AccessBanner(
             Text(step.second, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             problem?.let {
                 Text(
-                    stringResource(R.string.st_access_failed, it),
+                    when (it) {
+                        is AccessProblem.Said -> stringResource(R.string.st_access_failed, it.text)
+                        is AccessProblem.Failed -> stringResource(it.why.text)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )

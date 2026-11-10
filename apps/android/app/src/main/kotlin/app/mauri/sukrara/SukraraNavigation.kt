@@ -419,6 +419,7 @@ fun SukraraNavigation(
                             openSharing = { backStack.push(SharingRoute) },
                             openApps = { backStack.push(AppsRoute) },
                             openClinicUpload = { backStack.push(LibreViewRoute) },
+                            openClinicTidepool = { backStack.push(TidepoolRoute) },
                             openProfile = { backStack.push(ProfileRoute) },
                             openBackup = { backStack.push(BackupRoute) },
                             openExport = { backStack.push(ExportRoute) },
@@ -591,9 +592,12 @@ private fun route(
             backStack.push(ShareRoute)
         }
 
-        // LibreView is the clinic upload this app has
         HomeAction.OpenClinicUpload -> {
             backStack.push(LibreViewRoute)
+        }
+
+        HomeAction.OpenTidepool -> {
+            backStack.push(TidepoolRoute)
         }
 
         HomeAction.AllowPenTaps -> {

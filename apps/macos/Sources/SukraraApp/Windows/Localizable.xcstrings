@@ -401,18 +401,18 @@
         }
       }
     },
-    "Can't reach the relays. Check the internet connection and try again." : {
+    "Can't connect over the internet. Check the internet connection and try again." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't reach the relays. Check the internet connection and try again."
+            "value" : "Can't connect over the internet. Check the internet connection and try again."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede conectar con los relés. Revisa la conexión a internet y vuelve a intentarlo."
+            "value" : "No se puede conectar por internet. Revisa la conexión a internet y vuelve a intentarlo."
           }
         }
       }
@@ -1361,18 +1361,18 @@
         }
       }
     },
-    "Not monitoring: offline dev build (no sensor, relays or alerts)" : {
+    "Not monitoring: offline development build (no sensor, internet or alerts)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: offline dev build (no sensor, relays or alerts)"
+            "value" : "Not monitoring: offline development build (no sensor, internet or alerts)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin vigilancia: versión de desarrollo sin conexión (sin sensor, relés ni alertas)"
+            "value" : "Sin vigilancia: versión de desarrollo sin conexión (sin sensor, internet ni alertas)"
           }
         }
       }
@@ -4433,18 +4433,18 @@
         }
       }
     },
-    "Reconnect to the relays and to the phone over Bluetooth now" : {
+    "Reconnect over the internet and to the phone over Bluetooth now" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reconnect to the relays and to the phone over Bluetooth now"
+            "value" : "Reconnect over the internet and to the phone over Bluetooth now"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reconectar ahora con los relés y con el móvil por Bluetooth"
+            "value" : "Reconectar ahora por internet y con el móvil por Bluetooth"
           }
         }
       }
@@ -6097,18 +6097,18 @@
         }
       }
     },
-    "Over the internet (relays)" : {
+    "Internet" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Over the internet (relays)"
+            "value" : "Internet"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Por internet (relés)"
+            "value" : "Internet"
           }
         }
       }

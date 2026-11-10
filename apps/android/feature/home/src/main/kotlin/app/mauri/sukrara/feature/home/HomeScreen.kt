@@ -74,6 +74,7 @@ import app.mauri.sukrara.designsystem.alerts.alertA11yActions
 import app.mauri.sukrara.designsystem.alerts.rememberAlertWords
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.Banner
+import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSeverity
 import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
@@ -728,16 +729,30 @@ private fun banner(
             )
         }
 
+        // either service is the clinic's copy: one pill each, with the service's own icon
         BannerKind.ShareWithClinic -> {
             Banner(
                 kind.name,
-                DsR.drawable.ds_ic_info,
+                DsR.drawable.ds_ic_cloud_upload,
                 stringResource(R.string.banner_clinic_title),
                 stringResource(R.string.banner_clinic_text),
-                stringResource(R.string.banner_clinic_action),
-                open(HomeAction.OpenClinicUpload),
+                null,
+                {},
                 dismiss,
                 severity,
+                choices =
+                    listOf(
+                        BannerChoice(
+                            stringResource(R.string.banner_clinic_libreview),
+                            DsR.drawable.ds_ic_service_libreview,
+                            open(HomeAction.OpenClinicUpload),
+                        ),
+                        BannerChoice(
+                            stringResource(R.string.banner_clinic_tidepool),
+                            DsR.drawable.ds_ic_service_tidepool,
+                            open(HomeAction.OpenTidepool),
+                        ),
+                    ),
             )
         }
     }

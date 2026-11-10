@@ -85,7 +85,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
     /// How the readings arrive while following: always over the relays, and the Bluetooth path's state when it runs.
     static func source(_ snapshot: FollowerSnapshot) -> String? {
         guard snapshot.link.isFollowing else { return nil }
-        let internet = L10n.t("Over the internet (relays)")
+        let internet = L10n.t("Internet")
         switch snapshot.nearby {
         case nil: return internet
         case .off: return internet + " · " + L10n.t("Bluetooth off")

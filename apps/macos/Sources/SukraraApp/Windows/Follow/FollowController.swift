@@ -16,7 +16,7 @@ public enum FollowFailure: Error, Equatable, Sendable {
         case .notFound: L10n.t("This invite wasn't found. Ask for a new invite on the phone.")
         case .expired: L10n.t("This invite has expired. Ask for a new invite on the phone.")
         case .used: L10n.t("Another device already used this invite. Ask for a new invite on the phone.")
-        case .offline: L10n.t("Can't reach the relays. Check the internet connection and try again.")
+        case .offline: L10n.t("Can't connect over the internet. Check the internet connection and try again.")
         case .fingerprintMismatch: L10n.t("This invite doesn't match the link. Ask for a new invite on the phone.")
         case .alreadyFollowing:
             L10n.t(

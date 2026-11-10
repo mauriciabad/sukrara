@@ -79,8 +79,9 @@
     <string name="banner_widget_action">Add widget</string>
     <string name="banner_widget_manual">Touch &amp; hold the home screen, then tap Widgets › Sukrara.</string>
     <string name="banner_clinic_title">Share your data with your clinic</string>
-    <string name="banner_clinic_text">Upload your readings and entries to LibreView so your care team sees them.</string>
-    <string name="banner_clinic_action">Set up</string>
+    <string name="banner_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>
+    <string name="banner_clinic_libreview">LibreView</string>
+    <string name="banner_clinic_tidepool">Tidepool</string>
 
     <!-- Mute strip and sensor line -->
     <string name="home_unmute">Unmute</string>

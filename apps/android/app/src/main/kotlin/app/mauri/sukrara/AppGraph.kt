@@ -16,6 +16,7 @@ import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -337,8 +338,25 @@ class AppGraph(
             readings = data.readings,
             treatments = data.treatments,
             sensor =
-                sensor.source.sensorInfo.map { info ->
-                    info?.let { CurrentSensor(it.serial, Instant.ofEpochSecond(it.startEpoch), Instant.ofEpochSecond(it.endEpoch)) }
+                combine(
+                    sensor.source.sensorInfo,
+                    // the family the uploads name (a sensor read through Juggluco counts as a Libre 3, as before)
+                    sensor.source.detail
+                        .map { d ->
+                            when (d) {
+                                is SensorStatus.Direct -> d.profile.source
+                                else -> null
+                            }
+                        }.distinctUntilChanged(),
+                ) { info, source ->
+                    info?.let {
+                        CurrentSensor(
+                            it.serial,
+                            Instant.ofEpochSecond(it.startEpoch),
+                            Instant.ofEpochSecond(it.endEpoch),
+                            source ?: SourceId.Libre3,
+                        )
+                    }
                 },
             libreReadings =
                 sensor.source.sensorGlucose.map { b ->

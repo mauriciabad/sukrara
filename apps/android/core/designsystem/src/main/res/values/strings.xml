@@ -63,4 +63,15 @@
     <string name="ds_a11y_unmute_all">Unmute alerts</string>
     <string name="ds_a11y_change_mute">Change how long alerts are muted</string>
     <string name="ds_a11y_mute_all">Mute alerts</string>
+    <!-- UserErrors: why something failed, in plain words, with its next step -->
+    <string name="ds_err_no_internet">The phone isn\'t connected to the internet.</string>
+    <string name="ds_err_not_found">Can\'t find the server. Check the address and the internet connection.</string>
+    <string name="ds_err_cant_connect">Can\'t connect to the server. Check that it\'s running and the address is right.</string>
+    <string name="ds_err_timed_out">The server didn\'t answer in time.</string>
+    <string name="ds_err_secure">Couldn\'t make a secure connection. Check the address and the phone\'s date and time.</string>
+    <string name="ds_err_sign_in">The sign-in expired or the password or secret is wrong. Sign in again.</string>
+    <string name="ds_err_server">The service has a problem right now.</string>
+    <string name="ds_err_refused">The service didn\'t accept the data.</string>
+    <string name="ds_err_address">That address doesn\'t work. Check it, including https://.</string>
+    <string name="ds_err_other">Something went wrong. Try again.</string>
 </resources>

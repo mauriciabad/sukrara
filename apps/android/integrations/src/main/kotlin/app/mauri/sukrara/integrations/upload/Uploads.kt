@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.upload
 
+import app.mauri.sukrara.designsystem.errors.Trouble
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -45,13 +46,13 @@ sealed interface UploadStatus {
 
     data class Ok(val at: Instant, val count: Int) : UploadStatus
 
-    /** The last cycle failed; it is tried again by itself ([why] is for the page, never holds a secret). */
-    data class Failing(val why: String, val lastOk: Instant?) : UploadStatus
+    /** The last cycle failed; it is tried again by itself ([why] in plain words; the detail is in the log). */
+    data class Failing(val why: Trouble, val lastOk: Instant?) : UploadStatus
 }
 
-/** A cycle every [intervalMs], or sooner on [kick]; a failing cycle is reported and the loop goes on. */
+/** A cycle every [intervalMs] (read before each wait), or sooner on [kick]; a failing cycle is reported and the loop goes on. */
 class UploadLoop(
-    private val intervalMs: Long,
+    private val intervalMs: () -> Long,
     private val dispatcher: CoroutineDispatcher,
     private val onFailure: (Throwable) -> Unit,
     private val cycle: suspend () -> Unit,
@@ -77,7 +78,7 @@ class UploadLoop(
                     } catch (e: Exception) {
                         onFailure(e)
                     }
-                    withTimeoutOrNull(intervalMs) { wake.receive() }
+                    withTimeoutOrNull(intervalMs()) { wake.receive() }
                 }
             }
         return true
