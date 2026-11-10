@@ -510,7 +510,7 @@ class AlertRuntime(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
                 status = m?.status(now)?.let(::cardStatusOf) ?: CardStatus.None,
-                treatmentQuiet = m?.let { treatmentQuietOf(it.settings) } ?: TreatmentQuiet(),
+                treatmentQuiet = m?.let { treatmentQuietOf(it.settings, ui) } ?: TreatmentQuiet(),
                 mutedUntil = instantOf(ui.muteAllUntil),
                 quiet =
                     ui.quiet.map { q ->
@@ -585,12 +585,15 @@ class AlertRuntime(
         /**
          * How long each treatment quiets alerts under [s], the rules the engine runs (`Rules.coveringDose`: a dose quiets
          * while `now − t < quietSeconds`), for the cards' mute lines and last-treatment ring; a rule that's off quiets
-         * nothing (as the Mac's `CardAlertsMapping.muteEnd`).
+         * nothing (as the Mac's `CardAlertsMapping.muteEnd`). A quiet the person lifted (*Alert me anyway* on the high /
+         * low side, [ui]'s `lifted`) ends for the doses logged up to then, as in the engine.
          */
-        fun treatmentQuietOf(s: AlertSettings): TreatmentQuiet =
+        fun treatmentQuietOf(s: AlertSettings, ui: EngineUiState = EngineUiState()): TreatmentQuiet =
             TreatmentQuiet(
                 rapidS = s.quietSeconds(EngineTreatmentKind.RAPID).takeIf { s.afterInsulin.on },
                 carbsS = s.quietSeconds(EngineTreatmentKind.CARBS).takeIf { s.afterCarbs.on },
+                rapidLiftedAt = ui.lifted[Side.HIGH] ?: 0,
+                carbsLiftedAt = ui.lifted[Side.LOW] ?: 0,
             )
 
         /** The badge's answer in the card's terms (contracts/graph/status.json). */

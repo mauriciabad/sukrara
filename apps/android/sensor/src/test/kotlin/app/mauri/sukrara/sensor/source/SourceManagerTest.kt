@@ -395,7 +395,7 @@ class SourceManagerTest {
             r.manager.start()
             runCurrent()
             assertEquals(listOf(1), r.connector.opened)
-            assertEquals(SensorState.Active(Instant.ofEpochSecond(pairing.info!!.endEpoch)), r.manager.sensor.value)
+            assertEquals(SensorState.Active(Instant.ofEpochSecond(pairing.info!!.endEpoch), pairing.info!!.serial), r.manager.sensor.value)
             advanceTimeBy(SourceManager.WATCHDOG_MS - 120_000)
             r.clock.advance(Duration.ofMillis(SourceManager.WATCHDOG_MS - 120_000))
             assertEquals(listOf(1), r.connector.opened)

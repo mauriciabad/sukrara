@@ -40,10 +40,17 @@ class SyntheticSource(
     private val readyAt: Instant? = null,
 ) : ReadingSource {
     private val bluetooth = MutableStateFlow(true)
+
+    /** Each made-up sensor is a new one (a second `SYNTHETIC` replaces it, like a new sensor). */
+    private val id = "synthetic-${clock.now().toEpochMilli()}"
     private val mutableStatus = MutableStateFlow<SourceStatus>(SourceStatus.Connecting)
     private val mutableSensor =
         MutableStateFlow(
-            if (readyAt != null && readyAt.isAfter(clock.now())) SensorState.WarmingUp(readyAt) else SensorState.Active(endsAt = endsAt),
+            if (readyAt != null && readyAt.isAfter(clock.now())) {
+                SensorState.WarmingUp(readyAt, id)
+            } else {
+                SensorState.Active(endsAt = endsAt, id = id)
+            },
         )
 
     override val sensor: StateFlow<SensorState> = mutableSensor.asStateFlow()
@@ -56,7 +63,7 @@ class SyntheticSource(
             val ready = readyAt?.takeIf { mutableSensor.value is SensorState.WarmingUp }
             if (ready != null) {
                 delay(Duration.between(clock.now(), ready).toMillis().coerceAtLeast(0))
-                mutableSensor.value = SensorState.Active(endsAt = endsAt)
+                mutableSensor.value = SensorState.Active(endsAt = endsAt, id = id)
             }
             var last = clock.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
             emit(((if (ready != null) 0L else BACKFILL_MINUTES) downTo 0).map { reading(last - Duration.ofMinutes(it), shiftMinutes) })

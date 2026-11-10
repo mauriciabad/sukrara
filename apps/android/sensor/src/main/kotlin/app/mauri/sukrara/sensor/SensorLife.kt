@@ -40,7 +40,7 @@ object SensorLife {
     fun state(info: SensorInfo, latestT: Long?, now: Long): SensorState =
         when {
             ended(info, now) -> SensorState.Ended
-            warming(info, latestT, now) -> SensorState.WarmingUp(Instant.ofEpochSecond(info.warmupEndEpoch))
-            else -> SensorState.Active(Instant.ofEpochSecond(info.endEpoch))
+            warming(info, latestT, now) -> SensorState.WarmingUp(Instant.ofEpochSecond(info.warmupEndEpoch), info.serial)
+            else -> SensorState.Active(Instant.ofEpochSecond(info.endEpoch), info.serial)
         }
 }

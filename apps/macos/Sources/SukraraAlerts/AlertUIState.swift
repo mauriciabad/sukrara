@@ -30,6 +30,9 @@ public struct AlertUIState: Equatable, Sendable {
     public var quiets: [Quiet]
     /// Mute all's end (nil = off, `muteAllForever` = until turned off).
     public var muteAllUntil: Date?
+    /// Side → when *Unmute* / *Alert me anyway* lifted its open episode's quiet: the treatments logged up to then no
+    /// longer quiet it, so the card's mute lines and last-treatment ring end there too.
+    public var lifted: [AlertSide: Date] = [:]
 
     /// Nothing active, nothing quiet.
     public static let idle = AlertUIState(active: [:], quiets: [], muteAllUntil: nil)
@@ -45,11 +48,13 @@ extension AlertEngine {
         var active: [AlertGroup: AlertUIState.Active] = [:]
         var quiets: [AlertUIState.Quiet] = []
         var seen: Set<AlertSide> = []
+        var lifted: [AlertSide: Date] = [:]
         func canRelax(_ k: AlertKind, _ relax: Int) -> Bool { relax == 0 && s.canRelax(k) }
         for g in AlertGroup.allCases {
             guard let e = episodes[g] else { continue }
             if e.isOn { active[g] = AlertUIState.Active(kind: e.kind, quiet: e.quiet, firedAt: e.firedAt, n: e.n) }
             seen.insert(e.side)
+            if let l = e.liftedAt { lifted[e.side] = l }
             let sideMute = snoozes.muteEnd(e.side, at: t)
             let relax = snoozes.relaxMin(e.side)
             var why: QuietReason?
@@ -75,6 +80,6 @@ extension AlertEngine {
                     kind: k, isOn: false, quiet: until.map { .sideMuted(until: $0) }, relaxMin: sn.relaxMin,
                     canRelax: canRelax(k, sn.relaxMin)))
         }
-        return AlertUIState(active: active, quiets: quiets, muteAllUntil: muteAllEnd(at: t))
+        return AlertUIState(active: active, quiets: quiets, muteAllUntil: muteAllEnd(at: t), lifted: lifted)
     }
 }
