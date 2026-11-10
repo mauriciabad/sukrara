@@ -64,7 +64,7 @@ public struct GlucoseReport: Equatable, Sendable {
         let b = config.bands.sane()
         let m = GlucoseMetrics.of(readings, from: now - TimeInterval(days) * 86400, to: now, bands: b)
         let t = m.tir
-        func u(_ mg: Int) -> String { unit.format(mg) }
+        func u(_ mg: Int) -> String { unit.cardText(mg) }
         func row(_ kind: Row.Kind, _ range: String, _ share: Double, _ goal: Goal?, strong: Bool = false) -> Row {
             Row(
                 kind: kind, range: range, share: ShareText.of(share, goal), goal: goal?.text,

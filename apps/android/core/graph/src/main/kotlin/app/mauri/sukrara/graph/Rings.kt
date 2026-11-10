@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import androidx.core.graphics.ColorUtils
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.Goal
@@ -300,13 +301,16 @@ internal object MetricGauge {
         else -> Goal.CV.met(m)
     }
 
+    /** The number and its unit: the average in the card's [unit] ("141", "7.8"; the value says the unit). */
     fun text(
         k: SlotKind,
         m: GlucoseMetrics,
+        unit: GlucoseUnit,
+        locale: Locale,
     ): Pair<String, String> =
         when (k) {
             SlotKind.GMI -> "%.1f".format(m.gmi) to "%"
-            SlotKind.AVERAGE -> "${Math.round(m.mean)}" to ""
+            SlotKind.AVERAGE -> unit.text(Math.round(m.mean).toInt(), locale) to ""
             else -> "${Math.round(m.cv)}" to "%"
         }
 
@@ -331,6 +335,7 @@ internal object MetricGauge {
         emphasis: Float,
         d: Float,
         w: CardWords,
+        glucose: GlucoseUnit,
     ) {
         val alpha = (255 * emphasis).toInt()
         val sw = radius * 0.2f
@@ -382,7 +387,7 @@ internal object MetricGauge {
                 typeface = RoundedFont.typeface(600)
                 color = ColorUtils.setAlphaComponent(pal.inkSoft, alpha)
             }
-        val (v, u) = if (m.empty) "–" to "" else text(spec.kind, m)
+        val (v, u) = if (m.empty) "–" to "" else text(spec.kind, m, glucose, w.locale)
         val tw = num.measureText(v) + unit.measureText(u)
         val base = cy + num.textSize * 0.3f
         cv.drawText(v, cx - tw / 2, base, num)

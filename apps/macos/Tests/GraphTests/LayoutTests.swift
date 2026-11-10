@@ -23,6 +23,7 @@ private struct Render: CustomStringConvertible {
     var size: String
     var scene: String
     var settings: String
+    var unit: GlucoseUnit = .mgdl
     var layouts: [CardLayout]
     var faces: [GlucoseLook]
     var description: String { "\(surface.rawValue) \(size) (\(scene)/\(settings))" }
@@ -170,8 +171,10 @@ enum DefaultAlertRules {
 
         let scenes = (scenesRoot["scenes"] as? [[String: Any]] ?? []).map(Self.scene)
         var hour24Of: [String: Bool] = [:]
+        var unitOf: [String: GlucoseUnit] = [:]
         let settings: [(String, GraphConfig)] = (scenesRoot["settings"] as? [[String: Any]] ?? []).map { o in
             hour24Of[o["id"] as? String ?? "?"] = o["hour24"] as? Bool ?? true
+            unitOf[o["id"] as? String ?? "?"] = (o["unit"] as? String).flatMap(GlucoseUnit.init(rawValue:)) ?? .mgdl
             return (o["id"] as? String ?? "?", Self.config(o))
         }
         // an empty or moved scenes file must fail, not pass with nothing rendered
@@ -195,6 +198,7 @@ enum DefaultAlertRules {
         defer { Clock.hour24Source = nil }
         for (sid, cfg) in settings {
             let hour24 = hour24Of[sid] ?? true
+            let unit = unitOf[sid] ?? .mgdl
             Clock.hour24Source = { hour24 }
             for sc in scenes {
                 let data = CardData(
@@ -202,23 +206,24 @@ enum DefaultAlertRules {
                     alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now)
                 for s in CardSurface.allCases where s != .test {
                     if s.glyph {
-                        guard sid == "default" || sid.hasPrefix("clock") else { continue }
+                        guard sid == "default" || sid == "mmol" || sid.hasPrefix("clock") else { continue }
                         renders.append(
                             Render(
-                                surface: s, size: "-", scene: sc.id, settings: sid, layouts: [],
+                                surface: s, size: "-", scene: sc.id, settings: sid, unit: unit, layouts: [],
                                 faces: sc.readings.isEmpty
-                                    ? [] : [GlucoseCard.face(data, unit: .mgdl, surface: .menubarTitle)]))
+                                    ? [] : [GlucoseCard.face(data, unit: unit, surface: .menubarTitle)]))
                         continue
                     }
                     for size in sizes(s) {
-                        let st = s.style(cfg, sensor: sc.sensor)
+                        var st = s.style(cfg, sensor: sc.sensor)
+                        st.unit = unit
                         let lay = GlucoseCard.draw(
                             cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now, st,
                             pal,
                             surface: s, part: .all, alerts: data.alerts)
                         let r = Render(
                             surface: s, size: "\(Int(size.width))x\(Int(size.height))", scene: sc.id, settings: sid,
-                            layouts: [lay], faces: [])
+                            unit: unit, layouts: [lay], faces: [])
                         // one clock: every time drawn is in that variant's 24-hour setting
                         if let bad = lay.all("time.text").first(where: {
                             cycleOf($0.info).map { $0 != hour24 } ?? false
@@ -295,7 +300,7 @@ enum DefaultAlertRules {
             st.map { "\($0.value || ($0.graph != nil && chart == nil && r.layouts.contains { $0.part == .all }))" }
             ?? "\(!r.faces.isEmpty)"
         return [
-            "scene": r.scene, "settings": r.settings, "face": face,
+            "scene": r.scene, "settings": r.settings, "unit": r.unit.rawValue, "face": face,
             "value": st.map { "\($0.value)" } ?? "glyph",
             "graph": "\(st?.graph != nil)",
             "labels": b(st?.graph?.axisLabels), "side": b(st?.graph?.side),

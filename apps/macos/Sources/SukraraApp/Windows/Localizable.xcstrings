@@ -1777,22 +1777,6 @@
         }
       }
     },
-    "Ranges (mg/dL)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ranges (mg/dL)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rangos (mg/dL)"
-          }
-        }
-      }
-    },
     "Rapid" : {
       "localizations" : {
         "en" : {
@@ -2993,22 +2977,6 @@
         }
       }
     },
-    "%@ mg/dL" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ mg/dL"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ mg/dL"
-          }
-        }
-      }
-    },
     "%@ of %@" : {
       "localizations" : {
         "en" : {
@@ -3709,22 +3677,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Insulina rápida"
-          }
-        }
-      }
-    },
-    "Remove the line at %@ mg/dL" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove the line at %@ mg/dL"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quitar la línea de %@ mg/dL"
           }
         }
       }
@@ -5841,22 +5793,6 @@
         }
       }
     },
-    "Faster than %@ mg/dL/min" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Faster than %@ mg/dL/min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Más rápido que %@ mg/dL/min"
-          }
-        }
-      }
-    },
     "For at least" : {
       "localizations" : {
         "en" : {
@@ -7213,6 +7149,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mientras este Mac no sigue a nadie, puede leer la glucosa del servidor web de Juggluco en la misma red (en Juggluco: Ajustes › Servidor web, con «Local only» desactivado). Solo http sin cifrar en tu red de casa: las lecturas viajan sin cifrar entre el móvil y este Mac."
+          }
+        }
+      }
+    },
+    "Faster than %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faster than %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más rápido que %@ %@"
+          }
+        }
+      }
+    },
+    "Ranges (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranges (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rangos (%@)"
+          }
+        }
+      }
+    },
+    "Remove the line at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the line at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar la línea de %@"
           }
         }
       }

@@ -228,14 +228,19 @@ enum Slots {
 
     /// What a slot shows, for the layout report (Slots.describe in CardStatus.kt, the same words): kind, window, range,
     /// the number in it, its mark, and whether it is the main one (and carries the sensor countdown ring).
-    static func describe(_ item: SlotItem, main: Bool, countdown: Double?) -> String {
+    static func describe(_ item: SlotItem, main: Bool, countdown: Double?, unit: GlucoseUnit) -> String {
         var out: String
         switch item {
         case let .metric(spec, m, _):
             out = "\(spec.kind.rawValue) \(Int(spec.window))"
             if spec.kind == .tir { out += " \(spec.range.rawValue)" }
             out +=
-                " " + (m.empty ? "-" : spec.kind == .tir ? TirRing.text(m.tir, spec) : MetricGauge.text(spec.kind, m).0)
+                " "
+                + (m.empty
+                    ? "-"
+                    : spec.kind == .tir
+                        ? TirRing.text(m.tir, spec)
+                        : MetricGauge.text(spec.kind, m, unit: unit, locale: Locale(identifier: "en_US_POSIX")).0)
             let mk = mark(item)
             if mk != .none { out += " \(mk.rawValue)" }
         case let .last(info):
@@ -299,7 +304,7 @@ enum Slots {
     /// time-in-range ring draws it under its crown).
     static func draw(
         _ ctx: CGContext, _ item: SlotItem, center c: CGPoint, radius: CGFloat, now: TimeInterval, _ pal: GraphPalette,
-        d: CGFloat,
+        d: CGFloat, unit: GlucoseUnit,
         countdown: Double? = nil
     ) {
         switch item {
@@ -307,7 +312,7 @@ enum Slots {
             TirRing.draw(ctx, center: c, radius: radius, tir: m.tir, spec: spec, pal, emphasis: e, countdown: countdown)
             return
         case let .metric(spec, m, e):
-            MetricGauge.draw(ctx, center: c, radius: radius, m: m, spec: spec, pal, emphasis: e, d: d)
+            MetricGauge.draw(ctx, center: c, radius: radius, m: m, spec: spec, pal, emphasis: e, d: d, glucose: unit)
         case let .last(info): LastSlot.draw(ctx, center: c, radius: radius, info: info, now: now, pal, d: d)
         }
         SensorBadge.drawCountdown(ctx, center: c, radius: radius, countdown, pal)

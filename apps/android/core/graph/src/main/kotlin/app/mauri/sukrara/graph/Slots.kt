@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import androidx.core.graphics.ColorUtils
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.TirRange
 import kotlin.math.min
@@ -20,6 +21,8 @@ sealed interface SlotItem {
         val spec: RingSpec,
         val m: GlucoseMetrics,
         override val emphasis: Float,
+        /** The unit an average is written in (the card's [CardStyle.unit]). */
+        val unit: GlucoseUnit = GlucoseUnit.MGDL,
     ) : SlotItem
 
     data class Last(
@@ -44,13 +47,15 @@ object Slots {
         last: LastTreatment.Info?,
         fallback: Pair<RingSpec, GlucoseMetrics>?,
         max: Int,
+        unit: GlucoseUnit,
     ): List<SlotItem> {
-        val metric = rings.map { (i, s, m) -> i to SlotItem.Metric(s, m, if (s.faded) RING_EMPHASIS[i.coerceIn(0, 2)] else 1f) }
+        val metric =
+            rings.map { (i, s, m) -> i to SlotItem.Metric(s, m, if (s.faded) RING_EMPHASIS[i.coerceIn(0, 2)] else 1f, unit) }
         val extra: SlotItem? =
             when {
                 place == LastPlace.OFF -> null
                 last != null -> SlotItem.Last(last)
-                else -> fallback?.let { (s, m) -> SlotItem.Metric(s, m, if (s.faded) FALLBACK_EMPHASIS else 1f) }
+                else -> fallback?.let { (s, m) -> SlotItem.Metric(s, m, if (s.faded) FALLBACK_EMPHASIS else 1f, unit) }
             }
         val priority =
             buildList {
@@ -92,7 +97,7 @@ object Slots {
                         when {
                             item.m.empty -> "-"
                             item.spec.kind == SlotKind.TIR -> TirRing.text(item.m.tir, item.spec, java.util.Locale.ROOT)
-                            else -> MetricGauge.text(item.spec.kind, item.m).first
+                            else -> MetricGauge.text(item.spec.kind, item.m, item.unit, java.util.Locale.ROOT).first
                         },
                     )
                     mark(item).takeIf { it != TirMark.NONE }?.let { append(' ').append(it.name.lowercase()) }
@@ -121,7 +126,7 @@ object Slots {
                     "${TirRing.text(item.m.tir, item.spec)}%" to
                         "${if (item.spec.range == TirRange.TIGHT) w.tirVeryGood else w.tirInRange} ${w.period(item.spec.windowS)}"
                 } else {
-                    MetricGauge.text(item.spec.kind, item.m).let { (v, u) -> "$v$u" } to
+                    MetricGauge.text(item.spec.kind, item.m, item.unit, w.locale).let { (v, u) -> "$v$u" } to
                         "${MetricGauge.short(item.spec.kind, w)} ${w.period(item.spec.windowS)}"
                 }
             }
@@ -250,7 +255,7 @@ object Slots {
             }
 
             item is SlotItem.Metric -> {
-                MetricGauge.draw(cv, cx, cy, radius, item.m, item.spec, pal, item.emphasis, d, w)
+                MetricGauge.draw(cv, cx, cy, radius, item.m, item.spec, pal, item.emphasis, d, w, item.unit)
             }
 
             item is SlotItem.Last -> {

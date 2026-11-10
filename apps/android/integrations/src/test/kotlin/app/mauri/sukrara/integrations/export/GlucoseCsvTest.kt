@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.export
 
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
@@ -88,7 +89,7 @@ class GlucoseCsvTest {
             ZoneId.of(c.str("zone")),
             Instant.ofEpochSecond(c["generated"]!!.jsonPrimitive.long),
             sensor,
-            c["mmol"]?.jsonPrimitive?.boolean ?: false,
+            if (c["mmol"]?.jsonPrimitive?.boolean == true) GlucoseUnit.MMOL else GlucoseUnit.MGDL,
         )
     }
 

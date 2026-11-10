@@ -72,7 +72,7 @@ enum GlucoseGraph {
             }
             return out
         }
-        func valuesW(_ vs: [Int]) -> CGFloat { vs.map { Ink.width("\($0)", text) }.max() ?? 0 }
+        func valuesW(_ vs: [Int]) -> CGFloat { vs.map { Ink.width(st.unit.cardText($0), text) }.max() ?? 0 }
         // The plot's sides: the % column and the values column, each its widest drawn label + `sideGap` on each side.
         // Which values show depends on the plot's height, which depends (second treatment lane) on its width: start from
         // every candidate and settle on the values actually written (GlucoseGraph.kt).
@@ -198,7 +198,7 @@ enum GlucoseGraph {
         // The values on the right (axisValues), left-aligned `sideGap` after the plot; the widest ends `sideGap` before
         // the area's edge.
         for (v, ly) in values {
-            let s = "\(v)", base = ly + 10 * d / 3, w = Ink.width(s, text)
+            let s = st.unit.cardText(v), base = ly + 10 * d / 3, w = Ink.width(s, text)
             Ink.draw(ctx, s, x: right + Self.sideGap * d, y: base, text, pal.inkSoft)
             // the drawn label's box (LayoutSelfTest checks the column's gaps against it: layout/rules.json "gaps")
             rec.add(

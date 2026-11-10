@@ -303,6 +303,7 @@ struct SettingsView: View {
                 .tabItem { Label(L10n.t("Following"), systemImage: "person.2") }
                 .tag(SettingsModel.Pane.following)
         }
+        .environment(\.glucoseUnit, model.unit)
         .frame(minWidth: 560, minHeight: 560)
     }
 }

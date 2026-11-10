@@ -12,12 +12,14 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.Broadcaster
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsViewModel
@@ -109,7 +111,8 @@ class IntegrationsModule(
 ) {
     val wearer: Flow<Boolean> = role.map { it == Role.Wearer }
 
-    val exporter = Exporter(readings, treatments, sensor, clock)
+    val exporter =
+        Exporter(readings, treatments, sensor, clock, settings.flow(GraphSettings.GlucoseUnitSetting).map(GlucoseUnit::of))
 
     val nightscout =
         NightscoutUploader(

@@ -191,7 +191,7 @@
     <string name="report_above_detail">Very high + high</string>
     <string name="report_in_range">In range</string>
     <string name="report_very_good">Very good</string>
-    <string name="report_very_good_detail">%1$s mg/dL, inside the range</string>
+    <string name="report_very_good_detail">%1$s %2$s, inside the range</string>
     <string name="report_low">Low</string>
     <string name="report_very_low">Very low</string>
     <string name="report_below">Below range</string>

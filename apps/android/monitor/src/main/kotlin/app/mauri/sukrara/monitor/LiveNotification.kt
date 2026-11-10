@@ -18,6 +18,7 @@ import android.util.Log
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.CardSurface
@@ -171,7 +172,7 @@ class LiveNotification(
         frame: CardFrame?,
     ): Notification.MetricStyle {
         val bands = frame?.config?.bands ?: Bands()
-        val unit = context.getString(R.string.monitor_metric_unit)
+        val unit = (frame?.config?.unit ?: GlucoseUnit.MGDL).symbol
         val value =
             if (look.strike || content.mgdl == null) {
                 Notification.Metric(Notification.Metric.FixedText(look.text!!), unit)
@@ -419,11 +420,12 @@ class LiveNotification(
         /** The chart is redrawn at most this often without a new reading. */
         private const val GRAPH_EVERY_S = 300L
 
-        /** The card's face for a hub state: value, trend mark and freshness. */
+        /** The card's face for a hub state: value (in the person's [unit]), trend mark and freshness. */
         fun face(
             state: GlucoseState,
             now: Instant,
-        ): GlucoseLook = GlucoseCard.face(state, now.epochSecond, CardSurface.NOTIFICATION_TEXT)
+            unit: GlucoseUnit,
+        ): GlucoseLook = GlucoseCard.face(state, now.epochSecond, CardSurface.NOTIFICATION_TEXT, unit)
 
         /** A state's icon resource ([Icon.TREND] is drawn by the renderer instead). */
         fun iconRes(icon: Icon): Int =

@@ -38,11 +38,12 @@ fun widgetCardStyle(
                 lastElse = config.lastElseRing(),
                 sensorTime = sensorTime,
                 bands = config.bands,
+                unit = config.unit,
             )
         }
 
         CardSurface.WIDGET_GRAPH -> {
-            CardStyle(graph = graph, rings = emptyList(), value = false, sensorTime = sensorTime, bands = config.bands)
+            CardStyle(graph = graph, rings = emptyList(), value = false, sensorTime = sensorTime, bands = config.bands, unit = config.unit)
         }
 
         CardSurface.WIDGET_COMBINED -> {
@@ -53,6 +54,7 @@ fun widgetCardStyle(
                 lastElse = config.lastElseRing(),
                 sensorTime = sensorTime,
                 bands = config.bands,
+                unit = config.unit,
             )
         }
 
@@ -81,4 +83,5 @@ fun notificationCardStyle(
         slotDisc = slotDisc,
         valueInk = valueInk,
         bands = config.bands,
+        unit = config.unit,
     )

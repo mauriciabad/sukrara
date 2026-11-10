@@ -95,7 +95,11 @@ final class AppServices: ServiceStarting {
             let posting: any NotificationPosting = center ?? SilentCenter()
             let settings = alertSettings
             var controller: AlertController?
-            let notifier = Notifier(center: posting, sounds: sounds, clock: SystemClock()) {
+            let defaults = self.defaults
+            let notifier = Notifier(
+                center: posting, sounds: sounds, clock: SystemClock(),
+                unit: { DefaultsSettingsStore(defaults: defaults).unit }
+            ) {
                 controller?.settings ?? settings
             }
             notifier.eventLog = RotatingFileLog(directory: plan.data.paths.logs)

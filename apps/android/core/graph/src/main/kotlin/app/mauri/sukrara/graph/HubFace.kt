@@ -4,6 +4,7 @@
 package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.stats.toPoint
 
@@ -16,6 +17,7 @@ fun GlucoseCard.face(
     state: GlucoseState,
     nowS: Long,
     surface: CardSurface,
+    unit: GlucoseUnit,
 ): GlucoseLook {
     val sensor =
         when (val s = state.sensor) {
@@ -37,5 +39,5 @@ fun GlucoseCard.face(
                 null
             }
         }
-    return face(state.latest?.toPoint(), nowS, sensor, surface)
+    return face(state.latest?.toPoint(), nowS, sensor, surface, unit)
 }

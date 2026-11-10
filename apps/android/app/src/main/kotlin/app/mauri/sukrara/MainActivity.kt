@@ -10,16 +10,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NavTargets
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.monitor.service.StartReason
 import app.mauri.sukrara.sensor.pairing.PairingLoad
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** The one activity: launcher, invite links (`sukrara:` / `https://sukrara.mauri.app/join`). */
@@ -46,18 +53,22 @@ class MainActivity : ComponentActivity() {
         }
         val graph = graph
         setContent {
+            // the person's glucose unit: every number the screens show and every number input follows it
+            val unit by remember { graph.graphConfig.map { it.unit }.distinctUntilChanged() }.collectAsState(GlucoseUnit.MGDL)
             SukraraTheme {
-                SukraraNavigation(
-                    graph,
-                    deepLink,
-                    openNewSensor,
-                    { openNewSensor = false },
-                    Modifier.fillMaxSize(),
-                    openPen = openPen,
-                    onPenShow = { openPen = null },
-                    openHealthConnect = openHealth,
-                    onHealthConnectShow = { openHealth = false },
-                )
+                CompositionLocalProvider(LocalGlucoseUnit provides unit) {
+                    SukraraNavigation(
+                        graph,
+                        deepLink,
+                        openNewSensor,
+                        { openNewSensor = false },
+                        Modifier.fillMaxSize(),
+                        openPen = openPen,
+                        onPenShow = { openPen = null },
+                        openHealthConnect = openHealth,
+                        onHealthConnectShow = { openHealth = false },
+                    )
+                }
             }
         }
     }

@@ -138,7 +138,7 @@ struct AlertsRangesPane: View {
                 kind.isBelowThreshold
                     ? L10n.t("Below \(unit.format(Int(r.threshold))) \(unit.symbol)")
                     : L10n.t("From \(unit.format(Int(r.threshold))) \(unit.symbol)")
-            case .rate: L10n.t("Faster than \(String(format: "%.1f", r.threshold)) mg/dL/min")
+            case .rate: L10n.t("Faster than \(unit.rateText(r.threshold)) \(unit.rateSymbol)")
             case .noData: L10n.t("After \(Durations.text(Int(r.threshold))) without data")
             }
         let repeats = r.repeatMin == 0 ? L10n.t("once") : L10n.t("every \(Durations.text(r.repeatMin))")

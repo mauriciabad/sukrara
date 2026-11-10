@@ -142,6 +142,16 @@
         "android": ["apps/android/core/model/*Durations*"],
         "mac": ["apps/macos/Sources/SukraraCore/*Durations*"]
       }
+    },
+    {
+      "name": "units",
+      "level": "fail",
+      "why": "One glucose unit conversion and format per platform (contracts/settings/units.json): Android GlucoseUnit.kt and Mac GlucoseUnit.swift change together with the cases",
+      "sides": {
+        "cases": ["contracts/settings/units.json"],
+        "android": ["apps/android/core/model/*GlucoseUnit*"],
+        "mac": ["apps/macos/Sources/SukraraCore/*GlucoseUnit*"]
+      }
     }
   ],
   "features": {

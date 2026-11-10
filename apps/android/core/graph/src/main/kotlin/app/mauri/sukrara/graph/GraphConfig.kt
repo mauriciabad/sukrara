@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.TirRange
@@ -39,6 +40,11 @@ data class GraphConfig(
     /** Places whose card leaves out the sensor's time left. */
     val sensorHidden: Set<GraphPlace> = emptySet(),
     val marks: MarkShow = MarkShow.DEFAULT,
+    /**
+     * The glucose unit every number is written in (`general.unit`, not mirrored: each device keeps its own;
+     * contracts/settings/units.json). Not a `graph.*` setting, but every card surface draws from this config.
+     */
+    val unit: GlucoseUnit = GlucoseUnit.MGDL,
 ) {
     fun sensorTime(p: GraphPlace) = p !in sensorHidden
 
@@ -62,6 +68,7 @@ data class GraphConfig(
             gridHours = gridHours,
             crown = columnCrown,
             marks = marks,
+            unit = unit,
         )
 
     /** The app's home panel: the APP place's window and sensor time, the rings and last-treatment slot. */
@@ -73,6 +80,7 @@ data class GraphConfig(
             lastElse = lastElseRing(),
             sensorTime = sensorTime(GraphPlace.APP),
             bands = bands,
+            unit = unit,
         )
 
     companion object {

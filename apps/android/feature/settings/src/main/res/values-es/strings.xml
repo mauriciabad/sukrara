@@ -91,8 +91,8 @@
     <string name="st_band_high">Alto por encima de</string>
     <string name="st_band_very_high">Muy alto por encima de</string>
     <string name="st_band_extremely_high">Extremadamente alto por encima de</string>
-    <string name="st_band_between">Debe estar por encima de %1$s y por debajo de %2$s mg/dL</string>
-    <string name="st_ranges_footer">Los rangos colorean la gráfica y cuentan el tiempo en rango. No cambian cuándo suenan las alertas: eso es el valor de cada alerta. Valores en mg/dL.</string>
+    <string name="st_band_between">Debe estar por encima de %1$s y por debajo de %2$s %3$s</string>
+    <string name="st_ranges_footer">Los rangos colorean la gráfica y cuentan el tiempo en rango. No cambian cuándo suenan las alertas: eso es el valor de cada alerta.</string>
     <string name="st_graph_title">Gráfica</string>
     <string name="st_graph_hours">Tiempo mostrado</string>
     <string name="st_graph_grid">Líneas verticales cada</string>
@@ -347,7 +347,6 @@
     <string name="st_sensorend_footer">Un recordatorio que llegaría después del final del sensor se omite. El inicio de la cuenta atrás también decide cuándo la gráfica muestra el anillo de cuenta atrás del sensor. Con el chip de glucosa activado, la cuenta atrás del final se queda en las notificaciones para que la barra de estado siga mostrando tu glucosa. Desliza una cuenta atrás para ocultarla con este sensor. Android no comparte su horario de descanso con las apps, así que indica tu noche aquí.</string>
     <string name="st_reset_section">Restablecer %1$s</string>
     <string name="st_reset">Restablecer</string>
-    <string name="st_mgdl">mg/dL</string>
     <string name="st_slot_tir">Tiempo en rango</string>
     <string name="st_slot_gmi">GMI (A1c estimada)</string>
     <string name="st_slot_average">Media</string>
@@ -369,7 +368,7 @@
     <string name="st_graph_line_add_summary">Hasta %1$d líneas</string>
     <string name="st_graph_line_full">%1$d líneas: quita una para añadir otra</string>
     <string name="st_graph_line_exists">Esa línea ya está</string>
-    <string name="st_graph_line_remove">Quitar la línea de %1$d mg/dL</string>
+    <string name="st_graph_line_remove">Quitar la línea de %1$s</string>
     <string name="st_graph_hours_default">Por defecto</string>
     <string name="st_graph_hours_same">Igual que por defecto (%1$s)</string>
     <string name="st_graph_beside">Junto al valor</string>
@@ -385,8 +384,8 @@
     <string name="st_last_else_period">Sin tratamiento reciente: periodo</string>
     <string name="st_last_else_faded">Sin tratamiento reciente: más tenue</string>
     <string name="st_ring_counts">El centro del anillo cuenta</string>
-    <string name="st_ring_counts_in_range">En rango (%1$d–%2$d mg/dL)</string>
-    <string name="st_ring_counts_tight">Muy bien (%1$d–%2$d mg/dL)</string>
+    <string name="st_ring_counts_in_range">En rango (%1$s–%2$s %3$s)</string>
+    <string name="st_ring_counts_tight">Muy bien (%1$s–%2$s %3$s)</string>
     <string name="st_ring_order">Orden del anillo</string>
     <string name="st_ring_order_footer">Los colores del anillo en el sentido del reloj desde las 12. Arrastra una fila por su asa o mantenla pulsada; TalkBack ofrece Subir y Bajar.</string>
     <string name="st_graph_beside_graph">Junto al gráfico</string>
@@ -415,7 +414,7 @@
     <string name="st_marks_reset">Restablecer tratamientos en el gráfico</string>
     <string name="st_marks_footer">Se aplica a todos los gráficos: la app, la notificación, los widgets y la pantalla de bloqueo.</string>
     <string name="st_ranges_reset">Restablecer rangos</string>
-    <string name="st_ranges_reset_summary">Vuelven a 54 / 70 / 140 / 180 / 250 / 300 mg/dL</string>
+    <string name="st_ranges_reset_summary">Vuelven a los rangos por defecto</string>
     <string name="st_lock_title">Pantalla de bloqueo</string>
     <string name="st_lock_treatment">Añadir tratamiento sobre la pantalla de bloqueo</string>
     <string name="st_lock_time">Tiempo para guardar</string>
@@ -594,7 +593,7 @@
     <string name="st_clinic_tidepool">Tidepool</string>
     <!-- Settings › Alerts › Lately: the alerts' recent history -->
     <string name="st_lately_title">Últimamente</string>
-    <string name="st_note_fired">%1$s · %2$d mg/dL</string>
+    <string name="st_note_fired">%1$s · %2$s</string>
     <string name="st_note_remote">%1$s (de quien lleva el sensor)</string>
     <string name="st_note_cleared">Terminó: %1$s</string>
     <string name="st_note_cleared_remote">Terminó: %1$s (por quien lleva el sensor)</string>
@@ -704,4 +703,6 @@
     <string name="st_calendar_picked_sub">%1$s · se sincroniza con tus otros dispositivos</string>
     <string name="st_calendar_gcal_title">Mostrar en Google Calendar</string>
     <string name="st_calendar_gcal_hint">Google Calendar → Ajustes → Gestionar cuentas → Sukrara</string>
+    <string name="st_unit">Unidad de glucosa</string>
+    <string name="st_unit_footer">Todos los valores de glucosa se muestran y se escriben en esta unidad: la tarjeta, la gráfica, las notificaciones, las alertas, los widgets, la barra de estado y estos ajustes. Sukrara guarda los valores en mg/dL, así que cambiarla nunca cambia un umbral.</string>
 </resources>

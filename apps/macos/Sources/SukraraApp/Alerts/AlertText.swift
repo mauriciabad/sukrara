@@ -12,6 +12,8 @@ struct AlertText: Equatable {
     enum Language: String { case en, es }
 
     let language: Language
+    /// The unit every number is written in (`general.unit`; contracts/settings/units.json).
+    var unit: GlucoseUnit = .mgdl
 
     /// The first preferred language Sukrara speaks, else English.
     static func preferred(_ languages: [String] = Locale.preferredLanguages) -> AlertText {
@@ -26,7 +28,7 @@ struct AlertText: Equatable {
     func title(_ f: AlertFiring) -> String { headline(f) }
 
     /// The body: the value and arrow (`69 mg/dL ↘`), with the rate for falling / rising fast (`· falling 2.4
-    /// mg/dL/min`), and for no data how long and the last value. Never the threshold, never a made-up number: the
+    /// mg/dL/min`, `· falling 0.13 mmol/L/min`), and for no data how long and the last value. Never the threshold, never a made-up number: the
     /// sensor's LO / HI as such (not its stored 39 / 401), and without a reading it says so.
     func body(_ f: AlertFiring, now: Date) -> String {
         let en = language == .en
@@ -40,20 +42,30 @@ struct AlertText: Equatable {
         guard let r = f.reading else { return en ? "No recent reading" : "Sin lectura reciente" }
         let shown = "\(value(r)) \(TrendAngle.text(r.rate))"
         guard let rate = r.rate, f.kind == .fallingFast || f.kind == .risingFast else { return shown }
-        let amount = String(format: "%.1f", locale: Locale(identifier: language.rawValue), abs(rate))
+        let amount = "\(unit.rateText(abs(rate), locale: locale)) \(unit.rateSymbol)"
         switch (language, f.kind) {
-        case (.en, .fallingFast): return "\(shown) · falling \(amount) mg/dL/min"
-        case (.en, _): return "\(shown) · rising \(amount) mg/dL/min"
-        case (.es, .fallingFast): return "\(shown) · baja \(amount) mg/dL/min"
-        case (.es, _): return "\(shown) · sube \(amount) mg/dL/min"
+        case (.en, .fallingFast): return "\(shown) · falling \(amount)"
+        case (.en, _): return "\(shown) · rising \(amount)"
+        case (.es, .fallingFast): return "\(shown) · baja \(amount)"
+        case (.es, _): return "\(shown) · sube \(amount)"
         }
     }
 
-    /// `69 mg/dL`, or the sensor's LO / HI with what it means.
+    private var locale: Locale { Locale(identifier: language.rawValue) }
+
+    /// `69 mg/dL` / `3,8 mmol/L` (the user's unit, the language's decimal separator), or the sensor's LO / HI with what
+    /// it means, the bound in the unit.
     private func value(_ r: GlucoseSample) -> String {
-        if r.isLo { return language == .en ? "LO · below 40 mg/dL" : "LO · por debajo de 40 mg/dL" }
-        if r.isHi { return language == .en ? "HI · above 400 mg/dL" : "HI · por encima de 400 mg/dL" }
-        return "\(Int(r.mgdl.rounded())) mg/dL"
+        func shown(_ mgdl: Int) -> String { "\(unit.format(mgdl, locale: locale)) \(unit.symbol)" }
+        if r.isLo {
+            let b = shown(GlucoseRange.floor)
+            return language == .en ? "LO · below \(b)" : "LO · por debajo de \(b)"
+        }
+        if r.isHi {
+            let b = shown(GlucoseRange.ceiling)
+            return language == .en ? "HI · above \(b)" : "HI · por encima de \(b)"
+        }
+        return shown(Int(r.mgdl.rounded()))
     }
 
     /// The headline in the language (English: the engine's SPEC copy; highs never suggest more insulin).

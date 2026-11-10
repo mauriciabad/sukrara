@@ -7,12 +7,21 @@ import Foundation
 
 /// A number setting's format (contracts/settings/settings.json "numbers"), in stored units: valid = a preset, a special
 /// value (shown by its word, e.g. 0 = "Off"), or, when `custom`, a value in `min`...`max` on `step`. `scale` = stored
-/// units per shown unit (ring periods: seconds stored, days shown); `nudge` = one stepper click.
+/// units per shown unit (ring periods: seconds stored, days shown); `nudge` = one stepper click. `mmol` = a glucose
+/// format's mmol/L variant (all in mmol/L; values stay stored in mg/dL, contracts/settings/units.json).
 public struct NumberSpec: Equatable, Sendable {
     public let id: String, unit: String, min: Double, max: Double, step: Double, nudge: Double
     public let scale: Double, decimals: Int, presets: [Double], `default`: Double
     public let special: [Double: String], custom: Bool, maxItems: Int
+    private let variant: [NumberSpec]
+    public var mmol: NumberSpec? { variant.first }
     private static let eps = 1e-9
+
+    init(id: String, unit: String, min: Double, max: Double, step: Double, nudge: Double, scale: Double, decimals: Int, presets: [Double], default: Double, special: [Double: String], custom: Bool, maxItems: Int, mmol: NumberSpec? = nil) {
+        self.id = id; self.unit = unit; self.min = min; self.max = max; self.step = step; self.nudge = nudge; self.scale = scale
+        self.decimals = decimals; self.presets = presets; self.default = `default`; self.special = special; self.custom = custom
+        self.maxItems = maxItems; self.variant = mmol.map { [$0] } ?? []
+    }
 
     public func inRange(_ v: Double) -> Bool { v >= min - Self.eps && v <= max + Self.eps }
     public func onStep(_ v: Double) -> Bool { let k = (v - min) / step; return abs(k - k.rounded()) < 1e-6 }
@@ -37,6 +46,14 @@ public struct NumberSpec: Equatable, Sendable {
     /// The word of a special value ("off", "once", …) or nil.
     public func specialOf(_ v: Double) -> String? { special.first { abs($0.key - v) < Self.eps }?.value }
     public func isPreset(_ v: Double) -> Bool { presets.contains { abs($0 - v) < Self.eps } }
+    /// This format as shown and typed in `unit`: the `mmol` variant (in mmol/L) or itself.
+    public func inUnit(_ unit: GlucoseUnit) -> NumberSpec { unit == .mmol ? mmol ?? self : self }
+    /// A stored value as a number of `inUnit` (mg/dL → mmol/L at the variant's decimals; itself otherwise).
+    public func shown(_ v: Double, _ unit: GlucoseUnit) -> Double { unit == .mmol ? mmol.map { GlucoseUnit.mmol.shown(v, decimals: $0.decimals) } ?? v : v }
+    /// A number of `inUnit` → the stored value on `step`, always valid (a threshold typed in mmol/L lands on whole mg/dL).
+    public func stored(_ shown: Double, _ unit: GlucoseUnit) -> Double { unit == .mmol && mmol != nil ? coerce(GlucoseUnit.mmol.stored(shown, step: step)) : shown }
+    /// A stored value as typed / shown in `unit`, without the unit: "70" / "3.9".
+    public func text(_ v: Double, _ unit: GlucoseUnit) -> String { inUnit(unit).text(shown(v, unit)) }
 }
 
 /// One row of the settings inventory: where it's stored on each platform ("store:key", "" = not on that platform)
@@ -47,25 +64,25 @@ public struct SettingInfo: Sendable {
 
 /// The schema's number formats and inventory.
 public enum SettingsSpec {
-    public static let bandVeryLow = NumberSpec(id: "bandVeryLow", unit: "mg/dL", min: 30.0, max: 80.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [50.0, 54.0, 55.0, 60.0], default: 54.0, special: [:], custom: true, maxItems: 0)
-    public static let bandLow = NumberSpec(id: "bandLow", unit: "mg/dL", min: 40.0, max: 120.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [65.0, 70.0, 75.0, 80.0], default: 70.0, special: [:], custom: true, maxItems: 0)
-    public static let bandTight = NumberSpec(id: "bandTight", unit: "mg/dL", min: 80.0, max: 250.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [120.0, 140.0, 160.0], default: 140.0, special: [:], custom: true, maxItems: 0)
-    public static let bandHigh = NumberSpec(id: "bandHigh", unit: "mg/dL", min: 100.0, max: 300.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [160.0, 180.0, 200.0], default: 180.0, special: [:], custom: true, maxItems: 0)
-    public static let bandVeryHigh = NumberSpec(id: "bandVeryHigh", unit: "mg/dL", min: 150.0, max: 400.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [220.0, 250.0, 300.0], default: 250.0, special: [:], custom: true, maxItems: 0)
-    public static let bandExtremelyHigh = NumberSpec(id: "bandExtremelyHigh", unit: "mg/dL", min: 200.0, max: 450.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [300.0, 350.0, 400.0], default: 300.0, special: [:], custom: true, maxItems: 0)
+    public static let bandVeryLow = NumberSpec(id: "bandVeryLow", unit: "mg/dL", min: 30.0, max: 80.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [50.0, 54.0, 55.0, 60.0], default: 54.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "bandVeryLow", unit: "mmol/L", min: 1.7, max: 4.4, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [2.8, 3.0, 3.1, 3.3], default: 3.0, special: [:], custom: true, maxItems: 0))
+    public static let bandLow = NumberSpec(id: "bandLow", unit: "mg/dL", min: 40.0, max: 120.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [65.0, 70.0, 75.0, 80.0], default: 70.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "bandLow", unit: "mmol/L", min: 2.3, max: 6.6, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [3.6, 3.9, 4.2, 4.4], default: 3.9, special: [:], custom: true, maxItems: 0))
+    public static let bandTight = NumberSpec(id: "bandTight", unit: "mg/dL", min: 80.0, max: 250.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [120.0, 140.0, 160.0], default: 140.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "bandTight", unit: "mmol/L", min: 4.5, max: 13.8, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [6.7, 7.8, 8.9], default: 7.8, special: [:], custom: true, maxItems: 0))
+    public static let bandHigh = NumberSpec(id: "bandHigh", unit: "mg/dL", min: 100.0, max: 300.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [160.0, 180.0, 200.0], default: 180.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "bandHigh", unit: "mmol/L", min: 5.6, max: 16.6, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [8.9, 10.0, 11.1], default: 10.0, special: [:], custom: true, maxItems: 0))
+    public static let bandVeryHigh = NumberSpec(id: "bandVeryHigh", unit: "mg/dL", min: 150.0, max: 400.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [220.0, 250.0, 300.0], default: 250.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "bandVeryHigh", unit: "mmol/L", min: 8.4, max: 22.2, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [12.2, 13.9, 16.7], default: 13.9, special: [:], custom: true, maxItems: 0))
+    public static let bandExtremelyHigh = NumberSpec(id: "bandExtremelyHigh", unit: "mg/dL", min: 200.0, max: 450.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [300.0, 350.0, 400.0], default: 300.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "bandExtremelyHigh", unit: "mmol/L", min: 11.1, max: 24.9, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [16.7, 19.4, 22.2], default: 16.6, special: [:], custom: true, maxItems: 0))
     public static let graphHours = NumberSpec(id: "graphHours", unit: "h", min: 1.0, max: 48.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [3.0, 6.0, 12.0, 24.0], default: 12.0, special: [:], custom: true, maxItems: 0)
     public static let placeHours = NumberSpec(id: "placeHours", unit: "h", min: 1.0, max: 48.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [3.0, 6.0, 12.0, 24.0], default: 0.0, special: [0.0: "same_as_default"], custom: true, maxItems: 0)
     public static let ringCount = NumberSpec(id: "ringCount", unit: "", min: 0.0, max: 3.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [0.0, 1.0, 2.0, 3.0], default: 2.0, special: [0.0: "none"], custom: false, maxItems: 0)
     public static let ringWindow = NumberSpec(id: "ringWindow", unit: "d", min: 86400.0, max: 7776000.0, step: 86400.0, nudge: 86400.0, scale: 86400.0, decimals: 0, presets: [43200.0, 86400.0, 259200.0, 604800.0, 1209600.0, 2592000.0], default: 86400.0, special: [:], custom: true, maxItems: 0)
-    public static let line = NumberSpec(id: "line", unit: "mg/dL", min: 40.0, max: 400.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [], default: 100.0, special: [:], custom: true, maxItems: 6)
+    public static let line = NumberSpec(id: "line", unit: "mg/dL", min: 40.0, max: 400.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [], default: 100.0, special: [:], custom: true, maxItems: 6, mmol: NumberSpec(id: "line", unit: "mmol/L", min: 2.2, max: 22.2, step: 0.1, nudge: 0.5, scale: 1.0, decimals: 1, presets: [], default: 5.5, special: [:], custom: true, maxItems: 0))
     public static let gridHours = NumberSpec(id: "gridHours", unit: "h", min: 0.0, max: 12.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [0.0, 1.0, 2.0, 3.0, 4.0, 6.0, 12.0], default: 1.0, special: [0.0: "off"], custom: false, maxItems: 0)
     public static let countdownHours = NumberSpec(id: "countdownHours", unit: "h", min: 1.0, max: 24.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [2.0, 4.0, 8.0, 12.0, 24.0], default: 8.0, special: [:], custom: true, maxItems: 0)
-    public static let thresholdVeryLow = NumberSpec(id: "thresholdVeryLow", unit: "mg/dL", min: 40.0, max: 80.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [50.0, 54.0, 55.0, 60.0, 65.0], default: 55.0, special: [:], custom: true, maxItems: 0)
-    public static let thresholdLow = NumberSpec(id: "thresholdLow", unit: "mg/dL", min: 50.0, max: 120.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [60.0, 65.0, 70.0, 75.0, 80.0], default: 70.0, special: [:], custom: true, maxItems: 0)
-    public static let thresholdHigh = NumberSpec(id: "thresholdHigh", unit: "mg/dL", min: 120.0, max: 300.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [160.0, 170.0, 180.0, 185.0, 200.0], default: 180.0, special: [:], custom: true, maxItems: 0)
-    public static let thresholdVeryHigh = NumberSpec(id: "thresholdVeryHigh", unit: "mg/dL", min: 150.0, max: 400.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [200.0, 220.0, 250.0, 270.0, 300.0], default: 250.0, special: [:], custom: true, maxItems: 0)
-    public static let thresholdExtremelyHigh = NumberSpec(id: "thresholdExtremelyHigh", unit: "mg/dL", min: 200.0, max: 450.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [220.0, 250.0, 270.0, 300.0, 350.0], default: 300.0, special: [:], custom: true, maxItems: 0)
-    public static let thresholdRate = NumberSpec(id: "thresholdRate", unit: "mg/dL/min", min: 0.5, max: 5.0, step: 0.1, nudge: 0.5, scale: 1.0, decimals: 1, presets: [1.0, 1.5, 2.0, 2.5, 3.0], default: 2.0, special: [:], custom: true, maxItems: 0)
+    public static let thresholdVeryLow = NumberSpec(id: "thresholdVeryLow", unit: "mg/dL", min: 40.0, max: 80.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [50.0, 54.0, 55.0, 60.0, 65.0], default: 55.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "thresholdVeryLow", unit: "mmol/L", min: 2.2, max: 4.4, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [2.8, 3.0, 3.1, 3.3, 3.6], default: 3.1, special: [:], custom: true, maxItems: 0))
+    public static let thresholdLow = NumberSpec(id: "thresholdLow", unit: "mg/dL", min: 50.0, max: 120.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [60.0, 65.0, 70.0, 75.0, 80.0], default: 70.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "thresholdLow", unit: "mmol/L", min: 2.8, max: 6.6, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [3.3, 3.6, 3.9, 4.2, 4.4], default: 3.9, special: [:], custom: true, maxItems: 0))
+    public static let thresholdHigh = NumberSpec(id: "thresholdHigh", unit: "mg/dL", min: 120.0, max: 300.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [160.0, 170.0, 180.0, 185.0, 200.0], default: 180.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "thresholdHigh", unit: "mmol/L", min: 6.7, max: 16.6, step: 0.1, nudge: 0.5, scale: 1.0, decimals: 1, presets: [8.9, 9.4, 10.0, 10.3, 11.1], default: 10.0, special: [:], custom: true, maxItems: 0))
+    public static let thresholdVeryHigh = NumberSpec(id: "thresholdVeryHigh", unit: "mg/dL", min: 150.0, max: 400.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [200.0, 220.0, 250.0, 270.0, 300.0], default: 250.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "thresholdVeryHigh", unit: "mmol/L", min: 8.4, max: 22.2, step: 0.1, nudge: 0.5, scale: 1.0, decimals: 1, presets: [11.1, 12.2, 13.9, 15.0, 16.7], default: 13.9, special: [:], custom: true, maxItems: 0))
+    public static let thresholdExtremelyHigh = NumberSpec(id: "thresholdExtremelyHigh", unit: "mg/dL", min: 200.0, max: 450.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [220.0, 250.0, 270.0, 300.0, 350.0], default: 300.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "thresholdExtremelyHigh", unit: "mmol/L", min: 11.1, max: 24.9, step: 0.1, nudge: 0.5, scale: 1.0, decimals: 1, presets: [12.2, 13.9, 15.0, 16.7, 19.4], default: 16.6, special: [:], custom: true, maxItems: 0))
+    public static let thresholdRate = NumberSpec(id: "thresholdRate", unit: "mg/dL/min", min: 0.5, max: 5.0, step: 0.1, nudge: 0.5, scale: 1.0, decimals: 1, presets: [1.0, 1.5, 2.0, 2.5, 3.0], default: 2.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "thresholdRate", unit: "mmol/L/min", min: 0.03, max: 0.28, step: 0.01, nudge: 0.01, scale: 1.0, decimals: 2, presets: [0.06, 0.08, 0.11, 0.14, 0.17], default: 0.11, special: [:], custom: true, maxItems: 0))
     public static let penPrimeBelow = NumberSpec(id: "penPrimeBelow", unit: "u", min: 0.5, max: 5.0, step: 0.5, nudge: 0.5, scale: 1.0, decimals: 1, presets: [1.5, 2.0, 2.5, 3.0], default: 2.0, special: [:], custom: true, maxItems: 0)
     public static let penCluster = NumberSpec(id: "penCluster", unit: "min", min: 2.0, max: 30.0, step: 1.0, nudge: 1.0, scale: 1.0, decimals: 0, presets: [5.0, 10.0, 15.0], default: 10.0, special: [:], custom: true, maxItems: 0)
     public static let penPrimeBefore = NumberSpec(id: "penPrimeBefore", unit: "min", min: 5.0, max: 60.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [15.0, 30.0, 45.0], default: 30.0, special: [:], custom: true, maxItems: 0)
@@ -82,7 +99,7 @@ public enum SettingsSpec {
     public static let muteCarbs = NumberSpec(id: "muteCarbs", unit: "min", min: 5.0, max: 120.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [10.0, 15.0, 20.0, 30.0, 45.0], default: 15.0, special: [:], custom: true, maxItems: 0)
     public static let actionMute = NumberSpec(id: "actionMute", unit: "min", min: 1.0, max: 720.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [15.0, 30.0, 60.0, 120.0], default: 30.0, special: [:], custom: true, maxItems: 0)
     public static let actionRelax = NumberSpec(id: "actionRelax", unit: "min", min: 5.0, max: 120.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [15.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0], default: 30.0, special: [:], custom: true, maxItems: 0)
-    public static let backMgdl = NumberSpec(id: "backMgdl", unit: "mg/dL", min: 0.0, max: 50.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [0.0, 5.0, 10.0, 15.0, 20.0], default: 10.0, special: [:], custom: true, maxItems: 0)
+    public static let backMgdl = NumberSpec(id: "backMgdl", unit: "mg/dL", min: 0.0, max: 50.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [0.0, 5.0, 10.0, 15.0, 20.0], default: 10.0, special: [:], custom: true, maxItems: 0, mmol: NumberSpec(id: "backMgdl", unit: "mmol/L", min: 0.0, max: 2.8, step: 0.1, nudge: 0.1, scale: 1.0, decimals: 1, presets: [0.0, 0.3, 0.6, 0.8, 1.1], default: 0.6, special: [:], custom: true, maxItems: 0))
     public static let backMin = NumberSpec(id: "backMin", unit: "min", min: 0.0, max: 60.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [0.0, 5.0, 10.0, 15.0, 30.0], default: 10.0, special: [:], custom: true, maxItems: 0)
     public static let muteAll = NumberSpec(id: "muteAll", unit: "min", min: 5.0, max: 1440.0, step: 1.0, nudge: 15.0, scale: 1.0, decimals: 0, presets: [30.0, 60.0, 120.0, 240.0, 480.0, 0.0], default: 60.0, special: [0.0: "until_turned_off"], custom: true, maxItems: 0)
     public static let libreViewInterval = NumberSpec(id: "libreViewInterval", unit: "min", min: 1.0, max: 240.0, step: 1.0, nudge: 5.0, scale: 1.0, decimals: 0, presets: [5.0, 15.0, 60.0], default: 5.0, special: [:], custom: true, maxItems: 0)

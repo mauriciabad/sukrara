@@ -32,6 +32,7 @@ public enum GlucoseCard {
         // a zoomed chart: the same style with the window's length the surface zoomed to
         var graph = fr.showGraph ? st.graph : nil
         if let s = view?.span { graph?.window = s }
+        graph?.unit = st.unit
         let bands = st.bands.sane()
         let metrics = metricsOf ?? { r, b in GlucoseMetrics.of(readings, from: now - r.window, to: now, bands: b) }
         let spot = sensorSpot(st, sl, fr)
@@ -200,11 +201,11 @@ public enum GlucoseCard {
         Slots.drawUnder(ctx, items, cx: cx, cy: box.midY, radius: size / 2, pal)
         for (i, item) in items.enumerated() {
             Slots.draw(
-                ctx, item, center: CGPoint(x: cx[i], y: box.midY), radius: size / 2, now: now, pal, d: d,
+                ctx, item, center: CGPoint(x: cx[i], y: box.midY), radius: size / 2, now: now, pal, d: d, unit: st.unit,
                 countdown: i == main ? countdown : nil)
             rec.add(
                 "slot", CGRect(x: cx[i] - size / 2, y: box.midY - size / 2, width: size, height: size),
-                Slots.describe(item, main: i == main, countdown: i == main ? countdown : nil))
+                Slots.describe(item, main: i == main, countdown: i == main ? countdown : nil, unit: st.unit))
         }
         rec.add(
             "slots", CGRect(x: cx.last! - size / 2, y: box.minY, width: x - (cx.last! - size / 2), height: box.height),
@@ -280,7 +281,7 @@ public enum GlucoseCard {
         sensor: SensorBadge.Look?, unit: GlucoseUnit, rec: CardLayout
     ) {
         let small = Ink.font(max(11 * d, box.height * 0.17), .regular)
-        let face = face(r, now: now, sensor: sensor, format: unit.format)
+        let face = face(r, now: now, sensor: sensor, format: { unit.cardText($0) })
         if face.state == .warmingUp, let sensor {
             return drawWarmup(ctx, box, sensor, small, now, pal, d: d, rec: rec)
         }
@@ -744,7 +745,7 @@ extension GlucoseCard {
         let latest = data.latest
         return face(
             latest, now: data.now, sensor: SensorBadge.look(data.sensor, now: data.now, latest: latest?.t),
-            format: unit.format)
+            format: { unit.cardText($0) })
     }
 
     /// What VoiceOver says for `surface`'s card with the user's settings `config` (its ranges and chart window):

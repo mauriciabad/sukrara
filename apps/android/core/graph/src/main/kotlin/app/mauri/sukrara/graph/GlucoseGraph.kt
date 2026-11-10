@@ -163,7 +163,10 @@ object GlucoseGraph {
             return out
         }
 
-        fun valuesW(vs: List<Int>) = vs.maxOfOrNull { text.measureText("$it") } ?: 0f
+        // the range labels in the person's unit ("3.9"): the lines stay where the mg/dL values are
+        fun label(v: Int) = st.unit.text(v, input.words.locale)
+
+        fun valuesW(vs: List<Int>) = vs.maxOfOrNull { text.measureText(label(it)) } ?: 0f
 
         fun geo(valW: Float): Geo {
             val (left, right) = plotX(area.left, area.right, st.side && !tir.empty, labels, d, pctLabelW, valW)
@@ -249,7 +252,7 @@ object GlucoseGraph {
         drawHours(cv, from, end, st, left, right, top, plotBottom, sideW, area.bottom - 2 * d - lane1, d, text, grid, layout, rec, ::x)
         // the values on the right, left-aligned SIDE_GAP_DP after the plot
         for ((v, ly) in values) {
-            val s = "$v"
+            val s = label(v)
             val base = ly + text.textSize / 3
             val lx = right + SIDE_GAP_DP * d
             cv.drawText(s, lx, base, text)

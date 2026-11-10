@@ -4,7 +4,10 @@
 `python3 tools/settings/gen.py` turns it into `SettingsSpec.kt` (`:core:data`) and `SettingsSpec.swift`
 (`SukraraCore`): number formats, option lists, the inventory, and the store / key constants. App code takes every
 stored key from the generated `SettingsSpec` (tools/check rule `settings` fails on a key written by hand).
-[`durations.json`](durations.json) holds the duration formatting cases every `Durations` formatter passes.
+[`durations.json`](durations.json) holds the duration formatting cases every `Durations` formatter passes; [`units.json`](units.json)
+the glucose units (mg/dL ↔ mmol/L, how values and rates are written, typed mmol/L back to stored mg/dL) every
+`GlucoseUnit` passes. A glucose number format has a `mmol` variant (its range, step, stepper click and presets in
+mmol/L); `gen.py` refuses a variant whose grid doesn't come back unchanged through the stored mg/dL.
 
 ## Stores
 

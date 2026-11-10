@@ -4,6 +4,7 @@
 import CoreGraphics
 import CoreText
 import Foundation
+import SukraraCore
 
 // MARK: - Ring
 
@@ -475,17 +476,18 @@ enum MetricGauge {
         default: Goal.cv.met(m)
         }
     }
-    static func text(_ k: SlotKind, _ m: GlucoseMetrics) -> (String, String) {
+    /// The number and its unit: the average in the card's `unit` ("141", "7.8"; the value says the unit).
+    static func text(_ k: SlotKind, _ m: GlucoseMetrics, unit: GlucoseUnit, locale: Locale) -> (String, String) {
         switch k {
         case .gmi: (String(format: "%.1f", m.gmi), "%")
-        case .average: ("\(Int(m.mean.rounded()))", "")
+        case .average: (unit.format(Int(m.mean.rounded()), locale: locale), "")
         default: ("\(Int(m.cv.rounded()))", "%")
         }
     }
 
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius: CGFloat, m: GlucoseMetrics, spec: RingSpec,
-        _ pal: GraphPalette, emphasis: CGFloat, d: CGFloat
+        _ pal: GraphPalette, emphasis: CGFloat, d: CGFloat, glucose: GlucoseUnit
     ) {
         let sw = radius * 0.2, rr = radius - sw / 2
         ctx.saveGState()
@@ -515,7 +517,7 @@ enum MetricGauge {
         ctx.restoreGState()
         let num = Ink.font(radius * 0.62, .heavy, rounded: true)
         let unit = Ink.font(radius * 0.3, .semibold, rounded: true)
-        let (v, u) = m.empty ? ("–", "") : text(spec.kind, m)
+        let (v, u) = m.empty ? ("–", "") : text(spec.kind, m, unit: glucose, locale: CardWords.current.locale)
         let w = Ink.width(v, num) + Ink.width(u, unit)
         let base = c.y + radius * 0.62 * 0.3
         Ink.draw(ctx, v, x: c.x - w / 2, y: base, num, pal.ink.a(emphasis))

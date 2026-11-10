@@ -57,7 +57,7 @@ private fun noteText(
     val side = kind?.let { MuteText.sideName(it.side, w) }.orEmpty()
     return when (n.type) {
         AlertNoteType.Fired -> {
-            val text = if (n.mgdl != null) stringResource(R.string.st_note_fired, name, n.mgdl!!) else name
+            val text = n.mgdl?.let { stringResource(R.string.st_note_fired, name, glucoseLabeler()(it)) } ?: name
             if (n.remote) stringResource(R.string.st_note_remote, text) else text
         }
 

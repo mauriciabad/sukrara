@@ -4,6 +4,7 @@
 package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
@@ -40,8 +41,7 @@ class SpokenFixtureTest {
 
     @Test
     fun card() {
-        // a case `only` for the Mac: its mmol/L unit (Android's card writes mg/dL)
-        val cs = cases("spoken/card.json").filter { it["only"].str() == null }
+        val cs = cases("spoken/card.json")
         assertTrue(cs.size >= 20)
         for (c in cs) {
             val r = c["reading"]?.jsonObject
@@ -67,6 +67,7 @@ class SpokenFixtureTest {
                     value = card?.get("value").bool() ?: true,
                     badge = card?.get("badge").bool() ?: true,
                     sensorTime = card?.get("sensorTime").bool() ?: false,
+                    unit = GlucoseUnit.of(c["unit"].str()),
                 )
             for ((lang, locale) in languages) {
                 val model =
@@ -157,7 +158,10 @@ class SpokenFixtureTest {
     @Test
     fun theRangeFollowsTheSettings() {
         val m = Scenes.model(listOf(GlucosePoint(now - 60, 200, 0.0)), Scenes.words(), sensor = null)
-        assertEquals("200 milligrams per decilitre, steady, high, 1 min ago", A11y.value(m, Bands(), CardSurface.TEST))
-        assertEquals("200 milligrams per decilitre, steady, in range, 1 min ago", A11y.value(m, Bands().copy(high = 220), CardSurface.TEST))
+        assertEquals("200 milligrams per decilitre, steady, high, 1 min ago", A11y.value(m, Bands(), CardSurface.TEST, GlucoseUnit.MGDL))
+        assertEquals(
+            "200 milligrams per decilitre, steady, in range, 1 min ago",
+            A11y.value(m, Bands().copy(high = 220), CardSurface.TEST, GlucoseUnit.MGDL),
+        )
     }
 }

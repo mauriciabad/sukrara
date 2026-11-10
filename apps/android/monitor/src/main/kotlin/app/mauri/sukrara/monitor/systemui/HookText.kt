@@ -38,7 +38,7 @@ object HookText {
     fun face(
         s: HookState,
         nowS: Long,
-    ): GlucoseLook = GlucoseCard.face(s.latest(), nowS, sensorLook(s, nowS), CardSurface.STATUS_HOOK)
+    ): GlucoseLook = GlucoseCard.face(s.latest(), nowS, sensorLook(s, nowS), CardSurface.STATUS_HOOK, s.unit)
 
     /** The sensor states the face decides on (ended; warming up with its ready time where the number goes). */
     fun sensorLook(

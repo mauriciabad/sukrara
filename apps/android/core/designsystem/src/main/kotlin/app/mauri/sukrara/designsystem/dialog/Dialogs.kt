@@ -142,30 +142,32 @@ fun NumberDialog(
     sub: (Double) -> String? = { null },
     onChoose: (Double) -> Unit,
 ) {
-    if (!input.hasCustom) {
-        ChoiceDialog(title, input.options.map { Choice(label(it), it, sub(it)) }, selected, onClose, onChoose)
+    // a glucose format follows the screen's unit (mmol/L: its schema variant), values stay stored ones
+    val shown = input.inUnit(LocalGlucoseUnit.current)
+    if (!shown.hasCustom) {
+        ChoiceDialog(title, shown.options.map { Choice(label(it), it, sub(it)) }, selected, onClose, onChoose)
         return
     }
     val haptics = rememberHaptics()
-    val isOption = input.isOption(selected)
-    var custom by rememberSaveable { mutableStateOf(!isOption || input.options.isEmpty()) }
-    var text by rememberSaveable { mutableStateOf(input.initialText(selected)) }
-    val unit = unitText(input.spec)
-    val rangeText = stringResource(R.string.ds_custom_range, input.shownMin, input.shownMax, unit)
-    val check = input.check(text)
+    val isOption = shown.isOption(selected)
+    var custom by rememberSaveable { mutableStateOf(!isOption || shown.options.isEmpty()) }
+    var text by rememberSaveable { mutableStateOf(shown.initialText(selected)) }
+    val unit = unitText(shown.spec)
+    val rangeText = stringResource(R.string.ds_custom_range, shown.shownMin, shown.shownMax, unit)
+    val check = shown.check(text)
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(title) },
         text = {
             Column(Modifier.selectableGroup().verticalScroll(rememberScrollState())) {
-                for (p in input.options) {
-                    RadioRow(label(p), sub(p), !custom && input.same(p, selected), true) {
+                for (p in shown.options) {
+                    RadioRow(label(p), sub(p), !custom && shown.same(p, selected), true) {
                         haptics.confirm()
                         onChoose(p)
                         onClose()
                     }
                 }
-                if (input.options.isNotEmpty()) {
+                if (shown.options.isNotEmpty()) {
                     RadioRow(stringResource(R.string.ds_custom), null, custom, true) { custom = true }
                 }
                 if (custom) {
@@ -179,7 +181,7 @@ fun NumberDialog(
                         }
                     OutlinedTextField(
                         value = text,
-                        onValueChange = { text = input.filter(it) },
+                        onValueChange = { text = shown.filter(it) },
                         label = { Text(stringResource(R.string.ds_custom_label)) },
                         suffix = { Text(unit) },
                         singleLine = true,
@@ -187,7 +189,7 @@ fun NumberDialog(
                         supportingText = { Text(error ?: rangeText) },
                         keyboardOptions =
                             KeyboardOptions(
-                                keyboardType = if (input.spec.decimals > 0) KeyboardType.Decimal else KeyboardType.Number,
+                                keyboardType = if (shown.spec.decimals > 0) KeyboardType.Decimal else KeyboardType.Number,
                             ),
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp).focusRequester(focus),
                     )

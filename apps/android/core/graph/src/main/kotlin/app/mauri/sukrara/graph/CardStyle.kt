@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.graph
 
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.TirRange
@@ -95,6 +96,8 @@ data class GraphStyle(
     val crown: Boolean = true,
     /** Which parts of each treatment kind show ([GraphConfig.marks]). */
     val marks: MarkShow = MarkShow.DEFAULT,
+    /** The unit the range labels on the right are written in ([GraphConfig.unit]; the lines stay at mg/dL). */
+    val unit: GlucoseUnit = GlucoseUnit.MGDL,
 )
 
 /**
@@ -162,6 +165,11 @@ data class CardStyle(
     val valueInk: Int? = null,
     /** The ranges the value's colour and the slots count in: the user's, also on a card without a chart. */
     val bands: Bands = graph?.bands ?: Bands(),
+    /**
+     * The unit every number of the card is written in ([GraphConfig.unit]): the value, the chart's range labels, the
+     * spoken sentence (contracts/settings/units.json). Also on a card without a chart.
+     */
+    val unit: GlucoseUnit = graph?.unit ?: GlucoseUnit.MGDL,
 )
 
 /**

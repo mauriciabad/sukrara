@@ -25,6 +25,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -64,7 +65,7 @@ class HomeGallery {
         withTreatments: Boolean = false,
         problems: Int = 0,
     ): HomeUiState {
-        val look = homeLook(glucose, NOW)
+        val look = homeLook(glucose, NOW, GlucoseUnit.MGDL)
         val treatments =
             if (withTreatments) {
                 listOf(Samples.treatment("a", TreatmentKind.Carbs, 30.0, 25), Samples.treatment("b", TreatmentKind.RapidInsulin, 4.5, 30))

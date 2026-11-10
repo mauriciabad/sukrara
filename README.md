@@ -37,6 +37,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   sensor sends no value.
 - **LO / HI** from any sensor show as *LO* / *HI*, never a made-up number, and sound the very low / extremely high
   alert at once (Android and Mac).
+- **mg/dL or mmol/L** (Settings › Ranges; Mac Settings › General): every number you read or type follows it, on both
+  apps: the card, the chart's range labels, notifications, alerts, widgets, the status bar, the Mac menu bar,
+  TalkBack / VoiceOver, the report, the export and every glucose setting (mmol/L with one decimal, `7,8` in Spanish).
+  Values stay stored in mg/dL, so switching never moves a threshold.
 - A guided **new sensor** screen: a step bar (Sensor · Scan · Pair · Readings), which sensor, a drawing of where to hold
   the phone (this phone's NFC antenna) with tips after 10 s, ticked pairing steps and *Taking longer?* after 45 s, the
   warm-up countdown in a ring, haptics on the tap, the screen kept on, every failure handled on the same screen

@@ -5,6 +5,7 @@ package app.mauri.sukrara.monitor.notify
 
 import androidx.annotation.StringRes
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -35,6 +36,8 @@ data class NotificationPrefs(
     val sharing: SharingLine? = null,
     /** The person's ranges: the title says an out-of-range value's range in words (#26). */
     val bands: Bands = Bands(),
+    /** The person's glucose unit: the title's value and unit (`general.unit`). */
+    val unit: GlucoseUnit = GlucoseUnit.MGDL,
 )
 
 /**
@@ -109,7 +112,7 @@ data class LiveNotificationContent(
         fun from(
             state: GlucoseState,
             now: Instant,
-            face: (GlucoseState, Instant) -> GlucoseLook,
+            face: (GlucoseState, Instant, GlucoseUnit) -> GlucoseLook,
             prefs: NotificationPrefs = NotificationPrefs(),
         ): LiveNotificationContent {
             if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state)
@@ -120,10 +123,10 @@ data class LiveNotificationContent(
         private fun content(
             state: GlucoseState,
             now: Instant,
-            face: (GlucoseState, Instant) -> GlucoseLook,
+            face: (GlucoseState, Instant, GlucoseUnit) -> GlucoseLook,
             prefs: NotificationPrefs,
         ): LiveNotificationContent {
-            val look = face(state, now)
+            val look = face(state, now, prefs.unit)
             val detail = detail(state)
             return when (look.state) {
                 GlucoseLook.State.ENDED -> {
@@ -202,11 +205,14 @@ data class LiveNotificationContent(
                     else -> Icon.NO_TREND
                 }
             return LiveNotificationContent(
-                // the range in words too, never by colour alone (#26): "64 mg/dL ↘ · Low"
+                // the range in words too, never by colour alone (#26): "64 mg/dL ↘ · Low", "3,6 mmol/L ↘ · Baja"
                 title =
                     RangeState.shown(look, reading.mgdl, prefs.bands, null)?.let {
-                        UiText(R.string.monitor_notif_value_range, listOf(look.text!!, look.arrowText!!, UiText(it.words)))
-                    } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, look.arrowText!!)),
+                        UiText(
+                            R.string.monitor_notif_value_range,
+                            listOf(look.text!!, prefs.unit.symbol, look.arrowText!!, UiText(it.words)),
+                        )
+                    } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, prefs.unit.symbol, look.arrowText!!)),
                 text = if (look.fresh.showTime) UiText(R.string.monitor_notif_reading_at, listOf(reading.t)) else detail,
                 strike = look.strike,
                 chip = chip,

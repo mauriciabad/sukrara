@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.home
 
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
@@ -19,7 +20,7 @@ import org.junit.Test
 import java.time.Duration
 
 class NoDataReasonTest {
-    private fun reason(state: GlucoseState) = NoDataReason.of(state, homeLook(state, NOW))
+    private fun reason(state: GlucoseState) = NoDataReason.of(state, homeLook(state, NOW, GlucoseUnit.MGDL))
 
     @Test fun `a fresh value has no reason`() = assertNull(reason(Samples.wearer()))
 

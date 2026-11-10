@@ -12,6 +12,7 @@ Outputs: Android SettingsSpec.kt (:core:data, package app.mauri.sukrara.settings
 the models' validation and the schema tests read the same values on both platforms.
 """
 import json
+import math
 import os
 import sys
 
@@ -20,6 +21,9 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 SCHEMA = os.path.join(ROOT, "contracts/settings/settings.json")
 KT = os.path.join(ROOT, "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt")
 SWIFT = os.path.join(ROOT, "apps/macos/Sources/SukraraCore/Settings/SettingsSpec.swift")
+UNITS = os.path.join(ROOT, "contracts/settings/units.json")
+with open(UNITS, encoding="utf-8") as _f:
+    MGDL_PER_MMOL = json.load(_f)["factor"]
 
 HEADER = ("Sukrara — https://github.com/mauriciabad/sukrara\n"
           "Copyright (C) 2026 Maurici Abad\n"
@@ -62,6 +66,46 @@ def spec_fields(n):
                 maxItems=n.get("maxItems", 0))
 
 
+def to_mmol(mgdl, decimals):
+    """contracts/settings/units.json: mg/dL → mmol/L, half away from zero."""
+    x = mgdl / MGDL_PER_MMOL
+    r = math.floor(abs(x) * 10 ** decimals + 0.5) / 10 ** decimals
+    return -r if x < 0 and r else r
+
+
+def to_mgdl(mmol, step):
+    """contracts/settings/units.json: a typed mmol/L value → mg/dL on the format's step."""
+    return round(round(mmol * MGDL_PER_MMOL / step) * step, 6)
+
+
+def mmol_fields(n):
+    """The 'mmol' variant as a format of its own (in mmol/L; its default = the stored default shown), or None."""
+    m = n.get("mmol")
+    if not m:
+        return None
+    return dict(unit=m["unit"], min=m["min"], max=m["max"], step=m["step"], nudge=m.get("nudge", m["step"]), scale=1,
+                decimals=m["decimals"], presets=m.get("presets", []), default=to_mmol(n["default"], m["decimals"]),
+                special={}, custom=True, maxItems=0)
+
+
+def check_mmol(schema):
+    """Every value of every mmol variant's grid (and preset) is stored as a valid value and shown back unchanged."""
+    bad = []
+    for name, n in schema["numbers"].items():
+        m = mmol_fields(n)
+        if not m:
+            continue
+        steps = int(round((m["max"] - m["min"]) / m["step"]))
+        for x in [round(m["min"] + k * m["step"], 6) for k in range(steps + 1)] + list(m["presets"]):
+            v = to_mgdl(x, n["step"])
+            k = (v - n["min"]) / n["step"]
+            if not (n["min"] - 1e-9 <= v <= n["max"] + 1e-9 and abs(k - round(k)) < 1e-6):
+                bad.append("%s: %s mmol/L is stored as %s, outside the format" % (name, x, v))
+            elif abs(to_mmol(v, m["decimals"]) - x) > 1e-9:
+                bad.append("%s: %s mmol/L is stored as %s and shown back as %s" % (name, x, v, to_mmol(v, m["decimals"])))
+    return bad
+
+
 def platform_key(s, p):
     v = s.get(p)
     return "" if not v else "%s:%s" % (v["store"], v["key"])
@@ -89,17 +133,19 @@ def stored(schema, p, stores=None):
 
 def kotlin(schema):
     L = ["// " + l for l in HEADER.splitlines()]
-    L += ["// " + NOTE, "package app.mauri.sukrara.settings", "", "import kotlin.math.abs", "import kotlin.math.roundToLong", ""]
+    L += ["// " + NOTE, "package app.mauri.sukrara.settings", "", "import app.mauri.sukrara.core.model.GlucoseUnit",
+          "import kotlin.math.abs", "import kotlin.math.roundToLong", ""]
     L += [
         "/**",
         " * A number setting's format (contracts/settings/settings.json \"numbers\"), in stored units: valid = a preset, a special",
         " * value (shown by its word, e.g. 0 = \"Off\"), or, when [custom], a value in [min]..[max] on [step]. [scale] = stored",
-        " * units per shown unit (ring periods: seconds stored, days shown); [nudge] = one stepper click.",
+        " * units per shown unit (ring periods: seconds stored, days shown); [nudge] = one stepper click. [mmol] = a glucose",
+        " * format's mmol/L variant (all in mmol/L; values stay stored in mg/dL, contracts/settings/units.json).",
         " */",
         "data class NumberSpec(",
         "    val id: String, val unit: String, val min: Double, val max: Double, val step: Double, val nudge: Double,",
         "    val scale: Double, val decimals: Int, val presets: List<Double>, val default: Double,",
-        "    val special: Map<Double, String>, val custom: Boolean, val maxItems: Int,",
+        "    val special: Map<Double, String>, val custom: Boolean, val maxItems: Int, val mmol: NumberSpec? = null,",
         ") {",
         "    fun inRange(v: Double) = v >= min - EPS && v <= max + EPS",
         "    fun onStep(v: Double): Boolean { val k = (v - min) / step; return abs(k - k.roundToLong()) < 1e-6 }",
@@ -123,6 +169,14 @@ def kotlin(schema):
         "    /** The word of a special value (\"off\", \"once\", …) or null. */",
         "    fun specialOf(v: Double): String? = special.entries.firstOrNull { abs(it.key - v) < EPS }?.value",
         "    fun isPreset(v: Double) = presets.any { abs(it - v) < EPS }",
+        "    /** This format as shown and typed in [unit]: the [mmol] variant (in mmol/L) or itself. */",
+        "    fun inUnit(unit: GlucoseUnit): NumberSpec = if (unit == GlucoseUnit.MMOL) mmol ?: this else this",
+        "    /** A stored value as a number of [inUnit] (mg/dL → mmol/L at the variant's decimals; itself otherwise). */",
+        "    fun shown(v: Double, unit: GlucoseUnit): Double = mmol?.takeIf { unit == GlucoseUnit.MMOL }?.let { GlucoseUnit.MMOL.shown(v, it.decimals) } ?: v",
+        "    /** A number of [inUnit] → the stored value on [step], always valid (a threshold typed in mmol/L lands on whole mg/dL). */",
+        "    fun stored(shown: Double, unit: GlucoseUnit): Double = if (unit == GlucoseUnit.MMOL && mmol != null) coerce(GlucoseUnit.MMOL.stored(shown, step)) else shown",
+        "    /** A stored value as typed / shown in [unit], without the unit: \"70\" / \"3.9\". */",
+        "    fun text(v: Double, unit: GlucoseUnit): String = inUnit(unit).text(shown(v, unit))",
         "    private companion object { const val EPS = 1e-9 }",
         "}",
         "",
@@ -139,10 +193,13 @@ def kotlin(schema):
     for name, n in schema["numbers"].items():
         f = spec_fields(n)
         special = ", ".join("%s to %s" % (num(k), kstr(v)) for k, v in f["special"].items())
-        L.append("    val %s = NumberSpec(%s, %s, %s, %s, %s, %s, %s, %d, listOf(%s), %s, mapOf(%s), %s, %d)" % (
-            const_kt(name), kstr(name), kstr(f["unit"]), num(f["min"]), num(f["max"]), num(f["step"]), num(f["nudge"]),
-            num(f["scale"]), f["decimals"], ", ".join(num(p) for p in f["presets"]), num(f["default"]), special,
-            "true" if f["custom"] else "false", f["maxItems"]))
+        def kt_spec(f, special, mmol):
+            return "NumberSpec(%s, %s, %s, %s, %s, %s, %s, %d, listOf(%s), %s, mapOf(%s), %s, %d%s)" % (
+                kstr(name), kstr(f["unit"]), num(f["min"]), num(f["max"]), num(f["step"]), num(f["nudge"]),
+                num(f["scale"]), f["decimals"], ", ".join(num(p) for p in f["presets"]), num(f["default"]), special,
+                "true" if f["custom"] else "false", f["maxItems"], ", " + mmol if mmol else "")
+        m = mmol_fields(n)
+        L.append("    val %s = %s" % (const_kt(name), kt_spec(f, special, kt_spec(m, "", None) if m else None)))
     L.append("")
     L.append("    val NUMBERS: Map<String, NumberSpec> = mapOf(%s)" % ", ".join(
         "%s to %s" % (kstr(k), const_kt(k)) for k in schema["numbers"]))
@@ -189,12 +246,21 @@ def swift(schema):
     L += [
         "/// A number setting's format (contracts/settings/settings.json \"numbers\"), in stored units: valid = a preset, a special",
         "/// value (shown by its word, e.g. 0 = \"Off\"), or, when `custom`, a value in `min`...`max` on `step`. `scale` = stored",
-        "/// units per shown unit (ring periods: seconds stored, days shown); `nudge` = one stepper click.",
+        "/// units per shown unit (ring periods: seconds stored, days shown); `nudge` = one stepper click. `mmol` = a glucose",
+        "/// format's mmol/L variant (all in mmol/L; values stay stored in mg/dL, contracts/settings/units.json).",
         "public struct NumberSpec: Equatable, Sendable {",
         "    public let id: String, unit: String, min: Double, max: Double, step: Double, nudge: Double",
         "    public let scale: Double, decimals: Int, presets: [Double], `default`: Double",
         "    public let special: [Double: String], custom: Bool, maxItems: Int",
+        "    private let variant: [NumberSpec]",
+        "    public var mmol: NumberSpec? { variant.first }",
         "    private static let eps = 1e-9",
+        "",
+        "    init(id: String, unit: String, min: Double, max: Double, step: Double, nudge: Double, scale: Double, decimals: Int, presets: [Double], default: Double, special: [Double: String], custom: Bool, maxItems: Int, mmol: NumberSpec? = nil) {",
+        "        self.id = id; self.unit = unit; self.min = min; self.max = max; self.step = step; self.nudge = nudge; self.scale = scale",
+        "        self.decimals = decimals; self.presets = presets; self.default = `default`; self.special = special; self.custom = custom",
+        "        self.maxItems = maxItems; self.variant = mmol.map { [$0] } ?? []",
+        "    }",
         "",
         "    public func inRange(_ v: Double) -> Bool { v >= min - Self.eps && v <= max + Self.eps }",
         "    public func onStep(_ v: Double) -> Bool { let k = (v - min) / step; return abs(k - k.rounded()) < 1e-6 }",
@@ -219,6 +285,14 @@ def swift(schema):
         "    /// The word of a special value (\"off\", \"once\", …) or nil.",
         "    public func specialOf(_ v: Double) -> String? { special.first { abs($0.key - v) < Self.eps }?.value }",
         "    public func isPreset(_ v: Double) -> Bool { presets.contains { abs($0 - v) < Self.eps } }",
+        "    /// This format as shown and typed in `unit`: the `mmol` variant (in mmol/L) or itself.",
+        "    public func inUnit(_ unit: GlucoseUnit) -> NumberSpec { unit == .mmol ? mmol ?? self : self }",
+        "    /// A stored value as a number of `inUnit` (mg/dL → mmol/L at the variant's decimals; itself otherwise).",
+        "    public func shown(_ v: Double, _ unit: GlucoseUnit) -> Double { unit == .mmol ? mmol.map { GlucoseUnit.mmol.shown(v, decimals: $0.decimals) } ?? v : v }",
+        "    /// A number of `inUnit` → the stored value on `step`, always valid (a threshold typed in mmol/L lands on whole mg/dL).",
+        "    public func stored(_ shown: Double, _ unit: GlucoseUnit) -> Double { unit == .mmol && mmol != nil ? coerce(GlucoseUnit.mmol.stored(shown, step: step)) : shown }",
+        "    /// A stored value as typed / shown in `unit`, without the unit: \"70\" / \"3.9\".",
+        "    public func text(_ v: Double, _ unit: GlucoseUnit) -> String { inUnit(unit).text(shown(v, unit)) }",
         "}",
         "",
         "/// One row of the settings inventory: where it's stored on each platform (\"store:key\", \"\" = not on that platform)",
@@ -233,10 +307,13 @@ def swift(schema):
     for name, n in schema["numbers"].items():
         f = spec_fields(n)
         special = ", ".join("%s: %s" % (num(k), sstr(v)) for k, v in f["special"].items()) or ":"
-        L.append("    public static let %s = NumberSpec(id: %s, unit: %s, min: %s, max: %s, step: %s, nudge: %s, scale: %s, decimals: %d, presets: [%s], default: %s, special: [%s], custom: %s, maxItems: %d)" % (
-            lower_camel(name), sstr(name), sstr(f["unit"]), num(f["min"]), num(f["max"]), num(f["step"]), num(f["nudge"]),
-            num(f["scale"]), f["decimals"], ", ".join(num(p) for p in f["presets"]), num(f["default"]), special,
-            "true" if f["custom"] else "false", f["maxItems"]))
+        def sw_spec(f, special, mmol):
+            return "NumberSpec(id: %s, unit: %s, min: %s, max: %s, step: %s, nudge: %s, scale: %s, decimals: %d, presets: [%s], default: %s, special: [%s], custom: %s, maxItems: %d%s)" % (
+                sstr(name), sstr(f["unit"]), num(f["min"]), num(f["max"]), num(f["step"]), num(f["nudge"]),
+                num(f["scale"]), f["decimals"], ", ".join(num(p) for p in f["presets"]), num(f["default"]), special,
+                "true" if f["custom"] else "false", f["maxItems"], ", mmol: " + mmol if mmol else "")
+        m = mmol_fields(n)
+        L.append("    public static let %s = %s" % (lower_camel(name), sw_spec(f, special, sw_spec(m, ":", None) if m else None)))
     L.append("")
     L.append("    public static let numbers: [String: NumberSpec] = [%s]" % ", ".join(
         "%s: %s" % (sstr(k), lower_camel(k)) for k in schema["numbers"]))
@@ -285,6 +362,11 @@ def stale():
 
 
 def main(argv):
+    wrong = check_mmol(load())
+    for w in wrong:
+        print("mmol variant:", w)
+    if wrong:
+        return 1
     if "--check" in argv:
         bad = stale()
         for b in bad:

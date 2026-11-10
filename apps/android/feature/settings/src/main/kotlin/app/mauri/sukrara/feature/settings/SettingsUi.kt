@@ -39,6 +39,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.model.DurationWords
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.settings.NumberSpec
@@ -167,7 +169,8 @@ fun kindName(kind: AlertKind): String =
 
 /**
  * Labels number values as the dialogs and rows show them: the special word ("Once", "Until you turn it off") or
- * "70 mg/dL" / "30 min". A plain function (dialog option labels aren't composable), built from this locale's strings.
+ * "70 mg/dL" / "3,9 mmol/L" (a glucose format in the screen's unit, [LocalGlucoseUnit]) / "30 min". A plain function
+ * (dialog option labels aren't composable), built from this locale's strings. Values are stored ones.
  */
 @Composable
 fun numberLabeler(): (NumberSpec, Double) -> String {
@@ -187,11 +190,13 @@ fun numberLabeler(): (NumberSpec, Double) -> String {
             "s" to stringResource(DsR.string.ds_unit_s),
         )
     val durations = CardWords.of(LocalContext.current.resources).durations
+    val glucose = LocalGlucoseUnit.current
     return { spec, value ->
+        val shown = spec.inUnit(glucose)
         spec.specialOf(value)?.let { words[it] ?: it }
             ?: minutesText(spec, value, durations)
             // insulin units stick to the number like everywhere else ("2.0u", FEATURES "Treatments")
-            ?: listOf(spec.text(value), units[spec.unit] ?: spec.unit).filter { it.isNotEmpty() }.joinToString(
+            ?: listOf(spec.text(value, glucose), units[shown.unit] ?: shown.unit).filter { it.isNotEmpty() }.joinToString(
                 if (spec.unit ==
                     "u"
                 ) {
@@ -214,6 +219,17 @@ internal fun minutesText(
 ): String? {
     if (spec.unit != "min" || spec.scale != 1.0 || value < 0 || value != Math.rint(value)) return null
     return Durations.text(value.toLong(), words)
+}
+
+/**
+ * Writes a glucose level (mg/dL) as the screens show it, in the screen's unit ([LocalGlucoseUnit]) through THE
+ * conversion (`GlucoseUnit`): "70 mg/dL", "3,9 mmol/L". A plain function, like [numberLabeler].
+ */
+@Composable
+fun glucoseLabeler(): (Int) -> String {
+    val unit = LocalGlucoseUnit.current
+    val locale = LocalConfiguration.current.locales[0]
+    return { mgdl -> "${unit.text(mgdl, locale)} ${unit.symbol}" }
 }
 
 /** One number value's label (see [numberLabeler]). */
@@ -279,14 +295,20 @@ fun thresholdInput(
     kind: AlertKind,
 ): app.mauri.sukrara.designsystem.dialog.NumberInput {
     val spec = SchemaPrefs.thresholdSpec(kind)
+    val unit = LocalGlucoseUnit.current
     val between = stringResource(R.string.st_threshold_between)
     return app.mauri.sukrara.designsystem.dialog.NumberInput(
         spec,
-        presets = spec.presets.filter { AlertEdits.thresholdConflict(settings, kind, it) == null },
+        keep = { AlertEdits.thresholdConflict(settings, kind, it) == null },
         reject = { v ->
             AlertEdits.thresholdConflict(settings, kind, v)?.let { (lo, hi) ->
-                between.format(lo?.let(spec::text) ?: spec.text(spec.min), hi?.let(spec::text) ?: spec.text(spec.max))
+                val shown = spec.inUnit(unit)
+                between.format(
+                    "${spec.text(lo ?: spec.min, unit)} ${shown.unit}",
+                    "${spec.text(hi ?: spec.max, unit)} ${shown.unit}",
+                )
             }
         },
+        unit = unit,
     )
 }

@@ -356,6 +356,12 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       thresholds, remind, quiet times, Mute…, Relax, the margin, Mute all custom; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a custom value shows as *Custom* + value.
+- [ ] Glucose unit mmol/L (Android Settings › Ranges › *Glucose unit*; Mac Settings › General › *Unit*), in English and
+      Spanish: the card, the chart's range labels, the average slot, the glucose notification's title and Live Update,
+      an alert (*Send a test alert* and a real low), widgets, the System UI text, the Quick Settings tile, the report,
+      TalkBack / VoiceOver and the Mac menu bar all write mmol/L with one decimal (`3,9` in Spanish); every glucose
+      number dialog offers mmol/L presets (3.9, 10.0 …) and 0.1 steps, typing `3,9` stores 70; switching back shows the
+      same thresholds as before in mg/dL; LO / HI say *below 2.2* / *above 22.2 mmol/L*.
 - [ ] Ring order (Android): touch-down on a handle and drag: the row lifts and the others slide live; scrolling the page
       by swiping over the rows still scrolls; long press a row then drag also works; dragging to the screen edge scrolls
       the page; the drop settles with a spring and a haptic tick per slot. TalkBack offers Move up / down / to top / to

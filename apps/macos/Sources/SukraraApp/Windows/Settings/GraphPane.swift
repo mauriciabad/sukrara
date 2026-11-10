@@ -52,7 +52,7 @@ struct GraphPane: View {
                         Button(L10n.t("Reset Ranges")) { model.resetRanges() }.disabled(!model.rangesChanged)
                     }
                 } header: {
-                    Text(L10n.t("Ranges (mg/dL)"))
+                    Text(L10n.t("Ranges (\(model.unit.symbol))"))
                 } footer: {
                     note(L10n.t("Used by the graph, the rings, the report and the menu bar colour, and kept in order."))
                 }
@@ -142,10 +142,15 @@ struct GraphPane: View {
         }
     }
 
+    /// "100 mg/dL" / "5.5 mmol/L": a glucose level in the person's unit.
+    private func glucose(_ mgdl: Int) -> String {
+        "\(model.unit.format(mgdl)) \(model.unit.symbol)"  // card-ok: a setting's level (a line), not a reading
+    }
+
     private var linesSection: some View {
         Section {
             ForEach(g.lines, id: \.self) { l in
-                LabeledContent(L10n.t("\(String(l)) mg/dL")) {
+                LabeledContent(glucose(l)) {
                     Button(role: .destructive) {
                         model.removeLine(l)
                     } label: {
@@ -153,7 +158,7 @@ struct GraphPane: View {
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.t("Remove this line"))
-                    .accessibilityLabel(L10n.t("Remove the line at \(String(l)) mg/dL"))
+                    .accessibilityLabel(L10n.t("Remove the line at \(glucose(l))"))
                 }
             }
             if g.lines.count < SettingsSpec.line.maxItems {
@@ -176,11 +181,14 @@ struct GraphPane: View {
             (L10n.t("Time shown"), NumberSettingRow.word(SettingsSpec.graphHours, Double(g.hours))),
             (
                 L10n.t("Ranges"),
-                "\(b.veryLow) · \(b.low) · \(b.tight) · \(b.high) · \(b.veryHigh) · \(b.extremelyHigh) mg/dL"
+                [b.veryLow, b.low, b.tight, b.high, b.veryHigh, b.extremelyHigh].map { model.unit.format($0) }
+                    .joined(separator: " · ") + " " + model.unit.symbol
             ),
             (
                 L10n.t("Lines across the graph"),
-                g.lines.isEmpty ? L10n.t("None") : g.lines.map(String.init).joined(separator: ", ") + " mg/dL"
+                g.lines.isEmpty
+                    ? L10n.t("None")
+                    : g.lines.map { model.unit.format($0) }.joined(separator: ", ") + " " + model.unit.symbol
             ),
             (L10n.t("Vertical lines"), NumberSettingRow.word(SettingsSpec.gridHours, Double(g.gridHours))),
             (L10n.t("Beside the graph"), beside.isEmpty ? L10n.t("Nothing") : beside.joined(separator: ", ")),

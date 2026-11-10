@@ -258,7 +258,7 @@ class HomeViewModel(
             val now = maxOf(tick, deps.clock.now())
             val chart = recent.treatments.sortedByDescending { it.at }
             val listed = chart.filter { it.at >= now - TREATMENTS_WINDOW && it.at <= now + FUTURE_SLACK }
-            val look = homeLook(glucose, now)
+            val look = homeLook(glucose, now, config.unit)
             HomeUiState(
                 glucose = glucose,
                 now = now,
@@ -289,7 +289,8 @@ class HomeViewModel(
     private fun initial(): HomeUiState {
         val now = deps.clock.now()
         val glucose = deps.glucose.value
-        val look = homeLook(glucose, now)
+        // the settings arrive with the first state: until then the defaults (as [HomeUiState.config])
+        val look = homeLook(glucose, now, GraphConfig().unit)
         return HomeUiState(
             glucose = glucose,
             now = now,

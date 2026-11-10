@@ -110,6 +110,14 @@ public struct CardWords: Sendable {
     }
 
     func unit(_ u: GlucoseUnit) -> String { u == .mgdl ? unit.mgdl : unit.mmol }
+}
+
+extension GlucoseUnit {
+    /// A value as the card writes it: in the card's language (`CardWords.current`), "7.8" / "7,8".
+    public func cardText(_ mgdl: Int) -> String { format(mgdl, locale: CardWords.current.locale) }
+}
+
+extension CardWords {
 
     func trend(_ rate: Double?) -> String {
         guard let rate else { return trend.unknown }
@@ -174,9 +182,9 @@ enum A11y {
             let bound = r.sgv < GlucoseRange.floor || r.sgv >= GlucoseRange.hi
             let number =
                 switch r.sgv {
-                case ..<GlucoseRange.floor: w.below("\(w.decimal(unit.format(GlucoseRange.floor))) \(u)")
-                case GlucoseRange.hi...: w.above("\(w.decimal(unit.format(GlucoseRange.ceiling))) \(u)")
-                default: "\(w.decimal(look.text ?? GlucoseCard.noValueText)) \(u)"
+                case ..<GlucoseRange.floor: w.below("\(unit.format(GlucoseRange.floor, locale: w.locale)) \(u)")
+                case GlucoseRange.hi...: w.above("\(unit.format(GlucoseRange.ceiling, locale: w.locale)) \(u)")
+                default: "\(unit.format(r.sgv, locale: w.locale)) \(u)"
                 }
             let parts = [
                 number, look.strike ? w.old : nil, look.strike ? nil : w.trend(look.trend == .arrow ? look.rate : nil),
@@ -211,7 +219,7 @@ enum A11y {
             : age(data, surface: surface, words: w)
         guard !surface.glyph else { return first ?? "" }
         let slots = style.value ? GlucoseCard.slotItems(data, style, max: maxSlots) : []
-        let spoken = slots.compactMap { slot($0, now: data.now, words: w) }
+        let spoken = slots.compactMap { slot($0, now: data.now, unit: unit, words: w) }
         let now = data.now
         let fr = Freshness.of(age: data.latest.map { now - $0.t })
         let life = SensorBadge.look(style.sensor, now: now, latest: data.latest?.t).flatMap { s in
@@ -262,11 +270,13 @@ enum A11y {
     }
 
     /// A drawn slot in words (`metric`, `last`); nil for a ring without data (the card draws none).
-    private static func slot(_ item: SlotItem, now: TimeInterval, words w: CardWords) -> String? {
+    private static func slot(_ item: SlotItem, now: TimeInterval, unit: GlucoseUnit, words w: CardWords) -> String? {
         switch item {
         case let .metric(spec, m, _):
             guard !m.empty else { return nil }
-            let text = spec.kind == .tir ? TirRing.text(m.tir, spec) : MetricGauge.text(spec.kind, m).0
+            let text =
+                spec.kind == .tir
+                ? TirRing.text(m.tir, spec) : MetricGauge.text(spec.kind, m, unit: unit, locale: w.locale).0
             return metric(spec.kind, spec.range, window: spec.window, text: text, words: w)
         case let .last(info):
             return last(info, now: now, words: w)

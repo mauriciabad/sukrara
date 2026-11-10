@@ -183,7 +183,7 @@
     <string name="report_above_detail">Muy alta + alta</string>
     <string name="report_in_range">En rango</string>
     <string name="report_very_good">Muy bien</string>
-    <string name="report_very_good_detail">%1$s mg/dL, dentro del rango</string>
+    <string name="report_very_good_detail">%1$s %2$s, dentro del rango</string>
     <string name="report_low">Baja</string>
     <string name="report_very_low">Muy baja</string>
     <string name="report_below">Por debajo del rango</string>

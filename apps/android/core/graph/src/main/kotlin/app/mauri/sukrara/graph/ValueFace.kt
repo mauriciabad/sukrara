@@ -46,7 +46,7 @@ internal class ValueFace(
                 color = ink ?: pal.inkSoft
                 textSize = max(11 * d, box.height() * 0.17f)
             }
-        val face = GlucoseCard.face(model.latest, nowS, sensor, rec.surface)
+        val face = GlucoseCard.face(model.latest, nowS, sensor, rec.surface, rec.style.unit, w.locale)
         when (face.state) {
             GlucoseLook.State.WARMING_UP -> drawWarmup(cv, box, checkNotNull(sensor), small)
 

@@ -31,11 +31,14 @@
     <string name="alert_context_after_insulin">still high after insulin</string>
     <string name="alert_context_after_more_insulin">still high after more insulin</string>
     <string name="alert_text_value">%1$s %2$s</string>
-    <string name="alert_text_mgdl">%1$d mg/dL</string>
-    <string name="alert_text_lo">LO · below 40 mg/dL</string>
-    <string name="alert_text_hi">HI · above 400 mg/dL</string>
-    <string name="alert_text_falling">%1$s · falling %2$s mg/dL/min</string>
-    <string name="alert_text_rising">%1$s · rising %2$s mg/dL/min</string>
+    <!-- a glucose value: %1$s = the number in the person's unit (69, 3.8), %2$s = the unit (mg/dL, mmol/L) -->
+    <string name="alert_text_glucose">%1$s %2$s</string>
+    <!-- %1$s = the sensor's bound as alert_text_glucose (40 mg/dL, 2.2 mmol/L) -->
+    <string name="alert_text_lo">LO · below %1$s</string>
+    <string name="alert_text_hi">HI · above %1$s</string>
+    <!-- %2$s = the rate's number, %3$s = its unit (mg/dL/min, mmol/L/min) -->
+    <string name="alert_text_falling">%1$s · falling %2$s %3$s</string>
+    <string name="alert_text_rising">%1$s · rising %2$s %3$s</string>
     <string name="alert_text_no_reading">No recent reading</string>
     <string name="alert_text_no_data">No reading for %1$s</string>
     <string name="alert_text_no_data_last">No reading for %1$s · last %2$s</string>
@@ -96,9 +99,9 @@
     <string name="monitor_channel_alarm_rising_fast">Rising fast (alarm)</string>
     <string name="monitor_channel_alarm_no_data">No data (alarm)</string>
 
-    <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = the trend arrow -->
-    <string name="monitor_notif_value">%1$s mg/dL %2$s</string>
-    <string name="monitor_notif_value_range">%1$s mg/dL %2$s · %3$s</string>
+    <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = its unit (mg/dL, mmol/L), %3$s = the trend arrow -->
+    <string name="monitor_notif_value">%1$s %2$s %3$s</string>
+    <string name="monitor_notif_value_range">%1$s %2$s %3$s · %4$s</string>
     <!-- %1$s = the reading's time ("14:05", "Tue 14:05") -->
     <string name="monitor_notif_reading_at">Reading at %1$s</string>
     <string name="monitor_notif_no_readings_since">No readings since %1$s</string>
@@ -124,7 +127,6 @@
     <!-- Live Update chip once the value is 5 min old: the reading's time -->
     <string name="monitor_chip_stale">%1$s</string>
     <!-- Android 17 Live Update card (MetricStyle): the value's unit and the late reading's label -->
-    <string name="monitor_metric_unit">mg/dL</string>
     <string name="monitor_metric_reading">Reading</string>
     <string name="monitor_action_open_app">Open Sukrara</string>
     <string name="monitor_action_set_up_sensor">Set up sensor</string>

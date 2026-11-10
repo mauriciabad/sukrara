@@ -28,11 +28,11 @@
     <string name="alert_context_after_insulin">sigue alta tras la insulina</string>
     <string name="alert_context_after_more_insulin">sigue alta tras más insulina</string>
     <string name="alert_text_value">%1$s %2$s</string>
-    <string name="alert_text_mgdl">%1$d mg/dL</string>
-    <string name="alert_text_lo">LO · por debajo de 40 mg/dL</string>
-    <string name="alert_text_hi">HI · por encima de 400 mg/dL</string>
-    <string name="alert_text_falling">%1$s · baja %2$s mg/dL/min</string>
-    <string name="alert_text_rising">%1$s · sube %2$s mg/dL/min</string>
+    <string name="alert_text_glucose">%1$s %2$s</string>
+    <string name="alert_text_lo">LO · por debajo de %1$s</string>
+    <string name="alert_text_hi">HI · por encima de %1$s</string>
+    <string name="alert_text_falling">%1$s · baja %2$s %3$s</string>
+    <string name="alert_text_rising">%1$s · sube %2$s %3$s</string>
     <string name="alert_text_no_reading">Sin lectura reciente</string>
     <string name="alert_text_no_data">Sin lecturas desde hace %1$s</string>
     <string name="alert_text_no_data_last">Sin lecturas desde hace %1$s · última %2$s</string>
@@ -90,8 +90,8 @@
     <string name="monitor_channel_alarm_rising_fast">Subiendo rápido (alarma)</string>
     <string name="monitor_channel_alarm_no_data">Sin datos (alarma)</string>
 
-    <string name="monitor_notif_value">%1$s mg/dL %2$s</string>
-    <string name="monitor_notif_value_range">%1$s mg/dL %2$s · %3$s</string>
+    <string name="monitor_notif_value">%1$s %2$s %3$s</string>
+    <string name="monitor_notif_value_range">%1$s %2$s %3$s · %4$s</string>
     <string name="monitor_notif_reading_at">Lectura de las %1$s</string>
     <string name="monitor_notif_no_readings_since">Sin lecturas desde las %1$s</string>
     <string name="monitor_notif_waiting">Esperando la glucosa…</string>
@@ -112,7 +112,6 @@
     <string name="monitor_notif_core_missing">Esta versión no puede leer un sensor Libre 3</string>
     <string name="monitor_chip_value">%1$s</string>
     <string name="monitor_chip_stale">%1$s</string>
-    <string name="monitor_metric_unit">mg/dL</string>
     <string name="monitor_metric_reading">Lectura</string>
     <string name="monitor_action_open_app">Abrir Sukrara</string>
     <string name="monitor_action_set_up_sensor">Configurar sensor</string>
