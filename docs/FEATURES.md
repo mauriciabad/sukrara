@@ -345,10 +345,14 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
   before the time; from 3 h no chart (the value's face, *No reading since*). The pill's text shrinks to fit a narrow
   chart (down to 60 %) and the pill never grows past the chart. Once the sensor has ended the pill says so instead: the
   checkered flag and *Sensor ended* (the value's place's words), never the last reading's time, which looked like a gap
-  in the readings; VoiceOver says *Sensor ended. Replace sensor* (layout rule `age`: `graph.age` is the same on every
-  graph-only surface and both platforms, scene `ended` → `ended`). Tests: Android `FreshnessFixtureTest` +
-  `GraphOnlyAgeTest` (every case, fresh time, ended, pill inside the chart at 40–332 dp), Mac
-  `FreshnessFixtureTests.graphOnly` + `anEndedSensorIsNeverAGap` + `agePillStaysInsideTheChart`.
+  in the readings; VoiceOver says *Sensor ended. Replace sensor*. A new sensor warming up likewise says so in the pill,
+  never the previous sensor's last reading time: its disc filling and *Warming up · 40m* (*Almost ready* past the
+  warm-up's end, until the first reading), the time left always labelled and at the pill's size, never a figure that
+  could pass for a value (#27); VoiceOver says *Warming up* (layout rule `age`: `graph.age` is the same on every
+  graph-only surface and both platforms, scene `ended` → `ended`, `warmup` → `warmup`). Tests: Android
+  `FreshnessFixtureTest` + `GraphOnlyAgeTest` (every case, fresh time, ended, warm-up, pill inside the chart at
+  40–332 dp), Mac `FreshnessFixtureTests.graphOnly` + `anEndedSensorIsNeverAGap` + `aWarmingUpSensorIsNeverAGap` +
+  `agePillStaysInsideTheChart`.
 - "No readings" icon: Material Symbols `sensors_off` (`res/drawable/ic_stat_no_readings.xml`, `GlucoseLook.NO_READINGS_PATH`); Mac SF Symbol `antenna.radiowaves.left.and.right.slash` (a template image in the menubar). Status bar: the icon alone in the trend slot (number slot removed) / in the hook's text; notification small icon; the card and the app panel draw it before *No reading since*. Menubar: the symbol alone, tooltip `Sukrara · no reading since 00:32`.
 - "No trend" (no rate from the sensor, or the value is struck through): a hollow ring in the arrow's place, the arrow's size (radius 0.24, stroke 0.11 of its box; text `○`), everywhere an arrow goes (card, app panel, widgets, notification, chip icon, status bar `sb_t_none` / grey `sb_t_none_s`, SystemUI text, tile, alert notification body, Mac menubar and dropdown). Not a dot (read as a speck) nor `?` (doubts the number); a circle has no direction, so it can't be read as steady (→).
 - Root status bar slot icons: SystemUI spaces the number and the trend icons like its own status icons (5.7 dp on the user's Pixel, root path), so the drawables add no padding between them (0.11.34–0.11.37 added 1.5 dp: 7.2 dp, "too separated"); `SlotDrawablesTest` keeps the visible gap at 5.0–6.5 dp (SystemUI's share 5.74 dp, measured) for root alone; with the LSPosed module the pair sits at the card's own gap, about 3 dp (*Root status bar (system icons)* below). They are two slots (`glucose`, `glucose_trend`); how a full status bar keeps them together: *Root status bar (system icons)* below.
@@ -555,8 +559,8 @@ TalkBack reads the renderer's value sentence plus, with a chart, its summary.
 **States and exits**: *Placed* → touch & hold → *Reconfigure* (*Widget settings*: *Save*, *Cancel* / back leaves it as
 it was, *Reset* puts every row back to *Same as the app*) or *Remove* (its settings are forgotten). *Just placed* →
 *Widget settings* opens; back keeps the app's settings. *Stale* (5 min+, struck through; the graph widget dimmed with
-the reading's time), *no readings* (20 min+) and *sensor ended* (the graph widget's pill: the flag and *Sensor ended*)
-show on the widget itself; the tap opens the app where the reason and its fix are. *Follower* → the same exits.
+the reading's time), *no readings* (20 min+), *sensor ended* (the graph widget's pill: the flag and *Sensor ended*)
+and *warming up* (the graph widget's pill: the disc and *Warming up · 40m*) show on the widget itself; the tap opens the app where the reason and its fix are. *Follower* → the same exits.
 
 ## Add-the-widget banner
 

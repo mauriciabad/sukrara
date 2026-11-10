@@ -182,6 +182,40 @@ func fixtureSetHasCases(_ set: String) {
         #expect(spoken.hasPrefix("Sensor ended. Replace sensor"), "\(spoken)")
     }
 
+    /// A new sensor warming up says so in the pill over the chart ("Warming up · 40m", "Almost ready" past the warm-up's
+    /// end), never the previous sensor's last reading time (a gap) nor the countdown at the value's size (#27), at every
+    /// graph widget size; VoiceOver says it too (GraphOnlyAgeTest.warmupIsNeverAGap).
+    @Test func aWarmingUpSensorIsNeverAGap() {
+        let age = 7500.0  // off the hour: a 24-hour hour label never equals the reading's time
+        var readings = (1...60).reversed().map { GraphReading(t: now - age - Double($0) * 60, v: 120, rate: 0) }
+        readings.append(GraphReading(t: now - age, v: 110, rate: 0))
+        let last = Freshness.timeText(now - age, now: now)
+        let cases = [
+            (SensorInfo(start: now - 1200, end: now + 1_208_400, warmupEnd: now + 2400), "Warming up · 40m"),
+            (SensorInfo(start: now - 3900, end: now + 1_205_700, warmupEnd: now - 300), "Almost ready"),
+        ]
+        for (sensor, want) in cases {
+            var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true)
+            st.sensor = sensor
+            for size in [
+                CGSize(width: 138, height: 138), CGSize(width: 332, height: 138), CGSize(width: 60, height: 60),
+            ] {
+                let lay = GlucoseCard.draw(
+                    cardContext(size), size: size, readings: readings, marks: [], now: now, st,
+                    GraphPalette.of(dark: false), surface: .widgetGraph, part: .all)
+                #expect(lay.first("graph.age")?.info == "warmup", "\(size)")
+                #expect(lay.first("graph.age.text")?.info == want, "\(size)")
+                #expect(!lay.all("time.text").contains { $0.info == last }, "\(size)")
+                #expect(lay.all("value.warmup").isEmpty, "\(size): no countdown at the value's size")
+                #expect((lay.first("graph.age")?.box?.height ?? .infinity) <= 16 * 1.7, "\(size): the pill's size")
+            }
+            let spoken = GlucoseCard.accessibilityLabel(
+                CardData(readings: readings, sensor: sensor, now: now), unit: .mgdl, surface: .widgetGraph,
+                config: GraphConfig(), words: .en)
+            #expect(spoken.hasPrefix("Warming up. "), "\(spoken)")
+        }
+    }
+
     /// The age pill never grows past the chart, however narrow the widget (GraphOnlyAgeTest.pillStaysInsideTheChart).
     @Test(arguments: [40.0, 60.0, 90.0, 140.0, 332.0])
     func agePillStaysInsideTheChart(_ w: Double) {
