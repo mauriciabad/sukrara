@@ -187,9 +187,8 @@ damaged setup file never asks for the role again or turns alerts off.
 - **Role**: *I wear the sensor* ("This phone reads your sensor and shares it") / *I follow someone* ("This phone shows
   someone else's glucose"), confirmed: "One role per install. Changing it later means reinstalling Sukrara." Choosing
   or changing the role resets the alert runtime first (no phantom no-data alarm), stores it where the hub and the
-  alerts read it (`role`) and starts monitoring (the monitor runs once a sensor source exists). Following on Android isn't in this
-  build: choosing it says "Following on Android comes in a later version. Use Sukrara for Mac to follow." and setup
-  stays on the role step. When the choice would delete history this phone kept for the other role (the followed
+  alerts read it (`role`) and starts monitoring (the monitor runs once a sensor source exists). *I follow someone*
+  goes on to the follower's *Follow someone* step ([Following (Android)](#following-android)). When the choice would delete history this phone kept for the other role (the followed
   person's readings, or one's own before following, and every treatment), Continue asks *Delete the earlier history?*
   with the counts and dates, *Export CSV first*, *Delete and continue* and *Cancel* instead (Readings and backfill).
 - **Permissions**: THE alert checklist (`graph.alerts.readiness`, the monitor's `AndroidAlertReadiness`: the same

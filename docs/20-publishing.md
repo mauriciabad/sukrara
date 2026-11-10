@@ -159,12 +159,64 @@ open testing at once, with no *Apply for production* step) and no new fee.
   [#142](https://github.com/mauriciabad/sukrara/issues/142), the reviewer-access decision
   [#141](https://github.com/mauriciabad/sukrara/issues/141)): Privacy policy (the page exists:
   https://sukrara.mauri.app/privacy, from `docs/privacy.md`, linked in Settings › About), **Sign in details** (open
-  question: the app shows nothing without a sensor or a follow invite from another phone, and debug fakes are compiled
-  out of release, so reviewers need instructions and probably a demo video; answering "No restrictions" risks a
-  rejection), Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
+  decided: *Restricted* with instructions and a demo video, see [Reviewer access](#google-play-reviewer-access-app-access)),
+  Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
   drafted in [Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts));
   the sensitive-permission declarations (foreground service, full-screen intent, Health Connect) appear after the
   first upload. The bundle to upload comes from `tools/release/play-bundle.sh` ([Flavors](#flavors)).
+
+### Google Play: reviewer access (App access)
+
+Decided 2026-11-10 ([#141](https://github.com/mauriciabad/sukrara/issues/141)): **"All or some functionality in my
+app is restricted"**, with written instructions and a short demo video. The release build has no demo data (the
+synthetic sensor is in `src/debug/` only), and a labelled demo mode in the release build is out: someone could take a
+made-up 110 for their own glucose during a real low. A standing reviewer follow invite isn't possible either (invites
+are single-use, expire, and the wearer approves each request: PROTOCOL-v2), so it stays the fallback if Play rejects
+this (it would need a reusable, auto-approved invite and an always-on synthetic wearer). For hardware-dependent apps,
+instructions plus a video of the app working are the usual route; Juggluco (sensor-only, no account) was on Play for
+years this way.
+
+**Where**: Play Console › Sukrara › Policy and programs › App content › *App access* › *All or some functionality in my
+app is restricted* › *Add instructions*. Then *Target audience* (plan: 13+) unblocks.
+
+**The instructions** (English, as entered; under 500 characters):
+
+- *Instruction name*: `Sensor-dependent features`
+- *Username / email / phone* and *Password*: empty (Sukrara has no account or sign-in)
+- *Any other information required to access your app*:
+
+> Sukrara has no account or login. It shows glucose from a continuous glucose monitor (CGM) worn by the user, such as
+> a FreeStyle Libre 3, read over Bluetooth, or follows a person who wears one through an invite from their phone.
+> Without a sensor, home shows "Not monitoring: no sensor yet". You can still review the setup, every Settings page and
+> each alert's "Send a test alert" (Settings › Alerts › an alert). This video shows the app with a sensor (test build,
+> simulated data): <video link>
+
+**The demo video** (at most 2 min, no sound needed but the alert sound helps; English UI): recorded on the emulator
+from a **debug** build with the debug synthetic sensor (never the owner's phone, data or account), uploaded to YouTube
+as *Unlisted* (Play's reviewers must open it without signing in), the link pasted into the text above. Before
+recording: a fresh emulator install, wearer role, alerts on with the default thresholds, the synthetic source on
+(`adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.SYNTHETIC --ez on true
+--ei cycle 100`, so the curve reaches its low within the first minute; `cycle 135` is the lowest point) and a local
+relay for the invite shot (`… -a app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447`, docs/DEVELOPMENT.md;
+never the public relays from a debug build). Record with
+the emulator's *Extended controls › Record screen* or `adb shell screenrecord --time-limit 180 /sdcard/review.mp4`.
+Every shot carries the overlay **"Test build · simulated sensor data"** (added in the editor, top of the frame, never
+covering the value).
+
+| # | Time | Shot | What it shows the reviewer |
+|---|---|---|---|
+| 1 | 0:00–0:06 | Title card: "Sukrara · test build · simulated sensor data. No real person's glucose." | that the data is made up |
+| 2 | 0:06–0:25 | Home: the glucose value with its trend arrow and the graph moving as new readings arrive; open the reading's sheet | the core function: live glucose from the sensor |
+| 3 | 0:25–0:50 | The curve crosses the low threshold: the low alert fires (full-screen on the lock screen, its sound), then *Mute* | why it needs full-screen intents, exact alarms and a foreground service |
+| 4 | 0:50–1:05 | *Eat carbs* pill → log 15 g → the quiet line on the graph and the notification | treatments and how they quiet alerts |
+| 5 | 1:05–1:20 | The glucose notification and a home-screen widget showing the same value | the ongoing notification (foreground service) |
+| 6 | 1:20–1:35 | Settings › Sharing › *Share with someone* › *Create invite*: the invite QR code and its note ("you still allow them") | following, and that the wearer approves each follower |
+| 7 | 1:35–1:50 | Settings › Alerts › *Low* › *Send a test alert* | what a reviewer can do without a sensor |
+| 8 | 1:50–2:00 | Synthetic source off (`--ez on false`), back to home: "Not monitoring: no sensor yet" | what a reviewer will see on their own device |
+
+**Who keeps it current**: the owner re-records the video (same shot list) when home, the alert screen, setup or
+Settings › Sharing change visibly, and before a release whose store listing screenshots change; the instructions text
+changes with them. Health data in it is synthetic only; never the owner's screenshots (CLAUDE.md).
 
 ### Google Play: a brand-new personal account (research, 2026-10-18)
 
