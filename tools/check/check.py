@@ -50,7 +50,8 @@ Checks
               Synthetic* only inside #if DEBUG or in the snapshot / test targets
   settings    THE settings schema contracts/settings/settings.json (the user, 2026-10-21: settings must not diverge
               across platforms): generated SettingsSpec.kt/.swift up to date; every entry on both platforms or 'only'
-              with the reason; alert 'path's are fields of contracts/alerts/SPEC.md §3; no stored key written by hand
+              with the reason; alert 'path's are fields of contracts/alerts/SPEC.md §3 and options 'alertKind' its
+              kinds; 'mirrorExcept' only on mirrored '{kind}' rows; no stored key written by hand
               (Android *PreferencesKey("…"), Mac forKey: "…" / @AppStorage("…")): keys come from SettingsSpec.Keys;
               number settings only through the one input pattern (NumberDialog / NumberSettingRow; NumberSpec values
               only from the generated file). Whole tree.
@@ -771,6 +772,11 @@ def check_settings(ch, rep):
             rep.add("FAIL", "settings", "setting %s is on both platforms but says 'only' %s." % (sid, only.get("platform")))
         if s.get("mirror") and not s.get("wire"):
             rep.add("FAIL", "settings", "setting %s is mirrored from the wearer but has no 'wire' key." % sid)
+        if "mirrorExcept" in s:
+            bad = [k for k in s["mirrorExcept"] if kinds is not None and k not in kinds]
+            if not s.get("mirror") or "{kind}" not in (s.get("wire") or "") or not s["mirrorExcept"] or bad:
+                rep.add("FAIL", "settings", "setting %s: 'mirrorExcept' lists alert kinds (%s §1) a mirrored '{kind}' row\n"
+                        "doesn't take from the wearer%s." % (sid, ALERT_SPEC, ": not kinds %s" % ", ".join(bad) if bad else ""))
         for p in on:
             for k in s[p]["key"].split(","):
                 if s[p]["store"] != "system" and not KEY_NAME.match(k):
@@ -788,6 +794,10 @@ def check_settings(ch, rep):
     else:
         for f in sorted(fields - paths):
             rep.add("FAIL", "settings", "%s §3 field '%s' has no entry in %s." % (ALERT_SPEC, f, SETTINGS_SCHEMA))
+        listed = (schema.get("options", {}).get("alertKind") or {}).get("values") or []
+        if set(listed) != kinds:
+            rep.add("FAIL", "settings", "%s options 'alertKind' (%s) aren't the alert kinds of %s §3 (%s)."
+                    % (SETTINGS_SCHEMA, ", ".join(listed), ALERT_SPEC, ", ".join(sorted(kinds))))
     for p in tree_files(ch):
         lang = app_code(p)
         if not lang or p in (SETTINGS_KT, SETTINGS_SWIFT):
