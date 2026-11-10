@@ -323,7 +323,8 @@ private fun MetricRow(
     val spoken = (listOfNotNull(name, value) + goalTexts + goalWords(met)).joinToString(", ")
     Column(Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = spoken }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+            // the gap keeps a two-line caption (GMI) off the value
+            Column(Modifier.weight(1f).padding(end = 12.dp)) {
                 Text(name)
                 caption?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
