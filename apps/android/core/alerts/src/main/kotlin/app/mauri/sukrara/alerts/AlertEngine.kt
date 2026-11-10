@@ -247,8 +247,15 @@ class AlertEngine(
         val holding = level == null && episodes[AlertGroup.LEVEL]?.let { Rules.outOfRange(it.side, r, s, now) } == true
         step(AlertGroup.LEVEL, level, s, d, now, out, holding)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
-        // episode stays as it is: its alert showing, its repeat due, its hold not running down (SPEC §1)
-        if (!fresh || r?.rate != null) step(AlertGroup.RATE, rateKind, s, d, now, out)
+        // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
+        // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
+        if (!fresh ||
+            r?.rate != null
+        ) {
+            step(AlertGroup.RATE, rateKind, s, d, now, out)
+        } else {
+            episodes[AlertGroup.RATE]?.let { hide(it, now, out) }
+        }
         step(AlertGroup.NO_DATA, if (noData) AlertKind.NO_DATA else null, s, d, now, out)
         return out
     }

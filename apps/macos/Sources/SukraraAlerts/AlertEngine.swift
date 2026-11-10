@@ -264,8 +264,14 @@ public struct AlertEngine: Sendable {
         let holding = level == nil && (episodes[.level].map { isOutOfRange($0.side, r, s, at: t) } ?? false)
         step(.level, level, holding: holding, at: t, rng: &rng, out: &out)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
-        // episode stays as it is: its alert showing, its repeat due, its hold not running down (SPEC §1)
-        if !(rules && fresh && r?.rate == nil) { step(.rate, rate, at: t, rng: &rng, out: &out) }
+        // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
+        // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
+        if !(rules && fresh && r?.rate == nil) {
+            step(.rate, rate, at: t, rng: &rng, out: &out)
+        } else if var e = episodes[.rate] {
+            hide(&e, at: t, out: &out)
+            episodes[.rate] = e
+        }
         step(.noData, noData ? .noData : nil, at: t, rng: &rng, out: &out)
     }
 

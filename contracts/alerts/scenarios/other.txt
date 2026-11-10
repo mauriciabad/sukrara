@@ -27,15 +27,25 @@ settings falling_fast=on
 16                       => Low glucose · eat more; Falling fast
 17
 
-scenario Falling fast into a LO: the LO has no rate, so the fall's alert and its repeats go on
+scenario Falling fast into a LO: the LO has no rate, so the fall's episode and its repeats go on (its notification goes)
 settings falling_fast=on falling_fast.repeat=10
  0  glucose 60 rate -3   => Low glucose; Falling fast
- 1  glucose 39           => clear low; Very low glucose   # LO, sent without a rate: no sign the fall stopped
+ 1  glucose 39           => clear low; Very low glucose; clear falling_fast   # LO, no rate: no sign the fall stopped,
+                                                                              # but at a LO the very low is the message (#127)
  2  glucose 41 rate -3                                    # the same fall: no new first alert
  6                       => Very low glucose
 10                       => Falling fast                  # its repeat, counted from minute 0
 11                       => Very low glucose
 12
+
+scenario Carbs during a LO after falling fast: nothing stale is left up, both come back after the carbs' window
+settings falling_fast=on
+ 0  glucose 60 rate -3   => Low glucose; Falling fast
+ 1  glucose 39           => clear low; Very low glucose; clear falling_fast   # LO: the fall's notification goes (#127)
+ 2  carbs 15             => clear very_low
+ 5  glucose 41 rate -3                                                       # rated again, still falling: quiet after carbs
+17                       => Very low glucose · eat more; Falling fast
+18
 
 scenario LO readings don't end a falling-fast Mute: no rate is no sign the fall stopped
 mirror

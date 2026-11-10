@@ -40,9 +40,12 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
 - **Level alerts** (`very_low`, `low`, `high`, `very_high`, `extremely_high`): at most one is active, the most severe
   that matches. **Rate alerts** are independent of level alerts; `rate` is the reading's trend in mg/dL/min. No rate →
   no rate alert, but a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped:
-  an open rate episode stays as it is (its alert stays up, its repeat stays due, its hold doesn't run down) and a rate
-  side's Mute / Remind less isn't back by it (scenarios `other.txt`). `no_data` is checked by a timer, cleared by the
-  next reading.
+  an open rate episode stays (no new first alert, its repeat stays due, its hold doesn't run down) and a rate side's
+  Mute / Remind less isn't back by it, but **its notification goes** (#127): at a LO the very low is the message, and a
+  silent "60 mg/dL ↓ · falling 3 mg/dL/min" left up beside it misleads on a locked phone or a parent's screen (Dexcom G7
+  gives one or the other at or below 55, not both); the same for a HI and rising fast. The first rated reading that
+  still matches alerts at once if its repeat came due meanwhile (scenarios `other.txt`). `no_data` is checked by a
+  timer, cleared by the next reading.
 - **Episodes.** Each group (level, rate, no data) has at most one episode: a stretch of time on one *side* (lows,
   highs, falling fast, rising fast, no data). It starts when a kind of that side matches and ends once nothing of that
   side has matched for the **hold time** = the kind's `repeatMin`, at least 5 min. A reading back in range for a
