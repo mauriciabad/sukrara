@@ -99,12 +99,9 @@ public struct SetupView: View {
                 case .notifications:
                     page(.notifications, L10n.t("Allow notifications")) {
                         Text(L10n.t("Alerts reach you as notifications, even when Sukrara is in the background."))
-                        Text(
-                            L10n.t(
-                                "A Focus (Do Not Disturb, Sleep…) can hold back Sukrara's alarms on this Mac. Allow Sukrara in each Focus, and keep the phone as the alarm."
-                            )
-                        )
-                        .foregroundStyle(.secondary)
+                        if let state = model.settings.timeSensitive {
+                            TimeSensitiveNote(state: state).foregroundStyle(.secondary)
+                        }
                     }
                 case .openAtLogin:
                     page(.openAtLogin, L10n.t("Open at login")) {

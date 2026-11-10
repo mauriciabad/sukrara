@@ -110,6 +110,53 @@ needed for key rotation [[S1]](https://sparkle-project.org/documentation/). **Pl
 enclosures pointing at the GitHub Release dmg; the EdDSA private key stays on the user's Mac (export a backup to the
 password manager). The cask then sets `auto_updates true` so `brew upgrade` doesn't fight Sparkle.
 
+### Provisioning profiles: Time Sensitive alarms, the data-protection keychain, universal links (#19, #34)
+
+Three things only a provisioning profile grants; `Bundle/bundle.sh` adds them when it finds a profile, and the app
+reads its own entitlements at launch and falls back without them:
+
+| Entitlement (`Bundle/app-profile.entitlements.in`) | With it | Without (ad hoc, dev, no profile) |
+|---|---|---|
+| `com.apple.developer.usernotifications.time-sensitive` | alarms break through a Focus (`TimeSensitive`) | normal notifications; the panel, setup and Settings › Alerts say a Focus can hold them back |
+| `keychain-access-groups` = `QWUV9H4A3G.app.mauri.sukrara` | the follower key and Juggluco's secret in the data-protection keychain, no prompts after re-signing (`KeychainStore.secrets`) | the login keychain (an ACL on the signature: one prompt per signing change) |
+| `com.apple.developer.associated-domains` = `applinks:sukrara.mauri.app` | the web invite clicked anywhere opens the Follow step (`AppLink.universal`) | the web invite opens the page, which offers the `sukrara:` link |
+
+**Owner checklist** (done on 2026-11-10 for Developer ID; repeat when a certificate or profile is renewed):
+
+1. **App IDs** (Certificates, Identifiers & Profiles › Identifiers): `app.mauri.sukrara` with **Time Sensitive
+   Notifications** and **Associated Domains**; `app.mauri.sukrara.widget` with nothing extra. No App Groups
+   capability (`QWUV9H4A3G.app.mauri.sukrara` is team-prefixed: macOS grants it from the signature) and no Keychain
+   Sharing (every profile carries `keychain-access-groups = QWUV9H4A3G.*`, which covers the app's own group).
+2. **Profiles**: macOS › **Developer ID**, one per App ID, with the *Developer ID Application* certificate (`Sukrara Mac
+   Developer ID`, `Sukrara Mac Widget Developer ID`, valid until 2044-11-05). Only if Apple Development builds should
+   keep the entitlements too: a **macOS App Development** profile per App ID with the Apple Development certificate and
+   this Mac registered (its *Provisioning UDID*: `system_profiler SPHardwareDataType`).
+3. **Where**: `~/.apple-dev/profiles/*.provisionprofile` (`SUKRARA_PROFILES_DIR` for another folder). `bundle.sh`
+   picks, per App ID, the unexpired profile that lists the signing certificate (and this Mac, for a development one),
+   and without `SIGN_ID` signs with an identity such a profile lists: with the Developer ID profiles above, every
+   `bundle.sh` (and so `tools/install.sh mac` and `mac-release.sh`) signs with Developer ID and embeds them. A profile
+   missing a capability stops the build with what to enable.
+4. **Check**: `cd apps/macos && Bundle/bundle.sh` ends with `signed: "Developer ID Application: …", profile "Sukrara Mac
+   Developer ID" until …`; `tools/release/verify-app.sh build/Sukrara.app` lists the three entitlements (`codesign -d
+   --entitlements :- build/Sukrara.app` shows them all); `Bundle/smoke.sh` launches it offline with its own data and the
+   app logs `launched (…; time-sensitive yes, data-protection keychain yes, universal links yes)` (`/usr/bin/log show
+   --last 5m --info --predicate 'subsystem == "app.mauri.sukrara"'`). `spctl -a -vv` says *Unnotarized Developer ID*
+   until the build is notarized (above); a build made on this Mac has no quarantine, so it launches. All of this ran on
+   2026-11-10 with the profiles above; a build without them logs `no` three times.
+5. **Site**: `docs/.well-known/apple-app-site-association` gives `/join` to `QWUV9H4A3G.app.mauri.sukrara` (the
+   profile's `TeamIdentifier`; a new team changes it there, in `bundle.sh` `TEAM`, `SukraraIDs.teamID` and
+   `verify-app.sh`). GitHub Pages publishes it (`_config.yml` includes `.well-known`); Macs read it through Apple's CDN,
+   `curl -s https://app-site-association.cdn-apple.com/a/v1/sukrara.mauri.app` shows what they see (refreshed within
+   about a day of a change).
+6. **QA** on the owner's Mac (docs/QA.md Q6, Q8), then close #19: a Focus doesn't hold back an alarm; the follower key
+   moved (one Keychain prompt for the old login-keychain item, *Always Allow*); the web invite opens the Follow step.
+
+Once a profile build has run, the follower key is in the data-protection keychain, which a build without the profile
+can't read (it would show *not following*). So `bundle.sh` stops when there is a profile for the app that can't sign
+the build (expired, another certificate) instead of quietly building without it; `--no-profile` builds without on
+purpose. A test build with the profile also claims the invite links: never launch it from Finder, and unregister it
+after testing (`lsregister -u <app>`, `pluginkit -r <appex>`).
+
 ### Mac App Store: not now
 
 | Requirement | Impact on Sukrara |

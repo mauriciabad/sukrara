@@ -160,9 +160,13 @@ proven raw `swiftc` command (poc/spikes/menubar/bundle.sh), same flags.
 
 `Bundle/bundle.sh` assembles `build/Sukrara.app` (+ `Contents/PlugIns/SukraraWidget.appex`) from
 `Bundle/Info.plist.in`, `Bundle/Widget-Info.plist.in` and the entitlement templates, version from `<repo>/VERSION`
-(`CFBundleVersion` = versionCode, `--dev` appends `.<yyMMddHHmm>`), and signs inside-out with the Apple Development
-identity of team QWUV9H4A3G (hardened runtime; the app is not sandboxed, the widget is; both share the App Group).
-`--unsigned` signs ad hoc for CI. `Bundle/dmg.sh` makes the dmg and zip.
+(`CFBundleVersion` = versionCode, `--dev` appends `.<yyMMddHHmm>`), and signs inside-out with an identity of team
+QWUV9H4A3G (hardened runtime; the app is not sandboxed, the widget is; both share the App Group). With the provisioning
+profiles in `~/.apple-dev/profiles` (Developer ID) it embeds them and signs with `app-profile.entitlements.in` /
+`widget-profile.entitlements.in`: Time Sensitive, `keychain-access-groups`, Associated Domains; without them, with
+the Apple Development identity and `app.entitlements.in` / `widget.entitlements.in`. The app reads what it got at
+launch (`Entitlements.current`: alarms' interruption level, which keychain, universal links). `--unsigned` signs ad
+hoc for CI. `Bundle/dmg.sh` makes the dmg and zip.
 
 ### Ids and paths
 
@@ -253,8 +257,11 @@ WidgetFeed (SukraraApp) ── glucose.json in the App Group + WidgetReloadPolic
 - **Stores** (`SukraraCore/Stores`): `readings.csv` (`t_ms,mgdl,rate`, appended, atomic rewrite for backfill,
   31 days, first reading per `t` kept), `treatments.json` (`TreatmentLog` v1: entry + creator + delivery),
   `sensor.json`, `wearer-settings.json`. An unreadable file is copied to `<name>.corrupt-<unix s>` and reported as a
-  `StoreIssue` (never silent "no data"). `KeychainStore` uses the login keychain: the Apple Development signature has
-  no provisioning profile, so the data-protection keychain answers -34018 (TN3137); that error is tested to surface.
+  `StoreIssue` (never silent "no data"). `KeychainStore.secrets` picks the keychain from the build's entitlements:
+  the data-protection keychain in group `QWUV9H4A3G.app.mauri.sukrara` when a provisioning profile granted it
+  (`MovingSecretStore` moves an item still in the login keychain on its first read: copy, read back, compare, then
+  remove the old one), else the login keychain; without the entitlement the data-protection keychain answers -34018
+  (TN3137), which is tested to surface as an error, never as "no item".
 - **FollowerRuntime**: start reads the Keychain (missing item → wipe leftovers, not following; read error → keep
   data, `broken`), connects relays (+ Bluetooth when allowed), resubscribes when the session asks, persists trust
   changes at once and the rest ≤ every 5 min, re-sends unsent treatments, runs the missing-history check 90 s after

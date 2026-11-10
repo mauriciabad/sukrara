@@ -92,9 +92,16 @@
                 let m = SetupModel(
                     settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
                 m.loginItem = LoginItem(service: SnapLogin(status: .notRegistered))
+                m.settings.timeSensitive = .unavailable  // a build without a provisioning profile
                 m.flow.open(step)
                 out.append(("setup-\(step.rawValue)", AnyView(SetupView(model: m, close: {}))))
             }
+            // the notification step of a build whose alarms break through a Focus
+            let timeSensitive = SetupModel(
+                settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
+            timeSensitive.settings.timeSensitive = .on
+            timeSensitive.flow.open(.notifications)
+            out.append(("setup-notifications-time-sensitive", AnyView(SetupView(model: timeSensitive, close: {}))))
             // the alert step: the wearer's levels (mirrored), levels out of order, this Mac's own (Custom, one off)
             let wearerAlerts = WearerSettings(
                 json: #"{"alerts":{"alerts":{"low":{"on":true,"mgdl":72},"high":{"on":true,"mgdl":200}}}}"#,
@@ -244,6 +251,7 @@
                 ))
             let alerts = SettingsModel(store: store, follow: following, version: "0.12.0")
             alerts.pane = .alerts
+            alerts.timeSensitive = .unavailable
             out.append(
                 (
                     "settings-alerts",
@@ -258,6 +266,7 @@
                     json: #"{"graph":{"low":72},"alerts":{"alerts":{"low":{"on":true,"mgdl":72}}}}"#, wearer: "Marta"),
                 version: "0.12.0")
             mirrored.pane = .alerts
+            mirrored.timeSensitive = .on
             out.append(
                 (
                     "settings-alerts-mirrored",

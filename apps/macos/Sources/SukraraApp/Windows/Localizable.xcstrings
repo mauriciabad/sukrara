@@ -193,6 +193,22 @@
         }
       }
     },
+    "Alarms are Time Sensitive: they show and play during a Focus (Do Not Disturb, Sleep…) that allows Time Sensitive notifications." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alarms are Time Sensitive: they show and play during a Focus (Do Not Disturb, Sleep…) that allows Time Sensitive notifications."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alarmas son notificaciones urgentes: se muestran y suenan durante un modo de concentración (No molestar, Dormir…) que permita las notificaciones urgentes."
+          }
+        }
+      }
+    },
     "Alert banners or sounds are off: alerts may go unnoticed." : {
       "localizations" : {
         "en" : {
@@ -3245,6 +3261,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Umbral"
+          }
+        }
+      }
+    },
+    "Time Sensitive notifications are off for Sukrara, so a Focus (Do Not Disturb, Sleep…) can hold back its alarms. Turn them on in Sukrara's notification settings." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Sensitive notifications are off for Sukrara, so a Focus (Do Not Disturb, Sleep…) can hold back its alarms. Turn them on in Sukrara's notification settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las notificaciones urgentes de Sukrara están desactivadas, así que un modo de concentración (No molestar, Dormir…) puede retener sus alarmas. Actívalas en los ajustes de notificaciones de Sukrara."
           }
         }
       }

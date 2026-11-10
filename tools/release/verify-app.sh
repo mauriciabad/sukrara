@@ -6,7 +6,8 @@
 #   tools/release/verify-app.sh <Sukrara.app> [--unsigned]
 # - bundle id app.mauri.sukrara, version / build = tools/release/version.sh (dev builds may add .<yyMMddHHmm>)
 # - the widget extension (app.mauri.sukrara.widget) is inside
-# - signed (unless --unsigned): codesign --verify --deep --strict, team QWUV9H4A3G on the app and the appex
+# - signed (unless --unsigned): codesign --verify --deep --strict, team QWUV9H4A3G on the app and the appex; the
+#   entitlements only a provisioning profile grants all there with an embedded profile, none without
 # - a release build: no debug entry points in any binary (debugsend, DebugFakes, Synthetic*, the snapshot renderer)
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -38,6 +39,17 @@ if [ "$unsigned" != --unsigned ]; then
     team="$(codesign -dv "$b" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
     [ "$team" = QWUV9H4A3G ] && ok "team $team: $(basename "$b")" || bad "$(basename "$b") team '$team' (want QWUV9H4A3G)"
   done
+  # Only a provisioning profile grants these (bundle.sh): with one embedded the app has them all; without, none (macOS
+  # refuses to launch an app that claims them without a profile).
+  ents="$(codesign -d --entitlements - "$app" 2>/dev/null || true)"
+  for e in com.apple.developer.usernotifications.time-sensitive keychain-access-groups \
+    com.apple.developer.associated-domains; do
+    if [ -f "$app/Contents/embedded.provisionprofile" ]; then
+      echo "$ents" | grep -q "$e" && ok "$e (provisioning profile)" || bad "a provisioning profile but no $e"
+    elif echo "$ents" | grep -q "$e"; then bad "$e without a provisioning profile: macOS won't launch it"; fi
+  done
+  [ -f "$app/Contents/embedded.provisionprofile" ] \
+    || echo "note no provisioning profile: alarms not Time Sensitive, login keychain, no universal links"
 fi
 
 # The snapshot renderer's own strings ("sukrara-snap: …", "usage: sukrara-snap <…", its "sukrara-snap-<uuid>" scratch

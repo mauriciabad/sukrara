@@ -175,7 +175,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   two-finger double tap the chart through the stored 31 days. The card's pill is
   pressable (Eat carbs / Take insulin open Add Treatment; a mute opens its ways out).
 - **Follow** a wearer with an invite link (pasted, dropped or opened, `https://sukrara.mauri.app/join#…` or
-  `sukrara:`), a QR code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
+  `sukrara:`; a build with a provisioning profile opens the web invite straight from Safari, Mail or Messages), a QR
+  code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
   confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*; readings,
   alerts and
   treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
@@ -186,7 +187,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   same card, rings, sensor life and alerts. Plain http, to home-network addresses only; says so when macOS's Local
   Network permission is off, with the way to turn it on.
 - **Alerts** with sound packs and the same rules and timeline scenarios as Android; mute, change the time, a custom
-  length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert.
+  length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert. Alarms are **Time Sensitive**
+  (they break through a Focus) in a build with a provisioning profile; the panel, setup and Settings › Alerts say
+  when a Focus can hold them back (no profile, or Time Sensitive turned off) and open the setting that changes it.
+  With a profile the follower key is in the data-protection keychain (moved there once from the login keychain).
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
   7 days by day with the phone's entries, edit or delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
@@ -267,7 +271,7 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 | Android: debug APK (GitHub build; `assemblePlayDebug` for the Google Play build) | `cd apps/android && ./gradlew :app:assembleFullDebug` |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
-| Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity) |
+| Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity; the provisioning profiles in `~/.apple-dev/profiles` are used when there, `--no-profile` skips them) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
 | Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh` |
 

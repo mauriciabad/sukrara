@@ -72,7 +72,7 @@ struct PanelView: View {
                     SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
                 }
                 if model.notificationPermission.needsAttention { notificationsWarning }
-                if model.focusCanHoldAlerts { focusNote }
+                if model.focusCanHoldAlerts, let state = model.timeSensitive { TimeSensitiveNote(state: state) }
                 if let alerts = model.alerts { AlertBlocks(alerts: alerts, now: context.date, custom: $customMute) }
                 if let updates = model.updates { UpdateRow(updates: updates) }
                 if let links {
@@ -278,25 +278,6 @@ struct PanelView: View {
             }
             .help(L10n.t("Show what you can do"))
             .offset(x: rect.minX, y: rect.minY)
-        }
-    }
-
-    /// Without Time Sensitive notifications a Focus holds Sukrara's alarms back: say so, and where to allow it.
-    private var focusNote: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                L10n.t(
-                    "A Focus (Do Not Disturb, Sleep…) can hold back Sukrara's alarms on this Mac. Allow Sukrara in each Focus, and keep the phone as the alarm."
-                ),
-                systemImage: "moon.fill"
-            )
-            .font(.callout)
-            .fixedSize(horizontal: false, vertical: true)
-            Button(L10n.t("Open Focus Settings")) {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
         }
     }
 

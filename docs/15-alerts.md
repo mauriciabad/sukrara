@@ -280,7 +280,8 @@ deleted. Checked on an emulator: by default a low went to `alert_a_low` (categor
 `alert_a_high` and the low to `alert_n_low` (played as `USAGE_NOTIFICATION_EVENT`). All four played.
 
 On the Mac there is no alarm volume. The same switch ("Like an alarm") means **Time Sensitive**, which only works in a
-build signed with that entitlement; today's builds show it as a normal notification.
+build signed with that entitlement (a provisioning profile: `Bundle/bundle.sh`); a build without one shows it as a
+normal notification and says a Focus can hold it back.
 
 ## Notification behaviour learned on the way
 
@@ -376,8 +377,9 @@ build signed with that entitlement; today's builds show it as a normal notificat
   re-posting the alerts that were up with the same identifier and no sound; same tests in `-alerts-selftest`, and the
   shared timeline event `restart` (SPEC §7, `episodes.txt`) runs on both engines.
 - **Mac Time Sensitive** needs `com.apple.developer.usernotifications.time-sensitive`, which only a provisioning
-  profile grants. The app checks its own entitlement: lows are `.timeSensitive` when it has it, `.active` otherwise
-  (today).
+  profile grants (`Bundle/bundle.sh` signs with `app-profile.entitlements.in` when it finds one, #19). The app reads
+  its own entitlement and the person's setting (`TimeSensitive`): alarms are `.timeSensitive` when both allow it,
+  `.active` otherwise, and the panel / setup / Settings › Alerts say which.
 
 ## Alert UX round f30 (2026-10-22)
 
@@ -418,6 +420,7 @@ app never shows an alert that isn't real; test them on the emulator), `--es aler
 
 - **Not a medical device.** Alerts depend on the phone being on, the app not being killed, and Do Not Disturb. The
   very low can't be set to bypass DND unless the user allows alarms.
-- macOS Time Sensitive needs a provisioned build (Developer ID).
+- macOS Time Sensitive needs a provisioned build (Developer ID profile, docs/20-publishing.md): breaking through a
+  Focus is checked by hand (QA.md Q8).
 - The follower's local "no data" uses its own threshold even when mirroring.
 - Mirroring over Bluetooth only (no internet) between two real phones wasn't run; the emulators have no Bluetooth.
