@@ -1,7 +1,7 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Walks an app's screens on an EMULATOR through uiautomator (android-smoke.sh step 5): R8 can break a screen that is
+"""Walks an app's screens on an EMULATOR through uiautomator (android-smoke.sh step 4): R8 can break a screen that is
 never opened (a class it renamed or removed, a serializer it stripped), and the first screen proves nothing about the
 others.
 
