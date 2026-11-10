@@ -66,6 +66,17 @@ whose `sid` differs from the one the follower already has is rejected: a stream'
 - **Addressable events need strictly increasing `created_at`** per (author, kind, `d`) — two versions in the same
   second are rejected ("replaced: have newer event"), which can leave a stale owner backup.
 - Gift wraps' outer `created_at` is randomised up to 2 days into the past (NIP-59): subscribe with `since` ≥ 3 days.
+- **What a relay sends is not trusted**: an `EVENT` for a subscription that isn't open, or that doesn't match that
+  subscription's filter, is dropped before its signature is checked. A relay that sends more than 2000 events at once
+  or more than 20 per second after that (a token bucket per connection) loses its socket and reconnects with a growing
+  backoff. Event ids remembered as seen are capped at 5000 per follower (the least recently seen dropped first).
+- **Relay lists** received in a roster, key delivery, owner backup, invite or nearby pairing are validated: at most 8
+  (the first 8 valid ones, duplicates removed), each a `wss://` URL of at most 200 printable ASCII characters with no
+  user info, query or fragment, an optional port 1–65535 and a public host name: at least two labels of `a-z 0-9 -`,
+  not `localhost`, `.local`, `.lan`, `.home`, `.internal`, `.localdomain` or `.home.arpa`, no IPv6 literal and no
+  private, loopback, link-local, shared (100.64/10), multicast or reserved IPv4 address. Invalid entries are skipped
+  ([relays/relay-lists.json](relays/relay-lists.json)). A debug build's local test relay is configured on the device, never
+  taken from a relay list.
 
 ## Treatments (insulin / carbs / notes) — v2 addition, 2026-10-16
 
@@ -348,6 +359,17 @@ follower's open `#c` subscription picks the chunks up. Older followers/owners ig
 **Missed rotation**: a follower that sees an unknown `gk` sends a *rekey request*; the owner app answers with the
 current key if `F` is still approved.
 
+**Two apps as one identity** (e.g. the old phone still running after a restore): the owner app watches the rosters and
+backups signed by `I` that come back from the relays. A newer roster naming other devices or under an epoch it doesn't
+hold, or a newer backup listing epochs it doesn't hold (or missing its newest), is another app: it stops publishing
+roster, backup, rotations and follower changes (readings and alerts go on) until the wearer retries
+([sync/owner-conflict.json](sync/owner-conflict.json) `checks`). The retry first fetches the newest roster and backup
+signed by `I` and decrypts the backup (it is encrypted to `I`): followers rank rosters and keys by epoch number, so
+when the other app holds an epoch this app doesn't, the retry rotates to `max(own newest, every epoch in that backup)
++ 1`; when it holds one no readable backup names (its backup isn't on the relays, or no relay answered), to that
+`+ 100` (a number it can't have reached). Otherwise roster and backup are republished. Either way their `created_at`
+is past every event of the other app (`retries`; follower side: [sync/conflict-rotation.json](sync/conflict-rotation.json)).
+
 **Lost identity key** (no backup): unrecoverable by design — followers must be re-invited. (Key-migration NIPs are
 all unmerged as of 2026-10.)
 
@@ -357,7 +379,8 @@ all unmerged as of 2026-10.)
   epoch n+1 outranks every roster of epoch ≤ n (its `devices` apply until roster n+1 arrives), so a late or refreshed
   roster from a replaced phone can't bring the old device back ([sync/rotation.json](sync/rotation.json)).
 - Data (live/chunk): author ∈ current `roster.devices`, `gk` matches a known epoch, decrypts, `v == 2`. A chunk's `c`
-  must be `H("cgm2:glucose:"+sid)` and its `d` must be `H("cgm2:h:"+sid+":"+h)` for the payload's own hour `h`.
+  must be `H("cgm2:glucose:"+sid)` and its `d` must be `H("cgm2:h:"+sid+":"+h)` for the payload's own hour `h`. A
+  live reading, a chunk's hour or any reading in it later than now + 300 s is rejected (`reading-in-future`).
 - Unknown `gk`: a rekey request only when the event is signed by `I` or a roster device (≤ 1 per `gk` per 5 min), so a
   stranger can't make followers send them, and only when its `created_at` is newer than the newest key delivery's
   rumor (an older event is a backfill of hours from before the follower's latest key, not a missed rotation). The

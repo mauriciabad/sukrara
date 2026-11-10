@@ -166,7 +166,7 @@ class HandleInbox(private val ctx: OwnerContext) {
         val request =
             PendingRequest(
                 follower = sender,
-                name = r.profile?.name?.ifBlank { null } ?: "?",
+                name = Profile.shownName(r.profile?.name.orEmpty()),
                 token = r.token,
                 code = code,
                 at = now,

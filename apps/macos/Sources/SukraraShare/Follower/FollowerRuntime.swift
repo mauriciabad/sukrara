@@ -704,9 +704,10 @@ public actor FollowerRuntime: FollowerService {
             switch state.status {
             case .new, .requested:
                 link = .requested(
-                    code: state.code, wearer: state.wearer?.name,
+                    code: state.code, wearer: Profile.shownName(state.wearer?.name),
                     pairing: state.pair.map { LinkState.PairingCheck(code: $0.code, confirmed: $0.confirmed) })
-            case .active: link = .following(wearer: state.wearer?.name, canWrite: session?.canWrite ?? false)
+            case .active:
+                link = .following(wearer: Profile.shownName(state.wearer?.name), canWrite: session?.canWrite ?? false)
             case .declined: link = .declined
             case .inviteUsed: link = .inviteUsed
             case .revoked: link = .revoked

@@ -281,4 +281,51 @@ class RelayPoolTest {
             )
             p.close()
         }
+
+    @Test fun onlyEventsMatchingAnOpenSubscriptionReachInbound() =
+        runTest {
+            val p = pool()
+            val inbound = mutableListOf<RelayInbound.Event>()
+            backgroundScope.launch { p.inbound.collect { if (it is RelayInbound.Event) inbound += it } }
+            p.start()
+            p.subscribe("own", listOf(RelayFilter(kinds = listOf(Wire.KIND_DATA), authors = listOf(identity.public.hex))))
+            runCurrent()
+            val ours = crypto.sign(identity, UnsignedEvent(Wire.KIND_DATA, "x", listOf(listOf("d", "z")), 1_000))
+            val otherKind = crypto.sign(identity, UnsignedEvent(Wire.KIND_LIVE, "x", emptyList(), 1_000))
+            val stranger = crypto.sign(crypto.generate(), UnsignedEvent(Wire.KIND_DATA, "x", listOf(listOf("d", "z")), 1_000))
+            sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"own\",${otherKind.toJson()}]"))
+            sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"own\",${stranger.toJson()}]"))
+            sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"never-opened\",${ours.toJson()}]"))
+            sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"own\",${ours.toJson()}]"))
+            runCurrent()
+            p.close("own")
+            runCurrent()
+            sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"own\",${ours.toJson()}]"))
+            runCurrent()
+            assertEquals(listOf(ours.id), inbound.map { it.event.id })
+            p.close()
+        }
+
+    @Test fun aRelaySendingMoreEventsThanItsBudgetLosesItsSocket() =
+        runTest {
+            val p = pool()
+            p.start()
+            p.subscribe("own", listOf(RelayFilter(kinds = listOf(Wire.KIND_DATA))))
+            runCurrent()
+            val ev = crypto.sign(identity, UnsignedEvent(Wire.KIND_DATA, "x", listOf(listOf("d", "z")), 1_000))
+            // the clock stands still: no refill
+            repeat(RelayPool.EVENT_BURST) { sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"own\",${ev.toJson()}]")) }
+            runCurrent()
+            assertFalse("a full start's burst is fine", sockets[0].cancelled)
+            sockets[0].onEvent(SocketEvent.Message("[\"EVENT\",\"own\",${ev.toJson()}]"))
+            runCurrent()
+            assertTrue(sockets[0].cancelled)
+            assertEquals(
+                RelayPool.TOO_MANY_EVENTS,
+                p.status.value
+                    .getValue("wss://a.example")
+                    .lastError,
+            )
+            p.close()
+        }
 }

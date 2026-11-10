@@ -76,7 +76,10 @@ data class FollowerState(
     val held: Map<String, Pair<Long, String>> = emptyMap(),
     /** Alert `(id, state, n)` → its `at`, kept for [Wire.ALERT_MAX_AGE]. */
     val alertsSeen: Map<Triple<String, Boolean, Int>, Long> = emptyMap(),
-    /** Event id → expiration (or created_at + 31 d when it has none), pruned once passed. */
+    /**
+     * Event id → expiration (or created_at + 31 d when it has none), pruned once passed; at most [SEEN_LIMIT], the least
+     * recently seen dropped first (iteration order = recency).
+     */
     val seen: Map<String, Long> = emptyMap(),
     val rekeyAt: Map<String, Long> = emptyMap(),
     /** Rumor `created_at` of the newest key delivery / revoked notice: a re-approval after a revoke wins by time. */
@@ -191,9 +194,14 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
 
     fun onEvent(ev: SignedEvent, now: Long): FollowResult {
         prune(now)
-        if (ev.id in state.seen) return FollowResult.Ignored("duplicate")
+        state.seen[ev.id]?.let { until ->
+            // seen again: the most recent now
+            state = state.copy(seen = state.seen - ev.id + (ev.id to until))
+            return FollowResult.Ignored("duplicate")
+        }
         if (!crypto.verify(ev)) return FollowResult.Rejected("bad-signature")
-        state = state.copy(seen = state.seen + (ev.id to (ev.expiration ?: (ev.createdAt + 31 * Wire.DAY))))
+        val seen = state.seen + (ev.id to (ev.expiration ?: (ev.createdAt + 31 * Wire.DAY)))
+        state = state.copy(seen = if (seen.size > SEEN_LIMIT) seen.entries.drop(seen.size - SEEN_LIMIT).associate { it.toPair() } else seen)
         if (ev.isExpired(now)) return FollowResult.Ignored("expired")
         return try {
             if (ev.kind == Wire.KIND_WRAP) onWrap(ev) else onStreamEvent(ev, now)
@@ -218,7 +226,7 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         val sid = state.sid ?: return FollowResult.Ignored("no-sid")
         return when (ev.kind) {
             Wire.KIND_DATA -> {
-                onData(ev, epoch, sid, author)
+                onData(ev, epoch, sid, author, now)
             }
 
             Wire.KIND_LIVE, Wire.KIND_ALERT -> {
@@ -269,7 +277,7 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         return crypto.decrypt(epoch.key.secret, sender, content) ?: throw InvalidPayload("does not decrypt")
     }
 
-    private fun onData(ev: SignedEvent, epoch: Epoch, sid: String, author: String): FollowResult {
+    private fun onData(ev: SignedEvent, epoch: Epoch, sid: String, author: String, now: Long): FollowResult {
         val d = ev.tag("d")
         val c = ev.tag("c")
         return when {
@@ -289,6 +297,9 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
                 if (author !in state.devices) return notInRosterYet(ev, "author-not-device")
                 val chunk = ReadingsCodec.decodeChunk(decrypt(epoch, author, ev.content))
                 if (d != Wire.chunkD(sid, chunk.hour)) return FollowResult.Rejected("d-mismatch")
+                if (chunk.hour > now + FUTURE_TOLERANCE || chunk.readings.any { it.t > now + FUTURE_TOLERANCE }) {
+                    return FollowResult.Rejected("reading-in-future")
+                }
                 FollowResult.Accepted(Item.Chunk(chunk))
             }
 
@@ -469,8 +480,11 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         return FollowResult.Accepted(Item.Key(k.epoch))
     }
 
-    private companion object {
+    companion object {
         /** A reading more than 5 min in the future is rejected (reference follower). */
-        const val FUTURE_TOLERANCE = 300L
+        private const val FUTURE_TOLERANCE = 300L
+
+        /** The most event ids remembered as seen (PROTOCOL-v2 "Relay rules"; the Mac's `seenLimit`). */
+        const val SEEN_LIMIT = 5000
     }
 }

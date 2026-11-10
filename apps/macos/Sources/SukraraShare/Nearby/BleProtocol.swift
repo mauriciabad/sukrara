@@ -226,7 +226,7 @@ public enum BleMessage: Equatable, Sendable {
             return .info(
                 BleInfo(
                     nonce: o["nonce"] as? String, m: o["m"] as? String, identity: o["i"] as? String,
-                    relays: Relays.secure(o["relays"]), pairing: pairing))
+                    relays: Relays.list(o["relays"]), pairing: pairing))
         case "HELLO":
             guard let o = array[1] as? [String: Any], let nonce = o["nonce"] as? String else { return nil }
             return .hello(nonce: nonce, id: o["id"] as? String)

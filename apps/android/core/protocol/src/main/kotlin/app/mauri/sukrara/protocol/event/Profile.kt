@@ -108,6 +108,16 @@ data class Profile(val name: String, val avatar: Avatar?) {
         /** An edit of [typed] over the stored [previous] name: trimmed, at most 40 characters, blank keeps [previous]. */
         fun editedName(typed: String, previous: String): String = typed.trim().ifBlank { previous }.take(MAX_NAME)
 
+        /**
+         * A name as shown: control and format characters removed, trimmed; "" when nothing is left, so the caller
+         * shows its generic word (*Someone*) instead (contracts/protocol/identity/profile-v1.json `shown`; Mac
+         * `Profile.shownName`).
+         */
+        fun shownName(name: String): String =
+            name
+                .filterNot { Character.isISOControl(it) || Character.getType(it) == Character.FORMAT.toInt() }
+                .trim()
+
         fun of(e: JsonElement?): Profile? {
             val o = e as? JsonObject ?: return null
             return Profile(

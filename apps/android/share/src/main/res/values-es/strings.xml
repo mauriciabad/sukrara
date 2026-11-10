@@ -5,6 +5,7 @@
 <resources>
     <!-- access-request notification (a follower used an invite) -->
     <string name="share_request_title">%1$s quiere ver tu glucosa</string>
+    <string name="share_request_someone">Alguien</string>
     <string name="share_request_for">Pedido con tu invitación para %1$s · %2$s</string>
     <string name="share_request_from">Pedido con tu invitación · %1$s</string>
     <string name="share_request_nearby">Lo ha pedido con Emparejar cerca. Abre Sukrara y comprueba que su teléfono muestra el mismo código.</string>

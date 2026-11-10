@@ -58,16 +58,23 @@ public struct FollowerSession: Sendable {
     private let followerPublic: String
     /// gk → (epoch, read key).
     private var epochKeys: [String: (n: Int, g: SecretKeyHex)] = [:]
-    /// Event ids whose fate is final → when they may be forgotten (their expiry, at most a day).
-    private var seen: [String: Int] = [:]
+    /// Event ids whose fate is final → when they may be forgotten (their expiry, at most a day) and when last seen.
+    /// At most `seenLimit`: past it, the expired go first, then the least recently seen (down to 90 %).
+    private var seen: [String: (until: Int, used: Int)] = [:]
+    private var seenClock = 0
+    private let seenLimit: Int
     private var rekeyAskedAt: [String: Int] = [:]
     /// d tag → created_at of our last treatment event (strictly increasing per d).
     private var lastTreatmentCreatedAt: [String: Int] = [:]
-    private static let seenLimit = 5000
+    /// The most event ids remembered as seen (PROTOCOL-v2 "Relay rules"; Android `StreamFollower.SEEN_LIMIT`).
+    public static let seenLimit = 5000
 
-    public init(state: FollowerState, crypto: any NostrCrypto) throws(CryptoError) {
+    public init(state: FollowerState, crypto: any NostrCrypto, seenLimit: Int = FollowerSession.seenLimit)
+        throws(CryptoError)
+    {
         self.state = state
         self.crypto = crypto
+        self.seenLimit = seenLimit
         messages = FollowerMessages(crypto: crypto, follower: state.follower)
         followerPublic = try crypto.publicKey(of: state.follower)
         for epoch in state.epochs { try addEpoch(epoch) }
@@ -179,7 +186,11 @@ public struct FollowerSession: Sendable {
     // MARK: - incoming
 
     public mutating func receive(_ event: SignedEvent, now: Int) -> Outcome {
-        if seen[event.id] != nil { return Outcome(.ignored("duplicate")) }
+        if seen[event.id] != nil {
+            seenClock += 1
+            seen[event.id]?.used = seenClock  // the most recent now
+            return Outcome(.ignored("duplicate"))
+        }
         guard crypto.verify(event) else { return Outcome(.rejected("bad-signature")) }
         remember(event, now: now)
         if event.isExpired(now: now) { return Outcome(.ignored("expired")) }
@@ -190,7 +201,7 @@ public struct FollowerSession: Sendable {
         guard let sid = state.sid else { return Outcome(.ignored("no-sid")) }
         do throws(PayloadError) {
             switch event.kind {
-            case Wire.kindData: return try receiveData(event, epoch: n, key: g, sid: sid)
+            case Wire.kindData: return try receiveData(event, epoch: n, key: g, sid: sid, now: now)
             case Wire.kindLive, Wire.kindAlert:
                 guard state.devices.contains(event.pubkey) else { return notInRosterYet(event, "author-not-device") }
                 let plain = try decrypt(event, key: g)
@@ -229,7 +240,7 @@ public struct FollowerSession: Sendable {
         return Outcome(.rejected(reason))
     }
 
-    private mutating func receiveData(_ event: SignedEvent, epoch n: Int, key g: SecretKeyHex, sid: String)
+    private mutating func receiveData(_ event: SignedEvent, epoch n: Int, key g: SecretKeyHex, sid: String, now: Int)
         throws(PayloadError) -> Outcome
     {
         let d = event.tag("d"), c = event.tag("c"), author = event.pubkey
@@ -249,6 +260,10 @@ public struct FollowerSession: Sendable {
             guard state.devices.contains(author) else { return notInRosterYet(event, "author-not-device") }
             let chunk = try ChunkPayload.decode(try decrypt(event, key: g))
             guard d == Wire.chunkD(sid: sid, hour: chunk.hour) else { return Outcome(.rejected("d-mismatch")) }
+            let latest = now + Wire.futureTolerance
+            guard chunk.hour <= latest, !chunk.readings.contains(where: { $0.t > latest }) else {
+                return Outcome(.rejected("reading-in-future"))
+            }
             var outcome = Outcome(.accepted("chunk"))
             if !chunk.readings.isEmpty { outcome.deltas = [.readings(chunk.readings)] }
             return outcome
@@ -464,7 +479,12 @@ public struct FollowerSession: Sendable {
     }
 
     private mutating func remember(_ event: SignedEvent, now: Int) {
-        if seen.count >= Self.seenLimit { seen = seen.filter { $0.value > now } }
-        seen[event.id] = min(event.expiration ?? now + 86_400, now + 86_400)
+        seenClock += 1
+        seen[event.id] = (min(event.expiration ?? now + 86_400, now + 86_400), seenClock)
+        guard seen.count > seenLimit else { return }
+        seen = seen.filter { $0.value.until > now }
+        guard seen.count > seenLimit else { return }
+        let keep = Swift.max(1, seenLimit * 9 / 10)
+        for (id, _) in seen.sorted(by: { $0.value.used < $1.value.used }).prefix(seen.count - keep) { seen[id] = nil }
     }
 }

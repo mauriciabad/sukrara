@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -67,7 +68,7 @@ fun ApproveRefusedDialog(
     refused: ApproveResult,
     onClose: () -> Unit,
 ) {
-    val name = shownName(request.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
+    val name = Profile.shownName(request.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(R.string.sh_approve_refused_title, name)) },

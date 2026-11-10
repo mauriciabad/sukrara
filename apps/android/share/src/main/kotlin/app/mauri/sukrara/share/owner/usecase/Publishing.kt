@@ -109,24 +109,31 @@ class IdentityConflictDetector(private val ctx: OwnerContext) {
 
             is IdentityCheck.Conflict -> {
                 val newest = maxOf(ev.createdAt, s.conflict?.eventCreatedAt ?: 0)
-                s.copy(conflict = ConflictRecord(r.reason, now, newest))
+                // an unknown epoch stays the reason (followers stopped taking our readings) whatever comes after it
+                val unknown = IdentityCheck.Reason.RosterUnknownEpoch
+                val reason = if (s.conflict?.reason == unknown) unknown else r.reason
+                s.copy(conflict = ConflictRecord(reason, now, newest))
             }
         }
 
     /**
      * "I turned it off — retry": clears the block and republishes roster and backup with `created_at` past the other
-     * app's event, so relays keep ours. If the other app is still running, its next event blocks again.
+     * app's events ([found]: what the relays hold signed by our identity), so relays keep ours. When the other app holds
+     * an epoch we don't, rotate above its newest instead ([IdentityConflict.retryEpoch]): followers rank rosters and
+     * keys by epoch number, so only a higher epoch naming this phone wins them back. If the other app is still running,
+     * its next event blocks again.
      */
-    fun retry(s: OwnerState, now: Long): Step {
+    fun retry(s: OwnerState, found: List<SignedEvent>, now: Long): Step {
         val conflict = s.conflict ?: return Step(s)
-        // the conflict's created_at is the floor for this publish (ControlEvents.nextAt), then it is forgotten. After
-        // the other app rotated (unknown epoch) a plain roster would be older than its epoch: rotate instead, so our
-        // followers get a newer key naming this phone.
+        val identity = s.identity(ctx.crypto).public.hex
+        val newestOther = found.filter { it.pubkey == identity && it.kind == Wire.KIND_DATA }.maxOfOrNull { it.createdAt } ?: 0
+        // the floor for this publish (ControlEvents.nextAt), then it is forgotten
+        val floored = s.copy(conflict = conflict.copy(eventCreatedAt = maxOf(conflict.eventCreatedAt, newestOther)))
+        val unknownEpoch = conflict.reason == IdentityCheck.Reason.RosterUnknownEpoch
         val step =
-            if (conflict.reason == IdentityCheck.Reason.RosterUnknownEpoch) {
-                Rotate(ctx)(s, now)
-            } else {
-                ControlEvents.roster(ctx, s, now) + { ControlEvents.backup(ctx, it, now) }
+            when (val epoch = IdentityConflict.retryEpoch(ctx.crypto, s.marks(ctx.crypto), found, unknownEpoch)) {
+                null -> ControlEvents.roster(ctx, floored, now) + { ControlEvents.backup(ctx, it, now) }
+                else -> Rotate(ctx)(floored, now, epoch)
             }
         return Step(step.state.copy(conflict = null), step.publish)
     }

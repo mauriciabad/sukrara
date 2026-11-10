@@ -51,7 +51,8 @@ class SyncFixturesTest {
     private val now = v.now
     private val relays = listOf("wss://relay.example.org")
     private val g3 = throwaway("sukrara/sync/G3")
-    private val names = listOf("join-readings", "treatments-writer", "settings-mirror", "rotation", "revoke-reapprove")
+    private val g4 = throwaway("sukrara/sync/G4")
+    private val names = listOf("join-readings", "treatments-writer", "settings-mirror", "rotation", "revoke-reapprove", "conflict-rotation")
 
     /**
      * One fixture step: feed [event] and expect [expect] (and, when [rekey] is set, a rekey request whose `have` is that
@@ -189,11 +190,36 @@ class SyncFixturesTest {
                 revokeReapprove()
             }
 
+            "conflict-rotation" -> {
+                base + conflictRotation()
+            }
+
             else -> {
                 error(name)
             }
         }
     }
+
+    /**
+     * Two apps as one identity: the restored phone D2 (epochs 1–2) and the old phone D, still running, which rotated to
+     * epoch 3 naming itself — followers stop taking D2's readings. D2's retry reads the other app's epoch and rotates
+     * above it (4): followers take D2 again, and D's refreshed epoch-3 roster can't bring it back.
+     */
+    private fun conflictRotation(): List<Step> =
+        listOf(
+            step("roster-1", roster(1, g1, listOf(d)), "accepted:roster"),
+            step("key-2", keyTo(2, g2, listOf(d2)), "accepted:key"),
+            step("roster-2", roster(2, g2, listOf(d2), at = now - 90), "accepted:roster"),
+            step("live-2", live(d2, g2, now - 85, 120, 0.0), "accepted:live"),
+            step("key-3-other-app", keyTo(3, g3, listOf(d)), "accepted:key"),
+            step("roster-3-other-app", roster(3, g3, listOf(d), at = now - 60), "accepted:roster"),
+            step("live-2-after-other-rotation", live(d2, g2, now - 55, 121, 0.0), "rejected:author-not-device"),
+            step("key-4-retry", keyTo(4, g4, listOf(d2)), "accepted:key"),
+            step("roster-4-retry", roster(4, g4, listOf(d2), at = now - 40), "accepted:roster"),
+            step("live-4", live(d2, g4, now - 35, 122, 0.0), "accepted:live"),
+            step("live-3-other-app", live(d, g3, now - 30, 180, 0.0), "rejected:author-not-device"),
+            step("roster-3-refresh", roster(3, g3, listOf(d), at = now - 20), "ignored:roster-older"),
+        )
 
     /**
      * The wearer removes F (revoked notice), then invites it again with the same F key (key delivery of the epoch made
@@ -317,7 +343,8 @@ class SyncFixturesTest {
             put(
                 "keys",
                 buildJsonObject {
-                    listOf("I" to i, "D" to d, "D2" to d2, "W" to w, "F" to fol, "G1" to g1, "G2" to g2, "G3" to g3).forEach { (n, k) ->
+                    val shared = listOf("I" to i, "D" to d, "D2" to d2, "W" to w, "F" to fol, "G1" to g1, "G2" to g2, "G3" to g3)
+                    (shared + if (name == "conflict-rotation") listOf("G4" to g4) else emptyList()).forEach { (n, k) ->
                         put(
                             n,
                             buildJsonObject {

@@ -929,6 +929,11 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   notification goes as soon as the request is answered anywhere (notification or app) or sharing pauses (another app
   sharing as you). An Allow that didn't happen (invite expired, request no longer waiting, sharing paused) is replaced
   by *Couldn't give access* (open Sukrara to send a new invite). Sharing runs only while the phone is the wearer.
+- **Names someone else chose** (a follower's, the wearer's) are trimmed when typed, when received and when shown
+  (control and direction-changing characters dropped too; `Profile.shownName` on both apps,
+  `contracts/protocol/identity/profile-v1.json` `received` / `shown`); one that is empty reads *Someone* (*Alguien*) in
+  the access request (notification, dialog, followers list) and *the person who invited you* / *the wearer* where the
+  sentence names the wearer, never "?" or nothing.
 - **Treatments** (PROTOCOL-v2 §Treatments): every change of the phone's treatment log (add, edit, delete, undo) goes
   to followers at once, signed by this phone's device key; the whole log of the last 30 days (deleted entries too)
   again on start, on a new epoch (restore, removing a follower), when a follower is approved, and weekly. **Can add
@@ -942,7 +947,14 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   2 s doubling to 5 min (random 50–100 %), at once when the network comes back; per-relay status, never an error
   thrown at the person. Roster and backup are refreshed every 6 days. A relay that sends a message over 1 MiB, or
   more messages than the phone can handle (4096 waiting), loses its socket (status *message too big* / *too many
-  messages*) and is retried with the same backoff (Android; the Mac's URLSession caps messages at 1 MiB).
+  messages*) and is retried with the same backoff (Android; the Mac's URLSession caps messages at 1 MiB). On both
+  apps an event a relay sends for a subscription that isn't open, or that doesn't match it, is dropped unread; a relay
+  that sends more than 2000 events at once or 20 a second after that loses its socket (*too many events*) the same
+  way; a follower remembers at most 5000 seen events (the least recently seen forgotten first). Relay lists from a
+  roster, key delivery, backup, invite or nearby pairing keep at most 8 `wss://` relays with a public host (no
+  `localhost`, `.local` / `.lan` names or private addresses; `contracts/protocol/relays/relay-lists.json`); a debug
+  build's local test relay comes from the `RELAYS` debug command, never from a list. Readings (live or in an hour
+  chunk) more than 5 min in the future are refused.
 - **Screens** (`feature/sharing` `share/`, `followers/`, `conflict/`; Settings › Sharing = `SharingScreen`
   under the settings page's title and Back (system / predictive back too): no identity → *Set up sharing* (setup's
   followers step alone; done or Back → Settings › Sharing, Back also leaves *Restore your followers* on home's
@@ -958,7 +970,10 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   *Close*; it blocks only the sharing area — readings and alerts keep running).
 - **Another app sharing as you**: a newer roster / backup signed by this identity from another device (the
   old phone still running after a restore) blocks roster, backup, rotation and follower changes instead of
-  republishing back and forth; readings and alerts continue.
+  republishing back and forth; readings and alerts continue. The retry first reads the other app's newest roster and
+  backup from the relays; when the other app moved its followers to an epoch this phone doesn't hold, it rotates above
+  the other app's newest (read from its backup, or 100 past the newest known when that can't be read), so followers
+  take this phone's readings again (PROTOCOL-v2 "Two apps as one identity").
 
 **States and exits**: *No identity* → *Share with followers* (create) or *Restore from recovery code*. *Restore*
 errors → *Needs password* (type it), *Wrong password* / *Not a recovery code* (edit and retry), *Relays unreachable*

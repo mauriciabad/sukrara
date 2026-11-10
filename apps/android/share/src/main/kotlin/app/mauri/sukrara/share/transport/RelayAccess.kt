@@ -13,9 +13,9 @@ sealed interface RelayAccess {
     /** The relays a pool connects to when the protocol names [wanted]. */
     fun connectTo(wanted: List<String>): List<String>
 
-    /** The relays the protocol names, secure websockets only (release builds). */
+    /** The relays the protocol names that pass its relay-list rules (`Wire.validRelays`; release builds). */
     data object Public : RelayAccess {
-        override fun connectTo(wanted: List<String>) = Wire.secureRelays(wanted)
+        override fun connectTo(wanted: List<String>) = Wire.validRelays(wanted)
     }
 
     /** No relay at all: a debug build that wasn't pointed anywhere (emulator QA never reaches the public relays). */

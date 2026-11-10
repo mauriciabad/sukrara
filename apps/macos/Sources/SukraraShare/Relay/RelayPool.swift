@@ -25,7 +25,10 @@ public struct Backoff: Sendable {
 /// every reconnect (gift wraps must reach relays that were down), NIP-42 AUTH as `authKey` when a relay closes a REQ
 /// with `auth-required` (once per connection; REQs re-sent after the relay accepts it), a watchdog that pings a relay
 /// silent for 150 s and reconnects after 270 s. Events are not deduped here: the follower session does that (an
-/// event under a not-yet-known epoch must be seen again later). The owner must call `stop()` (terminal) to release it.
+/// event under a not-yet-known epoch must be seen again later). An event for a subscription that isn't open or doesn't
+/// match its filter is dropped before anyone verifies it, and a relay sending more than `eventBurst` events at once or
+/// `eventsPerSecond` after that loses its socket (PROTOCOL-v2 "Relay rules"; Android `RelayPool`, same numbers). The
+/// owner must call `stop()` (terminal) to release it.
 public actor RelayPool: RelayTransport {
     public nonisolated let inbound: AsyncStream<RelayInbound>
     private let continuation: AsyncStream<RelayInbound>.Continuation
@@ -38,6 +41,10 @@ public actor RelayPool: RelayTransport {
     private let now: @Sendable () -> Int
     private static let log = Logger(subsystem: "app.mauri.sukrara", category: "relays")
     private static let outboxSeconds = 3600
+    /// Events a relay may send at once (a full start: chunks, 30 days of treatments, wraps) …
+    public static let eventBurst = 2000
+    /// … and per second after that.
+    public static let eventsPerSecond = 20
 
     private struct Connection {
         var socket: (any WebSocket)?
@@ -49,7 +56,13 @@ public actor RelayPool: RelayTransport {
         /// The relay has sent something on the current socket.
         var open = false
         var lastReceived = 0
+        /// Token bucket of EVENT messages: `eventBurst` at most, refilled by `eventsPerSecond`.
+        var budget = Double(RelayPool.eventBurst)
+        var budgetAt = 0
     }
+
+    /// The relay sent more events than its budget.
+    private struct TooManyEvents: Error {}
 
     private var connections: [URL: Connection] = [:]
     private var subscriptions: [String: RelayFilter] = [:]
@@ -57,7 +70,7 @@ public actor RelayPool: RelayTransport {
     private var watchdog: Task<Void, Never>?
     private var stopped = false
 
-    /// `urls`: only `wss://` relays are used. `authKey`: the key relays' gift wraps are addressed to (follower `F`, or
+    /// `urls`: only the ones that pass the relay-list rules (`Relays.valid`) are used. `authKey`: the key relays' gift wraps are addressed to (follower `F`, or
     /// the invite key for an invite lookup).
     public init(
         relays: [String], authKey: SecretKeyHex?, crypto: any NostrCrypto,
@@ -65,7 +78,7 @@ public actor RelayPool: RelayTransport {
         sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
         now: @escaping @Sendable () -> Int = { Int(Date().timeIntervalSince1970) }
     ) {
-        urls = relays.filter { $0.hasPrefix("wss://") }.compactMap(URL.init(string:))
+        urls = Relays.valid(relays).compactMap(URL.init(string:))
         self.authKey = authKey
         self.crypto = crypto
         self.factory = factory
@@ -133,6 +146,9 @@ public actor RelayPool: RelayTransport {
             connections[url]?.authPending = false
             connections[url]?.open = false
             connections[url]?.lastReceived = now()
+            connections[url]?.budget = Double(Self.eventBurst)
+            connections[url]?.budgetAt = now()
+            let attemptBefore = attempt
             for (id, filter) in subscriptions { try? await socket.send(Self.req(id, filter)) }
             for item in outbox { try? await socket.send("[\"EVENT\",\(item.event.json())]") }
             var announced = false
@@ -146,9 +162,11 @@ public actor RelayPool: RelayTransport {
                     }
                     attempt = 0
                     connections[url]?.lastReceived = now()
-                    await handle(text, from: url, socket: socket)
+                    guard await handle(text, from: url, socket: socket) else { throw TooManyEvents() }
                 }
             } catch {
+                // a relay that answers and then floods doesn't win back the shortest backoff each time
+                if error is TooManyEvents { attempt = attemptBefore }
                 socket.cancel()
                 guard !Task.isCancelled else { return }
                 connections[url]?.socket = nil
@@ -161,17 +179,21 @@ public actor RelayPool: RelayTransport {
         }
     }
 
-    private func handle(_ text: String, from url: URL, socket: any WebSocket) async {
+    /// False when the relay sent more events than its budget: its socket is dropped.
+    private func handle(_ text: String, from url: URL, socket: any WebSocket) async -> Bool {
         guard let message = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [Any],
             let type = message.first as? String
-        else { return }
+        else { return true }
         let relay = Self.host(url)
         func string(_ i: Int) -> String? { message.count > i ? message[i] as? String : nil }
         switch type {
         case "EVENT":
-            guard message.count > 2, let sub = string(1), let object = message[2] as? [String: Any],
-                let event = SignedEvent.decode(json: JSONText.encode(object))
-            else { return }
+            guard spend(url) else { return false }
+            guard message.count > 2, let sub = string(1), let filter = subscriptions[sub],
+                let object = message[2] as? [String: Any],
+                let event = SignedEvent.decode(json: JSONText.encode(object)),
+                filter.matches(event)  // not what we asked for: never verified, never seen by the session
+            else { return true }
             continuation.yield(.event(event, subscription: sub, relay: relay))
         case "EOSE":
             if let sub = string(1) { continuation.yield(.endOfStored(subscription: sub, relay: relay)) }
@@ -187,11 +209,11 @@ public actor RelayPool: RelayTransport {
                 continuation.yield(.closed(subscription: sub, reason: reason, relay: relay))
             }
         case "OK":
-            guard message.count > 2, let id = string(1) else { return }
+            guard message.count > 2, let id = string(1) else { return true }
             let accepted = message[2] as? Bool ?? false
             if id == connections[url]?.authEventId {
                 Self.log.info("relay \(relay, privacy: .public) AUTH \(accepted ? "accepted" : "refused")")
-                guard accepted else { return }
+                guard accepted else { return true }
                 for (sub, filter) in subscriptions { try? await socket.send(Self.req(sub, filter)) }
                 for item in outbox { try? await socket.send("[\"EVENT\",\(item.event.json())]") }
             } else {
@@ -200,6 +222,21 @@ public actor RelayPool: RelayTransport {
         default:
             break
         }
+        return true
+    }
+
+    private func spend(_ url: URL) -> Bool {
+        guard var c = connections[url] else { return false }
+        let t = now()
+        c.budget = min(Double(Self.eventBurst), c.budget + Double(Swift.max(0, t - c.budgetAt) * Self.eventsPerSecond))
+        c.budgetAt = t
+        guard c.budget >= 1 else {
+            connections[url] = c
+            return false
+        }
+        c.budget -= 1
+        connections[url] = c
+        return true
     }
 
     /// NIP-42: kind 22242 with the relay and the challenge, signed by the key the wraps are addressed to.
