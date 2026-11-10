@@ -53,25 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.nfc.phoneBack
 import app.mauri.sukrara.feature.sensor.R
 import app.mauri.sukrara.core.designsystem.R as DsR
-
-/** Where the antenna is when the phone doesn't say: the upper middle of the back. */
-val DefaultAntenna = Offset(0.5f, 0.45f)
-
-/**
- * Where this phone's NFC antenna is, as a fraction of the phone's back (x from the left, y from the top, back view).
- * `AvailableNfcAntenna` gives millimetres from the top left of the front in portrait, so x is mirrored.
- */
-fun antennaSpot(nfc: NfcAdapter?): Offset {
-    val info = runCatching { nfc?.nfcAntennaInfo }.getOrNull()
-    val antenna = info?.availableNfcAntennas?.firstOrNull()
-    if (info == null || antenna == null || info.deviceWidth <= 0 || info.deviceHeight <= 0) return DefaultAntenna
-    return Offset(
-        (1f - antenna.locationX.toFloat() / info.deviceWidth).coerceIn(0.2f, 0.8f),
-        (antenna.locationY.toFloat() / info.deviceHeight).coerceIn(0.15f, 0.85f),
-    )
-}
 
 /** The tap illustration's height (the hero area keeps it so the page doesn't jump between steps). */
 private val HeroHeight = 220.dp
@@ -98,21 +82,9 @@ internal fun ScanArt(spot: Offset) {
             p
         }
     Canvas(Modifier.size(width = 170.dp, height = HeroHeight).semantics { contentDescription = description }) {
-        val ph = size.height * 0.96f
-        val pw = ph * 0.48f
-        val left = (size.width - pw) / 2
-        val top = (size.height - ph) / 2
-        val corner = CornerRadius(pw * 0.16f)
-        drawRoundRect(cs.surfaceContainerHighest, Offset(left, top), Size(pw, ph), corner)
-        drawRoundRect(cs.outline, Offset(left, top), Size(pw, ph), corner, style = Stroke(2.dp.toPx()))
-        // the camera island, top left of the back
-        val cam = pw * 0.28f
-        val island = Offset(left + pw * 0.1f, top + pw * 0.1f)
-        drawRoundRect(cs.surfaceContainerLow, island, Size(cam, cam * 1.4f), CornerRadius(cam * 0.32f))
-        drawCircle(cs.outline, cam * 0.24f, Offset(island.x + cam / 2, island.y + cam * 0.4f))
-        drawCircle(cs.outline, cam * 0.24f, Offset(island.x + cam / 2, island.y + cam * 1.0f))
-        val center = Offset(left + pw * spot.x, top + ph * spot.y)
-        val r = pw * 0.24f
+        val back = phoneBack(spot, cs.surfaceContainerHighest, cs.outline, cs.surfaceContainerLow)
+        val center = back.spot
+        val r = back.width * 0.24f
         for (k in 0 until RINGS) {
             val p = (pulse + k / RINGS.toFloat()) % 1f
             drawCircle(cs.primary.copy(alpha = 0.55f * (1 - p)), r * (1f + 1.6f * p), center, style = Stroke(3.dp.toPx()))

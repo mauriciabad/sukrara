@@ -6,6 +6,8 @@ package app.mauri.sukrara.feature.home
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.PenDoseInfo
+import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -82,7 +84,139 @@ class HomeViewModelTest {
             writes += "undo ${previous.id}"
             treatments.upsertIfNewer(TreatmentRecord(previous.copy(modifiedAt = clock.now().plusSeconds(1))))
         }
+
+        /** The pen entries the log holds (id → its doses), and whether this phone has pens to correct them. */
+        val pens = mutableMapOf<String, PenEntryInfo>()
+        var hasPens = true
+        var correctRefused = false
+        var restoreRefused = false
+
+        override suspend fun penEntries(ids: Collection<String>) = ids.filterTo(HashSet()) { it in pens }
+
+        override suspend fun penEntry(id: String) = pens[id]
+
+        override fun pensEditable() = hasPens
+
+        override suspend fun correctPen(
+            shown: PenEntryInfo,
+            primed: List<Boolean>,
+        ): PenEntryInfo? {
+            writes += "correct ${shown.id} $primed"
+            return if (correctRefused) null else shown
+        }
+
+        override suspend fun restorePen(was: PenEntryInfo): Boolean {
+            writes += "restore ${was.id}"
+            return !restoreRefused
+        }
     }
+
+    private fun penEntry(t: Treatment) =
+        PenEntryInfo(
+            id = t.id,
+            serial = "AB12",
+            kind = "rapid",
+            units = t.amount,
+            primed = 1.0,
+            t = t.at.epochSecond,
+            note = "",
+            doses =
+                listOf(
+                    PenDoseInfo("0", t.at.epochSecond - 60, 1.0, primed = true, incomplete = false),
+                    PenDoseInfo("1", t.at.epochSecond, t.amount, primed = false, incomplete = false),
+                ),
+            replaced = null,
+        )
+
+    @Test fun `a pen row opens its sheet, Save corrects it and Undo puts it back`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val pen = Samples.treatment(id = "p1")
+            val typed = Samples.treatment(id = "t2", minutesAgo = 20)
+            deps.treatments.upsertIfNewer(TreatmentRecord(pen))
+            deps.treatments.upsertIfNewer(TreatmentRecord(typed))
+            deps.pens[pen.id] = penEntry(pen)
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            assertEquals(setOf(pen.id), vm.state.value.fromPen)
+
+            vm.openPen(pen)
+            runCurrent()
+            val sheet = vm.penSheet.value!!
+            assertEquals(penEntry(pen), sheet.entry)
+            assertTrue(sheet.editable && sheet.deletable)
+
+            vm.correctPen(listOf(true, true))
+            runCurrent()
+            assertNull(vm.penSheet.value)
+            assertEquals(PenNotice(PenNotice.Kind.Removed, penEntry(pen)), vm.penNotice.value)
+            vm.penNoticeShown(vm.penNotice.value!!)
+            vm.undoPen(penEntry(pen))
+            runCurrent()
+            assertEquals(listOf("correct p1 [true, true]", "restore p1"), deps.writes)
+            assertNull(vm.penNotice.value)
+
+            // the entry changed meanwhile: nothing saved, and a refused Undo says so
+            vm.openPen(pen)
+            runCurrent()
+            deps.correctRefused = true
+            vm.correctPen(listOf(true, false))
+            runCurrent()
+            assertEquals(PenNotice(PenNotice.Kind.ChangedSince), vm.penNotice.value)
+            deps.restoreRefused = true
+            vm.undoPen(penEntry(pen))
+            runCurrent()
+            assertEquals(PenNotice(PenNotice.Kind.UndoFailed), vm.penNotice.value)
+        }
+
+    @Test fun `on a follower the pen sheet is read only and a non-pen row opens nothing`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val pen = Samples.treatment(id = "p1")
+            deps.treatments.upsertIfNewer(TreatmentRecord(pen))
+            deps.pens[pen.id] = penEntry(pen)
+            deps.mayChange = false
+            deps.hasPens = false
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            vm.openPen(pen)
+            runCurrent()
+            val sheet = vm.penSheet.value!!
+            assertEquals(false, sheet.editable)
+            assertEquals(false, sheet.deletable)
+            vm.correctPen(listOf(true, true))
+            vm.deletePen()
+            runCurrent()
+            assertEquals(emptyList<String>(), deps.writes)
+            vm.closePen()
+            vm.openPen(Samples.treatment(id = "t9"))
+            runCurrent()
+            assertNull(vm.penSheet.value)
+        }
+
+    @Test fun `Delete on the pen sheet is home's delete with its Undo`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val pen = Samples.treatment(id = "p1")
+            deps.treatments.upsertIfNewer(TreatmentRecord(pen))
+            deps.pens[pen.id] = penEntry(pen)
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            vm.openPen(pen)
+            runCurrent()
+            vm.deletePen()
+            runCurrent()
+            assertNull(vm.penSheet.value)
+            assertEquals(listOf("delete p1"), deps.writes)
+            assertEquals(
+                pen.id,
+                vm.state.value.undo
+                    ?.id,
+            )
+        }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
 

@@ -21,6 +21,11 @@ sealed interface PenAction {
 
     data object AddTreatment : PenAction
 
+    /** *Review*: a big read's entries in the pen's *Doses read*, with *Undo this read*. */
+    data class Review(
+        val serial: String,
+    ) : PenAction
+
     /** *Check it*: an untested pen's page (its display check). */
     data class OpenPen(
         val serial: String,
@@ -64,6 +69,21 @@ class PenCardText(
     fun u(a: Double) = number(a) + "u"
 
     fun time(t: Long): String = ClockText.time(t)
+
+    /** "13:12" on the day of [now] (epoch s), else "12 Oct 13:12": a read that brings yesterday's doses says so. */
+    fun whenText(
+        t: Long,
+        now: Long,
+    ): String {
+        val zone = java.time.ZoneId.systemDefault()
+        val day = { x: Long ->
+            java.time.Instant
+                .ofEpochSecond(x)
+                .atZone(zone)
+                .toLocalDate()
+        }
+        return if (day(t) == day(now)) time(t) else ClockText.dayTime(t)
+    }
 
     private fun s(
         id: Int,
@@ -230,6 +250,19 @@ class PenCardText(
                 ),
             )
         }
+        val since = r.bigSince
+        if (entries.isNotEmpty() && since != null && st.serial != null) {
+            // a big read (an injection older than 72 h): logged like any read, the card offers to check it
+            val lines = mutableListOf(s(R.string.pen_read_big_since, ClockText.dayTime(since)))
+            if (r.merged.isNotEmpty()) lines += p(R.plurals.pen_read_replaced_several, r.merged.size)
+            askLine?.let { lines += it }
+            return PenCard(
+                p(R.plurals.pen_read_several, entries.size),
+                lines,
+                actions =
+                    listOf(PenAction.Review(st.serial)) + undo + askActions,
+            )
+        }
         if (entries.isNotEmpty()) {
             val lines = mutableListOf<String>()
             val title: String
@@ -252,7 +285,15 @@ class PenCardText(
                 }
             } else {
                 title = ctx.resources.getQuantityString(R.plurals.pen_read_several, entries.size, entries.size)
-                lines += s(R.string.pen_read_since, u(PenEngine.r1(entries.sumOf { it.a })), time(entries.first().t))
+                lines +=
+                    s(
+                        R.string.pen_read_since,
+                        u(PenEngine.r1(entries.sumOf { it.a })),
+                        whenText(
+                            entries.first().t,
+                            st.read?.scanTime ?: (System.currentTimeMillis() / 1000),
+                        ),
+                    )
                 if (r.merged.isNotEmpty()) lines += p(R.plurals.pen_read_replaced_several, r.merged.size)
             }
             askLine?.let { lines += it }

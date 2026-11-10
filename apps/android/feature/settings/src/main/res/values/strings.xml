@@ -223,8 +223,9 @@
     <string name="st_sensor_this_phone">This phone</string>
     <string name="st_sensor_open_on_scan">Open Sukrara when you scan a sensor</string>
     <string name="st_sensor_open_on_scan_summary">A sensor tap opens pairing when no sensor is being read</string>
-    <string name="st_sensor_open_on_scan_blocked">Android blocks Sukrara\'s NFC taps</string>
-    <string name="st_sensor_open_on_scan_allow">Allow NFC taps in Android\'s settings</string>
+    <string name="st_sensor_open_on_scan_blocked">Blocked · tap to allow</string>
+    <string name="st_sensor_taps_blocked">Sensor taps are blocked</string>
+    <string name="st_sensor_taps_blocked_text">Android doesn\'t let Sukrara open when you scan a sensor. Allow it in Android\'s settings.</string>
     <string name="st_sensor_forget">Forget this sensor</string>
     <string name="st_sensor_forget_summary">Stops reading it on this phone</string>
     <string name="st_sensor_forget_title">Forget this sensor?</string>
@@ -444,6 +445,10 @@
     <string name="st_pens_taps_allowed">Pen taps allowed</string>
     <string name="st_pens_taps_still_blocked">Pen taps are still blocked</string>
     <string name="st_pens_nfc_off">NFC is off</string>
+    <string name="st_pens_antenna">Touch the back of the phone with the end of your pen, where the circle is, and hold still until it vibrates.</string>
+    <string name="st_pens_antenna_desc">The back of this phone with a circle where its NFC antenna is</string>
+    <string name="st_pens_juggluco">Juggluco also reads pens</string>
+    <string name="st_pens_juggluco_summary">Both apps react to the same tap, so a dose could be logged twice. Turn pen reading off in one of them.</string>
     <string name="st_pens_nfc_off_summary">Pen taps need NFC · open NFC settings</string>
     <string name="st_pens_notify_blocked">Blocked in Android settings · tap to allow</string>
     <string name="st_pens_yours">Your pens</string>
@@ -451,7 +456,7 @@
     <string name="st_pens_none_summary">Hold your pen to the back of the phone to add it</string>
     <string name="st_pens_blocked">Pen taps are blocked</string>
     <string name="st_pens_blocked_text">Android doesn\'t let pen taps reach Sukrara, so nothing is read or logged. Allow it in Android\'s settings.</string>
-    <string name="st_pens_allow">Allow</string>
+    <string name="st_taps_allow">Allow</string>
     <string name="st_pen_not_usable">Not usable: it didn\'t match its display</string>
     <string name="st_pen_not_usable_text">Sukrara logs nothing from this pen. Type its doses by hand, or check it again.</string>
     <string name="st_pen_check_to_start">Check it once before Sukrara logs it</string>
@@ -466,6 +471,24 @@
     <string name="st_pen_entry_changed">Entry changed</string>
     <string name="st_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
     <string name="st_pen_undo">Undo</string>
+    <string name="st_pen_review_title">Review read</string>
+    <string name="st_pen_review_row">Review the last read</string>
+    <plurals name="st_pen_review_line">
+        <item quantity="one">%1$d injection logged on %2$s</item>
+        <item quantity="other">%1$d injections logged on %2$s</item>
+    </plurals>
+    <string name="st_pen_review_text">The oldest is from %1$s. Tap one to check its doses or delete it.</string>
+    <string name="st_pen_review_none">Nothing from that read is left to review</string>
+    <string name="st_pen_undo_read">Undo this read</string>
+    <string name="st_pen_undo_read_title">Undo this read?</string>
+    <plurals name="st_pen_undo_read_text">
+        <item quantity="one">Its entry leaves your log (an entry of yours it replaced comes back). You can log each dose again here.</item>
+        <item quantity="other">Its %1$d entries leave your log (entries of yours they replaced come back). You can log each one again here.</item>
+    </plurals>
+    <string name="st_pen_undo_read_confirm">Undo read</string>
+    <string name="st_pen_read_undone">Read undone: its doses aren\'t logged</string>
+    <string name="st_pen_undo_read_changed">Couldn\'t undo: some of these entries changed since. Fix each one in its sheet.</string>
+    <string name="st_pen_undo_read_gone">Nothing left to undo from that read</string>
     <string name="st_pen_untested_tag">Untested model</string>
     <string name="st_pen_model">Model: %1$s</string>
     <string name="st_pen_serial">Serial number: %1$s</string>
@@ -517,16 +540,7 @@
     <string name="st_pen_h_not_logged">Not logged</string>
     <string name="st_pen_h_incomplete">%1$s · incomplete</string>
     <string name="st_pen_seg_priming">Priming</string>
-    <string name="st_pen_seg_injected">Injected</string>
-    <string name="st_pen_dose_a11y">%1$s, %2$s, %3$s</string>
-    <string name="st_pen_mark_injected">Mark as injected</string>
-    <string name="st_pen_mark_priming">Mark as priming</string>
-    <string name="st_pen_incomplete">Incomplete</string>
     <string name="st_pen_nothing_injected">Nothing injected</string>
-    <string name="st_pen_from_pen">From the pen</string>
-    <string name="st_pen_primed">%1$s primed</string>
-    <string name="st_pen_replaced">Replaced your %1$s entry at %2$s</string>
-    <string name="st_pen_remove">Remove from log</string>
     <string name="st_pen_done">Done</string>
     <string name="st_pen_add_to_entry">Add to the %1$s entry</string>
     <string name="st_pen_log_as_injection">Log as injection</string>
@@ -546,10 +560,6 @@
     <plurals name="st_pen_earlier">
         <item quantity="one">%1$d earlier dose</item>
         <item quantity="other">%1$d earlier doses</item>
-    </plurals>
-    <plurals name="st_pen_units_spoken">
-        <item quantity="one">%1$s unit</item>
-        <item quantity="other">%1$s units</item>
     </plurals>
     <string name="st_pen_changed_since_open">That entry changed or was deleted meanwhile</string>
     <string name="st_pen_q_several">Several of your entries are nearby: answer it on the pen read card or its notification.</string>

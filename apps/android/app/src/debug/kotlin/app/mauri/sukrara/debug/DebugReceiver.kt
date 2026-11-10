@@ -51,6 +51,7 @@ object DebugFakes {
             PREFIX + "SYNTHETIC" to ::synthetic,
             PREFIX + "PEN_READ" to ::penRead,
             PREFIX + "PEN_TAGS" to ::penTags,
+            PREFIX + "PEN_JUGGLUCO" to ::penJuggluco,
             PREFIX + "ALERTS" to ::alerts,
         )
 
@@ -161,10 +162,11 @@ object DebugFakes {
     }
 
     /**
-     * `PEN_READ [--es doses "-9:8.5,-8:1"] [--es serial AB1234567] [--ez first true]`: a made-up NovoPen read (minutes
-     * from now : units) goes through the real pen path (ledger, engine, treatment log) and its card shows over the
-     * current app. Emulators have no NFC: this also shows the pen surfaces there. `first` = a first read 10 min ago
-     * (nothing older is logged), so the doses that follow are new.
+     * `PEN_READ [--es doses "-9:8.5,-8:1"] [--es serial AB1234567] [--ez first true] [--el firstAgo 7200]`: a made-up
+     * NovoPen read (minutes from now : units) goes through the real pen path (ledger, engine, treatment log) and its
+     * card shows over the current app. Emulators have no NFC: this also shows the pen surfaces there. `first` = a first
+     * read `firstAgo` minutes ago (default 10; nothing older is logged), so the doses that follow are new. A big read
+     * (*N injections logged · Review*): `--ez first true --el firstAgo 7200 --es doses "-6000:6,-3000:5,-30:4"`.
      */
     private fun penRead(
         context: Context,
@@ -181,7 +183,10 @@ object DebugFakes {
             fun read(at: Long, doses: List<Pair<Long, Double>>) =
                 PenRead(serial, "NovoPen", at, penNow + (at - now), doses.map { (t, u) -> PenDose(penNow - (now - t), t, u, 0x08000000) })
             // an earlier half-unit dose identifies the pen as an Echo Plus (an empty read would be the untested NovoPen 6)
-            if (intent.getBooleanExtra("first", false)) graph.pens.pens.onRead(read(now - 600, listOf(now - 86400L to 4.5)))
+            if (intent.getBooleanExtra("first", false)) {
+                val firstAt = now - intent.getLongExtra("firstAgo", 10) * 60
+                graph.pens.pens.onRead(read(firstAt, listOf(firstAt - 86400L to 4.5)))
+            }
             val doses =
                 (intent.getStringExtra("doses") ?: "-1:1,-1:8.5").split(',').mapIndexed { i, d ->
                     val (min, u) = d.split(':')
@@ -201,8 +206,8 @@ object DebugFakes {
     }
 
     /**
-     * `PEN_TAGS --ez blocked true|false`: shows the *Pen taps are blocked* state (home banner, Settings › Insulin pens)
-     * as if Android blocked Sukrara's tag intents; real NFC is untouched. Also shows the pen surfaces on an emulator
+     * `PEN_TAGS --ez blocked true|false`: shows the taps-blocked state (home banner, Settings › Insulin pens and
+     * Settings › Sensor) as if Android blocked Sukrara's tag intents; real NFC is untouched. Also shows the pen surfaces on an emulator
      * without NFC. The screens read it on resume.
      */
     private fun penTags(
@@ -211,7 +216,20 @@ object DebugFakes {
     ) {
         val graph = context.graph
         graph.pens.fakeNfc.value = true
-        graph.pens.fakeTagsBlocked.value = intent.getBooleanExtra("blocked", true)
+        app.mauri.sukrara.core.data.nfc.TagIntents.fakeBlocked.value = intent.getBooleanExtra("blocked", true)
         graph.home.refresh()
+    }
+
+    /**
+     * `PEN_JUGGLUCO --ez installed true|false`: Settings › Insulin pens shows *Juggluco also reads pens* as if Juggluco
+     * were installed (pen reading On). The page reads it on resume.
+     */
+    private fun penJuggluco(
+        context: Context,
+        intent: Intent,
+    ) {
+        val graph = context.graph
+        graph.pens.fakeNfc.value = true
+        graph.pens.fakeJuggluco.value = intent.getBooleanExtra("installed", true)
     }
 }

@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.feature.home.banners.SETUP_LATER
@@ -42,6 +43,18 @@ class BannerSlotTest {
 
     @Test fun `monitoring stopped outranks everything, even with a value on screen`() =
         assertEquals(BannerKind.MonitoringStopped, pick(broken, everything, problems = 1, stopped = true))
+
+    @Test fun `blocked pen taps, sensor taps or both show the one taps banner, never dismissed`() {
+        listOf(BlockedTaps(pen = true), BlockedTaps(sensor = true), BlockedTaps(pen = true, sensor = true)).forEach { taps ->
+            val env = everything.copy(tapsBlocked = taps)
+            assertEquals(BannerKind.TapsBlocked, pick(env = env))
+            // closing isn't offered, and a stored close (an older build) never hides it
+            assertEquals(BannerKind.TapsBlocked, pick(env = env, memory = BannerMemory(mapOf(BannerKind.TapsBlocked.name to 1L))))
+            // the safety banners still come first
+            assertEquals(BannerKind.DataProblem, pick(env = env, problems = 1))
+        }
+        assertEquals(BannerKind.FinishSetup, pick(env = everything.copy(tapsBlocked = BlockedTaps())))
+    }
 
     @Test fun `damaged data comes before finish setup`() =
         assertEquals(BannerKind.DataProblem, pick(env = everything, problems = 1))

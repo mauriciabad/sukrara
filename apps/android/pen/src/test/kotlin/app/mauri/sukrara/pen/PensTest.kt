@@ -399,6 +399,80 @@ class PensTest {
             )
         }
 
+    /** A big read: the pen read once, then 5 days later with a dose 10 min after that read and one 30 min ago. */
+    private suspend fun bigRead(): PenReadState {
+        pens.onRead(read(600 to 4.5))
+        clock.instant = clock.instant.plusSeconds(5 * 86400L)
+        val ago30 = -(5 * 1440 - 30)
+        return pens.onRead(read(600 to 4.5, -10 to 6.0, ago30 to 5.0))!!
+    }
+
+    @Test fun aBigReadLogsAndIsKeptForReviewUntilUndoThisRead() =
+        runTest {
+            val st = bigRead()
+            assertEquals(start + 600, st.report!!.bigSince)
+            assertEquals(2, log.live().size)
+            val big =
+                pens.ledger.value.pens
+                    .getValue("AB1234567")
+                    .big!!
+            assertEquals(2, big.entries.size)
+            // kept in pens.json: *Review* and *Undo this read* survive a restart
+            val json = kotlinx.serialization.json.Json
+            val l = pens.ledger.value
+            assertEquals(l, json.decodeFromString(Ledger.serializer(), json.encodeToString(Ledger.serializer(), l)))
+            // a later everyday read (a new injection) neither stops the undo nor is taken back by it
+            clock.instant = clock.instant.plusSeconds(60)
+            val ago30 = -(5 * 1440 - 30)
+            val now = -(5 * 1440 + 1)
+            pens.onRead(read(600 to 4.5, -10 to 6.0, ago30 to 5.0, now to 3.0))
+            assertEquals(3, log.live().size)
+            assertEquals(BigUndo.Done, pens.undoBig("AB1234567"))
+            assertEquals(listOf(3.0), log.live().map { it.treatment.amount })
+            assertNull(
+                pens.ledger.value.pens
+                    .getValue("AB1234567")
+                    .big,
+            )
+            assertEquals(BigUndo.Gone, pens.undoBig("AB1234567"))
+        }
+
+    @Test fun undoThisReadIsRefusedOnceAnEntryOfTheReadChanged() =
+        runTest {
+            bigRead()
+            // one of its entries deleted since (home's delete, the other device): the read isn't undone as a whole
+            val e = log.live().first()
+            log.store(e.copy(treatment = e.treatment.copy(deleted = true, modifiedAt = e.treatment.modifiedAt.plusSeconds(5))))
+            assertEquals(BigUndo.Changed, pens.undoBig("AB1234567"))
+            assertEquals(1, log.live().size)
+            assertTrue(
+                pens.ledger.value.pens
+                    .getValue("AB1234567")
+                    .big != null,
+            )
+        }
+
+    @Test fun undoingABigReadFromItsCardLeavesNothingToReview() =
+        runTest {
+            val st = bigRead()
+            assertTrue(pens.undo(st.undo!!))
+            assertTrue(log.live().isEmpty())
+            assertEquals(BigUndo.Gone, pens.undoBig("AB1234567"))
+        }
+
+    @Test fun anEverydayReadKeepsNoReview() =
+        runTest {
+            pens.onRead(read(600 to 4.5))
+            clock.instant = clock.instant.plusSeconds(3600)
+            val st = pens.onRead(read(600 to 4.5, -30 to 6.0))!!
+            assertNull(st.report!!.bigSince)
+            assertNull(
+                pens.ledger.value.pens
+                    .getValue("AB1234567")
+                    .big,
+            )
+        }
+
     @Test fun recordsRoundTripThePenKeys() {
         val w =
             app.mauri.sukrara.pen.engine.PenEntry(

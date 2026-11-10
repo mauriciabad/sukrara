@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -63,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
@@ -81,6 +83,7 @@ import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
+import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -103,8 +106,12 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val pen by viewModel.penSheet.collectAsStateWithLifecycle()
+    val penNotice by viewModel.penNotice.collectAsStateWithLifecycle()
     HomeContent(
         state = state,
+        pen = pen,
+        penNotice = penNotice,
         callbacks =
             HomeCallbacks(
                 onAction = onAction,
@@ -116,6 +123,15 @@ fun HomeScreen(
                 onUndo = viewModel::undoDelete,
                 onUndoGone = viewModel::undoShown,
                 onOpenDataProblems = onOpenDataProblems,
+                pen =
+                    PenCallbacks(
+                        open = viewModel::openPen,
+                        close = viewModel::closePen,
+                        save = viewModel::correctPen,
+                        delete = viewModel::deletePen,
+                        undo = viewModel::undoPen,
+                        shown = viewModel::penNoticeShown,
+                    ),
             ),
         modifier = modifier,
     )
@@ -134,6 +150,17 @@ data class HomeCallbacks(
     val onUndo: () -> Unit = {},
     val onUndoGone: () -> Unit = {},
     val onOpenDataProblems: () -> Unit = {},
+    val pen: PenCallbacks = PenCallbacks(),
+)
+
+/** A pen row's sheet: open it, close it, *Save* the doses' roles, *Delete*, the snackbar's *Undo* and its end. */
+data class PenCallbacks(
+    val open: (Treatment) -> Unit = {},
+    val close: () -> Unit = {},
+    val save: (List<Boolean>) -> Unit = {},
+    val delete: () -> Unit = {},
+    val undo: (PenEntryInfo) -> Unit = {},
+    val shown: (PenNotice) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,6 +169,8 @@ fun HomeContent(
     state: HomeUiState,
     callbacks: HomeCallbacks,
     modifier: Modifier = Modifier,
+    pen: PenSheet? = null,
+    penNotice: PenNotice? = null,
 ) {
     val haptics = rememberHaptics()
     val snackbar = remember { SnackbarHostState() }
@@ -155,6 +184,28 @@ fun HomeContent(
             callbacks.onUndo()
         } else {
             callbacks.onUndoGone()
+        }
+    }
+    val penTexts =
+        mapOf(
+            PenNotice.Kind.Changed to stringResource(R.string.home_pen_changed),
+            PenNotice.Kind.Removed to stringResource(R.string.home_pen_removed),
+            PenNotice.Kind.ChangedSince to stringResource(R.string.home_pen_changed_since),
+            PenNotice.Kind.UndoFailed to stringResource(R.string.home_pen_undo_failed),
+        )
+    LaunchedEffect(penNotice) {
+        val notice = penNotice ?: return@LaunchedEffect
+        val result =
+            snackbar.showSnackbar(
+                penTexts.getValue(notice.kind),
+                actionLabel = if (notice.undo != null) undoText else null,
+                withDismissAction = true,
+                duration = if (notice.undo != null) SnackbarDuration.Long else SnackbarDuration.Short,
+            )
+        callbacks.pen.shown(notice)
+        if (result == SnackbarResult.ActionPerformed) {
+            haptics.confirm()
+            notice.undo?.let(callbacks.pen.undo)
         }
     }
     val follower = state.glucose.role == Role.Follower
@@ -228,7 +279,15 @@ fun HomeContent(
             GlucoseSection(state, callbacks, safetyBanner) { muteDialog = true }
             BannerSlot(infoBanner)
             MuteControl(state, callbacks.onAlert) { muteDialog = true }
-            Treatments(state.treatments, state.readOnly, state.marks, state.now, { callbacks.onAction(HomeAction.OpenClinicUpload) }) {
+            Treatments(
+                state.treatments,
+                state.readOnly,
+                state.fromPen,
+                state.marks,
+                state.now,
+                { callbacks.onAction(HomeAction.OpenClinicUpload) },
+                callbacks.pen.open,
+            ) {
                 haptics.confirm()
                 callbacks.onDelete(it)
             }
@@ -236,6 +295,15 @@ fun HomeContent(
             // room for the floating button over the last row
             Spacer(Modifier.height(88.dp))
         }
+    }
+    pen?.let { p ->
+        PenEntrySheet(
+            p.entry,
+            { Clock.time(it) },
+            onSave = if (p.editable) callbacks.pen.save else null,
+            onDismiss = callbacks.pen.close,
+            onDelete = if (p.deletable) callbacks.pen.delete else null,
+        )
     }
     if (muteDialog) {
         MuteAllDialog(onClose = { muteDialog = false }) { callbacks.onAlert(HomeAlertAction.MuteAll(it)) }
@@ -659,17 +727,28 @@ private fun banner(
             )
         }
 
-        BannerKind.PenTapsBlocked -> {
+        BannerKind.TapsBlocked -> {
+            val taps = state.blockedTaps
+            val haptics = rememberHaptics()
+            val (title, text) =
+                when {
+                    taps.pen && taps.sensor -> R.string.banner_taps_both_title to R.string.banner_taps_both_text
+                    taps.sensor -> R.string.banner_taps_sensor_title to R.string.banner_taps_sensor_text
+                    else -> R.string.banner_taps_pen_title to R.string.banner_taps_pen_text
+                }
             Banner(
                 kind.name,
                 R.drawable.home_ic_warning,
-                stringResource(R.string.banner_pens_title),
-                stringResource(R.string.banner_pens_text),
-                stringResource(R.string.banner_pens_allow),
-                open(HomeAction.AllowPenTaps),
+                stringResource(title),
+                stringResource(text),
+                stringResource(R.string.banner_taps_allow),
+                {
+                    haptics.confirm()
+                    callbacks.onAction(HomeAction.AllowTaps)
+                },
                 null,
                 severity,
-                secondary = stringResource(R.string.banner_pens_turn_off) to open(HomeAction.TurnOffPens),
+                secondary = stringResource(R.string.banner_taps_turn_off) to open(HomeAction.TurnOffTaps(taps)),
             )
         }
 
@@ -844,9 +923,11 @@ private fun MuteAllDialog(
 private fun Treatments(
     treatments: List<Treatment>,
     readOnly: Set<String>,
+    fromPen: Set<String>,
     marks: Map<String, UploadMark>,
     now: Instant,
     openClinicUpload: () -> Unit,
+    openPen: (Treatment) -> Unit,
     onDelete: (Treatment) -> Unit,
 ) {
     val resources = LocalContext.current.resources
@@ -857,10 +938,17 @@ private fun Treatments(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(start = 16.dp, top = 8.dp).semantics { heading() },
         )
+        val openLabel = stringResource(R.string.home_pen_open)
         treatments.forEach { t ->
-            val label = treatmentLabel(t)
+            val pen = t.id in fromPen
+            val label = treatmentLabel(t, pen)
             val time = clockTime(t.at)
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            // a pen row is one button (its sheet: the doses, Priming / Injected); its Delete stays a button of its own
+            val open = if (pen) Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp) else Modifier
+            Row(
+                Modifier.fillMaxWidth().then(open).padding(start = 16.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(time, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
                 // the time since the entry in the card's short durations ("12m", "3h")
@@ -908,9 +996,15 @@ private fun UploadMarkIcon(mark: UploadMark) {
     )
 }
 
-/** "4.5u rapid insulin", "30g carbs": the amount as the card writes it ([TreatmentMarks.amount]) and the kind. */
+/**
+ * "4.5u rapid insulin", "30g carbs": the amount as the card writes it ([TreatmentMarks.amount]) and the kind; a pen's
+ * entry adds "· from the pen".
+ */
 @Composable
-private fun treatmentLabel(t: Treatment): String {
+private fun treatmentLabel(
+    t: Treatment,
+    fromPen: Boolean,
+): String {
     val amount = TreatmentMarks.amount(t).orEmpty()
     val kind =
         when (t.kind) {
@@ -918,7 +1012,7 @@ private fun treatmentLabel(t: Treatment): String {
             TreatmentKind.LongInsulin -> stringResource(R.string.home_treatment_long, amount)
             TreatmentKind.Carbs -> stringResource(R.string.home_treatment_carbs, amount)
             TreatmentKind.Note -> stringResource(R.string.home_treatment_note)
-        }
+        }.let { if (fromPen) stringResource(R.string.home_treatment_from_pen, it) else it }
     return if (t.note.isBlank()) kind else "$kind · ${t.note}"
 }
 

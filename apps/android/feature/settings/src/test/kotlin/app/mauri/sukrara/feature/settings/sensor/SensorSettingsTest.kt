@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.settings.sensor
 
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
@@ -217,6 +218,31 @@ class SensorSettingsTest {
         compose.onNodeWithText("Forget this sensor").performClick()
         compose.onNodeWithText("Forget").performClick()
         assertEquals(1, forgot)
+    }
+
+    @Test
+    fun `blocked sensor taps show the card at the top and a warning row, both open Android's screen`() {
+        var allowed = 0
+        val scan = mutableListOf<Boolean>()
+        show(
+            working.copy(paired = true, openOnScan = OpenOnScan(on = true, blocked = true)),
+            SensorSettingsActions(setOpenOnScan = { scan += it }, allowTaps = { allowed++ }),
+        )
+        compose.onNodeWithText("Sensor taps are blocked").assertExists()
+        compose.onNodeWithText("Allow").performScrollTo().performClick()
+        assertEquals(1, allowed)
+        // the warning row: the row opens Android's screen, its switch still turns it off
+        compose.onNodeWithText("Blocked · tap to allow").performScrollTo().performClick()
+        assertEquals(2, allowed)
+        compose.onNode(isToggleable()).performScrollTo().performClick()
+        assertEquals(listOf(false), scan)
+    }
+
+    @Test
+    fun `allowed or off, the sensor taps card is gone`() {
+        show(working.copy(paired = true, openOnScan = OpenOnScan(on = true, blocked = false)))
+        compose.onNodeWithText("Sensor taps are blocked").assertDoesNotExist()
+        compose.onNodeWithText("A sensor tap opens pairing when no sensor is being read").assertExists()
     }
 
     @Test

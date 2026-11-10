@@ -72,8 +72,8 @@ sealed interface SettingsRoute {
     /** Settings › Insulin pens › one pen. */
     data class Pen(val serial: String) : SettingsRoute
 
-    /** Settings › Insulin pens › one pen › Doses read. */
-    data class PenDoses(val serial: String) : SettingsRoute
+    /** Settings › Insulin pens › one pen › Doses read; [review]: only its last big read, with *Undo this read*. */
+    data class PenDoses(val serial: String, val review: Boolean = false) : SettingsRoute
 
     data object Reliability : SettingsRoute
 
@@ -250,7 +250,12 @@ fun SettingsScreen(
                 LaunchedEffect(Unit) { back() }
             } else {
                 val vm = viewModel(key = "pen-${route.serial}") { PenViewModel(port, route.serial, deps.settings) }
-                PenPage(vm, onBack, openDoses = { navigate(SettingsRoute.PenDoses(route.serial)) })
+                PenPage(
+                    vm,
+                    onBack,
+                    openDoses = { navigate(SettingsRoute.PenDoses(route.serial)) },
+                    openReview = { navigate(SettingsRoute.PenDoses(route.serial, review = true)) },
+                )
             }
         }
 
@@ -261,7 +266,7 @@ fun SettingsScreen(
                 LaunchedEffect(Unit) { back() }
             } else {
                 val vm = viewModel(key = "pen-${route.serial}") { PenViewModel(port, route.serial, deps.settings) }
-                DosesReadPage(vm, onBack)
+                DosesReadPage(vm, onBack, review = route.review)
             }
         }
 

@@ -13,6 +13,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Role
@@ -164,22 +165,25 @@ class PensModule(
     /** NFC is off (the pens page offers Android's NFC settings). */
     fun nfcOff(): Boolean = hasNfc && NfcAdapter.getDefaultAdapter(context)?.isEnabled == false
 
-    /** Debug builds only (`DebugFakes`): the emulator shows the taps-blocked state. */
-    val fakeTagsBlocked = kotlinx.coroutines.flow.MutableStateFlow(false)
-
     /**
      * Android lets the user block an app's tag intents (Settings › Apps › Sukrara, or Android muting them until
      * allowed): then no pen tap reaches Sukrara. Checked again whenever a screen comes back.
      */
-    fun tagsBlocked(): Boolean =
-        fakeTagsBlocked.value ||
-            (hasNfc && runCatching { NfcAdapter.getDefaultAdapter(context)?.isTagIntentAllowed == false }.getOrDefault(false))
+    fun tagsBlocked(): Boolean = TagIntents.blocked(context)
+
+    /** Debug builds only (`DebugReceiver`): the emulator shows *Juggluco also reads pens*. */
+    val fakeJuggluco = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    /** Juggluco is installed (manifest `<queries>`): it reads NovoPens too, so one tap could log a dose in both apps. */
+    fun jugglucoInstalled(): Boolean =
+        fakeJuggluco.value || runCatching { context.packageManager.getPackageInfo(JUGGLUCO, 0) }.isSuccess
 
     fun taps() =
         app.mauri.sukrara.core.model.PenTaps(
             blocked = tagsBlocked(),
             nfcOff = nfcOff(),
             notifyBlocked = runCatching { notices.readBlocked() }.getOrDefault(false),
+            juggluco = jugglucoInstalled(),
         )
 
     /** Home's banner: reading On on the wearer's phone, and Android blocks the taps (re-read on every resume). */
@@ -225,6 +229,9 @@ class PensModule(
     companion object {
         private const val TAG = "SukraraPen"
         private const val WORK = "pen"
+
+        /** Juggluco's package (the app's manifest declares it in `<queries>`). */
+        const val JUGGLUCO = "tk.glucodata"
         val Reading = SchemaSettings.text("pens.reading", PenReading.Ask.value, PenReading.entries.map { it.value }.toSet())
         val Notify = SchemaSettings.bool("pens.notify", default = false)
         val PrimeBelow = SchemaSettings.number("pens.primeBelow")

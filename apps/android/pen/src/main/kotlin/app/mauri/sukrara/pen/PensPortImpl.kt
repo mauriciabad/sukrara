@@ -6,14 +6,16 @@ package app.mauri.sukrara.pen
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.nfc.NfcAdapter
 import android.provider.Settings
+import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.PenCheck
 import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenHeldDose
 import app.mauri.sukrara.core.model.PenInfo
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.PenReadUndo
+import app.mauri.sukrara.core.model.PenReview
 import app.mauri.sukrara.core.model.PenSessionInfo
 import app.mauri.sukrara.core.model.PenSessionStatus
 import app.mauri.sukrara.core.model.PenTaps
@@ -83,6 +85,10 @@ class PensPortImpl(
                 },
             opened = p.opened,
             held = held,
+            review =
+                p.big?.let { b ->
+                    PenReview(b.at, b.since, b.entries.size, b.merged, b.undo.keys.toSet())
+                },
         )
     }
 
@@ -236,6 +242,13 @@ class PensPortImpl(
         return pensRt.answerMatch(question, entry, k).also { module.syncNotices() }
     }
 
+    override suspend fun undoRead(serial: String): PenReadUndo =
+        when (pensRt.undoBig(serial)) {
+            BigUndo.Done -> PenReadUndo.Done.also { module.syncNotices() }
+            BigUndo.Changed -> PenReadUndo.Changed
+            BigUndo.Gone -> PenReadUndo.Gone
+        }
+
     override suspend fun checkPassed(
         serial: String,
         readAt: Long,
@@ -247,8 +260,7 @@ class PensPortImpl(
 
     override fun taps(): PenTaps = module.taps()
 
-    override fun openTagSettings(): Boolean =
-        start(Intent(NfcAdapter.ACTION_CHANGE_TAG_INTENT_PREFERENCE)) || start(Intent(Settings.ACTION_NFC_SETTINGS))
+    override fun openTagSettings(): Boolean = TagIntents.openAllow(context)
 
     override fun openNfcSettings() {
         start(Intent(Settings.ACTION_NFC_SETTINGS))
@@ -256,6 +268,10 @@ class PensPortImpl(
 
     override fun openNotifySettings() {
         start(module.notices.readChannelSettings())
+    }
+
+    override fun openJugglucoInfo() {
+        start(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", PensModule.JUGGLUCO, null)))
     }
 
     private fun start(i: Intent): Boolean =

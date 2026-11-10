@@ -100,6 +100,14 @@
     <string name="home_treatment_long">%1$s de insulina lenta</string>
     <string name="home_treatment_carbs">%1$s de hidratos</string>
     <string name="home_treatment_note">Nota</string>
+    <!-- %1$s = "8.5u rapid insulin": an entry an insulin pen logged -->
+    <string name="home_treatment_from_pen">%1$s · de la pluma</string>
+    <!-- TalkBack: what tapping a pen entry's row does -->
+    <string name="home_pen_open">ver sus dosis</string>
+    <string name="home_pen_changed">Entrada cambiada</string>
+    <string name="home_pen_removed">Quitado de tu registro</string>
+    <string name="home_pen_changed_since">Esta entrada cambió mientras tanto. No se guardó nada.</string>
+    <string name="home_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
     <string name="home_treatment_delete">Borrar %1$s de las %2$s</string>
     <string name="home_treatment_deleted">Tratamiento borrado</string>
     <string name="home_treatment_deleted_clinic">Tratamiento borrado. También se quitará de LibreView.</string>
@@ -152,10 +160,14 @@
         <item quantity="one">%1$d seguidor</item>
         <item quantity="other">%1$d seguidores</item>
     </plurals>
-    <string name="banner_pens_title">Los toques de pluma están bloqueados</string>
-    <string name="banner_pens_text">Android no deja que los toques de pluma lleguen a Sukrara, así que tus dosis no se leen ni se registran.</string>
-    <string name="banner_pens_allow">Permitir</string>
-    <string name="banner_pens_turn_off">Desactivar</string>
+    <string name="banner_taps_pen_title">Los toques de pluma están bloqueados</string>
+    <string name="banner_taps_pen_text">Android no deja que Sukrara se abra al tocar tu pluma, así que tus dosis no se leen ni se registran.</string>
+    <string name="banner_taps_sensor_title">Los toques de sensor están bloqueados</string>
+    <string name="banner_taps_sensor_text">Android no deja que Sukrara se abra al escanear un sensor.</string>
+    <string name="banner_taps_both_title">Los toques de pluma y sensor están bloqueados</string>
+    <string name="banner_taps_both_text">Android no deja que Sukrara se abra al tocar tu pluma o escanear un sensor, así que tus dosis no se leen ni se registran.</string>
+    <string name="banner_taps_allow">Permitir</string>
+    <string name="banner_taps_turn_off">Desactivar</string>
     <!-- Glucose report card on home -->
     <string name="report_title">Informe de glucosa</string>
     <string name="report_days_short">%1$d d</string>
