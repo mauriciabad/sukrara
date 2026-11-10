@@ -118,6 +118,14 @@
                     "identity-customize",
                     AnyView(IdentitySheet(draft: open, wearer: "Marta", onSave: { _, _ in }, onCancel: {}))
                 ))
+            // the grey initial: no shape or colour selected
+            let initial = IdentityDraft(name: "Ana's MacBook", avatar: nil)
+            initial.customizing = true
+            out.append(
+                (
+                    "identity-customize-initial",
+                    AnyView(IdentitySheet(draft: initial, wearer: "Marta", onSave: { _, _ in }, onCancel: {}))
+                ))
             out.append(
                 ("follow-not-following", AnyView(FollowStep(follow: follow(.notFollowing)).padding().frame(width: 520)))
             )

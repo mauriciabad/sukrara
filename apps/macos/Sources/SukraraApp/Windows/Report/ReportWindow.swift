@@ -50,17 +50,28 @@ final class ReportModel {
         }
     }
 
+    /// The time range `period` covers at `now` (epoch s); nil when it has no known range (no sensor).
+    func range(_ period: GlucoseCsv.Period, now: Date) -> (from: Int64, to: Int64)? {
+        let oldest = min(
+            app.allReadings.first.map { Int64($0.t.timeIntervalSince1970) } ?? .max,
+            app.treatments.map(\.t).min() ?? .max)
+        return period.range(
+            now: Int64(now.timeIntervalSince1970), sensor: sensor, oldest: oldest == .max ? nil : oldest)
+    }
+
+    /// The file name for `period` at `now`, from its range only (the save panel renames the file on every period
+    /// change; nothing is written until Save).
+    func csvName(_ period: GlucoseCsv.Period, now: Date = Date()) -> String? {
+        range(period, now: now).map { GlucoseCsv.fileName(from: $0.from, to: $0.to, zone: .current) }
+    }
+
     /// The CSV for `period` at `now`, and its file name; nil when the period has no known range (no sensor).
     func csv(_ period: GlucoseCsv.Period, now: Date = Date()) -> (name: String, text: String)? {
-        let readings = app.allReadings
-        let treatments = app.treatments
-        let oldest = (readings.map { Int64($0.t.timeIntervalSince1970) } + treatments.map(\.t)).min()
-        let nowS = Int64(now.timeIntervalSince1970)
-        guard let range = period.range(now: nowS, sensor: sensor, oldest: oldest) else { return nil }
+        guard let range = range(period, now: now) else { return nil }
         let zone = TimeZone.current
         let text = GlucoseCsv.write(
-            readings: readings, treatments: treatments, from: range.from, to: range.to, zone: zone,
-            generatedAt: nowS, sensor: sensor, unit: app.unit)
+            readings: app.allReadings, treatments: app.treatments, from: range.from, to: range.to, zone: zone,
+            generatedAt: Int64(now.timeIntervalSince1970), sensor: sensor, unit: app.unit)
         return (GlucoseCsv.fileName(from: range.from, to: range.to, zone: zone), text)
     }
 }
@@ -224,9 +235,9 @@ enum ReportExport {
         row.orientation = .horizontal
         row.edgeInsets = NSEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
         panel.accessoryView = row
-        panel.nameFieldStringValue = model.csv(periods[start])?.name ?? "sukrara-glucose.csv"
+        panel.nameFieldStringValue = model.csvName(periods[start]) ?? "sukrara-glucose.csv"
         let follower = PopupFollower { index in
-            if let name = model.csv(periods[index])?.name { panel.nameFieldStringValue = name }
+            if let name = model.csvName(periods[index]) { panel.nameFieldStringValue = name }
         }
         popup.target = follower
         popup.action = #selector(PopupFollower.changed(_:))
