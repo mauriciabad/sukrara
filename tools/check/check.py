@@ -48,9 +48,17 @@ Checks
   debug       debug code is compiled out of release builds: Android DebugReceiver / DebugFakes / DebugRelays / Synthetic* in
               src/debug (never named in src/main or src/release, manifests included); Mac debugsend / DebugFakes /
               Synthetic* only inside #if DEBUG or in the snapshot / test targets
+  debug-docs  docs/FEATURES.md, docs/QA.md and docs/DEVELOPMENT.md name only debug commands the code has (#111: they
+              kept `cmd sensorEnd`, `--es stage`, … long after the code dropped them): every `--e<type> <extra>` is one
+              a command in Android src/debug reads, with that type; every command (`debug.NAME`, `NAME --e…`,
+              `NAME …`, `DebugReceiver NAME`, a bare `NAME` in a sentence about debug commands) is one of DebugFakes'
+              actions, and each doc names all of them; every `sukrara-snap <surface>` is one of its surfaces (`-es` =
+              Spanish); every SUKRARA_* switch is read by some code or tool. A line that isn't about these is marked
+              debug-docs-ok. Whole files.
   settings    THE settings schema contracts/settings/settings.json (the user, 2026-10-21: settings must not diverge
               across platforms): generated SettingsSpec.kt/.swift up to date; every entry on both platforms or 'only'
-              with the reason; alert 'path's are fields of contracts/alerts/SPEC.md §3; no stored key written by hand
+              with the reason; alert 'path's are fields of contracts/alerts/SPEC.md §3 and options 'alertKind' its
+              kinds; 'mirrorExcept' only on mirrored '{kind}' rows; no stored key written by hand
               (Android *PreferencesKey("…"), Mac forKey: "…" / @AppStorage("…")): keys come from SettingsSpec.Keys;
               number settings only through the one input pattern (NumberDialog / NumberSettingRow; NumberSpec values
               only from the generated file). Whole tree.
@@ -357,6 +365,96 @@ def check_debug(ch, rep):
                 if m:
                     rep.add("FAIL", "debug", "%s:%d %s outside #if DEBUG: debug commands and fakes are compiled out of release\n"
                             "builds (wrap it in #if DEBUG, or move it to the sukrara-snap / test targets)." % (p, n, m.group(1)))
+
+
+# The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).
+DEBUG_DOCS = ("docs/FEATURES.md", "docs/QA.md", "docs/DEVELOPMENT.md")
+SNAP_MAIN = MAC_SOURCES + "sukrara-snap/main.swift"
+# code: DebugFakes' actions (`PREFIX + "SYNTHETIC" to ::synthetic`) and the extras its commands read
+CODE_COMMAND = re.compile(r'\bPREFIX\s*\+\s*"([A-Z][A-Z0-9_]*)"')
+CODE_EXTRA = re.compile(r'\bget(String|Int|Long|Boolean|Float|Double)Extra\(\s*"(\w+)"')
+SNAP_CASE = re.compile(r'^\s*case\s+"([a-z][a-z-]*)"\s*:', re.M)
+EXTRA_TYPE = {"s": "String", "i": "Int", "l": "Long", "z": "Boolean", "f": "Float", "d": "Double"}
+# docs: `am broadcast` extras, the action, a command written as `NAME --e…` / `NAME …` / `DebugReceiver NAME`, a bare
+# `NAME` on a line about debug commands, `sukrara-snap <surface>|…`, SUKRARA_* environment switches
+DOC_EXTRA = re.compile(r"--e([szilfd])\s+([A-Za-z_]\w*)")
+DOC_ACTION = re.compile(r"\bdebug\.([A-Z][A-Z0-9_]*)\b")
+DOC_COMMAND = re.compile(r"`(?:DebugReceiver\s+)?([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)(?=\s+(?:\[?--e[szilfd]\b|…))")
+DOC_BARE = re.compile(r"`([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)`")
+DOC_DEBUG_MARK = re.compile(r"DebugReceiver|DebugFakes|[Dd]ebug commands?\b|[Dd]ebug builds?:")
+# the end of a sentence (outside code spans), a paragraph or a list item
+SENTENCE_END = re.compile(r"`[^`\n]*(?:\n[^`\n]*)?`|\.\s|\n\s*\n|\n\s*- ")
+
+
+def sentence_ends(text):
+    """Where each sentence of a Markdown text ends (scanned from the start, so code spans pair up)."""
+    return [m.start() for m in SENTENCE_END.finditer(text) if not m.group(0).startswith("`")] + [len(text)]
+DOC_SNAP = re.compile(r"\bsukrara-snap\s+([a-z][a-z-]*(?:\|[a-z][a-z-]*)*)")
+DOC_ENV = re.compile(r"\bSUKRARA_[A-Z0-9_]*[A-Z0-9]\b")
+
+
+def check_debug_docs(ch, rep):
+    """debug-docs: see the module doc. The three docs and the code at the change's revision."""
+    files = tree_files(ch)
+    android = "\n".join(ch.blob(p) or "" for p in files
+                        if p.startswith(ANDROID) and "/src/debug/" in p and p.endswith(".kt"))
+    commands = set(CODE_COMMAND.findall(android))
+    extras = {}
+    for kind, name in CODE_EXTRA.findall(android):
+        extras.setdefault(name, set()).add(kind)
+    snap = ch.blob(SNAP_MAIN) or ""
+    surfaces = set(SNAP_CASE.findall(snap))
+    found = git("grep", "-h", "-o", "-I", "-E", *(["--cached"] if not ch.rev else []), "-e", "SUKRARA_[A-Z0-9_]+",
+                *([ch.rev] if ch.rev else []), "--", "apps", "tools", ".github", ok=True)
+    env = set(DOC_ENV.findall(found))
+    if not commands:
+        return rep.add("FAIL", "debug-docs", "can't find DebugFakes' commands (PREFIX + \"NAME\") in %s*/src/debug/." % ANDROID)
+    known = "known: %s" % ", ".join(sorted(commands))
+    for doc in DEBUG_DOCS:
+        text = ch.blob(doc)
+        if not text:
+            continue
+        lines = text.splitlines()
+
+        def at(i):
+            n = text.count("\n", 0, i) + 1
+            return n, "debug-docs-ok" in lines[n - 1]
+
+        def fail(i, what):
+            n, ok = at(i)
+            if not ok:
+                rep.add("FAIL", "debug-docs", "%s:%d %s. Fix the doc to what the code has, or add it to the code first\n"
+                        "(Android app/src/debug DebugFakes, Mac sukrara-snap / LaunchMode); a line that isn't about these\n"
+                        "commands is marked debug-docs-ok." % (doc, n, what))
+        for m in DOC_EXTRA.finditer(text):
+            flag, name = m.groups()
+            if name not in extras:
+                fail(m.start(), "names the debug extra '--e%s %s', which no debug command reads (%s)"
+                     % (flag, name, ", ".join(sorted(extras))))
+            elif EXTRA_TYPE[flag] not in extras[name]:
+                fail(m.start(), "passes '%s' as --e%s, but the code reads it with get%sExtra"
+                     % (name, flag, "/".join(sorted(extras[name]))))
+        named = {(m.start(1), m.group(1)) for rx in (DOC_ACTION, DOC_COMMAND) for m in rx.finditer(text)}
+        ends = sentence_ends(text)
+        for mark in DOC_DEBUG_MARK.finditer(text):
+            end = next(e for e in ends if e > mark.start())
+            named |= {(m.start(1), m.group(1)) for m in DOC_BARE.finditer(text, mark.start(), end)}
+        for i, name in sorted(named):
+            if name not in commands:
+                fail(i, "names the debug command %s, which DebugFakes doesn't have (%s)" % (name, known))
+        missing = commands - {name for _, name in named}
+        if missing:
+            rep.add("FAIL", "debug-docs", "%s doesn't name the debug command(s) %s: each of %s lists every command\n"
+                    "DebugFakes has (FEATURES.md 'Sensor reminders and countdowns', QA.md 'Emulator', DEVELOPMENT.md\n"
+                    "'Debug and test code')." % (doc, ", ".join(sorted(missing)), ", ".join(DEBUG_DOCS)))
+        for m in DOC_SNAP.finditer(text):
+            for s in m.group(1).split("|"):
+                base = s[:-3] if s.endswith("-es") and '"-es"' in snap else s
+                if base not in surfaces:
+                    fail(m.start(), "names sukrara-snap's surface '%s', which it doesn't have (%s)" % (s, ", ".join(sorted(surfaces))))
+        for m in DOC_ENV.finditer(text):
+            if m.group(0) not in env:
+                fail(m.start(), "names the switch %s, which no code or tool reads" % m.group(0))
 
 
 CLEARTEXT = re.compile(r"""["'](?:http|ws)(?:["':])""", re.I)
@@ -776,6 +874,11 @@ def check_settings(ch, rep):
             rep.add("FAIL", "settings", "setting %s is on both platforms but says 'only' %s." % (sid, only.get("platform")))
         if s.get("mirror") and not s.get("wire"):
             rep.add("FAIL", "settings", "setting %s is mirrored from the wearer but has no 'wire' key." % sid)
+        if "mirrorExcept" in s:
+            bad = [k for k in s["mirrorExcept"] if kinds is not None and k not in kinds]
+            if not s.get("mirror") or "{kind}" not in (s.get("wire") or "") or not s["mirrorExcept"] or bad:
+                rep.add("FAIL", "settings", "setting %s: 'mirrorExcept' lists alert kinds (%s §1) a mirrored '{kind}' row\n"
+                        "doesn't take from the wearer%s." % (sid, ALERT_SPEC, ": not kinds %s" % ", ".join(bad) if bad else ""))
         for p in on:
             for k in s[p]["key"].split(","):
                 if s[p]["store"] != "system" and not KEY_NAME.match(k):
@@ -793,6 +896,10 @@ def check_settings(ch, rep):
     else:
         for f in sorted(fields - paths):
             rep.add("FAIL", "settings", "%s §3 field '%s' has no entry in %s." % (ALERT_SPEC, f, SETTINGS_SCHEMA))
+        listed = (schema.get("options", {}).get("alertKind") or {}).get("values") or []
+        if set(listed) != kinds:
+            rep.add("FAIL", "settings", "%s options 'alertKind' (%s) aren't the alert kinds of %s §3 (%s)."
+                    % (SETTINGS_SCHEMA, ", ".join(listed), ALERT_SPEC, ", ".join(sorted(kinds))))
     for p in tree_files(ch):
         lang = app_code(p)
         if not lang or p in (SETTINGS_KT, SETTINGS_SWIFT):
@@ -1025,6 +1132,7 @@ def main(argv):
         check_static(ch, rep)
         check_parity_globs(ch, rep)
         check_debug(ch, rep)
+        check_debug_docs(ch, rep)
         check_cleartext(ch, rep)
         check_card(ch, rep)
         check_clock(ch, rep)

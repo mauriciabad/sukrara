@@ -53,6 +53,19 @@ case_ "Mac debugsend inside #if DEBUG passes" pass "" apps/macos/Sources/Sukrara
 #else
     let x = 1
 #endif"
+ALL_DEBUG='`SYNTHETIC --ez on true --ei cycle 135`, `ALERTS --es kinds high`, `PEN_READ …`, `PEN_TAGS --ez blocked
+true`, `PEN_JUGGLUCO --ez installed true`, `RELAYS --es urls off`; Mac `sukrara-snap card|windows-es <dir>`,
+`SUKRARA_DEV=1 SUKRARA_FIXTURE=1`.'
+case_ "the debug commands the code has pass" pass "" docs/DEVELOPMENT.md "Debug commands: $ALL_DEBUG"
+case_ "a debug command the code doesn't have fails" fail debug-docs docs/DEVELOPMENT.md "Debug commands: $ALL_DEBUG
+Also \`SENSOR_END …\`."
+case_ "a debug extra the code doesn't read fails" fail debug-docs docs/DEVELOPMENT.md "Debug commands: $ALL_DEBUG
+Also \`DebugReceiver --es cmd sensorEnd\`."
+case_ "a debug extra of the wrong type fails" fail debug-docs docs/QA.md "Debug commands: $ALL_DEBUG
+Also \`SYNTHETIC --es cycle 135\`."
+case_ "a doc without every debug command fails" fail debug-docs docs/FEATURES.md "Debug commands: \`SYNTHETIC --ez on true\`."
+case_ "a sukrara-snap surface it doesn't have fails" fail debug-docs docs/DEVELOPMENT.md "Debug commands: $ALL_DEBUG
+Also \`sukrara-snap widgets <dir>\`."
 case_ "a hand-written DataStore key fails" fail settings apps/android/core/data/src/main/kotlin/app/mauri/sukrara/Store.kt "$HDR
 val k = booleanPreferencesKey(\"graphHours\")"
 case_ "a hand-written defaults key fails" fail settings apps/macos/Sources/SukraraCore/Store.swift "$HDR

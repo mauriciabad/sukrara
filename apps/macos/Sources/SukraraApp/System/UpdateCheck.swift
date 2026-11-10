@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 import Observation
+import SukraraCore
 
 /// A version like "0.12.1" or "v0.12.1-rc.2" (a pre-release suffix sorts before the plain version).
 struct AppVersion: Comparable, Equatable, CustomStringConvertible {
@@ -98,7 +99,7 @@ final class UpdateCheck {
     @ObservationIgnored private let fetcher: any HTTPFetching
     @ObservationIgnored private let installed: AppVersion
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private static let skippedKey = "updateSkippedVersion"
+    @ObservationIgnored private static let skippedKey = MacSettings.updateSkippedVersion.key
 
     init(installed: AppVersion, fetcher: any HTTPFetching, defaults: UserDefaults) {
         self.installed = installed

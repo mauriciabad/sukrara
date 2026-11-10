@@ -108,7 +108,6 @@ class SettingsPagesTest {
             "sharing.nostr",
             "sharing.nostrInterval",
             "sharing.bleFollowers",
-            "home.uploadBanner",
             "widget.overrides",
         ) + SettingsSpec.SETTINGS.map { it.id }.filter { it.startsWith("pens.") || it.startsWith("apps.") } +
             setOf("healthConnect.on")
@@ -119,7 +118,7 @@ class SettingsPagesTest {
             // derived from follower.settingsFrom (no row of its own)
             "alerts.source",
             "alerts.v",
-            "statusbar.systemIcons",
+            // the LSPosed lock-screen widget, not ported from the PoC yet (#66)
             "lock.widget",
             "lock.background",
             "lock.appearance",
@@ -139,6 +138,11 @@ class SettingsPagesTest {
         assertEquals(emptySet<String>(), android - shown - elsewhere - pending)
         assertEquals(emptySet<String>(), (shown + pending) - android)
         assertEquals(emptySet<String>(), shown intersect pending)
+    }
+
+    @Test
+    fun `the alert kinds are the schema's, in its order`() {
+        assertEquals(SettingsSpec.OPTIONS.getValue("alertKind"), AlertKind.entries.map { it.wire })
     }
 
     @Test

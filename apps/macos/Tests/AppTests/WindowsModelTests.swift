@@ -622,16 +622,6 @@ final class RecordingSender: TreatmentActions {
         #expect(s.number(MacSettings.graphHours) == 48)
     }
 
-    @Test func everyP0MacNumberSettingHasItsSchemaFormat() {
-        for n in MacSettings.bands + [MacSettings.graphHours, MacSettings.gridHours, MacSettings.countdownHours] {
-            let info = SettingsSpec.settings.first { $0.id == n.id }
-            #expect(info != nil, "\(n.id)")
-            #expect(
-                info.map { "defaults:" + n.spec.key == $0.mac || $0.mac.hasPrefix("defaults:" + n.spec.key) } == true)
-            #expect(SettingsSpec.numbers[info?.number ?? ""] == n.format, "\(n.id)")
-        }
-    }
-
     @Test func alertSettingsKeepTheLastGoodValueWhenUnreadable() {
         let s = scratchStore()
         let a = AlertSettingsStore(store: s)

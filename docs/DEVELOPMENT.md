@@ -77,6 +77,13 @@ Debug commands that replace the sensor or make up data live only in `src/debug` 
 `sukrara-snap` and test targets (Mac): a release build cannot contain them (`debug` check, `verify-apk.sh`,
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
 
+The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
+app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO` and `RELAYS` (their
+extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"; docs/QA.md "Emulator"). The Mac's:
+`sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1`. The `debug-docs`
+check fails when docs/FEATURES.md, docs/QA.md or this file name a command or extra the code doesn't have: add the
+command to the code first, or fix the docs.
+
 **Relays in debug builds.** A debug build connects to no relay at all (`LaunchPlan`: release builds always use the
 public relays) until the `RELAYS` debug command points it somewhere. For sharing tests run the local test relay
 (`tools/relay/relay.py`, standard-library Python, in memory, listens on this computer's loopback only) and point every
