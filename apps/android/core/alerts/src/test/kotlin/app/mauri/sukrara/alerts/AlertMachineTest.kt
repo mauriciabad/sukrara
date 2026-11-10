@@ -130,6 +130,22 @@ class AlertMachineTest {
         assertEquals(AlertStatus.Taken(AlertKind.LOW, TreatmentKind.CARBS, t0, t0 + 15 * 60), treated)
     }
 
+    /** *Alert me anyway* lifts the treatment's quiet from the badge at once too: no *Taken* while the alert is up (#154). */
+    @Test fun alertMeAnywayEndsTheBadgesQuiet() {
+        val m = machine()
+        m.start(null, null, null, t0)
+        m.handle(AlertInput.Reading(AlertReading(t0, 50)), t0)
+        m.handle(AlertInput.Treatments(Doses(carbs = listOf(t0 + 60))), t0 + 60)
+        assertEquals(AlertStatus.Taken(AlertKind.VERY_LOW, TreatmentKind.CARBS, t0 + 60, t0 + 60 + 15 * 60), m.status(t0 + 120))
+        val lifted = m.handle(AlertInput.Unmute(AlertKind.VERY_LOW), t0 + 120)
+        assertEquals(listOf(AlertKind.VERY_LOW), lifted.fires())
+        assertEquals(mapOf(Side.LOW to t0 + 120), m.uiState(t0 + 180).lifted)
+        assertEquals(AlertStatus.Needed(AlertKind.VERY_LOW), m.status(t0 + 180))
+        // a treatment logged after it quiets again
+        m.handle(AlertInput.Treatments(Doses(carbs = listOf(t0 + 60, t0 + 240))), t0 + 240)
+        assertEquals(AlertStatus.Taken(AlertKind.VERY_LOW, TreatmentKind.CARBS, t0 + 240, t0 + 240 + 15 * 60), m.status(t0 + 300))
+    }
+
     /** A restart after the no-data deadline alerts at once (nothing else would wake it: no readings come). */
     @Test fun restartAfterADeadlineAlertsAtOnce() {
         val m = machine()

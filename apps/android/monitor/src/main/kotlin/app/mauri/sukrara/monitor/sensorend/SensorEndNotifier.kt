@@ -80,7 +80,7 @@ class SensorEndNotifier(
         val mem =
             when {
                 info != null -> {
-                    SensorEndPlan.remember(before, info.startS, info.endS, info.warmupEndS, s.config.hashCode(), now)
+                    SensorEndPlan.remember(before, info.startS, info.endS, info.warmupEndS, s.config.hashCode(), now, sensor.id())
                 }
 
                 // an end before the planned one: the sensor stopped early
@@ -98,7 +98,8 @@ class SensorEndNotifier(
                     return@withLock
                 }
             }
-        if (before.known && mem.start != before.start) SensorNotice.entries.forEach(presenter::cancel)
+        // a new sensor: the old one's notices go
+        if (before.known && (mem.start != before.start || mem.id != before.id)) SensorNotice.entries.forEach(presenter::cancel)
         apply(mem, latestS?.takeIf { it >= mem.start }, s, now)
     }
 
@@ -193,3 +194,11 @@ class SensorEndNotifier(
         alarm.set(p.next, p.tick)
     }
 }
+
+/** The source's identity of the sensor (its serial), or null when the source doesn't know one. */
+private fun SensorState.id(): String? =
+    when (this) {
+        is SensorState.WarmingUp -> id
+        is SensorState.Active -> id
+        else -> null
+    }

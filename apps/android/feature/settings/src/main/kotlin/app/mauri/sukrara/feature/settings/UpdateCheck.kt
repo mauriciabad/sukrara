@@ -50,6 +50,19 @@ object UpdateCheck {
     /** All releases (not `/latest`, which never returns a prerelease). */
     const val API_URL = "https://api.github.com/repos/mauriciabad/sukrara/releases"
 
+    /** The only links the update check opens: the project's own release pages and files. */
+    const val RELEASE_PREFIX = "$RELEASES_URL/"
+
+    /**
+     * Whether [url] is one of the project's release pages or files: under [RELEASE_PREFIX], with nothing that could
+     * leave it once a browser resolves it (dot segments, encoded dots, backslashes, spaces).
+     */
+    fun isReleaseUrl(url: String): Boolean =
+        url.startsWith(RELEASE_PREFIX) &&
+            url.length > RELEASE_PREFIX.length &&
+            listOf("..", "%2e", "%2E", "\\").none { it in url } &&
+            url.none { it.isWhitespace() || it.isISOControl() }
+
     /**
      * The release to offer: the newest non-draft one newer than [installed]; prereleases only when the installed
      * version is a prerelease itself (major 0). Null = up to date.
@@ -114,21 +127,24 @@ object UpdateCheck {
         }
     }
 
-    /** Parses the List-releases JSON (unknown fields ignored; a release without a tag is skipped). */
+    /**
+     * Parses the List-releases JSON (unknown fields ignored; a release without a tag is skipped). A page link outside
+     * [RELEASE_PREFIX] falls back to the releases page and such a file is dropped, so the app never opens it.
+     */
     fun parse(json: String): List<Release> =
         Json.parseToJsonElement(json).jsonArray.mapNotNull { element ->
             val o = element as? JsonObject ?: return@mapNotNull null
             val tag = o.string("tag_name") ?: return@mapNotNull null
             Release(
                 tag = tag,
-                url = o.string("html_url") ?: RELEASES_URL,
+                url = o.string("html_url")?.takeIf(::isReleaseUrl) ?: RELEASES_URL,
                 prerelease = o["prerelease"]?.jsonPrimitive?.booleanOrNull ?: false,
                 draft = o["draft"]?.jsonPrimitive?.booleanOrNull ?: false,
                 assets =
                     (o["assets"] as? JsonArray).orEmpty().mapNotNull { a ->
                         val ao = a.jsonObject
                         val name = ao.string("name") ?: return@mapNotNull null
-                        val url = ao.string("browser_download_url") ?: return@mapNotNull null
+                        val url = ao.string("browser_download_url")?.takeIf(::isReleaseUrl) ?: return@mapNotNull null
                         ReleaseAsset(name, url)
                     },
             )

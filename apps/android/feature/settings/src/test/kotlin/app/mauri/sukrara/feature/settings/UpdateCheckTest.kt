@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.settings
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,6 +40,43 @@ class UpdateCheckTest {
     @Test
     fun `a failed fetch is offline`() {
         assertEquals(UpdateState.Offline, UpdateCheck.state(Result.failure(Exception("offline")), "0.12.0", true))
+    }
+
+    @Test
+    fun `only the project's release pages and files are opened`() {
+        assertTrue(UpdateCheck.isReleaseUrl("https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1"))
+        assertTrue(UpdateCheck.isReleaseUrl("https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/Sukrara-0.12.1.dmg"))
+        listOf(
+            "https://github.com/mauriciabad/sukrara/releases/",
+            "https://github.com/mauriciabad/sukrara/releases",
+            "https://github.com/someone/sukrara/releases/tag/v1.0",
+            "https://github.com.evil.example/mauriciabad/sukrara/releases/tag/v1.0",
+            "http://github.com/mauriciabad/sukrara/releases/tag/v1.0",
+            "https://evil.example/https://github.com/mauriciabad/sukrara/releases/tag/v1.0",
+            "https://github.com/mauriciabad/sukrara/releases/../../other/repo",
+            "https://github.com/mauriciabad/sukrara/releases/%2e%2e/%2E%2E/other",
+            "https://github.com/mauriciabad/sukrara/releases/tag/v1 x",
+            "javascript:alert(1)",
+        ).forEach { assertFalse(it, UpdateCheck.isReleaseUrl(it)) }
+    }
+
+    @Test
+    fun `a release link outside the project falls back to the releases page and its file is dropped`() {
+        val parsed =
+            UpdateCheck
+                .parse(
+                    """
+                    [{"tag_name": "v9.0.0", "html_url": "https://evil.example/releases/tag/v9.0.0", "draft": false,
+                      "prerelease": false, "assets": [
+                        {"name": "Sukrara-9.0.0.dmg", "browser_download_url": "https://evil.example/Sukrara-9.0.0.dmg"},
+                        {"name": "Sukrara-9.0.0.zip",
+                         "browser_download_url": "https://github.com/mauriciabad/sukrara/releases/download/v9.0.0/Sukrara-9.0.0.zip"}
+                      ]}]
+                    """.trimIndent(),
+                ).single()
+        assertEquals(UpdateCheck.RELEASES_URL, parsed.url)
+        assertEquals(listOf("Sukrara-9.0.0.zip"), parsed.assets.map { it.name })
+        assertTrue(releases.all { UpdateCheck.isReleaseUrl(it.url) })
     }
 
     @Test
