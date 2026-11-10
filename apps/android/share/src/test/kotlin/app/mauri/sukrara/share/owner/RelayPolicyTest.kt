@@ -133,10 +133,13 @@ class RelayPolicyTest {
             val host = nearby.host!!
             val token = host.pairing()!!.token
             val mom = crypto.generate()
-            host.onEvent(OwnerFixtures.request(mom, (store.load() as OwnerIdentityStore.Load.Loaded).state, token, "Mom"), "aa:bb")
+            // a nearby request carries the follower's pairing nonce `n` (PROTOCOL-v2 §Nearby pairing); Allow follows
+            // the code comparison, nothing is typed
+            val state = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            host.onEvent(OwnerFixtures.request(mom, state, token, "Mom", nonce = "ab".repeat(32)), "aa:bb")
             runCurrent()
-            val code = e.pendingRequest(mom.public.hex)!!.code
-            assertEquals(ApproveResult.Allowed, e.approve(mom.public.hex, code))
+            assertTrue(e.pendingRequest(mom.public.hex)!!.nearby)
+            assertEquals(ApproveResult.Allowed, e.approve(mom.public.hex))
             runCurrent()
             val st = (store.load() as OwnerIdentityStore.Load.Loaded).state
             assertEquals(setOf(mom.public.hex), st.nearbyPaired)
