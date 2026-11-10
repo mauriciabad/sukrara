@@ -372,7 +372,7 @@ func fixtureSetHasCases(_ set: String) {
     }
 }
 
-/// The treatment amounts of the status fixtures (the status / last-treatment decision itself is the alert engine's).
+/// The treatment amounts of the status fixtures (the status, badge and slot: AppTests `StatusFixtureTests`).
 @Suite struct AmountFixtureTests {
     @Test(arguments: GraphFixtures.cases("status.json"))
     func amounts(_ c: JSON) {
