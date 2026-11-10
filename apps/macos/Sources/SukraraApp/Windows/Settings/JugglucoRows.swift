@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import AppKit
 import Observation
 import SukraraCore
 import SukraraShare
@@ -70,27 +71,44 @@ public final class JugglucoModel {
         return String(decoding: data, as: UTF8.self)
     }
 
-    /// The state line: words, a symbol and whether Try Again helps.
-    static func line(_ state: LanState) -> (text: String, symbol: String, retry: Bool) {
+    /// The state line: words, a symbol, whether Try Again helps and whether the Local Network setting may be why
+    /// (Open System Settings…).
+    static func line(_ state: LanState) -> (text: String, symbol: String, retry: Bool, localNetwork: Bool) {
         switch state {
-        case .off: (L10n.t("Starting…"), "antenna.radiowaves.left.and.right", false)
-        case .looking: (L10n.t("Looking for Juggluco on this network…"), "magnifyingglass", false)
+        case .off: (L10n.t("Starting…"), "antenna.radiowaves.left.and.right", false, false)
+        case .looking: (L10n.t("Looking for Juggluco on this network…"), "magnifyingglass", false, false)
         case .notFound:
+            // macOS doesn't always say a refusal is one: the hint stays here too
             (
                 L10n.t(
                     "Not found. Check that Juggluco's web server is on with Local only off and that Sukrara may use the local network (System Settings › Privacy & Security › Local Network), or type its address."
                 ),
-                "exclamationmark.triangle", true
+                "exclamationmark.triangle", true, true
             )
-        case .connected(let host): (L10n.t("Reading Juggluco at \(host)"), "checkmark.circle", false)
+        case .connected(let host): (L10n.t("Reading Juggluco at \(host)"), "checkmark.circle", false, false)
         case .unreachable(let host):
-            (L10n.t("Can't reach Juggluco at \(host). Retrying…"), "exclamationmark.triangle", true)
-        case .unauthorized: (L10n.t("Juggluco refused the API secret. Type the one set in Juggluco."), "lock", true)
+            (L10n.t("Can't reach Juggluco at \(host). Retrying…"), "exclamationmark.triangle", true, false)
+        case .unauthorized:
+            (L10n.t("Juggluco refused the API secret. Type the one set in Juggluco."), "lock", true, false)
         case .refused(let typed):
             (
                 L10n.t("\(typed) isn't a home-network address (like 192.168.1.23). Fix it or leave it blank."),
-                "exclamationmark.triangle", false
+                "exclamationmark.triangle", false, false
             )
+        case .localNetworkDenied:
+            (
+                L10n.t(
+                    "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network."
+                ),
+                "hand.raised", true, true
+            )
+        }
+    }
+
+    /// System Settings › Privacy & Security › Local Network.
+    static func openLocalNetworkSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork") {
+            NSWorkspace.shared.open(url)
         }
     }
 }
@@ -120,6 +138,9 @@ struct JugglucoRows: View {
                     if line.retry { Button(L10n.t("Try Again"), action: model.retry) }
                 }
                 .accessibilityElement(children: .combine)
+                if line.localNetwork {
+                    Button(L10n.t("Open System Settings…"), action: JugglucoModel.openLocalNetworkSettings)
+                }
             }
             TextField(
                 L10n.t("Address"), text: $model.addressDraft, prompt: Text(L10n.t("Find it automatically"))

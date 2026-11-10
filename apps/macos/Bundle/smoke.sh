@@ -31,6 +31,8 @@ case "$EXE_DIR" in
       || die "no Sukrara_SukraraApp.bundle with es.lproj in $CONTENTS/Resources"
     plutil -extract CFBundleLocalizations json -o - "$CONTENTS/Info.plist" | grep -q '"es"' \
       || die "Info.plist has no CFBundleLocalizations with es"
+    plutil -lint -s "$CONTENTS/Resources/es.lproj/InfoPlist.strings" \
+      || die "no readable es.lproj/InfoPlist.strings (the Spanish privacy descriptions)"
     ;;
 esac
 

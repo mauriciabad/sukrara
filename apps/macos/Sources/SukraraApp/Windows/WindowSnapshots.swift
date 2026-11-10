@@ -138,6 +138,7 @@
                 ("looking", .looking, nil), ("notfound", .notFound, nil),
                 ("connected", .connected("192.168.1.23"), nil),
                 ("secret", .unauthorized("192.168.1.23"), nil), ("paused", .off, "Marta"),
+                ("localnetwork", .localNetworkDenied, nil),
             ]
             for (name, state, paused) in lanStates {
                 let m = SettingsModel(store: lanStore, follow: follow(.notFollowing), version: "0.12.0")

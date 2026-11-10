@@ -95,6 +95,9 @@ cp "$BIN/SukraraWidget" "$APPEX/Contents/MacOS/SukraraWidget"
 [ -d "$BIN/Sukrara_SukraraApp.bundle" ] || die "no Sukrara_SukraraApp.bundle in $BIN"
 cp -R "$BIN/Sukrara_SukraraApp.bundle" "$APP/Contents/Resources/"
 [ -d "$APP/Contents/Resources/Sukrara_SukraraApp.bundle/Contents/Resources/es.lproj" ] || die "no es.lproj in the resource bundle"
+# The Info.plist's privacy descriptions in Spanish (the English is in Info.plist.in)
+cp -R "$HERE/es.lproj" "$APP/Contents/Resources/"
+[ -f "$APP/Contents/Resources/es.lproj/InfoPlist.strings" ] || die "no es.lproj/InfoPlist.strings in the app"
 [ -n "$ICON" ] && cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
 [ -n "$SOUNDS" ] && cp "$SOUNDS"/*.caf "$APP/Contents/Resources/Sounds/" 2>/dev/null || true
 

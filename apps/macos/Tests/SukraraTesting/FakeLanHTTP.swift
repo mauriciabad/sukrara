@@ -6,7 +6,8 @@ import SukraraShare
 import Synchronization
 
 /// A home network in memory for the Juggluco source: `answer` gives each GET's status and body (nil = nothing
-/// answers there), `live` the lines of a live stream (held open until the test ends it). Never touches the network.
+/// answers there: `unanswered` is thrown), `live` the lines of a live stream (held open until the test ends it). Never
+/// touches the network.
 public final class FakeLanHTTP: LanHTTP {
     public struct Request: Sendable, Equatable {
         public var url: URL
@@ -15,15 +16,18 @@ public final class FakeLanHTTP: LanHTTP {
 
     private let answer: @Sendable (URL, [String: String]) -> (Int, Data)?
     private let liveLines: @Sendable (URL) -> (Int, [String])?
+    private let unanswered: any Error
     private let log = Mutex<[Request]>([])
     private let streams = Mutex<[AsyncThrowingStream<String, any Error>.Continuation]>([])
 
     public init(
         answer: @escaping @Sendable (URL, [String: String]) -> (Int, Data)?,
-        live: @escaping @Sendable (URL) -> (Int, [String])? = { _ in nil }
+        live: @escaping @Sendable (URL) -> (Int, [String])? = { _ in nil },
+        unanswered: any Error = URLError(.cannotConnectToHost)
     ) {
         self.answer = answer
         self.liveLines = live
+        self.unanswered = unanswered
     }
 
     /// Every request so far, in order.
@@ -33,7 +37,7 @@ public final class FakeLanHTTP: LanHTTP {
         status: Int, body: Data
     ) {
         log.withLock { $0.append(Request(url: url, headers: headers)) }
-        guard let (status, body) = answer(url, headers) else { throw URLError(.cannotConnectToHost) }
+        guard let (status, body) = answer(url, headers) else { throw unanswered }
         return (status, body)
     }
 
@@ -41,7 +45,7 @@ public final class FakeLanHTTP: LanHTTP {
         status: Int, lines: AsyncThrowingStream<String, any Error>
     ) {
         log.withLock { $0.append(Request(url: url, headers: headers)) }
-        guard let (status, lines) = liveLines(url) else { throw URLError(.cannotConnectToHost) }
+        guard let (status, lines) = liveLines(url) else { throw unanswered }
         let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self, throwing: (any Error).self)
         for line in lines { continuation.yield(line) }
         streams.withLock { $0.append(continuation) }

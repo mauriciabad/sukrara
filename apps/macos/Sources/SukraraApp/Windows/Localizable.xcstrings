@@ -1281,6 +1281,22 @@
         }
       }
     },
+    "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS no deja a Sukrara usar la red local. Activa Sukrara en Ajustes del Sistema › Privacidad y seguridad › Red local."
+          }
+        }
+      }
+    },
     "Minutes ago (empty = now)" : {
       "localizations" : {
         "en" : {
@@ -1485,6 +1501,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin vigilancia: no se puede leer la clave de seguimiento del Llavero. Reintentando…"
+          }
+        }
+      }
+    },
+    "Not monitoring: macOS doesn't let Sukrara use the local network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: macOS doesn't let Sukrara use the local network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: macOS no deja a Sukrara usar la red local"
           }
         }
       }
@@ -1773,6 +1805,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abrir al iniciar sesión"
+          }
+        }
+      }
+    },
+    "Open System Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open System Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Ajustes del Sistema…"
           }
         }
       }

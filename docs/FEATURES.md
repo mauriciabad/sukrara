@@ -1423,22 +1423,36 @@ uploaded it. *Follower phone* → the switch is disabled with the reason. Back l
   entries written by Sukrara are refused (that server isn't Juggluco). Readings go into their own 31-day store
   (`juggluco/readings.csv`), apart from a followed wearer's. Reconnects with backoff 5 s → 60 s; a sweep that found
   nothing runs again every minute (a sweep that found only a Juggluco asking for another secret says so); the found address is swept for again after three failed connections; a wake or the network coming back tries again at once. macOS asks
-  once for Local Network access (`NSLocalNetworkUsageDescription`).
+  once for Local Network access (`NSLocalNetworkUsageDescription`, in Spanish from `Bundle/es.lproj/InfoPlist.strings`
+  like the Bluetooth one; `LocalizationTests`). A refusal is its own state when macOS says so (the failed connection's
+  path is unsatisfied as *local network denied*; `JugglucoApi.isLocalNetworkDenied`): *macOS doesn't let Sukrara use
+  the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network.* with **Open System
+  Settings…** (that pane) and *Try Again*; tried again every minute and when Sukrara becomes active. macOS doesn't
+  always say so, so *Not found* keeps the hint and the same button.
+- Sensor life: after the history Sukrara reads `/sgv.json?count=1&sensor=Y` (as Android's Juggluco source):
+  `sensor_status` "dd-mm-yy HH:MM (…)" is the running sensor's start in the phone's local time (taken as the Mac's:
+  same home), with the Libre 3 / 3 Plus wear (15 days) and warm-up (60 min), since Juggluco publishes neither. It is
+  read again when a live event's `sensorId` changes (a new sensor). It feeds the card's sensor life (ring, countdown,
+  warm-up, sensor ended) and the alert rules' sensor window like a followed wearer's sensor; an older Juggluco
+  without it, or a failed request, keeps the last one known and the readings go on.
 - The readings feed the card, the rings, the widgets, the report and the alerts exactly as a followed wearer's do
   (this Mac's own alert rules, no mirroring). Following someone always wins: while following, the source is paused
   and never mixed with the wearer's readings (two people's values must never be interleaved).
 - Monitoring starts at the first successful connection; from then on a lost Juggluco keeps monitoring and the no-data
   alert rings if it doesn't come back. Before that, the panel says why nothing is shown (*looking for Juggluco on this
   network*, *Juggluco wasn't found on this network*, *can't reach Juggluco at …*, *Juggluco refused the API secret*,
-  *… isn't an address on your home network*, *Waiting for the first reading from Juggluco*).
+  *… isn't an address on your home network*, *macOS doesn't let Sukrara use the local network*, *Waiting for the
+  first reading from Juggluco*).
 - Tests: `JugglucoLanTests` (formats, address ranges, the sweep, the secret only to the host that asked, a dropped
-  stream) and `AppModelSourceTests` over a fake network (`FakeLanHTTP`); nothing touches a real network.
+  stream, the sensor's life and a new sensor, a refused local network) and `AppModelSourceTests` over a fake network (`FakeLanHTTP`); nothing touches a real network.
 
 **States and exits** (Settings › General › Source): *Off* → turn the switch on. *Looking…* → found or not found by
 itself; switch off. *Not found* → *Try Again*, type the address, or switch off. *Reading Juggluco at …* → switch off.
 *Can't reach Juggluco at …* (retrying) → comes back by itself, *Try Again*, fix the address, switch off; the no-data
 alert covers a long gap. *Juggluco refused the API secret* → type the secret, *Try Again*, switch off. *Not a
-home-network address* → fix or clear the address, switch off. *Paused while following …* → stop following
+home-network address* → fix or clear the address, switch off. *macOS doesn't let Sukrara use the local network* →
+**Open System Settings…** (turn Sukrara on there; back in Sukrara it looks again at once), *Try Again*, switch off.
+*Paused while following …* → stop following
 (Settings › Following) or switch off. Every row is reachable with VoiceOver (the state line reads as one element).
 
 ## Not included

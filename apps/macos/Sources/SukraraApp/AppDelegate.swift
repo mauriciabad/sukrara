@@ -128,6 +128,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationDidBecomeActive(_ notification: Notification) {
         refreshNotificationPermission()
         model.loginItem?.refresh()
+        // back from System Settings › Local Network: look for Juggluco now, not in a minute
+        if model.lanSnapshot.state == .localNetworkDenied { model.retryLan() }
     }
 
     public func applicationWillTerminate(_ notification: Notification) {

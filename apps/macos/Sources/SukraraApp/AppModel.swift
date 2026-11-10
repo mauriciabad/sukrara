@@ -34,8 +34,9 @@ public final class AppModel {
             let wasMonitoring = monitoring
             syncLan()
             guard monitoring != wasMonitoring else { return }
-            // switched off: its readings leave the card and the alerts at once
+            // switched off: its readings (and its sensor) leave the card and the alerts at once
             monitoringChanged(from: wasMonitoring)
+            applySensor()
             apply(readings: monitoredReadings)
             feedWidget()
         }
@@ -59,6 +60,8 @@ public final class AppModel {
     var alertingOnLastData: Bool { keychainUnreadable && followMonitoring }
     /// The wearer's last 24 hours (while `followMonitoring`).
     @ObservationIgnored private var followReadings: [Reading] = []
+    /// The wearer's sensor from the follower snapshots.
+    @ObservationIgnored private var followSensor: WearerSensor?
     private var wearerName: String?
     /// The follower's first snapshot arrived (whether this Mac follows someone is known).
     @ObservationIgnored private var followerKnown = false
@@ -143,19 +146,13 @@ public final class AppModel {
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         followMonitoring = link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty)
         followReadings = followMonitoring ? snapshot.readings : []
+        followSensor = snapshot.sensor
         wearerName = Profile.shownName(snapshot.wearer?.name)
         followerKnown = true
         syncLan()
         monitoringChanged(from: wasMonitoring)
         if let alerts {
             alerts.setMirroring(followMonitoring && alerts.settings.source == .wearer)
-            alerts.sensor(
-                snapshot.sensor.map {
-                    SensorWindow(
-                        start: Date(timeIntervalSince1970: TimeInterval($0.start)),
-                        end: Date(timeIntervalSince1970: TimeInterval($0.end)),
-                        warmupEnd: Date(timeIntervalSince1970: TimeInterval($0.warmupEnd)))
-                })
             alerts.treatments(
                 snapshot.treatments.compactMap { t in
                     let kind: TreatmentKind? = t.k == .carbs ? .carbs : t.k == .rapid ? .rapidInsulin : nil
@@ -165,9 +162,7 @@ public final class AppModel {
         }
         marks = followMonitoring ? CardAlertsMapping.marks(snapshot.treatments) : []
         treatments = followMonitoring ? snapshot.treatments.filter { !$0.del } : []
-        sensor = snapshot.sensor.map {
-            SensorInfo(start: TimeInterval($0.start), end: TimeInterval($0.end), warmupEnd: TimeInterval($0.warmupEnd))
-        }
+        applySensor()
         // only a followed wearer's (or, not following, Juggluco's) readings are shown or alerted on
         apply(readings: monitoredReadings)
         // dropped out (the wearer stopped sharing, the follow broke): say so even with the panel shut; the person's
@@ -189,6 +184,7 @@ public final class AppModel {
         lanSnapshot = snapshot
         monitoringChanged(from: wasMonitoring)
         guard !followMonitoring else { return }
+        applySensor()
         apply(readings: monitoredReadings)
         feedWidget()
     }
@@ -196,6 +192,26 @@ public final class AppModel {
     /// The readings the card and the alert rules use: following wins over Juggluco (never two people's mixed).
     private var monitoredReadings: [Reading] {
         followMonitoring ? followReadings : lanMonitoring ? lanSnapshot.readings : []
+    }
+
+    /// The sensor of the same source: the wearer's, else the one Juggluco reads.
+    private var monitoredSensor: WearerSensor? {
+        followMonitoring ? followSensor : lanMonitoring ? lanSnapshot.sensor : nil
+    }
+
+    /// The card's sensor life and the alert rules' sensor window follow the monitored source.
+    private func applySensor() {
+        let s = monitoredSensor
+        alerts?.sensor(
+            s.map {
+                SensorWindow(
+                    start: Date(timeIntervalSince1970: TimeInterval($0.start)),
+                    end: Date(timeIntervalSince1970: TimeInterval($0.end)),
+                    warmupEnd: Date(timeIntervalSince1970: TimeInterval($0.warmupEnd)))
+            })
+        sensor = s.map {
+            SensorInfo(start: TimeInterval($0.start), end: TimeInterval($0.end), warmupEnd: TimeInterval($0.warmupEnd))
+        }
     }
 
     /// Monitoring started, stopped or moved to the other source: the alert rules forget the old one and the history
@@ -432,6 +448,7 @@ public final class AppModel {
         case .unreachable(let host): L10n.t("Not monitoring: can't reach Juggluco at \(host)")
         case .unauthorized: L10n.t("Not monitoring: Juggluco refused the API secret")
         case .refused(let typed): L10n.t("Not monitoring: \(typed) isn't an address on your home network")
+        case .localNetworkDenied: L10n.t("Not monitoring: macOS doesn't let Sukrara use the local network")
         }
     }
 
