@@ -60,15 +60,23 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         button.setAccessibilityLabel(title.accessibilityLabel)
     }
 
-    /// The value's colour: red below the range, orange above, secondary when stale or warming up, else the menu
-    /// bar's own ink (nil: the button follows light / dark and the selected highlight).
+    /// The value's colour: red below the range, orange above, grey when stale or warming up, else the menu bar's own
+    /// ink (nil: the button follows light / dark and the selected highlight). Resolved from the appearance it is drawn
+    /// in (the button's), so each passes 4.5:1 on a light and on a dark bar (`MenubarInk`, #8).
     static func color(_ tint: MenubarTitle.Tint) -> NSColor? {
-        switch tint {
-        case .plain: nil
-        case .below: .systemRed
-        case .above: .systemOrange
-        case .grey: .secondaryLabelColor
+        guard let light = MenubarInk.rgb(tint, dark: false), let dark = MenubarInk.rgb(tint, dark: true) else {
+            return nil
         }
+        return NSColor(name: nil) { appearance in
+            let c = isDark(appearance) ? dark : light
+            return NSColor(srgbRed: c.r, green: c.g, blue: c.b, alpha: 1)
+        }
+    }
+
+    static func isDark(_ appearance: NSAppearance) -> Bool {
+        appearance.bestMatch(from: [.aqua, .darkAqua, .vibrantLight, .vibrantDark]).map {
+            $0 == .darkAqua || $0 == .vibrantDark
+        } ?? false
     }
 
     /// The mute bell before the value, the value (struck when stale) in its range colour.
@@ -102,11 +110,16 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         case .arrow, .ring:
             let rate: Double? = if case .arrow(let r) = title.mark { r } else { nil }
             let size: CGFloat = 15
-            guard
-                let cg = GlucoseCard.trendImage(
-                    rate: rate, size: size, scale: 2, color: (ink ?? .black).cgColor)
-            else { return nil }
-            let img = NSImage(cgImage: cg, size: NSSize(width: size, height: size))
+            // drawn when the bar draws it, in the ink of the bar's appearance then (light / dark)
+            let img = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+                let color = (ink ?? .black).cgColor
+                guard
+                    let cg = GlucoseCard.trendImage(rate: rate, size: size, scale: 2, color: color),
+                    let ctx = NSGraphicsContext.current?.cgContext
+                else { return false }
+                ctx.draw(cg, in: rect)
+                return true
+            }
             img.isTemplate = ink == nil
             return img
         case .symbol(let name):

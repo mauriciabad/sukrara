@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import AppKit
 import Foundation
 import SukraraAlerts
 import SukraraCore
@@ -62,6 +63,40 @@ import Testing
                 AlertText(language: .en).body(firing, now: clock.now) == "64 mg/dL \(want)", "alert, \(c["name"] ?? "")"
             )
         }
+    }
+
+    /// #8: the title keeps its colour but every ink passes 4.5:1 on every bar it can be drawn on, light or dark, plain or
+    /// over a wallpaper (the system orange was about 2.2:1 and the red 3.6:1 on a light bar).
+    @Test func inksAreReadableOnLightAndDarkBars() throws {
+        for tint in [MenubarTitle.Tint.below, .above, .grey] {
+            for dark in [false, true] {
+                let ink = try #require(MenubarInk.rgb(tint, dark: dark))
+                for g in dark ? MenubarInk.darkBars : MenubarInk.lightBars {
+                    let ratio = MenubarInk.contrast(ink, (g, g, g))
+                    #expect(ratio >= MenubarInk.minContrast, "\(tint) on \(dark ? "dark" : "light") \(g): \(ratio)")
+                }
+            }
+        }
+        #expect(MenubarInk.contrast((1, 0.584, 0), (1, 1, 1)) < MenubarInk.minContrast, "systemOrange on white")
+        #expect(MenubarInk.rgb(.plain, dark: false) == nil && MenubarInk.rgb(.plain, dark: true) == nil)
+    }
+
+    /// The status item resolves the ink from the appearance the bar draws in (the button's), never one for both.
+    @Test func theInkFollowsTheBarsAppearance() throws {
+        for tint in [MenubarTitle.Tint.below, .above, .grey] {
+            let color = try #require(StatusItemController.color(tint))
+            for (name, dark) in [(NSAppearance.Name.aqua, false), (.darkAqua, true)] {
+                var got: NSColor?
+                try #require(NSAppearance(named: name)).performAsCurrentDrawingAppearance {
+                    got = color.usingColorSpace(.sRGB)
+                }
+                let want = try #require(MenubarInk.rgb(tint, dark: dark))
+                let c = try #require(got)
+                #expect(abs(c.redComponent - want.r) < 0.01 && abs(c.greenComponent - want.g) < 0.01)
+                #expect(abs(c.blueComponent - want.b) < 0.01, "\(tint) \(name.rawValue)")
+            }
+        }
+        #expect(StatusItemController.color(.plain) == nil)
     }
 
     @Test func staleValueIsStruck() {
