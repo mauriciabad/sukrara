@@ -402,7 +402,8 @@ Wearer only (`ui/NewSensorScreen.kt`; rules in `ui/NewSensorFlow.kt`, tests `New
 Android (`:feature:home`: `HomeScreen`, `HomeViewModel`, `NoDataReason`, `banners/HomeBanners`, `HomeCard` = the
 registered `app-panel` card surface; tests `NoDataReasonTest`, `BannerSlotTest`, `HomeViewModelTest`, `HomeGallery`).
 Glucose first: the card (value, arrow, slots, 6 h chart through the one renderer) with the sensor's end date under it
-(in the sensor's last day, the wearer gets a tonal *Pair new sensor* button there). The chart scrolls through the
+(*Sensor ends Nov 20* / *Sensor ended 2 hours ago* once the end has passed and the sensor still reports; in the
+sensor's last day, the wearer gets a tonal *Pair new sensor* button there). The chart scrolls through the
 stored 31 days (drag, fling, stretch at the ends) and two fingers zoom its time axis from 2 h to 31 days; the y range
 and the plot's bottom ease to the visible window; the renderer's *Now* pill (tap, or TalkBack *Back to now*) returns.
 The history is `:monitor` `GlucoseHistory`: the stored days before the live 24 h window, read once an hour, joined with
