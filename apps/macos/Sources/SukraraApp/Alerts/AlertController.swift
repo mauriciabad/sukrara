@@ -47,6 +47,8 @@ final class AlertController {
     @ObservationIgnored private let wake: any WakeScheduling
     /// When Mute all ends as last seen (nil = off): its end by itself gets one "Alerts back on" log line.
     @ObservationIgnored private var muteAllSeen: Date?
+    /// #128: readings stamped at or before this don't feed the rules (set when monitoring ends, gone when a source starts).
+    @ObservationIgnored private var fence: Date?
 
     init(
         settings: AlertSettings, clock: any TimeSource, store: any AlertStateStoring, notifier: any AlertNotifying,
@@ -65,6 +67,7 @@ final class AlertController {
             mirror = m
             mirrored = saved?.mirrored ?? [:]
         }
+        fence = saved?.fence
         run(effects)
     }
 
@@ -74,6 +77,8 @@ final class AlertController {
 
     /// The newest reading the Mac has (also an old one at launch: "no data" is measured from it).
     func reading(_ r: Reading) {
+        // still on its way from a follow or source that ended: it can't arm no data again (#128)
+        if let fence, r.t <= fence { return }
         let sample = GlucoseSample(at: r.t, mgdl: Double(r.mgdl), rate: r.rate)
         noteClock()
         if mirroring {
@@ -88,6 +93,8 @@ final class AlertController {
     /// The reading source started (following someone, Juggluco reached): no data counts from now until a reading, also
     /// with none ever. A source already running keeps its start (also across relaunches); `resetMonitoring` forgets it.
     func sourceStarted() {
+        // a new source (a join, Juggluco reached): its backfill counts, so no fence (#128)
+        fence = nil
         guard engine.context.sourceStart == nil else { return }
         handle(.source(since: clock.now))
     }
@@ -241,6 +248,8 @@ final class AlertController {
         mirror = AlertMirror()
         mirrored = [:]
         muteAllSeen = nil
+        // what is still on its way from the old source can't arm no data again (#128); the next source's start clears it
+        fence = clock.now
         run(effects)
     }
 
@@ -327,7 +336,7 @@ final class AlertController {
     }
 
     private func save() {
-        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored))
+        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored, fence: fence))
     }
 }
 

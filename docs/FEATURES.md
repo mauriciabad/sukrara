@@ -43,6 +43,12 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   *No glucose data · No reading yet* 20 min later (after a new sensor's warm-up and its 15 min grace). A new source
   never rings at once because of an older one's last reading. Removing the sensor, changing the role or stopping
   following ends it.
+- **Endings fence queued readings** (#128, both apps): when a follow ends (declined, removed, the invite used), is
+  stopped (*Stop following*) or its nearby codes differ, a reading still on its way (a relay or Bluetooth one, stamped
+  before the ending) is stored but can't arm *No glucose data* again (no hourly false alarm for a follow that's over);
+  a join is never fenced (its backfill is stamped before it and must arm no data). The fence is saved (Android
+  `MonitorRecord.armAfterEpochMs`, Mac `alert-state.json`), so a restart can't drop it; a forgotten sensor keeps its
+  fence (`GlucoseHubTest`, `AlertControllerTests`).
 - **The clock** (#41, SPEC §1 "The clock"; scenarios `other.txt`): a clock set back moves every alert time with it,
   measured on the monotonic clock (Android `elapsedRealtime`, Mac `CLOCK_MONOTONIC`), so a repeat, a Mute, Mute all
   and no data stay on real time to the second; a reading dated ahead counts as taken now. Both apps re-check at once

@@ -257,6 +257,34 @@ class GlucoseHubTest {
             assertEquals(NotMonitoringReason.NoSensorYet, hub.state.value.notMonitoring)
         }
 
+    /**
+     * #128: a follow that ended fences what is still on its way (a relay or Bluetooth reading), also across a restart (the
+     * fence is in the saved record); a join clears it, so its backfill arms no data.
+     */
+    @Test
+    fun `an ending's fence survives a restart and a join clears it`() =
+        runTest {
+            role.value = Role.Follower // the follow ended: its link is gone, so nothing "starts" a source again
+            val first = hub()
+            first.resetMonitoring(fence = true)
+            runCurrent()
+            assertNotNull(record.data.first().armAfterEpochMs)
+
+            val restarted = hub() // the process died: a new hub over the same record
+            val source = FakeSource()
+            backgroundScope.launch { restarted.attach(source) }
+            runCurrent()
+            source.emitted.emit(listOf(reading(118, agoMin = 2)))
+            runCurrent()
+            assertEquals(NotMonitoringReason.NoSensorYet, restarted.state.value.notMonitoring)
+
+            restarted.resetMonitoring(fence = false) // a join: its backfill is stamped before it
+            source.emitted.emit(listOf(reading(117, agoMin = 3)))
+            runCurrent()
+            assertNotNull(restarted.state.value.monitoringStartedAt)
+            assertNull(record.data.first().armAfterEpochMs)
+        }
+
     @Test
     fun `a reading of a forgotten sensor still on its way doesn't arm monitoring again, the next sensor's does`() =
         runTest {
@@ -268,7 +296,7 @@ class GlucoseHubTest {
             runCurrent()
             assertNotNull(hub.state.value.monitoringStartedAt)
 
-            hub.resetMonitoring(sensorForgotten = true)
+            hub.resetMonitoring(fence = true)
             // queued in the source before it stopped: stamped before the reset
             source.emitted.emit(listOf(reading(121, agoMin = 0)))
             runCurrent()

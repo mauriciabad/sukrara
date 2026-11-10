@@ -23,8 +23,11 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class AppFollowerSharing(
     private val engine: FollowerEngine,
-    /** Alert state and "monitoring since" back to nothing (the alert runtime's reset + the hub's). */
-    private val resetMonitoring: suspend () -> Unit,
+    /**
+     * Alert state and "monitoring since" back to nothing (the alert runtime's reset + the hub's); `fence` = an ending
+     * (#128): readings still on their way from it can't arm no data; false on a join.
+     */
+    private val resetMonitoring: suspend (fence: Boolean) -> Unit,
     private val startMonitoring: suspend () -> Unit,
     private val clearRole: suspend () -> Unit,
 ) : FollowerSharing {
@@ -50,7 +53,7 @@ class AppFollowerSharing(
 
     private suspend fun started(result: JoinResult): JoinResult {
         if (result == JoinResult.Joined) {
-            resetMonitoring()
+            resetMonitoring(false)
             startMonitoring()
         }
         return result
@@ -59,13 +62,13 @@ class AppFollowerSharing(
     override suspend fun confirmNearby(same: Boolean): Boolean {
         val done = engine.confirmNearby(same)
         // the codes differed: the join is gone, nothing was ever trusted; the role stays (setup's join step again)
-        if (done && !same) resetMonitoring()
+        if (done && !same) resetMonitoring(true)
         return done
     }
 
     override suspend fun stopFollowing(): Boolean {
         if (!engine.unfollow()) return false
-        resetMonitoring()
+        resetMonitoring(true)
         clearRole()
         return true
     }

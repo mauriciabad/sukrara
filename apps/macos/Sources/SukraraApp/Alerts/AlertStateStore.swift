@@ -15,6 +15,9 @@ struct AlertState: Codable, Equatable {
     var mirror: AlertMirror
     /// The wearer's newest firing per group (Unmute / Remind as usual shows it again after a relaunch).
     var mirrored: [AlertGroup: AlertFiring] = [:]
+    /// #128: readings stamped at or before this don't feed the rules (a follow or source that ended: what was still on
+    /// its way can't arm no data again); nil = no fence. Saved, so a relaunch can't drop it.
+    var fence: Date?
 }
 
 /// Loads and saves `AlertState` (tests use an in-memory one).

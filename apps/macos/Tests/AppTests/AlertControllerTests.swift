@@ -259,6 +259,23 @@ final class RecordingWake: WakeScheduling {
         #expect(c.ui.quiets.isEmpty)
     }
 
+    /// #128: after an ending, a reading still on its way (stamped before it) can't arm no data again, also after a
+    /// relaunch; the next source's start clears the fence, so a join's backfill counts.
+    @Test func anEndingFencesQueuedReadingsAJoinDoesNot() {
+        let c = controller()
+        c.reading(reading(110))
+        c.resetMonitoring()
+        clock.advance(by: 60)
+        c.reading(reading(111, minutesAgo: 2))  // queued before the ending
+        #expect(c.nextWake == nil)
+        let relaunched = controller()
+        relaunched.reading(reading(112, minutesAgo: 1.5))
+        #expect(relaunched.nextWake == nil)
+        relaunched.sourceStarted()  // a join: its backfill counts
+        relaunched.reading(reading(113, minutesAgo: 5))
+        #expect(relaunched.nextWake != nil)
+    }
+
     @Test func stoppingFollowingDisarmsNoData() {
         let c = controller()
         c.reading(reading(110))
