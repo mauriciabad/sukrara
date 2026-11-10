@@ -41,6 +41,55 @@ interface ReadingDao {
     @Upsert
     suspend fun upsert(readings: List<ReadingEntity>)
 
+    /**
+     * Stores [readings]; those that aren't [imported] then remove every imported reading within [tolerance] ms of them
+     * (the sensor's own reading wins over an imported copy, HistoryImport), in one transaction.
+     */
+    @Transaction
+    suspend fun upsertOwnFirst(
+        readings: List<ReadingEntity>,
+        imported: List<String>,
+        tolerance: Long,
+    ) {
+        upsert(readings)
+        val own = readings.filter { it.source !in imported }
+        if (own.isNotEmpty()) dropImportedNear(own.minOf { it.t } - tolerance, own.maxOf { it.t } + tolerance, imported, tolerance)
+    }
+
+    /** Imported readings in [from, to] with a reading from another source within [tolerance] ms. */
+    @Query(
+        "DELETE FROM readings WHERE source IN (:imported) AND t >= :from AND t <= :to AND EXISTS (SELECT 1 FROM readings AS own " +
+            "WHERE own.source NOT IN (:imported) AND own.t >= readings.t - :tolerance AND own.t <= readings.t + :tolerance)",
+    )
+    suspend fun dropImportedNear(
+        from: Long,
+        to: Long,
+        imported: List<String>,
+        tolerance: Long,
+    ): Int
+
+    /** Every reading in [from, to], any source (the import path compares with all of them). */
+    @Query("SELECT * FROM readings WHERE t >= :from AND t <= :to ORDER BY t")
+    suspend fun around(
+        from: Long,
+        to: Long,
+    ): List<ReadingEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertNew(readings: List<ReadingEntity>)
+
+    /** The import path: [plan] chooses, from what is stored in [from, to], what of the batch to add; one transaction. */
+    @Transaction
+    suspend fun importAround(
+        from: Long,
+        to: Long,
+        plan: (stored: List<ReadingEntity>) -> List<ReadingEntity>,
+    ): Int {
+        val add = plan(around(from, to))
+        if (add.isNotEmpty()) insertNew(add)
+        return add.size
+    }
+
     /** Retention. */
     @Query("DELETE FROM readings WHERE t < :cutoff")
     suspend fun deleteBefore(cutoff: Long): Int
@@ -103,6 +152,36 @@ interface TreatmentDao {
 
     @Query("DELETE FROM treatments")
     suspend fun deleteAll()
+
+    /** Every entry with `at` in [from, to], tombstones included (the import path compares with all of them). */
+    @Query("SELECT * FROM treatments WHERE at >= :from AND at <= :to")
+    suspend fun around(
+        from: Long,
+        to: Long,
+    ): List<TreatmentEntity>
+
+    @Query("SELECT * FROM treatments WHERE id IN (:ids)")
+    suspend fun byIds(ids: List<String>): List<TreatmentEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertNew(treatments: List<TreatmentEntity>)
+
+    /**
+     * The import path: [plan] chooses, from what is stored in [from, to] and under [ids], what of the batch to add; one
+     * transaction.
+     */
+    @Transaction
+    suspend fun importAround(
+        from: Long,
+        to: Long,
+        ids: List<String>,
+        plan: (stored: List<TreatmentEntity>) -> List<TreatmentEntity>,
+    ): Int {
+        val stored = (around(from, to) + ids.distinct().chunked(SQL_VARIABLES).flatMap { byIds(it) }).distinctBy { it.id }
+        val add = plan(stored)
+        if (add.isNotEmpty()) insertNew(add)
+        return add.size
+    }
 
     /** Last writer wins: stores [treatment] only if nothing with the same or a later `modifiedAt` is stored. */
     @Transaction
@@ -169,3 +248,6 @@ interface PenLedgerDao {
         return stored.map { it.id }
     }
 }
+
+/** Bound parameters per query, under SQLite's 999. */
+internal const val SQL_VARIABLES = 900

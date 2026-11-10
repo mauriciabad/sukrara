@@ -98,7 +98,13 @@ class DatabaseSchemaTest {
             val data = data()
             try {
                 assertEquals(current(), data.database.openHelper.writableDatabase.version)
-                assertEquals(120, data.readings.latest().first()?.mgdl)
+                assertEquals(
+                    120,
+                    data.readings
+                        .latest()
+                        .first()
+                        ?.mgdl,
+                )
                 assertFalse(data.databaseReplaced.value)
             } finally {
                 data.database.close()
@@ -117,7 +123,13 @@ class DatabaseSchemaTest {
                     assertTrue("reported (from version $version)", data.databaseReplaced.value)
                     // and it works
                     data.readings.upsert(listOf(Reading(clock.now(), 110, null, SourceId.Libre3)))
-                    assertEquals(110, data.readings.latest().first()?.mgdl)
+                    assertEquals(
+                        110,
+                        data.readings
+                            .latest()
+                            .first()
+                            ?.mgdl,
+                    )
                 } finally {
                     data.database.close()
                 }

@@ -25,7 +25,7 @@ import androidx.room.RoomDatabase
         OutboxEntity::class,
         PenLedgerEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class SukraraDatabase : RoomDatabase() {

@@ -8,6 +8,8 @@ import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.storage.HistoryImport
+import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingSpec
@@ -110,10 +112,20 @@ class InMemoryReadingsRepository : ReadingsRepository {
     ): List<Reading> = readings.value.filter { it.t >= from && it.t < to }
 
     override suspend fun upsert(readings: List<Reading>) {
+        val tolerance = HistoryImport.SAME_READING
         this.readings.update { current ->
-            (current + readings).associateBy { it.t to it.source }.values.sortedBy { it.t }
+            val own = readings.filterNot { it.imported }
+            // as in Room: the sensor's own reading removes the imported copies within the tolerance
+            val kept = current.filterNot { c -> c.imported && own.any { Duration.between(it.t, c.t).abs() <= tolerance } }
+            (kept + readings).associateBy { it.t to it.source }.values.sortedBy { it.t }
         }
     }
+
+    /** Everything stored, any source (the import fake reads it). */
+    val all: List<Reading> get() = readings.value
+
+    /** Adds [new] as they are (the import fake, after [HistoryImport.readings] chose them). */
+    fun addImported(new: List<Reading>) = readings.update { current -> (current + new).sortedBy { it.t } }
 
     override suspend fun deleteBefore(cutoff: Instant): Int {
         val before = readings.value.size
@@ -172,4 +184,21 @@ class InMemoryTreatmentsRepository : TreatmentsRepository {
             .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
 
     override suspend fun deleteAll() = records.update { emptyMap() }
+
+    /** Everything stored, tombstones included (the import fake reads it). */
+    val all: List<TreatmentRecord> get() = records.value.values.toList()
+
+    fun addImported(new: List<TreatmentRecord>) = records.update { it + new.associateBy { r -> r.treatment.id } }
+}
+
+/** [HistoryImportStore] over the in-memory stores, by the same [HistoryImport] rules as Room. */
+class InMemoryHistoryImport(
+    private val readings: InMemoryReadingsRepository,
+    private val treatments: InMemoryTreatmentsRepository,
+) : HistoryImportStore {
+    override suspend fun importReadings(batch: List<Reading>): Int =
+        HistoryImport.readings(readings.all, batch).also(readings::addImported).size
+
+    override suspend fun importTreatments(batch: List<TreatmentRecord>): Int =
+        HistoryImport.treatments(treatments.all, batch).also(treatments::addImported).size
 }

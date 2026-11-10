@@ -8,6 +8,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.mauri.sukrara.core.data.db.QuarantiningOpenHelperFactory
+import app.mauri.sukrara.core.data.db.RoomHistoryImport
 import app.mauri.sukrara.core.data.db.RoomPenLedgerRepository
 import app.mauri.sukrara.core.data.db.RoomReadingsRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
@@ -28,6 +29,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.PenLedgerRepository
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -111,9 +113,9 @@ class DataModule(
         Room
             .databaseBuilder(context, SukraraDatabase::class.java, SukraraDatabase.FILE)
             .openHelperFactory(QuarantiningOpenHelperFactory(::quarantineDatabase))
-            // no migrations: another version (older or newer) is dropped, every table, and created afresh
+            // no migrations: another version, older or newer, is dropped (every table) and created afresh. This one call
+            // covers downgrades too (fallbackToDestructiveMigrationOnDowngrade would require migrations on upgrades again)
             .fallbackToDestructiveMigration(dropAllTables = true)
-            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .addCallback(
                 object : RoomDatabase.Callback() {
                     override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
@@ -135,6 +137,9 @@ class DataModule(
     fun readingsFor(role: Flow<Role?>): ReadingsRepository = RoomReadingsRepository(database.readings(), role.map(SourceId::notOf))
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
+
+    /** THE import path (Import history): every importer stores through it, deduplicated (`HistoryImport`). */
+    val historyImport: HistoryImportStore by lazy { RoomHistoryImport(database.readings(), database.treatments()) }
 
     /** The pen ledger, stored with the treatments of each pen change in one transaction (`:pen`). */
     val penLedger: PenLedgerRepository by lazy { RoomPenLedgerRepository(database.penLedger()) }

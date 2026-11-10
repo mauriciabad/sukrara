@@ -1018,11 +1018,12 @@ def check_room_schema(ch, rep):
                     "schema under the same version. Bump the @Database version instead (the new <version>.json\n"
                     "replaces this one; phones get an empty database, no migration)." % p)
             continue
+        # a version bump often shows as a rename N.json -> N+1.json (the files are alike): the old one went
         old = ch.origin.get(p, p) if st == "R" else p
         files = tree_files(ch) if files is None else files
         folder, v = os.path.dirname(old), schema_version(old)
         newer = [f for f in files if os.path.dirname(f) == folder and (schema_version(f) or 0) > (v or 0)]
-        if st == "R" or v is None or not newer:
+        if v is None or not newer:
             rep.add("FAIL", "room-schema", "%s %s without a newer version replacing it: the committed schema is the\n"
                     "current database version. Keep it until a version bump commits the next <version>.json."
                     % (old, "moved" if st == "R" else "deleted"))
