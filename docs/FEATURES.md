@@ -984,21 +984,32 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   shows *Not backed up* (dismissable, back after a while). Last, *Replace this identity* (see below).
 - **Replace this identity** (Backup's last row; `backup/ReplaceIdentity.kt`): a working identity replaced without
   reinstalling. The page first says what followers lose, by name (*Your glucose stops reaching Dad and Marta right
-  away.*, *Each one needs a new invite from you to follow you again. Until then their Sukrara warns that no data
-  arrives.*, *Requests waiting for you and unused invites stop working.*; *No one follows this identity now.* when
-  so), and, while the identity exists nowhere else, *This identity isn't backed up: once replaced, it's gone for good.*
-  with *Back up first* (back to Backup). Then two ways: *Restore another identity* (the setup restore form: the same
+  away.*, *Their Sukrara says you stopped sharing, not that no data arrives. Each one needs a new invite from you to
+  follow you again.*, *Requests waiting for you and unused invites stop working.*; *No one follows this identity
+  now.* when so), and, while the identity exists nowhere else, *This identity isn't backed up: once replaced, it's
+  gone for good.* with *Back up first* (back to Backup). Then two ways: *Restore another identity* (the setup restore form: the same
   gate — this phone's own sensor live —, the password manager or a pasted code; *Replace with this identity*) or
   *Start fresh* (a new identity with how the wearer appears now). Each is confirmed in a dialog that names the followers
   again and repeats the backup warning; its button (*Replace* / *Start fresh*) is armed only by *I understand they must
   be invited again*. The engine replaces only when asked (`OwnerEngine.createIdentity` / `restore` with
   `replaceExisting`), never over an unreadable identity, and a code for the identity already in use changes nothing
-  (*That code is for the identity this phone already shares as.*). The old identity stops publishing at once; followers
-  aren't told (they see no data until they join again). Leaving the page doesn't stop a replace that started. Done:
-  *Started fresh. No one follows this phone yet: invite your followers again.* with *Invite someone* (the share screen)
-  and *Done*, or *Replaced. N followers of the restored identity follow this phone now.* with *Done*. Setup's *Start
-  fresh* confirmation says the old identity can be restored later there. Tests: `OwnerEngineTest`,
-  `ReplaceIdentityViewModelTest`, the `replace-*` gallery scenes.
+  (*That code is for the identity this phone already shares as.*). Before the identity goes, its followers are told
+  (#161; PROTOCOL-v2 "Replace the identity"): a restore first makes sure the other identity's backup can be read, then
+  every active follower gets the *removed* notice from the old identity (as when a follower is removed) and the page
+  shows *Telling your followers…* (why: *So their Sukrara says you stopped sharing instead of warning that no data
+  arrives.*; a bar that fills and *1 of 3 told* as relays take each notice) with *Cancel*. Once a relay took every
+  notice, or after 15 s (at once with *Over the internet* off), the identity is replaced and the old one publishes
+  nothing more; a notice no relay took yet goes out again with the new identity's events until one does. *Cancel* (or
+  the app closing before the replace) keeps the identity and sends each follower told the key again, so they keep
+  following: the page says *Cancelled. Nothing changed: your followers keep getting your glucose.* On each follower
+  (Android and Mac) the notice is the usual *removed*: *Ana stopped sharing with you* (Android's notification and
+  home; Mac: *The wearer stopped sharing with this Mac*) with *Follow* / a new invite as the way on, and no No data
+  alarm. Leaving the page doesn't stop a replace that started (coming back shows *Telling your followers…* while it
+  lasts). Done: *Started fresh. No one follows this phone yet: invite your followers again.* with *Invite someone* (the
+  share screen) and *Done*, or *Replaced. N followers of the restored identity follow this phone now.* with *Done*.
+  Setup's *Start fresh* confirmation says the old identity can be restored later there. Tests: `OwnerEngineTest`,
+  `ReplaceIdentityTest` (contracts/protocol/sync/replace-identity.json, whose follower steps every app replays),
+  `ReplaceIdentityViewModelTest`, Mac `AppModelFollowerTests`, the `replace-*` gallery scenes.
 - **Restore** (switching phones): *Restore from password manager* (only once the restore gate is open: the secret is
   never fetched before; an `ncryptsec` fills the code field and asks for its password; a saved password that isn't
   an `nsec` / `ncryptsec` is never used, it says so) or the pasted code → the newest
@@ -1092,8 +1103,11 @@ or *Restore from recovery code*. *Sharing* → invite, approve / deny, remove, a
 How you appear (*Save* / *Cancel* / Back; leaving drops an unsaved edit), Backup (each row can be repeated; closing the
 recovery dialog while the code is being made drops it; a code not copied isn't a backup), Replace this identity (the
 choice → *Cancel* / Back, *Back up first*; the restore form → *Back* (to the choice), its errors inline with the code
-kept; each confirmation → *Cancel* / Back / a tap outside, its button armed only by the checkbox; working → Back leaves,
-the replace finishes; done → *Invite someone* / *Done*). *Not backed up* → *Backup*
+kept; each confirmation → *Cancel* / Back / a tap outside, its button armed only by the checkbox; *Telling your
+followers…* → *Cancel* (the identity stays, they follow again: *Cancelled. Nothing changed…* on the step it came from)
+or Back (leaves; the replace goes on and the page shows it again when reopened); working → Back leaves, the replace
+finishes; done → *Invite someone* / *Done*). Followers of a replaced identity: the same as a removed follower (*Ana stopped sharing
+with you* → follow again with a new invite; no No data alarm). *Not backed up* → *Backup*
 or dismiss. *Request waiting* → the approve dialog over the app (*Later* or Back hides that request until the app
 process restarts; Settings › Sharing's request row shows it again), notification *Allow* (needs unlock) / *Deny*;
 both leave once answered. *Removed* pill → expand / *See less*. *Over the internet* off → its switch (on again sends

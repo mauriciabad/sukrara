@@ -351,6 +351,26 @@ follower's open `#c` subscription picks the chunks up. Older followers/owners ig
 4. Followers keep older epochs' keys → their local history stays readable. A revoked follower keeps what it already
    has (no forward secrecy) but gets nothing new.
 
+**Replace the identity** (the wearer's phone replaces `I` with a restored identity or a new one: Backup › Replace
+this identity, confirmed first; followers must be invited again)
+1. A restore first finds and reads the other identity's backup; nothing changes and nobody is told while that fails.
+2. A *revoked notice* sealed by `I` to every active follower (30 d, as for Revoke), to the relays and over Bluetooth.
+   It isn't kept for re-sending while `I` stays; the phone saves only who was told (so step 5 runs at the next start
+   if the app closed before step 4).
+3. Wait until a relay accepted (`OK true`) every notice, at most **15 s** (no wait with internet sharing off). The
+   wearer can cancel meanwhile.
+4. Replace: the new identity's events go out (a fresh one's roster and backup; a restored one's rotation, as in *Phone
+   change*), and with them, first, the notices no relay accepted yet, again until one does. A follower approved
+   during the wait is told then, without waiting. `I` publishes nothing more.
+5. Cancelled, or cut short: `I` stays, and every follower told gets the current epoch's *key delivery* again with a
+   rumor `created_at` after the notice's, which re-approves it (see Acceptance rules).
+6. During an identity conflict nobody is told: the other app still shares as `I`, and its followers keep following it.
+
+Followers take the notice like any revoked notice: they stop, say the wearer stopped sharing (exit: follow again with
+a new invite) and arm no `no_data` alarm for the stream that won't come back. Pinned by
+[sync/replace-identity.json](sync/replace-identity.json): the follower's side in `steps`, the wearer's (who is told,
+when the identity is replaced, what goes out again) in `replace`.
+
 **Phone change / reinstall** (seamless for followers)
 1. New phone: *Restore* → Credential Manager returns the identity `nsec` from Proton Pass / Bitwarden / Google.
 2. App fetches the *owner backup* → gets `sid`, all epochs, followers, relays.

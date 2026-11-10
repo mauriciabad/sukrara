@@ -117,7 +117,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   code (the dialog shows over any screen, with their picture and the invite they used), see followers with their
   pictures, let one *add entries*, remove them (confirmed; removed ones fold away), **Backup** to your password manager
   or a recovery code (home says *Not backed up* until then; setup restores from either), **Replace this identity**
-  without reinstalling (restore another one or start fresh, confirmed with the followers who lose your readings named),
+  without reinstalling (restore another one or start fresh, confirmed with the followers who lose your readings named;
+  their Sukrara is told first and says you stopped sharing instead of warning that no data arrives),
   and a clear screen when another device is sharing as you.
 - **Bluetooth nearby**: followers' phones and Macs in range get your readings straight from your phone, even without
   internet (on by default, *Over Bluetooth nearby*); Settings › Sharing lists the devices connected now and the ones

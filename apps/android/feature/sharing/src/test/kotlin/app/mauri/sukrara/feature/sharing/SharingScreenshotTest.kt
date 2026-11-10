@@ -70,6 +70,7 @@ import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import com.github.takahirom.roborazzi.RoborazziComposeOptions
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -341,6 +342,10 @@ class SharingScreenshotTest {
                     onDismiss = {},
                 )
             },
+            "replace-telling" to {
+                ReplaceIdentityScreen(sharing, ReplaceUi(fresh = FreshUi.Busy, telling = TellingFollowers(3, 1)), ReplaceActions())
+            },
+            "replace-cancelled" to { ReplaceIdentityScreen(sharing, ReplaceUi(cancelled = true), ReplaceActions()) },
             "replace-done-fresh" to { ReplaceIdentityScreen(null, ReplaceUi(fresh = FreshUi.Done), ReplaceActions()) },
             "backup-done" to {
                 BackupScreen(

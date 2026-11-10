@@ -395,7 +395,7 @@
     <string name="sh_replace_lose_title">What your followers lose</string>
     <string name="sh_replace_lose_named">Your glucose stops reaching %1$s right away.</string>
     <string name="sh_replace_lose_none">No one follows this identity now.</string>
-    <string name="sh_replace_lose_invite">Each one needs a new invite from you to follow you again. Until then their Sukrara warns that no data arrives.</string>
+    <string name="sh_replace_lose_invite">Their Sukrara says you stopped sharing, not that no data arrives. Each one needs a new invite from you to follow you again.</string>
     <string name="sh_replace_lose_pending">Requests waiting for you and unused invites stop working.</string>
     <string name="sh_replace_not_backed_up">This identity isn\'t backed up: once replaced, it\'s gone for good.</string>
     <string name="sh_replace_back_up_first">Back up first</string>
@@ -410,6 +410,10 @@
     <string name="sh_replace_confirm_check">I understand they must be invited again</string>
     <string name="sh_replace_confirm_restore">Replace</string>
     <string name="sh_replace_fresh_busy">Making the new identity…</string>
+    <string name="sh_replace_telling">Telling your followers…</string>
+    <string name="sh_replace_telling_text">So their Sukrara says you stopped sharing instead of warning that no data arrives. This takes a few seconds; then the identity is replaced.</string>
+    <string name="sh_replace_telling_count">%1$d of %2$d told</string>
+    <string name="sh_replace_cancelled">Cancelled. Nothing changed: your followers keep getting your glucose.</string>
     <string name="sh_replace_fresh_failed">Couldn\'t make the new identity. Nothing changed: try again.</string>
     <string name="sh_replace_done_restore">Replaced. %1$d followers of the restored identity follow this phone now.</string>
     <string name="sh_replace_done_fresh">Started fresh. No one follows this phone yet: invite your followers again.</string>

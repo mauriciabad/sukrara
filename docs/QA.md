@@ -530,6 +530,11 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    home shows the wearer's value and graph; the next minute's reading arrives on both. Both uids still have only the
    10.0.2.2 socket.
 6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
+7. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
+   fresh*, confirmed. *Telling your followers…* fills (*1 of 1 told*) and ends on *Started fresh*; the relay logs the
+   kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
+   home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with
+   *Cancel*; *Cancel* says *Cancelled. Nothing changed…* and the follower keeps following once the relay is back.
 
 ## Q20 The person and the feel
 

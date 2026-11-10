@@ -9,6 +9,7 @@ import app.mauri.sukrara.share.ShareOwnerModule
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerShareState
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.CreateInvite
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +36,15 @@ interface OwnerSharing {
         profile: Profile,
         replace: Boolean = false,
     ): Boolean
+
+    /**
+     * Backup › Replace this identity telling the followers before the identity goes (*Telling your followers…*), null
+     * otherwise. [startFresh] / [restore] with `replace` return once it is replaced or [cancelReplace] kept it.
+     */
+    val telling: StateFlow<TellingFollowers?>
+
+    /** Cancel while the followers are told: the identity stays and they follow again. */
+    fun cancelReplace()
 
     /** "How you appear" (name + picture) for followers. False without an identity or while another app shares as it. */
     suspend fun setProfile(profile: Profile): Boolean
@@ -112,6 +122,10 @@ class EngineOwnerSharing(
         profile: Profile,
         replace: Boolean,
     ): Boolean = engine.createIdentity(scope, profile, replaceExisting = replace)
+
+    override val telling: StateFlow<TellingFollowers?> get() = engine.telling
+
+    override fun cancelReplace() = engine.cancelReplace()
 
     override suspend fun setProfile(profile: Profile): Boolean = engine.setProfile(profile)
 

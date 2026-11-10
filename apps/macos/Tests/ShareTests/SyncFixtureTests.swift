@@ -8,7 +8,8 @@ import Testing
 
 /// Every follower sequence in contracts/protocol/sync (written by the Android tests, cross-checked with the Python
 /// reference): each step's verdict and the final follower state must match. Owner-side files (no `steps`, e.g.
-/// owner-conflict.json) belong to the wearer's app.
+/// owner-conflict.json) and sections (replace-identity.json's `replace`: who the wearer's phone tells, and when it
+/// replaces its identity) belong to the wearer's app.
 struct SyncFixtureTests {
     static var followerSequences: [String] {
         let dir = Contracts.url("protocol/sync")
