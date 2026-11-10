@@ -339,7 +339,7 @@ read (new app id, no migration). Nothing is in cloud backup or device transfer (
 | Typed state (alert episodes, sensor pairing, the wearer's last mirrored settings `wearer_settings`, …) | `files/state/<name>.json` (DataStore + kotlinx JSON) | `DataModule.typedStore(name, serializer, initial, whenCorrupt)` |
 | A follower's settings in use | the stored settings, the mirrored graph rows resolved per `follower.settingsFrom` (Wearer / Default / Custom) | `FollowerSettingsRepository` (`:core:data`), built by `FollowerSettingsBridge` (`:app`, also the alert runtime's mirrored values, the alert pages' values in use and `alerts.source`) |
 | The wearer's settings for its followers | this phone's mirrored graph rows under their wire keys + the whole alert settings (SPEC §3); the owner engine keeps the `"mirror": true` rows and publishes the settings event when they change | `WearerSettingsSource` (`:app`) → `MirroredSettingsSource` of `ShareOwnerModule` |
-| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `tidepool`, `libreview`, `sensor` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
+| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview`, `sensor`, `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
 | History | `databases/sukrara.db` (Room v1, schema in `core/data/schemas/`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox` | `ReadingsRepository`, `TreatmentsRepository`, DAOs for the sharing ledger |
 | Other files | `files/<path>` atomic tmp + fsync + rename | `DataModule.fileStore(path, codec)` → `Loaded / Missing / Corrupt` |
 | Diagnostics | `files/diag/diag.log` + `.1`, 512 KB each, `Redact` scrubs keys / tokens | `DiagLog` |
@@ -448,8 +448,8 @@ content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`,
   memory), `NightscoutApi` (the v1 read API, pure: routes, secret check, per-source `device` labels) and
   `NightscoutApiServer` (`apps.nightscout` on 127.0.0.1:17581; the API secret only in SecureStore `nightscout-api`;
   `apps.nightscoutLan` adds a second `LocalHttpServer` bound to the Wi-Fi's private address with `LanPolicy`'s subnet and
-  Host rules, the Wi-Fi from `LanWatcher`'s ConnectivityManager callback while it is on, pinned network in the typed
-  store `nightscout-lan`).
+  Host rules and its own secret in SecureStore `nightscout-api-lan`, the Wi-Fi from `LanWatcher`'s ConnectivityManager
+  callback while it is on, pinned network in the typed store `nightscout-lan`).
 - `broadcasts/` — `BroadcastPayloads` (pure extras per action), `BroadcastPlan` (pure: who gets what for one live
   Libre 3 reading), `Broadcaster` (allowed apps + signer pins in `apps.broadcasts`; throttle / life count / activations
   in the typed store `broadcasts`; `PlatformApps` = PackageManager + `sendBroadcast`). Input: `SourceManager.sensorGlucose`
@@ -460,7 +460,8 @@ content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`,
   `HEALTH_PERMISSIONS` from the `.HealthPermissionsRationale` alias to it).
 - `tidepool/` — `TidepoolClient` (session login, token refresh; https, no redirects), `TidepoolData` (cbg / food /
   insulin / notes with origin ids), `TidepoolQueue` (pure plan), `TidepoolUploader` (settings JSON `apps.tidepool`;
-  token + user id only in SecureStore `tidepool`, the password never stored; state in the typed store `tidepool-upload`).
+  token + user id only in SecureStore `tidepool`, the email in SecureStore `tidepool-email`, the password never stored;
+  state in the typed store `tidepool-upload`).
 - `export/` — `GlucoseCsv` (`contracts/export`), `Exporter` (period → stores), `ExportViewModel` (SAF save, FileProvider
   `${applicationId}.export` share from `cache/export/`).
 

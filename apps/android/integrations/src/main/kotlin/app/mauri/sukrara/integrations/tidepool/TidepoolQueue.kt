@@ -49,7 +49,6 @@ data class TpRoleState(
  */
 @Serializable
 data class TpState(
-    val email: String = "",
     val account: String = "",
     val roles: Map<String, TpRoleState> = emptyMap(),
     /** Tidepool ended the session (the token was wiped): the page asks to sign in again. */

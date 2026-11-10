@@ -63,8 +63,8 @@
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/NightscoutApiPage.kt",
-      "contains": "summary = \"http://${s.secret}@${l.address}:${NightscoutApi.PORT}\"",
-      "reason": "Nightscout API on the home Wi-Fi (opt-in, warned as unencrypted): the address other devices on this Wi-Fi use, shown as text for copying; the app opens nothing"
+      "contains": "summary = \"http://${s.lanSecret}@${l.address}:${NightscoutApi.PORT}\"",
+      "reason": "Nightscout API on the home Wi-Fi (opt-in, warned as unencrypted): the address other devices on this Wi-Fi use, with the Wi-Fi secret only (never the phone apps' secret), shown as text for copying; the app opens nothing"
     },
     {
       "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift",
