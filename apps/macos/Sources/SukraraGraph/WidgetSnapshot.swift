@@ -9,8 +9,8 @@ import SukraraCore
 /// (the widget then shows its "open Sukrara" state, never a guessed value), and the app rewrites it on its next
 /// reading. It lives with the renderer (not SukraraCore) because it carries the card's types.
 public struct WidgetSnapshot: Sendable, Codable, Equatable {
-    /// The format this build writes and reads.
-    public static let version = 1
+    /// The format this build writes and reads (2: with the no-data reason).
+    public static let version = 2
 
     public var v: Int
     /// When the app wrote it (epoch s): the widget's "updated" time, never the reading's.
@@ -18,13 +18,19 @@ public struct WidgetSnapshot: Sendable, Codable, Equatable {
     public var data: CardData
     public var config: GraphConfig
     public var unit: GlucoseUnit
+    /// Why the app has no value to show (`AppModel.noDataReason`): the widget says it instead of a bare "No readings
+    /// yet" (#72). Nil while a value can be shown.
+    public var reason: NoDataReason?
 
-    public init(writtenAt: TimeInterval, data: CardData, config: GraphConfig, unit: GlucoseUnit) {
+    public init(
+        writtenAt: TimeInterval, data: CardData, config: GraphConfig, unit: GlucoseUnit, reason: NoDataReason? = nil
+    ) {
         self.v = Self.version
         self.writtenAt = writtenAt
         self.data = data
         self.config = config
         self.unit = unit
+        self.reason = reason
     }
 
     public func encoded() throws -> Data {

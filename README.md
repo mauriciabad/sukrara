@@ -179,9 +179,14 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   a pill that counts down while a treatment quiets the alert; the widgets too.
 - **Desktop widgets** (Glucose, Glucose graph, Glucose + graph) with the same card; they age by themselves (struck
   through at 5 min, the graph dimmed with the reading's time, no value at 20 min) and a tap opens Add treatment.
+- **No value never goes unexplained**: the panel and the widgets say why (not following anyone, waiting for the
+  wearer to allow this Mac, no readings from the wearer's phone since 9:50, Juggluco not found…) and the panel offers
+  the way out (*Follow Someone…*, *Following Settings…*, *Juggluco Settings…*).
 - VoiceOver reads the card as the same sentence as Android's TalkBack (value, trend, range in words, age, the alert
   or mute, the slots, the chart summary) in the menu bar, the panel and the widgets; every card writes the range
   under an out-of-range value (*Low*, *Very high*) and the status item's tooltip says it.
+- English and Spanish (Spain) by the Mac's language: the windows, the panel's lines and every word the card draws
+  (*Come hidratos*, *quedan 45 min*, *Calentando · 40 min*), the same words as Android's.
 
 **Not included**: the LSPosed lock-screen widget, Dexcom / Aidex / SmartGuide (untested) sensors, and the pen list and
 dose review.
