@@ -91,7 +91,7 @@ internal class G6Driver(
         G6Messages.AuthChallenge.parse(value)?.let { challenge ->
             // the transmitter proves it holds the same key before we answer: its tokenHash must match our token
             if (!Dexcom.challengeHash(key, token).contentEquals(challenge.tokenHash)) {
-                return fail(FailReason.WrongId, "wrong transmitter id for this transmitter")
+                return refusedByDevice(FailReason.WrongId, "wrong transmitter id for this transmitter")
             }
             link.write(Dexcom.AUTHENTICATION, G6Messages.challengeReply(Dexcom.challengeHash(key, challenge.challenge)))
             return

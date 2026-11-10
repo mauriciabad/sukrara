@@ -74,6 +74,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -95,6 +96,7 @@ import app.mauri.sukrara.graph.SensorInfo
 import app.mauri.sukrara.graph.SensorLife
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.cardInfo
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.GlucosePoint
@@ -102,7 +104,6 @@ import app.mauri.sukrara.graph.stats.MetricsCache
 import app.mauri.sukrara.graph.stats.toPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToInt
 
@@ -138,31 +139,16 @@ fun homeLook(
 }
 
 /**
- * The sensor's dates as the card needs them; null when nothing is known (the card then shows no sensor badge). An ended
- * sensor without dates ends at [now], so the renderer draws "Sensor ended" + "Replace sensor" in the value's place.
+ * The sensor's dates as the card needs them (the renderer's [cardInfo], the alerts' defaults); null when nothing is
+ * known (the card then shows no sensor badge). An ended sensor without dates ends at [now], so the renderer draws
+ * "Sensor ended" + "Replace sensor" in the value's place.
  */
 private fun SensorState.info(now: Instant): SensorInfo? =
-    when (this) {
-        SensorState.Ended -> {
-            SensorInfo(startS = now.epochSecond - SENSOR_LIFE.seconds, endS = now.epochSecond)
-        }
-
-        is SensorState.Active -> {
-            endsAt?.let { SensorInfo(startS = it.epochSecond - SENSOR_LIFE.seconds, endS = it.epochSecond) }
-        }
-
-        is SensorState.WarmingUp -> {
-            val start = readyAt.epochSecond - WARMUP.seconds
-            SensorInfo(startS = start, endS = start + SENSOR_LIFE.seconds, warmupEndS = readyAt.epochSecond)
-        }
-
-        else -> {
-            null
-        }
+    if (this == SensorState.Ended) {
+        SensorInfo(startS = now.epochSecond - SensorTiming.DEFAULT_WEAR_MIN * 60L, endS = now.epochSecond)
+    } else {
+        cardInfo()
     }
-
-private val SENSOR_LIFE = Duration.ofDays(15)
-private val WARMUP = Duration.ofHours(1)
 
 /**
  * The app panel's card model: [points] = the stored history; the badge, mute lines and last-treatment ring are the

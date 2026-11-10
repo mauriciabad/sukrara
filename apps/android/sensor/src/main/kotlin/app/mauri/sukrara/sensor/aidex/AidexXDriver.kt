@@ -55,7 +55,7 @@ internal class AidexXDriver(
     ) {
         if (advert.name != AidexX.deviceName(serial) || knownStart == null) return
         val a = AidexX.Advertisement.parse(record) ?: return
-        if (a.crcOk && a.name == AidexX.deviceName(serial)) onGlucose(a.latest)
+        if (a.crcOk && a.name == AidexX.deviceName(serial)) onGlucose(a.latest, advertised = true)
     }
 
     override fun onConnected(
@@ -159,13 +159,24 @@ internal class AidexXDriver(
         }
     }
 
-    /** A record from a reply or an advertisement: the same 8 bytes either way. */
-    fun onGlucose(g: AidexX.Glucose) {
+    /**
+     * A record from a reply or an advertisement: the same 8 bytes either way. Only the polled reply ([advertised] =
+     * false) speaks for the link: an advertisement only ever adds a reading, so one heard between two polls with a
+     * warm-up flag, no value or a status never seen with a value never flickers the link's state.
+     */
+    fun onGlucose(
+        g: AidexX.Glucose,
+        advertised: Boolean = false,
+    ) {
+        if (advertised && (g.warmingUp || !g.valid || g.status !in AidexX.Glucose.KNOWN_GOOD_STATUS)) {
+            return log("Aidex: advertised record without a value (status ${g.status}): link unchanged")
+        }
         val start = sessionStart(now() - g.minutesSinceStart * 60L, authoritative = false)
         if (g.warmingUp) return events.onStatus(LinkStatus.WarmingUp((profile.warmupMin - g.minutesSinceStart).coerceAtLeast(0)))
         if (!g.valid) return events.onStatus(LinkStatus.NoValue(NoValueReason.Missing))
-        // No public map of the status byte (Juggluco leaves it a TODO). The recorded frames carry 0 and 1 with good
-        // values; anything else has never been seen with one: no number until the sensor is back to 0 / 1.
+        // No public map of the status byte: Juggluco leaves it a TODO (`aidexx/java.cpp` aidexXscanBytes), its
+        // `glucose.h` only names the field. The recorded frames carry 0 and 1 with good values; anything else has never
+        // been seen with one: no number until the sensor is back to 0 / 1.
         if (g.status !in AidexX.Glucose.KNOWN_GOOD_STATUS) {
             log("Aidex: record status ${g.status}: no value")
             return events.onStatus(LinkStatus.NoValue(NoValueReason.SensorError))

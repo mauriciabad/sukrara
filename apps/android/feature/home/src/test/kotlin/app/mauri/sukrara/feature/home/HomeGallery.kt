@@ -24,10 +24,12 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.StopReason
@@ -112,6 +114,10 @@ class HomeGallery {
             "sensor-ended" to ui(Samples.wearer(sensor = SensorState.Ended)),
             "bluetooth-off" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.BluetoothOff)),
             "core-missing" to ui(Samples.wearer(sensor = SensorState.CoreMissing)),
+            "clock-behind" to
+                ui(Samples.wearer(ageMin = 8).copy(clockBehind = ClockBehind(NOW.plus(Duration.ofMinutes(12)), Duration.ofMinutes(12)))),
+            "sensor-taken-over" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.TakeOver))),
+            "scan-needed" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(SensorAction.ScanSensor))),
             "monitoring-stopped" to
                 ui(
                     Samples.wearer(ageMin = 25).copy(service = ServiceState.Stopped(StopReason.StartDenied)),

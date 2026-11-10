@@ -59,6 +59,7 @@ class PairingStore(private val secure: SecureStore) {
         /** [FailReason] name, or null. */
         val failed: String? = null,
         val skipAddresses: List<String> = emptyList(),
+        val strangers: List<String> = emptyList(),
     )
 
     suspend fun load(): PairingLoad {
@@ -115,6 +116,7 @@ class PairingStore(private val secure: SecureStore) {
                             r.pairedAt,
                             r.failed?.let { FailReason.valueOf(it) },
                             r.skipAddresses,
+                            r.strangers,
                         ),
                     )
                 }
@@ -155,6 +157,15 @@ class PairingStore(private val secure: SecureStore) {
             { it.sameScanned(ranWith) },
         ) { it.copy(skipAddresses = it.skipping(address), address = "", deviceName = "", startEpoch = 0) }
 
+    /**
+     * The scan picked a device that refused this pairing's id / PIN before it ever reached its sensor (maybe another
+     * person's): never pick it again for this pairing; the source scans once more.
+     */
+    suspend fun skipStranger(ranWith: Pairing, address: String) =
+        updateIf({ it.sameScanned(ranWith) }) {
+            it.copy(strangers = (it.strangers + address.uppercase()).distinct(), address = "", deviceName = "")
+        }
+
     private suspend fun write(p: Pairing) {
         val r =
             Record(
@@ -172,6 +183,7 @@ class PairingStore(private val secure: SecureStore) {
                 p.pairedAt,
                 p.failed?.name,
                 p.skipAddresses,
+                p.strangers,
             )
         secure.write(NAME, json.encodeToString(Record.serializer(), r).encodeToByteArray())
     }

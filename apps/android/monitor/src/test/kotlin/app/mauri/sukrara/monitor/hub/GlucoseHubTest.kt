@@ -186,6 +186,60 @@ class GlucoseHubTest {
         }
 
     @Test
+    fun `a reading from ahead of the phone's clock says the clock is behind until one as new is accepted`() =
+        runTest {
+            val hub = hub()
+            val source = FakeSource()
+            backgroundScope.launch { hub.attach(source) }
+            runCurrent()
+            assertNull(hub.state.value.clockBehind)
+            val ahead = Reading(clock.now() + Duration.ofMinutes(12), 130, null, SourceId.Libre3)
+            source.emitted.emit(listOf(reading(120, agoMin = 3), ahead))
+            runCurrent()
+            val behind = checkNotNull(hub.state.value.clockBehind) { "the clock should be behind" }
+            assertEquals(ahead.t, behind.readingAt)
+            assertEquals(Duration.ofMinutes(12), behind.ahead)
+            assertEquals(
+                listOf(120),
+                hub.state.value.recent
+                    .map { it.mgdl },
+            ) // the future one is still dropped
+
+            // backfill older than the dropped reading says nothing about the clock
+            source.emitted.emit(listOf(reading(118, agoMin = 2)))
+            runCurrent()
+            assertNotNull(hub.state.value.clockBehind)
+
+            // the clock set right: the next reading is accepted and clears it
+            clock.advance(Duration.ofMinutes(13))
+            source.emitted.emit(listOf(reading(125)))
+            runCurrent()
+            assertNull(hub.state.value.clockBehind)
+            assertEquals(
+                125,
+                hub.state.value.latest
+                    ?.mgdl,
+            )
+        }
+
+    @Test
+    fun `a reading within the tolerance is accepted and never says the clock is behind`() =
+        runTest {
+            val hub = hub()
+            val source = FakeSource()
+            backgroundScope.launch { hub.attach(source) }
+            runCurrent()
+            source.emitted.emit(listOf(Reading(clock.now() + Duration.ofMinutes(4), 130, null, SourceId.Libre3)))
+            runCurrent()
+            assertNull(hub.state.value.clockBehind)
+            assertEquals(
+                130,
+                hub.state.value.latest
+                    ?.mgdl,
+            )
+        }
+
+    @Test
     fun `a source reporting no sensor never disarms monitoring, only an explicit reset does`() =
         runTest {
             val hub = hub()

@@ -21,12 +21,11 @@ public struct SensorInfo: Codable, Equatable, Sendable {
     }
 }
 
-/// The sensor's remaining life and warm-up; the same rules as Android's core/SensorLife (spikes/graph-fixtures/sensor).
+/// The sensor's remaining life and warm-up; the same rules as Android's SensorLife (contracts/graph/sensor). The
+/// warm-up rule and its numbers are `SensorTiming`'s, the alerts' too.
 enum SensorLife {
     static let defaultCountdownHours = 8
     static let countdownRange = 1...24
-    /// The warm-up state lasts until the first reading, at most this long past the warm-up's end.
-    static let warmupGrace: TimeInterval = 15 * 60
 
     static func ended(end: TimeInterval, now: TimeInterval) -> Bool { now >= end }
 
@@ -49,7 +48,7 @@ enum SensorLife {
 
     /// Warming up: started, no reading since the start (`latest` = the newest reading's time), ≤ 15 min past its end.
     static func warming(_ s: SensorInfo, latest: TimeInterval?, now: TimeInterval) -> Bool {
-        now >= s.start && now < s.warmupEnd + warmupGrace && (latest.map { $0 < s.start } ?? true)
+        SensorTiming.warming(start: s.start, warmupEnd: s.warmupEnd, latest: latest, now: now)
     }
 
     /// The warm-up's time left as the card's figure: whole minutes rounded up ("42m"), from 60 of them hours ("1h": one
