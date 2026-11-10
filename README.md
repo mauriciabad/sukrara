@@ -74,7 +74,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   data* when that alert would have.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
-  ready*, *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
+  ready*, a note on home in a new sensor's first 12 hours (readings can be less accurate: check a surprising one with a
+  meter), *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
   your night until you start a new sensor), and optionally the sensor's end as an event in Sukrara's own calendar or
   one you pick (Settings › Sensor end).
 - **Monitoring** in one foreground service that comes back by itself (boot, update, a 15 min health check); before the

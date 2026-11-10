@@ -90,6 +90,8 @@
     <string name="home_sensor_ends">Sensor ends in %1$s</string>
     <!-- Under the graph once the end time has passed; %1$s = "5 min", "2 h 10 min", "3 days" -->
     <string name="home_sensor_ended">Sensor ended %1$s ago</string>
+    <!-- A new sensor's first 12 hours; %1$s = when they end (time of day) -->
+    <string name="home_sensor_early">New sensor: readings can be less accurate until %1$s. If one doesn\'t match how you feel, check with a meter.</string>
 
     <!-- Follower header -->
     <string name="home_following">Following %1$s</string>

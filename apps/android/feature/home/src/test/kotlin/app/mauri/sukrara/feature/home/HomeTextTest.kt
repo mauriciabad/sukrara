@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -109,6 +110,20 @@ class HomeTextTest {
     @Test fun sensorLineLastDay() {
         show(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofMinutes(4 * 60 + 58).plusSeconds(30)))))
         compose.onNodeWithText("Sensor ends in 4 h 59 min").assertExists()
+    }
+
+    /** A new sensor's first 12 h (#46): the note says until when and what to do; later it's gone. */
+    @Test fun earlyReadingsNote() {
+        show(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofDays(15)).minus(Duration.ofHours(3)))))
+        compose
+            .onNodeWithText("New sensor: readings can be less accurate until", substring = true)
+            .assertExists()
+        compose.onNodeWithText("check with a meter", substring = true).assertExists()
+    }
+
+    @Test fun noEarlyNoteOnAnOlderSensor() {
+        show(Samples.wearer())
+        compose.onNodeWithTag("home-sensor-early").assertDoesNotExist()
     }
 
     @Test

@@ -69,7 +69,7 @@
     <string name="sensor_almost_ready">Almost ready</string>
     <string name="sensor_waiting_first_reading">Waiting for the first reading</string>
     <string name="sensor_ready_title">Sensor ready</string>
-    <string name="sensor_ready_text">Readings have started.</string>
+    <string name="sensor_ready_text">Readings have started. The first 12 hours can be less accurate.</string>
     <string name="sensor_ended_title">Sensor ended</string>
     <string name="sensor_ended_text">No readings until you start a new sensor.</string>
 

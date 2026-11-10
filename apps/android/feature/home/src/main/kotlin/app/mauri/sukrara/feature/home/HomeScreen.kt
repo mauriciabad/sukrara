@@ -532,7 +532,8 @@ private fun GlucoseSection(
 
 /**
  * When the sensor ends; in its last day (the wearer) *Pair new sensor* as a tonal button under it, so the new one can
- * be put on before the old one stops.
+ * be put on before the old one stops. In a new sensor's first hours ([EarlyReadings]) a note says its readings can be
+ * less accurate until when, and what to do; it leaves by itself.
  */
 @Composable
 private fun SensorLine(
@@ -541,7 +542,19 @@ private fun SensorLine(
 ) {
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return
     val left = Duration.between(state.now, ends).seconds
+    val early = EarlyReadings.until(state.glucose.sensor, state.now)
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
+        Reveal(early != null) {
+            // keeps its last text while it slides away
+            var shown by remember { mutableStateOf("") }
+            if (early != null) shown = stringResource(R.string.home_sensor_early, clockTime(early))
+            Text(
+                shown,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp).testTag("home-sensor-early"),
+            )
+        }
         Text(
             if (left > 0) {
                 // partial minutes up: never "in 0 min" while it still runs
