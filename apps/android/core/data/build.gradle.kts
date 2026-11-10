@@ -6,6 +6,7 @@
 plugins {
     id("sukrara.android.library")
     id("sukrara.room")
+    id("sukrara.contracts")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
