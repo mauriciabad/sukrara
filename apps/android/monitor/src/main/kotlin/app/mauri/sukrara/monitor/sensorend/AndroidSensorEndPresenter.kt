@@ -27,8 +27,9 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * The sensor notices. Reminders, *Sensor ready* and *Sensor ended* are plain notifications on channel `sensor` in the
  * `info` group (never an alarm, never a Live Update: "upcoming calendar events" are not one). The countdowns are
- * ongoing ProgressStyle notifications on `sensor.countdown`, ungrouped, with the time left as a chronometer counting
- * down (the chip's timer when promoted) and **no buttons**: the way out is a swipe (the delete intent keeps it away
+ * ongoing ProgressStyle notifications on `sensor.countdowns`, in the `info` group too (#156: two ungrouped
+ * notifications, a countdown and the glucose one, end up in Android's automatic bundle; only a group *summary* can't
+ * be promoted), with the time left as a chronometer counting down (the chip's timer when promoted) and **no buttons**: the way out is a swipe (the delete intent keeps it away
  * for this sensor, as the Live Update guide asks) or Settings › Sensor end. Not `setTimeoutAfter` on them: a timeout
  * sends the delete intent, which would read as "dismissed". The end countdown asks for promotion only while the
  * glucose chip is off: the status bar shows one chip, and the glucose value keeps it.
@@ -149,10 +150,7 @@ class AndroidSensorEndPresenter(
         // nothing posted by this process: a notification from before a restart may still show
         val had = posted.remove(notice) != null
         if (!had && runCatching { nm.activeNotifications.none { it.id == id(notice) } }.getOrDefault(false)) return
-        when (notice) {
-            SensorNotice.COUNTDOWN, SensorNotice.WARMUP -> nm.cancel(id(notice))
-            else -> NotificationGroups.cancel(ctx, id(notice), NotificationGroups.Group.INFO)
-        }
+        NotificationGroups.cancel(ctx, id(notice), NotificationGroups.Group.INFO)
     }
 
     /** "Sensor ends today at 14:30" / "tomorrow at 14:30" / "on Wednesday at 14:30". */
@@ -211,6 +209,7 @@ class AndroidSensorEndPresenter(
                 .setCategory(Notification.CATEGORY_PROGRESS)
                 .setContentIntent(openApp())
                 .setDeleteIntent(dismissed(notice == SensorNotice.WARMUP))
+                .setGroup(NotificationGroups.Group.INFO.key)
         // until == null: no timer at all (a countdown is never left running past its end)
         if (until != null) {
             b
@@ -222,7 +221,8 @@ class AndroidSensorEndPresenter(
             b.setShowWhen(false)
         }
         if (promote && canPromote()) runCatching { b.setRequestPromotedOngoing(true) }
-        runCatching { nm.notify(id(notice), b.build()) }
+        // the countdown channel never sounds: posted at once, with the group's summary
+        runCatching { NotificationGroups.post(ctx, id(notice), b.build(), NotificationGroups.Group.INFO, Channels.SENSOR_COUNTDOWN) }
             .onSuccess { posted[notice] = key }
             .onFailure { Log.w(TAG, "post $notice: ${it.javaClass.simpleName}") }
     }

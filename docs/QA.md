@@ -161,8 +161,9 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Grouping (Android 16 / 17 emulators, chip on and off): `SYNTHETIC --ez on true --ei warmupMin 10` + `ALERTS --es
       kinds high`, then the warm-up's end (*Sensor ready* with the first reading), then `ALERTS --es kinds
       rising_fast`. `dumpsys notification --noredact`: alerts only in `g:app.mauri.sukrara.ALERTS` (summary
-      id 119), *Sensor ready* in `g:app.mauri.sukrara.INFO` (summary 19), the countdown and the glucose card
-      ungrouped, nothing in `g:Aggregate_…`; the alert is the one that sounded (`mSoundNotificationKey` = id 101). In
+      id 119), *Sensor ready* and both countdowns (the warm-up one, then `SYNTHETIC --ei endsInMin 300` for the end
+      countdown, chip on and off) in `g:app.mauri.sukrara.INFO` (summary 19), the glucose card the one ungrouped
+      notification, nothing in `g:Aggregate_…` (#156); the alert is the one that sounded (`mSoundNotificationKey` = id 101). In
       the shade *High glucose* never inside a bundle with *Sensor ready*; a real alert (`SYNTHETIC --ei cycle 135`) is
       removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the

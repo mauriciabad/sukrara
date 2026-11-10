@@ -853,7 +853,9 @@ Wearer only (`sensorend/`; rules in `SensorEndPlan`, tests `SensorEndPlanTest`);
   `AndroidSensorEndPresenter`; page `:feature:settings` `sensorend/SensorEndPage`; settings `sensor.reminders` JSON +
   `sensor.countdownHours`; tests `SensorEndPlanTest`, `SensorEndNotifierTest`). Differences from the description
   below: reminders and *Sensor ended* use channel `sensor`; both countdowns and *Sensor ready* (silent) use
-  `sensor.countdowns`; the sensor's start is derived from its end (15 d) or ready time (60 min); a sensor whose start
+  `sensor.countdowns`; every one of them is in Sukrara's info group (`g:app.mauri.sukrara.INFO`, with its summary),
+  the countdowns too (#156: with the glucose notification, the one ungrouped notification, they went into Android's
+  automatic bundle; a group child can still be a Live Update); the sensor's start is derived from its end (15 d) or ready time (60 min); a sensor whose start
   moves by more than a day is a new one. Swiping a countdown away goes to `AlertCheckReceiver` (kept away for that
   sensor). States and exits: each reminder (tap opens the app, swipe); countdowns (swipe = gone for this sensor, or
   the switches on the page); *Sensor ended* (*Replace sensor* → new-sensor flow; a new sensor clears it); turning a
