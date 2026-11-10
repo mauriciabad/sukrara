@@ -82,8 +82,11 @@ public enum GlucoseCard {
             }
         }
         if age != .none, let latest {
-            // over the plot itself, clear of the % column and the y axis labels
-            drawAgeLabel(ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, pal, d: d, rec: rec)
+            // over the plot itself, clear of the % column and the y axis labels; an ended sensor says so instead of
+            // the reading's time, which would read as a gap
+            drawAgeLabel(
+                ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, ended: sl?.ended == true, pal, d: d,
+                rec: rec)
         }
         // a graph-only card without its chart: the value's face alone
         if noChart && !st.value {
@@ -193,21 +196,24 @@ public enum GlucoseCard {
     }
 
     /// A card without a value: the reading's time centred over the top of the chart's `plot` on a background pill,
-    /// after the "no readings" icon from 20 min (`age`, freshness.json `graph_only`; GlucoseCard.kt `drawAgeLabel`).
-    /// The text shrinks to fit the plot's width (down to 60 %) and the pill never grows past it.
+    /// after the "no readings" icon from 20 min (`age`, freshness.json `graph_only`; GlucoseCard.kt `drawAgeLabel`);
+    /// once the sensor has `ended`, the checkered flag and "Sensor ended" (the value's place's words) instead, so it never
+    /// reads as a gap in the readings. The text shrinks to fit the plot's width (down to 60 %) and the pill never grows
+    /// past it.
     private static func drawAgeLabel(
         _ ctx: CGContext, _ plot: CGRect, _ r: GraphReading, _ now: TimeInterval, _ age: Freshness.AgeMark,
-        _ pal: GraphPalette, d: CGFloat, rec: CardLayout
+        ended: Bool, _ pal: GraphPalette, d: CGFloat, rec: CardLayout
     ) {
-        let text = Freshness.timeText(r.t, now: now)
+        let text = ended ? "Sensor ended" : Freshness.timeText(r.t, now: now)
+        let hasIcon = ended || age == .noReadings
         var size = min(max(10 * d, plot.height * 0.12), 16 * d)
         func width(_ s: CGFloat) -> CGFloat {
-            (age == .noReadings ? s * 1.45 : 0) + Ink.width(text, Ink.font(s, .semibold)) + s
+            (hasIcon ? s * 1.45 : 0) + Ink.width(text, Ink.font(s, .semibold)) + s
         }
         let room = max(0, plot.width - 4 * d)
         if width(size) > room { size *= max(0.6, room / width(size)) }
         let font = Ink.font(size, .semibold)
-        let icon = age == .noReadings ? size * 1.15 : 0
+        let icon = hasIcon ? size * 1.15 : 0
         let gap = icon > 0 ? size * 0.3 : 0
         let padX = size * 0.5, padY = size * 0.25
         let w = min(icon + gap + Ink.width(text, font) + 2 * padX, room), h = size * 1.2 + 2 * padY
@@ -219,15 +225,17 @@ public enum GlucoseCard {
         }
         ctx.saveGState()
         ctx.clip(to: box)
-        if icon > 0 {
+        if ended {
+            _ = SensorBadge.flag(ctx, x: box.minX + padX, y: box.midY - icon / 2, size: icon, color: pal.inkSoft)
+        } else if icon > 0 {
             _ = SensorBadge.symbol(
                 ctx, GlucoseLook.noReadingsSymbol, x: box.minX + padX, y: box.midY - icon / 2, size: icon,
                 color: pal.inkSoft)
         }
         Ink.draw(ctx, text, x: box.minX + padX + icon + gap, y: box.midY + size * 0.36, font, pal.inkSoft)
         ctx.restoreGState()
-        rec.add("graph.age", box, age.rawValue)
-        rec.add("time.text", nil, text)
+        rec.add("graph.age", box, ended ? "ended" : age.rawValue)
+        if !ended { rec.add("time.text", nil, text) }
     }
 
     /// The number + arrow, and under it the late reading's time and/or the status badge (`look`). The badge takes a

@@ -110,6 +110,24 @@ class GraphOnlyAgeTest {
         assertTrue("$time in ${lay.all("time.text").map { it.info }}", lay.all("time.text").any { it.info == time })
     }
 
+    /**
+     * An ended sensor says "Sensor ended" with the flag over the chart, never the last reading's time (a gap), at every
+     * graph widget size (Mac: FreshnessFixtureTests.anEndedSensorIsNeverAGap).
+     */
+    @Test fun endedIsNeverAGap() {
+        val age = 4200L
+        val readings = (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, 118, 0.2)
+        val sensor = SensorInfo(now - 15 * 86_400L - 3600, now - 3600, now - 15 * 86_400L)
+        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true)
+        val model = CardModel(readings, emptyList(), now, Scenes.words(), sensor = sensor)
+        val last = Freshness.timeText(now - age, now)
+        for ((w, h) in listOf(170f to 170f, 320f to 80f, 320f to 170f, 60f to 60f)) {
+            val lay = GlucoseCard.draw(Canvas(), w, h, model, st, GraphPalette.of(false), 1f, CardSurface.WIDGET_GRAPH, CardPart.ALL)
+            assertEquals("${w}x$h", "ended", lay.first("graph.age")?.info)
+            assertTrue("${w}x$h: ${lay.all("time.text").map { it.info }}", lay.all("time.text").none { it.info == last })
+        }
+    }
+
     /** The pill never grows past the chart, however narrow the widget (the widest label: icon + time). */
     @Test fun pillStaysInsideTheChart() {
         for (w in listOf(40f, 60f, 90f, 140f, 332f)) {

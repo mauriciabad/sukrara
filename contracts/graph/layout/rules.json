@@ -10,6 +10,8 @@
    "by": ["scene", "settings", "value", "graph", "labels", "sensorTime"], "shared": true},
   {"name": "status", "elements": ["value.status", "value.pill"], "by": ["scene", "settings", "value", "badge"], "shared": true},
   {"name": "time", "elements": ["value.time"], "by": ["scene", "value"], "shared": true},
+  {"name": "age", "elements": ["graph.age"], "by": ["scene", "face"], "shared": true,
+   "about": "A card without the value's place (the graph widget) says over its chart what that place would: the reading's age (freshness graph_only: time, dimmed, no_readings) or, once the sensor has ended, 'ended' (the checkered flag and 'Sensor ended', the value's own words). An ended sensor never shows as the last reading's time over the chart, which reads as a gap in the readings."},
   {"name": "pct", "elements": ["chart.pct", "chart.pct.crown"], "by": ["scene", "settings", "side", "labels", "pctWide"], "shared": true},
   {"name": "slots", "elements": ["slot"], "by": ["scene", "settings", "rings"], "mode": "subset", "shared": true},
   {"name": "chart", "elements": ["chart.distribution", "chart.lines", "chart.markers", "chart.hours"],

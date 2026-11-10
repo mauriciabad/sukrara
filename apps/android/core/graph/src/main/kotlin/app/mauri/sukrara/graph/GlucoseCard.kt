@@ -101,7 +101,11 @@ object GlucoseCard {
             GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view)
             dimmed?.let(cv::restoreToCount)
         }
-        if (age != Freshness.AgeMark.NONE && latest != null) drawAgeLabel(cv, chart, latest.t, nowS, age, pal, d, rec)
+        // an ended sensor says so instead of the reading's time, which would read as a gap
+        if (age != Freshness.AgeMark.NONE && latest != null) {
+            val ended = if (sl?.ended == true) model.words.sensorEnded else null
+            drawAgeLabel(cv, chart, latest.t, nowS, age, ended, pal, d, rec)
+        }
         // a graph-only card without its chart: the value's face alone (a graph card has no slots or badge)
         if (noChart && !st.value) value.draw(cv, chart, null, null)
         if (st.value && part != CardPart.GRAPH) {
@@ -122,8 +126,10 @@ object GlucoseCard {
 
     /**
      * A card without a value: the reading's time centred over the top of [chart] on a background pill, after the
-     * "no readings" icon from 20 min ([age], freshness.json `graph_only`; GlucoseCard.swift `drawAgeLabel`). The text
-     * shrinks to fit the chart's width (down to 60 %) and the pill never grows past it.
+     * "no readings" icon from 20 min ([age], freshness.json `graph_only`; GlucoseCard.swift `drawAgeLabel`); once the
+     * sensor has ended, the checkered flag and [ended] ("Sensor ended", the value's place's words) instead, so it never
+     * reads as a gap in the readings. The text shrinks to fit the chart's width (down to 60 %) and the pill never grows
+     * past it.
      */
     private fun drawAgeLabel(
         cv: Canvas,
@@ -131,17 +137,18 @@ object GlucoseCard {
         t: Long,
         nowS: Long,
         age: Freshness.AgeMark,
+        ended: String?,
         pal: GraphPalette,
         d: Float,
         rec: CardLayout,
     ) {
-        val text = Freshness.timeText(t, nowS)
+        val text = ended ?: Freshness.timeText(t, nowS)
         val ink =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
                 typeface = RoundedFont.typeface(600)
             }
-        val hasIcon = age == Freshness.AgeMark.NO_READINGS
+        val hasIcon = ended != null || age == Freshness.AgeMark.NO_READINGS
 
         // the pill's width at text size s: icon + gap + text + padding (the same proportions as below)
         fun width(s: Float): Float {
@@ -163,11 +170,15 @@ object GlucoseCard {
         cv.drawRoundRect(box, bh / 2, bh / 2, bg)
         val clip = cv.save()
         cv.clipRect(box)
-        if (icon > 0) Glyphs.drawSymbol(cv, Glyphs.noReadings, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+        if (ended != null) {
+            SensorBadge.flag(cv, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+        } else if (icon > 0) {
+            Glyphs.drawSymbol(cv, Glyphs.noReadings, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+        }
         cv.drawText(text, box.left + padX + icon + gap, box.centerY() + size * 0.36f, ink)
         cv.restoreToCount(clip)
-        rec.add("graph.age", box, age.key)
-        rec.add("time.text", info = text)
+        rec.add("graph.age", box, if (ended != null) "ended" else age.key)
+        if (ended == null) rec.add("time.text", info = text)
     }
 
     /** [draw] into a new bitmap of [wDp] × [hDp] dp at [d] px per dp (widgets, the notification, the lock screen). */

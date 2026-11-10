@@ -146,15 +146,17 @@ enum A11y {
     {
         let value =
             style.value || surface.glyph
-            ? value(data, unit: unit, surface: surface, style: style, words: words) : age(data, words: words)
+            ? value(data, unit: unit, surface: surface, style: style, words: words)
+            : age(data, surface: surface, words: words)
         let chart = surface.glyph ? nil : style.graph.map { chart(data, $0, words: words) }
         return [value, chart].compactMap { $0 }.joined(separator: ". ")
     }
 
     /// A card without a value says how old its chart is, as the picture does (`Freshness.AgeMark`): "last reading
     /// 9:50" at every age, "old reading" too from 5 min, "no reading since 9:50" from 20 min (and
-    /// once the chart is gone), "no readings yet" without any.
-    static func age(_ data: CardData, words w: CardWords) -> String? {
+    /// once the chart is gone), "no readings yet" without any; an ended sensor says so, as the value's place does.
+    static func age(_ data: CardData, surface: CardSurface, words w: CardWords) -> String? {
+        if GlucoseCard.face(data, unit: .mgdl, surface: surface).state == .ended { return w.sensorEnded }
         guard let t = data.latest?.t else { return w.noReadings }
         let time = Freshness.timeText(t, now: data.now)
         switch Freshness.of(age: data.now - t).ageMark {
