@@ -203,6 +203,11 @@ class FollowerEngine(
             emitAll(latestSettings)
         }
 
+    private val _refused = MutableStateFlow(0)
+
+    /** Events refused since the app started (bad signature, an unknown device or key…; Settings › Advanced). */
+    val refused: StateFlow<Int> = _refused.asStateFlow()
+
     private val _nearbyStatus = MutableStateFlow<NearbyStatus>(NearbyStatus.Stopped)
 
     /** The Bluetooth link to the wearer's phone (Following page); following goes on over the internet in every state. */
@@ -770,7 +775,7 @@ class FollowerEngine(
             }
 
             is FollowResult.Rejected -> {
-                Unit
+                _refused.update { it + 1 }
             }
 
             is FollowResult.Accepted -> {

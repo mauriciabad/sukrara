@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -93,6 +94,11 @@ class OwnerEngine(
     private val settingsMirror = PublishSettingsMirror(ctx)
     private val _state = MutableStateFlow<OwnerShareState>(OwnerShareState.Loading)
     val state: StateFlow<OwnerShareState> = _state.asStateFlow()
+
+    private val _sent = MutableStateFlow(SentCounts())
+
+    /** The live readings and hour chunks handed to the relays / nearby followers since the app started (Settings › Advanced). */
+    val sent: StateFlow<SentCounts> = _sent.asStateFlow()
 
     @Volatile private var owner: OwnerState? = null
 
@@ -267,7 +273,7 @@ class OwnerEngine(
                     while (true) {
                         delay(PublishReadings.CHUNK_EVERY * 1000)
                         locked {
-                            owner?.let { publish(readings.tick(it, now())) }
+                            owner?.let { publishReadings(readings.tick(it, now())) }
                             refreshControl()
                             refreshShared()
                         }
@@ -286,7 +292,7 @@ class OwnerEngine(
         // before the first send: the Bluetooth backlog caches what goes out from here on
         nearby.start(nearbyHost)
         s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach(::send)
-        publish(readings.republish(s, now()))
+        publishReadings(readings.republish(s, now()))
         subscribeWriters(s)
         republishShared()
         refreshControl()
@@ -308,7 +314,7 @@ class OwnerEngine(
         if (!before.on && next.on) {
             transport.start()
             s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach { send(it, overBluetooth = false) }
-            readings.republish(s, now()).forEach { send(it, overBluetooth = false) }
+            publishReadings(readings.republish(s, now()), overBluetooth = false)
             republishShared(overBluetooth = false)
             refreshControl()
         }
@@ -319,7 +325,7 @@ class OwnerEngine(
             .filter { it.role == Role.Wearer }
             .map { it.recent }
             .distinctUntilChanged()
-            .collect { recent -> locked { owner?.let { publish(readings.onReadings(it, recent, now())) } } }
+            .collect { recent -> locked { owner?.let { publishReadings(readings.onReadings(it, recent, now())) } } }
     }
 
     private suspend fun onInbound(m: RelayInbound) {
@@ -606,6 +612,16 @@ class OwnerEngine(
     }
 
     private fun publish(events: List<SignedEvent>) = events.forEach(::send)
+
+    /** Readings' live events and hour chunks, counted for Settings › Advanced (counts only, nothing personal). */
+    private fun publishReadings(
+        events: List<SignedEvent>,
+        overBluetooth: Boolean = true,
+    ) {
+        if (events.isEmpty()) return
+        events.forEach { send(it, overBluetooth) }
+        _sent.update { it.plus(events) }
+    }
 
     /**
      * To the relays (unless [policy] keeps it off them: internet sharing off, or a live event while the upload interval

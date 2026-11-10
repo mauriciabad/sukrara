@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings.advanced
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -29,6 +32,27 @@ class AdvancedPageTest {
         assertEquals("not a url", hostOf("not a url"))
         assertEquals(listOf("c", "b"), newestFirst("a\nb\n\nc\n").take(2))
         assertEquals(300, newestFirst((1..400).joinToString("\n")).size)
+    }
+
+    @Test
+    fun `statistics - the wearer sees what was sent, a follower what is stored and refused`() {
+        var follower by mutableStateOf(false)
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                AdvancedContent(
+                    AdvancedState(follower = follower, stats = AdvancedStats(live = 1, chunks = 2, stored = 900, refused = 1, posted = 3)),
+                    AdvancedActions(),
+                ) {}
+            }
+        }
+        compose.onNodeWithText("Sent to your followers").performScrollTo()
+        compose.onNodeWithText("1 live reading · 2 hours of history").assertExists()
+        compose.onNodeWithText("3 updates · 0 skipped (nothing new)").assertExists()
+        compose.onNodeWithText("Readings on this phone").assertDoesNotExist()
+        follower = true
+        compose.onNodeWithText("Readings on this phone").performScrollTo()
+        compose.onNodeWithText("900 stored · 1 event refused").assertExists()
+        compose.onNodeWithText("Sent to your followers").assertDoesNotExist()
     }
 
     @Test

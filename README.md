@@ -87,14 +87,15 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   widget's real size (*Glucose* down to one cell), with the same card as their picker preview; home offers *Add
   widget* until a graph widget is placed (or says how to add it by hand when the launcher can't), and a tap opens
   *Add treatment*.
-- **Settings** for daily use (searchable, accents optional; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
+- **Settings** for daily use (every row searchable, accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
   (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with
   *Copy report*), ranges and the whole graph (lines, time
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
-  now*, the log, your sharing identity), and About with an update check against this repo's releases.
+  now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with an update check
+  against this repo's releases.
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
   by your pen?*), with *Undo*; it asks when unsure. Settings › Insulin pens lists your pens: each pen's page (name,
