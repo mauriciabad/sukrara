@@ -325,10 +325,12 @@ build signed with that entitlement; today's builds show it as a normal notificat
   an alert (the sensor lost, then *No data*) muted the alert (#130). Since 2026-11-10 every info notification that
   would sound (its channel at default importance or above, with a sound or a vibration) goes through `SoundGap`: it
   waits 1.1 s, so an alert decided at the same moment rings first, and posts only 1.1 s after the last alert sound; a
-  newer post of the same id replaces the waiting one, a cancel drops it (`SoundGapTest`). Alerts never wait. Left: the
-  *Monitoring stopped* notice posts at once (Android is stopping the service, a waiting post could die with it), and an
-  unrelated alert that comes within 1 s *after* an info sound landed is still muted (rare: the info already waited
-  1.1 s past every alert).
+  newer post of the same id replaces the waiting one, a cancel drops it (`SoundGapTest`). The *Monitoring stopped*
+  notice still posts at once (Android is stopping the service, a waiting post could die with it), through
+  `SoundGap.postNow`. Since the follow-up the other direction is covered too: an alert that comes less than 1.1 s
+  *after* any info sound (a waiting one that landed, or that notice) waits the rest of the gap before it posts (at
+  most 1.1 s, `AlertPresenter.beforeRing`; `AlertRingTurnTest`): a short delay instead of an alert muted by the
+  limit. Alerts among themselves still never wait (the ring order decides).
 - **"Vibrate only when unlocked" (#129, 2026-11-10, from the AOSP source, main).** NotificationAttentionHelper:
   `vibrateOnly = hasValidVibrate && mNotificationCooldownVibrateUnlocked && mUserPresent`, then the sound plays only
   `if (hasValidSound && !vibrateOnly)`; `mUserPresent` is set on ACTION_USER_PRESENT and cleared on SCREEN_OFF. No

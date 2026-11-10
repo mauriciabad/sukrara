@@ -28,6 +28,7 @@ import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.SoundGap
+import kotlinx.coroutines.delay
 
 /**
  * The alert notifications ([AlertPresenter]): one slot per [AlertGroup] (level, rate, no data), all in the `alerts`
@@ -79,6 +80,9 @@ class AlertNotifier(
             unlocked?.ringing(kind.group, AlertChannels.id(kind, alarm), alarm)
         }
     }
+
+    /** An info notification sounded less than a second ago: its sound would mute this alert's, so it waits the rest. */
+    override suspend fun beforeRing() = delay(SoundGap.shared.alertWaitMs())
 
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
         val alarm = settings.rule(kind).alarm

@@ -33,6 +33,13 @@ class FakePresenter : AlertPresenter {
     /** Whose alert each [show] was (the wearer's name on a follower). */
     val who = mutableListOf<String?>()
 
+    /** How many times an alert waited for its turn to ring ([beforeRing]: every loud post, never a silent one). */
+    var waits = 0
+
+    override suspend fun beforeRing() {
+        waits++
+    }
+
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         slots[firing.kind.group] = firing.kind.wire
         log += (if (silent) "resume " else "show ") + firing.kind.wire

@@ -421,6 +421,7 @@ class AlertRuntime(
 
     /** Posts [f] in [group]'s slot; a refusal is remembered with its sound, for [retryUnposted]. */
     private suspend fun post(m: AlertMachine, group: AlertGroup, f: Firing, silent: Boolean, relax: Int) {
+        if (!silent) presenter.beforeRing()
         if (attempt(Step.Notify, group) { presenter.show(f, m.settings, silent, whoFor(m), relax) }) {
             unposted.remove(group)
         } else {
