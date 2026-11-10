@@ -18,9 +18,14 @@ class FakeOwnerSharing(
     override val state = MutableStateFlow(initial)
     val calls = mutableListOf<String>()
 
-    override suspend fun startFresh(profile: Profile): Boolean {
-        calls += "startFresh:${profile.name}"
-        return true
+    var startFreshAccepted = true
+
+    override suspend fun startFresh(
+        profile: Profile,
+        replace: Boolean,
+    ): Boolean {
+        calls += "startFresh:${profile.name}" + if (replace) ":replace" else ""
+        return startFreshAccepted
     }
 
     var profileAccepted = true
@@ -54,8 +59,9 @@ class FakeOwnerSharing(
     override suspend fun restore(
         code: String,
         password: String?,
+        replace: Boolean,
     ): RestoreIdentity.Result {
-        calls += "restore"
+        calls += "restore" + if (replace) ":replace" else ""
         return restoreResult
     }
 

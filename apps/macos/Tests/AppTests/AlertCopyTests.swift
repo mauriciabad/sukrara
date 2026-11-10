@@ -53,7 +53,7 @@ import Testing
     }
 
     /// `c` as the Mac words it in `lang`.
-    static func word(_ c: Case, _ lang: CopyLanguage) throws -> String? {
+    static func word(_ c: Case, _ lang: AppLanguage) throws -> String? {
         var text = AlertText(language: lang)
         text.unit = c.unit == "mmol" ? .mmol : .mgdl
         func firing() -> AlertFiring? {

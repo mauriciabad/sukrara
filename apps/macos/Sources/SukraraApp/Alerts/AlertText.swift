@@ -10,7 +10,7 @@ import SukraraGraph
 /// `contracts/alerts/copy.json`, the words Android writes too (`AlertCopyTests`; the state lines are `MuteCopy`'s).
 /// Self-contained: the value, the direction and what it means, readable on the lock screen without opening the app.
 struct AlertText: Equatable {
-    typealias Language = CopyLanguage
+    typealias Language = AppLanguage
 
     let language: Language
     /// The unit every number is written in (`general.unit`; contracts/settings/units.json).
@@ -88,7 +88,7 @@ struct AlertText: Equatable {
         return base + (f.treated == 1 ? " · sigue alta tras la insulina" : " · sigue alta tras más insulina")
     }
 
-    /// The muted note: "Low alerts muted" / "Until 10:42".
+    /// The muted note: "Low alerts muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
     func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, language) }
 
     func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, language) }

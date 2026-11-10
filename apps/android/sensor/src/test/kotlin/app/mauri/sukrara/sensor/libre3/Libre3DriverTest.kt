@@ -375,9 +375,9 @@ class Libre3DriverTest {
         assertEquals(listOf("disconnect"), s.link.take())
     }
 
-    private val libre3Trace = Trace.resource("libre3")
+    private val libre3Trace = Trace.of("libre3")
 
-    /** One packet of `traces/libre3.txt` in its own authorized session. */
+    /** One packet of `contracts/sensor/traces/libre3.txt` in its own authorized session. */
     private fun replay(label: String): Session {
         val s = Session()
         s.connect()

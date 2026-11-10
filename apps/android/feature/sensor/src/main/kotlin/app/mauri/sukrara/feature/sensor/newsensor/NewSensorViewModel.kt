@@ -7,7 +7,9 @@ import android.nfc.Tag
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.pairing.PairOutcome
 import app.mauri.sukrara.sensor.source.SensorStatus
@@ -17,13 +19,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.Instant
 
 /** What the new-sensor flow needs from the sensor side (SensorUiModule implements it over the SensorModule). */
@@ -44,6 +49,12 @@ interface NewSensorPort {
 
     val detail: StateFlow<SensorStatus>
     val sensor: StateFlow<SensorState>
+
+    /** The newest stored reading (the glucose hub's): the *Sensor ready* page draws the first one. */
+    val latest: Flow<Reading?>
+
+    /** THE graph settings every card draws with (unit, ranges). */
+    val graphConfig: Flow<GraphConfig>
 
     /** Connect again with the saved pairing (BleFailed › Retry). */
     fun retryLink()
@@ -86,6 +97,20 @@ class NewSensorViewModel(
 
     private val _effects = Channel<NewSensorEffect>(Channel.BUFFERED)
     val effects: Flow<NewSensorEffect> = _effects.receiveAsFlow()
+
+    private val openedAt = clock.now()
+
+    /**
+     * The reading the *Sensor ready* page shows: the newest one, once it came after this flow opened (a sensor's clock
+     * may be a little behind the phone's: [FIRST_READING_SLACK]); never the previous sensor's last value.
+     */
+    val firstReading: StateFlow<Reading?> =
+        port.latest
+            .map { r -> r?.takeUnless { it.t.isBefore(openedAt - FIRST_READING_SLACK) } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The person's unit and ranges for the first reading's card. */
+    val graphConfig: StateFlow<GraphConfig> = port.graphConfig.stateIn(viewModelScope, SharingStarted.Eagerly, GraphConfig())
 
     init {
         viewModelScope.launch {
@@ -201,5 +226,8 @@ class NewSensorViewModel(
 
     private companion object {
         const val TICK_MS = 1_000L
+
+        /** How far before the flow opened a reading may be stamped and still be the new sensor's first. */
+        val FIRST_READING_SLACK: Duration = Duration.ofMinutes(3)
     }
 }

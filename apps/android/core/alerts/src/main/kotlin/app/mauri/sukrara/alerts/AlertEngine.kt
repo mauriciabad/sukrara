@@ -136,10 +136,14 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         return evaluate(s, d, now)
     }
 
-    /** *Unmute* (Mute all): whatever matches and isn't muted otherwise alerts at once. */
+    /**
+     * *Unmute* (Mute all): whatever matches and isn't muted otherwise alerts at once, however recent its last alert
+     * (every episode was quiet under Mute all, as when it ends at its time).
+     */
     fun unmuteAll(s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
         if (muteAllUntil <= now) return emptyList()
         muteAllUntil = 0
+        episodes.values.forEach { it.liftPending = true }
         return evaluate(s, d, now)
     }
 

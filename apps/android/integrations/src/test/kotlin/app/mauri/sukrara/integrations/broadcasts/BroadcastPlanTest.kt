@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -173,6 +176,51 @@ class BroadcastPlanTest {
             assertTrue(b.allow("app.aaps"))
             b.onLive(later)
             assertEquals(2, apps.sent.size)
+        }
+
+    @Test fun `allowing a changed app again shows the certificate it had and the one it has now`() =
+        runBlocking {
+            Dispatchers.setMain(UnconfinedTestDispatcher())
+            try {
+                val apps = FakeApps(receivers = mapOf("app.aaps" to setOf(XDRIP)), signers = mapOf("app.aaps" to "aa01"))
+                val b =
+                    Broadcaster(
+                        InMemorySettingsRepository(),
+                        InMemoryStateStore(BcState()),
+                        emptyFlow(),
+                        flowOf(sensor),
+                        flowOf(Role.Wearer),
+                        apps,
+                        FakeClock(now),
+                        Dispatchers.Unconfined,
+                    ) {}
+                assertTrue(b.allow("app.aaps"))
+                apps.signers["app.aaps"] = "bb02"
+                val vm = BroadcastsViewModel(b, apps, flowOf(true), Dispatchers.Unconfined)
+                vm.refresh()
+                val row =
+                    vm.ui
+                        .first { it?.apps != null }!!
+                        .apps!!
+                        .single()
+                assertEquals(AppProblem.SignerChanged, row.problem)
+                assertEquals("aa01", row.pinnedSigner)
+                assertEquals("bb02", row.currentSigner)
+                assertEquals("BB:02", fingerprint(row.currentSigner!!))
+                // a signer Android can't name (several certificates): nothing to pin, so it can't be allowed
+                apps.signers.remove("app.aaps")
+                vm.refresh()
+                assertEquals(
+                    null,
+                    vm.ui
+                        .first { it?.apps?.single()?.currentSigner == null }!!
+                        .apps!!
+                        .single()
+                        .currentSigner,
+                )
+            } finally {
+                Dispatchers.resetMain()
+            }
         }
 
     private class FakeApps(

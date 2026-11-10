@@ -96,8 +96,12 @@ answers a *connected* central's Device Name read; an app can't turn that off.)
 **Frame** (each GATT write or notification): 6-byte header, big endian, then payload bytes
 
 ```
-[msgId u16][idx u16][count u16][payload: up to ATT_MTU - 3 - 6 bytes]
+[msgId u16][idx u16][count u16][payload: up to min(ATT_MTU - 3, 512) - 6 bytes]
 ```
+
+The link rules (every frame within one ATT write, long writes on the wearer, which phone is the wearer's, how long a
+phone is left alone) are specified once, in [PROTOCOL-v2 "Bluetooth link"](../contracts/protocol/PROTOCOL-v2.md#bluetooth-link),
+and pinned by `contracts/protocol/ble/link-rules.json`; this section is the background.
 
 - `msgId` increments per message per sender (wraps at 65535); `idx` = 0..count-1; frames are sent in order.
 - Receiver keeps one buffer per `msgId`; a frame with `idx == 0` restarts that buffer. When all `count` parts are
@@ -108,8 +112,11 @@ answers a *connected* central's Device Name read; an app can't turn that off.)
   shorter than the header, with `idx ≥ count` or `count = 0`, or over the central's byte budget (256 KiB a minute)
   gets `GATT_WRITE_NOT_PERMITTED` and the central is disconnected; at most 30 messages a minute per central (more are
   dropped).
-- Central requests MTU 517 (Android) / uses `maximumWriteValueLength` (CoreBluetooth); the owner uses each
-  central's negotiated MTU for its notifications (23 if never negotiated → 14 payload bytes per frame).
+- Central requests MTU 517 (Android) / takes the ATT MTU from `maximumWriteValueLength(for: .withoutResponse)` + 3
+  (CoreBluetooth; the `.withResponse` length is always 512 and would make every frame a long write); the owner uses
+  each central's negotiated MTU for its notifications (23 if never negotiated → 14 payload bytes per frame). The owner
+  still accepts a long (Prepare / Execute) write on RX: parts in offset order, ≤ 512 bytes, one queue per central,
+  dropped 30 s after its last part without an Execute Write.
 - Owner sends one notification at a time per central (next one after `onNotificationSent`); central writes one
   frame at a time (next one after the write response).
 
@@ -129,12 +136,13 @@ key deliveries…) is also pushed to every subscribed central. The owner backup 
 Followers send access requests (gift wrap to `I`), rekey requests and treatments (kind 30078, see below) as
 `EVENT`s on RX; the owner feeds them into the same `onEvent(json, "ble:<addr>")` as relay events.
 
-**Which owner** (P12, Android and Mac): a follower writes nothing but `HELLO` until the phone's `INFO` proves it's
-its wearer's: `m` matches `H("cgm2:ble:"+sid+":"+nonce)` for one of its last 4 HELLO nonces (a recorded INFO can't be
-replayed), or `i` is its stream's `I` while pairing. Another wearer's phone (a different `i`, or a wrong/missing `m`
-once the follower knows the `sid`) is left and avoided for 10 minutes, and the scan goes on. While a request is still
-pending (no `sid` yet) and the phone isn't pairing, the follower receives (events are verified anyway) but writes
-nothing.
+**Which owner** (P12, Android and Mac; the rule: [PROTOCOL-v2 "Bluetooth link"](../contracts/protocol/PROTOCOL-v2.md#bluetooth-link)):
+a follower writes nothing but `HELLO` until the phone's `INFO` proves it's its wearer's. Once the follower knows the
+`sid`, `m` is checked first: only `m` = `H("cgm2:ble:"+sid+":"+nonce)` for one of its last 4 HELLO nonces proves it (a
+recorded INFO can't be replayed; a pairing `i` is public, so it never does), and an `i` naming another identity still
+makes it another wearer's. Before the `sid` (request pending), `i` = its stream's `I` while pairing says ours. Another
+wearer's phone is left and avoided for 10 minutes, and the scan goes on. While a request is still pending and the
+phone isn't pairing, the follower receives (events are verified anyway) but writes nothing.
 
 **Treatments** (libreview SPEC §5): kind 30078, signed by the writer `W` (the follower key `F`), tags
 `d = H("cgm2:tr:"+sid+":"+id)`, `c = H("cgm2:treatments:"+sid)`, `gk`, `expiration` (+30 d); content =

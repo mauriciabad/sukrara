@@ -18,9 +18,13 @@ import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.Avatar
+import app.mauri.sukrara.protocol.event.LivePayload
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
@@ -89,6 +93,39 @@ class OwnerEngineTest {
             e.stop()
         }
 
+    /** #55: the wearer's sensor reaches the relays as a reading-less live event when it changes, with no reading. */
+    @Test fun aSensorChangeIsPublishedWithoutAReading() =
+        runTest {
+            val s = CreateIdentity(ctx)(null, NOW).state.copy(rosterPublishedAt = NOW, backupPublishedAt = NOW)
+            store.save(s)
+            val sensor = MutableStateFlow<SensorLife?>(null)
+            val e =
+                OwnerEngine(
+                    ctx,
+                    store,
+                    relay,
+                    NoHub,
+                    { _, _ -> true },
+                    InMemoryTreatmentsRepository(),
+                    FakeClock(Instant.ofEpochSecond(NOW)),
+                    StandardTestDispatcher(testScheduler),
+                    sensor = sensor,
+                )
+            e.start(backgroundScope)
+            runCurrent()
+
+            fun sensorEvents() =
+                relay.published
+                    .filter { it.kind == Wire.KIND_LIVE }
+                    .map { ReadingsCodec.decodeLive(crypto.decrypt(s.readKey(crypto).secret, s.device(crypto).public, it.content)!!) }
+            assertTrue("nothing known yet: nothing sent", sensorEvents().isEmpty())
+            val fresh = SensorLife(NOW - 60, NOW + 15 * Wire.DAY, NOW + 3540)
+            sensor.value = fresh
+            runCurrent()
+            assertEquals(listOf(LivePayload(null, fresh)), sensorEvents())
+            e.stop()
+        }
+
     @Test fun restoreNeverReplacesAWorkingIdentitySilently() =
         runTest {
             val e = engine()
@@ -96,6 +133,52 @@ class OwnerEngineTest {
             runCurrent()
             val code = crypto.nsec(crypto.generate().secret)
             assertEquals(RestoreIdentity.Result.AlreadySharing, e.restore(backgroundScope, code, null))
+            e.stop()
+        }
+
+    /** Backup › Replace this identity › Start fresh: a new identity over the working one, only when asked. */
+    @Test fun startFreshReplacesAWorkingIdentityOnlyWhenConfirmed() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            runCurrent()
+            val before = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertFalse(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            assertEquals(before, (store.load() as OwnerIdentityStore.Load.Loaded).state)
+
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null), replaceExisting = true))
+            runCurrent()
+            val after = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertFalse(before.identity(crypto).public == after.identity(crypto).public)
+            assertTrue(e.running)
+            val shown = e.state.value as OwnerShareState.Sharing
+            assertEquals("Ana", shown.profile?.name)
+            assertTrue(shown.followers.isEmpty())
+            // the new identity's own backup goes out; the old one publishes nothing more
+            assertTrue(relay.published.any { it.pubkey == after.identity(crypto).public.hex })
+            e.stop()
+        }
+
+    /** Backup › Replace this identity › Restore: another identity over the working one; its own code changes nothing. */
+    @Test fun restoreReplacesAWorkingIdentityWhenConfirmedButNeverWithItself() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            runCurrent()
+            val mine = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            val own = crypto.nsec(mine.identity(crypto).secret)
+            assertEquals(RestoreIdentity.Result.SameIdentity, e.restore(backgroundScope, own, null, replaceExisting = true))
+            assertEquals(mine, (store.load() as OwnerIdentityStore.Load.Loaded).state)
+
+            val other = CreateIdentity(ctx)(Profile("Ana", null), NOW - 50)
+            relay.stored += other.publish.filter { it.kind == Wire.KIND_DATA }
+            val code = crypto.nsec(other.state.identity(crypto).secret)
+            val restored = e.restore(backgroundScope, code, null, replaceExisting = true)
+            assertTrue(restored is RestoreIdentity.Result.Restored)
+            runCurrent()
+            val now = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertEquals(other.state.identity(crypto).public, now.identity(crypto).public)
+            assertTrue(e.running)
             e.stop()
         }
 

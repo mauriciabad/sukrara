@@ -6,6 +6,7 @@ package app.mauri.sukrara.integrations.nightscout
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.SentRanges
@@ -108,6 +109,8 @@ object NightscoutQueue {
         state: NsState,
         o: NsOptions,
         nowS: Long,
+        /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
+        hold: UploadHold = UploadHold.NONE,
     ): Plan {
         if (state.paused) return Plan.EMPTY
         val from = maxOf(state.from, nowS - WINDOW_S)
@@ -129,6 +132,7 @@ object NightscoutQueue {
                 val t = r.treatment
                 val had = state.treatments[t.id]
                 if (had == t.modifiedAt.toEpochMilli()) continue
+                if ((hold.until(r) ?: 0L) > nowS) continue
                 when {
                     had == null && (t.deleted || t.at.epochSecond < from) -> if (t.deleted) settled += r
 

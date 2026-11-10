@@ -157,13 +157,14 @@ object NsDocs {
         t: Treatment,
         device: String,
         zone: ZoneId,
+        enteredBy: String = APP,
     ): JsonObject =
         buildJsonObject {
             put("identifier", t.id)
             put("created_at", isoUtc(t.at))
             put("date", t.at.toEpochMilli())
             put("utcOffset", utcOffsetMin(t.at, zone))
-            put("enteredBy", APP)
+            put("enteredBy", enteredBy)
             put("app", APP)
             put("device", device)
             when (t.kind) {

@@ -28,17 +28,21 @@ import java.util.Locale
  *
  * Every data route needs the API secret ([authorized]); only `status` answers without it, and then with nothing about
  * the person (no glucose, no name, no thresholds). Entries are newest first with integer-ms `date`, a `delta` that is
- * never null, numeric `trend` matching `direction`, 24-hex `_id`, `/api/v3` → 404 so clients fall back to v1. Each
+ * never null, numeric `trend` matching `direction`, 24-hex `_id` ([entryId]), `/api/v3` → 404 so clients fall back to v1. Each
  * entry's `device` says where it came from ([device]) so a downstream app can tell a followed person's or an untested
  * sensor's data from a Libre 3 read by this phone; a reading from any other source is never served.
  */
 object NightscoutApi {
-    /** What the API serves: [readings] newest first, [treatments] not deleted. */
+    /**
+     * What the API serves: [readings] newest first, [treatments] not deleted; [role] says whose they are (a follower
+     * serves the followed person's, labelled as such).
+     */
     data class Snapshot(
         val readings: List<Reading>,
         val treatments: List<Treatment>,
         val now: Instant,
         val zone: ZoneId,
+        val role: Role? = Role.Wearer,
     )
 
     const val PORT = 17581
@@ -145,7 +149,7 @@ object NightscoutApi {
             SourceId.DexcomG6 -> "Sukrara · Dexcom G6 (untested)"
             SourceId.SmartGuide -> "Sukrara · Accu-Chek SmartGuide (untested)"
             SourceId.AidexX -> "Sukrara · Aidex X (untested)"
-            SourceId.Relay, SourceId.Nearby -> "Sukrara (following)"
+            SourceId.Relay, SourceId.Nearby -> FOLLOWING
             else -> null
         }
 
@@ -158,7 +162,7 @@ object NightscoutApi {
         val ms = r.t.toEpochMilli()
         val iso = r.t.toString()
         return buildJsonObject {
-            put("_id", String.format(Locale.US, "%024x", r.t.epochSecond))
+            put("_id", entryId(r))
             put("device", device(r.source))
             put("type", "sgv")
             put("date", ms)
@@ -173,6 +177,13 @@ object NightscoutApi {
             put("mills", ms)
         }
     }
+
+    /**
+     * 24 hex digits like a Nightscout (Mongo) id: the reading's second, then 64 bits of its source and millisecond, so
+     * readings of two sources in the same second never share an id (clients dedupe by it).
+     */
+    fun entryId(r: Reading): String =
+        String.format(Locale.US, "%08x", r.t.epochSecond) + sha1("${r.source.id}@${r.t.toEpochMilli()}").take(16)
 
     /**
      * mg/dL per 5 min: the sensor's rate, else the slope to a reading 2–15 min earlier; null for a LO / HI reading or
@@ -284,15 +295,20 @@ object NightscoutApi {
                 .filter { !it.deleted && (from == null || it.at.toEpochMilli() >= from) }
                 .sortedByDescending { it.at }
                 .take(count)
-        return JsonArray(rows.map { treatment(it, s.zone) }).toString()
+        return JsonArray(rows.map { treatment(it, s.zone, s.role) }).toString()
     }
 
-    /** The upload's mapping (long-acting insulin is a `Note` with the dose in `notes`) plus the v1 read fields. */
+    /**
+     * The upload's mapping (long-acting insulin is a `Note` with the dose in `notes`) plus the v1 read fields. On a
+     * follower `enteredBy` and `device` say `Sukrara (following)`, as its readings do: the followed person's entries.
+     */
     fun treatment(
         t: Treatment,
         zone: ZoneId,
+        role: Role? = Role.Wearer,
     ): JsonObject {
-        val doc = NsDocs.treatment(t, "Sukrara", zone)
+        val by = if (role == Role.Follower) FOLLOWING else NsDocs.APP
+        val doc = NsDocs.treatment(t, by, zone, enteredBy = by)
         return JsonObject(doc + mapOf("_id" to JsonPrimitive(sha1(t.id).take(24)), "mills" to JsonPrimitive(t.at.toEpochMilli())))
     }
 
@@ -330,6 +346,8 @@ object NightscoutApi {
             .getInstance("SHA-1")
             .digest(s.toByteArray())
             .joinToString("") { String.format(Locale.US, "%02x", it) }
+
+    private const val FOLLOWING = "Sukrara (following)"
 
     /** Nightscout's numeric trends, by index (0 = none). */
     private val TRENDS = listOf("NONE", "DoubleUp", "SingleUp", "FortyFiveUp", "Flat", "FortyFiveDown", "SingleDown", "DoubleDown")

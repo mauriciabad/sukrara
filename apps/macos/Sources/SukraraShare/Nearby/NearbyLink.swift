@@ -42,8 +42,10 @@ public struct NearbyLink: Sendable {
     private var outbox: [Pending] = []
     private var inFlight: Pending?
     private var msgId: UInt16 = 0
-    /// Our last HELLO nonces: an INFO must prove `sid` over one of them.
+    /// Our last HELLO nonces (at most `noncesKept`): an INFO must prove `sid` over one of them.
     public private(set) var nonces: [String] = []
+    /// How many HELLO nonces an INFO may answer (PROTOCOL-v2 "Bluetooth link"): a recorded older INFO proves nothing.
+    public static let noncesKept = 4
     /// The phone proved it's our wearer's.
     public private(set) var verified = false
 
@@ -60,9 +62,9 @@ public struct NearbyLink: Sendable {
         return hello(nonce: nonce)
     }
 
-    /// HELLO with `nonce` (the last 4 are kept) and, once we know `sid`, the identity proof.
+    /// HELLO with `nonce` (the last `noncesKept` are kept) and, once we know `sid`, the identity proof.
     public mutating func hello(nonce: String) -> [Effect] {
-        nonces = Array((nonces + [nonce]).suffix(4))
+        nonces = Array((nonces + [nonce]).suffix(Self.noncesKept))
         var proof: String?
         if let sid = identity.sid, let follower = identity.follower {
             proof = try? HelloProof.sign(sid: sid, nonce: nonce, follower: follower, crypto: crypto)

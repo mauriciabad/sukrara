@@ -133,8 +133,10 @@ class TreatmentFormState(
     }
 }
 
+/** The form, kept through a rotation; [at] = *When* to start with (a pen read's injection), else now. */
 @Composable
-fun rememberTreatmentFormState(): TreatmentFormState = rememberSaveable(saver = TreatmentFormState.Saver) { TreatmentFormState() }
+fun rememberTreatmentFormState(at: Instant? = null): TreatmentFormState =
+    rememberSaveable(saver = TreatmentFormState.Saver) { TreatmentFormState(at = at) }
 
 /**
  * The quick dialog's countdown over the lock screen: [seconds] left (the ring's digits), [spokenSeconds] (TalkBack's
@@ -155,10 +157,11 @@ data class LockInfo(
  * Add insulin, carbs and a note in one go: rapid, long-acting and carbs side by side, a note below, all optional;
  * each filled field becomes its own entry at the chosen time (default now). Laid out like an M3 basic dialog (28 dp
  * corners, surface-container-high, 24 dp padding, confirming action last). The first field is focused so the number
- * pad is up at once — Carbs instead when [focusCarbs] (a low is going on). Next walks the fields, Done saves.
+ * pad is up at once — Carbs instead when [focusCarbs] (a low is going on), Long-acting when [focusLong] (a rapid pen's
+ * dose was just read). Next walks the fields, Done saves.
  *
  * [onOpenApp] adds *Open Sukrara* (the quick dialog, where a tap no longer opens the app); [lock] shows the
- * lock-screen countdown with *Unlock*.
+ * lock-screen countdown with *Unlock*; [penLine] is the pen's line under the fields (reading a pen into the dialog).
  */
 @Composable
 fun TreatmentDialogContent(
@@ -172,9 +175,12 @@ fun TreatmentDialogContent(
     onOpenApp: (() -> Unit)? = null,
     lock: LockInfo? = null,
     quiet: QuietRules = QuietRules.NONE,
+    focusLong: Boolean = false,
+    penLine: (@Composable () -> Unit)? = null,
 ) {
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
+    val longFocus = remember { FocusRequester() }
     val carbsFocus = remember { FocusRequester() }
     var picking by remember { mutableStateOf(false) }
     val entries = form.entries
@@ -187,7 +193,15 @@ fun TreatmentDialogContent(
             onSave(list, form.whenAt(now()))
         }
     }
-    LaunchedEffect(Unit) { runCatching { (if (focusCarbs) carbsFocus else first).requestFocus() } }
+    LaunchedEffect(Unit) {
+        runCatching {
+            when {
+                focusCarbs -> carbsFocus
+                focusLong -> longFocus
+                else -> first
+            }.requestFocus()
+        }
+    }
 
     Surface(
         modifier = modifier.widthIn(min = 280.dp, max = 560.dp).testTag("treatment-dialog"),
@@ -207,7 +221,13 @@ fun TreatmentDialogContent(
                     R.string.treatment_unit_u,
                     fieldModifier.focusRequester(first),
                 )
-                AmountField(form.long, { form.long = it }, R.string.treatment_long, R.string.treatment_unit_u, fieldModifier)
+                AmountField(
+                    form.long,
+                    { form.long = it },
+                    R.string.treatment_long,
+                    R.string.treatment_unit_u,
+                    fieldModifier.focusRequester(longFocus),
+                )
                 AmountField(form.carbs, {
                     form.carbs = it
                 }, R.string.treatment_carbs, R.string.treatment_unit_g, fieldModifier.focusRequester(carbsFocus))
@@ -234,6 +254,7 @@ fun TreatmentDialogContent(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("treatment-limits"),
                 )
             }
+            penLine?.invoke()
             QuietLine(form, quiet, now)
             WhenRow(form, zone, now, onPick = { picking = true })
             if (lock != null) {

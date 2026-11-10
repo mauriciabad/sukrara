@@ -37,6 +37,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -186,6 +187,39 @@ class NightscoutApiTest {
     }
 
     @Test
+    fun `two sources' readings in the same second never share an id`() {
+        val t = now.plusMillis(250)
+        val libre = Reading(t, 120, null, SourceId.Libre3)
+        val juggluco = Reading(t.plusMillis(400), 121, null, SourceId.Juggluco)
+        val ids = listOf(libre, juggluco).map { NightscoutApi.entryId(it) }
+        assertNotEquals(ids[0], ids[1])
+        assertTrue(ids.all { it.length == 24 && it.all { c -> c in "0123456789abcdef" } })
+        // the same reading keeps its id; the id starts with its second, as a Nightscout id does
+        assertEquals(ids[0], NightscoutApi.entryId(libre.copy(mgdl = 125)))
+        assertTrue(ids[0].startsWith(t.epochSecond.toString(16).padStart(8, '0')))
+        val both = array(call("api/v1/entries.json", list = listOf(juggluco, libre)))
+        assertEquals(ids.reversed(), both.map { it.jsonObject["_id"]!!.jsonPrimitive.content })
+    }
+
+    @Test
+    fun `a follower's served entries say they are the followed person's`() {
+        val zone = ZoneOffset.UTC
+        val wearer = NightscoutApi.treatment(treatments[0], zone, Role.Wearer)
+        assertEquals("Sukrara", wearer["enteredBy"]!!.jsonPrimitive.content)
+        val following = NightscoutApi.treatment(treatments[0], zone, Role.Follower)
+        assertEquals("Sukrara (following)", following["enteredBy"]!!.jsonPrimitive.content)
+        assertEquals("Sukrara (following)", following["device"]!!.jsonPrimitive.content)
+        val served =
+            NightscoutApi.route(
+                HttpRequest("GET", "api/v1/treatments.json", emptyMap(), mapOf("api-secret" to NightscoutApi.sha1(secret))),
+                secret,
+            ) {
+                NightscoutApi.Snapshot(emptyList(), treatments.filter { !it.deleted }, now, zone, Role.Follower)
+            }
+        assertTrue(array(served).all { it.jsonObject["enteredBy"]!!.jsonPrimitive.content == "Sukrara (following)" })
+    }
+
+    @Test
     fun `each role serves only its own person's readings`() {
         assertTrue(SourceId.Libre3 in SourceId.of(Role.Wearer))
         assertFalse(SourceId.Relay in SourceId.of(Role.Wearer))
@@ -308,6 +342,62 @@ class NightscoutApiTest {
         }
 
     @Test
+    fun `the home-network listener has its own secret, replaced on its own`() =
+        runBlocking<Unit> {
+            val wifi =
+                MutableStateFlow<WifiNet?>(WifiNet(listOf(InetAddress.getByName("192.168.77.5") to 24), "192.168.77.1", null, null, true))
+            val secure = InMemorySecureStore()
+            val api =
+                NightscoutApiServer(
+                    InMemorySettingsRepository(),
+                    secure,
+                    InMemoryReadingsRepository(),
+                    InMemoryTreatmentsRepository(),
+                    flowOf(Role.Wearer),
+                    FakeClock(now),
+                    Dispatchers.IO,
+                    InMemoryStateStore(LanPin()),
+                    wifi,
+                    { true },
+                    port = 0,
+                )
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+            fun read(key: String) = HttpRequest("GET", "api/v1/entries.json", mapOf("token" to key), emptyMap())
+            try {
+                api.start(scope)
+                api.setOn(true)
+                withTimeout(5_000) { api.state.first { it is NsApiState.Listening } }
+                assertNull(api.lanSecret())
+                assertEquals(null, api.setLan(true))
+                // the address isn't this machine's: it can't bind, but it has read its secret by then
+                withTimeout(5_000) { api.lan.first { it == LanState.PortBusy } }
+                val phone = api.secret()!!
+                val lan = api.lanSecret()!!
+                assertEquals(32, lan.length)
+                assertNotEquals(phone, lan)
+                // each listener takes only its own secret: the one that travels over Wi-Fi never opens the phone's
+                assertTrue(api.answerLan(read(lan)).status.startsWith("200"))
+                assertTrue(api.answerLan(read(phone)).status.startsWith("401"))
+                assertTrue(api.answerLocal(read(phone)).status.startsWith("200"))
+                assertTrue(api.answerLocal(read(lan)).status.startsWith("401"))
+                // New Wi-Fi secret: only the Wi-Fi devices need the new one
+                val renewed = api.renewLanSecret()
+                assertNotEquals(lan, renewed)
+                assertEquals(phone, api.secret())
+                assertTrue(api.answerLan(read(renewed)).status.startsWith("200"))
+                assertTrue(api.answerLan(read(lan)).status.startsWith("401"))
+                // turned off and on again: the same Wi-Fi secret (replacing it is the person's choice)
+                api.setLan(false)
+                assertEquals(null, api.setLan(true))
+                assertEquals(renewed, api.lanSecret())
+            } finally {
+                api.stop()
+                scope.cancel()
+            }
+        }
+
+    @Test
     fun `an unreadable secret serves nothing`() =
         runBlocking<Unit> {
             val api = server(Unreadable())
@@ -324,7 +414,12 @@ class NightscoutApiTest {
 
     @Test
     fun `over the socket, no secret is 401 and the secret is 200`() {
-        val server = LocalHttpServer(0, { req -> call(req.path, req.query, req.headers) })
+        val callers = mutableListOf<String?>()
+        val server =
+            LocalHttpServer(0, { req ->
+                callers += req.caller
+                call(req.path, req.query, req.headers)
+            })
         try {
             assertTrue(server.bind())
 
@@ -339,6 +434,8 @@ class NightscoutApiTest {
             assertTrue(ok.startsWith("HTTP/1.1 200"))
             assertTrue(Json.parseToJsonElement(ok.substringAfter("\r\n\r\n")) is JsonArray)
             assertFalse(Json.parseToJsonElement(ok.substringAfter("\r\n\r\n")) is JsonObject)
+            // the caller's address comes with the request (the Wi-Fi listener shows the last one)
+            assertEquals(listOf("127.0.0.1", "127.0.0.1"), callers)
         } finally {
             server.stop()
         }

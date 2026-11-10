@@ -36,6 +36,13 @@ struct RuntimeHarness {
     var paths: SukraraPaths { SukraraPaths(home: directory) }
 }
 
+extension FollowerRuntime {
+    /// The person opens `link`, sees who is inviting and clicks *Follow*.
+    func lookUpAndFollow(link: String) async throws(FollowerJoinError) {
+        try await join(invite: try await lookUp(link: link))
+    }
+}
+
 /// Polls `condition` for up to 3 s (the runtime processes relay messages on its own tasks).
 func eventually(_ condition: @Sendable () async -> Bool) async -> Bool {
     for _ in 0..<300 {
@@ -58,13 +65,45 @@ struct FollowerRuntimeTests {
             expiration: v.now + 3600)
     }
 
+    /// #55: the wearer's new sensor reaches the Mac while it warms up, before any reading (a reading-less live event,
+    /// contracts/protocol/sync/sensor-life.json): the snapshot the menu bar and widgets draw carries it, no reading.
+    @Test func aWarmingSensorArrivesBeforeAnyReading() async throws {
+        let fixture = loadJSON("protocol/sync/sensor-life.json")
+        let keys = fixture["keys"] as! [String: [String: String]]
+        let now = fixture["now"] as! Int
+        var state = FollowerState(
+            follower: SecretKeyHex(keys[fixture["follower"] as! String]!["sec"]!)!,
+            identity: fixture["identity"] as! String, token: "t", code: "0000", pair: nil,
+            me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
+        state.status = .requested
+        let secrets = InMemorySecretStore()
+        secrets.write(try state.encoded(), account: KeychainStore.followerAccount)
+        let h = RuntimeHarness(now: now, secrets: secrets)
+        await h.runtime.start()
+        let snapshots = await h.runtime.snapshots()
+        let events = fixture["events"] as! [String: Any]
+        for name in ["key-1", "roster-1", "sensor-new-warming"] {
+            await h.hub.push(try #require(SignedEvent.decode(json: JSONText.encode(events[name]!))))
+        }
+        let warming = WearerSensor(start: now - 3200, end: now - 3200 + 15 * 86400, warmupEnd: now - 200)
+        #expect(await eventually { await h.stores.sensor.load() == warming })
+        var shown = false
+        for await snapshot in snapshots where snapshot.sensor == warming {
+            #expect(snapshot.readings.isEmpty)
+            shown = true
+            break
+        }
+        #expect(shown)
+        await h.runtime.stop()
+    }
+
     @Test func joinRequestThenFollowFillsTheStores() async throws {
         let hub = FakeRelayHub(stored: [v.event("invite")])
         let h = RuntimeHarness(now: v.now, hub: hub)
         await h.runtime.start()
         let snapshots = await h.runtime.snapshots()
         let invite = (v.derivations["invite"] as! [String: Any])["link"] as! String
-        try await h.runtime.join(link: invite)
+        try await h.runtime.lookUpAndFollow(link: invite)
 
         // Requested: the access request (a gift wrap to the identity) went out, the key is in the Keychain.
         let stateData = try #require(try h.secrets.read(account: KeychainStore.followerAccount))
@@ -106,7 +145,7 @@ struct FollowerRuntimeTests {
         await h.runtime.start()
         await h.runtime.setProfile(name: "  Ana's MacBook ", avatar: nil)
         let invite = (v.derivations["invite"] as! [String: Any])["link"] as! String
-        try await h.runtime.join(link: invite)
+        try await h.runtime.lookUpAndFollow(link: invite)
         var state = try FollowerState.decode(try #require(try h.secrets.read(account: KeychainStore.followerAccount)))
         #expect(state.me.name == "Ana's MacBook")
         await hub.inject(try keyDelivery(to: try crypto.publicKey(of: state.follower)))
@@ -131,7 +170,7 @@ struct FollowerRuntimeTests {
     @Test func overlappingReconnectsLeaveOneConnection() async throws {
         let h = RuntimeHarness(now: v.now, hub: FakeRelayHub(stored: [v.event("invite")]))
         await h.runtime.start()
-        try await h.runtime.join(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        try await h.runtime.lookUpAndFollow(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<8 { group.addTask { await h.runtime.reconnect() } }
         }
@@ -147,7 +186,7 @@ struct FollowerRuntimeTests {
     @Test func unfollowWipesTheWearersDataAndTheKey() async throws {
         let h = RuntimeHarness(now: v.now, hub: FakeRelayHub(stored: [v.event("invite")]))
         await h.runtime.start()
-        try await h.runtime.join(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        try await h.runtime.lookUpAndFollow(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
         try await h.stores.readings.merge([Reading(t: Date(timeIntervalSince1970: Double(v.now)), mgdl: 120)])
         await h.runtime.unfollow()
         #expect(try h.secrets.read(account: KeychainStore.followerAccount) == nil)
@@ -163,11 +202,34 @@ struct FollowerRuntimeTests {
             makeRelays: { _, _ in h.hub.connect() }, sleep: { _ in })
         await runtime.start()
         await #expect(throws: FollowerJoinError.notFound) {
-            try await runtime.join(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+            _ = try await runtime.lookUp(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
         }
-        await #expect(throws: FollowerJoinError.invalidLink) { try await runtime.join(link: "https://example.org") }
+        await #expect(throws: FollowerJoinError.invalidLink) {
+            _ = try await runtime.lookUp(link: "https://example.org")
+        }
         #expect(await runtime.currentLink == .notFollowing)
         await runtime.stop()
+    }
+
+    /// The lookup only reads: who is inviting (the invite's profile) comes back, while no key is made, nothing is
+    /// published and the link stays *not following* until the person clicks *Follow*. An invite that expired while
+    /// they decided is refused.
+    @Test func lookingUpShowsWhoIsInvitingAndSendsNothing() async throws {
+        let hub = FakeRelayHub(stored: [v.event("invite")])
+        let h = RuntimeHarness(now: v.now, hub: hub)
+        await h.runtime.start()
+        let invite = try await h.runtime.lookUp(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        #expect(invite.identity == v.pub("I"))
+        #expect(invite.profile?.name == "Alex")
+        #expect(try h.secrets.read(account: KeychainStore.followerAccount) == nil)
+        #expect(await hub.published().isEmpty)
+        #expect(await h.runtime.currentLink == .notFollowing)
+        let late = Invite(
+            identity: invite.identity, token: invite.token, expiry: v.now - 1, relays: invite.relays,
+            profile: invite.profile)
+        await #expect(throws: FollowerJoinError.expired) { try await h.runtime.join(invite: late) }
+        #expect(try h.secrets.read(account: KeychainStore.followerAccount) == nil)
+        await h.runtime.stop()
     }
 
     @Test func anUnreadableKeychainKeepsTheHistoryAndSaysWhy() async throws {

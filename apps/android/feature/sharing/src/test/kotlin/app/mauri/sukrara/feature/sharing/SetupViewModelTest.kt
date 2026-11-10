@@ -29,9 +29,12 @@ import app.mauri.sukrara.feature.sharing.setup.RoleChange
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupViewModel
+import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.InviteLookup
 import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
@@ -46,6 +49,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -88,16 +93,21 @@ class SetupViewModelTest {
     }
 
     private var joinedAs: Profile? = null
+    private val lookups = mutableListOf<String>()
 
     private val follower =
         object : FollowerSharing {
             override val state = MutableStateFlow<FollowState>(FollowState.NotFollowing)
 
+            override suspend fun lookUp(link: String): InviteLookup {
+                lookups += link
+                return if (link == LINK) InviteLookup.Found(INVITE) else InviteLookup.Failed(JoinResult.InvalidLink)
+            }
+
             override suspend fun join(
-                link: String,
+                invite: Invite,
                 me: Profile?,
             ): JoinResult {
-                if (link != LINK) return JoinResult.InvalidLink
                 joinedAs = me
                 state.value = FollowState.Following(FollowStatus.Requested, Profile("Ana", null), "0420", false, null, emptyMap())
                 return JoinResult.Joined
@@ -200,14 +210,49 @@ class SetupViewModelTest {
             vm.chooseRole(Role.Follower)
             assertEquals(listOf("reset", "role:Follower", "start"), events)
             assertEquals(SetupStep.Join, vm.ui.first { it?.step == SetupStep.Join }!!.step)
-            vm.join("https://sukrara.mauri.app/join#bad", "Bea")
+            vm.lookUp("https://sukrara.mauri.app/join#bad")
             assertEquals(JoinUi.Failed(JoinResult.InvalidLink), vm.ui.first { it?.join is JoinUi.Failed }!!.join)
-            vm.join(LINK, "  Bea ")
+            vm.lookUp(LINK)
+            // who is inviting, before anything is sent
+            assertEquals(JoinUi.Confirm(INVITE), vm.ui.first { it?.join is JoinUi.Confirm }!!.join)
+            assertNull(joinedAs)
+            assertEquals(FollowState.NotFollowing, follower.state.value)
+            vm.join("  Bea ")
             val waiting = vm.ui.first { (it?.follow as? FollowState.Following)?.status == FollowStatus.Requested }!!
             assertEquals(SetupStep.Join, waiting.step)
             assertEquals("Bea", joinedAs?.name)
             vm.completeJoin()
             assertEquals(SetupStep.Permissions, vm.ui.first { it?.step == SetupStep.Permissions }!!.step)
+        }
+
+    @Test
+    fun `an opened invite is looked up once by itself and Cancel or Back sends nothing`() =
+        runTest {
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            vm.ui.first { it != null }
+            vm.chooseRole(Role.Follower)
+            assertEquals(SetupStep.Join, vm.ui.first { it?.step == SetupStep.Join }!!.step)
+            vm.lookUp(LINK, opened = true)
+            // a rotation draws the step again: the same opened link isn't looked up twice
+            vm.lookUp(LINK, opened = true)
+            assertEquals(listOf(LINK), lookups)
+            assertEquals(JoinUi.Confirm(INVITE), vm.ui.first { it?.join is JoinUi.Confirm }!!.join)
+            vm.cancelInvite()
+            assertEquals(JoinUi.Idle, vm.ui.first { it?.join == JoinUi.Idle }!!.join)
+            assertNull(joinedAs)
+            // looked up again (by hand): Back is Cancel and the step stays
+            vm.lookUp(LINK)
+            vm.ui.first { it?.join is JoinUi.Confirm }
+            var left = false
+            vm.back { left = true }
+            assertEquals(JoinUi.Idle, vm.ui.first { it?.join == JoinUi.Idle }!!.join)
+            assertEquals(SetupStep.Join, vm.ui.value!!.step)
+            assertFalse(left)
+            assertNull(joinedAs)
+            // Follow without an invite shown does nothing
+            vm.join("Bea")
+            assertNull(joinedAs)
         }
 
     @Test
@@ -374,3 +419,4 @@ class SetupViewModelTest {
 }
 
 private const val LINK = "https://sukrara.mauri.app/join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+private val INVITE = Invite(PublicKeyHex("ab".repeat(32)), "t".repeat(22), Long.MAX_VALUE, emptyList(), Profile("Ana", null))

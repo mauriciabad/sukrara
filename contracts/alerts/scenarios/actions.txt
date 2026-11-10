@@ -147,6 +147,13 @@ scenario Mute all with Never lasts until the user turns alerts back on
 306                  => Low glucose
 307
 
+scenario Unmute (Mute all) right after muting
+ 0  glucose 65       => Low glucose
+ 1  mute all 1h      => clear low
+ 2  unmute all       => Low glucose           # at once, though the last alert was 2 min ago
+ 7                   => Low glucose           # the repeats count from there
+ 8
+
 scenario Mute all also quiets no data
  0  glucose 120
  1  mute all 1h

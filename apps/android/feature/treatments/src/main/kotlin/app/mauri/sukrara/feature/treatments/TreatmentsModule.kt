@@ -38,6 +38,8 @@ class TreatmentsModule(
     val hints: AlertHints,
     /** A pen entry near a typed insulin dose (*Already logged by your pen?*); none without pens. */
     private val penDuplicates: PenDuplicates = PenDuplicates { _, _ -> null },
+    /** Reading a pen into the open dialog (the wearer's phone with pens); a function: pens are built later. */
+    val pen: () -> DialogPen? = { null },
 ) {
     val log = TreatmentLog(repository, sync, clock)
 

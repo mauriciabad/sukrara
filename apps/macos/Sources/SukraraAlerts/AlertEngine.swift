@@ -200,6 +200,8 @@ public struct AlertEngine: Sendable {
         case .unmuteAll:
             guard muteAllEnd(at: t) != nil else { return }
             muteAllUntil = nil
+            // every episode was quiet under Mute all, as when it ends at its time: the next match alerts at once
+            for g in Array(episodes.keys) { episodes[g]?.liftPending = true }
         }
     }
 

@@ -138,6 +138,35 @@ struct Case: @unchecked Sendable, CustomTestStringConvertible {
         #expect(TreatmentMerge.winner(phone, mac) == phone)
     }
 
+    /// contracts/treatments/merge.json (SPEC §1): the greater `(u, o)` wins in either arrival order; the same cases run
+    /// on Android through Room (`SukraraDatabaseTest`) and the wire comparison (`TreatmentMergeTest`).
+    @Test func theContractsMergeCases() throws {
+        let data = try Data(contentsOf: Contracts.url("treatments/merge.json"))
+        let cases = try #require(
+            (try JSONSerialization.jsonObject(with: data) as? [String: Any])?["cases"] as? [[String: Any]])
+        #expect(!cases.isEmpty)
+        func version(_ v: Any?) throws -> Treatment {
+            let v = try #require(v as? [String: Any])
+            let o = try #require(Treatment.Origin(rawValue: v["o"] as? String ?? ""))
+            return entry(
+                u: try #require((v["u"] as? NSNumber)?.int64Value), o: o,
+                a: try #require((v["a"] as? NSNumber)?.doubleValue))
+        }
+        for c in cases {
+            let name = c["name"] as? String ?? "?"
+            let cur = try version(c["cur"]), inc = try version(c["inc"])
+            let wins = c["wins"] as? String
+            // both arrival orders keep the same version (`same`: an equal `(u, o)`, the second changes nothing)
+            for (first, second) in [(cur, inc), (inc, cur)] {
+                let winner = wins == "same" ? first : wins == "inc" ? inc : cur
+                #expect(TreatmentMerge.winner(first, second) == winner, "\(name)")
+                var log = TreatmentLog(entries: [first])
+                #expect(log.merge([second]).isEmpty == (wins == "same" || winner == first), "\(name)")
+                #expect(log.entries["x"] == winner, "\(name)")
+            }
+        }
+    }
+
     @Test func aDeletionIsANewerVersion() {
         var log = TreatmentLog(entries: [entry(u: 1, o: .mac)])
         #expect(log.merge([entry(u: 2, o: .mac, del: true)]).count == 1)

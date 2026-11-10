@@ -128,18 +128,25 @@ object BleMessages {
     enum class Owner { Ours, Other, Unknown }
 
     /**
-     * Is the phone that sent [info] our wearer (B§6 "Which owner")? [nonces] = those our recent HELLOs carried. Once we
-     * know `sid`, only `m` proves it (for one of our nonces): `i` is public while any wearer pairs, so a copied `i` never
-     * does. Before `sid` (request pending), `i` = our identity says ours. Other: another identity, or a known `sid` that
-     * doesn't match. Unknown: no `sid` yet and no `i` — receive, but don't write.
+     * Is the phone that sent [info] our wearer (PROTOCOL-v2 "Bluetooth link", *Which owner*;
+     * contracts/protocol/ble/link-rules.json)? [nonces] = those our last HELLOs carried. Once we know [sid], `m` is
+     * checked first: only `m` over one of our nonces can make it ours (`i` is public while any wearer pairs, so a copied
+     * `i` never does), and an `i` naming another identity still makes it other. Before [sid] (request pending): `i` = our
+     * identity is ours, another `i` is other, no `i` (or no identity yet) is unknown — receive, but don't write.
      */
     fun owner(info: JsonObject, identity: PublicKeyHex?, sid: String?, nonces: Collection<String>): Owner {
         val i = (info["i"] as? JsonPrimitive)?.content?.ifEmpty { null }
-        if (identity != null && i != null && i != identity.hex) return Owner.Other
-        if (sid == null) return if (identity != null && i != null) Owner.Ours else Owner.Unknown
-        val n = (info["nonce"] as? JsonPrimitive)?.content
-        val m = (info["m"] as? JsonPrimitive)?.content
-        return if (n != null && n in nonces && m == infoM(sid, n)) Owner.Ours else Owner.Other
+        if (sid != null) {
+            val n = (info["nonce"] as? JsonPrimitive)?.content
+            val m = (info["m"] as? JsonPrimitive)?.content
+            if (n == null || n !in nonces || m != infoM(sid, n)) return Owner.Other
+            return if (identity != null && i != null && i != identity.hex) Owner.Other else Owner.Ours
+        }
+        return when {
+            identity == null || i == null -> Owner.Unknown
+            i == identity.hex -> Owner.Ours
+            else -> Owner.Other
+        }
     }
 }
 

@@ -4,8 +4,10 @@ The CSV export (docs/22 "In Sukrara: CSV export", docs/FEATURES.md "Data export"
 `cases` that both writers must turn into the same bytes.
 
 - Android: `GlucoseCsvTest` in `:integrations` (`cd apps/android && ./gradlew :integrations:test`)
-- Mac: `CoreTests` (`cd apps/macos && swift test --filter CoreTests`)
-- CI runs both (`.github/workflows/checks.yml`).
+- Mac: `GlucoseCsvFixtureTests` in `CoreTests` (`cd apps/macos && swift test --filter CoreTests`)
+- Both read every case of every `*.json` file here. CI runs both (`.github/workflows/checks.yml`).
+- `tools/check` parity group `export`: a change here fails unless both writers (or their tests) change with it;
+  `export-impl` reminds when one writer changes alone.
 
 A case: `name`; `zone` (IANA id); `generated`, `from`, `to` (epoch s; rows with `from ≤ t < to`); `mmol` (optional);
 `sensor` `{serial, start, end}` or null; `readings` `[{t, sgv, rate?}]`; `treatments` `[{id, k: rapid|long|carbs|note,

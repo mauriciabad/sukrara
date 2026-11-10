@@ -4,18 +4,15 @@
 import Foundation
 import SukraraCore
 
-/// The languages the alert copy is written in (`contracts/alerts/copy.json`: en + es).
-public enum CopyLanguage: String, Sendable, CaseIterable {
-    case en, es
-}
-
-/// THE mute / remind-less state lines (SPEC §2 "Copy"): every line case of `contracts/alerts/copy.json`, in English
-/// (the default: the panel and menus) and Spanish (the notifications in the person's language, `AlertText`). Durations
-/// only through `Durations`. Lines are sentence case; Mac menu items are title-style.
+/// THE mute / remind-less state lines (SPEC §2 "Copy"): every case of `contracts/alerts/copy.json`, English and Spanish
+/// (`l`: the language the app speaks, `AppLanguage.current`; the log passes `.en`). Durations only through `Durations`.
+/// Lines are sentence case; Mac menu items are title-style. The card's pill ("Muted · 1h 12m") is the renderer's
+/// (`CardWords`).
 public enum MuteCopy {
-    /// The side's name ("low" covers very low, "high" very high and extremely high): "Low"; es "de glucosa baja".
-    public static func sideName(_ side: AlertSide, _ lang: CopyLanguage = .en) -> String {
-        switch (side, lang) {
+    /// The side's name ("low" covers very low, "high" very high and extremely high): "Low" / "de glucosa baja", as it
+    /// goes before "alerts" ("Low alerts", "Alertas de glucosa baja").
+    public static func sideName(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
+        switch (side, l) {
         case (.low, .en): "Low"
         case (.high, .en): "High"
         case (.fallingFast, .en): "Falling fast"
@@ -29,113 +26,96 @@ public enum MuteCopy {
         }
     }
 
-    /// "1 h 12 min left"; es "quedan 1 h 12 min" ("queda" with one unit of 1: "queda 1 h", "queda 1 min").
-    private static func left(_ minutes: Int, _ lang: CopyLanguage) -> String {
-        let text = Durations.text(minutes)
-        guard lang == .es else { return "\(text) left" }
-        let quantity = minutes >= 60 && minutes % 60 == 0 ? minutes / 60 : minutes
-        return "\(quantity == 1 ? "queda" : "quedan") \(text)"
+    /// "12 min left" / "quedan 12 min" ("queda" for a single unit of 1: "queda 1 h").
+    private static func left(_ min: Int, _ l: AppLanguage) -> String {
+        let d = Durations.text(min)
+        guard l == .es else { return "\(d) left" }
+        let m = max(0, min)
+        return ((m >= 60 && m % 60 == 0 ? m / 60 : m) == 1 ? "queda " : "quedan ") + d
+    }
+
+    /// "Low alerts muted" / "Alertas de glucosa baja silenciadas".
+    private static func sideAlertsMuted(_ side: AlertSide, _ l: AppLanguage) -> String {
+        l == .en ? "\(sideName(side, l)) alerts muted" : "Alertas \(sideName(side, l)) silenciadas"
     }
 
     /// "Low alerts muted · 12 min left".
-    public static func sideMuted(_ side: AlertSide, leftMin: Int, _ lang: CopyLanguage = .en) -> String {
-        "\(notificationTitle(side, lang)) · \(left(leftMin, lang))"
+    public static func sideMuted(_ side: AlertSide, leftMin: Int, _ l: AppLanguage = .current) -> String {
+        "\(sideAlertsMuted(side, l)) · \(left(leftMin, l))"
     }
 
     /// "Low alerts muted after carbs · 12 min left", "High alerts muted after insulin · 1 h left".
     public static func sideAfter(
-        _ side: AlertSide, treatment: TreatmentKind, leftMin: Int, _ lang: CopyLanguage = .en
+        _ side: AlertSide, treatment: TreatmentKind, leftMin: Int, _ l: AppLanguage = .current
     ) -> String {
-        switch lang {
-        case .en:
-            "\(sideName(side)) alerts muted after \(treatment == .carbs ? "carbs" : "insulin") · \(left(leftMin, lang))"
-        case .es:
-            "Alertas \(sideName(side, .es)) silenciadas tras \(treatment == .carbs ? "los hidratos" : "la insulina") · "
-                + left(leftMin, lang)
-        }
+        let after =
+            switch l {
+            case .en: treatment == .carbs ? "after carbs" : "after insulin"
+            case .es: treatment == .carbs ? "tras los hidratos" : "tras la insulina"
+            }
+        return "\(sideAlertsMuted(side, l)) \(after) · \(left(leftMin, l))"
     }
 
     /// "High alerts muted while falling back into range" (no end of its own).
-    public static func sideFalling(_ side: AlertSide, _ lang: CopyLanguage = .en) -> String {
-        switch lang {
-        case .en: "\(sideName(side)) alerts muted while falling back into range"
-        case .es: "Alertas \(sideName(side, .es)) silenciadas mientras baja hacia el rango"
-        }
+    public static func sideFalling(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
+        "\(sideAlertsMuted(side, l)) " + (l == .en ? "while falling back into range" : "mientras baja hacia el rango")
     }
 
     /// "Low reminders every 30 min".
-    public static func sideLess(_ side: AlertSide, intervalMin: Int, _ lang: CopyLanguage = .en) -> String {
-        switch lang {
-        case .en: "\(sideName(side)) reminders every \(Durations.text(intervalMin))"
-        case .es: "Avisos \(sideName(side, .es)) cada \(Durations.text(intervalMin))"
-        }
+    public static func sideLess(_ side: AlertSide, intervalMin: Int, _ l: AppLanguage = .current) -> String {
+        l == .en
+            ? "\(sideName(side, l)) reminders every \(Durations.text(intervalMin))"
+            : "Avisos \(sideName(side, l)) cada \(Durations.text(intervalMin))"
     }
 
     /// Mute all for a time: "Alerts muted · 1 h 12 min left".
-    public static func allTimed(leftMin: Int, _ lang: CopyLanguage = .en) -> String {
-        "\(lang == .en ? "Alerts muted" : "Alertas silenciadas") · \(left(leftMin, lang))"
+    public static func allTimed(leftMin: Int, _ l: AppLanguage = .current) -> String {
+        (l == .en ? "Alerts muted · " : "Alertas silenciadas · ") + left(leftMin, l)
     }
-    public static let allForever = "Alerts muted until you turn it off"
-    public static func allForever(_ lang: CopyLanguage) -> String {
-        lang == .en ? allForever : "Alertas silenciadas hasta que lo desactives"
+    public static func allForever(_ l: AppLanguage = .current) -> String {
+        l == .en ? "Alerts muted until you turn it off" : "Alertas silenciadas hasta que lo desactives"
     }
 
     /// The silent notification while a side is muted (Mac notifications can't count down: they say the end).
-    public static func notificationTitle(_ side: AlertSide, _ lang: CopyLanguage = .en) -> String {
-        lang == .en ? "\(sideName(side)) alerts muted" : "Alertas \(sideName(side, .es)) silenciadas"
+    public static func notificationTitle(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
+        sideAlertsMuted(side, l)
     }
-    public static func notificationText(until: String, _ lang: CopyLanguage = .en) -> String {
-        lang == .en ? "Until \(until)" : "Hasta las \(until)"
-    }
-
-    /// The card pill while Mute all runs in range: "Muted · 1h 12m" / "Muted"; es "Silenciadas · 1 h 12 min" (Spanish
-    /// writes the compact durations in words).
-    public static func pill(leftMin: Int, _ lang: CopyLanguage = .en) -> String {
-        lang == .en ? "Muted · \(Durations.compact(leftMin))" : "Silenciadas · \(compactEs(leftMin))"
-    }
-    public static let pillForever = "Muted"
-    public static func pillForever(_ lang: CopyLanguage) -> String { lang == .en ? pillForever : "Silenciadas" }
-
-    /// `Durations.compact`'s steps in Spanish words (Android's `duration_*` es strings): "12 min", "1 h 5 min", whole
-    /// hours from 6 h ("7 h"), days from two days ("2 d").
-    private static func compactEs(_ minutes: Int) -> String {
-        let m = max(0, minutes)
-        switch m {
-        case ..<(6 * 60): return Durations.text(m)
-        case ..<(48 * 60): return Durations.text(m / 60 * 60)
-        default: return "\(m / 1440) d"
-        }
+    public static func notificationText(until: String, _ l: AppLanguage = .current) -> String {
+        l == .en ? "Until \(until)" : "Hasta las \(until)"
     }
 
     /// A Mute choice: "For 30 min", "For 1 h".
-    public static func choice(_ minutes: Int, _ lang: CopyLanguage = .en) -> String {
-        "\(lang == .en ? "For" : "Durante") \(Durations.text(minutes))"
+    public static func choice(_ minutes: Int, _ l: AppLanguage = .current) -> String {
+        (l == .en ? "For " : "Durante ") + Durations.text(minutes)
     }
-    public static let choiceForever = "Until you turn it off"
-    public static func choiceForever(_ lang: CopyLanguage) -> String {
-        lang == .en ? choiceForever : "Hasta que lo desactives"
+    public static func choiceForever(_ l: AppLanguage = .current) -> String {
+        l == .en ? "Until you turn it off" : "Hasta que lo desactives"
     }
-    public static let menuForever = "Until You Turn It Off"
+    /// The menu item (title case in English).
+    public static func menuForever(_ l: AppLanguage = .current) -> String {
+        l == .en ? "Until You Turn It Off" : "Hasta que lo desactives"
+    }
 
     /// The line for Mute all ending at `until` (`muteAllForever` = indefinite), nil once it is over.
-    public static func allLine(until: Date, now: Date, _ lang: CopyLanguage = .en) -> String? {
+    public static func allLine(until: Date, now: Date, _ l: AppLanguage = .current) -> String? {
         guard until > now else { return nil }
         return until >= muteAllForever
-            ? allForever(lang) : allTimed(leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), lang)
+            ? allForever(l) : allTimed(leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), l)
     }
 
     /// The line for a quiet reason on `side`, counting down at `now`; nil once a timed one is over (never claims a
     /// quiet that has ended).
-    public static func line(_ reason: QuietReason, side: AlertSide, now: Date, _ lang: CopyLanguage = .en) -> String? {
+    public static func line(
+        _ reason: QuietReason, side: AlertSide, now: Date, _ l: AppLanguage = .current
+    ) -> String? {
         switch reason {
         case .treatment(_, _, let until) where until <= now: nil
         case .sideMuted(let until) where until <= now: nil
         case .treatment(let kind, _, let until):
-            sideAfter(side, treatment: kind, leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), lang)
-        case .fallingBack: sideFalling(side, lang)
-        case .sideMuted(let until):
-            sideMuted(side, leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), lang)
-        case .allMuted(let until): allLine(until: until, now: now, lang)
+            sideAfter(side, treatment: kind, leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), l)
+        case .fallingBack: sideFalling(side, l)
+        case .sideMuted(let until): sideMuted(side, leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), l)
+        case .allMuted(let until): allLine(until: until, now: now, l)
         }
     }
 }

@@ -21,6 +21,11 @@ sealed interface PenAction {
 
     data object AddTreatment : PenAction
 
+    /** *Choose*: a pen injection near several typed entries; home's question card and its sheet name which one. */
+    data class Choose(
+        val question: String,
+    ) : PenAction
+
     /** *Review*: a big read's entries in the pen's *Doses read*, with *Undo this read*. */
     data class Review(
         val serial: String,
@@ -51,13 +56,19 @@ sealed interface PenAction {
     ) : PenAction
 }
 
-/** One card: title, lines, whether it reports an error, and its buttons. */
+/** One card: title, lines, whether it reports an error, its buttons, its glyph and the dose its title counts up to. */
 data class PenCard(
     val title: String,
     val lines: List<String>,
     val error: Boolean = false,
     val actions: List<PenAction> = emptyList(),
-)
+    val glyph: Glyph = if (error) Glyph.Error else Glyph.Pen,
+    /** A single injection logged: the title is its amount (*8.5u logged*), counting up from 0 as the card arrives. */
+    val count: Double? = null,
+) {
+    /** The glyph in the reading ring: the pen, a check once doses were logged, or the error mark. */
+    enum class Glyph { Pen, Check, Error }
+}
 
 /**
  * Every pen sentence the read card and the notifications show (amounts `8.5u`: dot, lowercase `u`, no space; times in
@@ -164,7 +175,8 @@ class PenCardText(
         return if (cands.size == 1) {
             listOf(PenAction.Same(q.id, q.keys, cands[0]), PenAction.Same(q.id, q.keys, null))
         } else {
-            listOf(PenAction.Same(q.id, q.keys, null))
+            // several typed entries: which one is chosen on home's card (its sheet lists them), or none of them here
+            listOf(PenAction.Choose(q.id), PenAction.Same(q.id, q.keys, null))
         }
     }
 
@@ -261,11 +273,13 @@ class PenCardText(
                 lines,
                 actions =
                     listOf(PenAction.Review(st.serial)) + undo + askActions,
+                glyph = PenCard.Glyph.Check,
             )
         }
         if (entries.isNotEmpty()) {
             val lines = mutableListOf<String>()
             val title: String
+            var count: Double? = null
             if (entries.size == 1) {
                 val e = entries[0]
                 if (e.id in r.updated && e.id !in r.created && e.id !in r.merged) {
@@ -273,6 +287,7 @@ class PenCardText(
                     lines += listOf(kind(e.k), time(e.t), s(R.string.pen_added, u(r.logged))).joinToString(" · ")
                 } else {
                     title = s(R.string.pen_read_logged, u(e.a))
+                    count = e.a
                     lines += entryLine(e)
                     pen?.replaced?.get(e.id)?.takeIf { e.id in r.merged }?.let { was ->
                         lines +=
@@ -297,12 +312,15 @@ class PenCardText(
                 if (r.merged.isNotEmpty()) lines += p(R.plurals.pen_read_replaced_several, r.merged.size)
             }
             askLine?.let { lines += it }
-            return PenCard(title, lines, actions = undo + askActions + PenAction.AddTreatment)
+            return PenCard(title, lines, actions = undo + askActions + PenAction.AddTreatment, glyph = PenCard.Glyph.Check, count = count)
         }
         if (q != null) return PenCard(questionTitle(q), listOfNotNull(askLine), actions = askActions)
         if (r.pending > 0) return PenCard(s(R.string.pen_read_pending), listOf(s(R.string.pen_read_pending_text)))
         return PenCard(s(R.string.pen_read_nothing), listOfNotNull(st.last?.let { s(R.string.pen_read_last, u(it.a), time(it.t)) }))
     }
+
+    /** The title of a single logged dose while it counts up: *4.5u logged*. */
+    fun logged(a: Double) = s(R.string.pen_read_logged, u(a))
 
     /** What TalkBack says for a card line: amounts as words ("8.5 units"), not "8.5u". */
     fun spoken(text: String): String =

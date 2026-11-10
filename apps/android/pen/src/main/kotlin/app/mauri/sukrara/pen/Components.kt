@@ -80,6 +80,7 @@ class PenReadActivity : ComponentActivity() {
         setContent {
             SukraraTheme {
                 val st by module.pens.read.collectAsState()
+                val progress by module.pens.progress.collectAsState()
                 val shown by showing
                 var touched by remember { mutableIntStateOf(0) }
                 val s = st
@@ -94,6 +95,7 @@ class PenReadActivity : ComponentActivity() {
                         onClose = ::finish,
                         onTouch = { touched++ },
                         text = PenCardText(this),
+                        progress = progress,
                     )
                     // a card that asks for a decision waits 60 s; a plain result at least 6 s, longer with the
                     // accessibility timeout; any touch on the card restarts the time
@@ -166,6 +168,7 @@ class PenReadActivity : ComponentActivity() {
                                 }
                             },
                             progress = { p ->
+                                module.pens.progressed(p)
                                 if (p > lastProgress) view.post { PenHaptics.play(view, PenHaptics.Moment.Segment) }
                                 lastProgress = p
                             },
@@ -219,7 +222,22 @@ class PenReadActivity : ComponentActivity() {
         val view = window.decorView
         when (a) {
             PenAction.AddTreatment -> {
-                startActivity(PenNotices.addTreatment(this))
+                // at the read's newest injection, the other insulin focused
+                startActivity(
+                    PenNotices.addTreatment(
+                        this,
+                        module.pens.read.value
+                            ?.entries
+                            ?.maxByOrNull { it.t },
+                    ),
+                )
+                finish()
+                return
+            }
+
+            is PenAction.Choose -> {
+                // which typed entry it is: home's question card and its sheet list them
+                PenNotices.home(this)?.let { runCatching { startActivity(it) } }
                 finish()
                 return
             }
@@ -255,7 +273,7 @@ class PenReadActivity : ComponentActivity() {
                         is PenAction.Suggest -> module.pens.acceptSuggestion(a.question, a.keys)
                         is PenAction.AllPriming -> module.pens.allPriming(a.question, a.keys)
                         is PenAction.Same -> module.pens.answerMatch(a.question, a.entry, a.keys)
-                        PenAction.AddTreatment, is PenAction.OpenPen, is PenAction.Review -> true
+                        PenAction.AddTreatment, is PenAction.OpenPen, is PenAction.Review, is PenAction.Choose -> true
                     }
                 }.onFailure { Log.e(TAG, "pen action failed", it) }
                     .getOrDefault(false)

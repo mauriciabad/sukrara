@@ -234,6 +234,33 @@ class SensorEndPlanTest {
     }
 
     @Test
+    fun `a replacement 3 h after the previous sensor started gets the warm-up countdown and Sensor ready`() {
+        val now = t("2026-03-01T20:00")
+        // the previous sensor started at 17:00, warmed up, read, and failed
+        val old =
+            SensorEndMemory(
+                start = now - 3 * 3600,
+                end = now - 3 * 3600 + 15 * 86_400,
+                warmupEnd = now - 2 * 3600,
+                lastReminder = now - 3 * 3600,
+                warmupShown = true,
+                readyShown = true,
+                firstReading = now - 2 * 3600 + 60,
+                config = cfg.hashCode(),
+                id = "OLD",
+            )
+        val m = SensorEndPlan.remember(old, now, now + 15 * 86_400, now + 3600, cfg.hashCode(), now, id = "NEW")
+        assertEquals(SensorEndMemory(now, now + 15 * 86_400, now + 3600, lastReminder = now, config = cfg.hashCode(), id = "NEW"), m)
+        val warming = SensorEndPlan.plan(cfg, 8, now + 60, zone, m)
+        assertTrue(warming.warmup)
+        val ready = SensorEndPlan.plan(cfg, 8, now + 3660, zone, m.copy(warmupShown = true), firstReading = now + 3630)
+        assertTrue(ready.ready)
+        // the same serial stays the same sensor however its derived start moves
+        val same = SensorEndPlan.remember(m, now + 3 * 86_400, now + 18 * 86_400, now + 3600, cfg.hashCode(), now + 60, id = "NEW")
+        assertEquals(m.start, same.start)
+    }
+
+    @Test
     fun `an early end stays when the source still reports the planned end`() {
         val m = mem("2026-03-10T14:30").copy(config = cfg.hashCode())
         val now = t("2026-03-09T12:00")
