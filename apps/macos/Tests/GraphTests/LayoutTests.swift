@@ -252,6 +252,7 @@ enum DefaultAlertRules {
         checkGaps(renders, rulesRoot, fail)
         checkBadge(renders, rulesRoot, fail)
         checkDistribution(renders, rulesRoot, fail)
+        checkWarmup(renders, rulesRoot, fail)
         #expect(failures == 0, "\(failures) layout failure(s) over \(renders.count) renders")
     }
 
@@ -458,6 +459,28 @@ enum DefaultAlertRules {
             }
         }
         if compared == 0 { fail("badge: no render shows the sensor badge (rule untested)") }
+    }
+
+    /// A warming-up sensor's time left is labelled and never at a value's size (rules.json "warmup", #27).
+    private func checkWarmup(_ renders: [Render], _ root: JSON, _ fail: (String) -> Void) {
+        let warmup = root.child("warmup")
+        guard let maxText = warmup.number("maxText"), let words = warmup["words"] as? [String] else {
+            return fail("rules.json has no \"warmup\"")
+        }
+        var shown = 0
+        for r in renders {
+            for l in r.layouts {
+                guard let e = l.first("value.warmup") else { continue }
+                shown += 1
+                let size = Double((e.box?.height ?? .infinity) / l.d)
+                if size > maxText + 0.05 { fail("warmup on \(r): text \(size) pt, want ≤ \(maxText)") }
+                let text = l.first("value.warmup.text")?.info ?? ""
+                if !words.contains(where: { text.hasPrefix($0) }) {
+                    fail("warmup on \(r): \"\(text)\" doesn't say \(words) first")
+                }
+            }
+        }
+        if shown == 0 { fail("warmup: no render shows a warming-up sensor (rule untested)") }
     }
 
     /// The distribution's erased outline: the dots plus one constant margin, everywhere.

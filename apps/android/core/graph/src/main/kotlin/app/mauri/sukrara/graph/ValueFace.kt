@@ -29,6 +29,11 @@ internal class ValueFace(
     private val w = model.words
     private val nowS = model.nowS
 
+    companion object {
+        /** The largest a warming-up sensor's words are drawn (dp): the size of "Sensor ended", never a value's. */
+        const val WARMUP_TEXT_DP = 20f
+    }
+
     /** Draw into [box] with the status pill [look] (null = none) and the value in [ink] (null = its range colour). */
     fun draw(
         cv: Canvas,
@@ -96,7 +101,12 @@ internal class ValueFace(
         }
     }
 
-    /** A new sensor warming up: its time left where the number goes, the disc filling beside it, "Ready at …" under it. */
+    /**
+     * A new sensor warming up, labelled so it can never pass for a value (#27): the disc filling and "Warming up · 42m"
+     * ("Almost ready" past the warm-up's end) at the size of "Sensor ended" (at most [WARMUP_TEXT_DP], never the
+     * number's), and under it "Ready at 19:45" / "Waiting for the first reading" when there is room. A box too narrow
+     * for one line puts the time left on its own line under the words, at the same size.
+     */
     private fun drawWarmup(
         cv: Canvas,
         box: RectF,
@@ -104,28 +114,51 @@ internal class ValueFace(
         small: Paint,
     ) {
         val s = look.warmup ?: return
+        val waiting = look.waiting(nowS)
+        val title = if (waiting) w.almostReady else "${w.warmingUp} · $s"
         val line = look.warmupLine(nowS, w)
-        val numBox = RectF(box.left, box.top, box.right, box.bottom - small.textSize * 1.25f)
-        val num =
+        val p =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
-                typeface = RoundedFont.typeface(700)
-                textSize =
-                    numBox.height() * 1.18f
+                typeface = Typeface.create(Typeface.DEFAULT, 600, false)
             }
-        val need = num.measureText(s) + num.textSize * 0.6f
-        if (need > box.width()) num.textSize *= box.width() / need
-        val capH = num.textSize * ValueGlyphs.CAP
-        val cy = numBox.centerY()
-        val baseY = cy + capH / 2
-        cv.drawText(s, box.left - num.textSize * 0.04f, baseY, num)
-        val dh = capH * 0.5f
-        SensorBadge.disc(cv, box.left + num.measureText(s) + num.textSize * 0.12f, cy - dh / 2, dh, look, pal)
-        val t = Paint(small)
-        if (t.measureText(line) > box.width()) t.textSize *= box.width() / t.measureText(line)
-        cv.drawText(line, box.left, baseY + small.textSize * 1.25f, t)
-        rec.add("value.warmup", RectF(box.left, cy - capH / 2, box.left + need, cy + capH / 2), s)
-        if (!look.waiting(nowS)) rec.add("time.text", info = line)
+        val sub = Paint(small).apply { textSize = min(small.textSize, 15 * d) }
+        val subH = sub.textSize * 1.3f
+        val withSub = box.height() - subH >= 20 * d
+        val textBox = if (withSub) RectF(box.left, box.top, box.right, box.bottom - subH) else box
+        p.textSize = min(textBox.height() * 0.5f, WARMUP_TEXT_DP * d)
+
+        // the disc before the words, as the flag before "Sensor ended"
+        fun iconW() = p.textSize * 1.3f
+        val one = iconW() + p.measureText(title)
+        val lines =
+            if (one <= box.width() || waiting || box.width() / one >= 0.6f) {
+                if (one > box.width()) p.textSize *= (box.width() / one).coerceAtLeast(0.45f)
+                listOf(title)
+            } else {
+                // two lines: the words, then the time left under them (never alone at a bigger size)
+                p.textSize = min(textBox.height() / 2.6f, WARMUP_TEXT_DP * d)
+                val widest = iconW() + max(p.measureText(w.warmingUp), p.measureText(s))
+                if (widest > box.width()) p.textSize *= (box.width() / widest).coerceAtLeast(0.45f)
+                listOf(w.warmingUp, s)
+            }
+        val lh = p.textSize * 1.25f
+        if (withSub && sub.measureText(line) > box.width()) sub.textSize *= box.width() / sub.measureText(line)
+        // the words and the line under them as one group, centred in the box
+        val groupH = lines.size * lh + if (withSub) sub.textSize * 1.3f else 0f
+        val top = box.centerY() - groupH / 2
+        val base = top + lh / 2 + p.textSize * 0.36f
+        val ds = p.textSize * 1.05f
+        SensorBadge.disc(cv, box.left, base - p.textSize * 0.36f - ds / 2, ds, look, pal)
+        val x = box.left + iconW()
+        lines.forEachIndexed { i, t -> cv.drawText(t, x, base + i * lh, p) }
+        val textW = lines.maxOf { p.measureText(it) }
+        rec.add("value.warmup", RectF(box.left, base - p.textSize, x + textW, base), s)
+        rec.add("value.warmup.text", info = title)
+        if (withSub) {
+            cv.drawText(line, box.left, top + lines.size * lh + sub.textSize * 1.05f, sub)
+            if (!waiting) rec.add("time.text", info = line)
+        }
     }
 
     /** No reading yet / none for 20 min: the "no readings" icon (only with a last reading) and the words. */

@@ -16,7 +16,7 @@ struct MenubarTitle: Equatable {
         case arrow(Double)
         /// The "no trend" ring (a value without a rate).
         case ring
-        /// An SF Symbol instead of a value: no readings for 20 min, the sensor ended.
+        /// An SF Symbol instead of a value (no readings for 20 min, the sensor ended), or beside the warm-up's time left.
         case symbol(String)
         case none
     }
@@ -50,6 +50,8 @@ struct MenubarTitle: Equatable {
     var tooltip: String
 
     static let endedSymbol = "flag.checkered"
+    /// Beside a warming-up sensor's time left, so "42m" never reads as a value (#27).
+    static let warmupSymbol = "hourglass"
 
     static func of(
         look: GlucoseLook, data: CardData? = nil, config: GraphConfig = GraphConfig(), spoken: String,
@@ -93,6 +95,7 @@ struct MenubarTitle: Equatable {
             let waiting = data?.sensor.map { now.timeIntervalSince1970 >= $0.warmupEnd } ?? false
             value = waiting ? L10n.t("Almost ready") : look.warmup ?? ""
             text = L10n.t("Warming up") + (look.warmup.map { " \($0)" } ?? "")
+            mark = .symbol(warmupSymbol)
             tint = .grey
             if let s = data?.sensor {
                 tooltip =

@@ -503,6 +503,27 @@ class CardLayoutTest {
         }
         if (cuts == 0) problems += "distribution: no render erases its outline (rule untested)"
 
+        // a warming-up sensor's time left is labelled and never at a value's size
+        val warmup = rulesFile["warmup"]!!.jsonObject
+        val maxText = warmup["maxText"].double()!!
+        val warmWords = warmup["words"]!!.jsonArray.map { it.str()!! }
+        var warmShown = 0
+        for (r in renders) {
+            for (l in r.layouts) {
+                val e = l.first("value.warmup") ?: continue
+                warmShown++
+                val size = (e.box?.height() ?: Float.MAX_VALUE) / l.d
+                if (size > maxText + 0.05) problems += "warmup on $r: text ${size}dp, want ≤ $maxText"
+                val text = l.first("value.warmup.text")?.info
+                if (text == null ||
+                    warmWords.none { text.startsWith(it) }
+                ) {
+                    problems += "warmup on $r: \"$text\" doesn't say $warmWords first"
+                }
+            }
+        }
+        if (warmShown == 0) problems += "warmup: no render shows a warming-up sensor (rule untested)"
+
         // treatment labels only up to maxHours
         val maxHours = rulesFile["treatmentLabels"]!!.jsonObject["maxHours"].long()!!
         assertTrue("treatmentLabels maxHours", GlucoseGraph.LABELS_MAX_S == maxHours * 3600)

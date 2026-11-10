@@ -147,6 +147,9 @@ times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays wit
 - `layout/rules.json` `distribution`: the distribution's dot pitch, dot radius and the outline erased around the dots
   (`cut`, dp); both renderers' constants must equal them and every drawn distribution's erased box
   (`chart.distribution.cut`) is its dots' box (`chart.distribution.dots`) plus `cut` on the right and the top.
+- `layout/rules.json` `warmup`: a warming-up sensor's time left never passes for a value (#27): every render whose
+  value's place shows the warm-up (`value.warmup`) draws it at most `maxText` dp tall and labelled
+  (`value.warmup.text` starts with one of `words`: `Warming up · 40m`, `Almost ready`).
 - `layout/scenes.json` `scroll`: scrolled charts (the app panel, the Mac dropdown), each case a scene and how far back
   (`back`, s) the window ends and, zoomed, how long it is (`span`, s), rendered through the scrollable surfaces' entry paths (`PanelCard` with a `ChartScroll`,
   `CardView.scrollEnd`): the chart must equal the chart of the visible data alone (every reading and treatment outside

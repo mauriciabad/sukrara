@@ -99,7 +99,7 @@ import Testing
         #expect(none.accessibilityLabel.hasPrefix("Glucose: no reading since "))
         let warm = title(
             minutesAgo: nil, sensor: SensorInfo(start: now - 600, end: now + 14 * 86400, warmupEnd: now + 42 * 60))
-        #expect(warm.value == "42m" && warm.tint == .grey && warm.mark == .none)
+        #expect(warm.value == "42m" && warm.tint == .grey && warm.mark == .symbol(MenubarTitle.warmupSymbol))
         #expect(warm.tooltip.hasPrefix("Sukrara · ready at "))
         let ended = title(minutesAgo: 1, sensor: SensorInfo(start: now - 15 * 86400, end: now - 60, warmupEnd: now))
         #expect(ended.value.isEmpty && ended.mark == .symbol(MenubarTitle.endedSymbol))
