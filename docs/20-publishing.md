@@ -155,7 +155,9 @@ open testing at once, with no *Apply for production* step) and no new fee.
 - **App content done**: Ads (none), Advertising ID (not used), Government apps (no), Financial features (none),
   Content rating (IARC, *All Other App Types*: users exchange text — treatment notes reach the wearer's followers —,
   blockable, invited friends only, no location; result all ages / PEGI 3 / ESRB E / USK 0).
-- **App content still open**: Privacy policy (needs the page on the site), **Sign in details** (open question: the app
+- **App content still open** (the remaining Play work is
+  [#142](https://github.com/mauriciabad/sukrara/issues/142), the reviewer-access decision
+  [#141](https://github.com/mauriciabad/sukrara/issues/141)): Privacy policy (needs the page on the site), **Sign in details** (open question: the app
   shows nothing without a sensor or a follow invite from another phone, and debug fakes are compiled out of release, so
   reviewers need instructions and probably a demo video; answering "No restrictions" risks a rejection), Target
   audience (blocked until Sign in details is done; plan: 13+), Data safety, Health apps; the sensitive-permission
