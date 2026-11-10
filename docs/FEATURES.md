@@ -1589,8 +1589,12 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   the same kind for the same address: a saved token is never sent to a new address), *Test* (read-only: the site's status with that credential; "Connected · Nightscout <version>", "The
   site refused this token or secret", "Couldn't connect. <reason>") and *Save*. The token or secret lives only in the
   Keystore-encrypted secure store (`nightscout`), never in settings, logs or backups, and is never shown again.
-- Addresses: `https://` with a certificate from a public authority (user-installed / private CAs aren't trusted, so a
-  self-signed home server fails *Test* with a TLS error); `http://` only to this phone (`localhost`, `127.0.0.1`: it
+- Addresses: `https://` with a certificate from a public authority. A self-signed or private-CA site fails *Test* with
+  "Couldn't connect. The site's certificate isn't trusted: it's self-signed or from a private authority. If it's your
+  own server, give it a free certificate (Let's Encrypt, Tailscale) or put it behind a reverse proxy that has one."
+  (`UserErrors` `UntrustedCertificate`, also on the status line; #121). User-installed CAs are never trusted: one would
+  let a work or device-management profile read every Sukrara connection. An expired certificate or a wrong phone clock
+  keeps "Couldn't make a secure connection. Check the address and the phone's date and time."; `http://` only to this phone (`localhost`, `127.0.0.1`: it
   never leaves the phone), the only cleartext the network security config allows. Any other `http://`, **home network
   included** (#93: the token or secret goes with every request, and anyone on that Wi-Fi could read it), shows "Use
   https://: Sukrara sends your data only encrypted. A server at home needs a certificate: Let's Encrypt and Tailscale

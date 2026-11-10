@@ -315,6 +315,18 @@ Let's Encrypt or Tailscale). Discarded, with the reasons:
 - Nightscout itself redirects http to https unless `INSECURE_USE_HTTP` is set, and AAPS also allows cleartext only to
   localhost. Home devices that only read glucose already have the opt-in *Nightscout API on the home Wi-Fi*.
 
+**Self-signed or private-CA sites: still refused, now with the reason** (decided 2026-11-10, issue #121). Only system
+CAs are trusted. *Test* used to say only "Couldn't make a secure connection"; a TLS failure caused by an untrusted
+certificate is now its own `UserErrors` kind, `UntrustedCertificate`: the certificate isn't trusted because it's
+self-signed or from a private authority, and a self-hoster can use a free certificate (Let's Encrypt, Tailscale) or a
+reverse proxy that has one. An expired certificate or a wrong phone clock keeps the date-and-time message. Discarded:
+- *Trust user-installed CAs for the whole app* (xDrip+ does): any CA a work profile, a device-management profile or
+  stalkerware installs could then read every Sukrara connection (relays, LibreView, Tidepool, Nightscout). The wrong
+  trade for health data.
+- *Pin per site* (*Test* shows the fingerprint, *Trust this certificate*): sound, but security-critical custom TLS code
+  for a rare setup, and a renewed certificate would need its own "certificate changed" state with exits, or uploads
+  would stop silently overnight. Revisit if someone with a home CA asks.
+
 **One upload design with Tidepool** (`upload/Uploads.kt`). Both uploaders were built in parallel and arrived at the
 same core, so the PoC's per-reading outbox was dropped for Tidepool's model:
 - *No outbox*: the phone's stores (31 days of readings, the treatment log) are the queue; each uploader keeps only what

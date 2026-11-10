@@ -385,7 +385,11 @@ afterwards). Never a hosted site, never the user's phone.
 - [ ] Emulator (wearer, debug = synthetic glucose; `adb reverse tcp:1337 tcp:1337`): Settings → Share with apps →
       Nightscout → *Nightscout upload*: *Not set up*, main switch greyed. A follower has no such row.
 - [ ] Site dialog: `http://my.ns.example` and `http://192.168.1.20:1337` (https only, the home network too) → "Use
-      https:// … Let's Encrypt and Tailscale give one free", *Save* disabled; `http://localhost:1337` + the access token → *Test*
+      https:// … Let's Encrypt and Tailscale give one free", *Save* disabled; a self-signed site on the Mac
+      (`openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=localhost -days 1 -keyout k.pem -out c.pem`, `openssl
+      s_server -accept 8443 -cert c.pem -key k.pem -www`, `adb reverse tcp:8443 tcp:8443`) → `https://localhost:8443`
+      *Test* → "Couldn't connect. The site's certificate isn't trusted: … Let's Encrypt, Tailscale … reverse proxy …"
+      (Spanish too); `http://localhost:1337` + the access token → *Test*
       shows "Connected · Nightscout 15.0.8"; a wrong token → "The site refused the token or secret". *Save*.
 - [ ] Main switch on → `adb logcat -s Sukrara.nightscout` shows `sent N`; status "Up to date · last upload …"; the site
       shows the last 30 days, the treatments, SAGE and the phone battery. A new reading is on the site within seconds.
