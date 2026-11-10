@@ -115,7 +115,8 @@ class SyncFixturesTest {
                 step("key-1", keyTo(1, g1, listOf(d)), "accepted:key"),
             )
         return when (name) {
-            // a roster without a profile keeps the wearer's last one
+            // the wearer is the source of truth: a 1-minute jump from 80 to 300 is shown as sent (no follower
+            // plausibility check); a roster without a profile keeps the wearer's last one
             "join-readings" -> {
                 base +
                     listOf(
@@ -132,6 +133,8 @@ class SyncFixturesTest {
                             ),
                             "accepted:chunk",
                         ),
+                        step("live-80", live(d, g1, now - 150, 80, 0.0, sensor), "accepted:live"),
+                        step("live-jump-300", live(d, g1, now - 90, 300, null, sensor), "accepted:live"),
                         step("live", live(d, g1, now - 30, 121, -1.25, sensor), "accepted:live"),
                         step("live-again", live(d, g1, now - 30, 121, -1.25, sensor), "accepted:live"),
                         step(

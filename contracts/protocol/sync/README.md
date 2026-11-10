@@ -10,7 +10,7 @@ test keys (the OGS draft-1 vector keys plus `D2` = sha256("sukrara/sync/D2")); a
 
 | file | what it pins |
 |---|---|
-| `join-readings.json` | key delivery → roster with the wearer's profile → hour chunk → live (reading + sensor) → reading-less sensor update → outsider rejected → a roster without a profile (the wearer's is kept) |
+| `join-readings.json` | key delivery → roster with the wearer's profile → hour chunk → live (reading + sensor), a 1-minute jump from 80 to 300 accepted unchanged (followers make no plausibility check) → reading-less sensor update → outsider rejected → a roster without a profile (the wearer's is kept) |
 | `sensor-life.json` | the wearer's sensor without readings: ended early, removed (`{"v":2}`), a new one warming up (reading-less live events), its first reading, a late backlog copy of an old reading that can't bring the old sensor back, a live event from a clock more than 5 min ahead rejected whole (its `ss` / `se` / `sw` don't change the sensor) |
 | `treatments-writer.json` | writer scope: wearer entry, writer's own entry and edit, writer hijack rejected, wearer tombstone, older `(u,o)` ignored |
 | `settings-mirror.json` | mirrored settings: newest `u` wins, only from a roster device; the payload holds every mirrored setting (graph + alerts) |

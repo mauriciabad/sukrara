@@ -434,6 +434,14 @@ all unmerged as of 2026-10.)
   whole event, a live event's sensor fields (`ss`, `se`, `sw`) too, so a wearer clock that runs ahead can't end or
   replace the sensor ([sync/sensor-life.json](sync/sensor-life.json) `live-future-sensor`). Nothing is lost: the
   sensor state also rides on reading-less live events, which carry no `t`.
+- Readings are shown as sent. The wire checks (the rules above and `sgv` 1–1000, else `invalid`) are the only checks
+  a follower makes: no plausibility check, no jump check, no badge or rejection of its own. **The wearer is the source
+  of truth**: plausibility is judged once, on the wearer's phone, where the sensor's own flags are (valid ranges, LO /
+  HI, quality errors that give no value), and a follower must never show something different from the wearer's card.
+  The usual "absurd jump" is a fast real low or a compression low, which can't be told apart live (investigation 33),
+  so a follower-only mark would land on real lows. If a mark is ever wanted it belongs on the wearer (driver or
+  renderer), so every surface shows it. Pinned by [sync/join-readings.json](sync/join-readings.json): a 1-minute jump
+  from 80 to 300 is accepted unchanged.
 - Unknown `gk`: a rekey request only when the event is signed by `I` or a roster device (≤ 1 per `gk` per 5 min), so a
   stranger can't make followers send them, and only when its `created_at` is newer than the newest key delivery's
   rumor (an older event is a backfill of hours from before the follower's latest key, not a missed rotation). Its

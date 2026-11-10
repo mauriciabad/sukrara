@@ -106,6 +106,42 @@
             "content": "ArYgO/zW3XvV9jtLp9fUKx++lbNcUZI5uLrMgjk0nKzzXlUwqCaE84oZ+fntllDTEm64lmFR9bWiNojHQLqtC2SmffyTtAZZulXmmlgV+q64CiDq5sqSsTjPFAykrL5qAAMGVWMJKja63BFbYoMgUnMi+MQUnERPqjjXmFeSdL4lOA+01at9hE48ARMaPYfXyKdYArIuNJh0kY1hdmiB7XjmQQ==",
             "sig": "96d70c339b5f8864be42ea307f5e67cccfa076c4e2a1622c5d29b0889a112ca596a0d069662e2d5892537f6929b49a5946dac01ca74932a1b6c170521acf97cc"
         },
+        "live-80": {
+            "id": "0eefeb5adb342f93899861356aed7edd8aaec345f574b78265595ca84f9551cf",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792087055,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792090655"
+                ]
+            ],
+            "content": "AvJ0Sc5FFWms/k2Ja5rVphJ4LHbKKBFpGI6pRlqjywzAmyXzAq8tWQTh5RLf+/tgiO9H0H2abFJkt6Ox99wGnkvIBBPggIRl1hZ3Y30JJPscJuXKEgGRefitSG0aMyl+5KLximj56eNW/xNQZ/xMq//78ybeMHt/HwFj2N8aKkhn1voIARR7sBmptnyjQxqqiK6tjW6hjlxKrbSkaqMJMfmbfgv8T83GqAc7BayUcvE8E4fgmK10HmV6ZRi1J04hRi9Y",
+            "sig": "45e152fb3d6b78069e7ed5f51aeda6bf5a1318f452fce245f056a4834cb2d3da7ea2b1ac1035b9d3cccd4a5cb72b2be8a0b8ee63e5ac9f043508270f74e2afa9"
+        },
+        "live-jump-300": {
+            "id": "d28d996d14f13595e5eafcb0d82f28123da4592931d92d3de5a200c0247e45df",
+            "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
+            "created_at": 1792087115,
+            "kind": 21078,
+            "tags": [
+                [
+                    "gk",
+                    "a10d4e6e"
+                ],
+                [
+                    "expiration",
+                    "1792090715"
+                ]
+            ],
+            "content": "AnpsU/iEUY0vkY7imXqVYd2UU9TcYMs7cvl3zzecSeXxqUGGeaSn6E8KSUJ0EOuCOyF2Ot+sX/iRGYl7giVGEuUR8YigtVg6pFAYXfCUc73MdHw08tGxaz1jbahjWlECuajEu7kCG7eLnE/97z81AhkndhhDq9uq9b4EqjL9XXip0/rkmONJLLxT7eDPRrqjS9kLhbR48XA9H5zvBD7mJMNG+oG5okoFrlT0OAf6KvcKbpV84c93QDQZ7W4KN3tmFsqn",
+            "sig": "abb7a85df1891beec115f73de0d21c2a0796fdff91eba2f64c8251e2c89b6eedb6e9be10294e45ed52eb548296f93b4e879a2aab2103a7c4b8a0a10218137a81"
+        },
         "live": {
             "id": "f7a537cc482a248973fc4f33692394369ba440260640d75aa27d4a04a4868e56",
             "pubkey": "8b73bfc4b780b4d3dbecad27f579ce54fd2f46c5db1663d530a560b6a182e974",
@@ -215,6 +251,14 @@
             "expect": "accepted:chunk"
         },
         {
+            "event": "live-80",
+            "expect": "accepted:live"
+        },
+        {
+            "event": "live-jump-300",
+            "expect": "accepted:live"
+        },
+        {
             "event": "live",
             "expect": "accepted:live"
         },
@@ -263,6 +307,16 @@
             [
                 1792083960,
                 115,
+                null
+            ],
+            [
+                1792087050,
+                80,
+                0.0
+            ],
+            [
+                1792087110,
+                300,
                 null
             ],
             [
