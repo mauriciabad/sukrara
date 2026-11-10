@@ -15,8 +15,10 @@ import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.following
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.InviteLookup
 import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
@@ -53,8 +55,14 @@ sealed interface RestoreUi {
 sealed interface JoinUi {
     data object Idle : JoinUi
 
-    /** Looking for the invite on the relays (up to ~25 s). */
+    /** Looking for the invite on the relays (up to ~25 s), or saving the key after *Follow*. */
     data object Busy : JoinUi
+
+    /**
+     * The invite was found: who is inviting (the name and picture in it), waiting for *Follow* or *Cancel*. Nothing
+     * was saved or sent yet.
+     */
+    data class Confirm(val invite: Invite) : JoinUi
 
     data class Failed(val result: JoinResult) : JoinUi
 }
@@ -227,6 +235,8 @@ class SetupViewModel(
      * left as skipped (written first), so its Finish-setup row stays.
      */
     fun back(onLeave: () -> Unit) {
+        // an invite shown for confirmation: Back is its Cancel (the step stays)
+        if (joining.value is JoinUi.Confirm) return cancelInvite()
         // the join step's list is gone: Bluetooth stops looking
         searching.value = null
         val u = ui.value ?: return onLeave()
@@ -265,23 +275,48 @@ class SetupViewModel(
             m.startMonitoring()
         }
 
-    /** Joins with [link] as [name] (with a new picture); then monitoring starts, which sends the request. */
-    fun join(
+    /** The invite link opened on this phone that was already looked up by itself (not again after a rotation). */
+    private var openedLookedUp: String? = null
+
+    /**
+     * *Join*: looks up the invite behind [link] (reads only) and shows who is inviting with *Follow* / *Cancel*. An
+     * invite link opened on this phone is looked up by itself, once per opening ([opened]).
+     */
+    fun lookUp(
         link: String,
-        name: String,
+        opened: Boolean = false,
     ) {
-        if (joining.value == JoinUi.Busy) return
+        if (joining.value == JoinUi.Busy || joining.value is JoinUi.Confirm) return
+        if (opened) {
+            if (link == openedLookedUp) return
+            openedLookedUp = link
+        }
+        joining.value = JoinUi.Busy
         viewModelScope.launch {
-            joining.value = JoinUi.Busy
-            val me =
-                name
-                    .trim()
-                    .take(Profile.MAX_NAME)
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { Profile(it, Avatar.random(SecureRandom())) }
+            val found =
+                try {
+                    m.follower.lookUp(link)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    InviteLookup.Failed(JoinResult.Offline)
+                }
+            joining.value =
+                when (found) {
+                    is InviteLookup.Found -> JoinUi.Confirm(found.invite)
+                    is InviteLookup.Failed -> JoinUi.Failed(found.result)
+                }
+        }
+    }
+
+    /** *Follow* on the invite shown: joins as [name] (with a new picture); then monitoring starts, which sends the request. */
+    fun join(name: String) {
+        val invite = (joining.value as? JoinUi.Confirm)?.invite ?: return
+        joining.value = JoinUi.Busy
+        viewModelScope.launch {
             val result =
                 try {
-                    m.follower.join(link, me)
+                    m.follower.join(invite, profileFor(name))
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -290,10 +325,22 @@ class SetupViewModel(
             joining.value = if (result == JoinResult.Joined) JoinUi.Idle else JoinUi.Failed(result)
             if (result == JoinResult.Joined) {
                 m.pendingInvite.value = null
+                openedLookedUp = null
                 // the follow's own link takes over: a second search would spend the shared scan budget
                 searching.value = null
             }
         }
+    }
+
+    /**
+     * *Cancel* (or Back) on the invite shown: nothing was sent. A link opened on this phone leaves the field too (the
+     * person may not have wanted it); a pasted one stays.
+     */
+    fun cancelInvite() {
+        if (joining.value !is JoinUi.Confirm) return
+        joining.value = JoinUi.Idle
+        m.pendingInvite.value = null
+        openedLookedUp = null
     }
 
     /** null = not looking; each new number starts a fresh search (after Bluetooth or the permission came back). */

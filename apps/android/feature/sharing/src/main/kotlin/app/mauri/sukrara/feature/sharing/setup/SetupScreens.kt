@@ -125,7 +125,12 @@ data class SetupActions(
     val back: () -> Unit = {},
     val continueWelcome: () -> Unit = {},
     val chooseRole: (Role) -> Unit = {},
-    val join: (link: String, name: String) -> Unit = { _, _ -> },
+    /** *Join*: look up the invite ([opened] = a link opened on this phone, looked up by itself). */
+    val lookUp: (link: String, opened: Boolean) -> Unit = { _, _ -> },
+    /** *Follow* on the invite shown, as the typed name. */
+    val join: (name: String) -> Unit = {},
+    /** *Cancel* on the invite shown (nothing was sent). */
+    val cancelInvite: () -> Unit = {},
     val clearJoinError: () -> Unit = {},
     /** *Find phones nearby* on / *Stop looking*. */
     val findNearby: (Boolean) -> Unit = {},
@@ -163,7 +168,9 @@ private fun SetupViewModel.actions(
             back = { back(onDone) },
             continueWelcome = ::continueWelcome,
             chooseRole = ::chooseRole,
+            lookUp = ::lookUp,
             join = ::join,
+            cancelInvite = ::cancelInvite,
             clearJoinError = ::clearJoinError,
             findNearby = ::findNearby,
             joinNearby = ::joinNearby,

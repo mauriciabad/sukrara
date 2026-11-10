@@ -318,6 +318,11 @@
     <string name="sh_join_err_wrong">Esta invitación no coincide con su enlace. Pide un enlace nuevo.</string>
     <string name="sh_join_err_already">Este teléfono ya sigue a alguien. Deja de seguirle primero en Ajustes › Compartir.</string>
     <string name="sh_join_err_store">No se ha podido guardar la clave en este teléfono. Vuelve a intentarlo.</string>
+    <!-- The invite was found: who is inviting, before anything is sent -->
+    <string name="sh_join_confirm_title">¿Seguir a %1$s?</string>
+    <string name="sh_join_confirm_body">%1$s te ha invitado a ver su glucosa. Seguir pide a %1$s que dé acceso a este teléfono; no se comparte nada hasta que lo haga.</string>
+    <string name="sh_join_confirm_note">Este nombre y esta imagen vienen de la invitación. Sigue solo si sabes quién te ha enviado este enlace.</string>
+    <string name="sh_join_follow">Seguir</string>
     <string name="sh_following_title">Siguiendo</string>
     <string name="sh_following_waiting">Esperando a que %1$s te dé acceso</string>
     <string name="sh_following_active">Sigues a %1$s</string>

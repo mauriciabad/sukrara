@@ -247,7 +247,7 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - joining
 
-    public func join(link text: String) async throws(FollowerJoinError) {
+    public func lookUp(link text: String) async throws(FollowerJoinError) -> Invite {
         guard session == nil else { throw .alreadyFollowing }
         guard let parsed = InviteLink.parse(text) else { throw .invalidLink }
         link = .joining
@@ -259,13 +259,15 @@ public actor FollowerRuntime: FollowerService {
         joinTask = task
         let result = await task.value
         joinTask = nil
-        switch result {
-        case .success(let invite): try await begin(invite: invite, commit: nil)
-        case .failure(let why):
-            if session == nil { link = .notFollowing }
-            await publishSnapshot()
-            throw why
-        }
+        // found or not, nothing was made or sent: back to not following until the person clicks Follow
+        if session == nil { link = .notFollowing }
+        await publishSnapshot()
+        return try result.get()
+    }
+
+    public func join(invite: Invite) async throws(FollowerJoinError) {
+        guard session == nil else { throw .alreadyFollowing }
+        try await begin(invite: invite, commit: nil)
     }
 
     public func cancelJoin() { joinTask?.cancel() }

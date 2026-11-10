@@ -119,7 +119,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   Bluetooth is off or the Nearby devices permission is missing, and offers the fix; the live notification says
   *2 followers · 1 nearby*.
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a
-  picture of it, read on the phone), or find their phone nearby over
+  picture of it, read on the phone), see who is inviting (their name and picture from the invite) and tap *Follow* or
+  *Cancel*, or find their phone nearby over
   Bluetooth while they have *Pair nearby* on (Settings › Sharing; both phones show the same 6-digit code and you each
   confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the 4-digit
   code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
@@ -150,8 +151,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   card and chart (drawn by the same renderer rules as Android, tested against the same fixtures); scroll, pinch or
   two-finger double tap the chart through the stored 31 days. The card's pill is
   pressable (Eat carbs / Take insulin open Add Treatment; a mute opens its ways out).
-- **Follow** a wearer with an invite link, a QR code image or **nearby** Bluetooth pairing (the Mac and the phone show
-  the same 6-digit code to confirm before anything is followed); readings, alerts and
+- **Follow** a wearer with an invite link (pasted, dropped or opened, `https://sukrara.mauri.app/join#…` or
+  `sukrara:`), a QR code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
+  confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*; readings,
+  alerts and
   treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
   (*How you appear*); the wearer's picture shows in Following and the nearby dialog. A setup window walks Welcome → Follow → Alerts → Notifications → Open at
   login.

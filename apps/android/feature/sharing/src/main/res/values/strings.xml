@@ -428,6 +428,11 @@
     <string name="sh_join_err_wrong">This invite doesn\'t match its link. Ask for a new link.</string>
     <string name="sh_join_err_already">This phone already follows someone. Stop following first in Settings › Sharing.</string>
     <string name="sh_join_err_store">Couldn\'t save the key on this phone. Try again.</string>
+    <!-- The invite was found: who is inviting, before anything is sent -->
+    <string name="sh_join_confirm_title">Follow %1$s?</string>
+    <string name="sh_join_confirm_body">%1$s invited you to see their glucose. Follow asks %1$s to allow this phone; nothing is shared until they do.</string>
+    <string name="sh_join_confirm_note">This name and picture come from the invite. Follow only if you know who sent you this link.</string>
+    <string name="sh_join_follow">Follow</string>
     <string name="sh_following_title">Following</string>
     <string name="sh_following_waiting">Waiting for %1$s to allow you</string>
     <string name="sh_following_active">You follow %1$s</string>

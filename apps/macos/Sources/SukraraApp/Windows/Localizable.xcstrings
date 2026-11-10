@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ te ha invitado a ver su glucosa. Seguir pide a %2$@ que dé acceso a este Mac; no se comparte nada hasta que lo haga."
+          }
+        }
+      }
+    },
     "%@'s phone is nearby" : {
       "localizations" : {
         "en" : {
@@ -813,6 +829,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seguir"
+          }
+        }
+      }
+    },
+    "Follow %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow %@?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Seguir a %@?"
           }
         }
       }
@@ -1681,18 +1713,18 @@
         }
       }
     },
-    "Paste the invite link from the wearer's phone (Sukrara › Share › Invite)." : {
+    "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paste the invite link from the wearer's phone (Sukrara › Share › Invite)."
+            "value" : "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pega el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar)."
+            "value" : "Pega o arrastra aquí el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar). Empieza por https://sukrara.mauri.app/join#"
           }
         }
       }
@@ -2369,6 +2401,22 @@
         }
       }
     },
+    "the person who invited you" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the person who invited you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la persona que te invitó"
+          }
+        }
+      }
+    },
     "The wearer declined. Ask them for a new invite." : {
       "localizations" : {
         "en" : {
@@ -2525,6 +2573,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se ha encontrado esta invitación. Pide una nueva en el móvil."
+          }
+        }
+      }
+    },
+    "This name and picture come from the invite. Follow only if you know who sent you this link." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This name and picture come from the invite. Follow only if you know who sent you this link."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este nombre y esta imagen vienen de la invitación. Sigue solo si sabes quién te ha enviado este enlace."
           }
         }
       }

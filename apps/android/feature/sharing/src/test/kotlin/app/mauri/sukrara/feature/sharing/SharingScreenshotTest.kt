@@ -271,6 +271,17 @@ class SharingScreenshotTest {
                     a,
                 )
             },
+            "setup-join-confirm" to {
+                val invite =
+                    app.mauri.sukrara.protocol.invite.Invite(
+                        PublicKeyHex("ab".repeat(32)),
+                        "t".repeat(22),
+                        1_761_600_000,
+                        emptyList(),
+                        me,
+                    )
+                SetupContent(ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Confirm(invite)), a)
+            },
             "setup-join-scan-why" to { ScanScene(ScanState.Rationale) },
             "setup-join-scan-off" to { ScanScene(ScanState.Denied) },
             "setup-join-scan-no-camera" to { ScanScene(ScanState.NoCamera) },

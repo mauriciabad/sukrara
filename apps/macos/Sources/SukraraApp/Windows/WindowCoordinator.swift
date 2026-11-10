@@ -133,9 +133,11 @@ final class WindowCoordinator {
     /// Opens the menu bar panel (set by `AppDelegate`; `sukrara://open`).
     var openPanel: () -> Void = {}
 
-    /// `sukrara:` links: `sukrara://treatment/new` opens Add treatment, `sukrara://open` (a widget click with no
-    /// data) the panel; anything else is treated as an invite link: it opens Follow and starts following (nothing
-    /// reaches the relays unless it parses as an invite).
+    /// Links opened on this Mac: `sukrara://treatment/new` opens Add treatment, `sukrara://open` (a widget click with
+    /// no data) the panel; an invite link (`sukrara:join#…`, any other `sukrara:` link, or
+    /// `https://sukrara.mauri.app/join#…`) opens Follow, looks the invite up and shows who is inviting with *Follow* /
+    /// *Cancel*: it never follows by itself (nothing reaches the relays unless it parses as an invite). Other links are
+    /// ignored.
     func open(_ url: URL) {
         switch AppLink(url) {
         case .newTreatment:
@@ -143,30 +145,42 @@ final class WindowCoordinator {
         case .panel:
             openPanel()
         case .invite(let text):
-            follow.linkText = text
             openFollow()
-            Task { await follow.follow() }
+            Task { await follow.open(link: text) }
+        case nil:
+            break
         }
     }
 
 }
 
-/// Where a `sukrara:` link goes (`WindowCoordinator.open`).
+/// Where a link opened on this Mac goes (`WindowCoordinator.open`).
 enum AppLink: Equatable {
     /// `sukrara://treatment/new`: the widget's quick Add treatment.
     case newTreatment
     /// `sukrara://open`: the widget with no data asks for the app.
     case panel
-    /// Anything else: an invite link (`sukrara:join#…`), checked by the follow step before it reaches the relays.
+    /// An invite link (`https://sukrara.mauri.app/join#…`, `sukrara:join#…` or any other `sukrara:` link), checked by
+    /// the follow step before it reaches the relays.
     case invite(String)
 
-    init(_ url: URL) {
-        switch (url.host(), url.path()) {
-        case ("treatment", "/new"): self = .newTreatment
-        case ("open", ""), ("open", "/"): self = .panel
-        default: self = .invite(url.absoluteString)
+    /// nil: not Sukrara's (an `https` link elsewhere than the invite page).
+    init?(_ url: URL) {
+        if url.scheme == SukraraIDs.urlScheme {
+            switch (url.host(), url.path()) {
+            case ("treatment", "/new"): self = .newTreatment
+            case ("open", ""), ("open", "/"): self = .panel
+            default: self = .invite(url.absoluteString)
+            }
+        } else if url.scheme == "https", url.host() == Self.inviteHost, url.path() == "/join" {
+            self = .invite(url.absoluteString)
+        } else {
+            return nil
         }
     }
+
+    /// The web invite's host (`Wire.inviteBase`).
+    static let inviteHost = "sukrara.mauri.app"
 }
 
 /// The settings window with the app's live parts: open at login (the login item), the update check's result.

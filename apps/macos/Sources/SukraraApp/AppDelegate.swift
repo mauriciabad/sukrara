@@ -131,11 +131,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.stop()
     }
 
-    /// `sukrara:` links (Info.plist CFBundleURLTypes): invite links go to the follow step, `sukrara://treatment/new`
-    /// to Add treatment, `sukrara://open` to the panel. A link that launched the app arrives after
-    /// `applicationDidFinishLaunching`.
+    /// `sukrara:` links (Info.plist CFBundleURLTypes) and the web invite `https://sukrara.mauri.app/join#…` (given to
+    /// the app with `open -a Sukrara <link>` or dropped on it): invite links go to the follow step's confirmation,
+    /// `sukrara://treatment/new` to Add treatment, `sukrara://open` to the panel; anything else is ignored
+    /// (`AppLink`). A link that launched the app arrives after `applicationDidFinishLaunching`.
     public func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.scheme == SukraraIDs.urlScheme { windows?.open(url) }
+        for url in urls { windows?.open(url) }
     }
 
     /// Timers don't run while the Mac sleeps and a clock change moves every deadline: re-check alerts and freshness.
