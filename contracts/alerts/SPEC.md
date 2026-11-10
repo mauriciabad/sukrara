@@ -160,7 +160,8 @@ A muted alert is not "fired": no notification here. A treatment-muted one isn't 
 have the same treatments); a notification-muted one is (above). A treatment mute ends at exactly `t + min`,
 and the timer wakes then (Android: an exact alarm; Mac: a one-shot timer), so it alerts on time even between
 readings. The UI shows why it's quiet ("High, muted: insulin 12 min ago"); `AlertStatus` (Android) applies the same
-treatment rules for the badge under the value.
+treatment rules for the badge under the value. Once *Alert me anyway* lifts a treatment's quiet, every card drops it
+at once: no after-treatment pill, and the mute line and ring of the entries logged up to then end at that moment.
 
 ## 3. Settings (JSON, same keys on both platforms)
 
