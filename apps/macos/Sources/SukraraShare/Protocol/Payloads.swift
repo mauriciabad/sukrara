@@ -158,7 +158,7 @@ public struct RosterPayload: Equatable, Sendable {
         guard let writers, writers.allSatisfy(Hex.isKey) else { throw PayloadError("writers must be hex pubkeys") }
         return RosterPayload(
             epoch: try o.int("epoch"), devices: devices, writers: writers,
-            relays: Relays.secure(o.raw["relays"]), profile: o.object("profile").flatMap(Profile.init(wire:)))
+            relays: Relays.list(o.raw["relays"]), profile: o.object("profile").flatMap(Profile.init(wire:)))
     }
 }
 
@@ -365,13 +365,73 @@ public struct KeyDelivery: Codable, Equatable, Sendable {
         guard let g = o.string("g") else { throw PayloadError("missing g") }
         let devices = (o.raw["devices"] as? [String] ?? []).filter(Hex.isKey)
         return KeyDelivery(
-            sid: sid, epoch: try o.int("epoch"), nsec: g, devices: devices, relays: Relays.secure(o.raw["relays"]))
+            sid: sid, epoch: try o.int("epoch"), nsec: g, devices: devices, relays: Relays.list(o.raw["relays"]))
     }
 }
 
+/// Received relay lists (PROTOCOL-v2 "Relay rules", contracts/protocol/relays; Android `Wire.validRelays`).
 public enum Relays {
-    /// Only `wss://` URLs from a received relay list (no cleartext, no junk).
-    public static func secure(_ value: Any?) -> [String] {
-        (value as? [Any] ?? []).compactMap { $0 as? String }.filter { $0.hasPrefix("wss://") }
+    /// The most relays kept from a received list.
+    public static let max = 8
+    private static let maxURL = 200
+    private static let lanNames = ["localhost", "local", "lan", "home", "internal", "localdomain", "home.arpa"]
+
+    /// The valid relays of a received JSON array (non-strings skipped).
+    public static func list(_ value: Any?) -> [String] {
+        valid((value as? [Any] ?? []).compactMap { $0 as? String })
+    }
+
+    /// The first `max` URLs that pass `isRelay`, duplicates removed.
+    public static func valid(_ urls: [String]) -> [String] {
+        var out: [String] = []
+        for url in urls where isRelay(url) && !out.contains(url) {
+            out.append(url)
+            if out.count == max { break }
+        }
+        return out
+    }
+
+    /// A `wss://` URL with a public host: no user info, query or fragment, no loopback / LAN name or address.
+    public static func isRelay(_ url: String) -> Bool {
+        guard url.unicodeScalars.allSatisfy({ (0x21...0x7e).contains($0.value) }), url.utf8.count <= maxURL,
+            url.hasPrefix("wss://")
+        else { return false }
+        let rest = url.dropFirst("wss://".count)
+        guard !rest.contains("?"), !rest.contains("#"), !rest.contains("@") else { return false }
+        let authority = rest.prefix { $0 != "/" }
+        guard !authority.hasPrefix("[") else { return false }
+        var host = Substring(authority)
+        if let colon = authority.lastIndex(of: ":") {
+            let port = authority[authority.index(after: colon)...]
+            guard (1...5).contains(port.count), port.allSatisfy({ ("0"..."9").contains($0) }), let n = Int(port),
+                (1...65535).contains(n)
+            else { return false }
+            host = authority[..<colon]
+        }
+        return publicHost(host.lowercased())
+    }
+
+    private static func publicHost(_ host: String) -> Bool {
+        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        let wellFormed =
+            host.count <= 253 && labels.count >= 2
+            && labels.allSatisfy { label in
+                (1...63).contains(label.count) && label.first != "-" && label.last != "-"
+                    && label.allSatisfy { ("a"..."z").contains($0) || ("0"..."9").contains($0) || $0 == "-" }
+            }
+        guard wellFormed else { return false }
+        if labels.allSatisfy({ $0.allSatisfy { ("0"..."9").contains($0) } }) { return publicIPv4(labels) }
+        return !lanNames.contains { host == $0 || host.hasSuffix(".\($0)") }
+    }
+
+    /// Not 0/8, 10/8, 100.64/10, 127/8, 169.254/16, 172.16/12, 192.168/16 or 224/3 (multicast, reserved, broadcast).
+    private static func publicIPv4(_ labels: [Substring]) -> Bool {
+        guard labels.count == 4, labels.allSatisfy({ $0.count <= 3 }) else { return false }
+        let bytes = labels.compactMap { Int($0) }
+        guard bytes.count == 4, bytes.allSatisfy({ $0 <= 255 }) else { return false }
+        let a = bytes[0], b = bytes[1]
+        return
+            !(a == 0 || a == 10 || a == 127 || a >= 224 || (a == 100 && (64...127).contains(b))
+            || (a == 169 && b == 254) || (a == 172 && (16...31).contains(b)) || (a == 192 && b == 168))
     }
 }

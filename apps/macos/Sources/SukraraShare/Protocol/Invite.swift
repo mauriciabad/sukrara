@@ -80,7 +80,7 @@ public struct InviteOpener: Sendable {
         guard expiry > now else { return .failure(.expired) }
         return .success(
             Invite(
-                identity: rumor.sender, token: link.token, expiry: expiry, relays: Relays.secure(body.raw["r"]),
+                identity: rumor.sender, token: link.token, expiry: expiry, relays: Relays.list(body.raw["r"]),
                 profile: body.object("profile").flatMap(Profile.init(wire:))))
     }
 

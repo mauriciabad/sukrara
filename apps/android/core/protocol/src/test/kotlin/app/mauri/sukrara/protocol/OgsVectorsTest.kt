@@ -143,7 +143,7 @@ class OgsVectorsTest {
         assertEquals(withCommit, json(BleMessages.info(v.sid, nonce, pairing, v.now)))
         assertEquals(ble.getValue("info"), json(BleMessages.info(v.sid, nonce, pairing, pairing.expiry)))
         // the follower reads the offer back (Find phones nearby); expired, absent or without a commitment = none
-        assertEquals(pairing.copy(relays = Wire.secureRelays(pairing.relays)), BleMessages.pairing(withCommit[1].jsonObject, v.now))
+        assertEquals(pairing.copy(relays = Wire.validRelays(pairing.relays)), BleMessages.pairing(withCommit[1].jsonObject, v.now))
         assertEquals(null, BleMessages.pairing(pair, v.now))
         assertEquals(null, BleMessages.pairing(withCommit[1].jsonObject, pairing.expiry))
         assertEquals(null, BleMessages.pairing((ble.getValue("info") as JsonArray)[1].jsonObject, v.now))

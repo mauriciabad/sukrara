@@ -66,6 +66,7 @@ struct RelayPoolTests {
     @Test func eventsEndOfStoredAndOkReachInbound() async throws {
         let factory = FakeWebSocketFactory()
         let pool = pool(factory)
+        await pool.subscribe("live", RelayFilter(kinds: [Wire.kindLive], authors: [v.pub("D")]))
         await pool.start()
         #expect(await factory.waitForConnections(1))
         let socket = factory.sockets[0]
@@ -85,6 +86,49 @@ struct RelayPoolTests {
                 .endOfStored(subscription: "live", relay: "relay.test.invalid"),
                 .ok(eventId: "abc", accepted: false, relay: "relay.test.invalid"),
             ])
+        await pool.stop()
+    }
+
+    @Test func onlyEventsMatchingAnOpenSubscriptionReachInbound() async throws {
+        let factory = FakeWebSocketFactory()
+        let pool = pool(factory)
+        await pool.subscribe("live", RelayFilter(kinds: [Wire.kindLive], authors: [v.pub("D")]))
+        await pool.start()
+        #expect(await factory.waitForConnections(1))
+        let socket = factory.sockets[0]
+        let live = v.event("live")
+        let stranger = try crypto.sign(
+            kind: Wire.kindLive, content: "x", tags: [], createdAt: v.now, with: v.secret("X"))
+        let otherKind = try crypto.sign(
+            kind: Wire.kindData, content: "x", tags: [["d", "z"]], createdAt: v.now, with: v.secret("D"))
+        socket.push("[\"EVENT\",\"live\",\(stranger.json())]")
+        socket.push("[\"EVENT\",\"live\",\(otherKind.json())]")
+        socket.push("[\"EVENT\",\"never-opened\",\(live.json())]")
+        socket.push("[\"EVENT\",\"live\",\(live.json())]")
+        socket.push("[\"EOSE\",\"live\"]")
+        var events: [SignedEvent] = []
+        for await message in pool.inbound {
+            if case .event(let e, _, _) = message { events.append(e) }
+            if case .endOfStored = message { break }
+        }
+        #expect(events == [live])
+        await pool.stop()
+    }
+
+    @Test func aRelaySendingMoreEventsThanItsBudgetLosesItsSocket() async throws {
+        let factory = FakeWebSocketFactory()
+        let pool = pool(factory)
+        await pool.start()
+        #expect(await factory.waitForConnections(1))
+        let socket = factory.sockets[0]
+        let frame = "[\"EVENT\",\"none\",\(v.event("live").json())]"
+        // the clock stands still: no refill
+        for _ in 0..<RelayPool.eventBurst { socket.push(frame) }
+        socket.push("[\"EOSE\",\"none\"]")
+        for await message in pool.inbound { if case .endOfStored = message { break } }
+        #expect(factory.sockets.count == 1, "a full start's burst is fine")
+        socket.push(frame)
+        #expect(await factory.waitForConnections(2))
         await pool.stop()
     }
 

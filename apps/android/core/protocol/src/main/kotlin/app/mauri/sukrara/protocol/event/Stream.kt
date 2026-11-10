@@ -52,7 +52,7 @@ object RosterCodec {
             o.long("epoch").toInt(),
             devices,
             writers,
-            Wire.secureRelays(o.strings("relays")),
+            Wire.validRelays(o.strings("relays")),
             Profile.of(o.obj("profile")),
         )
     }
@@ -198,7 +198,7 @@ object BackupCodec {
                 )
             }
         val writers = o.strings("writers").filter(Hex::isKey)
-        return BackupPayload(sid, epochs, followers, invites, Wire.secureRelays(o.strings("relays")), writers, Profile.of(o.obj("profile")))
+        return BackupPayload(sid, epochs, followers, invites, Wire.validRelays(o.strings("relays")), writers, Profile.of(o.obj("profile")))
     }
 
     private fun invite(i: BackupInvite) =

@@ -940,7 +940,14 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   2 s doubling to 5 min (random 50–100 %), at once when the network comes back; per-relay status, never an error
   thrown at the person. Roster and backup are refreshed every 6 days. A relay that sends a message over 1 MiB, or
   more messages than the phone can handle (4096 waiting), loses its socket (status *message too big* / *too many
-  messages*) and is retried with the same backoff (Android; the Mac's URLSession caps messages at 1 MiB).
+  messages*) and is retried with the same backoff (Android; the Mac's URLSession caps messages at 1 MiB). On both
+  apps an event a relay sends for a subscription that isn't open, or that doesn't match it, is dropped unread; a relay
+  that sends more than 2000 events at once or 20 a second after that loses its socket (*too many events*) the same
+  way; a follower remembers at most 5000 seen events (the least recently seen forgotten first). Relay lists from a
+  roster, key delivery, backup, invite or nearby pairing keep at most 8 `wss://` relays with a public host (no
+  `localhost`, `.local` / `.lan` names or private addresses; `contracts/protocol/relays/relay-lists.json`); a debug
+  build's local test relay comes from the `RELAYS` debug command, never from a list. Readings (live or in an hour
+  chunk) more than 5 min in the future are refused.
 - **Screens** (`feature/sharing` `share/`, `followers/`, `conflict/`; Settings › Sharing = `SharingScreen`
   under the settings page's title and Back (system / predictive back too): no identity → *Set up sharing* (setup's
   followers step alone; done or Back → Settings › Sharing, Back also leaves *Restore your followers* on home's

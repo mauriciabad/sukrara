@@ -96,7 +96,7 @@ object BleMessages {
             (pair["x"] as? JsonPrimitive)?.content?.toLongOrNull()?.takeIf { NearbyPairing.offerExpiryOk(it, now) } ?: return null
         val commit = (pair["c"] as? JsonPrimitive)?.content?.takeIf(NearbyPairing::isHex64) ?: return null
         val relays = (info["relays"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty()
-        return Pairing(identity, Wire.secureRelays(relays), token, expiry, Profile.of(pair["profile"]), commit)
+        return Pairing(identity, Wire.validRelays(relays), token, expiry, Profile.of(pair["profile"]), commit)
     }
 
     private val TOKEN = Regex("[A-Za-z0-9_-]{16,64}")

@@ -12,6 +12,7 @@ import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.follow.FollowResult
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.follow.FollowerState
+import app.mauri.sukrara.protocol.follow.StreamFollower
 import app.mauri.sukrara.protocol.testing.FollowerModel
 import app.mauri.sukrara.protocol.testing.OgsVectors
 import app.mauri.sukrara.protocol.testing.OgsVectors.Companion.str
@@ -169,6 +170,57 @@ class AcceptanceRulesTest {
         val m = joined()
         val future = factory.live(d, g1.public, LivePayload(WireReading(v.now + 301, 120, null), null), v.now)
         assertEquals("rejected:reading-in-future", m.feed(future, v.now).code)
+        val nextHour = Wire.hourOf(v.now) + Wire.HOUR
+        val laterHour =
+            factory.chunk(
+                d,
+                g1.public,
+                v.sid,
+                nextHour + Wire.HOUR,
+                listOf(WireReading(nextHour + Wire.HOUR + 60, 120, null)),
+                v.now,
+            )
+        assertEquals("rejected:reading-in-future", m.feed(laterHour, v.now).code)
+        val hour = Wire.hourOf(v.now)
+        val aheadRow =
+            factory.chunk(
+                d,
+                g1.public,
+                v.sid,
+                hour,
+                listOf(WireReading(hour, 110, null), WireReading(v.now + 301, 120, null)),
+                v.now,
+            )
+        assertEquals("rejected:reading-in-future", m.feed(aheadRow, v.now).code)
+        val fine =
+            factory.chunk(
+                d,
+                g1.public,
+                v.sid,
+                hour,
+                listOf(WireReading(hour, 110, null), WireReading(v.now + 300, 120, null)),
+                v.now + 1,
+            )
+        assertEquals("accepted:chunk", m.feed(fine, v.now).code)
+    }
+
+    @Test fun seenIdsAreCappedLeastRecentlySeenFirst() {
+        val full = (0 until StreamFollower.SEEN_LIMIT).associate { "old-$it" to v.now + Wire.DAY }
+        val m = FollowerModel(crypto, FollowerState(follower = v.key("F"), identity = i.public, seen = full))
+        val key = v.events.getValue("key-1")
+        assertEquals("accepted:key", m.feed(key, v.now).code)
+        assertEquals("accepted:roster", m.feed(v.events.getValue("roster-1"), v.now).code)
+        val seen = m.follower.state.seen
+        assertEquals(StreamFollower.SEEN_LIMIT, seen.size)
+        assertEquals(false, "old-0" in seen || "old-1" in seen)
+        assertEquals(true, "old-2" in seen)
+        // a duplicate becomes the most recent, so it outlives the older ids
+        assertEquals("ignored:duplicate", m.feed(key, v.now).code)
+        assertEquals(
+            key.id,
+            m.follower.state.seen.keys
+                .last(),
+        )
     }
 
     @Test fun seenIdsArePrunedAtTheirExpiration() {
