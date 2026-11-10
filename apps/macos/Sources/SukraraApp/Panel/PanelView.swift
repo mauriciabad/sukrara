@@ -674,10 +674,8 @@ private struct UpdateRow: View {
                 Label(L10n.t("Sukrara \(version.description) is available"), systemImage: "arrow.down.circle")
                 Spacer()
                 Button(L10n.t("Later")) { updates.later() }
-                Button(L10n.t("Download")) {
-                    // only the project's own release page
-                    if release.htmlURL.host() == "github.com" { NSWorkspace.shared.open(release.htmlURL) }
-                }
+                // only the project's own release pages (UpdateCheck.isReleaseURL)
+                Button(L10n.t("Download")) { NSWorkspace.shared.open(release.pageURL) }
             }
         case .failed:
             HStack {
