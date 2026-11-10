@@ -12,13 +12,17 @@ tests), Android unit tests (`cd apps/android && ./gradlew check`: alert scenario
 Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.yml --ref <branch>`), Mac tests (`cd apps/macos && swift test`). CI runs all of them (`.github/workflows/checks.yml`).
 
 - **Emulator**: `medium_phone` (wearer, debug build = synthetic glucose) and `small_phone` (follower); at most two at
-  once. DebugReceiver: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver
-  --es alertFeed '204,-0.5'` (a made-up reading through the alert rules), `--es alertTest KIND` (a test alert),
-  `--ei previewSgv N` (a status-bar preview), `--es cmd treat …`, `cmd locktest`, `cmd newSensor --es stage …`, see
-  docs/10. **These fake commands run only on the emulator's debug build**: the release app never shows a glucose
-  value, an alert, a treatment or a sensor state that isn't real (a release build refuses them, `debugOnly` in the reply).
+  once. DebugReceiver: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
+  app.mauri.sukrara.debug.<NAME> …`, written below as `<NAME> …`. The only commands: `SYNTHETIC --ez on true|false
+  [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic sensor: a 3-hour curve from
+  45 to 215 mg/dL; `cycle 135` = its lowest point now, `cycle 45` its highest, `cycle 0` 130 and rising; a sensor that
+  ends in N min; a new one warming up for W min), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder
+  true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …` and `PEN_TAGS --ez blocked
+  true|false` (docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"). Treatments are added in the app.
+  **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
+  alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
 - **Phone** (`62240DLCH0005W`): only after `tools/install.sh phone`; read-only adb, `adb exec-out screencap -p`
-  while unlocked. No fake commands (they're refused on release); root/LSPosed checks that need a value use the real one.
+  while unlocked. No fake commands (a release build has none); root/LSPosed checks that need a value use the real one.
 
 ## Q1 App home and screens
 
@@ -43,8 +47,8 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
 - [ ] Zoom (app panel pinch, Mac pinch / ⌘-scroll): the moment under the fingers / cursor stays put; 2 h to the whole
       history; the line steps and labels change (hours → dates); the line turns into columns far out without a jump;
       *Now* returns to now and the place's time shown. JVM gallery `zoom`; Mac by hand (`ChartScrollTests` cover the rules).
-- [ ] Sensor life (JVM gallery `sensorLife`, Mac `sukrara-snap card` → `*-ended-*`, `*-warmup-*`; emulator: `--es cmd sensor
-  --el left <s>`): badge `13d` / `20h` (no ring with an 8 h window) / `5h` with the countdown ring over the main ring,
+- [ ] Sensor life (JVM gallery `sensorLife`, Mac `sukrara-snap card` → `*-ended-*`, `*-warmup-*`; emulator: `SYNTHETIC --ei
+  endsInMin <min>`, `--ei warmupMin <min>`): badge `13d` / `20h` (no ring with an 8 h window) / `5h` with the countdown ring over the main ring,
   legible over every band colour, light and dark; warm-up `42m` + filling ring; ended `Sensor ended` + `Replace sensor` pill on every widget size (3×1 and 2×1 too, also while the last value is fresh; pill/tap opens the Sensor screen on the wearer's phone), checkered flag in the status bar (notification icon, root slots, hook) and the Mac menubar + no-data alert
   quiet. Follower and Mac show the same from the live events. Evidence 2026-10-18:
   `poc/spikes/showcase-android/evidence/sensor-life-emulator-{13d,20h,5h}.png` (emulator app panel),
@@ -60,14 +64,15 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   both; close hides it for good. Spanish wording fits.
 - [ ] Add-the-widget banner (emulator, Pixel Launcher): with no graph widget, home shows the card under the glucose
   panel; *Add widget* opens the launcher's dialog with the preview; *Add to home screen* places it and the card is gone
-  on return; remove the widget → the card is back; close → gone after a force-stop too (`--es cmd widgetBanner --ez
-  reset true` brings it back). Spanish wording fits.
+  on return; remove the widget → the card is back; close → gone after a force-stop too (Settings › *Show closed tips*
+  brings it back). Spanish wording fits.
 
 ## Q4 Lock screen widget
 
-- [ ] Needs root/LSPosed: the phone only, after install. Check light and dark lock screens, frosted glass on/off,
-      appearance Light / Dark / Automatic.
-- [ ] Treatment buttons work without unlocking; the value updates while locked.
+The LSPosed lock-screen widget isn't in the app yet (#66); this section covers what the lock screen has.
+
+- [ ] A device whose lock screen hosts widgets (tablet hub): the home widgets are offered there; a tap opens the
+      treatment dialog over the lock screen; the value updates while locked.
 - [ ] Lock-screen countdown (emulator: `adb shell locksettings set-pin 1234`, keyevent 26 then 224, open the quick
       dialog from the glucose notification on the lock screen): the ring with the seconds on *Cancel* counts from 20;
       typing doesn't add time; one tick at 5 s with input; at 0 it closes and toasts *Treatment not saved* (only with
@@ -129,8 +134,9 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] The running app offline: `FIXTURE=1 Bundle/smoke.sh .build/debug/Sukrara` (a made-up wearer, fresh data, no
       socket); by hand `SUKRARA_DEV=1 SUKRARA_FIXTURE=1 SUKRARA_DEV_HOME=<scratch dir> .build/debug/Sukrara`. A dev
       build refuses to start without `SUKRARA_DEV=1` and takes no arguments (`LaunchPlan`, `LaunchModeTests`).
-- [ ] Settings (round f28): `-settingsSnapshot <dir>` renders every pane in four synthetic states (defaults, Wearer
-      with a sample event from "Ana", Custom with custom numbers, an invalid typed number); check the toolbar (five
+- [ ] Settings (round f28): `sukrara-snap windows <dir>` renders the panes with synthetic data
+      (`settings-*.png`: General with Custom and the login states, Alerts own and mirrored, Graph and Rings own and
+      from the wearer, Following); check the toolbar (five
       panes, title = pane), Settings from in General (Wearer / Default / Custom, *In use* line; Custom: *Copy the
       Wearer's Settings…* disabled until an event arrived, *Reset to Defaults…* asks first), Default / Wearer show the
       read-only summary and *Change…* opens General; every number: presets + *Custom…*, the field takes a value in range
@@ -148,14 +154,15 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 ## Q8 Alerts on a device
 
 - [ ] New/changed rule: a scenario in `contracts/alerts/scenarios` covers it (the checks enforce this).
-- [ ] Emulator: `--es alertFeed` a reading over and under the thresholds; notification text, channel, sound, repeat.
-- [ ] Grouping (Android 16 / 17 emulators, chip on and off): `--es cmd sensorStart --ei agoMin 50` + `--es alertTest
-      high`, then `--es cmd backfill` + `--es cmd sensorStart --ez firstReading true` (*Sensor ready*), then `--es
-      alertTest rising_fast`. `dumpsys notification --noredact`: alerts only in `g:app.mauri.sukrara.ALERTS` (summary
+- [ ] Emulator: `SYNTHETIC --ei cycle 135` (45 mg/dL now) and `--ei cycle 45` (215 mg/dL): real alerts through the
+      rules; notification text, channel, sound, repeat.
+- [ ] Grouping (Android 16 / 17 emulators, chip on and off): `SYNTHETIC --ez on true --ei warmupMin 10` + `ALERTS --es
+      kinds high`, then the warm-up's end (*Sensor ready* with the first reading), then `ALERTS --es kinds
+      rising_fast`. `dumpsys notification --noredact`: alerts only in `g:app.mauri.sukrara.ALERTS` (summary
       id 119), *Sensor ready* in `g:app.mauri.sukrara.INFO` (summary 19), the countdown and the glucose card
       ungrouped, nothing in `g:Aggregate_…`; the alert is the one that sounded (`mSoundNotificationKey` = id 101). In
-      the shade *High glucose* never inside a bundle with *Sensor ready*; an in-range `alertFeed` removes the alert and
-      its group's summary.
+      the shade *High glucose* never inside a bundle with *Sensor ready*; a real alert (`SYNTHETIC --ei cycle 135`) is
+      removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the
       headline and timing with Android.
 - [ ] Never on the user's phone with real alarms unless the user asked.
@@ -188,12 +195,13 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
 
 ## Q11 Sensor reminders and countdowns
 
-- [ ] Emulator (wearer): `--es cmd sensorEnd --ei inMin 300` → the end countdown in the shade (bar, timer, Hide);
-      with the glucose chip off (`--ez chip false`) the status bar chip shows the timer. `--es reminders '0@<now+1 min>'`
-      → a reminder a minute later ("Sensor ends today at …"). `--ei inMin 1` → "Sensor ended" a minute later.
-- [ ] `--es cmd sensorStart --ei agoMin 40` → the warm-up countdown (bar filling, chip timer); `--es cmd sensorStart
-      --ez firstReading true` → "Sensor ready".
-- [ ] Swipe the countdown away: it doesn't come back for that sensor (`--es cmd sensorEndState` → `dismissed`).
+- [ ] Emulator (wearer): `SYNTHETIC --ez on true --ei endsInMin 300` → the end countdown in the shade (bar, timer);
+      with Settings › Status bar › *Live Update chip* off the status bar chip shows the timer. A reminder set in
+      Settings › Sensor end for a minute ahead → it shows then ("Sensor ends today at …"). `--ei endsInMin 1` →
+      "Sensor ended" a minute later.
+- [ ] `SYNTHETIC --ez on true --ei warmupMin 20` → the warm-up countdown (bar filling, chip timer); at its end the
+      first reading → "Sensor ready".
+- [ ] Swipe the countdown away: it doesn't come back for that sensor (also after the app restarts).
 - [ ] Settings → Sensor end: add / edit / remove a reminder (dialog: days radio, time picker), countdown hours,
       both switches; the card's countdown ring follows the hours. Spanish texts.
 - [ ] Follower role: none of these notifications.
@@ -201,9 +209,9 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
 ## Q12 Sensor scan
 
 - [ ] Unit tests first: `Libre3NfcTest` (commands, answers, receiver ID, `chipGate`), `PatchStateTest`.
-- [ ] Unit tests: `NewSensorFlowTest` (steps after the tap, home button). Emulator: `--es cmd newSensor --es stage
-      <each stage>` with the screen open (`am start … --es screen newsensor`): light and dark, English and Spanish;
-      home's button filled after `fakeSensor` with an end in the past, tonal with an end < 24 h away, gone otherwise.
+- [ ] Unit tests: `NewSensorFlowTest` (steps after the tap, home button). Every stage: `SensorGallery` (JVM, light
+      and dark, font 1× and 2×, some in Spanish; no debug command forces a stage). Emulator: home's button filled
+      after `SYNTHETIC --ei endsInMin 0`, tonal with `--ei endsInMin 600`, gone otherwise.
 - [ ] Settings → Glucose source (one page): header with the sensor (family, red *Untested* tag when unverified, serial,
       dates, status) and *Pair new sensor*; *Read glucose from*: *This phone* (named family) / *Juggluco* (from
       Juggluco to *This phone* asks first, then the New sensor screen); *Sensor*: open on scan, *Forget this sensor*.
@@ -230,22 +238,23 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
       asks. *Pair* is disabled until a typed id is valid. Light and
       dark, English and Spanish. Unit tests: `BrandStepTest`, the driver tests (`G7DriverTest`, `G6DriverTest`,
       `SmartGuideDriverTest`, `AidexXDriverTest`, `CrcTest`), `DirectSourceTest` (the Libre 3 never scans).
-- [ ] Untested banner: `--es cmd sensorProfile --es profile dexcom-g7` (debug) → home shows *Dexcom G7 / ONE+
+- [ ] Untested banner (a real untested sensor on a phone; no debug command fakes a family) → home shows *Dexcom G7 / ONE+
       support is untested. Tell us how it works.* directly under the graph, no close button, not red; *Send feedback*
       opens github.com/…/issues/new with the sensor-feedback form pre-filled with the sensor, the Sukrara and Android
-      versions and the phone model only (`SensorFeedbackTest`); `--es profile libre3` → gone; a follower never shows it.
-- [ ] Untested family, outputs: with `sensorProfile dexcom-g7`, Settings → Share with apps → *Apps on this phone*
+      versions and the phone model only (`SensorFeedbackTest`); back on a Libre 3 → gone; a follower never shows it.
+- [ ] Untested family, outputs: with that sensor, Settings → Share with apps → *Apps on this phone*
       starts with *Paused: Dexcom G7 / ONE+ support is untested* and `adb logcat -s Sukrara.broadcast` stays silent for
-      readings tagged with an untested family; `libre3` → the line is gone and the allowed apps get readings again.
+      readings tagged with an untested family; a Libre 3 → the line is gone and the allowed apps get readings again.
       Unit tests: `BroadcastPayloadsTest` (no broadcast without a verified label), `SensorOutputsTest` (Health
       Connect, Tidepool, Nightscout, phone APIs, CSV), `LibreViewUploaderTest`.
 
 ## Q13 Sensor end in calendar
 
-- [ ] Emulator (wearer, debug): `--es cmd fakeSensor` (synthetic TEST serial), then Settings → Sensor end → "Sensor end in calendar" on: the
+- [ ] Phone with a real sensor (the synthetic sensor has no serial, so it gets no event; `SensorCalendarPlanTest`
+      covers the plan): Settings → Sensor end → "Sensor end in calendar" on: the
       permission dialog; Allow → "On · Sukrara (this phone only)"; Don't allow → stays off with the reason.
-- [ ] `--es cmd calendar` dumps one "Sensor ends" event at the sensor's end; a second `fakeSensor` with a new serial
-      moves the future event to the new sensor (the old future one is removed); restart the app → still one event per sensor.
+- [ ] `adb shell content query --uri content://com.android.calendar/events --projection title:dtstart` lists one
+      "Sensor ends" event at the sensor's end; a new sensor moves the future event to it (the old future one is removed); restart the app → still one event per sensor.
 - [ ] A calendar app on the device shows the "Sukrara" calendar in the brand colour (if the image has one).
 - [ ] Off → the Sukrara calendar is gone (`content query --uri content://com.android.calendar/calendars`).
 - [ ] Picking a Google calendar (needs a signed-in account): the event appears on another device after sync and goes
@@ -257,7 +266,8 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
       it under *Apps on this phone* with its own icon, switch **off**; `adb logcat -s Sukrara.broadcast` stays silent.
 - [ ] Switch on → each minute `→ de.michelinside.glucodatahandler 3`; GDH (`logcat | grep GDH`) logs
       `XDripBroadcastReceiver … SourceInfo => Libre3` and `Glucodata received from XDRIP`, and shows the value.
-- [ ] `--es cmd fakeSensor --es serial TEST…`: the next minute sends 4 (SENSOR_ACTIVATE), GDH `setSensorStartTime`.
+- [ ] A new real sensor (phone; the synthetic one has no serial): the next minute sends 4 (SENSOR_ACTIVATE), GDH
+      `setSensorStartTime`.
 - [ ] Source → Juggluco: the app switches are greyed with "Only while Sukrara reads the sensor itself"; nothing sent.
 - [ ] Follower role: the page has neither group.
 - [ ] Health Connect on → Health Connect's own sheet; Don't allow → stays off with "needs access in Health Connect";
@@ -276,7 +286,7 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
 ## Q15 Data export
 
 - [ ] Emulator (wearer, debug = synthetic glucose): Settings → Export data; the count updates when the period changes;
-      This sensor shows only when a sensor is known (`--es cmd fakeSensor`).
+      This sensor shows only when the current sensor is known (`Exporter.currentSensor`).
 - [ ] *Save file*: the system picker suggests `sukrara-glucose-<from>-to-<to>.csv`; saving shows "File saved";
       `adb shell cat` the file (or open it in Files): line 1 `Glucose Data,…`, 5-minute rows, treatments with
       `Entered By`; a pen entry has its priming in `Primed Insulin (units)` (`1.5`, `0.0` without), typed entries leave it empty.
@@ -303,7 +313,7 @@ the data set's device → delete, or the end-to-end test below). Never switch it
 - [ ] Sign in → the account row shows the email; nothing uploads until *Upload to Tidepool* is on. On → `adb logcat -s
       Sukrara.tidepool` shows `uploaded N readings …`; status "Up to date · last upload …"; Tidepool web shows the
       readings (one per 5 minutes) under a *Sukrara* device.
-- [ ] `--es cmd treat …` carbs and rapid insulin, then edit and delete one in the app: Tidepool web follows within a
+- [ ] Add carbs and rapid insulin in the app, then edit and delete one in the app: Tidepool web follows within a
       cycle (one food / insulin each, the deleted one gone); a note on its own shows as a Tidepool note.
 - [ ] Airplane mode for 15 min → status "Will retry · …"; back online → the gap is filled (no missing 5-minute slots).
 - [ ] Follower (`small_phone`): the page has *Upload the person you follow*, off; status "Waiting for your choice
@@ -369,7 +379,7 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
 - [ ] Leaving it updates everything that showed it at once (history, badge, widgets, ring, notification).
 - [ ] Status bar placement without the LSPosed module: the rows say the placement needs the module and what shows
       meanwhile; the dialog lets you leave a clock placement (system-icon placements selectable).
-- [ ] Alerts: emulator `--es alertFeed '65,0'` → Mute 30 min → the muted notification's *Unmute* brings *Low glucose*
+- [ ] Alerts: emulator `SYNTHETIC --ei cycle 135` (a low) → Mute 30 min → the muted notification's *Unmute* brings *Low glucose*
       back at once; Mute… → the pill opens the sheet → *Change to 15 min*; Remind less → the chip → *Remind as usual*; home
       *Mute alerts* → 1 h → the muted pill on the card and widgets → the line counts down → *Unmute*; *Until you turn it off* stays after a restart; the muted notification's header counts down;
       a high muted, then a low: the low alerts; muted low back at ≥ 80 for 10 min → the muted notification goes;
@@ -379,7 +389,7 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
 
 ## Q21 Insulin pens
 
-Emulator only (debug build, synthetic data: `DebugReceiver --es cmd penRead …`, docs/10 "Insulin pens"); a real pen
+Emulator only (debug build, synthetic data: `PEN_READ …`, docs/FEATURES.md "Insulin pens"); a real pen
 only on the user's phone, by the user. The full checklist is `poc/spikes/novopen-android/PRODUCT.md` §9 (59 rows).
 
 - [ ] Fresh install (*Ask*): the first tap shows *Log this pen in Sukrara?*; nothing logged; *Turn on* → *New pen
@@ -416,7 +426,7 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
 - [ ] *Notification after each read* off (default): a read posts no *Pen reads* notification (*Pen doses to check*
       still posts). On: the read's notification, silent, no heads-up; `dumpsys notification --noredact` shows it in
       Sukrara's info group (`g:app.mauri.sukrara.INFO`), never in `g:Aggregate_…` with the glucose card or an alert
-      (`--es alertTest high`), chip on and off. Switching it off removes the shown one. Notifications blocked: the row
+      (`ALERTS --es kinds high`), chip on and off. Switching it off removes the shown one. Notifications blocked: the row
       says *Blocked in Android settings* and opens the channel page.
 - [ ] Treatment dialog with pen reading on: no pen icon in the title row; a pen with nothing new → *Nothing new* under
       the fields for 3 s; a failed read → red *Couldn't read the pen* for 3 s.
