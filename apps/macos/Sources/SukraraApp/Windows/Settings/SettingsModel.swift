@@ -101,6 +101,16 @@ public final class SettingsModel {
         }
     }
 
+    /// Where a read-only (mirrored) value comes from, said after it: "from Marta" while the wearer's settings apply,
+    /// "Sukrara's default" otherwise (Default, or Wearer before their settings arrived). Empty in Custom (editable).
+    public var mirrorSource: String {
+        switch settingsFrom {
+        case .custom: return ""
+        case .wearer where wearer != nil: return L10n.t("from \(wearer?.wearer ?? L10n.t("the wearer"))")
+        case .wearer, .default: return L10n.t("Sukrara's default")
+        }
+    }
+
     // MARK: card settings
 
     /// The card settings in use (the menu bar's; each place may show its own time).

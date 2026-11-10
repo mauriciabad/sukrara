@@ -18,6 +18,15 @@ struct NumberSettingRow: View {
     private var isCustom: Bool { custom || !(format.isPreset(value) || format.specialOf(value) != nil) }
 
     var body: some View {
+        if readOnly {
+            // a mirrored value in words, never a dimmed pop-up (#106: faint in dark mode)
+            LabeledContent(label) { ReadOnlyValue(value: Self.word(format, value)) }
+        } else {
+            editor
+        }
+    }
+
+    private var editor: some View {
         VStack(alignment: .leading, spacing: 4) {
             Picker(label, selection: choice) {
                 ForEach(
@@ -27,9 +36,8 @@ struct NumberSettingRow: View {
                 }
                 if format.custom { Text(L10n.t("Custom…")).tag(Double?.none) }
             }
-            .disabled(readOnly)
             .accessibilityValue(Self.word(format, value))
-            if isCustom && format.custom && !readOnly {
+            if isCustom && format.custom {
                 HStack {
                     // no title beside it: in a Form it took a column of its own and broke as "Val-ue"
                     TextField(L10n.t("Value"), text: $text)  // settings-ok: number input
@@ -85,4 +93,32 @@ struct NumberSettingRow: View {
         default: f.unit.isEmpty ? f.text(v) : "\(f.text(v)) \(f.unit)"
         }
     }
+}
+
+/// A setting this Mac shows but doesn't decide (the wearer's or Sukrara's default, read-only outside Custom), in words
+/// at full contrast rather than a dimmed control (#106: disabled switches couldn't be told on from off in dark mode):
+/// "On — from Marta", "70 mg/dL". VoiceOver reads it as one value.
+struct ReadOnlyValue: View {
+    let value: String
+    /// Where it comes from ("from Marta", "Sukrara's default"); nil = said elsewhere (the section's footer).
+    var source: String? = nil
+    /// What it is, for VoiceOver where no label stands beside it ("Low" in the Alerts list).
+    var name: String? = nil
+
+    var body: some View {
+        Group {
+            if let source, !source.isEmpty {
+                Text("\(Text(value).fontWeight(.medium)) \(Text("— \(source)").foregroundStyle(.secondary))")
+            } else {
+                Text(value).fontWeight(.medium)
+            }
+        }
+        .foregroundStyle(.primary)
+        .multilineTextAlignment(.trailing)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text([name ?? "", value, source ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")))
+    }
+
+    /// "On" / "Off" for a mirrored switch.
+    static func onOff(_ on: Bool) -> String { on ? L10n.t("On") : L10n.t("Off") }
 }

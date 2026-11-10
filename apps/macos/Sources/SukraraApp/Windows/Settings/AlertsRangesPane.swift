@@ -118,13 +118,17 @@ struct AlertsRangesPane: View {
             Button(L10n.t("Details…")) { editing = kind }
                 .controlSize(.small)
                 .accessibilityLabel(L10n.t("\(Self.kindName(kind)) alert details"))
-            Toggle(
-                Self.kindName(kind),
-                isOn: Binding(get: { shown.on }, set: { v in model.alerts.update { $0[kind].on = v } })
-            )
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .disabled(readOnly)
+            if readOnly {
+                ReadOnlyValue(
+                    value: ReadOnlyValue.onOff(shown.on), source: model.mirrorSource, name: Self.kindName(kind))
+            } else {
+                Toggle(
+                    Self.kindName(kind),
+                    isOn: Binding(get: { shown.on }, set: { v in model.alerts.update { $0[kind].on = v } })
+                )
+                .labelsHidden()
+                .toggleStyle(.switch)
+            }
         }
         .accessibilityElement(children: .contain)
     }
@@ -164,7 +168,13 @@ struct AlertsRangesPane: View {
         let on = Binding(get: { rule.on }, set: { v in model.alerts.update { $0[keyPath: path].on = v } })
         let minutes = Binding(get: { rule.min }, set: { v in model.alerts.update { $0[keyPath: path].min = v } })
         return VStack(alignment: .leading) {
-            Toggle(label, isOn: on).disabled(model.alertsMirrored)
+            if model.alertsMirrored {
+                LabeledContent(label) {
+                    ReadOnlyValue(value: ReadOnlyValue.onOff(rule.on), source: model.mirrorSource)
+                }
+            } else {
+                Toggle(label, isOn: on)
+            }
             if let format = SettingsSpec.numbers[name], rule.on {
                 NumberSettingRow(label: L10n.t("For"), format: format, value: minutes, readOnly: model.alertsMirrored)
             }
@@ -214,11 +224,15 @@ private struct AlertDetails: View {
         VStack(spacing: 0) {
             Form {
                 Section {
-                    Toggle(
-                        L10n.t("\(name) alert"),
-                        isOn: Binding(get: { shown.on }, set: { v in model.alerts.update { $0[kind].on = v } })
-                    )
-                    .disabled(readOnly)
+                    if readOnly {
+                        LabeledContent(L10n.t("\(name) alert")) {
+                            ReadOnlyValue(value: ReadOnlyValue.onOff(shown.on), source: model.mirrorSource)
+                        }
+                    } else {
+                        Toggle(
+                            L10n.t("\(name) alert"),
+                            isOn: Binding(get: { shown.on }, set: { v in model.alerts.update { $0[kind].on = v } }))
+                    }
                     let id = "alerts.threshold.\(kind.rawValue)"
                     if let number = SettingsSpec.settings.first(where: { $0.id == id })?.number,
                         let format = SettingsSpec.numbers[number]

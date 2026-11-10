@@ -2321,6 +2321,22 @@
         }
       }
     },
+    "Sukrara's default" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara's default"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "predeterminado de Sukrara"
+          }
+        }
+      }
+    },
     "Synthetic data (dev build)" : {
       "localizations" : {
         "en" : {
@@ -2941,6 +2957,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Te damos la bienvenida a Sukrara"
+          }
+        }
+      }
+    },
+    "from %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de %@"
           }
         }
       }
