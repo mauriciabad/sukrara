@@ -10,18 +10,22 @@ import SwiftUI
 public final class SetupModel {
     public var flow: SetupFlow
     public let follow: FollowModel
-    public let alerts: AlertSettingsStore
+    /// The settings window's model: the alert rules in use and "Settings from" (one alert store for both windows, so
+    /// neither writes back a stale copy of the other's change).
+    public let settings: SettingsModel
+    /// Thresholds changed on the alert step; nothing is stored before Use these.
+    var editedThresholds: [AlertKind: Double] = [:]
     @ObservationIgnored let store: any SettingsStoring
     /// Asks for notification permission; true = granted.
     @ObservationIgnored var requestNotifications: () async -> Bool = { false }
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
     var loginItem: LoginItem?
 
-    public init(store: any SettingsStoring, follow: FollowModel) {
-        self.store = store
-        self.flow = SetupFlow(store: store)
-        self.follow = follow
-        self.alerts = AlertSettingsStore(store: store)
+    public init(settings: SettingsModel) {
+        self.settings = settings
+        self.store = settings.store
+        self.flow = SetupFlow(store: settings.store)
+        self.follow = settings.follow
     }
 
     func complete(_ s: SetupFlow.Step) { flow.complete(s); flow.save(to: store) }
@@ -36,9 +40,44 @@ public final class SetupModel {
         if loginItem.status != .on { loginItem.set(true) }
         if loginItem.status == .on { complete(.openAtLogin) }
     }
+
+    // MARK: the alert step
+
+    /// The alert step's rows, as in Android's setup: the five levels and no data.
+    static let reviewedKinds: [AlertKind] = [.veryLow, .low, .high, .veryHigh, .extremelyHigh, .noData]
+
+    /// A row's value: the change made here, else the threshold in use (the wearer's, the defaults or this Mac's own;
+    /// no data is always this Mac's).
+    func threshold(_ kind: AlertKind) -> Double { editedThresholds[kind] ?? settings.shownAlerts[kind].threshold }
+
+    func setThreshold(_ value: Double, _ kind: AlertKind) { editedThresholds[kind] = value }
+
+    /// The five levels keep their order (very low < low < high < very high < extremely high); else Use these waits.
+    var thresholdsInOrder: Bool {
+        let levels = Self.reviewedKinds.filter { $0 != .noData }.map(threshold)
+        return zip(levels, levels.dropFirst()).allSatisfy { $0 < $1 }
+    }
+
+    /// The levels come from the wearer or the defaults (not this Mac's own): changing one changes that.
+    var levelsMirrored: Bool { settings.settingsFrom != .custom }
+
+    /// Use these: stores the changed thresholds and completes the step (never confirmed silently: only this button).
+    /// A changed level applies only as this Mac's own rule, so the settings in use become this Mac's own first
+    /// (Custom, starting from the wearer's or the defaults: nothing else on screen changes); no data is always this
+    /// Mac's. Nothing changed = nothing stored.
+    func confirmThresholds() {
+        guard thresholdsInOrder else { return }
+        let shown = settings.shownAlerts
+        let changed = editedThresholds.filter { shown[$0.key].threshold != $0.value }
+        if changed.keys.contains(where: { $0 != .noData }) { settings.useInUseAsOwn() }
+        if !changed.isEmpty { settings.alerts.update { s in for (k, v) in changed { s[k].threshold = v } } }
+        editedThresholds = [:]
+        complete(.alerts)
+    }
 }
 
-/// First-run setup: Welcome → Follow → Alerts (thresholds confirmed) → Notifications → Open at login → Done.
+/// First-run setup: Welcome → Follow → Alerts (thresholds checked, changed, confirmed) → Notifications → Open at
+/// login → Done.
 /// Every step has Skip and Back; closing the window leaves "Finish setup" in the panel.
 public struct SetupView: View {
     @Bindable var model: SetupModel
@@ -99,18 +138,59 @@ public struct SetupView: View {
         }
     }
 
+    /// The five levels and no data, each with THE number input over the step's draft; the order rule and where the
+    /// levels come from under them.
     private var thresholds: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(L10n.t("Sukrara alerts at these values. Use them, or change them in Settings › Alerts."))
-            ForEach([AlertKind.veryLow, .low, .high, .veryHigh, .extremelyHigh], id: \.self) { k in
-                LabeledContent(AlertsRangesPane.kindName(k)) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(
+                L10n.t(
+                    "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these."
+                ))
+            Form {
+                ForEach(SetupModel.reviewedKinds, id: \.self) { thresholdRow($0) }
+            }
+            .formStyle(.columns)
+            if !model.thresholdsInOrder {
+                // the colour only on the symbol: the words keep full contrast
+                Label {
                     Text(
-                        model.alerts.settings[k].on ? "\(Int(model.alerts.settings[k].threshold)) mg/dL" : L10n.t("Off")
-                    )
+                        L10n.t(
+                            "Keep the order: very low below low, low below high, high below very high, very high below extremely high."
+                        ))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                 }
-                .frame(minHeight: 24)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            if model.levelsMirrored {
+                Text(mirroredNote).font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    @ViewBuilder private func thresholdRow(_ kind: AlertKind) -> some View {
+        let id = "alerts.threshold.\(kind.rawValue)"
+        if let number = SettingsSpec.settings.first(where: { $0.id == id })?.number,
+            let format = SettingsSpec.numbers[number]
+        {
+            let name = AlertsRangesPane.kindName(kind)
+            NumberSettingRow(
+                label: model.settings.shownAlerts[kind].on ? name : L10n.t("\(name) (off)"), format: format,
+                value: Binding(get: { model.threshold(kind) }, set: { model.setThreshold($0, kind) }))
+        }
+    }
+
+    /// Where the levels come from while they aren't this Mac's own, and what changing one does.
+    private var mirroredNote: String {
+        if model.settings.settingsFrom == .wearer, let who = model.settings.wearer?.wearer {
+            return L10n.t(
+                "These are \(who)'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+            )
+        }
+        return L10n.t(
+            "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+        )
     }
 
     private func page(_ step: SetupFlow.Step, _ title: String, @ViewBuilder content: () -> some View) -> some View {
@@ -123,7 +203,9 @@ public struct SetupView: View {
                 Button(L10n.t("Skip")) { model.skip(step) }
                 Button(primaryTitle(step)) { Task { await primary(step) } }
                     .keyboardShortcut(.defaultAction)
-                    .disabled((step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil))
+                    .disabled(
+                        (step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil)
+                            || (step == .alerts && !model.thresholdsInOrder))
             }
         }
     }
@@ -149,6 +231,7 @@ public struct SetupView: View {
         case .notifications:
             if await model.requestNotifications() { model.complete(s) } else { model.skip(s) }
         case .openAtLogin: model.openAtLogin()
+        case .alerts: model.confirmThresholds()
         default: model.complete(s)
         }
     }

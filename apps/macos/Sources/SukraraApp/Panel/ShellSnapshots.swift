@@ -72,7 +72,9 @@
                 controller.refreshUI()
                 model.notificationPermission = permission
                 model.focusCanHoldAlerts = focus
-                let setupModel = SetupModel(store: store, follow: FollowModel(status: .notFollowing, actions: nil))
+                let setupModel = SetupModel(
+                    settings: SettingsModel(
+                        store: store, follow: FollowModel(status: .notFollowing, actions: nil), version: "0.12.0"))
                 setupModel.flow = setup
                 let treatments = TreatmentsModel(rows: [], canWrite: false, actions: nil)
                 treatments.isFollowing = link.isFollowing

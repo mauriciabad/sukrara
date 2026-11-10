@@ -25,8 +25,8 @@ final class WindowCoordinator {
         let adapter = model.follower.map(FollowerAdapter.init(follower:))
         self.adapter = adapter
         follow = FollowModel(status: .notFollowing, actions: adapter)
-        setup = SetupModel(store: store, follow: follow)
         settings = SettingsModel(store: store, follow: follow, version: Self.version)
+        setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
         report = ReportModel(store: store, app: model)
         setup.requestNotifications = requestNotifications

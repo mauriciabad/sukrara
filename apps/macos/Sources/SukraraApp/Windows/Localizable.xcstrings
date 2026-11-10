@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ (off)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (off)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (desactivada)"
+          }
+        }
+      }
+    },
     "%@'s phone is nearby" : {
       "localizations" : {
         "en" : {
@@ -1121,6 +1137,22 @@
         }
       }
     },
+    "Keep the order: very low below low, low below high, high below very high, very high below extremely high." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep the order: very low below low, low below high, high below very high, very high below extremely high."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto."
+          }
+        }
+      }
+    },
     "Last reading %@" : {
       "localizations" : {
         "en" : {
@@ -2225,6 +2257,22 @@
         }
       }
     },
+    "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara te avisa con estos valores. Cambia los que quieras aquí: nada cambia hasta que elijas Usar estos."
+          }
+        }
+      }
+    },
     "Sukrara opens at login." : {
       "localizations" : {
         "en" : {
@@ -2253,22 +2301,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustes de Sukrara"
-          }
-        }
-      }
-    },
-    "Sukrara alerts at these values. Use them, or change them in Settings › Alerts." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara alerts at these values. Use them, or change them in Settings › Alerts."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara avisa con estos valores. Úsalos o cámbialos en Ajustes › Alertas."
           }
         }
       }
@@ -2461,6 +2493,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
+          }
+        }
+      }
+    },
+    "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son las alertas de %@, desde su móvil. Cambiar un nivel las convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
+          }
+        }
+      }
+    },
+    "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son los valores predeterminados de Sukrara. Cambiar un nivel los convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
           }
         }
       }

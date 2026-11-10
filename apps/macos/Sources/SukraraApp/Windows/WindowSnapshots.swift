@@ -4,6 +4,7 @@
 #if DEBUG
     import AppKit
     import ServiceManagement
+    import SukraraAlerts
     import SukraraCore
     import SukraraGraph
     import SukraraShare
@@ -49,10 +50,31 @@
             }
             var out: [(String, AnyView)] = []
             for step in SetupFlow.Step.allCases {
-                let m = SetupModel(store: store, follow: follow(.notFollowing))
+                let m = SetupModel(
+                    settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
                 m.loginItem = LoginItem(service: SnapLogin(status: .notRegistered))
                 m.flow.open(step)
                 out.append(("setup-\(step.rawValue)", AnyView(SetupView(model: m, close: {}))))
+            }
+            // the alert step: the wearer's levels (mirrored), levels out of order, this Mac's own (Custom, one off)
+            let wearerAlerts = WearerSettings(
+                json: #"{"alerts":{"alerts":{"low":{"on":true,"mgdl":72},"high":{"on":true,"mgdl":200}}}}"#,
+                wearer: "Marta")
+            func scratchSettings(_ wearer: WearerSettings?) -> SettingsModel {
+                let s = DefaultsSettingsStore(defaults: UserDefaults(suiteName: "\(suite).\(UUID().uuidString)")!)
+                return SettingsModel(store: s, follow: follow(.notFollowing), wearer: wearer, version: "0.12.0")
+            }
+            let ownAlerts = scratchSettings(nil)
+            ownAlerts.settingsFrom = .custom
+            ownAlerts.alerts.update { $0[.veryHigh].on = false }
+            for (name, settings, edit) in [
+                ("wearer", scratchSettings(wearerAlerts), [AlertKind: Double]()),
+                ("order", scratchSettings(nil), [.veryLow: 65, .low: 60]), ("custom", ownAlerts, [:]),
+            ] {
+                let m = SetupModel(settings: settings)
+                m.flow.open(.alerts)
+                m.editedThresholds = edit
+                out.append(("setup-alerts-\(name)", AnyView(SetupView(model: m, close: {}))))
             }
             // Open at login after the button: waiting for approval, refused, on (the step stays until it's on)
             let refusedLogin = LoginItem(service: SnapLogin(status: .notRegistered, refuses: true))
@@ -61,12 +83,14 @@
                 ("approval", LoginItem(service: SnapLogin(status: .requiresApproval))),
                 ("failed", refusedLogin), ("on", LoginItem(service: SnapLogin(status: .enabled))),
             ] {
-                let m = SetupModel(store: store, follow: follow(.notFollowing))
+                let m = SetupModel(
+                    settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
                 m.loginItem = item
                 m.flow.open(.openAtLogin)
                 out.append(("setup-openAtLogin-\(name)", AnyView(SetupView(model: m, close: {}))))
             }
-            let doneModel = SetupModel(store: store, follow: follow(.notFollowing))
+            let doneModel = SetupModel(
+                settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
             doneModel.flow = SetupFlow(states: [
                 .welcome: .done, .follow: .skipped, .alerts: .done, .notifications: .done, .openAtLogin: .done,
             ])
