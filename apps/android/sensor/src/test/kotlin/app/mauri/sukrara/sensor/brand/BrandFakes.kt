@@ -107,6 +107,7 @@ internal class BrandEvents : SensorEvents {
     val history = ArrayList<Reading>()
     val starts = ArrayList<Long>()
     val ended = ArrayList<String>()
+    var strangers = 0
 
     override fun onStatus(status: LinkStatus) {
         statuses += status
@@ -126,6 +127,10 @@ internal class BrandEvents : SensorEvents {
 
     override fun onSessionStart(startEpoch: Long) {
         starts += startEpoch
+    }
+
+    override fun onStranger() {
+        strangers++
     }
 
     fun last() = statuses.last()

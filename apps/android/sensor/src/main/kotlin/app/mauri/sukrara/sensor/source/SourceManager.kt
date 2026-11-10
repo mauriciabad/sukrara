@@ -17,6 +17,7 @@ import app.mauri.sukrara.sensor.ble.BleScanner
 import app.mauri.sukrara.sensor.ble.GattConnector
 import app.mauri.sukrara.sensor.ble.GattLink
 import app.mauri.sukrara.sensor.ble.LinkStatus
+import app.mauri.sukrara.sensor.ble.ScanOutcome
 import app.mauri.sukrara.sensor.ble.SensorDriver
 import app.mauri.sukrara.sensor.ble.SensorEvents
 import app.mauri.sukrara.sensor.ble.SensorGlucose
@@ -220,7 +221,23 @@ class SourceManager internal constructor(
             var address = pairing.address
             if (driver is BrandDriver && address.isEmpty()) {
                 // a scanned family's first run: find it, keep its address (later runs connect straight to it)
-                val found = SensorScanner(scanner, log).find(driver, events) ?: awaitCancellation()
+                // after a stranger's device (Pairing.strangers) one more scan; nothing else nearby: the pairing fails
+                val limit = if (pairing.strangers.isEmpty()) Int.MAX_VALUE else SensorScanner.RESCAN_WINDOWS
+                val found =
+                    when (val outcome = SensorScanner(scanner, log).find(driver, events, limit)) {
+                        is ScanOutcome.Found -> {
+                            outcome.advert
+                        }
+
+                        ScanOutcome.Stopped -> {
+                            awaitCancellation()
+                        }
+
+                        ScanOutcome.NotFound -> {
+                            events.onStatus(LinkStatus.Failed(driver.strangerFailure))
+                            awaitCancellation()
+                        }
+                    }
                 pairings.setFound(pairing, found.address, found.name.orEmpty())
                 address = found.address
                 found.name?.let { name -> events.found(name) }
@@ -330,6 +347,14 @@ class SourceManager internal constructor(
             scope.launch {
                 if (wrong.isNotEmpty()) pairings.skipDevice(pairing, wrong)
                 retry() // scan again, without it
+            }
+        }
+
+        override fun onStranger() {
+            val stranger = address
+            scope.launch {
+                if (stranger.isNotEmpty()) pairings.skipStranger(pairing, stranger)
+                retry() // scan once more, without it
             }
         }
 

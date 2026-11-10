@@ -31,12 +31,10 @@ class SmartGuideDriverTest {
     private val nowS = nowMs / 1000
     private val chars = setOf(CgmService.MEASUREMENT, CgmService.STATUS, CgmService.RACP, CgmService.SOCP)
 
-    private fun driver(events: BrandEvents) =
-        SmartGuideDriver(
-            Pairing.scanned(SensorProfile.SmartGuide, "", 1L),
-            events,
-            clockMs = { nowMs },
-        )
+    private fun driver(
+        events: BrandEvents,
+        pairing: Pairing = Pairing.scanned(SensorProfile.SmartGuide, "", 1L),
+    ) = SmartGuideDriver(pairing, events, clockMs = { nowMs })
 
     /** Bonded, subscribed, and the session start known from a status read: 4762 minutes ago. */
     private fun running(events: BrandEvents, link: BrandLink = BrandLink()): SmartGuideDriver =
@@ -90,15 +88,31 @@ class SmartGuideDriverTest {
         assertEquals("write 2A52 ${CgmService.reportRecordsFrom(4762 - 24 * 60).hex()}", link.ops.last())
     }
 
+    /**
+     * Every SmartGuide advertises "AC-…": the first one a new pairing meets that refuses the PIN may be a stranger's
+     * (skipped, one more scan); the next one, or one after the pairing reached its sensor, needs the person.
+     */
     @Test
     fun aRefusedPinNeedsThePerson() {
-        val events = BrandEvents()
-        val link = BrandLink(isBonded = false)
-        val d = driver(events)
-        d.onConnected(link, chars, 0)
-        d.onBondChanged(false)
-        assertEquals(LinkStatus.Failed(FailReason.BondFailed), events.last())
-        assertEquals(1, link.closed)
+        val first = BrandEvents()
+        val firstLink = BrandLink(isBonded = false)
+        driver(first).apply {
+            onConnected(firstLink, chars, 0)
+            onBondChanged(false)
+        }
+        assertEquals(1, firstLink.closed)
+        assertEquals(1, first.strangers)
+        assertEquals(LinkStatus.EnterPin, first.last())
+        assertEquals(FailReason.BondFailed, driver(first).strangerFailure)
+
+        val scanned = Pairing.scanned(SensorProfile.SmartGuide, "", 1L)
+        for (pairing in listOf(scanned.copy(strangers = listOf("AA:01")), scanned.copy(startEpoch = nowS - 3600))) {
+            val events = BrandEvents()
+            val d = driver(events, pairing)
+            d.onConnected(BrandLink(isBonded = false), chars, 0)
+            d.onBondChanged(false)
+            assertEquals(LinkStatus.Failed(FailReason.BondFailed), events.last())
+        }
     }
 
     @Test

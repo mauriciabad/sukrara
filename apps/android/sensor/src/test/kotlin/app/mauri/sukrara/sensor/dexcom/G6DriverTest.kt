@@ -28,8 +28,10 @@ class G6DriverTest {
     private val token = ByteArray(8) { (0x10 + it).toByte() }
     private val chars = setOf(Dexcom.AUTHENTICATION, Dexcom.CONTROL, Dexcom.BACKFILL)
 
-    private fun driver(events: BrandEvents) =
-        G6Driver(Pairing.scanned(SensorProfile.DexcomG6, "8GABCD", 1L), events, random = { token.copyInto(it) }, clockMs = { nowMs })
+    private fun driver(
+        events: BrandEvents,
+        pairing: Pairing = Pairing.scanned(SensorProfile.DexcomG6, "8GABCD", 1L),
+    ) = G6Driver(pairing, events, random = { token.copyInto(it) }, clockMs = { nowMs })
 
     /** Authenticated and bonded, the transmitter's clock at 100 000 s, its session started an hour ago. */
     private fun streaming(events: BrandEvents, link: BrandLink = BrandLink()): G6Driver =
@@ -108,16 +110,35 @@ class G6DriverTest {
         assertEquals(listOf(nowS - 1_000), events.history.map { it.epochSec })
     }
 
+    /**
+     * A transmitter that doesn't know this id's key: dropped before answering. The first one a new pairing meets may be
+     * a stranger's that advertises the same "Dexcom" + 2 characters: skipped, one more scan; the next one (or one after
+     * the pairing reached its sensor) needs the person.
+     */
     @Test
     fun aWrongIdIsDroppedBeforeAnsweringAndNeedsThePerson() {
-        val events = BrandEvents()
-        val link = BrandLink()
-        val d = driver(events)
-        d.onConnected(link, chars, 0)
-        d.onNotification(Dexcom.AUTHENTICATION, byteArrayOf(0x03) + ByteArray(16))
-        assertEquals(1, link.characteristicWrites.size) // only our auth request: nothing revealed
-        assertEquals(1, link.closed)
-        assertEquals(LinkStatus.Failed(FailReason.WrongId), events.last())
+        val first = BrandEvents()
+        val firstLink = BrandLink()
+        driver(first).apply {
+            onConnected(firstLink, chars, 0)
+            onNotification(Dexcom.AUTHENTICATION, byteArrayOf(0x03) + ByteArray(16))
+        }
+        assertEquals(1, firstLink.characteristicWrites.size) // only our auth request: nothing revealed
+        assertEquals(1, firstLink.closed)
+        assertEquals(1, first.strangers)
+        assertFalse(first.statuses.any { it is LinkStatus.Failed })
+
+        val scanned = Pairing.scanned(SensorProfile.DexcomG6, "8GABCD", 1L)
+        for (pairing in listOf(scanned.copy(strangers = listOf("AA:01")), scanned.copy(startEpoch = nowS - 3600))) {
+            val events = BrandEvents()
+            val link = BrandLink()
+            val d = driver(events, pairing)
+            d.onConnected(link, chars, 0)
+            d.onNotification(Dexcom.AUTHENTICATION, byteArrayOf(0x03) + ByteArray(16))
+            assertEquals(1, link.closed)
+            assertEquals(0, events.strangers)
+            assertEquals(LinkStatus.Failed(FailReason.WrongId), events.last())
+        }
     }
 
     @Test

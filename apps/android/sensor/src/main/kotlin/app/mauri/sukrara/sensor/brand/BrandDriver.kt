@@ -54,8 +54,12 @@ internal abstract class BrandDriver(
     /** Should the source connect to this device? */
     abstract fun matches(advert: Advert): Boolean
 
-    /** [matches], and not a device this pairing skips ([Pairing.skipAddresses]: an old sensor). */
-    fun accepts(advert: Advert): Boolean = advert.address.uppercase() !in pairing.skipAddresses && matches(advert)
+    /** [matches], and not a device this pairing skips ([Pairing.skipAddresses]: an old sensor; [Pairing.strangers]). */
+    fun accepts(advert: Advert): Boolean =
+        advert.address.uppercase().let { it !in pairing.skipAddresses && it !in pairing.strangers } && matches(advert)
+
+    /** How the pairing fails when the one rescan after a stranger's device ([refusedByDevice]) finds no other. */
+    open val strangerFailure: FailReason get() = FailReason.WrongId
 
     /** A scan result that passed [scan], before [matches]: [record] is the raw advertising data (Aidex X carries values). */
     open fun onAdvertisement(
@@ -180,6 +184,21 @@ internal abstract class BrandDriver(
         log("sensor: $why")
         link?.close()
         events.onStatus(LinkStatus.Failed(reason))
+    }
+
+    /**
+     * The device refused this pairing's id / PIN ([reason]). Before the pairing ever reached its sensor (no session start
+     * known) the first such device may be someone else's that the scan found first: it is skipped and the scan runs once
+     * more ([SensorEvents.onStranger]); otherwise, or the second time, the pairing fails for good.
+     */
+    protected fun refusedByDevice(
+        reason: FailReason,
+        why: String,
+    ) {
+        if (pairing.startEpoch > 0 || pairing.strangers.isNotEmpty()) return fail(reason, why)
+        log("sensor: $why: maybe another person's sensor, skipping it and scanning once more")
+        link?.close()
+        events.onStranger()
     }
 
     /** This device isn't the pairing's sensor (an old one the scan found first): close, the source skips it. */
