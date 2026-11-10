@@ -53,7 +53,7 @@
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/NsConfig.kt",
       "contains": "\"http\" -> if (isLoopback(host))",
-      "reason": "Nightscout upload site rules: a typed http:// address is accepted only for this phone's loopback (localhost / 127.x / ::1), all network_security_config allows; any other http:// is refused with 'use https://'"
+      "reason": "Nightscout upload is https only, the home network too (#93); a typed http:// address is accepted only for this phone's loopback (localhost / 127.0.0.1: it never leaves the phone, e.g. a local test site through adb reverse), all network_security_config allows; any other http:// is refused with 'Use https://'"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/NightscoutApiPage.kt",

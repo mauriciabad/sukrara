@@ -384,8 +384,8 @@ afterwards). Never a hosted site, never the user's phone.
       `poc/spikes/nightscout-upload` `cli check` (24/24) and `followers/run.sh` pass against the same site.
 - [ ] Emulator (wearer, debug = synthetic glucose; `adb reverse tcp:1337 tcp:1337`): Settings → Share with apps →
       Nightscout → *Nightscout upload*: *Not set up*, main switch greyed. A follower has no such row.
-- [ ] Site dialog: `http://my.ns.example` → "Use https:// …"; `http://192.168.1.20:1337` → allowed with the
-      "Not encrypted" warning (also under the site row once saved); `http://localhost:1337` + the access token → *Test*
+- [ ] Site dialog: `http://my.ns.example` and `http://192.168.1.20:1337` (https only, the home network too) → "Use
+      https:// … Let's Encrypt and Tailscale give one free", *Save* disabled; `http://localhost:1337` + the access token → *Test*
       shows "Connected · Nightscout 15.0.8"; a wrong token → "The site refused the token or secret". *Save*.
 - [ ] Main switch on → `adb logcat -s Sukrara.nightscout` shows `sent N`; status "Up to date · last upload …"; the site
       shows the last 30 days, the treatments, SAGE and the phone battery. A new reading is on the site within seconds.

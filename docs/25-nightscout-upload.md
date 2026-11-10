@@ -296,9 +296,24 @@ readings just queue (no extra wake-ups). Sukrara's own battery numbers belong to
 ## In Sukrara
 
 **In Sukrara (Android), branch `w-nightscout`.** The decisions taken with the user: HTTPS required, plain http only
-to the phone itself or the home network (with a warning); 30-day backfill; every reading; wearer only; second-uploader
-guard; upload only; API v1 default; access token recommended, API secret accepted, both in `SecureStore`; one upload
-design shared with Tidepool.
+to the phone itself (see the home-network decision below); 30-day backfill; every reading; wearer only;
+second-uploader guard; upload only; API v1 default; access token recommended, API secret accepted, both in
+`SecureStore`; one upload design shared with Tidepool.
+
+**Home network: https only** (decided 2026-11-10, issue #93; it reverses the earlier "http on the home network allowed
+with a warning"). A typed `http://` is accepted only for this phone itself (`localhost`, `127.0.0.1`: it never leaves
+the phone, and the local test site of the QA steps is reached that way through `adb reverse`); any other `http://`,
+private addresses included, is refused with "Use https://", which says what to do instead (a free certificate from
+Let's Encrypt or Tailscale). Discarded, with the reasons:
+- *http to private addresses with a "Not encrypted" note*: the uploader sends a write credential with every request
+  (the API secret is full admin), and over http anyone on that Wi-Fi can capture it. A private address is a different
+  machine on a café, hotel or friend's Wi-Fi, so a phone that leaves home would send the credential to a stranger.
+  The network security config can't express "private ranges", so it would mean cleartext for the whole app and our
+  own URL check guarding every client (relays, LibreView, Tidepool).
+- *The same, confirmed per site and tied to the Wi-Fi it was saved on*: the same exposure on that Wi-Fi, for a setup
+  a free certificate solves.
+- Nightscout itself redirects http to https unless `INSECURE_USE_HTTP` is set, and AAPS also allows cleartext only to
+  localhost. Home devices that only read glucose already have the opt-in *Nightscout API on the home Wi-Fi*.
 
 **One upload design with Tidepool** (`upload/Uploads.kt`). Both uploaders were built in parallel and arrived at the
 same core, so the PoC's per-reading outbox was dropped for Tidepool's model:
@@ -390,7 +405,7 @@ queue, backoff, diff-backfill, roles and conflict ideas here are written so they
 | Follower uploads | **Discard (default)**; explicit single-person relay later | someone else's data must not become "our" sensor |
 | v3 soft deletes | **Discard** | v1 readers still show the treatment |
 | `filtered`/`unfiltered`/`rssi`/`mbg`/calibrations | **Discard** | Libre 3 has none |
-| HTTP to LAN hosts | **Discard (for now)** | TLS only; see open questions |
+| HTTP to LAN hosts | **Discard** | TLS only; decided for good in #93 (see "In Sukrara") |
 
 **QA steps** (add to `docs/QA.md`):
 1. Fresh install → Settings → Share with apps → Nightscout: off. Turn on with an empty site → it asks for the site.
@@ -409,8 +424,9 @@ queue, backoff, diff-backfill, roles and conflict ideas here are written so they
 
 ## Open questions
 
-Settled with the user for the integration: http on the home network allowed with a warning, 30-day backfill, every
-reading, no follower relay, one upload design shared with Tidepool. Still open:
+Settled with the user for the integration: 30-day backfill, every reading, no follower relay, one upload design
+shared with Tidepool; later, https only on the home network too (#93, which reversed "http on the home network allowed
+with a warning"). Still open:
 - Battery cost of an upload per minute on the phone (investigation 11).
 - A read-only overlay of other apps' treatments on the graph (§3.6), if users ask for it.
 

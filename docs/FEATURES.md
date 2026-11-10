@@ -1590,10 +1590,11 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   site refused this token or secret", "Couldn't connect. <reason>") and *Save*. The token or secret lives only in the
   Keystore-encrypted secure store (`nightscout`), never in settings, logs or backups, and is never shown again.
 - Addresses: `https://` with a certificate from a public authority (user-installed / private CAs aren't trusted, so a
-  self-signed home server fails *Test* with a TLS error); `http://` only to this phone (`localhost`, `127.0.0.1`),
-  the only cleartext the network security config allows. Any other `http://`, home network included, shows "Use
-  https://: Sukrara sends your data only encrypted" (issue filed: a home-network `http://` site needs a network-config
-  and local-network-permission decision). A redirect is never followed (it could carry the secret elsewhere): it shows as
+  self-signed home server fails *Test* with a TLS error); `http://` only to this phone (`localhost`, `127.0.0.1`: it
+  never leaves the phone), the only cleartext the network security config allows. Any other `http://`, **home network
+  included** (#93: the token or secret goes with every request, and anyone on that Wi-Fi could read it), shows "Use
+  https://: Sukrara sends your data only encrypted. A server at home needs a certificate: Let's Encrypt and Tailscale
+  give one free." and *Save* stays off. A redirect is never followed (it could carry the secret elsewhere): it shows as
   a retry with "That address doesn't work. Check it, including https://.".
 - *Upload to my Nightscout* (enabled once a site is saved; a follower phone sees "Only the phone that wears the sensor
   uploads"), *Status* ("Last upload 3 min ago · 12 items", "On · nothing sent yet", "<reason> Trying again soon.",
@@ -1719,6 +1720,9 @@ home-network address* → fix or clear the address, switch off. *macOS doesn't l
   Nightscout API, Health Connect and Tidepool name untested families.
 - Sensors: the Libre 3 experiment preferences (minimal subscription set, connection priority, screen-off skip). Reason: no hardware to test them, the owner uses a Libre 3.
 - The LSPosed lock-screen widget (#66; [Lock screen widget](#lock-screen-widget)). Reason: not ported from the PoC yet; the root status bar and the LSPosed status-bar text are.
+- Nightscout upload over plain `http://` on the home network (#93; [Nightscout upload](#nightscout-upload-docs25)).
+  Reason: the token or API secret goes with every request, so anyone on that Wi-Fi could capture it, and a private
+  address is a stranger's machine on a café or hotel Wi-Fi; a free certificate (Let's Encrypt, Tailscale) solves it.
 - Planned (issues filed): the rest of insulin pens (see its section). The sections above that describe it are the behaviour to build. Reason: what daily use needs comes first.
 
 **States and exits**: none (these features aren't in the app).
