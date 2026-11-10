@@ -9,6 +9,7 @@ import app.mauri.sukrara.sensor.ble.BleLink
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.ble.SensorEvents
 import app.mauri.sukrara.sensor.ble.SensorGlucose
+import app.mauri.sukrara.sensor.brand.Trace
 import app.mauri.sukrara.sensor.libre3.Libre3Protocol.CH_CERT
 import app.mauri.sukrara.sensor.libre3.Libre3Protocol.CH_CHALLENGE
 import app.mauri.sukrara.sensor.libre3.Libre3Protocol.CH_COMMAND
@@ -372,6 +373,87 @@ class Libre3DriverTest {
         s.link.fire()
         assertEquals(LinkStatus.Reconnecting("no glucose data after authorizing"), s.events.lastStatus())
         assertEquals(listOf("disconnect"), s.link.take())
+    }
+
+    private val libre3Trace = Trace.resource("libre3")
+
+    /** One packet of `traces/libre3.txt` in its own authorized session. */
+    private fun replay(label: String): Session {
+        val s = Session()
+        s.connect()
+        s.challenge()
+        s.link.take()
+        s.packet(CH_GLUCOSE, libre3Trace[label], cipherLen = 33, seq = 5)
+        return s
+    }
+
+    /** A LO: the capped word's below-range flag (Juggluco's 8231) or, without it, uncapped and capped both below 40. */
+    @Test
+    fun belowRangeIsALoWithoutRateOrLibreViewValue() {
+        val now = nowMs / 1000
+        for (label in listOf("lo", "lo-unflagged")) {
+            val s = replay(label)
+            assertEquals(label, listOf(Reading.lo(Instant.ofEpochSecond(now), SourceId.Libre3)), s.events.readings)
+            assertTrue(
+                label,
+                s.events.readings
+                    .single()
+                    .isLo,
+            )
+            assertNull(
+                label,
+                s.events.readings
+                    .single()
+                    .rateMgdlPerMin,
+            )
+            assertEquals(label, listOf("cancel"), s.link.take()) // a LO is data: the glucose timer stops
+            assertEquals(label, LinkStatus.Live, s.events.lastStatus())
+            // no number for LibreView; the 5-minute point (42) still goes
+            assertEquals(label, listOf(null to listOf(SensorGlucose(2985, 42, start + 60L * 2986))), s.events.sensorGlucose)
+        }
+    }
+
+    /** A HI (> 400 → 401, no rate); LibreView keeps the sensor's own number, the uncapped one while it is one. */
+    @Test
+    fun aboveRangeIsAHiAndLibreViewKeepsTheNumber() {
+        val now = nowMs / 1000
+        for ((label, kept) in listOf("hi" to 450, "hi-unflagged" to 450, "hi-over" to 401)) {
+            val s = replay(label)
+            assertEquals(label, listOf(Reading.hi(Instant.ofEpochSecond(now), SourceId.Libre3)), s.events.readings)
+            assertEquals(
+                label,
+                401,
+                s.events.readings
+                    .single()
+                    .mgdl,
+            )
+            assertNull(
+                label,
+                s.events.readings
+                    .single()
+                    .rateMgdlPerMin,
+            )
+            assertEquals(label, listOf("cancel"), s.link.take())
+            val lifeCount = libre3Trace[label].let { (it[0].toInt() and 0xFF) or ((it[1].toInt() and 0xFF) shl 8) }
+            assertEquals(
+                label,
+                SensorGlucose(lifeCount, kept, now, 2.5),
+                s.events.sensorGlucose
+                    .single()
+                    .first,
+            )
+        }
+    }
+
+    /** A data-quality error (too hot, too cold, …), a range flag the numbers contradict or the no-range code: no value. */
+    @Test
+    fun flaggedOrContradictoryPacketsAreNoValue() {
+        for (label in listOf("too-hot", "too-cold", "dq-low", "flag-contradicts", "no-range")) {
+            val s = replay(label)
+            assertTrue(label, s.events.readings.isEmpty())
+            assertTrue(label, s.events.sensorGlucose.isEmpty())
+            assertEquals(label, emptyList<String>(), s.link.take()) // the 120 s timer still runs: a stream of them reconnects
+        }
     }
 
     @Test
