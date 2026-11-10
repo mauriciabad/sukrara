@@ -5,6 +5,7 @@ package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -110,7 +111,12 @@ class GraphFixtureTest {
         for (c in cases("sensor/life.json")) {
             val now = Scenes.NOW
             val start = now + c["start"].long()!!
-            val info = SensorInfo(start, now + c["end"].long()!!, c["warmup"].long()?.let { now + it } ?: (start + 3600))
+            val info =
+                SensorInfo(
+                    start,
+                    now + c["end"].long()!!,
+                    c["warmup"].long()?.let { now + it } ?: (start + 60L * SensorTiming.DEFAULT_WARMUP_MIN),
+                )
             val latest = c["latest"].long()?.let { now + it }
             val look = SensorBadge.look(info, now, latest, w)!!
             val e = c["expect"]!!.jsonObject
@@ -204,17 +210,22 @@ class GraphFixtureTest {
         val file = Fixtures.read("labels/labels.json")
         val pctLabel = file["pctLabel"].double()!!.toFloat()
         val valueLabel = file["valueLabel"].double()!!.toFloat()
-        val w = Scenes.words()
+        // a case's `locale` (es) lays the labels out with that language's times ("1 h 35 min")
+        val words = mapOf("en" to Scenes.words(), "es" to Scenes.words(Locale.forLanguageTag("es")))
         val now = Scenes.NOW
         val all = cases("labels/labels.json")
         assertTrue("no label cases", all.isNotEmpty())
         val fails = ArrayList<String>()
         for (c in all) {
+            val w = words.getValue(c["locale"].str() ?: "en")
             val chart = c["chart"]!!.jsonObject
             val cw = chart["w"].double()!!.toFloat()
             val lanes = GlucoseGraph.lanes(chart["h"].double()!!.toFloat(), 1f)
             val windowS = (c["hours"].double()!! * 3600).toLong()
-            val (left, right) = GlucoseGraph.plotX(0f, cw, c["pct"].bool() != false, true, 1f, pctLabel, valueLabel)
+            // a large system font: the labels and the side columns' widest labels grow, the geometry doesn't
+            val scale = GlucoseGraph.textScale(c["fontScale"].double()?.toFloat() ?: 1f)
+            val (left, right) =
+                GlucoseGraph.plotX(0f, cw, c["pct"].bool() != false, true, 1f, pctLabel * scale, valueLabel * scale)
             val from = now - windowS
             val lay =
                 TreatmentMarks.layout(
@@ -227,6 +238,7 @@ class GraphFixtureTest {
                     1f,
                     w,
                     marksOf(c),
+                    scale,
                 )
             val e = c["expect"]!!.jsonObject
             val plot = e["plot"]!!.jsonArray.map { it.double()!! }

@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import app.mauri.sukrara.core.model.supersedes
 import kotlinx.coroutines.flow.Flow
 
 /** A count with the first and last time in epoch ms (null when the count is 0). */
@@ -104,11 +105,11 @@ interface TreatmentDao {
     @Query("DELETE FROM treatments")
     suspend fun deleteAll()
 
-    /** Last writer wins: stores [treatment] only if nothing with the same or a later `modifiedAt` is stored. */
+    /** The contract's merge ([supersedes]): stores [treatment] only if it is newer by `(u, o)` than the stored version. */
     @Transaction
     suspend fun upsertIfNewer(treatment: TreatmentEntity): Boolean {
         val stored = get(treatment.id)
-        if (stored != null && stored.modifiedAt >= treatment.modifiedAt) return false
+        if (stored != null && !treatment.toRecord().treatment.supersedes(stored.toRecord().treatment)) return false
         upsert(treatment)
         return true
     }
@@ -131,4 +132,41 @@ interface OutboxDao {
 
     @Query("DELETE FROM outbox WHERE sent_at IS NOT NULL AND sent_at < :cutoff")
     suspend fun deleteSentBefore(cutoff: Long): Int
+}
+
+@Dao
+interface PenLedgerDao {
+    @Query("SELECT json FROM pen_ledger WHERE id = 0")
+    suspend fun ledger(): String?
+
+    @Upsert
+    suspend fun put(ledger: PenLedgerEntity)
+
+    /** Insulin and pen entries, tombstones included (the pen engine's view of the log; carbs and notes never matter). */
+    @Query("SELECT * FROM treatments WHERE kind IN ('RapidInsulin', 'LongInsulin') OR pen_json IS NOT NULL")
+    suspend fun insulin(): List<TreatmentEntity>
+
+    @Query("SELECT modified_at FROM treatments WHERE id = :id")
+    suspend fun modifiedAt(id: String): Long?
+
+    @Upsert
+    suspend fun upsertTreatment(treatment: TreatmentEntity)
+
+    /**
+     * One pen change: the ledger and every one of [treatments] newer than the stored version (last writer wins, as
+     * [TreatmentDao.upsertIfNewer]), all or nothing. Returns the ids it stored.
+     */
+    @Transaction
+    suspend fun commit(
+        ledger: PenLedgerEntity,
+        treatments: List<TreatmentEntity>,
+    ): List<String> {
+        val stored =
+            treatments.filter { t ->
+                val had = modifiedAt(t.id)
+                (had == null || had < t.modifiedAt).also { newer -> if (newer) upsertTreatment(t) }
+            }
+        put(ledger)
+        return stored.map { it.id }
+    }
 }

@@ -74,6 +74,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -95,6 +96,7 @@ import app.mauri.sukrara.graph.SensorInfo
 import app.mauri.sukrara.graph.SensorLife
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.cardInfo
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.GlucosePoint
@@ -102,7 +104,6 @@ import app.mauri.sukrara.graph.stats.MetricsCache
 import app.mauri.sukrara.graph.stats.toPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToInt
 
@@ -138,31 +139,16 @@ fun homeLook(
 }
 
 /**
- * The sensor's dates as the card needs them; null when nothing is known (the card then shows no sensor badge). An ended
- * sensor without dates ends at [now], so the renderer draws "Sensor ended" + "Replace sensor" in the value's place.
+ * The sensor's dates as the card needs them (the renderer's [cardInfo], the alerts' defaults); null when nothing is
+ * known (the card then shows no sensor badge). An ended sensor without dates ends at [now], so the renderer draws
+ * "Sensor ended" + "Replace sensor" in the value's place.
  */
 private fun SensorState.info(now: Instant): SensorInfo? =
-    when (this) {
-        SensorState.Ended -> {
-            SensorInfo(startS = now.epochSecond - SENSOR_LIFE.seconds, endS = now.epochSecond)
-        }
-
-        is SensorState.Active -> {
-            endsAt?.let { SensorInfo(startS = it.epochSecond - SENSOR_LIFE.seconds, endS = it.epochSecond) }
-        }
-
-        is SensorState.WarmingUp -> {
-            val start = readyAt.epochSecond - WARMUP.seconds
-            SensorInfo(startS = start, endS = start + SENSOR_LIFE.seconds, warmupEndS = readyAt.epochSecond)
-        }
-
-        else -> {
-            null
-        }
+    if (this == SensorState.Ended) {
+        SensorInfo(startS = now.epochSecond - SensorTiming.DEFAULT_WEAR_MIN * 60L, endS = now.epochSecond)
+    } else {
+        cardInfo()
     }
-
-private val SENSOR_LIFE = Duration.ofDays(15)
-private val WARMUP = Duration.ofHours(1)
 
 /**
  * The app panel's card model: [points] = the stored history; the badge, mute lines and last-treatment ring are the
@@ -198,6 +184,10 @@ internal fun panelModel(
  * custom actions are [actions] plus Earlier / Later / Zoom in / Zoom out / Back to now (the history without the drag).
  * The status pill is a button ([pill], read as [pillWords]) that calls [onPill]. Over the drawn number a polite live
  * region says each new reading as it comes in ([A11y.reading]). [height]: the panel's (a safety banner may take some).
+ *
+ * The scrolled / zoomed window survives a rotation ([rememberChartScroll]); leaving home opens it at now again. Scrolling, zooming and the value's motion are
+ * read in the draw block (or through `derivedStateOf` for the actions), so a frame of them redraws the card without
+ * recomposing it; Earlier / Zoom in / Zoom out are offered only while a step changes the window.
  */
 @Composable
 fun PanelCard(
@@ -208,7 +198,7 @@ fun PanelCard(
     config: GraphConfig,
     modifier: Modifier = Modifier,
     actions: List<CustomAccessibilityAction> = emptyList(),
-    scroll: ChartScroll = remember { ChartScroll() },
+    scroll: ChartScroll = rememberChartScroll(),
     pill: PillAction = PillAction.None,
     pillWords: String? = null,
     onPill: (PillAction) -> Unit = {},
@@ -252,6 +242,10 @@ fun PanelCard(
     val scope = rememberCoroutineScope()
     val fling = ScrollableDefaults.flingBehavior()
     val away by remember(scroll) { derivedStateOf { scroll.away } }
+    val scrolledBack by remember(scroll) { derivedStateOf { scroll.endS != null } }
+    val olderLeft by remember(scroll, default) { derivedStateOf { (scroll.endS ?: latestNow) > first + scroll.span(default) } }
+    val canZoomIn by remember(scroll, default) { derivedStateOf { scroll.canZoom(out = false, default, first, latestNow) } }
+    val canZoomOut by remember(scroll, default) { derivedStateOf { scroll.canZoom(out = true, default, first, latestNow) } }
     val nowPill = animateFloatAsState(if (away) 1f else 0f, Motion.defaultEffects(reduced), label = "now pill")
     val pointsNow by rememberUpdatedState(points)
 
@@ -314,10 +308,10 @@ fun PanelCard(
             emptyList()
         } else {
             buildList {
-                add(CustomAccessibilityAction(earlier) { true.also { page(forward = false) } })
-                if (scroll.endS != null) add(CustomAccessibilityAction(later) { true.also { page(forward = true) } })
-                add(CustomAccessibilityAction(zoomOut) { true.also { scroll.step(out = true, default, first, latestNow) } })
-                add(CustomAccessibilityAction(zoomIn) { true.also { scroll.step(out = false, default, first, latestNow) } })
+                if (olderLeft) add(CustomAccessibilityAction(earlier) { true.also { page(forward = false) } })
+                if (scrolledBack) add(CustomAccessibilityAction(later) { true.also { page(forward = true) } })
+                if (canZoomOut) add(CustomAccessibilityAction(zoomOut) { true.also { scroll.step(out = true, default, first, latestNow) } })
+                if (canZoomIn) add(CustomAccessibilityAction(zoomIn) { true.also { scroll.step(out = false, default, first, latestNow) } })
                 if (away) add(CustomAccessibilityAction(backToNow) { true.also { back() } })
             }
         }
@@ -367,8 +361,9 @@ fun PanelCard(
                         density,
                         CardSurface.APP_PANEL,
                         CardPart.ALL,
-                        motion = motion,
+                        motion = motion(),
                         view = view,
+                        fontScale = fontScale,
                     )
                 laid.read(rec)
             }
@@ -406,6 +401,7 @@ private fun LiveValue(
 /**
  * The panel's value motion (paint only, never layout): a new number rolls in from the previous one (up for a rising
  * value), the arrow turns to the new rate and the value's range colour fades. Reduced motion: drawn still (null).
+ * Returned as a function the draw block calls, so the animations' frames redraw the card without recomposing it.
  */
 @Composable
 private fun panelMotion(
@@ -414,7 +410,7 @@ private fun panelMotion(
     config: GraphConfig,
     palette: GraphPalette,
     reduced: Boolean,
-): CardMotion? {
+): () -> CardMotion? {
     val look = homeLook(glucose, now, config.unit)
     val number = look.text.takeIf { look.state == GlucoseLook.State.VALUE && !look.strike }
     val roll = remember { Animatable(1f) }
@@ -439,12 +435,13 @@ private fun panelMotion(
         }
     }
     val rate = glucose.latest?.rateMgdlPerMin
-    val angle by animateFloatAsState(rate?.let { TrendAngle.deg(it) } ?: 0f, Motion.defaultSpatial(reduced), label = "trend")
+    val angle = animateFloatAsState(rate?.let { TrendAngle.deg(it) } ?: 0f, Motion.defaultSpatial(reduced), label = "trend")
     val latest = glucose.latest
     val target = if (latest == null || look.strike) palette.inkSoft else palette.at(config.bands, latest.mgdl)
-    val color by animateColorAsState(Color(target), Motion.defaultEffects(reduced), label = "range")
-    if (reduced) return null
-    return CardMotion(from, roll.value, up, rate?.let { angle }, color.toArgb())
+    val color = animateColorAsState(Color(target), Motion.defaultEffects(reduced), label = "range")
+    if (reduced) return { null }
+    val turns = rate != null
+    return { CardMotion(from, roll.value, up, if (turns) angle.value else null, color.value.toArgb()) }
 }
 
 /** TalkBack's "double-tap to …" for [action]. */

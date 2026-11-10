@@ -107,8 +107,8 @@ class MonitorModule(
     private val ticks = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     /**
-     * A freshness step passed without a new reading, or how a time is written changed (12/24-hour, time zone,
-     * language): surfaces that show the value redraw (notification, widgets) if their picture changed.
+     * A freshness step passed without a new reading, how a time is written changed (12/24-hour, time zone, language) or
+     * the theme switched: surfaces that show the value redraw (notification, widgets) if their picture changed.
      */
     val freshnessTicks: SharedFlow<Unit> = ticks
 
@@ -181,6 +181,14 @@ class MonitorModule(
     fun onLocaleChanged() {
         Channels.create(context)
         repost()
+        ticks.tryEmit(Unit)
+    }
+
+    /**
+     * The phone switched between the light and the dark theme: the widgets and the glucose notification's card are
+     * pictures in one palette, so they redraw at once instead of at the next reading.
+     */
+    fun onThemeChanged() {
         ticks.tryEmit(Unit)
     }
 

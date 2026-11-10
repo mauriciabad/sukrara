@@ -8,8 +8,9 @@
 
 Outputs: Android SettingsSpec.kt (:core:data, package app.mauri.sukrara.settings) and Mac SettingsSpec.swift
 (SukraraCore). Both carry the number formats ('numbers') as NumberSpec values, the option lists, the inventory
-('settings') as SettingInfo rows and the stored keys as constants (Stores / Keys), so the number inputs, the stores,
-the models' validation and the schema tests read the same values on both platforms.
+('settings') as SettingInfo rows (with 'mirror' / 'mirrorExcept': what a follower takes from the wearer) and the stored
+keys as constants (Stores / Keys), so the number inputs, the stores, the models' validation, the settings mirror and
+the schema tests read the same values on both platforms.
 """
 import json
 import math
@@ -182,10 +183,15 @@ def kotlin(schema):
         "",
         "/**",
         " * One row of the settings inventory: where it's stored on each platform (\"store:key\", \"\" = not on that platform)",
-        " * and, for a field inside a JSON value (the alert settings), its [path].",
+        " * and, for a field inside a JSON value (the alert settings), its [path]. [mirrorExcept] = the alert kinds of a",
+        " * `{kind}` row a follower never takes from the wearer (no data is each device's own alarm).",
         " */",
         "data class SettingInfo(val id: String, val type: String, val number: String?, val mirror: Boolean, val wire: String?,",
-        "                       val android: String, val mac: String, val path: String?, val only: String?, val reason: String?)",
+        "                       val android: String, val mac: String, val path: String?, val only: String?, val reason: String?,",
+        "                       val mirrorExcept: List<String>) {",
+        "    /** Whether a follower takes the wearer's value of this row (for [kind] in a `{kind}` row). */",
+        "    fun mirrors(kind: String? = null): Boolean = mirror && (kind == null || kind !in mirrorExcept)",
+        "}",
         "",
         "/** The schema's number formats and inventory. */",
         "object SettingsSpec {",
@@ -211,12 +217,13 @@ def kotlin(schema):
     L.append("    val SETTINGS: List<SettingInfo> = listOf(")
     for s in schema["settings"]:
         only = s.get("only") or {}
-        L.append("        SettingInfo(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)," % (
+        L.append("        SettingInfo(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, listOf(%s))," % (
             kstr(s["id"]), kstr(s["type"]), kstr(s["number"]) if s.get("number") else "null",
             "true" if s.get("mirror") else "false", kstr(s["wire"]) if s.get("wire") else "null",
             kstr(platform_key(s, "android")), kstr(platform_key(s, "mac")),
             kstr(path_of(s)) if path_of(s) else "null",
-            kstr(only["platform"]) if only else "null", kstr(only["reason"]) if only else "null"))
+            kstr(only["platform"]) if only else "null", kstr(only["reason"]) if only else "null",
+            ", ".join(kstr(k) for k in s.get("mirrorExcept", []))))
     L.append("    )")
     stores, keys = stored(schema, "android")
     # 'secure' is the Keystore SecureStore (secrets, one file each), not a Preferences DataStore file
@@ -296,9 +303,13 @@ def swift(schema):
         "}",
         "",
         "/// One row of the settings inventory: where it's stored on each platform (\"store:key\", \"\" = not on that platform)",
-        "/// and, for a field inside a JSON value (the alert settings), its `path`.",
+        "/// and, for a field inside a JSON value (the alert settings), its `path`. `mirrorExcept` = the alert kinds of a",
+        "/// `{kind}` row a follower never takes from the wearer (no data is each device's own alarm).",
         "public struct SettingInfo: Sendable {",
         "    public let id: String, type: String, number: String?, mirror: Bool, wire: String?, android: String, mac: String, path: String?, only: String?, reason: String?",
+        "    public let mirrorExcept: [String]",
+        "    /// Whether a follower takes the wearer's value of this row (for `kind` in a `{kind}` row).",
+        "    public func mirrors(kind: String? = nil) -> Bool { mirror && !(kind.map(mirrorExcept.contains) ?? false) }",
         "}",
         "",
         "/// The schema's number formats and inventory.",
@@ -325,12 +336,13 @@ def swift(schema):
     L.append("    public static let settings: [SettingInfo] = [")
     for s in schema["settings"]:
         only = s.get("only") or {}
-        L.append("        SettingInfo(id: %s, type: %s, number: %s, mirror: %s, wire: %s, android: %s, mac: %s, path: %s, only: %s, reason: %s)," % (
+        L.append("        SettingInfo(id: %s, type: %s, number: %s, mirror: %s, wire: %s, android: %s, mac: %s, path: %s, only: %s, reason: %s, mirrorExcept: [%s])," % (
             sstr(s["id"]), sstr(s["type"]), sstr(s["number"]) if s.get("number") else "nil",
             "true" if s.get("mirror") else "false", sstr(s["wire"]) if s.get("wire") else "nil",
             sstr(platform_key(s, "android")), sstr(platform_key(s, "mac")),
             sstr(path_of(s)) if path_of(s) else "nil",
-            sstr(only["platform"]) if only else "nil", sstr(only["reason"]) if only else "nil"))
+            sstr(only["platform"]) if only else "nil", sstr(only["reason"]) if only else "nil",
+            ", ".join(sstr(k) for k in s.get("mirrorExcept", []))))
     L.append("    ]")
     _, keys = stored(schema, "mac", stores=("defaults",))
     L.append("")

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 import Observation
+import SukraraCore
 import SukraraShare
 
 /// Why following didn't start (`FollowerJoinError`, mapped by the runtime adapter).
@@ -40,7 +41,18 @@ public enum FollowStatus: Equatable, Sendable {
     case waiting(wearer: String?, pairing: LinkState.PairingCheck?)
     case following(wearer: String?, lastReading: Date?, canWrite: Bool)
     case declined, inviteUsed, revoked
-    case broken(String)
+    case broken(LinkProblem)
+}
+
+extension LinkProblem {
+    /// Why following stopped, in words (Settings › Following, the panel).
+    var text: String {
+        switch self {
+        case .keyUnreadable: L10n.t("Can't read the follower key from the Keychain")
+        case .stateDamaged: L10n.t("The follower state is damaged; stop following and join again")
+        case .keyNotRemoved: L10n.t("Can't remove the follower key from the Keychain")
+        }
+    }
 }
 
 /// A phone nearby offering pairing (`NearbyOffer`).
@@ -56,7 +68,10 @@ public struct NearbyPhone: Equatable, Sendable {
 
 /// What the follow UI needs from the follower runtime (`FollowerService`, behind an adapter).
 public protocol FollowActions: AnyObject {
-    func join(link: String) async throws(FollowFailure)
+    /// Looks up the invite behind `link` (reads only): who is inviting, before anything is sent. nil = cancelled.
+    func lookUp(link: String) async throws(FollowFailure) -> Invite?
+    /// The person clicked *Follow* on `invite`: this Mac asks the wearer for access.
+    func join(invite: Invite) async throws(FollowFailure)
     func joinNearby(name: String) async throws(FollowFailure)
     /// The pairing codes on both devices: the same (the wearer's key is used), or different (the join ends).
     func confirmNearby(same: Bool) async -> Bool
@@ -68,11 +83,16 @@ public protocol FollowActions: AnyObject {
     func unfollow() async
 }
 
-/// The follow UI's state: the link, the text typed or pasted, the error shown, and the nearby offer.
+/// The follow UI's state: the link, the text typed or pasted, the invite waiting for *Follow*, the error shown, and the
+/// nearby offer.
 @Observable
 public final class FollowModel {
     public var status: FollowStatus
     public var linkText = ""
+    /// An invite looked up and waiting for *Follow* / *Cancel*: who is inviting comes from it. Nothing was sent yet.
+    public internal(set) var invite: Invite?
+    /// `linkText` came from a link opened on this Mac (not typed or pasted): *Cancel* removes it again.
+    @ObservationIgnored private var opened = false
     public private(set) var failure: FollowFailure?
     public var nearby: NearbyPhone?
     /// The name the wearer sees for this Mac (typed when following): the computer's name by default.
@@ -99,9 +119,11 @@ public final class FollowModel {
         self.macName = macName
     }
 
-    /// Paste or `sukrara:` link: nothing goes to the relays until the text parses as an invite.
-    public func follow() async {
+    /// The pasted, typed or opened link: looks the invite up and shows who is inviting with *Follow* / *Cancel*.
+    /// Nothing goes to the relays until the text parses as an invite, and nothing is sent before *Follow*.
+    public func lookUp() async {
         failure = nil
+        invite = nil
         let link = linkText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard InviteLink.parse(link) != nil else {
             failure = .invalidLink
@@ -114,23 +136,58 @@ public final class FollowModel {
         }
         let before = status
         status = .joining
-        await actions?.setName(macName)
         do {
-            try await actions?.join(link: link)
+            let found = try await actions?.lookUp(link: link)
+            if status == .joining { status = before }
+            invite = found
         } catch {
             failure = error
             status = error == .alreadyFollowing ? before : .notFollowing
         }
     }
 
+    /// A `sukrara:` or `https://sukrara.mauri.app/join#…` link opened on this Mac: fills the field and looks it up,
+    /// so the confirmation shows; it never follows by itself.
+    public func open(link: String) async {
+        linkText = link
+        opened = true
+        await lookUp()
+    }
+
     /// The QR image's text (QRImport) goes the same way as a pasted link.
-    public func follow(qrText: String?) async {
+    public func lookUp(qrText: String?) async {
         guard let qrText else {
             failure = .noQRCode
             return
         }
         linkText = qrText
-        await follow()
+        opened = false
+        await lookUp()
+    }
+
+    /// *Follow* on the invite shown: this Mac asks the wearer, with the name typed for it.
+    public func confirmInvite() async {
+        guard let pending = invite else { return }
+        failure = nil
+        invite = nil
+        opened = false
+        let before = status
+        status = .joining
+        await actions?.setName(macName)
+        do {
+            try await actions?.join(invite: pending)
+        } catch {
+            failure = error
+            status = error == .alreadyFollowing ? before : .notFollowing
+        }
+    }
+
+    /// *Cancel* (or Escape) on the invite shown: nothing was sent. A link opened on this Mac leaves the field too.
+    public func cancelInvite() {
+        guard invite != nil else { return }
+        invite = nil
+        if opened { linkText = "" }
+        opened = false
     }
 
     public func askNearby() async {
@@ -162,6 +219,7 @@ public final class FollowModel {
     public func cancel() async {
         await actions?.cancelJoin()
         status = .notFollowing
+        invite = nil
     }
 
     public func unfollow() async {

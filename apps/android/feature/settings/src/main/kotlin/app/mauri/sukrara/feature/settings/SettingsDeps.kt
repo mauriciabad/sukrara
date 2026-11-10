@@ -16,6 +16,7 @@ import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.settings.advanced.AdvancedPort
 import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
 import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarPort
+import app.mauri.sukrara.protocol.event.Avatar
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -96,9 +97,32 @@ interface SettingsDeps {
 
 /**
  * The overview's sharing rows: [wearer] (a follower has no profile or backup here), the profile [name] (null = not
- * set) and whether the identity is backed up ([backedUp] null = no identity yet: Backup leads to setting one up).
+ * set) and picture ([avatar]) and the identity's [backup].
  */
-data class OverviewSharing(val wearer: Boolean = true, val name: String? = null, val backedUp: Boolean? = null)
+data class OverviewSharing(
+    val wearer: Boolean = true,
+    val name: String? = null,
+    val avatar: Avatar? = null,
+    val backup: BackupState = BackupState.NoIdentity,
+)
+
+/** What the overview's Backup row says about the sharing identity. */
+enum class BackupState {
+    /** Somewhere besides this phone (password manager, a recovery code kept, or where it was restored from). */
+    Saved,
+
+    /** Only on this phone. */
+    NotSaved,
+
+    /** No identity yet: nothing to back up until the person shares. */
+    NoIdentity,
+
+    /** The stored identity can't be read: Backup leads to restoring it from the recovery code. */
+    Unreadable,
+
+    /** Another app shares as this identity: backups wait until that is solved (Backup explains). */
+    Paused,
+}
 
 /**
  * Hearing an alert from its settings page, only on the person's tap: [play] its sound for a pack (with its vibration

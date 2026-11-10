@@ -34,7 +34,6 @@ import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
-import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardModel
 import app.mauri.sukrara.graph.CardPart
@@ -136,7 +135,9 @@ fun renderWidget(
     val h = (bmp.height - 2 * pad).coerceAtLeast(1f)
     val model = widgetModel(context, frame)
     val style = widgetStyle(kind, frame, overrides)
-    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL)
+    // the chart's words follow the system font size (the renderer caps it)
+    val fontScale = context.resources.configuration.fontScale
+    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL, fontScale = fontScale)
     return bmp
 }
 
@@ -182,7 +183,6 @@ fun widgetTap(
         mgdl = model.latest?.sgv,
         lowLimit = frame.config.bands.low,
         firingKinds = frame.glucose.alerts.firingKinds,
-        sensorEnded = frame.glucose.sensor == SensorState.Ended,
     )
 }
 

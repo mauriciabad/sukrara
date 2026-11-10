@@ -89,8 +89,11 @@ public protocol FollowerService: Sendable {
     func stop() async
     /// The Mac woke or the network came back: reconnect now instead of waiting for the watchdog.
     func reconnect() async
-    /// Follows the wearer behind an invite link (web link, `sukrara:` link or a QR code's text).
-    func join(link: String) async throws(FollowerJoinError)
+    /// Looks up the invite behind a link (web link, `sukrara:` link or a QR code's text) on the relays. Reads only: no
+    /// key is made and nothing is sent, so the person sees who is inviting (`Invite.profile`) before asking.
+    func lookUp(link: String) async throws(FollowerJoinError) -> Invite
+    /// The person clicked *Follow* on an invite `lookUp` found: makes this Mac's follower key and asks the wearer.
+    func join(invite: Invite) async throws(FollowerJoinError)
     func cancelJoin() async
     /// Follows the wearer whose phone offers nearby pairing (nothing of theirs is used until `confirmNearby(same: true)`).
     func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError)

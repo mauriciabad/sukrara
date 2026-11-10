@@ -18,27 +18,51 @@ sealed interface SearchTarget {
     data class Other(val page: OtherPage) : SearchTarget
 }
 
-/** What a row needs besides the page: a phone that reads pens, or a build with root features / the update check. */
-enum class RowNeeds { Pens, Root, UpdateCheck }
+/** Whose phone shows a row: every phone, only the wearer's or only a follower's. */
+enum class Seen { Everyone, Wearer, Follower }
+
+/** What only the GitHub build has (the Google Play build has neither: docs/20-publishing.md › Flavors). */
+enum class BuildFeature { Root, UpdateCheck }
 
 /**
  * One row the search finds: its [title] and [summary] as the page shows them (string resources, no format
- * arguments), the [page] it is on (the breadcrumb) and where tapping it leads. A row with [needs] exists only where
- * that is there: [RowNeeds.Pens] on a phone that reads insulin pens, [RowNeeds.Root] and [RowNeeds.UpdateCheck] in the
- * full build (the Google Play build has neither).
+ * arguments), the [page] it is on (the breadcrumb, after its [parent] page if any: "Alerts › Low") and where tapping
+ * it leads. [pensOnly] rows exist only on a phone that reads insulin pens, [seen] says on whose phone the row shows,
+ * [needs] which build has it (null: both).
  */
 data class SearchEntry(
     @StringRes val title: Int,
     @StringRes val page: Int,
     val target: SearchTarget,
     @StringRes val summary: Int? = null,
-    val needs: RowNeeds? = null,
-)
+    val pensOnly: Boolean = false,
+    val seen: Seen = Seen.Everyone,
+    @StringRes val parent: Int? = null,
+    val needs: BuildFeature? = null,
+) {
+    /**
+     * Whether this phone shows the row: [pens] = it reads insulin pens, [wearer] = the wearer's phone (else a
+     * follower's), [build] = what this build has.
+     */
+    fun shownOn(
+        pens: Boolean,
+        wearer: Boolean,
+        build: Set<BuildFeature> = BuildFeature.entries.toSet(),
+    ): Boolean =
+        (pens || !pensOnly) &&
+            (needs == null || needs in build) &&
+            when (seen) {
+                Seen.Everyone -> true
+                Seen.Wearer -> wearer
+                Seen.Follower -> !wearer
+            }
+}
 
 /**
  * THE search index: one entry per row of every settings page, in page order. A row added to a page is added here
  * (the same string resources), so search and pages can't drift apart; [pageTitle] is exhaustive, so a new page
- * doesn't compile until it has a title here, and `SettingsIndexTest` checks every page has entries.
+ * doesn't compile until it has a title here, and `SettingsIndexTest` renders every page and checks each row on it is
+ * here (and each entry is on its page).
  */
 object SettingsIndex {
     /** The breadcrumb of each page; null for the overview (its rows are the pages) and per-pen pages (no fixed rows). */
@@ -47,7 +71,7 @@ object SettingsIndex {
         when (route) {
             SettingsRoute.Overview, is SettingsRoute.Pen, is SettingsRoute.PenDoses -> null
             SettingsRoute.Alerts -> R.string.st_alerts_title
-            is SettingsRoute.AlertKindPage -> R.string.st_alerts_title
+            is SettingsRoute.AlertKindPage -> kindNames.getValue(route.kind)
             SettingsRoute.Ranges -> R.string.st_ranges_title
             SettingsRoute.Graph -> R.string.st_graph_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
@@ -63,22 +87,35 @@ object SettingsIndex {
             SettingsRoute.SettingsFrom -> R.string.st_from_title
         }
 
+    /** The page a page is under in the breadcrumb: an alert's page is under Alerts. */
+    @StringRes
+    fun parent(route: SettingsRoute): Int? = if (route is SettingsRoute.AlertKindPage) R.string.st_alerts_title else null
+
     private fun page(
         route: SettingsRoute,
         vararg rows: Pair<Int, Int?>,
-        needs: RowNeeds? = null,
+        pensOnly: Boolean = false,
+        seen: Seen = Seen.Everyone,
+        needs: BuildFeature? = null,
     ): List<SearchEntry> {
         val title = checkNotNull(pageTitle(route)) { "$route has no page title" }
         val target = SearchTarget.Page(route)
-        return rows.map { (t, s) -> SearchEntry(t, title, target, s, needs) }
+        return rows.map { (t, s) -> SearchEntry(t, title, target, s, pensOnly, seen, parent(route), needs) }
     }
 
     private fun overview(
         title: Int,
         summary: Int?,
         target: SearchTarget,
-        needs: RowNeeds? = null,
-    ) = SearchEntry(title, R.string.st_settings_title, target, summary, needs)
+        pensOnly: Boolean = false,
+        seen: Seen = Seen.Everyone,
+    ) = SearchEntry(title, R.string.st_settings_title, target, summary, pensOnly, seen)
+
+    /** A row of Settings › Sensor (another feature's page). */
+    private fun sensor(
+        title: Int,
+        summary: Int? = null,
+    ) = SearchEntry(title, R.string.st_sensor, SearchTarget.Other(OtherPage.Sensor), summary)
 
     private val kindNames =
         mapOf(
@@ -91,9 +128,6 @@ object SettingsIndex {
             AlertKind.RISING_FAST to R.string.st_kind_rising_fast,
             AlertKind.NO_DATA to R.string.st_kind_no_data,
         )
-
-    /** The rows a phone and build with [available] show (a row that needs something else isn't on its page). */
-    fun available(available: Set<RowNeeds>): List<SearchEntry> = entries.filter { it.needs == null || it.needs in available }
 
     val entries: List<SearchEntry> =
         buildList {
@@ -108,28 +142,28 @@ object SettingsIndex {
             add(overview(R.string.st_sensorend_title, R.string.st_overview_sensorend, SearchTarget.Page(SettingsRoute.SensorEnd)))
             add(overview(R.string.st_sharing, R.string.st_sharing_summary, SearchTarget.Other(OtherPage.Sharing)))
             add(overview(R.string.st_apps, R.string.st_apps_summary, SearchTarget.Other(OtherPage.Apps)))
-            add(overview(R.string.st_pens_title, R.string.st_overview_pens, SearchTarget.Page(SettingsRoute.Pens), RowNeeds.Pens))
-            add(overview(R.string.st_backup_title, null, SearchTarget.Other(OtherPage.Backup)))
+            add(overview(R.string.st_pens_title, R.string.st_overview_pens, SearchTarget.Page(SettingsRoute.Pens), pensOnly = true))
+            add(overview(R.string.st_backup_title, null, SearchTarget.Other(OtherPage.Backup), seen = Seen.Wearer))
             add(overview(R.string.st_export_title, R.string.st_export_summary, SearchTarget.Other(OtherPage.Export)))
             add(overview(R.string.st_adv_title, R.string.st_adv_overview_summary, SearchTarget.Page(SettingsRoute.Advanced)))
             add(overview(R.string.st_about_title, null, SearchTarget.Page(SettingsRoute.About)))
-            add(
-                SearchEntry(
-                    R.string.st_profile_title,
-                    R.string.st_settings_title,
-                    SearchTarget.Other(OtherPage.Profile),
-                    R.string.st_profile_summary,
-                ),
-            )
+            add(overview(R.string.st_profile_title, R.string.st_profile_summary, SearchTarget.Other(OtherPage.Profile), seen = Seen.Wearer))
+            add(overview(R.string.st_from_title, null, SearchTarget.Page(SettingsRoute.SettingsFrom), seen = Seen.Follower))
             // Settings › Sensor's own rows (another feature's page)
-            for ((title, summary) in listOf(
-                R.string.st_sensor_pair_new to R.string.st_sensor_pair_new_summary,
-                R.string.st_sensor_open_on_scan to null,
-                R.string.st_sensor_forget to R.string.st_sensor_forget_summary,
-                R.string.st_sensor_libreview to null,
-            )) {
-                add(SearchEntry(title, R.string.st_sensor, SearchTarget.Other(OtherPage.Sensor), summary))
-            }
+            add(sensor(R.string.st_sensor_reading_from))
+            add(sensor(R.string.st_sensor_status))
+            add(sensor(R.string.st_sensor_serial))
+            add(sensor(R.string.st_sensor_started))
+            add(sensor(R.string.st_sensor_ends))
+            add(sensor(R.string.st_sensor_pair_new, R.string.st_sensor_pair_new_summary))
+            add(sensor(R.string.st_sensor_source))
+            add(sensor(R.string.st_sensor_juggluco_secret))
+            add(sensor(R.string.st_sensor_open_on_scan))
+            add(sensor(R.string.st_sensor_forget, R.string.st_sensor_forget_summary))
+            add(sensor(R.string.st_sensor_libreview))
+            add(sensor(R.string.st_sensor_signed_in_as))
+            add(sensor(R.string.st_sensor_receiver_id))
+            add(sensor(R.string.st_sensor_sign_out))
 
             addAll(
                 page(
@@ -140,6 +174,7 @@ object SettingsIndex {
                     R.string.st_quiet_insulin to null,
                     R.string.st_quiet_carbs to null,
                     R.string.st_quiet_falling to null,
+                    R.string.st_quiet_length to null,
                     R.string.st_action_mute to null,
                     R.string.st_action_relax to null,
                     R.string.st_action_back_mgdl to null,
@@ -147,18 +182,26 @@ object SettingsIndex {
                     R.string.st_sound_pack to null,
                     R.string.st_shuffle to null,
                     R.string.st_notification_settings to R.string.st_notification_settings_summary,
-                    // each alert's page has these rows; search leads to the list of alerts
-                    R.string.st_threshold to null,
-                    R.string.st_repeat to null,
-                    R.string.st_alarm to null,
-                    R.string.st_sound to null,
-                    R.string.st_play_sound to null,
-                    R.string.st_play_vibrate to null,
-                    R.string.st_send_test to R.string.st_send_test_summary,
-                    R.string.st_channel_settings to R.string.st_channel_settings_summary,
                 ),
             )
-            for ((kind, name) in kindNames) addAll(page(SettingsRoute.AlertKindPage(kind), name to null))
+            // each alert's own page, so a hit opens that alert ("Remind every · In Alerts › Low")
+            for ((kind, name) in kindNames) {
+                addAll(
+                    page(
+                        SettingsRoute.AlertKindPage(kind),
+                        name to null,
+                        R.string.st_threshold to null,
+                        R.string.st_repeat to null,
+                        R.string.st_alarm to R.string.st_alarm_summary,
+                        R.string.st_sound to null,
+                        R.string.st_notification_settings to R.string.st_notification_settings_summary,
+                        R.string.st_play_sound to null,
+                        R.string.st_play_vibrate to null,
+                        R.string.st_send_test to R.string.st_send_test_summary,
+                        R.string.st_channel_settings to R.string.st_channel_settings_summary,
+                    ),
+                )
+            }
             addAll(
                 page(
                     SettingsRoute.Ranges,
@@ -179,9 +222,18 @@ object SettingsIndex {
                     R.string.st_graph_line_add to null,
                     R.string.st_graph_grid to null,
                     R.string.st_graph_hours to null,
+                    R.string.st_graph_hours_default to null,
+                    R.string.st_place_app to null,
+                    R.string.st_place_notification to null,
+                    R.string.st_place_widgets to null,
                     R.string.st_graph_rings to null,
+                    R.string.st_slot_main to null,
+                    R.string.st_slot_second to null,
+                    R.string.st_slot_third to null,
                     R.string.st_last to null,
                     R.string.st_last_else to null,
+                    R.string.st_last_else_period to null,
+                    R.string.st_last_else_faded to null,
                     R.string.st_ring_counts to null,
                     R.string.st_graph_marks to R.string.st_graph_marks_summary,
                     R.string.st_graph_side to R.string.st_graph_side_summary,
@@ -217,7 +269,7 @@ object SettingsIndex {
                     R.string.st_pens_match_units to null,
                     R.string.st_pens_match_share to null,
                     R.string.st_pens_reset to R.string.st_pens_reset_summary,
-                    needs = RowNeeds.Pens,
+                    pensOnly = true,
                 ),
             )
             addAll(page(SettingsRoute.Reliability, R.string.st_reliability_title to R.string.st_reliability_ready))
@@ -235,7 +287,7 @@ object SettingsIndex {
                     R.string.st_root_colour to null,
                     R.string.st_root_placement to null,
                     R.string.st_root_hide_icon to R.string.st_root_hide_icon_summary,
-                    needs = RowNeeds.Root,
+                    needs = BuildFeature.Root,
                 ),
             )
             addAll(
@@ -260,7 +312,7 @@ object SettingsIndex {
                     R.string.st_about_version to null,
                 ),
             )
-            addAll(page(SettingsRoute.About, R.string.st_update_check_again to null, needs = RowNeeds.UpdateCheck))
+            addAll(page(SettingsRoute.About, R.string.st_update_check_again to null, needs = BuildFeature.UpdateCheck))
             addAll(
                 page(
                     SettingsRoute.About,
@@ -279,7 +331,20 @@ object SettingsIndex {
                     R.string.st_adv_relays to null,
                     R.string.st_adv_check_now to null,
                     R.string.st_adv_log to R.string.st_adv_log_summary,
-                    R.string.st_adv_identity to null,
+                    R.string.st_adv_notification to null,
+                ),
+            )
+            addAll(page(SettingsRoute.Advanced, R.string.st_adv_identity to null, R.string.st_adv_sent to null, seen = Seen.Wearer))
+            addAll(page(SettingsRoute.Advanced, R.string.st_adv_this_phone to null, R.string.st_adv_received to null, seen = Seen.Follower))
+            addAll(
+                page(
+                    SettingsRoute.SettingsFrom,
+                    R.string.st_from_wearer to R.string.st_from_wearer_summary,
+                    R.string.st_from_default to R.string.st_from_default_summary,
+                    R.string.st_from_custom to R.string.st_from_custom_summary,
+                    R.string.st_from_copy to R.string.st_from_copy_summary,
+                    R.string.st_from_reset to R.string.st_from_reset_summary,
+                    seen = Seen.Follower,
                 ),
             )
         }

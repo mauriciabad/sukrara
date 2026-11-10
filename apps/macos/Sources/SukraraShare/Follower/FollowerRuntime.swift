@@ -43,10 +43,11 @@ public actor FollowerRuntime: FollowerService {
     static let historyInterval = 30 * 60
     static let persistInterval: TimeInterval = 300
     static let snapshotWindow: TimeInterval = 24 * 3600
-    /// B§6: another wearer's phone is avoided for 10 minutes.
+    /// PROTOCOL-v2 "Bluetooth link" (link-rules.json): another wearer's phone is avoided for 10 minutes.
     public static let nearbyLeaveOther: Double = 600
-    /// A phone with nothing to pair with (it may open pairing in a moment): a minute.
-    public static let nearbyLeaveNoPairing: Double = 60
+    /// A phone with nothing to pair with (it may open pairing in a moment): 5 s, as Android's *Find phones nearby*
+    /// (link-rules.json).
+    public static let nearbyLeaveNoPairing: Double = 5
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "follower")
 
     private let secrets: any SecretStoring
@@ -165,7 +166,7 @@ public actor FollowerRuntime: FollowerService {
             data = try secrets.read(account: account)
         } catch {
             Self.log.error("follower state unreadable: \(String(describing: error), privacy: .public)")
-            link = .broken("Can't read the follower key from the Keychain")
+            link = .broken(.keyUnreadable)
             keychainUnreadable = true
             if keychainRetry == nil { keychainRetry = Task { await self.retryKeychain() } }
             return await publishSnapshot()
@@ -181,7 +182,7 @@ public actor FollowerRuntime: FollowerService {
             persisted = state
             persistedAt = clock.now
         } catch {
-            link = .broken("The follower state is damaged; stop following and join again")
+            link = .broken(.stateDamaged)
             return await publishSnapshot()
         }
         await serially(.connect)
@@ -247,7 +248,7 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - joining
 
-    public func join(link text: String) async throws(FollowerJoinError) {
+    public func lookUp(link text: String) async throws(FollowerJoinError) -> Invite {
         guard session == nil else { throw .alreadyFollowing }
         guard let parsed = InviteLink.parse(text) else { throw .invalidLink }
         link = .joining
@@ -259,13 +260,15 @@ public actor FollowerRuntime: FollowerService {
         joinTask = task
         let result = await task.value
         joinTask = nil
-        switch result {
-        case .success(let invite): try await begin(invite: invite, commit: nil)
-        case .failure(let why):
-            if session == nil { link = .notFollowing }
-            await publishSnapshot()
-            throw why
-        }
+        // found or not, nothing was made or sent: back to not following until the person clicks Follow
+        if session == nil { link = .notFollowing }
+        await publishSnapshot()
+        return try result.get()
+    }
+
+    public func join(invite: Invite) async throws(FollowerJoinError) {
+        guard session == nil else { throw .alreadyFollowing }
+        try await begin(invite: invite, commit: nil)
     }
 
     public func cancelJoin() { joinTask?.cancel() }
@@ -421,7 +424,7 @@ public actor FollowerRuntime: FollowerService {
             try secrets.delete(account: account)
             link = .notFollowing
         } catch {
-            link = .broken("Can't remove the follower key from the Keychain")
+            link = .broken(.keyNotRemoved)
         }
         if searchingNearby { startNearby() }
         await publishSnapshot()

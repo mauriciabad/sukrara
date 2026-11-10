@@ -12,6 +12,7 @@ import android.content.res.Configuration
 import android.os.LocaleList
 import app.mauri.sukrara.feature.treatments.TreatmentsHost
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
+import app.mauri.sukrara.graph.RoundedFont
 import app.mauri.sukrara.monitor.AlertsHost
 import app.mauri.sukrara.monitor.MonitorHost
 import app.mauri.sukrara.monitor.MonitorModule
@@ -56,7 +57,10 @@ class App :
 
     override fun onCreate() {
         super.onCreate()
+        // the cards' rounded face (the value, the rings) on every surface, the app's panel included
+        RoundedFont.init(this)
         locales = resources.configuration.locales
+        night = resources.configuration.isNight
         if (userUnlocked) graph else afterUnlock()
     }
 
@@ -82,19 +86,29 @@ class App :
 
     private var locales: LocaleList? = null
 
-    /** A language change renames the notification channels, redraws the glucose notification and home's setup step at once. */
+    private var night = false
+
+    /**
+     * A language change renames the notification channels, redraws the glucose notification and home's setup step at
+     * once; a switch between the light and dark theme redraws the widgets and the notification's card (pictures in one
+     * palette) without waiting for the next reading.
+     */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        if (newConfig.locales == locales) return
+        val language = newConfig.locales != locales
+        val theme = newConfig.isNight != night
         locales = newConfig.locales
-        // before the first unlock there is no graph: it starts with the language of its time
-        if (!graphOnce.isInitialized()) return
-        graph.locales.value = newConfig.locales
+        night = newConfig.isNight
+        // before the first unlock there is no graph: it starts with the language and theme of its time
+        if (!(language || theme) || !graphOnce.isInitialized()) return
+        if (language) graph.locales.value = newConfig.locales
         graph.scope.launch {
             graph.ready.await()
-            graph.monitor.onLocaleChanged()
+            if (language) graph.monitor.onLocaleChanged() else graph.monitor.onThemeChanged()
         }
     }
+
+    private val Configuration.isNight get() = uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
     override val treatments: TreatmentsModule get() = graph.treatments
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The fgsOnly flavor: only the foreground-service exemption, no run / data in the background. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission
+        android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND"
+        tools:node="remove" />
+</manifest>

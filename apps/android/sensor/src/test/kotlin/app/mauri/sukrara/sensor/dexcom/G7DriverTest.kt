@@ -26,7 +26,7 @@ import org.junit.Test
  * port, not a restatement of it. Untested on a real sensor.
  */
 class G7DriverTest {
-    private val trace = Trace.resource("g7-session")
+    private val trace = Trace.of("g7-session")
     private val nowMs = 1_800_000_000_000L
     private val nowS = nowMs / 1000
     private val chars = setOf(Dexcom.AUTHENTICATION, Dexcom.CONTROL, Dexcom.BACKFILL)

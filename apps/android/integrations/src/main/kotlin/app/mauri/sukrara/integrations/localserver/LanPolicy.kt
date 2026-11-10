@@ -6,6 +6,7 @@ package app.mauri.sukrara.integrations.localserver
 import kotlinx.serialization.Serializable
 import java.net.Inet4Address
 import java.net.InetAddress
+import java.time.Instant
 
 /**
  * The Wi-Fi network the phone is joined to, as [LanWatcher] reads it from ConnectivityManager (the station network:
@@ -46,8 +47,18 @@ sealed interface LanState {
     /** Another app holds port 17581 on this address. */
     data object PortBusy : LanState
 
-    /** Listening on http://[address]:17581 for devices on this subnet. */
-    data class Listening(val address: String) : LanState
+    /** Its own secret (`nightscout-api-lan`) can't be read: paused until *New Wi-Fi secret*. */
+    data object SecretUnreadable : LanState
+
+    /**
+     * Listening on http://[address]:17581 for devices on this subnet; [lastCaller] = the address of the last device that
+     * read with the Wi-Fi secret, at [lastAsked] (in memory only).
+     */
+    data class Listening(
+        val address: String,
+        val lastCaller: String? = null,
+        val lastAsked: Instant? = null,
+    ) : LanState
 }
 
 /**

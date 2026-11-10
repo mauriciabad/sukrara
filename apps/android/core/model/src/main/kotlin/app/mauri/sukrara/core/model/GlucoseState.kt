@@ -4,6 +4,7 @@
 package app.mauri.sukrara.core.model
 
 import kotlinx.coroutines.flow.StateFlow
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -28,6 +29,8 @@ data class GlucoseState(
     val monitoringStartedAt: Instant? = null,
     /** Whether the monitoring service runs. */
     val service: ServiceState = ServiceState.NotRunning,
+    /** The phone's clock is behind the readings, so the newest ones are dropped (#50); null = it isn't. */
+    val clockBehind: ClockBehind? = null,
 ) {
     /** Why nothing is monitored yet ("Not monitoring: no sensor yet"), or null while monitoring. */
     val notMonitoring: NotMonitoringReason?
@@ -53,14 +56,26 @@ data class GlucoseState(
     }
 }
 
+/**
+ * The phone's clock is behind the readings: the newest reading came stamped [ahead] of this phone's time, further than
+ * the hub accepts, so it was dropped (and the next ones will be, until the clock is right). [readingAt] = that reading's
+ * time; the next reading the hub accepts that is at least as new clears it.
+ */
+data class ClockBehind(
+    val readingAt: Instant,
+    val ahead: Duration,
+)
+
 /** The wearer's sensor as the person needs to see it. */
 sealed interface SensorState {
     /** No sensor set up yet ("Not monitoring: no sensor yet"). */
     data object None : SensorState
 
-    data class WarmingUp(val readyAt: Instant) : SensorState
+    /** [id]: the source's identity of the sensor (its serial; null = the source doesn't know one). */
+    data class WarmingUp(val readyAt: Instant, val id: String? = null) : SensorState
 
-    data class Active(val endsAt: Instant?) : SensorState
+    /** [id]: the source's identity of the sensor (its serial; null = the source doesn't know one). */
+    data class Active(val endsAt: Instant?, val id: String? = null) : SensorState
 
     data object Ended : SensorState
 
@@ -73,10 +88,19 @@ sealed interface SensorState {
     data class ActionNeeded(val action: SensorAction) : SensorState
 }
 
-/** What the person has to do so the sensor can be read again. */
+/** What the person has to do so the sensor can be read again (home's no-data reason and Settings › Sensor say it). */
 enum class SensorAction {
-    /** Scan the sensor with the phone (NFC): a new sensor, a lost or unreadable pairing, or taking it over. */
+    /** Scan the sensor with the phone (NFC): a lost or unreadable pairing, a sensor this version can't read. */
     ScanSensor,
+
+    /**
+     * Another app took the sensor over (Abbott's app, Juggluco: it keeps refusing Sukrara): close that app, then scan
+     * the sensor (NFC) to take it back.
+     */
+    TakeOver,
+
+    /** A sensor found by a scan refused the pairing (wrong id, refused, PIN not entered): pair it again. */
+    PairAgain,
 
     /** Sign in to LibreView so Sukrara can start / take over the sensor with the account's receiver ID. */
     SignInLibreView,
@@ -154,23 +178,31 @@ data class AlertUiState(
 /**
  * How long a treatment quiets the alerts it answers, as the alert engine runs it now (on a follower mirroring the
  * wearer, the wearer's rules): [rapidS] after rapid insulin, [carbsS] after carbs, in seconds; null = that rule is off,
- * or no engine runs. Every card draws its mute lines and last-treatment ring from it, so they end where the engine's
- * quiet does (contracts/alerts/SPEC.md §2).
+ * or no engine runs. [rapidLiftedAt] / [carbsLiftedAt] (epoch s, 0 = none): when *Alert me anyway* lifted the quiet
+ * of the open high / low episode: the doses logged up to then stop quieting at that moment. Every card draws its mute
+ * lines and last-treatment ring from it, so they end where the engine's quiet does (contracts/alerts/SPEC.md §2).
  */
 data class TreatmentQuiet(
     val rapidS: Long? = null,
     val carbsS: Long? = null,
+    val rapidLiftedAt: Long = 0,
+    val carbsLiftedAt: Long = 0,
 ) {
     /** No treatment quiets anything. */
     val none: Boolean get() = rapidS == null && carbsS == null
 
     /** When [t]'s quiet ends (epoch s), or null: its kind quiets nothing (long-acting, a note, a rule that's off). */
-    fun until(t: Treatment): Long? =
-        when (t.kind) {
-            TreatmentKind.RapidInsulin -> rapidS
-            TreatmentKind.Carbs -> carbsS
-            else -> null
-        }?.let { t.at.epochSecond + it }
+    fun until(t: Treatment): Long? {
+        val (window, lifted) =
+            when (t.kind) {
+                TreatmentKind.RapidInsulin -> rapidS to rapidLiftedAt
+                TreatmentKind.Carbs -> carbsS to carbsLiftedAt
+                else -> return null
+            }
+        val at = t.at.epochSecond
+        val end = at + (window ?: return null)
+        return if (lifted > 0 && at <= lifted) minOf(end, lifted) else end
+    }
 }
 
 /**

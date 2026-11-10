@@ -70,8 +70,10 @@ on their device.
 
 ## Sukrara for Mac
 
-The Mac app follows a wearer: it connects to the same relays and to the wearer's phone over Bluetooth, and sends only
-your follow request (with a name, by default the computer's name, encrypted) and, if allowed, the entries you add.
+The Mac app follows a wearer: it connects to the same relays and to the wearer's phone over Bluetooth, and sends your
+follow request (with a name, by default the computer's name, and a picture), the encrypted messages that keep the
+follow working (new keys, a request for missed readings) and, if allowed, the entries you add, all end-to-end
+encrypted.
 *Juggluco on this network*, when you turn it on, reads glucose from Juggluco on your home network. Once a day, and when
 you choose *Check for Updates…*, it asks GitHub for the list of releases. It keeps readings 31 days and your keys in
 the Mac's login Keychain, on that Mac only.

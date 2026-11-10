@@ -4,6 +4,7 @@
 package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.graph.stats.Bands
@@ -47,7 +48,7 @@ fun interface MuteRule {
 data class SensorInfo(
     val startS: Long,
     val endS: Long,
-    val warmupEndS: Long = startS + 60L * SensorLife.DEFAULT_WARMUP_MIN,
+    val warmupEndS: Long = startS + 60L * SensorTiming.DEFAULT_WARMUP_MIN,
 ) {
     val lengthS: Long get() = (endS - startS).coerceAtLeast(1)
 }

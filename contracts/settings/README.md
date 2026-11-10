@@ -13,11 +13,12 @@ mmol/L); `gen.py` refuses a variant whose grid doesn't come back unchanged throu
 
 - **Android:** one Preferences DataStore file per area: `settings` (general), `graph`, `alerts`, `sensor`, `sharing`,
   `integrations`, `widgets`, `pens`, `statusbar`, `lock`. Complex values (lists, per-place maps) are JSON strings
-  under their key.
-- **Mac:** `defaults` = the app's UserDefaults (App Group suite where the widget reads it), `system` = macOS state
-  (`SMAppService.mainApp` for Open at login).
+  under their key. `secure` = the Keystore SecureStore (secrets, never in a DataStore or the settings file).
+- **Mac:** `defaults` = the app's UserDefaults (App Group suite where the widget reads it), `keychain` = the Keychain
+  (secrets), `system` = macOS state (`SMAppService.mainApp` for Open at login).
 - **Alerts:** ONE key `alerts` per platform holding the JSON object of [`../alerts/SPEC.md`](../alerts/SPEC.md) §3.
-  The schema's `alerts.*` entries address its fields with `path` (`{kind}` = each kind). Safety rule for every app: if
+  The schema's `alerts.*` entries address its fields with `path` (`{kind}` = each kind of the `alertKind` options;
+  `mirrorExcept` = the kinds a follower never takes from the wearer: no data). Safety rule for every app: if
   the stored value can't be decoded, the app keeps running with the **last value it decoded** (in memory, else the
   SPEC defaults with alerts ON), shows a visible "Alert settings couldn't be read" error with a way to reset them,
   and never turns alerts off or drops a threshold silently. Each app's alert-settings store has a test for it.

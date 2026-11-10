@@ -3,8 +3,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.broadcasts
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -14,13 +18,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
-import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.R
@@ -41,13 +47,19 @@ import java.time.Instant
 /** Why an allowed app gets nothing. */
 enum class AppProblem { NotInstalled, SignerChanged }
 
-/** One app on the page: a receiver found on the phone, or an allowed one that is gone or changed. */
+/**
+ * One app on the page: a receiver found on the phone, or an allowed one that is gone or changed. For a changed one,
+ * [pinnedSigner] is the certificate's SHA-256 (hex) when it was allowed and [currentSigner] the one it has now (null:
+ * not one certificate Android can name, so it can't be allowed).
+ */
 data class BcApp(
     val pkg: String,
     val label: String,
     val actions: Set<String>,
     val allowed: Boolean,
     val problem: AppProblem? = null,
+    val pinnedSigner: String? = null,
+    val currentSigner: String? = null,
 )
 
 data class BcUi(
@@ -68,6 +80,8 @@ private data class Installed(
     val receivers: Map<String, Set<String>>,
     val labels: Map<String, String>,
     val signerOk: Map<String, Boolean>,
+    /** The current signer of each allowed app whose signer changed (shown when it is allowed again). */
+    val signers: Map<String, String?> = emptyMap(),
 )
 
 class BroadcastsViewModel(
@@ -92,10 +106,12 @@ class BroadcastsViewModel(
                     withContext(io) {
                         val r = apps.receivers()
                         val pkgs = r.keys + allowed.map { it.pkg }
+                        val ok = allowed.associate { it.pkg to apps.signedBy(it.pkg, it.signer) }
                         Installed(
                             r,
                             pkgs.associateWith { apps.label(it) ?: it },
-                            allowed.associate { it.pkg to apps.signedBy(it.pkg, it.signer) },
+                            ok,
+                            ok.filterValues { !it }.keys.associateWith { apps.signer(it) },
                         )
                     }
                 }.getOrElse { Installed(emptyMap(), emptyMap(), emptyMap()) }
@@ -124,7 +140,15 @@ class BroadcastsViewModel(
             inst.receivers.map { (pkg, actions) ->
                 val a = allowed[pkg]
                 val changed = a != null && inst.signerOk[pkg] == false
-                BcApp(pkg, inst.labels[pkg] ?: pkg, actions, a != null && !changed, if (changed) AppProblem.SignerChanged else null)
+                BcApp(
+                    pkg,
+                    inst.labels[pkg] ?: pkg,
+                    actions,
+                    a != null && !changed,
+                    if (changed) AppProblem.SignerChanged else null,
+                    pinnedSigner = a?.signer?.takeIf { changed },
+                    currentSigner = inst.signers[pkg]?.takeIf { changed },
+                )
             }
         val gone =
             s.apps.filter { it.pkg !in inst.receivers }.map {
@@ -166,7 +190,7 @@ fun BroadcastsContent(
             InfoRow(stringResource(R.string.in_bc_follower))
             // allowed while this phone wore the sensor: still removable here
             for (a in ui.apps.orEmpty().filter { it.allowed || it.problem != null }) {
-                NavigationRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
+                ActionRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
             }
         }
         FooterText(stringResource(R.string.in_bc_footer))
@@ -191,16 +215,16 @@ fun BroadcastsContent(
                     }
 
                     AppProblem.SignerChanged -> {
-                        NavigationRow(
+                        ActionRow(
                             a.label,
                             { reallow = a.pkg },
                             summary = stringResource(R.string.in_bc_changed, a.pkg),
                         )
-                        NavigationRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
+                        ActionRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
                     }
 
                     AppProblem.NotInstalled -> {
-                        NavigationRow(
+                        ActionRow(
                             a.label,
                             { actions.remove(a.pkg) },
                             summary = stringResource(R.string.in_bc_gone),
@@ -211,16 +235,31 @@ fun BroadcastsContent(
         }
     }
     ui.apps.orEmpty().firstOrNull { it.pkg == reallow }?.let { a ->
-        // a different signature can mean another app under the same name: a closed loop may dose from what it gets
+        // a different signature can mean another app under the same name: a closed loop may dose from what it gets. Both
+        // certificates are shown, so the person can compare the new one with what the app's developer publishes.
+        val now = a.currentSigner
         AlertDialog(
             onDismissRequest = { reallow = null },
             title = { Text(stringResource(R.string.in_bc_reallow_title, a.label)) },
-            text = { Text(stringResource(R.string.in_bc_reallow_text, a.label, a.pkg)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.in_bc_reallow_text, a.label, a.pkg))
+                    a.pinnedSigner?.let { Fingerprint(stringResource(R.string.in_bc_signer_was), it) }
+                    if (now != null) {
+                        Fingerprint(stringResource(R.string.in_bc_signer_now), now)
+                    } else {
+                        Text(stringResource(R.string.in_bc_signer_unknown))
+                    }
+                }
+            },
             confirmButton = {
-                TextButton({
-                    reallow = null
-                    actions.setAllowed(a.pkg, true)
-                }) { Text(stringResource(R.string.in_bc_reallow_action)) }
+                // a signer that can't be named can't be pinned: only Cancel (and Remove on the page)
+                if (now != null) {
+                    TextButton({
+                        reallow = null
+                        actions.setAllowed(a.pkg, true)
+                    }) { Text(stringResource(R.string.in_bc_reallow_action)) }
+                }
             },
             dismissButton = { TextButton({ reallow = null }) { Text(stringResource(android.R.string.cancel)) } },
         )
@@ -230,6 +269,19 @@ fun BroadcastsContent(
     }
     FooterText(stringResource(R.string.in_bc_footer))
 }
+
+/** "Allowed with" and a certificate's SHA-256 the way keytool and developers' pages print it (AB:CD:…). */
+@Composable
+private fun Fingerprint(
+    title: String,
+    sha256: String,
+) = Column {
+    Text(title, style = MaterialTheme.typography.labelLarge)
+    Text(fingerprint(sha256), style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+}
+
+/** A hex SHA-256 as colon-separated upper-case pairs. */
+internal fun fingerprint(sha256: String): String = sha256.uppercase().chunked(2).joinToString(":")
 
 private val LOOPS = setOf("info.nightscout.androidaps", "app.aaps")
 private val FORWARDERS = setOf("com.eveningoutpost.dexdrip", "de.michelinside.glucodatahandler")

@@ -46,12 +46,13 @@ fun ProfilePage(
     }
 }
 
-/** Backup on the engine; the password manager's sheet shows over this activity. */
+/** Backup on the engine; the password manager's sheet shows over this activity; [onReplace] opens Replace this identity. */
 @Composable
 fun BackupPage(
     viewModel: SharingViewModel,
     onSetUpSharing: () -> Unit,
     modifier: Modifier = Modifier,
+    onReplace: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
@@ -78,6 +79,7 @@ fun BackupPage(
                 recoveryCode = viewModel::recoveryCode,
                 onRecoveryKeep = viewModel::recoverySaved,
                 modifier = modifier,
+                onReplace = onReplace,
             )
         }
 

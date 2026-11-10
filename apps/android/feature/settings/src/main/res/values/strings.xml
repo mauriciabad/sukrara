@@ -205,6 +205,8 @@
     <string name="st_sensor_sign_in_needed">Sign in to LibreView so Sukrara can start or take over the sensor.</string>
     <string name="st_sensor_bluetooth_permission_text">Sukrara needs the Nearby devices permission to read the sensor. Pair new sensor asks for it.</string>
     <string name="st_sensor_scan_again_text">Sukrara can’t use the saved pairing. Scan the sensor again: it keeps running and nothing is lost.</string>
+    <string name="st_sensor_taken_over_text">Another app took over the sensor (the official app or Juggluco), so Sukrara stopped reading it. Close that app, then scan the sensor to take it back.</string>
+    <string name="st_sensor_pair_again_text">The sensor refused the pairing (a wrong ID or PIN). Pair it again.</string>
     <string name="st_sensor_source">Reading source</string>
     <string name="st_sensor_source_direct">This phone reads the sensor</string>
     <string name="st_sensor_source_direct_why">Sukrara connects to the sensor itself over Bluetooth.</string>
@@ -228,6 +230,8 @@
     <string name="st_sensor_status_connecting_juggluco">Getting readings from Juggluco…</string>
     <string name="st_sensor_status_juggluco_unreachable">Juggluco isn’t answering: no readings</string>
     <string name="st_sensor_status_scan_again">Needs a new scan of the sensor</string>
+    <string name="st_sensor_status_taken_over">Used by another app</string>
+    <string name="st_sensor_status_pair_again">Needs pairing again</string>
     <string name="st_sensor_status_sign_in">Needs the LibreView sign-in</string>
     <string name="st_sensor_status_permission">Needs the Nearby devices permission</string>
     <string name="st_sensor_juggluco_unreachable_text">Juggluco doesn’t answer, so Sukrara gets no readings. Open Juggluco and turn on its web server (Settings › Web server), or choose This phone reads the sensor below.</string>
@@ -576,14 +580,9 @@
     <string name="st_pen_h_incomplete">%1$s · incomplete</string>
     <string name="st_pen_seg_priming">Priming</string>
     <string name="st_pen_nothing_injected">Nothing injected</string>
-    <string name="st_pen_done">Done</string>
     <string name="st_pen_add_to_entry">Add to the %1$s entry</string>
     <string name="st_pen_log_as_injection">Log as injection</string>
     <string name="st_pen_log_injection">Log this injection</string>
-    <string name="st_pen_different">Different</string>
-    <string name="st_pen_same">Same injection</string>
-    <string name="st_pen_all_priming">All priming</string>
-    <string name="st_pen_log_units">Log %1$s</string>
     <plurals name="st_pen_older">
         <item quantity="one">%1$d earlier dose left out</item>
         <item quantity="other">%1$d earlier doses left out</item>
@@ -597,7 +596,6 @@
         <item quantity="other">%1$d earlier doses</item>
     </plurals>
     <string name="st_pen_changed_since_open">That entry changed or was deleted meanwhile</string>
-    <string name="st_pen_q_several">Several of your entries are nearby: answer it on the pen read card or its notification.</string>
     <string name="st_clinic_title">Share your data with your clinic</string>
     <string name="st_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>
     <string name="st_clinic_libreview">LibreView</string>
@@ -624,6 +622,8 @@
     <string name="st_backup_saved">Backed up · your followers stay if you change phones</string>
     <string name="st_backup_not_saved">Not backed up · save it so a new phone keeps your followers</string>
     <string name="st_backup_no_identity">Nothing to back up until you share</string>
+    <string name="st_backup_unreadable">Your sharing identity can\'t be read · restore it from your recovery code</string>
+    <string name="st_backup_paused">Paused · another app is sharing as you</string>
     <string name="st_export_title">Export data</string>
     <string name="st_export_summary">Readings and treatments as a file</string>
     <string name="st_adv_title">Advanced</string>
@@ -667,11 +667,43 @@
         <item quantity="one">%1$d of %2$d relay connected</item>
         <item quantity="other">%1$d of %2$d relays connected</item>
     </plurals>
+    <!-- Advanced › Statistics: counts only, nothing personal -->
+    <string name="st_adv_stats">Statistics</string>
+    <string name="st_adv_sent">Sent to your followers</string>
+    <string name="st_adv_received">Readings on this phone</string>
+    <string name="st_adv_notification">Glucose notification</string>
+    <string name="st_adv_stats_footer">Sent, refused and notification counts start again when Sukrara restarts; the readings are all those stored on this phone.</string>
+    <plurals name="st_adv_live">
+        <item quantity="one">%d live reading</item>
+        <item quantity="other">%d live readings</item>
+    </plurals>
+    <plurals name="st_adv_chunks">
+        <item quantity="one">%d hour of history</item>
+        <item quantity="other">%d hours of history</item>
+    </plurals>
+    <plurals name="st_adv_stored">
+        <item quantity="one">%d stored</item>
+        <item quantity="other">%d stored</item>
+    </plurals>
+    <plurals name="st_adv_refused">
+        <item quantity="one">%d event refused</item>
+        <item quantity="other">%d events refused</item>
+    </plurals>
+    <plurals name="st_adv_posts">
+        <item quantity="one">%d update</item>
+        <item quantity="other">%d updates</item>
+    </plurals>
+    <plurals name="st_adv_skipped">
+        <item quantity="one">%d skipped (nothing new)</item>
+        <item quantity="other">%d skipped (nothing new)</item>
+    </plurals>
     <!-- settings search -->
     <string name="st_search_hint">Search settings</string>
     <string name="st_search_clear">Clear search</string>
     <string name="st_search_none">No settings match “%1$s”</string>
     <string name="st_search_in">In %1$s</string>
+    <string name="st_search_recent">Recent searches</string>
+    <string name="st_search_recent_clear">Clear</string>
     <string name="st_profile_title">Your profile</string>
     <string name="st_active_now">Active now</string>
     <string name="st_from_title">Settings from</string>

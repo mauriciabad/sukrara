@@ -36,7 +36,7 @@ import Testing
         #expect(!r.empty && !r.lowCoverage, "\(r.coverage) \(r.rows.map(\.share))")
         let target = r.rows.first { $0.kind == .target }
         #expect(target?.share == "100" && target?.met == true)
-        #expect(r.rows.first { $0.kind == .below }?.share == "0.0")
+        #expect(r.rows.first { $0.kind == .below }?.share == "0")
         #expect(r.average.value == "154 mg/dL" && !r.average.met)
         #expect(r.gmi.value.hasPrefix("7.0 %") && r.gmi.met)
         #expect(r.cv.value == "0.0 %" && r.cv.met)

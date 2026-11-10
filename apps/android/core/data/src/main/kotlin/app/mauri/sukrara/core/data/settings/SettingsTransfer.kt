@@ -188,7 +188,6 @@ class SettingsTransfer(
             mapOf(
                 "source.source" to "where glucose comes from is the setup: switching it would drop the sensor",
                 CONFIRMED_ID to "a record of the person's review, not an option (cleared when the alert settings change)",
-                "home.uploadBanner" to "a closed tip, not an option (Settings › Show closed tips)",
                 "sharing.nostr" to "who receives the data: changed only on the Sharing page, with the followers in view",
                 "sharing.bleFollowers" to "who receives the data: changed only on the Sharing page, with the followers in view",
                 "apps.xdrip" to "a connection to another app: set up on its page",

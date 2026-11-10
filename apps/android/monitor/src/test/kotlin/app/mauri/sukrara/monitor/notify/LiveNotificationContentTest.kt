@@ -258,4 +258,14 @@ class LiveNotificationContentTest {
         // a sharing identity without followers says nothing (no "0 followers" on the lock screen)
         assertNull(content(state(), prefs.copy(sharing = SharingLine(0, 0))).sharing)
     }
+
+    @Test
+    fun `the Nightscout API on the Wi-Fi is in the sub text in either role`() {
+        val prefs = NotificationPrefs(chip = true, promotionAllowed = true, sharing = SharingLine(2, 1, wifi = true))
+        assertEquals(SharingLine(2, 1, wifi = true), content(state(), prefs).sharing)
+        // a follower's line names only the API (followers are the wearer's)
+        assertEquals(SharingLine(0, 0, wifi = true), content(state(role = Role.Follower), prefs).sharing)
+        assertEquals(SharingLine(0, 0, wifi = true), content(state(), prefs.copy(sharing = SharingLine(0, 0, wifi = true))).sharing)
+        assertNull(content(state(role = null), prefs).sharing)
+    }
 }

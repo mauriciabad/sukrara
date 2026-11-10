@@ -78,7 +78,7 @@ surface. The pictures in this report show the current design, except the options
 
 | | age of the latest reading | value | reading's time | graph |
 |---|---|---|---|---|
-| fresh | ≤ 90 s | ✓ | – | ✓ |
+| fresh | ≤ 90 s | ✓ | "now" beside the arrow (#70) | ✓ |
 | late | ≤ 5 min | ✓ | ✓ ("10:11 PM") | ✓ |
 | stale | ≤ 20 min | struck through, grey, no arrow | ✓ | ✓ |
 | old | ≤ 3 h | – ("No reading since 8:59 PM") | ✓ | ✓ |
@@ -396,6 +396,10 @@ Units are dp, times seconds; the chart's area is `minX`…`maxX`, the plot `left
    edges differ by a few dp between Roboto and SF Pro; the label fixtures use the file's `pctLabel` (37 dp) and
    `valueLabel` (20.6 dp) for the columns' labels.
 
+**At a large system font** (#70): the labels' size (and the rows', the side columns' labels) is 9 dp × the chart's
+text scale, the system font scale capped to 1…1.3; the merge distance, gaps and the 90 dp second-row threshold stay in
+dp. The `labels` fixtures carry cases with `fontScale` 2.
+
 **Why not more rows or leader lines:** two rows already take 25 dp of a 4×2 widget's 93 dp chart; a third would
 take the plot's room, and a leader line would cross the marker lane's mute lines.
 
@@ -413,7 +417,8 @@ label fits its modelled box (the font that could break it).
 ## Rounded numbers (2026-10-18)
 
 The user: "On Mac I like the round font on the graph's big numbers, can't we have a similar one on Android?" The
-Mac draws them in SF Pro Rounded (value bold; the ring and slot numbers heavy, their window labels semibold).
+Mac draws them in SF Pro Rounded (value bold; the ring and slot numbers and their window labels semibold: a slot's
+number heavier than the value read as a second reading, #70).
 
 ![SF Pro Rounded and Google Sans Flex rounded](img/16/rounded-numbers.png)
 
@@ -427,7 +432,7 @@ The 3.9 MB variable font is instanced with fontTools at `ROND` 100, `opsz` 18, `
 600 / 700 / 800, each subset to Basic Latin, a few accented letters and `–`, `−`, `·`, `…` (~33 KB each, ~100 KB in
 all), in `assets/fonts/` next to `OFL.txt`. Used for the same texts as on the Mac: the value (700, proportional figures like SF Pro Rounded)
 in the widgets, the lock screen and the app panel's rolling digits (Compose `FontFamily(Typeface)`), the ring and
-slot numbers (800) and their labels (600). The notification's value is a `TextView` in `RemoteViews`, which
+slot numbers and their labels (600; 800 until #70). The notification's value is a `TextView` in `RemoteViews`, which
 can't use an app font (the system inflates it with a restricted context), so it is now drawn as a picture in the
 same face (with the number as its content description). The last-treatment slot keeps the system face, as on the
 Mac.

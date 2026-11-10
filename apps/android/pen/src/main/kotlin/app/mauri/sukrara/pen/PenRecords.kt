@@ -64,6 +64,13 @@ object PenRecords {
         )
     }
 
+    /** The time (epoch s) of a pen entry's last dose, or null for an entry that isn't from a pen. */
+    fun lastDose(r: TreatmentRecord): Long? =
+        r.penJson
+            ?.let { runCatching { json.decodeFromString(Keys.serializer(), it) }.getOrNull() }
+            ?.pd
+            ?.maxOfOrNull { it.t }
+
     /**
      * The record to store for an engine write: on top of the stored one ([stored], keeping its sharing fields) or new.
      * Hand-typed fields ([PenEntry.n]) come from the engine, which keeps them through a merge. `modifiedAt` is the

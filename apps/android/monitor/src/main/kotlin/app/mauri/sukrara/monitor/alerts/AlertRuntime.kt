@@ -32,6 +32,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentQuiet
@@ -43,7 +44,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.Duration
 import java.time.Instant
 import app.mauri.sukrara.alerts.AlertUiState as EngineUiState
 import app.mauri.sukrara.alerts.TreatmentKind as EngineTreatmentKind
@@ -510,7 +510,7 @@ class AlertRuntime(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
                 status = m?.status(now)?.let(::cardStatusOf) ?: CardStatus.None,
-                treatmentQuiet = m?.let { treatmentQuietOf(it.settings) } ?: TreatmentQuiet(),
+                treatmentQuiet = m?.let { treatmentQuietOf(it.settings, ui) } ?: TreatmentQuiet(),
                 mutedUntil = instantOf(ui.muteAllUntil),
                 quiet =
                     ui.quiet.map { q ->
@@ -565,9 +565,11 @@ class AlertRuntime(
                     s.endsAt?.let { SensorWindow(startEpoch = 0, endEpoch = it.epochSecond, warmupEndEpoch = 0) }
                 }
 
+                // the card's dates for the same state (`cardInfo`): start = ready − the default warm-up
                 is SensorState.WarmingUp -> {
                     s.readyAt.epochSecond.let { ready ->
-                        SensorWindow(ready - SensorWindow.DEFAULT_WARMUP_MIN * 60L, ready + WEAR_S, ready)
+                        val start = ready - SensorTiming.DEFAULT_WARMUP_MIN * 60L
+                        SensorWindow(start, start + SensorTiming.DEFAULT_WEAR_MIN * 60L, ready)
                     }
                 }
 
@@ -580,17 +582,18 @@ class AlertRuntime(
                 }
             }
 
-        private val WEAR_S = Duration.ofDays(15).seconds
-
         /**
          * How long each treatment quiets alerts under [s], the rules the engine runs (`Rules.coveringDose`: a dose quiets
          * while `now − t < quietSeconds`), for the cards' mute lines and last-treatment ring; a rule that's off quiets
-         * nothing (as the Mac's `CardAlertsMapping.muteEnd`).
+         * nothing (as the Mac's `CardAlertsMapping.muteEnd`). A quiet the person lifted (*Alert me anyway* on the high /
+         * low side, [ui]'s `lifted`) ends for the doses logged up to then, as in the engine.
          */
-        fun treatmentQuietOf(s: AlertSettings): TreatmentQuiet =
+        fun treatmentQuietOf(s: AlertSettings, ui: EngineUiState = EngineUiState()): TreatmentQuiet =
             TreatmentQuiet(
                 rapidS = s.quietSeconds(EngineTreatmentKind.RAPID).takeIf { s.afterInsulin.on },
                 carbsS = s.quietSeconds(EngineTreatmentKind.CARBS).takeIf { s.afterCarbs.on },
+                rapidLiftedAt = ui.lifted[Side.HIGH] ?: 0,
+                carbsLiftedAt = ui.lifted[Side.LOW] ?: 0,
             )
 
         /** The badge's answer in the card's terms (contracts/graph/status.json). */

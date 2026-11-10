@@ -259,7 +259,8 @@ enum class Goal(
 /**
  * A time share as the number of a percentage, without the "%": whole percent from 10 %, one decimal under 10 %, and
  * more decimals (up to two) whenever rounding would put the number on the other side of its goal than the value (or
- * turn a share that isn't all into "100"); a non-zero share that rounds to 0 is "<0.1". contracts/graph/share.
+ * turn a share that isn't all into "100"); a non-zero share that rounds to 0 is "<0.1", none at all is "0" (never
+ * "0.0": a figure with a decimal beside the value can be read as a glucose value). contracts/graph/share.
  */
 object ShareText {
     private fun format(
@@ -267,6 +268,8 @@ object ShareText {
         met: ((Double) -> Boolean)?,
         locale: java.util.Locale,
     ): String {
+        if (x <= 0.0) return "0"
+
         fun shown(d: Int): Double {
             val k = Math.pow(10.0, d + 2.0)
             return Math.round(x * k) / k

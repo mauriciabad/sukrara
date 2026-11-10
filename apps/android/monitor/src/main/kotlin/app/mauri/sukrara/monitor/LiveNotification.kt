@@ -44,9 +44,11 @@ import app.mauri.sukrara.monitor.notify.NotificationArt
 import app.mauri.sukrara.monitor.notify.NotificationCard
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
+import app.mauri.sukrara.monitor.notify.PostCounts
 import app.mauri.sukrara.monitor.notify.PostGate
 import app.mauri.sukrara.monitor.notify.SharingLine
 import app.mauri.sukrara.monitor.notify.UiText
+import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -76,6 +78,9 @@ class LiveNotification(
                 TimeUnit.MILLISECONDS,
             )
         }
+
+    /** Its posts since the app started: posted, and skipped as nothing new (Settings › Advanced › Statistics). */
+    val counts: StateFlow<PostCounts> get() = gate.counts
 
     /** The content for [state] now with the status-bar [prefs] (the chip's permission is read here). */
     fun content(
@@ -344,15 +349,21 @@ class LiveNotification(
         return context.getString(text.res, *args.toTypedArray())
     }
 
-    /** "2 followers · 1 nearby" (nearby only while a follower device is connected over Bluetooth). */
+    /**
+     * "2 followers · 1 nearby · Nightscout API on Wi-Fi" (nearby only while a follower device is connected over
+     * Bluetooth, the API only while it listens on the home Wi-Fi).
+     */
     private fun sharingText(line: SharingLine): String {
         val r = context.resources
-        val followers = r.getQuantityString(R.plurals.monitor_sub_followers, line.followers, line.followers)
-        return if (line.nearby > 0) {
-            followers + " · " + r.getQuantityString(R.plurals.monitor_sub_nearby, line.nearby, line.nearby)
-        } else {
-            followers
-        }
+        return buildList {
+            if (line.followers > 0 ||
+                line.nearby > 0
+            ) {
+                add(r.getQuantityString(R.plurals.monitor_sub_followers, line.followers, line.followers))
+            }
+            if (line.nearby > 0) add(r.getQuantityString(R.plurals.monitor_sub_nearby, line.nearby, line.nearby))
+            if (line.wifi) add(r.getString(R.string.monitor_sub_wifi))
+        }.joinToString(" · ")
     }
 
     private fun struck(text: String): CharSequence =

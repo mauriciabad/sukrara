@@ -16,7 +16,7 @@ import java.util.Locale
  *
  * | | age | value | time of the reading | graph |
  * |---|---|---|---|---|
- * | [FRESH] | ≤ 90 s | ✓ | – | ✓ |
+ * | [FRESH] | ≤ 90 s | ✓ | "now" ([saysNow]) | ✓ |
  * | [LATE] | ≤ 5 min | ✓ | ✓ | ✓ |
  * | [STALE] | ≤ 20 min | struck through, grey | ✓ | ✓ |
  * | [OLD] | ≤ 3 h | – ("no readings") | ✓ | ✓ |
@@ -37,6 +37,12 @@ enum class Freshness(
     OLD(false, true, false, true),
     GONE(false, true, false, false),
     ;
+
+    /**
+     * A card's value place says "now" where the time goes (beside the arrow, or in the pill's row): a fresh value reads
+     * as live, not just as "no time shown" (#70; contracts/graph/freshness `now`). Text-only places don't.
+     */
+    val saysNow: Boolean get() = this == FRESH
 
     /**
      * What a card WITHOUT a value (graph-only: the graph widget) shows of its data's age, so it never looks current

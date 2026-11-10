@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
+import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInContent
 import app.mauri.sukrara.feature.sensor.libreview.SignInError
@@ -78,7 +80,8 @@ class SensorGallery {
                 if (showSignIn) {
                     LibreViewSignInContent(ui, canSubmit = { _, _ -> true }, onSignIn = { _, _ -> }, onSignOut = {}, onBack = {})
                 } else {
-                    NewSensorContent(step, Steps.NOW) {}
+                    // the Sensor ready page draws its first reading with the card renderer (surface sensor-ready)
+                    NewSensorContent(step, Steps.NOW, firstReading = Reading(Steps.NOW.minusSeconds(40), 112, 0.6, SourceId.Libre3)) {}
                 }
             }
         }

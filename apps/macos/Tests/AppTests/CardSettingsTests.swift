@@ -60,6 +60,22 @@ import Testing
         #expect(card.last?.tr == marks[0] && card.last?.until == marks[0].t + 15 * 60)
     }
 
+    /// *Alert me anyway* ends the card's quiet at once: the pill asks for carbs again and the carbs' mute line and ring
+    /// end at that moment; insulin's (the high side) keeps its window (#154).
+    @Test func alertMeAnywayEndsTheCardsQuiet() {
+        let list = [treatment("c1", .carbs, 20, minutesAgo: 5), treatment("i1", .rapid, 2, minutesAgo: 30)]
+        let marks = CardAlertsMapping.marks(list)
+        let state = ui([
+            alertTreatments(list), .reading(GlucoseSample(at: now, mgdl: 62, rate: 0)), .unmute(.low),
+        ])
+        #expect(state.lifted == [.low: now])
+        let card = CardAlertsMapping.of(state, settings: AlertSettings(), marks: marks, now: now)
+        #expect(card.status == .needed(.low))
+        #expect(card.muteEnds == ["c1": t, "i1": t - 30 * 60 + 3600])
+        #expect(card.last?.tr.id == "i1")  // running insulin; the lifted carbs ride along with no time left
+        #expect(card.last?.carbs?.until == t)
+    }
+
     @Test func runningInsulinFillsTheSlotAndCarriesTheCarbs() {
         let list = [treatment("i1", .rapid, 4, minutesAgo: 10), treatment("c1", .carbs, 40, minutesAgo: 3)]
         let marks = CardAlertsMapping.marks(list)

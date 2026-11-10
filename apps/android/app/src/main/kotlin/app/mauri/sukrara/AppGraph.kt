@@ -4,6 +4,8 @@
 package app.mauri.sukrara
 
 import android.app.Application
+import android.nfc.Tag
+import android.view.View
 import app.mauri.sukrara.alerts.AlertEvent
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
@@ -20,12 +22,15 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.model.storage.UploadHold
+import app.mauri.sukrara.feature.home.PenRead
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.sensor.SensorUiModule
 import app.mauri.sukrara.feature.settings.AlertPlayback
 import app.mauri.sukrara.feature.settings.AlertSettingsStore
 import app.mauri.sukrara.feature.settings.AppOutput
+import app.mauri.sukrara.feature.settings.BackupState
 import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
@@ -34,6 +39,7 @@ import app.mauri.sukrara.feature.sharing.SharingDeps
 import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.label
+import app.mauri.sukrara.feature.treatments.DialogPen
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
@@ -47,6 +53,7 @@ import app.mauri.sukrara.integrations.libreview.LvReadings
 import app.mauri.sukrara.integrations.libreview.LvState
 import app.mauri.sukrara.integrations.libreview.LvUnsent
 import app.mauri.sukrara.integrations.localserver.LanPin
+import app.mauri.sukrara.integrations.localserver.LanState
 import app.mauri.sukrara.integrations.nightscout.NsState
 import app.mauri.sukrara.integrations.tidepool.TpState
 import app.mauri.sukrara.monitor.MonitorModule
@@ -63,9 +70,11 @@ import app.mauri.sukrara.monitor.sensorend.SensorEndMemory
 import app.mauri.sukrara.monitor.service.StartReason
 import app.mauri.sukrara.pen.PenLog
 import app.mauri.sukrara.pen.PenNotificationPorts
+import app.mauri.sukrara.pen.PenTag
+import app.mauri.sukrara.pen.PenTapHint
 import app.mauri.sukrara.pen.PensModule
-import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.protocol.event.AlertCodec
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.PairingLoad
@@ -195,14 +204,19 @@ class AppGraph(
             graphConfig = graphConfig,
             // cold: the owner engine is built when the service first draws the notification
             sharing =
-                flow {
-                    val owner = shareOwner.ownerEngine
-                    emitAll(
-                        combine(owner.state, owner.nearbyLinks) { s, links ->
-                            (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
-                        },
-                    )
-                }.distinctUntilChanged(),
+                combine(
+                    flow {
+                        val owner = shareOwner.ownerEngine
+                        emitAll(
+                            combine(owner.state, owner.nearbyLinks) { s, links ->
+                                (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
+                            },
+                        )
+                    },
+                    // the Nightscout API open to the home Wi-Fi: said on the notification while it listens there
+                    flow { emitAll(integrations.nightscoutApi.lan) }.map { it is LanState.Listening },
+                ) { line, wifi -> if (line == null && !wifi) null else (line ?: SharingLine(0, 0)).copy(wifi = wifi) }
+                    .distinctUntilChanged(),
             sourceChanges = sourceChanges,
             rootFeatures = Store.rootFeatures,
         )
@@ -290,12 +304,21 @@ class AppGraph(
                     data.diagLog,
                     // an imported alert settings value passes their codec (SPEC §3) or is refused
                     data.settingsTransfer(mapOf("alerts:alerts" to { t -> AlertSettingsCodec.decode(t)?.let(AlertSettingsCodec::encode) })),
+                    monitor.notification.counts,
+                    { data.readings.spanOf(setOf(SourceId.Relay)).count },
                 )
             },
             overviewSharing =
                 combine(role.data, shareOwner.ownerEngine.state) { r, own ->
                     val sharing = own as? OwnerShareState.Sharing
-                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.backedUp)
+                    val backup =
+                        when (own) {
+                            is OwnerShareState.Sharing -> if (own.backedUp) BackupState.Saved else BackupState.NotSaved
+                            is OwnerShareState.IdentityUnreadable -> BackupState.Unreadable
+                            is OwnerShareState.AnotherAppSharingAsYou -> BackupState.Paused
+                            OwnerShareState.Loading, OwnerShareState.NoIdentity -> BackupState.NoIdentity
+                        }
+                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.profile?.avatar, backup)
                 },
             alertPlayback =
                 object : AlertPlayback {
@@ -401,6 +424,8 @@ class AppGraph(
             clock = clock,
             dispatchers = dispatchers,
             log = { data.diagLog.log("integrations", it) },
+            // a pen entry waits for its session to close (the pens module is built on first use)
+            uploadHold = UploadHold { pens.uploadHold.until(it) },
         )
     }
 
@@ -411,6 +436,8 @@ class AppGraph(
             data.settings,
             clock,
             scope,
+            glucose = monitor.hub.state,
+            graphConfig = graphConfig,
             startMonitoring = { startMonitoring(StartReason.App) },
         )
     }
@@ -515,6 +542,8 @@ class AppGraph(
             tapsBlocked = { BlockedTaps(pen = pens.tapsBlockedWhileOn(), sensor = sensor.tapLaunch.onButBlocked()) },
             penEntryOf = { pens.port.entry(it) },
             penPort = { pens.port.takeIf { pens.available() } },
+            penQuestionsOf = { pens.homeQuestions },
+            penReadOf = { pens.lastRead.map { r -> r?.let { PenRead(it.first, it.second) } } },
             clinicUploadSet = { integrations.clinicUploadSet },
             clinicMarks = { integrations.libreView.entryMarks.map { m -> m?.let(::LibreViewMarks) } },
             untestedSensor =
@@ -574,6 +603,8 @@ class AppGraph(
             // what followers on *Settings from: Wearer* use (cold: the alert runtime is built when the engine reads it)
             settings = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
             relays = launch.relays,
+            // the live events' ss / se / sw (PROTOCOL-v2 "Sensor life"): followers see a warm-up and an end with no reading
+            sensor = sensor.source.sensorInfo.map { it?.let { i -> SensorLife(i.startEpoch, i.endEpoch, i.warmupEndEpoch) } },
         )
     }
 
@@ -588,12 +619,36 @@ class AppGraph(
             hints = AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock),
             // read when the dialog saves (the pens module is built on first use, after this one)
             penDuplicates = PenDuplicates { kind, at -> pens.duplicates.near(kind, at) },
+            // a pen held to the phone while the dialog is open (the wearer's phone with pens)
+            pen = { pens.takeIf { it.available() }?.let(::DialogPenOf) },
         )
     }
 
+    /** Add treatment's pen read over the pens module. */
+    private class DialogPenOf(
+        private val pens: PensModule,
+    ) : DialogPen {
+        override suspend fun readable() = pens.dialogReadable()
+
+        override fun mightBePen(tag: Tag) = PenTag.isPen(tag)
+
+        override suspend fun read(
+            tag: Tag,
+            view: View,
+            reading: () -> Unit,
+        ) = pens.readInDialog(tag, view, reading)
+
+        override suspend fun undo() = pens.pens.undoLast().also { if (it) pens.notices.cancelRead() }
+
+        override suspend fun tapHintDue() = pens.tapHintDue()
+
+        override fun tapHintShown() = pens.tapHintShown()
+    }
+
     /**
-     * Insulin pens (NFC) on the wearer's phone: the ledger (`pens.json`; damaged → empty: a known pen's next tap is
-     * a first scan that continues after its newest logged entry) and its writes into the treatment log.
+     * Insulin pens (NFC) on the wearer's phone: the ledger (in the database, written with its entries in one
+     * transaction; damaged → empty: a known pen's next tap is a first scan that continues after its newest logged
+     * entry) and its writes into the treatment log.
      */
     val pens: PensModule by lazy {
         val info = NotificationGroups.Group.INFO
@@ -611,15 +666,21 @@ class AppGraph(
             }
         PensModule(
             context = app,
-            store = data.typedStore("pens", Ledger.serializer(), Ledger(), whenCorrupt = Ledger()),
             logChanges = data.treatments.between(Instant.EPOCH, Instant.parse("2200-01-01T00:00:00Z")),
+            // a lost one only shows *Next time, just tap your pen* again (at most 3 times)
+            tapHints = data.typedStore("pen-hints", PenTapHint.serializer(), PenTapHint(), whenCorrupt = PenTapHint()),
             log =
                 object : PenLog {
-                    override suspend fun all() = data.treatments.changedSince(Instant.EPOCH)
+                    override suspend fun ledger() = data.penLedger.ledger()
+
+                    override suspend fun all() = data.penLedger.insulin()
 
                     override fun canWrite() = treatments.log.penMayWrite()
 
-                    override suspend fun store(record: TreatmentRecord) = treatments.log.storeFromPen(record)
+                    override suspend fun commit(
+                        ledger: String,
+                        records: List<TreatmentRecord>,
+                    ) = treatments.log.storeFromPen(records) { data.penLedger.commit(ledger, it) }
                 },
             settings = data.settings,
             clock = clock,

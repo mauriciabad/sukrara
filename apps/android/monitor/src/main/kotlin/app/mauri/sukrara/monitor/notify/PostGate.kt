@@ -3,6 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.notify
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+
+/** The glucose notification's updates since the app started (Settings › Advanced): [posted], and [skipped] (nothing new). */
+data class PostCounts(val posted: Int = 0, val skipped: Int = 0)
+
 /**
  * The gate in front of the glucose notification's `notify` (Android drops an app's posts above ~5/s, which a Bluetooth
  * backfill can reach):
@@ -11,7 +19,8 @@ package app.mauri.sukrara.monitor.notify
  *    changes inside the gap are folded into one post at its end, the latest winning.
  *
  * [clock] must be monotonic (`SystemClock.elapsedRealtime`): with the wall clock, setting the time back delayed every
- * later post. A wait is never longer than [minGapMs].
+ * later post. A wait is never longer than [minGapMs]. [counts]: what was posted, and what was skipped or folded into a
+ * later post.
  */
 class PostGate<K>(
     private val minGapMs: Long,
@@ -23,6 +32,8 @@ class PostGate<K>(
     private var lastKey: Any? = NONE
     private var lastAt = Long.MIN_VALUE / 2
     private var pending: Pending<K>? = null
+    private val _counts = MutableStateFlow(PostCounts())
+    val counts: StateFlow<PostCounts> = _counts.asStateFlow()
 
     /** Drops the post waiting for the end of the gap, if any (its flush then does nothing). */
     @Synchronized
@@ -39,9 +50,13 @@ class PostGate<K>(
     ) {
         pending?.let {
             pending = Pending(key, force || it.force, post)
+            skipped()
             return
         }
-        if (!force && key == lastKey) return
+        if (!force && key == lastKey) {
+            skipped()
+            return
+        }
         val wait = (lastAt + minGapMs - clock()).coerceAtMost(minGapMs)
         if (wait > 0) {
             pending = Pending(key, force, post)
@@ -55,9 +70,14 @@ class PostGate<K>(
     private fun flush() {
         val p = pending ?: return
         pending = null
-        if (!p.force && p.key == lastKey) return
+        if (!p.force && p.key == lastKey) {
+            skipped()
+            return
+        }
         run(p.key, p.post)
     }
+
+    private fun skipped() = _counts.update { it.copy(skipped = it.skipped + 1) }
 
     private fun run(
         key: K,
@@ -65,6 +85,7 @@ class PostGate<K>(
     ) {
         lastKey = key
         lastAt = clock()
+        _counts.update { it.copy(posted = it.posted + 1) }
         post()
     }
 

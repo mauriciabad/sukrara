@@ -140,7 +140,7 @@ public struct BleInfo: Equatable, Sendable {
 
     /// Whose phone sent this INFO (B§6).
     public enum Owner: Equatable, Sendable {
-        /// Our wearer's: `i` is our identity, or `m` proves our `sid` over one of our HELLO nonces.
+        /// Our wearer's: `m` proves our `sid` over one of our HELLO nonces, or (before `sid`) `i` is our identity.
         case ours
         /// Another identity, or a missing / wrong proof while we know the `sid`.
         case other
@@ -148,13 +148,20 @@ public struct BleInfo: Equatable, Sendable {
         case unknown
     }
 
-    /// B§6 "Which owner": once we know `sid`, only `m` over one of our nonces proves it (`i` is public while any
-    /// wearer pairs, so a copied `i` never does); before `sid`, `i` = our identity says ours.
+    /// PROTOCOL-v2 "Bluetooth link", *Which owner* (contracts/protocol/ble/link-rules.json): once we know `sid`, `m` is
+    /// checked first: only `m` over one of our nonces can make it ours (`i` is public while any wearer pairs, so a
+    /// copied `i` never does), and an `i` naming another identity still makes it other. Before `sid`: `i` = our
+    /// identity is ours, another `i` is other, no `i` (or no identity yet) is unknown.
     public func owner(identity ours: String?, sid: String?, nonces: [String]) -> Owner {
-        if let ours, let identity, identity != ours { return .other }
-        guard let sid else { return ours != nil && identity != nil ? .ours : .unknown }
-        guard let nonce, nonces.contains(nonce), m == BleMessage.infoM(sid: sid, nonce: nonce) else { return .other }
-        return .ours
+        if let sid {
+            guard let nonce, nonces.contains(nonce), m == BleMessage.infoM(sid: sid, nonce: nonce) else {
+                return .other
+            }
+            if let ours, let identity, identity != ours { return .other }
+            return .ours
+        }
+        guard let ours, let identity else { return .unknown }
+        return identity == ours ? .ours : .other
     }
 
     /// The invite a nearby pairing offer stands for (the token is the invite token), nil when it has none or it

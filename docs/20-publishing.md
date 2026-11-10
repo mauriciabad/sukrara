@@ -295,7 +295,7 @@ falls back to the debug key), runs `verify-apk.sh` (signer = `android-cert.sha25
 not debuggable, Libre 3 core inside, R8 full mode with the mapping that belongs to this APK, no debug classes or
 debug-tool strings, no exported component without a permission beyond the launcher and the alert sound provider,
 `POST_PROMOTED_NOTIFICATIONS` declared), then installs it fresh and launches it (see `docs/QA.md` Q10
-for every assertion). Keep the mapping (`apps/android/app/build/outputs/mapping/release/mapping.txt`) with the
+for every assertion). Keep the mapping (`apps/android/app/build/outputs/mapping/fullRelease/mapping.txt`) with the
 release: crash stack traces from the owner's phone are unreadable without it. Keep-rule fixes go to the owning
 module's `consumer-rules.pro` (the module that uses the reflective / JNI library), never to a blanket `-keep`.
 

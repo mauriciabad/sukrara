@@ -17,10 +17,11 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic sensor: a 3-hour curve from
   45 to 215 mg/dL; `cycle 135` = its lowest point now, `cycle 45` its highest, `cycle 0` 130 and rising; a sensor that
   ends in N min; a new one warming up for W min), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder
-  true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …` and `PEN_TAGS --ez blocked
-  true|false` (docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"), `RELAYS --es urls
-  ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: Q22). Treatments are
-  added in the app.
+  true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …`, `PEN_TAGS --ez blocked
+  true|false` and `PEN_JUGGLUCO --ez installed true|false` (docs/FEATURES.md "Sensor reminders and countdowns",
+  "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
+  = no relay: Q22). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
 - **Phone** (`62240DLCH0005W`): only after `tools/install.sh phone`; read-only adb, `adb exec-out screencap -p`
@@ -161,9 +162,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Grouping (Android 16 / 17 emulators, chip on and off): `SYNTHETIC --ez on true --ei warmupMin 10` + `ALERTS --es
       kinds high`, then the warm-up's end (*Sensor ready* with the first reading), then `ALERTS --es kinds
       rising_fast`. `dumpsys notification --noredact`: alerts only in `g:app.mauri.sukrara.ALERTS` (summary
-      id 119), *Sensor ready* and both countdowns (the warm-up one, then `SYNTHETIC --ei endsInMin 300` for the end
-      countdown, chip on and off) in `g:app.mauri.sukrara.INFO` (summary 19), the glucose card the one ungrouped
-      notification, nothing in `g:Aggregate_…` (#156); the alert is the one that sounded (`mSoundNotificationKey` = id 101). In
+      id 1000; the alerts 1001 and up, one per group: 1001 level, 1002 rate, 1003 no data; `NotificationIds` in
+      `monitor/notify/Channels.kt`), *Sensor ready* and both countdowns (the warm-up one, then `SYNTHETIC --ei
+      endsInMin 300` for the end countdown, chip on and off) in `g:app.mauri.sukrara.INFO` (summary 1100), the glucose
+      card the one ungrouped notification, nothing in `g:Aggregate_…` (#156); an alert is the one that sounded
+      (`mSoundNotificationKey` = an alert's id, 1001 or up; never *Sensor ready*'s). In
       the shade *High glucose* never inside a bundle with *Sensor ready*; a real alert (`SYNTHETIC --ei cycle 135`) is
       removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the
@@ -201,15 +204,17 @@ An emulator of your own with file-based encryption (`adb shell getprop ro.crypto
 `tools/release/android-smoke.sh` (`--final` for the release gate: every WARN becomes a FAIL) does the cheap part on
 its own AVD `release_smoke` (API 37, port 5600; it refuses anything that isn't an emulator): signed release build →
 `verify-apk.sh` → fresh install → the app launches, renders,
-survives an activity recreation (saved state) → 3 min watch + a 3 h clock jump with no alert (no sensor) → the
-app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error. Output in `$TMPDIR/sukrara-smoke.*`.
+survives an activity recreation (saved state) → 3 min watch + a 3 h clock jump with no alert (no sensor) → a walk
+of every screen up to two taps from home (`tools/release/ui-walk.py`: taps each labelled control, the app must
+survive it) → the app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error. Output in
+`$TMPDIR/sukrara-smoke.*` (the walk's screenshots in `walk/`).
 
-- [ ] The smoke exits 0 (`--final` before a release). Look at its two screenshots.
+- [ ] The smoke exits 0 (`--final` before a release). Look at its screenshots, the walk's too.
 - [ ] `verify-apk.sh` FAILs on the debug APK (signer, debuggable, debug receiver, no R8 marker): the checks bite.
 - [ ] A release build without Juggluco (`-Psukrara.juggluco=/nonexistent`) or without the key
   (`SUKRARA_KEYSTORE=/nonexistent`) stops in `verifyJuggluco` / `verifyReleaseSigning`.
-- [ ] By hand on the emulator release build: open every top-level screen (home, settings, sensor, sharing,
-  treatments) — R8 breaks screens the smoke never opens.
+- [ ] By hand on the emulator release build: the screens deeper than the walk's two taps that the change touched
+  (a settings page's own pages, setup's later steps, a sensor's pairing) — R8 breaks screens nothing opens.
 - [ ] Not checkable on an emulator (phone, by the owner): the Live Update chip on the status bar with a real sensor,
   the NFC tag chooser and the `https://sukrara.mauri.app/join` App Link.
 - [ ] The version in `VERSION` matches what the release notes say.
@@ -270,15 +275,16 @@ over nothing:
       *Continue* needed); *Continue* → the same NFC flow as before; no *Untested* tag, no confirmation, no banner on
       home. After the install, `adb logcat -s Sukrara.direct Sukrara.scan` shows the usual Libre 3 connection by
       address and **no `Sukrara.scan` line at all**; readings keep arriving every minute.
-- [ ] Untested families (emulator only; nobody has the sensors): `--es stage choose|untested|pairfailed|setup-dexcom-g6|
-      setup-aidex-x|setup-accu-chek-smartguide|setup-dexcom-g7`: every brand but the Libre 3 has the *Untested* tag;
-      *Untested* tags are red with the flask; *Continue* with an untested family opens the red confirmation, counting
-      *Continue anyway (10)* … *(1)* with the button disabled, then *Continue anyway* → the family's setup; *Cancel*,
-      back and a tap outside close it and stay on the brand step; reopening restarts the count; the Libre 3 never
-      asks. *Pair* is disabled until a typed id is valid. Light and
-      dark, English and Spanish. Unit tests: `BrandStepTest`, the driver tests (`G7DriverTest`, `G6DriverTest`,
-      `SmartGuideDriverTest`, `AidexXDriverTest`, `CrcTest`), `DirectSourceTest` (the Libre 3 never scans).
-- [ ] Untested banner (a real untested sensor on a phone; no debug command fakes a family) → home shows *Dexcom G7 / ONE+
+- [ ] Untested families (emulator, no sensor needed; no debug command forces a stage: home → *Pair new sensor* →
+      *Which sensor are you starting?*): every brand but the Libre 3 has the *Untested* tag (a red label, no icon;
+      TalkBack "untested with real sensors"); *Continue* with an untested family goes to the flow's next page,
+      *Untested with real sensors* (red, `NewSensorStep.ConfirmUntested`), whose *Continue anyway (10)* … *(1)* counts
+      down with the button disabled, then *Continue anyway* → the family's setup; *Cancel* and back go back to the
+      brand step; opening the page again restarts the count; the Libre 3 never asks. *Pair* is disabled until a typed
+      id is valid. Light and dark, English and Spanish. Unit tests: `NewSensorMachineTest` (the untested page and its
+      wait), the driver tests (`G7DriverTest`, `G6DriverTest`, `SmartGuideDriverTest`, `AidexXDriverTest`, `CrcTest`).
+- [ ] Untested banner (after pairing an untested family through the New sensor flow above, no sensor needed; no
+      debug command fakes a family) → home shows *Dexcom G7 / ONE+
       support is untested. Tell us how it works.* directly under the graph, no close button, not red; *Send feedback*
       opens github.com/…/issues/new with the sensor-feedback form pre-filled with the sensor, the Sukrara and Android
       versions and the phone model only (`SensorFeedbackTest`); back on a Libre 3 → gone; a follower never shows it.
@@ -337,6 +343,12 @@ over nothing:
       file opens in Numbers.
 - [ ] Import check (optional): `poc/spikes/export-fixtures/tidepool-check` runs Tidepool Uploader's LibreView driver on a
       file and prints the records it would upload.
+- [ ] Damaged database (emulator wearer, debug build; never a phone; `DatabaseSchemaTest` covers the same on the JVM):
+      with some history, `adb shell am force-stop app.mauri.sukrara`, then `adb shell run-as app.mauri.sukrara sh -c
+      'head -c 8192 /dev/urandom > databases/sukrara.db; rm -f databases/sukrara.db-wal databases/sukrara.db-shm'`.
+      Open the app: no crash, an empty history that `SYNTHETIC` readings fill again, home's *Some saved data was
+      damaged* banner → *Damaged data* lists the database, and `adb shell run-as app.mauri.sukrara ls databases/` shows
+      the kept `sukrara.db.corrupt-<time>` beside the new file.
 
 ## Q16 Tidepool upload
 
@@ -448,6 +460,8 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
 - [ ] Entry sheet: flip a dose → header updates, *Save* → snackbar *Entry changed · Undo*; all priming → *Remove from
       log*; TalkBack reads one node per dose with *Mark as injected / priming*.
 - [ ] Type 8u rapid within 45 min of a pen entry → *Already logged by your pen?*; carbs in the same save are saved.
+      Rotate with the question open: it is asked again. Over the lock screen the countdown ring stands still while it is
+      open; *Cancel* → the form, the ring runs again.
 - [ ] On Android 17 a pen tap from another app opens the card (no `does not have DISPATCH_NFC_MESSAGE permission` in
       logcat `NfcDispatcher`); a Libre tap with Sukrara closed opens the New sensor screen (0.11.47).
 - [ ] Taps blocked (the debug `PEN_TAGS --ez blocked true` command on the emulator, with *Open Sukrara when you scan
@@ -468,7 +482,22 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       Juggluco's App info; on the emulator Android's App info page for a missing app); `false` + resume → gone.
 - [ ] A bank / transit card or a passport held to the phone (reading on): nothing at all (no card, no vibration, no
       notification); only a pen tap shows the card (the filter is IsoDep + NfcA since 0.11.46).
-- [ ] Failed read → red card, REJECT haptic, nothing logged; a second one within 2 min adds the tips.
+- [ ] Failed read → red card, REJECT haptic, nothing logged; a second one within 2 min adds the tips. The card springs
+      up; while reading the wavy ring fills with a tick per segment; a logged dose pops a check and counts up (*8.5u
+      logged*); a failure shakes once. *Remove animations* on: none of it, a still ring, final numbers.
+- [ ] Home question card (`PEN_READ` with `1, 1.5` 40 min ago, and a typed 8u near an 8.5u read twice for *Same
+      injection?*): under the glucose card, never above it; *Log 1.5u* / *All priming* answer it and the next one fades
+      in; several typed entries → *Choose* → the sheet (radio rows, *None of these*, *Save* disabled until a choice);
+      the same sheet from Doses read; TalkBack reads amounts as units. Light, dark, largest font.
+- [ ] Add treatment with a pen (a real pen, on the phone, by the user): *Injected? Hold your pen to the phone.* under
+      the fields; holding the pen → *Reading your pen…*, the dose counts into Rapid (Long-acting for a long pen) and
+      *When* moves to its time, *Logged from your pen · 1.5u primed* + *Undo*; type carbs, *Save* → only the carbs are
+      new; change the dose by hand → *Already logged by your pen?*. A read card's *Add treatment* → the dialog at the
+      injection's time with the other insulin focused. Rapid typed by hand with a pen known → toast *… · Next time,
+      just tap your pen* (once a day, 3 times). A day without a read → *Pen read 1d ago* on the treatments' title opens
+      the pen. Carbs typed alone → *Injected? Hold your pen to the phone.* under the treatments for an hour.
+- [ ] Uploads (LibreView / Nightscout / Tidepool on): a pen dose goes up only 10 min after its last dose; a top-up
+      within those 10 min goes up as one entry.
 - [ ] *Notification after each read* off (default): a read posts no *Pen reads* notification (*Pen doses to check*
       still posts). On: the read's notification, silent, no heads-up; `dumpsys notification --noredact` shows it in
       Sukrara's info group (`g:app.mauri.sukrara.INFO`), never in `g:Aggregate_…` with the glucose card or an alert
@@ -476,7 +505,8 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       says *Blocked in Android settings* and opens the channel page.
 - [ ] Treatment dialog with pen reading on: no pen icon in the title row; a pen with nothing new → *Nothing new* under
       the fields for 3 s; a failed read → red *Couldn't read the pen* for 3 s.
-- [ ] Untested NovoPen 6 (`--es model novopen6`) → *Untested pen added*; *Set up* → the pen's page: red 10 s confirmation → display
+- [ ] Untested NovoPen 6 (a new pen whose doses are all whole units: `PEN_READ --es serial NP6000001 --es doses
+      "-30:4"`) → *Untested pen added*; *Set up* → the pen's page: red 10 s confirmation → display
       check; *It doesn't* → *Sukrara doesn't log this pen*.
 - [ ] *Your pens*: one row per pen (pen icon, not a pencil), *· Revisa sus ajustes* until its page was opened; no extra setup row.
 - [ ] Which pens work = the page's footer (always, also with reading off and no pen; no rows, no red tag): *Sukrara

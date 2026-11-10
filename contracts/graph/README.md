@@ -24,10 +24,12 @@ A case: `name`; optional `settings` (alert settings JSON, ../alerts/SPEC.md §3,
 
 The layout dump: which treatment labels are drawn, where and with what text (rules: docs/16-graph.md, "Treatment
 labels"). Run by `GraphFixtureTest.labels` (Android) and `-graphselftest` (Mac), which also checks that SF Pro's real
-width of each label fits the width model. A case: `name`; `chart` `{w, h}` (the chart's area, dp); `hours` (window);
+width of each label fits the width model. A case: `name`; optional `locale` (`es`: the labels' times in Spanish, "1 h 35 min", "ahora": the widths the Spanish card lays out, #77); `chart` `{w, h}` (the chart's area, dp); `hours` (window);
 `pct` (time in range has data, so the % column shows where the chart is ≥ 240 dp wide); `treatments` as above
 (`k`: rapid | long | carbs | note; times relative to "now"). Optional `marks` (Treatments on the graph): absent = the defaults (carbs: point
-only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). The file's `pctLabel` and `valueLabel` stand in for the widest
+only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). Optional
+`fontScale` (the system font size, absent = 1): the chart's text scale is it capped to 1…1.3 (`GlucoseGraph.textScale`):
+the labels, their rows and the side columns' widest labels grow by it; the geometry (marker spacing, the gap between labels, the 90 dp second-row threshold) doesn't. The file's `pctLabel` and `valueLabel` stand in for the widest
 % label and the widest value on the right (dp; the real ones are measured with the drawing font): each side column is
 it plus the gap of `layout/rules.json` on each side. `expect`:
 
@@ -41,6 +43,10 @@ it plus the gap of `layout/rules.json` on each side. `expect`:
 Positions are rounded to 0.5 dp; Android computes in `Float`, the Mac in `Double`. To add a case, write it with an
 empty `expect`, run `GraphFixtureTest` (`--rerun`: Gradle doesn't see the fixture files as inputs), check the dump in
 the failure message against the rules, paste it, and run the Mac self-test.
+
+## The card's words (`words/words.json`)
+
+Every word the card draws, English and Spanish (#77): the pill (*Eat carbs* / *Come hidratos*, *45m left* / *quedan 45 min*), the short durations (`duration_*`), the slots' periods and names (`period_*`, `slot_*_short`), the value's place (`card_*`), the range words and the chart's *Now*. Keys are Android's `core/graph` string names; run by `CardWordsFixtureTest` (Android, the resources' raw text in each language) and `CardWordsFixtureTests` (Mac, `CardWords.drawn` filled with the file's sample arguments). The Mac keeps these words in code (`CardWords`, SukraraGraph/A11y.swift: the widget extension has no String Catalog), so this file is what keeps the two in step. `layout/rules.json` `warmup` lists the Spanish warm-up words too (`es`), and the Mac renders the whole layout matrix a second time in Spanish (`LayoutTests.spanishWordsLayOutTheSameOnEverySurface`).
 
 ## Where the sensor badge goes (`place/place.json`)
 
@@ -174,6 +180,11 @@ with it, from 12 h or on another day; `date` after 6 days), run by `FreshnessFix
 - `layout/rules.json` `distribution`: the distribution's dot pitch, dot radius and the outline erased around the dots
   (`cut`, dp); both renderers' constants must equal them and every drawn distribution's erased box
   (`chart.distribution.cut`) is its dots' box (`chart.distribution.dots`) plus `cut` on the right and the top.
+- `layout/rules.json` `crowdedSlots`: slots beside the value smaller than `dp` are at most `max` (#71); both renderers'
+  constants equal them and every render is checked (CardLayoutTest, LayoutTests).
+- `layout/rules.json` `badge` `covered`: an hour label the sensor badge's erased outline would cut into is left out and recorded as
+  `chart.hour.covered` (compared as `time.text`, so the labels stay laid out as if the badge weren't there); no drawn hour
+  label starts inside the badge as drawn (`chart.sensor.drawn`) plus its erased outline (#71).
 - `layout/rules.json` `warmup`: a warming-up sensor's time left never passes for a value (#27): every render whose
   value's place shows the warm-up (`value.warmup`) draws it at most `maxText` dp tall and labelled
   (`value.warmup.text` starts with one of `words`: `Warming up · 40m`, `Almost ready`).

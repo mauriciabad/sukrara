@@ -110,6 +110,8 @@ struct GraphStyle {
     var marks = MarkShow.defaults
     /// The unit the range labels on the right are written in (the card's `CardStyle.unit`; the lines stay at mg/dL).
     var unit: GlucoseUnit = .mgdl
+    /// The language the chart's words are drawn in (the labels' times, the Now pill).
+    var words: CardWords = .en
 }
 
 /// Which parts of each kind's marks the chart draws (Settings › Graph › Treatments on the graph; schema `graph.marks`,
@@ -177,22 +179,6 @@ public struct MarkShow: Codable, Equatable, Sendable {
 /// What a slot beside the value shows (investigation 18): a time-in-range ring or one of the report's numbers.
 public enum SlotKind: String, Codable, CaseIterable, Sendable {
     case tir = "TIR", gmi = "GMI", average = "AVERAGE", cv = "CV"
-    var label: String {
-        switch self {
-        case .tir: "Time in range"
-        case .gmi: "GMI"
-        case .average: "Average glucose"
-        case .cv: "Variability (CV)"
-        }
-    }
-    var short: String {
-        switch self {
-        case .tir: ""
-        case .gmi: "GMI"
-        case .average: "avg"
-        case .cv: "CV"
-        }
-    }
 }
 
 /// One slot beside the value: its kind, window and, for a ring, which range its centre counts. `faded` = drawn
@@ -206,7 +192,6 @@ public struct RingSpec: Codable, Equatable, Sendable {
     public var order: [Band] = DEFAULT_RING_ORDER
     /// Whether the ring wears its `TirMark` (`GraphConfig.ringMarks`).
     public var marks = true
-    public var period: String { periodLabel(window) }
     public init(
         window: TimeInterval, range: TirRange = .inRange, kind: SlotKind = .tir, faded: Bool = true,
         order: [Band] = DEFAULT_RING_ORDER, marks: Bool = true
@@ -292,9 +277,12 @@ enum Goal: CaseIterable {
 /// A time share as the number of a percentage, without the "%": "64", "5.2", "70.2" (ShareText in GlucoseMetrics.kt,
 /// cases in spikes/graph-fixtures/share). Whole percent from 10 %, one decimal under 10 %, and more decimals (up to two)
 /// whenever rounding would put the number on the other side of its goal than the value or show "100" for a share that
-/// isn't all (100 is the crown's number, TirMark); a non-zero share too small to show is "<0.1", one too close to all ">99.9". [locale] nil = "." (the Mac's texts are English, like its other numbers).
+/// isn't all (100 is the crown's number, TirMark); a non-zero share too small to show is "<0.1", one too close to all ">99.9",
+/// none at all "0" (never "0.0": a figure with a decimal beside the value can be read as a glucose value). [locale] nil =
+/// "." (the Mac's texts are English, like its other numbers).
 enum ShareText {
     private static func format(_ x: Double, _ met: ((Double) -> Bool)?, _ locale: Locale?) -> String {
+        if x <= 0 { return "0" }
         func shown(_ d: Int) -> Double { let k = pow(10.0, Double(d + 2)); return (x * k).rounded() / k }
         var d = x < 0.095 ? 1 : 0
         // more decimals while rounding crosses the goal, or turns a share that isn't all into "100" (the crown's number)
@@ -308,11 +296,6 @@ enum ShareText {
     }
     /// Coverage against the report's 70 % (the "only … % has data" note).
     static func coverage(_ x: Double, locale: Locale? = nil) -> String { format(x, { $0 >= Goal.minCoverage }, locale) }
-}
-
-func periodLabel(_ s: TimeInterval) -> String {
-    let i = Int(s)
-    return i % 86400 == 0 ? "\(i / 86400)d" : "\(i / 3600)h"
 }
 
 /// What a whole glucose card shows: value header and/or chart, up to three rings (main first), the last-treatment slot
@@ -337,6 +320,17 @@ struct CardStyle {
     /// The unit every number of the card is written in (the user's setting): the value, the chart's range labels,
     /// the spoken sentence (contracts/settings/units.json).
     var unit: GlucoseUnit = .mgdl
+    /// The language the card's words are drawn in (the pill, the slots' periods, the value's place); the chart's are
+    /// `graph.words`, set together by `speaking`.
+    var words: CardWords = .en
+
+    /// This style drawing its words (the card's and its chart's) in `w`.
+    func speaking(_ w: CardWords) -> CardStyle {
+        var s = self
+        s.words = w
+        s.graph?.words = w
+        return s
+    }
 }
 
 /// Everything the graph settings decide (UserDefaults on the Mac; the widget gets it in its snapshot).

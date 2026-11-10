@@ -44,8 +44,20 @@ object GlucoseGraph {
     const val NOW_PILL_DP = 22f
     const val NOW_INSET_DP = 4f
 
-    /** Height of the sensor badge in the hour-label row (dp). */
+    /** Height of the sensor badge in the hour-label row (dp, at the chart's text scale). */
     const val SENSOR_DP = 10f
+
+    /** The hour labels' row under the plot, and a treatment label's box (dp, at the chart's text scale). */
+    const val TEXT_ROW_DP = 14f
+
+    /**
+     * The chart's text (hour and value labels, the % column, treatment labels, the sensor badge) grows with the system
+     * font size up to this (never smaller than its own size): at 2× it would crowd the plot out (#70).
+     */
+    const val MAX_TEXT_SCALE = 1.3f
+
+    /** The chart's text scale for the system's [fontScale] (1 … [MAX_TEXT_SCALE]). */
+    fun textScale(fontScale: Float): Float = if (fontScale.isNaN()) 1f else fontScale.coerceIn(1f, MAX_TEXT_SCALE)
 
     /** The side columns' margin (dp) on each side of their widest label (layout/rules.json "gaps"). */
     const val SIDE_GAP_DP = 3f
@@ -89,8 +101,11 @@ object GlucoseGraph {
         sensor: SensorBadge.Look?,
         rec: CardLayout,
         view: ChartView?,
+        fontScale: Float = 1f,
     ) {
         val nowS = input.nowS
+        // px per dp of text: the chart's words grow with the system font size, its geometry doesn't
+        val t = d * textScale(fontScale)
         // the window drawn: the view's (scrolled) or the last windowS up to now; everything is about it only
         val end = view?.endS?.coerceAtMost(nowS) ?: nowS
         val from = end - st.windowS
@@ -100,17 +115,17 @@ object GlucoseGraph {
         val text =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
-                textSize = 10 * d
+                textSize = 10 * t
             }
         val pctBig =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.ink
-                textSize = 13 * d
+                textSize = 13 * t
                 typeface = Typeface.create(Typeface.DEFAULT, 700, false)
             }
         val pctSmall =
             Paint(pctBig).apply {
-                textSize = 8.5f * d
+                textSize = 8.5f * t
                 color = pal.inkSoft
                 typeface = Typeface.DEFAULT
             }
@@ -182,14 +197,15 @@ object GlucoseGraph {
                         d,
                         input.words,
                         show,
+                        textScale(fontScale),
                     )
                 } else {
                     null
                 }
-            val lane1 = if (layout?.twoLanes == true) TreatmentMarks.LANE_DP * d else 0f
+            val lane1 = if (layout?.twoLanes == true) TreatmentMarks.LANE_DP * t else 0f
             val textRow = labels || layout?.labels?.isNotEmpty() == true
             val top = area.top + 3 * d
-            val bottom = area.bottom - (if (textRow) 14 * d else 0f) - lane1
+            val bottom = area.bottom - (if (textRow) TEXT_ROW_DP * t else 0f) - lane1
             val plotBottom = if (lane) bottom - 12 * d else bottom
             return Geo(left, right, layout, lane1, textRow, top, bottom, plotBottom, axisValues(top, plotBottom), valW)
         }
@@ -213,9 +229,9 @@ object GlucoseGraph {
             if (!eased) {
                 g.lane1
             } else {
-                (area.bottom - (if (g.textRow) 14 * d else 0f) - (if (lane) 12 * d else 0f) - plotBottom).coerceIn(
+                (area.bottom - (if (g.textRow) TEXT_ROW_DP * t else 0f) - (if (lane) 12 * d else 0f) - plotBottom).coerceIn(
                     0f,
-                    TreatmentMarks.LANE_DP * d,
+                    TreatmentMarks.LANE_DP * t,
                 )
             }
         val bottom =
@@ -249,7 +265,29 @@ object GlucoseGraph {
                 strokeWidth = 1 * d
                 pathEffect = DashPathEffect(floatArrayOf(2 * d, 3 * d), 0f)
             }
-        drawHours(cv, from, end, st, left, right, top, plotBottom, sideW, area.bottom - 2 * d - lane1, d, text, grid, layout, rec, ::x)
+        // the sensor badge as drawn (at the chart's text size), with its erased outline, at the start of the hour row:
+        // an hour label the outline would cut into is left out
+        val badgeEnd = if (sensor != null && labels) area.left + SensorBadge.width(sensor, SENSOR_DP * t) + BADGE_CUT_DP * d else null
+        drawHours(
+            cv,
+            from,
+            end,
+            st,
+            left,
+            right,
+            top,
+            plotBottom,
+            sideW,
+            area.bottom - 2 * d - lane1,
+            d,
+            t,
+            text,
+            grid,
+            layout,
+            badgeEnd,
+            rec,
+            ::x,
+        )
         // the values on the right, left-aligned SIDE_GAP_DP after the plot
         for ((v, ly) in values) {
             val s = label(v)
@@ -352,7 +390,7 @@ object GlucoseGraph {
                 val labelBottom = if (l.lane == 0) area.bottom - lane1 else area.bottom
                 rec.add(
                     "chart.label",
-                    RectF(l.left, labelBottom - 14 * d, l.left + l.w, labelBottom),
+                    RectF(l.left, labelBottom - TEXT_ROW_DP * t, l.left + l.w, labelBottom),
                     "${l.text} lane${l.lane}",
                     exact = true,
                 )
@@ -373,14 +411,15 @@ object GlucoseGraph {
                 nowS = nowS,
                 muteUntil = muteUntil,
                 show = show,
+                textScale = textScale(fontScale),
             )
         }
         if (view != null && view.now > 0f) drawNowPill(cv, view.now, right, top, pal, d, input.words, rec)
         // the sensor badge at the start of the hour labels' row, drawn last over what passes under it (its outline is
         // erased), so it never moves a label (labels are laid out as if it weren't there)
         if (sensor != null && labels) {
-            val sy = sensorTop(area.bottom, lane1, d)
-            val box = RectF(area.left, sy, area.left + sensorWidth(sensor.label, d), sy + SENSOR_DP * d)
+            val sy = sensorTop(area.bottom, lane1, d, textScale(fontScale))
+            val box = RectF(area.left, sy, area.left + sensorWidth(sensor.label, t), sy + SENSOR_DP * t)
             val c = BADGE_CUT_DP * d
             cv.drawRoundRect(
                 RectF(box.left - c, box.top - c, box.right + c, box.bottom + c),
@@ -388,8 +427,10 @@ object GlucoseGraph {
                 box.height() / 2 + c,
                 Paint(Paint.ANTI_ALIAS_FLAG).apply { blendMode = BlendMode.DST_OUT },
             )
-            SensorBadge.draw(cv, area.left, sy, SENSOR_DP * d, sensor, pal)
+            val drawnW = SensorBadge.draw(cv, area.left, sy, SENSOR_DP * t, sensor, pal)
             rec.add("chart.sensor", box, sensor.label, exact = true)
+            // the badge as drawn (the font's width, not the room it keeps free): what an hour label may not touch
+            rec.add("chart.sensor.drawn", RectF(area.left, sy, area.left + drawnW, sy + SENSOR_DP * t))
         }
         cv.restoreToCount(chartLayer)
     }
@@ -427,13 +468,16 @@ object GlucoseGraph {
         sideW: Float,
         baseline: Float,
         d: Float,
+        t: Float,
         text: Paint,
         grid: Paint,
         layout: TreatmentMarks.Layout?,
+        badgeEnd: Float?,
         rec: CardLayout,
         x: (Long) -> Float,
     ) {
-        val step = gridStep((right - left) / (st.windowS / 3600f), st.gridHours, d)
+        // labels a wider text needs further apart
+        val step = gridStep((right - left) / (st.windowS / 3600f), st.gridHours, t)
         // from a day up the lines fall on midnights and the labels are dates, fixed to the calendar so they don't shift
         val cal =
             Calendar.getInstance().apply {
@@ -456,10 +500,17 @@ object GlucoseGraph {
                     val lx = (gx - tw / 2).coerceIn(left, right - tw)
                     // a label squeezed against its neighbour is left out; a treatment label wins
                     if (lx > labelEnd + 6 * d && layout?.blocks(lx - 3 * d, lx + tw + 3 * d) != true) {
-                        cv.drawText(s, lx, baseline, text)
-                        rec.add("time.text", info = s)
-                        if (!anyLabel) rec.add("chart.hours")
-                        anyLabel = true
+                        val box = RectF(lx, baseline - text.textSize * 0.72f, lx + tw, baseline)
+                        if (badgeEnd != null && lx < badgeEnd) {
+                            // under the sensor badge (a stray "M" of "9 AM" was left beside "8d"): left out, as a
+                            // treatment label leaves it out, and laid out as if drawn so the others stay where they are
+                            rec.add("chart.hour.covered", box, s)
+                        } else {
+                            cv.drawText(s, lx, baseline, text)
+                            rec.add("time.text", box, s)
+                            if (!anyLabel) rec.add("chart.hours")
+                            anyLabel = true
+                        }
                         labelEnd = lx + tw
                     }
                 }
@@ -707,14 +758,18 @@ object GlucoseGraph {
         return areaLeft + pctCol to areaRight - if (labels) valW + 2 * SIDE_GAP_DP * d else 0f
     }
 
-    /** The top of the sensor badge, centred on the hour labels' x-height (contracts/graph/place). */
+    /**
+     * The top of the sensor badge, centred on the hour labels' x-height (contracts/graph/place); [textScale] = the
+     * chart's text scale ([textScale]).
+     */
     fun sensorTop(
         bottom: Float,
         lane1: Float,
         d: Float,
-    ): Float = bottom - 2 * d - lane1 - 3.6f * d - SENSOR_DP * d / 2
+        textScale: Float = 1f,
+    ): Float = bottom - 2 * d - lane1 - (3.6f + SENSOR_DP / 2) * d * textScale
 
-    /** The badge's width in the [TextModel] (the room kept free; the same on every platform). */
+    /** The badge's width in the [TextModel] (the room kept free; the same on every platform); [d] = px per dp of text. */
     fun sensorWidth(
         label: String,
         d: Float,

@@ -1,0 +1,57 @@
+{
+  "about": "THE sensor-life numbers and the warm-up rule (#87): the card's badge and warm-up and the alerts' quiet no_data decide with the same ones on every app (Android :core:model SensorTiming, Mac SukraraCore SensorTiming). A sensor is warming up from its start until its first reading, at most warmupGraceS past the warm-up's end; a sensor that doesn't say has a defaultWarmupMin warm-up and a defaultWearMin wear. Cases: times in seconds relative to now (negative = past); start, warmupEnd, latest (the newest reading's time, null = none) → expect warming. Run through the card's rule and the alert engine's on each app: SensorTimingFixtureTest in :core:alerts and :core:graph (Android), SensorTimingTests in CoreTests, AlertsTests and GraphTests (Mac).",
+  "warmupGraceS": 900,
+  "defaultWarmupMin": 60,
+  "defaultWearMin": 21600,
+  "cases": [
+    {
+      "name": "18 min into a 60-min warm-up, no reading yet",
+      "start": -1080,
+      "warmupEnd": 2520,
+      "latest": null,
+      "expect": { "warming": true }
+    },
+    {
+      "name": "not started yet",
+      "start": 60,
+      "warmupEnd": 3660,
+      "latest": null,
+      "expect": { "warming": false }
+    },
+    {
+      "name": "the old sensor's last reading doesn't end the warm-up",
+      "start": -600,
+      "warmupEnd": 3000,
+      "latest": -900,
+      "expect": { "warming": true }
+    },
+    {
+      "name": "a reading since the start ends the warm-up",
+      "start": -600,
+      "warmupEnd": 3000,
+      "latest": -60,
+      "expect": { "warming": false }
+    },
+    {
+      "name": "the warm-up ended 14 min ago without a reading: still warming (grace)",
+      "start": -4440,
+      "warmupEnd": -840,
+      "latest": null,
+      "expect": { "warming": true }
+    },
+    {
+      "name": "the warm-up ended 15 min ago without a reading: the grace is over",
+      "start": -4500,
+      "warmupEnd": -900,
+      "latest": null,
+      "expect": { "warming": false }
+    },
+    {
+      "name": "a 2-h warm-up (Dexcom G6) 90 min in",
+      "start": -5400,
+      "warmupEnd": 1800,
+      "latest": null,
+      "expect": { "warming": true }
+    }
+  ]
+}

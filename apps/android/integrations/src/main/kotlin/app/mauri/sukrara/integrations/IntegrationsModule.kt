@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.Broadcaster
@@ -109,6 +110,8 @@ class IntegrationsModule(
     private val clock: Clock,
     private val dispatchers: DispatcherProvider,
     log: (String) -> Unit,
+    /** Holds back the uploads of a pen entry while its session is open (`:pen`); none without pens. */
+    uploadHold: UploadHold = UploadHold.NONE,
 ) {
     val wearer: Flow<Boolean> = role.map { it == Role.Wearer }
 
@@ -129,6 +132,7 @@ class IntegrationsModule(
             clock,
             dispatchers.io,
             log,
+            uploadHold,
         )
 
     val libreView =
@@ -147,6 +151,7 @@ class IntegrationsModule(
             clock,
             dispatchers.io,
             log,
+            uploadHold,
         )
 
     val xdrip = XdripServer(settings, readings, sensor, jugglucoIsSource, clock, dispatchers.io)
@@ -164,6 +169,7 @@ class IntegrationsModule(
             clock,
             dispatchers.io,
             log,
+            hold = uploadHold,
         )
 
     private val lanWatcher = LanWatcher(context)
