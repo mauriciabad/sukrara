@@ -46,7 +46,7 @@ fi
 
 if [ "$mode" = --notarized ]; then
   for b in "$app" "$appex"; do
-    info="$(codesign -dvv "$b" 2>&1)"
+    info="$(codesign -dvv "$b" 2>&1 || true)"
     case "$info" in *"Authority=Developer ID Application:"*) ok "Developer ID: $(basename "$b")" ;;
       *) bad "$(basename "$b") isn't signed by a Developer ID Application identity" ;; esac
     case "$info" in *"flags="*"(runtime)"*) ok "hardened runtime: $(basename "$b")" ;;
