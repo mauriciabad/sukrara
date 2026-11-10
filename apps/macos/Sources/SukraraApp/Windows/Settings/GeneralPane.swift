@@ -263,7 +263,7 @@ struct FollowingRows: View {
         case .declined: L10n.t("The wearer declined. Ask them for a new invite.")
         case .inviteUsed: L10n.t("Another device used this invite. Ask for a new one.")
         case .revoked: L10n.t("The wearer stopped sharing with this Mac.")
-        case .broken(let why): L10n.t("Following stopped: \(why)")
+        case .broken(let why): L10n.t("Following stopped: \(why.text)")
         default: ""
         }
     }

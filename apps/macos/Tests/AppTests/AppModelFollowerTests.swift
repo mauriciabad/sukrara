@@ -46,7 +46,7 @@ import Testing
         snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
         model.apply(snapshot)
         #expect(alerts.nextWake != nil)
-        snapshot.link = .broken("Can't read the follower key from the Keychain")
+        snapshot.link = .broken(.keyUnreadable)
         snapshot.keychainUnreadable = true
         model.apply(snapshot)
         #expect(alerts.nextWake != nil)  // still armed: fires if the readings stop

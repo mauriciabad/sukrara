@@ -433,6 +433,38 @@
         }
       }
     },
+    "Can't read the follower key from the Keychain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read the follower key from the Keychain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer la clave para seguir en el Llavero"
+          }
+        }
+      }
+    },
+    "Can't remove the follower key from the Keychain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't remove the follower key from the Keychain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede borrar la clave para seguir del Llavero"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "localizations" : {
         "en" : {
@@ -2397,6 +2429,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Los códigos no coincidían, así que no se ha compartido nada. Vuelve a probar junto al móvil de la persona a la que sigues."
+          }
+        }
+      }
+    },
+    "The follower state is damaged; stop following and join again" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The follower state is damaged; stop following and join again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los datos para seguir están dañados; deja de seguir y vuelve a unirte"
           }
         }
       }

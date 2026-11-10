@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 import Observation
+import SukraraCore
 import SukraraShare
 
 /// Why following didn't start (`FollowerJoinError`, mapped by the runtime adapter).
@@ -40,7 +41,18 @@ public enum FollowStatus: Equatable, Sendable {
     case waiting(wearer: String?, pairing: LinkState.PairingCheck?)
     case following(wearer: String?, lastReading: Date?, canWrite: Bool)
     case declined, inviteUsed, revoked
-    case broken(String)
+    case broken(LinkProblem)
+}
+
+extension LinkProblem {
+    /// Why following stopped, in words (Settings › Following, the panel).
+    var text: String {
+        switch self {
+        case .keyUnreadable: L10n.t("Can't read the follower key from the Keychain")
+        case .stateDamaged: L10n.t("The follower state is damaged; stop following and join again")
+        case .keyNotRemoved: L10n.t("Can't remove the follower key from the Keychain")
+        }
+    }
 }
 
 /// A phone nearby offering pairing (`NearbyOffer`).

@@ -386,7 +386,7 @@ public final class AppModel {
             return L10n.t("Not monitoring: offline development build (no sensor, internet or alerts)")
         }
         // shown over the stored readings too: with the Keychain unreadable no new reading can arrive
-        if case .broken(let why) = link, !lanMonitoring { return L10n.t("Not monitoring: \(why)") }
+        if case .broken(let why) = link, !lanMonitoring { return L10n.t("Not monitoring: \(why.text)") }
         guard readings.isEmpty else { return nil }
         if !followMonitoring, lanSent != nil, let why = Self.lanReason(lanSnapshot.state) { return why }
         switch link {
@@ -396,7 +396,7 @@ public final class AppModel {
         case .declined: return L10n.t("Not monitoring: the wearer declined")
         case .inviteUsed: return L10n.t("Not monitoring: the invite was used by another device")
         case .revoked: return L10n.t("Not monitoring: the wearer stopped sharing")
-        case .broken(let why): return L10n.t("Not monitoring: \(why)")
+        case .broken(let why): return L10n.t("Not monitoring: \(why.text)")
         }
     }
 

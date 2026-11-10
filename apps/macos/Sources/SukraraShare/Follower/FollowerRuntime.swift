@@ -165,7 +165,7 @@ public actor FollowerRuntime: FollowerService {
             data = try secrets.read(account: account)
         } catch {
             Self.log.error("follower state unreadable: \(String(describing: error), privacy: .public)")
-            link = .broken("Can't read the follower key from the Keychain")
+            link = .broken(.keyUnreadable)
             keychainUnreadable = true
             if keychainRetry == nil { keychainRetry = Task { await self.retryKeychain() } }
             return await publishSnapshot()
@@ -181,7 +181,7 @@ public actor FollowerRuntime: FollowerService {
             persisted = state
             persistedAt = clock.now
         } catch {
-            link = .broken("The follower state is damaged; stop following and join again")
+            link = .broken(.stateDamaged)
             return await publishSnapshot()
         }
         await serially(.connect)
@@ -421,7 +421,7 @@ public actor FollowerRuntime: FollowerService {
             try secrets.delete(account: account)
             link = .notFollowing
         } catch {
-            link = .broken("Can't remove the follower key from the Keychain")
+            link = .broken(.keyNotRemoved)
         }
         if searchingNearby { startNearby() }
         await publishSnapshot()
