@@ -112,8 +112,13 @@ interface ReadingsRepository {
     suspend fun deleteFrom(sources: Set<SourceId>): Int
 }
 
-/** How a treatment reached this phone and whether the wearer has it (followers write through an outbox). */
-enum class TreatmentDelivery { Local, Pending, Delivered }
+/**
+ * How a treatment reached this phone and whether the wearer has it (followers write through an outbox): [Local] = the
+ * wearer's own, [Pending] = a writer's version on its way, [Delivered] = a relay or the wearer's phone has it, [Failed]
+ * = nothing took it within 2 minutes (or it couldn't be sent at all): shown as *Not sent* with *Retry*, and still sent
+ * again on every connect.
+ */
+enum class TreatmentDelivery { Local, Pending, Delivered, Failed }
 
 /**
  * A stored treatment with what sharing needs: [creator] (the key that created it; writers may change only their
@@ -134,7 +139,10 @@ data class TreatmentRecord(
     val imported: Boolean get() = importedFrom != null
 }
 
-/** Treatments (Room), last-writer-wins on `Treatment.modifiedAt`. Deleted ones stay as tombstones for sync. */
+/**
+ * Treatments (Room), merged by the contract's `(u, o)` ([app.mauri.sukrara.core.model.supersedes]). Deleted ones stay
+ * as tombstones for sync.
+ */
 interface TreatmentsRepository {
     /** Not-deleted treatments with `at` in [from, to), oldest first, updated live. */
     fun between(
@@ -144,7 +152,10 @@ interface TreatmentsRepository {
 
     suspend fun get(id: String): TreatmentRecord?
 
-    /** Stores [record] unless a version with a later (or equal) `modifiedAt` is stored; returns true when stored. */
+    /**
+     * Stores [record] only if it [supersedes][app.mauri.sukrara.core.model.supersedes] the stored version (or none is
+     * stored); returns true when stored.
+     */
     suspend fun upsertIfNewer(record: TreatmentRecord): Boolean
 
     /** Every record changed after [since], tombstones included (sync). */

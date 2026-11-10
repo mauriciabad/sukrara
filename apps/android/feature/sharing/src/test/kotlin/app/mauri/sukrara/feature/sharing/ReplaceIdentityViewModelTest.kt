@@ -17,8 +17,12 @@ import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityViewModel
 import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.share.owner.EpochKey
 import app.mauri.sukrara.share.owner.OwnerShareState
+import app.mauri.sukrara.share.owner.OwnerState
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
+import app.mauri.sukrara.share.owner.usecase.Step
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -114,6 +118,43 @@ class ReplaceIdentityViewModelTest {
             var left = false
             vm.back { left = true }
             assertTrue(left)
+        }
+
+    /** #161: the followers are told first (*Telling your followers…* with Cancel); Cancel keeps the identity. */
+    @Test
+    fun `telling the followers shows progress, Cancel keeps the identity and the page says so`() =
+        runTest {
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            sharing.followersToTell = 2
+            vm.startFresh()
+            assertEquals(TellingFollowers(2, 0), vm.ui.first { it.telling != null }.telling)
+            assertTrue(vm.ui.value.busy)
+            vm.cancel()
+            val kept = vm.ui.first { it.cancelled }
+            assertEquals(FreshUi.Idle, kept.fresh)
+            assertEquals(null, kept.telling)
+            assertFalse(kept.done)
+            assertEquals(listOf("startFresh:Ana:replace", "cancelReplace"), sharing.calls)
+
+            // the restore path: a cancelled replace returns to the form, nothing failed
+            hub.live(clock)
+            vm.ui.first { it.gate.open }
+            vm.chooseRestore()
+            assertFalse(vm.ui.first { it.step == ReplaceStep.Restore }.cancelled)
+            sharing.restoreResult = RestoreIdentity.Result.Restored(Step(OwnerState("i", "d", "s", listOf(EpochKey(1, "g")))), 2)
+            vm.restore("nsec1code", null)
+            vm.ui.first { it.telling != null }
+            vm.cancel()
+            val back = vm.ui.first { it.cancelled }
+            assertEquals(RestoreUi.Idle, back.restore)
+            assertEquals(ReplaceStep.Restore, back.step)
+
+            // told without Cancel: replaced
+            vm.restore("nsec1code", null)
+            vm.ui.first { it.telling != null }
+            sharing.finishTelling()
+            assertEquals(RestoreUi.Restored(2), vm.ui.first { it.done }.restore)
         }
 
     private class Hub : GlucoseHub {

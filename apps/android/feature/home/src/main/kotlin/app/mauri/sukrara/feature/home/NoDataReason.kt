@@ -6,11 +6,13 @@ package app.mauri.sukrara.feature.home
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.graph.GlucoseLook
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -56,6 +58,24 @@ sealed interface NoDataReason {
         override val action = HomeAction.EnableBluetooth
     }
 
+    /**
+     * Another app took the sensor over (the official app, Juggluco: it keeps refusing Sukrara): close that app, then
+     * take the sensor back with a scan (the new-sensor flow's takeover).
+     */
+    data object UsedByAnotherApp : NoDataReason {
+        override val action = HomeAction.PairSensor
+    }
+
+    /** The saved pairing can't be used: scan the sensor with the phone (NFC) again; the sensor keeps running. */
+    data object ScanNeeded : NoDataReason {
+        override val action = HomeAction.PairSensor
+    }
+
+    /** A sensor found by a scan refused the pairing (wrong id, PIN not entered): pair it again. */
+    data object PairAgain : NoDataReason {
+        override val action = HomeAction.PairSensor
+    }
+
     /** Android refused to start monitoring in the background. */
     data object MonitoringStopped : NoDataReason {
         override val action = HomeAction.ResumeMonitoring
@@ -63,6 +83,14 @@ sealed interface NoDataReason {
 
     data object SensorEnded : NoDataReason {
         override val action = HomeAction.PairSensor
+    }
+
+    /**
+     * The phone's clock is behind the readings by [ahead], so the new ones are dropped (#50): they'd look fresh for too
+     * long. Set the date and time right (automatic); the next reading clears it.
+     */
+    data class ClockBehind(val ahead: Duration) : NoDataReason {
+        override val action = HomeAction.OpenDateSettings
     }
 
     data class WarmingUp(val readyAt: Instant) : NoDataReason {
@@ -98,6 +126,8 @@ sealed interface NoDataReason {
             val latest = state.latest
             val valueShown = look.shown
             val sensor = state.sensor
+            val needed = (sensor as? SensorState.ActionNeeded)?.action?.reason()
+            val clock = state.clockBehind
             return when {
                 state.notMonitoring == NotMonitoringReason.SetupIncomplete -> SetupIncomplete
 
@@ -106,6 +136,9 @@ sealed interface NoDataReason {
                 state.sensor == SensorState.CoreMissing -> CoreMissing
 
                 state.sensor == SensorState.Ended -> SensorEnded
+
+                // even while the last value shows: every new reading is being dropped, and its age reads wrong
+                clock != null -> ClockBehind(clock.ahead)
 
                 sensor is SensorState.WarmingUp && look.state == GlucoseLook.State.WARMING_UP -> WarmingUp(sensor.readyAt)
 
@@ -120,6 +153,9 @@ sealed interface NoDataReason {
 
                 latest == null && state.notMonitoring == NotMonitoringReason.NoSensorYet -> NoSensorYet(follower)
 
+                // nothing comes until the person acts: say what to do, never "it reconnects on its own"
+                !follower && needed != null -> needed
+
                 follower -> WearerSilent(state.link?.lastHeardAt ?: latest?.t)
 
                 else -> NoReadings((state.source as? SourceStatus.Interrupted)?.since ?: latest?.t)
@@ -127,6 +163,15 @@ sealed interface NoDataReason {
         }
     }
 }
+
+/** The no-data reason for what the sensor needs, or null: the others have their own place (permission, sign-in). */
+private fun SensorAction.reason(): NoDataReason? =
+    when (this) {
+        SensorAction.TakeOver -> NoDataReason.UsedByAnotherApp
+        SensorAction.ScanSensor -> NoDataReason.ScanNeeded
+        SensorAction.PairAgain -> NoDataReason.PairAgain
+        SensorAction.SignInLibreView, SensorAction.GrantBluetooth -> null
+    }
 
 /** Something the home screen asks the app to do (routed by `:app`; home never navigates by itself). */
 sealed interface HomeAction {
@@ -140,9 +185,17 @@ sealed interface HomeAction {
 
     data object EnableBluetooth : HomeAction
 
+    /** Android's date and time settings (the phone's clock is behind). */
+    data object OpenDateSettings : HomeAction
+
     data object ResumeMonitoring : HomeAction
 
     data object AddTreatment : HomeAction
+
+    /** A row of the treatment list: the treatment dialog edits that entry (amount, time, note). */
+    data class EditTreatment(
+        val id: String,
+    ) : HomeAction
 
     /** Add treatment with Carbs ([carbs]) or Rapid focused: the card's *Eat carbs* / *Take insulin* pill. */
     data class Treat(

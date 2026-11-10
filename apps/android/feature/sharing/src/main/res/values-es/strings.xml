@@ -8,6 +8,10 @@
     <string name="sh_setup_cancel">Cancelar</string>
     <string name="sh_setup_continue">Continuar</string>
     <string name="sh_setup_later">Más tarde</string>
+    <string name="sh_setup_test_title">Enviar una alerta de prueba</string>
+    <string name="sh_setup_test_body">La alerta real, marcada como prueba. Pruébala con No molestar activado.</string>
+    <string name="sh_setup_test_sent">Enviada: mira tus notificaciones. Se va sola en 2 min.</string>
+    <string name="sh_setup_test_send">Enviar</string>
     <string name="sh_setup_skip">Omitir</string>
     <string name="sh_setup_start">Empezar</string>
     <string name="sh_setup_allow">Permitir</string>
@@ -278,7 +282,7 @@
     <string name="sh_replace_lose_title">Lo que pierden tus seguidores</string>
     <string name="sh_replace_lose_named">Tu glucosa deja de llegar a %1$s al instante.</string>
     <string name="sh_replace_lose_none">Ahora nadie sigue esta identidad.</string>
-    <string name="sh_replace_lose_invite">Cada uno necesita una invitación nueva tuya para volver a seguirte. Hasta entonces su Sukrara avisa de que no llegan datos.</string>
+    <string name="sh_replace_lose_invite">Su Sukrara dice que dejaste de compartir, no que no llegan datos. Cada uno necesita una invitación nueva tuya para volver a seguirte.</string>
     <string name="sh_replace_lose_pending">Las solicitudes pendientes y las invitaciones sin usar dejan de funcionar.</string>
     <string name="sh_replace_not_backed_up">Esta identidad no tiene copia de seguridad: una vez sustituida, se pierde para siempre.</string>
     <string name="sh_replace_back_up_first">Hacer copia primero</string>
@@ -293,6 +297,10 @@
     <string name="sh_replace_confirm_check">Entiendo que habrá que volver a invitarlos</string>
     <string name="sh_replace_confirm_restore">Sustituir</string>
     <string name="sh_replace_fresh_busy">Creando la identidad nueva…</string>
+    <string name="sh_replace_telling">Avisando a tus seguidores…</string>
+    <string name="sh_replace_telling_text">Así su Sukrara dice que dejaste de compartir en vez de avisar de que no llegan datos. Tarda unos segundos; después se sustituye la identidad.</string>
+    <string name="sh_replace_telling_count">%1$d de %2$d avisados</string>
+    <string name="sh_replace_cancelled">Cancelado. No ha cambiado nada: tus seguidores siguen recibiendo tu glucosa.</string>
     <string name="sh_replace_fresh_failed">No se ha podido crear la identidad nueva. No ha cambiado nada: vuelve a intentarlo.</string>
     <string name="sh_replace_done_restore">Sustituida. %1$d seguidores de la identidad restaurada siguen ahora este móvil.</string>
     <string name="sh_replace_done_fresh">Has empezado de cero. Nadie sigue este móvil todavía: vuelve a invitar a tus seguidores.</string>

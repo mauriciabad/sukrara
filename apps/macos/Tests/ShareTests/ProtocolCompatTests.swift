@@ -12,8 +12,10 @@ import Testing
 /// stores must end as the fixture says. `rotation.json` is also the identity-restore case: a new device key and
 /// epoch delivered to every follower, a roster with only the new device, late rosters from the old one ignored —
 /// the link stays "following" with no action. `revoke-reapprove.json` relaunches the runtime mid-sequence: a removed
-/// and re-approved Mac keeps following when the relays replay the old revoked notice. The wire format itself is pinned by the
-/// OGS vectors (Python reference, `FollowerRuntimeTests.joinRequestThenFollowFillsTheStores`).
+/// and re-approved Mac keeps following when the relays replay the old revoked notice. `replace-identity.json` is the
+/// wearer replacing their identity: the notice it sends first leaves the link `revoked` ("The wearer stopped sharing
+/// with this Mac", which ends monitoring: no No data alarm), also after a relaunch. The wire format itself is pinned by
+/// the OGS vectors (Python reference, `FollowerRuntimeTests.joinRequestThenFollowFillsTheStores`).
 struct ProtocolCompatTests {
     @Test(arguments: SyncFixtureTests.followerSequences)
     func replayThroughTheRuntime(_ name: String) async throws {
@@ -89,6 +91,15 @@ struct ProtocolCompatTests {
         #expect(settings?.u == (expected["settings"] as? [String: Any])?["u"] as? Int, "\(name)")
         if saved.status == .active {
             #expect(await h.runtime.isFollowing, "\(name): still following")
+        }
+        // What the panel, the menu bar and the widgets show comes from the snapshot's link.
+        if saved.status == .revoked {
+            var link: LinkState?
+            for await snapshot in await h.runtime.snapshots() {
+                link = snapshot.link
+                break
+            }
+            #expect(link == .revoked, "\(name): stopped sharing")
         }
         await h.runtime.stop()
     }

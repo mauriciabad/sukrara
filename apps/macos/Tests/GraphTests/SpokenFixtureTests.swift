@@ -49,22 +49,12 @@ import Testing
         let data = CardData(
             readings: (history ?? []) + [latest].compactMap { $0 }, sensor: sensor,
             alerts: CardAlerts(status: status(c.string("status"))), now: now)
-        // the reading's time in either clock cycle: LayoutTests switch `Clock.hour24Source` while this runs
-        let times =
-            latest.map { r in
-                let text = Freshness.timeText(r.t, now: now)
-                let d = Date(timeIntervalSince1970: r.t)
-                return [text]
-                    + [true, false].map {
-                        text.replacingOccurrences(
-                            of: Clock.time(d, hour24: $0, locale: .autoupdatingCurrent),
-                            with: Clock.time(d, hour24: !$0, locale: .autoupdatingCurrent))
-                    }
-            } ?? [""]
+        // the reading's time as the clock writes it here (another test's 12 / 24-hour switch is its task's own)
+        let time = latest.map { Freshness.timeText($0.t, now: now) } ?? ""
         for (lang, words) in Self.languages {
-            let want = Set(times.map { (c.expect.string(lang) ?? "?").replacingOccurrences(of: "{time}", with: $0) })
+            let want = (c.expect.string(lang) ?? "?").replacingOccurrences(of: "{time}", with: time)
             let got = A11y.card(data, unit: unit, surface: .widgetCombined, style: style, words: words)
-            #expect(want.contains(got), "\(lang): \(got)")
+            #expect(got == want, "\(lang): \(got)")
         }
     }
 

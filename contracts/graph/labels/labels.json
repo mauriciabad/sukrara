@@ -100,6 +100,24 @@
                 "labels": [
                   {"ids": ["r1"], "text": "4u 1h 4m", "lane": 0, "x": 191.5},
                   {"ids": ["l1"], "text": "18u 10m", "lane": 0, "x": 260.5}]}},
+    {"name": "font 2× (the chart's text at 1.3×), 4×2, 3 h: the bigger labels no longer fit side by side, so the snack's takes the second row", "chart": {"w": 300, "h": 93}, "hours": 3, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c1", "k": "carbs", "a": 45, "t": -5700}, {"id": "c2", "k": "carbs", "a": 15, "t": -2400}, {"id": "r2", "k": "rapid", "a": 2, "t": -1200}], "fontScale": 2.0,
+     "expect": {"plot": [54, 267], "lanes": 2, "dropped": [],
+                "labels": [
+                  {"ids": ["r1", "c1"], "text": "4.5u · 45g 1h 35m", "lane": 0, "x": 154.5},
+                  {"ids": ["c2"], "text": "15g 40m", "lane": 1, "x": 220},
+                  {"ids": ["r2"], "text": "2u 20m", "lane": 0, "x": 243.5}]}},
+    {"name": "font 2× (the chart's text at 1.3×), app, 12 h: the plot is narrower, so the corrections' pair keeps its label and the lone snack's is the one left out (markers stay)", "chart": {"w": 328, "h": 210}, "hours": 12, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 1, "t": -11400}, {"id": "r2", "k": "rapid", "a": 1.5, "t": -10200}, {"id": "c1", "k": "carbs", "a": 10, "t": -9600}, {"id": "n1", "k": "note", "a": 0, "t": -9000}, {"id": "r3", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c2", "k": "carbs", "a": 45, "t": -5700}, {"id": "c3", "k": "carbs", "a": 15, "t": -2400}, {"id": "r4", "k": "rapid", "a": 2, "t": -1200}], "fontScale": 2.0,
+     "expect": {"plot": [54, 295], "lanes": 2, "dropped": [["c1"]],
+                "labels": [
+                  {"ids": ["r1", "r2"], "text": "1u · 1.5u 2h 50m", "lane": 0, "x": 185},
+                  {"ids": ["r3", "c2"], "text": "4.5u · 45g 1h 35m", "lane": 1, "x": 263.5},
+                  {"ids": ["r4", "c3"], "text": "2u · 15g 20m", "lane": 0, "x": 285}]}},
+    {"name": "font 2× (the chart's text at 1.3×), 2×2 graph widget, 12 h: the narrower plot brings the snack's marker within 9 dp of the meal's, so the three share one label", "chart": {"w": 150, "h": 150}, "hours": 12, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 6, "t": -29400}, {"id": "c1", "k": "carbs", "a": 60, "t": -28800}, {"id": "r2", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c2", "k": "carbs", "a": 45, "t": -5700}, {"id": "c3", "k": "carbs", "a": 15, "t": -2400}, {"id": "r3", "k": "rapid", "a": 2, "t": -1200}], "fontScale": 2.0,
+     "expect": {"plot": [0, 117], "lanes": 2, "dropped": [],
+                "labels": [
+                  {"ids": ["r1", "c1"], "text": "6u · 60g 8h", "lane": 0, "x": 38.5},
+                  {"ids": ["r2", "c2", "c3"], "text": "4.5u · 45g · 15g 40m", "lane": 1, "x": 83.5},
+                  {"ids": ["r3"], "text": "2u 20m", "lane": 0, "x": 114}]}},
     {"name": "es, 4×2, 3 h: the meal, snack and correction with Spanish times (#77): '1 h 35 min', '40 min' are wider than '1h 35m', '40m'", "locale": "es", "chart": {"w": 300, "h": 93}, "hours": 3, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c1", "k": "carbs", "a": 45, "t": -5700}, {"id": "c2", "k": "carbs", "a": 15, "t": -2400}, {"id": "r2", "k": "rapid", "a": 2, "t": -1200}],
      "expect": {"plot": [43, 273.5], "lanes": 2, "dropped": [],
                 "labels": [

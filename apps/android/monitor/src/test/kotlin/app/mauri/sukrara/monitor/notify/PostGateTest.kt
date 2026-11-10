@@ -31,6 +31,20 @@ class PostGateTest {
     }
 
     @Test
+    fun `counts what was posted and what was skipped as nothing new (Settings › Advanced)`() {
+        submit("a")
+        submit("a")
+        now += 100
+        submit("b")
+        submit("c") // folds b
+        now += 900
+        runDue()
+        submit("c")
+        assertEquals(listOf("a", "c"), posts)
+        assertEquals(PostCounts(posted = 2, skipped = 3), gate.counts.value)
+    }
+
+    @Test
     fun `a burst is folded into one post at the end of the gap, the latest winning`() {
         submit("a")
         now += 100

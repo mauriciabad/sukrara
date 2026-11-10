@@ -328,6 +328,7 @@ with *Pair new sensor*, *Read glucose from* *This phone* / *Juggluco*, the senso
 | Calibration entry | All ported families are factory calibrated; the optional on-sensor calibration isn't offered. |
 | The banner for followers and on the Mac | It's about the wearer's own sensor. |
 | **CareSens Air** | mg/dL only exists inside the vendor's `libCALCULATION.so`, and the BLE key is lifted from the vendor app. Both rules. |
+| The G7 J-PAKE round vectors (`g7-jpake-rounds.txt`) in `contracts/sensor/traces` | Nothing reads them: Sukrara doesn't do the G7's own pairing (above). The driver tests read the other traces from `contracts/sensor/traces`, the only copy (#51); the vectors stay in the spike. |
 | **Sibionics GS1 / GS1Sb** | Raw counts plus a vendor algorithm library; keys recovered from the vendor binary. |
 | **Sibionics GS3** | No vendor algorithm, but vendor keys from the same binary **and** a login to `cgm.sibionics.io` for the account id baked into the auth frame. Parked, not refused: revisit if the account id can come from the user's own session. |
 | **Libre 2 / 2 Plus, Libre 1 bridges, Medtrum** | Raw values: either Abbott's library or an unvalidated reimplementation (Libre), or finger-stick calibration (Medtrum). Same decision as inv. 02. |

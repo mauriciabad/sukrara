@@ -32,6 +32,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentQuiet
@@ -43,7 +44,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.Duration
 import java.time.Instant
 import app.mauri.sukrara.alerts.AlertUiState as EngineUiState
 import app.mauri.sukrara.alerts.TreatmentKind as EngineTreatmentKind
@@ -74,6 +74,8 @@ class AlertRuntime(
     private val log: (String) -> Unit = {},
     /** Saves what the phone needs before the first unlock after a restart (`LockedBootStore`), with every save. */
     private val lockedBoot: (LockedBootPlan) -> Unit = {},
+    /** The monotonic clock in s (`SystemClock.elapsedRealtime`): a wall clock set back is measured exactly. */
+    private val elapsed: () -> Long? = { null },
 ) : AlertControls {
     private val mutex = Mutex()
     private var started = false
@@ -84,6 +86,12 @@ class AlertRuntime(
     private var monitoring = false
     private var doses = Doses()
     private var sensor: SensorWindow? = null
+
+    /**
+     * When monitoring started (epoch s) as last given to the machine (it keeps its own copy): no data counts from it
+     * until the source delivers a reading, also with none ever.
+     */
+    private var sourceStart: Long? = null
     private var who: String? = null
     private var fedReadingAt: Long? = null
 
@@ -95,6 +103,9 @@ class AlertRuntime(
 
     /** Which alert each group's notification shows (from the effects), and the muted cards up. */
     private val firing = HashMap<AlertGroup, Firing>()
+
+    /** The kind each group last rang (shown or not since): a level change inside one alert gets its history line. */
+    private val lastFired = HashMap<AlertGroup, AlertKind>()
     private val mutedCards = HashMap<AlertGroup, Pair<Side, Long>>()
     private val shownRelax = HashMap<AlertGroup, Int>()
 
@@ -146,12 +157,14 @@ class AlertRuntime(
             started = true
             (firing.keys + mutedCards.keys).forEach { g -> attempt(Step.Notify, g) { presenter.clear(g) } }
             firing.clear()
+            lastFired.clear()
             mutedCards.clear()
             shownRelax.clear()
             machine = null
             role = null
             monitoring = false
             sensor = null
+            sourceStart = null
             fedReadingAt = null
             failed.clear()
             notes = emptyList()
@@ -222,6 +235,12 @@ class AlertRuntime(
             who = state.link?.wearerName
             val monitoringNow = state.monitoringStartedAt != null
             val window = windowOf(state.sensor)
+            // before no data turns on: it counts from the source's start, never from an older source's last reading
+            val started = state.monitoringStartedAt?.epochSecond
+            if (started != sourceStart) {
+                sourceStart = started
+                run(AlertInput.Source(started), now)
+            }
             if (r != role || monitoringNow != monitoring) {
                 monitoring = monitoringNow
                 rebuildOrUpdate(r, now)
@@ -271,6 +290,7 @@ class AlertRuntime(
                 is AlertInput.Settings -> own = input.settings
                 is AlertInput.Treatments -> doses = input.doses
                 is AlertInput.Sensor -> sensor = input.sensor
+                is AlertInput.Source -> sourceStart = input.startedAt
                 else -> Unit
             }
             run(input, now())
@@ -309,6 +329,7 @@ class AlertRuntime(
         // a new role: the old role's notifications go; the machine drops a saved state of another role
         firing.keys.toList().forEach { g -> attempt(Step.Notify, g) { presenter.clear(g) } }
         firing.clear()
+        lastFired.clear()
         mutedCards.clear()
         unposted.clear()
         if (alertRole == null) {
@@ -324,15 +345,18 @@ class AlertRuntime(
     private suspend fun startMachine(alertRole: AlertRole, saved: AlertState?, now: Long): List<AlertEffect> {
         val m = AlertMachine(alertRole, effectiveSettings(alertRole), doses, newId)
         machine = m
-        val effects = m.start(saved, saved?.local?.last, sensor, now)
+        val effects = m.start(saved, saved?.local?.last, sensor, now, elapsed())
         fedReadingAt = saved?.local?.last?.t
-        return applyAndSave(m, effects, now)
+        // a machine that starts without a saved state of its role (a new role) learns when monitoring started
+        val fresh = saved?.role != alertRole && sourceStart != null
+        val source = if (fresh) m.handle(AlertInput.Source(sourceStart), now, elapsed()) else emptyList()
+        return applyAndSave(m, effects + source, now)
     }
 
     private suspend fun run(input: AlertInput, now: Long): List<AlertEffect> {
         val m = machine ?: return emptyList()
         val effective = if (input is AlertInput.Settings) AlertInput.Settings(effectiveSettings()) else input
-        return applyAndSave(m, m.handle(effective, now), now, input)
+        return applyAndSave(m, m.handle(effective, now, elapsed()), now, input)
     }
 
     /**
@@ -349,8 +373,9 @@ class AlertRuntime(
         input: AlertInput? = null,
     ): List<AlertEffect> {
         val muteAll = m.uiState(now).muteAllUntil
-        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll))
+        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll, lastFired))
         muteAllSeen = muteAll
+        effects.filterIsInstance<AlertEffect.Fire>().forEach { lastFired[it.firing.kind.group] = it.firing.kind }
         effects.filterIsInstance<AlertEffect.Schedule>().forEach { e -> attempt(Step.Alarm) { alarm.set(e.at) } }
         val firedNow = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
         retryUnposted(m, now, skip = firedNow)
@@ -396,6 +421,7 @@ class AlertRuntime(
 
     /** Posts [f] in [group]'s slot; a refusal is remembered with its sound, for [retryUnposted]. */
     private suspend fun post(m: AlertMachine, group: AlertGroup, f: Firing, silent: Boolean, relax: Int) {
+        if (!silent) presenter.beforeRing()
         if (attempt(Step.Notify, group) { presenter.show(f, m.settings, silent, whoFor(m), relax) }) {
             unposted.remove(group)
         } else {
@@ -499,7 +525,7 @@ class AlertRuntime(
         }
         // the machine's settings already have no data off before monitoring started
         lockedBoot(
-            LockedBootPlan.of(m?.settings, monitoring, snapshot?.local?.last?.t, m?.uiState(now())?.muteAllUntil ?: 0, sensor),
+            LockedBootPlan.of(m?.settings, monitoring, m?.engine?.noDataSince(), m?.uiState(now())?.muteAllUntil ?: 0, sensor),
         )
     }
 
@@ -565,9 +591,11 @@ class AlertRuntime(
                     s.endsAt?.let { SensorWindow(startEpoch = 0, endEpoch = it.epochSecond, warmupEndEpoch = 0) }
                 }
 
+                // the card's dates for the same state (`cardInfo`): start = ready − the default warm-up
                 is SensorState.WarmingUp -> {
                     s.readyAt.epochSecond.let { ready ->
-                        SensorWindow(ready - SensorWindow.DEFAULT_WARMUP_MIN * 60L, ready + WEAR_S, ready)
+                        val start = ready - SensorTiming.DEFAULT_WARMUP_MIN * 60L
+                        SensorWindow(start, start + SensorTiming.DEFAULT_WEAR_MIN * 60L, ready)
                     }
                 }
 
@@ -579,8 +607,6 @@ class AlertRuntime(
                     null
                 }
             }
-
-        private val WEAR_S = Duration.ofDays(15).seconds
 
         /**
          * How long each treatment quiets alerts under [s], the rules the engine runs (`Rules.coveringDose`: a dose quiets

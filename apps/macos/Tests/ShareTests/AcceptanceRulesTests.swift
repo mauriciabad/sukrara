@@ -94,8 +94,13 @@ struct AcceptanceRulesTests {
         #expect(rumor.sender == v.pub("F"))
         #expect(rumor.kind == Wire.kindToOwner)
         #expect(rumor.content.contains("\"type\":\"rekey\""))
-        // `have` names the newest gk held (epoch 1), not the unknown one.
+        // `have` names the newest gk held (epoch 1), not the unknown one: the OGS vectors' rekey request.
         #expect(rumor.content.contains("\"have\":\"\(Wire.gk(groupPublicKey: v.pub("G1")))\""))
+        let vector = try #require(v.plaintext("rekey-request")?["rumor"] as? [String: Any])
+        func body(_ json: String?) throws -> NSDictionary? {
+            try JSONSerialization.jsonObject(with: Data((json ?? "").utf8)) as? NSDictionary
+        }
+        #expect(try body(rumor.content) == body(vector["content"] as? String))
         #expect(wrap.expiration == v.now + Wire.ttlRequest)
         #expect(follower.receive(newer, now: v.now + 60).publish.isEmpty)
         #expect(follower.receive(newer, now: v.now + Wire.rekeyInterval).publish.count == 1)
@@ -232,6 +237,23 @@ struct AcceptanceRulesTests {
         #expect(
             again.receive(v.event("treatment-writer-hijack"), now: v.now).verdict == .rejected("writer-not-creator"))
         #expect(again.receive(v.event("live"), now: v.now).verdict == .accepted("live"))
+    }
+
+    /// contracts/treatments/merge.json: the wire comparison a follower judges with (equal `u`: the greater origin wins).
+    @Test func treatmentMergeCases() throws {
+        let cases = try #require(loadJSON("treatments/merge.json")["cases"] as? [[String: Any]])
+        func payload(_ v: Any?) throws -> TreatmentPayload {
+            let v = try #require(v as? [String: Any])
+            return TreatmentPayload(
+                id: "x", kind: "rapid", amount: (v["a"] as? NSNumber)?.doubleValue ?? 0, t: 100, note: "",
+                u: try #require((v["u"] as? NSNumber)?.intValue), deleted: false,
+                origin: try #require(v["o"] as? String))
+        }
+        for c in cases {
+            let cur = try payload(c["cur"]), inc = try payload(c["inc"])
+            #expect(inc.isNewer(than: cur) == (c["wins"] as? String == "inc"), "\(c["name"] ?? "?")")
+            #expect(cur.isNewer(than: inc) == (c["wins"] as? String == "cur"), "\(c["name"] ?? "?")")
+        }
     }
 
     @Test func secretsNeverPrint() throws {

@@ -19,6 +19,8 @@ struct PanelView: View {
     var links: PanelLinks?
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
+    /// The screen's pixels per point: the card is drawn at it (sharp on any display, no wasted pixels on a 1x one).
+    @Environment(\.displayScale) private var displayScale
     /// Where the chart looks (scrolled / zoomed through time; nil end = now).
     @State private var scroll: ChartScroll
 
@@ -143,12 +145,12 @@ struct PanelView: View {
         let increased = contrast == .increased
         if let image = GlucoseCard.image(
             surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
-            dark: scheme == .dark, view: view, contrast: increased)
+            dark: scheme == .dark, scale: displayScale, view: view, contrast: increased)
         {
             let rects = GlucoseCard.chartRects(
                 surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
                 view: view)
-            Image(decorative: image, scale: 2)
+            Image(decorative: image, scale: displayScale)
                 .accessibilityElement()
                 .accessibilityLabel(
                     GlucoseCard.accessibilityLabel(data, unit: model.unit, surface: .menubarCard, config: model.graph)
@@ -307,11 +309,7 @@ struct PanelView: View {
                 systemImage: "exclamationmark.triangle.fill"
             )
             .foregroundStyle(.orange)
-            Button(L10n.t("Open Notification Settings")) {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
+            Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
         }
     }
 }
@@ -583,6 +581,10 @@ private struct AlertBlocks: View {
             // the line above its exits (as a side's): beside them, "1 h left" broke between "1" and "h"
             VStack(alignment: .leading, spacing: 4) {
                 Label(line, systemImage: "bell.slash.fill")
+                // what it covers: nothing still sounds here, and no other device is muted
+                Text(L10n.t("Very low and no data included, on this Mac only"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 HStack {
                     Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
                         .accessibilityLabel(L10n.t("Alerts: Unmute"))

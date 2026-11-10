@@ -58,6 +58,12 @@ sealed interface OwnerShareState {
     ) : OwnerShareState
 }
 
+/**
+ * Backup › Replace this identity telling the followers first: [told] of [followers] notices a relay accepted so far
+ * (the identity is replaced once all are, or after 15 s); Cancel keeps the identity.
+ */
+data class TellingFollowers(val followers: Int, val told: Int)
+
 /** What an Allow did. */
 enum class ApproveResult {
     Allowed,

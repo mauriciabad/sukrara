@@ -13,19 +13,33 @@ import android.nfc.Tag
 import android.os.Bundle
 import android.os.PowerManager
 import android.os.SystemClock
+import android.view.Gravity
 import android.view.HapticFeedbackConstants
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -47,10 +61,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.PenFill
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
@@ -66,7 +84,14 @@ import java.time.Instant
  *
  * Over the lock screen an entry needs no unlock, but the dialog closes by itself, unsaved, after *Time to save*
  * ([LockCountdown]) so a stray touch in a pocket can't log anything; the screen turning off closes it at once.
- * *Unlock* pauses the countdown for the unlock prompt (success: an ordinary dialog, every input kept).
+ * *Unlock* pauses the countdown for the unlock prompt (success: an ordinary dialog, every input kept). What the
+ * countdown closes on is kept as a draft ([TreatmentDraft]) and offered on the next unlock and the next time this opens.
+ *
+ * After Save the dialog goes and a snackbar at the bottom says what was saved, with *Undo* ([SavedSnackbar]); the
+ * window then covers only the snackbar and lets touches elsewhere through, so the app behind stays usable.
+ *
+ * With [NavTargets.EXTRA_TREATMENT_ID] (a row of home's list) it edits that stored entry instead: its kind's amount,
+ * its time and its note, Save changes it (a newer version, synced) and *Undo* brings the old one back.
  *
  * On the wearer's phone with pens (reading On, unlocked) the dialog holds the NFC reader: a pen held to the phone is
  * read and logged at once like a tap anywhere ([DialogPen]); its newest injection fills Rapid / Long-acting (counting
@@ -89,6 +114,23 @@ class QuickTreatmentActivity : ComponentActivity() {
     private var carriedMs: Long? = null
     private var saved = false
 
+    /** The stored entry this dialog edits (home's list), once read; null = adding (or still reading it). */
+    private var editing by mutableStateOf<Treatment?>(null)
+    private val editId by lazy { intent.getStringExtra(NavTargets.EXTRA_TREATMENT_ID) }
+
+    /** The form holds the kept draft (when it was kept), with *Discard*; null = an ordinary form. */
+    private var draftAt by mutableStateOf<Instant?>(null)
+
+    /** Look for a kept draft once the form exists (a fresh dialog only). */
+    private var offerDraft = false
+
+    /** After Save: the dialog leaves, then [confirmation] shows the snackbar. */
+    private var leaving by mutableStateOf(false)
+    private var confirmation by mutableStateOf<Confirmation?>(null)
+
+    /** What the snackbar will say once the dialog has left. */
+    private var pending: Confirmation? = null
+
     private val screen =
         object : BroadcastReceiver() {
             override fun onReceive(
@@ -97,7 +139,7 @@ class QuickTreatmentActivity : ComponentActivity() {
             ) {
                 when (intent.action) {
                     // put away: discard, no toast (a late broadcast after the screen came back on is ignored)
-                    Intent.ACTION_SCREEN_OFF -> if (countdown != null && !interactive()) finish()
+                    Intent.ACTION_SCREEN_OFF -> if ((countdown != null || leaving) && !interactive()) finish()
 
                     // unlocked on the lock screen itself (fingerprint) while the dialog was up
                     Intent.ACTION_USER_PRESENT -> endLock()
@@ -130,49 +172,127 @@ class QuickTreatmentActivity : ComponentActivity() {
         saved = duplicate != null
         // a field filled by a pen read stays the pen's after a rotation (its Undo stays with the read card)
         penLine = PenFills.restore(savedInstanceState)
+        draftAt = savedInstanceState?.getLong(KEY_DRAFT, -1L)?.takeIf { it >= 0 }?.let(Instant::ofEpochMilli)
         setContent {
-            form = rememberTreatmentFormState(startAt)
+            val edited = editing
+            // editing: nothing until the entry is read (a moment), then its own form
+            if (editId != null && edited == null) return@setContent
+            form = if (edited != null) rememberEditFormState(edited) else rememberTreatmentFormState(startAt)
             SukraraTheme {
-                val cd = countdown
-                val quiet by module.hints.quiet.collectAsState(QuietRules.NONE)
-                LaunchedEffect(cd) { if (cd != null) runCountdown(cd) }
-                PenFillEffects()
-                // M3 dialog scrim; a tap on it dismisses, like outside a dialog
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f))
-                        // a tap outside dismisses (TalkBack users have Cancel and back; no unlabeled node)
-                        .pointerInput(Unit) { detectTapGestures { finish() } }
-                        .safeDrawingPadding()
-                        .imePadding()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    TreatmentDialogContent(
-                        form = form,
-                        focusCarbs = focusCarbs,
-                        zone = module.clock.zone,
-                        now = module.clock::now,
-                        onSave = ::save,
-                        onCancel = ::finish,
-                        // over the lock screen Unlock takes Open Sukrara's place
-                        onOpenApp = if (cd == null) ::openApp else null,
-                        lock = cd?.let { lockInfo(it) },
-                        quiet = quiet,
-                        focusLong = focusLong,
-                        penLine =
-                            penLine?.let { line ->
-                                { PenFillLine(line, showHint = form.rapid.isBlank() && form.long.isBlank(), onUndo = ::undoPen) }
-                            },
-                        // the card swallows taps so they don't reach the scrim
-                        modifier = Modifier.pointerInput(Unit) { detectTapGestures { } },
-                    )
-                    duplicate?.let { d ->
-                        PenDuplicateDialog(d.pen, onCancel = { cancelDuplicate() }, onLog = { store(d.entries, d.at) })
-                    }
+                val c = confirmation
+                if (c != null) {
+                    ConfirmationLayer(c)
+                } else {
+                    FormLayer(focusCarbs, focusLong)
                 }
             }
+        }
+        editId?.let { id ->
+            lifecycleScope.launch {
+                val t = module.editable(id)
+                if (t == null) {
+                    // deleted meanwhile, or no longer this phone's to change
+                    Toast.makeText(this@QuickTreatmentActivity, R.string.treatment_edit_gone, Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    editing = t
+                }
+            }
+        }
+        // the kept draft fills a fresh form (a recreated one keeps what is typed); never an edit's
+        offerDraft = savedInstanceState == null && editId == null
+    }
+
+    @Composable
+    private fun FormLayer(
+        focusCarbs: Boolean,
+        focusLong: Boolean,
+    ) {
+        val cd = countdown
+        val quiet by module.hints.quiet.collectAsState(QuietRules.NONE)
+        val reduced = LocalReducedMotion.current
+        LaunchedEffect(cd) { if (cd != null) runCountdown(cd) }
+        PenFillEffects()
+        LaunchedEffect(Unit) {
+            if (!offerDraft) return@LaunchedEffect
+            offerDraft = false
+            val draft = module.draft() ?: return@LaunchedEffect
+            if (form.hasInput || leaving) return@LaunchedEffect
+            form.fill(draft.form())
+            draftAt = draft.keptAt
+        }
+        // after Save: the scrim fades and the card leaves, then the window shrinks to the snackbar
+        val scrim by animateFloatAsState(if (leaving) 0f else SCRIM_ALPHA, tween(if (reduced) 0 else LEAVE_MS), label = "scrim")
+        LaunchedEffect(leaving) {
+            if (!leaving) return@LaunchedEffect
+            delay(if (reduced) 0L else LEAVE_MS.toLong())
+            pending?.let(::confirm)
+        }
+        // M3 dialog scrim; a tap on it dismisses, like outside a dialog
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = scrim))
+                // a tap outside dismisses (TalkBack users have Cancel and back; no unlabeled node)
+                .pointerInput(Unit) { detectTapGestures { finish() } }
+                .safeDrawingPadding()
+                .imePadding()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            AnimatedVisibility(
+                !leaving,
+                enter = fadeIn(snap()),
+                exit = fadeOut(tween(if (reduced) 0 else LEAVE_MS)) + scaleOut(tween(if (reduced) 0 else LEAVE_MS), targetScale = 0.92f),
+            ) {
+                TreatmentDialogContent(
+                    form = form,
+                    focusCarbs = focusCarbs,
+                    zone = module.clock.zone,
+                    now = module.clock::now,
+                    onSave = ::save,
+                    onCancel = ::finish,
+                    // over the lock screen Unlock takes Open Sukrara's place; an edit was opened from the app
+                    onOpenApp = if (cd == null && editId == null) ::openApp else null,
+                    lock = cd?.let { lockInfo(it) },
+                    quiet = quiet,
+                    draft = draftAt?.let { DraftLine(it, ::discardDraft) },
+                    focusLong = focusLong,
+                    penLine =
+                        penLine?.let { line ->
+                            { PenFillLine(line, showHint = form.rapid.isBlank() && form.long.isBlank(), onUndo = ::undoPen) }
+                        },
+                    // the card swallows taps so they don't reach the scrim
+                    modifier = Modifier.pointerInput(Unit) { detectTapGestures { } },
+                )
+            }
+            duplicate?.let { d ->
+                PenDuplicateDialog(d.pen, onCancel = { cancelDuplicate() }, onLog = { store(d.entries, d.at) })
+            }
+        }
+    }
+
+    /**
+     * The snackbar after Save. It goes by itself after [SNACK_MS] (raised to Android's *Time to take action*, longer
+     * with TalkBack), [UNDONE_MS] after an Undo; back closes it at once.
+     */
+    @Composable
+    private fun ConfirmationLayer(c: Confirmation) {
+        LaunchedEffect(c) {
+            val ms = if (c.undo == null) UNDONE_MS else SNACK_MS
+            val a11y = getSystemService(AccessibilityManager::class.java)
+            val flags = AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
+            // raised for TalkBack and *Time to take action*, never shorter than its own time
+            delay(maxOf(ms, a11y.getRecommendedTimeoutMillis(ms, flags)).toLong())
+            finish()
+        }
+        val reduced = LocalReducedMotion.current
+        val shown = remember { MutableTransitionState(reduced) }.apply { targetState = true }
+        Box(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.BottomCenter) {
+            AnimatedVisibility(
+                shown,
+                enter = slideInVertically(tween(if (reduced) 0 else SNACK_IN_MS)) { it } + fadeIn(tween(if (reduced) 0 else LEAVE_MS)),
+            ) { SavedSnackbar(c, onUndo = ::undo, modifier = Modifier.widthIn(max = 560.dp)) }
         }
     }
 
@@ -197,12 +317,13 @@ class QuickTreatmentActivity : ComponentActivity() {
         countdown?.let { outState.putLong(KEY_LEFT, it.remaining(SystemClock.elapsedRealtime())) }
         duplicate?.save(outState)
         (penLine as? PenLine.Filled)?.let { PenFills.save(it, outState) }
+        draftAt?.let { outState.putLong(KEY_DRAFT, it.toEpochMilli()) }
     }
 
     override fun onStop() {
         super.onStop()
-        // the screen went off in lock mode (doesn't wait for the broadcast)
-        if (countdown != null && !interactive()) finish()
+        // the screen went off in lock mode (doesn't wait for the broadcast); after Save there's nothing left to do
+        if ((countdown != null || leaving) && !interactive()) finish()
     }
 
     override fun onDestroy() {
@@ -224,6 +345,11 @@ class QuickTreatmentActivity : ComponentActivity() {
         at: java.time.Instant?,
     ) {
         if (saved) return
+        editing?.let { t ->
+            saved = true
+            storeEdit(t, typed.single(), at)
+            return
+        }
         // the dose a pen read filled in is in the log already: Save never logs it again
         val entries = PenFills.withoutFilled(typed, penLine, form)
         if (entries.isEmpty()) {
@@ -254,22 +380,69 @@ class QuickTreatmentActivity : ComponentActivity() {
         at: java.time.Instant?,
     ) {
         duplicate = null
-        if (module.save(entries, at)) {
-            val pending =
-                module.sync.writer.value
-                    ?.throughOutbox == true
-            val text =
-                resources.getQuantityString(
-                    if (pending) R.plurals.treatment_sent else R.plurals.treatment_saved,
-                    entries.size,
-                    entries.size,
-                )
-            // rapid insulin typed by hand while a pen is read: once a day, three times, the quicker way
-            val hint = tapHint && entries.any { it.kind == TreatmentKind.RapidInsulin }
-            if (hint) module.pen()?.tapHintShown()
-            Toast.makeText(this, if (hint) getString(R.string.treatment_saved_tap_hint, text) else text, Toast.LENGTH_SHORT).show()
+        val outbox =
+            module.sync.writer.value
+                ?.throughOutbox == true
+        val saved = module.save(entries, at)
+        if (saved == null) {
+            finish()
+            return
         }
-        finish()
+        if (draftAt != null) module.dropDraft()
+        val text =
+            getString(if (outbox) R.string.treatment_sent_snack else R.string.treatment_saved_snack, EntryWords.of(resources, entries))
+        // rapid insulin typed by hand while a pen is read: once a day, three times, the quicker way
+        val hint = tapHint && entries.any { it.kind == TreatmentKind.RapidInsulin }
+        if (hint) module.pen()?.tapHintShown()
+        leave(Confirmation(if (hint) getString(R.string.treatment_saved_tap_hint, text) else text, saved))
+    }
+
+    /** Save on an edit: [t] becomes [entry] at [at]; the snackbar's *Undo* brings [t] back. */
+    private fun storeEdit(
+        t: Treatment,
+        entry: NewEntry,
+        at: Instant?,
+    ) {
+        val saved = module.edit(t, entry, at)
+        if (saved == null) {
+            finish()
+            return
+        }
+        leave(Confirmation(getString(R.string.treatment_changed_snack, EntryWords.one(resources, entry)), saved))
+    }
+
+    /** The dialog leaves (the countdown ends with it, the pen reader and the keyboard go), then [c] shows. */
+    private fun leave(c: Confirmation) {
+        endLock()
+        stopPenReader()
+        pending = c
+        WindowCompat.getInsetsController(window, window.decorView).hide(WindowInsetsCompat.Type.ime())
+        leaving = true
+    }
+
+    /**
+     * The snackbar shows: the window shrinks to it at the bottom and lets every touch outside it through
+     * (`FLAG_NOT_TOUCH_MODAL`), so whatever is behind can be used at once.
+     */
+    private fun confirm(c: Confirmation) {
+        window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT)
+        window.setGravity(Gravity.BOTTOM)
+        confirmation = c
+    }
+
+    /** *Undo*: what this Save stored is taken back (a newer deleted version of each); the snackbar says so and goes. */
+    private fun undo() {
+        val c = confirmation ?: return
+        c.undo?.undo()
+        confirmation = Confirmation(getString(R.string.treatment_undone), null)
+    }
+
+    /** *Discard* on the kept draft: the form empties and the draft (and its notification) is dropped. */
+    private fun discardDraft() {
+        form.fill(TreatmentFormState())
+        draftAt = null
+        module.dropDraft()
     }
 
     /** What the dialog shows of the pen (null = pens can't be read into it now). */
@@ -282,6 +455,7 @@ class QuickTreatmentActivity : ComponentActivity() {
 
     /** Holds the NFC reader while the dialog is open, unlocked, and pens can be read (Android reads tags unlocked only). */
     private fun startPenReader() {
+        if (editId != null || leaving) return
         val pen = module.pen() ?: return
         lifecycleScope.launch {
             val ok = runCatching { pen.readable() }.getOrDefault(false)
@@ -406,8 +580,15 @@ class QuickTreatmentActivity : ComponentActivity() {
             }
             if (!announced && cd.announceDue(now)) announced = true
             if (cd.expired(now)) {
-                // nothing is saved; a toast only if something had been typed (no haptic: from a pocket it means nothing)
-                if (form.hasInput) Toast.makeText(this, R.string.treatment_lock_not_saved, Toast.LENGTH_SHORT).show()
+                // nothing is saved (no haptic: from a pocket it means nothing). Entries that could be saved are kept as a
+                // draft, offered after the unlock; anything else typed only gets the toast
+                val draft = TreatmentDraft.of(form, module.clock.now())?.takeIf { form.canSave && editId == null }
+                if (draft != null) {
+                    module.keepDraft(draft, EntryWords.of(resources, form.entries.orEmpty()))
+                    Toast.makeText(this, R.string.treatment_lock_draft_kept, Toast.LENGTH_LONG).show()
+                } else if (form.hasInput) {
+                    Toast.makeText(this, R.string.treatment_lock_not_saved, Toast.LENGTH_SHORT).show()
+                }
                 finish()
                 return
             }
@@ -441,7 +622,7 @@ class QuickTreatmentActivity : ComponentActivity() {
         countdown?.stop()
         countdown = null
         // unlocked: a pen can be read into the dialog now
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && penReader == null) startPenReader()
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && penReader == null && !leaving) startPenReader()
     }
 
     private fun unlock() {
@@ -496,6 +677,16 @@ class QuickTreatmentActivity : ComponentActivity() {
 
     private companion object {
         const val KEY_LEFT = "lock_left_ms"
+        const val KEY_DRAFT = "draft_kept_ms"
+        const val SCRIM_ALPHA = 0.32f
+
+        /** The dialog's way out after Save, before the snackbar slides in. */
+        const val LEAVE_MS = 180
+        const val SNACK_IN_MS = 250
+
+        /** How long the snackbar offers Undo (a short snackbar's 4 s), and how long *Undone* stays. */
+        const val SNACK_MS = 4_000
+        const val UNDONE_MS = 1_500
         const val READER_FLAGS =
             NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
         const val MAX_COUNT_STEPS = 20
@@ -509,7 +700,7 @@ class QuickTreatmentActivity : ComponentActivity() {
  * *Log anyway* saves what was typed (a second injection is the person's call).
  */
 @Composable
-private fun PenDuplicateDialog(
+internal fun PenDuplicateDialog(
     pen: PenNearEntry,
     onCancel: () -> Unit,
     onLog: () -> Unit,

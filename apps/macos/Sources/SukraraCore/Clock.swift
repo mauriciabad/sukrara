@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
-import Synchronization
 
 /// Every clock time Sukrara shows on the Mac ("21:08" / "9:08 PM"): the menu bar, the card, the widgets, the
 /// treatments, the graph's hour labels. They follow System Settings › General › Date & Time › 24-hour time, not the
@@ -10,13 +9,9 @@ import Synchronization
 /// setting is read (tools/check `clock`): nothing else keeps a flag of its own (2026-10-21: Android's value widget and
 /// chart cards read it from different places and disagreed).
 public enum Clock {
-    private static let source = Mutex<(@Sendable () -> Bool)?>(nil)
-
-    /// Where the 24-hour setting comes from: nil = the Mac's setting. Tests set it to draw both cycles.
-    public static var hour24Source: (@Sendable () -> Bool)? {
-        get { source.withLock { $0 } }
-        set { source.withLock { $0 = newValue } }
-    }
+    /// Where the 24-hour setting comes from in this task: nil = the Mac's setting. Tests draw both cycles inside
+    /// `Clock.$hour24Source.withValue(…)`, which tests running in parallel never see (a task-local, not a global).
+    @TaskLocal public static var hour24Source: (@Sendable () -> Bool)?
 
     /// The 24-hour setting in force.
     public static var hour24: Bool { hour24Source?() ?? systemHour24 }

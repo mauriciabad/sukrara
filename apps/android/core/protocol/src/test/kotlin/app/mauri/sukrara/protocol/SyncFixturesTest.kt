@@ -52,7 +52,19 @@ class SyncFixturesTest {
     private val relays = listOf("wss://relay.example.org")
     private val g3 = throwaway("sukrara/sync/G3")
     private val g4 = throwaway("sukrara/sync/G4")
-    private val names = listOf("join-readings", "treatments-writer", "settings-mirror", "rotation", "revoke-reapprove", "conflict-rotation")
+    private val f2 = throwaway("sukrara/sync/F2")
+    private val f3 = throwaway("sukrara/sync/F3")
+    private val names =
+        listOf(
+            "join-readings",
+            "sensor-life",
+            "treatments-writer",
+            "settings-mirror",
+            "rotation",
+            "revoke-reapprove",
+            "conflict-rotation",
+            "replace-identity",
+        )
 
     /**
      * One fixture step: feed [event] and expect [expect] (and, when [rekey] is set, a rekey request whose `have` is that
@@ -119,6 +131,10 @@ class SyncFixturesTest {
                         ),
                         step("live-outsider", live(v.key("X"), g1, now - 20, 300, null), "rejected:author-not-device"),
                     )
+            }
+
+            "sensor-life" -> {
+                base + sensorLife()
             }
 
             "treatments-writer" -> {
@@ -194,10 +210,36 @@ class SyncFixturesTest {
                 base + conflictRotation()
             }
 
+            "replace-identity" -> {
+                replaceIdentity()
+            }
+
             else -> {
                 error(name)
             }
         }
+    }
+
+    /**
+     * The wearer's sensor without readings (#55): the old sensor ends early and is removed, a new one warms up (no
+     * reading for an hour, so reading-less live events carry it), its first reading carries it too, and a late backlog
+     * copy of an old reading adds the reading but can't bring the old sensor back (the newest `created_at` wins).
+     */
+    private fun sensorLife(): List<Step> {
+        val old = SensorLife(now - 14 * Wire.DAY, now + Wire.DAY, now - 14 * Wire.DAY + 3600)
+        val fresh = SensorLife(now - 3200, now - 3200 + 15 * Wire.DAY, now - 200)
+
+        fun sensorOnly(sensor: SensorLife?, at: Long) = f.live(d, g1.public, LivePayload(null, sensor), at)
+        return listOf(
+            step("roster-1", roster(1, g1, listOf(d)), "accepted:roster"),
+            step("live-old-sensor", live(d, g1, now - 3400, 140, 0.5, old), "accepted:live"),
+            step("sensor-ended-early", sensorOnly(old.copy(end = now - 3300), now - 3300), "accepted:sensor"),
+            step("sensor-removed", sensorOnly(null, now - 3250), "accepted:sensor"),
+            step("sensor-new-warming", sensorOnly(fresh, now - 3200), "accepted:sensor"),
+            step("sensor-warming-tick", sensorOnly(fresh, now - 2900), "accepted:sensor"),
+            step("live-first-reading", live(d, g1, now - 60, 101, null, fresh), "accepted:live"),
+            step("live-old-backlog", live(d, g1, now - 3350, 138, -0.5, old), "accepted:live"),
+        )
     }
 
     /**
@@ -275,6 +317,57 @@ class SyncFixturesTest {
         )
     }
 
+    /**
+     * Backup › Replace this identity (PROTOCOL-v2 "Replace the identity"), the follower's side: the wearer starts a
+     * replace and cancels it (the `revoked` notice, then the same key again one second newer: F follows again), then
+     * replaces for real (the notice: F stops, the old phone's late reading is ignored). After a restart the relays
+     * replay all of it and F stays removed. The wearer's side (who is told, when the identity is replaced) is `replace`.
+     */
+    private fun replaceIdentity(): List<Step> {
+        val key1 = keyTo(1, g1, listOf(d))
+        val told = f.gift(i, fol.public, Rumor.Revoked, now - 100, now + Wire.TTL_KEY_DELIVERY)
+        val keyAgain =
+            f.gift(
+                i,
+                fol.public,
+                Rumor.KeyDelivery(v.sid, 1, crypto.nsec(g1.secret), listOf(d.public.hex), relays),
+                now - 99,
+                now + Wire.TTL_KEY_DELIVERY,
+            )
+        val replaced = f.gift(i, fol.public, Rumor.Revoked, now - 60, now + Wire.TTL_KEY_DELIVERY)
+        val live2 = live(d, g1, now - 90, 118, -0.5)
+        return listOf(
+            step("key-1", key1, "accepted:key"),
+            step("roster-1", roster(1, g1, listOf(d)), "accepted:roster"),
+            step("live-1", live(d, g1, now - 120, 120, 0.0), "accepted:live"),
+            step("told-then-cancelled", told, "accepted:revoked"),
+            step("live-while-told", live(d, g1, now - 100, 119, 0.0), "ignored:revoked"),
+            step("key-again", keyAgain, "accepted:key"),
+            step("live-2", live2, "accepted:live"),
+            step("told-then-replaced", replaced, "accepted:revoked"),
+            step("live-late", live(d, g1, now - 55, 117, 0.0), "ignored:revoked"),
+            restart("restart"),
+            step("key-1", key1, "ignored:key-known"),
+            step("key-again", keyAgain, "ignored:key-known"),
+            step("told-then-cancelled", told, "ignored:revoked-before-latest-key"),
+            step("told-then-replaced", replaced, "ignored:revoked-already"),
+            step("live-2", live2, "ignored:revoked"),
+        )
+    }
+
+    /**
+     * The wearer's side of replace-identity.json: who gets a notice and when the identity is replaced, for each way the
+     * relays answer (read by Android `ReplaceIdentityTest`; the Mac follows only).
+     */
+    private val replaceOrder =
+        Json.parseToJsonElement(
+            """{"followers":[{"f":"F"},{"f":"F2"},{"f":"F3","removed":true}],"timeoutS":15,"runs":[
+               {"name":"acknowledged","internet":true,"acks":{"F":1,"F2":2},"cancelAt":null,"replacedAt":2,"resent":[],"keyAgain":[]},
+               {"name":"timed-out","internet":true,"acks":{"F":1},"cancelAt":null,"replacedAt":15,"resent":["F2"],"keyAgain":[]},
+               {"name":"cancelled","internet":true,"acks":{"F":1},"cancelAt":3,"replacedAt":null,"resent":[],"keyAgain":["F","F2"]},
+               {"name":"internet-off","internet":false,"acks":{},"cancelAt":null,"replacedAt":0,"resent":["F","F2"],"keyAgain":[]}]}""",
+        )
+
     /** Every `"mirror": true` row of contracts/settings/settings.json, at its wire key (checked by [everyMirroredSettingIsInTheFixture]). */
     private fun settings(dev: KeyPair, u: Long, low: Int): SignedEvent {
         val graph =
@@ -344,7 +437,13 @@ class SyncFixturesTest {
                 "keys",
                 buildJsonObject {
                     val shared = listOf("I" to i, "D" to d, "D2" to d2, "W" to w, "F" to fol, "G1" to g1, "G2" to g2, "G3" to g3)
-                    (shared + if (name == "conflict-rotation") listOf("G4" to g4) else emptyList()).forEach { (n, k) ->
+                    val extra =
+                        when (name) {
+                            "conflict-rotation" -> listOf("G4" to g4)
+                            "replace-identity" -> listOf("F2" to f2, "F3" to f3)
+                            else -> emptyList()
+                        }
+                    (shared + extra).forEach { (n, k) ->
                         put(
                             n,
                             buildJsonObject {
@@ -379,6 +478,7 @@ class SyncFixturesTest {
                 },
             )
             put("expected", m.stateJson())
+            if (name == "replace-identity") put("replace", replaceOrder)
         }
     }
 

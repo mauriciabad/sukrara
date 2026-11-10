@@ -10,6 +10,7 @@ import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -108,6 +109,20 @@ class HomeViewModelTest {
         override suspend fun restorePen(was: PenEntryInfo): Boolean {
             writes += "restore ${was.id}"
             return !restoreRefused
+        }
+
+        override suspend fun deliveries(ids: Collection<String>) =
+            ids
+                .mapNotNull { id ->
+                    treatments.get(id)?.delivery?.takeIf { it != TreatmentDelivery.Local && it != TreatmentDelivery.Delivered }?.let {
+                        id to
+                            it
+                    }
+                }.toMap()
+
+        override suspend fun retryTreatment(id: String) {
+            writes += "retry $id"
+            treatments.get(id)?.let { treatments.replace(it.copy(delivery = TreatmentDelivery.Pending)) }
         }
 
         override val penQuestions = MutableStateFlow<List<app.mauri.sukrara.core.model.PenQuestionInfo>>(emptyList())
@@ -306,6 +321,25 @@ class HomeViewModelTest {
             vm.acknowledge(problem)
             runCurrent()
             assertNull(vm.state.value.banner)
+        }
+
+    /** #75: a writer's entry says *Sending…*, then *Not sent* with *Retry*; Retry sends it again. */
+    @Test fun `entries on their way show their delivery and Retry sends again`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val sending = Samples.treatment("s")
+            val failed = Samples.treatment("f", minutesAgo = 10)
+            deps.treatments.upsertIfNewer(TreatmentRecord(sending, delivery = TreatmentDelivery.Pending))
+            deps.treatments.upsertIfNewer(TreatmentRecord(failed, delivery = TreatmentDelivery.Failed))
+            deps.treatments.upsertIfNewer(TreatmentRecord(Samples.treatment("d", minutesAgo = 20), delivery = TreatmentDelivery.Delivered))
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            assertEquals(mapOf("s" to TreatmentDelivery.Pending, "f" to TreatmentDelivery.Failed), vm.state.value.delivery)
+            vm.retry(failed)
+            runCurrent()
+            assertEquals(listOf("retry f"), deps.writes)
+            assertEquals(mapOf("s" to TreatmentDelivery.Pending, "f" to TreatmentDelivery.Pending), vm.state.value.delivery)
         }
 
     @Test fun `delete and undo go through the treatment log, a refused delete offers no undo`() =

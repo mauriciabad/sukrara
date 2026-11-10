@@ -20,8 +20,11 @@ import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.Avatar
+import app.mauri.sukrara.protocol.event.LivePayload
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
@@ -87,6 +90,39 @@ class OwnerEngineTest {
             rotated.pendingControl.forEach { relay.ok(it.eventId) }
             runCurrent()
             assertTrue((store.load() as OwnerIdentityStore.Load.Loaded).state.pendingControl.isEmpty())
+            e.stop()
+        }
+
+    /** #55: the wearer's sensor reaches the relays as a reading-less live event when it changes, with no reading. */
+    @Test fun aSensorChangeIsPublishedWithoutAReading() =
+        runTest {
+            val s = CreateIdentity(ctx)(null, NOW).state.copy(rosterPublishedAt = NOW, backupPublishedAt = NOW)
+            store.save(s)
+            val sensor = MutableStateFlow<SensorLife?>(null)
+            val e =
+                OwnerEngine(
+                    ctx,
+                    store,
+                    relay,
+                    NoHub,
+                    { _, _ -> true },
+                    InMemoryTreatmentsRepository(),
+                    FakeClock(Instant.ofEpochSecond(NOW)),
+                    StandardTestDispatcher(testScheduler),
+                    sensor = sensor,
+                )
+            e.start(backgroundScope)
+            runCurrent()
+
+            fun sensorEvents() =
+                relay.published
+                    .filter { it.kind == Wire.KIND_LIVE }
+                    .map { ReadingsCodec.decodeLive(crypto.decrypt(s.readKey(crypto).secret, s.device(crypto).public, it.content)!!) }
+            assertTrue("nothing known yet: nothing sent", sensorEvents().isEmpty())
+            val fresh = SensorLife(NOW - 60, NOW + 15 * Wire.DAY, NOW + 3540)
+            sensor.value = fresh
+            runCurrent()
+            assertEquals(listOf(LivePayload(null, fresh)), sensorEvents())
             e.stop()
         }
 

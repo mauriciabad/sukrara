@@ -8,9 +8,12 @@ import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.BackupCodec
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.owner.RecoveryCode
 import app.mauri.sukrara.share.owner.EpochKey
 import app.mauri.sukrara.share.owner.OwnerState
+import app.mauri.sukrara.share.owner.PendingControl
+import app.mauri.sukrara.share.owner.ReplaceRecord
 import app.mauri.sukrara.share.transport.RelayFilter
 
 /** A brand-new identity I, device key D, stream id and epoch 1; publishes roster and backup. */
@@ -42,6 +45,55 @@ class CreateIdentity(private val ctx: OwnerContext) {
                 profileJson = profile?.toJson()?.toString(),
             )
         return ControlEvents.roster(ctx, s, now) + { ControlEvents.backup(ctx, it, now) }
+    }
+}
+
+/**
+ * Backup › Replace this identity, before the identity goes (PROTOCOL-v2 "Replace the identity"): a `revoked` notice
+ * sealed by this identity to every active follower not in [except], so each follower's app says the wearer stopped
+ * sharing instead of warning that no data arrives. The notices stay out of `pendingControl` (they must never go out
+ * again if the identity stays); [OwnerState.replacing] records who was told, saved before they are sent.
+ */
+class TellFollowers(private val ctx: OwnerContext) {
+    /** The state with the record and the notices to publish ([step]), and each follower's notice ([notices]). */
+    data class Told(val step: Step, val notices: Map<String, SignedEvent>)
+
+    /** Null: no one (else) to tell. */
+    operator fun invoke(s: OwnerState, now: Long, except: Set<String> = emptySet()): Told? {
+        val notices =
+            s
+                .activeFollowers()
+                .filter { it.key !in except }
+                .associate { it.key to ControlEvents.noticeEvent(ctx, s, it.key, Rumor.Revoked, now) }
+        if (notices.isEmpty()) return null
+        val told = (s.replacing?.told.orEmpty() + notices.keys).distinct()
+        val record = ReplaceRecord(s.replacing?.at ?: now, told)
+        return Told(Step(s.copy(replacing = record), notices.values.toList()), notices)
+    }
+
+    companion object {
+        /**
+         * The replace itself: [next] (the restored or new identity) keeps the notices no relay accepted yet ([unacked])
+         * in its `pendingControl`, so they go out again with its own events until a relay takes them.
+         */
+        fun carry(next: OwnerState, unacked: Map<String, SignedEvent>): OwnerState =
+            next.copy(pendingControl = unacked.map { (f, ev) -> PendingControl("replaced:$f", ev.id, ev.toJson()) } + next.pendingControl)
+    }
+}
+
+/**
+ * The replace cancelled, or cut short (the app closed before it finished): every follower told gets the current read
+ * key again, newer than the notice, so it follows again (a key delivery newer than the revoked notice re-approves).
+ * The identity stays. Null when no replace was under way.
+ */
+class KeepIdentity(private val ctx: OwnerContext) {
+    operator fun invoke(s: OwnerState, now: Long): Step? {
+        val r = s.replacing ?: return null
+        // the follower orders the two by their rumor's created_at, in seconds: the key must be the newer one
+        val at = maxOf(now, r.at + 1)
+        var step = Step(s.copy(replacing = null))
+        s.activeFollowers().filter { it.key in r.told }.forEach { f -> step += { ControlEvents.deliverKey(ctx, it, f.key, at) } }
+        return step
     }
 }
 
@@ -111,6 +163,12 @@ class RestoreIdentity(private val ctx: OwnerContext) {
 
         /** The code is for the identity this phone already shares as: nothing to replace, nothing changed. */
         data object SameIdentity : Result
+
+        /**
+         * Backup › Replace this identity cancelled while the followers were being told, or another replace is under
+         * way: the identity stays and every follower told follows again.
+         */
+        data object Cancelled : Result
     }
 
     /** Step 1: the identity in [code] (`nsec1…`, `ncryptsec1…` + [password], or hex). */

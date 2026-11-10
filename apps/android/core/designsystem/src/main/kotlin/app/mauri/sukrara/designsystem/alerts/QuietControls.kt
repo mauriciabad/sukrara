@@ -141,9 +141,10 @@ fun QuietRow(
 }
 
 /**
- * Mute alerts is on: its line counting down ("Alerts muted · 1 h 12 min left"), *Unmute* (filled: the way out must be
- * easy to find) and *Change time* (opens the lengths), on a tonal surface in the neutral secondary colours, never red.
- * Nothing while it is off or over.
+ * Mute alerts is on: its line counting down ("Alerts muted · 1 h 12 min left"), what it covers ("Very low and no data
+ * included, on this phone only": nothing still sounds, and no other device is muted), *Unmute* (filled: the way out
+ * must be easy to find) and *Change time* (opens the lengths), on a tonal surface in the neutral secondary colours,
+ * never red. Nothing while it is off or over.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -170,7 +171,10 @@ fun MuteAllState(
                     contentDescription = null,
                     modifier = Modifier.padding(end = 12.dp).size(20.dp),
                 )
-                Text(line, style = MaterialTheme.typography.titleSmall)
+                Column {
+                    Text(line, style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.mute_all_scope), style = MaterialTheme.typography.bodyMedium)
+                }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Button(onClick = {

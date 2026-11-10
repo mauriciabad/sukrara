@@ -71,6 +71,18 @@ class TreatmentLog(
     /** Brings [previous] (what [edit] or [delete] returned) back as the newest version. */
     suspend fun undo(previous: Treatment): Boolean = rewrite(previous.id) { previous } != null
 
+    /**
+     * *Retry* on an entry nothing took ([TreatmentDelivery.Failed]): the same version is pending again and handed to
+     * sharing at once. False when it isn't stored or not failed.
+     */
+    suspend fun retry(id: String): Boolean {
+        val stored = repository.get(id)?.takeIf { it.delivery == TreatmentDelivery.Failed } ?: return false
+        val again = stored.copy(delivery = TreatmentDelivery.Pending)
+        repository.replace(again)
+        sync.publish(again)
+        return true
+    }
+
     private suspend fun rewrite(
         id: String,
         change: (Treatment) -> Treatment,

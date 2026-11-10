@@ -94,6 +94,8 @@ struct AvatarDrawingTests {
     @Test @MainActor func editorOpsKeepThePictureEditable() {
         let draft = IdentityDraft(name: "Ana", avatar: Avatar(wire: ["v": 9]))
         #expect(draft.editable.isKnown)  // a newer picture: customizing starts from a fresh one
+        #expect(draft.shape == nil && draft.colors == nil)  // drawn as the grey initial: nothing selected
+        #expect(IdentityDraft(name: "Ana", avatar: nil).shape == nil)
         draft.setShape("rings")
         #expect(draft.shape == "rings" && draft.avatar?.isKnown == true)
         draft.setColors(3)

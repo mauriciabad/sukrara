@@ -18,7 +18,10 @@ import android.os.SystemClock
  * right before an alert of the same reading (the sensor lost, then No data) muted the alert. So an info notification
  * that would sound waits [GAP_MS] before it posts (an alert decided at the same moment rings first), and posts only
  * [GAP_MS] after the last alert sound ([alertRang]); a newer post of the same id replaces the waiting one, a cancel
- * drops it. Alerts never wait: among themselves the runtime's ring order decides (AlertRingOrder).
+ * drops it. One that can't wait ([postNow]: *Monitoring stopped*, posted while Android stops the service) posts at
+ * once. Either way an alert that comes less than [GAP_MS] after an info sound waits out the rest ([alertWaitMs], at
+ * most [GAP_MS]): a short delay instead of a silent alert. Among themselves alerts never wait: the runtime's ring order
+ * decides (AlertRingOrder).
  *
  * [clock] is monotonic (`SystemClock.elapsedRealtime`); [later] runs a post after a delay.
  */
@@ -27,6 +30,9 @@ class SoundGap(
     private val later: (delayMs: Long, run: () -> Unit) -> Unit,
 ) {
     private var lastAlertAt = Long.MIN_VALUE / 2
+
+    /** When an info notification last made a sound. */
+    private var lastInfoAt = Long.MIN_VALUE / 2
 
     /** The waiting post of each notification id (a newer one replaces it: only the latest runs). */
     private val waiting = HashMap<Int, Any>()
@@ -53,6 +59,22 @@ class SoundGap(
         waiting[id] = token
         schedule(id, token, GAP_MS, post)
     }
+
+    /** Runs [post] now, for a notification that can't wait; one that [sounds] holds the next alert back ([alertWaitMs]). */
+    @Synchronized
+    fun postNow(
+        id: Int,
+        sounds: Boolean,
+        post: () -> Unit,
+    ) {
+        waiting.remove(id)
+        post()
+        if (sounds) lastInfoAt = clock()
+    }
+
+    /** How long an alert about to ring waits so the info sound just before it can't mute it (0 = none). */
+    @Synchronized
+    fun alertWaitMs(): Long = (lastInfoAt + GAP_MS - clock()).coerceIn(0, GAP_MS)
 
     /** The notification [id] was cancelled: a post still waiting for it never lands. */
     @Synchronized
@@ -81,6 +103,7 @@ class SoundGap(
         }
         waiting.remove(id)
         post()
+        lastInfoAt = clock()
     }
 
     companion object {

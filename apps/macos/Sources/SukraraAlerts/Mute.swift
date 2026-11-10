@@ -135,6 +135,16 @@ public struct SideSnoozes: Codable, Equatable, Sendable {
         }
     }
 
+    /// The clock was set back by `d`: every Mute's end and margin count move with it (a Mute keeps its length).
+    mutating func shiftBack(_ d: TimeInterval) {
+        bySide = bySide.mapValues { sn in
+            var s = sn
+            s.until = sn.until?.shiftedBack(d)
+            s.backSince = sn.backSince?.shiftedBack(d)
+            return s
+        }
+    }
+
     private mutating func put(_ side: AlertSide, _ sn: Snooze) {
         bySide[side] = sn.until == nil && sn.relaxMin == 0 ? nil : sn
     }

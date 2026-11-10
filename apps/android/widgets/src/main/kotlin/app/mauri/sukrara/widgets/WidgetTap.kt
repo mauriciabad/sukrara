@@ -40,10 +40,9 @@ sealed interface WidgetTap {
             mgdl: Int?,
             lowLimit: Int,
             firingKinds: Set<String>,
-            /** The source says the sensor has ended (the card may show no readings instead of its end). */
-            sensorEnded: Boolean = false,
         ): WidgetTap {
-            if (role == Role.Wearer && (sensorEnded || look.state == GlucoseLook.State.ENDED)) return NewSensor
+            // the card says *Sensor ended* also when the source sent no dates (cardSensor)
+            if (role == Role.Wearer && look.state == GlucoseLook.State.ENDED) return NewSensor
             if (role == null || look.state != GlucoseLook.State.VALUE) return OpenApp
             val low = firingKinds.any { it in LOW_KINDS } || (mgdl != null && mgdl < lowLimit)
             return QuickTreatment(focusCarbs = low)

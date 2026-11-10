@@ -22,7 +22,10 @@ import kotlinx.serialization.Serializable
 data class LockedBootPlan(
     /** A role is set and monitoring had started: only then does the phone say anything before the first unlock. */
     val monitoring: Boolean = false,
-    /** The last reading's time (epoch s); never its value. */
+    /**
+     * Since when nothing was read (epoch s; never a value): the last reading, or monitoring's start when newer (a source
+     * that never delivered a reading). *No data* counts from it.
+     */
     val lastReadingAt: Long? = null,
     /** *No data*'s minutes while alerts and *No data* are on (and monitoring started); null = no alarm before unlock. */
     val noDataMin: Int? = null,

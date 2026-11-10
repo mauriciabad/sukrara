@@ -8,6 +8,7 @@ import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.AlertPayload
 import app.mauri.sukrara.protocol.event.LivePayload
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.owner.IdentityCheck
 import app.mauri.sukrara.protocol.owner.IdentityConflict
@@ -20,7 +21,10 @@ import java.util.TreeMap
  * every hour that changed — earlier hours at once, the current hour at most every [chunkEvery] (the upload interval,
  * [CHUNK_EVERY] by default) — with `created_at`
  * strictly increasing per hour. Keeps the last [BACKFILL_HOURS] in memory (what a new follower or a rotation gets).
- * Not thread-safe: the engine calls it on its serial dispatcher.
+ * The wearer's sensor (PROTOCOL-v2 "Sensor life") rides on every live event; a **reading-less live event** carries it
+ * alone when it changes ([onSensor]: a new sensor, one that ended early, none any more) and at every [tick] while the
+ * sensor warms up, so followers see a warm-up and a sensor end before any reading. Not thread-safe: the engine calls
+ * it on its serial dispatcher.
  */
 class PublishReadings(private val ctx: OwnerContext) {
     private val readings = TreeMap<Long, WireReading>()
@@ -28,6 +32,9 @@ class PublishReadings(private val ctx: OwnerContext) {
     private val chunkSentAt = mutableMapOf<Long, Long>()
     private val chunkCreatedAt = mutableMapOf<Long, Long>()
     private var newestLive = 0L
+
+    /** The sensor every live event carries (null = the wearer knows none). */
+    private var sensor: SensorLife? = null
 
     /** Seconds between two publishes of the current hour's chunk ([app.mauri.sukrara.share.owner.RelayPolicy.chunkEvery]). */
     var chunkEvery: Long = CHUNK_EVERY
@@ -42,7 +49,7 @@ class PublishReadings(private val ctx: OwnerContext) {
             if (readings.put(w.t, w) != w) dirty += Wire.hourOf(w.t)
             if (w.t > newestLive && now - w.t < LIVE_MAX_AGE) {
                 newestLive = w.t
-                out += ctx.events.live(s.device(ctx.crypto), s.readKey(ctx.crypto).public, LivePayload(w, null), now)
+                out += live(s, LivePayload(w, sensor), now)
             }
         }
         prune(now)
@@ -56,8 +63,36 @@ class PublishReadings(private val ctx: OwnerContext) {
         return flush(s, now, force = true)
     }
 
-    /** Called every [CHUNK_EVERY]: the current hour's chunk if it changed and [chunkEvery] has passed. */
-    fun tick(s: OwnerState, now: Long): List<SignedEvent> = flush(s, now, force = false)
+    /**
+     * The wearer's sensor changed ([new] null = none any more): a reading-less live event says so at once. The first
+     * known sensor counts as a change, so one that started while sharing was off reaches followers without waiting
+     * for a reading; a first null (nothing known yet) sends nothing.
+     */
+    fun onSensor(s: OwnerState, new: SensorLife?, now: Long): List<SignedEvent> {
+        if (new == sensor) return emptyList()
+        sensor = new
+        return listOf(sensorOnly(s, now))
+    }
+
+    /**
+     * Called every [CHUNK_EVERY]: the current hour's chunk if it changed and [chunkEvery] has passed, and the sensor
+     * again while it warms up (live events aren't stored by relays: a follower that connects during the warm-up gets it
+     * from the next tick).
+     */
+    fun tick(s: OwnerState, now: Long): List<SignedEvent> =
+        flush(s, now, force = false) + listOfNotNull(sensor?.takeIf { warming(it, now) }?.let { sensorOnly(s, now) })
+
+    /**
+     * Warming up as followers draw it (`:core:graph` SensorLife.warming): started, no reading since its start, and not
+     * more than [WARMUP_GRACE] past the warm-up's end (a warm-up that brings no reading).
+     */
+    private fun warming(sensor: SensorLife, now: Long): Boolean =
+        now >= sensor.start && now < sensor.warmupEnd + WARMUP_GRACE && (readings.lastEntry()?.key ?: 0) < sensor.start
+
+    private fun sensorOnly(s: OwnerState, now: Long): SignedEvent = live(s, LivePayload(null, sensor), now)
+
+    private fun live(s: OwnerState, payload: LivePayload, now: Long): SignedEvent =
+        ctx.events.live(s.device(ctx.crypto), s.readKey(ctx.crypto).public, payload, now)
 
     fun publishAlert(s: OwnerState, alert: AlertPayload, now: Long): SignedEvent =
         ctx.events.alert(s.device(ctx.crypto), s.readKey(ctx.crypto).public, alert, now)
@@ -91,6 +126,9 @@ class PublishReadings(private val ctx: OwnerContext) {
         const val CHUNK_EVERY = 300L
         const val LIVE_MAX_AGE = 600L
         const val FUTURE_SLACK = 60L
+
+        /** How long past its warm-up's end a sensor with no reading yet still counts as warming up (15 min). */
+        const val WARMUP_GRACE = 15 * 60L
     }
 }
 

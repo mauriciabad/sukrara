@@ -337,22 +337,6 @@
         }
       }
     },
-    "Another device already used this invite. Ask for a new invite on the phone." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Another device already used this invite. Ask for a new invite on the phone."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otro dispositivo ya ha usado esta invitación. Pide una nueva en el móvil."
-          }
-        }
-      }
-    },
     "Another device used this invite. Ask for a new one." : {
       "localizations" : {
         "en" : {
@@ -577,6 +561,22 @@
         }
       }
     },
+    "Changed to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changed to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiado a %@"
+          }
+        }
+      }
+    },
     "Check for Updates…" : {
       "localizations" : {
         "en" : {
@@ -721,6 +721,22 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
     "Delete %@" : {
       "localizations" : {
         "en" : {
@@ -829,6 +845,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada invitación sirve una vez. Pide una nueva a quien lleva el sensor."
+          }
+        }
+      }
+    },
+    "Edit %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar %@"
+          }
+        }
+      }
+    },
+    "Edit Treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar tratamiento"
           }
         }
       }
@@ -1373,6 +1421,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más tarde"
+          }
+        }
+      }
+    },
+    "Logged on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en el móvil de %@"
+          }
+        }
+      }
+    },
+    "Logged on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en este Mac"
           }
         }
       }
@@ -2145,6 +2225,22 @@
         }
       }
     },
+    "Read from the pen on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read from the pen on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leído de la pluma en el móvil de %@"
+          }
+        }
+      }
+    },
     "Remind as Usual" : {
       "localizations" : {
         "en" : {
@@ -2156,7 +2252,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recordar como siempre"
+            "value" : "Avisar como siempre"
           }
         }
       }
@@ -3421,6 +3517,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Muy baja por debajo de"
+          }
+        }
+      }
+    },
+    "Very low and no data included, on this Mac only" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very low and no data included, on this Mac only"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluidas muy baja y sin datos, solo en este Mac"
           }
         }
       }
@@ -5580,7 +5692,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas %@: cambiar la hora"
+            "value" : "Alertas %@: cambiar duración"
           }
         }
       }
@@ -5660,7 +5772,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas: cambiar la hora"
+            "value" : "Alertas: cambiar duración"
           }
         }
       }
@@ -5692,7 +5804,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cambiar la hora"
+            "value" : "Cambiar duración"
           }
         }
       }
@@ -5996,7 +6108,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recordar menos"
+            "value" : "Avisar menos"
           }
         }
       }
@@ -6524,7 +6636,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recordar menos: cada"
+            "value" : "Avisar menos: cada"
           }
         }
       }
@@ -6573,22 +6685,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sonido"
-          }
-        }
-      }
-    },
-    "Test" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Test"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prueba"
           }
         }
       }
@@ -6700,7 +6796,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Silenciar y Recordar menos terminan cuando el valor vuelve dentro del umbral por este margen durante este tiempo."
+            "value" : "Silenciar y Avisar menos terminan cuando el valor vuelve dentro del umbral por este margen durante este tiempo."
           }
         }
       }

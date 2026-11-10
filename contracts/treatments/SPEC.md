@@ -54,7 +54,10 @@ entries are only ever created and changed on the wearer's devices.
 
 **Merge** (receiving `inc` for an `id` we hold as `cur`):
 `winner = inc if (inc.u, inc.o) > (cur.u, cur.o) else cur`; result = winner with `lv = max(cur.lv, inc.lv)`.
-Changed if the result differs from `cur`. Unknown ids are inserted as-is.
+`o` compares as its string, so on equal `u` the greater origin wins (`phone` > `mac` > `follower`) and every device
+keeps the same version whatever order the two arrive in; an equal `(u, o)` changes nothing. Changed if the result
+differs from `cur`. Unknown ids are inserted as-is. Every store applies it, the apps' databases included
+([merge.json](merge.json), read by both apps).
 
 **Needs upload** when `lv < u`. Upload policy (avoids both devices racing for the same row): the origin device
 uploads immediately; the other device uploads only if the row still needs upload 2 minutes after it learned it.

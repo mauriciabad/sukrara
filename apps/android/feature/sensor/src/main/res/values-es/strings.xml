@@ -51,7 +51,7 @@
     <string name="newsensor_warming_almost">Casi listo</string>
     <string name="newsensor_ready_in">Listo en %1$s</string>
     <string name="newsensor_ready_title">Sensor listo</string>
-    <string name="newsensor_ready_text">Ya llegan las lecturas de glucosa.</string>
+    <string name="newsensor_ready_text">Ya llegan las lecturas de glucosa. Las primeras 12 horas pueden ser menos precisas.</string>
     <string name="newsensor_juggluco_title">Ahora la fuente es Juggluco</string>
     <string name="newsensor_juggluco_text">Sukrara deja de leer el sensor directamente y lee la glucosa desde Juggluco en este móvil. Puedes cambiarlo en Ajustes › Sensor.</string>
 

@@ -27,8 +27,6 @@ import app.mauri.sukrara.monitor.service.AndroidStoppedNotice
 import app.mauri.sukrara.monitor.service.FreshnessTicker
 import app.mauri.sukrara.monitor.service.HealthCheck
 import app.mauri.sukrara.monitor.service.MonitorStarter
-import app.mauri.sukrara.monitor.systemui.RootStatusBar
-import app.mauri.sukrara.monitor.systemui.SystemAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -69,6 +67,8 @@ class MonitorModule(
     sharing: Flow<SharingLine?> = flowOf(null),
     /** The role's reading source may have changed (Settings › Sensor): the service picks it again. */
     val sourceChanges: Flow<Unit> = emptyFlow(),
+    /** Root and the System UI module: the full build's `SystemUiRoot`; null in the Google Play build ([RootFeatures]). */
+    rootFeatures: RootFeatures.Factory? = null,
 ) {
     val hubImpl = GlucoseHubImpl(scope, dispatchers, clock, readings, record, role)
 
@@ -107,8 +107,8 @@ class MonitorModule(
     private val ticks = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     /**
-     * A freshness step passed without a new reading, or how a time is written changed (12/24-hour, time zone,
-     * language): surfaces that show the value redraw (notification, widgets) if their picture changed.
+     * A freshness step passed without a new reading, how a time is written changed (12/24-hour, time zone, language) or
+     * the theme switched: surfaces that show the value redraw (notification, widgets) if their picture changed.
      */
     val freshnessTicks: SharedFlow<Unit> = ticks
 
@@ -145,21 +145,23 @@ class MonitorModule(
         screenOn.tryEmit(Unit)
     }
 
-    /** Root for Sukrara and the System UI module (Settings › Status bar, the home restart card). */
-    val systemAccess = SystemAccess(dispatchers.io)
-
-    /** The value in the status bar with root: system icons and the System UI module's state. */
-    val rootStatusBar =
-        RootStatusBar(
-            context = context,
-            scope = scope,
-            clock = clock,
-            access = systemAccess,
-            hub = hubImpl.state,
-            settings = settings,
-            graphConfig = graphConfig,
-            freshnessTicks = freshnessTicks,
-            repostNotification = ::repost,
+    /**
+     * Root for Sukrara, the System UI module and the value in the status bar with root (Settings › Status bar, the home
+     * restart card); null in the Google Play build, which has none of them.
+     */
+    val root: RootFeatures? =
+        rootFeatures?.create(
+            RootInputs(
+                context = context,
+                scope = scope,
+                io = dispatchers.io,
+                clock = clock,
+                hub = hubImpl.state,
+                settings = settings,
+                graphConfig = graphConfig,
+                freshnessTicks = freshnessTicks,
+                repostNotification = ::repost,
+            ),
         )
 
     /** Channels and the hub's inputs; call from `AppGraph.ready()` (after storage is ready, off the main thread). */
@@ -168,8 +170,7 @@ class MonitorModule(
         hubImpl.start()
         // starters must see the real role from disk, not the initial "setup not done"
         hubImpl.awaitInputs()
-        systemAccess.start()
-        rootStatusBar.start()
+        root?.start()
     }
 
     /**
@@ -180,6 +181,14 @@ class MonitorModule(
     fun onLocaleChanged() {
         Channels.create(context)
         repost()
+        ticks.tryEmit(Unit)
+    }
+
+    /**
+     * The phone switched between the light and the dark theme: the widgets and the glucose notification's card are
+     * pictures in one palette, so they redraw at once instead of at the next reading.
+     */
+    fun onThemeChanged() {
         ticks.tryEmit(Unit)
     }
 

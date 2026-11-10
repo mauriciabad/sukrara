@@ -194,6 +194,7 @@ object SettingsSpec {
         SettingInfo("apps.nightscoutLan", "bool", null, false, null, "integrations:nightscoutServerLan", "", null, "android", "Phone-side local API", listOf()),
         SettingInfo("apps.libreviewInterval", "number", "libreViewInterval", false, null, "integrations:libreviewInterval", "", null, "android", "Only the wearer's phone uploads to the wearer's LibreView account", listOf()),
         SettingInfo("apps.libreview", "group", null, false, null, "integrations:libreview", "", null, "android", "Only the wearer's phone uploads to the wearer's LibreView account", listOf()),
+        SettingInfo("settings.searchRecent", "state", null, false, null, "settings:searchRecent", "", null, "android", "Android's settings overview has a search field; the Mac Settings window is a few panes without one", listOf()),
         SettingInfo("apps.tidepool", "group", null, false, null, "integrations:tidepool", "", null, "android", "Tidepool upload runs on a phone (wearer, or a follower uploading the followed person's data); the Mac doesn't upload", listOf()),
         SettingInfo("apps.nightscoutUpload", "group", null, false, null, "integrations:nightscoutUpload", "", null, "android", "Only the wearer's phone uploads", listOf()),
         SettingInfo("apps.broadcasts", "group", null, false, null, "integrations:broadcastApps", "", null, "android", "Android inter-app broadcasts and Health Connect", listOf()),
@@ -282,6 +283,7 @@ object SettingsSpec {
         const val NIGHTSCOUT_SERVER_LAN = "nightscoutServerLan"
         const val LIBREVIEW_INTERVAL = "libreviewInterval"
         const val LIBREVIEW = "libreview"
+        const val SEARCH_RECENT = "searchRecent"
         const val TIDEPOOL = "tidepool"
         const val NIGHTSCOUT_UPLOAD = "nightscoutUpload"
         const val BROADCAST_APPS = "broadcastApps"

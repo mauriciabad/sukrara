@@ -1,5 +1,5 @@
 {
-  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
+  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. play_permissions: what the Google Play build (play flavor) removes from and adds to that list, each with the reason (ManifestTest on the play manifest, verify-apk.sh --play). prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
   "header_exts": [
     ".kt",
     ".swift",
@@ -154,10 +154,6 @@
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     },
     {
-      "section": "Sensor reminders and countdowns",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
       "section": "Languages",
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     }
@@ -188,6 +184,15 @@
     "android.permission.health.WRITE_BLOOD_GLUCOSE": "Health Connect blood glucose, opt-in (:integrations PlatformHealth)",
     "app.mauri.sukrara.permission.SYSTEMUI_STATE": "our own signature permission: only Sukrara feeds the System UI module (:monitor)",
     "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
+  },
+  "play_permissions": {
+    "remove": {
+      "android.permission.USE_EXACT_ALARM": "Play allows it only for alarm-clock and calendar apps (app/src/play/AndroidManifest.xml)",
+      "app.mauri.sukrara.permission.SYSTEMUI_STATE": "no System UI module in the Play build (Device and Network Abuse)"
+    },
+    "add": {
+      "android.permission.SCHEDULE_EXACT_ALARM": "the alert check's exact alarms; the person can refuse it and the alert checklist then asks for Alarms and reminders (:monitor readiness)"
+    }
   },
   "queries": {
     "package:com.google.android.calendar": "open the sensor-end event in Google Calendar (:monitor, :app, :feature:settings)",

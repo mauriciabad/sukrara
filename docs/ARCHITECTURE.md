@@ -364,7 +364,13 @@ every load (never `Missing`) until a deliberate save or delete; settings read as
 `SecretUnreadableException` on every read and stays in place (an unreadable identity is never "no identity"); a
 transient Keystore error (busy after an OS update) throws `transient = true`, is not reported and deletes nothing; keys
 are never deleted by an error path. A damaged database is copied aside (with its WAL) and reported by
-`QuarantiningOpenHelperFactory` before SQLite recreates it. The database is not encrypted yet (issue: SQLCipher).
+`QuarantiningOpenHelperFactory` before SQLite recreates it.
+
+**No app-level encryption of the database** (investigation [31](31-db-encryption.md)): file-based encryption protects
+`sukrara.db` at rest. A SQLCipher key the app can use while the phone is locked (every reading arrives then) is a key
+anyone who can read the file on a running phone can use too, and it would add a way for the history to become
+unreadable. The same holds for the typed state and the device-protected plan. Secrets stay sealed by the Keystore
+(`SecureStore`).
 
 ## Android protocol (`apps/android/core/protocol`)
 
@@ -487,6 +493,9 @@ every app). Alert scenario expectations change only with the owner's OK.
 
 ## Release
 
-`VERSION` → every app. Android: `tools/release/android-release.sh` (assembleRelease with the release key +
-`verify-apk.sh`); Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`). 0.x versions are GitHub
-prereleases; every app's update check include prereleases only on a prerelease build.
+`VERSION` → every app. Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
+`verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
+`verify-apk.sh --play`; the play flavor has no root / LSPosed code and no update check: `app/src/play`, `Store`, and
+`:monitor`'s `RootFeatures` that only the full flavor passes); Mac: `tools/release/mac-release.sh` (bundle + dmg +
+`verify-app.sh`). 0.x versions are GitHub prereleases; every app's update check includes prereleases only on a
+prerelease build.

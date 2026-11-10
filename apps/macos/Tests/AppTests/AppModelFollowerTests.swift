@@ -25,7 +25,9 @@ import Testing
         #expect(model.notMonitoringReason == "Not monitoring: not following anyone yet" && wake.at == nil)
         snapshot.link = .following(wearer: "Ana", canWrite: false)
         model.apply(snapshot)
-        #expect(model.notMonitoringReason == "Waiting for the first reading from the wearer" && wake.at == nil)
+        // #40: the follow is the source's start: no data rings 20 min later if no reading ever comes
+        #expect(model.notMonitoringReason == "Waiting for the first reading from the wearer")
+        #expect(wake.at == clock.now.addingTimeInterval(20 * 60))
         snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
         model.apply(snapshot)
         #expect(model.notMonitoringReason == nil && model.statusTitle == "112 →" && wake.at != nil)
@@ -101,6 +103,29 @@ import Testing
         model.apply(snapshot)
         #expect(
             model.notMonitoringReason == "Not monitoring: can't read the follower key from the Keychain. Retrying…")
+    }
+
+    /// #161: a wearer who replaces their identity tells this Mac first (the revoked notice): the panel says the wearer
+    /// stopped sharing, with *Follow* as its way out, and no No data alarm is armed for a stream that won't come back.
+    @Test func aWearerWhoStoppedSharingRingsNoNoDataAlarm() {
+        let alerts = AlertController(
+            settings: AlertSettings(), clock: clock, store: MemoryAlertStore(), notifier: notifier, wake: wake)
+        let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
+        let model = AppModel(plan: plan, clock: clock, alerts: alerts)
+        var snapshot = FollowerSnapshot.empty
+        snapshot.link = .following(wearer: "Ana", canWrite: false)
+        snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
+        model.apply(snapshot)
+        #expect(alerts.nextWake != nil)  // armed: no data would ring if the readings stopped
+        snapshot.link = .revoked
+        model.apply(snapshot)
+        #expect(alerts.nextWake == nil && !alerts.mirroring)
+        #expect(model.noDataReason == .revoked && NoDataReason.revoked.action == .follow)
+        #expect(notifier.monitoring.last == .some("Not monitoring: the wearer stopped sharing"))
+        clock.advance(by: 3 * 3600)
+        alerts.tick()
+        model.apply(snapshot)
+        #expect(notifier.posts.isEmpty)
     }
 
     /// #109: a monitoring Mac that drops out (not by the person) posts a passive note with why; it goes when

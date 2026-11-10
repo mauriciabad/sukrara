@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.sharing.backup
 
 import android.icu.text.ListFormatter
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -46,6 +48,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.sharing.OwnerSharing
@@ -59,6 +63,7 @@ import app.mauri.sukrara.feature.sharing.setup.StepButtons
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.OwnerShareState
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -78,12 +83,18 @@ enum class ReplaceStep { Choose, Restore }
 /** *Start fresh* over the working identity. */
 enum class FreshUi { Idle, Busy, Failed, Done }
 
-/** The page's state; [gate] = the restore gate (this phone's own sensor is live), re-read with every reading. */
+/**
+ * The page's state; [gate] = the restore gate (this phone's own sensor is live), re-read with every reading.
+ * [telling]: the followers are being told before the identity goes (the engine's, so it shows again after leaving and
+ * coming back); [cancelled]: the person cancelled that, nothing changed.
+ */
 data class ReplaceUi(
     val step: ReplaceStep = ReplaceStep.Choose,
     val restore: RestoreUi = RestoreUi.Idle,
     val fresh: FreshUi = FreshUi.Idle,
     val gate: RestoreGate = RestoreGate.evaluate(ownSensorLive = false),
+    val telling: TellingFollowers? = null,
+    val cancelled: Boolean = false,
 ) {
     val busy: Boolean get() = restore == RestoreUi.Busy || fresh == FreshUi.Busy
 
@@ -94,7 +105,8 @@ data class ReplaceUi(
 /**
  * Backup › Replace this identity: a working identity replaced without reinstalling, by a restored one (its recovery code
  * or the password manager; through the same gate as setup) or a fresh one (how the wearer appears now). Both are
- * confirmed first, naming the followers who lose the readings; the work isn't cancelled by leaving the page.
+ * confirmed first, naming the followers who lose the readings; the followers are told first (*Telling your
+ * followers…*, with [cancel] until it is replaced); the work isn't cancelled by leaving the page.
  */
 class ReplaceIdentityViewModel(
     private val sharing: OwnerSharing,
@@ -106,11 +118,20 @@ class ReplaceIdentityViewModel(
     private val local = MutableStateFlow(ReplaceUi())
 
     val ui: StateFlow<ReplaceUi> =
-        combine(local, hub.state) { u, glucose ->
-            u.copy(gate = RestoreGate.evaluate(RestoreGate.ownSensorLive(glucose, clock.now())))
+        combine(local, hub.state, sharing.telling) { u, glucose, telling ->
+            u.copy(gate = RestoreGate.evaluate(RestoreGate.ownSensorLive(glucose, clock.now())), telling = telling)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), local.value)
 
-    fun chooseRestore() = local.update { it.copy(step = ReplaceStep.Restore, restore = RestoreUi.Idle) }
+    /** Cancel was tapped while the followers were told: a replace that then reports nothing done was cancelled. */
+    private var cancelAsked = false
+
+    fun chooseRestore() = local.update { it.copy(step = ReplaceStep.Restore, restore = RestoreUi.Idle, cancelled = false) }
+
+    /** Cancel while the followers are told: the identity stays and they follow again (too late once replaced). */
+    fun cancel() {
+        cancelAsked = true
+        sharing.cancelReplace()
+    }
 
     /** Back: the restore form returns to the choice; on the choice, while working, or once replaced, [onLeave] runs. */
     fun back(onLeave: () -> Unit) {
@@ -130,7 +151,8 @@ class ReplaceIdentityViewModel(
         password: String?,
     ) {
         if (local.value.busy || !RestoreGate.ownSensorLive(hub.state.value, clock.now())) return
-        local.update { it.copy(restore = RestoreUi.Busy) }
+        cancelAsked = false
+        local.update { it.copy(restore = RestoreUi.Busy, cancelled = false) }
         viewModelScope.launch {
             // leaving the page must not stop a replace halfway: the engine finishes it
             val result =
@@ -144,16 +166,11 @@ class ReplaceIdentityViewModel(
                     }
                 }
             local.update {
-                it.copy(
-                    restore =
-                        if (result is RestoreIdentity.Result.Restored) {
-                            RestoreUi.Restored(
-                                result.followers,
-                            )
-                        } else {
-                            RestoreUi.Failed(result)
-                        },
-                )
+                when (result) {
+                    is RestoreIdentity.Result.Restored -> it.copy(restore = RestoreUi.Restored(result.followers))
+                    RestoreIdentity.Result.Cancelled -> it.copy(restore = RestoreUi.Idle, cancelled = true)
+                    else -> it.copy(restore = RestoreUi.Failed(result))
+                }
             }
         }
     }
@@ -162,7 +179,8 @@ class ReplaceIdentityViewModel(
     fun startFresh() {
         if (local.value.busy) return
         val profile = (state.value as? OwnerShareState.Sharing)?.profile ?: Profile("", Avatar.random(SecureRandom()))
-        local.update { it.copy(fresh = FreshUi.Busy) }
+        cancelAsked = false
+        local.update { it.copy(fresh = FreshUi.Busy, cancelled = false) }
         viewModelScope.launch {
             val created =
                 withContext(NonCancellable) {
@@ -174,7 +192,13 @@ class ReplaceIdentityViewModel(
                         false
                     }
                 }
-            local.update { it.copy(fresh = if (created) FreshUi.Done else FreshUi.Failed) }
+            local.update {
+                when {
+                    created -> it.copy(fresh = FreshUi.Done)
+                    cancelAsked -> it.copy(fresh = FreshUi.Idle, cancelled = true)
+                    else -> it.copy(fresh = FreshUi.Failed)
+                }
+            }
         }
     }
 
@@ -212,6 +236,7 @@ fun ReplaceIdentityPage(
                 restore = viewModel::restore,
                 clearRestoreError = viewModel::clearRestoreError,
                 startFresh = viewModel::startFresh,
+                cancelTelling = viewModel::cancel,
                 close = onClose,
                 backUp = onBackUp,
                 invite = onInvite,
@@ -227,6 +252,7 @@ data class ReplaceActions(
     val restore: (code: String, password: String?) -> Unit = { _, _ -> },
     val clearRestoreError: () -> Unit = {},
     val startFresh: () -> Unit = {},
+    val cancelTelling: () -> Unit = {},
     val close: () -> Unit = {},
     val backUp: () -> Unit = {},
     val invite: () -> Unit = {},
@@ -249,8 +275,10 @@ fun ReplaceIdentityScreen(
     val names = remember(followers) { followers?.map { it.ifBlank { someone } }.orEmpty() }
     // the settings group brings its own margins; everything else gets the page's
     Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        val telling = u.telling
         when {
             u.done -> Padded { Done(u, actions) }
+            telling != null -> Padded { Telling(telling, actions.cancelTelling) }
             u.step == ReplaceStep.Restore -> Padded { RestoreStep(u, actions) { code, password -> pending = code to password } }
             else -> Choose(sharing, names, u, actions) { confirmingFresh = true }
         }
@@ -302,9 +330,10 @@ private fun ColumnScope.Choose(
         )
     }
     Padded {
-        when (u.fresh) {
-            FreshUi.Busy -> Working(stringResource(R.string.sh_replace_fresh_busy))
-            FreshUi.Failed -> NoteCard(stringResource(R.string.sh_replace_fresh_failed), error = true)
+        when {
+            u.fresh == FreshUi.Busy -> Working(stringResource(R.string.sh_replace_fresh_busy))
+            u.fresh == FreshUi.Failed -> NoteCard(stringResource(R.string.sh_replace_fresh_failed), error = true)
+            u.cancelled -> Cancelled()
             else -> Unit
         }
         StepButtons(null, {}, secondary = listOf(stringResource(R.string.sh_setup_cancel) to actions.close))
@@ -354,6 +383,7 @@ private fun ColumnScope.RestoreStep(
     actions: ReplaceActions,
     onRestore: (String, String?) -> Unit,
 ) {
+    if (u.cancelled) Cancelled()
     RestoreForm(
         gate = u.gate,
         restore = u.restore,
@@ -388,6 +418,50 @@ private fun ColumnScope.Done(
         onPrimary = if (restored == null) actions.invite else actions.close,
         secondary = if (restored == null) listOf(stringResource(R.string.sh_replace_done) to actions.close) else emptyList(),
     )
+}
+
+/**
+ * *Telling your followers…*: why (their Sukrara says the wearer stopped sharing, not that no data arrives), how many
+ * relays took the notice so far (the bar fills as they do), and Cancel until the identity is replaced.
+ */
+@Composable
+private fun ColumnScope.Telling(
+    t: TellingFollowers,
+    onCancel: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    val target = if (t.followers == 0) 0f else t.told.toFloat() / t.followers
+    val progress by animateFloatAsState(target, Motion.defaultSpatial(LocalReducedMotion.current), label = "told")
+    Column(
+        Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(stringResource(R.string.sh_replace_telling), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.sh_replace_telling_text), style = MaterialTheme.typography.bodyMedium)
+        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+        Text(
+            stringResource(R.string.sh_replace_telling_count, t.told, t.followers),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    StepButtons(
+        null,
+        {},
+        secondary =
+            listOf(
+                stringResource(R.string.sh_setup_cancel) to {
+                    haptics.confirm()
+                    onCancel()
+                },
+            ),
+    )
+}
+
+/** The replace was cancelled while the followers were told: nothing changed. */
+@Composable
+private fun Cancelled() {
+    Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) { NoteCard(stringResource(R.string.sh_replace_cancelled)) }
 }
 
 @Composable

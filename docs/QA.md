@@ -221,6 +221,23 @@ survive it) → the app's logcat has no crash and no R8 / JNA / UniFFI / seriali
 - [ ] The release notes list every pre-release library `android-release.sh` printed (`tools/check/allow.json`
   `prerelease_ok`), each with its reason.
 
+### Google Play build (emulator)
+
+`tools/release/play-bundle.sh` builds and checks the bundle (docs/20-publishing.md › Flavors). Then, on an emulator
+(never the owner's phone: the Play build would replace the GitHub one), install bundletool's universal APK
+(`bundletool build-apks --mode=universal`, or `apps/android/app/build/outputs/apk/play/release/app-play-release.apk`)
+over nothing:
+
+- [ ] `play-bundle.sh` exits 0 with bundletool (`$BUNDLETOOL`), and `verify-apk.sh --play` FAILs on the full flavor's
+  APK (USE_EXACT_ALARM, XposedProvider, the systemui classes): the Play checks bite.
+- [ ] Settings › Status bar has no *With root* section; searching "root" or "placement" finds nothing; home never shows
+  *Restart System UI*.
+- [ ] Settings › About: version, *Report a problem*, *Source code*, *Privacy policy* (opens sukrara.mauri.app/privacy);
+  no update rows, nothing about other devices.
+- [ ] A fresh install: the alert checklist (setup and Settings › Alert reliability) lists *Alarms and reminders*;
+  *Fix* opens Android's page; allowing it and coming back clears the item; turning it off again brings it back.
+- [ ] TalkBack reads the About rows and the checklist item with their summaries.
+
 ## Q11 Sensor reminders and countdowns
 
 - [ ] Emulator (wearer): `SYNTHETIC --ez on true --ei endsInMin 300` → the end countdown in the shade (bar, timer);
@@ -339,7 +356,7 @@ Use a test Tidepool account (or a real one only with synthetic emulator data you
 the data set's device → delete, or the end-to-end test below). Never switch it on on the user's phone for a test.
 
 - [ ] No device first: `TIDEPOOL_E2E_EMAIL=… TIDEPOOL_E2E_PASSWORD_FILE=<gitignored file> TIDEPOOL_E2E_LEDGER=<gitignored
-      file> ./gradlew :app:testDebugUnitTest --tests '*TidepoolLiveTest*'` passes: it uploads a synthetic night across
+      file> ./gradlew :app:testFullDebugUnitTest --tests '*TidepoolLiveTest*'` passes: it uploads a synthetic night across
       a DST change into its own data set, checks dedupe / edit / delete / notes, deletes everything and checks that
       nothing is left (`[tidepool-e2e] left: data=0 … e2e data sets=0 notes=0` in the test's output). Each run leaves one
       empty deleted upload record (Tidepool's tombstone; the API can't remove it), so run it only when needed.
@@ -362,7 +379,7 @@ Only a local, throwaway Nightscout with synthetic data (`poc/spikes/nightscout-u
 afterwards). Never a hosted site, never the user's phone.
 
 - [ ] No device first: with the site up, `NS_E2E_URL=http://localhost:1337 NS_E2E_SECRET=… NS_E2E_TOKEN=…
-      NS_E2E_READ_TOKEN=… ./gradlew :app:testDebugUnitTest --tests '*NightscoutLiveTest*'` passes (30 days in, a late
+      NS_E2E_READ_TOKEN=… ./gradlew :app:testFullDebugUnitTest --tests '*NightscoutLiveTest*'` passes (30 days in, a late
       gap filled, 0 gaps / 0 duplicates, treatments, both sensor events, battery, v3 edit + move + delete), then
       `poc/spikes/nightscout-upload` `cli check` (24/24) and `followers/run.sh` pass against the same site.
 - [ ] Emulator (wearer, debug = synthetic glucose; `adb reverse tcp:1337 tcp:1337`): Settings → Share with apps →
@@ -530,6 +547,11 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    home shows the wearer's value and graph; the next minute's reading arrives on both. Both uids still have only the
    10.0.2.2 socket.
 6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
+7. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
+   fresh*, confirmed. *Telling your followers…* fills (*1 of 1 told*) and ends on *Started fresh*; the relay logs the
+   kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
+   home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with
+   *Cancel*; *Cancel* says *Cancelled. Nothing changed…* and the follower keeps following once the relay is back.
 
 ## Q23 Import history
 

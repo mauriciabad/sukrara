@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -39,6 +40,9 @@ import app.mauri.sukrara.feature.settings.pens.PenPage
 import app.mauri.sukrara.feature.settings.pens.PenViewModel
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
+import app.mauri.sukrara.feature.settings.search.BuildFeature
+import app.mauri.sukrara.feature.settings.search.RecentSearch
+import app.mauri.sukrara.feature.settings.search.RecentSearches
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndViewModel
@@ -47,6 +51,10 @@ import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarViewModel
 import app.mauri.sukrara.feature.settings.statusbar.liveUpdatesAllowed
 import app.mauri.sukrara.feature.settings.statusbar.openLiveUpdateSettings
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 /** The settings pages (the app's Nav3 entries map one key to each). */
@@ -130,6 +138,7 @@ fun SettingsScreen(
             val closedTips by deps.closedTips.collectAsStateWithLifecycle(0)
             val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            val recent = recentSearches(deps)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
             SettingsOverviewContent(
                 ui?.settings?.on ?: true,
@@ -148,6 +157,11 @@ fun SettingsScreen(
                     restoreClinicBanner = deps::restoreClinicBanner,
                     restoreClosedTips = deps::restoreClosedTips,
                     pens = deps.pensAvailable(),
+                    build =
+                        buildSet {
+                            if (deps.systemAccess != null) add(BuildFeature.Root)
+                            if (deps.releases != null) add(BuildFeature.UpdateCheck)
+                        },
                     openProfile = openProfile,
                     openBackup = openBackup,
                     openExport = openExport,
@@ -157,7 +171,8 @@ fun SettingsScreen(
                 closedTips,
                 sharing,
                 from,
-                onBack,
+                recent,
+                onBack = onBack,
             )
         }
 
@@ -280,8 +295,16 @@ fun SettingsScreen(
 
         SettingsRoute.Reliability -> {
             val readiness by deps.readiness.readiness.collectAsStateWithLifecycle()
+            val alerts by deps.alertSettings.settings.collectAsStateWithLifecycle(null)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
-            ReliabilityContent(readiness, deps.readiness::fix, deps.readiness::answerUnlockedSound, onBack)
+            ReliabilityContent(
+                readiness,
+                deps.readiness::fix,
+                deps.readiness::answerUnlockedSound,
+                alerts = alerts,
+                playback = deps.alertPlayback,
+                onBack = onBack,
+            )
         }
 
         SettingsRoute.StatusBar -> {
@@ -325,6 +348,7 @@ fun SettingsScreen(
         }
 
         SettingsRoute.About -> {
+            // the Google Play build has no update check (deps.releases null): Play brings the updates
             val vm = viewModel { AboutViewModel(deps.releases, deps.appVersion, deps.prerelease) }
             val state by vm.state.collectAsStateWithLifecycle()
             AboutContent(vm.installed, state, vm::check, onBack)
@@ -362,6 +386,29 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * The search's recent queries (`settings.searchRecent`), remembered and cleared on this phone only. A query is
+ * remembered as its result opens another page: the write starts at once and finishes even though the overview leaves.
+ */
+@Composable
+private fun recentSearches(deps: SettingsDeps): RecentSearch {
+    val scope = rememberCoroutineScope()
+    val text by remember(deps) { deps.settings.flow(SchemaPrefs.SearchRecent) }.collectAsStateWithLifecycle("")
+
+    fun write(change: (String) -> String) {
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable) { deps.settings.update(SchemaPrefs.SearchRecent, change) }
+        }
+    }
+    return remember(text, deps) {
+        RecentSearch(
+            RecentSearches.decode(text),
+            remember = { q -> write { RecentSearches.encode(RecentSearches.add(RecentSearches.decode(it), q)) } },
+            clear = { write { "" } },
+        )
     }
 }
 

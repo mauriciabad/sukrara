@@ -14,7 +14,6 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -58,7 +57,7 @@ class SensorScannerTest {
             scanner.onHit(ScanHit(Advert("AA:01", "DexcomXY"), null)) // passes nothing
             scanner.onHit(ScanHit(Advert("AA:02", "DexcomCD"), null))
             runCurrent()
-            assertEquals("AA:02", found.await()?.address)
+            assertEquals(ScanOutcome.Found(Advert("AA:02", "DexcomCD")), found.await())
             assertEquals(2, scanner.stops)
         }
 
@@ -73,7 +72,7 @@ class SensorScannerTest {
             assertEquals(LinkStatus.SensorNotFound, events.last())
             scanner.onHit(ScanHit(Advert("AA:02", "DexcomCD"), null))
             runCurrent()
-            assertEquals("AA:02", found.await()?.address)
+            assertEquals(ScanOutcome.Found(Advert("AA:02", "DexcomCD")), found.await())
         }
 
     @Test
@@ -81,12 +80,24 @@ class SensorScannerTest {
         runTest {
             val off = FakeScanner().apply { isBluetoothOn = false }
             val events = BrandEvents()
-            assertNull(SensorScanner(off).find(g6, events))
+            assertEquals(ScanOutcome.Stopped, SensorScanner(off).find(g6, events))
             assertEquals(LinkStatus.WaitingForBluetooth, events.last())
 
             val denied = FakeScanner().apply { this.denied = true }
-            assertNull(SensorScanner(denied).find(g6, events))
+            assertEquals(ScanOutcome.Stopped, SensorScanner(denied).find(g6, events))
             assertEquals(LinkStatus.PermissionMissing, events.last())
             assertTrue(denied.starts.isEmpty())
+        }
+
+    @Test
+    fun aLimitedRescanGivesUpAfterItsWindows() =
+        runTest {
+            val scanner = FakeScanner()
+            val events = BrandEvents()
+            val found = async { SensorScanner(scanner).find(g6, events, limit = SensorScanner.RESCAN_WINDOWS) }
+            advanceTimeBy(SensorScanner.WINDOW_MS + 1)
+            runCurrent()
+            assertEquals(ScanOutcome.NotFound, found.await())
+            assertEquals(1, scanner.starts.size)
         }
 }

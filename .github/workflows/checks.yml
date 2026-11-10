@@ -65,6 +65,10 @@ jobs:
         run: python3 tools/settings/gen.py --check
       - name: The local test relay's tests (loopback only)
         run: python3 tools/relay/test_relay.py
+      # The independent Python reference (poc/spec/reference, frozen) with PROTOCOL-v2's rules: every sync sequence
+      # gives the same verdicts and state as both apps, and the OGS vectors are its generator's bytes.
+      - name: Protocol fixtures cross-checked against the reference follower
+        run: python3 tools/protocol/sync_crosscheck.py
       - name: Scripts parse
         run: for f in tools/*.sh tools/*/*.sh; do bash -n "$f" || exit 1; done
 
@@ -108,8 +112,8 @@ jobs:
         working-directory: apps/android
         run: |
           # no Libre 3 core on CI (a separate checkout): skip its checks, the sounds are what this step verifies
-          ./gradlew --no-daemon :app:assembleRelease -x verifyReleaseSigning -x verifyJuggluco -x verifyReleaseApkNativeCore
-          ../../tools/release/verify-sounds.sh app/build/outputs/apk/release/app-release-unsigned.apk
+          ./gradlew --no-daemon :app:assembleFullRelease -x verifyReleaseSigning -x verifyJuggluco -x verifyFullReleaseApkNativeCore
+          ../../tools/release/verify-sounds.sh app/build/outputs/apk/full/release/app-full-release-unsigned.apk
       - name: Roborazzi diffs
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -117,6 +121,24 @@ jobs:
           name: roborazzi-diffs
           path: apps/android/**/build/outputs/roborazzi
           if-no-files-found: ignore
+
+  # The Google Play build (play flavor): the bundle builds and passes every check play-bundle.sh makes before an
+  # upload except the signer and the Libre 3 core (no release key, no Juggluco checkout on CI): bundletool validate,
+  # its universal APK through verify-apk.sh --play (permissions with play_permissions; no root, LSPosed or update-check
+  # code).
+  android-play:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Play bundle, unsigned, checked
+        run: tools/release/play-bundle.sh --unsigned
 
   mac:
     needs: changes
@@ -184,7 +206,7 @@ jobs:
     # The only required check. Passes only when every job either succeeded, or was skipped because `changes` said
     # its paths didn't change; a failed, cancelled or unexpectedly skipped job fails it.
     if: always()
-    needs: [changes, rules, android, mac, poc-android, poc-mac]
+    needs: [changes, rules, android, android-play, mac, poc-android, poc-mac]
     runs-on: ubuntu-latest
     steps:
       - name: Every job that should have run passed
@@ -196,6 +218,7 @@ jobs:
           needs = json.loads(os.environ["RESULTS"])
           out = needs.get("changes", {}).get("outputs", {})
           wanted = {"changes": True, "rules": True, "android": out.get("android") == "true",
+                    "android-play": out.get("android") == "true",
                     "mac": out.get("mac") == "true", "poc-android": out.get("poc") == "true",
                     "poc-mac": out.get("poc") == "true"}
           bad = []

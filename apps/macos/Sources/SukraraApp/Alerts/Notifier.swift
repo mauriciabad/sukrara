@@ -84,7 +84,7 @@ final class Notifier: AlertNotifying {
         let s = settings()
         let f = Self.testFiring(kind, threshold: s[kind].threshold, at: clock.now)
         let content = UNMutableNotificationContent()
-        content.title = L10n.t("Test") + " · " + text.title(f)
+        content.title = text.testTitle(f)
         content.body = L10n.t("This is how this alert looks and sounds. Nothing was muted or logged.")
         content.interruptionLevel = s[kind].alarm && center.timeSensitiveAllowed ? .timeSensitive : .active
         content.sound = notificationSound(kind, s)

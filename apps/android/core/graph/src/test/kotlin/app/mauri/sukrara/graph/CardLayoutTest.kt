@@ -233,13 +233,15 @@ class CardLayoutTest {
             Shape("notification", GraphPlace.NOTIFICATION, listOf(CardPart.HEADER to 64f, CardPart.GRAPH to 96f), sizes("notification")) {
                 notificationCardStyle(it)
             },
-            // Layout coverage only, not registered surfaces (not in the app; surfaces.json "about"): the shapes the Mac
-            // shares answers with in expect.json (a wide 3-ring lock-screen card, a value-only card). Drop one only together with the expect.json answers it alone produces.
+            // the Sensor ready page's real style (WidgetStyle.kt sensorReadyCardStyle, what :feature:sensor draws with)
+            Shape("sensor-ready", GraphPlace.APP, listOf(CardPart.VALUE to 0f), sizes("sensor-ready")) {
+                sensorReadyCardStyle(it)
+            },
+            // Layout coverage only, not a registered surface (not in the app; surfaces.json "about"): the shape the Mac
+            // shares answers with in expect.json (a wide 3-ring lock-screen card). Drop it only together with the
+            // expect.json answers it alone produces.
             Shape("lockscreen-shape", GraphPlace.WIDGETS, listOf(CardPart.ALL to 0f), listOf(380f to 200f, 360f to 170f)) {
                 full(it, GraphPlace.WIDGETS)
-            },
-            Shape("value-only-shape", GraphPlace.APP, listOf(CardPart.VALUE to 0f), listOf(220f to 72f)) {
-                full(it, GraphPlace.APP, graph = false)
             },
         )
 
@@ -303,7 +305,8 @@ class CardLayoutTest {
         return cover?.let { (t, until) -> CardStatus.Taken(kind, t.at.epochSecond, until) } ?: CardStatus.Needed(lowSide = low)
     }
 
-    private fun renderAll(): List<Render> {
+    /** Every scene × settings × shape × size; [fontScale] = the system font size the surfaces pass. */
+    private fun renderAll(fontScale: Float = 1f): List<Render> {
         val words = Scenes.words()
         val pal = GraphPalette.of(false)
         val out = ArrayList<Render>()
@@ -339,6 +342,7 @@ class CardLayoutTest {
                                         d,
                                         CardSurface.TEST,
                                         part,
+                                        fontScale = fontScale,
                                     ).also { bmp.recycle() }
                             }
                         out += Render(shape.id, "${w.toInt()}x${h.toInt()}", sc.id, sid, layouts)
@@ -423,11 +427,48 @@ class CardLayoutTest {
 
     @Test
     fun everySurfaceShapeFollowsTheSameRules() {
+        val answers = sortedMapOf<String, String>()
         val renders = renderAll()
+        val problems = ruleProblems(renders, answers)
+        if (problems.isNotEmpty()) {
+            fail("${problems.size} layout rule failures (contracts/graph/layout/rules.json):\n  " + problems.take(40).joinToString("\n  "))
+        }
+        compareAnswers(renders, answers)
+    }
+
+    /**
+     * A large system font (2×: the chart's words at their 1.3× cap, `GlucoseGraph.MAX_TEXT_SCALE`) keeps every rule
+     * too: the same pass over the same renders. The shared answers are the default size's (the Mac draws at 1×).
+     */
+    @Test
+    fun largeFontFollowsTheSameRules() {
+        val renders = renderAll(fontScale = 2f)
+        val problems = ruleProblems(renders, sortedMapOf())
+        // the words did grow: a treatment label is 1.3× as tall as at 1×
+        val grown = renders.flatMap { it.layouts }.mapNotNull { it.first("chart.label")?.box }
+        assertTrue("no render shows a treatment label at 2×", grown.isNotEmpty())
+        assertTrue(
+            "treatment labels at 2× are ${grown.map {
+                it.height()
+            }.distinct()} tall, want ${GlucoseGraph.TEXT_ROW_DP * GlucoseGraph.MAX_TEXT_SCALE}",
+            grown.all { abs(it.height() / d - GlucoseGraph.TEXT_ROW_DP * GlucoseGraph.MAX_TEXT_SCALE) < 0.05f },
+        )
+        if (problems.isNotEmpty()) {
+            fail(
+                "${problems.size} layout rule failures at 2× font (contracts/graph/layout/rules.json):\n  " +
+                    problems.take(40).joinToString("\n  "),
+            )
+        }
+    }
+
+    /** Every rule of rules.json over [renders]; the shared rules' answers go into [answers]. */
+    private fun ruleProblems(
+        renders: List<Render>,
+        answers: MutableMap<String, String>,
+    ): List<String> {
         val problems = ArrayList<String>()
 
         // the rules: same inputs → same elements, whatever the surface; shared rules give the answers the Mac checks
-        val answers = sortedMapOf<String, String>()
         for (rule in rulesFile["rules"]!!.jsonArray.map { it.jsonObject }) {
             val name = rule["name"].str()!!
             val by = rule["by"]!!.jsonArray.map { it.str()!! }
@@ -606,11 +647,14 @@ class CardLayoutTest {
         // treatment labels only up to maxHours
         val maxHours = rulesFile["treatmentLabels"]!!.jsonObject["maxHours"].long()!!
         assertTrue("treatmentLabels maxHours", GlucoseGraph.LABELS_MAX_S == maxHours * 3600)
+        return problems
+    }
 
-        if (problems.isNotEmpty()) {
-            fail("${problems.size} layout rule failures (contracts/graph/layout/rules.json):\n  " + problems.take(40).joinToString("\n  "))
-        }
-
+    /** The shared [answers] these shapes produce against expect.json (or written into it with `-Dlayout.write=true`). */
+    private fun compareAnswers(
+        renders: List<Render>,
+        answers: Map<String, String>,
+    ) {
         // the shared answers: every one these shapes produce is the one the Mac checks against
         val expectFile = Fixtures.read("layout/expect.json")
         if (System.getProperty("layout.write") == "true") {

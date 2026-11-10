@@ -26,6 +26,9 @@ public enum Freshness: Sendable {
     var showTime: Bool { self != .fresh }
     var strike: Bool { self == .stale }
     var showGraph: Bool { self != .gone }
+    /// A card's value place says "now" where the time goes: a fresh value reads as live (#70; contracts/graph/freshness
+    /// `now`). Text-only places don't.
+    var saysNow: Bool { self == .fresh }
 
     /// What a card WITHOUT a value (graph-only) shows of its data's age, so it never looks current when it isn't
     /// (contracts/graph/freshness `graph_only`; Freshness.kt AgeMark): the reading's time at every age, fresh too (a

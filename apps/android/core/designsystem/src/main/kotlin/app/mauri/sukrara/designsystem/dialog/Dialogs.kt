@@ -59,6 +59,17 @@ fun <T> ChoiceDialog(
     selected: T,
     onClose: () -> Unit,
     onChoose: (T) -> Unit,
+) = ChoiceDialog(title, options, selected, onClose, null, onChoose)
+
+/** [ChoiceDialog] with a [message] above the rows, about all of them (null = none). */
+@Composable
+fun <T> ChoiceDialog(
+    title: String,
+    options: List<Choice<T>>,
+    selected: T,
+    onClose: () -> Unit,
+    message: String?,
+    onChoose: (T) -> Unit,
 ) {
     val haptics = rememberHaptics()
     AlertDialog(
@@ -66,6 +77,14 @@ fun <T> ChoiceDialog(
         title = { Text(title) },
         text = {
             Column(Modifier.selectableGroup().verticalScroll(rememberScrollState())) {
+                if (message != null) {
+                    Text(
+                        message,
+                        Modifier.padding(bottom = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 for (o in options) {
                     RadioRow(o.label, o.sub, o.value == selected, o.enabled, o.trailing) {
                         haptics.confirm()

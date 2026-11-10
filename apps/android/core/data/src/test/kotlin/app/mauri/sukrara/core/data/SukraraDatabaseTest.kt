@@ -19,10 +19,18 @@ import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.testing.Contracts
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -147,6 +155,55 @@ class SukraraDatabaseTest {
             assertTrue(treatments.upsertIfNewer(record(2, 5.0)))
             assertEquals(record(2, 5.0), treatments.get("tr-1"))
         }
+
+    /** contracts/treatments/merge.json: the greater `(u, o)` wins in either arrival order (equal `u`: the greater origin). */
+    @Test
+    fun `treatments - the contract's merge cases through Room`() =
+        runTest {
+            val cases =
+                Json
+                    .parseToJsonElement(Contracts.file("treatments/merge.json").readText())
+                    .jsonObject
+                    .getValue("cases")
+                    .jsonArray
+            cases.forEachIndexed { i, c ->
+                val case = c.jsonObject
+                val name = case.getValue("name").jsonPrimitive.content
+                val cur = mergeRecord("m$i", case.getValue("cur").jsonObject)
+                val inc = mergeRecord("m$i", case.getValue("inc").jsonObject)
+                val wins = case.getValue("wins").jsonPrimitive.content
+                // both arrival orders keep the same version (`same`: the second one changes nothing)
+                listOf(cur to inc, inc to cur).forEach { (first, second) ->
+                    val winner =
+                        if (wins == "same") {
+                            first
+                        } else if (wins == "inc") {
+                            inc
+                        } else {
+                            cur
+                        }
+                    assertTrue(name, treatments.upsertIfNewer(first))
+                    assertEquals(name, winner === second, treatments.upsertIfNewer(second))
+                    assertEquals(name, winner, treatments.get("m$i"))
+                    treatments.deleteAll()
+                }
+            }
+        }
+
+    private fun mergeRecord(
+        id: String,
+        v: JsonObject,
+    ) = TreatmentRecord(
+        treatment =
+            Treatment(
+                id = id,
+                kind = TreatmentKind.RapidInsulin,
+                amount = v.getValue("a").jsonPrimitive.double,
+                at = t0,
+                modifiedAt = Instant.ofEpochMilli(v.getValue("u").jsonPrimitive.long),
+                origin = TreatmentOrigin.entries.single { it.wire == v.getValue("o").jsonPrimitive.content },
+            ),
+    )
 
     @Test
     fun `deleted treatments are hidden but stay as tombstones for sync`() =

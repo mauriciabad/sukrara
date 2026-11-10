@@ -44,9 +44,11 @@ import app.mauri.sukrara.monitor.notify.NotificationArt
 import app.mauri.sukrara.monitor.notify.NotificationCard
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
+import app.mauri.sukrara.monitor.notify.PostCounts
 import app.mauri.sukrara.monitor.notify.PostGate
 import app.mauri.sukrara.monitor.notify.SharingLine
 import app.mauri.sukrara.monitor.notify.UiText
+import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -76,6 +78,9 @@ class LiveNotification(
                 TimeUnit.MILLISECONDS,
             )
         }
+
+    /** Its posts since the app started: posted, and skipped as nothing new (Settings › Advanced › Statistics). */
+    val counts: StateFlow<PostCounts> get() = gate.counts
 
     /** The content for [state] now with the status-bar [prefs] (the chip's permission is read here). */
     fun content(

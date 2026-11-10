@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.UnlockedSound
@@ -28,13 +29,15 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /**
  * Alert reliability: the same checklist as home's row and the setup step, every item with its state
  * and, while missing, a Fix button that opens the system screen for it (a failed alert step: *Copy report*). The page
- * refreshes when it comes back.
+ * refreshes when it comes back. *Check it now* sends the real test alert ([TestAlert]; shown once [alerts] are read).
  */
 @Composable
 internal fun ReliabilityContent(
     readiness: AlertReadiness,
     onFix: (AlertRequirement) -> Unit,
     onAnswerUnlockedSound: (UnlockedSound) -> Unit = {},
+    alerts: AlertSettings? = null,
+    playback: AlertPlayback = AlertPlayback.None,
     onBack: () -> Unit,
 ) {
     SettingsPage(stringResource(R.string.st_reliability_title), onBack) {
@@ -85,6 +88,9 @@ internal fun ReliabilityContent(
                     }
                 }
             }
+        }
+        if (alerts != null) {
+            SettingsGroup(title = stringResource(R.string.st_reliability_test_title)) { ReliabilityTestRow(alerts, playback) }
         }
         FooterText(stringResource(R.string.st_reliability_footer))
     }

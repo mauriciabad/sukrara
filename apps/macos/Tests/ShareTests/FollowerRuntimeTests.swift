@@ -65,6 +65,38 @@ struct FollowerRuntimeTests {
             expiration: v.now + 3600)
     }
 
+    /// #55: the wearer's new sensor reaches the Mac while it warms up, before any reading (a reading-less live event,
+    /// contracts/protocol/sync/sensor-life.json): the snapshot the menu bar and widgets draw carries it, no reading.
+    @Test func aWarmingSensorArrivesBeforeAnyReading() async throws {
+        let fixture = loadJSON("protocol/sync/sensor-life.json")
+        let keys = fixture["keys"] as! [String: [String: String]]
+        let now = fixture["now"] as! Int
+        var state = FollowerState(
+            follower: SecretKeyHex(keys[fixture["follower"] as! String]!["sec"]!)!,
+            identity: fixture["identity"] as! String, token: "t", code: "0000", pair: nil,
+            me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
+        state.status = .requested
+        let secrets = InMemorySecretStore()
+        secrets.write(try state.encoded(), account: KeychainStore.followerAccount)
+        let h = RuntimeHarness(now: now, secrets: secrets)
+        await h.runtime.start()
+        let snapshots = await h.runtime.snapshots()
+        let events = fixture["events"] as! [String: Any]
+        for name in ["key-1", "roster-1", "sensor-new-warming"] {
+            await h.hub.push(try #require(SignedEvent.decode(json: JSONText.encode(events[name]!))))
+        }
+        let warming = WearerSensor(start: now - 3200, end: now - 3200 + 15 * 86400, warmupEnd: now - 200)
+        #expect(await eventually { await h.stores.sensor.load() == warming })
+        var shown = false
+        for await snapshot in snapshots where snapshot.sensor == warming {
+            #expect(snapshot.readings.isEmpty)
+            shown = true
+            break
+        }
+        #expect(shown)
+        await h.runtime.stop()
+    }
+
     @Test func joinRequestThenFollowFillsTheStores() async throws {
         let hub = FakeRelayHub(stored: [v.event("invite")])
         let h = RuntimeHarness(now: v.now, hub: hub)
@@ -179,6 +211,20 @@ struct FollowerRuntimeTests {
         await runtime.stop()
     }
 
+    /// No relay answers the lookup at all (no connection, no end of stored events): offline, not "not found".
+    @Test func aLookupNoRelayAnswersIsOffline() async throws {
+        let h = RuntimeHarness(now: v.now)
+        let runtime = FollowerRuntime(
+            secrets: h.secrets, stores: h.stores, crypto: crypto, clock: h.clock, me: Profile(name: "Mac", avatar: nil),
+            makeRelays: { _, _ in SilentRelay() }, sleep: { _ in })
+        await runtime.start()
+        await #expect(throws: FollowerJoinError.offline) {
+            _ = try await runtime.lookUp(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        }
+        #expect(await runtime.currentLink == .notFollowing)
+        await runtime.stop()
+    }
+
     /// The lookup only reads: who is inviting (the invite's profile) comes back, while no key is made, nothing is
     /// published and the link stays *not following* until the person clicks *Follow*. An invite that expired while
     /// they decided is refused.
@@ -247,6 +293,118 @@ struct FollowerRuntimeTests {
         #expect(await runtime.send(entry) == .sending)
         // FakeRelay answers OK true at once → sent.
         #expect(await eventually { (try? await h.stores.treatments.load().entries[entry.id]?.delivery) == .sent })
+        // The wearer's phone (device D, in the roster) echoes the same version → accepted, and the snapshot says so.
+        let echo = try FollowerMessages(crypto: crypto, follower: v.secret("D")).treatment(
+            TreatmentPayload(
+                id: entry.id, kind: "rapid", amount: 2, t: Int(entry.t), note: "", u: Int(entry.u), deleted: false,
+                origin: "follower"),
+            sid: v.sid, groupSecret: v.secret("G1"), createdAt: v.now + 5)
+        await hub.inject(echo)
+        #expect(await eventually { (try? await h.stores.treatments.load().entries[entry.id]?.delivery) == .accepted })
+        #expect(
+            await eventually {
+                var snapshots = await runtime.snapshots().makeAsyncIterator()
+                return await snapshots.next()?.deliveries[entry.id] == .accepted
+            })
+        await runtime.stop()
+    }
+}
+
+/// Relays that never answer (this Mac offline): nothing ever arrives on `inbound` until stopped.
+actor SilentRelay: RelayLink {
+    nonisolated let inbound: AsyncStream<RelayInbound>
+    private let continuation: AsyncStream<RelayInbound>.Continuation
+
+    init() { (inbound, continuation) = AsyncStream.makeStream() }
+
+    func start() {}
+    func stop() { continuation.finish() }
+    func subscribe(_ id: String, _ filter: RelayFilter) {}
+    func close(_ id: String) {}
+    func publish(_ event: SignedEvent) {}
+}
+
+/// Lets the runtime's 90 s history waits pass one at a time, when the test says (every other wait blocks).
+final class HistoryGate: @unchecked Sendable {
+    // Guarded by `lock`.
+    private let lock = NSLock()
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+    private var credits = 0
+
+    func sleep(_ seconds: Double) async throws {
+        guard seconds == FollowerRuntimeHistoryTests.historyDelay else {
+            try await Task.sleep(for: .seconds(3600))
+            return
+        }
+        await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
+            let now = lock.withLock { () -> Bool in
+                if credits > 0 {
+                    credits -= 1
+                    return true
+                }
+                waiting.append(c)
+                return false
+            }
+            if now { c.resume() }
+        }
+    }
+
+    /// One wait ends (now, or as soon as the runtime starts it).
+    func pass() {
+        let c = lock.withLock { () -> CheckedContinuation<Void, Never>? in
+            if waiting.isEmpty {
+                credits += 1
+                return nil
+            }
+            return waiting.removeFirst()
+        }
+        c?.resume()
+    }
+}
+
+/// PROTOCOL-v2 "Missing history" on a fake clock: 90 s after the backfill the runtime asks once for the empty hours
+/// of a live stream, checks again 90 s later without asking twice, and asks again only 30 min after its last request.
+struct FollowerRuntimeHistoryTests {
+    static let historyDelay: Double = 90
+    let v = OgsVectors.shared
+    let crypto = NostrSDKCrypto()
+
+    @Test func emptyHoursOfALiveStreamAreAskedForAtMostEveryHalfHour() async throws {
+        let hub = FakeRelayHub(stored: [v.event("invite")])
+        let gate = HistoryGate()
+        let h = RuntimeHarness(now: v.now, hub: hub)
+        let runtime = FollowerRuntime(
+            secrets: h.secrets, stores: h.stores, crypto: crypto, clock: h.clock, me: Profile(name: "Mac", avatar: nil),
+            makeRelays: { _, _ in hub.connect() }, sleep: { try await gate.sleep($0) })
+        await runtime.start()
+        let invite = (v.derivations["invite"] as! [String: Any])["link"] as! String
+        try await runtime.lookUpAndFollow(link: invite)
+        let state = try FollowerState.decode(try #require(try h.secrets.read(account: KeychainStore.followerAccount)))
+        await hub.inject(
+            try crypto.giftWrap(
+                kind: Wire.kindToFollower,
+                content: ((v.raw["plaintexts"] as! [String: Any])["key-1"] as! [String: Any])["rumor"]
+                    .flatMap { ($0 as? [String: Any])?["content"] as? String } ?? "",
+                from: v.secret("I"), to: try crypto.publicKey(of: state.follower), expiration: v.now + 3600))
+        #expect(await eventually { await runtime.isFollowing })
+        for name in ["roster-1", "chunk", "live"] { await hub.inject(v.event(name)) }
+        #expect(await eventually { (try? await h.stores.readings.load(since: .distantPast).count) ?? 0 > 1 })
+
+        // the wraps to the identity: the access request so far; a history request is one more
+        @Sendable func requests() async -> Int { await hub.published().filter { $0.tag("p") == v.pub("I") }.count }
+        let before = await requests()
+        gate.pass()  // 90 s after the backfill: the empty hours are asked for
+        #expect(await eventually { await requests() == before + 1 })
+        gate.pass()  // 90 s later: still empty, but the last request was just now
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(await requests() == before + 1)
+
+        // 31 min later, readings still arriving: a reconnect's backfill asks again
+        h.clock.advance(by: 31 * 60)
+        try await h.stores.readings.merge([Reading(t: h.clock.now, mgdl: 120)])
+        await runtime.reconnect()
+        gate.pass()
+        #expect(await eventually { await requests() == before + 2 })
         await runtime.stop()
     }
 }

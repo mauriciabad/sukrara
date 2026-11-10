@@ -36,7 +36,7 @@ import Testing
         #expect(!r.empty && !r.lowCoverage, "\(r.coverage) \(r.rows.map(\.share))")
         let target = r.rows.first { $0.kind == .target }
         #expect(target?.share == "100" && target?.met == true)
-        #expect(r.rows.first { $0.kind == .below }?.share == "0.0")
+        #expect(r.rows.first { $0.kind == .below }?.share == "0")
         #expect(r.average.value == "154 mg/dL" && !r.average.met)
         #expect(r.gmi.value.hasPrefix("7.0 %") && r.gmi.met)
         #expect(r.cv.value == "0.0 %" && r.cv.met)
@@ -86,6 +86,9 @@ import Testing
         #expect(rows(week.text) == 7 * 288)
         #expect(rows(all.text) == 20 * 288)
         #expect(week.name.hasPrefix("sukrara-glucose-") && week.name.hasSuffix(".csv"))
+        // the save panel's name for a period comes from its range alone, the same as the written file's
+        #expect(m.csvName(.d7, now: now) == week.name && m.csvName(.all, now: now) == all.name)
+        #expect(m.csvName(.sensor, now: now) == nil)
         #expect(m.csv(.sensor, now: now) == nil, "no sensor known: no This sensor range")
         #expect(!GlucoseCsv.Period.offered(sensor: m.sensor).contains(.sensor))
     }

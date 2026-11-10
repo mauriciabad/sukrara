@@ -23,6 +23,9 @@ interface AlertPresenter {
      */
     fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int)
 
+    /** Right before an alert rings: waits (a second at most) until nothing of the app's can mute its sound. */
+    suspend fun beforeRing() = Unit
+
     /** Replaces the group's slot with "[side] alerts muted · until [until]" (count-down, Unmute, Change time). */
     fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long)
 

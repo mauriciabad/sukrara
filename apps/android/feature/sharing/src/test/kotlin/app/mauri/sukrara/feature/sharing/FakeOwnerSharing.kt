@@ -6,7 +6,9 @@ package app.mauri.sukrara.feature.sharing
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerShareState
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** A scripted owner engine: records every call, never touches relays. */
@@ -25,7 +27,30 @@ class FakeOwnerSharing(
         replace: Boolean,
     ): Boolean {
         calls += "startFresh:${profile.name}" + if (replace) ":replace" else ""
-        return startFreshAccepted
+        return tell(replace) && startFreshAccepted
+    }
+
+    override val telling = MutableStateFlow<TellingFollowers?>(null)
+
+    /** A replace first tells this many followers and waits for [finishTelling] or [cancelReplace] (0: no one to tell). */
+    var followersToTell = 0
+    private var told: CompletableDeferred<Boolean>? = null
+
+    private suspend fun tell(replace: Boolean): Boolean {
+        if (!replace || followersToTell == 0) return true
+        val done = CompletableDeferred<Boolean>().also { told = it }
+        telling.value = TellingFollowers(followersToTell, 0)
+        return done.await().also { telling.value = null }
+    }
+
+    /** Every notice reached a relay: the replace goes on. */
+    fun finishTelling() {
+        told?.complete(true)
+    }
+
+    override fun cancelReplace() {
+        calls += "cancelReplace"
+        told?.complete(false)
     }
 
     var profileAccepted = true
@@ -62,6 +87,7 @@ class FakeOwnerSharing(
         replace: Boolean,
     ): RestoreIdentity.Result {
         calls += "restore" + if (replace) ":replace" else ""
+        if (restoreResult is RestoreIdentity.Result.Restored && !tell(replace)) return RestoreIdentity.Result.Cancelled
         return restoreResult
     }
 

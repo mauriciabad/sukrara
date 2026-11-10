@@ -133,10 +133,36 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.lanSnapshot.state == .localNetworkDenied { model.retryLan() }
     }
 
-    public func applicationWillTerminate(_ notification: Notification) {
+    /// How long Quit waits for the follower runtime and Juggluco to stop before it ends the app anyway.
+    static let quitTimeout: Duration = .seconds(2)
+    private var quitting = false
+    private var quitAnswered = false
+
+    /// Quit (menu, logout, restart) waits until the model has stopped what it started (relay sockets closed, the
+    /// runtime's state saved), at most `quitTimeout`, then ends the app.
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !quitting else { return .terminateLater }
+        quitting = true
         network.cancel()
-        model.stop()
+        services.stop()
+        Task { [weak self] in
+            await self?.model.stop()
+            self?.answerQuit()
+        }
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.quitTimeout)
+            self?.answerQuit()
+        }
+        return .terminateLater
     }
+
+    private func answerQuit() {
+        guard !quitAnswered else { return }
+        quitAnswered = true
+        NSApp.reply(toApplicationShouldTerminate: true)
+    }
+
+    public func applicationWillTerminate(_ notification: Notification) { network.cancel() }
 
     /// `sukrara:` links (Info.plist CFBundleURLTypes) and the web invite `https://sukrara.mauri.app/join#…` (given to
     /// the app with `open -a Sukrara <link>` or dropped on it): invite links go to the follow step's confirmation,

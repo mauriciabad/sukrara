@@ -50,6 +50,19 @@ enum CardAlertsMapping {
         }
     }
 
+    /// The card's decision while this Mac mirrors the wearer's alerts: `mirroredStatus`, the mute lines of the rules in
+    /// use and the slot from that status.
+    static func mirrored(
+        latest: GlucoseSample?, settings: AlertSettings, marks: [GraphMark], sideMutes: [AlertSide: Date],
+        muteAll: Date?, now: Date
+    ) -> CardAlerts {
+        var card = of(.idle, settings: settings, marks: marks, now: now)
+        card.status = mirroredStatus(
+            latest: latest, settings: settings, marks: marks, sideMutes: sideMutes, muteAll: muteAll, now: now)
+        card.last = lastTreatment(marks, status: card.status, now: now.timeIntervalSince1970) { card.muteEnds[$0.id] }
+        return card
+    }
+
     /// The badge while this Mac mirrors the wearer's alerts (its engine then runs only no data, so it has no level
     /// episode): the same rules over the latest reading and the rules in use (the wearer's): a covering treatment →
     /// Taken; this Mac's Mute of the side or Mute all → paused; else Needed; in range with Mute all → muted.

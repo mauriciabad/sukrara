@@ -24,7 +24,7 @@ class HookHelloReceiver : BroadcastReceiver() {
         runAsync("hello") {
             val host = context.monitorHost
             host.awaitReady()
-            host.monitor.rootStatusBar.onHello(code, iconOrder)
+            host.monitor.root?.onHello(code, iconOrder)
         }
     }
 }

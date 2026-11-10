@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.share.follower
 
+import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.core.testing.FakeClock
@@ -52,7 +53,16 @@ class FollowerSyncFixtureTest {
 
     @Test fun everyFollowerSequenceLeavesTheExpectedState() {
         assertEquals(
-            listOf("conflict-rotation", "join-readings", "revoke-reapprove", "rotation", "settings-mirror", "treatments-writer"),
+            listOf(
+                "conflict-rotation",
+                "join-readings",
+                "replace-identity",
+                "revoke-reapprove",
+                "rotation",
+                "sensor-life",
+                "settings-mirror",
+                "treatments-writer",
+            ),
             files,
         )
         files.forEach { replay(it) }
@@ -81,9 +91,22 @@ class FollowerSyncFixtureTest {
             )
             val received = mutableListOf<Reading>()
             val relay = FakeRelayTransport()
+            val links = mutableListOf<LinkState?>()
+            val notices = mutableListOf<FollowerNotice>()
 
             fun TestScope.start(): Pair<FollowerEngine, Job> {
-                val e = FollowerEngine(crypto, store, { _, _ -> relay }, readings, treatments, clock, StandardTestDispatcher(testScheduler))
+                val e =
+                    FollowerEngine(
+                        crypto,
+                        store,
+                        { _, _ -> relay },
+                        readings,
+                        treatments,
+                        clock,
+                        StandardTestDispatcher(testScheduler),
+                        setLink = { links += it },
+                        onNotice = { n, _ -> notices += n },
+                    )
                 val job = backgroundScope.launch { e.readings.collect { received += it } }
                 runCurrent()
                 return e to job
@@ -157,6 +180,11 @@ class FollowerSyncFixtureTest {
             )
             val settings = expected["settings"]?.takeIf { it != JsonNull }?.jsonObject
             assertEquals("$name settings", settings?.getValue("u")?.jsonPrimitive?.long, record.settings?.u)
+            // what the person sees: removed = "<wearer> stopped sharing with you" (the notification and home's reason,
+            // whose `ended` disarms the no-data alarm), never a silent stream that ends in No data
+            val removed = s.status.name.lowercase() == "revoked"
+            assertEquals("$name link removed", removed, links.lastOrNull()?.revoked == true)
+            assertEquals("$name stopped-sharing notice", removed, notices.lastOrNull() == FollowerNotice.Revoked)
         }
 
     private fun pair(o: JsonObject) = KeyPair(SecretKey.ofHex(o.str("sec"))!!, PublicKeyHex(o.str("pub")))

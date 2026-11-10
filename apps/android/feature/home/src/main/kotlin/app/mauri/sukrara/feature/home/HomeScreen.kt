@@ -62,6 +62,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -81,6 +82,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.designsystem.alerts.MuteAllState
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.designsystem.alerts.QuietExits
@@ -144,6 +146,7 @@ fun HomeScreen(
                 onDelete = viewModel::delete,
                 onUndo = viewModel::undoDelete,
                 onUndoGone = viewModel::undoShown,
+                onRetry = viewModel::retry,
                 onOpenDataProblems = onOpenDataProblems,
                 pen =
                     PenCallbacks(
@@ -172,6 +175,8 @@ data class HomeCallbacks(
     val onDelete: (Treatment) -> Unit = {},
     val onUndo: () -> Unit = {},
     val onUndoGone: () -> Unit = {},
+    /** *Retry* on an entry nothing took (a writer's *Not sent*). */
+    val onRetry: (Treatment) -> Unit = {},
     val onOpenDataProblems: () -> Unit = {},
     val pen: PenCallbacks = PenCallbacks(),
 )
@@ -344,13 +349,14 @@ private fun HomeColumn(
         BannerSlot(infoBanner)
         MuteControl(state, callbacks.onAlert, onMuteAll)
         Treatments(
-            state.treatments,
-            state.readOnly,
-            state.fromPen,
-            state.marks,
-            state.now,
+            state,
             { callbacks.onAction(HomeAction.OpenClinicUpload) },
             callbacks.pen.open,
+            onEdit = { callbacks.onAction(HomeAction.EditTreatment(it.id)) },
+            onRetry = {
+                haptics.confirm()
+                callbacks.onRetry(it)
+            },
             penRead = penRead,
             openPenPage = { callbacks.onAction(HomeAction.OpenPen(it)) },
         ) {
@@ -555,7 +561,8 @@ private fun GlucoseSection(
 
 /**
  * When the sensor ends; in its last day (the wearer) *Pair new sensor* as a tonal button under it, so the new one can
- * be put on before the old one stops.
+ * be put on before the old one stops. In a new sensor's first hours ([EarlyReadings]) a note says its readings can be
+ * less accurate until when, and what to do; it leaves by itself.
  */
 @Composable
 private fun SensorLine(
@@ -564,7 +571,19 @@ private fun SensorLine(
 ) {
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return
     val left = Duration.between(state.now, ends).seconds
+    val early = EarlyReadings.until(state.glucose.sensor, state.now)
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
+        Reveal(early != null) {
+            // keeps its last text while it slides away
+            var shown by remember { mutableStateOf("") }
+            if (early != null) shown = stringResource(R.string.home_sensor_early, clockTime(early))
+            Text(
+                shown,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp).testTag("home-sensor-early"),
+            )
+        }
         Text(
             if (left > 0) {
                 // partial minutes up: never "in 0 min" while it still runs
@@ -696,8 +715,24 @@ private fun reasonText(
             stringResource(R.string.reason_stopped_title) to stringResource(R.string.reason_stopped_body)
         }
 
+        NoDataReason.UsedByAnotherApp -> {
+            stringResource(R.string.reason_taken_over_title) to stringResource(R.string.reason_taken_over_body)
+        }
+
+        NoDataReason.ScanNeeded -> {
+            stringResource(R.string.reason_scan_title) to stringResource(R.string.reason_scan_body)
+        }
+
+        NoDataReason.PairAgain -> {
+            stringResource(R.string.reason_pair_again_title) to stringResource(R.string.reason_pair_again_body)
+        }
+
         NoDataReason.SensorEnded -> {
             stringResource(R.string.reason_ended_title) to stringResource(R.string.reason_ended_body)
+        }
+
+        is NoDataReason.ClockBehind -> {
+            stringResource(R.string.reason_clock_title) to stringResource(R.string.reason_clock_body, spanText(reason.ahead.toMinutes()))
         }
 
         is NoDataReason.WarmingUp -> {
@@ -733,6 +768,10 @@ private fun actionLabel(reason: NoDataReason): String =
             is NoDataReason.NoSensorYet -> if (reason.follower) R.string.reason_no_wearer_action else R.string.reason_no_sensor_action
             NoDataReason.BluetoothOff -> R.string.reason_bluetooth_action
             NoDataReason.MonitoringStopped -> R.string.reason_stopped_action
+            NoDataReason.UsedByAnotherApp -> R.string.reason_taken_over_action
+            NoDataReason.ScanNeeded -> R.string.reason_scan_action
+            NoDataReason.PairAgain -> R.string.reason_pair_again_action
+            is NoDataReason.ClockBehind -> R.string.reason_clock_action
             NoDataReason.SensorEnded -> R.string.reason_ended_action
             NoDataReason.LinkRevoked -> R.string.reason_revoked_action
             else -> R.string.reason_no_readings_action
@@ -1019,19 +1058,27 @@ private fun MuteAllDialog(
     ) { m -> onChoose(if (m <= 0.0) null else m.roundToInt()) }
 }
 
+/**
+ * The last 24 h of entries. A row this phone may change is one button that opens the treatment dialog on it (amount,
+ * time, note; TalkBack *edit*), a pen's row opens its sheet; Delete stays a button of its own. A writer's entry nothing
+ * took yet says *Sending…* under it, then *Not sent* with *Retry*.
+ */
 @Composable
 private fun Treatments(
-    treatments: List<Treatment>,
-    readOnly: Set<String>,
-    fromPen: Set<String>,
-    marks: Map<String, UploadMark>,
-    now: Instant,
+    state: HomeUiState,
     openClinicUpload: () -> Unit,
     openPen: (Treatment) -> Unit,
+    onEdit: (Treatment) -> Unit,
+    onRetry: (Treatment) -> Unit,
     penRead: PenRead? = null,
     openPenPage: (String) -> Unit = {},
     onDelete: (Treatment) -> Unit,
 ) {
+    val treatments = state.treatments
+    val readOnly = state.readOnly
+    val fromPen = state.fromPen
+    val marks = state.marks
+    val now = state.now
     val resources = LocalContext.current.resources
     val words = remember(resources) { CardWords.of(resources) }
     val stale = penRead?.takeIf { now.epochSecond - it.at > PEN_STALE_S }
@@ -1051,12 +1098,19 @@ private fun Treatments(
             }
         }
         val openLabel = stringResource(R.string.home_pen_open)
+        val editLabel = stringResource(R.string.home_treatment_edit)
         treatments.forEach { t ->
             val pen = t.id in fromPen
             val label = treatmentLabel(t, pen)
             val time = clockTime(t.at)
-            // a pen row is one button (its sheet: the doses, Priming / Injected); its Delete stays a button of its own
-            val open = if (pen) Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp) else Modifier
+            // a pen row is one button (its sheet: the doses, Priming / Injected), any other row this phone may change
+            // opens its edit; Delete stays a button of its own
+            val open =
+                when {
+                    pen -> Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp)
+                    t.id !in readOnly -> Modifier.clickable(onClickLabel = editLabel) { onEdit(t) }.heightIn(min = 48.dp)
+                    else -> Modifier
+                }
             Row(
                 Modifier.fillMaxWidth().then(open).padding(start = 16.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1082,6 +1136,7 @@ private fun Treatments(
                     }
                 }
             }
+            DeliveryLine(state.delivery[t.id], label) { onRetry(t) }
         }
     }
     // carbs logged, no rapid insulin near them yet, and a pen at hand: the quiet way to log it (an hour at most)
@@ -1092,6 +1147,47 @@ private fun Treatments(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
+    }
+}
+
+/**
+ * A writer's entry on its way (#75): *Sending…* while a relay or the wearer's phone hasn't taken it, *Not sent* in the
+ * error colour with *Retry* once 2 minutes passed without (it is still sent again on every connect). Slides in and out;
+ * the line is a polite live region, *Retry* names the entry for TalkBack.
+ */
+@Composable
+private fun DeliveryLine(
+    delivery: TreatmentDelivery?,
+    label: String,
+    onRetry: () -> Unit,
+) {
+    var last by remember { mutableStateOf(delivery) }
+    if (delivery != null) last = delivery
+    Reveal(delivery != null) {
+        val failed = last == TreatmentDelivery.Failed
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp).testTag("treatment-delivery"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(if (failed) DsR.drawable.ds_ic_error else DsR.drawable.ds_ic_send),
+                contentDescription = null,
+                tint = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                stringResource(if (failed) R.string.home_treatment_not_sent else R.string.home_treatment_sending),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(start = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            if (failed) {
+                val retryLabel = stringResource(R.string.home_treatment_retry_label, label)
+                TextButton(onClick = onRetry, modifier = Modifier.semantics { contentDescription = retryLabel }) {
+                    Text(stringResource(R.string.home_treatment_retry))
+                }
+            }
+        }
     }
 }
 

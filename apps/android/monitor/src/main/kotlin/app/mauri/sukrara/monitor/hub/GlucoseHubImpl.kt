@@ -5,6 +5,7 @@ package app.mauri.sukrara.monitor.hub
 
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseRange
@@ -98,6 +99,12 @@ class GlucoseHubImpl(
                     inputsLoaded.complete(Unit)
                 }
             }
+            // a source that starts arms monitoring, also before its first reading: a sensor paired but silent from the
+            // start still rings no data, counted from then. On the start itself (a transition), so a reset while the
+            // old source still runs doesn't arm it again
+            launch {
+                state.map { sourceStarted(it) }.distinctUntilChanged().collect { started -> if (started) arm(clock.now()) }
+            }
             launch { windowStarts().flatMapLatest { from -> readings.window(from) }.collect(::applyWindow) }
             launch {
                 val wearer = state.map { it.role == Role.Wearer }.distinctUntilChanged()
@@ -174,9 +181,11 @@ class GlucoseHubImpl(
     private suspend fun accept(batch: List<Reading>) {
         val now = clock.now()
         // a reading stamped ahead of the phone's clock would look fresh for too long (and the same reading delivered
-        // again can't be stored under a substitute time): dropped; the missing data then shows and alarms as no data
-        // and every LO / HI is stored as the flag (39 / 401, no rate) whichever source sent which raw number
-        val valid = batch.mapNotNull { r -> GlucoseRange.normalise(r)?.takeUnless { it.t.isAfter(now + FUTURE_TOLERANCE) } }
+        // again can't be stored under a substitute time): dropped; the missing data then shows and alarms as no data,
+        // and home says the phone's clock is behind (#50); every LO / HI is stored as the flag (39 / 401, no rate)
+        // whichever source sent which raw number
+        val (future, valid) = batch.mapNotNull(GlucoseRange::normalise).partition { it.t.isAfter(now + FUTURE_TOLERANCE) }
+        noteClock(future.maxOfOrNull { it.t }, valid.maxOfOrNull { it.t }, now)
         if (valid.isEmpty()) return
         readings.upsert(valid)
         val startedAt = now.toEpochMilli()
@@ -185,6 +194,39 @@ class GlucoseHubImpl(
             val fence = armAfter
             val arms = fence == null || valid.any { r -> r.t.isAfter(fence) }
             if (it.startedAtEpochMs == null && arms) it.copy(startedAtEpochMs = startedAt) else it
+        }
+    }
+
+    /** Monitoring starts at [at] unless it already has (the first reading, or the source's start). */
+    private suspend fun arm(at: Instant) {
+        record.update { if (it.startedAtEpochMs == null) it.copy(startedAtEpochMs = at.toEpochMilli()) else it }
+    }
+
+    /**
+     * The clock state after a batch whose newest dropped reading is [dropped] and newest accepted one [accepted]: behind
+     * while the newest reading heard is a dropped one; an accepted reading at least as new (the clock was set right)
+     * clears it, an older one (backfill) doesn't.
+     */
+    private fun noteClock(
+        dropped: Instant?,
+        accepted: Instant?,
+        now: Instant,
+    ) {
+        mutableState.update { s ->
+            val behind = s.clockBehind
+            when {
+                dropped != null && (behind == null || dropped >= behind.readingAt) -> {
+                    s.copy(clockBehind = ClockBehind(dropped, Duration.between(now, dropped)))
+                }
+
+                behind != null && accepted != null && accepted >= behind.readingAt -> {
+                    s.copy(clockBehind = null)
+                }
+
+                else -> {
+                    s
+                }
+            }
         }
     }
 
@@ -208,6 +250,17 @@ class GlucoseHubImpl(
         }
 
     companion object {
+        /**
+         * The role's source runs and readings are expected: the wearer's sensor source started (a pairing connecting,
+         * Juggluco chosen), a follow the wearer allowed.
+         */
+        fun sourceStarted(s: GlucoseState): Boolean =
+            when (s.role) {
+                Role.Wearer -> s.source !is SourceStatus.NotStarted
+                Role.Follower -> s.link?.active == true
+                null -> false
+            }
+
         /** The recent window every surface can draw (the graph's longest setting is 24 h). */
         val WINDOW: Duration = Duration.ofHours(24)
         private val WINDOW_REFRESH: Duration = Duration.ofHours(1)

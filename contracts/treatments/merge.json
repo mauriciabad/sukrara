@@ -1,0 +1,14 @@
+{
+ "about": "SPEC §1 merge: receiving `inc` for an id held as `cur`, the greater (u, o) wins; `o` compares as its wire string (\"follower\" < \"mac\" < \"phone\"). `wins` = which version every device keeps, whatever order the two arrive in (`same`: an equal (u, o) is the same version, the second one changes nothing). Read by Android SukraraDatabaseTest (Room) and TreatmentMergeTest (Treatment.supersedes, TreatmentPayload.newerThan, the in-memory store), Mac TreatmentTests (TreatmentMerge.winner, TreatmentLog) and AcceptanceRulesTests (TreatmentPayload.isNewer).",
+ "cases": [
+  {"name": "newer u wins", "cur": {"u": 1000, "o": "phone", "a": 1}, "inc": {"u": 2000, "o": "phone", "a": 2}, "wins": "inc"},
+  {"name": "older u loses", "cur": {"u": 2000, "o": "follower", "a": 1}, "inc": {"u": 1000, "o": "phone", "a": 2}, "wins": "cur"},
+  {"name": "newer u wins whatever the origin", "cur": {"u": 1000, "o": "phone", "a": 1}, "inc": {"u": 1001, "o": "follower", "a": 2}, "wins": "inc"},
+  {"name": "equal u: phone beats follower", "cur": {"u": 5000, "o": "follower", "a": 1}, "inc": {"u": 5000, "o": "phone", "a": 2}, "wins": "inc"},
+  {"name": "equal u: phone beats mac", "cur": {"u": 5000, "o": "mac", "a": 1}, "inc": {"u": 5000, "o": "phone", "a": 2}, "wins": "inc"},
+  {"name": "equal u: mac beats follower", "cur": {"u": 5000, "o": "follower", "a": 1}, "inc": {"u": 5000, "o": "mac", "a": 2}, "wins": "inc"},
+  {"name": "equal u: follower loses to phone", "cur": {"u": 5000, "o": "phone", "a": 1}, "inc": {"u": 5000, "o": "follower", "a": 2}, "wins": "cur"},
+  {"name": "equal u: mac loses to phone", "cur": {"u": 5000, "o": "phone", "a": 1}, "inc": {"u": 5000, "o": "mac", "a": 2}, "wins": "cur"},
+  {"name": "the same version again changes nothing", "cur": {"u": 5000, "o": "mac", "a": 1}, "inc": {"u": 5000, "o": "mac", "a": 1}, "wins": "same"}
+ ]
+}
