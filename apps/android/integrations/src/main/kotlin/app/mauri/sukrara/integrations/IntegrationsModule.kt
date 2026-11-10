@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -34,6 +35,8 @@ import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectSync
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectViewModel
 import app.mauri.sukrara.integrations.healthconnect.PlatformHealth
+import app.mauri.sukrara.integrations.history.HistoryImporter
+import app.mauri.sukrara.integrations.history.ImportViewModel
 import app.mauri.sukrara.integrations.libreview.LibreViewClient
 import app.mauri.sukrara.integrations.libreview.LibreViewUploader
 import app.mauri.sukrara.integrations.libreview.LibreViewViewModel
@@ -93,6 +96,8 @@ class IntegrationsModule(
     appVersion: String,
     readings: ReadingsRepository,
     treatments: TreatmentsRepository,
+    /** THE import path (Import history), deduplicated. */
+    historyImport: HistoryImportStore,
     sensor: Flow<CurrentSensor?>,
     /** Libre 3 readings by life count (the sensor link), for LibreView. */
     libreReadings: Flow<LvReadings>,
@@ -196,6 +201,9 @@ class IntegrationsModule(
 
     val healthConnect = HealthConnectSync(settings, healthState, readings, role, health, clock, dispatchers.io, log)
 
+    /** Import history: the last 90 days from Tidepool (its signed-in account), LibreView's file or a Sukrara export. */
+    val history = HistoryImporter(historyImport, { block -> tidepool.withAccount(block) }, clock, dispatchers.io, log)
+
     val summary: Flow<AppsSummary> =
         combine(
             nightscout.page,
@@ -242,6 +250,7 @@ class IntegrationsModule(
         nightscoutApi.start(scope)
         broadcasts.start(scope)
         healthConnect.start(scope)
+        history.start(scope)
     }
 
     // MARK: view models (the app's navigation entries create them)
@@ -266,6 +275,12 @@ class IntegrationsModule(
         follower: Boolean,
         start: ExportPeriod = ExportPeriod.DEFAULT,
     ): ViewModelProvider.Factory = viewModelFactory { initializer { ExportViewModel(exporter, follower, dispatchers.io, start) } }
+
+    val importViewModels: ViewModelProvider.Factory
+        get() =
+            viewModelFactory {
+                initializer { ImportViewModel(history, wearer, tidepool.page.map { it.signedIn to it.email }, dispatchers.io) }
+            }
 
     fun nightscoutViewModels(wearer: Boolean): ViewModelProvider.Factory =
         viewModelFactory { initializer { NightscoutViewModel(nightscout, wearer) { clock.now() } } }

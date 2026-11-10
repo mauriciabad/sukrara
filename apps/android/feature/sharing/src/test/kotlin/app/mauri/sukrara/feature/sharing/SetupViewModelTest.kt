@@ -69,6 +69,10 @@ class SetupViewModelTest {
     private val sharing = FakeOwnerSharing()
     private val alerts = FakeAlerts()
     private val record = InMemoryStateStore(SetupRecord())
+
+    /** What is stored now (the in-memory store keeps a StateFlow): for checks inside a non-suspending callback. */
+    private fun recorded() = (record.data as kotlinx.coroutines.flow.StateFlow<SetupRecord>).value
+
     private val events = mutableListOf<String>()
     private val settings = InMemorySettingsRepository()
     private val readiness = FakeReadiness()
@@ -334,6 +338,30 @@ class SetupViewModelTest {
         }
 
     @Test
+    fun `bring your history back records the step before Import history opens, and Back skips it`() =
+        runTest {
+            roles.role.value = Role.Wearer
+            val before = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Sensor, SetupStep.Alerts, SetupStep.Identity)
+            record.update { SetupRecord(completed = before) }
+            val vm = vm(startAt = SetupStep.History)
+            vm.ui.launchIn(backgroundScope)
+            assertEquals(SetupStep.History, vm.ui.first { it?.step != null }!!.step)
+            var opened = false
+            vm.openHistoryImport { opened = SetupStep.History in recorded().completed }
+            vm.ui.first { it?.step == null }
+            assertTrue("recorded first", opened)
+
+            record.update { SetupRecord(completed = before) }
+            val again = vm(startAt = SetupStep.History)
+            again.ui.launchIn(backgroundScope)
+            again.ui.first { it?.step == SetupStep.History }
+            var left = false
+            again.back { left = true }
+            again.ui.first { it?.step == null }
+            assertTrue(left && SetupStep.History in recorded().skipped)
+        }
+
+    @Test
     fun `Finish setup walks every skipped step, alerts first, and Later keeps each on the card`() =
         runTest {
             roles.role.value = Role.Wearer
@@ -341,7 +369,7 @@ class SetupViewModelTest {
             val skipped = setOf(SetupStep.Sensor, SetupStep.Alerts)
             record.update {
                 SetupRecord(
-                    completed = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Identity),
+                    completed = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Identity, SetupStep.History),
                     skipped = skipped,
                 )
             }

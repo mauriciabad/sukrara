@@ -449,4 +449,10 @@
     <string name="sh_scan_no_camera">No se pudo abrir ninguna cámara en este dispositivo. Pega el enlace o elige una imagen del código.</string>
     <string name="sh_scan_read">Invitación leída. Añade tu nombre si quieres y toca Unirme.</string>
     <string name="sh_scan_picture_none">No hay ningún código QR de invitación de Sukrara en esa imagen. Prueba con una captura más nítida o pega el enlace.</string>
+    <!-- configuración: Recupera tu historial (se ofrece una vez) -->
+    <string name="sh_setup_history_title">Recupera tu historial</string>
+    <string name="sh_setup_history_body">Sukrara empieza con el historial vacío. Recupera los últimos 90 días desde Tidepool, LibreView o un archivo exportado de la app anterior, para volver a tener tu gráfica, tus informes y tus últimas dosis.</string>
+    <string name="sh_setup_history_note">Nada cuenta doble: las lecturas de tu sensor mandan, e importar otra vez solo añade lo que falta. También puedes hacerlo más tarde en Ajustes › Compartir con apps › Importar historial.</string>
+    <string name="sh_setup_history_open">Recuperarlo</string>
+    <string name="sh_setup_history_skip">Empezar vacío</string>
 </resources>

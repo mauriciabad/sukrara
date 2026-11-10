@@ -280,10 +280,16 @@ class TidepoolUploaderTest {
             }
             treatments.upsertIfNewer(entry("own", TreatmentKind.Carbs, 20.0, 20))
             uploader.cycle()
-            assertEquals(listOf(120), data().filter { it["type"]!!.jsonPrimitive.content == "cbg" }.map { it["value"]!!.jsonPrimitive.content.toInt() })
+            assertEquals(
+                listOf(120),
+                data().filter { it["type"]!!.jsonPrimitive.content == "cbg" }.map { it["value"]!!.jsonPrimitive.content.toInt() },
+            )
             assertEquals(
                 listOf(TidepoolData.treatmentOrigin("own")),
-                data().filter { it["type"]!!.jsonPrimitive.content == "food" }.map { it["origin"]!!.jsonObject["id"]!!.jsonPrimitive.content },
+                data()
+                    .filter {
+                        it["type"]!!.jsonPrimitive.content == "food"
+                    }.map { it["origin"]!!.jsonObject["id"]!!.jsonPrimitive.content },
             )
         }
 

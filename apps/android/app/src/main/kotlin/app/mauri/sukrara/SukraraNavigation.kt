@@ -74,6 +74,7 @@ import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
 import app.mauri.sukrara.integrations.export.ExportPage
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectPage
+import app.mauri.sukrara.integrations.history.ImportPage
 import app.mauri.sukrara.integrations.libreview.LibreViewPage
 import app.mauri.sukrara.integrations.localserver.NightscoutApiPage
 import app.mauri.sukrara.integrations.nightscout.NightscoutPage
@@ -141,6 +142,10 @@ data object NightscoutUploadRoute : NavKey
 /** Settings › Share with apps › Export data. */
 @Serializable
 data object ExportRoute : NavKey
+
+/** Settings › Share with apps › Import history (also setup's *Bring your history back*). */
+@Serializable
+data object ImportRoute : NavKey
 
 /** Export data on everything this phone keeps: setup's *Export CSV first* before a role change deletes it. */
 @Serializable
@@ -297,6 +302,12 @@ fun SukraraNavigation(
             backStack.add(SetupRoute)
         }
     }
+    // a wearer who hasn't answered Bring your history back (setup done before it existed, or the database was replaced by
+    // an update): that one step, once per launch, never over setup itself (which offers it as its last step)
+    LaunchedEffect(Unit) {
+        graph.setup.historyDue.first { it }
+        if (backStack.none { it is SetupRoute || it is SetupStepRoute }) backStack.push(SetupStepRoute(SetupStep.History))
+    }
     // an invite link says where it works, on top of whatever is open (Back returns there), once per link: a recreated
     // activity keeps it
     var handledLink by rememberSaveable { mutableStateOf<String?>(null) }
@@ -432,6 +443,10 @@ fun SukraraNavigation(
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.remove(SetupRoute) },
+                            onOpenHistoryImport = {
+                                backStack.remove(SetupRoute)
+                                backStack.push(ImportRoute)
+                            },
                         )
                     }
                     entry<SetupStepRoute> { key ->
@@ -441,6 +456,10 @@ fun SukraraNavigation(
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.pop(key) },
+                            onOpenHistoryImport = {
+                                backStack.pop(key)
+                                backStack.push(ImportRoute)
+                            },
                         )
                     }
                     entry<NewSensorKey> {
@@ -491,6 +510,15 @@ fun SukraraNavigation(
                                 openTidepool = { backStack.push(TidepoolRoute) },
                                 openBroadcasts = { backStack.push(BroadcastsRoute) },
                                 openHealthConnect = { backStack.push(HealthConnectRoute) },
+                                openImport = { backStack.push(ImportRoute) },
+                            )
+                        }
+                    }
+                    entry<ImportRoute> {
+                        SettingsPage(stringResource(IntegrationsR.string.in_import_title), { backStack.pop(ImportRoute) }) {
+                            ImportPage(
+                                viewModel(factory = graph.integrations.importViewModels),
+                                openTidepool = { backStack.push(TidepoolRoute) },
                             )
                         }
                     }

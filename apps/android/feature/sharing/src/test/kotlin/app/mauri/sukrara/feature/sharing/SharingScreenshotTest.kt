@@ -114,7 +114,7 @@ class SharingScreenshotTest {
     ) = SetupUi(
         step = step,
         index = index,
-        count = 6,
+        count = 7,
         facts = facts,
         record = record,
         readiness = AlertReadiness(missing),
@@ -218,6 +218,7 @@ class SharingScreenshotTest {
                 SetupContent(ui(SetupStep.Identity, 6, live, restore = RestoreUi.Busy), a)
             },
             "setup-6-identity-conflict" to { SetupContent(ui(SetupStep.Identity, 6, live, share = conflict), a) },
+            "setup-7-history" to { SetupContent(ui(SetupStep.History, 7, live), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
             "share-new" to { ShareScreen(InviteUi.None, {}, {}) },
             "share-ready" to {

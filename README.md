@@ -147,6 +147,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   **glucose broadcasts** to the apps you allow (AndroidAPS, GlucoDataHandler, xDrip+: the Libre 3 read by this phone
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
   readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.
+- **Import history** (wearer; also setup's last step, *Bring your history back*): the new app starts empty and brings
+  back the last 90 days from **Tidepool** (signed in), **LibreView**'s *Download glucose data* file or a **Sukrara
+  export** (this app's or the earlier app's), with progress and *Stop*. Nothing is ever counted twice (the sensor's own
+  readings win; importing again adds only what is missing), and imported history is never uploaded again.
 - English and Spanish (Spain) everywhere.
 - **TalkBack hears one sentence** for the glucose card everywhere (home, widgets, the notification card, the Quick
   Settings tile): the value, trend, range in words and age, the alert or mute, the slots and the chart summary, the

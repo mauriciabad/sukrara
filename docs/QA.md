@@ -531,6 +531,28 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    10.0.2.2 socket.
 6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
 
+## Q23 Import history
+
+Synthetic data only: a throwaway Tidepool account and files written from the emulator, never the owner's.
+
+- [ ] Fresh install (emulator, wearer): setup's last step *Bring your history back*; *Start empty* goes home and the
+      step never comes back; reinstall, *Bring it back* opens Settings › Share with apps › Import history and Back
+      lands on home.
+- [ ] An update that bumps the database version over an install with history (debug build): the history is empty, no
+      crash, and the next launch opens *Bring your history back* on its own; Back counts as *Start empty*.
+- [ ] *Choose a file* with an export from Export data › Everything on this phone (and one from the earlier app's
+      Export data › All time): the card shows progress and the counts; the graph and the report have the history;
+      choosing the same file again adds 0 ("… were already here").
+- [ ] A LibreView-layout file in mmol/L with day-first dates (`integrations/src/test/resources/history/`): the values
+      read in mg/dL as expected; a random CSV says "This isn't a glucose file…".
+- [ ] Tidepool (a test account with data): *Sign in to Tidepool first* opens the Tidepool page; signed in, the row
+      imports the last 90 days with the progress bar moving week by week; *Stop* half way keeps what was added and a
+      second run completes it with no duplicates; the Tidepool upload (if on) never sends the imported data back.
+- [ ] The sensor's own backfill after an import (emulator `SYNTHETIC` over imported readings): no two points within 2
+      minutes on the graph.
+- [ ] TalkBack: the progress card reads the added counts as they change; *Stop* and *OK* are buttons. Largest font,
+      dark theme, Spanish.
+
 ## Q20 The person and the feel
 
 Every app change (CLAUDE.md *Design from the person's life first*, *Make it juicy*; user, 2026-10-23).

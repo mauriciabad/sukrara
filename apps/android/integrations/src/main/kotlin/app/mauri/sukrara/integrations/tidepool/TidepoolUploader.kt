@@ -241,6 +241,30 @@ class TidepoolUploader(
 
     fun kick() = loop.kick()
 
+    /**
+     * Runs [block] with the signed-in client under the upload's lock (Import history reads the account back): one
+     * session for both, a refreshed token is kept, and a session Tidepool ended signs out here as in a cycle. Null when
+     * no one is signed in.
+     */
+    suspend fun <T> withAccount(block: suspend (TidepoolClient) -> T): T? =
+        mutex.withLock {
+            val session =
+                client.session ?: readSession()?.also { client.session = it } ?: return@withLock null
+            try {
+                block(client)
+            } catch (e: TpSignedOut) {
+                log("tidepool: signed out by Tidepool")
+                client.session = null
+                secure.delete(NAME)
+                signedIn.value = false
+                store.update { it.copy(signedOutByTidepool = true, lastError = null, failures = 0, nextAttemptMs = 0) }
+                throw e
+            } finally {
+                val now = client.session
+                if (now != null && now != session) withContext(NonCancellable) { writeSession(now) }
+            }
+        }
+
     // MARK: the cycle
 
     internal suspend fun cycle() =

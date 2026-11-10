@@ -21,6 +21,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.storage.ImportSource
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.integrations.broadcasts.AppProblem
 import app.mauri.sukrara.integrations.broadcasts.BcActions
@@ -40,6 +41,12 @@ import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HcUi
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectContent
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectSync
+import app.mauri.sukrara.integrations.history.ImportActions
+import app.mauri.sukrara.integrations.history.ImportContent
+import app.mauri.sukrara.integrations.history.ImportFailure
+import app.mauri.sukrara.integrations.history.ImportState
+import app.mauri.sukrara.integrations.history.ImportTally
+import app.mauri.sukrara.integrations.history.ImportUi
 import app.mauri.sukrara.integrations.libreview.LibreViewActions
 import app.mauri.sukrara.integrations.libreview.LibreViewContent
 import app.mauri.sukrara.integrations.libreview.LvPageState
@@ -107,6 +114,40 @@ class IntegrationsGallery {
                     AppsActions(),
                 )
             },
+            "import-idle" to
+                {
+                    ImportContent(
+                        ImportUi(true, ImportState.Idle, tidepoolSignedIn = true, tidepoolEmail = "me@example.com"),
+                        ImportActions(),
+                    )
+                },
+            "import-running" to {
+                ImportContent(
+                    ImportUi(true, ImportState.Running(ImportSource.Tidepool, 5, 14, ImportTally(readings = 1440, entries = 37)), true),
+                    ImportActions(),
+                )
+            },
+            "import-done" to {
+                ImportContent(
+                    ImportUi(
+                        true,
+                        ImportState.Done(
+                            ImportSource.LibreView,
+                            ImportTally(8640, 212, alreadyHere = 310, outsidePeriod = 1200, skipped = 4),
+                            now,
+                        ),
+                        false,
+                    ),
+                    ImportActions(),
+                )
+            },
+            "import-signed-out" to {
+                ImportContent(
+                    ImportUi(true, ImportState.Failed(ImportSource.Tidepool, ImportFailure.SignedOut, ImportTally()), false),
+                    ImportActions(),
+                )
+            },
+            "import-follower" to { ImportContent(ImportUi(false, ImportState.Idle, false), ImportActions()) },
             "apps-busy-follower" to
                 { AppsContent(AppsUi(false, true, XdripState.PortBusy, emptyList(), UploadStatus.Off), now, AppsActions()) },
             "nsapi-off" to { NightscoutApiContent(NsApiUi(false, NsApiState.Off), now, NsApiActions()) },

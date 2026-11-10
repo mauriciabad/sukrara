@@ -162,7 +162,7 @@ follower mirrors the wearer's alerts), the limits line, *Open Sukrara*, and the 
 ## First-run setup (Android)
 
 Android (`apps/android/feature/sharing` `setup/`): a calm ordered journey from install to home. The order is
-binding: **Welcome → Role → Permissions → Sensor → Alert thresholds → Your followers → home**. "Step N of M" is announced by TalkBack; steps cross-fade with a spring (snaps with reduced
+binding: **Welcome → Role → Permissions → Sensor → Alert thresholds → Your followers → Bring your history back → home**. "Step N of M" is announced by TalkBack; steps cross-fade with a spring (snaps with reduced
 motion); setup done gives a confirm haptic. Progress is kept in the typed store `setup` (`SetupMachine`, pure;
 `SetupMachineTest`), so setup resumes at the same step after a restart; the role lives in its own store (`role`), so a
 damaged setup file never asks for the role again or turns alerts off.
@@ -196,6 +196,9 @@ damaged setup file never asks for the role again or turns alerts off.
   live reading from its own sensor (`RestoreGate`, re-checked just before restoring; `RestoreGateTest`). *Start fresh*
   is confirmed: "Your followers (and your Mac) will need a new invite. To use your old identity again later, restore
   it in Settings › Sharing › Backup › Replace this identity."
+- **Bring your history back** (wearer, last): Import history (below) offered once: *Bring it back* opens it, *Start
+  empty* skips; neither comes back on the Finish-setup card. Offered on its own at launch to a wearer who hasn't
+  answered it (setup finished before it existed, or an update replaced the database).
 - **Finish setup** (home's banner): names the first skipped step that still matters — *Allow what alerts
   need*, *Alerts not confirmed*, *Connect your sensor*, *Restore your followers*, in that order; its action walks
   every skipped step in that order, each alone (done or *Later* → the next one, then home; *Later* and Back keep the
@@ -211,6 +214,7 @@ order message while stored levels are out of order. Followers → restore disabl
 the code stays, fix and retry; never drops into Start fresh: needs password, wrong password, not a code, relays
 unreachable, no backup, unreadable, another phone still sharing) / restored (followers count) → home; *Start fresh* → confirm
 / *Cancel*; identity unreadable → note + restore; another app sharing as you → the conflict content (below) / *Later*.
+History → *Bring it back* (Import history) / *Start empty* / Back (on its own: = *Start empty*).
 System back on the first step leaves setup (home shows "Not monitoring: setup incomplete" with *Set up*).
 
 ## Following (Android)
@@ -283,6 +287,11 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
 - Wearer phone (`:sensor` `SourceManager`, the hub's one `ReadingSource`): readings come only from the Libre 3 (one live value a minute plus its 5-minute historic point, 24 h backfill on every connection) or Juggluco (history of 1600 entries at start, 180 after a reconnect, then its live stream; backoff 5 s → 60 s; entries marked `device: Sukrara` are refused so the app never re-reads its own values as fresh). Nothing is invented, repeated as new or extrapolated; values outside 39–501 mg/dL are dropped. Plain `http://` is allowed only to this phone (127.0.0.1 / localhost: Juggluco); every other connection is https / wss (`network_security_config`). The source is the setting `source.source` (Libre 3 directly by default, or Juggluco); a switch, a new pairing, *Try again* or Bluetooth coming back fully closes the old source before the new one starts.
 - Android user-facing errors are sentences in the app's language (one mapper, `:core:designsystem` `errors/UserErrors` → `Trouble`, en + es; `UserErrorsTest`), never an exception's class, an HTTP code or a socket address: the home panel's and the source page's source line (*Can't reach Juggluco. Open it and check that its web server is on.*, *Juggluco stopped sending readings. Reconnecting…*, *Bluetooth is off*, *No sensor paired*, *The sensor has ended. Pair a new one.*, *This sensor isn't supported*, *Lost the sensor. Reconnecting…*, the Nearby devices permission, else *Can't get readings from the sensor. Retrying…*), and the failures of LibreView / Tidepool sign-in, the Nightscout test, the Nightscout / Tidepool / LibreView upload status lines (*<reason> Trying again soon.*), the status-bar page's root / LSPosed actions, settings export / import, CSV export, invite lookup and password-manager restore (failures by kind, each with its next step: no internet / can't find the server / can't connect / didn't answer in time / secure connection failed / sign-in expired or wrong password or secret / the service has a problem / the service didn't accept the data / the address doesn't work; our own and LSPosed's short messages as written; else *Something went wrong. Try again.*). The technical text stays in the log. The home panel shows the newest of the engine's and the source's reading and takes the current time again when the app comes back to the front (round 22: it once showed a 3-min-old value).
 - Android: whose readings the phone keeps follows its role. Every read (the hub's window, history, report, the 7/14/30-day rings, the CSV export, every upload and the local servers) leaves out the other role's sources (`SourceId.notOf`: the followed person's relay / nearby feed on a wearer, the phone's own sensor on a follower; `DataModule.readingsFor`), so a reading of the previous role still on its way never shows. Choosing another role in setup (`AppRoles`; the join step's Back to the role, or a follow that ended) deletes the other role's readings and every treatment (they were the previous person's), only after the person confirms it: when anything would be deleted (`AppRoles.loss`: the other role's readings, plus the not-deleted treatments when the role really changes), Continue opens *Delete the earlier history?* instead of the role confirmation, saying in plain words what goes and when (*You chose “I wear the sensor”. This deletes what this phone kept from before: 1,204 glucose readings and 12 treatments, from Oct 3, 2026 to Nov 10, 2026. It can’t be undone. To keep a copy, export a CSV file first.*), with *Export CSV first* (Export data opened on *Everything on this phone*, still under the old role, so the file holds exactly what will go; Back returns to the same dialog), *Delete and continue* (error colour, confirm haptic) and *Cancel* (also Back / a tap outside: the role step as it was, nothing deleted, role unchanged); with nothing to delete it's the usual role confirmation (`RoleLossDialog`, `RoleLossDialogTest`, `SetupViewModelTest`, `AppRolesTest`; #125). Choosing the same role again keeps the treatments; start-up deletes any of the other role's readings that landed after the change. Whether a role change also fences queued readings out of arming *no data* is the owner's decision (#128): not changed here.
+- Android: imported history (Import history) is stored under its own sources and is part of the wearer's history (not
+  of a follower's: a role change to follower deletes it with the rest). The phone's own sensor always wins: a sensor
+  reading, a backfill included, removes the imported readings within 2 minutes of it (`ReadingDao.upsertOwnFirst`).
+  An update that changes the database version starts with an empty history (no migrations); setup then offers
+  *Bring your history back*.
 - Mac user-facing words never use protocol terms (v2, relay, roster, writer, epoch, BLE): the data source reads `Internet` or `Internet · Bluetooth: connected to <phone>`, `Bluetooth · <phone>` or `Wi-Fi · Juggluco`; the follow state `Following Ana`; logs stay technical (`LocalizationTests.noProtocolTermsInWhatPeopleRead` checks the catalog).
 - Mac: every backfilled reading (v2 hour chunks over relays or Bluetooth, the BLE backlog, v1 Nostr, Juggluco's Wi-Fi history) goes into the 31-day readings store as it arrives, whatever its age; only the live 3 h working window is trimmed (a chunk older than 3 h before the newest reading used to be dropped, which left gaps in the graph after every launch, wake or reconnect).
 - Mac follower (protocol v2): the chunk subscription starts 1 h before the newest stored reading, at least 13 h and at most 7 days back (the chunks' expiry); recomputed on every reconnect (wake, manual reconnect).
@@ -666,6 +675,78 @@ Settings → *Show closed tips* brings every closed tip back; nothing closed →
 - Mac: the same periods as Android (`GlucoseCsv.Period`, in the order of the schema's `exportPeriod` options): This sensor (only when the wearer's sensor start is known, `SensorStore`; until its end), Last 7 / 14 / 30 days, All time (from the oldest reading or treatment the Mac holds: its 31-day readings store and its treatment log), as a *Period* pop-up in the save panel's accessory view (HIG File management: an accessory view with options in the Save dialog); it starts on the report's period (14 days when the report shows 1 day) and the file name follows the period. `ReportTests.csvPeriods` checks the periods.
 
 **States and exits**: *choosing a period* → the period dialog (Cancel keeps the old one). *Counting* → the buttons are disabled until the counts show. *Saving* → the system file picker (its Cancel writes nothing); "File saved" or "Couldn't write the file". *Sharing* → the share sheet (Back cancels; the cached copy is deleted on the next share or app start). Back leaves the page; nothing is kept.
+
+## Import history
+
+The new apps are a fresh start (the owner, 2026-11-10: "a new app and a fresh start that simply has the same and more
+features"): no database, file or setting of an earlier version is read (a database of another version is replaced by
+an empty one, docs/ARCHITECTURE.md). The history comes back from where it already is, never twice.
+
+- Android, wearer only (`:integrations` `history/`: `HistoryImporter`, `HistoryCsv`, `TidepoolHistory`, `ImportPage`;
+  the shared rules `HistoryImport` in `:core:model`, stored by `RoomHistoryImport` in one transaction per week).
+  Settings → Share with apps → *Files* → *Import history* (its summary says what is running or how the last import
+  ended), and setup's last step *Bring your history back* (below). A follower has nothing to import: their history is
+  the wearer's, shared from the wearer's phone (the page says so; setup doesn't offer it). The Mac follows, so it has
+  no import either.
+- **What comes back**: the last 90 days (what the phone keeps), readings up to 15 minutes ago (newer ones are the
+  sensor's: an imported reading never alerts, the alert rules ignore readings older than 15 minutes, and never shows as
+  the current value), insulin (rapid / long), carbs and notes.
+- **From Tidepool** (signed in on the Tidepool page; *Sign in to Tidepool first* opens it): Tidepool's data API, one
+  request per week (`GET /data/{userId}`, types cbg, bolus, insulin, food, wizard) and one for the notes
+  (`GET /message/notes/{userId}`), one second apart; a 429 / 503 waits for Tidepool's `Retry-After` (30 s without one,
+  at most 2 min) and tries again, three times. Readings come back in mg/dL (Tidepool's factor 18.01559, so what Sukrara
+  sent comes back unchanged); a bolus (delivered normal + extended) or an injection is insulin (long / intermediate
+  acting → long), food and a bolus calculator's carbs (grams) are carbs, a datum's notes are the entry's note, a
+  Tidepool note (not a reply) is a note entry. An entry Sukrara sent (`origin.id` `sukrara-tr-<id>`) comes back with its
+  own id. Not read: finger-sticks, basal and other pump records (Sukrara has no record for them).
+- **From LibreView**: LibreView has no API that gives an app the account's history (its app API only uploads;
+  `glucoseHistory` gives report summaries, not readings; LibreLinkUp gives a follower 12 hours), and its *Download
+  glucose data* file is behind a captcha. The LibreView row explains the three steps (open LibreView and sign in,
+  Glucose History › Download glucose data, choose the file here) with *Open LibreView* (the browser) and *Choose the
+  file*.
+- **From a file** (*Choose a file*, the system picker): a file in LibreView's "Glucose Data" layout (contracts/export):
+  Sukrara's own export, the earlier app's *Export data* (All time) or LibreView's file, read by column position (so its
+  translated headers work), the unit from the glucose column's header (mmol/L with `.` or `,`), the time from Sukrara's
+  `Time (ISO 8601)` column or else `Device Timestamp` in the phone's time zone, in whichever of LibreView's date layouts
+  fits every row (day or month first, 12 or 24 hours; when both fit, the one that keeps the rows in order, then day
+  first). Historic and scan glucose are readings (LO / HI as the flags); rapid insulin (or meal + correction + user
+  change), long insulin, carbs in grams and notes are entries (`Entered By` kept as their origin). Finger-sticks,
+  ketones, food in servings and non-numeric amounts are counted as left out. A pen's priming isn't read (the pen
+  rebuilds its record at its next read, docs/29). Anything else: "This isn't a glucose file…"; dates in an unknown
+  layout: "…a layout Sukrara can't read. Nothing was added."
+- **Never twice** (one import path for all three, `HistoryImport`, property-tested): a reading within 2 minutes of a
+  stored one (any source) or of one kept earlier in the same import is the same measurement and stays out, so the same
+  reading uploaded by two devices, a scan next to a historic reading or a second import adds nothing; the phone's own
+  sensor always wins (a sensor reading, a backfill included, removes the imported copies within 2 minutes when it
+  arrives later). An entry with a stored id is that entry; otherwise the same kind within 2 minutes with the same amount
+  (insulin ±0.05 U, carbs ±0.5 g: a file's rounding) or note text is the same entry (the Nightscout linking rule), a
+  deleted one included (it stays deleted). Running an import again changes nothing.
+- **Marked and kept local**: imported readings have their own sources (`import-libreview`, `import-tidepool`,
+  `import-file`), imported entries their origin (`importedFrom`, kept through an edit). They show on the graph, in
+  reports and the export, and reach followers like the rest (entries of the last 30 days). They are never uploaded to
+  LibreView, Tidepool, Nightscout or Health Connect: those have them already or got them from the same place, and a
+  second copy (new ids, new record numbers) would count twice.
+- **Progress**: the page shows the running import in a card above the sources: *Importing from Tidepool…* (or
+  *…LibreView's file…*, *…the file…*), a progress bar by week (it slides; snaps with reduced motion), "Added N readings
+  and M entries" counting up, read by TalkBack as it changes, and *Stop*. It runs in the app's scope: leaving the page
+  or locking the phone doesn't stop it. At the end: *Imported from …* with what was added, what was already here, what
+  was older than 90 days or from the last 15 minutes, what Sukrara doesn't keep (a confirm haptic), and *OK*.
+- **Bring your history back** (setup's last step, wearer): "Sukrara starts with an empty history…"; *Bring it back*
+  records the step and opens Import history; *Start empty* skips it. Offered once: either answer is final and it
+  isn't on the Finish-setup card. A wearer who finished setup before the step existed, or whose database an update
+  replaced (empty), gets that one step on its own at the next launch (once per launch until answered; Back counts as
+  *Start empty*).
+
+**States and exits**: *no import yet* → a source row (Tidepool when signed in, *Choose a file*, the LibreView steps
+dialog: *Open LibreView* / *Choose the file* / *Cancel*); Tidepool signed out → *Sign in to Tidepool first* (the
+Tidepool page, Back returns). *Picking a file* → the system picker (its Back imports nothing). *Importing* → the
+progress card with *Stop* (sources disabled meanwhile); leaving the page keeps it running and the Share with apps row
+says *Importing…*. *Stopped* → "What was added stays. Importing again adds only what is missing." + *OK*. *Imported*
+→ the counts + *OK* (back to the sources; importing again adds only what is missing). *Couldn't import* → the reason
+(not a glucose file, unknown dates, couldn't open it, not signed in to Tidepool: *Sign in to Tidepool*, network: the
+plain-words reason) + *OK*. Setup's step → *Bring it back* / *Start empty* / Back (= *Start empty*). A follower → the
+note only. Every state shows on the page and in the Share with apps row, reachable with TalkBack and without a
+notification. Back leaves the page.
 
 ## Settings
 - Followers' *Settings from* (round f28; schema `follower.settingsFrom`, Android `WearerSettings`, Mac `WearerSettings`): **Wearer** (default), **Default** or **Custom**. It decides the settings marked `"mirror": true` in `contracts/settings/settings.json`: the six graph ranges, time shown (default), rings beside the value (count, slots, centre count, order, rewards), time in range beside the graph, crown at 100 %, lines across the graph, vertical lines, last-treatment place and fallback, the sensor countdown hours, each alert's on / threshold / remind every (not *No data*) and the three quiet rules. *Wearer* = the wearer's own values from its settings event (PROTOCOL-v2 "Settings"; the defaults until the first one arrives; newest `u` wins); *Default* = the schema's defaults; *Custom* = this device's own. Everything else stays per device in every mode: sounds, like an alarm, the notification's Mute / Remind less, Mute all, *No data*, the alerts main switch, time shown and sensor time left per place. The alert source follows it: *Wearer* mirrors the wearer's alert events, *Default* / *Custom* run the rules on this device (SPEC §3 `source`). Android: `FollowerSettingsRepository` (`:core:data`) is what the cards, the notification and the sensor-end reminders read (a mirrored graph row resolves per choice; everything else and every write is this phone's own), `FollowerSettingsBridge` (`:app`) feeds the alert runtime (`AlertMirror.effective`: only the mirrored alert rows, never no data) and keeps `alerts.source` on the choice; the wearer's phone always reads its own. *Copy the wearer's settings* / *Reset to default* overwrite only the mirrored fields of this phone's own. Tests: `FollowerSettingsTest`, `FollowerSettingsBridgeTest`, `FollowerEngineTest`, Mac `IntegrationTests.wearerValuesReplaceOnlyMirroredFields`.
@@ -1310,7 +1391,7 @@ digit by digit).
   platform `android.health.connect` API. Turning it on asks Health Connect's own permission sheet (blood glucose, write
   only); denied → the switch stays off with "Health Connect didn't allow it" and *Open Health Connect*. On, the last 30
   days go in first, then each new reading: only this phone's own sensor readings (by the stored source, so a followed
-  person's readings never go in), never LO / HI (no number: a gap at severe lows and highs), as blood glucose
+  person's readings and imported history never go in), never LO / HI (no number: a gap at severe lows and highs), as blood glucose
   (interstitial fluid) with the sensor as device (Abbott · FreeStyle Libre 3; Juggluco; the untested families say
   "(untested)"). One record per minute (clientRecordId `sukrara-glucose-<minute>`): writing a minute again updates it.
   The written minutes are remembered, so each pass writes only new minutes (a new reading, or a gap a reconnect filled
@@ -1379,7 +1460,7 @@ Android (`apps/android/pen`: `opennov/` reader, `engine/PenEngine`, `Pens` runti
   (edits and deletes follow; a note on its own becomes a Tidepool note), each unavailable while the upload is off.
 - Wearer: uploads its own readings and entries. Follower: *Upload the person you follow*, **off by default**; until it
   is on nothing is sent. Only the role's own readings go up (the wearer's sensor sources, or the followed person's
-  feed), never ones left from the other role. A note removed on Tidepool's web page and then edited here goes up again
+  feed), never ones left from the other role, and never imported history (Import history: readings or entries). A note removed on Tidepool's web page and then edited here goes up again
   as a new note, and later edits go to that one; a 403 is a failed request (retried), not a sign-out
   (`TidepoolUploaderTest`).
 - One upload record per account, install and role (found again by device id, made when missing; if Tidepool deleted
@@ -1401,7 +1482,7 @@ without a notification. Back leaves the page.
   `:integrations` `libreview/`: `LibreViewClient`, `LibreViewQueue`, `LibreViewUploader`, `LibreViewPage`; tests
   `LibreViewPayloadTest` over `contracts/treatments/libreview-fixture.json`, `LibreViewUploaderTest` against
   MockWebServer). **Off by default**; the Share with apps row shows the status and the overview summary includes
-  `LibreView` while it is on.
+  `LibreView` while it is on. Imported entries (Import history) never go up.
 - *Account* opens *Sign in to LibreView* (email, prefilled from the sensor screens' LibreView account; password, "Used
   once to sign in, never saved"). The LibreView app login (`/api/nisperson/getauthentication`, Abbott's config URLs
   checked to be https) gets a token; the token and the profile fields the sensor registration repeats are kept only in
@@ -1465,7 +1546,7 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
 - Settings → Share with apps → *Nightscout* → *Nightscout upload* (wearer only; Android only, the Mac doesn't upload;
   `:integrations` `NightscoutUploader`, `NightscoutPage`; `NightscoutUploaderTest` against MockWebServer). **Off by
   default**; the Share with apps row shows the status line and the overview summary includes `Nightscout upload` while
-  it is on.
+  it is on. Imported history (Import history: readings and entries) never goes up.
 - *Site* opens a dialog: address, *Access token* or *API secret*, the token / secret field (empty keeps the saved one of
   the same kind for the same address: a saved token is never sent to a new address), *Test* (read-only: the site's status with that credential; "Connected · Nightscout <version>", "The
   site refused this token or secret", "Couldn't connect. <reason>") and *Save*. The token or secret lives only in the

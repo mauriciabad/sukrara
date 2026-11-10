@@ -1,0 +1,6 @@
+Informe del paciente,Generado el,14-11-2026 10:15 UTC,Generado por,Persona de Ejemplo
+Dispositivo,Número de serie,Sello de tiempo del dispositivo,Tipo de registro,Historial de glucosa mmol/L,Glucosa leída mmol/L,Insulina de acción rápida no numérica,Insulina de acción rápida (unidades),Alimentos no numéricos,Carbohidratos (gramos),Carbohidratos (porciones),Insulina de acción prolongada no numérica,Insulina de acción prolongada (unidades),Notas,Glucosa de tira mmol/L,Cetona mmol/L,Insulina para comida (unidades),Insulina de corrección (unidades),Cambio de insulina del usuario (unidades)
+FreeStyle Libre 3,00000000-0000-0000-0000-00000000000c,02-11-2026 08:00,0,"6,2",,,,,,,,,,,,,,
+FreeStyle Libre 3,00000000-0000-0000-0000-00000000000c,02-11-2026 08:05,0,"6,5",,,,,,,,,,,,,,
+FreeStyle Libre 3,00000000-0000-0000-0000-00000000000c,02-11-2026 08:10,4,,,,"2,5",,,,,,,,,,,
+FreeStyle Libre 3,00000000-0000-0000-0000-00000000000c,03-11-2026 08:00,0,"5,9",,,,,,,,,,,,,,

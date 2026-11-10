@@ -91,6 +91,8 @@ fun SetupScreen(
     onExportHistory: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Import history (`:integrations`), opened by the history step's *Bring it back* once the step is recorded. */
+    onOpenHistoryImport: () -> Unit = {},
 ) {
     LifecycleResumeEffect(viewModel) {
         viewModel.onResume()
@@ -113,7 +115,7 @@ fun SetupScreen(
         return
     }
     BackHandler { viewModel.back(onDone) }
-    SetupContent(u, viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone), modifier)
+    SetupContent(u, viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport), modifier)
 }
 
 /**
@@ -162,6 +164,8 @@ data class SetupActions(
     val restore: (String, String?) -> Unit = { _, _ -> },
     val clearRestoreError: () -> Unit = {},
     val skip: (SetupStep) -> Unit = {},
+    /** *Bring it back* on the history step: Import history. */
+    val openHistoryImport: () -> Unit = {},
 )
 
 @Composable
@@ -170,6 +174,7 @@ private fun SetupViewModel.actions(
     thresholdRows: ThresholdRows,
     onExportHistory: () -> Unit,
     onDone: () -> Unit,
+    onOpenHistoryImport: () -> Unit,
 ): SetupActions {
     val context = LocalContext.current
     return remember(this) {
@@ -203,6 +208,7 @@ private fun SetupViewModel.actions(
             restore = ::restore,
             clearRestoreError = ::clearRestoreError,
             skip = ::skip,
+            openHistoryImport = { openHistoryImport(onOpenHistoryImport) },
         )
     }
 }
@@ -246,6 +252,7 @@ fun SetupContent(
                         SetupStep.Sensor -> SensorStep(u, actions)
                         SetupStep.Alerts -> AlertConfirmStep(u, actions)
                         SetupStep.Identity -> IdentityStep(u, actions)
+                        SetupStep.History -> HistoryStep(actions)
                     }
                     Spacer(Modifier.size(24.dp))
                 }
@@ -540,6 +547,21 @@ private fun ColumnScope.SensorStep(
             secondary = listOf(stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Sensor) }),
         )
     }
+}
+
+/**
+ * *Bring your history back*: the new app starts empty; Import history brings the last 90 days back from where they
+ * already are, never twice. Offered once: *Bring it back* (done) or *Start empty* (skipped); both are final.
+ */
+@Composable
+private fun ColumnScope.HistoryStep(actions: SetupActions) {
+    StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_body))
+    NoteCard(stringResource(R.string.sh_setup_history_note))
+    StepButtons(
+        stringResource(R.string.sh_setup_history_open),
+        actions.openHistoryImport,
+        secondary = listOf(stringResource(R.string.sh_setup_history_skip) to { actions.skip(SetupStep.History) }),
+    )
 }
 
 /** Opens [intent] if anything can handle it (a settings page some phones lack). */
