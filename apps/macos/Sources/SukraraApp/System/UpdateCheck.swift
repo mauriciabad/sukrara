@@ -44,6 +44,9 @@ struct GitHubRelease: Decodable, Equatable {
     enum CodingKeys: String, CodingKey {
         case tagName = "tag_name", htmlURL = "html_url", draft, prerelease, name
     }
+
+    /// The page *Download* opens: this release's page when it is one of the project's, else the releases page.
+    var pageURL: URL { UpdateCheck.isReleaseURL(htmlURL) ? htmlURL : UpdateCheck.releasesPageURL }
 }
 
 /// GETs a URL (tests return recorded JSON; the app uses `URLSession`).
@@ -75,6 +78,21 @@ final class UpdateCheck {
     }
 
     static let releasesURL = URL(string: "https://api.github.com/repos/mauriciabad/sukrara/releases")!
+    /// The project's releases page (opened when a release's own page isn't one of the project's).
+    static let releasesPageURL = URL(string: "https://github.com/mauriciabad/sukrara/releases")!
+    /// The only links the update check opens: the project's own release pages and files.
+    static let releasePrefix = "https://github.com/mauriciabad/sukrara/releases/"
+
+    /// Whether `url` is one of the project's release pages or files: under `releasePrefix`, with nothing that could
+    /// leave it once a browser resolves it (dot segments, encoded dots, backslashes, spaces).
+    private static let unsafe = CharacterSet.whitespacesAndNewlines.union(.controlCharacters)
+
+    static func isReleaseURL(_ url: URL) -> Bool {
+        let text = url.absoluteString
+        return text.hasPrefix(releasePrefix) && text.count > releasePrefix.count
+            && !["..", "%2e", "%2E", "\\"].contains(where: text.contains)
+            && !text.unicodeScalars.contains(where: Self.unsafe.contains)
+    }
 
     private(set) var state: State = .idle
     @ObservationIgnored private let fetcher: any HTTPFetching

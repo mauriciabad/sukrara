@@ -69,6 +69,22 @@ class CardMuteRuleTest {
         assertNull(last.carbs)
     }
 
+    /** *Alert me anyway* on the low side: the carbs logged up to then stop quieting at that moment, later ones don't. */
+    @Test fun aLiftedQuietEndsAtTheLift() {
+        val meal = Scenes.treatment("c1", TreatmentKind.Carbs, 15.0, agoS = 5 * 60)
+        val more = Scenes.treatment("c2", TreatmentKind.Carbs, 15.0, agoS = 60)
+        val dose = Scenes.treatment("i1", TreatmentKind.RapidInsulin, 4.0, agoS = 10 * 60)
+        val lifted = Scenes.NOW - 2 * 60
+        val m = model(defaults.copy(carbsLiftedAt = lifted), meal, more, dose)
+        assertEquals(lifted, m.muteRule!!.muteUntil(meal))
+        assertEquals(more.at.epochSecond + 15 * 60, m.muteRule!!.muteUntil(more))
+        // the high side wasn't lifted
+        assertEquals(dose.at.epochSecond + 3600, m.muteRule!!.muteUntil(dose))
+        // the lifted carbs' ring is empty: its quiet is over
+        val ring = LastTreatment.of(listOf(meal), m.muteRule, m.status, m.nowS)!!
+        assertEquals(0f, ring.left(m.nowS), 0f)
+    }
+
     @Test fun noEngineOrBothRulesOffMeansNoRule() {
         val dose = Scenes.treatment("i1", TreatmentKind.RapidInsulin, 4.0, agoS = 15 * 60)
         assertNull(model(TreatmentQuiet(), dose).muteRule)

@@ -17,7 +17,7 @@ enum CardAlertsMapping {
     ) -> CardAlerts {
         var ends: [String: TimeInterval] = [:]
         if let settings {
-            for m in marks { if let e = muteEnd(m, settings) { ends[m.id] = e } }
+            for m in marks { if let e = muteEnd(m, settings, lifted: ui.lifted) { ends[m.id] = e } }
         }
         let status = status(ui, marks: marks, now: now)
         let last = lastTreatment(marks, status: status, now: now.timeIntervalSince1970) { ends[$0.id] }
@@ -76,12 +76,20 @@ enum CardAlertsMapping {
     }
 
     /// When `m`'s quiet window ends, or nil when its kind quiets nothing (the rule is off, long-acting, a note).
-    static func muteEnd(_ m: GraphMark, _ s: AlertSettings) -> TimeInterval? {
+    /// `lifted`: the engine's *Alert me anyway* per side (`AlertUIState.lifted`): an entry logged up to then stops
+    /// quieting at that moment, as in the engine (insulin answers the high side, carbs the low one).
+    static func muteEnd(_ m: GraphMark, _ s: AlertSettings, lifted: [AlertSide: Date] = [:]) -> TimeInterval? {
+        let end: TimeInterval
+        let side: AlertSide
         switch m.k {
-        case Treatment.Kind.rapid.rawValue where s.muteAfterInsulin.on: m.t + s.quietDuration(.rapidInsulin)
-        case Treatment.Kind.carbs.rawValue where s.muteAfterCarbs.on: m.t + s.quietDuration(.carbs)
-        default: nil
+        case Treatment.Kind.rapid.rawValue where s.muteAfterInsulin.on:
+            (end, side) = (m.t + s.quietDuration(.rapidInsulin), .high)
+        case Treatment.Kind.carbs.rawValue where s.muteAfterCarbs.on:
+            (end, side) = (m.t + s.quietDuration(.carbs), .low)
+        default: return nil
         }
+        guard let l = lifted[side]?.timeIntervalSince1970, m.t <= l else { return end }
+        return min(end, l)
     }
 
     /// How long an entry stays in the last-treatment slot: rapid insulin 4 h, carbs 3 min per gram between 30 min and
