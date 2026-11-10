@@ -61,6 +61,12 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
     /** Lifted since the last alert: the next match alerts at once. */
     var liftPending: Boolean = false
 
+    /**
+     * Since when the side has been out of range in a row (by the margin, SPEC §1 #37; 0 = it is back): a waiting first
+     * alert counts from here.
+     */
+    var outSince: Long = start
+
     /** The clock was set back by [delta] s: every time moves with it (what is due stays as far away as it was). */
     fun shiftBack(delta: Long) {
         start = start.shiftedBack(delta)
@@ -69,6 +75,7 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
         quietUntil = quietUntil.shiftedBack(delta)
         next = next.shiftedBack(delta)
         lifted = lifted.shiftedBack(delta)
+        outSince = outSince.shiftedBack(delta)
     }
 
     fun copy(): Episode =
@@ -84,6 +91,7 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
             it.next = next
             it.lifted = lifted
             it.liftPending = liftPending
+            it.outSince = outSince
         }
 }
 

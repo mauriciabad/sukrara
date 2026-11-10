@@ -73,6 +73,10 @@ class SettingsPagesTest {
             "alerts.muteFallingHigh.min",
             "alerts.muteAfterCarbs.on",
             "alerts.muteAfterCarbs.min",
+            // Settings › Alerts › Near a threshold (#37)
+            "alerts.persistence.lowMin",
+            "alerts.persistence.highMin",
+            "alerts.persistence.marginMgdl",
             "alerts.actions.muteMin",
             "alerts.actions.relaxMin",
             "alerts.actions.backMgdl",
@@ -149,6 +153,7 @@ class SettingsPagesTest {
     fun `every number the pages show has its schema format`() {
         for (kind in AlertKind.entries) assertNotNull(SchemaPrefs.thresholdSpec(kind))
         for (which in QuietKind.entries) assertNotNull(SchemaPrefs.spec(AlertEdits.quietSpecId(which)))
+        for (which in WaitKind.entries) assertNotNull(SchemaPrefs.spec(which.specId))
         for (band in SchemaPrefs.Bands) assertEquals(band.default, SchemaPrefs.bandSpec(band).default, 0.0)
         listOf(
             "alerts.actions.muteMin",

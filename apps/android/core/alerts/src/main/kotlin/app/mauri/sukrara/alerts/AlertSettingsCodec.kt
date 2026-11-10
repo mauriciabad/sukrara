@@ -63,6 +63,11 @@ object AlertSettingsCodec {
                 put("backMgdl", s.actions.backMgdl)
                 put("backMin", s.actions.backMin)
             }
+            putJsonObject("persistence") {
+                put("lowMin", s.persistence.lowMin)
+                put("highMin", s.persistence.highMin)
+                put("marginMgdl", s.persistence.marginMgdl)
+            }
             put("source", s.source.wire)
         }
 
@@ -82,8 +87,11 @@ object AlertSettingsCodec {
             }
         val sounds = j.obj("sounds")
         val actions = j.obj("notificationActions")
+        val persistence = j.obj("persistence")
 
         fun action(key: String, limit: NumberLimit, def: Int) = limit.coerce(actions?.num(key)?.toInt() ?: def)
+
+        fun persist(key: String, limit: NumberLimit, def: Int) = limit.coerce(persistence?.num(key)?.toInt() ?: def)
         return AlertSettings(
             on = j.bool("on") ?: d.on,
             rules = rules,
@@ -113,6 +121,12 @@ object AlertSettingsCodec {
                     relaxMin = action("relaxMin", AlertLimits.ACTION_RELAX, d.actions.relaxMin),
                     backMgdl = action("backMgdl", AlertLimits.BACK_MGDL, d.actions.backMgdl),
                     backMin = action("backMin", AlertLimits.BACK_MIN, d.actions.backMin),
+                ),
+            persistence =
+                Persistence(
+                    lowMin = persist("lowMin", AlertLimits.PERSIST_LOW, d.persistence.lowMin),
+                    highMin = persist("highMin", AlertLimits.PERSIST_HIGH, d.persistence.highMin),
+                    marginMgdl = persist("marginMgdl", AlertLimits.PERSIST_MARGIN, d.persistence.marginMgdl),
                 ),
             source = AlertSource.entries.firstOrNull { it.wire == j.str("source") } ?: d.source,
         )

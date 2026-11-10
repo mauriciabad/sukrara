@@ -1,0 +1,80 @@
+# Waiting before the first alert and back by the margin (#37, SPEC.md §1; format: SPEC.md §7). Both are off by
+# default (today's behaviour): every scenario here turns them on.
+
+scenario A low that waits 10 min: a short dip never alerts, a lasting one does
+settings persist.low=10
+ 0  glucose 69                  # out of range: the wait starts
+ 3  glucose 75                  # back in range before 10 min: the count starts again
+ 5  glucose 68                  # out again: it waits until 15
+15               => Low glucose
+16
+
+scenario Very low never waits, whatever the low's wait
+settings persist.low=15
+ 0  glucose 65                          # low: it would wait until 15
+ 2  glucose 50   => Very low glucose    # very low: at once
+ 3  glucose 60   => clear very_low      # better: no alert (SPEC §1)
+ 7               => Low glucose         # the repeat: the episode's first alert was given, nothing waits any more
+ 8
+
+scenario A LO never waits
+settings persist.low=15 very_low=off
+ 0  glucose 39   => Low glucose         # LO with very low off: the low, at once
+ 1
+
+scenario A high that waits 30 min; very high waits with it; extremely high never waits
+settings persist.high=30
+ 0  glucose 200                         # high: its first alert waits until minute 30
+10  glucose 260                         # very high: the same wait, counted from minute 0
+30               => Very high glucose   # 30 min out of range
+31  glucose 310  => clear very_high; Extremely high glucose   # more severe: at once
+32
+
+scenario Extremely high never waits
+settings persist.high=60
+ 0  glucose 200
+ 5  glucose 320  => Extremely high glucose
+ 6
+
+scenario A HI never waits
+settings persist.high=60 extremely_high=off
+ 0  glucose 401  => Very high glucose   # HI with extremely high off: very high, at once
+ 1
+
+scenario With a margin, readings bouncing just over the threshold don't restart the wait
+settings persist.low=10 persist.margin=5
+ 0  glucose 68                  # the wait starts
+ 2  glucose 71                  # over 70 but not by 5: the count goes on
+ 4  glucose 68
+10               => Low glucose # 10 min out of range by the margin
+11
+
+scenario Back by the margin keeps the episode: the carbs still count
+settings persist.margin=5
+ 0  glucose 68   => Low glucose
+ 1  carbs 10     => clear low
+ 3  glucose 73                                # over 70 but not by 5: the episode holds
+30  glucose 68   => Low glucose · eat more    # the same episode: the carbs still count
+31
+
+scenario Back by the margin on the high side
+settings persist.margin=10
+ 0  glucose 190  => High glucose
+ 1  insulin 2    => clear high
+ 2  glucose 175                                           # under 180 but not under 170: the episode holds
+80  glucose 190  => High glucose · still high after insulin
+81
+
+scenario The followers get the alert after the same wait (the rules decide for both)
+mirror
+settings persist.low=5
+ 0  glucose 69
+ 5               => Low glucose; follower Low glucose
+ 6
+
+scenario A restart keeps the wait
+settings persist.low=10
+ 0  glucose 68
+ 4  restart
+10               => Low glucose
+11

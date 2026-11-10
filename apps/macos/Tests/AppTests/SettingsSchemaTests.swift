@@ -226,7 +226,7 @@ import Testing
         #expect(AlertSettings.mirroredKinds == AlertKind.allCases.filter { $0 != .noData })
         let json = #"""
             {"graph":{"low":65},"alerts":{"alerts":{"low":{"on":false,"mgdl":72,"repeatMin":30},
-            "no_data":{"on":false,"min":200,"repeatMin":240}}}}
+            "no_data":{"on":false,"min":200,"repeatMin":240}},"persistence":{"lowMin":10,"highMin":30,"marginMgdl":5}}}
             """#
         let w = try #require(WearerSettings(json: json, wearer: "Ana"))
         #expect(w.bool("alerts.kind.on", kind: "low") == false)
@@ -238,6 +238,11 @@ import Testing
         let inUse = own.inUse(from: .wearer, wearer: w)
         #expect(inUse[.low].on == false && inUse[.low].threshold == 72 && inUse[.low].repeatMin == 30)
         #expect(inUse[.noData] == own[.noData])
+        // #37: the waits and the margin near a threshold are rules: the wearer's, back to the defaults in Default
+        #expect(inUse.persistence == PersistenceSettings(lowMin: 10, highMin: 30, marginMgdl: 5))
+        var custom = own
+        custom.persistence.lowMin = 15
+        #expect(custom.inUse(from: .default, wearer: w).persistence == PersistenceSettings())
     }
 }
 

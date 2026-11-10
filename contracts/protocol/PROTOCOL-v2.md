@@ -235,7 +235,8 @@ per-place windows and sensor time, the alerts main switch) is per device and nev
   (`"100,120"`), `gridHours` (h, 0 = off), `lastPlace` (`OFF` / `NEAR_VALUE` / `END`), `lastElse` (one slot, `""` =
   nothing), plus `countdownHours` (the sensor countdown, h).
 - `alerts`: the [alerts SPEC §3](../alerts/SPEC.md) shape with only `alerts.<kind>.{on, mgdl|rate, repeatMin}` for the 7
-  kinds other than `no_data`, and `muteAfterInsulin`, `muteFallingHigh`, `muteAfterCarbs` (`{on, min}`).
+  kinds other than `no_data`, `muteAfterInsulin`, `muteFallingHigh`, `muteAfterCarbs` (`{on, min}`) and
+  `persistence` (`{lowMin, highMin, marginMgdl}`, #37).
 - Values follow the schema's number formats (`numbers`); a receiver coerces anything out of spec to a valid value
   and takes a missing key as the default.
 - **Published** by the wearer's phone on a change (debounced 3 s; only when the mirrored content changed), on a new

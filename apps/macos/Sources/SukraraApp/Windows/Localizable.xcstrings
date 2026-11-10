@@ -113,6 +113,22 @@
         }
       }
     },
+    "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una alerta de glucosa baja o alta solo suena cuando la glucosa lleva este tiempo seguido fuera de rango. Muy baja y extremadamente alta nunca esperan. Un rebote hacia el rango menor que el margen es el mismo episodio: no hay una nueva primera alerta y sus tratamientos siguen contando."
+          }
+        }
+      }
+    },
     "A phone" : {
       "localizations" : {
         "en" : {
@@ -1233,6 +1249,22 @@
         }
       }
     },
+    "High alerts wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High alerts wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas de glucosa alta esperan"
+          }
+        }
+      }
+    },
     "High from" : {
       "localizations" : {
         "en" : {
@@ -1245,6 +1277,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alta desde"
+          }
+        }
+      }
+    },
+    "Ignore bounces within" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore bounces within"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorar rebotes de hasta"
           }
         }
       }
@@ -1425,6 +1473,22 @@
         }
       }
     },
+    "Low alerts wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low alerts wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas de glucosa baja esperan"
+          }
+        }
+      }
+    },
     "Low below" : {
       "localizations" : {
         "en" : {
@@ -1437,6 +1501,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Baja por debajo de"
+          }
+        }
+      }
+    },
+    "Near a threshold" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Near a threshold"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca de un umbral"
           }
         }
       }

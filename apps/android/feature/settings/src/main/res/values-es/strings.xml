@@ -32,6 +32,11 @@
     <string name="st_quiet_falling">Silenciar altos mientras bajan</string>
     <string name="st_quiet_for">Durante %1$s</string>
     <string name="st_quiet_length">Cuánto tiempo</string>
+    <string name="st_wait_title">Cerca de un umbral</string>
+    <string name="st_wait_low">Las alertas de glucosa baja esperan</string>
+    <string name="st_wait_high">Las alertas de glucosa alta esperan</string>
+    <string name="st_wait_margin">Ignorar rebotes de hasta</string>
+    <string name="st_wait_footer">Una alerta de glucosa baja o alta solo suena cuando la glucosa lleva este tiempo seguido fuera de rango. Muy baja y extremadamente alta nunca esperan. Un rebote hacia el rango menor que el margen es el mismo episodio: no hay una nueva primera alerta y sus tratamientos siguen contando.</string>
     <string name="st_actions_title">Botones de la notificación</string>
     <string name="st_action_mute">Silenciar durante</string>
     <string name="st_action_relax">Recordar menos: cada</string>

@@ -100,12 +100,27 @@ import Testing
         #expect(!s[.veryLow].alarm && s[.low].alarm && s[.low].threshold == 70)
     }
 
+    /// #37: the waits and the margin are read and coerced into the schema (a low may wait at most 15 min).
+    @Test func persistenceIsReadAndCoerced() {
+        let s = AlertSettings.decode(
+            Data(#"{"v":1,"persistence":{"lowMin":40,"highMin":30,"marginMgdl":5}}"#.utf8))
+        #expect(s.persistence == PersistenceSettings(lowMin: 15, highMin: 30, marginMgdl: 5))
+        #expect(AlertSettings.decode(Data(#"{"v":1}"#.utf8)).persistence == PersistenceSettings())
+        let lo = GlucoseSample(at: Date(), mgdl: 39)
+        let low = GlucoseSample(at: Date(), mgdl: 65)
+        #expect(s.persistence.waitMin(.low, low) == 15)
+        #expect(s.persistence.waitMin(.veryLow, low) == 0)
+        #expect(s.persistence.waitMin(.low, lo) == 0)
+        #expect(s.persistence.waitMin(.extremelyHigh, GlucoseSample(at: Date(), mgdl: 320)) == 0)
+        #expect(s.persistence.waitMin(.veryHigh, GlucoseSample(at: Date(), mgdl: 260)) == 30)
+    }
+
     @Test func writtenJSONHasTheSpecKeys() throws {
         let out = try #require(try JSONSerialization.jsonObject(with: AlertSettings().encoded()) as? [String: Any])
         #expect(
             Set(out.keys) == [
                 "v", "on", "alerts", "muteAfterInsulin", "muteFallingHigh", "muteAfterCarbs", "sounds",
-                "notificationActions", "source",
+                "notificationActions", "persistence", "source",
             ])
         let alerts = try #require(out["alerts"] as? [String: [String: Any]])
         #expect(Set(alerts.keys) == Set(AlertKind.allCases.map(\.rawValue)))

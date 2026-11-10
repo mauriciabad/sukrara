@@ -7,7 +7,8 @@ import SukraraCore
 import SwiftUI
 
 /// Alerts: alerts on/off; each kind as a row with its summary and Details… (threshold, repeat, its sound with ▶, Like
-/// an alarm, Send Test Alert); the quiet times; what the notification's buttons offer; the sound pack with ▶ and
+/// an alarm, Send Test Alert); the quiet times; the waits and margin near a threshold (#37); what the notification's
+/// buttons offer; the sound pack with ▶ and
 /// Different sound each time; Notification Settings…; and what is quiet right now with its ways out. The mirrored
 /// rules (each kind's on / threshold / repeat but no data's, the quiet times) are read-only outside Custom; what
 /// isn't mirrored (alerts on/off, no data, sounds, Like an alarm, the notification's buttons) is this Mac's.
@@ -41,6 +42,20 @@ struct AlertsRangesPane: View {
                 quiet(L10n.t("Quiet after insulin"), \.muteAfterInsulin, "alerts.muteAfterInsulin.min")
                 quiet(L10n.t("Quiet while a high falls"), \.muteFallingHigh, "alerts.muteFallingHigh.min")
                 quiet(L10n.t("Quiet after carbs"), \.muteAfterCarbs, "alerts.muteAfterCarbs.min")
+            }
+            Section {
+                waitRow(L10n.t("Low alerts wait"), SettingsSpec.persistLow, \.lowMin)
+                waitRow(L10n.t("High alerts wait"), SettingsSpec.persistHigh, \.highMin)
+                waitRow(L10n.t("Ignore bounces within"), SettingsSpec.persistMargin, \.marginMgdl)
+            } header: {
+                Text(L10n.t("Near a threshold"))
+            } footer: {
+                Text(
+                    L10n.t(
+                        "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
+                    )
+                )
+                .font(.callout).foregroundStyle(.secondary)
             }
             Section {
                 NumberSettingRow(
@@ -179,6 +194,18 @@ struct AlertsRangesPane: View {
                 NumberSettingRow(label: L10n.t("For"), format: format, value: minutes, readOnly: model.alertsMirrored)
             }
         }
+    }
+
+    /// One row of *Near a threshold* (SPEC §1 #37): read-only while the wearer's rules apply.
+    private func waitRow(
+        _ label: String, _ format: NumberSpec, _ path: WritableKeyPath<PersistenceSettings, Int>
+    ) -> some View {
+        NumberSettingRow(
+            label: label, format: format,
+            value: Binding(
+                get: { Double(model.shownAlerts.persistence[keyPath: path]) },
+                set: { v in model.alerts.update { $0.persistence[keyPath: path] = Int(v) } }),
+            readOnly: model.alertsMirrored)
     }
 
     private func alertBinding<V>(_ path: WritableKeyPath<AlertSettings, V>) -> Binding<V> {

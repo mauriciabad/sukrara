@@ -115,6 +115,9 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
     case "relax.min": s.notificationActions.relaxMin = try int()
     case "back.mgdl": s.notificationActions.backMgdl = try int()
     case "back.min": s.notificationActions.backMin = try int()
+    case "persist.low": s.persistence.lowMin = try int()
+    case "persist.high": s.persistence.highMin = try int()
+    case "persist.margin": s.persistence.marginMgdl = try int()
     default:
         let parts = k.split(separator: ".", maxSplits: 1).map(String.init)
         guard let kind = AlertKind(rawValue: parts[0]) else { throw ScenarioError.bad("unknown setting \(kv)") }

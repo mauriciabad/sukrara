@@ -32,6 +32,26 @@ data class NotificationActions(
     val backMin: Int = 10,
 )
 
+/**
+ * SPEC §1 "Waiting before the first alert" and "Back by the margin" (#37): a low side's / high side's first alert of an
+ * episode waits until the side has been out of range for [lowMin] / [highMin] minutes in a row; a level episode is back
+ * in range only once [marginMgdl] inside the threshold. All 0 = today's behaviour.
+ */
+data class Persistence(val lowMin: Int = 0, val highMin: Int = 0, val marginMgdl: Int = 0) {
+    /**
+     * Minutes [kind]'s first alert waits for [r]: very low, extremely high, a LO, a HI and the non-level kinds never
+     * wait (the safety net is never delayed).
+     */
+    fun waitMin(kind: AlertKind, r: AlertReading?): Int =
+        when {
+            r == null || r.isLo || r.isHi -> 0
+            kind == AlertKind.VERY_LOW || kind == AlertKind.EXTREMELY_HIGH -> 0
+            kind.side == Side.LOW -> lowMin
+            kind.side == Side.HIGH -> highMin
+            else -> 0
+        }
+}
+
 /** Followers: mirror the wearer's `alert` events, or run these rules on the followed data (SPEC §3 `source`). */
 enum class AlertSource(val wire: String) { WEARER("wearer"), OWN("own") }
 
@@ -44,6 +64,7 @@ data class AlertSettings(
     val afterCarbs: QuietRule = QuietRule(on = true, min = 15),
     val sounds: SoundSettings = SoundSettings(),
     val actions: NotificationActions = NotificationActions(),
+    val persistence: Persistence = Persistence(),
     val source: AlertSource = AlertSource.WEARER,
 ) {
     fun rule(kind: AlertKind): KindRule = rules[kind] ?: DEFAULT_RULES.getValue(kind)

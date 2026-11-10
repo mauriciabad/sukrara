@@ -37,9 +37,23 @@ class AlertSettingsCodecTest {
                 afterInsulin = QuietRule(false, 90),
                 sounds = SoundSettings("arcade", mapOf(AlertKind.LOW to "soft"), shuffle = false),
                 actions = NotificationActions(45, 60, 5, 15),
+                persistence = Persistence(lowMin = 10, highMin = 30, marginMgdl = 5),
                 source = AlertSource.OWN,
             )
         assertEquals(s, AlertSettingsCodec.decode(AlertSettingsCodec.encode(s)))
+    }
+
+    /** #37: the waits and the margin are read and coerced (a low may wait at most 15 min); very low never waits. */
+    @Test fun persistenceIsReadAndCoerced() {
+        val s = AlertSettingsCodec.decode("""{"v":1,"persistence":{"lowMin":40,"highMin":30,"marginMgdl":5}}""")!!
+        assertEquals(Persistence(lowMin = 15, highMin = 30, marginMgdl = 5), s.persistence)
+        assertEquals(Persistence(), AlertSettingsCodec.decode("""{"v":1}""")!!.persistence)
+        val low = AlertReading(0, 65)
+        assertEquals(15, s.persistence.waitMin(AlertKind.LOW, low))
+        assertEquals(0, s.persistence.waitMin(AlertKind.VERY_LOW, low))
+        assertEquals(0, s.persistence.waitMin(AlertKind.LOW, AlertReading(0, 39)))
+        assertEquals(0, s.persistence.waitMin(AlertKind.EXTREMELY_HIGH, AlertReading(0, 320)))
+        assertEquals(30, s.persistence.waitMin(AlertKind.VERY_HIGH, AlertReading(0, 260)))
     }
 
     /** A newer peer's payload: unknown keys and kinds are ignored, every known field still read. */

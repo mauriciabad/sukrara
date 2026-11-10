@@ -159,6 +159,18 @@ object AlertScenarios {
                 s.copy(actions = s.actions.copy(backMin = v.toInt()))
             }
 
+            "persist.low" -> {
+                s.copy(persistence = s.persistence.copy(lowMin = v.toInt()))
+            }
+
+            "persist.high" -> {
+                s.copy(persistence = s.persistence.copy(highMin = v.toInt()))
+            }
+
+            "persist.margin" -> {
+                s.copy(persistence = s.persistence.copy(marginMgdl = v.toInt()))
+            }
+
             else -> {
                 val kind = requireNotNull(AlertKind.fromWire(k.substringBefore('.'))) { "unknown setting $kv" }
                 val r = s.rule(kind)

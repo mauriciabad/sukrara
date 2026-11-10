@@ -6,7 +6,8 @@ import SukraraCore
 
 extension AlertSettings {
     /// The rules this Mac runs while following in "Settings from: Wearer": this Mac's own settings with every value
-    /// the schema marks `mirror` replaced by the wearer's (each kind's on / threshold / repeat, the quiet-after rules).
+    /// the schema marks `mirror` replaced by the wearer's (each kind's on / threshold / repeat, the quiet-after rules, the
+    /// waits and margin near a threshold).
     /// What the wearer didn't send keeps the value it is applied to (`inUse` applies it to the defaults); what isn't
     /// mirrored (alerts on/off, alarm, sounds, no data, notification actions) is always this Mac's, so a mirrored
     /// payload can't silence this Mac.
@@ -35,6 +36,9 @@ extension AlertSettings {
         quiet(&s.muteAfterInsulin, "muteAfterInsulin")
         quiet(&s.muteFallingHigh, "muteFallingHigh")
         quiet(&s.muteAfterCarbs, "muteAfterCarbs")
+        if let v = wearer.number("alerts.persistence.lowMin") { s.persistence.lowMin = Int(v) }
+        if let v = wearer.number("alerts.persistence.highMin") { s.persistence.highMin = Int(v) }
+        if let v = wearer.number("alerts.persistence.marginMgdl") { s.persistence.marginMgdl = Int(v) }
         return s
     }
 
@@ -54,6 +58,7 @@ extension AlertSettings {
         s.muteAfterInsulin = d.muteAfterInsulin
         s.muteFallingHigh = d.muteFallingHigh
         s.muteAfterCarbs = d.muteAfterCarbs
+        s.persistence = d.persistence
         return s
     }
 

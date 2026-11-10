@@ -49,6 +49,18 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
 - Episodes: one per group and side; a brief exit (back in range for less than the repeat interval, at least 5 min)
   clears the notification but keeps the episode, its repeat count and its treatments; no new "first" alert.
 - Repeats count from the last alert of the episode; repeat 0 = once per episode.
+- **Near a threshold** (#37, SPEC §1 "Waiting before the first alert" / "Back by the margin"; scenarios
+  `persistence.txt`; Android Settings › Alerts › *Near a threshold*, Mac Settings › Alerts › *Near a threshold*, en + es):
+  *Low alerts wait* (Off, 5–15 min) and *High alerts wait* (Off, 15 min–4 h, for high and very high): an episode's
+  first alert comes only once glucose has been out of range that long in a row; very low, extremely high, a LO and a HI
+  never wait (Dexcom G7 delays only its High alert, 15 min–4 h; LoopFollow's persistent minutes default to 0).
+  *Ignore bounces within* (0–20 mg/dL, 0–1.1 mmol/L): a reading back over the threshold by less than this keeps the
+  episode (no new first alert, its treatments still count, a wait keeps counting) though the notification goes. All
+  three default to off / 0 (the behaviour before), are rules (the followers' alerts use the wearer's, a follower in
+  *Settings from: Wearer* shows them read-only) and are mirrored in the settings event. *States and exits*: while a
+  first alert waits there is no notification; the card's value and its *Eat carbs* / *Take insulin* pill show the low
+  or high as always; it ends when glucose is back in range by the margin (the count starts again), with the alert at
+  the wait's end, or by setting the wait to Off on that page.
 - Logging the answering treatment clears the alert; when its mute window ends and it still matches, it alerts at once
   and the repeats count from there.
 - Carbs mute very low, low and falling fast (default 15 min); rapid insulin mutes high, very high and rising fast

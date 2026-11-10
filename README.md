@@ -69,7 +69,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   "like an alarm" ones pass Do Not Disturb; alerts that come close together still ring in full (Android's notification
   cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
-  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
+  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. A low
+  or a high can wait a few minutes out of range before its first alert, and bounces just inside the threshold can count
+  as the same alert (Settings › Alerts › *Near a threshold*; off by default; very low and extremely high never wait). Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
   independent of the monitoring service; it also rings for a sensor (or follow) that never sends a first reading, and
   keeps real time when the phone's clock is set back. After a restart, before you first unlock the phone, Sukrara can't read your
   sensor (Android keeps its storage locked): it says *Unlock to resume monitoring* on the lock screen and rings as *No
@@ -172,8 +174,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   server on the home network (found automatically, or by its address; optional API secret in the Keychain), with the
   same card, rings, sensor life and alerts. Plain http, to home-network addresses only; says so when macOS's Local
   Network permission is off, with the way to turn it on.
-- **Alerts** with sound packs and the same rules and timeline scenarios as Android; mute, change the time, a custom
-  length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert.
+- **Alerts** with sound packs and the same rules and timeline scenarios as Android (also the waits and margin *Near a
+  threshold*); mute, change the time, a custom length, Alert Me Anyway, Remind Less and unmute from the panel; Send
+  Test Alert.
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
   7 days by day with the phone's entries, delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.

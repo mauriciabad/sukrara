@@ -76,7 +76,7 @@ class SettingsMirrorTest {
                "no_data":{"on":true,"min":20,"repeatMin":30,"alarm":false},
                "falling_fast":{"on":false,"rate":2.0,"repeatMin":0,"alarm":false}},
                "muteAfterInsulin":{"on":true,"min":60},"sounds":{"pack":"arcade"},
-               "notificationActions":{"muteMin":30},"source":"own"}""",
+               "notificationActions":{"muteMin":30},"persistence":{"lowMin":10,"highMin":30,"marginMgdl":5},"source":"own"}""",
                 ),
         )
 
@@ -86,7 +86,7 @@ class SettingsMirrorTest {
         assertEquals(
             obj(
                 """{"alerts":{"low":{"on":true,"mgdl":70,"repeatMin":15},"falling_fast":{"on":false,"rate":2.0,"repeatMin":0}},
-                   "muteAfterInsulin":{"on":true,"min":60}}""",
+                   "muteAfterInsulin":{"on":true,"min":60},"persistence":{"lowMin":10,"highMin":30,"marginMgdl":5}}""",
             ),
             out.alerts,
         )

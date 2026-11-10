@@ -245,7 +245,10 @@ public struct AlertEngine: Sendable {
             }
         }
         out += backSides.map(AlertEffect.back)
-        step(.level, rules ? Self.level(of: r, s, at: t) : nil, at: t, rng: &rng, out: &out)
+        let level = rules ? Self.level(of: r, s, at: t) : nil
+        // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
+        let holding = level == nil && (episodes[.level].map { isOutOfRange($0.side, r, s, at: t) } ?? false)
+        step(.level, level, holding: holding, at: t, rng: &rng, out: &out)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
         // episode stays as it is: its alert showing, its repeat due, its hold not running down (SPEC §1)
         if !(rules && fresh && r?.rate == nil) { step(.rate, rate, at: t, rng: &rng, out: &out) }
@@ -261,7 +264,8 @@ public struct AlertEngine: Sendable {
     }
 
     private mutating func step(
-        _ g: AlertGroup, _ want: AlertKind?, at t: Date, rng: inout some RandomNumberGenerator, out: inout [AlertEffect]
+        _ g: AlertGroup, _ want: AlertKind?, holding: Bool = false, at t: Date, rng: inout some RandomNumberGenerator,
+        out: inout [AlertEffect]
     ) {
         let s = settings
         guard let want else {
@@ -269,6 +273,13 @@ public struct AlertEngine: Sendable {
             hide(&e, at: t, out: &out)
             e.isOn = false
             e.quiet = nil
+            if holding {
+                // between the threshold and the margin: nothing alerts, but the episode holds and a wait keeps counting
+                e.lastIn = t
+                episodes[g] = e
+                return
+            }
+            e.outSince = nil
             episodes[g] = t.timeIntervalSince(e.lastIn) >= e.holdTime(s) ? nil : e
             return
         }
@@ -279,6 +290,8 @@ public struct AlertEngine: Sendable {
         }
         var e = found ?? Episode(want, at: t)
         defer { episodes[g] = e }
+        // out of range again: a waiting first alert counts from here
+        if e.outSince == nil { e.outSince = t }
         e.isOn = true
         e.lastIn = t
         e.kind = want
@@ -308,6 +321,13 @@ public struct AlertEngine: Sendable {
             return
         }
         e.quiet = nil
+        // the episode's first alert waits until the side has been out of range long enough (never very low, #37)
+        let wait = TimeInterval(s.persistence.waitMin(want, context.latest) * 60)
+        let waitUntil = (e.outSince ?? t).addingTimeInterval(wait)
+        if e.firedAt == nil, t < waitUntil {
+            e.next = waitUntil
+            return
+        }
         e.next = due(e, want, at: t)
         guard let next = e.next, t >= next else { return }
         e.n += 1

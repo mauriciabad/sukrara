@@ -233,7 +233,9 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
                 snoozes[side] = cur.copy(backSince = since)
             }
         }
-        step(AlertGroup.LEVEL, level, s, d, now, out)
+        // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
+        val holding = level == null && episodes[AlertGroup.LEVEL]?.let { Rules.outOfRange(it.side, r, s, now) } == true
+        step(AlertGroup.LEVEL, level, s, d, now, out, holding)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
         // episode stays as it is: its alert showing, its repeat due, its hold not running down (SPEC §1)
         if (!fresh || r?.rate != null) step(AlertGroup.RATE, rateKind, s, d, now, out)
@@ -273,13 +275,27 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         e.shown = null
     }
 
-    private fun step(group: AlertGroup, want: AlertKind?, s: AlertSettings, d: Doses, now: Long, out: MutableList<RuleAction>) {
+    private fun step(
+        group: AlertGroup,
+        want: AlertKind?,
+        s: AlertSettings,
+        d: Doses,
+        now: Long,
+        out: MutableList<RuleAction>,
+        holding: Boolean = false,
+    ) {
         var e = episodes[group]
         if (want == null) {
             if (e == null) return
             hide(e, now, out)
             e.on = false
             e.quiet = null
+            if (holding) {
+                // between the threshold and the margin: nothing alerts, but the episode holds and a wait keeps counting
+                e.lastIn = now
+                return
+            }
+            e.outSince = 0
             if (now - e.lastIn >= hold(e, s)) episodes.remove(group)
             return
         }
@@ -288,6 +304,7 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
             e = null
         }
         val ep = e ?: Episode(want.side, now, want).also { episodes[group] = it }
+        if (ep.outSince == 0L) ep.outSince = now // out of range again: a waiting first alert counts from here
         ep.on = true
         ep.lastIn = now
         ep.kind = want
@@ -318,6 +335,12 @@ class AlertEngine(private val newId: () -> String = ::randomId) {
         }
         ep.quiet = null
         ep.quietUntil = 0
+        // the episode's first alert waits until the side has been out of range long enough (never very low, #37)
+        val waitUntil = ep.outSince + s.persistence.waitMin(want, last) * 60L
+        if (ep.firedAt == null && now < waitUntil) {
+            ep.next = waitUntil
+            return
+        }
         ep.next = due(ep, want, s, d, now)
         if (now < ep.next) return
         ep.n++

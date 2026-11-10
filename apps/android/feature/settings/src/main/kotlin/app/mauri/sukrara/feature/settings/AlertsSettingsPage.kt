@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -228,6 +230,21 @@ fun AlertsSettingsContent(
             }
         }
 
+        // #37: a low or high waits before its first alert; bounces inside the margin stay one episode
+        SettingsGroup(title = stringResource(R.string.st_wait_title)) {
+            for (which in WaitKind.entries) {
+                val spec = SchemaPrefs.spec(which.specId)
+                ValueRow(
+                    stringResource(which.title),
+                    numberLabel(spec, which.value(s).toDouble()),
+                    { dialog = "wait:${which.name}" },
+                    icon = which.icon,
+                    readOnly = ui.mirrored,
+                )
+            }
+        }
+        FooterText(stringResource(R.string.st_wait_footer))
+
         SettingsGroup(title = stringResource(R.string.st_actions_title)) {
             ValueRow(
                 stringResource(
@@ -350,6 +367,14 @@ private fun AlertsDialogs(
             }
         }
 
+        dialog.startsWith("wait:") -> {
+            val which = WaitKind.valueOf(dialog.removePrefix("wait:"))
+            val spec = SchemaPrefs.spec(which.specId)
+            NumberDialog(stringResource(which.title), NumberInput(spec), which.value(s).toDouble(), { label(spec, it) }, close) { v ->
+                actions.edit { which.set(it, spec.coerce(v).toInt()) }
+            }
+        }
+
         dialog == "actionMute" -> {
             val spec = SchemaPrefs.spec("alerts.actions.muteMin")
             NumberDialog(
@@ -430,4 +455,33 @@ fun ConfirmDialog(
         },
         dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.st_cancel)) } },
     )
+}
+
+/** The rows of *Near a threshold* (SPEC §1 #37): the low and high waits and the margin, each one schema number. */
+enum class WaitKind(
+    val specId: String,
+    @StringRes val title: Int,
+    @DrawableRes val icon: Int,
+) {
+    Low("alerts.persistence.lowMin", R.string.st_wait_low, DsR.drawable.ds_ic_timer),
+    High("alerts.persistence.highMin", R.string.st_wait_high, DsR.drawable.ds_ic_timer),
+    Margin("alerts.persistence.marginMgdl", R.string.st_wait_margin, DsR.drawable.ds_ic_trending_down),
+    ;
+
+    fun value(s: AlertSettings): Int =
+        when (this) {
+            Low -> s.persistence.lowMin
+            High -> s.persistence.highMin
+            Margin -> s.persistence.marginMgdl
+        }
+
+    fun set(s: AlertSettings, v: Int): AlertSettings =
+        s.copy(
+            persistence =
+                when (this) {
+                    Low -> s.persistence.copy(lowMin = v)
+                    High -> s.persistence.copy(highMin = v)
+                    Margin -> s.persistence.copy(marginMgdl = v)
+                },
+        )
 }

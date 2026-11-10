@@ -58,6 +58,31 @@ public struct NotificationActionSettings: Codable, Equatable, Sendable {
     }
 }
 
+/// SPEC §1 "Waiting before the first alert" and "Back by the margin" (#37): a low / high side's first alert of an
+/// episode waits until the side has been out of range for `lowMin` / `highMin` minutes in a row; a level episode is back
+/// in range only once `marginMgdl` inside the threshold. All 0 = today's behaviour.
+public struct PersistenceSettings: Codable, Equatable, Sendable {
+    public var lowMin: Int
+    public var highMin: Int
+    public var marginMgdl: Int
+    public init(lowMin: Int = 0, highMin: Int = 0, marginMgdl: Int = 0) {
+        self.lowMin = lowMin
+        self.highMin = highMin
+        self.marginMgdl = marginMgdl
+    }
+
+    /// Minutes `kind`'s first alert waits for `reading`: very low, extremely high, a LO, a HI and the non-level kinds
+    /// never wait (the safety net is never delayed).
+    public func waitMin(_ kind: AlertKind, _ reading: GlucoseSample?) -> Int {
+        guard let r = reading, !r.isLo, !r.isHi, kind != .veryLow, kind != .extremelyHigh else { return 0 }
+        switch kind.side {
+        case .low: return lowMin
+        case .high: return highMin
+        default: return 0
+        }
+    }
+}
+
 /// Sound choice: the pack every kind uses, per-kind overrides (`system` / `none` allowed), shuffle variants.
 public struct AlertSoundSettings: Codable, Equatable, Sendable {
     public static let packs = ["arcade", "kart", "quest", "soft"]
@@ -89,6 +114,7 @@ public struct AlertSettings: Equatable, Sendable {
     public var muteAfterCarbs = QuietRule(on: true, min: 15)
     public var sounds = AlertSoundSettings()
     public var notificationActions = NotificationActionSettings()
+    public var persistence = PersistenceSettings()
     public var source = AlertSource.wearer
 
     public init() {}
@@ -144,7 +170,8 @@ public struct AlertSettings: Equatable, Sendable {
 
 extension AlertSettings: Codable {
     private enum Key: String, CodingKey {
-        case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteAfterCarbs, sounds, notificationActions, source
+        case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteAfterCarbs, sounds, notificationActions, persistence
+        case source
     }
 
     private struct DynamicKey: CodingKey {
@@ -237,6 +264,16 @@ extension AlertSettings: Codable {
                 backMgdl: int("backMgdl", SettingsSpec.backMgdl, d.backMgdl),
                 backMin: int("backMin", SettingsSpec.backMin, d.backMin))
         }
+        if let p = root["persistence"] {
+            let d = persistence
+            func int(_ key: String, _ limits: NumberSpec, _ fallback: Int) -> Int {
+                p[key]?.number.map { Int(limits.coerce($0)) } ?? fallback
+            }
+            persistence = PersistenceSettings(
+                lowMin: int("lowMin", SettingsSpec.persistLow, d.lowMin),
+                highMin: int("highMin", SettingsSpec.persistHigh, d.highMin),
+                marginMgdl: int("marginMgdl", SettingsSpec.persistMargin, d.marginMgdl))
+        }
         if let s = root["source"]?.string.flatMap(AlertSource.init(rawValue:)) { source = s }
     }
 
@@ -258,6 +295,7 @@ extension AlertSettings: Codable {
         try c.encode(muteAfterCarbs, forKey: .muteAfterCarbs)
         try c.encode(sounds, forKey: .sounds)
         try c.encode(notificationActions, forKey: .notificationActions)
+        try c.encode(persistence, forKey: .persistence)
         try c.encode(source, forKey: .source)
     }
 

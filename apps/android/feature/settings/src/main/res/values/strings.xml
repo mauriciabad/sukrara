@@ -32,6 +32,11 @@
     <string name="st_quiet_falling">Quiet highs while falling back</string>
     <string name="st_quiet_for">For %1$s</string>
     <string name="st_quiet_length">How long</string>
+    <string name="st_wait_title">Near a threshold</string>
+    <string name="st_wait_low">Low alerts wait</string>
+    <string name="st_wait_high">High alerts wait</string>
+    <string name="st_wait_margin">Ignore bounces within</string>
+    <string name="st_wait_footer">A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count.</string>
     <string name="st_actions_title">Notification buttons</string>
     <string name="st_action_mute">Mute for</string>
     <string name="st_action_relax">Remind less: every</string>
