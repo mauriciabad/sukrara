@@ -56,7 +56,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   focused, a mute's pill its ways out), a chip for each other quiet alert, a **Mute alerts** button (30 min … 8 h,
   until you turn it off, custom) that becomes the countdown with *Unmute* / *Change time*, the sensor's end date with *Pair new sensor* in its last day,
   one banner at a time for what needs you (monitoring stopped, alerts may not ring,
-  damaged saved data, finish setup), the last 24 h of treatments with delete + undo, and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
+  damaged saved data, finish setup), the last 24 h of treatments (tap one to edit its amount, time or note, with
+  *Undo*; delete + undo; a follower's entry nothing took yet says *Not sent* with *Retry*), and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
   there's no value it says why and what to do (Bluetooth off, the sensor used by another app, a scan or a new pairing
   needed, the phone's clock behind the readings, the sensor warming up or ended…).
 - A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
@@ -76,7 +77,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   data* when that alert would have.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
-  ready*, *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
+  ready*, a note on home in a new sensor's first 12 hours (readings can be less accurate: check a surprising one with a
+  meter), *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
   your night until you start a new sensor), and optionally the sensor's end as an event in Sukrara's own calendar or
   one you pick (Settings › Sensor end).
 - **Monitoring** in one foreground service that comes back by itself (boot, update, a 15 min health check); before the
@@ -84,7 +86,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Treatments**: a quick dialog for rapid / long insulin, carbs and a note (from the notification, the Quick
   Settings tile *Add treatment*, which also shows your glucose, or home), *now*, a time or *minutes ago*, a line saying which alerts it quiets and for
   how long, and a short countdown when opened on the lock screen (a ring on *Cancel*, also in the *When?* picker, and
-  one spoken *Closes in 10 seconds* with TalkBack).
+  one spoken *Closes in 10 seconds* with TalkBack). After *Save* a snackbar says what was saved, with *Undo*; what the
+  countdown closes on is kept as a draft and offered after the unlock (*Treatment not saved*, *Discard*).
 - **Home-screen widgets** (*Glucose*, *Glucose graph*, *Glucose and graph*) drawn by the same card renderer at the
   widget's real size (*Glucose* down to one cell), with the same card as their picker preview; home offers *Add
   widget* until a graph widget is placed (or says how to add it by hand when the launcher can't) and then opens its
@@ -93,7 +96,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Settings** for daily use (every row searchable, accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
   (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with
-  *Copy report*), ranges and the whole graph (lines, time
+  *Copy report*) and the same real test alert to check it gets through Do Not Disturb (also in first-run setup), ranges and the whole graph (lines, time
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect

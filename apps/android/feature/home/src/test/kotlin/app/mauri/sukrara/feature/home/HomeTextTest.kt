@@ -3,19 +3,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -41,6 +46,8 @@ class HomeTextTest {
         widgetBanner: Boolean? = null,
         fromPen: Set<String> = emptySet(),
         callbacks: HomeCallbacks = HomeCallbacks(),
+        readOnly: Set<String> = emptySet(),
+        delivery: Map<String, TreatmentDelivery> = emptyMap(),
     ) {
         val look = homeLook(glucose, NOW, GlucoseUnit.MGDL)
         val treatments =
@@ -59,6 +66,8 @@ class HomeTextTest {
                 undo = null,
                 widgetPinnable = widgetBanner != false,
                 fromPen = fromPen,
+                readOnly = readOnly,
+                delivery = delivery,
             )
         compose.setContent { SukraraTheme(dark = false, dynamic = false) { HomeContent(state, callbacks) } }
     }
@@ -86,13 +95,41 @@ class HomeTextTest {
         compose.onNodeWithText("3h").assertExists()
     }
 
-    /** A pen's entry says where it came from and is one button that opens its sheet; typed rows are not buttons. */
+    /** A pen's entry says where it came from and is one button that opens its sheet; a read-only row is no button. */
     @Test fun penRowOpensItsSheet() {
         val opened = mutableListOf<String>()
-        show(Samples.wearer(), fromPen = setOf("b"), callbacks = HomeCallbacks(pen = PenCallbacks(open = { opened += it.id })))
+        show(
+            Samples.wearer(),
+            fromPen = setOf("b"),
+            callbacks = HomeCallbacks(pen = PenCallbacks(open = { opened += it.id })),
+            readOnly = setOf("a"),
+        )
         compose.onNode(hasText("4.5u rapid insulin · from the pen") and hasClickAction()).performScrollTo().performClick()
         assertEquals(listOf("b"), opened)
         compose.onNode(hasText("30g carbs") and hasClickAction()).assertDoesNotExist()
+    }
+
+    /** #75: a row this phone may change opens the treatment dialog on that entry. */
+    @Test fun aRowOpensItsEdit() {
+        val asked = mutableListOf<HomeAction>()
+        show(Samples.wearer(), callbacks = HomeCallbacks(onAction = { asked += it }))
+        compose.onNode(hasText("30g carbs") and hasClickAction()).performScrollTo().performClick()
+        assertEquals(listOf<HomeAction>(HomeAction.EditTreatment("a")), asked)
+    }
+
+    /** #75: a writer's entry nothing took says *Not sent* with *Retry*; one still on its way says *Sending…*. */
+    @Test fun notSentOffersRetry() {
+        val retried = mutableListOf<String>()
+        show(
+            Samples.wearer(),
+            callbacks = HomeCallbacks(onRetry = { retried += it.id }),
+            delivery = mapOf("a" to TreatmentDelivery.Failed, "b" to TreatmentDelivery.Pending),
+        )
+        compose.onNodeWithText("Not sent").performScrollTo().assertExists()
+        compose.onNodeWithText("Sending…").assertExists()
+        // its action (a scrolled-to button can sit under the floating Add treatment button)
+        compose.onNodeWithContentDescription("Retry sending 30g carbs").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("a"), retried)
     }
 
     @Test fun muteAllUntilTurnedOff() {
@@ -109,6 +146,20 @@ class HomeTextTest {
     @Test fun sensorLineLastDay() {
         show(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofMinutes(4 * 60 + 58).plusSeconds(30)))))
         compose.onNodeWithText("Sensor ends in 4 h 59 min").assertExists()
+    }
+
+    /** A new sensor's first 12 h (#46): the note says until when and what to do; later it's gone. */
+    @Test fun earlyReadingsNote() {
+        show(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofDays(15)).minus(Duration.ofHours(3)))))
+        compose
+            .onNodeWithText("New sensor: readings can be less accurate until", substring = true)
+            .assertExists()
+        compose.onNodeWithText("check with a meter", substring = true).assertExists()
+    }
+
+    @Test fun noEarlyNoteOnAnOlderSensor() {
+        show(Samples.wearer())
+        compose.onNodeWithTag("home-sensor-early").assertDoesNotExist()
     }
 
     @Test

@@ -15,7 +15,7 @@ class ChannelsTest {
     @Test
     fun `every channel id exists exactly once`() {
         val expected =
-            listOf("glucose", "status", "requests", "sensor", "sensor.countdowns", "pen.results", "pen.check") +
+            listOf("glucose", "status", "requests", "sensor", "sensor.countdowns", "pen.results", "pen.check", "treatment.draft") +
                 Channels.ALERT_KINDS.map { "alert.$it" } + Channels.ALERT_KINDS.map { "alert_alarm.$it" }
         assertEquals(expected.sorted(), ids.sorted())
         assertEquals(ids.size, ids.toSet().size)
@@ -53,7 +53,7 @@ class ChannelsTest {
         val countdown = Channels.ALL.single { it.id == Channels.SENSOR_COUNTDOWN }
         assertEquals(3, countdown.importance)
         assertTrue(countdown.silent)
-        assertEquals(listOf(Channels.SENSOR_COUNTDOWN), Channels.ALL.filter { it.silent }.map { it.id })
+        assertEquals(listOf(Channels.SENSOR_COUNTDOWN, Channels.TREATMENT_DRAFT), Channels.ALL.filter { it.silent }.map { it.id })
         assertEquals(listOf("sensor.countdown"), Channels.DELETED)
         assertTrue(Channels.DELETED.none { it in ids })
     }
@@ -71,6 +71,7 @@ class ChannelsTest {
                 NotificationIds.SENSOR_COUNTDOWN,
                 NotificationIds.PEN_RESULTS,
                 NotificationIds.PEN_CHECK,
+                NotificationIds.TREATMENT_DRAFT,
                 NotificationIds.REQUESTS,
             )
         assertEquals(fixed.size, fixed.toSet().size)

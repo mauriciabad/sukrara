@@ -915,8 +915,17 @@ class FollowerEngine(
                 delivery = TreatmentDelivery.Delivered,
                 penJson = TreatmentWire.penJson(p),
             )
-        if (item.override && stored != null) treatments.replace(record) else treatments.upsertIfNewer(record)
+        if (item.override && stored != null) {
+            treatments.replace(record)
+        } else if (!treatments.upsertIfNewer(record) && stored != null && stored.onItsWay() &&
+            item.author in follower?.state?.devices.orEmpty() && record.treatment.modifiedAt >= stored.treatment.modifiedAt
+        ) {
+            // the wearer's echo of our own entry (same version, so not stored again): the wearer has it
+            treatments.replace(stored.copy(delivery = TreatmentDelivery.Delivered))
+        }
     }
+
+    private fun TreatmentRecord.onItsWay() = delivery == TreatmentDelivery.Pending || delivery == TreatmentDelivery.Failed
 
     // ------------------------------------------------------------------------------------------------ writer
 
@@ -932,15 +941,49 @@ class FollowerEngine(
             ?.hex
 
     /**
-     * A writer's entry stored on this phone (add / edit / delete): sent at once under the newest epoch, and again on
-     * every connect until a relay accepts it. Ignored when not allowed to write.
+     * A writer's entry stored on this phone (add / edit / delete, a *Retry*): sent at once under the newest epoch, and
+     * again on every connect until a relay or the wearer's phone takes it. Not taken within [UNSENT_MS] (or it can't
+     * be sent now: not connected, not allowed to write) → [TreatmentDelivery.Failed] (*Not sent* with *Retry*).
      */
     suspend fun publishTreatment(entry: TreatmentRecord) =
         locked {
-            val ev = treatmentEvent(entry) ?: return@locked
+            val ev = treatmentEvent(entry)
+            if (ev == null) {
+                markFailed(entry.treatment.id, entry.treatment.modifiedAt)
+                return@locked
+            }
             pendingEvents[ev.id] = entry.treatment.id to entry.treatment.modifiedAt
             send(ev)
+            watchUnsent(entry.treatment.id, entry.treatment.modifiedAt)
         }
+
+    /** [UNSENT_MS] after a send, the version still on its way is *Not sent*; right away when nothing is connected. */
+    private suspend fun watchUnsent(
+        id: String,
+        version: Instant,
+    ) {
+        val out = sink
+        if (out == null || transport == null) {
+            markFailed(id, version)
+            return
+        }
+        // finished watches leave the list (it is cancelled on disconnect)
+        jobs = jobs.filter { it.isActive } +
+            out.launch {
+                delay(UNSENT_MS)
+                locked { markFailed(id, version) }
+            }
+    }
+
+    private suspend fun markFailed(
+        id: String,
+        version: Instant,
+    ) {
+        val stored = treatments.get(id) ?: return
+        if (stored.delivery == TreatmentDelivery.Pending && stored.treatment.modifiedAt == version) {
+            treatments.replace(stored.copy(delivery = TreatmentDelivery.Failed))
+        }
+    }
 
     private fun treatmentEvent(entry: TreatmentRecord): SignedEvent? {
         val r = record?.takeIf { it.canWrite } ?: return null
@@ -957,15 +1000,19 @@ class FollowerEngine(
         return events.treatment(s.follower, newest.key.public, sid, payload, at)
     }
 
+    /** Every entry still on its way (*Sending…* or *Not sent*) goes again: pending, and watched like a first send. */
     private suspend fun resendPending() {
         if (record?.canWrite != true) return
         treatments
             .changedSince(Instant.ofEpochSecond(now() - Wire.TTL_TREATMENT))
-            .filter { it.delivery == TreatmentDelivery.Pending }
-            .forEach { entry ->
+            .filter { it.onItsWay() }
+            .forEach { stored ->
+                val entry = stored.copy(delivery = TreatmentDelivery.Pending)
+                if (stored.delivery != entry.delivery) treatments.replace(entry)
                 treatmentEvent(entry)?.let { ev ->
                     pendingEvents[ev.id] = entry.treatment.id to entry.treatment.modifiedAt
                     send(ev)
+                    watchUnsent(entry.treatment.id, entry.treatment.modifiedAt)
                 }
             }
     }
@@ -973,10 +1020,9 @@ class FollowerEngine(
     private suspend fun markDelivered(eventId: String) {
         val (id, version) = pendingEvents.remove(eventId) ?: return
         val stored = treatments.get(id) ?: return
-        // only the version that event carried: a newer edit stays pending until its own event is accepted
-        if (stored.delivery == TreatmentDelivery.Pending &&
-            stored.treatment.modifiedAt == version
-        ) {
+        // only the version that event carried: a newer edit stays pending until its own event is accepted; a late OK
+        // after *Not sent* still counts
+        if (stored.onItsWay() && stored.treatment.modifiedAt == version) {
             treatments.replace(stored.copy(delivery = TreatmentDelivery.Delivered))
         }
     }
@@ -1086,6 +1132,9 @@ class FollowerEngine(
         private const val JOIN_RETRY_MS = 3_000L
         private const val FETCH_TIMEOUT_MS = 8_000L
         private const val HISTORY_DELAY_MS = 90_000L
+
+        /** A writer's entry no relay or wearer's phone took this long after a send is *Not sent* (PROTOCOL-v2 Writers). */
+        const val UNSENT_MS = 120_000L
         private const val HISTORY_INTERVAL = 30 * 60L
         private const val PERSIST_EVERY = 300L
         private const val RETRY_FIRST_MS = 5_000L

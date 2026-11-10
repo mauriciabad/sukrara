@@ -195,7 +195,7 @@ class SharingScreenshotTest {
             "setup-3-permissions" to {
                 SetupContent(
                     ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
-                    a,
+                    a.copy(sendTestAlert = {}),
                 )
             },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },

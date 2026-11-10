@@ -49,9 +49,11 @@ import app.mauri.sukrara.feature.home.PanelPreview
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInRoute
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorRoute
 import app.mauri.sukrara.feature.settings.AlertThresholdRows
+import app.mauri.sukrara.feature.settings.SettingsDeps
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import app.mauri.sukrara.feature.settings.SettingsScreen
+import app.mauri.sukrara.feature.settings.TestAlert
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
 import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityPage
@@ -432,6 +434,7 @@ fun SukraraNavigation(
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.remove(SetupRoute) },
+                            sendTestAlert = rememberSendTestAlert(graph.settingsUi.deps),
                         )
                     }
                     entry<SetupStepRoute> { key ->
@@ -441,6 +444,7 @@ fun SukraraNavigation(
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
                             onDone = { backStack.pop(key) },
+                            sendTestAlert = rememberSendTestAlert(graph.settingsUi.deps),
                         )
                     }
                     entry<NewSensorKey> {
@@ -582,6 +586,18 @@ private fun NavBackStack<NavKey>.push(key: NavKey) {
     if (lastOrNull() != key) add(key)
 }
 
+/**
+ * Setup's *Send a test alert*: Settings' real test alert ([TestAlert.kind], the same notification as an alert's page and
+ * Alert reliability); null while alerts are off or none is on.
+ */
+@Composable
+private fun rememberSendTestAlert(deps: SettingsDeps): (() -> Unit)? {
+    val alerts by deps.alertSettings.settings.collectAsStateWithLifecycle(null)
+    val settings = alerts ?: return null
+    val kind = TestAlert.kind(settings) ?: return null
+    return remember(settings, kind) { { deps.alertPlayback.sendTest(kind, settings) } }
+}
+
 /** Removes the top-most [key] (equal keys can be lower in the stack; never pop one of those). */
 private fun NavBackStack<NavKey>.pop(key: NavKey) {
     val i = lastIndexOf(key)
@@ -615,6 +631,10 @@ private fun route(
 
         HomeAction.AddTreatment -> {
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT)) {}
+        }
+
+        is HomeAction.EditTreatment -> {
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id)) {}
         }
 
         is HomeAction.Treat -> {

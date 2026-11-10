@@ -289,8 +289,16 @@ fun SettingsScreen(
 
         SettingsRoute.Reliability -> {
             val readiness by deps.readiness.readiness.collectAsStateWithLifecycle()
+            val alerts by deps.alertSettings.settings.collectAsStateWithLifecycle(null)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
-            ReliabilityContent(readiness, deps.readiness::fix, deps.readiness::answerUnlockedSound, onBack)
+            ReliabilityContent(
+                readiness,
+                deps.readiness::fix,
+                deps.readiness::answerUnlockedSound,
+                alerts = alerts,
+                playback = deps.alertPlayback,
+                onBack = onBack,
+            )
         }
 
         SettingsRoute.StatusBar -> {

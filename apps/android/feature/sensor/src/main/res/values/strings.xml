@@ -53,7 +53,7 @@
     <!-- %1$s = a duration from the one formatter ("52 min" shown, "52 minutes" spoken). -->
     <string name="newsensor_ready_in">Ready in %1$s</string>
     <string name="newsensor_ready_title">Sensor ready</string>
-    <string name="newsensor_ready_text">Glucose readings are coming in.</string>
+    <string name="newsensor_ready_text">Glucose readings are coming in. The first 12 hours can be less accurate.</string>
     <string name="newsensor_juggluco_title">Juggluco is now the source</string>
     <string name="newsensor_juggluco_text">Sukrara stops reading the sensor itself and reads glucose from Juggluco on this phone. You can change it in Settings › Sensor.</string>
 

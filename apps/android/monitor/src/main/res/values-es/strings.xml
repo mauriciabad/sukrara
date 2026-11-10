@@ -60,7 +60,7 @@
     <string name="sensor_almost_ready">Casi listo</string>
     <string name="sensor_waiting_first_reading">Esperando la primera lectura</string>
     <string name="sensor_ready_title">Sensor listo</string>
-    <string name="sensor_ready_text">Ya llegan las lecturas.</string>
+    <string name="sensor_ready_text">Ya llegan las lecturas. Las primeras 12 horas pueden ser menos precisas.</string>
     <string name="sensor_ended_title">Sensor terminado</string>
     <string name="sensor_ended_text">No hay lecturas hasta que pongas un sensor nuevo.</string>
 
@@ -74,6 +74,7 @@
     <string name="monitor_channel_sensor_countdown">Cuenta atrás del sensor</string>
     <string name="monitor_channel_pen_results">Dosis de la pluma</string>
     <string name="monitor_channel_pen_check">Recordatorios de la pluma</string>
+    <string name="monitor_channel_treatment_draft">Tratamientos sin guardar</string>
     <string name="monitor_channel_alert_very_low">Muy baja</string>
     <string name="monitor_channel_alert_low">Baja</string>
     <string name="monitor_channel_alert_high">Alta</string>
@@ -128,7 +129,7 @@
     <string name="monitor_locked_boot_alarm_title">Sin datos de glucosa · desbloquea el teléfono</string>
     <string name="monitor_locked_boot_alarm_text">Sin lecturas desde %1$s. Sukrara no puede leer el sensor ni avisarte hasta que desbloquees el teléfono.</string>
     <string name="alert_test_title">Prueba · %1$s</string>
-    <string name="alert_test_text">Una prueba desde Ajustes, no una lectura. Tu alerta real suena así.</string>
+    <string name="alert_test_text">Una prueba, no una lectura. Tu alerta real suena así.</string>
     <string name="calendar_event_title">Fin del sensor</string>
     <string name="calendar_event_description">Sensor %1$s, empezado el %2$s. Sukrara mantiene este evento al día.</string>
 </resources>

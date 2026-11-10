@@ -112,6 +112,8 @@ class HomeGallery {
             "no-sensor-yet" to ui(Samples.noSensorYet()),
             "setup-incomplete" to ui(GlucoseState.Initial),
             "warming-up" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.WarmingUp(NOW.plus(Duration.ofMinutes(42))))),
+            // a new sensor's first 12 h: the note under the card
+            "sensor-early" to ui(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofDays(15)).minus(Duration.ofHours(3))))),
             "sensor-ended" to ui(Samples.wearer(sensor = SensorState.Ended)),
             "bluetooth-off" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.BluetoothOff)),
             "core-missing" to ui(Samples.wearer(sensor = SensorState.CoreMissing)),
