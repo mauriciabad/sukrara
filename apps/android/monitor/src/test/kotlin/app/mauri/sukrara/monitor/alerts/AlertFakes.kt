@@ -21,6 +21,7 @@ import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
+import app.mauri.sukrara.monitor.lockedboot.LockedBootPlan
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.Instant
 
@@ -66,9 +67,16 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
     val alarm = FakeAlarm()
     val treatments = MutableStateFlow<List<Treatment>>(emptyList())
     var published = AlertUiState()
+
+    /** The last plan the runtime saved for the time before the first unlock (lockedboot). */
+    var lockedBoot: LockedBootPlan? = null
     private var ids = 0
 
-    fun runtime() = AlertRuntime(store, treatments, presenter, alarm, { }, { published = it }, clock, newId = { "id${++ids}" })
+    fun runtime() =
+        AlertRuntime(store, treatments, presenter, alarm, { }, { published = it }, clock, newId = { "id${++ids}" }, lockedBoot = {
+            lockedBoot =
+                it
+        })
 
     fun reading(mgdl: Int, at: Instant = clock.now()) = Reading(at, mgdl, null, SourceId.Libre3)
 

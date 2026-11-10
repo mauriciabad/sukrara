@@ -754,7 +754,38 @@ tests `GlucoseHubTest`, `MonitorServiceLogicTest`).
   *Stopped* → tap the notice or *Resume* (starts it; a notification tap is an allowed start), or open the app; the
   notice goes away once it runs. The in-app banner for Stopped / Not monitoring (visible without notifications) is the
   home screen's. *Not monitoring* → *Set up sensor* / finish setup → first reading.
-- Not yet: Direct Boot (after a reboot nothing runs until the first unlock; issue).
+- After a restart, monitoring resumes at the **first unlock**, not before: see
+  [Before the first unlock](#before-the-first-unlock-android).
+
+## Before the first unlock (Android)
+
+Android (`:monitor` `lockedboot/`: `LockedBootPlan`, `LockedBootStore`, `LockedBoot`, `LockedBootReceiver`; `App`;
+tests `LockedBootPlanTest`, `LockedBootTest`, `LockedBootReceiverTest`, `LockedBootPlanSaveTest`, `ManifestTest`;
+investigation [docs/30](30-direct-boot.md)).
+- After a restart (an overnight OS update, a crash, the phone's own restart after days locked) a phone with a screen
+  lock keeps the app's storage encrypted until the person unlocks it once. Readings, the sensor pairing, the
+  identity and the alert state live there, so **Sukrara doesn't monitor before the first unlock**: no Bluetooth, no
+  relays, no readings, no level alerts.
+- What it does instead, from a small **device-protected plan** (`locked-boot.json`: whether monitoring had started,
+  the last reading's *time*, *No data*'s minutes / re-alert / sound, whether any alert that is on rings as an alarm,
+  *Mute all*'s end and the sensor's life; never a glucose value), which the alert runtime rewrites with every save:
+  - at the locked boot, if a role is set and monitoring had started: a **lock-screen notice** on `status`, public and
+    silent, *Unlock to resume monitoring* · *Your phone restarted. Sukrara can't read your sensor or alert you until
+    you unlock it.*;
+  - when *No data* would have rung (the last reading + its minutes; later while the sensor warms up or *Mute all* is
+    on; never once the sensor has ended or with *Mute all* until turned back on, *No data* off or alerts off), the
+    notice **rings as an alarm**: *No glucose data · unlock your phone* · *No readings since 3:10. Sukrara can't read
+    your sensor or alert you until you unlock your phone.*, on *No data*'s channel at alarm volume when any alert that
+    is on rings as an alarm (very low by default: every alert waits for the unlock), else at notification volume;
+    *No data*'s sound pack; again every *No data* re-alert interval (0 = once). A restart long after the last reading
+    rings at once.
+- Nothing shows on a phone without a screen lock (Android unlocks it by itself) or when nothing was set up to monitor.
+- No full-screen alarm, *Mute…* or *Remind less* before the unlock (those open the app or need its storage).
+- **States and exits**: *Waiting for the first unlock* (notice on the lock screen) → unlock (or tap the notice, which
+  asks for the unlock and opens the app): the notice and its alarm go at once and monitoring starts as after any
+  restart (alert check, service). *Ringing* → swipe it away (it comes back at the next re-alert) or unlock. Turning
+  *No data* off (Settings › Alerts) before a restart leaves only the silent notice. TalkBack reads the notice on the
+  lock screen like any notification.
 
 ## Lock screen widget
 

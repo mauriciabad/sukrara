@@ -121,6 +121,11 @@
     <string name="monitor_stopped_title">Monitorización detenida</string>
     <string name="monitor_stopped_text">No hay lecturas de glucosa ni avisos hasta que vuelva a funcionar. Toca para reanudar.</string>
     <string name="monitor_action_resume">Reanudar</string>
+    <!-- before the first unlock after a restart (lockedboot): on the lock screen, no health data -->
+    <string name="monitor_locked_boot_title">Desbloquea para reanudar la monitorización</string>
+    <string name="monitor_locked_boot_text">El teléfono se ha reiniciado. Sukrara no puede leer el sensor ni avisarte hasta que lo desbloquees.</string>
+    <string name="monitor_locked_boot_alarm_title">Sin datos de glucosa · desbloquea el teléfono</string>
+    <string name="monitor_locked_boot_alarm_text">Sin lecturas desde %1$s. Sukrara no puede leer el sensor ni avisarte hasta que desbloquees el teléfono.</string>
     <string name="alert_test_title">Prueba · %1$s</string>
     <string name="alert_test_text">Una prueba desde Ajustes, no una lectura. Tu alerta real suena así.</string>
     <string name="calendar_event_title">Fin del sensor</string>

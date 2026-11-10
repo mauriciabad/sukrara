@@ -35,6 +35,7 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentQuiet
+import app.mauri.sukrara.monitor.lockedboot.LockedBootPlan
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -71,6 +72,8 @@ class AlertRuntime(
     private val newId: () -> String = AlertEngine::randomId,
     /** The diagnostic log (`DiagLog`): step names and exception classes only, never values. */
     private val log: (String) -> Unit = {},
+    /** Saves what the phone needs before the first unlock after a restart (`LockedBootStore`), with every save. */
+    private val lockedBoot: (LockedBootPlan) -> Unit = {},
 ) : AlertControls {
     private val mutex = Mutex()
     private var started = false
@@ -155,7 +158,10 @@ class AlertRuntime(
             muteAllSeen = 0
             unposted.clear()
             attempt(Step.Alarm) { alarm.set(null) }
-            attempt(Step.Save) { store.save { AlertRecord() } }
+            attempt(Step.Save) {
+                store.save { AlertRecord() }
+                lockedBoot(LockedBootPlan())
+            }
             attempt(Step.Publish) { publishUi(now()) }
         }
     }
@@ -479,7 +485,8 @@ class AlertRuntime(
             ?.relaxMin ?: 0
 
     private suspend fun save() {
-        val snapshot = machine?.snapshot()
+        val m = machine
+        val snapshot = m?.snapshot()
         store.save {
             it.copy(
                 machine = snapshot,
@@ -490,6 +497,10 @@ class AlertRuntime(
                 muteAllUntil = muteAllSeen,
             )
         }
+        // the machine's settings already have no data off before monitoring started
+        lockedBoot(
+            LockedBootPlan.of(m?.settings, monitoring, snapshot?.local?.last?.t, m?.uiState(now())?.muteAllUntil ?: 0, sensor),
+        )
     }
 
     private fun publishUi(now: Long) {

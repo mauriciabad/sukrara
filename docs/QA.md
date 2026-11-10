@@ -169,6 +169,24 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       headline and timing with Android.
 - [ ] Never on the user's phone with real alarms unless the user asked.
 
+### Before the first unlock (emulator; docs/30)
+
+An emulator of your own with file-based encryption (`adb shell getprop ro.crypto.type` = `file`), never the phone.
+- [ ] Debug build, `SYNTHETIC` (wearer monitoring). `adb shell run-as app.mauri.sukrara cat
+      /data/user_de/0/app.mauri.sukrara/files/locked-boot.json`: `monitoring`, `lastReadingAt`, `noDataMin`, no value.
+- [ ] `adb shell locksettings set-pin 1234`, `adb reboot`, wait for `sys.boot_completed` and up to a minute more
+      (the locked boot broadcast reached Sukrara ~20 s later on the emulator); `dumpsys user` says `RUNNING_LOCKED`. Lock screen: *Unlock to resume monitoring* (public, silent; `dumpsys notification
+      --noredact`: id 3 on `status`); `dumpsys alarm`: `lockedboot.RING` at the last reading + *No data*'s minutes; no
+      crash in `logcat` (`FATAL`).
+- [ ] Ring it now: `adb root`, `adb shell am broadcast -n app.mauri.sukrara/.monitor.lockedboot.LockedBootReceiver -a
+      app.mauri.sukrara.lockedboot.RING`: id 3 moves to `alert_alarm.no_data`, `RingtonePlayer` plays
+      `content://app.mauri.sukrara.alertsound/no_data` (the provider answers before the unlock), the next
+      `lockedboot.RING` is *No data*'s re-alert later.
+- [ ] Unlock (`input keyevent 82`, swipe up, `input text 1234`, Enter): id 3 and its alarm go at once; after the boot
+      broadcast `Sukrara.monitor: start (Boot): Started` in the same process and the glucose notification is back.
+- [ ] Phone (the owner, read-only): after an OS update at night the notice is on the lock screen in the morning, the
+      *No data* alarm rang about 20 min after the last reading, and unlocking brings the readings back (backfilled).
+
 ## Q9 Translations
 
 - [ ] Every new key in `values/strings.xml` and `values-es/strings.xml` (the checks and StringsParityTest enforce

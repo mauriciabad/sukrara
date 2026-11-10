@@ -4,7 +4,10 @@
 package app.mauri.sukrara
 
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.LocaleList
 import app.mauri.sukrara.feature.treatments.TreatmentsHost
@@ -13,6 +16,8 @@ import app.mauri.sukrara.monitor.AlertsHost
 import app.mauri.sukrara.monitor.MonitorHost
 import app.mauri.sukrara.monitor.MonitorModule
 import app.mauri.sukrara.monitor.alerts.AlertsModule
+import app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver
+import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 import app.mauri.sukrara.pen.PensHost
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.share.ShareOwnerModule
@@ -33,8 +38,15 @@ class App :
     ShareOwnerHost,
     WidgetsHost,
     PensHost {
-    lateinit var graph: AppGraph
-        private set
+    private val graphOnce =
+        lazy {
+            // before the first unlock after a restart the app's storage is unreadable: nothing may build the graph then
+            check(userUnlocked) { "the app graph needs the unlocked storage" }
+            AppGraph(this).also { it.ready.start() }
+        }
+
+    /** Built at the first use once the phone is unlocked (at once in [onCreate] when it already is). */
+    val graph: AppGraph get() = graphOnce.value
 
     override val monitor: MonitorModule get() = graph.monitor
 
@@ -44,9 +56,28 @@ class App :
 
     override fun onCreate() {
         super.onCreate()
-        graph = AppGraph(this)
-        graph.ready.start()
         locales = resources.configuration.locales
+        if (userUnlocked) graph else afterUnlock()
+    }
+
+    /**
+     * The process started before the first unlock after a restart (only the direct-boot-aware `LockedBootReceiver` and
+     * sound provider run then: docs/30-direct-boot.md). At the unlock: what it showed goes and the graph is built; the
+     * boot broadcast that follows runs the alert check and starts monitoring as after any restart.
+     */
+    private fun afterUnlock() {
+        val unlock =
+            object : BroadcastReceiver() {
+                override fun onReceive(
+                    context: Context,
+                    intent: Intent,
+                ) {
+                    unregisterReceiver(this)
+                    LockedBootReceiver.lockedBoot(this@App).onUnlocked()
+                    graph
+                }
+            }
+        registerReceiver(unlock, IntentFilter(Intent.ACTION_USER_UNLOCKED), RECEIVER_NOT_EXPORTED)
     }
 
     private var locales: LocaleList? = null
@@ -56,6 +87,8 @@ class App :
         super.onConfigurationChanged(newConfig)
         if (newConfig.locales == locales) return
         locales = newConfig.locales
+        // before the first unlock there is no graph: it starts with the language of its time
+        if (!graphOnce.isInitialized()) return
         graph.locales.value = newConfig.locales
         graph.scope.launch {
             graph.ready.await()

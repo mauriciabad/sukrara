@@ -20,6 +20,7 @@ import app.mauri.sukrara.monitor.MonitorReceiver
 import app.mauri.sukrara.monitor.MonitoringService
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.alerts.AlertAlarm
+import app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.sensorend.SensorEndAlarm
@@ -122,6 +123,27 @@ class AndroidAlarms(
         }
 
     /**
+     * The alarm of the time before the first unlock ([LockedBootReceiver]: *No data* while Sukrara can't monitor), exact
+     * and waking like an alert check. Set and cancelled only by that receiver, which is direct-boot aware.
+     */
+    fun lockedBoot(clock: Clock): AlertAlarm =
+        AlertAlarm { at ->
+            val pi =
+                PendingIntent.getBroadcast(
+                    context,
+                    LOCKED_BOOT,
+                    Intent(context, LockedBootReceiver::class.java).setAction(LockedBootReceiver.ACTION_RING),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            if (at == null) {
+                am.cancel(pi)
+            } else {
+                val inMs = ((at - clock.now().epochSecond) * 1000).coerceAtLeast(0)
+                set(Wakeup.AlertCheck, SystemClock.elapsedRealtime() + inMs, pi)
+            }
+        }
+
+    /**
      * The sensor-end notifier's one alarm ([SENSOR_END_CHECK]): an event (reminder, window start, end) exact and waking
      * like an alert check, a countdown's progress tick non-waking ([Wakeup.SensorTick]).
      */
@@ -170,6 +192,7 @@ class AndroidAlarms(
     companion object {
         const val ALERT_CHECK = 1
         const val SENSOR_END_CHECK = 2
+        const val LOCKED_BOOT = 3
     }
 }
 
