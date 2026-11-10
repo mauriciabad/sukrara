@@ -14,6 +14,7 @@ anywhere. **No cloud account, nothing to host.** The name: *sucre* (sugar) + *ar
 · **[Download for Mac](https://github.com/mauriciabad/sukrara/releases/download/v0.11.52/Sukrara-0.11.52.dmg)**
 · [All releases](https://github.com/mauriciabad/sukrara/releases)
 · [Source and install steps](https://github.com/mauriciabad/sukrara#try-it)
+· [Privacy policy](privacy)
 
 **Mac** (Apple Silicon, macOS 14+): open the dmg and drag Sukrara onto Applications, or
 `brew install --cask mauriciabad/tap/sukrara`. The app isn't notarized yet, so the first launch says *"Sukrara" Not

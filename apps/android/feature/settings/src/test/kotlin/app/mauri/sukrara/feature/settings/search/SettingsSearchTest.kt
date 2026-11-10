@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -113,6 +114,21 @@ class SettingsSearchTest {
         assertTrue(profile !in follower && backup !in follower && from in follower)
         assertFalse(SearchTarget.Page(SettingsRoute.Pens) in wearer)
         assertTrue(SearchTarget.Page(SettingsRoute.Pens) in targets(pens = true, wearer = true))
+    }
+
+    /** The Google Play build (no root features, no update check) finds none of their rows; both find the privacy policy. */
+    @Test
+    fun rowsOfTheOtherBuildAreNotFound() {
+        fun titles(
+            build: Set<BuildFeature>,
+        ) = SettingsIndex.entries.filter { it.shownOn(pens = true, wearer = true, build) }.map { it.title }
+        val play = titles(emptySet())
+        val full = titles(BuildFeature.entries.toSet())
+        val onlyFull =
+            listOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon) +
+                R.string.st_update_check_again
+        for (t in onlyFull) assertTrue(t !in play && t in full)
+        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_chip, R.string.st_about_version)) assertTrue(t in play && t in full)
     }
 
     /** #134: a hit on an alert's own row opens that alert's page ("Remind every · In Alerts › Low"), not the list. */

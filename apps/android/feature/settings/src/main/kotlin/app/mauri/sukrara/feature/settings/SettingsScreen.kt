@@ -40,6 +40,7 @@ import app.mauri.sukrara.feature.settings.pens.PenPage
 import app.mauri.sukrara.feature.settings.pens.PenViewModel
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
+import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.RecentSearch
 import app.mauri.sukrara.feature.settings.search.RecentSearches
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
@@ -156,6 +157,11 @@ fun SettingsScreen(
                     restoreClinicBanner = deps::restoreClinicBanner,
                     restoreClosedTips = deps::restoreClosedTips,
                     pens = deps.pensAvailable(),
+                    build =
+                        buildSet {
+                            if (deps.systemAccess != null) add(BuildFeature.Root)
+                            if (deps.releases != null) add(BuildFeature.UpdateCheck)
+                        },
                     openProfile = openProfile,
                     openBackup = openBackup,
                     openExport = openExport,
@@ -342,6 +348,7 @@ fun SettingsScreen(
         }
 
         SettingsRoute.About -> {
+            // the Google Play build has no update check (deps.releases null): Play brings the updates
             val vm = viewModel { AboutViewModel(deps.releases, deps.appVersion, deps.prerelease) }
             val state by vm.state.collectAsStateWithLifecycle()
             AboutContent(vm.installed, state, vm::check, onBack)

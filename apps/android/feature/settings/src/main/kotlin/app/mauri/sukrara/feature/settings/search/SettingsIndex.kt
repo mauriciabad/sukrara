@@ -21,10 +21,14 @@ sealed interface SearchTarget {
 /** Whose phone shows a row: every phone, only the wearer's or only a follower's. */
 enum class Seen { Everyone, Wearer, Follower }
 
+/** What only the GitHub build has (the Google Play build has neither: docs/20-publishing.md › Flavors). */
+enum class BuildFeature { Root, UpdateCheck }
+
 /**
  * One row the search finds: its [title] and [summary] as the page shows them (string resources, no format
  * arguments), the [page] it is on (the breadcrumb, after its [parent] page if any: "Alerts › Low") and where tapping
- * it leads. [pensOnly] rows exist only on a phone that reads insulin pens, [seen] says on whose phone the row shows.
+ * it leads. [pensOnly] rows exist only on a phone that reads insulin pens, [seen] says on whose phone the row shows,
+ * [needs] which build has it (null: both).
  */
 data class SearchEntry(
     @StringRes val title: Int,
@@ -34,13 +38,19 @@ data class SearchEntry(
     val pensOnly: Boolean = false,
     val seen: Seen = Seen.Everyone,
     @StringRes val parent: Int? = null,
+    val needs: BuildFeature? = null,
 ) {
-    /** Whether this phone shows the row: [pens] = it reads insulin pens, [wearer] = the wearer's phone (else a follower's). */
+    /**
+     * Whether this phone shows the row: [pens] = it reads insulin pens, [wearer] = the wearer's phone (else a
+     * follower's), [build] = what this build has.
+     */
     fun shownOn(
         pens: Boolean,
         wearer: Boolean,
+        build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     ): Boolean =
         (pens || !pensOnly) &&
+            (needs == null || needs in build) &&
             when (seen) {
                 Seen.Everyone -> true
                 Seen.Wearer -> wearer
@@ -86,10 +96,11 @@ object SettingsIndex {
         vararg rows: Pair<Int, Int?>,
         pensOnly: Boolean = false,
         seen: Seen = Seen.Everyone,
+        needs: BuildFeature? = null,
     ): List<SearchEntry> {
         val title = checkNotNull(pageTitle(route)) { "$route has no page title" }
         val target = SearchTarget.Page(route)
-        return rows.map { (t, s) -> SearchEntry(t, title, target, s, pensOnly, seen, parent(route)) }
+        return rows.map { (t, s) -> SearchEntry(t, title, target, s, pensOnly, seen, parent(route), needs) }
     }
 
     private fun overview(
@@ -267,10 +278,16 @@ object SettingsIndex {
                     SettingsRoute.StatusBar,
                     R.string.st_statusbar_chip to R.string.st_statusbar_chip_summary,
                     R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary,
+                ),
+            )
+            addAll(
+                page(
+                    SettingsRoute.StatusBar,
                     R.string.st_root_value to null,
                     R.string.st_root_colour to null,
                     R.string.st_root_placement to null,
                     R.string.st_root_hide_icon to R.string.st_root_hide_icon_summary,
+                    needs = BuildFeature.Root,
                 ),
             )
             addAll(
@@ -293,9 +310,15 @@ object SettingsIndex {
                 page(
                     SettingsRoute.About,
                     R.string.st_about_version to null,
-                    R.string.st_update_check_again to null,
+                ),
+            )
+            addAll(page(SettingsRoute.About, R.string.st_update_check_again to null, needs = BuildFeature.UpdateCheck))
+            addAll(
+                page(
+                    SettingsRoute.About,
                     R.string.st_report_problem to R.string.st_report_problem_summary,
                     R.string.st_source_code to R.string.st_license,
+                    R.string.st_privacy to R.string.st_privacy_summary,
                 ),
             )
             addAll(page(SettingsRoute.ThresholdReview, R.string.st_review_confirm to null))
