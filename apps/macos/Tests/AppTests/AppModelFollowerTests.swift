@@ -25,7 +25,9 @@ import Testing
         #expect(model.notMonitoringReason == "Not monitoring: not following anyone yet" && wake.at == nil)
         snapshot.link = .following(wearer: "Ana", canWrite: false)
         model.apply(snapshot)
-        #expect(model.notMonitoringReason == "Waiting for the first reading from the wearer" && wake.at == nil)
+        // #40: the follow is the source's start: no data rings 20 min later if no reading ever comes
+        #expect(model.notMonitoringReason == "Waiting for the first reading from the wearer")
+        #expect(wake.at == clock.now.addingTimeInterval(20 * 60))
         snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
         model.apply(snapshot)
         #expect(model.notMonitoringReason == nil && model.statusTitle == "112 →" && wake.at != nil)

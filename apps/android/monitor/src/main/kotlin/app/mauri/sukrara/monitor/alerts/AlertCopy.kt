@@ -30,12 +30,10 @@ object AlertCopy {
     ): String {
         val r = f.reading
         if (f.kind == AlertKind.NO_DATA) {
-            val since = Durations.text(((f.at - (r?.t ?: f.at)) / 60).coerceAtLeast(f.threshold.toLong()), w.durations)
-            return if (r == null) {
-                w.get("alert_text_no_data").format(since)
-            } else {
-                w.get("alert_text_no_data_last").format(since, value(r, w, unit, locale))
-            }
+            // a source that never delivered a reading: nothing to count from but its start, nothing to show
+            if (r == null) return w.get("alert_text_no_data")
+            val since = Durations.text(((f.at - r.t) / 60).coerceAtLeast(f.threshold.toLong()), w.durations)
+            return w.get("alert_text_no_data_last").format(since, value(r, w, unit, locale))
         }
         if (r == null) return w.get("alert_text_no_reading")
         val value = w.get("alert_text_value").format(value(r, w, unit, locale), TrendAngle.text(r.rate))

@@ -13,7 +13,7 @@
     <string name="reason_setup_body">Elige si este móvil lleva el sensor o sigue a alguien que lo lleva.</string>
     <string name="reason_setup_action">Configurar</string>
     <string name="reason_no_sensor_title">Sin monitorizar: aún no hay sensor</string>
-    <string name="reason_no_sensor_body">Empareja un sensor para ver tu glucosa aquí. Ninguna alerta suena hasta que llegue la primera lectura.</string>
+    <string name="reason_no_sensor_body">Empareja un sensor para ver tu glucosa aquí. Ninguna alerta suena hasta que esté emparejado.</string>
     <string name="reason_no_sensor_action">Emparejar sensor</string>
     <string name="reason_no_wearer_title">Sin monitorizar: aún no sigues a nadie</string>
     <string name="reason_no_wearer_body">Abre el enlace de invitación de la persona a la que sigues. Ninguna alerta suena hasta que llegue su primera lectura.</string>

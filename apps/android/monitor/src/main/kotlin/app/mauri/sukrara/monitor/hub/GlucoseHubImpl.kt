@@ -98,6 +98,12 @@ class GlucoseHubImpl(
                     inputsLoaded.complete(Unit)
                 }
             }
+            // a source that starts arms monitoring, also before its first reading: a sensor paired but silent from the
+            // start still rings no data, counted from then. On the start itself (a transition), so a reset while the
+            // old source still runs doesn't arm it again
+            launch {
+                state.map { sourceStarted(it) }.distinctUntilChanged().collect { started -> if (started) arm(clock.now()) }
+            }
             launch { windowStarts().flatMapLatest { from -> readings.window(from) }.collect(::applyWindow) }
             launch {
                 val wearer = state.map { it.role == Role.Wearer }.distinctUntilChanged()
@@ -188,6 +194,11 @@ class GlucoseHubImpl(
         }
     }
 
+    /** Monitoring starts at [at] unless it already has (the first reading, or the source's start). */
+    private suspend fun arm(at: Instant) {
+        record.update { if (it.startedAtEpochMs == null) it.copy(startedAtEpochMs = at.toEpochMilli()) else it }
+    }
+
     private fun onSourceSensor(sensor: SensorState) {
         sourceSensor.value = sensor
     }
@@ -208,6 +219,17 @@ class GlucoseHubImpl(
         }
 
     companion object {
+        /**
+         * The role's source runs and readings are expected: the wearer's sensor source started (a pairing connecting,
+         * Juggluco chosen), a follow the wearer allowed.
+         */
+        fun sourceStarted(s: GlucoseState): Boolean =
+            when (s.role) {
+                Role.Wearer -> s.source !is SourceStatus.NotStarted
+                Role.Follower -> s.link?.active == true
+                null -> false
+            }
+
         /** The recent window every surface can draw (the graph's longest setting is 24 h). */
         val WINDOW: Duration = Duration.ofHours(24)
         private val WINDOW_REFRESH: Duration = Duration.ofHours(1)

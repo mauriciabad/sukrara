@@ -1042,7 +1042,7 @@ class FollowerEngine(
                         ?.takeIf { r.stream.status == FollowStatus.New || r.stream.status == FollowStatus.Requested }
                         ?.let { PairingCheck(it.code, it.confirmed) },
             )
-        setLink(LinkState(r.wearer?.name, r.lastHeardAt?.let(Instant::ofEpochSecond), revoked))
+        setLink(LinkState(r.wearer?.name, r.lastHeardAt?.let(Instant::ofEpochSecond), revoked, r.stream.status == FollowStatus.Active))
     }
 
     private fun sensorState(life: SensorLife?): SensorState =

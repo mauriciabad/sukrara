@@ -22,8 +22,10 @@ data class GlucoseState(
     /** The follower's link to the wearer; null on a wearer phone. */
     val link: LinkState?,
     /**
-     * When monitoring started: the first reading from the current source (persisted; cleared only when the person
-     * removes the sensor or changes the role). Null = not monitoring yet, so no "no data" alarm can be armed.
+     * When monitoring started: the current source's start (a sensor paired and connecting, Juggluco chosen, a follow
+     * the wearer allowed) or its first reading, whichever came first (persisted; cleared only when the person removes
+     * the sensor or changes the role). No data counts from it until a reading: a source that never delivers one still
+     * alerts. Null = not monitoring yet, so no "no data" alarm can be armed.
      */
     val monitoringStartedAt: Instant? = null,
     /** Whether the monitoring service runs. */
@@ -223,6 +225,8 @@ data class LinkState(
     val wearerName: String?,
     val lastHeardAt: Instant?,
     val revoked: Boolean = false,
+    /** The wearer allowed this follow: their readings are expected from now on. */
+    val active: Boolean = false,
 )
 
 /**

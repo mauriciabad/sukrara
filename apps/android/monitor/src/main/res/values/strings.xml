@@ -40,7 +40,7 @@
     <string name="alert_text_falling">%1$s · falling %2$s %3$s</string>
     <string name="alert_text_rising">%1$s · rising %2$s %3$s</string>
     <string name="alert_text_no_reading">No recent reading</string>
-    <string name="alert_text_no_data">No reading for %1$s</string>
+    <string name="alert_text_no_data">No reading yet</string>
     <string name="alert_text_no_data_last">No reading for %1$s · last %2$s</string>
     <string name="alert_relaxed_subtext">Reminders every %1$s</string>
 

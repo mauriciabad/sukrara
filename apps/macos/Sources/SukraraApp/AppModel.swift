@@ -223,6 +223,8 @@ public final class AppModel {
         if wasMonitoring && (!monitoring || (historySource != .none && source != historySource)) {
             alerts?.resetMonitoring()
         }
+        // the source started: no data counts from now, also before (or without) its first reading
+        if monitoring { alerts?.sourceStarted() }
         guard source != historySource else { return }
         historySource = source
         history = []

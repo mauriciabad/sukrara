@@ -74,6 +74,8 @@ class AlertRuntime(
     private val log: (String) -> Unit = {},
     /** Saves what the phone needs before the first unlock after a restart (`LockedBootStore`), with every save. */
     private val lockedBoot: (LockedBootPlan) -> Unit = {},
+    /** The monotonic clock in s (`SystemClock.elapsedRealtime`): a wall clock set back is measured exactly. */
+    private val elapsed: () -> Long? = { null },
 ) : AlertControls {
     private val mutex = Mutex()
     private var started = false
@@ -84,6 +86,12 @@ class AlertRuntime(
     private var monitoring = false
     private var doses = Doses()
     private var sensor: SensorWindow? = null
+
+    /**
+     * When monitoring started (epoch s) as last given to the machine (it keeps its own copy): no data counts from it
+     * until the source delivers a reading, also with none ever.
+     */
+    private var sourceStart: Long? = null
     private var who: String? = null
     private var fedReadingAt: Long? = null
 
@@ -95,6 +103,7 @@ class AlertRuntime(
 
     /** Which alert each group's notification shows (from the effects), and the muted cards up. */
     private val firing = HashMap<AlertGroup, Firing>()
+
     private val mutedCards = HashMap<AlertGroup, Pair<Side, Long>>()
     private val shownRelax = HashMap<AlertGroup, Int>()
 
@@ -152,6 +161,7 @@ class AlertRuntime(
             role = null
             monitoring = false
             sensor = null
+            sourceStart = null
             fedReadingAt = null
             failed.clear()
             notes = emptyList()
@@ -222,6 +232,12 @@ class AlertRuntime(
             who = state.link?.wearerName
             val monitoringNow = state.monitoringStartedAt != null
             val window = windowOf(state.sensor)
+            // before no data turns on: it counts from the source's start, never from an older source's last reading
+            val started = state.monitoringStartedAt?.epochSecond
+            if (started != sourceStart) {
+                sourceStart = started
+                run(AlertInput.Source(started), now)
+            }
             if (r != role || monitoringNow != monitoring) {
                 monitoring = monitoringNow
                 rebuildOrUpdate(r, now)
@@ -271,6 +287,7 @@ class AlertRuntime(
                 is AlertInput.Settings -> own = input.settings
                 is AlertInput.Treatments -> doses = input.doses
                 is AlertInput.Sensor -> sensor = input.sensor
+                is AlertInput.Source -> sourceStart = input.startedAt
                 else -> Unit
             }
             run(input, now())
@@ -324,15 +341,18 @@ class AlertRuntime(
     private suspend fun startMachine(alertRole: AlertRole, saved: AlertState?, now: Long): List<AlertEffect> {
         val m = AlertMachine(alertRole, effectiveSettings(alertRole), doses, newId)
         machine = m
-        val effects = m.start(saved, saved?.local?.last, sensor, now)
+        val effects = m.start(saved, saved?.local?.last, sensor, now, elapsed())
         fedReadingAt = saved?.local?.last?.t
-        return applyAndSave(m, effects, now)
+        // a machine that starts without a saved state of its role (a new role) learns when monitoring started
+        val fresh = saved?.role != alertRole && sourceStart != null
+        val source = if (fresh) m.handle(AlertInput.Source(sourceStart), now, elapsed()) else emptyList()
+        return applyAndSave(m, effects + source, now)
     }
 
     private suspend fun run(input: AlertInput, now: Long): List<AlertEffect> {
         val m = machine ?: return emptyList()
         val effective = if (input is AlertInput.Settings) AlertInput.Settings(effectiveSettings()) else input
-        return applyAndSave(m, m.handle(effective, now), now, input)
+        return applyAndSave(m, m.handle(effective, now, elapsed()), now, input)
     }
 
     /**
@@ -499,7 +519,7 @@ class AlertRuntime(
         }
         // the machine's settings already have no data off before monitoring started
         lockedBoot(
-            LockedBootPlan.of(m?.settings, monitoring, snapshot?.local?.last?.t, m?.uiState(now())?.muteAllUntil ?: 0, sensor),
+            LockedBootPlan.of(m?.settings, monitoring, m?.engine?.noDataSince(), m?.uiState(now())?.muteAllUntil ?: 0, sensor),
         )
     }
 

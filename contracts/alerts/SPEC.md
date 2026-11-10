@@ -13,10 +13,24 @@ One rule set for **Sukrara for Android** (wearer + follower) and **Sukrara for M
 | `extremely_high` | `sgv ≥ mgdl` | on | 300 mg/dL | 5 min, alarm volume | *final boss*: the most insistent high, never muted |
 | `falling_fast` | `rate ≤ −rate` | off | 2.0 mg/dL/min | 30 min | quick down sweep |
 | `rising_fast` | `rate ≥ +rate` | off | 2.0 mg/dL/min | 30 min | quick up sweep |
-| `no_data` | no reading for `min` minutes, unless the sensor has ended or is warming up (core/SensorLife; a running one clears) | on | 20 min | 60 min | *connection lost* blip |
+| `no_data` | no reading for `min` minutes since the last reading, or since the reading source started when that is newer (a source that never delivers a first reading alerts too), unless the sensor has ended or is warming up (core/SensorLife; a running one clears) | on | 20 min | 60 min | *connection lost* blip |
 
 The defaults are the user's own settings (2026-10-18). Lows are **strictly below** the threshold (low 70 alerts at
 69, not at 70); highs are at or above it.
+
+**The source's start.** No data needs something to count from: the last reading, or the moment the reading source
+started (a sensor paired and connecting, Juggluco chosen or reached, a follow the wearer allowed), whichever is newer,
+until the source delivers its first reading; from then on its readings alone (a first reading that arrives already old
+counts as it is, never postponed to the start). So a sensor paired but silent from the start alerts `min` minutes
+after it started, and a new source never alerts at once because of an older source's last reading. The same start
+given again changes nothing. Before any source starts nothing counts (scenarios `other.txt`).
+
+**The clock.** A device clock set back (by more than a minute: NTP corrections are ignored) moves every time the rules
+keep back with it: a repeat, a treatment or mute window, Mute all, the last reading's age and the source's start stay
+as far away as they were, measured exactly on a clock that never jumps (Android `elapsedRealtime`, Mac
+`CLOCK_MONOTONIC`; the first input after a restart has none, so what was due comes at most one input later). A reading
+dated after now counts as taken now. A clock set forward needs nothing: what came due alerts at once (scenarios
+`other.txt`).
 
 **LO / HI.** A sensor that reads below / above what it can measure sends a flagged reading, LO (`sgv < 40`, sent as
 39) or HI (`sgv > 400`, sent as 401), never a made-up number. Its real value is beyond every threshold: LO matches
@@ -281,7 +295,10 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
 - A line is `<minute>[:<ss>] [events, …] [=> expectations; …]`. Events: `glucose <mg/dL> [rate <mg/dL/min>]
   [age <min>]` (what the sensor reads from now on; without `rate` the readings have no rate), `readings every <n>` (default 1 min), `sensor off|on`,
   `sensor ended` (the sensor reaches its end now; readings stop), `sensor started` (a new sensor starts now, 60 min
-  warm-up; readings stay off until `sensor on`),
+  warm-up; readings stay off until `sensor on`), `source started` (the reading source starts now: no data counts from
+  it, §1), `clock back <length>` (the wearer's clock is set back: from then on it gets the scenario's time minus the
+  length and stamps readings and treatments with it, and it is ticked at once, as the system's clock-change notice
+  does; expectations stay on the scenario's minutes, which are also the monotonic clock the driver passes),
   `carbs <g>`, `insulin <u>` (rapid, logged now), `delete carbs|insulin` (the newest one), `set <key>=<value> …`,
   `mute <kind> [<length>]` (the notification's Mute… with `muteMin` or a picked / typed length, read by the shared
   duration parser: `10`, `2h`, `1 h 30`; on a muted side: Change), `relax <kind>` (Remind less), `unmute <kind>` (Unmute /
@@ -303,5 +320,8 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
 - Driver (same on both platforms): time starts on a whole minute. At each instant, first the line's events in order
   (a treatment, a deletion or a `set` re-evaluates at once, like the apps do when the log or the settings change),
   then a reading if one is due (the first at the first `glucose`, then every `readings every` minutes while the sensor
-  is on), otherwise the engine's timer if it is due. The next instant is the earliest of the next line, the next
-  reading and the engine's `nextCheckAt`. Actions are compared per minute.
+  is on), otherwise the engine's timer if it is due, otherwise (`mirror`) the follower's own timer (its Mute or Mute
+  all ending). The next instant is the earliest of the next line, the next reading and both devices' `nextCheckAt`.
+  Actions are compared per minute.
+- A follower's Mute all that ends at its time shows the wearer's newest alert still up at once, on its timer or on the
+  first input at or after its end, whichever comes first (scenarios `devices.txt`).

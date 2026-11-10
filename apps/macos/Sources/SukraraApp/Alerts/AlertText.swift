@@ -33,9 +33,9 @@ struct AlertText: Equatable {
     func body(_ f: AlertFiring, now: Date) -> String {
         let en = language == .en
         if f.kind == .noData {
-            let since = Durations.text(
-                max(Int(f.threshold.rounded()), Int(now.timeIntervalSince(f.reading?.at ?? now) / 60)))
-            guard let r = f.reading else { return en ? "No reading for \(since)" : "Sin lecturas desde hace \(since)" }
+            // a source that never delivered a reading: nothing to count from but its start, nothing to show
+            guard let r = f.reading else { return en ? "No reading yet" : "Aún no hay lecturas" }
+            let since = Durations.text(max(Int(f.threshold.rounded()), Int(now.timeIntervalSince(r.at) / 60)))
             return en
                 ? "No reading for \(since) · last \(value(r))" : "Sin lecturas desde hace \(since) · última \(value(r))"
         }
