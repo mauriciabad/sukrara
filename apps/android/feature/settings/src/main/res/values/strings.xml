@@ -186,6 +186,9 @@
     <string name="st_sensor_status_ended">Ended</string>
     <string name="st_sensor_status_core_missing">This build can’t read Libre 3 sensors</string>
     <string name="st_sensor_status_bluetooth_off">Bluetooth is off: no readings until it’s on</string>
+    <string name="st_sensor_status_stopped">Monitoring stopped</string>
+    <string name="st_sensor_stopped_text">Monitoring is stopped, so the sensor isn\'t being read. No readings or alerts until you resume.</string>
+    <string name="st_sensor_resume">Resume</string>
     <string name="st_sensor_none_text">No sensor yet. Pair a sensor to start getting readings.</string>
     <string name="st_sensor_ended_text">This sensor has ended. Apply a new one and pair it.</string>
     <string name="st_sensor_sign_in_needed">Sign in to LibreView so Sukrara can start or take over the sensor.</string>

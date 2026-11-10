@@ -82,6 +82,11 @@ data class SensorSettingsState(
     val paired: Boolean = false,
     /** *Open Sukrara when you scan a sensor*: null = the phone has no NFC (the row doesn't show). */
     val openOnScan: OpenOnScan? = null,
+    /**
+     * Monitoring is stopped while something is set up to read (a pairing, or Juggluco): the source isn't read, so
+     * [state] says nothing about the sensor. The page says *Monitoring stopped* with *Resume*, never "no sensor".
+     */
+    val stopped: Boolean = false,
 )
 
 /** The tap switch: [on], and [blocked] = Android stops Sukrara's tag intents (Settings › Apps › Sukrara). */
@@ -117,6 +122,9 @@ interface SensorSettingsPort {
      * again from the next sensor's first reading). Runs to the end in the app's scope.
      */
     fun forget() = Unit
+
+    /** *Resume* while monitoring is stopped ([SensorSettingsState.stopped]): starts it again. */
+    fun resume() = Unit
 }
 
 class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel() {
@@ -138,6 +146,8 @@ class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel(
     fun allowTaps() = port.allowTaps()
 
     fun forget() = port.forget()
+
+    fun resume() = port.resume()
 
     companion object {
         fun factory(

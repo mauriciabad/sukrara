@@ -87,8 +87,10 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -131,6 +133,9 @@ class AppGraph(
     // ---- modules (one line each; construction does no I/O) ----
 
     val data by lazy { DataModule(app, appVersion, dispatchers, clock) }
+
+    /** Another glucose source was chosen or the sensor forgotten: the monitoring service picks its source again. */
+    private val sourceChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     /**
      * The readings as the current role sees them (`DataModule.readingsFor`): another person's never reach the hub,
@@ -192,6 +197,7 @@ class AppGraph(
                         },
                     )
                 }.distinctUntilChanged(),
+            sourceChanges = sourceChanges,
         )
     }
 
@@ -456,9 +462,19 @@ class AppGraph(
     }
 
     val sensorSettings by lazy {
-        SensorSettingsBridge(sensor, data.settings, SensorSource, scope, {
-            startMonitoring(StartReason.App)
-        }) { monitor.hubImpl.resetMonitoring(sensorForgotten = true) }
+        SensorSettingsBridge(
+            sensors = SensorModulePort(sensor),
+            settings = data.settings,
+            sourceSetting = SensorSource,
+            scope = scope,
+            service =
+                monitor.hub.state
+                    .map { it.service }
+                    .distinctUntilChanged(),
+            startMonitoring = { startMonitoring(StartReason.App) },
+            resetMonitoring = { monitor.hubImpl.resetMonitoring(sensorForgotten = true) },
+            sourceChanged = { sourceChanges.tryEmit(Unit) },
+        )
     }
 
     /** The person's graph settings: THE [GraphConfig] every card surface draws with (home, widgets). */

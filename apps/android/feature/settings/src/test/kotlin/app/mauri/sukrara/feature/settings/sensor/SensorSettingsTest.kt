@@ -108,6 +108,17 @@ class SensorSettingsTest {
     }
 
     @Test
+    fun `monitoring stopped with a pairing says so with Resume, never no sensor`() {
+        var resumed = 0
+        show(working.copy(state = SensorState.None, paired = true, stopped = true), SensorSettingsActions(resume = { resumed++ }))
+        compose.onNodeWithText("Monitoring is stopped", substring = true).assertExists()
+        compose.onNodeWithText("No sensor", substring = true).assertDoesNotExist()
+        compose.onAllNodesWithTextFirst("Monitoring stopped").assertExists()
+        compose.onNodeWithText("Resume").performClick()
+        assertEquals(1, resumed)
+    }
+
+    @Test
     fun `an ended sensor offers Pair new sensor`() {
         var paired = 0
         show(working.copy(state = SensorState.Ended), SensorSettingsActions(pairNewSensor = { paired++ }))

@@ -66,6 +66,7 @@ class SensorSettingsActions(
     val setOpenOnScan: (Boolean) -> Unit = {},
     val forget: () -> Unit = {},
     val allowTaps: () -> Unit = {},
+    val resume: () -> Unit = {},
 )
 
 /** Settings › Sensor with its ViewModel; the "ends in" time moves every minute. */
@@ -101,6 +102,7 @@ fun SensorSettingsScreen(
             viewModel::setOpenOnScan,
             viewModel::forget,
             viewModel::allowTaps,
+            viewModel::resume,
         ),
         onBack,
     )
@@ -153,6 +155,10 @@ private fun StateNotice(
 ) {
     val context = LocalContext.current
     val pair = stringResource(R.string.st_sensor_pair_new) to actions.pairNewSensor
+    if (state.stopped) {
+        StateStrip(stringResource(R.string.st_sensor_stopped_text), listOf(stringResource(R.string.st_sensor_resume) to actions.resume))
+        return
+    }
     if (state.link == SourceLink.JugglucoUnreachable) {
         val open = context.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE)
         val openJuggluco = stringResource(R.string.st_sensor_open_juggluco) to { open?.let(context::startActivity) ?: Unit }
@@ -339,8 +345,9 @@ private fun ThisPhoneGroup(
 private fun statusText(
     state: SensorSettingsState,
     zone: ZoneId,
-): String =
-    when (val s = state.state) {
+): String {
+    if (state.stopped) return stringResource(R.string.st_sensor_status_stopped)
+    return when (val s = state.state) {
         SensorState.None -> {
             stringResource(
                 if (state.source ==
@@ -431,6 +438,7 @@ private fun statusText(
             )
         }
     }
+}
 
 /** Libre 3 direct ↔ Juggluco: tapping the other one asks first ([onChoose]); the current one does nothing. */
 @Composable

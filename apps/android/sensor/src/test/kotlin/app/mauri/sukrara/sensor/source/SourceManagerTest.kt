@@ -291,6 +291,20 @@ class SourceManagerTest {
         }
 
     @Test
+    fun aStoppedSourceIsNotRunningNeverNoSensor() =
+        runTest {
+            val r = Rig(this)
+            r.store.save(pairing.copy(ended = true))
+            assertEquals("before the first start", SensorStatus.NotRunning, r.manager.detail.value)
+            r.manager.start()
+            runCurrent()
+            assertEquals(SensorStatus.Ended, r.manager.detail.value)
+            r.manager.stop()
+            runCurrent()
+            assertEquals("the pairing is still there", SensorStatus.NotRunning, r.manager.detail.value)
+        }
+
+    @Test
     fun aBuildWithoutTheNativeCoreSaysSo() =
         runTest {
             val r = Rig(this, security = null)

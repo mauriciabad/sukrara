@@ -186,6 +186,9 @@
     <string name="st_sensor_status_ended">Terminado</string>
     <string name="st_sensor_status_core_missing">Esta versión no puede leer sensores Libre 3</string>
     <string name="st_sensor_status_bluetooth_off">El Bluetooth está apagado: no hay lecturas hasta que lo enciendas</string>
+    <string name="st_sensor_status_stopped">Monitorización detenida</string>
+    <string name="st_sensor_stopped_text">La monitorización está detenida, así que no se lee el sensor. No hay lecturas ni avisos hasta que la reanudes.</string>
+    <string name="st_sensor_resume">Reanudar</string>
     <string name="st_sensor_none_text">Aún no hay sensor. Empareja un sensor para empezar a recibir lecturas.</string>
     <string name="st_sensor_ended_text">Este sensor ha terminado. Ponte uno nuevo y emparéjalo.</string>
     <string name="st_sensor_sign_in_needed">Inicia sesión en LibreView para que Sukrara pueda iniciar el sensor o tomar el control.</string>
