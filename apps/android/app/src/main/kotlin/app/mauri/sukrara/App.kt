@@ -51,11 +51,12 @@ class App :
 
     private var locales: LocaleList? = null
 
-    /** A language change renames the notification channels and redraws the glucose notification at once. */
+    /** A language change renames the notification channels, redraws the glucose notification and home's setup step at once. */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (newConfig.locales == locales) return
         locales = newConfig.locales
+        graph.locales.value = newConfig.locales
         graph.scope.launch {
             graph.ready.await()
             graph.monitor.onLocaleChanged()
