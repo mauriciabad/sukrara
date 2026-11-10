@@ -48,14 +48,22 @@ struct PanelView: View {
                             .foregroundStyle(.secondary)
                     }
                 #endif
-                if let reason = model.notMonitoringReason {
-                    Label(reason, systemImage: "antenna.radiowaves.left.and.right.slash")
-                        .font(.callout)
-                        .accessibilityLabel(reason)
-                } else {
+                let reason = model.noDataReason
+                if model.notMonitoringReason == nil {
                     card
                 }
-                if let links { SetupRows(links: links, needsFollow: model.needsFollow) }
+                // why there's no value and what to do: in the card's place, or under a card whose value is hidden
+                if let reason {
+                    ReasonBlock(
+                        text: NoDataText.of(reason, now: context.date.timeIntervalSince1970),
+                        act: links.flatMap { reasonAction(reason.action, $0) },
+                        symbol: reason.action == .follow ? "person.badge.plus" : "gearshape")
+                }
+                if let links {
+                    // a reason about the link offers its own way out (Follow Someone…, Following Settings…)
+                    let linkAction = reason?.action == .follow || reason?.action == .following
+                    SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
+                }
                 if model.notificationPermission.needsAttention { notificationsWarning }
                 if model.focusCanHoldAlerts { focusNote }
                 if let alerts = model.alerts { AlertBlocks(alerts: alerts, now: context.date, custom: $customMute) }
@@ -72,6 +80,16 @@ struct PanelView: View {
                 scroll = ChartScroll()
                 ease = ChartEase()
             }
+        }
+    }
+
+    /// What a reason's button does: follow someone, or open the settings pane that holds its exit.
+    private func reasonAction(_ action: NoDataReason.Action?, _ links: PanelLinks) -> (() -> Void)? {
+        switch action {
+        case nil: nil
+        case .follow: links.openFollow
+        case .following: { links.openSettingsPane(.following) }
+        case .juggluco: { links.openSettingsPane(.general) }
         }
     }
 
@@ -336,6 +354,39 @@ struct PanelLinks {
     let openTreatments: () -> Void
     let openReport: () -> Void
     let openSettings: () -> Void
+    /// Settings on one pane (a no-data reason's way out: Following, Juggluco in General).
+    let openSettingsPane: (SettingsModel.Pane) -> Void
+}
+
+/// Why there's no value and what to do about it (#72; Android's no-data reasons): the reason in a line with the "no
+/// readings" symbol, why in a sentence, and its action as a button. VoiceOver reads the reason and why as one element,
+/// then the button.
+private struct ReasonBlock: View {
+    let text: NoDataText
+    var act: (() -> Void)?
+    var symbol = "person.badge.plus"
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Label(text.title, systemImage: GlucoseCard.noReadingsSymbol)
+                    .font(.callout.weight(.medium))
+                if let body = text.body {
+                    Text(body)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 28)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            if let action = text.action, let act {
+                Button(action, systemImage: symbol, action: act)
+                    .padding(.leading, 28)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 /// Whether the panel's Add Treatment… can open, and why not in words (on the row, its tooltip and VoiceOver hint):

@@ -84,7 +84,7 @@ public enum Freshness: Sendable {
 
     /// "14:05" today, "Tue 14:05" this week, "12 Oct" before; the time in the Mac's 12/24-hour setting (`Clock`).
     /// A clock time doesn't tick.
-    static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
+    public static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
         let d = Date(timeIntervalSince1970: t), n = Date(timeIntervalSince1970: now)
         let time = Clock.time(d)
         if Calendar.current.isDate(d, inSameDayAs: n) { return time }

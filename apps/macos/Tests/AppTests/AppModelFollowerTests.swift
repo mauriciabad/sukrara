@@ -35,6 +35,38 @@ import Testing
         #expect(model.statusTitle == "—" && alerts.nextWake == nil && !alerts.mirroring)
     }
 
+    /// Every way to have no value names its reason and the way out the panel offers (#72), the same reason the
+    /// widgets get.
+    @Test func everyNoDataStateHasAReasonAndAWayOut() {
+        let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
+        let model = AppModel(plan: plan, clock: clock)
+        var snapshot = FollowerSnapshot.empty
+        let cases: [(LinkState, NoDataReason, NoDataReason.Action?)] = [
+            (.notFollowing, .notFollowing, .follow), (.joining, .notFollowing, .follow),
+            (.requested(code: "1234", wearer: "Ana", pairing: nil), .waitingApproval, .following),
+            (.declined, .declined, .follow), (.inviteUsed, .inviteUsed, .follow), (.revoked, .revoked, .follow),
+            (.broken(.stateDamaged), .broken(.stateDamaged), .following),
+            (.following(wearer: "Ana", canWrite: false), .wearerSilent(since: nil), nil),
+        ]
+        for (link, reason, action) in cases {
+            snapshot.link = link
+            model.apply(snapshot)
+            #expect(model.noDataReason == reason && reason.action == action, "\(link)")
+            let text = NoDataText.of(reason, now: clock.now.timeIntervalSince1970)
+            #expect(model.notMonitoringReason == text.title && (action == nil) == (text.action == nil), "\(link)")
+        }
+        // a value hidden after 20 min: the card stays, the reason goes under it with the last reading's time
+        snapshot.link = .following(wearer: "Ana", canWrite: false)
+        let last = clock.now.addingTimeInterval(-45 * 60)
+        snapshot.readings = [Reading(t: last, mgdl: 131, rate: 0)]
+        model.apply(snapshot)
+        #expect(model.noDataReason == .wearerSilent(since: last.timeIntervalSince1970))
+        #expect(model.notMonitoringReason == nil)
+        snapshot.readings = [Reading(t: clock.now, mgdl: 131, rate: 0)]
+        model.apply(snapshot)
+        #expect(model.noDataReason == nil)
+    }
+
     /// r-code-mac H2: a Keychain that won't read (the runtime retries) never disarms the no-data alarm.
     @Test func anUnreadableKeychainKeepsTheNoDataAlarmArmed() {
         let alerts = AlertController(

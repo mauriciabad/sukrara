@@ -83,7 +83,9 @@ final class WindowCoordinator {
 
     func openFollow() { openSetup(at: .follow) }
 
-    func openSettings() {
+    /// Settings on its last pane, or on `pane` (a no-data reason's way out).
+    func openSettings(pane: SettingsModel.Pane? = nil) {
+        if let pane { settings.pane = pane }
         windows.show(.settings, title: L10n.t("Sukrara Settings")) {
             SettingsWindowContent(model: settings, app: model) { [weak self] in self?.openFollow() }
         }

@@ -80,7 +80,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             openAddTreatment: { [weak self] focus in self?.fromPanel { $0.openAddTreatment(focus: focus) } },
             openTreatments: { [weak self] in self?.fromPanel { $0.openTreatments() } },
             openReport: { [weak self] in self?.fromPanel { $0.openReport() } },
-            openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } })
+            openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } },
+            openSettingsPane: { [weak self] pane in self?.fromPanel { $0.openSettings(pane: pane) } })
         let statusItem = StatusItemController(model: model, menu: contextMenu, links: links)
         statusItem.onOpen = { [weak self, weak model] in
             self?.refreshNotificationPermission()
