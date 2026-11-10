@@ -448,12 +448,14 @@ class CardLayoutTest {
         val badge = rulesFile["badge"]!!.jsonObject
         val (withBadge, noBadge) = badge["compare"]!!.jsonArray.map { it.str()!! }
         val badgeEls = badge["elements"]!!.jsonArray.map { it.str()!! }.toSet()
+        // an hour label the badge covers is left out but laid out as if drawn: compared as one
+        val covered = badge["covered"].str()!!
 
         fun badgeDesc(r: Render) =
             r.layouts
                 .flatMap { l ->
-                    l.elements.filter { it.name in badgeEls }.map { e ->
-                        "${e.name} ${e.info}" +
+                    l.elements.filter { it.name in badgeEls || it.name == covered }.map { e ->
+                        "${if (e.name == covered) "time.text" else e.name} ${e.info}" +
                             (
                                 e.box?.let { b ->
                                     " @${CardLayout.dp(
@@ -484,6 +486,21 @@ class CardLayoutTest {
             }
         }
         if (compared == 0) problems += "badge: no render shows the sensor badge (rule untested)"
+        // no hour label is drawn under the badge (#71)
+        var coveredSeen = 0
+        val cut = GlucoseGraph.BADGE_CUT_DP
+        for (r in renders) {
+            for (l in r.layouts) {
+                val s = l.first("chart.sensor.drawn")?.box ?: continue
+                val erasedRight = s.right + cut * l.d
+                coveredSeen += l.all(covered).size
+                for (t in l.all("time.text")) {
+                    val b = t.box ?: continue
+                    if (b.left < erasedRight) problems += "badge on $r: the hour label '${t.info}' is drawn under the sensor badge"
+                }
+            }
+        }
+        if (coveredSeen == 0) problems += "badge: no render has an hour label under the badge (rule untested)"
 
         // the distribution's erased outline: the dots plus one constant margin
         val dist = rulesFile["distribution"]!!.jsonObject
@@ -512,6 +529,25 @@ class CardLayoutTest {
             }
         }
         if (cuts == 0) problems += "distribution: no render erases its outline (rule untested)"
+
+        // small slots beside the value are at most two (#71)
+        val crowded = rulesFile["crowdedSlots"]!!.jsonObject
+        val crowdedDp = crowded["dp"].double()!!
+        val crowdedMax = crowded["max"].long()!!.toInt()
+        if (abs(GlucoseCard.CROWDED_DP - crowdedDp) > 1e-4 || GlucoseCard.CROWDED_MAX != crowdedMax) {
+            problems += "crowdedSlots: GlucoseCard ${GlucoseCard.CROWDED_DP}/${GlucoseCard.CROWDED_MAX}, rules.json $crowded"
+        }
+        var small = 0
+        for (r in renders) {
+            for (l in r.layouts.filter { it.part != CardPart.SLOTS }) {
+                val slots = l.all("slot")
+                val size = slots.firstOrNull()?.box?.width() ?: continue
+                if (size / l.d >= crowdedDp) continue
+                small++
+                if (slots.size > crowdedMax) problems += "crowdedSlots on $r: ${slots.size} slots of ${size / l.d} dp"
+            }
+        }
+        if (small == 0) problems += "crowdedSlots: no render has small slots beside the value (rule untested)"
 
         // a warming-up sensor's time left is labelled and never at a value's size
         val warmup = rulesFile["warmup"]!!.jsonObject

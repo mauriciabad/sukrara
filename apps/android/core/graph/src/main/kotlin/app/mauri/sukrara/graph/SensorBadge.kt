@@ -176,6 +176,12 @@ object SensorBadge {
         pal: GraphPalette,
     ) = draw(cv, x, y, h, look, pal, label = false)
 
+    /** The drawn badge's width at [h] tall: the disc, its gap and the label as drawn (what [draw] returns). */
+    internal fun width(
+        look: Look,
+        h: Float,
+    ): Float = h + h * 0.3f + text(h, 0).measureText(look.label)
+
     /** Draws the badge [h] tall with its top-left at ([x], [y]); returns its width. */
     internal fun draw(
         cv: Canvas,

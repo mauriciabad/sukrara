@@ -11,6 +11,11 @@ import SukraraCore
 /// Value + trend arrow + rings + chart in one drawing (GlucoseCard.kt), adapting to the size.
 public enum GlucoseCard {
     static let minCoverage = 0.25
+    /// Slots beside the value smaller than this (pt) are at most `crowdedMax`: three rings that small read as one
+    /// cluttered row of near-equal numbers (#71: 86/30d, 86/7d, 84/1d on the medium widget; layout/rules.json
+    /// `crowdedSlots`; GlucoseCard.kt `CROWDED_DP`).
+    static let crowdedDp: CGFloat = 56
+    static let crowdedMax = 2
 
     /// Draw `part` of the card `st` for `surface` and return what was laid out. `metricsOf` gives a slot's numbers; by
     /// default computed from `readings` (enough for windows they cover). `alerts` = what the alert rules decided (the
@@ -183,7 +188,8 @@ public enum GlucoseCard {
         let size = min(box.height * 0.96, 84 * d)
         guard size >= 30 * d else { return 0 }
         let gap = size * 0.14
-        let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), 4)
+        let most = !dedicated && size < crowdedDp * d ? crowdedMax : 4
+        let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), most)
         guard fit >= 1 else { return 0 }
         let (rings, fallback) = slotInputs(st, last, bands, metricsOf)
         let x = box.maxX

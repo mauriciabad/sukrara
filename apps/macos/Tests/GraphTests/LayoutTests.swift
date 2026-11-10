@@ -267,6 +267,7 @@ enum DefaultAlertRules {
         checkGaps(renders, rulesRoot, fail)
         checkBadge(renders, rulesRoot, fail)
         checkDistribution(renders, rulesRoot, fail)
+        checkCrowded(renders, rulesRoot, fail)
         checkWarmup(renders, rulesRoot, language: words.language, fail)
         #expect(failures == 0, "\(failures) layout failure(s) over \(renders.count) renders (\(words.language))")
     }
@@ -445,10 +446,12 @@ enum DefaultAlertRules {
             return fail("rules.json has no \"badge\"")
         }
         let els = Set(badge["elements"] as? [String] ?? [])
+        // an hour label the badge covers is left out but laid out as if drawn: compared as one
+        let covered = badge["covered"] as? String ?? "?"
         func desc(_ r: Render) -> [String] {
             r.layouts.flatMap { l in
-                l.elements.filter { els.contains($0.name) }.map { e in
-                    "\(e.name) \(e.info)"
+                l.elements.filter { els.contains($0.name) || $0.name == covered }.map { e in
+                    "\(e.name == covered ? "time.text" : e.name) \(e.info)"
                         + (e.box.map { b in
                             " @\(CardLayout.dp(b.minX, l.d)),\(CardLayout.dp(b.minY, l.d)),"
                                 + "\(CardLayout.dp(b.maxX, l.d)),\(CardLayout.dp(b.maxY, l.d))"
@@ -475,6 +478,20 @@ enum DefaultAlertRules {
             }
         }
         if compared == 0 { fail("badge: no render shows the sensor badge (rule untested)") }
+        // no hour label is drawn under the badge (#71)
+        var coveredSeen = 0
+        let cut = GlucoseGraph.badgeCut
+        for r in renders {
+            for l in r.layouts {
+                guard let s = l.first("chart.sensor.drawn")?.box else { continue }
+                let erased = s.insetBy(dx: -cut * l.d, dy: -cut * l.d)
+                coveredSeen += l.all(covered).count
+                for t in l.all("time.text") where t.box.map({ $0.minX < erased.maxX }) == true {
+                    fail("badge on \(r): the hour label \"\(t.info)\" is drawn under the sensor badge")
+                }
+            }
+        }
+        if coveredSeen == 0 { fail("badge: no render has an hour label under the badge (rule untested)") }
     }
 
     /// A warming-up sensor's time left is labelled and never at a value's size (rules.json "warmup", #27), in the
@@ -500,6 +517,29 @@ enum DefaultAlertRules {
             }
         }
         if shown == 0 { fail("warmup: no render shows a warming-up sensor (rule untested)") }
+    }
+
+    /// Small slots beside the value are at most two (rules.json "crowdedSlots", #71).
+    private func checkCrowded(_ renders: [Render], _ root: JSON, _ fail: (String) -> Void) {
+        let crowded = root.child("crowdedSlots")
+        guard let dp = crowded.number("dp"), let most = crowded.number("max") else {
+            return fail("rules.json has no \"crowdedSlots\"")
+        }
+        if abs(Double(GlucoseCard.crowdedDp) - dp) > 1e-4 || Double(GlucoseCard.crowdedMax) != most {
+            fail(
+                "crowdedSlots: GlucoseCard \(GlucoseCard.crowdedDp)/\(GlucoseCard.crowdedMax), rules.json \(dp)/\(most)"
+            )
+        }
+        var small = 0
+        for r in renders {
+            for l in r.layouts where l.part != .slots {
+                let slots = l.all("slot")
+                guard let size = slots.first?.box?.width, Double(size / l.d) < dp else { continue }
+                small += 1
+                if Double(slots.count) > most { fail("crowdedSlots on \(r): \(slots.count) slots of \(size / l.d) dp") }
+            }
+        }
+        if small == 0 { fail("crowdedSlots: no render has small slots beside the value (rule untested)") }
     }
 
     /// The distribution's erased outline: the dots plus one constant margin, everywhere.

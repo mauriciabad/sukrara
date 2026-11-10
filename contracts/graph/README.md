@@ -175,6 +175,11 @@ times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays wit
 - `layout/rules.json` `distribution`: the distribution's dot pitch, dot radius and the outline erased around the dots
   (`cut`, dp); both renderers' constants must equal them and every drawn distribution's erased box
   (`chart.distribution.cut`) is its dots' box (`chart.distribution.dots`) plus `cut` on the right and the top.
+- `layout/rules.json` `crowdedSlots`: slots beside the value smaller than `dp` are at most `max` (#71); both renderers'
+  constants equal them and every render is checked (CardLayoutTest, LayoutTests).
+- `layout/rules.json` `badge` `covered`: an hour label the sensor badge's erased outline would cut into is left out and recorded as
+  `chart.hour.covered` (compared as `time.text`, so the labels stay laid out as if the badge weren't there); no drawn hour
+  label starts inside the badge as drawn (`chart.sensor.drawn`) plus its erased outline (#71).
 - `layout/rules.json` `warmup`: a warming-up sensor's time left never passes for a value (#27): every render whose
   value's place shows the warm-up (`value.warmup`) draws it at most `maxText` dp tall and labelled
   (`value.warmup.text` starts with one of `words`: `Warming up · 40m`, `Almost ready`).
