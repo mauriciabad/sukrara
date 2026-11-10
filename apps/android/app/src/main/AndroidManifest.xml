@@ -120,6 +120,15 @@
                 <data android:pathPrefix="/join" />
             </intent-filter>
         </activity>
+        <!-- The new-sensor flow from Sukrara's own notifications, widgets and sensor taps (NavTargets.SENSOR_SETUP_ACTIVITY):
+             not exported, so no other app can open the flow; it signs the request for MainActivity (SensorSetupGate). -->
+        <activity
+            android:name=".SensorSetupActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
         <!-- Health Connect grants health permissions only to apps that show their privacy rationale -->
         <activity-alias
             android:name=".HealthPermissionsRationale"

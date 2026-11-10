@@ -216,7 +216,7 @@ data class PenTarget(
     val review: Boolean = false,
 )
 
-/** The new-sensor flow: home's Pair sensor, the "Sensor ended" notification, [NavTargets.ACTION_SENSOR_SETUP]. */
+/** The new-sensor flow: home's Pair sensor, the "Sensor ended" notification, [SensorSetupActivity]. */
 @Serializable
 data object NewSensorKey : NavKey
 
@@ -226,10 +226,6 @@ data object LibreViewSignInKey : NavKey
 /** Settings › Sensor (the settings overview's Sensor row; the new-sensor flow's "change it in Settings › Sensor"). */
 @Serializable
 data object SensorSettingsKey : NavKey
-
-/** Intent actions that open the new-sensor flow: the sensor-end notification's Pair new sensor, other modules' links. */
-fun opensNewSensor(action: String?): Boolean =
-    action == NavTargets.ACTION_SENSOR_SETUP
 
 /** Invite links (`sukrara:` / `https://sukrara.mauri.app/join…`) open setup's join step (or say where they work). */
 fun isInviteLink(uri: Uri?): Boolean =

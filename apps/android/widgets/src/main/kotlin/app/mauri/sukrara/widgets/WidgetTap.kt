@@ -63,9 +63,11 @@ sealed interface WidgetTap {
                     launch(context)
                 }
 
-                // the app's own main activity, explicitly, asked for the new-sensor flow
+                // the app's non-exported trampoline for the new-sensor flow: no other app can open it
                 NewSensor -> {
-                    launch(context).setAction(NavTargets.ACTION_SENSOR_SETUP).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    Intent(NavTargets.ACTION_SENSOR_SETUP)
+                        .setClassName(context.packageName, NavTargets.SENSOR_SETUP_ACTIVITY)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             }
 

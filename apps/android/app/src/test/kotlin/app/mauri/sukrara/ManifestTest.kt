@@ -52,6 +52,16 @@ class ManifestTest {
     }
 
     @Test
+    fun `only Sukrara's own intents open the new-sensor flow`() {
+        assertEquals("false", named("app.mauri.sukrara.SensorSetupActivity").attr("exported"))
+        val actions = root.getElementsByTagName("action").let { list -> (0 until list.length).map { list.item(it) as Element } }
+        assertTrue(
+            "no intent filter declares the new-sensor action",
+            actions.none { it.attr("name") == app.mauri.sukrara.core.model.NavTargets.ACTION_SENSOR_SETUP },
+        )
+    }
+
+    @Test
     fun `only System UI can say hello to the root status bar`() {
         val hello = named("app.mauri.sukrara.monitor.systemui.HookHelloReceiver")
         assertEquals("android.permission.STATUS_BAR_SERVICE", hello.attr("permission"))

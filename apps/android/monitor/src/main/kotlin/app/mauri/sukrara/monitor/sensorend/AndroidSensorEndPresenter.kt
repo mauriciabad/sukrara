@@ -264,9 +264,11 @@ class AndroidSensorEndPresenter(
     }
 
     private fun sensorSetup(): PendingIntent {
-        // the app's own activity with the flow's action (MainActivity reads it): no exported filter for the action
-        val launch = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: Intent().setPackage(ctx.packageName)
-        val setup = launch.setAction(NavTargets.ACTION_SENSOR_SETUP).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // the app's non-exported trampoline: no other app can open the flow
+        val setup =
+            Intent(NavTargets.ACTION_SENSOR_SETUP)
+                .setClassName(ctx.packageName, NavTargets.SENSOR_SETUP_ACTIVITY)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return PendingIntent.getActivity(ctx, REQUEST_SETUP, setup, PendingIntent.FLAG_IMMUTABLE)
     }
 
