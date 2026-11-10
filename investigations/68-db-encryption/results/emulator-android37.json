@@ -1,0 +1,307 @@
+{
+  "loadLibraryMs": 9.452208,
+  "workload": {
+    "plain": {
+      "openNewMs": 6.668167,
+      "backfill90dMs": 702.807334,
+      "insertOneMedianUs": 337.083,
+      "insertOneP95Us": 1043.334,
+      "read24hMedianMs": 1.971708,
+      "read14dMedianMs": 24.1567915,
+      "fileBytes": 7450624,
+      "reopenMs": 2.939125,
+      "prune30dMs": 28.251334
+    },
+    "cipher-raw": {
+      "openNewMs": 7.325834,
+      "backfill90dMs": 650.940959,
+      "insertOneMedianUs": 434.79150000000004,
+      "insertOneP95Us": 899.959,
+      "read24hMedianMs": 1.477709,
+      "read14dMedianMs": 59.4006465,
+      "fileBytes": 7667712,
+      "reopenMs": 40.151792,
+      "prune30dMs": 75.060042
+    },
+    "cipher-kdf": {
+      "openNewMs": 590.792042,
+      "backfill90dMs": 626.185292,
+      "insertOneMedianUs": 432,
+      "insertOneP95Us": 840.416,
+      "read24hMedianMs": 1.4882710000000001,
+      "read14dMedianMs": 60.500334,
+      "fileBytes": 7667712,
+      "reopenMs": 582.505751,
+      "prune30dMs": 74.393833
+    },
+    "cipher-driver": {
+      "openNewMs": 6.748416,
+      "backfill90dMs": 1324.887751,
+      "insertOneMedianUs": 412.3545,
+      "insertOneP95Us": 937.292,
+      "read24hMedianMs": 1.4728755,
+      "read14dMedianMs": 56.348603999999995,
+      "fileBytes": 7667712,
+      "reopenMs": 47.987875,
+      "prune30dMs": 75.811042
+    }
+  },
+  "file": {
+    "plain": {
+      "SELECT sqlite_version()": "3.50.6",
+      "PRAGMA journal_mode": "wal",
+      "PRAGMA synchronous": "1",
+      "PRAGMA cache_size": "-2000",
+      "PRAGMA wal_autocheckpoint": "100",
+      "PRAGMA page_size": "4096",
+      "PRAGMA secure_delete": "1",
+      "PRAGMA cipher_version": null,
+      "PRAGMA cipher_provider": null,
+      "PRAGMA cipher_provider_version": null,
+      "PRAGMA kdf_iter": null,
+      "PRAGMA cipher_kdf_algorithm": null,
+      "PRAGMA cipher_hmac_algorithm": null,
+      "PRAGMA cipher_page_size": null,
+      "PRAGMA cipher_memory_security": null,
+      "PRAGMA temp_store": "2",
+      "header": "SQLite format 3",
+      "markerInFile": true
+    },
+    "cipher-raw": {
+      "SELECT sqlite_version()": "3.54.1",
+      "PRAGMA journal_mode": "wal",
+      "PRAGMA synchronous": "1",
+      "PRAGMA cache_size": "-2000",
+      "PRAGMA wal_autocheckpoint": "1000",
+      "PRAGMA page_size": "4096",
+      "PRAGMA secure_delete": "1",
+      "PRAGMA cipher_version": "4.20.0 community",
+      "PRAGMA cipher_provider": "libtomcrypt",
+      "PRAGMA cipher_provider_version": "1.18.2",
+      "PRAGMA kdf_iter": "256000",
+      "PRAGMA cipher_kdf_algorithm": "PBKDF2_HMAC_SHA512",
+      "PRAGMA cipher_hmac_algorithm": "HMAC_SHA512",
+      "PRAGMA cipher_page_size": "4096",
+      "PRAGMA cipher_memory_security": "0",
+      "PRAGMA temp_store": "2",
+      "header": "8X4W)9",
+      "markerInFile": false
+    }
+  },
+  "failures": {
+    "wrongKey": {
+      "result": "net.zetetic.database.sqlcipher.SQLiteNotADatabaseException: file is not a database (code 26): , while compiling: SELECT COUNT(*) FROM sqlite_schema;",
+      "onCorruptionCalls": 0,
+      "fileExistsAfter": true,
+      "fileBytesBefore": 102400,
+      "fileBytesAfter": 102400,
+      "rowsWithRightKeyAfter": 1440
+    },
+    "wrongKeyDriver": {
+      "result": "net.zetetic.database.sqlcipher.SQLiteNotADatabaseException: file is not a database (code 26): , while compiling: SELECT COUNT(*) FROM sqlite_schema;",
+      "onCorruptionCalls": "n\/a (driver)",
+      "fileExistsAfter": true,
+      "fileBytesBefore": 102400,
+      "fileBytesAfter": 102400,
+      "rowsWithRightKeyAfter": 1440
+    },
+    "plaintextOpenedWithKey": {
+      "result": "net.zetetic.database.sqlcipher.SQLiteNotADatabaseException: file is not a database (code 26): , while compiling: SELECT COUNT(*) FROM sqlite_schema;",
+      "onCorruptionCalls": 0,
+      "fileExistsAfter": true,
+      "fileBytesBefore": 102400,
+      "fileBytesAfter": 102400,
+      "rowsWithRightKeyAfter": 1440
+    },
+    "garbagePlain": {
+      "result": "opened, 0 rows",
+      "onCorruptionCalls": 1,
+      "fileExistsAfter": true,
+      "fileBytesAfter": 24576
+    },
+    "garbageCipher": {
+      "result": "net.zetetic.database.sqlcipher.SQLiteNotADatabaseException: file is not a database (code 26): , while compiling: SELECT COUNT(*) FROM sqlite_schema;",
+      "onCorruptionCalls": 0,
+      "fileExistsAfter": true,
+      "fileBytesAfter": 65536
+    },
+    "bitFlipPlain": [
+      {
+        "page": 3,
+        "offsetInPage": 2048,
+        "result": "read 1440 rows, 0 differ from what was written",
+        "integrityCheck": "ok",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 5,
+        "offsetInPage": 2048,
+        "result": "read 1440 rows, 0 differ from what was written",
+        "integrityCheck": "ok",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 8,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11 SQLITE_CORRUPT)",
+        "integrityCheck": "ok",
+        "onCorruptionCalls": 1,
+        "rowsLeftAfter": 0
+      },
+      {
+        "page": 13,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11 SQLITE_CORRUPT)",
+        "integrityCheck": "ok",
+        "onCorruptionCalls": 1,
+        "rowsLeftAfter": 0
+      },
+      {
+        "page": 21,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11 SQLITE_CORRUPT)",
+        "integrityCheck": "ok",
+        "onCorruptionCalls": 1,
+        "rowsLeftAfter": 0
+      },
+      {
+        "page": 4,
+        "offsetInPage": 4084,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11 SQLITE_CORRUPT)",
+        "integrityCheck": "ok",
+        "onCorruptionCalls": 1,
+        "rowsLeftAfter": 0
+      },
+      {
+        "page": 9,
+        "offsetInPage": 4084,
+        "result": "read 1440 rows, 1 differ from what was written",
+        "integrityCheck": "row 1 missing from index sqlite_autoindex_readings_1",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 14,
+        "offsetInPage": 4084,
+        "result": "read 1440 rows, 0 differ from what was written",
+        "integrityCheck": "row 533 missing from index sqlite_autoindex_readings_1",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 19,
+        "offsetInPage": 4084,
+        "result": "read 1440 rows, 0 differ from what was written",
+        "integrityCheck": "row 929 missing from index sqlite_autoindex_readings_1",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 22,
+        "offsetInPage": 4084,
+        "result": "read 1440 rows, 1 differ from what was written",
+        "integrityCheck": "non-unique entry in index sqlite_autoindex_readings_1",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      }
+    ],
+    "bitFlipCipher": [
+      {
+        "page": 3,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)"
+      },
+      {
+        "page": 5,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 8,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)"
+      },
+      {
+        "page": 13,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)"
+      },
+      {
+        "page": 21,
+        "offsetInPage": 2048,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 4,
+        "offsetInPage": 4084,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)"
+      },
+      {
+        "page": 9,
+        "offsetInPage": 4084,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 14,
+        "offsetInPage": 4084,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 19,
+        "offsetInPage": 4084,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": 1440
+      },
+      {
+        "page": 22,
+        "offsetInPage": 4084,
+        "result": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "integrityCheck": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)",
+        "onCorruptionCalls": 0,
+        "rowsLeftAfter": "android.database.sqlite.SQLiteDatabaseCorruptException: database disk image is malformed (code 11)"
+      }
+    ]
+  },
+  "keystore": {
+    "unwrapFirstMs": 5.632917,
+    "unwrapMedianMs": 3.369271,
+    "keystoreAesGcmPerValueUs": 2790.7705,
+    "softwareAesGcmPerValueUs": 17.291,
+    "keystore90dBackfillEstimateS": 361.6838568
+  },
+  "migrate": {
+    "rows": 129600,
+    "lastDayRows": 1440,
+    "plainBytes": 7434240,
+    "encryptedBytes": 7155712,
+    "exportAndSwapMs": 169.042375
+  }
+}
