@@ -115,6 +115,16 @@ class TreatmentFormState(
     val canSave: Boolean get() = entries?.isNotEmpty() == true
     val hasInput: Boolean get() = listOf(rapid, long, carbs, note).any { it.isNotBlank() }
 
+    /** Takes every field of [other] (a kept draft, or an empty form for *Discard*). */
+    fun fill(other: TreatmentFormState) {
+        rapid = other.rapid
+        long = other.long
+        carbs = other.carbs
+        note = other.note
+        at = other.at
+        ago = other.ago
+    }
+
     companion object {
         val Saver: Saver<TreatmentFormState, Any> =
             listSaver(
@@ -151,6 +161,12 @@ data class LockInfo(
     val announce: Boolean = false,
 )
 
+/** A kept draft shown in the form (#100): when the countdown kept it, and *Discard* (the form empties, it's dropped). */
+data class DraftLine(
+    val keptAt: Instant,
+    val onDiscard: () -> Unit,
+)
+
 /**
  * Add insulin, carbs and a note in one go: rapid, long-acting and carbs side by side, a note below, all optional;
  * each filled field becomes its own entry at the chosen time (default now). Laid out like an M3 basic dialog (28 dp
@@ -158,7 +174,7 @@ data class LockInfo(
  * pad is up at once — Carbs instead when [focusCarbs] (a low is going on). Next walks the fields, Done saves.
  *
  * [onOpenApp] adds *Open Sukrara* (the quick dialog, where a tap no longer opens the app); [lock] shows the
- * lock-screen countdown with *Unlock*.
+ * lock-screen countdown with *Unlock*; [draft] says the form holds what a countdown kept, with *Discard*.
  */
 @Composable
 fun TreatmentDialogContent(
@@ -172,6 +188,7 @@ fun TreatmentDialogContent(
     onOpenApp: (() -> Unit)? = null,
     lock: LockInfo? = null,
     quiet: QuietRules = QuietRules.NONE,
+    draft: DraftLine? = null,
 ) {
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
@@ -197,6 +214,7 @@ fun TreatmentDialogContent(
     ) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.treatment_title), style = MaterialTheme.typography.headlineSmall)
+            DraftRow(draft, zone)
             // side by side; stacked at large font sizes so labels and units never truncate
             val stacked = LocalDensity.current.fontScale > STACK_FONT_SCALE
             val fields: @Composable (Modifier) -> Unit = { fieldModifier ->
@@ -257,6 +275,33 @@ fun TreatmentDialogContent(
             lock = lock,
             onDone = { picking = false },
         )
+    }
+}
+
+/** *Kept at 14:05, not saved yet* · *Discard*: slides away once discarded or saved. */
+@Composable
+private fun DraftRow(
+    draft: DraftLine?,
+    zone: ZoneId,
+) {
+    val haptics = rememberHaptics()
+    // keeps the last line while it slides out
+    var last by remember { mutableStateOf(draft) }
+    if (draft != null) last = draft
+    Reveal(draft != null) {
+        val shown = last ?: return@Reveal
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("treatment-draft")) {
+            Text(
+                stringResource(R.string.treatment_draft_line, Clock.time(shown.keptAt.epochSecond, zone = zone)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            TextButton(onClick = {
+                haptics.confirm()
+                shown.onDiscard()
+            }) { Text(stringResource(R.string.treatment_draft_discard)) }
+        }
     }
 }
 

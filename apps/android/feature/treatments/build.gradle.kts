@@ -7,6 +7,7 @@ plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
     id("sukrara.contracts")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
@@ -16,8 +17,8 @@ dependencies {
     implementation(project(":core:graph"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(project(":core:testing"))
-    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.compose.ui.test.junit4)

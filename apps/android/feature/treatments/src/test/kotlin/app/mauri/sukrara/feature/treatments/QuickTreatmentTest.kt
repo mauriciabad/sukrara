@@ -5,6 +5,13 @@ package app.mauri.sukrara.feature.treatments
 
 import android.app.Application
 import android.content.Intent
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
@@ -18,7 +25,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -55,6 +64,35 @@ class TestTreatmentsApp :
 @Config(sdk = [36], application = TestTreatmentsApp::class)
 class QuickTreatmentTest {
     private val app = ApplicationProvider.getApplicationContext<TestTreatmentsApp>()
+
+    @get:Rule val compose = createEmptyComposeRule()
+
+    /** #100: the dialog opens with what the lock-screen countdown kept; Save stores it and offers Undo. */
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-xxhdpi")
+    fun aKeptDraftFillsTheDialogAndSaveOffersUndo() {
+        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        val now = app.treatments.clock.now()
+        app.treatments.keepDraft(
+            TreatmentDraft("4.5", "", "", "", atMs = now.minusSeconds(300).toEpochMilli(), keptMs = now.toEpochMilli()),
+            "",
+        )
+        ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Draft)).use {
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-draft").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("4.5").assertExists()
+            // the snackbar goes by itself after a few seconds: time moves by hand from here
+            compose.mainClock.autoAdvance = false
+            compose.onNodeWithTag("treatment-save").performScrollTo().performClick()
+            compose.waitForIdle()
+            compose.mainClock.advanceTimeBy(1_000)
+            compose.waitForIdle()
+            compose.onNodeWithTag("treatment-saved").assertExists()
+            compose.onNodeWithText("Saved: 4.5u rapid insulin").assertExists()
+            compose.onNodeWithText("Undo").assertExists()
+        }
+        // saved, so no longer offered
+        kotlinx.coroutines.runBlocking { assertNull(app.treatments.draft()) }
+    }
 
     @Test fun widgetAndNotificationIntentsResolveToTheQuickDialog() {
         for (source in QuickSource.entries) {

@@ -74,6 +74,7 @@
     <string name="monitor_channel_sensor_countdown">Cuenta atrás del sensor</string>
     <string name="monitor_channel_pen_results">Dosis de la pluma</string>
     <string name="monitor_channel_pen_check">Recordatorios de la pluma</string>
+    <string name="monitor_channel_treatment_draft">Tratamientos sin guardar</string>
     <string name="monitor_channel_alert_very_low">Muy baja</string>
     <string name="monitor_channel_alert_low">Baja</string>
     <string name="monitor_channel_alert_high">Alta</string>

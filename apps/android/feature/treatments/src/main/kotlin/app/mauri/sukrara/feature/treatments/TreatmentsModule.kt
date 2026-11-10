@@ -12,12 +12,15 @@ import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.PenNearEntry
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.graph.stats.Bands
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -38,6 +41,10 @@ class TreatmentsModule(
     val hints: AlertHints,
     /** A pen entry near a typed insulin dose (*Already logged by your pen?*); none without pens. */
     private val penDuplicates: PenDuplicates = PenDuplicates { _, _ -> null },
+    /** The lock-screen countdown's kept entry (typed state `treatment-draft`), offered on the next unlock. */
+    private val drafts: StateStore<TreatmentDraft> = MemoryDraftStore(),
+    /** *Treatment not saved*, the notification that offers [drafts]' entry. */
+    private val draftNotice: DraftNotice = DraftNotice.None,
 ) {
     val log = TreatmentLog(repository, sync, clock)
 
@@ -53,16 +60,48 @@ class TreatmentsModule(
 
     /**
      * Saves [entries] at [at] (null = now) in the app's scope, so it completes after the quick dialog has closed.
-     * Returns false (nothing saved) when this phone may not add entries.
+     * Returns null (nothing saved) when this phone may not add entries, else the way to take it back ([Saved.undo]).
      */
     fun save(
         entries: List<NewEntry>,
         at: Instant?,
-    ): Boolean {
-        if (!canAdd()) return false
+    ): Saved? {
+        if (!canAdd()) return null
         // a failed write must not crash the app: the entry simply isn't in the list (diagnosable there)
-        scope.launch { runCatching { log.add(entries, at) } }
-        return true
+        val added = scope.async { runCatching { log.add(entries, at) }.getOrNull().orEmpty() }
+        return Saved {
+            // a newer deleted version of each, synced like any delete (Undo on home's list works the same way)
+            scope.launch { runCatching { added.await().forEach { log.delete(it.id) } } }
+        }
+    }
+
+    /** The draft the lock-screen countdown kept, while it is offered ([TreatmentDraft.offered]); else null. */
+    suspend fun draft(): TreatmentDraft? = runCatching { drafts.data.first() }.getOrNull()?.takeIf { it.offered(clock.now()) }
+
+    /**
+     * The countdown closed on [draft] (something typed, nothing saved): it is kept and *Treatment not saved* offers it
+     * ([summary]: the valid entries in words). In the app's scope: the dialog is closing.
+     */
+    fun keepDraft(
+        draft: TreatmentDraft,
+        summary: String,
+    ) {
+        scope.launch {
+            runCatching {
+                drafts.update { draft }
+                draftNotice.show(summary)
+            }
+        }
+    }
+
+    /** The draft was saved or discarded: it is no longer offered (store and notification). */
+    fun dropDraft() {
+        scope.launch {
+            runCatching {
+                draftNotice.clear()
+                drafts.update { TreatmentDraft.EMPTY }
+            }
+        }
     }
 
     /**
@@ -92,6 +131,11 @@ class TreatmentsModule(
     companion object {
         val LockTreatmentTime = SchemaSettings.number("lock.treatmentTime")
     }
+}
+
+/** What one Save (or edit) stored: [undo] takes it back, as a newer version synced like any change. */
+fun interface Saved {
+    fun undo()
 }
 
 /** The `Application` gives the treatment components (quick dialog, tile) their module. */

@@ -7,8 +7,11 @@ import android.content.Context
 import android.content.Intent
 import app.mauri.sukrara.core.model.NavTargets
 
-/** Where a quick Add treatment was opened from (kept for the dialog's choices, e.g. the tile collapses the shade). */
-enum class QuickSource { Notification, Widget, Tile, Home }
+/**
+ * Where a quick Add treatment was opened from (kept for the dialog's choices, e.g. the tile collapses the shade);
+ * [Draft] = the *Treatment not saved* notification.
+ */
+enum class QuickSource { Notification, Widget, Tile, Home, Draft }
 
 /**
  * The intents that open the quick Add treatment dialog over whatever is on screen (widgets, the glucose

@@ -34,6 +34,9 @@ import app.mauri.sukrara.feature.sharing.SharingDeps
 import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.label
+import app.mauri.sukrara.feature.treatments.AndroidDraftNotice
+import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
+import app.mauri.sukrara.feature.treatments.TreatmentDraft
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
@@ -587,6 +590,27 @@ class AppGraph(
             hints = AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock),
             // read when the dialog saves (the pens module is built on first use, after this one)
             penDuplicates = PenDuplicates { kind, at -> pens.duplicates.near(kind, at) },
+            drafts =
+                data.typedStore(
+                    "treatment-draft",
+                    TreatmentDraft.serializer(),
+                    TreatmentDraft.EMPTY,
+                    whenCorrupt = TreatmentDraft.EMPTY,
+                ),
+            draftNotice =
+                AndroidDraftNotice(
+                    app,
+                    NotificationGroups.Group.INFO.let { info ->
+                        DraftNotificationPorts(
+                            channel = Channels.TREATMENT_DRAFT,
+                            group = info.key,
+                            post = { n ->
+                                NotificationGroups.post(app, NotificationIds.TREATMENT_DRAFT, n, info, Channels.TREATMENT_DRAFT)
+                            },
+                            cancel = { NotificationGroups.cancel(app, NotificationIds.TREATMENT_DRAFT, info) },
+                        )
+                    },
+                ),
         )
     }
 

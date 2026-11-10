@@ -27,20 +27,26 @@
     <string name="treatment_unlock">Desbloquear</string>
     <string name="treatment_lock_closes">Se cierra sin guardar en %1$d s</string>
     <string name="treatment_lock_not_saved">No guardado: el diálogo se cerró en la pantalla de bloqueo</string>
+    <string name="treatment_lock_draft_kept">Aún sin guardar: desbloquea y toca la notificación para terminar</string>
+    <!-- La confirmación tras Guardar; %1$s = las entradas en palabras, p. ej. "4.5u de insulina rápida · 30g de hidratos" -->
+    <string name="treatment_saved_snack">Guardado: %1$s</string>
+    <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
+    <string name="treatment_undo">Deshacer</string>
+    <string name="treatment_undone">Deshecho</string>
+    <string name="treatment_entry_rapid">%1$s de insulina rápida</string>
+    <string name="treatment_entry_long">%1$s de insulina lenta</string>
+    <string name="treatment_entry_carbs">%1$s de hidratos</string>
+    <!-- La notificación que ofrece lo que tenía el diálogo cuando se cerró en la pantalla de bloqueo; %1$s = las entradas -->
+    <string name="treatment_draft_title">Tratamiento sin guardar</string>
+    <string name="treatment_draft_text">%1$s. Toca para terminar de guardarlo.</string>
+    <string name="treatment_draft_tap">Toca para terminar de guardarlo.</string>
+    <!-- En el diálogo, sobre la entrada guardada como borrador; %1$s = la hora -->
+    <string name="treatment_draft_line">Borrador de las %1$s, aún sin guardar</string>
+    <string name="treatment_draft_discard">Descartar</string>
     <plurals name="treatment_lock_closes_in">
         <item quantity="one">Se cierra en %1$d segundo</item>
         <item quantity="many">Se cierra en %1$d segundos</item>
         <item quantity="other">Se cierra en %1$d segundos</item>
-    </plurals>
-    <plurals name="treatment_saved">
-        <item quantity="one">%1$d entrada guardada</item>
-        <item quantity="many">%1$d entradas guardadas</item>
-        <item quantity="other">%1$d entradas guardadas</item>
-    </plurals>
-    <plurals name="treatment_sent">
-        <item quantity="one">%1$d entrada se enviará a quien lleva el sensor</item>
-        <item quantity="many">%1$d entradas se enviarán a quien lleva el sensor</item>
-        <item quantity="other">%1$d entradas se enviarán a quien lleva el sensor</item>
     </plurals>
     <string name="treatment_ago">Hace %1$s</string>
     <string name="treatment_yesterday">Ayer %1$s</string>

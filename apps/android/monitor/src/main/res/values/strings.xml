@@ -84,6 +84,7 @@
     <string name="monitor_channel_sensor_countdown">Sensor countdown</string>
     <string name="monitor_channel_pen_results">Pen doses</string>
     <string name="monitor_channel_pen_check">Pen reminders</string>
+    <string name="monitor_channel_treatment_draft">Unsaved treatments</string>
     <string name="monitor_channel_alert_very_low">Very low</string>
     <string name="monitor_channel_alert_low">Low</string>
     <string name="monitor_channel_alert_high">High</string>

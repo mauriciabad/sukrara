@@ -83,7 +83,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Treatments**: a quick dialog for rapid / long insulin, carbs and a note (from the notification, the Quick
   Settings tile *Add treatment*, which also shows your glucose, or home), *now*, a time or *minutes ago*, a line saying which alerts it quiets and for
   how long, and a short countdown when opened on the lock screen (a ring on *Cancel*, also in the *When?* picker, and
-  one spoken *Closes in 10 seconds* with TalkBack).
+  one spoken *Closes in 10 seconds* with TalkBack). After *Save* a snackbar says what was saved, with *Undo*; what the
+  countdown closes on is kept as a draft and offered after the unlock (*Treatment not saved*, *Discard*).
 - **Home-screen widgets** (*Glucose*, *Glucose graph*, *Glucose and graph*) drawn by the same card renderer at the
   widget's real size (*Glucose* down to one cell), with the same card as their picker preview; home offers *Add
   widget* until a graph widget is placed (or says how to add it by hand when the launcher can't), and a tap opens
