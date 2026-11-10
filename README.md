@@ -165,7 +165,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Alerts** with sound packs and the same rules and timeline scenarios as Android; mute, change the time, a custom
   length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert.
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
-  7 days by day with the phone's entries, delete your own with undo.
+  7 days by day with the phone's entries, edit or delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
 - **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, update check,
   Quit), Graph (time shown per place, treatments on the graph, lines, ranges, sensor countdown and time left), Rings

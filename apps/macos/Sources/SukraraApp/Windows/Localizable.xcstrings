@@ -513,6 +513,22 @@
         }
       }
     },
+    "Changed to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changed to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiado a %@"
+          }
+        }
+      }
+    },
     "Check for Updates…" : {
       "localizations" : {
         "en" : {
@@ -657,6 +673,22 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
     "Delete %@" : {
       "localizations" : {
         "en" : {
@@ -749,6 +781,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descargar"
+          }
+        }
+      }
+    },
+    "Edit %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar %@"
+          }
+        }
+      }
+    },
+    "Edit Treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar tratamiento"
           }
         }
       }
@@ -1213,6 +1277,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más tarde"
+          }
+        }
+      }
+    },
+    "Logged on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en el móvil de %@"
+          }
+        }
+      }
+    },
+    "Logged on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en este Mac"
           }
         }
       }
@@ -1933,6 +2029,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rápida"
+          }
+        }
+      }
+    },
+    "Read from the pen on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read from the pen on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leído de la pluma en el móvil de %@"
           }
         }
       }

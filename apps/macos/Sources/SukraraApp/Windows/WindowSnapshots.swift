@@ -286,7 +286,19 @@
                     delivery: nil),
             ]
             let tm = TreatmentsModel(rows: rows, canWrite: true, actions: nil)
+            tm.wearer = "Marta"
             out.append(("treatments", AnyView(TreatmentsView(model: tm, add: {}).frame(width: 460, height: 380))))
+            // Edit Treatment on an amount and on a note (nothing changed yet: Save off)
+            out.append(
+                (
+                    "treatment-edit",
+                    AnyView(EditTreatmentView(treatment: rows[0].treatment, save: { _, _, _ in }, cancel: {}))
+                ))
+            out.append(
+                (
+                    "treatment-edit-note",
+                    AnyView(EditTreatmentView(treatment: rows[3].treatment, save: { _, _, _ in }, cancel: {}))
+                ))
             out.append(
                 (
                     "treatments-empty",

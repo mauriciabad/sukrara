@@ -412,7 +412,7 @@ final class RecordingSender: TreatmentActions {
         #expect(m.rows.isEmpty && m.undoAvailable)
         #expect(sender.sent.last?.del == true)
         clock += 5
-        await m.undoDelete()
+        await m.undoLast()
         #expect(m.rows.map(\.id) == ["a"] && m.rows[0].delivery == .sending)
         #expect(sender.sent.last?.del == false)
         #expect(sender.sent.last!.u > sender.sent.first!.u)
@@ -422,13 +422,79 @@ final class RecordingSender: TreatmentActions {
         var clock = Date(timeIntervalSince1970: 2000)
         let sender = RecordingSender()  // the model holds its actions weakly
         let m = TreatmentsModel(
-            rows: [.init(treatment: Self.mine, delivery: nil)], canWrite: true, actions: sender,
+            rows: [.init(treatment: Self.mine, delivery: .accepted)], canWrite: true, actions: sender,
             now: { clock })
         await m.delete(m.rows[0])
+        #expect(m.rows.isEmpty)
         clock += TreatmentsModel.undoSeconds + 0.1
         #expect(!m.undoAvailable)
-        await m.undoDelete()
+        await m.undoLast()
         #expect(m.rows.isEmpty)
+    }
+
+    @Test func editSendsANewerVersionAndUndoTakesItBack() async {
+        var clock = Date(timeIntervalSince1970: 2000)
+        let sender = RecordingSender()
+        let m = TreatmentsModel(
+            rows: [.init(treatment: Self.mine, delivery: .accepted)], canWrite: true, actions: sender, now: { clock })
+        await m.edit(m.rows[0], amount: 5.5, note: "", at: 1100)
+        #expect(m.rows.map(\.treatment.a) == [5.5] && m.rows[0].treatment.t == 1100 && m.rows[0].delivery == .sending)
+        #expect(sender.sent.last?.id == "a" && sender.sent.last?.a == 5.5 && sender.sent.last!.u > Self.mine.u)
+        #expect(m.undo?.kind == .changed && m.undo?.shown.a == 5.5)
+        clock += 3
+        await m.undoLast()
+        #expect(m.rows[0].treatment.a == 4 && m.rows[0].treatment.t == 1000 && !m.undoAvailable)
+        #expect(sender.sent.count == 2 && sender.sent[1].u > sender.sent[0].u && !sender.sent[1].del)
+    }
+
+    @Test func anEditWithoutAChangeSendsNothing() async {
+        let sender = RecordingSender()
+        let m = TreatmentsModel(rows: [.init(treatment: Self.mine, delivery: .sent)], canWrite: true, actions: sender)
+        await m.edit(m.rows[0], amount: 4, note: "", at: 1000)
+        #expect(sender.sent.isEmpty && m.undo == nil)
+    }
+
+    @Test func aChangedEntryStaysListedWhileItsUndoIsOffered() async {
+        let sender = RecordingSender()
+        let m = TreatmentsModel(rows: [.init(treatment: Self.mine, delivery: .sent)], canWrite: true, actions: sender)
+        await m.edit(m.rows[0], amount: 6, note: "", at: 1000)
+        var echoed = Self.mine
+        echoed.a = 6
+        echoed.o = .follower
+        m.sync([echoed], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.rows.map(\.treatment.a) == [6] && m.rows[0].delivery == .accepted)
+    }
+
+    /// The runtime keeps this Mac's entries as `o: follower` (how every writer sends them): they stay this Mac's to
+    /// edit and delete by their delivery state; another follower's entry never is.
+    @Test func ownEntriesStayChangeableInTheRuntimesCopy() {
+        let m = TreatmentsModel(rows: [], canWrite: true, actions: nil)
+        var own = Self.mine
+        own.o = .follower
+        let other = Treatment(id: "c", k: .carbs, a: 20, t: 950, u: 1, o: .follower)
+        m.sync([own, other, Self.phones], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.rows.map { m.canChange($0) } == [true, false, false])
+        #expect(TreatmentsView.loggedBy(own, mine: true) == "Logged on this Mac")
+        #expect(TreatmentsView.loggedBy(Self.phones, wearer: "Ana") == "Logged on Ana's phone")
+        m.sync([own], deliveries: ["a": .accepted], canWrite: false)
+        #expect(!m.canChange(m.rows[0]))
+    }
+
+    @Test func theEditSheetParsesLikeAddTreatment() {
+        #expect(EditTreatmentView.text(of: Self.mine) == "4")
+        #expect(EditTreatmentView.edited(Self.mine, text: "4,5")! == (4.5, ""))
+        #expect(EditTreatmentView.edited(Self.mine, text: "150") == nil)
+        #expect(EditTreatmentView.edited(Self.phones, text: "30.4")! == (30, ""))
+        let note = Treatment(id: "n", k: .note, a: 0, t: 1000, n: "Walk", u: 1, o: .mac)
+        #expect(EditTreatmentView.edited(note, text: "  Run ")! == (0, "Run"))
+        #expect(EditTreatmentView.edited(note, text: " ") == nil)
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        // the picker's OK on the entry's own clock time (three days later) keeps the entry's day
+        let old = Treatment(id: "o", k: .rapid, a: 2, t: 1_800_000_000, u: 1, o: .mac)
+        #expect(EditTreatmentView.isOwnTime(.at(1_800_000_000 + 3 * 86400), of: old, calendar: utc))
+        #expect(!EditTreatmentView.isOwnTime(.at(1_800_000_000 + 60), of: old, calendar: utc))
+        #expect(!EditTreatmentView.isOwnTime(.now, of: old, calendar: utc))
     }
 
     @Test func thePhonesEntriesCantBeChanged() async {

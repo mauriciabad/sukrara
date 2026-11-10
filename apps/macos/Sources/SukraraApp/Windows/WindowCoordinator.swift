@@ -55,6 +55,7 @@ final class WindowCoordinator {
         settings.wearer = Self.wearerSettings(snapshot)
         let canWrite = if case .following(_, true) = snapshot.link { true } else { false }
         treatments.isFollowing = snapshot.link.isFollowing
+        treatments.wearer = snapshot.link.isFollowing ? FollowerAdapter.wearerName(snapshot.link) : nil
         treatments.sync(
             snapshot.treatments, deliveries: snapshot.deliveries.compactMapValues(FollowerAdapter.delivery),
             canWrite: canWrite)
