@@ -101,6 +101,63 @@ rm /tmp/tapkey /tmp/tapkey.pub
   and the widgets read a new container (the host rewrites it on the next reading). Combine it with the
   `app.mauri.sukrara` rename so it happens once.
 
+### Mac release: Developer ID and notarization
+
+Built 2026-11-10 ([#91](https://github.com/mauriciabad/sukrara/issues/91), notarization first, Sparkle next):
+`tools/release/mac-release.sh` switches Developer ID signing and notarization on by itself once the credentials below
+exist on the release Mac; until then it builds as before (Apple Development, *Open Anyway*). **The owner creates, once**
+(about an hour, as the account holder):
+
+1. **Team ID**: developer.apple.com › Account › *Membership details*. If it isn't `QWUV9H4A3G` (the free personal
+   team's), say so before the first notarized release: `TEAM` in `apps/macos/Bundle/bundle.sh`, the team check in
+   `tools/release/verify-app.sh` and the App Group `<TEAM>.app.mauri.sukrara` (`SukraraIDs.appGroup` and its test, the
+   entitlements: #19) change together, and the widgets read a new container.
+2. **Certificate: Developer ID Application.** Not *Developer ID Installer* (Sukrara ships a dmg, not a pkg) and not
+   *Apple Distribution* (that's the App Store). Xcode › Settings › Accounts › the paid team › *Manage Certificates…* ›
+   + › *Developer ID Application* (the private key is made in the login keychain); or developer.apple.com ›
+   Certificates › + › *Developer ID Application* (G2 Sub-CA) with a CSR from Keychain Access › Certificate Assistant ›
+   *Request a Certificate From a Certificate Authority*. Check: `security find-identity -v -p codesigning` lists
+   `"Developer ID Application: … (<TEAM ID>)"`. Back it up: Keychain Access › My Certificates › that identity ›
+   *Export…* as `.p12` with a strong password, into the password manager (like the Android key; never the repo).
+3. **App ID and provisioning profile: none for notarization.** The entitlements (a team-prefixed App Group, nothing
+   restricted) need no profile. Explicit App IDs (`app.mauri.sukrara`, `app.mauri.sukrara.widget`, macOS) and a
+   *Developer ID* provisioning profile only if #19 decides an entitlement needs one (e.g. Time Sensitive
+   notifications, which is worth checking while enrolling); that's #19's change, not the release script's.
+4. **Notary credentials**, stored in the login keychain as the notarytool profile **`sukrara`**, one of:
+   - *App Store Connect API key* (recommended: not tied to the Apple Account's password or 2FA, revocable on its own):
+     App Store Connect › Users and Access › Integrations › App Store Connect API › *Team Keys* › + (name
+     `sukrara-notary`, access *Developer*); download `AuthKey_<KEY ID>.p8` (offered only once) and note the Key ID and
+     the Issuer ID. Then
+     `xcrun notarytool store-credentials sukrara --key ~/Downloads/AuthKey_<KEY ID>.p8 --key-id <KEY ID> --issuer <ISSUER ID>`,
+     the `.p8` into the password manager, and the download deleted.
+   - *App-specific password*: account.apple.com › Sign-In and Security › *App-Specific Passwords* › + (`sukrara-notary`).
+     Then `xcrun notarytool store-credentials sukrara --apple-id <Apple Account e-mail> --team-id <TEAM ID>` (it asks
+     for the password, so it stays out of the shell history).
+
+   Check: `xcrun notarytool history --keychain-profile sukrara` answers (an empty list the first time).
+
+**What the release then does by itself**: `mac-release.sh` finds the Developer ID identity (`SIGN_ID` picks another by
+name or SHA-1) and refuses unless the profile `sukrara` answers (`NOTARY_PROFILE` names another); a Developer ID build
+is never released unnotarized. `bundle.sh` signs the widget, then the app, with the hardened runtime and a secure
+timestamp, submits the app to notarytool (`--wait`) and staples it. `verify-app.sh --notarized` checks, on the app and
+the widget, the Developer ID authority, the hardened runtime, the secure timestamp, the stapled ticket and Gatekeeper's
+verdict (`spctl`: *Notarized Developer ID*). `dmg.sh` signs, notarizes and staples the dmg, and `mac-release.sh` checks
+its ticket and Gatekeeper's verdict. A rejected submission stops the release (`apps/macos/build/notary.log`; details with
+`xcrun notarytool log <submission id> --keychain-profile sukrara`). After the first notarized release: README › Install
+and docs/DEVELOPMENT.md drop *Open Anyway* / "no notarization yet", and the cask can aim at the official tap.
+
+**Sparkle next (prepared, not built).** The owner's part: download Sparkle 2's release archive
+(github.com/sparkle-project/Sparkle/releases), run `./bin/generate_keys` once (the EdDSA private key goes into the login
+keychain; it prints the public key for `SUPublicEDKey`) and back the key up with `./bin/generate_keys -x
+sukrara-sparkle.key` into the password manager, then delete that file (without the key no update can be signed, and
+every user would have to reinstall by hand). The build, one change after notarization works: `apps/macos/Package.swift`
+adds Sparkle; `bundle.sh` embeds `Sparkle.framework` and signs it inside-out (its XPC services and `Updater.app` first);
+`Info.plist.in` gets `SUFeedURL` (`https://sukrara.mauri.app/appcast.xml`) and `SUPublicEDKey`; `mac-release.sh` signs
+the dmg with `sign_update` and adds its appcast item (the GitHub release dmg as the enclosure) to `docs/appcast.xml`;
+Sparkle replaces `UpdateCheck.swift`; `LaunchMode` starts no updater in test, snapshot and dev runs;
+`update.skippedVersion` leaves contracts/settings (Sparkle keeps its own); `verify-app.sh` checks the framework's
+signature; README, FEATURES; the cask sets `auto_updates true`.
+
 ### In-app updates: Sparkle 2
 
 Sparkle 2 (current 2.9 line [[S1]](https://sparkle-project.org/documentation/)): `generate_keys` puts an **EdDSA** private key in the login keychain and prints
@@ -367,10 +424,10 @@ release with that allowlist goes up without the mapping (installs older than it 
 its mapping stays in `~/.android/sukrara-mappings/`); attach the mapping from the release after it on. Play builds need no
 separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
 crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never
-bumps the Homebrew cask (`homebrew-tap.yml` skips it, also when dispatched by hand) and never becomes *Latest*. **The Mac app is not notarized yet**: there is no Developer
-ID identity or notarytool profile on the release Mac (checked 2026-10-27), so the dmg is Apple Development signed and
-the first open needs *Open Anyway* (README › Install). `NOTARY_PROFILE` in `bundle.sh` / `dmg.sh` / `mac-release.sh`
-takes over once a Developer ID exists.
+bumps the Homebrew cask (`homebrew-tap.yml` skips it, also when dispatched by hand) and never becomes *Latest*. **Mac
+notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on the release
+Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); until then the dmg is
+Apple Development signed and the first open needs *Open Anyway* (README › Install).
 
 ### Alternatives to Play
 
