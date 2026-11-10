@@ -77,8 +77,9 @@
     <string name="banner_widget_action">Añadir widget</string>
     <string name="banner_widget_manual">Mantén pulsada la pantalla de inicio y toca Widgets › Sukrara.</string>
     <string name="banner_clinic_title">Comparte tus datos con tu clínica</string>
-    <string name="banner_clinic_text">Sube tus lecturas y anotaciones a LibreView para que tu equipo médico las vea.</string>
-    <string name="banner_clinic_action">Configurar</string>
+    <string name="banner_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
+    <string name="banner_clinic_libreview">LibreView</string>
+    <string name="banner_clinic_tidepool">Tidepool</string>
 
     <string name="home_unmute">Reactivar</string>
     <string name="home_untested_sensor">La compatibilidad con %1$s no está probada. Cuéntanos cómo funciona.</string>

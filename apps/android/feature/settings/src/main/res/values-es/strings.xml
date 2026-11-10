@@ -560,8 +560,9 @@
     <string name="st_pen_changed_since_open">Esa entrada cambió o se borró mientras tanto</string>
     <string name="st_pen_q_several">Hay varias entradas tuyas cerca: respóndela en la tarjeta de lectura de la pluma o en su notificación.</string>
     <string name="st_clinic_title">Comparte tus datos con tu clínica</string>
-    <string name="st_clinic_text">Sube tus lecturas y anotaciones a LibreView para que tu equipo médico las vea.</string>
-    <string name="st_clinic_action">Configurar</string>
+    <string name="st_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
+    <string name="st_clinic_libreview">LibreView</string>
+    <string name="st_clinic_tidepool">Tidepool</string>
     <!-- Settings › Alerts › Lately: the alerts' recent history -->
     <string name="st_lately_title">Últimamente</string>
     <string name="st_note_fired">%1$s · %2$d mg/dL</string>

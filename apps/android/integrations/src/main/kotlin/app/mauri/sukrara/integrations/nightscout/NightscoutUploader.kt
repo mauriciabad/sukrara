@@ -98,7 +98,7 @@ class NightscoutUploader(
     private val log: (String) -> Unit = {},
 ) {
     private val credential = MutableStateFlow<NsCredentialKind?>(null)
-    private val loop = UploadLoop(INTERVAL_MS, io, { e -> log("nightscout cycle: ${e.javaClass.simpleName}") }) { cycle() }
+    private val loop = UploadLoop({ INTERVAL_MS }, io, { e -> log("nightscout cycle: ${e.javaClass.simpleName}") }) { cycle() }
     private var client: Pair<NsConfig, NsClient>? = null
 
     /** One writer of [store] at a time: a cycle's network calls never overwrite a newer *Upload anyway*, token or removal. */
@@ -399,7 +399,7 @@ object NightscoutSync {
         readings.sortedBy { it.t }.zipWithNext { a, b -> prevOf[b.t] = a }
         val entries = if (cfg.api == NsApi.V3) plan.entries.takeLast(NightscoutQueue.V3_MAX_PER_CYCLE) else plan.entries
         for (chunk in entries.chunked(NightscoutQueue.BATCH)) {
-            val docs = chunk.map { NsDocs.entry(it, prevOf[it.t], cfg.device, zone, cfg.api) }
+            val docs = chunk.map { NsDocs.entry(it, prevOf[it.t], NsDocs.entryDevice(cfg.device, it.source), zone, cfg.api) }
             when (val o = client.postEntries(docs)) {
                 is Outcome.Ok -> {
                     val bad = if (cfg.api == NsApi.V3) client.lastRejected else 0

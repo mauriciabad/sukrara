@@ -4,12 +4,15 @@
 package app.mauri.sukrara.designsystem.banner
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -39,6 +42,13 @@ import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 
+/** One of a banner's equal choices (*LibreView* / *Tidepool*): a pill with the service's own, untinted [icon]. */
+data class BannerChoice(
+    val label: String,
+    @param:DrawableRes val icon: Int,
+    val onClick: () -> Unit,
+)
+
 /** How much a banner matters: [Safety] = alerts or readings may not work (error colours, filled action); [Info] = a tip. */
 enum class BannerSeverity { Safety, Info }
 
@@ -58,9 +68,13 @@ data class Banner(
     val severity: BannerSeverity = BannerSeverity.Info,
     /** A second, quieter way out next to the action (*Turn off*), a text button before it. */
     val secondary: Pair<String, () -> Unit>? = null,
+    /** Equal choices side by side instead of one action (each opens its own page). */
+    val choices: List<BannerChoice> = emptyList(),
 ) {
     init {
-        require(action != null || onDismiss != null) { "banner $id has no way out: give it an action or a dismiss" }
+        require(action != null || onDismiss != null || choices.isNotEmpty()) {
+            "banner $id has no way out: give it an action, choices or a dismiss"
+        }
     }
 }
 
@@ -110,6 +124,23 @@ private fun BannerCard(b: Banner) {
                 b.onDismiss?.let {
                     IconButton(onClick = it) {
                         Icon(painterResource(R.drawable.ds_ic_close), contentDescription = stringResource(R.string.ds_dismiss))
+                    }
+                }
+            }
+            if (b.choices.isNotEmpty()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 40.dp, end = 12.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    b.choices.forEach { c ->
+                        FilledTonalButton(
+                            onClick = c.onClick,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp),
+                        ) {
+                            Image(painterResource(c.icon), contentDescription = null, modifier = Modifier.size(28.dp))
+                            Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
+                        }
                     }
                 }
             }

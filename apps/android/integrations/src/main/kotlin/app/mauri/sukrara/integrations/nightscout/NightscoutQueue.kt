@@ -210,11 +210,11 @@ object NightscoutQueue {
             }
         }
 
-    /** A site entry is ours when its `device` is exactly this install's name. */
+    /** A site entry is ours when its `device` is this install's name, alone or with an untested family after it. */
     fun ours(
         dev: String,
         device: String,
-    ) = dev == device
+    ) = dev == device || dev.startsWith(device + NsDocs.FAMILY_SEPARATOR)
 
     /**
      * Apply a diff: [server] = the site's sgv entries in [fromS, toS] (date ms → device). Minutes we sent that the site

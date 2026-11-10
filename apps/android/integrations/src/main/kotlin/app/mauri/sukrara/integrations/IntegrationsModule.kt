@@ -196,14 +196,15 @@ class IntegrationsModule(
         }
 
     /**
-     * Whether the wearer's data goes to their clinic (LibreView signed in and on), for the *Share your data with your
-     * clinic* banner; null on a follower's phone (it never shows there).
+     * Whether the wearer's data goes to their clinic (LibreView or Tidepool signed in and on), for the *Share your data
+     * with your clinic* banner; null on a follower's phone (it never shows there).
      */
     val clinicUploadSet: Flow<Boolean?> =
-        combine(wearer, libreView.settingsFlow, libreView.signedInKnown) { w, s, signed ->
-            // unknown until the secure store was read: never a "not set up" banner for someone signed in
-            if (w && signed != null) s.on && signed else null
-        }.distinctUntilChanged()
+        combine(
+            wearer,
+            combine(libreView.settingsFlow, libreView.signedInKnown) { s, signed -> signed?.let { s.on && it } },
+            combine(tidepool.settingsFlow, tidepool.signedInKnown) { s, signed -> signed?.let { s.on && it } },
+        ) { w, lv, tp -> clinicSet(w, lv, tp) }.distinctUntilChanged()
 
     suspend fun load() {
         nightscout.load()
@@ -258,3 +259,19 @@ class IntegrationsModule(
         return level * 100 / scale to (i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0)
     }
 }
+
+/**
+ * The clinic banner's rule: set up when either upload is on and signed in; unknown (null) until both secure stores
+ * were read, so someone signed in never sees a "not set up" banner flash; null on a follower's phone.
+ */
+internal fun clinicSet(
+    wearer: Boolean,
+    libreView: Boolean?,
+    tidepool: Boolean?,
+): Boolean? =
+    when {
+        !wearer -> null
+        libreView == true || tidepool == true -> true
+        libreView == null || tidepool == null -> null
+        else -> false
+    }

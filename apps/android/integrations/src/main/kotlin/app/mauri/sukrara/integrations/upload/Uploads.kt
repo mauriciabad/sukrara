@@ -50,9 +50,9 @@ sealed interface UploadStatus {
     data class Failing(val why: Trouble, val lastOk: Instant?) : UploadStatus
 }
 
-/** A cycle every [intervalMs], or sooner on [kick]; a failing cycle is reported and the loop goes on. */
+/** A cycle every [intervalMs] (read before each wait), or sooner on [kick]; a failing cycle is reported and the loop goes on. */
 class UploadLoop(
-    private val intervalMs: Long,
+    private val intervalMs: () -> Long,
     private val dispatcher: CoroutineDispatcher,
     private val onFailure: (Throwable) -> Unit,
     private val cycle: suspend () -> Unit,
@@ -78,7 +78,7 @@ class UploadLoop(
                     } catch (e: Exception) {
                         onFailure(e)
                     }
-                    withTimeoutOrNull(intervalMs) { wake.receive() }
+                    withTimeoutOrNull(intervalMs()) { wake.receive() }
                 }
             }
         return true

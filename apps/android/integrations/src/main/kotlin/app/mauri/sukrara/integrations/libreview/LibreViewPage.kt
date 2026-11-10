@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.designsystem.dialog.NumberDialog
+import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
@@ -43,10 +46,12 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -56,6 +61,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** The sign-in dialog's state. */
 sealed interface LvSignInUi {
@@ -95,6 +101,7 @@ class LibreViewViewModel(
             },
             signOut = { viewModelScope.launch { runCatching { uploader.signOut() } } },
             reset = { _signIn.value = LvSignInUi.Idle },
+            setInterval = { min -> viewModelScope.launch { uploader.setInterval(min) } },
         )
 
     fun nowInstant() = now()
@@ -107,6 +114,7 @@ class LibreViewActions(
     val signIn: (String, String, Boolean) -> Unit = { _, _, _ -> },
     val signOut: () -> Unit = {},
     val reset: () -> Unit = {},
+    val setInterval: (Double) -> Unit = {},
 )
 
 @Composable
@@ -163,6 +171,7 @@ fun LibreViewContent(
 ) = Column(modifier) {
     val s = state.settings
     val on = s.on && wearer && state.signedIn
+    var choosingInterval by rememberSaveable { mutableStateOf(false) }
     IntroText(stringResource(R.string.in_lv_intro))
     SettingsGroup {
         ValueRow(
@@ -221,6 +230,13 @@ fun LibreViewContent(
         SwitchRow(stringResource(R.string.in_ns_entries), s.treatments, { v ->
             actions.change { it.copy(treatments = v) }
         }, enabled = on, summary = off ?: stringResource(R.string.in_lv_entries_summary))
+        ValueRow(
+            stringResource(R.string.in_lv_interval),
+            if (on) intervalText(state.intervalMin) else stringResource(R.string.in_ns_unavailable),
+            { choosingInterval = true },
+            enabled = on,
+            icon = DsR.drawable.ds_ic_schedule,
+        )
     }
     if (state.signedIn) {
         SettingsGroup {
@@ -237,7 +253,22 @@ fun LibreViewContent(
     if (editing) {
         SignInDialog(state.email.ifEmpty { suggestedEmail }, signIn, actions) { setEditing(false) }
     }
+    if (choosingInterval) {
+        val words = CardWords.of(LocalContext.current.resources).durations
+        NumberDialog(
+            stringResource(R.string.in_lv_interval),
+            NumberInput(SettingsSpec.LIBRE_VIEW_INTERVAL),
+            state.intervalMin,
+            { Durations.text(it.toLong(), words) },
+            { choosingInterval = false },
+            onChoose = actions.setInterval,
+        )
+    }
 }
+
+/** "5 min", "1 h": THE duration formatter. */
+@Composable
+private fun intervalText(min: Double): String = Durations.text(min.toLong(), CardWords.of(LocalContext.current.resources).durations)
 
 @Composable
 private fun glucoseSummary(state: LvPageState): String {

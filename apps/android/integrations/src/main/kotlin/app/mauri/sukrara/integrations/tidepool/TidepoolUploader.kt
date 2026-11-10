@@ -104,7 +104,10 @@ class TidepoolUploader(
 
     /** Null until [load] read the secure store. */
     private val signedIn = MutableStateFlow<Boolean?>(null)
-    private val loop = UploadLoop(INTERVAL_MS, io, { e -> log("tidepool cycle: ${e.javaClass.simpleName}") }) { cycle() }
+
+    /** Whether a session is saved; null until [load] ran. */
+    val signedInKnown: Flow<Boolean?> = signedIn
+    private val loop = UploadLoop({ INTERVAL_MS }, io, { e -> log("tidepool cycle: ${e.javaClass.simpleName}") }) { cycle() }
     private val mutex = Mutex()
 
     /** When the last cycle read the whole window (in between, only the last hours are read). */

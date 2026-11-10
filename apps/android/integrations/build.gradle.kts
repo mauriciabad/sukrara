@@ -14,6 +14,8 @@ dependencies {
     api(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+    // THE duration words (CardWords.durations) for *Upload every*
+    implementation(project(":core:graph"))
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)

@@ -259,4 +259,6 @@
     <string name="in_bc_reallow_title">Allow %1$s again?</string>
     <string name="in_bc_reallow_text">%1$s (%2$s) is signed with a different key than when you allowed it. That happens when it was reinstalled from another source, and it can also be a different app using the same name. Allow it again only if you installed it yourself from a source you trust: an app like AndroidAPS may dose insulin from these readings.</string>
     <string name="in_bc_reallow_action">Allow again</string>
+    <!-- LibreView: Upload every (apps.libreviewInterval) -->
+    <string name="in_lv_interval">Upload every</string>
 </resources>

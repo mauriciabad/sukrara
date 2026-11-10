@@ -144,7 +144,11 @@ sealed interface HomeAction {
     /** Share with someone (a new invite). */
     data object Share : HomeAction
 
+    /** The LibreView upload's page (the clinic banner's *LibreView*, an entry's cloud mark). */
     data object OpenClinicUpload : HomeAction
+
+    /** The Tidepool upload's page (the clinic banner's *Tidepool*). */
+    data object OpenTidepool : HomeAction
 
     /** Pen taps blocked by Android: its screen that allows them. */
     data object AllowPenTaps : HomeAction

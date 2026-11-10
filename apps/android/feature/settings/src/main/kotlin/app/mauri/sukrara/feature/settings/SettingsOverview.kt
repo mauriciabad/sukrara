@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.designsystem.banner.Banner
+import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.Category
@@ -41,6 +42,7 @@ class OverviewActions(
     val unmuteAll: () -> Unit = {},
     /** *Share your data with your clinic*: Set up (the clinic upload's page) and Dismiss. */
     val openClinicUpload: () -> Unit = {},
+    val openClinicTidepool: () -> Unit = {},
     val dismissClinicBanner: () -> Unit = {},
     /** Undo on the "Tip closed" snackbar. */
     val restoreClinicBanner: () -> Unit = {},
@@ -100,11 +102,11 @@ fun SettingsOverviewContent(
         BannerSlot(
             Banner(
                 "clinic",
-                DsR.drawable.ds_ic_info,
+                DsR.drawable.ds_ic_cloud_upload,
                 stringResource(R.string.st_clinic_title),
                 stringResource(R.string.st_clinic_text),
-                stringResource(R.string.st_clinic_action),
-                actions.openClinicUpload,
+                null,
+                {},
                 {
                     haptics.confirm()
                     actions.dismissClinicBanner()
@@ -119,6 +121,19 @@ fun SettingsOverviewContent(
                         if (result == SnackbarResult.ActionPerformed) actions.restoreClinicBanner()
                     }
                 },
+                choices =
+                    listOf(
+                        BannerChoice(
+                            stringResource(R.string.st_clinic_libreview),
+                            DsR.drawable.ds_ic_service_libreview,
+                            actions.openClinicUpload,
+                        ),
+                        BannerChoice(
+                            stringResource(R.string.st_clinic_tidepool),
+                            DsR.drawable.ds_ic_service_tidepool,
+                            actions.openClinicTidepool,
+                        ),
+                    ),
             ).takeIf { clinicBanner },
         )
         if (sharing.wearer) {
