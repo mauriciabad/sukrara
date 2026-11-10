@@ -147,7 +147,7 @@ public struct SetupView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.flow.isComplete ? L10n.t("All set") : L10n.t("Almost done")).font(.title.bold())
             if !model.flow.isComplete {
-                Text(L10n.t("Some steps were skipped. \"Finish setup\" in the Sukrara menu takes you back to them."))
+                Text(L10n.t("Some steps were skipped. \"Finish Setup…\" in the Sukrara menu takes you back to them."))
             }
             HStack {
                 Spacer()

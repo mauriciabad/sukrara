@@ -34,16 +34,16 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
 ## Q2 Graph and value card
 
 - [ ] JVM gallery before/after: marks, mute lines, badge, slots, bands; light and dark; small and large sizes.
-- [ ] Mac `render treatments` before/after shows the same decisions (same labels, same badge text, same slot order).
+- [ ] Mac `sukrara-snap card <dir>` before/after shows the same decisions (same labels, same badge text, same slot order).
 - [ ] Units mg/dL and mmol/L both read right (setting in the app).
 - [ ] Scrolling (app panel, Mac dropdown): `screenrecord` a slow drag, a fling, a fling against now (stretch) and a tap
       on *Now*; step the frames: the % column, distribution, y range (eased, no jump), hour labels and treatment marks
       follow the window; the plot doesn't jump when a treatment scrolls in or out; the pill fades in and out. Mac: the
-      same with two-finger swipes (momentum after lifting) and a mouse wheel; `-panelPreview` writes `*-scrolled.png`.
+      same with two-finger swipes (momentum after lifting) and a mouse wheel; `sukrara-snap shell <dir>` writes `panel-chart-scrolled-*.png`.
 - [ ] Zoom (app panel pinch, Mac pinch / ⌘-scroll): the moment under the fingers / cursor stays put; 2 h to the whole
       history; the line steps and labels change (hours → dates); the line turns into columns far out without a jump;
-      *Now* returns to now and the place's time shown. JVM gallery `zoom`, Mac `-panelPreview` `*-zoom-*.png`.
-- [ ] Sensor life (JVM gallery `sensorLife`, Mac `render treatments` → `mac-sensor-*.png`; emulator: `--es cmd sensor
+      *Now* returns to now and the place's time shown. JVM gallery `zoom`; Mac by hand (`ChartScrollTests` cover the rules).
+- [ ] Sensor life (JVM gallery `sensorLife`, Mac `sukrara-snap card` → `*-ended-*`, `*-warmup-*`; emulator: `--es cmd sensor
   --el left <s>`): badge `13d` / `20h` (no ring with an 8 h window) / `5h` with the countdown ring over the main ring,
   legible over every band colour, light and dark; warm-up `42m` + filling ring; ended `Sensor ended` + `Replace sensor` pill on every widget size (3×1 and 2×1 too, also while the last value is fresh; pill/tap opens the Sensor screen on the wearer's phone), checkered flag in the status bar (notification icon, root slots, hook) and the Mac menubar + no-data alert
   quiet. Follower and Mac show the same from the live events. Evidence 2026-10-18:
@@ -120,15 +120,15 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Test build at another path (never over `~/Applications/Sukrara.app`): menubar number + colour; click → panel
       (card in its module, Return opens *Add Treatment*: Tab rapid → long → carbs → note, `4.5u` keeps `4.5`,
       quiet line, limits line at 600g, time chip popover, Return saves all, Escape cancels; Escape / click outside
-      closes the panel); right-click menu; Treatments… (7 days, delete with ⌫ / context menu, ⌘W; a pen entry from the phone: total as title, *From the pen · 1.5u primed*, the triangle opens the doses with *primed* on air shots, tooltip *Read from the pen on …'s phone* (no serial); Add Treatment with rapid within 45 min of a pen entry → *Already logged by the pen?*, Cancel keeps the insulin typed and saves carbs / note, Log Anyway saves; `-treatmentTimeSnapshot <dir>` → `add-treatment-pen-warning-*.png`; VoiceOver reads the row as one sentence and each dose as *12:37, 1 unit, primed*; a correction on the phone shows here within seconds; chart mark = the total; synthetic: `GlucoseBar -treatmentsSnapshot <dir>`); Glucose Report (report only, period, Export CSV…); Settings (each pane; ⌘, ⌘W, paste in
+      closes the panel); right-click menu; Treatments… (7 days, delete with ⌫ / context menu, ⌘W; a pen entry from the phone: total as title, *From the pen · 1.5u primed*, the triangle opens the doses with *primed* on air shots, tooltip *Read from the pen on …'s phone* (no serial); Add Treatment with rapid within 45 min of a pen entry → *Already logged by the pen?*, Cancel keeps the insulin typed and saves carbs / note, Log Anyway saves; VoiceOver reads the row as one sentence and each dose as *12:37, 1 unit, primed*; a correction on the phone shows here within seconds; chart mark = the total; synthetic: `sukrara-snap windows <dir>` → `treatments-*.png`, `treatment-add-*.png`); Glucose Report (report only, period, Export CSV…); Settings (each pane; ⌘, ⌘W, paste in
       the invite field); light and dark, over a bright and a dark window/wallpaper, Increase Contrast and Reduce
       Transparency (System Settings → Accessibility → Display).
-- [ ] Real captures (Screen Recording for the terminal): launch the build with `-openPanel [-appearance dark]`, take
-      `screencapture -x -R<rect>` with the rect it logs ("panel window … rect x,y,w,h"); never commit them (real data).
-- [ ] Synthetic renders for docs: `GlucoseBar -panelPreview <dir>` (the real panel over test wallpapers), and
-      `-settingsSnapshot <dir>` / `-reportSnapshot <dir>` (with `SUKRARA_DEV=1` in the environment and
-      `-keychainService <test> -readingsDir <dir> -treatmentsDir <dir> -v2NoRelays YES -bleV2 NO`; a dev build refuses
-      to start the full app without `SUKRARA_DEV=1`, LaunchGuard).
+- [ ] Synthetic renders (the only snapshot path; offline, scratch data, debug builds): `cd apps/macos && swift build &&
+      .build/debug/sukrara-snap shell|windows|card <dir>` (`shell-es` / `windows-es` for Spanish): the menu bar title
+      + panel in each state, every window state (light, dark, large text) and every card surface. Never into the repo.
+- [ ] The running app offline: `FIXTURE=1 Bundle/smoke.sh .build/debug/Sukrara` (a made-up wearer, fresh data, no
+      socket); by hand `SUKRARA_DEV=1 SUKRARA_FIXTURE=1 SUKRARA_DEV_HOME=<scratch dir> .build/debug/Sukrara`. A dev
+      build refuses to start without `SUKRARA_DEV=1` and takes no arguments (`LaunchPlan`, `LaunchModeTests`).
 - [ ] Settings (round f28): `-settingsSnapshot <dir>` renders every pane in four synthetic states (defaults, Wearer
       with a sample event from "Ana", Custom with custom numbers, an invalid typed number); check the toolbar (five
       panes, title = pane), Settings from in General (Wearer / Default / Custom, *In use* line; Custom: *Copy the
@@ -137,12 +137,12 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       on Return / leaving it, out-of-range text turns the range note red and changes nothing, the stepper and
       Shift-click stay in range; a custom value (7 h, 45 days, 183 mg/dL) survives a relaunch and shows in the panel /
       widgets; the per-place windows; ring order: drag a range onto another (insertion line), Control-click Move Up /
-      Down, VoiceOver actions; Details… of an alert in Custom vs Wearer; *Send Test Alert*. `-settingsselftest` must pass.
+      Down, VoiceOver actions; Details… of an alert in Custom vs Wearer; *Send Test Alert*. Snapshots: `sukrara-snap windows` → `settings-*.png`.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets
 
-- [ ] `poc/spikes/widgets-macos/build.sh render` before/after for every family.
+- [ ] `sukrara-snap card <dir>` before/after: `widget-*` for every family and state, light, dark and tinted.
 - [ ] Real widgets only via `tools/install.sh mac` (restarts the widget extension); they update within a minute.
 
 ## Q8 Alerts on a device
@@ -156,7 +156,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       ungrouped, nothing in `g:Aggregate_…`; the alert is the one that sounded (`mSoundNotificationKey` = id 101). In
       the shade *High glucose* never inside a bundle with *Sensor ready*; an in-range `alertFeed` removes the alert and
       its group's summary.
-- [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or check `-alerts-selftest` output) and compare the
+- [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the
       headline and timing with Android.
 - [ ] Never on the user's phone with real alarms unless the user asked.
 
@@ -374,7 +374,7 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       *Mute alerts* → 1 h → the muted pill on the card and widgets → the line counts down → *Unmute*; *Until you turn it off* stays after a restart; the muted notification's header counts down;
       a high muted, then a low: the low alerts; muted low back at ≥ 80 for 10 min → the muted notification goes;
       durations everywhere read *1 h* / *2 h*;
-      log carbs → *Alert me anyway* in Settings → Alerts › Active now. Mac (test copy, `-panelPreview`): the rows under
+      log carbs → *Alert me anyway* in Settings → Alerts › Active now. Mac (`sukrara-snap shell`: `panel-low-muted-*`, `panel-muted-all-*`): the rows under
       the card and the pill's menu.
 
 ## Q21 Insulin pens
