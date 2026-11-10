@@ -284,12 +284,17 @@ class TidepoolUploader(
         val windowStart = Instant.ofEpochSecond(maxOf(rs.from, nowS - TidepoolQueue.WINDOW_S))
         val full = nowMs - fullScanMs >= FULL_SCAN_EVERY_MS
         val start = if (full) windowStart else maxOf(windowStart, clock.now() - RECENT)
-        // only this role's readings: never the person followed earlier (or one's own readings while following)
+        // only this role's readings: never the person followed earlier (or one's own readings while following), and
+        // never imported history (Tidepool has it already or got it from the same place: it would count twice)
         val own = SourceId.of(r)
         val rd =
-            if (s.glucose) readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own } else emptyList()
+            if (s.glucose) {
+                readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own && !it.imported }
+            } else {
+                emptyList()
+            }
         if (full) fullScanMs = nowMs
-        val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)) else emptyList()
+        val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)).filterNot { it.imported } else emptyList()
         val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS, hold = hold)
         if (plan.count == 0) {
             if (!plan.isEmpty) rs = TidepoolQueue.applied(rs, plan, emptyMap(), nowS)
