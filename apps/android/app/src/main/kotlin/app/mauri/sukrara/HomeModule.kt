@@ -20,6 +20,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.feature.home.DamagedStore
 import app.mauri.sukrara.feature.home.DataProblem
@@ -206,6 +207,20 @@ class HomeModule(
     }
 
     override suspend fun mayChangeTreatment(id: String): Boolean = treatmentLog().mayChange(id)
+
+    override suspend fun deliveries(ids: Collection<String>): Map<String, TreatmentDelivery> =
+        ids
+            .mapNotNull { id ->
+                data.treatments
+                    .get(id)
+                    ?.delivery
+                    ?.takeIf { it == TreatmentDelivery.Pending || it == TreatmentDelivery.Failed }
+                    ?.let { id to it }
+            }.toMap()
+
+    override suspend fun retryTreatment(id: String) {
+        treatmentLog().retry(id)
+    }
 
     private fun CorruptFile.toProblem() =
         DataProblem(

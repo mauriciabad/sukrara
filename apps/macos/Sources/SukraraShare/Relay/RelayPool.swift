@@ -181,17 +181,13 @@ public actor RelayPool: RelayTransport {
 
     /// False when the relay sent more events than its budget: its socket is dropped.
     private func handle(_ text: String, from url: URL, socket: any WebSocket) async -> Bool {
-        guard let message = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [Any],
-            let type = message.first as? String
-        else { return true }
+        guard let frame = try? JSONDecoder().decode(RelayFrame.self, from: Data(text.utf8)) else { return true }
         let relay = Self.host(url)
-        func string(_ i: Int) -> String? { message.count > i ? message[i] as? String : nil }
-        switch type {
+        func string(_ i: Int) -> String? { frame.string(i) }
+        switch frame.type {
         case "EVENT":
             guard spend(url) else { return false }
-            guard message.count > 2, let sub = string(1), let filter = subscriptions[sub],
-                let object = message[2] as? [String: Any],
-                let event = SignedEvent.decode(json: JSONText.encode(object)),
+            guard let sub = string(1), let filter = subscriptions[sub], let event = frame.event,
                 filter.matches(event)  // not what we asked for: never verified, never seen by the session
             else { return true }
             continuation.yield(.event(event, subscription: sub, relay: relay))
@@ -209,8 +205,8 @@ public actor RelayPool: RelayTransport {
                 continuation.yield(.closed(subscription: sub, reason: reason, relay: relay))
             }
         case "OK":
-            guard message.count > 2, let id = string(1) else { return true }
-            let accepted = message[2] as? Bool ?? false
+            guard let id = string(1) else { return true }
+            let accepted = frame.bool(2) ?? false
             if id == connections[url]?.authEventId {
                 Self.log.info("relay \(relay, privacy: .public) AUTH \(accepted ? "accepted" : "refused")")
                 guard accepted else { return true }
@@ -348,5 +344,56 @@ private final class FirstAnswer: @unchecked Sendable {
             return continuation
         }
         waiting?.resume(returning: answer)
+    }
+}
+
+/// One relay → client frame (NIP-01 `["EVENT", sub, event]`, `["OK", id, accepted, message]`, `["EOSE", sub]`, …),
+/// decoded once: its type, then each element as a string, a flag or an event (anything else is skipped).
+struct RelayFrame: Decodable {
+    enum Item {
+        case string(String), bool(Bool), event(SignedEvent), other
+    }
+
+    var type: String
+    /// The elements after the type (index 1 = `items[0]`).
+    var items: [Item]
+
+    init(from decoder: any Decoder) throws {
+        var c = try decoder.unkeyedContainer()
+        type = try c.decode(String.self)
+        items = []
+        while !c.isAtEnd {
+            if let s = try? c.decode(String.self) {
+                items.append(.string(s))
+            } else if let b = try? c.decode(Bool.self) {
+                items.append(.bool(b))
+            } else if let e = try? c.decode(SignedEvent.self) {
+                items.append(.event(e))
+            } else {
+                _ = try c.decode(Skip.self)
+                items.append(.other)
+            }
+        }
+    }
+
+    func string(_ i: Int) -> String? {
+        guard i >= 1, i <= items.count, case .string(let s) = items[i - 1] else { return nil }
+        return s
+    }
+
+    func bool(_ i: Int) -> Bool? {
+        guard i >= 1, i <= items.count, case .bool(let b) = items[i - 1] else { return nil }
+        return b
+    }
+
+    /// EVENT's event (the third element).
+    var event: SignedEvent? {
+        guard items.count >= 2, case .event(let e) = items[1] else { return nil }
+        return e
+    }
+
+    /// Any JSON value, read and dropped.
+    private struct Skip: Decodable {
+        init(from decoder: any Decoder) throws {}
     }
 }

@@ -1,5 +1,5 @@
 {
-  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
+  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. play_permissions: what the Google Play build (play flavor) removes from and adds to that list, each with the reason (ManifestTest on the play manifest, verify-apk.sh --play). prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
   "header_exts": [
     ".kt",
     ".swift",
@@ -53,7 +53,7 @@
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/NsConfig.kt",
       "contains": "\"http\" -> if (isLoopback(host))",
-      "reason": "Nightscout upload site rules: a typed http:// address is accepted only for this phone's loopback (localhost / 127.x / ::1), all network_security_config allows; any other http:// is refused with 'use https://'"
+      "reason": "Nightscout upload is https only, the home network too (#93); a typed http:// address is accepted only for this phone's loopback (localhost / 127.0.0.1: it never leaves the phone, e.g. a local test site through adb reverse), all network_security_config allows; any other http:// is refused with 'Use https://'"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/NightscoutApiPage.kt",
@@ -112,7 +112,7 @@
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/tidepool/TidepoolClient.kt",
-      "reason": "Tidepool upload: fixed https api.tidepool.org (tests: MockWebServer on loopback); redirects never followed; the session token never in logs or reasons"
+      "reason": "Tidepool upload and Import history's download (GET /data, /message/notes): fixed https api.tidepool.org (tests: MockWebServer on loopback); redirects never followed; the session token never in logs or reasons"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/LanWatcher.kt",
@@ -154,10 +154,6 @@
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     },
     {
-      "section": "Sensor reminders and countdowns",
-      "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
-    },
-    {
       "section": "Languages",
       "reason": "written before the Complete flows rule (round f29): audit its states and exits, then add the paragraph"
     }
@@ -189,6 +185,15 @@
     "app.mauri.sukrara.permission.SYSTEMUI_STATE": "our own signature permission: only Sukrara feeds the System UI module (:monitor)",
     "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
   },
+  "play_permissions": {
+    "remove": {
+      "android.permission.USE_EXACT_ALARM": "Play allows it only for alarm-clock and calendar apps (app/src/play/AndroidManifest.xml)",
+      "app.mauri.sukrara.permission.SYSTEMUI_STATE": "no System UI module in the Play build (Device and Network Abuse)"
+    },
+    "add": {
+      "android.permission.SCHEDULE_EXACT_ALARM": "the alert check's exact alarms; the person can refuse it and the alert checklist then asks for Alarms and reminders (:monitor readiness)"
+    }
+  },
   "queries": {
     "package:com.google.android.calendar": "open the sensor-end event in Google Calendar (:monitor, :app, :feature:settings)",
     "package:tk.glucodata": "Juggluco: pens through Juggluco and Settings › Sensor's Open Juggluco (:pen, :feature:settings)",
@@ -218,7 +223,8 @@
     "package:com.freestylelibre.app.at": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.freestylelibre.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.freestylelibre.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
-    "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)"
+    "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
+    "intent:android.intent.action.TTS_SERVICE": "Read glucose aloud: the phone's text-to-speech engine (:monitor ReadAloud)"
   },
   "prerelease_ok": {
     "material3": {

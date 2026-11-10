@@ -21,6 +21,8 @@ import app.mauri.sukrara.integrations.broadcasts.BcStatus
 import app.mauri.sukrara.integrations.broadcasts.broadcastStatusText
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.healthStatusText
+import app.mauri.sukrara.integrations.history.ImportState
+import app.mauri.sukrara.integrations.history.importStatusText
 import app.mauri.sukrara.integrations.libreview.libreViewStatusText
 import app.mauri.sukrara.integrations.localserver.NsApiState
 import app.mauri.sukrara.integrations.localserver.XdripState
@@ -60,6 +62,8 @@ data class AppsUi(
     val broadcasts: BcStatus = BcStatus(null, null),
     /** Health Connect (wearer only). */
     val healthConnect: HcStatus = HcStatus.Off,
+    /** Import history (wearer only). */
+    val history: ImportState = ImportState.Idle,
 )
 
 class AppsActions(
@@ -71,6 +75,7 @@ class AppsActions(
     val openTidepool: () -> Unit = {},
     val openBroadcasts: () -> Unit = {},
     val openHealthConnect: () -> Unit = {},
+    val openImport: () -> Unit = {},
 )
 
 /**
@@ -105,6 +110,7 @@ private data class Others(
     val broadcastApps: Int,
     val broadcasts: BcStatus,
     val health: HcStatus,
+    val history: ImportState = ImportState.Idle,
 )
 
 class AppsViewModel(
@@ -120,14 +126,14 @@ class AppsViewModel(
             module.nightscout.page,
             module.libreView.page,
             combine(
-                module.nightscoutApi.state,
-                module.tidepool.status,
+                combine(module.nightscoutApi.state, module.tidepool.status) { api, tp -> api to tp },
                 module.broadcasts.settingsFlow,
                 module.broadcasts.status,
                 module.healthConnect.status,
-            ) { api, tp, bc, bs, hc -> Others(api, tp, bc.apps.size, bs, hc) },
+                module.history.state,
+            ) { (api, tp), bc, bs, hc, h -> Others(api, tp, bc.apps.size, bs, hc, h) },
         ) { (w, on, x), r, ns, lv, o ->
-            AppsUi(w, on, x, r, ns.status, lv.status, o.api, o.tidepool, o.broadcastApps, o.broadcasts, o.health)
+            AppsUi(w, on, x, r, ns.status, lv.status, o.api, o.tidepool, o.broadcastApps, o.broadcasts, o.health, o.history)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
@@ -151,6 +157,7 @@ fun AppsPage(
     openTidepool: () -> Unit,
     openBroadcasts: () -> Unit,
     openHealthConnect: () -> Unit,
+    openImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -167,6 +174,7 @@ fun AppsPage(
                 openTidepool,
                 openBroadcasts,
                 openHealthConnect,
+                openImport,
             ),
             modifier,
         )
@@ -215,6 +223,9 @@ fun AppsContent(
         NavigationRow(stringResource(R.string.in_nsapi_title), actions.openNightscoutApi, summary = nsApiStatusText(ui.nightscoutApi, now))
     }
     SettingsGroup(title = stringResource(R.string.in_apps_files_group)) {
+        if (ui.wearer) {
+            NavigationRow(stringResource(R.string.in_import_title), actions.openImport, summary = importStatusText(ui.history))
+        }
         NavigationRow(
             stringResource(R.string.in_export_title),
             actions.openExport,

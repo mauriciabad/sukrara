@@ -30,7 +30,11 @@ enum class NsSiteProblem {
     /** Not a web address (or it carries a user name, a query or a fragment). */
     Url,
 
-    /** Plain `http://` to anything but this phone: the app sends only encrypted traffic. */
+    /**
+     * Plain `http://` to anything but this phone, the home network included (#93): the access token or API secret goes
+     * with every request, so anyone on that Wi-Fi could capture it, and a private address is a stranger's machine on
+     * another Wi-Fi.
+     */
     Https,
 }
 
@@ -41,8 +45,9 @@ data class NsSite(
 ) {
     companion object {
         /**
-         * `https://` anywhere; plain `http://` only to this phone (`localhost`, `127.0.0.1`), which is all the network
-         * security config lets through. Decided on the literal host, never by resolving it.
+         * `https://` only; plain `http://` only to this phone (`localhost`, `127.0.0.1`: it never leaves the phone, e.g.
+         * a local test site through `adb reverse`), which is all the network security config lets through. Never a
+         * home-network address (#93). Decided on the literal host, never by resolving it.
          */
         fun parse(input: String): NsSite {
             val t = input.trim().trimEnd('/')

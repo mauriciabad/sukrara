@@ -136,7 +136,7 @@
     <string name="in_ns_test_ok_plain">Connected</string>
     <string name="in_ns_test_auth">The site refused this token or secret</string>
     <string name="in_ns_test_failed">Couldn\'t connect. %1$s</string>
-    <string name="in_ns_problem_https">Use https://: Sukrara sends your data only encrypted</string>
+    <string name="in_ns_problem_https">Use https://: Sukrara sends your data only encrypted. A server at home needs a certificate: Let\'s Encrypt and Tailscale give one free.</string>
     <string name="in_ns_problem_url">This isn\'t a web address</string>
 
     <!-- LibreView upload -->
@@ -281,4 +281,60 @@
     <string name="in_bc_reallow_action">Allow again</string>
     <!-- LibreView: Upload every (apps.libreviewInterval) -->
     <string name="in_lv_interval">Upload every</string>
+    <!-- Import history (Settings › Share with apps › Import history, setup's Bring your history back) -->
+    <string name="in_import_title">Import history</string>
+    <string name="in_import_row_summary">The last 90 days from Tidepool, LibreView or a file</string>
+    <string name="in_import_intro">Sukrara starts with an empty history. Bring back the last 90 days from where it already is. Nothing is added twice: what is on this phone wins, and importing again only adds what is missing.</string>
+    <string name="in_import_follower">Your history is the person you follow\'s: it comes from their phone, so there is nothing to import here.</string>
+    <string name="in_import_accounts_group">From your accounts</string>
+    <string name="in_import_tidepool_summary">Download the last 90 days from %1$s</string>
+    <string name="in_import_tidepool_summary_plain">Download the last 90 days from your Tidepool account</string>
+    <string name="in_import_tidepool_sign_in">Sign in to Tidepool first</string>
+    <string name="in_import_tidepool_sign_in_action">Sign in to Tidepool</string>
+    <string name="in_import_action">import</string>
+    <string name="in_import_libreview_summary">LibreView gives your history as a file: download it there, then choose it here</string>
+    <string name="in_import_libreview_title">History from LibreView</string>
+    <string name="in_import_libreview_steps">1. Open LibreView and sign in.\n2. Glucose History › Download glucose data.\n3. Choose that file here.\n\nLibreView has no way for apps to download your history, so this one step is yours.</string>
+    <string name="in_import_libreview_open">Open LibreView</string>
+    <string name="in_import_libreview_choose">Choose the file</string>
+    <string name="in_import_cancel">Cancel</string>
+    <string name="in_import_file">Choose a file</string>
+    <string name="in_import_file_summary">A Sukrara export (Export data with All time in the earlier app, or Everything on this phone) or LibreView\'s file</string>
+    <string name="in_import_footer">Imported history shows on the graph and in reports, is kept 90 days and reaches your followers like the rest. It never goes to LibreView, Tidepool, Nightscout or Health Connect: they have it already or got it from the same place, and a second copy would count twice. Readings of the last 15 minutes are left to your sensor.</string>
+    <string name="in_import_running_tidepool">Importing from Tidepool…</string>
+    <string name="in_import_running_libreview">Importing LibreView\'s file…</string>
+    <string name="in_import_running_file">Importing the file…</string>
+    <string name="in_import_done_tidepool">Imported from Tidepool</string>
+    <string name="in_import_done_libreview">Imported LibreView\'s file</string>
+    <string name="in_import_done_file">Imported the file</string>
+    <string name="in_import_stopped">Import stopped</string>
+    <string name="in_import_stopped_body">What was added stays. Importing again adds only what is missing.</string>
+    <string name="in_import_failed">Couldn\'t import</string>
+    <string name="in_import_stop">Stop</string>
+    <string name="in_import_ok">OK</string>
+    <string name="in_import_added">Added %1$s and %2$s</string>
+    <plurals name="in_import_readings">
+        <item quantity="one">%d reading</item>
+        <item quantity="other">%d readings</item>
+    </plurals>
+    <plurals name="in_import_entries">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <plurals name="in_import_already">
+        <item quantity="one">%d was already here</item>
+        <item quantity="other">%d were already here</item>
+    </plurals>
+    <plurals name="in_import_outside">
+        <item quantity="one">%d older than 90 days or from the last 15 minutes left out</item>
+        <item quantity="other">%d older than 90 days or from the last 15 minutes left out</item>
+    </plurals>
+    <plurals name="in_import_skipped">
+        <item quantity="one">%d row Sukrara doesn\'t keep left out (finger-sticks, ketones)</item>
+        <item quantity="other">%d rows Sukrara doesn\'t keep left out (finger-sticks, ketones)</item>
+    </plurals>
+    <string name="in_import_err_not_glucose">This isn\'t a glucose file. Choose a Sukrara export or LibreView\'s Download glucose data file.</string>
+    <string name="in_import_err_dates">The dates in this file are in a layout Sukrara can\'t read. Nothing was added.</string>
+    <string name="in_import_err_unreadable">Couldn\'t open the file. Choose it again.</string>
+    <string name="in_import_err_signed_out">Not signed in to Tidepool. Sign in, then import again.</string>
 </resources>

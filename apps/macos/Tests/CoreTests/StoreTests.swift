@@ -101,4 +101,20 @@ struct StoreTests {
         try await store.save(nil)
         #expect(await store.load() == nil)
     }
+
+    /// The runtime publishes a snapshot on every relay event: the file is read once, then the store answers from
+    /// memory (it is the file's only writer); a broken file is still quarantined on that first read.
+    @Test func jsonFileStoreReadsItsFileOnce() async throws {
+        let url = directory.appending(path: "wearer-settings.json")
+        let store = WearerSettingsStore(url: url, clock: clock)
+        try await store.save(MirroredSettings(u: 1, json: "{}"))
+        try FileManager.default.removeItem(at: url)
+        #expect(await store.load()?.u == 1)
+        try "{not json".write(to: url, atomically: true, encoding: .utf8)
+        let broken = WearerSettingsStore(url: url, clock: clock)
+        #expect(await broken.load() == nil)
+        #expect(await broken.issue?.quarantined != nil)
+        try "{not json either".write(to: url, atomically: true, encoding: .utf8)
+        #expect(await broken.load() == nil)  // known absent: not read (or quarantined) again
+    }
 }

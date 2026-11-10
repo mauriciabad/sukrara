@@ -345,6 +345,10 @@ profile = {"name": "Alex", "avatar": {"v": 1, "c": 0, "s": "cube", "a": 45, "n":
     240, glyph box centred).
   - `n` seed 0 … 2³¹−1 (only `dots` uses it).
 - **Wearer → followers**: the invite wrap and every roster carry `profile`; a change republishes the roster at once.
+  A roster without a valid `profile` (missing, `null` or not an object) **keeps the last one**: profiles are replaced,
+  never removed, so a name and picture a parent recognises don't vanish because one roster lacks them (an identity
+  restored from a backup without a profile, an older build). They authenticate nothing, so keeping one is safe.
+  Pinned by [sync/join-readings.json](sync/join-readings.json) (`roster-no-profile`, `expected.wearer`).
 - **Follower → wearer**: the access request carries `profile`; a later change (Android *How you appear*, Mac
   Settings › Following › Edit…) is a `profile` rumor: kind 30500 `{"v":2,"type":"profile","profile":{name, avatar}}`
   sealed by `F`, wrapped to `I` (7 d), sent to the relays and over Bluetooth. A blank name keeps the previous one;
@@ -381,6 +385,26 @@ follower's open `#c` subscription picks the chunks up. Older followers/owners ig
 4. Followers keep older epochs' keys → their local history stays readable. A revoked follower keeps what it already
    has (no forward secrecy) but gets nothing new.
 
+**Replace the identity** (the wearer's phone replaces `I` with a restored identity or a new one: Backup › Replace
+this identity, confirmed first; followers must be invited again)
+1. A restore first finds and reads the other identity's backup; nothing changes and nobody is told while that fails.
+2. A *revoked notice* sealed by `I` to every active follower (30 d, as for Revoke), to the relays and over Bluetooth.
+   It isn't kept for re-sending while `I` stays; the phone saves only who was told (so step 5 runs at the next start
+   if the app closed before step 4).
+3. Wait until a relay accepted (`OK true`) every notice, at most **15 s** (no wait with internet sharing off). The
+   wearer can cancel meanwhile.
+4. Replace: the new identity's events go out (a fresh one's roster and backup; a restored one's rotation, as in *Phone
+   change*), and with them, first, the notices no relay accepted yet, again until one does. A follower approved
+   during the wait is told then, without waiting. `I` publishes nothing more.
+5. Cancelled, or cut short: `I` stays, and every follower told gets the current epoch's *key delivery* again with a
+   rumor `created_at` after the notice's, which re-approves it (see Acceptance rules).
+6. During an identity conflict nobody is told: the other app still shares as `I`, and its followers keep following it.
+
+Followers take the notice like any revoked notice: they stop, say the wearer stopped sharing (exit: follow again with
+a new invite) and arm no `no_data` alarm for the stream that won't come back. Pinned by
+[sync/replace-identity.json](sync/replace-identity.json): the follower's side in `steps`, the wearer's (who is told,
+when the identity is replaced, what goes out again) in `replace`.
+
 **Phone change / reinstall** (seamless for followers)
 1. New phone: *Restore* → Credential Manager returns the identity `nsec` from Proton Pass / Bitwarden / Google.
 2. App fetches the *owner backup* → gets `sid`, all epochs, followers, relays.
@@ -411,9 +435,21 @@ all unmerged as of 2026-10.)
   `roster-epoch-mismatch`); the highest `(epoch, created_at)` wins, not the newest `created_at` alone. A key delivery
   for epoch n+1 outranks every roster of epoch ≤ n (its `devices` apply until roster n+1 arrives), so a late or
   refreshed roster from a replaced phone can't bring the old device back ([sync/rotation.json](sync/rotation.json)).
+  An accepted roster without a valid `profile` keeps the wearer's last one ([Profiles](#profiles)).
 - Data (live/chunk): author ∈ current `roster.devices`, `gk` matches a known epoch, decrypts, `v == 2`. A chunk's `c`
   must be `H("cgm2:glucose:"+sid)` and its `d` must be `H("cgm2:h:"+sid+":"+h)` for the payload's own hour `h`. A
-  live reading, a chunk's hour or any reading in it later than now + 300 s is rejected (`reading-in-future`).
+  live reading, a chunk's hour or any reading in it later than now + 300 s is rejected (`reading-in-future`): the
+  whole event, a live event's sensor fields (`ss`, `se`, `sw`) too, so a wearer clock that runs ahead can't end or
+  replace the sensor ([sync/sensor-life.json](sync/sensor-life.json) `live-future-sensor`). Nothing is lost: the
+  sensor state also rides on reading-less live events, which carry no `t`.
+- Readings are shown as sent. The wire checks (the rules above and `sgv` 1–1000, else `invalid`) are the only checks
+  a follower makes: no plausibility check, no jump check, no badge or rejection of its own. **The wearer is the source
+  of truth**: plausibility is judged once, on the wearer's phone, where the sensor's own flags are (valid ranges, LO /
+  HI, quality errors that give no value), and a follower must never show something different from the wearer's card.
+  The usual "absurd jump" is a fast real low or a compression low, which can't be told apart live (investigation 33),
+  so a follower-only mark would land on real lows. If a mark is ever wanted it belongs on the wearer (driver or
+  renderer), so every surface shows it. Pinned by [sync/join-readings.json](sync/join-readings.json): a 1-minute jump
+  from 80 to 300 is accepted unchanged.
 - Unknown `gk`: a rekey request only when the event is signed by `I` or a roster device (≤ 1 per `gk` per 5 min), so a
   stranger can't make followers send them, and only when its `created_at` is newer than the newest key delivery's
   rumor (an older event is a backfill of hours from before the follower's latest key, not a missed rotation). Its

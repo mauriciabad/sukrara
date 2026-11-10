@@ -155,3 +155,32 @@ back on. Verified with a final export: 0 rows from the spike device, and Juggluc
    device uploaded, glucose included. Irreversible, but it only holds spike data.
 3. Juggluco → LibreView → **Send to LibreView** back on. It re-takes the account and uploads its own backlog
    (including the hours Juggluco was off), so the gap closes with Juggluco's data.
+
+## In Sukrara: Import history (reading the history back)
+
+*2026-11-10.* The new apps start fresh (no database of the earlier app is read), so the owner asked to bring the
+history back from LibreView with the existing sign-in. Researched what a client can read back:
+
+| Endpoint | What it gives | Verdict |
+|---|---|---|
+| The app API this report uses (`/api/nisperson/getauthentication`, `/api/measurements`, `x-newyu-token`) | upload only; Abbott says the Libre 3 app can't download history ("download your raw glucose data from LibreView") | nothing to read |
+| `api.libreview.io/glucoseHistory?numPeriods=&period=` (the web app, `Authorization: Bearer` from `/auth/login`) | report summaries per period (AGP percentiles, average, days of data), not readings | not history |
+| LibreLinkUp `/llu/connections/{patientId}/graph` and `/logbook` (`product: llu.android`, `version` ≥ 4.16, `Account-Id`: SHA-256 of the user id) | a *follower's* view: the last ~12 h of readings and ~2 weeks of alarms, only for patients the account follows | not the wearer's 90 days |
+| LibreView web *Glucose History › Download glucose data* (`POST /export` with `captchaResponse`) | every reading and entry, as the "Glucose Data" CSV (the layout of [22](22-ecosystem-outputs.md#in-sukrara-csv-export)) | behind a captcha: the person downloads it |
+
+Sources: [YtoTech/libreview-data-export](https://github.com/YtoTech/libreview-data-export), the LibreLinkUp HTTP dumps
+([gist](https://gist.github.com/khskekec/6c13ba01b10d3018d816706a32ae8ab2), its comments on `glucoseHistory` and the
+`Account-Id` header), Abbott's support page on downloading data from the Libre 3 app.
+
+| Added | Where |
+|---|---|
+| *From LibreView* = the three steps (open LibreView, *Download glucose data*, choose the file) and the file import, which reads LibreView's layout by column position (translated headers), mg/dL or mmol/L (`.` or `,`), month- or day-first dates, 12 or 24 hours | Android `:integrations` `history/HistoryCsv.kt`, `ImportPage.kt`; `HistoryCsvTest` (synthetic US and European fixtures) |
+| One import path for every origin: nothing twice (2-minute reading rule, the Nightscout linking rule for entries), idempotent, the sensor's own reading wins, imported data marked and never uploaded again | `:core:model` `HistoryImport`, `:core:data` `RoomHistoryImport`; `HistoryImportTest` (property tests) |
+
+| Discarded | Why |
+|---|---|
+| Downloading with the app API's token | there is no download endpoint in it |
+| `glucoseHistory` | summaries, not readings |
+| LibreLinkUp graph / logbook | a follower's 12 h for someone they follow; the wearer's own account follows nobody |
+| Automating *Download glucose data* | its captcha exists to stop exactly that |
+| Finger-stick, ketone and servings rows | Sukrara has no record for them (counted as left out) |

@@ -17,39 +17,40 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** Checks for an update once when the About page opens (and on *Check again*); never polls. */
+/** The privacy policy on the site (docs/privacy.md): what Sukrara stores and sends, and where. */
+const val PRIVACY_URL = "https://sukrara.mauri.app/privacy"
+
+/**
+ * Checks for an update once when the About page opens (and on *Check again*); never polls. Without [releases] (the
+ * Google Play build: Play brings the updates) there is no check and [state] stays null.
+ */
 class AboutViewModel(
-    private val releases: ReleasesSource,
+    private val releases: ReleasesSource?,
     val installed: String,
     private val prerelease: Boolean,
 ) : ViewModel() {
-    private val _state = MutableStateFlow<UpdateState>(UpdateState.Checking)
-    val state: StateFlow<UpdateState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<UpdateState?>(null)
+    val state: StateFlow<UpdateState?> = _state.asStateFlow()
 
     init {
         check()
     }
 
     fun check() {
+        val source = releases ?: return
         _state.value = UpdateState.Checking
-        viewModelScope.launch { _state.value = UpdateCheck.state(releases.fetch(), installed, prerelease) }
+        viewModelScope.launch { _state.value = UpdateCheck.state(source.fetch(), installed, prerelease) }
     }
 }
 
-/** What a release file is for, from its name ("Mac", "Android"); unknown kinds show their file name. */
-@Composable
-private fun platformOf(name: String): String =
-    when {
-        name.endsWith(".apk") -> stringResource(R.string.st_asset_android)
-        name.endsWith(".dmg") || (name.contains("mac", ignoreCase = true) && name.endsWith(".zip")) -> stringResource(R.string.st_asset_mac)
-        else -> name
-    }
-
-/** About: version, update check, Sukrara on other devices, report a problem. */
+/**
+ * About: version, update check (none when [update] is null: the Google Play build), Sukrara on other devices, report a
+ * problem, source code, privacy policy.
+ */
 @Composable
 fun AboutContent(
     installed: String,
-    update: UpdateState,
+    update: UpdateState?,
     onCheckAgain: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -58,6 +59,8 @@ fun AboutContent(
         SettingsGroup {
             InfoRow(stringResource(R.string.st_about_version), summary = installed, icon = DsR.drawable.ds_ic_info)
             when (update) {
+                null -> {}
+
                 UpdateState.Checking -> {
                     InfoRow(stringResource(R.string.st_update_checking), icon = DsR.drawable.ds_ic_update)
                 }
@@ -96,11 +99,11 @@ fun AboutContent(
                 is UpdateState.UpToDate -> update.latest
                 else -> null
             }
-        val others = latest?.assets.orEmpty().filterNot { it.name.endsWith(".apk") }
+        val others = latest?.let(UpdateCheck::otherDevices).orEmpty()
         if (others.isNotEmpty()) {
             SettingsGroup(title = stringResource(R.string.st_other_devices)) {
                 for (asset in others) {
-                    NavigationRow(platformOf(asset.name), {
+                    NavigationRow(stringResource(R.string.st_asset_mac), {
                         context.openUrl(asset.url)
                     }, summary = asset.name, icon = DsR.drawable.ds_ic_download)
                 }
@@ -113,6 +116,9 @@ fun AboutContent(
             NavigationRow(stringResource(R.string.st_source_code), {
                 context.openUrl(UpdateCheck.REPO_URL)
             }, summary = stringResource(R.string.st_license), icon = DsR.drawable.ds_ic_code)
+            NavigationRow(stringResource(R.string.st_privacy), {
+                context.openUrl(PRIVACY_URL)
+            }, summary = stringResource(R.string.st_privacy_summary), icon = DsR.drawable.ds_ic_privacy)
         }
     }
 }

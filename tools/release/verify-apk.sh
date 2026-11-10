@@ -3,7 +3,12 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Checks a release APK before it reaches a phone or a GitHub release:
-#   tools/release/verify-apk.sh <apk> <mapping.txt>
+#   tools/release/verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt>
+# --play: the Google Play build (play flavor; tools/release/play-bundle.sh passes the bundle's universal APK): the
+#   permissions are allow.json's with `play_permissions` applied, and no LSPosed module, root status bar or update
+#   check is inside (no META-INF/xposed, no XposedProvider / HookHelloReceiver, no systemui or libxposed class in the
+#   R8 mapping, no api.github.com in the dex).
+# --unsigned: CI only (no release key, no Juggluco checkout): skips the signer and the Libre 3 core, checks the rest.
 # - signature verifies and the signer certificate is THE release key (tools/release/android-cert.sha256)
 # - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh, not debuggable
 # - the Libre 3 native core lib/arm64-v8a/libsukrara_libre3.so is inside
@@ -17,8 +22,16 @@
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
-apk="${1:?usage: verify-apk.sh <apk> <mapping.txt>}"
-mapping="${2:?usage: verify-apk.sh <apk> <mapping.txt> (R8 renames classes: only the mapping shows them)}"
+play=0 unsigned=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --play) play=1; shift ;;
+    --unsigned) unsigned=1; shift ;;
+    *) break ;;
+  esac
+done
+apk="${1:?usage: verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt>}"
+mapping="${2:?usage: verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt> (R8 renames classes: only the mapping shows them)}"
 fail=0
 bad() { echo "FAIL $*"; fail=1; }
 ok() { echo "ok   $*"; }
@@ -33,9 +46,12 @@ VI=$(version_info) || exit 1
 set -- $VI
 want_name="$1" want_code="$2"
 
-certs="$("$apksigner" verify --print-certs "$apk" 2>&1)" || { bad "signature doesn't verify: $certs"; certs=""; }
-signers="$(printf '%s\n' "$certs" | grep -v 'Stamp' | sed -n 's/^.*[Ss]igner.* certificate SHA-256 digest: //p' | tr 'a-f' 'A-F' | sort -u)"
-if [ "$signers" = "$want_cert" ]; then ok "signed by the release key"; else bad "signer '$signers' is not the release key $want_cert"; fi
+if [ $unsigned = 1 ]; then echo "skip signer (--unsigned)"
+else
+  certs="$("$apksigner" verify --print-certs "$apk" 2>&1)" || { bad "signature doesn't verify: $certs"; certs=""; }
+  signers="$(printf '%s\n' "$certs" | grep -v 'Stamp' | sed -n 's/^.*[Ss]igner.* certificate SHA-256 digest: //p' | tr 'a-f' 'A-F' | sort -u)"
+  if [ "$signers" = "$want_cert" ]; then ok "signed by the release key"; else bad "signer '$signers' is not the release key $want_cert"; fi
+fi
 
 badging="$("$aapt2" dump badging "$apk")"
 pkg="$(printf '%s\n' "$badging" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
@@ -49,12 +65,27 @@ if printf '%s\n' "$badging" | grep -q "application-debuggable"; then bad "the AP
 # Looked up by name, kept only by keep_alert_sounds.xml: a stripped sound would be a silent alarm.
 AAPT2="$aapt2" "$here/verify-sounds.sh" "$apk" || fail=1
 
-if unzip -l "$apk" | grep -q 'lib/arm64-v8a/libsukrara_libre3.so$'; then ok "Libre 3 native core present"
+if [ $unsigned = 1 ]; then echo "skip Libre 3 native core (--unsigned: CI has no Juggluco checkout)"
+elif unzip -l "$apk" | grep -q 'lib/arm64-v8a/libsukrara_libre3.so$'; then ok "Libre 3 native core present"
 else bad "lib/arm64-v8a/libsukrara_libre3.so missing (third_party/Juggluco not built in)"; fi
 
 manifest="$("$aapt2" dump xmltree --file AndroidManifest.xml "$apk")"
 if printf '%s\n' "$manifest" | grep -Eq 'DebugReceiver|DebugFakes|DebugRelays|Synthetic'; then bad "the manifest registers debug components"
 else ok "manifest has no debug components"; fi
+
+# The Google Play build: no LSPosed module, no root status bar, no GitHub update check (docs/20-publishing.md › Flavors).
+if [ $play = 1 ]; then
+  if unzip -l "$apk" | grep -q 'META-INF/xposed/'; then bad "META-INF/xposed is inside: LSPosed would offer it as a module"
+  else ok "no META-INF/xposed (not an LSPosed module)"; fi
+  if printf '%s\n' "$manifest" | grep -Eq 'XposedProvider|HookHelloReceiver|SYSTEMUI_STATE'; then bad "the manifest still has the System UI module's components"
+  else ok "manifest has no System UI module components"; fi
+  gone='^(app\.mauri\.sukrara\.monitor\.systemui\.|io\.github\.libxposed\.|app\.mauri\.sukrara\.feature\.settings\.GitHubReleases)[^ ]*'
+  if [ -f "$mapping" ] && grep -Eq "$gone ->" "$mapping"; then
+    bad "R8 mapping lists root / LSPosed / update-check classes: $(grep -Eo "$gone" "$mapping" | head -3 | tr '\n' ' ')"
+  else ok "no root, LSPosed or update-check classes (R8 mapping)"; fi
+  if unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -aq 'api.github.com'; then bad "dex contains the GitHub update check's URL"
+  else ok "no GitHub update check URL (dex)"; fi
+fi
 
 # Cleartext only to this phone's loopback: the debug build's config also allows 10.0.2.2 (a local test relay).
 nsc_file="$("$aapt2" dump resources "$apk" | grep -A1 ' xml/network_security_config$' | sed -n 's/.*(file) \([^ ]*\) type=XML.*/\1/p' | head -1)"
@@ -68,13 +99,17 @@ else bad "network security config: base cleartext '${nsc_base:-?}', cleartext ho
 # the launcher / App Link activity, and the alert sound provider (System UI reads channel sounds from it and can hold
 # no permission; it serves only bundled sounds), and the home-screen widgets' receivers + configure activity (any home
 # app sends the widget broadcasts and opens the configure screen, so they can't require a permission; they only redraw
-# or edit that placement). Anything else exported needs a permission.
+# or edit that placement). The full build also has libxposed's XposedProvider (LSPosed hands the app its service there
+# and can hold no permission; what it reports is advisory, as ManifestTest says); the Play build must not (--play).
+# Anything else exported needs a permission.
 allowed_open='app.mauri.sukrara.MainActivity
 app.mauri.sukrara.monitor.AlertSoundProvider
 app.mauri.sukrara.widgets.ValueWidgetReceiver
 app.mauri.sukrara.widgets.GraphWidgetReceiver
 app.mauri.sukrara.widgets.CombinedWidgetReceiver
 app.mauri.sukrara.widgets.WidgetConfigActivity'
+[ $play = 1 ] || allowed_open="$allowed_open
+io.github.libxposed.service.XposedProvider"
 open_components="$(printf '%s\n' "$manifest" | awk '
   function flush() { if (comp != "" && exported && !perm) print comp; comp = "" }
   /E: (activity|activity-alias|service|receiver|provider) / { flush(); depth = index($0, "E:"); exported = perm = 0; comp = "?"; next }
@@ -118,9 +153,12 @@ print("\n".join(sorted(set(items))))
 wanted="$(python3 -I -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
-print("\n".join(sorted(["permission " + k for k in d["permissions"]] + ["query " + k for k in d["queries"]])))
-' "$allow")"
-if [ "$declared" = "$wanted" ]; then ok "permissions and queries are allow.json's ($(printf '%s\n' "$declared" | grep -c '^permission') permissions, $(printf '%s\n' "$declared" | grep -c '^query') queries)"
+perms = set(d["permissions"])
+if sys.argv[2] == "1":  # the Google Play build
+    perms = (perms - set(d["play_permissions"]["remove"])) | set(d["play_permissions"]["add"])
+print("\n".join(sorted(["permission " + k for k in perms] + ["query " + k for k in d["queries"]])))
+' "$allow" "$play")"
+if [ "$declared" = "$wanted" ]; then ok "permissions and queries are allow.json's$([ $play = 1 ] && echo ' with play_permissions') ($(printf '%s\n' "$declared" | grep -c '^permission') permissions, $(printf '%s\n' "$declared" | grep -c '^query') queries)"
 else
   extra="$(printf '%s\n' "$declared" | grep -vxF "$wanted" | tr '\n' ' ')"
   missing="$(printf '%s\n' "$wanted" | grep -vxF "$declared" | tr '\n' ' ')"

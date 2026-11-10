@@ -70,6 +70,7 @@ import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
+import app.mauri.sukrara.share.owner.TellingFollowers
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import com.github.takahirom.roborazzi.RoborazziComposeOptions
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -114,7 +115,7 @@ class SharingScreenshotTest {
     ) = SetupUi(
         step = step,
         index = index,
-        count = 6,
+        count = 7,
         facts = facts,
         record = record,
         readiness = AlertReadiness(missing),
@@ -195,7 +196,7 @@ class SharingScreenshotTest {
             "setup-3-permissions" to {
                 SetupContent(
                     ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
-                    a,
+                    a.copy(sendTestAlert = {}),
                 )
             },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
@@ -218,6 +219,7 @@ class SharingScreenshotTest {
                 SetupContent(ui(SetupStep.Identity, 6, live, restore = RestoreUi.Busy), a)
             },
             "setup-6-identity-conflict" to { SetupContent(ui(SetupStep.Identity, 6, live, share = conflict), a) },
+            "setup-7-history" to { SetupContent(ui(SetupStep.History, 7, live), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
             "share-new" to { ShareScreen(InviteUi.None, {}, {}) },
             "share-ready" to {
@@ -341,6 +343,10 @@ class SharingScreenshotTest {
                     onDismiss = {},
                 )
             },
+            "replace-telling" to {
+                ReplaceIdentityScreen(sharing, ReplaceUi(fresh = FreshUi.Busy, telling = TellingFollowers(3, 1)), ReplaceActions())
+            },
+            "replace-cancelled" to { ReplaceIdentityScreen(sharing, ReplaceUi(cancelled = true), ReplaceActions()) },
             "replace-done-fresh" to { ReplaceIdentityScreen(null, ReplaceUi(fresh = FreshUi.Done), ReplaceActions()) },
             "backup-done" to {
                 BackupScreen(

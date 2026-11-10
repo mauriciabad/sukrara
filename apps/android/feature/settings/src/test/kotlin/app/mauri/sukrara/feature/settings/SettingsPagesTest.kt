@@ -123,6 +123,8 @@ class SettingsPagesTest {
             "alerts.unlockedSound",
             // Settings › Settings from (a follower)
             "follower.settingsFrom",
+            // the overview's search: its recent queries
+            "settings.searchRecent",
         )
 
     /** Shown by another chunk's screen (sensor 18, sharing / setup 24, home 16, pens 19, integrations 26, widgets 20). */

@@ -4,8 +4,9 @@
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <!--
   Cleartext only to this phone: Juggluco's web server listens on 127.0.0.1:17580. Every other client builds
-  https:// / wss:// URLs, and the platform refuses any http:// that slips through. A future home-network Nightscout
-  client widens this here, with its tools/check/allow.json entry (tools/check/allow.json lists each cleartext use).
+  https:// / wss:// URLs, and the platform refuses any http:// that slips through. Nightscout upload is https only,
+  the home network too (#93: plain http on a Wi-Fi gives its write credential to anyone on it); it takes http:// only
+  to this phone, which this loopback rule covers. tools/check/allow.json lists each cleartext use.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />

@@ -38,6 +38,7 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.graph.CardSurface
+import app.mauri.sukrara.graph.RoundedFont
 import app.mauri.sukrara.protocol.event.Avatar
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -111,6 +112,8 @@ class HomeGallery {
             "no-sensor-yet" to ui(Samples.noSensorYet()),
             "setup-incomplete" to ui(GlucoseState.Initial),
             "warming-up" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.WarmingUp(NOW.plus(Duration.ofMinutes(42))))),
+            // a new sensor's first 12 h: the note under the card
+            "sensor-early" to ui(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofDays(15)).minus(Duration.ofHours(3))))),
             "sensor-ended" to ui(Samples.wearer(sensor = SensorState.Ended)),
             "bluetooth-off" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.BluetoothOff)),
             "core-missing" to ui(Samples.wearer(sensor = SensorState.CoreMissing)),
@@ -153,6 +156,8 @@ class HomeGallery {
         only: List<String>? = null,
         prefix: String = "",
     ) {
+        // the card's rounded face, as the app loads it at start (App.onCreate)
+        RoundedFont.init(ApplicationProvider.getApplicationContext())
         var current by mutableStateOf(states.first().second)
         compose.mainClock.autoAdvance = true
         compose.setContent {

@@ -9,10 +9,12 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.storage.ImportSource
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
+import app.mauri.sukrara.core.testing.InMemoryHistoryImport
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
@@ -343,9 +345,13 @@ class NightscoutUploaderTest {
     @Test
     fun `site rules accept https anywhere and http only to this phone`() {
         assertNull(NsSite.parse("https://ns.example.org/").problem)
+        assertNull(NsSite.parse("https://192.168.1.10:1337").problem)
         assertNull(NsSite.parse("http://127.0.0.1:1337").problem)
         assertEquals(NsSiteProblem.Https, NsSite.parse("http://127.0.0.2:1337").problem)
+        // https only on the home network too (#93)
         assertEquals(NsSiteProblem.Https, NsSite.parse("http://192.168.1.10:1337").problem)
+        assertEquals(NsSiteProblem.Https, NsSite.parse("http://10.0.0.5").problem)
+        assertEquals(NsSiteProblem.Https, NsSite.parse("http://nightscout.local:1337").problem)
         assertEquals(NsSiteProblem.Https, NsSite.parse("http://ns.example.org").problem)
         assertEquals(NsSiteProblem.Url, NsSite.parse("https://user:pw@ns.example.org").problem)
         assertEquals(NsSiteProblem.Url, NsSite.parse("ftp://ns.example.org").problem)
@@ -358,6 +364,23 @@ class NightscoutUploaderTest {
            "insulin":5,"carbs":30,"enteredBy":"AndroidAPS","pumpId":4711,"identifier":"aaps-7f3e"}]"""
 
     private fun treatmentPosts() = requests.filter { it.method == "POST" && it.path == "/api/v1/treatments" }
+
+    @Test
+    fun `imported history never goes up`() =
+        runBlocking {
+            readings.upsert(listOf(reading(5)))
+            InMemoryHistoryImport(readings, treatments).apply {
+                importReadings(listOf(Reading(now - Duration.ofMinutes(30), 140, null, ImportSource.File.readings)))
+                importTreatments(listOf(record("imported", at = now - Duration.ofMinutes(40)).copy(importedFrom = ImportSource.File)))
+            }
+            treatments.upsertIfNewer(record("own"))
+            setUpSite()
+            uploader.cycle()
+            val entries = requests.filter { it.method == "POST" && it.path == "/api/v1/entries" }.map { it.body.clone().readUtf8() }
+            assertEquals(1, entries.sumOf { Json.parseToJsonElement(it).jsonArray.size })
+            val sent = treatmentPosts().map { it.body.clone().readUtf8() }
+            assertTrue(sent.toString(), sent.any { "\"own\"" in it } && sent.none { "imported" in it })
+        }
 
     @Test
     fun `a treatment another app already uploaded is linked, not doubled`() =

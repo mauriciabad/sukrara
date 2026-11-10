@@ -401,22 +401,6 @@
         }
       }
     },
-    "Another device already used this invite. Ask for a new invite on the phone." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Another device already used this invite. Ask for a new invite on the phone."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otro dispositivo ya ha usado esta invitación. Pide una nueva en el móvil."
-          }
-        }
-      }
-    },
     "Another device used this invite. Ask for a new one." : {
       "localizations" : {
         "en" : {
@@ -657,6 +641,22 @@
         }
       }
     },
+    "Changed to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changed to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiado a %@"
+          }
+        }
+      }
+    },
     "Check for Updates…" : {
       "localizations" : {
         "en" : {
@@ -801,6 +801,22 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
     "Delete %@" : {
       "localizations" : {
         "en" : {
@@ -909,6 +925,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada invitación sirve una vez. Pide una nueva a quien lleva el sensor."
+          }
+        }
+      }
+    },
+    "Edit %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar %@"
+          }
+        }
+      }
+    },
+    "Edit Treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar tratamiento"
           }
         }
       }
@@ -1265,6 +1313,22 @@
         }
       }
     },
+    "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde cualquier app: el valor, su tendencia y su antigüedad, con la voz de VoiceOver si VoiceOver está activado. Desactívalo si otra app usa estas teclas. Leer la glucosa en voz alta también está en el menú contextual del valor de la barra de menús."
+          }
+        }
+      }
+    },
     "General" : {
       "localizations" : {
         "en" : {
@@ -1517,6 +1581,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más tarde"
+          }
+        }
+      }
+    },
+    "Logged on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en el móvil de %@"
+          }
+        }
+      }
+    },
+    "Logged on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged on this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrado en este Mac"
           }
         }
       }
@@ -2397,6 +2493,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rápida"
+          }
+        }
+      }
+    },
+    "Read from the pen on %@'s phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read from the pen on %@'s phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leído de la pluma en el móvil de %@"
+          }
+        }
+      }
+    },
+    "Read Glucose Aloud" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read Glucose Aloud"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa en voz alta"
+          }
+        }
+      }
+    },
+    "Read glucose aloud with %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read glucose aloud with %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa en voz alta con %@"
           }
         }
       }

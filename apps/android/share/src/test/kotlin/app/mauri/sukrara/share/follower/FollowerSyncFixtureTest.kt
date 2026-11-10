@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.share.follower
 
+import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.core.testing.FakeClock
@@ -13,6 +14,7 @@ import app.mauri.sukrara.protocol.KeyPair
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.SecretKey
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.testing.ContractFiles
 import app.mauri.sukrara.share.FakeRelayTransport
@@ -39,7 +41,7 @@ import java.time.Instant
  * The follower sequences in contracts/protocol/sync through the real [FollowerEngine] (not only `StreamFollower`, which
  * `SyncFixturesTest` pins): a seeded follower record, every step's event delivered by a fake relay, `{"restart"}` =
  * a new engine on the same SecureStore (what a process restart keeps). The engine must leave the fixture's expected
- * status, keys, devices, writers, readings, sensor, treatments and settings — what the person sees.
+ * status, keys, devices, writers, the wearer's profile, readings, sensor, treatments and settings — what the person sees.
  */
 class FollowerSyncFixtureTest {
     private val files =
@@ -55,6 +57,7 @@ class FollowerSyncFixtureTest {
             listOf(
                 "conflict-rotation",
                 "join-readings",
+                "replace-identity",
                 "revoke-reapprove",
                 "rotation",
                 "sensor-life",
@@ -89,9 +92,22 @@ class FollowerSyncFixtureTest {
             )
             val received = mutableListOf<Reading>()
             val relay = FakeRelayTransport()
+            val links = mutableListOf<LinkState?>()
+            val notices = mutableListOf<FollowerNotice>()
 
             fun TestScope.start(): Pair<FollowerEngine, Job> {
-                val e = FollowerEngine(crypto, store, { _, _ -> relay }, readings, treatments, clock, StandardTestDispatcher(testScheduler))
+                val e =
+                    FollowerEngine(
+                        crypto,
+                        store,
+                        { _, _ -> relay },
+                        readings,
+                        treatments,
+                        clock,
+                        StandardTestDispatcher(testScheduler),
+                        setLink = { links += it },
+                        onNotice = { n, _ -> notices += n },
+                    )
                 val job = backgroundScope.launch { e.readings.collect { received += it } }
                 runCurrent()
                 return e to job
@@ -127,6 +143,7 @@ class FollowerSyncFixtureTest {
             )
             assertEquals("$name devices", expected.strs("devices"), s.devices)
             assertEquals("$name writers", expected.strs("writers"), s.writers)
+            assertEquals("$name wearer", Profile.of(expected["wearer"]), record.wearer)
             val firstPerT = received.groupBy { it.t.epochSecond }.mapValues { it.value.first().mgdl }.toSortedMap()
             val want =
                 expected.getValue("readings").jsonArray.associate { r ->
@@ -165,6 +182,11 @@ class FollowerSyncFixtureTest {
             )
             val settings = expected["settings"]?.takeIf { it != JsonNull }?.jsonObject
             assertEquals("$name settings", settings?.getValue("u")?.jsonPrimitive?.long, record.settings?.u)
+            // what the person sees: removed = "<wearer> stopped sharing with you" (the notification and home's reason,
+            // whose `ended` disarms the no-data alarm), never a silent stream that ends in No data
+            val removed = s.status.name.lowercase() == "revoked"
+            assertEquals("$name link removed", removed, links.lastOrNull()?.revoked == true)
+            assertEquals("$name stopped-sharing notice", removed, notices.lastOrNull() == FollowerNotice.Revoked)
         }
 
     private fun pair(o: JsonObject) = KeyPair(SecretKey.ofHex(o.str("sec"))!!, PublicKeyHex(o.str("pub")))

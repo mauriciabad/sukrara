@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -131,7 +132,7 @@ private fun RowFrame(
             Spacer(Modifier.width(16.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = titleColor, style = MaterialTheme.typography.bodyLarge)
+            Text(title, Modifier.testTag(ROW_TITLE_TAG), color = titleColor, style = MaterialTheme.typography.bodyLarge)
             if (!summary.isNullOrEmpty()) {
                 Text(
                     summary,
@@ -145,6 +146,9 @@ private fun RowFrame(
 }
 
 private const val DisabledAlpha = 0.38f
+
+/** The test tag of every row's title (the settings search index test reads the rows of each page by it). */
+const val ROW_TITLE_TAG = "settings-row-title"
 
 /**
  * A switch; the whole row toggles (TalkBack: "switch, on"). A disabled row explains why in [summary]. [readOnly]: a

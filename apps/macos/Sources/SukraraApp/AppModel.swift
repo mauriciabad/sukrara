@@ -323,17 +323,13 @@ public final class AppModel {
     /// The card's alert decision: the engine's state, or while mirroring the wearer's alerts the same rules over the
     /// latest reading (this Mac's engine then runs only no data).
     private var cardAlerts: CardAlerts {
-        var card = CardAlertsMapping.of(alerts?.ui ?? .idle, settings: alerts?.settings, marks: marks, now: now)
-        if let alerts, alerts.mirroring {
-            let latest = readings.last.map { GlucoseSample(at: $0.t, mgdl: Double($0.mgdl), rate: $0.rate) }
-            card.status = CardAlertsMapping.mirroredStatus(
-                latest: latest, settings: alerts.settings, marks: marks, sideMutes: alerts.mirroredSideMutes(at: now),
-                muteAll: alerts.ui.muteAllUntil, now: now)
-            card.last = CardAlertsMapping.lastTreatment(marks, status: card.status, now: now.timeIntervalSince1970) {
-                card.muteEnds[$0.id]
-            }
+        guard let alerts, alerts.mirroring else {
+            return CardAlertsMapping.of(alerts?.ui ?? .idle, settings: alerts?.settings, marks: marks, now: now)
         }
-        return card
+        let latest = readings.last.map { GlucoseSample(at: $0.t, mgdl: Double($0.mgdl), rate: $0.rate) }
+        return CardAlertsMapping.mirrored(
+            latest: latest, settings: alerts.settings, marks: marks, sideMutes: alerts.mirroredSideMutes(at: now),
+            muteAll: alerts.ui.muteAllUntil, now: now)
     }
 
     /// The panel card's data: `cardData` with the stored history before the snapshot's readings, so the chart
@@ -542,13 +538,17 @@ public final class AppModel {
         networkCameBack()
     }
 
-    func stop() {
+    /// Stops what this model started and returns once the follower runtime and the Juggluco source have stopped
+    /// (their sockets closed, their state saved), so quitting doesn't cut them off halfway.
+    func stop() async {
         ticker?.cancel()
         feeds.forEach { $0.cancel() }
+        feeds = []
         alerts?.stop()
-        if let follower { Task { await follower.stop() } }
         lanSent = nil
         toLan { await $0.set(nil) }
+        await lanTask?.value
+        await follower?.stop()
     }
 }
 

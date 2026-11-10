@@ -37,6 +37,7 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
+import app.mauri.sukrara.feature.settings.advanced.AdvancedStats
 import app.mauri.sukrara.feature.settings.advanced.LogContent
 import app.mauri.sukrara.feature.settings.advanced.RelayRow
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
@@ -266,7 +267,13 @@ class SettingsGallery {
             "graph-marks" to { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             "lock" to { LockScreenContent(20.0, {}, {}) },
             "reliability" to
-                { ReliabilityContent(AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), {}) {} },
+                {
+                    ReliabilityContent(
+                        AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
+                        {},
+                        alerts = AlertSettings(),
+                    ) {}
+                },
             // a failed alert step (Copy report) and the unanswered Vibrate only when unlocked
             "reliability-delivery-unlocked" to {
                 ReliabilityContent(
@@ -276,6 +283,8 @@ class SettingsGallery {
             },
             "about-update" to { AboutContent("0.12.0", UpdateState.Available(release), {}) {} },
             "about-offline" to { AboutContent("0.12.0", UpdateState.Offline, {}) {} },
+            // the Google Play build: no update check
+            "about-play" to { AboutContent("0.12.0", null, {}) {} },
             "sensor" to { SensorSettingsContent(sensorWorking, now, zone, SensorSettingsActions()) {} },
             "sensor-this-phone" to {
                 SensorSettingsContent(
@@ -292,8 +301,36 @@ class SettingsGallery {
                     AlertReadiness.Ready,
                     clock,
                     OverviewActions(),
-                    sharing = OverviewSharing(name = "Alex", backedUp = false),
+                    sharing = OverviewSharing(name = "Alex", backup = BackupState.NotSaved),
                 ) {}
+            },
+            // the identity can't be read / another app shares as the wearer: Backup says so (#134)
+            "overview-backup-unreadable" to {
+                SettingsOverviewContent(
+                    true,
+                    AlertUiState(),
+                    AlertReadiness.Ready,
+                    clock,
+                    OverviewActions(),
+                    sharing = OverviewSharing(backup = BackupState.Unreadable),
+                ) {}
+            },
+            "overview-backup-paused" to {
+                SettingsOverviewContent(
+                    true,
+                    AlertUiState(),
+                    AlertReadiness.Ready,
+                    clock,
+                    OverviewActions(),
+                    sharing = OverviewSharing(name = "Alex", backup = BackupState.Paused),
+                ) {}
+            },
+            // search: an alert's own rows lead to that alert ("Remind every · In Alerts › Low"), and no match (#134)
+            "overview-search" to {
+                SettingsOverviewContent(true, AlertUiState(), AlertReadiness.Ready, clock, OverviewActions(), searchQuery = "low remind") {}
+            },
+            "overview-search-none" to {
+                SettingsOverviewContent(true, AlertUiState(), AlertReadiness.Ready, clock, OverviewActions(), searchQuery = "volcano") {}
             },
             "advanced" to {
                 AdvancedContent(
@@ -305,11 +342,22 @@ class SettingsGallery {
                             ),
                         identity = "npub1qqqqsynth…xyzxyz",
                         epoch = 3,
+                        stats = AdvancedStats(live = 1204, chunks = 58, posted = 1310, skipped = 342),
                     ),
                     AdvancedActions(),
                 ) {}
             },
             "advanced-none" to { AdvancedContent(AdvancedState(follower = true), AdvancedActions()) {} },
+            "advanced-follower-stats" to {
+                AdvancedContent(
+                    AdvancedState(
+                        follower = true,
+                        identity = "npub1qqqqsynth…abcabc",
+                        stats = AdvancedStats(stored = 8920, refused = 1, posted = 1290),
+                    ),
+                    AdvancedActions(),
+                ) {}
+            },
             "log" to {
                 LogContent(listOf("2026-10-28T10:00:00Z share relay connected", "2026-10-28T09:59:00Z sensor link live"), {})
             },
@@ -467,6 +515,8 @@ class SettingsGallery {
                     "sensor-juggluco-unreachable",
                     "from-wearer",
                     "from-custom",
+                    "overview-search",
+                    "advanced",
                 ),
         )
 }

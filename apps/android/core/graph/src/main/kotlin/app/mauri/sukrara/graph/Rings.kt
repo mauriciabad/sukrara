@@ -225,26 +225,46 @@ object TirRing {
             Crown.draw(cv, cx, crownBottom, crownW, pal.ink or (0xFF shl 24))
             if (fade >= 0) cv.restoreToCount(fade)
         }
+        // a share, never a reading: lighter than the value's number (700) and with its "%" ([SLOT_WEIGHT])
         val num =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = ColorUtils.setAlphaComponent(pal.ink, alpha)
-                textAlign = Paint.Align.CENTER
-                typeface = RoundedFont.typeface(800)
+                typeface = RoundedFont.typeface(SLOT_WEIGHT)
                 textSize = r * 0.78f
             }
         val sub =
             Paint(num).apply {
+                textAlign = Paint.Align.CENTER
                 textSize = r * 0.34f
                 typeface = RoundedFont.typeface(600)
                 color = ColorUtils.setAlphaComponent(if (spec.range == TirRange.TIGHT) pal.tight else pal.inkSoft, alpha)
             }
         val v = if (tir.empty) "–" else text(tir, spec)
+        val pct = if (tir.empty) "" else "%"
         val base = cy + num.textSize * 0.28f
         if (v.length > 3) num.textSize *= 0.7f // "69.7", "<0.1": the decimals fit inside the ring
-        num.textSize = min(num.textSize, num.textSize * (r - sw) * 1.5f / num.measureText(v).coerceAtLeast(1f))
-        cv.drawText(v, cx, base, num)
+        val unit = Paint(num).apply { textSize = num.textSize * PCT_SIZE }
+
+        fun width() = num.measureText(v) + unit.measureText(pct)
+        val fit = (r - sw) * 1.5f / width().coerceAtLeast(1f)
+        if (fit < 1f) {
+            num.textSize *= fit
+            unit.textSize *= fit
+        }
+        val x0 = cx - width() / 2
+        cv.drawText(v, x0, base, num)
+        cv.drawText(pct, x0 + num.measureText(v), base, unit)
         cv.drawText(w.period(spec.windowS), cx, base + sub.textSize * 1.1f, sub)
     }
+
+    /**
+     * The weight of a slot's number (here and [MetricGauge]): lighter than the value's (700), so "59" in a ring beside
+     * "112" never reads as a second glucose value.
+     */
+    internal const val SLOT_WEIGHT = 600
+
+    /** The "%" after the ring's number, as a share of its size (MetricGauge's unit is the same share). */
+    internal const val PCT_SIZE = 0.45f
 
     /** The ring's [TirMark] (none without data or with the rewards turned off). */
     fun mark(
@@ -372,7 +392,7 @@ internal object MetricGauge {
         val num =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = ColorUtils.setAlphaComponent(pal.ink, alpha)
-                typeface = RoundedFont.typeface(800)
+                typeface = RoundedFont.typeface(TirRing.SLOT_WEIGHT)
                 textSize = radius * 0.62f
             }
         val unit =

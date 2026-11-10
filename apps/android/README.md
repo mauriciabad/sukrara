@@ -11,7 +11,8 @@ Juggluco checkout (a release build fails without it). Architecture: [`docs/ARCHI
 cd apps/android
 ./gradlew :core:alerts:test             # one JVM module's tests (fast: prefer targeted tasks)
 ./gradlew :monitor:testDebugUnitTest    # one Android module's tests
-./gradlew :app:assembleDebug            # debug APK (app.mauri.sukrara, debug key)
+./gradlew :app:testFullDebugUnitTest    # the app module's tests (it has flavors: full = GitHub, play = Google Play)
+./gradlew :app:assembleFullDebug        # debug APK (app.mauri.sukrara, debug key); assemblePlayDebug for the Play build
 ./gradlew check                         # everything CI runs: unit tests + lint (slow)
 ```
 
@@ -132,9 +133,13 @@ broadcast): `:sensor` / `:share` register it at runtime while monitoring runs.
 - Version from `<repo>/VERSION` (`0.12.0` → versionCode 12000; `BuildConfig.PRERELEASE` while major is 0).
 - Signed with `SUKRARA_KEYSTORE` (default `~/.android/sukrara-release.jks`, alias `sukrara`); the password comes only
   from env `SUKRARA_KEYSTORE_PASSWORD` (Gradle never reads the Keychain):
-  `SUKRARA_KEYSTORE_PASSWORD="$(security find-generic-password -s sukrara-android-release -a sukrara -w)" ./gradlew :app:assembleRelease`.
+  `SUKRARA_KEYSTORE_PASSWORD="$(security find-generic-password -s sukrara-android-release -a sukrara -w)" ./gradlew :app:assembleFullRelease`.
+- Two flavors, one package and key (docs/20-publishing.md › Flavors): `full` (GitHub: `assembleFullRelease`, an APK,
+  `tools/release/android-release.sh`) and `play` (Google Play: `bundlePlayRelease`, an app bundle,
+  `tools/release/play-bundle.sh`). The play flavor's differences are all in `app/src/play` (`Store`, the manifest).
 - The Libre 3 core comes from Juggluco (`-Psukrara.juggluco=…`, env `SUKRARA_JUGGLUCO`, else
   `<main checkout>/third_party/Juggluco`) at the commit in `sensor/juggluco.lock`, clean tree. Debug builds without
-  it only warn (the app reports the missing core). Any release output (`preReleaseBuild`) fails without the key or
-  the pinned checkout, and `assembleRelease` / `installRelease` fail if the APK lacks `lib/arm64-v8a/libsukrara_libre3.so`.
+  it only warn (the app reports the missing core). Any release output (`pre<Flavor>ReleaseBuild`) fails without the key
+  or the pinned checkout, and assembling, installing or bundling a release fails if the APK / bundle lacks
+  `lib/arm64-v8a/libsukrara_libre3.so`.
 - `local.properties` (`sdk.dir=…`) is needed once per clone/worktree when `ANDROID_HOME` isn't set.

@@ -20,9 +20,15 @@
             AppLanguage.forced = AppLanguage(rawValue: language)
         }
 
+        /// Scenes drawn in their real window (title bar and toolbar, e.g. the Treatments window's "+"), by window title.
+        static var windowed: [String: String] {
+            ["treatments": L10n.t("Treatments"), "treatments-empty": L10n.t("Treatments")]
+        }
+
         public static func render(to dir: URL) throws -> Int {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             var n = 0
+            let windowed = Self.windowed
             for (name, view) in scenes() {
                 for dark in [false, true] {
                     for large in [false, true] {
@@ -32,12 +38,41 @@
                             .dynamicTypeSize(large ? .xxxLarge : .large)
                             .background(Color(nsColor: .windowBackgroundColor))
                         let file = dir.appending(path: "\(name)-\(dark ? "dark" : "light")\(large ? "-large" : "").png")
-                        try png(v, appearance: dark ? .darkAqua : .aqua).write(to: file)
+                        let appearance: NSAppearance.Name = dark ? .darkAqua : .aqua
+                        let data =
+                            try windowed[name].map { try windowPNG(v, title: $0, appearance: appearance) }
+                            ?? png(v, appearance: appearance)
+                        try data.write(to: file)
                         n += 1
                     }
                 }
             }
             return n
+        }
+
+        /// `view` as the app shows it in a window (`AppWindows`: a hosting controller in a titled window), title bar
+        /// and toolbar included, drawn offscreen.
+        static func windowPNG(_ view: some View, title: String, appearance: NSAppearance.Name) throws -> Data {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+            window.title = title
+            window.isReleasedWhenClosed = false
+            window.appearance = NSAppearance(named: appearance)
+            let offscreen = CGPoint(x: -20_000, y: -20_000)
+            window.setFrameOrigin(offscreen)
+            window.orderFrontRegardless()
+            for _ in 0..<6 {
+                window.setFrameOrigin(offscreen)  // the content sizes the window: keep it off every screen
+                window.contentView?.layoutSubtreeIfNeeded()
+                window.displayIfNeeded()
+                RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            }
+            defer { window.orderOut(nil) }
+            guard let frame = window.contentView?.superview,
+                let rep = frame.bitmapImageRepForCachingDisplay(in: frame.bounds)
+            else { throw SnapError.render }
+            frame.cacheDisplay(in: frame.bounds, to: rep)
+            guard let data = rep.representation(using: .png, properties: [:]) else { throw SnapError.render }
+            return data
         }
 
         private static func scenes() -> [(String, AnyView)] {
@@ -121,6 +156,14 @@
                 (
                     "identity-customize",
                     AnyView(IdentitySheet(draft: open, wearer: "Marta", onSave: { _, _ in }, onCancel: {}))
+                ))
+            // the grey initial: no shape or colour selected
+            let initial = IdentityDraft(name: "Ana's MacBook", avatar: nil)
+            initial.customizing = true
+            out.append(
+                (
+                    "identity-customize-initial",
+                    AnyView(IdentitySheet(draft: initial, wearer: "Marta", onSave: { _, _ in }, onCancel: {}))
                 ))
             out.append(
                 ("follow-not-following", AnyView(FollowStep(follow: follow(.notFollowing)).padding().frame(width: 520)))
@@ -295,7 +338,19 @@
                     delivery: nil),
             ]
             let tm = TreatmentsModel(rows: rows, canWrite: true, actions: nil)
+            tm.wearer = "Marta"
             out.append(("treatments", AnyView(TreatmentsView(model: tm, add: {}).frame(width: 460, height: 380))))
+            // Edit Treatment on an amount and on a note (nothing changed yet: Save off)
+            out.append(
+                (
+                    "treatment-edit",
+                    AnyView(EditTreatmentView(treatment: rows[0].treatment, save: { _, _, _ in }, cancel: {}))
+                ))
+            out.append(
+                (
+                    "treatment-edit-note",
+                    AnyView(EditTreatmentView(treatment: rows[3].treatment, save: { _, _, _ in }, cancel: {}))
+                ))
             out.append(
                 (
                     "treatments-empty",

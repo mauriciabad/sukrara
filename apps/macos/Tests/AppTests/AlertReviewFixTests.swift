@@ -67,4 +67,16 @@ import Testing
         #expect(current.count <= 200)
         #expect(FileManager.default.fileExists(atPath: log.previous.path))
     }
+
+    /// An unreadable alert state starts fresh (alerts on, nothing muted) and is copied aside first.
+    @Test func anUnreadableAlertStateIsKeptAside() throws {
+        let home = FileManager.default.temporaryDirectory.appending(path: "sukrara-alerts-\(UUID().uuidString)")
+        let file = AlertStateFile(paths: SukraraPaths(home: home))
+        try FileManager.default.createDirectory(
+            at: file.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("{not json".utf8).write(to: file.url)
+        #expect(file.load(now: Date(timeIntervalSince1970: 1_800_000_000)) == nil)
+        let kept = file.url.deletingLastPathComponent().appending(path: "alert-state.json.corrupt-1800000000")
+        #expect(try String(contentsOf: kept, encoding: .utf8) == "{not json")
+    }
 }

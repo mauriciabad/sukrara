@@ -21,6 +21,9 @@ data class Reading(
     /** Higher than the sensor can measure: shown as "HI", above every high alert threshold. */
     val isHi: Boolean get() = GlucoseRange.isHi(mgdl)
 
+    /** Brought back by Import history ([SourceId.Imported]): never uploaded to a service. */
+    val imported: Boolean get() = source in SourceId.Imported
+
     companion object {
         /** A sensor said "below my range" at [t]: no number is known (stored as [GlucoseRange.LO], no rate). */
         fun lo(t: Instant, source: SourceId) = Reading(t, GlucoseRange.LO, null, source)
@@ -96,10 +99,19 @@ value class SourceId(val id: String) {
         /** Every source that is the followed person's feed. */
         val Follower: Set<SourceId> = setOf(Relay, Nearby)
 
-        /** The sources whose readings are [role]'s person: the phone's own sensor, or the followed person's feed. */
+        /**
+         * History brought back by Import history (`storage.ImportSource`: LibreView, Tidepool, a file): the wearer's
+         * own past readings, never this phone's sensor (no live reading, no restore gate) and never uploaded.
+         */
+        val Imported: Set<SourceId> = setOf(SourceId("import-libreview"), SourceId("import-tidepool"), SourceId("import-file"))
+
+        /**
+         * The sources whose readings are [role]'s person: the phone's own sensor and its imported history, or the
+         * followed person's feed.
+         */
         fun of(role: Role): Set<SourceId> =
             when (role) {
-                Role.Wearer -> Wearer
+                Role.Wearer -> Wearer + Imported
                 Role.Follower -> Follower
             }
 
@@ -112,7 +124,7 @@ value class SourceId(val id: String) {
             when (role) {
                 null -> emptySet()
                 Role.Wearer -> Follower
-                Role.Follower -> Wearer
+                Role.Follower -> Wearer + Imported
             }
     }
 }

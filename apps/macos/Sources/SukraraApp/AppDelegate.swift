@@ -25,6 +25,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsPending = false
     /// `sukrara:` links held until the windows exist (a link that launches the app arrives before them).
     private var linkInbox = LinkInbox()
+    /// *Read Glucose Aloud* and its system-wide keys (none in a snapshot run).
+    private let readAloud = ReadAloud()
+    private var shortcut: GlobalShortcut?
 
     public init(plan: LaunchPlan) {
         let services = AppServices(plan: plan)
@@ -90,6 +93,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             model?.loadHistory()
         }
         self.statusItem = statusItem
+        statusItem.readAloud = { [weak self] in self?.readGlucoseAloud() }
+        contextMenu.readAloud = { [weak self] in self?.readGlucoseAloud() }
+        // only the real app takes the system-wide keys: a render, a synthetic or an offline dev run never answers them
+        // (the person's own copy may be running beside it)
+        if model.plan.mode == .normal && !model.plan.isOffline {
+            shortcut = GlobalShortcut { [weak self] in self?.readGlucoseAloud() }
+        }
+        contextMenu.shortcutOn = { [weak self] in self?.shortcut?.isOn == true }
+        shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
         windows.statusItemFrame = { [weak statusItem] in statusItem?.screenFrame }
         if let updates = model.updates {
             // the result shows in the panel: open it once the check is done
@@ -115,6 +127,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         AppLog.app.info("launched (offline: \(self.model.plan.isOffline, privacy: .public))")
     }
 
+    /// Read Glucose Aloud (menu, VoiceOver action, ⌃⇧⌘G): what VoiceOver says for the menu bar value, said now.
+    private func readGlucoseAloud() {
+        readAloud.toggle(model.menubarTitle.accessibilityLabel, from: statusItem?.accessibilityElement)
+    }
+
     /// A panel row: close the panel, then open its window.
     private func fromPanel(_ open: (WindowCoordinator) -> Void) {
         statusItem?.closePanel()
@@ -133,10 +150,36 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.lanSnapshot.state == .localNetworkDenied { model.retryLan() }
     }
 
-    public func applicationWillTerminate(_ notification: Notification) {
+    /// How long Quit waits for the follower runtime and Juggluco to stop before it ends the app anyway.
+    static let quitTimeout: Duration = .seconds(2)
+    private var quitting = false
+    private var quitAnswered = false
+
+    /// Quit (menu, logout, restart) waits until the model has stopped what it started (relay sockets closed, the
+    /// runtime's state saved), at most `quitTimeout`, then ends the app.
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !quitting else { return .terminateLater }
+        quitting = true
         network.cancel()
-        model.stop()
+        services.stop()
+        Task { [weak self] in
+            await self?.model.stop()
+            self?.answerQuit()
+        }
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.quitTimeout)
+            self?.answerQuit()
+        }
+        return .terminateLater
     }
+
+    private func answerQuit() {
+        guard !quitAnswered else { return }
+        quitAnswered = true
+        NSApp.reply(toApplicationShouldTerminate: true)
+    }
+
+    public func applicationWillTerminate(_ notification: Notification) { network.cancel() }
 
     /// `sukrara:` links (Info.plist CFBundleURLTypes) and the web invite `https://sukrara.mauri.app/join#…` (given to
     /// the app with `open -a Sukrara <link>` or dropped on it): invite links go to the follow step's confirmation,
@@ -219,6 +262,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.widgetGraph != widgetGraph { model.widgetGraph = widgetGraph }
         if changed { model.feedWidget(settingsChanged: true) }
         model.lanConfig = lanConfig
+        shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
     }
 
     /// The wearer's mirrored settings arrived, changed or went away (stopped following).

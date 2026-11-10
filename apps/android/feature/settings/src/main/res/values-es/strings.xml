@@ -140,6 +140,9 @@
     <string name="st_reliability_title">Fiabilidad de las alertas</string>
     <string name="st_reliability_ready">Todo lo que necesitan las alertas está activado</string>
     <string name="st_reliability_footer">Las mismas comprobaciones que la fila de fiabilidad de inicio y la configuración. Arreglar abre la pantalla de Android correspondiente; al volver, se actualiza.</string>
+    <string name="st_reliability_test_title">Compruébalo ahora</string>
+    <string name="st_reliability_test_summary">La alerta real %1$s, marcada como prueba. Pruébala con No molestar activado.</string>
+    <string name="st_reliability_test_none">No hay ninguna alerta activada: activa una en Alertas para probarla</string>
     <string name="st_req_ok">Activado</string>
     <string name="st_req_missing">Falta</string>
     <string name="st_req_failed">Falló</string>
@@ -181,12 +184,13 @@
     <string name="st_update_offline">No se pudo buscar actualizaciones</string>
     <string name="st_update_offline_summary">Abrir la página de versiones</string>
     <string name="st_other_devices">Sukrara en otros dispositivos</string>
-    <string name="st_asset_android">Android</string>
     <string name="st_asset_mac">Mac</string>
     <string name="st_report_problem">Informar de un problema</string>
     <string name="st_report_problem_summary">Abre las incidencias del proyecto en GitHub</string>
     <string name="st_source_code">Código fuente</string>
     <string name="st_license">Software libre, GPL-3.0 o posterior</string>
+    <string name="st_privacy">Política de privacidad</string>
+    <string name="st_privacy_summary">Qué se queda en este teléfono y qué se envía, y adónde</string>
     <string name="st_alarm_off_title">¿Quitar la alarma %1$s?</string>
     <string name="st_alarm_off_text">Sonará como una notificación normal: más baja y sin abrirse sobre la pantalla de bloqueo.</string>
     <string name="st_threshold_between">Debe estar por encima de %1$s y por debajo de %2$s (las alertas vecinas)</string>
@@ -480,6 +484,7 @@
     <string name="st_send_test">Enviar una alerta de prueba</string>
     <string name="st_send_test_summary">La notificación real, marcada como prueba · no se envía a quien te sigue</string>
     <string name="st_send_test_sent">Enviada: mira tus notificaciones. Se va sola en 2 min.</string>
+    <string name="st_send_test_alerts_off">Las alertas están desactivadas: actívalas para probar una</string>
     <string name="st_channel_settings">Canal de notificación</string>
     <string name="st_channel_settings_summary">El sonido, la vibración y No molestar de esta alerta en los ajustes de Android</string>
     <string name="st_silenced_by_android">Silenciada en los ajustes de Android: abre Canal de notificación abajo para activar su sonido</string>
@@ -657,6 +662,8 @@
     <string name="st_backup_saved">Guardada · tus seguidores se quedan si cambias de teléfono</string>
     <string name="st_backup_not_saved">Sin copia · guárdala para que un teléfono nuevo conserve tus seguidores</string>
     <string name="st_backup_no_identity">Nada que guardar hasta que compartas</string>
+    <string name="st_backup_unreadable">No se puede leer tu identidad para compartir · restáurala con tu código de recuperación</string>
+    <string name="st_backup_paused">En pausa · otra app está compartiendo como tú</string>
     <string name="st_export_title">Exportar datos</string>
     <string name="st_export_summary">Lecturas y tratamientos en un archivo</string>
     <string name="st_adv_title">Avanzado</string>
@@ -702,11 +709,49 @@
         <item quantity="many">%1$d de %2$d relays conectados</item>
         <item quantity="other">%1$d de %2$d relays conectados</item>
     </plurals>
+    <!-- Avanzado › Estadísticas: solo recuentos, nada personal -->
+    <string name="st_adv_stats">Estadísticas</string>
+    <string name="st_adv_sent">Enviado a tus seguidores</string>
+    <string name="st_adv_received">Lecturas en este teléfono</string>
+    <string name="st_adv_notification">Notificación de glucosa</string>
+    <string name="st_adv_stats_footer">Lo enviado, lo rechazado y las actualizaciones de la notificación se cuentan de nuevo cuando Sukrara se reinicia; las lecturas son todas las guardadas en este teléfono.</string>
+    <plurals name="st_adv_live">
+        <item quantity="one">%d lectura en directo</item>
+        <item quantity="many">%d lecturas en directo</item>
+        <item quantity="other">%d lecturas en directo</item>
+    </plurals>
+    <plurals name="st_adv_chunks">
+        <item quantity="one">%d hora de historial</item>
+        <item quantity="many">%d horas de historial</item>
+        <item quantity="other">%d horas de historial</item>
+    </plurals>
+    <plurals name="st_adv_stored">
+        <item quantity="one">%d guardada</item>
+        <item quantity="many">%d guardadas</item>
+        <item quantity="other">%d guardadas</item>
+    </plurals>
+    <plurals name="st_adv_refused">
+        <item quantity="one">%d evento rechazado</item>
+        <item quantity="many">%d eventos rechazados</item>
+        <item quantity="other">%d eventos rechazados</item>
+    </plurals>
+    <plurals name="st_adv_posts">
+        <item quantity="one">%d actualización</item>
+        <item quantity="many">%d actualizaciones</item>
+        <item quantity="other">%d actualizaciones</item>
+    </plurals>
+    <plurals name="st_adv_skipped">
+        <item quantity="one">%d omitida (nada nuevo)</item>
+        <item quantity="many">%d omitidas (nada nuevo)</item>
+        <item quantity="other">%d omitidas (nada nuevo)</item>
+    </plurals>
     <!-- settings search -->
     <string name="st_search_hint">Buscar en ajustes</string>
     <string name="st_search_clear">Borrar búsqueda</string>
     <string name="st_search_none">Ningún ajuste coincide con “%1$s”</string>
     <string name="st_search_in">En %1$s</string>
+    <string name="st_search_recent">Búsquedas recientes</string>
+    <string name="st_search_recent_clear">Borrar</string>
     <string name="st_profile_title">Tu perfil</string>
     <string name="st_active_now">Activo ahora</string>
     <string name="st_from_title">Ajustes de</string>

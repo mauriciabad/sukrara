@@ -55,6 +55,7 @@ object Channels {
     const val SENSOR_COUNTDOWN = "sensor.countdowns"
     const val PEN_RESULTS = "pen.results"
     const val PEN_CHECK = "pen.check"
+    const val TREATMENT_DRAFT = "treatment.draft"
 
     /**
      * Channels that were replaced, deleted by [create]: `sensor.countdown` was low importance, which the phone's "hide
@@ -90,6 +91,16 @@ object Channels {
             ),
             Spec(PEN_RESULTS, R.string.monitor_channel_pen_results, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO),
             Spec(PEN_CHECK, R.string.monitor_channel_pen_check, NotificationManager.IMPORTANCE_DEFAULT, Group.INFO, Kind.INFO),
+            // *Treatment not saved* (the lock-screen countdown kept a draft): seen after the unlock, never a sound (the
+            // person was just looking at the dialog)
+            Spec(
+                TREATMENT_DRAFT,
+                R.string.monitor_channel_treatment_draft,
+                NotificationManager.IMPORTANCE_DEFAULT,
+                Group.INFO,
+                Kind.INFO,
+                silent = true,
+            ),
         ) +
             ALERT_KINDS.map { Spec(alert(it), alertName(it), NotificationManager.IMPORTANCE_HIGH, Group.ALERTS, Kind.ALERT, it) } +
             ALERT_KINDS.map { Spec(alarm(it), alarmName(it), NotificationManager.IMPORTANCE_HIGH, Group.ALERTS_ALARM, Kind.ALARM, it) }
@@ -182,6 +193,9 @@ object NotificationIds {
     const val SENSOR_READY = 14
     const val PEN_RESULTS = 20
     const val PEN_CHECK = 21
+
+    /** *Treatment not saved*: what the quick dialog's lock-screen countdown closed on. */
+    const val TREATMENT_DRAFT = 22
     const val REQUESTS = 30
 
     /** What the followed wearer said: invite used, declined, access removed. */

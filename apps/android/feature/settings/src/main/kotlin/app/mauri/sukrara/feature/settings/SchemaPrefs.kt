@@ -26,6 +26,9 @@ object SchemaPrefs {
     /** When the wearer confirmed the alert thresholds (ISO instant; empty = never). */
     val ThresholdsConfirmedAt = SchemaSettings.text("alerts.thresholdsConfirmedAt", default = "")
 
+    /** The settings search's recent queries, one per line, newest first (`RecentSearches`). */
+    val SearchRecent = SchemaSettings.text("settings.searchRecent", default = "")
+
     /** The number format of a setting by schema id (e.g. `alerts.threshold.low`). */
     fun spec(id: String): NumberSpec {
         val info = SettingsSpec.SETTINGS.first { it.id == id }

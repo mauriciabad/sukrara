@@ -38,6 +38,22 @@ class UpdateCheckTest {
     }
 
     @Test
+    fun `other devices get only the Mac files, never the APK or the R8 mapping`() {
+        val dl = "https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/"
+        val release =
+            Release(
+                "v0.12.1",
+                UpdateCheck.RELEASES_URL,
+                prerelease = true,
+                draft = false,
+                assets =
+                    listOf("Sukrara-0.12.1.apk", "Sukrara-0.12.1.dmg", "Sukrara-mac-0.12.1.zip", "Sukrara-0.12.1-android-mapping.txt.gz")
+                        .map { ReleaseAsset(it, dl + it) },
+            )
+        assertEquals(listOf("Sukrara-0.12.1.dmg", "Sukrara-mac-0.12.1.zip"), UpdateCheck.otherDevices(release).map { it.name })
+    }
+
+    @Test
     fun `a failed fetch is offline`() {
         assertEquals(UpdateState.Offline, UpdateCheck.state(Result.failure(Exception("offline")), "0.12.0", true))
     }

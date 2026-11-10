@@ -8,7 +8,8 @@ import SukraraShare
 
 /// Why following didn't start (`FollowerJoinError`, mapped by the runtime adapter).
 public enum FollowFailure: Error, Equatable, Sendable {
-    case invalidLink, notFound, expired, used, offline, fingerprintMismatch, alreadyFollowing, keychain, noQRCode
+    // an invite another device already used isn't known before the request: it arrives as the link's `inviteUsed`
+    case invalidLink, notFound, expired, offline, fingerprintMismatch, alreadyFollowing, keychain, noQRCode
     /// A nearby join the person ended because the two devices showed different pairing codes.
     case codesDiffered
 
@@ -18,7 +19,6 @@ public enum FollowFailure: Error, Equatable, Sendable {
         case .invalidLink: L10n.t("That isn't a Sukrara invite link. Copy the whole link from the phone and try again.")
         case .notFound: L10n.t("This invite wasn't found. Ask for a new invite on the phone.")
         case .expired: L10n.t("This invite has expired. Ask for a new invite on the phone.")
-        case .used: L10n.t("Another device already used this invite. Ask for a new invite on the phone.")
         case .offline: L10n.t("Can't connect over the internet. Check the internet connection and try again.")
         case .fingerprintMismatch: L10n.t("This invite doesn't match the link. Ask for a new invite on the phone.")
         case .alreadyFollowing:

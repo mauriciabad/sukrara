@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,10 +42,13 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
+import app.mauri.sukrara.designsystem.dialog.NumberDialog
+import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.graph.stats.TirRange
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.launch
 
 /**
@@ -191,18 +195,22 @@ private fun WidgetSettingsScreen(
         }
     }
     when (open) {
+        // the one number input (schema placeHours: 3 / 6 / 12 / 24 h or Custom… 1–48 h; 0 = Same as the app)
         "hours" -> {
-            ChoiceDialog(
+            val res = LocalResources.current
+            NumberDialog(
                 stringResource(R.string.widget_config_hours),
-                listOf(Choice(same, null as Int?)) + HOURS.map { Choice(hoursLabel(it), it as Int?) },
-                o.hours,
+                NumberInput(SettingsSpec.PLACE_HOURS),
+                (o.hours ?: 0).toDouble(),
+                { v -> if (v == 0.0) same else v.toInt().let { h -> res.getQuantityString(R.plurals.widget_config_hours_n, h, h) } },
                 { open = null },
             ) {
-                o = o.copy(hours = it)
+                o = o.copy(hours = it.toInt().takeIf { h -> h > 0 })
                 open = null
             }
         }
 
+        // a closed list (schema ringCount: 0–3, no custom value) is plain choices, as on Settings › Graph
         "rings" -> {
             ChoiceDialog(
                 stringResource(R.string.widget_config_rings),
@@ -253,8 +261,6 @@ private fun OnOffDialog(
     onClose: () -> Unit,
     onChoose: (Boolean?) -> Unit,
 ) = ChoiceDialog(title, listOf(Choice(same, null), Choice(on, true), Choice(off, false)), value, onClose, onChoose)
-
-private val HOURS = listOf(3, 6, 12, 24)
 
 @Composable
 private fun hoursLabel(h: Int) = pluralStringResource(R.plurals.widget_config_hours_n, h, h)

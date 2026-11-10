@@ -301,7 +301,9 @@ public struct FollowerSession: Sendable {
     }
 
     /// Writer scope: a writer changes only entries it created; the wearer's own entry (`o` ≠ follower) beats a copy a
-    /// writer created first, whatever its `u`; the newest `(u, o)` wins otherwise.
+    /// writer created first, whatever its `u`; the newest `(u, o)` wins otherwise. A wearer device's copy of the
+    /// version already held (the echo of this writer's entry, after the relay sent the writer's own copy back) is passed
+    /// on too: it is what tells the writer the wearer accepted it (PROTOCOL-v2 "Writers": `u` ≥ the sent `u`).
     private mutating func receiveTreatment(_ entry: TreatmentPayload, author: String) -> Outcome {
         let fromWearer = state.devices.contains(author)
         let held = state.treatments[entry.id]
@@ -318,9 +320,10 @@ public struct FollowerSession: Sendable {
         }
         let creator = (held == nil || override) ? author : held!.creator
         let newer = held.map { (entry.u, entry.origin) > ($0.u, $0.origin) } ?? true
-        guard newer || override else { return Outcome(.ignored("treatment-older")) }
+        let echo = fromWearer && !newer && held.map { (entry.u, entry.origin) == ($0.u, $0.origin) } == true
+        guard newer || override || echo else { return Outcome(.ignored("treatment-older")) }
         state.treatments[entry.id] = .init(creator: creator, u: entry.u, origin: entry.origin)
-        var outcome = Outcome(.accepted("treatment"))
+        var outcome = Outcome(.accepted(echo ? "treatment-echo" : "treatment"))
         outcome.deltas = [.treatment(entry, fromWearer: fromWearer, creator: creator, override: override)]
         return outcome
     }

@@ -46,13 +46,29 @@ data class RelayRow(val url: String, val connected: Boolean, val error: String? 
 
 /**
  * What Settings › Advanced shows: the relays this phone talks to ([relays] empty = not sharing / following over the
- * internet), the sharing identity in short form ([identity], public only) and its key generation ([epoch]).
+ * internet), the sharing identity in short form ([identity], public only), its key generation ([epoch]) and the
+ * [stats] (null = none to show).
  */
 data class AdvancedState(
     val follower: Boolean = false,
     val relays: List<RelayRow> = emptyList(),
     val identity: String? = null,
     val epoch: Int? = null,
+    val stats: AdvancedStats? = null,
+)
+
+/**
+ * Settings › Advanced › Statistics, counts only: the wearer's [live] readings and hour [chunks] sent, a follower's
+ * [stored] readings and [refused] events, and the glucose notification's [posted] / [skipped] updates. All since the
+ * app started except [stored] (every reading this phone keeps).
+ */
+data class AdvancedStats(
+    val live: Int = 0,
+    val chunks: Int = 0,
+    val stored: Int = 0,
+    val refused: Int = 0,
+    val posted: Int = 0,
+    val skipped: Int = 0,
 )
 
 /** What a settings file import did. */
@@ -201,7 +217,7 @@ class AdvancedActions(
     val openLog: () -> Unit = {},
 )
 
-/** Settings › Advanced: the settings file, the relays with *Check now*, the log and the identity. */
+/** Settings › Advanced: the settings file, the relays with *Check now*, the log and the identity, the statistics. */
 @Composable
 fun AdvancedContent(
     state: AdvancedState,
@@ -234,6 +250,7 @@ fun AdvancedContent(
                 icon = DsR.drawable.ds_ic_restart_alt,
             )
         }
+        FooterText(stringResource(R.string.st_adv_footer))
         SettingsGroup(title = stringResource(R.string.st_adv_relays)) {
             if (state.relays.isEmpty()) {
                 InfoRow(
@@ -280,8 +297,43 @@ fun AdvancedContent(
                 )
             }
         }
-        FooterText(stringResource(R.string.st_adv_footer))
+        state.stats?.let { StatsGroup(it, state.follower) }
     }
+}
+
+/** What was sent (wearer) or is stored and was refused (follower), and the notification's updates: counts only. */
+@Composable
+private fun StatsGroup(
+    stats: AdvancedStats,
+    follower: Boolean,
+) {
+    @Composable
+    fun counts(vararg parts: Pair<Int, Int>): String {
+        val shown = mutableListOf<String>()
+        for ((res, n) in parts) shown += pluralStringResource(res, n, n)
+        return shown.joinToString(" · ")
+    }
+    SettingsGroup(title = stringResource(R.string.st_adv_stats)) {
+        if (follower) {
+            InfoRow(
+                stringResource(R.string.st_adv_received),
+                summary = counts(R.plurals.st_adv_stored to stats.stored, R.plurals.st_adv_refused to stats.refused),
+                icon = DsR.drawable.ds_ic_database,
+            )
+        } else {
+            InfoRow(
+                stringResource(R.string.st_adv_sent),
+                summary = counts(R.plurals.st_adv_live to stats.live, R.plurals.st_adv_chunks to stats.chunks),
+                icon = DsR.drawable.ds_ic_send,
+            )
+        }
+        InfoRow(
+            stringResource(R.string.st_adv_notification),
+            summary = counts(R.plurals.st_adv_posts to stats.posted, R.plurals.st_adv_skipped to stats.skipped),
+            icon = DsR.drawable.ds_ic_notifications,
+        )
+    }
+    FooterText(stringResource(R.string.st_adv_stats_footer))
 }
 
 /** `wss://relay.example.org/` → `relay.example.org`. */

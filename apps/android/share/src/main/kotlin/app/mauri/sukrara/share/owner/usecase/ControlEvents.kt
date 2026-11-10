@@ -76,9 +76,13 @@ internal object ControlEvents {
     }
 
     /** `revoked`, `declined` or `invite-used` to [follower]. */
-    fun notice(ctx: OwnerContext, s: OwnerState, follower: String, rumor: Rumor, now: Long): Step {
-        val ev = ctx.events.gift(s.identity(ctx.crypto), PublicKeyHex(follower), rumor, now, now + Wire.TTL_REQUEST)
-        return pending(s, "${rumor.type}:$follower", ev, follower)
+    fun notice(ctx: OwnerContext, s: OwnerState, follower: String, rumor: Rumor, now: Long): Step =
+        pending(s, "${rumor.type}:$follower", noticeEvent(ctx, s, follower, rumor, now), follower)
+
+    /** The notice itself; `revoked` lives as long as a key delivery (30 d: both come back after a restart), the others 7 d. */
+    fun noticeEvent(ctx: OwnerContext, s: OwnerState, follower: String, rumor: Rumor, now: Long): SignedEvent {
+        val ttl = if (rumor == Rumor.Revoked) Wire.TTL_KEY_DELIVERY else Wire.TTL_REQUEST
+        return ctx.events.gift(s.identity(ctx.crypto), PublicKeyHex(follower), rumor, now, now + ttl)
     }
 
     private fun pending(s: OwnerState, key: String, ev: SignedEvent, follower: String?): Step {

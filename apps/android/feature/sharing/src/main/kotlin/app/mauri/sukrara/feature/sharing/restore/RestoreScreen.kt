@@ -291,5 +291,6 @@ fun restoreError(result: RestoreIdentity.Result): String =
         RestoreIdentity.Result.BackupOutdated -> stringResource(R.string.sh_restore_err_outdated)
         RestoreIdentity.Result.AlreadySharing -> stringResource(R.string.sh_restore_err_already)
         RestoreIdentity.Result.SameIdentity -> stringResource(R.string.sh_restore_err_same)
+        RestoreIdentity.Result.Cancelled -> stringResource(R.string.sh_replace_cancelled)
         is RestoreIdentity.Result.Restored -> ""
     }

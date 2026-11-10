@@ -140,6 +140,9 @@
     <string name="st_reliability_title">Alert reliability</string>
     <string name="st_reliability_ready">Everything alerts need is on</string>
     <string name="st_reliability_footer">The same checks as home\'s reliability row and the setup. Fix opens the Android screen for it; come back and the check updates.</string>
+    <string name="st_reliability_test_title">Check it now</string>
+    <string name="st_reliability_test_summary">The real %1$s alert, marked as a test. Try it with Do Not Disturb on.</string>
+    <string name="st_reliability_test_none">No alert is on: turn one on in Alerts to test it</string>
     <string name="st_req_ok">On</string>
     <string name="st_req_missing">Missing</string>
     <string name="st_req_failed">Failed</string>
@@ -182,12 +185,13 @@
     <string name="st_update_offline">Couldn\'t check for updates</string>
     <string name="st_update_offline_summary">Open the releases page</string>
     <string name="st_other_devices">Sukrara on other devices</string>
-    <string name="st_asset_android">Android</string>
     <string name="st_asset_mac">Mac</string>
     <string name="st_report_problem">Report a problem</string>
     <string name="st_report_problem_summary">Opens the project\'s issues on GitHub</string>
     <string name="st_source_code">Source code</string>
     <string name="st_license">Free software, GPL-3.0-or-later</string>
+    <string name="st_privacy">Privacy policy</string>
+    <string name="st_privacy_summary">What stays on this phone, and what is sent where</string>
     <string name="st_alarm_off_title">Stop the %1$s alarm?</string>
     <string name="st_alarm_off_text">It will ring as a normal notification: quieter, and it won\'t open over the lock screen.</string>
     <string name="st_threshold_between">Must be above %1$s and below %2$s (the neighbouring alerts)</string>
@@ -477,6 +481,7 @@
     <string name="st_send_test">Send a test alert</string>
     <string name="st_send_test_summary">The real notification, marked as a test · not sent to followers</string>
     <string name="st_send_test_sent">Sent: check your notifications. It goes away by itself in 2 min.</string>
+    <string name="st_send_test_alerts_off">Alerts are off: turn them on to test one</string>
     <string name="st_channel_settings">Notification channel</string>
     <string name="st_channel_settings_summary">This alert\'s sound, vibration and Do Not Disturb in Android\'s settings</string>
     <string name="st_silenced_by_android">Silenced in Android\'s settings: open Notification channel below to turn its sound on</string>
@@ -649,6 +654,8 @@
     <string name="st_backup_saved">Backed up · your followers stay if you change phones</string>
     <string name="st_backup_not_saved">Not backed up · save it so a new phone keeps your followers</string>
     <string name="st_backup_no_identity">Nothing to back up until you share</string>
+    <string name="st_backup_unreadable">Your sharing identity can\'t be read · restore it from your recovery code</string>
+    <string name="st_backup_paused">Paused · another app is sharing as you</string>
     <string name="st_export_title">Export data</string>
     <string name="st_export_summary">Readings and treatments as a file</string>
     <string name="st_adv_title">Advanced</string>
@@ -692,11 +699,43 @@
         <item quantity="one">%1$d of %2$d relay connected</item>
         <item quantity="other">%1$d of %2$d relays connected</item>
     </plurals>
+    <!-- Advanced › Statistics: counts only, nothing personal -->
+    <string name="st_adv_stats">Statistics</string>
+    <string name="st_adv_sent">Sent to your followers</string>
+    <string name="st_adv_received">Readings on this phone</string>
+    <string name="st_adv_notification">Glucose notification</string>
+    <string name="st_adv_stats_footer">Sent, refused and notification counts start again when Sukrara restarts; the readings are all those stored on this phone.</string>
+    <plurals name="st_adv_live">
+        <item quantity="one">%d live reading</item>
+        <item quantity="other">%d live readings</item>
+    </plurals>
+    <plurals name="st_adv_chunks">
+        <item quantity="one">%d hour of history</item>
+        <item quantity="other">%d hours of history</item>
+    </plurals>
+    <plurals name="st_adv_stored">
+        <item quantity="one">%d stored</item>
+        <item quantity="other">%d stored</item>
+    </plurals>
+    <plurals name="st_adv_refused">
+        <item quantity="one">%d event refused</item>
+        <item quantity="other">%d events refused</item>
+    </plurals>
+    <plurals name="st_adv_posts">
+        <item quantity="one">%d update</item>
+        <item quantity="other">%d updates</item>
+    </plurals>
+    <plurals name="st_adv_skipped">
+        <item quantity="one">%d skipped (nothing new)</item>
+        <item quantity="other">%d skipped (nothing new)</item>
+    </plurals>
     <!-- settings search -->
     <string name="st_search_hint">Search settings</string>
     <string name="st_search_clear">Clear search</string>
     <string name="st_search_none">No settings match “%1$s”</string>
     <string name="st_search_in">In %1$s</string>
+    <string name="st_search_recent">Recent searches</string>
+    <string name="st_search_recent_clear">Clear</string>
     <string name="st_profile_title">Your profile</string>
     <string name="st_active_now">Active now</string>
     <string name="st_from_title">Settings from</string>

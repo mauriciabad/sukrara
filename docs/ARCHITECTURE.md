@@ -22,6 +22,10 @@ How the Sukrara apps are built. The rules are in
   `QWUV9H4A3G.app.mauri.sukrara`.
 - Settings: [`contracts/settings/settings.json`](../contracts/settings/settings.json) → generated `SettingsSpec`
   (Android Preferences DataStore files by area, Mac UserDefaults). Every persisted format carries a version.
+- **No backwards compatibility, no migrations** (the owner, 2026-11-10: "a new app and a fresh start"): a stored format
+  of another version (a file, a typed store, the Android database, a Mac store) is not read; it starts empty. The
+  Android database is replaced by an empty one on any version change (below). History comes back through *Import
+  history* (LibreView, Tidepool or a file, deduplicated), never through a migration or a legacy reader.
 
 ## Android (`apps/android`)
 
@@ -67,7 +71,9 @@ libxposed service, the hello's `HookCode.VERSION`) implements `:core:model`'s `S
 
 **First-run setup and wearer sharing screens: `:feature:sharing`** (package `app.mauri.sukrara.feature.sharing`).
 
-- `setup/SetupMachine` (pure): the binding step order, what completes / skips each step, the Finish-setup items.
+- `setup/SetupMachine` (pure): the binding step order, what completes / skips each step, the Finish-setup items, and the
+  history step (*Bring your history back*, wearer, last, offered once: `historyDue`; `SetupModule.offerHistoryAgain`
+  after `DataModule.databaseReplaced`; the app opens it on its own at launch when due).
   `SetupRecord` persists in the typed store `setup`; the role is a separate store owned by `AppGraph` (`RoleStore`).
 - `setup/RestoreGate` (pure): restore only with a live own-sensor reading (≤ 15 min, Libre 3 / Juggluco).
 - `:monitor`'s `AndroidAlertReadiness` implements `:core:model`'s `AlertReadinessSource` (the checklist setup, home and
@@ -340,7 +346,8 @@ read (new app id, no migration). Nothing is in cloud backup or device transfer (
 | A follower's settings in use | the stored settings, the mirrored graph rows resolved per `follower.settingsFrom` (Wearer / Default / Custom) | `FollowerSettingsRepository` (`:core:data`), built by `FollowerSettingsBridge` (`:app`, also the alert runtime's mirrored values, the alert pages' values in use and `alerts.source`) |
 | The wearer's settings for its followers | this phone's mirrored graph rows under their wire keys + the whole alert settings (SPEC §3); the owner engine keeps the `"mirror": true` rows and publishes the settings event when they change | `WearerSettingsSource` (`:app`) → `MirroredSettingsSource` of `ShareOwnerModule` |
 | Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview`, `sensor`, `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
-| History | `databases/sukrara.db` (Room v2, schemas and migrations in `core/data/schemas/` + `SukraraDatabase.MIGRATIONS`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox`, `pen_ledger` (the pen ledger, one JSON row, written with its entries in one transaction) | `ReadingsRepository`, `TreatmentsRepository`, `PenLedgerRepository`, DAOs for the sharing ledger |
+| History | `databases/sukrara.db` (Room; only the current version's schema in `core/data/schemas/`; **no migrations**: a database of any other version, older or newer, is dropped, every table, and created empty: `fallbackToDestructiveMigration(dropAllTables = true)`, which covers downgrades too, `DataModule.databaseReplaced`, `DatabaseSchemaTest`, check `room-schema`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox`, `pen_ledger` (the pen ledger, one JSON row, written with its entries in one transaction) | `ReadingsRepository`, `TreatmentsRepository`, `PenLedgerRepository`, DAOs for the sharing ledger |
+| Imported history | the same tables: readings under `SourceId.Imported` (`import-libreview`, `import-tidepool`, `import-file`), entries with `imported_from`; stored only through THE import path (`HistoryImport` rules in `:core:model`, pure and property-tested; `RoomHistoryImport`, one transaction per batch); `ReadingDao.upsertOwnFirst` lets the sensor's own reading replace an imported copy | `DataModule.historyImport` (`HistoryImportStore`) |
 | Other files | `files/<path>` atomic tmp + fsync + rename | `DataModule.fileStore(path, codec)` → `Loaded / Missing / Corrupt` |
 | Diagnostics | `files/diag/diag.log` + `.1`, 512 KB each, `Redact` scrubs keys / tokens | `DiagLog` |
 | Before the first unlock | the only file in **device-protected** storage: `/data/user_de/…/files/locked-boot.json` (times and the *No data* rule, never a value; docs/30). Everything above is credential-encrypted: unreadable after a restart until the first unlock, so `App` builds no graph then and only `LockedBootReceiver` and `AlertSoundProvider` run | `LockedBootStore` (`:monitor`), written by `AlertRuntime` |
@@ -470,6 +477,13 @@ content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`,
   state in the typed store `tidepool-upload`).
 - `export/` — `GlucoseCsv` (`contracts/export`), `Exporter` (period → stores), `ExportViewModel` (SAF save, FileProvider
   `${applicationId}.export` share from `cache/export/`).
+- `history/` — Import history (wearer): `HistoryCsv` (reads the `contracts/export` layout back: Sukrara's export, the
+  earlier app's, LibreView's *Download glucose data* file; columns by position, the date layout every row fits),
+  `TidepoolHistory` (Tidepool's data model back into readings / entries; `TidepoolClient.data` / `notes` read it,
+  `TidepoolUploader.withAccount` lends the signed-in session under the upload's lock), `HistoryImporter` (the last
+  90 days a week at a time through `DataModule.historyImport`, one job in the app scope, *Stop*, a 429 / 503 waits for
+  `Retry-After`; `ImportState` for the page and the Share with apps row), `ImportPage`. Imported readings / entries
+  (`SourceId.Imported`, `TreatmentRecord.importedFrom`) are left out of every upload.
 
 ## Contracts and tests
 
@@ -479,6 +493,9 @@ every app). Alert scenario expectations change only with the owner's OK.
 
 ## Release
 
-`VERSION` → every app. Android: `tools/release/android-release.sh` (assembleRelease with the release key +
-`verify-apk.sh`); Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`). 0.x versions are GitHub
-prereleases; every app's update check include prereleases only on a prerelease build.
+`VERSION` → every app. Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
+`verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
+`verify-apk.sh --play`; the play flavor has no root / LSPosed code and no update check: `app/src/play`, `Store`, and
+`:monitor`'s `RootFeatures` that only the full flavor passes); Mac: `tools/release/mac-release.sh` (bundle + dmg +
+`verify-app.sh`). 0.x versions are GitHub prereleases; every app's update check includes prereleases only on a
+prerelease build.

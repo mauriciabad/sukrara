@@ -30,6 +30,7 @@ import app.mauri.sukrara.feature.sensor.SensorUiModule
 import app.mauri.sukrara.feature.settings.AlertPlayback
 import app.mauri.sukrara.feature.settings.AlertSettingsStore
 import app.mauri.sukrara.feature.settings.AppOutput
+import app.mauri.sukrara.feature.settings.BackupState
 import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
@@ -38,7 +39,10 @@ import app.mauri.sukrara.feature.sharing.SharingDeps
 import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.label
+import app.mauri.sukrara.feature.treatments.AndroidDraftNotice
 import app.mauri.sukrara.feature.treatments.DialogPen
+import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
+import app.mauri.sukrara.feature.treatments.TreatmentDraft
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
@@ -106,6 +110,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -216,6 +221,7 @@ class AppGraph(
                 ) { line, wifi -> if (line == null && !wifi) null else (line ?: SharingLine(0, 0)).copy(wifi = wifi) }
                     .distinctUntilChanged(),
             sourceChanges = sourceChanges,
+            rootFeatures = Store.rootFeatures,
         )
     }
 
@@ -280,11 +286,10 @@ class AppGraph(
             readiness = alerts.readiness,
             appVersion = appVersion,
             prerelease = BuildConfig.PRERELEASE,
-            http = data.http,
-            dispatchers = dispatchers,
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
-            systemAccess = monitor.systemAccess,
+            systemAccess = monitor.root?.access,
+            releases = { Store.releases(this) },
             pensAvailable = { pens.available() },
             pens = { pens.port.takeIf { pens.available() } },
             clinicBanner =
@@ -305,12 +310,21 @@ class AppGraph(
                     data.diagLog,
                     // an imported alert settings value passes their codec (SPEC §3) or is refused
                     data.settingsTransfer(mapOf("alerts:alerts" to { t -> AlertSettingsCodec.decode(t)?.let(AlertSettingsCodec::encode) })),
+                    monitor.notification.counts,
+                    { data.readings.spanOf(setOf(SourceId.Relay)).count },
                 )
             },
             overviewSharing =
                 combine(role.data, shareOwner.ownerEngine.state) { r, own ->
                     val sharing = own as? OwnerShareState.Sharing
-                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.backedUp)
+                    val backup =
+                        when (own) {
+                            is OwnerShareState.Sharing -> if (own.backedUp) BackupState.Saved else BackupState.NotSaved
+                            is OwnerShareState.IdentityUnreadable -> BackupState.Unreadable
+                            is OwnerShareState.AnotherAppSharingAsYou -> BackupState.Paused
+                            OwnerShareState.Loading, OwnerShareState.NoIdentity -> BackupState.NoIdentity
+                        }
+                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.profile?.avatar, backup)
                 },
             alertPlayback =
                 object : AlertPlayback {
@@ -382,6 +396,7 @@ class AppGraph(
             appVersion = appVersion,
             readings = readings,
             treatments = data.treatments,
+            historyImport = data.historyImport,
             sensor =
                 combine(
                     sensor.source.sensorInfo,
@@ -551,7 +566,7 @@ class AppGraph(
                 sensor.source.detail
                     .map { d -> (d as? SensorStatus.Direct)?.profile?.takeUnless { it.verified }?.label }
                     .distinctUntilChanged(),
-            systemAccess = monitor.systemAccess.state,
+            systemAccess = monitor.root?.access?.state ?: emptyFlow(),
             build = BuildConfig.VERSION_CODE.toLong(),
         )
     }
@@ -620,6 +635,27 @@ class AppGraph(
             hints = AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock),
             // read when the dialog saves (the pens module is built on first use, after this one)
             penDuplicates = PenDuplicates { kind, at -> pens.duplicates.near(kind, at) },
+            drafts =
+                data.typedStore(
+                    "treatment-draft",
+                    TreatmentDraft.serializer(),
+                    TreatmentDraft.EMPTY,
+                    whenCorrupt = TreatmentDraft.EMPTY,
+                ),
+            draftNotice =
+                AndroidDraftNotice(
+                    app,
+                    NotificationGroups.Group.INFO.let { info ->
+                        DraftNotificationPorts(
+                            channel = Channels.TREATMENT_DRAFT,
+                            group = info.key,
+                            post = { n ->
+                                NotificationGroups.post(app, NotificationIds.TREATMENT_DRAFT, n, info, Channels.TREATMENT_DRAFT)
+                            },
+                            cancel = { NotificationGroups.cancel(app, NotificationIds.TREATMENT_DRAFT, info) },
+                        )
+                    },
+                ),
             // a pen held to the phone while the dialog is open (the wearer's phone with pens)
             pen = { pens.takeIf { it.available() }?.let(::DialogPenOf) },
         )
@@ -707,6 +743,8 @@ class AppGraph(
             // a step that fails is logged and the next one still runs: a damaged database must not keep the hub
             // (and so the service, the notification and the alerts) from starting
             step("data") { data.ready() }
+            // a version change replaced the database with an empty one: Import history is offered again
+            step("history") { if (data.databaseReplaced.value) setup.offerHistoryAgain() }
             step("role") {
                 role.heal()
                 // a reading of the previous role that landed after the role change's clean-up
