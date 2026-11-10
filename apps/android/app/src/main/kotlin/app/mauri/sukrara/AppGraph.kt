@@ -20,6 +20,7 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.sensor.SensorUiModule
@@ -64,7 +65,6 @@ import app.mauri.sukrara.monitor.service.StartReason
 import app.mauri.sukrara.pen.PenLog
 import app.mauri.sukrara.pen.PenNotificationPorts
 import app.mauri.sukrara.pen.PensModule
-import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.protocol.event.AlertCodec
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
@@ -400,6 +400,8 @@ class AppGraph(
             clock = clock,
             dispatchers = dispatchers,
             log = { data.diagLog.log("integrations", it) },
+            // a pen entry waits for its session to close (the pens module is built on first use)
+            uploadHold = UploadHold { pens.uploadHold.until(it) },
         )
     }
 
@@ -591,8 +593,9 @@ class AppGraph(
     }
 
     /**
-     * Insulin pens (NFC) on the wearer's phone: the ledger (`pens.json`; damaged → empty: a known pen's next tap is
-     * a first scan that continues after its newest logged entry) and its writes into the treatment log.
+     * Insulin pens (NFC) on the wearer's phone: the ledger (in the database, written with its entries in one
+     * transaction; damaged → empty: a known pen's next tap is a first scan that continues after its newest logged
+     * entry) and its writes into the treatment log.
      */
     val pens: PensModule by lazy {
         val info = NotificationGroups.Group.INFO
@@ -610,15 +613,19 @@ class AppGraph(
             }
         PensModule(
             context = app,
-            store = data.typedStore("pens", Ledger.serializer(), Ledger(), whenCorrupt = Ledger()),
             logChanges = data.treatments.between(Instant.EPOCH, Instant.parse("2200-01-01T00:00:00Z")),
             log =
                 object : PenLog {
-                    override suspend fun all() = data.treatments.changedSince(Instant.EPOCH)
+                    override suspend fun ledger() = data.penLedger.ledger()
+
+                    override suspend fun all() = data.penLedger.insulin()
 
                     override fun canWrite() = treatments.log.penMayWrite()
 
-                    override suspend fun store(record: TreatmentRecord) = treatments.log.storeFromPen(record)
+                    override suspend fun commit(
+                        ledger: String,
+                        records: List<TreatmentRecord>,
+                    ) = treatments.log.storeFromPen(records) { data.penLedger.commit(ledger, it) }
                 },
             settings = data.settings,
             clock = clock,

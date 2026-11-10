@@ -109,6 +109,9 @@ class QuickTreatmentActivity : ComponentActivity() {
         enableEdgeToEdge()
         val focusCarbs = QuickTreatmentIntents.focusCarbs(intent) || module.lowNow()
         carriedMs = savedInstanceState?.getLong(KEY_LEFT, -1L)?.takeIf { it >= 0 }
+        // a question open before a rotation is asked again (Save was already pressed for it)
+        duplicate = PenDuplicate.restore(savedInstanceState)
+        saved = duplicate != null
         setContent {
             form = rememberTreatmentFormState()
             SukraraTheme {
@@ -142,7 +145,7 @@ class QuickTreatmentActivity : ComponentActivity() {
                         modifier = Modifier.pointerInput(Unit) { detectTapGestures { } },
                     )
                     duplicate?.let { d ->
-                        PenDuplicateDialog(d.second, onCancel = { cancelDuplicate() }, onLog = { store(d.first, d.third) })
+                        PenDuplicateDialog(d.pen, onCancel = { cancelDuplicate() }, onLog = { store(d.entries, d.at) })
                     }
                 }
             }
@@ -162,6 +165,7 @@ class QuickTreatmentActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         countdown?.let { outState.putLong(KEY_LEFT, it.remaining(SystemClock.elapsedRealtime())) }
+        duplicate?.save(outState)
     }
 
     override fun onStop() {
@@ -175,8 +179,14 @@ class QuickTreatmentActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** A typed insulin dose a pen already logged: the entries and time waiting for *Log anyway*. */
-    private var duplicate by mutableStateOf<Triple<List<NewEntry>, PenNearEntry, java.time.Instant?>?>(null)
+    /**
+     * A typed insulin dose a pen already logged: the entries and time waiting for *Log anyway*. While it is asked the
+     * lock-screen countdown stands still (the dialog must not close under the question); *Cancel* resumes it.
+     */
+    private var duplicate by mutableStateOf<PenDuplicate?>(null)
+
+    /** Whether the lock-screen countdown stands still for *Already logged by your pen?* (tests). */
+    internal val countdownPaused: Boolean get() = countdown?.paused == true
 
     private fun save(
         entries: List<NewEntry>,
@@ -187,7 +197,8 @@ class QuickTreatmentActivity : ComponentActivity() {
         lifecycleScope.launch {
             val d = module.penDuplicate(entries, at)
             if (d != null) {
-                duplicate = Triple(entries, d.second, at)
+                duplicate = PenDuplicate(entries, d.second, at)
+                countdown?.pause(SystemClock.elapsedRealtime())
             } else {
                 store(entries, at)
             }
@@ -197,6 +208,7 @@ class QuickTreatmentActivity : ComponentActivity() {
     /** *Cancel* on *Already logged by your pen?*: back to the form, nothing saved. */
     private fun cancelDuplicate() {
         duplicate = null
+        countdown?.resume(SystemClock.elapsedRealtime())
         saved = false
     }
 
@@ -264,7 +276,11 @@ class QuickTreatmentActivity : ComponentActivity() {
         val left = carriedMs?.coerceAtMost(full) ?: full
         carriedMs = null
         announced = false
-        countdown = LockCountdown(full, start - (full - left)).also { if (left < full) it.firstFrame(start - (full - left)) }
+        countdown =
+            LockCountdown(full, start - (full - left)).also {
+                if (left < full) it.firstFrame(start - (full - left))
+                if (duplicate != null) it.pause(start)
+            }
     }
 
     private fun endLock() {
@@ -293,7 +309,7 @@ class QuickTreatmentActivity : ComponentActivity() {
 
     private fun resumeAfterPrompt() {
         unlocking = false
-        countdown?.resume(SystemClock.elapsedRealtime())
+        if (duplicate == null) countdown?.resume(SystemClock.elapsedRealtime())
         if (!keyguard.isKeyguardLocked) endLock()
     }
 

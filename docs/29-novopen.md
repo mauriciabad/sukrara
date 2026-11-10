@@ -212,6 +212,16 @@ read in between doesn't take the undo away. Kept as decided: the read logs at on
 read, row below); the 72 h threshold stays a fixed engine guard. Discarded: the unused `pen_read_big` plural (*Check N
 injections*, from the superseded "hold big reads" rule).
 
+**Rebuilt in `apps/android` (issue #117).** Changed: the ledger moved from `files/state/pens.json` into the database
+(`pen_ledger`, schema version 2) so a read's ledger and entries are one Room transaction (`PenLedgerDao.commit`; the
+old order "ledger first, then each entry" could leave a dose pointing at a missing entry after a crash); the pen reads
+only insulin and pen entries instead of the whole treatments table; *Already logged by your pen?* lives in the
+dialog's saved state (a rotation asks it again) and stops the lock-screen countdown while it is open; the uploads
+(LibreView, Nightscout, Tidepool) hold a pen entry until its session closes (`UploadHold`: its last dose + *One
+injection*). Discarded: reading the old `pens.json` (no backwards compatibility: a known pen's next tap rebuilds its
+record from its entries in the log, as after a reinstall; its name, a passed display check and an open question are
+asked again).
+
 | Discarded or changed | Why |
 |---|---|
 | DESIGN's "every dose after the first large one is injected" | a split dose around a cartridge change (`5, 0.5, 0.5, 1, 3`) logged 10u; priming now = small doses before the **last** large one (PRODUCT §3.2) |

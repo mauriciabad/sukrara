@@ -64,3 +64,13 @@ data class OutboxEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "sent_at") val sentAt: Long?,
 )
+
+/**
+ * The pen ledger (`:pen`'s JSON document; one row, id 0): in this database so a pen change stores it and the
+ * treatments it writes in one transaction ([PenLedgerDao.commit]).
+ */
+@Entity(tableName = "pen_ledger")
+data class PenLedgerEntity(
+    @PrimaryKey val id: Int = 0,
+    val json: String,
+)

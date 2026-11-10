@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.integrations.upload.UploadLoop
@@ -99,6 +100,8 @@ class TidepoolUploader(
     private val log: (String) -> Unit = {},
     /** Tidepool's API; tests point it at a MockWebServer on loopback. */
     baseUrl: String = TidepoolClient.API,
+    /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
+    private val hold: UploadHold = UploadHold.NONE,
 ) {
     private val client = TidepoolClient(http, version, baseUrl)
 
@@ -272,7 +275,7 @@ class TidepoolUploader(
             if (s.glucose) readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own } else emptyList()
         if (full) fullScanMs = nowMs
         val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)) else emptyList()
-        val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS)
+        val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS, hold = hold)
         if (plan.count == 0) {
             if (!plan.isEmpty) rs = TidepoolQueue.applied(rs, plan, emptyMap(), nowS)
             store.update { it.withRole(r, rs).copy(failures = 0, nextAttemptMs = 0, lastError = null) }

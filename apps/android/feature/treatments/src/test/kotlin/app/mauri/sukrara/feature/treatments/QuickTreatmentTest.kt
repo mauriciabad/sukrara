@@ -38,6 +38,9 @@ class TestTreatmentsApp :
             override val quiet = kotlinx.coroutines.flow.flowOf(QuietRules(afterInsulinMin = 60, afterCarbsMin = 15))
         }
 
+    /** The pen entry *Already logged by your pen?* names (null = no pen entry near the typed dose). */
+    var penNear: app.mauri.sukrara.core.model.PenNearEntry? = null
+
     override val treatments by lazy {
         TreatmentsModule(
             InMemoryTreatmentsRepository(),
@@ -47,6 +50,9 @@ class TestTreatmentsApp :
             InMemorySettingsRepository(),
             CoroutineScope(Dispatchers.Unconfined),
             hints,
+            penDuplicates =
+                app.mauri.sukrara.core.model
+                    .PenDuplicates { _, _ -> penNear },
         )
     }
 }

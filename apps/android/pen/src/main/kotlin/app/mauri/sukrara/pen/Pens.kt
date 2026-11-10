@@ -4,7 +4,6 @@
 package app.mauri.sukrara.pen
 
 import app.mauri.sukrara.core.model.Clock
-import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.pen.engine.BigRead
 import app.mauri.sukrara.pen.engine.Ledger
@@ -23,23 +22,33 @@ import app.mauri.sukrara.pen.opennov.PenRead
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
 
-/** The treatment log as the pens use it (`AppGraph` implements it over the repository and the share layer). */
+/**
+ * The pen ledger and the treatment log as the pens use them (`AppGraph` implements it over the database and the share
+ * layer): one [commit] per pen change.
+ */
 interface PenLog {
-    /** Every stored treatment, tombstones included (a deleted pen entry keeps its doses consumed). */
+    /** The stored ledger (JSON), or null before the first pen. */
+    suspend fun ledger(): String?
+
+    /** Insulin and pen entries, tombstones included (a deleted pen entry keeps its doses consumed). */
     suspend fun all(): List<TreatmentRecord>
 
     /** Whether this phone writes the log as the wearer now (checked before the engine runs, so nothing is half done). */
     fun canWrite(): Boolean
 
     /**
-     * Stores [record] as this phone's (the wearer's) version and hands it to sharing: `modifiedAt` exactly as given,
-     * the stored `creator` kept, `author` = the wearer.
+     * One pen change, all or nothing: the [ledger] and [records] in one transaction, each record as this phone's (the
+     * wearer's) version (`modifiedAt` exactly as given, the stored `creator` kept, `author` = the wearer); then the
+     * stored records go to sharing.
      */
-    suspend fun store(record: TreatmentRecord)
+    suspend fun commit(
+        ledger: String,
+        records: List<TreatmentRecord>,
+    )
 }
 
 /** How *Undo this read* went: undone, refused because its entries changed since, or nothing (left) to undo. */
@@ -86,16 +95,14 @@ data class PenReadState(
 }
 
 /**
- * Insulin pens on the wearer's phone (docs/29-novopen.md): the pen ledger (`pens.json`, phone only, never synced), the
- * [PenEngine] run over each read, and its writes into the treatment log.
+ * Insulin pens on the wearer's phone (docs/29-novopen.md): the pen ledger (in the database, phone only, never synced),
+ * the [PenEngine] run over each read, and its writes into the treatment log.
  *
  * Every operation runs under one [Mutex], so two reads, a read and an *Undo*, or a read and the timer never interleave,
- * and every one checks the role first (only the wearer's phone logs pen doses). Order of a change: the ledger is saved
- * first, then the entries. A crash in between leaves a dose pointing at an entry that isn't there, which the engine
- * treats as deleted (it asks), never as new (it would log it twice).
+ * and every one checks the role first (only the wearer's phone logs pen doses). Each change (a read, an answer, an
+ * undo, a correction) is one [PenLog.commit]: the ledger and its entries are stored together or not at all.
  */
 class Pens(
-    private val store: StateStore<Ledger>,
     private val log: PenLog,
     private val clock: Clock,
     private val rules: suspend () -> PenRules,
@@ -133,16 +140,31 @@ class Pens(
     suspend fun load(): Ledger = mutex.withLock { current() }
 
     private suspend fun current(): Ledger =
-        loaded ?: store.data.first().also {
+        loaded ?: decode(log.ledger()).also {
             loaded = it
             _ledger.value = it
         }
 
-    private suspend fun save(l: Ledger) {
-        store.update { l }
+    /** A damaged ledger reads as empty: a known pen's next tap rebuilds its record from its entries in the log. */
+    private fun decode(json: String?): Ledger =
+        json?.let {
+            runCatching { JSON.decodeFromString(Ledger.serializer(), it) }
+                .onFailure { e -> diagnostic("pen ledger unreadable, starting empty: ${e.message}") }
+                .getOrNull()
+        } ?: Ledger()
+
+    /** One change: [l] and [records] in one transaction, then the screens follow. */
+    private suspend fun commit(
+        l: Ledger,
+        records: List<TreatmentRecord> = emptyList(),
+    ) {
+        log.commit(JSON.encodeToString(Ledger.serializer(), l), records)
         loaded = l
         _ledger.value = l
     }
+
+    /** A change of the ledger alone (a name, the display check). */
+    private suspend fun save(l: Ledger) = commit(l)
 
     private suspend fun engine() = PenEngine(rules(), origin = "phone", log = diagnostic)
 
@@ -155,15 +177,14 @@ class Pens(
 
     private suspend fun allowed() = available() && log.canWrite()
 
-    /** Ledger first, then the entries (each on top of what is stored, keeping its sharing fields). */
+    /** The ledger and the entries of [o] in one commit (each entry on top of what is stored, keeping its sharing fields). */
     private suspend fun apply(
         o: Outcome,
         stored: Map<String, TreatmentRecord>,
     ): Outcome {
         lastUndo = o.undo
         if (o.writes.any { it.id == lastCorrection?.first?.id }) lastCorrection = null
-        save(o.ledger)
-        for (w in o.writes) log.store(PenRecords.record(w, stored[w.id]))
+        commit(o.ledger, o.writes.map { PenRecords.record(it, stored[it.id]) })
         changed(o.ledger)
         return o
     }
@@ -266,14 +287,22 @@ class Pens(
         l: Ledger,
     ) = l.pens[r.serial]?.model?.let { PenProfiles.byId(it) } ?: PenProfiles.identify(r)
 
+    /**
+     * A read through the engine on [base] (the ledger now, or the display check's), with the pen's model, its big read
+     * and [after] (the display check's fields) in the same commit.
+     */
     private suspend fun scanLocked(
         r: PenRead,
         profile: PenProfile,
+        base: Ledger? = null,
+        after: (Pen) -> Pen = { it },
     ): PenReadState {
         val (entries, stored) = entries()
-        val o = apply(engine().scan(current(), scanOf(r), entries, nowMs()), stored)
-        if (current().pens[r.serial]?.model.isNullOrEmpty()) save(engine().update(current(), r.serial) { it.copy(model = profile.id) })
-        bigOf(r.scanTime, o)?.let { big -> save(engine().update(current(), r.serial) { it.copy(big = big) }) }
+        val e = engine()
+        val o0 = e.scan(base ?: current(), scanOf(r), entries, nowMs())
+        val big = bigOf(r.scanTime, o0)
+        val l = e.update(o0.ledger, r.serial) { p -> after(p.copy(model = p.model.ifEmpty { profile.id }, big = big ?: p.big)) }
+        val o = apply(o0.copy(ledger = l), stored)
         return done(r.serial, o.report, o.undo, r)
     }
 
@@ -346,9 +375,19 @@ class Pens(
         mutex.withLock {
             if (r != lastUndo || !allowed()) return@withLock false
             val (entries, stored) = entries()
-            apply(engine().undo(current(), r, entries, nowMs()), stored)
+            val e = engine()
+            val o = e.undo(current(), r, entries, nowMs())
             // a big read undone from its card: nothing is left for its Review to undo
-            if (current().pens[r.serial]?.big?.undo == r) save(engine().update(current(), r.serial) { it.copy(big = null) })
+            val l =
+                if (o.ledger.pens[r.serial]
+                        ?.big
+                        ?.undo == r
+                ) {
+                    e.update(o.ledger, r.serial) { it.copy(big = null) }
+                } else {
+                    o.ledger
+                }
+            apply(o.copy(ledger = l), stored)
             lastUndo = null
             _read.value = _read.value?.let { if (it.undo == r) it.copy(undone = true) else it }
             true
@@ -366,9 +405,9 @@ class Pens(
             val (entries, stored) = entries()
             val byId = entries.associateBy { it.id }
             if (big.wrote.any { (id, u) -> byId[id]?.u != u }) return@withLock BigUndo.Changed
-            apply(engine().undo(current(), big.undo, entries, nowMs()), stored)
-            save(engine().update(current(), serial) { it.copy(big = null) })
-            changed(current())
+            val e = engine()
+            val o = e.undo(current(), big.undo, entries, nowMs())
+            apply(o.copy(ledger = e.update(o.ledger, serial) { it.copy(big = null) }), stored)
             _read.value = _read.value?.let { if (it.undo == big.undo) it.copy(undone = true) else it }
             BigUndo.Done
         }
@@ -482,11 +521,12 @@ class Pens(
             if (!allowed() || r == null || r.scanTime != readAt || !fresh || was.check != null) return@withLock false
             checkHeld.remove(serial)
             // the placeholder makes way for the real first scan (its start date, earlier doses, a returning pen)
-            if (was.doses.isEmpty()) save(engine().forget(current(), serial))
+            val base = if (was.doses.isEmpty()) engine().forget(current(), serial) else current()
             val profile = PenProfiles.byId(was.model) ?: PenProfiles.identify(r)
-            val st = scanLocked(r, profile)
-            save(engine().update(current(), serial) { it.copy(check = CHECK_OK, name = was.name, kind = was.kind, opened = was.opened) })
-            _read.value = st.copy(ledger = current())
+            _read.value =
+                scanLocked(r, profile, base) {
+                    it.copy(check = CHECK_OK, name = was.name, kind = was.kind, opened = was.opened)
+                }
             true
         }
 
@@ -591,8 +631,7 @@ class Pens(
                         val d = next.pd!!.firstOrNull { v.e == id && it.t == v.t && PenEngine.tenths(it.a) == PenEngine.tenths(v.a) }
                         if (d == null) v else v.copy(role = if (d.p) PenEngine.PRIMED else PenEngine.INJECTED, p = d.p)
                     }
-                save(engine().update(l, serial) { it.copy(doses = doses) })
-                log.store(PenRecords.record(next.copy(u = nowMs()), stored[id]))
+                commit(engine().update(l, serial) { it.copy(doses = doses) }, listOf(PenRecords.record(next.copy(u = nowMs()), stored[id])))
                 changed(current())
             }
             val after =
@@ -641,6 +680,8 @@ class Pens(
 
         /** A held read older than this isn't checked: the pen's display counts hours from now, not from the read. */
         const val CHECK_FRESH_S = 600L
+
+        private val JSON = Json { ignoreUnknownKeys = true }
 
         fun scanOf(r: PenRead) =
             PenScan(r.serial, r.scanTime, r.penRelNow, r.doses.map { ReadDose(it.relTime, it.time, it.units, it.incomplete) }, "")

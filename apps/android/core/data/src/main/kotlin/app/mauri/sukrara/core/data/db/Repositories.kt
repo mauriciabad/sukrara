@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.storage.PenLedgerRepository
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -67,6 +68,21 @@ class RoomTreatmentsRepository(private val dao: TreatmentDao) : TreatmentsReposi
     override suspend fun replace(record: TreatmentRecord) = dao.upsert(record.toEntity())
 
     override suspend fun deleteAll() = dao.deleteAll()
+}
+
+/** The pen ledger and the pen's view of the log ([PenLedgerDao]): one transaction per pen change. */
+class RoomPenLedgerRepository(private val dao: PenLedgerDao) : PenLedgerRepository {
+    override suspend fun ledger(): String? = dao.ledger()
+
+    override suspend fun insulin(): List<TreatmentRecord> = dao.insulin().map { it.toRecord() }
+
+    override suspend fun commit(
+        ledger: String,
+        records: List<TreatmentRecord>,
+    ): List<TreatmentRecord> {
+        val stored = dao.commit(PenLedgerEntity(json = ledger), records.map { it.toEntity() }).toSet()
+        return records.filter { it.treatment.id in stored }
+    }
 }
 
 internal fun ReadingEntity.toReading() = Reading(Instant.ofEpochMilli(t), mgdl, rate, SourceId(source))

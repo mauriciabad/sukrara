@@ -18,7 +18,7 @@ import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.SettingsRepository
-import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PenEngine
 import app.mauri.sukrara.pen.engine.PenRules
@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit
  */
 class PensModule(
     private val context: Context,
-    store: StateStore<Ledger>,
     log: PenLog,
     private val settings: SettingsRepository,
     clock: Clock,
@@ -68,7 +67,6 @@ class PensModule(
 
     val pens =
         Pens(
-            store = store,
             log = log,
             clock = clock,
             rules = { rules() },
@@ -78,6 +76,16 @@ class PensModule(
             changed = { l -> changed(l) },
             diagnostic = { Log.i(TAG, it) },
         )
+
+    /** One injection's window (s): doses this close are one session (setting `pens.cluster`). */
+    private val clusterS: StateFlow<Long> =
+        settings.flow(Cluster).map { (it * 60).toLong() }.stateIn(scope, SharingStarted.Eagerly, PenRules().cluster)
+
+    /**
+     * The uploads hold a pen entry until its session closes (one injection's window after its last dose): a top-up
+     * then joins the first version instead of going up as a change of it.
+     */
+    val uploadHold = UploadHold { r -> PenRecords.lastDose(r)?.let { it + clusterS.value } }
 
     /** The reading setting (Ask / On / Off). */
     val readingFlow: Flow<PenReading> = settings.flow(Reading).map { PenReading.of(it) }

@@ -6,6 +6,7 @@ package app.mauri.sukrara.integrations.libreview
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.upload.SentRanges
 import app.mauri.sukrara.integrations.upload.Span
@@ -95,16 +96,19 @@ object LibreViewQueue {
 
     /**
      * The entries that LibreView lacks, oldest first, at most [MAX_ENTRIES]: new ones changed since the upload was
-     * switched on ([from], epoch s) and from the last 30 days, plus every change to one LibreView already has.
+     * switched on ([from], epoch s) and from the last 30 days, plus every change to one LibreView already has. An
+     * entry [hold] keeps back (a pen session still open) waits.
      */
     fun entries(
         records: List<TreatmentRecord>,
         ledger: Map<String, LvSent>,
         from: Long,
         nowS: Long,
+        hold: UploadHold = UploadHold.NONE,
     ): List<LvEntry> =
         records
             .asSequence()
+            .filter { (hold.until(it) ?: 0L) <= nowS }
             .map { it to it.treatment }
             .filter { (_, t) ->
                 // what LibreView has is always corrected (edited, moved or deleted), whenever it happened
