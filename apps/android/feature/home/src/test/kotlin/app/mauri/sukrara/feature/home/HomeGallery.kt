@@ -80,7 +80,10 @@ class HomeGallery {
             banner = banner,
             firstProblem = AlertReadiness(setOf(AlertRequirement.ExactAlarm)).firstProblem,
             nextSetupStep = "Alert thresholds",
-            dataProblems = List(problems) { DataProblem("settings", "SerializationException", "settings.corrupt.json", NOW) },
+            dataProblems =
+                List(
+                    problems,
+                ) { DataProblem(DamagedStore.Settings, "settings", "SerializationException", "settings.corrupt.json", NOW) },
             treatments = treatments,
             undo = null,
         )
@@ -248,8 +251,8 @@ class HomeGallery {
             SukraraTheme(dark = true, dynamic = false) {
                 DataProblemScreen(
                     listOf(
-                        DataProblem("settings:alerts", "SerializationException", "settings.corrupt-1767.json", NOW),
-                        DataProblem("database:history", "sqlite corruption", null, NOW),
+                        DataProblem(DamagedStore.Settings, "alerts", "SerializationException", "settings.corrupt-1767.json", NOW),
+                        DataProblem(DamagedStore.History, "sukrara.db", "sqlite corruption", null, NOW),
                     ),
                     onCopyReport = {},
                     onAcknowledge = {},

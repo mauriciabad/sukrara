@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.core.data
 
+import app.mauri.sukrara.core.data.settings.SECURE_STORE
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.schemaStores
 import app.mauri.sukrara.settings.SettingsSpec
@@ -51,6 +52,24 @@ class SettingsSchemaTest {
                 .toSet()
         val keys = android.flatMap { it.android.substringAfter(':').split(',') }.toSet()
         assertEquals(constants, keys)
+    }
+
+    @Test
+    fun `every Android secret lives in the SecureStore under a known name, never in a DataStore or a settings file`() {
+        val secrets = android.filter { it.type == "secret" }
+        assertTrue(secrets.any { it.id == "source.jugglucoSecret" })
+        for (info in secrets) {
+            val (store, name) = info.android.split(":", limit = 2)
+            assertEquals(info.id, SECURE_STORE, store)
+            assertTrue(info.id, name in app.mauri.sukrara.core.data.secure.SecretName.ALL)
+        }
+        assertEquals("secure:${app.mauri.sukrara.core.data.secure.SecretName.JUGGLUCO}", secrets.single().android)
+        assertTrue(SECURE_STORE !in schemaStores())
+        assertTrue(
+            app.mauri.sukrara.core.data.settings.SettingsTransfer
+                .entries()
+                .none { it.store == SECURE_STORE },
+        )
     }
 
     @Test(expected = IllegalArgumentException::class)

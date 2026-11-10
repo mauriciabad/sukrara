@@ -46,7 +46,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   warm-up countdown in a ring, haptics on the tap, the screen kept on, every failure handled on the same screen
   (ended sensor, Libre 1/2, a tag that isn't a sensor, another app holding the sensor, Bluetooth off, a wrong ID or PIN).
 - **Settings › Sensor**: the current sensor (status, serial, start, end and time left), the reading source (Libre 3
-  directly or Juggluco, saying first what changes), the LibreView account (email and receiver ID, sign in / out; the
+  directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account (email and receiver ID, sign in / out; the
   password is never stored) and *Pair new sensor*.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
   every card: never by colour alone) and a 6 h chart you can scroll and pinch-zoom through the
@@ -129,9 +129,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   **Settings from** (Settings): use the wearer's ranges, graph and alert rules (kept up to date), Sukrara's defaults,
   or your own (start them by copying the wearer's or from the defaults); sounds and no-data alerts are always yours.
 - **Share with apps**: upload your Libre 3 glucose and entries to **LibreView** for your clinic (password used once,
-  never saved; asks before taking over another uploading device; only from the moment you switch it on; a cloud on each
+  never saved; asks before taking over another uploading device or uploading to another account than your sensor's; readings not sent yet survive a restart; only from the moment you switch it on; a cloud on each
   entry on home says whether LibreView has it, every 5 / 15 / 60 min or your own interval; a home banner suggests LibreView or Tidepool until one is set up), to your own **Nightscout** site (https, access token kept encrypted; 30-day catch-up,
-  pauses when another app uploads to the same site), to **Tidepool** (both roles; a follower only after its own
+  pauses when another app uploads to the same site; an entry another app already put there, like an AndroidAPS bolus, is
+  never doubled), to **Tidepool** (both roles; a follower only after its own
   choice; password used once), an **xDrip+-compatible server** on this phone for **Garmin** watches (off until you
   switch it on; loopback only), a **Nightscout API on this phone** for apps like xDrip+ and GlucoDataHandler (off by
   default, API secret required; an extra opt-in also serves devices on your home Wi-Fi, with a plain warning),

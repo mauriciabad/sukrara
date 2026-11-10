@@ -17,10 +17,15 @@ import app.mauri.sukrara.protocol.testing.OgsVectors
 import app.mauri.sukrara.protocol.testing.OgsVectors.Companion.str
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -83,6 +88,7 @@ class IdentityConflictTest {
             Triple("own-backup-unrecorded", backup(listOf(1 to g1, 2 to g2), now - 5), "fine"),
             Triple("old-backup-late", backup(listOf(1 to g1), now - 1000), "fine"),
             Triple("other-device-backup", backup(listOf(1 to g1), now + 30), "conflict:BackupFromElsewhere"),
+            Triple("other-rotated-backup", backup(listOf(1 to g1, 2 to g2, 3 to g3), now + 25), "conflict:BackupFromElsewhere"),
             Triple(
                 "stranger-roster",
                 f.roster(
@@ -94,6 +100,27 @@ class IdentityConflictTest {
                 ),
                 "fine",
             ),
+        )
+
+    /**
+     * "I turned it off — retry" after a conflict: what the relays returned ([found]), whether a roster under an
+     * unknown epoch was seen ([unknown]) → the epoch the retry rotates to (null = republish roster + backup only).
+     */
+    private data class Retry(val found: List<String>, val unknown: Boolean, val rotateTo: Int?)
+
+    private fun retries() =
+        listOf(
+            // the other app rotated to 3 and its backup says so: go above it
+            Retry(listOf("unknown-epoch-roster", "other-rotated-backup"), true, 4),
+            // its backup isn't on the relays: epoch 3's number can't be read, jump past the newest known
+            Retry(listOf("unknown-epoch-roster"), true, 2 + 1 + IdentityConflict.EPOCH_JUMP),
+            // no relay answered
+            Retry(emptyList(), true, 2 + 1 + IdentityConflict.EPOCH_JUMP),
+            // only the backup shows the other app's newer epoch
+            Retry(listOf("other-rotated-backup"), false, 4),
+            // the other app is on an epoch we hold: republishing is enough
+            Retry(listOf("other-device-roster", "other-device-backup"), false, null),
+            Retry(listOf("own-roster-echo", "own-backup-echo"), false, null),
         )
 
     private fun code(c: IdentityCheck) =
@@ -154,6 +181,20 @@ class IdentityConflictTest {
                             }
                         },
                     )
+                    put(
+                        "retries",
+                        buildJsonArray {
+                            retries().forEach { r ->
+                                add(
+                                    buildJsonObject {
+                                        put("found", buildJsonArray { r.found.forEach { add(JsonPrimitive(it)) } })
+                                        put("unknownEpoch", r.unknown)
+                                        put("rotateTo", r.rotateTo?.let(::JsonPrimitive) ?: JsonNull)
+                                    },
+                                )
+                            }
+                        },
+                    )
                 }
             File(Contracts.root, "protocol/sync/owner-conflict.json").writeText(
                 Json {
@@ -167,6 +208,17 @@ class IdentityConflictTest {
             val c = it.jsonObject
             val ev = SignedEvent.parse(events.getValue(c.str("event")).toString())!!
             assertEquals(c.str("event"), c.str("expect"), code(IdentityConflict.check(crypto, marks, ev)))
+        }
+        fx.getValue("retries").jsonArray.forEach {
+            val r = it.jsonObject
+            val names = r.getValue("found").jsonArray.map { n -> n.jsonPrimitive.content }
+            val found = names.map { n -> SignedEvent.parse(events.getValue(n).toString())!! }
+            val unknown = r.getValue("unknownEpoch").jsonPrimitive.boolean
+            assertEquals(
+                "retry after $names",
+                r.getValue("rotateTo").jsonPrimitive.intOrNull,
+                IdentityConflict.retryEpoch(crypto, marks, found, unknown),
+            )
         }
     }
 

@@ -105,11 +105,9 @@ class NoDataReasonTest {
         for (state in underCard) assertFalse("$state", reason(state)!!.fullPage)
     }
 
-    @Test fun `a damaged store says what it means for the person`() {
-        fun kind(store: String) = DataProblem(store, "x", null, NOW).kind
-        assertEquals(DamagedStore.Settings, kind("settings:alerts"))
-        assertEquals(DamagedStore.History, kind("database:history"))
-        assertEquals(DamagedStore.Keys, kind("secret:identity"))
-        assertEquals(DamagedStore.Other, kind("home-banners.json"))
+    @Test fun `the damaged-data report names the store kind and error type only`() {
+        val text = report(DataProblem(DamagedStore.Keys, "identity.owner", "AEADBadTagException", "identity.owner.bin.corrupt-1", NOW))
+        assertTrue(text.contains("store: keys:identity.owner"))
+        assertTrue(text.contains("reason: AEADBadTagException"))
     }
 }

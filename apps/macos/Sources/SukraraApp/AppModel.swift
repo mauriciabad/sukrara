@@ -137,7 +137,7 @@ public final class AppModel {
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         followMonitoring = link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty)
         followReadings = followMonitoring ? snapshot.readings : []
-        wearerName = snapshot.wearer?.name
+        wearerName = Profile.shownName(snapshot.wearer?.name)
         followerKnown = true
         syncLan()
         monitoringChanged(from: wasMonitoring)
@@ -220,7 +220,7 @@ public final class AppModel {
 
     /// The wearer's name while following pauses Juggluco (nil = not paused).
     var lanPausedFor: String? {
-        followMonitoring ? (wearerName.flatMap { $0.isEmpty ? nil : $0 } ?? L10n.t("the wearer")) : nil
+        followMonitoring ? (wearerName ?? L10n.t("the wearer")) : nil
     }
 
     /// Try Again on the Juggluco source.

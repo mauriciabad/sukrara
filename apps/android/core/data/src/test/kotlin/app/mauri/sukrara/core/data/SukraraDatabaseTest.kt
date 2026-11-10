@@ -11,13 +11,16 @@ import app.mauri.sukrara.core.data.db.RoomReadingsRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
 import app.mauri.sukrara.core.data.db.SukraraDatabase
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -49,6 +52,28 @@ class SukraraDatabaseTest {
         mgdl: Int,
         source: SourceId = SourceId.Libre3,
     ) = Reading(t0.plus(Duration.ofMinutes(minutes)), mgdl, 0.5, source)
+
+    @Test
+    fun `across a role change every read shows only the current person's readings`() =
+        runTest {
+            val role = MutableStateFlow<Role?>(Role.Wearer)
+            val scoped = RoomReadingsRepository(db.readings(), role.map(SourceId::notOf))
+            // the wearer's own sensor, then the person followed (the role changed meanwhile)
+            readings.upsert(listOf(reading(0, 100), reading(5, 110, SourceId.Juggluco), reading(10, 200, SourceId.Relay)))
+
+            assertEquals(listOf(100, 110), scoped.window(t0).first().map { it.mgdl })
+            assertEquals(110, scoped.latest().first()?.mgdl)
+            assertEquals(listOf(100, 110), scoped.range(t0, t0.plusSeconds(3600)).map { it.mgdl })
+
+            role.value = Role.Follower
+            assertEquals(listOf(200), scoped.window(t0).first().map { it.mgdl })
+            assertEquals(200, scoped.latest().first()?.mgdl)
+            assertEquals(listOf(200), scoped.range(t0, t0.plusSeconds(3600)).map { it.mgdl })
+
+            assertEquals(2, scoped.deleteFrom(SourceId.notOf(Role.Follower)))
+            assertEquals(listOf(200), readings.window(t0).first().map { it.mgdl })
+            assertEquals("no role yet hides and deletes nothing", 0, readings.deleteFrom(SourceId.notOf(null)))
+        }
 
     @Test
     fun `window returns readings from a time, oldest first`() =

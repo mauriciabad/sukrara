@@ -51,7 +51,10 @@ class FollowerSyncFixtureTest {
             .sorted()
 
     @Test fun everyFollowerSequenceLeavesTheExpectedState() {
-        assertEquals(listOf("join-readings", "revoke-reapprove", "rotation", "settings-mirror", "treatments-writer"), files)
+        assertEquals(
+            listOf("conflict-rotation", "join-readings", "revoke-reapprove", "rotation", "settings-mirror", "treatments-writer"),
+            files,
+        )
         files.forEach { replay(it) }
     }
 

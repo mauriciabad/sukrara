@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
             deepLink = intent?.data
-            intent?.let(::askNewSensor)
+            askNewSensor(intent)
             openPen = penPage(intent)
             openHealth = healthRationale(intent)
         }
@@ -82,13 +82,14 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * The new-sensor flow for [i] (a notification, a widget, a sensor tap). A tap only when no sensor is being read:
-     * resting the phone on the running sensor must not re-pair it (a new pairing would interrupt its readings); then
-     * the app just opens.
+     * The new-sensor flow for [i] (a notification, a widget, a sensor tap), only when Sukrara asked for it
+     * ([SensorSetupGate]: another app's intent just opens the app). A tap only when no sensor is being read: resting
+     * the phone on the running sensor must not re-pair it (a new pairing would interrupt its readings); then the app
+     * just opens.
      */
-    private fun askNewSensor(i: Intent) {
-        if (!opensNewSensor(i.action)) return
-        if (!i.getBooleanExtra(NavTargets.EXTRA_FROM_SENSOR_TAP, false)) {
+    private fun askNewSensor(i: Intent?) {
+        val request = SensorSetupGate.request(i) ?: return
+        if (!request.fromSensorTap) {
             openNewSensor = true
             return
         }

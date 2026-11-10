@@ -79,7 +79,7 @@ class IdentityConflictTest {
     @Test fun retryReplacesTheOtherAppsRosterSoItsStaleEventIsFineAfterwards() {
         val other = events.getValue("other-device-roster")
         val blocked = detector.check(state, other, NOW)!!
-        val retried = detector.retry(blocked, NOW)
+        val retried = detector.retry(blocked, listOf(other), NOW)
         assertNull(retried.state.conflict)
         assertTrue(retried.state.rosterPublishedAt > other.createdAt)
         assertEquals(IdentityCheck.Fine, IdentityConflict.check(crypto, retried.state.marks(crypto), other))
@@ -120,6 +120,61 @@ class IdentityConflictTest {
             runCurrent()
             assertTrue(engine.state.value is OwnerShareState.Sharing)
             engine.stop()
+        }
+
+    @Test fun retryAfterAnUnknownEpochRotatesAboveTheOtherAppsEpoch() {
+        val other = events.getValue("unknown-epoch-roster")
+        val blocked = detector.check(state, other, NOW)!!
+        // a later backup conflict doesn't hide that followers moved to the other app's epoch
+        val still = detector.check(blocked, events.getValue("other-device-backup"), NOW)!!
+        assertEquals(IdentityCheck.Reason.RosterUnknownEpoch, still.conflict!!.reason)
+        val retried = detector.retry(still, listOf(other, events.getValue("other-rotated-backup")), NOW)
+        assertEquals(4, retried.state.current.n)
+        assertNull(retried.state.conflict)
+        // past every event of the other app, so relays keep ours
+        assertTrue(retried.state.rosterPublishedAt > events.getValue("other-rotated-backup").createdAt)
+    }
+
+    /** The engine reads the other app's epoch from the relays (a fake relay holding its higher-epoch roster) before it rotates. */
+    @Test fun engineRetryReadsTheOtherAppsEpochFromTheRelays() =
+        runTest {
+            fun engineWith(stored: List<String>): Triple<OwnerEngine, OwnerIdentityStore, FakeRelayTransport> {
+                val dispatcher = StandardTestDispatcher(testScheduler)
+                val relay = FakeRelayTransport().apply { this.stored += stored.map(events::getValue) }
+                val store = OwnerIdentityStore(InMemorySecureStore())
+                val clock = FakeClock(Instant.ofEpochSecond(NOW))
+                val engine =
+                    OwnerEngine(
+                        OwnerFixtures.context(),
+                        store,
+                        relay,
+                        FakeHub(),
+                        { _, _ -> true },
+                        InMemoryTreatmentsRepository(),
+                        clock,
+                        dispatcher,
+                    )
+                return Triple(engine, store, relay)
+            }
+            for ((stored, epoch) in listOf(
+                listOf("unknown-epoch-roster", "other-rotated-backup") to 4,
+                listOf("unknown-epoch-roster") to 3 + IdentityConflict.EPOCH_JUMP,
+            )) {
+                val (engine, store, relay) = engineWith(stored)
+                store.save(state.copy(rosterPublishedAt = NOW, backupPublishedAt = NOW))
+                engine.start(backgroundScope)
+                runCurrent()
+                (engine.state.value as OwnerShareState.Sharing).let { assertEquals(2, it.epoch) }
+                engine.retryConflict() // nothing to retry yet
+                (store.load() as OwnerIdentityStore.Load.Loaded).let { assertEquals(2, it.state.current.n) }
+                relay.deliver("own", events.getValue("unknown-epoch-roster"))
+                runCurrent()
+                assertTrue(engine.state.value is OwnerShareState.AnotherAppSharingAsYou)
+                engine.retryConflict()
+                runCurrent()
+                assertEquals(stored.toString(), epoch, (engine.state.value as OwnerShareState.Sharing).epoch)
+                engine.stop()
+            }
         }
 
     private companion object {

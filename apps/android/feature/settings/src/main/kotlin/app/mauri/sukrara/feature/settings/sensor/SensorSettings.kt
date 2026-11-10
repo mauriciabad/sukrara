@@ -45,6 +45,9 @@ enum class SourceLink {
     /** Juggluco's web server doesn't answer: no readings until Juggluco runs with it on. */
     JugglucoUnreachable,
 
+    /** Juggluco refuses Sukrara: its web server's API secret and Sukrara's don't match (or one is missing). */
+    JugglucoRefused,
+
     /** Looking for the sensor (a scanned family): short scans until it shows up. Leaves by itself. */
     Searching,
 
@@ -82,6 +85,13 @@ data class SensorSettingsState(
     val paired: Boolean = false,
     /** *Open Sukrara when you scan a sensor*: null = the phone has no NFC (the row doesn't show). */
     val openOnScan: OpenOnScan? = null,
+    /**
+     * Monitoring is stopped while something is set up to read (a pairing, or Juggluco): the source isn't read, so
+     * [state] says nothing about the sensor. The page says *Monitoring stopped* with *Resume*, never "no sensor".
+     */
+    val stopped: Boolean = false,
+    /** Juggluco's API secret is saved (never shown; null = not read yet). */
+    val jugglucoSecret: Boolean? = null,
 )
 
 /** The tap switch: [on], and [blocked] = Android stops Sukrara's tag intents (Settings › Apps › Sukrara). */
@@ -117,6 +127,15 @@ interface SensorSettingsPort {
      * again from the next sensor's first reading). Runs to the end in the app's scope.
      */
     fun forget() = Unit
+
+    /** *Resume* while monitoring is stopped ([SensorSettingsState.stopped]): starts it again. */
+    fun resume() = Unit
+
+    /**
+     * Saves Juggluco's web-server API secret (blank removes it) and reconnects to Juggluco with it. Runs to the end in
+     * the app's scope.
+     */
+    fun setJugglucoSecret(secret: String) = Unit
 }
 
 class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel() {
@@ -138,6 +157,10 @@ class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel(
     fun allowTaps() = port.allowTaps()
 
     fun forget() = port.forget()
+
+    fun resume() = port.resume()
+
+    fun setJugglucoSecret(secret: String) = port.setJugglucoSecret(secret)
 
     companion object {
         fun factory(

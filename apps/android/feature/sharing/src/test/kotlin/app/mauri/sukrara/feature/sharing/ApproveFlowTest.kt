@@ -9,7 +9,7 @@ import app.mauri.sukrara.feature.sharing.share.LaterRequests
 import app.mauri.sukrara.feature.sharing.share.SharingViewModel
 import app.mauri.sukrara.feature.sharing.share.labelMatches
 import app.mauri.sukrara.feature.sharing.share.requestToShow
-import app.mauri.sukrara.feature.sharing.share.shownName
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -78,7 +78,7 @@ class ApproveFlowTest {
 
     @Test
     fun `a name someone else chose loses control and direction characters`() {
-        assertEquals("Mom", shownName("\u202EMo\u0000m\n"))
+        assertEquals("Mom", Profile.shownName("\u202EMo\u0000m\n"))
     }
 
     @Test

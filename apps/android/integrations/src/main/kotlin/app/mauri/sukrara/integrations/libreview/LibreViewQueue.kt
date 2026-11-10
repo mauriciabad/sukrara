@@ -42,6 +42,8 @@ data class LvState(
     val deviceId: String = "",
     /** Signed in as (shown on the page; the token itself is only in the SecureStore). */
     val email: String = "",
+    /** The signed-in account's LibreView AccountId: decides "the same account" at the next sign-in. */
+    val accountId: String = "",
     /** Sensor glucose goes up from this moment (epoch s; 0 = glucose isn't uploading). */
     val glucoseFrom: Long = 0,
     /** New entries go up when changed after this moment (epoch s; 0 = entries aren't uploading). */
@@ -56,6 +58,16 @@ data class LvState(
     val lastOkMs: Long = 0,
     val lastCount: Int = 0,
     val lastError: Trouble? = null,
+)
+
+/**
+ * The Libre 3 history LibreView hasn't got yet (typed store `libreview-unsent`), so a restart or a process death
+ * doesn't lose it: at most [LibreViewQueue.HISTORY_MIN] of one sensor, only what would go up ([LibreViewQueue.unsent]).
+ */
+@Serializable
+data class LvUnsent(
+    val serial: String = "",
+    val history: List<LvGlucose> = emptyList(),
 )
 
 /** Where an entry stands with LibreView ([LibreViewQueue.mark]). */
@@ -182,6 +194,24 @@ object LibreViewQueue {
                 .take(MAX_HISTORY)
         if (cur == null && hist.isEmpty()) return null
         return LvSensor(serial, start, cur, hist, sendStart = state?.startSent != true)
+    }
+
+    /** What of [serial]'s [history] LibreView lacks and would get (from [from]; nothing while glucose is off). */
+    fun unsent(
+        serial: String?,
+        history: Collection<LvGlucose>,
+        state: LvState,
+    ): LvUnsent {
+        if (serial == null || state.glucoseFrom <= 0) return LvUnsent()
+        val sent =
+            SentRanges.expand(
+                state.sensors
+                    .firstOrNull { it.serial == serial }
+                    ?.sent
+                    .orEmpty(),
+            )
+        val keep = history.filter { it.epochSec >= state.glucoseFrom && it.lifeCount.toLong() !in sent }.sortedBy { it.lifeCount }
+        return if (keep.isEmpty()) LvUnsent() else LvUnsent(serial, keep.takeLast(HISTORY_MIN))
     }
 
     /** The sensors' state after LibreView accepted [s]: the last two sensors, 3 days of life counts each. */

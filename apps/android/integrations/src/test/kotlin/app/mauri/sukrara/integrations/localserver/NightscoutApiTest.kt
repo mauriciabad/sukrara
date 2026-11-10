@@ -187,9 +187,9 @@ class NightscoutApiTest {
 
     @Test
     fun `each role serves only its own person's readings`() {
-        assertTrue(SourceId.Libre3 in NightscoutApi.sources(Role.Wearer))
-        assertFalse(SourceId.Relay in NightscoutApi.sources(Role.Wearer))
-        assertEquals(setOf(SourceId.Relay, SourceId.Nearby), NightscoutApi.sources(Role.Follower))
+        assertTrue(SourceId.Libre3 in SourceId.of(Role.Wearer))
+        assertFalse(SourceId.Relay in SourceId.of(Role.Wearer))
+        assertEquals(setOf(SourceId.Relay, SourceId.Nearby), SourceId.of(Role.Follower))
     }
 
     private class Unreadable : SecureStore {

@@ -93,7 +93,7 @@ class SourceManager internal constructor(
     private val scope = CoroutineScope(SupervisorJob() + dispatcher + CoroutineExceptionHandler { _, e -> log("sensor task failed: $e") })
     private val readingsOut = Channel<List<Reading>>(Channel.UNLIMITED)
     private val restarts = MutableStateFlow(0)
-    private val _detail = MutableStateFlow<SensorStatus>(SensorStatus.NoSensor)
+    private val _detail = MutableStateFlow<SensorStatus>(SensorStatus.NotRunning)
     private val _sensor = MutableStateFlow<SensorState>(SensorState.None)
     private val _status = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
     private val _sensorGlucose = MutableSharedFlow<SensorGlucoseBatch>(extraBufferCapacity = 64)
@@ -154,13 +154,16 @@ class SourceManager internal constructor(
             }
     }
 
-    /** Stops reading (the phone stops being the wearer): the link is closed; [start] begins again. */
+    /**
+     * Stops reading (monitoring stopped, or the phone stops being the wearer): the link is closed; [start] begins
+     * again. The detail says [SensorStatus.NotRunning], never "no sensor": a pairing may well exist.
+     */
     fun stop() {
         started?.cancel()
         started = null
         scope.launch {
             resetState()
-            publish(SensorStatus.NoSensor)
+            publish(SensorStatus.NotRunning)
         }
     }
 
@@ -384,7 +387,7 @@ class SourceManager internal constructor(
                 override fun onStatus(status: JugglucoStatus) {
                     scope.launch {
                         publish(SensorStatus.Juggluco(status))
-                        if (status is JugglucoStatus.Unreachable) interrupted()
+                        if (status is JugglucoStatus.Unreachable || status == JugglucoStatus.Refused) interrupted()
                     }
                 }
 
@@ -439,7 +442,7 @@ class SourceManager internal constructor(
     private fun refreshSensor() {
         _sensor.value =
             when (val d = _detail.value) {
-                SensorStatus.NoSensor -> {
+                SensorStatus.NoSensor, SensorStatus.NotRunning -> {
                     SensorState.None
                 }
 

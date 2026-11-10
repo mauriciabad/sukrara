@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -48,7 +49,9 @@ import kotlinx.coroutines.flow.shareIn
  * the glucose notification. `AppGraph` builds one and the `Application` exposes it through [MonitorHost].
  *
  * [source] is the role's one reading source: wearer → the sensor module's source, follower → the follower engine;
- * null = nothing set up to monitor (no sensor paired, not following anyone), so the service doesn't run.
+ * null = nothing set up to monitor (no sensor paired, not following anyone), so the service doesn't run. The service
+ * asks for it again on a role change and on every [sourceChanges] (another glucose source chosen, the sensor
+ * forgotten): nothing left to read stops it.
  */
 class MonitorModule(
     private val context: Context,
@@ -64,6 +67,8 @@ class MonitorModule(
     graphConfig: Flow<GraphConfig>,
     /** The wearer's followers and nearby devices for the notification's sub text (null: not sharing). */
     sharing: Flow<SharingLine?> = flowOf(null),
+    /** The role's reading source may have changed (Settings › Sensor): the service picks it again. */
+    val sourceChanges: Flow<Unit> = emptyFlow(),
 ) {
     val hubImpl = GlucoseHubImpl(scope, dispatchers, clock, readings, record, role)
 

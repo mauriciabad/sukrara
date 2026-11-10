@@ -57,10 +57,10 @@ class SecureStoreTest {
             assertTrue("never turned into 'no identity'", file.exists())
             assertEquals(1, log.files.value.size)
             assertEquals(
-                "secret:identity.owner",
+                StoreKind.Secret to "identity.owner",
                 log.files.value
                     .single()
-                    .store,
+                    .let { it.kind to it.store },
             )
             assertTrue(
                 log.files.value

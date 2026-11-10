@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -199,7 +200,7 @@ class NightscoutApiServer(
                         flowOf(emptyList())
                     } else {
                         hourly(WINDOW).flatMapLatest { from -> readings.window(from) }.map { list ->
-                            list.filter { it.source in NightscoutApi.sources(r) }.asReversed()
+                            list.filter { it.source in SourceId.of(r) }.asReversed()
                         }
                     }
                 }.catch { emit(emptyList()) }

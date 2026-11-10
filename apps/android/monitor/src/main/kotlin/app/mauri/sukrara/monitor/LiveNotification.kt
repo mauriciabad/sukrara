@@ -376,8 +376,11 @@ class LiveNotification(
             }
 
             Target.SensorSetup -> {
-                // the app's own activity with the flow's action: no exported filter for it (any app could open it)
-                val setup = launchIntent().setAction(NavTargets.ACTION_SENSOR_SETUP).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // the app's non-exported trampoline: no other app can open the flow
+                val setup =
+                    Intent(NavTargets.ACTION_SENSOR_SETUP)
+                        .setClassName(context.packageName, NavTargets.SENSOR_SETUP_ACTIVITY)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 PendingIntent.getActivity(context, REQUEST_SENSOR, setup, IMMUTABLE)
             }
         }

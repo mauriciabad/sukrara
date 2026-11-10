@@ -165,7 +165,7 @@ object RumorCodec {
                 if (type ==
                     "invite"
                 ) {
-                    Rumor.Invite(o.long("x"), Wire.secureRelays(o.strings("r")), Profile.of(o["profile"]))
+                    Rumor.Invite(o.long("x"), Wire.validRelays(o.strings("r")), Profile.of(o["profile"]))
                 } else {
                     null
                 }
@@ -214,7 +214,7 @@ object RumorCodec {
                     o.long("epoch").toInt(),
                     g,
                     o.strings("devices").filter(Hex::isKey),
-                    Wire.secureRelays(o.strings("relays")),
+                    Wire.validRelays(o.strings("relays")),
                 )
             }
 

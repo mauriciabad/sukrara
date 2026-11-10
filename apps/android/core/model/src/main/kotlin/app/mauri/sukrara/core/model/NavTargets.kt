@@ -14,8 +14,14 @@ object NavTargets {
     /** Boolean extra of [ACTION_QUICK_TREATMENT]: open with Carbs focused (a low is going on). */
     const val EXTRA_FOCUS_CARBS = "app.mauri.sukrara.extra.FOCUS_CARBS"
 
-    /** The new-sensor / sensor setup flow. */
+    /**
+     * The new-sensor / sensor setup flow. Intents for it target [SENSOR_SETUP_ACTIVITY] explicitly (not exported:
+     * only Sukrara's own PendingIntents reach it); the main activity ignores the action from any other app.
+     */
     const val ACTION_SENSOR_SETUP = "app.mauri.sukrara.action.SENSOR_SETUP"
+
+    /** The non-exported trampoline (`:app`) that opens the new-sensor flow: `Intent.setClassName(packageName, this)`. */
+    const val SENSOR_SETUP_ACTIVITY = "app.mauri.sukrara.SensorSetupActivity"
 
     /** Boolean extra of [ACTION_SENSOR_SETUP]: a sensor was tapped (NFC) while Sukrara wasn't in front. */
     const val EXTRA_FROM_SENSOR_TAP = "app.mauri.sukrara.extra.FROM_SENSOR_TAP"

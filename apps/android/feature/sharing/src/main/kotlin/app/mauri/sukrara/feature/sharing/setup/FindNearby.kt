@@ -35,7 +35,7 @@ import app.mauri.sukrara.feature.sharing.BLOCKED
 import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
-import app.mauri.sukrara.feature.sharing.share.shownName
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
@@ -120,11 +120,12 @@ private fun OfferRow(
     onClick: () -> Unit,
 ) {
     val name =
-        shownName(
-            offer.pairing.profile
-                ?.name
-                .orEmpty(),
-        ).ifBlank { stringResource(R.string.sh_join_someone) }
+        Profile
+            .shownName(
+                offer.pairing.profile
+                    ?.name
+                    .orEmpty(),
+            ).ifBlank { stringResource(R.string.sh_join_someone) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

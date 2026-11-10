@@ -165,7 +165,7 @@ object SettingsSpec {
         SettingInfo("general.openAtLogin", "bool", null, false, null, "", "system:SMAppService.mainApp", null, "mac", "A menu bar app starts as a login item; Android starts Sukrara's service on boot by itself"),
         SettingInfo("source.jugglucoLan", "bool", null, false, null, "", "defaults:jugglucoLan", null, "mac", "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)"),
         SettingInfo("source.jugglucoAddress", "string", null, false, null, "", "defaults:jugglucoAddress", null, "mac", "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)"),
-        SettingInfo("source.jugglucoSecret", "secret", null, false, null, "", "keychain:jugglucoSecret", null, "mac", "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)"),
+        SettingInfo("source.jugglucoSecret", "secret", null, false, null, "secure:juggluco", "keychain:jugglucoSecret", null, null, null),
         SettingInfo("settings.pane", "enum", null, false, null, "", "defaults:settingsPane", null, "mac", "The Mac Settings window reopens on the last pane it showed (HIG Settings); Android settings are a navigation stack that starts at its top"),
         SettingInfo("report.days", "enum", null, false, null, "", "defaults:reportDays", null, "mac", "Both reports offer the same 1 / 7 / 14 / 30-day choice in the report itself; the Mac's report window remembers the last one, Android's card starts at 14 days"),
         SettingInfo("source.source", "enum", null, false, null, "settings:source", "", null, "android", "Only the wearer's phone reads a sensor; the Mac follows (its source is the follow link, Settings › General)"),
@@ -210,7 +210,7 @@ object SettingsSpec {
         SettingInfo("healthConnect.on", "bool", null, false, null, "integrations:healthConnect", "", null, "android", "Health Connect is an Android platform store; macOS has none for a follower"),
     )
 
-    /** The Preferences DataStore files (one per area). */
+    /** The Preferences DataStore files (one per area); secrets (store 'secure') are in the SecureStore. */
     object Stores {
         const val GRAPH = "graph"
         const val SENSOR = "sensor"
@@ -257,6 +257,7 @@ object SettingsSpec {
         const val THRESHOLDS_CONFIRMED_AT = "thresholdsConfirmedAt"
         const val UNLOCKED_SOUND = "unlockedSound"
         const val UNIT = "unit"
+        const val JUGGLUCO = "juggluco"
         const val SOURCE = "source"
         const val RELAY_SHARING = "relaySharing"
         const val RELAY_INTERVAL = "relayInterval"

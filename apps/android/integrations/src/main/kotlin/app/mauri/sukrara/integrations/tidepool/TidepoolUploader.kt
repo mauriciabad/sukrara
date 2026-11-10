@@ -267,7 +267,7 @@ class TidepoolUploader(
         val full = nowMs - fullScanMs >= FULL_SCAN_EVERY_MS
         val start = if (full) windowStart else maxOf(windowStart, clock.now() - RECENT)
         // only this role's readings: never the person followed earlier (or one's own readings while following)
-        val own = if (r == Role.Wearer) SourceId.Wearer else setOf(SourceId.Relay, SourceId.Nearby)
+        val own = SourceId.of(r)
         val rd =
             if (s.glucose) readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own } else emptyList()
         if (full) fullScanMs = nowMs

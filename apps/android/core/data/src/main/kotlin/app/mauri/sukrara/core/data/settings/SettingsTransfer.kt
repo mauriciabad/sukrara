@@ -208,7 +208,8 @@ class SettingsTransfer(
         /** The stored keys the file carries (one per key of a per-place setting; settings sharing a key once). */
         internal fun entries(): List<Entry> =
             SettingsSpec.SETTINGS
-                .filter { it.android.isNotEmpty() && it.id !in KEPT && it.type != "state" }
+                // secrets (store `secure`) never leave the phone in a settings file
+                .filter { it.android.isNotEmpty() && it.id !in KEPT && it.type != "state" && it.type != "secret" }
                 .flatMap { info ->
                     val (store, keys) = info.android.split(":", limit = 2)
                     keys.split(',').map { Entry(info.id, info.type, store, it) }

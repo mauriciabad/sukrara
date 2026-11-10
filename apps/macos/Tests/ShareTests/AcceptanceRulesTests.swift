@@ -157,6 +157,46 @@ struct AcceptanceRulesTests {
         #expect(follower.state.sensorCreatedAt == -1)
     }
 
+    @Test func chunkFromTheFutureIsRefused() throws {
+        var follower = try session()
+        _ = follower.receive(v.event("key-1"), now: v.now)
+        _ = follower.receive(v.event("roster-1"), now: v.now)
+        func chunk(hour: Int, rows: [(dt: Int, sgv: Int)], createdAt: Int) throws -> SignedEvent {
+            let r = rows.map { "[\($0.dt),\($0.sgv)]" }.joined(separator: ",")
+            let content = try crypto.nip44Encrypt(
+                "{\"v\":2,\"h\":\(hour),\"r\":[\(r)]}", from: v.secret("D"), to: v.pub("G1"))
+            return try crypto.sign(
+                kind: Wire.kindData, content: content,
+                tags: [
+                    ["d", Wire.chunkD(sid: v.sid, hour: hour)], ["c", Wire.glucoseC(sid: v.sid)],
+                    ["gk", Wire.gk(groupPublicKey: v.pub("G1"))],
+                ], createdAt: createdAt, with: v.secret("D"))
+        }
+        let hour = v.now - v.now % 3600
+        let later = try chunk(hour: hour + 7200, rows: [(60, 120)], createdAt: v.now)
+        #expect(follower.receive(later, now: v.now).verdict == .rejected("reading-in-future"))
+        let ahead = try chunk(hour: hour, rows: [(0, 110), (v.now + 301 - hour, 120)], createdAt: v.now)
+        #expect(follower.receive(ahead, now: v.now).verdict == .rejected("reading-in-future"))
+        let fine = try chunk(hour: hour, rows: [(0, 110), (v.now + 300 - hour, 120)], createdAt: v.now + 1)
+        #expect(follower.receive(fine, now: v.now).verdict == .accepted("chunk"))
+    }
+
+    @Test func seenIdsAreCappedLeastRecentlySeenFirst() throws {
+        var state = FollowerState(
+            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
+            me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
+        state.status = .requested
+        var follower = try FollowerSession(state: state, crypto: crypto, seenLimit: 3)
+        let key = v.event("key-1"), roster = v.event("roster-1"), live = v.event("live")
+        #expect(follower.receive(key, now: v.now).verdict == .accepted("key"))
+        #expect(follower.receive(roster, now: v.now).verdict == .accepted("roster"))
+        #expect(follower.receive(live, now: v.now).verdict == .accepted("live"))
+        #expect(follower.receive(key, now: v.now).verdict == .ignored("duplicate"))  // the most recent now
+        _ = follower.receive(v.event("chunk"), now: v.now)  // over the cap: down to the 2 most recent
+        #expect(follower.receive(key, now: v.now).verdict == .ignored("duplicate"))
+        #expect(follower.receive(live, now: v.now).verdict != .ignored("duplicate"))
+    }
+
     @Test func declinedOnlyWhileWaiting() throws {
         var follower = try session()
         let declined = try crypto.giftWrap(

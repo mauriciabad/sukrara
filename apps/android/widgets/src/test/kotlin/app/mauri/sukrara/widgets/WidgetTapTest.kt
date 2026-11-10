@@ -80,6 +80,10 @@ class WidgetTapTest {
             widgetTap(context, frame(120, Duration.ofMinutes(25), role = Role.Follower, sensor = SensorState.Ended)),
         )
         assertEquals(NavTargets.ACTION_SENSOR_SETUP, WidgetTap.intent(context, WidgetTap.NewSensor).action)
+        assertEquals(
+            ComponentName(context.packageName, NavTargets.SENSOR_SETUP_ACTIVITY),
+            WidgetTap.intent(context, WidgetTap.NewSensor).component,
+        )
     }
 
     @Test

@@ -45,6 +45,7 @@ import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.libreview.LvGlucose
 import app.mauri.sukrara.integrations.libreview.LvReadings
 import app.mauri.sukrara.integrations.libreview.LvState
+import app.mauri.sukrara.integrations.libreview.LvUnsent
 import app.mauri.sukrara.integrations.localserver.LanPin
 import app.mauri.sukrara.integrations.nightscout.NsState
 import app.mauri.sukrara.integrations.tidepool.TpState
@@ -69,6 +70,7 @@ import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.PairingLoad
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
+import app.mauri.sukrara.sensor.pairing.ReceiverIds
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import app.mauri.sukrara.share.FollowerModule
@@ -87,8 +89,10 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -135,6 +139,15 @@ class AppGraph(
 
     val data by lazy { DataModule(app, appVersion, dispatchers, clock) }
 
+    /** Another glucose source was chosen or the sensor forgotten: the monitoring service picks its source again. */
+    private val sourceChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /**
+     * The readings as the current role sees them (`DataModule.readingsFor`): another person's never reach the hub,
+     * the history, the report, the export or an upload, even right after a role change.
+     */
+    val readings by lazy { data.readingsFor(role.data.map { it.role }) }
+
     /**
      * The phone's role, chosen in first-run setup (written with `role.update`); null = setup not done. Two
      * copies, so one damaged file (reported on home) never stops monitoring ([RoleStore]).
@@ -165,7 +178,7 @@ class AppGraph(
             scope = scope,
             dispatchers = dispatchers,
             clock = clock,
-            readings = data.readings,
+            readings = readings,
             // a damaged record keeps the no-data alarm armed (from now) instead of silently disarming it
             record =
                 data.typedStore(
@@ -189,6 +202,7 @@ class AppGraph(
                         },
                     )
                 }.distinctUntilChanged(),
+            sourceChanges = sourceChanges,
         )
     }
 
@@ -334,6 +348,8 @@ class AppGraph(
             nightscoutState = data.typedStore("nightscout-upload", NsState.serializer(), NsState(), whenCorrupt = NsState()),
             // a lost state re-sends nothing old (each part starts again from now) but can't retract versions sent before
             libreViewState = data.typedStore("libreview-upload", LvState.serializer(), LvState(), whenCorrupt = LvState()),
+            // a lost one only loses history the sensor's own backfill may bring back
+            libreViewUnsent = data.typedStore("libreview-unsent", LvUnsent.serializer(), LvUnsent(), whenCorrupt = LvUnsent()),
             // a lost state re-sends what the phone keeps; Tidepool replaces each datum by its origin id (no duplicates)
             tidepoolState = data.typedStore("tidepool-upload", TpState.serializer(), TpState(), whenCorrupt = TpState()),
             // a lost state may send the current reading once more (the throttle and life count start again)
@@ -343,7 +359,7 @@ class AppGraph(
             // a lost pin pauses the home-network option ("another Wi-Fi") until Allow on this Wi-Fi: never a silent move
             nightscoutLan = data.typedStore("nightscout-lan", LanPin.serializer(), LanPin(), whenCorrupt = LanPin()),
             appVersion = appVersion,
-            readings = data.readings,
+            readings = readings,
             treatments = data.treatments,
             sensor =
                 combine(
@@ -376,6 +392,8 @@ class AppGraph(
                     b.current?.let { LiveReading(it.mgdl, it.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount) }
                 },
             libreViewEmail = sensor.libreView.email,
+            sensorReceiverId = sensor.libreView.receiverId,
+            receiverIdOf = ReceiverIds::fromAccountId,
             role = role.data.map { it.role },
             jugglucoIsSource = data.settings.flow(SensorSource).map { SensorSourceKind.fromId(it) == SensorSourceKind.Juggluco },
             http = data.http,
@@ -400,7 +418,7 @@ class AppGraph(
         SetupModule(
             context = app,
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
-            roles = AppRoles(role),
+            roles = AppRoles(role, data.readings, data.treatments),
             hub = monitor.hub,
             sharing = EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings) { clock.now().epochSecond },
             alertSettings = AppAlertSettings(alerts.store),
@@ -453,9 +471,19 @@ class AppGraph(
     }
 
     val sensorSettings by lazy {
-        SensorSettingsBridge(sensor, data.settings, SensorSource, scope, {
-            startMonitoring(StartReason.App)
-        }) { monitor.hubImpl.resetMonitoring(sensorForgotten = true) }
+        SensorSettingsBridge(
+            sensors = SensorModulePort(sensor),
+            settings = data.settings,
+            sourceSetting = SensorSource,
+            scope = scope,
+            service =
+                monitor.hub.state
+                    .map { it.service }
+                    .distinctUntilChanged(),
+            startMonitoring = { startMonitoring(StartReason.App) },
+            resetMonitoring = { monitor.hubImpl.resetMonitoring(sensorForgotten = true) },
+            sourceChanged = { sourceChanges.tryEmit(Unit) },
+        )
     }
 
     /** The person's graph settings: THE [GraphConfig] every card surface draws with (home, widgets). */
@@ -616,7 +644,11 @@ class AppGraph(
             // a step that fails is logged and the next one still runs: a damaged database must not keep the hub
             // (and so the service, the notification and the alerts) from starting
             step("data") { data.ready() }
-            step("role") { role.heal() }
+            step("role") {
+                role.heal()
+                // a reading of the previous role that landed after the role change's clean-up
+                data.readings.deleteFrom(SourceId.notOf(role.data.first().role))
+            }
             step("monitor") { monitor.ready() }
             step("widgets") { widgets.start() }
             step("integrations") {

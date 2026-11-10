@@ -37,6 +37,7 @@ import app.mauri.sukrara.integrations.libreview.LibreViewUploader
 import app.mauri.sukrara.integrations.libreview.LibreViewViewModel
 import app.mauri.sukrara.integrations.libreview.LvReadings
 import app.mauri.sukrara.integrations.libreview.LvState
+import app.mauri.sukrara.integrations.libreview.LvUnsent
 import app.mauri.sukrara.integrations.localserver.LanPin
 import app.mauri.sukrara.integrations.localserver.LanWatcher
 import app.mauri.sukrara.integrations.localserver.NightscoutApiServer
@@ -80,6 +81,8 @@ class IntegrationsModule(
     secure: SecureStore,
     nightscoutState: StateStore<NsState>,
     libreViewState: StateStore<LvState>,
+    /** Libre 3 history LibreView hasn't got yet, kept through a restart. */
+    libreViewUnsent: StateStore<LvUnsent>,
     tidepoolState: StateStore<TpState>,
     broadcastState: StateStore<BcState>,
     healthState: StateStore<HcState>,
@@ -95,6 +98,10 @@ class IntegrationsModule(
     libreLive: Flow<LiveReading>,
     /** The email of the LibreView account the sensor screens signed in with (a starting point for the upload's). */
     private val libreViewEmail: Flow<String?>,
+    /** The receiver ID the sensor screens' LibreView account gives (sensors are started and taken over with it). */
+    sensorReceiverId: Flow<Long?>,
+    /** LibreView AccountId → receiver ID (`:sensor` `ReceiverIds.fromAccountId`). */
+    receiverIdOf: (String) -> Long,
     role: Flow<Role?>,
     jugglucoIsSource: Flow<Boolean>,
     http: OkHttpClient,
@@ -128,9 +135,12 @@ class IntegrationsModule(
             settings,
             secure,
             libreViewState,
+            libreViewUnsent,
             treatments,
             libreReadings,
             sensor,
+            sensorReceiverId,
+            receiverIdOf,
             role,
             LibreViewClient(http),
             clock,

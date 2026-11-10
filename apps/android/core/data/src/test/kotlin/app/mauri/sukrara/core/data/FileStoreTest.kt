@@ -79,12 +79,12 @@ class FileStoreTest {
             store.load()
 
             val nextRun = CorruptionLog()
-            nextRun.rescan(listOf(tmp.root))
+            nextRun.rescan(listOf(QuarantineRoot(tmp.root, StoreKind.File)))
             val report = nextRun.files.value.single()
             assertEquals("pens.txt", report.store)
 
             nextRun.acknowledge(report)
-            val afterAck = CorruptionLog().apply { rescan(listOf(tmp.root)) }
+            val afterAck = CorruptionLog().apply { rescan(listOf(QuarantineRoot(tmp.root, StoreKind.File))) }
             assertTrue(afterAck.files.value.isEmpty())
             assertTrue(
                 "the copy is kept",

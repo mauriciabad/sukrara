@@ -242,7 +242,7 @@ class HomeViewModelTest {
             val deps = Deps()
             val vm = HomeViewModel(deps)
             backgroundScope.launch { vm.state.collect {} }
-            val problem = DataProblem("settings", "SerializationException", "settings.corrupt-1.json", Samples.NOW)
+            val problem = DataProblem(DamagedStore.Settings, "settings", "SerializationException", "settings.corrupt-1.json", Samples.NOW)
             deps.dataProblems.value = listOf(problem)
             runCurrent()
             assertEquals(BannerKind.DataProblem, vm.state.value.banner)
@@ -360,7 +360,8 @@ class HomeViewModelTest {
     @Test fun `safety banners ignore dismiss`() =
         runTest(dispatcher) {
             val deps = Deps()
-            deps.dataProblems.value = listOf(DataProblem("settings", "SerializationException", "settings.corrupt-1.json", Samples.NOW))
+            deps.dataProblems.value =
+                listOf(DataProblem(DamagedStore.Settings, "settings", "SerializationException", "settings.corrupt-1.json", Samples.NOW))
             val vm = HomeViewModel(deps)
             backgroundScope.launch { vm.state.collect {} }
             vm.dismiss(BannerKind.DataProblem)
