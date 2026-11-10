@@ -58,7 +58,16 @@
     <string name="st_kind_falling_fast">Falling fast</string>
     <string name="st_kind_rising_fast">Rising fast</string>
     <string name="st_kind_no_data">No data</string>
-    <string name="st_kind_use">Use %1$s alert</string>
+    <!-- An alert kind inside a sentence (fills st_kind_use, st_kind_off_title, st_alarm_off_title) -->
+    <string name="st_kind_in_very_low">very low</string>
+    <string name="st_kind_in_low">low</string>
+    <string name="st_kind_in_high">high</string>
+    <string name="st_kind_in_very_high">very high</string>
+    <string name="st_kind_in_extremely_high">extremely high</string>
+    <string name="st_kind_in_falling_fast">falling fast</string>
+    <string name="st_kind_in_rising_fast">rising fast</string>
+    <string name="st_kind_in_no_data">no data</string>
+    <string name="st_kind_use">Use the %1$s alert</string>
     <string name="st_kind_off_title">Turn off the %1$s alert?</string>
     <string name="st_kind_off_text_very_low">Nothing will alert you when your glucose goes very low. The low alert, if on, still sounds.</string>
     <string name="st_kind_off_text_no_data">Nothing will tell you when readings stop arriving (sensor, Bluetooth or phone problems).</string>

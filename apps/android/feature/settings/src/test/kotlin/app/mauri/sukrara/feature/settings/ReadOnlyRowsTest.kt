@@ -47,7 +47,7 @@ class ReadOnlyRowsTest {
 
     @Test fun mirroredAlertShowsItsRulesReadOnly() {
         kindPage(AlertKind.LOW, mirrored = true)
-        compose.onNodeWithText("Use Low alert").assertIsNotEnabled()
+        compose.onNodeWithText("Use the low alert").assertIsNotEnabled()
         compose.onNodeWithText("Glucose").assertIsNotEnabled()
         compose.onNodeWithText("Like an alarm").assertIsEnabled()
     }

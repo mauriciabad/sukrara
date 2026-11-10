@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performScrollTo
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
@@ -98,11 +99,23 @@ class HomeTextTest {
         compose.onNodeWithText("Alerts muted until you turn it off").assertIsDisplayed()
     }
 
+    /** The sensor's time left in the card's spoken words (#104): lower-case "in", whole days, partial minutes up. */
+    @Test fun sensorLine() {
+        show(Samples.wearer())
+        compose.onNodeWithText("Sensor ends in 9 days").assertExists()
+    }
+
+    @Test fun sensorLineLastDay() {
+        show(Samples.wearer(sensor = SensorState.Active(NOW.plus(Duration.ofMinutes(4 * 60 + 58).plusSeconds(30)))))
+        compose.onNodeWithText("Sensor ends in 4 h 59 min").assertExists()
+    }
+
     @Test
     @Config(qualifiers = "es")
     fun spanishLines() {
         show(muted)
         compose.onNodeWithText("Alertas silenciadas · quedan 1 h 12 min").assertIsDisplayed()
         compose.onNodeWithText("30g de hidratos").assertExists()
+        compose.onNodeWithText("El sensor termina en 9 días").assertExists()
     }
 }

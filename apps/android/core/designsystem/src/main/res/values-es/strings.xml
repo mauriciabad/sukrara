@@ -6,7 +6,7 @@
     <string name="ds_ok">Aceptar</string>
     <string name="ds_cancel">Cancelar</string>
     <string name="ds_dismiss">Descartar</string>
-    <string name="ds_custom">Personalizado</string>
+    <string name="ds_custom">Personalizado…</string>
     <string name="ds_custom_label">Valor</string>
     <string name="ds_custom_range">De %1$s a %2$s %3$s</string>
     <string name="ds_unit_h">h</string>

@@ -65,6 +65,7 @@ import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -497,12 +498,15 @@ private fun SensorLine(
     onPair: () -> Unit,
 ) {
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return
+    val left = Duration.between(state.now, ends).seconds
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
         Text(
-            stringResource(
-                if (ends.isAfter(state.now)) R.string.home_sensor_ends else R.string.home_sensor_ended,
-                relative(ends, state.now),
-            ),
+            if (left > 0) {
+                // partial minutes up: never "in 0 min" while it still runs
+                stringResource(R.string.home_sensor_ends, spanText((left + 59) / 60))
+            } else {
+                stringResource(R.string.home_sensor_ended, spanText((-left / 60).coerceAtLeast(1)))
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -1057,6 +1061,19 @@ private fun relative(
     if (!past.isNegative && past < Duration.ofMinutes(1)) return stringResource(R.string.home_a11y_just_now)
     return DateUtils.getRelativeTimeSpanString(t.toEpochMilli(), now.toEpochMilli(), DateUtils.MINUTE_IN_MILLIS).toString()
 }
+
+/**
+ * [min] minutes as the card's spoken sentence says the sensor's time left: whole days from 24 h ("13 days"), else the
+ * shared duration words ("4 h 59 min", "45 min"; `Durations.text`), so home never says "In 4 hours" beside a "5 h".
+ */
+@Composable
+private fun spanText(min: Long): String {
+    if (min >= MINUTES_PER_DAY) return pluralStringResource(DsR.plurals.ds_days, (min / MINUTES_PER_DAY).toInt(), min / MINUTES_PER_DAY)
+    val resources = LocalContext.current.resources
+    return Durations.text(min, remember(resources) { CardWords.of(resources) }.durations)
+}
+
+private const val MINUTES_PER_DAY = 1440L
 
 /** "1:24 AM" within the last 12 hours, else the date and time ("Oct 26, 11:40 PM"): when a silence began. */
 @Composable
