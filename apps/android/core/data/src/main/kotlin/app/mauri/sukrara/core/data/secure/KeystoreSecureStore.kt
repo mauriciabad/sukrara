@@ -5,7 +5,9 @@ package app.mauri.sukrara.core.data.secure
 
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.CorruptionLog
+import app.mauri.sukrara.core.data.StoreKind
 import app.mauri.sukrara.core.data.files.FileStore
+import app.mauri.sukrara.core.data.reasonOf
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -101,7 +103,7 @@ class KeystoreSecureStore(
             val now = clock.now()
             val copy = file.copyTo(FileStore.quarantineTarget(file, now.toEpochMilli()), overwrite = true)
             reported.add(name)
-            corruption.report(CorruptFile(store = "secret:$name", quarantinedTo = copy, at = now, reason = error.message.orEmpty()))
+            corruption.report(CorruptFile(StoreKind.Secret, store = name, quarantinedTo = copy, at = now, reason = reasonOf(error)))
         }
         return SecretUnreadableException(name, error.transient, error)
     }

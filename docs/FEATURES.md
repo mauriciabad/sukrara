@@ -483,8 +483,9 @@ motion). Ranges are in mg/dL like the chart axis.
 **Damaged data** screen (from the banner's Review; back arrow in the top bar): each damaged file as what it means for
 the person: settings → *Your settings were reset to the defaults. Check your alert levels and mutes.* with *Open alert
 settings* (opens Settings › Alerts); readings / treatments may be
-missing; a key or sign-in may need redoing; other saved data started again. *Copy report* (store, error type and the
-kept file's name; no content), *Got it* (acknowledges it; the banner leaves when none is left), Back. No exception or
+missing; a key or sign-in may need redoing; other saved data started again (the store's kind is typed in `:core:data`,
+kept copies found at the next start keep it). *Copy report* (store kind and name, the error's class name and the kept
+file's name; never an error message, which can quote the damaged readings or keys), *Got it* (acknowledges it; the banner leaves when none is left), Back. No exception or
 file names on screen.
 
 **States and exits**: *value* → scroll/zoom the chart → *Now* (tap or TalkBack *Back to now*); *quiet sheet* (the

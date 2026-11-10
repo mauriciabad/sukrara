@@ -76,7 +76,8 @@ class SettingsStoreTest {
             val repo = repo(backgroundScope)
             assertEquals(12.0, repo.flow(graphHours).first(), 0.0)
             val report = log.files.value.single()
-            assertEquals("settings:graph", report.store)
+            assertEquals(StoreKind.Settings, report.kind)
+            assertEquals("graph", report.store)
             assertEquals(7, report.quarantinedTo!!.length().toInt())
         }
 }

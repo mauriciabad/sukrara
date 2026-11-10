@@ -5,6 +5,7 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.DataModule
+import app.mauri.sukrara.core.data.StoreKind
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertReadinessSource
@@ -18,6 +19,7 @@ import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.feature.home.DamagedStore
 import app.mauri.sukrara.feature.home.DataProblem
 import app.mauri.sukrara.feature.home.HomeAlertAction
 import app.mauri.sukrara.feature.home.HomeDeps
@@ -189,5 +191,18 @@ class HomeModule(
 
     override suspend fun mayChangeTreatment(id: String): Boolean = treatmentLog().mayChange(id)
 
-    private fun CorruptFile.toProblem() = DataProblem(store = store, reason = reason, keptAs = quarantinedTo?.name, at = at)
+    private fun CorruptFile.toProblem() =
+        DataProblem(
+            kind =
+                when (kind) {
+                    StoreKind.Settings -> DamagedStore.Settings
+                    StoreKind.Database -> DamagedStore.History
+                    StoreKind.Secret -> DamagedStore.Keys
+                    StoreKind.File -> DamagedStore.Other
+                },
+            store = store,
+            reason = reason,
+            keptAs = quarantinedTo?.name,
+            at = at,
+        )
 }

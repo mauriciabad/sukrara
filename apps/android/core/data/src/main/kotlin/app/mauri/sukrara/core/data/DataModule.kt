@@ -73,6 +73,7 @@ class DataModule(
     val json: Json = SukraraJson
 
     private val datastoreDir: File get() = File(context.filesDir.parentFile, "datastore")
+    private val secureDir: File get() = File(context.filesDir, "secure")
 
     val http: OkHttpClient by lazy { Http.client(appVersion) }
 
@@ -88,7 +89,7 @@ class DataModule(
     ): SettingsTransfer = SettingsTransfer(preferenceStores, appVersion, normalize)
 
     val secureStore: SecureStore by lazy {
-        KeystoreSecureStore(File(context.filesDir, "secure"), secretBox, corruption, clock, dispatchers.io)
+        KeystoreSecureStore(secureDir, secretBox, corruption, clock, dispatchers.io)
     }
 
     val database: SukraraDatabase by lazy {
@@ -132,7 +133,14 @@ class DataModule(
      */
     suspend fun ready() =
         withContext(dispatchers.io) {
-            corruption.rescan(listOf(context.filesDir, datastoreDir, context.getDatabasePath(SukraraDatabase.FILE).parentFile!!))
+            corruption.rescan(
+                listOf(
+                    QuarantineRoot(context.filesDir, StoreKind.File),
+                    QuarantineRoot(secureDir, StoreKind.Secret),
+                    QuarantineRoot(datastoreDir, StoreKind.Settings),
+                    QuarantineRoot(context.getDatabasePath(SukraraDatabase.FILE).parentFile!!, StoreKind.Database),
+                ),
+            )
             database.openHelper.writableDatabase
             prune()
         }
@@ -144,7 +152,7 @@ class DataModule(
             listOf(db, File(db.path + "-wal"))
                 .filter { it.exists() }
                 .map { it.copyTo(FileStore.quarantineTarget(it, now.toEpochMilli()), overwrite = true) }
-        corruption.report(CorruptFile("database:${db.name}", kept.firstOrNull(), now, "sqlite corruption"))
+        corruption.report(CorruptFile(StoreKind.Database, db.name, kept.firstOrNull(), now, "sqlite corruption"))
     }
 
     /** Deletes history older than [retention]; pending outbox entries are never deleted. */

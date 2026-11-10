@@ -34,24 +34,16 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** One damaged stored file, as the person needs to see it (`:app` maps `:core:data`'s `CorruptFile` to this). */
 data class DataProblem(
-    /** Which store, as `:core:data` names it ("settings:alerts", "database:history", "secret:identity", a file name). */
+    /** What the damage means for the person (`:app` maps `:core:data`'s store kind). */
+    val kind: DamagedStore,
+    /** Which store of [kind], as `:core:data` names it ("alerts", "sukrara.db", "identity.owner", a file name). */
     val store: String,
     /** The decoder's error type (never the content): for the report only, never on screen. */
     val reason: String,
     /** The file name the damaged bytes were moved to, or null when they were left in place: for the report only. */
     val keptAs: String?,
     val at: Instant,
-) {
-    /** What the damage means for the person, from the store's kind (`:core:data`'s name prefixes). */
-    val kind: DamagedStore
-        get() =
-            when {
-                store.startsWith("settings") -> DamagedStore.Settings
-                store.startsWith("database") -> DamagedStore.History
-                store.startsWith("secret") -> DamagedStore.Keys
-                else -> DamagedStore.Other
-            }
-}
+)
 
 /** The kinds of damaged data, each with its own plain sentence and way forward. */
 enum class DamagedStore {
@@ -147,6 +139,6 @@ private fun words(kind: DamagedStore): Pair<String, String> =
     }
 
 /** The plain-text report for a bug report: no file content, only what failed. */
-internal fun report(
-    p: DataProblem,
-): String = "Sukrara damaged data\nstore: ${p.store}\nreason: ${p.reason}\nkept as: ${p.keptAs ?: "-"}\nat: ${p.at}"
+internal fun report(p: DataProblem): String =
+    "Sukrara damaged data\nstore: ${p.kind.name.lowercase()}:${p.store}\nreason: ${p.reason}\n" +
+        "kept as: ${p.keptAs ?: "-"}\nat: ${p.at}"

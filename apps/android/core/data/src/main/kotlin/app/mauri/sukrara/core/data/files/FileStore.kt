@@ -5,6 +5,8 @@ package app.mauri.sukrara.core.data.files
 
 import app.mauri.sukrara.core.data.CorruptFile
 import app.mauri.sukrara.core.data.CorruptionLog
+import app.mauri.sukrara.core.data.StoreKind
+import app.mauri.sukrara.core.data.reasonOf
 import app.mauri.sukrara.core.model.Clock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
@@ -90,14 +92,14 @@ class FileStore<T>(
         } catch (e: IOException) {
             throw e
         } catch (e: Exception) {
-            Decoded.Damaged(e.javaClass.simpleName)
+            Decoded.Damaged(reasonOf(e))
         }
 
     private fun quarantine(reason: String): FileLoad.Corrupt {
         quarantined?.let { return it }
         val now = clock.now()
         val copy = file.copyTo(quarantineTarget(file, now.toEpochMilli()), overwrite = true)
-        corruption.report(CorruptFile(store = file.name, quarantinedTo = copy, at = now, reason = reason))
+        corruption.report(CorruptFile(StoreKind.File, store = file.name, quarantinedTo = copy, at = now, reason = reason))
         return FileLoad.Corrupt(copy, reason).also { quarantined = it }
     }
 
