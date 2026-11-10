@@ -76,6 +76,21 @@ public final class SettingsModel {
         settingsFrom = .custom
     }
 
+    /// Makes the settings in use this Mac's own and applies them (Custom): the wearer's, as "Copy the wearer's
+    /// settings" does, or Sukrara's defaults. Nothing on screen changes; from then on a change to a mirrored value made
+    /// outside the Settings window (setup's alert step) applies. Already Custom: nothing to do.
+    public func useInUseAsOwn() {
+        switch settingsFrom {
+        case .custom: return
+        case .wearer where wearer != nil: copyWearer()
+        case .wearer, .default:
+            writeGraph(GraphConfig())
+            let defaults = alerts.settings.withMirroredDefaults()
+            alerts.update { $0 = defaults }
+            settingsFrom = .custom
+        }
+    }
+
     /// "Reset to Defaults" (after the confirmation, Custom only): this Mac's own mirrored settings (ranges, graph,
     /// rings, lines, last treatment, sensor countdown, alert rules and quiet rules) become Sukrara's defaults. Sounds,
     /// the no-data alert, Mute all, the notification actions and each place's own time stay.

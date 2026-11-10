@@ -162,4 +162,18 @@ final class FakeCenter: NotificationPosting {
         #expect(AlertText.preferred(["fr-FR", "es"]).language == .es)
         #expect(AlertText.preferred(["de"]).language == .en)
     }
+
+    /// #109: a Mac that stopped monitoring says so once, passively (no sound), with why; it goes when it's back.
+    @Test func theStoppedMonitoringNoteIsPassiveAndReplaceable() {
+        let n = notifier()
+        n.monitoringStopped("Not monitoring: the wearer stopped sharing")
+        n.monitoringStopped("Not monitoring: the wearer stopped sharing")
+        #expect(center.added.count == 2 && Set(center.added.map(\.identifier)) == [Notifier.monitoringStoppedID])
+        let c = center.added[0].content
+        #expect(c.title == "Sukrara stopped monitoring")
+        #expect(c.body.hasPrefix("Not monitoring: the wearer stopped sharing\n"))
+        #expect(c.interruptionLevel == .passive && c.sound == nil && c.categoryIdentifier.isEmpty)
+        n.monitoringStopped(nil)
+        #expect(center.removed == [Notifier.monitoringStoppedID])
+    }
 }

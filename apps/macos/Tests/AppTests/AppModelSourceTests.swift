@@ -26,12 +26,16 @@ import Testing
         }
     }
 
-    /// Juggluco at `phone`: its history is the store's, the live stream sends one reading of 123 now.
-    func network() -> FakeLanHTTP {
+    /// Juggluco at `phone`: its history is the store's, the live stream sends one reading of 123 now; `sensor` is
+    /// what `sgv.json?sensor=Y` says (nil: an older Juggluco without it).
+    func network(sensor: String? = nil) -> FakeLanHTTP {
         let t = Int(clock.now.timeIntervalSince1970)
         return FakeLanHTTP(
             answer: { url, _ in
                 guard url.host() == Self.phone else { return nil }
+                if url.path().hasSuffix("sgv.json"), let sensor {
+                    return (200, Data(#"[{"sgv":123,"sensor_status":"\#(sensor)"}]"#.utf8))
+                }
                 return url.path().hasSuffix("entries.json") ? (200, Data("[]".utf8)) : (404, Data())
             },
             live: { url in
@@ -68,6 +72,45 @@ import Testing
         model.lanConfig = nil
         await until { model.readings.isEmpty }
         #expect(model.statusTitle == "—" && alerts.nextWake == nil)
+    }
+
+    /// #136: the sensor Juggluco reads gives the card its sensor life (and the alert rules their sensor window);
+    /// following someone shows the wearer's instead, switching Juggluco off shows none.
+    @Test func jugglucosSensorFeedsTheCardsSensorLife() async {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "dd-MM-yy HH:mm"
+        let started = clock.now.addingTimeInterval(-3 * 86_400)
+        let model = model(network(sensor: f.string(from: started) + " (3d)"))
+        model.run()
+        model.apply(FollowerSnapshot.empty)
+        model.lanConfig = LanConfig(address: Self.phone)
+        await until { model.sensor != nil }
+        let start = model.sensor?.start ?? 0
+        #expect(abs(start - started.timeIntervalSince1970) < 60)
+        #expect(model.sensor?.end == start + 15 * 86_400 && model.cardData.sensor == model.sensor)
+        var snapshot = FollowerSnapshot.empty
+        snapshot.link = .following(wearer: "Ana", canWrite: false)
+        snapshot.readings = [Reading(t: clock.now, mgdl: 200, rate: 0)]
+        snapshot.sensor = WearerSensor(start: 1000, end: 2000, warmupEnd: 1100)
+        model.apply(snapshot)
+        #expect(model.sensor?.start == 1000)  // the wearer's, never Juggluco's
+        snapshot.link = .notFollowing
+        snapshot.sensor = nil
+        model.apply(snapshot)
+        model.lanConfig = nil
+        await until { model.sensor == nil }
+        #expect(model.sensor == nil)
+    }
+
+    @Test func aRefusedLocalNetworkSaysSoWithItsWayOut() {
+        #expect(
+            AppModel.lanReason(.localNetworkDenied) == "Not monitoring: macOS doesn't let Sukrara use the local network"
+        )
+        let denied = JugglucoModel.line(.localNetworkDenied)
+        #expect(denied.localNetwork && denied.retry)
+        #expect(JugglucoModel.line(.notFound).localNetwork)  // macOS doesn't always say: the hint stays
+        #expect(!JugglucoModel.line(.connected(Self.phone)).localNetwork)
     }
 
     @Test func followingPausesJugglucoNeverMixingTwoPeople() async {

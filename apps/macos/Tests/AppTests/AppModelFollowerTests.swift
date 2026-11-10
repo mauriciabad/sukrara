@@ -50,6 +50,49 @@ import Testing
         snapshot.keychainUnreadable = true
         model.apply(snapshot)
         #expect(alerts.nextWake != nil)  // still armed: fires if the readings stop
-        #expect(model.notMonitoringReason != nil)  // and the panel says why
+        // #109: the panel says what is going on, not "Not monitoring"
+        #expect(
+            model.notMonitoringReason
+                == "Can't read the follower key from the Keychain. Retrying; alerting on the last data.")
+        #expect(notifier.monitoring == [nil])  // still monitoring: no "stopped" note
+        #expect(model.alertingOnLastData)  // the card stays under the line
+        #expect(AddTreatmentAvailability(model) == .keyUnreadable)
+        #expect(AddTreatmentAvailability(model).reason == "Can't add treatments until the follower key can be read")
+    }
+
+    @Test func anUnreadableKeychainWithNothingStoredIsNotMonitoringAndRetrying() {
+        let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
+        let model = AppModel(plan: plan, clock: clock)
+        var snapshot = FollowerSnapshot.empty
+        snapshot.link = .broken("Can't read the follower key from the Keychain")
+        snapshot.keychainUnreadable = true
+        model.apply(snapshot)
+        #expect(
+            model.notMonitoringReason == "Not monitoring: can't read the follower key from the Keychain. Retrying…")
+    }
+
+    /// #109: a monitoring Mac that drops out (not by the person) posts a passive note with why; it goes when
+    /// monitoring is back. The person's own Stop following posts nothing.
+    @Test func droppingOutPostsANoteThatGoesWhenMonitoringIsBack() {
+        let alerts = AlertController(
+            settings: AlertSettings(), clock: clock, store: MemoryAlertStore(), notifier: notifier, wake: wake)
+        let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
+        let model = AppModel(plan: plan, clock: clock, alerts: alerts)
+        var snapshot = FollowerSnapshot.empty
+        snapshot.link = .following(wearer: "Ana", canWrite: false)
+        snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
+        model.apply(snapshot)
+        #expect(notifier.monitoring == [nil])  // monitoring started: nothing to show (a stale note goes)
+        snapshot.link = .revoked
+        model.apply(snapshot)
+        #expect(notifier.monitoring == [nil, "Not monitoring: the wearer stopped sharing"])
+        model.apply(snapshot)  // the same state again: no second note
+        #expect(notifier.monitoring.count == 2)
+        snapshot.link = .following(wearer: "Ana", canWrite: false)
+        model.apply(snapshot)
+        #expect(notifier.monitoring.count == 3 && notifier.monitoring.last == .some(nil))  // back: the note goes
+        snapshot.link = .notFollowing  // Stop following: the person's own choice, no note
+        model.apply(snapshot)
+        #expect(notifier.monitoring.count == 4 && notifier.monitoring.last == .some(nil))
     }
 }

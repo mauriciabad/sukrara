@@ -159,7 +159,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   login.
 - **Juggluco on this network** (off by default): while the Mac follows nobody, it reads glucose from Juggluco's web
   server on the home network (found automatically, or by its address; optional API secret in the Keychain), with the
-  same card, rings and alerts. Plain http, to home-network addresses only.
+  same card, rings, sensor life and alerts. Plain http, to home-network addresses only; says so when macOS's Local
+  Network permission is off, with the way to turn it on.
 - **Alerts** with sound packs and the same rules and timeline scenarios as Android; mute, change the time, a custom
   length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert.
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last

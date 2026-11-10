@@ -32,6 +32,9 @@ final class RecordingNotifier: AlertNotifying {
     /// The event log's alert-state lines, in order.
     var lines: [String] = []
     func log(_ line: String) { lines.append(line) }
+    /// The "stopped monitoring" notes, in order (nil = removed).
+    var monitoring: [String?] = []
+    func monitoringStopped(_ reason: String?) { monitoring.append(reason) }
 }
 
 final class MemoryAlertStore: AlertStateStoring {

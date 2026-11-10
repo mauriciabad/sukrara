@@ -25,12 +25,12 @@ final class WindowCoordinator {
         let adapter = model.follower.map(FollowerAdapter.init(follower:))
         self.adapter = adapter
         follow = FollowModel(status: .notFollowing, actions: adapter)
-        setup = SetupModel(store: store, follow: follow)
         settings = SettingsModel(store: store, follow: follow, version: Self.version)
+        setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
         report = ReportModel(store: store, app: model)
         setup.requestNotifications = requestNotifications
-        setup.setOpenAtLogin = { [weak model] on in model?.loginItem?.set(on) }
+        setup.loginItem = model.loginItem
         follow.searchNearby = { [weak adapter] on in adapter?.searchNearby(on) }
     }
 
@@ -166,6 +166,32 @@ enum AppLink: Equatable {
         case ("open", ""), ("open", "/"): self = .panel
         default: self = .invite(url.absoluteString)
         }
+    }
+}
+
+/// The `sukrara:` links macOS hands the app, held until the windows exist: a link that launches Sukrara arrives
+/// before `applicationDidFinishLaunching`, and opening it then would drop it. Other schemes are ignored.
+struct LinkInbox {
+    /// Links that arrived before launch finished, in order.
+    private(set) var pending: [URL] = []
+    /// Launch finished: links are opened as they arrive.
+    private(set) var isOpen = false
+
+    /// The links to open now; before launch finished they wait (none now).
+    mutating func receive(_ urls: [URL]) -> [URL] {
+        let ours = urls.filter { $0.scheme == SukraraIDs.urlScheme }
+        guard isOpen else {
+            pending += ours
+            return []
+        }
+        return ours
+    }
+
+    /// Launch finished: the links that waited, in the order they came (each handed out once).
+    mutating func launched() -> [URL] {
+        isOpen = true
+        defer { pending = [] }
+        return pending
     }
 }
 

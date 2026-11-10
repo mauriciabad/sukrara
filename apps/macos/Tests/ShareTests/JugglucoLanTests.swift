@@ -5,6 +5,7 @@ import Foundation
 import SukraraCore
 import SukraraShare
 import SukraraTesting
+import Synchronization
 import Testing
 
 /// Juggluco on the home network, without a network: the answers are Juggluco's documented formats.
@@ -46,6 +47,35 @@ import Testing
         #expect(data.count == 1)
         let r = JugglucoApi.live(data[0], now: now)
         #expect(r == Reading(t: Date(timeIntervalSince1970: 1_799_999_990), mgdl: 101, rate: -1.5))
+    }
+
+    /// #136: `sgv.json?sensor=Y`'s `sensor_status` gives the sensor's start (the phone's local time) and, with the
+    /// Libre 3 lengths, its end and warm-up, as Android's Juggluco source reads it.
+    @Test func sensorStatusGivesTheSensorsLife() throws {
+        let zone = try #require(TimeZone(identifier: "Europe/Madrid"))
+        let json = #"[{"_id":"3MH00ABCDE#1234","sgv":120,"sensor_status":"09-10-26 08:05 (9d 3h)"}]"#
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = zone
+        let start = Int(
+            try #require(cal.date(from: DateComponents(year: 2026, month: 10, day: 9, hour: 8, minute: 5)))
+                .timeIntervalSince1970)
+        let s = JugglucoApi.sensor(Data(json.utf8), zone: zone)
+        #expect(s == WearerSensor(start: start, end: start + 15 * 86_400, warmupEnd: start + 3600))
+        #expect(JugglucoApi.sensor(Data(#"[{"_id":"x#1","sgv":120}]"#.utf8), zone: zone) == nil)
+        #expect(JugglucoApi.sensor(Data(#"[{"sensor_status":"yesterday-ish"}]"#.utf8), zone: zone) == nil)
+        #expect(JugglucoApi.sensor(Data("[]".utf8), zone: zone) == nil)
+        #expect(
+            JugglucoApi.sensorURL(URL(string: "http://192.168.1.7:17580")!).absoluteString
+                == "http://192.168.1.7:17580/sgv.json?count=1&sensor=Y")
+        #expect(JugglucoApi.liveSensorId(Data(#"{"timestamp":1,"glucoseMgDl":99,"sensorId":7}"#.utf8)) == 7)
+        #expect(JugglucoApi.liveSensorId(Data(#"{"timestamp":1,"glucoseMgDl":99}"#.utf8)) == nil)
+    }
+
+    @Test func onlyMacOSsRefusalIsALocalNetworkDenial() {
+        #expect(JugglucoApi.isLocalNetworkDenied(JugglucoError.localNetworkDenied))
+        #expect(!JugglucoApi.isLocalNetworkDenied(JugglucoError.unauthorized))
+        #expect(!JugglucoApi.isLocalNetworkDenied(URLError(.cannotConnectToHost)))
+        #expect(!JugglucoApi.isLocalNetworkDenied(URLError(.timedOut)))
     }
 
     @Test func secretTravelsHashed() {
@@ -222,6 +252,57 @@ import Testing
         #expect(await count(recent) == "180")
         let night = InMemoryReadingsStore([Reading(t: clock.now.addingTimeInterval(-8 * 3600), mgdl: 100)])
         #expect(await count(night) == "490")
+    }
+
+    /// #136: the sensor's life comes from Juggluco after the history, and again when the live stream names a new
+    /// sensor.
+    @Test func readsTheSensorsLifeAndAgainForANewSensor() async {
+        let asked = Mutex(0)
+        let now = clock.now
+        let t = Int(now.timeIntervalSince1970)
+        let http = FakeLanHTTP(
+            answer: { url, _ in
+                guard url.host() == Self.phone else { return nil }
+                if url.path().hasSuffix("entries.json") { return (200, Self.entries(now)) }
+                if url.path().hasSuffix("sgv.json") {
+                    let n = asked.withLock {
+                        $0 += 1; return $0
+                    }
+                    let status = n == 1 ? "01-10-26 08:00 (9d)" : "09-10-26 08:05 (0d 1h)"
+                    return (200, Data(#"[{"sgv":120,"sensor_status":"\#(status)"}]"#.utf8))
+                }
+                return (404, Data())
+            },
+            live: { url in
+                guard url.host() == Self.phone else { return nil }
+                return (
+                    200,
+                    [
+                        "event: glucose", "data: {\"timestamp\": \(t - 60), \"glucoseMgDl\": 121, \"sensorId\": 1}", "",
+                        "event: glucose", "data: {\"timestamp\": \(t), \"glucoseMgDl\": 122, \"sensorId\": 2}",
+                    ]
+                )
+            })
+        let source = source(http)
+        await source.set(LanConfig(address: Self.phone))
+        let first = JugglucoApi.sensor(Data(#"[{"sensor_status":"01-10-26 08:00"}]"#.utf8))
+        let second = JugglucoApi.sensor(Data(#"[{"sensor_status":"09-10-26 08:05"}]"#.utf8))
+        #expect(first != nil && second != nil && first != second)
+        #expect(await wait(source) { $0.sensor == second } != nil)
+        #expect(asked.withLock { $0 } == 2)
+        await source.set(nil)
+        #expect(await wait(source) { $0.state == .off && $0.sensor == nil } != nil)
+    }
+
+    /// #136: macOS refusing the local network is its own state (not "not found"), for a sweep and a typed address.
+    @Test func aRefusedLocalNetworkIsItsOwnState() async {
+        let http = FakeLanHTTP(answer: { _, _ in nil }, unanswered: JugglucoError.localNetworkDenied)
+        let source = source(http)
+        await source.set(LanConfig())
+        #expect(await wait(source) { $0.state == .localNetworkDenied } != nil)
+        await source.set(LanConfig(address: Self.phone))
+        #expect(await wait(source) { $0.state == .localNetworkDenied && !$0.monitoring } != nil)
+        await source.set(nil)
     }
 
     @Test func aDroppedStreamIsUnreachableButStillMonitored() async {

@@ -21,6 +21,12 @@ func scratchStore() -> DefaultsSettingsStore {
     return DefaultsSettingsStore(defaults: d)
 }
 
+/// The settings window's model over a fresh store, following nobody.
+func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
+    SettingsModel(
+        store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil), wearer: wearer, version: "0")
+}
+
 /// `sukrara:` links (`AppLink`): the widget's two clicks never reach the follow step as a bad invite.
 @Suite struct AppLinkTests {
     @Test func widgetLinksRouteToTheirPlace() {
@@ -34,6 +40,19 @@ func scratchStore() -> DefaultsSettingsStore {
         let invite = "sukrara:join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         #expect(AppLink(URL(string: invite)!) == .invite(invite))
         #expect(AppLink(URL(string: "sukrara://treatment/old")!) == .invite("sukrara://treatment/old"))
+    }
+
+    /// #110: a link that launches the app arrives before the windows exist; it waits and opens once launch is done.
+    @Test func aLinkThatArrivesDuringLaunchOpensAfterIt() {
+        var inbox = LinkInbox()
+        let invite = URL(string: "sukrara:join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!
+        let add = URL(string: SukraraIDs.Link.newTreatment)!
+        #expect(inbox.receive([invite, URL(string: "https://example.com")!]).isEmpty)
+        #expect(inbox.receive([add]).isEmpty)
+        #expect(inbox.pending == [invite, add])  // only sukrara: links, in order
+        #expect(inbox.launched() == [invite, add])
+        #expect(inbox.pending.isEmpty && inbox.launched().isEmpty)  // each opens once
+        #expect(inbox.receive([add]) == [add])  // after launch: at once
     }
 }
 
@@ -117,6 +136,34 @@ func scratchStore() -> DefaultsSettingsStore {
         fake.next = .notFound  // register returned, but macOS still has no login item
         item.set(true)
         #expect(item.status == .off && item.lastError != nil)
+    }
+
+    /// #108: setup's Open at login step is done only once macOS has the login item on.
+    @Test func theSetupStepCompletesOnlyWhenTheLoginItemIsOn() {
+        let fake = FakeLogin()
+        fake.fail = true
+        let model = SetupModel(settings: scratchSettings())
+        model.loginItem = LoginItem(service: fake)
+        model.flow.open(.openAtLogin)
+        model.openAtLogin()  // refused: the step stays, with the reason
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+        #expect(model.loginItem?.lastError != nil && model.loginItem?.offersLoginItems == true)
+        fake.fail = false
+        fake.next = .requiresApproval
+        model.openAtLogin()  // waiting for approval: still not done
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+        #expect(model.loginItem?.status == .needsApproval)
+        fake.status = .enabled  // allowed in System Settings › Login Items
+        model.openAtLogin()
+        #expect(model.flow.states[.openAtLogin] == .done && model.flow.current == nil)
+        #expect(fake.calls == ["register", "register"])  // found on: not registered again
+    }
+
+    @Test func withoutALoginItemTheSetupStepDoesNothing() {
+        let model = SetupModel(settings: scratchSettings())
+        model.flow.open(.openAtLogin)
+        model.openAtLogin()
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
     }
 
     @Test func everyStateBeyondOnAndOffHasALine() {
@@ -280,6 +327,66 @@ private extension DateComponents {
         let again = SetupFlow(store: store)
         #expect(again.states == f.states && again.current == .alerts)
         #expect(SettingsSpec.Keys.setupSteps == MacSettings.setupSteps.key)
+    }
+}
+
+/// #107: setup's alert step has Android's rows (the five levels and no data), each changeable; nothing is stored
+/// before Use these, and a changed level applies (this Mac's own rules) even while the wearer's are mirrored.
+@Suite struct SetupAlertStepTests {
+    static let marta = WearerSettings(
+        json: #"{"alerts":{"alerts":{"low":{"on":true,"mgdl":72},"high":{"on":true,"mgdl":200}}}}"#, wearer: "Marta")
+
+    @Test func theRowsAreTheFiveLevelsAndNoDataInUse() {
+        let m = SetupModel(settings: scratchSettings(wearer: Self.marta))
+        #expect(SetupModel.reviewedKinds == [.veryLow, .low, .high, .veryHigh, .extremelyHigh, .noData])
+        #expect(SetupModel.reviewedKinds.map(m.threshold) == [55, 72, 200, 250, 300, 20])
+        #expect(m.levelsMirrored && m.thresholdsInOrder)
+    }
+
+    @Test func noDataIsThisMacsOwnAndTheWearersLevelsStay() {
+        let settings = scratchSettings(wearer: Self.marta)
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(30, .noData)
+        #expect(m.threshold(.noData) == 30 && settings.alerts.settings[.noData].threshold == 20)  // not stored yet
+        m.confirmThresholds()
+        #expect(settings.alerts.settings[.noData].threshold == 30)
+        #expect(settings.settingsFrom == .wearer && settings.shownAlerts[.low].threshold == 72)
+        #expect(m.flow.states[.alerts] == .done && m.editedThresholds.isEmpty)
+    }
+
+    @Test func aChangedLevelBecomesThisMacsOwnStartingFromTheWearers() {
+        let settings = scratchSettings(wearer: Self.marta)
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(80, .low)
+        m.confirmThresholds()
+        #expect(settings.settingsFrom == .custom && !m.levelsMirrored)
+        #expect(settings.shownAlerts[.low].threshold == 80 && settings.shownAlerts[.high].threshold == 200)
+        #expect(m.flow.states[.alerts] == .done)
+    }
+
+    @Test func levelsOutOfOrderWait() {
+        let settings = scratchSettings()
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(65, .veryLow)
+        m.setThreshold(60, .low)  // below very low: both are values each input offers
+        #expect(!m.thresholdsInOrder)
+        m.confirmThresholds()
+        #expect(m.flow.states[.alerts] == nil && m.flow.current == .alerts && settings.settingsFrom == .wearer)
+        m.setThreshold(70, .low)
+        #expect(m.thresholdsInOrder)
+    }
+
+    @Test func useTheseWithoutAChangeStoresNothing() {
+        let settings = scratchSettings()
+        let m = SetupModel(settings: settings)
+        m.flow.open(.alerts)
+        m.setThreshold(70, .low)  // the value in use: no change
+        m.confirmThresholds()
+        #expect(m.flow.states[.alerts] == .done && settings.settingsFrom == .wearer)
+        #expect(settings.store.value(MacSettings.alerts).isEmpty)
     }
 }
 

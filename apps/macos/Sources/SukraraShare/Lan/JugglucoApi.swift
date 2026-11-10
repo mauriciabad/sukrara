@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import CryptoKit
 import Foundation
+import Network
 import SukraraCore
 
 /// Juggluco's web server (Juggluco › Settings › Web server, "Local only" off) as this Mac reads it on the home network.
@@ -12,7 +13,9 @@ import SukraraCore
 /// - `GET /api/v1/entries.json?count=N&interval=0` → the history, every minute (Nightscout entries; `delta` is the
 ///   sensor's rate × 5, `direction` "" = no rate).
 /// - `GET /x/live` → Server-Sent Events, one `glucose` event per new reading (`timestamp` s, `glucoseMgDl`,
-///   `rateMgDlPerMinute`).
+///   `rateMgDlPerMinute`, `sensorId`).
+/// - `GET /sgv.json?count=1&sensor=Y` → the newest entry with `sensor_status` "dd-mm-yy HH:MM (…)": the running
+///   sensor's start in the phone's local time (Android's Juggluco source reads the same).
 /// - The API secret travels as `api-secret: sha1hex(secret)`.
 public enum JugglucoApi {
     /// Juggluco's web server port.
@@ -46,6 +49,58 @@ public enum JugglucoApi {
 
     public static func liveURL(_ base: URL) -> URL { base.appending(path: "x/live") }
 
+    public static func sensorURL(_ base: URL) -> URL {
+        base.appending(path: "sgv.json").appending(queryItems: [
+            URLQueryItem(name: "count", value: "1"), URLQueryItem(name: "sensor", value: "Y"),
+        ])
+    }
+
+    /// Juggluco publishes no wear length or warm-up: the Libre 3 / 3 Plus ones, as Android's Juggluco source.
+    public static let wearSeconds = 15 * 86_400
+    public static let warmupSeconds = 60 * 60
+
+    /// The running sensor from `sgv.json?sensor=Y`: its start (`sensor_status` "09-10-26 08:05 (9d 3h)", the phone's
+    /// local time, taken as this Mac's: they share the home network), end and warm-up. nil without one.
+    public static func sensor(_ data: Data, zone: TimeZone = .current) -> WearerSensor? {
+        guard let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+            let status = list.first?["sensor_status"] as? String, status.count >= 14
+        else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = zone
+        f.dateFormat = "dd-MM-yy HH:mm"
+        guard let date = f.date(from: String(status.prefix(14))) else { return nil }
+        let start = Int(date.timeIntervalSince1970)
+        return WearerSensor(start: start, end: start + wearSeconds, warmupEnd: start + warmupSeconds)
+    }
+
+    /// A live event's `sensorId` (a new one = a new sensor in Juggluco: its start is read again), nil without one.
+    public static func liveSensorId(_ data: Data) -> Int? {
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return (obj["sensorId"] as? NSNumber)?.intValue
+    }
+
+    /// Whether `error` is macOS refusing this app the local network (System Settings › Privacy & Security › Local
+    /// Network off): the failed connection's path, which URLSession puts in the error (or an underlying one), is
+    /// unsatisfied with "local network denied". Anything else (nothing there, a timeout) is not.
+    public static func isLocalNetworkDenied(_ error: any Error) -> Bool {
+        if let e = error as? JugglucoError { return e == .localNetworkDenied }
+        var next: NSError? = error as NSError
+        var depth = 0
+        while let ns = next, depth < 4 {
+            for value in ns.userInfo.values {
+                let object = value as AnyObject
+                if let path = object as? nw_path_t,
+                    nw_path_get_unsatisfied_reason(path) == nw_path_unsatisfied_reason_local_network_denied
+                {
+                    return true
+                }
+            }
+            next = ns.userInfo[NSUnderlyingErrorKey] as? NSError
+            depth += 1
+        }
+        return false
+    }
     /// Whether a status answer is Juggluco's.
     public static func isJuggluco(status data: Data) -> Bool {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
@@ -118,6 +173,8 @@ public enum JugglucoError: Error, Equatable, Sendable {
     /// 401 / 403: the API secret is missing or wrong.
     case unauthorized
     case status(Int)
+    /// macOS doesn't let Sukrara use the local network (Privacy & Security › Local Network).
+    case localNetworkDenied
 }
 
 /// An IPv4 address.

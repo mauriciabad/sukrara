@@ -58,6 +58,19 @@ import Testing
         #expect(missing.isEmpty, "Add these keys (with en + es) to Localizable.xcstrings: \(missing)")
     }
 
+    /// #136: the privacy descriptions macOS shows when it asks (Bluetooth, Local Network) are in Spanish too: every
+    /// `*UsageDescription` of Info.plist.in has its line in Bundle/es.lproj/InfoPlist.strings.
+    @Test func everyPrivacyDescriptionHasSpanish() throws {
+        let bundle = Self.macRoot.appending(path: "Bundle")
+        let plist = try String(contentsOf: bundle.appending(path: "Info.plist.in"), encoding: .utf8)
+        let keys = Set(plist.matches(of: /<key>(NS\w+UsageDescription)<\/key>/).map { String($0.output.1) })
+        #expect(keys.count >= 2, "no privacy descriptions found in Info.plist.in")
+        let strings = try #require(
+            NSDictionary(contentsOf: bundle.appending(path: "es.lproj/InfoPlist.strings")) as? [String: String])
+        #expect(Set(strings.keys) == keys)
+        #expect(strings.values.allSatisfy { !$0.isEmpty })
+    }
+
     /// What people read is in plain words: no protocol terms (#144). Logs may use them; the catalog may not.
     @Test func noProtocolTermsInWhatPeopleRead() throws {
         let terms = [/(?i)relay/, /(?i)\bv2\b/, /(?i)roster/, /(?i)\bwriter/, /(?i)epoch/, /\bBLE\b/]

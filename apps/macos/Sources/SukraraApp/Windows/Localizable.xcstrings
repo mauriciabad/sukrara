@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ (off)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (off)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (desactivada)"
+          }
+        }
+      }
+    },
     "%@'s phone is nearby" : {
       "localizations" : {
         "en" : {
@@ -417,6 +433,22 @@
         }
       }
     },
+    "Can't add treatments until the follower key can be read" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't add treatments until the follower key can be read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pueden añadir tratamientos hasta poder leer la clave de seguimiento"
+          }
+        }
+      }
+    },
     "Can't connect over the internet. Check the internet connection and try again." : {
       "localizations" : {
         "en" : {
@@ -429,6 +461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se puede conectar por internet. Revisa la conexión a internet y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Can't read the follower key from the Keychain. Retrying; alerting on the last data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read the follower key from the Keychain. Retrying; alerting on the last data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer la clave de seguimiento del Llavero. Reintentando; las alertas siguen con los últimos datos."
           }
         }
       }
@@ -1121,6 +1169,22 @@
         }
       }
     },
+    "Keep the order: very low below low, low below high, high below very high, very high below extremely high." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep the order: very low below low, low below high, high below very high, very high below extremely high."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto."
+          }
+        }
+      }
+    },
     "Last reading %@" : {
       "localizations" : {
         "en" : {
@@ -1217,6 +1281,22 @@
         }
       }
     },
+    "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS doesn't let Sukrara use the local network. Turn Sukrara on in System Settings › Privacy & Security › Local Network."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS no deja a Sukrara usar la red local. Activa Sukrara en Ajustes del Sistema › Privacidad y seguridad › Red local."
+          }
+        }
+      }
+    },
     "Minutes ago (empty = now)" : {
       "localizations" : {
         "en" : {
@@ -1245,6 +1325,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Silenciar todas las alertas"
+          }
+        }
+      }
+    },
+    "No glucose readings or alerts until it's back." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No glucose readings or alerts until it's back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay lecturas de glucosa ni avisos hasta que vuelva."
           }
         }
       }
@@ -1389,6 +1485,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin vigilancia: %@"
+          }
+        }
+      }
+    },
+    "Not monitoring: can't read the follower key from the Keychain. Retrying…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: can't read the follower key from the Keychain. Retrying…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: no se puede leer la clave de seguimiento del Llavero. Reintentando…"
+          }
+        }
+      }
+    },
+    "Not monitoring: macOS doesn't let Sukrara use the local network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: macOS doesn't let Sukrara use the local network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: macOS no deja a Sukrara usar la red local"
           }
         }
       }
@@ -1677,6 +1805,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abrir al iniciar sesión"
+          }
+        }
+      }
+    },
+    "Open System Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open System Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Ajustes del Sistema…"
           }
         }
       }
@@ -2209,6 +2353,38 @@
         }
       }
     },
+    "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara te avisa con estos valores. Cambia los que quieras aquí: nada cambia hasta que elijas Usar estos."
+          }
+        }
+      }
+    },
+    "Sukrara opens at login." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara opens at login."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara se abre al iniciar sesión."
+          }
+        }
+      }
+    },
     "Sukrara Settings" : {
       "localizations" : {
         "en" : {
@@ -2221,22 +2397,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustes de Sukrara"
-          }
-        }
-      }
-    },
-    "Sukrara alerts at these values. Use them, or change them in Settings › Alerts." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara alerts at these values. Use them, or change them in Settings › Alerts."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara avisa con estos valores. Úsalos o cámbialos en Ajustes › Alertas."
           }
         }
       }
@@ -2301,6 +2461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara se abre al iniciar sesión, así la barra de menús siempre muestra la glucosa."
+          }
+        }
+      }
+    },
+    "Sukrara stopped monitoring" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara stopped monitoring"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara ha dejado de vigilar"
           }
         }
       }
@@ -2429,6 +2605,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
+          }
+        }
+      }
+    },
+    "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son las alertas de %@, desde su móvil. Cambiar un nivel las convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
+          }
+        }
+      }
+    },
+    "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son los valores predeterminados de Sukrara. Cambiar un nivel los convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
           }
         }
       }

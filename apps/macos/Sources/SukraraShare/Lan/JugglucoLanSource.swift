@@ -21,6 +21,9 @@ public enum LanState: Sendable, Equatable {
     case unauthorized(String)
     /// The typed address isn't one this Mac contacts in plain http (not a home-network IPv4 address).
     case refused(String)
+    /// macOS doesn't let Sukrara use the local network (System Settings › Privacy & Security › Local Network);
+    /// tried again every minute and on Try Again.
+    case localNetworkDenied
 }
 
 /// What the app sees of the Juggluco source (one value, replaced on every change).
@@ -31,6 +34,15 @@ public struct LanSnapshot: Sendable, Equatable {
     /// Reached Juggluco at least once since it was switched on: from then on its readings are monitored and losing it
     /// rings the no-data alert (a source that never connected says so instead).
     public var monitoring: Bool
+    /// The sensor Juggluco reads (start, end, warm-up), nil before Juggluco named one.
+    public var sensor: WearerSensor?
+
+    public init(state: LanState, readings: [Reading], monitoring: Bool, sensor: WearerSensor? = nil) {
+        self.state = state
+        self.readings = readings
+        self.monitoring = monitoring
+        self.sensor = sensor
+    }
 
     public static let off = LanSnapshot(state: .off, readings: [], monitoring: false)
 }
@@ -188,12 +200,18 @@ public actor JugglucoLanSource: LanSourcing {
             } else if let found {
                 base = found
             } else {
-                if current.state != .notFound { publish(state: .looking, gen: gen) }
+                if current.state != .notFound && current.state != .localNetworkDenied {
+                    publish(state: .looking, gen: gen)
+                }
                 let sweep = await find(secret: config.secret)
                 guard let b = sweep.hit else {
                     guard !Task.isCancelled else { return }
-                    // Juggluco answered but wants a (different) API secret: say so, not "not found"
-                    publish(state: sweep.locked.map { .unauthorized(Self.hostText($0)) } ?? .notFound, gen: gen)
+                    // Juggluco answered but wants a (different) API secret: say so, not "not found"; macOS refusing
+                    // the local network is its own state too (every probe failed for that)
+                    let state: LanState =
+                        sweep.locked.map { .unauthorized(Self.hostText($0)) }
+                        ?? (sweep.denied ? .localNetworkDenied : .notFound)
+                    publish(state: state, gen: gen)
                     try? await sleep(Self.sweepAgain)
                     continue
                 }
@@ -211,19 +229,32 @@ public actor JugglucoLanSource: LanSourcing {
                 s.state = .connected(host)
                 s.monitoring = true
                 publish(s, gen: gen)
+                await readSensor(base, headers: headers, gen: gen)
                 let (liveStatus, lines) = try await http.lines(JugglucoApi.liveURL(base), headers: headers)
                 try Self.check(liveStatus)
                 var parser = SseParser()
+                var sensorId: Int?
                 for try await line in lines {
                     attempt = 0
                     if let data = parser.feed(line), let r = JugglucoApi.live(data, now: clock.now) {
                         try await merge([r], gen: gen)
+                        // a new sensor in Juggluco: read its start again
+                        let id = JugglucoApi.liveSensorId(data)
+                        if let id, let seen = sensorId, id != seen {
+                            await readSensor(base, headers: headers, gen: gen)
+                        }
+                        sensorId = id ?? sensorId
                     }
                 }
                 Self.log.info("live stream ended")
             } catch JugglucoError.unauthorized {
                 guard !Task.isCancelled else { return }
                 publish(state: .unauthorized(host), gen: gen)
+                try? await sleep(Self.sweepAgain)
+                continue
+            } catch JugglucoError.localNetworkDenied {
+                guard !Task.isCancelled else { return }
+                publish(state: .localNetworkDenied, gen: gen)
                 try? await sleep(Self.sweepAgain)
                 continue
             } catch {
@@ -238,6 +269,17 @@ public actor JugglucoLanSource: LanSourcing {
             try? await sleep(backoff.delay(attempt: attempt, jitter: Double.random(in: 0.5...1)))
             attempt += 1
         }
+    }
+
+    /// The running sensor's life from Juggluco (best effort: an older Juggluco or a failed request keeps the last
+    /// one known; the readings go on either way).
+    private func readSensor(_ base: URL, headers: [String: String], gen: Int) async {
+        guard let (status, body) = try? await http.get(JugglucoApi.sensorURL(base), headers: headers, timeout: 15),
+            status == 200, let sensor = JugglucoApi.sensor(body), sensor != current.sensor
+        else { return }
+        var s = current
+        s.sensor = sensor
+        publish(s, gen: gen)
     }
 
     private func merge(_ readings: [Reading], gen: Int) async throws {
@@ -265,44 +307,53 @@ public actor JugglucoLanSource: LanSourcing {
 
     /// The first host on this Mac's networks whose status says Juggluco, or else one that refused for want of the
     /// right secret. Probed without the secret first; a secret set in Sukrara goes only to the hosts that refused.
-    private func find(secret: String) async -> (hit: URL?, locked: URL?) {
+    /// `denied`: macOS refused the local network to the probes (nothing found).
+    private func find(secret: String) async -> (hit: URL?, locked: URL?, denied: Bool) {
         let hosts = LanInterface.hosts(interfaces()).compactMap { JugglucoApi.base($0) }
         Self.log.info("sweeping \(hosts.count) hosts")
-        let (hit, locked) = await probe(hosts, headers: [:])
-        if let hit { return (hit, nil) }
-        guard !secret.isEmpty, !locked.isEmpty else { return (nil, locked.first) }
+        let (hit, locked, denied) = await probe(hosts, headers: [:])
+        if let hit { return (hit, nil, false) }
+        guard !secret.isEmpty, !locked.isEmpty else { return (nil, locked.first, denied) }
         let retried = await probe(locked, headers: JugglucoApi.headers(secret: secret))
-        return (retried.hit, retried.locked.first)
+        return (retried.hit, retried.locked.first, false)
     }
 
-    private func probe(_ bases: [URL], headers: [String: String]) async -> (hit: URL?, locked: [URL]) {
+    /// One probe's answer: the status code, or nil (nothing answered there, or not Juggluco); `denied` = macOS
+    /// refused the local network.
+    private typealias Probe = (base: URL, status: Int?, denied: Bool)
+
+    private func probe(_ bases: [URL], headers: [String: String]) async -> (hit: URL?, locked: [URL], denied: Bool) {
         let http = self.http
-        return await withTaskGroup(of: (URL, Int?).self) { group in
+        return await withTaskGroup(of: Probe.self) { group in
             var next = 0
             var locked: [URL] = []
+            var denied = false
             func add() {
                 guard next < bases.count else { return }
                 let base = bases[next]
                 next += 1
                 group.addTask {
-                    guard
-                        let (status, body) = try? await http.get(
+                    do {
+                        let (status, body) = try await http.get(
                             JugglucoApi.statusURL(base), headers: headers, timeout: 1.5)
-                    else { return (base, nil) }
-                    return (base, status == 200 && !JugglucoApi.isJuggluco(status: body) ? nil : status)
+                        return (base, status == 200 && !JugglucoApi.isJuggluco(status: body) ? nil : status, false)
+                    } catch {
+                        return (base, nil, JugglucoApi.isLocalNetworkDenied(error))
+                    }
                 }
             }
             for _ in 0..<Self.sweepWidth { add() }
-            while let (base, status) = await group.next() {
-                if status == 200 {
+            while let probe = await group.next() {
+                if probe.status == 200 {
                     group.cancelAll()
-                    return (base, [])
+                    return (probe.base, [], false)
                 }
-                if status == 401 || status == 403 { locked.append(base) }
+                if probe.status == 401 || probe.status == 403 { locked.append(probe.base) }
+                denied = denied || probe.denied
                 if Task.isCancelled { break }
                 add()
             }
-            return (nil, locked)
+            return (nil, locked, denied)
         }
     }
 
@@ -352,8 +403,12 @@ public final class URLSessionLanHTTP: LanHTTP {
     ) {
         var request = URLRequest(url: url, timeoutInterval: timeout)
         for (k, v) in headers { request.setValue(v, forHTTPHeaderField: k) }
-        let (data, response) = try await session.data(for: request)
-        return ((response as? HTTPURLResponse)?.statusCode ?? 0, data)
+        do {
+            let (data, response) = try await session.data(for: request)
+            return ((response as? HTTPURLResponse)?.statusCode ?? 0, data)
+        } catch let error where JugglucoApi.isLocalNetworkDenied(error) {
+            throw JugglucoError.localNetworkDenied
+        }
     }
 
     public func lines(_ url: URL, headers: [String: String]) async throws -> (
@@ -362,7 +417,13 @@ public final class URLSessionLanHTTP: LanHTTP {
         var request = URLRequest(url: url)
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         for (k, v) in headers { request.setValue(v, forHTTPHeaderField: k) }
-        let (bytes, response) = try await stream.bytes(for: request)
+        let bytes: URLSession.AsyncBytes
+        let response: URLResponse
+        do {
+            (bytes, response) = try await stream.bytes(for: request)
+        } catch let error where JugglucoApi.isLocalNetworkDenied(error) {
+            throw JugglucoError.localNetworkDenied
+        }
         let lines = AsyncThrowingStream<String, any Error> { continuation in
             let task = Task {
                 do {
