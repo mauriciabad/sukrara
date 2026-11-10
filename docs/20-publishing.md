@@ -35,7 +35,7 @@ unused).
 | Mac, non-developers | Notarized dmg from sukrara.mauri.app / GitHub Releases + **Sparkle 2** in-app updates | Paid Apple Developer Program (Developer ID) | 99 USD/year |
 | Mac, developers | **Own tap** `mauriciabad/homebrew-tap` → `brew install --cask mauriciabad/tap/sukrara`; later the official cask | Official cask needs Gatekeeper-passing (notarized) builds + notability | 0 |
 | Mac App Store | **Not now** | Sandbox + no own updater + medical/third-party-service review risk | (same 99 USD) |
-| Android, everyone | **Google Play** (new personal account, closed test first), without the root/LSPosed features | New account: ID verification + 12 testers × 14 days; health/medical declarations; `USE_EXACT_ALARM` justification | 25 USD once |
+| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), without the root/LSPosed features | Health/medical declarations; `USE_EXACT_ALARM` justification (no 12-tester rule: the account predates it) | paid (old account) |
 | Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; a "full" flavor with root/LSPosed features | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
 | Android, F-Droid main repo | Later, optional | Build from source incl. Juggluco core + rust-nostr; likely *NonFreeNet* anti-feature | 0 |
 | Garmin | Connect IQ Store, free app | Developer account; privacy policy; no medical claims | 0 |
@@ -126,7 +126,42 @@ don't fit a free GPL app and were not researched further.
 
 ## Android
 
-### Google Play: a brand-new personal account
+### Google Play: the account and app as set up (2026-11-10)
+
+The research below assumed a new account; Google **reinstated the old one** instead, which changes two things: no
+"12 testers × 14 days" closed test (the account predates 2023-11-13; the app dashboard offers internal, closed and
+open testing at once, with no *Apply for production* step) and no new fee.
+
+- **Account**: personal, developer account ID `5201366068122058756`, owner `mauriciabad1@gmail.com`; identity,
+  contact e-mail and phone verified; public developer e-mail `support-googleplay@a.mauri.app`; no account-level policy
+  issues. The three 2024 apps (GradeCalc, Begur Secret, Emoji dealer) stay *Removed by Google*; their package names
+  are unrelated.
+- **App**: *Sukrara*, `app.mauri.sukrara`, Play app ID `4974476015579711409`, default language en-US, Free (can't
+  become paid once published), category **Medical**, store contact `support-googleplay@a.mauri.app` +
+  https://sukrara.mauri.app. Since 2026 *Create app* takes the package name, so it is reserved for this account.
+- **Automatic protection off** (Protected with Play → Automatic protection → *Installer check* off): Play would
+  otherwise inject an installer check that tells anyone with a non-Play copy (Aurora Store, backups, transfers) to get
+  the app from Play, and ship code that isn't in the source. Sukrara is distributed on GitHub / F-Droid / others too.
+- **Play App Signing uses our release key** (Protected with Play → App signing → *Change key* → *Export and upload a
+  key from Java keystore*, PEPK with `--rsa-aes-encryption`). Play had generated its own key at app creation; it was
+  replaced before any upload. App signing key **and** upload key are both `27:EC:21:…:8D:96`
+  (`tools/release/android-cert.sha256`), so every channel shares one signature and `android-release.sh`'s output is
+  uploadable as is. Play's Digital Asset Links snippet matches `docs/.well-known/assetlinks.json`.
+- **API access**: Google Cloud project `sukrara-play` with the Google Play Android Developer API enabled; service
+  account `sukrara-play-upload@sukrara-play.iam.gserviceaccount.com`, JSON key at **`~/.android/sukrara-play.json`**
+  (0600, outside the repo; recreate with `gcloud iam service-accounts keys create`). In Play Console it has only *View
+  app information*, *Release apps to testing tracks* and *Manage testing tracks and edit tester lists* for Sukrara: no
+  production, store listing or policy declarations. Checked: it opens an edit and lists the tracks.
+- **App content done**: Ads (none), Advertising ID (not used), Government apps (no), Financial features (none),
+  Content rating (IARC, *All Other App Types*: users exchange text — treatment notes reach the wearer's followers —,
+  blockable, invited friends only, no location; result all ages / PEGI 3 / ESRB E / USK 0).
+- **App content still open**: Privacy policy (needs the page on the site), **Sign in details** (open question: the app
+  shows nothing without a sensor or a follow invite from another phone, and debug fakes are compiled out of release, so
+  reviewers need instructions and probably a demo video; answering "No restrictions" risks a rejection), Target
+  audience (blocked until Sign in details is done; plan: 13+), Data safety, Health apps; the sensitive-permission
+  declarations (exact alarm, foreground service…) appear after the first upload.
+
+### Google Play: a brand-new personal account (research, 2026-10-18)
 
 **The old account is gone.** Inactive accounts (created more than a year ago and never submitted an app, or all apps
 under 1,000 lifetime installs plus no verified contacts / no Console use) are closed and the fee is not refunded
@@ -388,17 +423,18 @@ root features; register the package and key for developer verification in the sa
 3. *(agent)* First notarized release with the existing scripts; Homebrew tap + cask + auto-bump; README/site
    `brew` instructions.
 4. *(agent)* Sparkle 2 in the Mac app, appcast on sukrara.mauri.app. *(user)* keeps the EdDSA private key backup.
-5. *(user)* Create the Google Play developer account (personal, 25 USD): try the current Google account, else a new
-   one; verify identity, address, phone and e-mail. Check the old account's package names (they stay blocked).
+5. ~~*(user)* Create the Google Play developer account~~ Done 2026-11-10: the old account was reinstated, the app
+   created, our key set for Play App Signing, API access set up ([as set up](#google-play-the-account-and-app-as-set-up-2026-11-10)).
 6. *(user)* Generate and back up the release keystore (an agent can script it; the user owns the file and passwords).
 7. *(agent)* Rename to `app.mauri.sukrara`, `play`/`full` flavors, `SCHEDULE_EXACT_ALARM` in `play`, migration screen
    in the last `.poc` build, settings export/import, Juggluco core pinned.
 8. *(agent)* Privacy page, store listing (with the not-a-medical-device statement and Abbott disclaimer), synthetic
    screenshots, Fastlane metadata, FGS demo video script; drafts of the Health apps, data safety, FGS and exact-alarm
    answers. *(user)* submits the forms (only the account owner can).
-9. *(user)* Recruit 12 testers (Google Group), run the closed test 14 days, apply for production.
-10. *(user)* Register `app.mauri.sukrara` + key for developer verification in Play Console (upload our own key to Play
-    App Signing so all channels share it).
+9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; use internal testing for
+   the first builds, then open testing as the permanent beta.
+10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows
+    from the Play registration of `app.mauri.sukrara` with that key.
 11. *(agent)* IzzyOnDroid inclusion request; Obtainium link on the site.
 12. Later: F-Droid main repo; Connect IQ store when the watch app exists *(user creates the Garmin account)*.
 
