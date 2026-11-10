@@ -17,10 +17,11 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic sensor: a 3-hour curve from
   45 to 215 mg/dL; `cycle 135` = its lowest point now, `cycle 45` its highest, `cycle 0` 130 and rising; a sensor that
   ends in N min; a new one warming up for W min), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder
-  true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …` and `PEN_TAGS --ez blocked
-  true|false` (docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"), `RELAYS --es urls
-  ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: Q22). Treatments are
-  added in the app.
+  true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …`, `PEN_TAGS --ez blocked
+  true|false` and `PEN_JUGGLUCO --ez installed true|false` (docs/FEATURES.md "Sensor reminders and countdowns",
+  "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
+  = no relay: Q22). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
 - **Phone** (`62240DLCH0005W`): only after `tools/install.sh phone`; read-only adb, `adb exec-out screencap -p`
@@ -161,8 +162,10 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Grouping (Android 16 / 17 emulators, chip on and off): `SYNTHETIC --ez on true --ei warmupMin 10` + `ALERTS --es
       kinds high`, then the warm-up's end (*Sensor ready* with the first reading), then `ALERTS --es kinds
       rising_fast`. `dumpsys notification --noredact`: alerts only in `g:app.mauri.sukrara.ALERTS` (summary
-      id 119), *Sensor ready* in `g:app.mauri.sukrara.INFO` (summary 19), the countdown and the glucose card
-      ungrouped, nothing in `g:Aggregate_…`; the alert is the one that sounded (`mSoundNotificationKey` = id 101). In
+      id 1000; the alerts 1001 and up, one per group: 1001 level, 1002 rate, 1003 no data; `NotificationIds` in
+      `monitor/notify/Channels.kt`), *Sensor ready* in `g:app.mauri.sukrara.INFO` (summary 1100), the countdown and
+      the glucose card ungrouped, nothing in `g:Aggregate_…`; an alert is the one that sounded
+      (`mSoundNotificationKey` = an alert's id, 1001 or up; never *Sensor ready*'s). In
       the shade *High glucose* never inside a bundle with *Sensor ready*; a real alert (`SYNTHETIC --ei cycle 135`) is
       removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the
@@ -232,15 +235,16 @@ app's logcat has no crash and no R8 / JNA / UniFFI / serialization / Room error.
       *Continue* needed); *Continue* → the same NFC flow as before; no *Untested* tag, no confirmation, no banner on
       home. After the install, `adb logcat -s Sukrara.direct Sukrara.scan` shows the usual Libre 3 connection by
       address and **no `Sukrara.scan` line at all**; readings keep arriving every minute.
-- [ ] Untested families (emulator only; nobody has the sensors): `--es stage choose|untested|pairfailed|setup-dexcom-g6|
-      setup-aidex-x|setup-accu-chek-smartguide|setup-dexcom-g7`: every brand but the Libre 3 has the *Untested* tag;
-      *Untested* tags are red with the flask; *Continue* with an untested family opens the red confirmation, counting
-      *Continue anyway (10)* … *(1)* with the button disabled, then *Continue anyway* → the family's setup; *Cancel*,
-      back and a tap outside close it and stay on the brand step; reopening restarts the count; the Libre 3 never
-      asks. *Pair* is disabled until a typed id is valid. Light and
-      dark, English and Spanish. Unit tests: `BrandStepTest`, the driver tests (`G7DriverTest`, `G6DriverTest`,
-      `SmartGuideDriverTest`, `AidexXDriverTest`, `CrcTest`), `DirectSourceTest` (the Libre 3 never scans).
-- [ ] Untested banner (a real untested sensor on a phone; no debug command fakes a family) → home shows *Dexcom G7 / ONE+
+- [ ] Untested families (emulator, no sensor needed; no debug command forces a stage: home → *Pair new sensor* →
+      *Which sensor are you starting?*): every brand but the Libre 3 has the *Untested* tag (a red label, no icon;
+      TalkBack "untested with real sensors"); *Continue* with an untested family goes to the flow's next page,
+      *Untested with real sensors* (red, `NewSensorStep.ConfirmUntested`), whose *Continue anyway (10)* … *(1)* counts
+      down with the button disabled, then *Continue anyway* → the family's setup; *Cancel* and back go back to the
+      brand step; opening the page again restarts the count; the Libre 3 never asks. *Pair* is disabled until a typed
+      id is valid. Light and dark, English and Spanish. Unit tests: `NewSensorMachineTest` (the untested page and its
+      wait), the driver tests (`G7DriverTest`, `G6DriverTest`, `SmartGuideDriverTest`, `AidexXDriverTest`, `CrcTest`).
+- [ ] Untested banner (after pairing an untested family through the New sensor flow above, no sensor needed; no
+      debug command fakes a family) → home shows *Dexcom G7 / ONE+
       support is untested. Tell us how it works.* directly under the graph, no close button, not red; *Send feedback*
       opens github.com/…/issues/new with the sensor-feedback form pre-filled with the sensor, the Sukrara and Android
       versions and the phone model only (`SensorFeedbackTest`); back on a Libre 3 → gone; a follower never shows it.
@@ -438,7 +442,8 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       says *Blocked in Android settings* and opens the channel page.
 - [ ] Treatment dialog with pen reading on: no pen icon in the title row; a pen with nothing new → *Nothing new* under
       the fields for 3 s; a failed read → red *Couldn't read the pen* for 3 s.
-- [ ] Untested NovoPen 6 (`--es model novopen6`) → *Untested pen added*; *Set up* → the pen's page: red 10 s confirmation → display
+- [ ] Untested NovoPen 6 (a new pen whose doses are all whole units: `PEN_READ --es serial NP6000001 --es doses
+      "-30:4"`) → *Untested pen added*; *Set up* → the pen's page: red 10 s confirmation → display
       check; *It doesn't* → *Sukrara doesn't log this pen*.
 - [ ] *Your pens*: one row per pen (pen icon, not a pencil), *· Revisa sus ajustes* until its page was opened; no extra setup row.
 - [ ] Which pens work = the page's footer (always, also with reading off and no pen; no rows, no red tag): *Sukrara
