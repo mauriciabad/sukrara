@@ -29,6 +29,7 @@ class SecretNamesTest {
                 TidepoolUploader.NAME,
                 LibreViewUploader.NAME,
                 PairingStore.NAME,
+                SecretName.JUGGLUCO, // JugglucoSecret writes it by this name
             )
         assertEquals(SecretName.ALL, used)
     }

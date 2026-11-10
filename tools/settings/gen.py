@@ -162,8 +162,10 @@ def kotlin(schema):
             kstr(only["platform"]) if only else "null", kstr(only["reason"]) if only else "null"))
     L.append("    )")
     stores, keys = stored(schema, "android")
+    # 'secure' is the Keystore SecureStore (secrets, one file each), not a Preferences DataStore file
+    stores = [s for s in stores if s != "secure"]
     L.append("")
-    L.append("    /** The Preferences DataStore files (one per area). */")
+    L.append("    /** The Preferences DataStore files (one per area); secrets (store 'secure') are in the SecureStore. */")
     L.append("    object Stores {")
     L += ["        const val %s = %s" % (const_kt(s), kstr(s)) for s in stores]
     L.append("    }")

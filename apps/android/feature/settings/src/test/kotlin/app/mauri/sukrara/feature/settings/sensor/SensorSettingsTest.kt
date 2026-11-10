@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings.sensor
 
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.testing.FakeClock
@@ -105,6 +108,35 @@ class SensorSettingsTest {
         compose.onNodeWithText("10d", substring = true).assertExists()
         compose.onNodeWithText("me@example.invalid").performScrollTo().assertExists()
         compose.onNodeWithText("123456789").assertExists()
+    }
+
+    @Test
+    fun `monitoring stopped with a pairing says so with Resume, never no sensor`() {
+        var resumed = 0
+        show(working.copy(state = SensorState.None, paired = true, stopped = true), SensorSettingsActions(resume = { resumed++ }))
+        compose.onNodeWithText("Monitoring is stopped", substring = true).assertExists()
+        compose.onNodeWithText("No sensor", substring = true).assertDoesNotExist()
+        compose.onAllNodesWithTextFirst("Monitoring stopped").assertExists()
+        compose.onNodeWithText("Resume").performClick()
+        assertEquals(1, resumed)
+    }
+
+    @Test
+    fun `Juggluco refusing the secret says so and the secret can be typed, saved or removed`() {
+        val saved = mutableListOf<String>()
+        val refused =
+            working.copy(source = SourceChoice.Juggluco, link = SourceLink.JugglucoRefused, jugglucoSecret = true)
+        show(refused, SensorSettingsActions(setJugglucoSecret = { saved += it }))
+        compose.onNodeWithText("Juggluco refuses Sukrara", substring = true).assertExists()
+        compose.onNodeWithText("Juggluco on this phone").assertExists()
+        compose.onNodeWithText("Change API secret").performClick()
+        compose.onNodeWithText("Save").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction()).performTextInput("s3cret")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("s3cret"), saved)
+        compose.onAllNodesWithTextFirst("API secret").performClick()
+        compose.onNodeWithText("Remove").performClick()
+        assertEquals(listOf("s3cret", ""), saved)
     }
 
     @Test

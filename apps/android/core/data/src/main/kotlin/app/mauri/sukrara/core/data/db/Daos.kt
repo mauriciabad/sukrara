@@ -13,18 +13,22 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ReadingDao {
-    /** The card's window: everything from [from], oldest first, live. */
-    @Query("SELECT * FROM readings WHERE t >= :from ORDER BY t")
-    fun window(from: Long): Flow<List<ReadingEntity>>
+    /** The card's window: everything from [from] not from [hidden] sources, oldest first, live. */
+    @Query("SELECT * FROM readings WHERE t >= :from AND source NOT IN (:hidden) ORDER BY t")
+    fun window(
+        from: Long,
+        hidden: List<String>,
+    ): Flow<List<ReadingEntity>>
 
-    @Query("SELECT * FROM readings ORDER BY t DESC LIMIT 1")
-    fun latest(): Flow<ReadingEntity?>
+    @Query("SELECT * FROM readings WHERE source NOT IN (:hidden) ORDER BY t DESC LIMIT 1")
+    fun latest(hidden: List<String>): Flow<ReadingEntity?>
 
-    /** Backfill / export range [from, to). */
-    @Query("SELECT * FROM readings WHERE t >= :from AND t < :to ORDER BY t")
+    /** Backfill / export range [from, to), not from [hidden] sources. */
+    @Query("SELECT * FROM readings WHERE t >= :from AND t < :to AND source NOT IN (:hidden) ORDER BY t")
     suspend fun range(
         from: Long,
         to: Long,
+        hidden: List<String>,
     ): List<ReadingEntity>
 
     @Upsert
@@ -33,6 +37,10 @@ interface ReadingDao {
     /** Retention. */
     @Query("DELETE FROM readings WHERE t < :cutoff")
     suspend fun deleteBefore(cutoff: Long): Int
+
+    /** A role change: another person's readings go. */
+    @Query("DELETE FROM readings WHERE source IN (:sources)")
+    suspend fun deleteFrom(sources: List<String>): Int
 }
 
 @Dao

@@ -34,6 +34,12 @@ sealed interface SensorStatus {
     /** What the person can do about it (null = nothing needed, the app is working on it). */
     val action: SensorAction? get() = null
 
+    /**
+     * The source isn't running: before monitoring starts, or after it stopped (the service is off). Says nothing
+     * about a pairing: Settings › Sensor reads the pairing and the service and never calls this "no sensor".
+     */
+    data object NotRunning : SensorStatus
+
     /** No sensor set up yet ("Not monitoring: no sensor yet"). */
     data object NoSensor : SensorStatus {
         override val action get() = SensorAction.ScanSensor

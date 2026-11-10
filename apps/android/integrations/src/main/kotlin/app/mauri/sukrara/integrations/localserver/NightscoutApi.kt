@@ -48,13 +48,6 @@ object NightscoutApi {
 
     private const val VERSION = "15.0.8"
 
-    /** The sources served for [role]: the wearer's own sensor, or the followed person's feed. */
-    fun sources(role: Role): Set<SourceId> =
-        when (role) {
-            Role.Wearer -> SourceId.Wearer
-            Role.Follower -> setOf(SourceId.Relay, SourceId.Nearby)
-        }
-
     fun route(
         req: HttpRequest,
         secret: String,

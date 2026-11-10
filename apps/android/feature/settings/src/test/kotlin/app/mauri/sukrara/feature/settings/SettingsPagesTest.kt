@@ -80,6 +80,8 @@ class SettingsPagesTest {
             "alerts.thresholdsConfirmedAt",
             // Settings › Sensor (the app joins it to the sensor module)
             "source.source",
+            // Settings › Sensor › Juggluco's web server (the SecureStore, through the sensor module)
+            "source.jugglucoSecret",
             // Settings › Status bar and Settings › Sensor end
             "statusbar.chip",
             "statusbar.icon",

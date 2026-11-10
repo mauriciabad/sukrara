@@ -22,8 +22,8 @@ import org.robolectric.annotation.Config
 import java.time.Duration
 
 /**
- * The *Sensor ended* notification (its tap and *Replace sensor*) opens the app's own activity with the new-sensor
- * action: no activity declares that action, so an implicit intent would fall back to home.
+ * The *Sensor ended* notification (its tap and *Replace sensor*) opens the app's non-exported new-sensor trampoline,
+ * explicitly: no other app can open the flow, and an implicit intent would fall back to home.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -43,14 +43,14 @@ class SensorEndedIntentTest {
         )
     }
 
-    @Test fun `tap and Replace sensor open the app's activity with the new-sensor action`() {
+    @Test fun `tap and Replace sensor open the app's new-sensor trampoline`() {
         AndroidSensorEndPresenter(ctx).ended()
         // a sounding info notification waits for SoundGap
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(SoundGap.GAP_MS))
         val posted = shadowOf(nm).getNotification(AndroidSensorEndPresenter.id(SensorNotice.ENDED))
         for (pending in listOf(posted.contentIntent, posted.actions.single().actionIntent)) {
             val intent = shadowOf(pending).savedIntent
-            assertEquals(main, intent.component)
+            assertEquals(ComponentName(ctx.packageName, NavTargets.SENSOR_SETUP_ACTIVITY), intent.component)
             assertEquals(NavTargets.ACTION_SENSOR_SETUP, intent.action)
         }
     }

@@ -5,10 +5,12 @@ package app.mauri.sukrara.sensor.juggluco
 
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.sensor.SensorInfo
 import com.sun.net.httpserver.HttpServer
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -132,5 +134,64 @@ class JugglucoSourceTest {
             assertEquals(0.5, readings[1].rateMgdlPerMin)
             assertEquals("3MH00ABCDE", sensor?.serial)
             assertEquals(listOf(JugglucoStatus.FetchingHistory, JugglucoStatus.Live), statuses.take(2))
+        }
+
+    /** With an API secret every request carries `api-secret: sha1hex(secret)`; Juggluco's 401 is a visible refusal. */
+    @Test
+    fun theApiSecretIsSentAndARefusalSaysSo() =
+        runBlocking {
+            val expected = JugglucoSecret.header("my juggluco secret")
+            val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+            val seen = Collections.synchronizedList(ArrayList<String?>())
+            server.createContext("/") { ex ->
+                val sent = ex.requestHeaders.getFirst("api-secret")
+                seen += sent
+                val out = "[]".encodeToByteArray()
+                ex.sendResponseHeaders(if (sent == expected) 200 else 401, out.size.toLong())
+                ex.responseBody.use { it.write(out) }
+            }
+            server.start()
+            val statuses = Collections.synchronizedList(ArrayList<JugglucoStatus>())
+            val refused = CompletableDeferred<Unit>()
+            val sink =
+                object : JugglucoSink {
+                    override fun onReadings(readings: List<Reading>, live: Boolean) = Unit
+
+                    override fun onStatus(status: JugglucoStatus) {
+                        statuses += status
+                        if (status == JugglucoStatus.Refused) refused.complete(Unit)
+                    }
+
+                    override fun onSensor(info: SensorInfo) = Unit
+                }
+            val source = JugglucoSource(OkHttpClient(), "http://127.0.0.1:${server.address.port}", secret = { "a wrong one" }) { zone }
+            val job = launch(Dispatchers.IO) { source.run(sink) }
+            try {
+                withTimeout(10_000) { refused.await() }
+            } finally {
+                job.cancel()
+                source.cancelCall()
+                server.stop(0)
+            }
+            assertEquals(JugglucoSecret.header("a wrong one"), seen.first())
+            assertEquals(listOf(JugglucoStatus.FetchingHistory, JugglucoStatus.Refused), statuses.take(2))
+        }
+
+    @Test
+    fun theHeaderIsTheSecretsSha1InLowercaseHex() {
+        assertEquals("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3", JugglucoSecret.header("test"))
+    }
+
+    @Test
+    fun theSecretIsKeptInTheSecureStoreAndBlankRemovesIt() =
+        runBlocking {
+            val s = JugglucoSecret(InMemorySecureStore())
+            assertNull(s.read())
+            s.save("  abc  ")
+            assertEquals("abc", s.read())
+            assertEquals(true, s.isSet.first())
+            s.save(" ")
+            assertNull(s.read())
+            assertEquals(false, s.isSet.first())
         }
 }

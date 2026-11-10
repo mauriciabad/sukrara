@@ -24,13 +24,13 @@ import kotlinx.coroutines.flow.asStateFlow
 class SensorTapActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // the app's own main activity, explicitly (no intent filter: nothing else can open it this way)
-        packageManager.getLaunchIntentForPackage(packageName)?.let { launch ->
+        // the app's non-exported new-sensor trampoline, explicitly (nothing else can open the flow)
+        runCatching {
             startActivity(
-                launch
-                    .setAction(NavTargets.ACTION_SENSOR_SETUP)
+                Intent(NavTargets.ACTION_SENSOR_SETUP)
+                    .setClassName(packageName, NavTargets.SENSOR_SETUP_ACTIVITY)
                     .putExtra(NavTargets.EXTRA_FROM_SENSOR_TAP, true)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         }
         finish()

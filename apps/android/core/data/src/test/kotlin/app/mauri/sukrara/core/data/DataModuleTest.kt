@@ -68,13 +68,22 @@ class DataModuleTest {
         runTest {
             File(context.filesDir, "state").mkdirs()
             File(context.filesDir, "state/pairing.json.corrupt-1700000000000").writeText("{bad")
+            File(context.filesDir, "secure").mkdirs()
+            File(context.filesDir, "secure/identity.owner.bin.corrupt-1700000000001").writeText("x")
+            File(context.filesDir.parentFile, "datastore").mkdirs()
+            File(context.filesDir.parentFile, "datastore/alerts.preferences_pb.corrupt-1700000000002").writeText("x")
 
             data.ready()
 
             assertEquals(
-                listOf("pairing.json"),
+                setOf(
+                    StoreKind.File to "pairing.json",
+                    StoreKind.Secret to "identity.owner",
+                    StoreKind.Settings to "alerts",
+                ),
                 data.corruption.files.value
-                    .map { it.store },
+                    .map { it.kind to it.store }
+                    .toSet(),
             )
         }
 }

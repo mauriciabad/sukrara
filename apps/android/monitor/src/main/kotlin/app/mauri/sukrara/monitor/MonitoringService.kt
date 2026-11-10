@@ -131,16 +131,23 @@ class MonitoringService : Service() {
                 postGlucose(m, state, inputs, force)
             }
         }
-        // the role's source, swapped when the role changes (wearer ↔ follower)
-        m.hubImpl.state.map { it.role }.distinctUntilChanged().collectLatest { role ->
-            val source = role?.let { m.source(it) }
-            if (source == null) {
-                // nothing to monitor (setup not done, no sensor, not following): no service; the app shows why
-                stopSelf()
-            } else {
-                m.hubImpl.attach(source)
+        // the role's source, picked again when the role changes (wearer ↔ follower) or the source may have (another
+        // glucose source, the sensor forgotten): nothing left to read stops the service
+        combine(
+            m.hubImpl.state
+                .map { it.role }
+                .distinctUntilChanged(),
+            m.sourceChanges.onStart { emit(Unit) },
+        ) { role, _ -> role }
+            .collectLatest { role ->
+                val source = role?.let { m.source(it) }
+                if (source == null) {
+                    // nothing to monitor (setup not done, no sensor, not following): no service; the app shows why
+                    stopSelf()
+                } else {
+                    m.hubImpl.attach(source)
+                }
             }
-        }
     }
 
     private fun postGlucose(
