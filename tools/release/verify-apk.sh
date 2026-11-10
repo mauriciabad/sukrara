@@ -10,6 +10,7 @@
 # - no debug code: the merged manifest names no DebugReceiver, and (R8 renames classes, so the dex names prove
 #   nothing) the build's R8 mapping lists no DebugReceiver / DebugFakes / Synthetic* class
 # - no exported component without a permission except the launcher activity, the alert sound provider and widgets
+# - every alert sound of contracts/alerts/sounds/android survived resource shrinking (verify-sounds.sh)
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
@@ -41,6 +42,9 @@ name="$(printf '%s\n' "$badging" | sed -n "s/^package: .*versionName='\([^']*\)'
 [ "$code" = "$want_code" ] && ok "versionCode $code" || bad "versionCode '$code' (want $want_code from VERSION)"
 [ "$name" = "$want_name" ] && ok "versionName $name" || bad "versionName '$name' (want $want_name)"
 if printf '%s\n' "$badging" | grep -q "application-debuggable"; then bad "the APK is debuggable"; else ok "not debuggable"; fi
+
+# Looked up by name, kept only by keep_alert_sounds.xml: a stripped sound would be a silent alarm.
+AAPT2="$aapt2" "$here/verify-sounds.sh" "$apk" || fail=1
 
 if unzip -l "$apk" | grep -q 'lib/arm64-v8a/libsukrara_libre3.so$'; then ok "Libre 3 native core present"
 else bad "lib/arm64-v8a/libsukrara_libre3.so missing (third_party/Juggluco not built in)"; fi

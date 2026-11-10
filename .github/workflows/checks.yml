@@ -92,6 +92,13 @@ jobs:
         run: >-
           ./gradlew --no-daemon check -x verifyReleaseSigning
           :core:graph:verifyRoborazziDebug :widgets:verifyRoborazziDebug :monitor:verifyRoborazziDebug
+      # The alert sounds are looked up by name, so only keep_alert_sounds.xml stops resource shrinking from removing
+      # them (a silent alarm on release builds only). An unsigned release build is shrunk exactly like the signed one.
+      - name: Alert sounds survive release resource shrinking
+        working-directory: apps/android
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease -x verifyReleaseSigning
+          ../../tools/release/verify-sounds.sh app/build/outputs/apk/release/app-release-unsigned.apk
       - name: Roborazzi diffs
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
