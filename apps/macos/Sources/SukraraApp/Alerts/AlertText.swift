@@ -75,26 +75,12 @@ struct AlertText: Equatable {
         return base + (f.treated == 1 ? " · sigue alta tras la insulina" : " · sigue alta tras más insulina")
     }
 
-    /// The muted note: "Low alerts muted" / "Until 10:42".
-    func mutedTitle(_ side: AlertSide) -> String {
-        switch language {
-        case .en: return MuteCopy.notificationTitle(side)
-        case .es:
-            let name: String
-            switch side {
-            case .low: name = "de glucosa baja"
-            case .high: name = "de glucosa alta"
-            case .fallingFast: name = "de bajada rápida"
-            case .risingFast: name = "de subida rápida"
-            case .noData: name = "sin datos"
-            }
-            return "Alertas \(name) silenciadas"
-        }
-    }
+    /// The muted note: "Low alerts muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
+    func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, appLanguage) }
 
-    func mutedBody(until: String) -> String {
-        language == .en ? MuteCopy.notificationText(until: until) : "Hasta las \(until)"
-    }
+    func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, appLanguage) }
+
+    private var appLanguage: AppLanguage { language == .en ? .en : .es }
 
     // Action titles (HIG title case in English; the ellipsis = more input follows).
     var mute: String { language == .en ? "Mute…" : "Silenciar…" }

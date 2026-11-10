@@ -370,7 +370,7 @@ enum Laurel {
 enum TirRing {
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius r: CGFloat, tir: TimeInRange, spec: RingSpec,
-        _ pal: GraphPalette, emphasis: CGFloat, countdown: Double? = nil
+        _ pal: GraphPalette, emphasis: CGFloat, countdown: Double? = nil, words w: CardWords
     ) {
         let mark = mark(tir, spec)
         let sw = r * 0.2
@@ -435,7 +435,7 @@ enum TirRing {
             ctx, v, x: c.x, y: base, size == r * 0.78 ? num : Ink.font(size, .heavy, rounded: true),
             pal.ink.a(emphasis), align: 0.5)
         Ink.draw(
-            ctx, spec.period, x: c.x, y: base + r * 0.34 * 1.1, sub,
+            ctx, w.period(spec.window), x: c.x, y: base + r * 0.34 * 1.1, sub,
             (spec.range == .tight ? pal.tight : pal.inkSoft).a(emphasis), align: 0.5)
     }
 }
@@ -485,7 +485,7 @@ enum MetricGauge {
 
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius: CGFloat, m: GlucoseMetrics, spec: RingSpec,
-        _ pal: GraphPalette, emphasis: CGFloat, d: CGFloat
+        _ pal: GraphPalette, emphasis: CGFloat, d: CGFloat, words: CardWords
     ) {
         let sw = radius * 0.2, rr = radius - sw / 2
         ctx.saveGState()
@@ -521,7 +521,7 @@ enum MetricGauge {
         Ink.draw(ctx, v, x: c.x - w / 2, y: base, num, pal.ink.a(emphasis))
         Ink.draw(ctx, u, x: c.x - w / 2 + Ink.width(v, num), y: base, unit, pal.ink.a(emphasis))
         Ink.draw(
-            ctx, "\(spec.kind.short) \(spec.period)", x: c.x, y: base + radius * 0.3 * 1.25, unit,
+            ctx, "\(words.short(spec.kind)) \(words.period(spec.window))", x: c.x, y: base + radius * 0.3 * 1.25, unit,
             pal.inkSoft.a(emphasis), align: 0.5)
     }
 }

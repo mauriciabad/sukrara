@@ -10,7 +10,7 @@
     "        'Nm', 'Nh', 'Nh Mm'; from 6 h whole hours only; from 48 h whole days.",
     "whole   one unit, rounded down: minutes, from 60 min hours, from 24 h days (the sensor-life badge, warm-up).",
     "parse   typed minutes (Mute..., custom values): a number of minutes, or hours with h, or h:mm; null = not a duration.",
-    "Spanish ('es') uses the same unit symbols with spaces (SI style): '1 h 30 min'; Mac is English only."
+    "Spanish ('es') uses the same unit symbols with spaces (SI style): '1 h 30 min'; both platforms run the 'es' cases (Mac DurationWords.es)."
   ],
   "text": [[0, "0 min"], [1, "1 min"], [15, "15 min"], [45, "45 min"], [59, "59 min"], [60, "1 h"], [64, "1 h 4 min"],
            [90, "1 h 30 min"], [120, "2 h"], [240, "4 h"], [480, "8 h"], [720, "12 h"], [1440, "24 h"]],

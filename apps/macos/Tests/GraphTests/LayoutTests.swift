@@ -105,7 +105,8 @@ enum DefaultAlertRules {
     }
 }
 
-@Suite struct LayoutTests {
+/// Serialized: each pass sets the one clock setting (`Clock.hour24Source`) per settings variant.
+@Suite(.serialized) struct LayoutTests {
     private static func num(_ a: Any?) -> Double { (a as? NSNumber)?.doubleValue ?? 0 }
 
     /// The scenes' readings: the same integer maths as CardLayoutTest.
@@ -156,11 +157,25 @@ enum DefaultAlertRules {
     }
 
     @Test func everySurfaceLaysOutLikeEveryOtherAndLikeAndroid() throws {
+        let expect = try #require(GraphFixtures.object("layout/expect.json")["answers"] as? [String: String])
+        try checkAllSurfaces(words: .en, android: expect)
+    }
+
+    /// The same matrix with the card's Spanish words (#77: longer pills, "45 min", "8 d", "Calentando · 40 min"): every
+    /// surface still lays out like every other with the same facts, the columns keep their margins, the sensor badge
+    /// moves nothing and the warm-up stays labelled. Android's answers (expect.json) are English, so they aren't
+    /// compared here.
+    @Test func spanishWordsLayOutTheSameOnEverySurface() throws {
+        try checkAllSurfaces(words: .es, android: nil)
+    }
+
+    /// Renders every registered surface × size × scene × settings variant in `words` and checks the rules; `android` =
+    /// expect.json's answers for the shared rules (nil = not compared).
+    private func checkAllSurfaces(words: CardWords, android expect: [String: String]?) throws {
         let reg = GraphFixtures.object("surfaces/surfaces.json").child("mac")
         let scenesRoot = GraphFixtures.object("layout/scenes.json")
         let rulesRoot = GraphFixtures.object("layout/rules.json")
         let rules = try #require(rulesRoot["rules"] as? [[String: Any]])
-        let expect = try #require(GraphFixtures.object("layout/expect.json")["answers"] as? [String: String])
         let entries = reg["surfaces"] as? [[String: Any]] ?? []
         var failures = 0
         func fail(_ s: String) {
@@ -207,11 +222,11 @@ enum DefaultAlertRules {
                             Render(
                                 surface: s, size: "-", scene: sc.id, settings: sid, layouts: [],
                                 faces: sc.readings.isEmpty
-                                    ? [] : [GlucoseCard.face(data, unit: .mgdl, surface: .menubarTitle)]))
+                                    ? [] : [GlucoseCard.face(data, unit: .mgdl, surface: .menubarTitle, words: words)]))
                         continue
                     }
                     for size in sizes(s) {
-                        let st = s.style(cfg, sensor: sc.sensor)
+                        let st = s.style(cfg, sensor: sc.sensor, words: words)
                         let lay = GlucoseCard.draw(
                             cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now, st,
                             pal,
@@ -252,8 +267,8 @@ enum DefaultAlertRules {
         checkGaps(renders, rulesRoot, fail)
         checkBadge(renders, rulesRoot, fail)
         checkDistribution(renders, rulesRoot, fail)
-        checkWarmup(renders, rulesRoot, fail)
-        #expect(failures == 0, "\(failures) layout failure(s) over \(renders.count) renders")
+        checkWarmup(renders, rulesRoot, language: words.language, fail)
+        #expect(failures == 0, "\(failures) layout failure(s) over \(renders.count) renders (\(words.language))")
     }
 
     // MARK: - Rules (layout/rules.json) and Android's answers (expect.json)
@@ -345,11 +360,12 @@ enum DefaultAlertRules {
     }
 
     private func checkRules(
-        _ renders: [Render], _ rules: [[String: Any]], _ expect: [String: String], _ fail: (String) -> Void
+        _ renders: [Render], _ rules: [[String: Any]], _ expect: [String: String]?, _ fail: (String) -> Void
     ) {
         for rule in rules {
             let name = rule["name"] as? String ?? "?", by = rule["by"] as? [String] ?? []
-            let subset = rule["mode"] as? String == "subset", shared = rule["shared"] as? Bool ?? false
+            let subset = rule["mode"] as? String == "subset"
+            let shared = (rule["shared"] as? Bool ?? false) && expect != nil
             var groups: [String: [Render]] = [:]
             for r in renders where !r.layouts.isEmpty || !r.faces.isEmpty {
                 let f = facts(r)
@@ -357,7 +373,7 @@ enum DefaultAlertRules {
             }
             for (key, rs) in groups.sorted(by: { $0.key < $1.key }) {
                 let ds = rs.map { ($0, descriptor($0, rule)) }
-                let golden = expect["\(name)|\(key)"]
+                let golden = expect?["\(name)|\(key)"]
                 if subset {
                     let longest = ds.max { $0.1.count < $1.1.count }!.1
                     for (r, d) in ds where !isSubsequence(d, longest) {
@@ -461,10 +477,13 @@ enum DefaultAlertRules {
         if compared == 0 { fail("badge: no render shows the sensor badge (rule untested)") }
     }
 
-    /// A warming-up sensor's time left is labelled and never at a value's size (rules.json "warmup", #27).
-    private func checkWarmup(_ renders: [Render], _ root: JSON, _ fail: (String) -> Void) {
+    /// A warming-up sensor's time left is labelled and never at a value's size (rules.json "warmup", #27), in the
+    /// words of the render's `language` (`words`, `es`).
+    private func checkWarmup(_ renders: [Render], _ root: JSON, language: String, _ fail: (String) -> Void) {
         let warmup = root.child("warmup")
-        guard let maxText = warmup.number("maxText"), let words = warmup["words"] as? [String] else {
+        guard let maxText = warmup.number("maxText"),
+            let words = warmup[language == "en" ? "words" : language] as? [String]
+        else {
             return fail("rules.json has no \"warmup\"")
         }
         var shown = 0

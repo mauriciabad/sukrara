@@ -24,7 +24,7 @@ A case: `name`; optional `settings` (alert settings JSON, ../alerts/SPEC.md §3,
 
 The layout dump: which treatment labels are drawn, where and with what text (rules: docs/16-graph.md, "Treatment
 labels"). Run by `GraphFixtureTest.labels` (Android) and `-graphselftest` (Mac), which also checks that SF Pro's real
-width of each label fits the width model. A case: `name`; `chart` `{w, h}` (the chart's area, dp); `hours` (window);
+width of each label fits the width model. A case: `name`; optional `locale` (`es`: the labels' times in Spanish, "1 h 35 min", "ahora": the widths the Spanish card lays out, #77); `chart` `{w, h}` (the chart's area, dp); `hours` (window);
 `pct` (time in range has data, so the % column shows where the chart is ≥ 240 dp wide); `treatments` as above
 (`k`: rapid | long | carbs | note; times relative to "now"). Optional `marks` (Treatments on the graph): absent = the defaults (carbs: point
 only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). The file's `pctLabel` and `valueLabel` stand in for the widest
@@ -41,6 +41,10 @@ it plus the gap of `layout/rules.json` on each side. `expect`:
 Positions are rounded to 0.5 dp; Android computes in `Float`, the Mac in `Double`. To add a case, write it with an
 empty `expect`, run `GraphFixtureTest` (`--rerun`: Gradle doesn't see the fixture files as inputs), check the dump in
 the failure message against the rules, paste it, and run the Mac self-test.
+
+## The card's words (`words/words.json`)
+
+Every word the card draws, English and Spanish (#77): the pill (*Eat carbs* / *Come hidratos*, *45m left* / *quedan 45 min*), the short durations (`duration_*`), the slots' periods and names (`period_*`, `slot_*_short`), the value's place (`card_*`), the range words and the chart's *Now*. Keys are Android's `core/graph` string names; run by `CardWordsFixtureTest` (Android, the resources' raw text in each language) and `CardWordsFixtureTests` (Mac, `CardWords.drawn` filled with the file's sample arguments). The Mac keeps these words in code (`CardWords`, SukraraGraph/A11y.swift: the widget extension has no String Catalog), so this file is what keeps the two in step. `layout/rules.json` `warmup` lists the Spanish warm-up words too (`es`), and the Mac renders the whole layout matrix a second time in Spanish (`LayoutTests.spanishWordsLayOutTheSameOnEverySurface`).
 
 ## Where the sensor badge goes (`place/place.json`)
 

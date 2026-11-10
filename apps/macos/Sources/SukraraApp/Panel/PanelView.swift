@@ -660,7 +660,7 @@ struct MuteAllLengths: View {
                 alerts.perform(.muteAll(until: now.addingTimeInterval(TimeInterval(minutes * 60))))
             }
         }
-        Button(MuteCopy.menuForever) { alerts.perform(.muteAll(until: muteAllForever)) }
+        Button(MuteCopy.menuForever()) { alerts.perform(.muteAll(until: muteAllForever)) }
         if offerCustom {
             Divider()
             Button(L10n.t("Custom…")) { custom = true }

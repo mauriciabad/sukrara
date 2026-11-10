@@ -173,6 +173,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - VoiceOver reads the card as the same sentence as Android's TalkBack (value, trend, range in words, age, the alert
   or mute, the slots, the chart summary) in the menu bar, the panel and the widgets; every card writes the range
   under an out-of-range value (*Low*, *Very high*) and the status item's tooltip says it.
+- English and Spanish (Spain) by the Mac's language: the windows, the panel's lines and every word the card draws
+  (*Come hidratos*, *quedan 45 min*, *Calentando · 40 min*), the same words as Android's.
 
 **Not included**: the LSPosed lock-screen widget, Dexcom / Aidex / SmartGuide (untested) sensors, and the pen list and
 dose review.

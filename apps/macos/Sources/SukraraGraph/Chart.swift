@@ -89,7 +89,8 @@ enum GlucoseGraph {
                 ? nil
                 : TreatmentMarks.layout(
                     shownMarks, x: { left + CGFloat(($0 - from) / st.window) * (right - left) }, now: now,
-                    minX: area.minX, maxX: area.maxX, lanes: lanes(area.height, d: d), d: d, show: show)
+                    minX: area.minX, maxX: area.maxX, lanes: lanes(area.height, d: d), d: d, show: show,
+                    words: st.words)
             let lane1: CGFloat = layout?.twoLanes == true ? TreatmentMarks.laneH * d : 0
             let textRow = labels || !(layout?.labels.isEmpty ?? true)
             let top = area.minY + 3 * d
@@ -406,7 +407,7 @@ enum GlucoseGraph {
         // The "Now" pill of a scrolled chart (the action pill, StatusBadge): top right in the plot, fading in and out
         // with `view.now`; the surface makes its box (chart.now) clickable.
         if let view, view.now > 0 {
-            let ph = Self.nowPill * d, look = StatusBadge.backToNow
+            let ph = Self.nowPill * d, look = StatusBadge.backToNow(st.words)
             let pw = StatusBadge.width(look, h: ph)
             let px = right - pw - Self.nowInset * d, py = top + Self.nowInset * d
             ctx.saveGState()

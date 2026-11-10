@@ -5356,7 +5356,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas de %@: cambiar la hora"
+            "value" : "Alertas %@: cambiar la hora"
           }
         }
       }
@@ -5372,7 +5372,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas de %@: silenciar"
+            "value" : "Alertas %@: silenciar"
           }
         }
       }
