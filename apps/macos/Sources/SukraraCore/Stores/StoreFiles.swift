@@ -3,16 +3,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
-/// File helpers shared by the stores: atomic replace, and moving an unreadable file aside.
-enum StoreFiles {
+/// File helpers shared by the stores (and the alert state): atomic replace, and moving an unreadable file aside.
+public enum StoreFiles {
     /// Writes `data` to `url` atomically (temp file + rename), creating the directory.
-    static func write(_ data: Data, to url: URL) throws {
+    public static func write(_ data: Data, to url: URL) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try data.write(to: url, options: [.atomic])
     }
 
     /// Copies the unreadable `url` to `<name>.corrupt-<unix s>` next to it and returns the issue to show.
-    static func quarantine(_ url: URL, now: Date) -> StoreIssue {
+    public static func quarantine(_ url: URL, now: Date) -> StoreIssue {
         let target = url.deletingLastPathComponent()
             .appending(path: "\(url.lastPathComponent).corrupt-\(Int(now.timeIntervalSince1970))")
         let copied = (try? FileManager.default.copyItem(at: url, to: target)) != nil
@@ -21,11 +21,14 @@ enum StoreFiles {
 }
 
 /// A small Codable value in one JSON file (`sensor.json`, `wearer-settings.json`): nil when absent. An unreadable
-/// file is quarantined and reported (`issue`), then treated as absent.
+/// file is quarantined and reported (`issue`), then treated as absent. The file is read once; after that the value
+/// is kept in memory (this store is its only writer), so a snapshot on every relay event reads no file.
 public actor JSONFileStore<Value: Codable & Sendable> {
     public let url: URL
     private let clock: any TimeSource
     public private(set) var issue: StoreIssue?
+    /// The value as last read or saved (`.some(nil)` = known absent); nil = the file wasn't read yet.
+    private var cache: Value??
 
     public init(url: URL, clock: any TimeSource = SystemClock()) {
         self.url = url
@@ -33,6 +36,13 @@ public actor JSONFileStore<Value: Codable & Sendable> {
     }
 
     public func load() -> Value? {
+        if let cache { return cache }
+        let value = read()
+        cache = .some(value)
+        return value
+    }
+
+    private func read() -> Value? {
         guard let data = try? Data(contentsOf: url) else { return nil }
         do {
             return try JSONDecoder().decode(Value.self, from: data)
@@ -47,10 +57,14 @@ public actor JSONFileStore<Value: Codable & Sendable> {
     public func save(_ value: Value?) throws {
         guard let value else {
             try? FileManager.default.removeItem(at: url)
+            cache = .some(nil)
             return
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
+        // a failed write leaves the file as it was: read it again next time rather than trust the memory
+        cache = nil
         try StoreFiles.write(try encoder.encode(value), to: url)
+        cache = .some(value)
     }
 }

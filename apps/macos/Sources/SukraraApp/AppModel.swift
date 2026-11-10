@@ -519,13 +519,17 @@ public final class AppModel {
         networkCameBack()
     }
 
-    func stop() {
+    /// Stops what this model started and returns once the follower runtime and the Juggluco source have stopped
+    /// (their sockets closed, their state saved), so quitting doesn't cut them off halfway.
+    func stop() async {
         ticker?.cancel()
         feeds.forEach { $0.cancel() }
+        feeds = []
         alerts?.stop()
-        if let follower { Task { await follower.stop() } }
         lanSent = nil
         toLan { await $0.set(nil) }
+        await lanTask?.value
+        await follower?.stop()
     }
 }
 

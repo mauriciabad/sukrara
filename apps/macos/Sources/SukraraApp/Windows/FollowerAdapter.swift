@@ -62,6 +62,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         switch error {
         case .invalidLink: .invalidLink
         case .notFound: .notFound
+        case .offline: .offline
         case .expired: .expired
         case .fingerprintMismatch: .fingerprintMismatch
         case .alreadyFollowing: .alreadyFollowing

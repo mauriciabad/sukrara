@@ -26,6 +26,8 @@ final class AppServices: ServiceStarting {
     private(set) var widget: WidgetFeed?
     private let makeWidget: () -> WidgetFeed
     let responder = NotificationResponder()
+    /// The daily update check (owned here, cancelled by `stop`).
+    private var updateLoop: Task<Void, Never>?
     /// Re-read what notifications may do (after the authorization prompt).
     var permissionChanged: (() -> Void)?
     /// A tap on a notification's body: open the panel.
@@ -124,7 +126,8 @@ final class AppServices: ServiceStarting {
                 .flatMap(AppVersion.init) ?? AppVersion("0.0.0")!
             let check = UpdateCheck(installed: installed, fetcher: URLSessionFetcher(), defaults: defaults)
             updates = check
-            Task {
+            updateLoop?.cancel()
+            updateLoop = Task {
                 while !Task.isCancelled {
                     await check.check(userAsked: false)
                     try? await Task.sleep(for: .seconds(24 * 3600))
@@ -152,6 +155,12 @@ final class AppServices: ServiceStarting {
                 store: ReadingsFileStore(
                     directory: plan.data.paths.appSupport.appending(path: "juggluco", directoryHint: .isDirectory)))
         }
+    }
+
+    /// Quit: ends the long-lived work this class started itself (the follower and Juggluco stop with the model).
+    func stop() {
+        updateLoop?.cancel()
+        updateLoop = nil
     }
 
     /// The app's model over what this run started: the follower runtime (the fixture follower in a fixture run), the

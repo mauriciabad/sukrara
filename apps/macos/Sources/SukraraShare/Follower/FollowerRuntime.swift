@@ -320,27 +320,37 @@ public actor FollowerRuntime: FollowerService {
         await relays.start()
         await relays.subscribe("invite", RelayFilter(kinds: [Wire.kindWrap], p: [invitePub]))
         let opener = InviteOpener(crypto: crypto)
+        // what the lookup learnt: a relay answered (connected or ended its stored events), the invite's state
+        let heard = LookupState()
         let result = await withTaskGroup(of: Result<Invite, FollowerJoinError>?.self) { group in
+            // reads everything that arrives until the invite opens or the stream ends (the timeout ends it), so the
+            // verdict counts every answer that came in time
             group.addTask {
-                var failure: FollowerJoinError = .notFound
                 for await message in relays.inbound {
-                    guard case .event(let wrap, _, _) = message else { continue }
-                    switch opener.open(wrap, link: link, now: Int(clock.now.timeIntervalSince1970)) {
-                    case .success(let invite): return .success(invite)
-                    case .failure(.expired): failure = .expired
-                    case .failure(.fingerprintMismatch): failure = .fingerprintMismatch
-                    case .failure(.notAnInvite): break
+                    switch message {
+                    case .connection(.connected, _), .endOfStored: heard.answered()
+                    case .event(let wrap, _, _):
+                        heard.answered()
+                        switch opener.open(wrap, link: link, now: Int(clock.now.timeIntervalSince1970)) {
+                        case .success(let invite): return .success(invite)
+                        case .failure(.expired): heard.found(.expired)
+                        case .failure(.fingerprintMismatch): heard.found(.fingerprintMismatch)
+                        case .failure(.notAnInvite): break
+                        }
+                    default: break
                     }
                 }
-                return Task.isCancelled ? .failure(.cancelled) : .failure(failure)
+                return Task.isCancelled ? .failure(.cancelled) : .failure(heard.failure)
             }
             group.addTask {
                 do { try await sleep(joinTimeout) } catch { return .failure(.cancelled) }
+                await relays.stop()
                 return nil
             }
-            let first = await group.next() ?? nil
+            var first: Result<Invite, FollowerJoinError>?
+            while first == nil, let next = await group.next() { first = next }
             group.cancelAll()
-            return first ?? .failure(.notFound)
+            return first ?? .failure(heard.failure)
         }
         await relays.stop()
         return Task.isCancelled ? .failure(.cancelled) : result
@@ -755,5 +765,19 @@ public actor FollowerRuntime: FollowerService {
             id: t.id, kind: t.k.rawValue, amount: t.a, t: Int(t.t), note: t.n, u: Int(t.u), deleted: t.del,
             origin: t.o.rawValue, primed: t.pr, pen: t.pen,
             doses: t.pd?.map { TreatmentPayload.Dose(t: Int($0.t), a: $0.a, primed: $0.p) })
+    }
+}
+
+/// What an invite lookup learnt, shared by its listening and timeout tasks: whether any relay answered (none = this
+/// Mac couldn't reach the internet: `offline`, not "not found") and the most telling failure seen.
+private final class LookupState: Sendable {
+    private let state = OSAllocatedUnfairLock(initialState: (answered: false, failure: FollowerJoinError?.none))
+
+    func answered() { state.withLock { $0.answered = true } }
+    func found(_ failure: FollowerJoinError) { state.withLock { $0.failure = failure } }
+
+    /// expired / mismatched when such an invite came, else not found when a relay answered, else offline.
+    var failure: FollowerJoinError {
+        state.withLock { $0.failure ?? ($0.answered ? .notFound : .offline) }
     }
 }

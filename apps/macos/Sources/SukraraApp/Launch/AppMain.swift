@@ -25,7 +25,8 @@ public enum AppMain {
         app.setActivationPolicy(.accessory)
         let delegate = AppDelegate(plan: plan)
         app.delegate = delegate
-        app.run()
+        // NSApplication holds its delegate weakly: keep it alive for the whole run, whatever the optimizer sees
+        withExtendedLifetime(delegate) { app.run() }
         exit(0)
     }
 

@@ -321,22 +321,6 @@
         }
       }
     },
-    "Another device already used this invite. Ask for a new invite on the phone." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Another device already used this invite. Ask for a new invite on the phone."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otro dispositivo ya ha usado esta invitación. Pide una nueva en el móvil."
-          }
-        }
-      }
-    },
     "Another device used this invite. Ask for a new one." : {
       "localizations" : {
         "en" : {

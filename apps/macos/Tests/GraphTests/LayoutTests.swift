@@ -195,45 +195,46 @@ enum DefaultAlertRules {
 
         var renders: [Render] = []
         var clockShown = 0
-        defer { Clock.hour24Source = nil }
         for (sid, cfg) in settings {
             let hour24 = hour24Of[sid] ?? true
             let unit = unitOf[sid] ?? .mgdl
-            Clock.hour24Source = { hour24 }
-            for sc in scenes {
-                let data = CardData(
-                    readings: sc.readings, marks: sc.marks, sensor: sc.sensor,
-                    alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now)
-                for s in CardSurface.allCases where s != .test {
-                    if s.glyph {
-                        guard sid == "default" || sid == "mmol" || sid.hasPrefix("clock") else { continue }
-                        renders.append(
-                            Render(
-                                surface: s, size: "-", scene: sc.id, settings: sid, unit: unit, layouts: [],
-                                faces: sc.readings.isEmpty
-                                    ? [] : [GlucoseCard.face(data, unit: unit, surface: .menubarTitle)]))
-                        continue
-                    }
-                    for size in sizes(s) {
-                        var st = s.style(cfg, sensor: sc.sensor)
-                        st.unit = unit
-                        let lay = GlucoseCard.draw(
-                            cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now, st,
-                            pal,
-                            surface: s, part: .all, alerts: data.alerts)
-                        let r = Render(
-                            surface: s, size: "\(Int(size.width))x\(Int(size.height))", scene: sc.id, settings: sid,
-                            unit: unit, layouts: [lay], faces: [])
-                        // one clock: every time drawn is in that variant's 24-hour setting
-                        if let bad = lay.all("time.text").first(where: {
-                            cycleOf($0.info).map { $0 != hour24 } ?? false
-                        }),
-                            clockShown < 10
-                        {
-                            fail("clock: \(r) shows \"\(bad.info)\", want \(hour24 ? 24 : 12)-hour time")
-                            clockShown += 1
+            // this variant's clock for this task only: tests running beside it keep the Mac's
+            Clock.$hour24Source.withValue({ hour24 }) {
+                for sc in scenes {
+                    let data = CardData(
+                        readings: sc.readings, marks: sc.marks, sensor: sc.sensor,
+                        alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now)
+                    for s in CardSurface.allCases where s != .test {
+                        if s.glyph {
+                            guard sid == "default" || sid == "mmol" || sid.hasPrefix("clock") else { continue }
+                            renders.append(
+                                Render(
+                                    surface: s, size: "-", scene: sc.id, settings: sid, unit: unit, layouts: [],
+                                    faces: sc.readings.isEmpty
+                                        ? [] : [GlucoseCard.face(data, unit: unit, surface: .menubarTitle)]))
+                            continue
                         }
-                        renders.append(r)
+                        for size in sizes(s) {
+                            var st = s.style(cfg, sensor: sc.sensor)
+                            st.unit = unit
+                            let lay = GlucoseCard.draw(
+                                cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now, st,
+                                pal,
+                                surface: s, part: .all, alerts: data.alerts)
+                            let r = Render(
+                                surface: s, size: "\(Int(size.width))x\(Int(size.height))", scene: sc.id, settings: sid,
+                                unit: unit, layouts: [lay], faces: [])
+                            // one clock: every time drawn is in that variant's 24-hour setting
+                            if let bad = lay.all("time.text").first(where: {
+                                cycleOf($0.info).map { $0 != hour24 } ?? false
+                            }),
+                                clockShown < 10
+                            {
+                                fail("clock: \(r) shows \"\(bad.info)\", want \(hour24 ? 24 : 12)-hour time")
+                                clockShown += 1
+                            }
+                            renders.append(r)
+                        }
                     }
                 }
             }
