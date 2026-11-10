@@ -61,6 +61,7 @@
     <string name="mute_all_left_one">Alertas silenciadas · queda %1$s</string>
     <string name="mute_all_left_other">Alertas silenciadas · quedan %1$s</string>
     <string name="mute_all_forever">Alertas silenciadas hasta que lo desactives</string>
+    <string name="mute_all_scope">Incluidas muy baja y sin datos, solo en este teléfono</string>
     <string name="mute_notif_until">Hasta las %1$s</string>
     <string name="mute_pill">Silenciadas · %1$s</string>
     <string name="mute_pill_forever">Silenciadas</string>

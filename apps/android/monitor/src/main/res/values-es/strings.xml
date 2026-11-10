@@ -44,7 +44,7 @@
     <string name="alert_action_remind_less">Avisar menos</string>
     <string name="alert_action_remind_usual">Avisar como siempre</string>
     <string name="alert_action_unmute">Reactivar</string>
-    <string name="alert_action_change">Cambiar tiempo</string>
+    <string name="alert_action_change">Cambiar duración</string>
 
     <string name="sensor_end_today">El sensor termina hoy a las %1$s</string>
     <string name="sensor_end_tomorrow">El sensor termina mañana a las %1$s</string>

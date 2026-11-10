@@ -21,7 +21,31 @@ import org.junit.Test
  * resources and are checked against the same file by the Robolectric test.
  */
 class MuteCopyTest {
-    private val cases = Json.parseToJsonElement(Contracts.file("alerts/copy.json").readText()).jsonObject["cases"]!!.jsonArray
+    /** The state lines' cases (the notification's own words are `:monitor`'s AlertCopyTest). */
+    private val cases =
+        Json
+            .parseToJsonElement(Contracts.file("alerts/copy.json").readText())
+            .jsonObject["cases"]!!
+            .jsonArray
+            .filter { it.jsonObject["state"]!!.jsonPrimitive.content in LINES }
+
+    private companion object {
+        val LINES =
+            setOf(
+                "side_muted",
+                "side_after",
+                "side_falling",
+                "side_less",
+                "all_timed",
+                "all_forever",
+                "notif_title",
+                "notif_text",
+                "pill",
+                "pill_forever",
+                "choice",
+                "choice_forever",
+            )
+    }
 
     private fun side(c: JsonObject) = Side.entries.single { it.wire == c["side"]!!.jsonPrimitive.content }
 

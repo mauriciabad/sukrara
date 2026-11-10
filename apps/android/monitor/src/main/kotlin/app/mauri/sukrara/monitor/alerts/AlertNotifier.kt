@@ -56,7 +56,7 @@ class AlertNotifier(
         val words = words()
         val b =
             base(kind, alarm, silent)
-                .setContentTitle(headline(kind, firing.treated, words))
+                .setContentTitle(AlertCopy.headline(kind, firing.treated, words))
                 .setContentText(AlertCopy.body(firing, words, unit()))
                 .setWhen(firing.at * 1000)
                 .setShowWhen(true)
@@ -156,17 +156,6 @@ class AlertNotifier(
             // silent = what NotificationCompat.setSilent does: a child that defers alerting to the summary, which never
             // alerts (GROUP_ALERT_CHILDREN); a ringing alert keeps GROUP_ALERT_ALL and rings as a child
             .apply { if (silent) setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY) }
-
-    private fun headline(kind: AlertKind, treated: Int, words: AlertWords): String {
-        val base = words.get("alert_headline_${kind.wire}")
-        val context =
-            when {
-                treated <= 0 || !kind.isLevel -> return base
-                kind.side == Side.LOW -> if (treated == 1) R.string.alert_context_eat_more else R.string.alert_context_eat_more_again
-                else -> if (treated == 1) R.string.alert_context_after_insulin else R.string.alert_context_after_more_insulin
-            }
-        return ctx.getString(R.string.alert_headline_with_context, base, ctx.getString(context))
-    }
 
     private fun clockTime(epochS: Long): String = Clock.time(epochS)
 

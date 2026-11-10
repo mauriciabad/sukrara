@@ -89,9 +89,15 @@ So every alert notification, every kind, has exactly **two** actions, the same o
 | *Mute…* | One action whose choices are the lengths: Android a direct reply with the choices `muteMin` first, then 15 min / 30 min / 1 h / 2 h (written by the one duration formatter) and free typing; Mac a text-input action (empty = `muteMin`). Typed text is read by the shared duration parser (`45`, `1 h 30`, `1:30`, `2h`; spikes/durations/durations.json), 1–720 min; anything else changes nothing. |
 | *Remind less* (Mac *Remind Less*; es *Avisar menos*) | The side's repeats come every `max(repeatMin, relaxMin)` minutes, counted from the last alert. Shown when it would slow anything (the kind repeats faster than `relaxMin`); once relaxed the same slot is *Remind as usual*. The interval is said in the secondary text (Android: the notification's subtext "Reminders every 30 min"), never in the button. |
 
-**Copy** (round f31): every mute / remind-less state line is built by one function per platform (`MuteCopy`) from
-[`copy.json`](copy.json) (en + es; Android `MuteCopyTest`, Mac `-alerts-selftest`). Every muted state counts down
-(Android notification chronometer, app and Mac rows / pill tick each minute); Mac notifications say "Until 10:42".
+**Copy** (round f31, #42): the alert notification's words and every mute / remind-less state line are in
+[`copy.json`](copy.json), en + es: the title (headline and treatment context), the body (value and arrow in the
+person's unit, the fast kinds' rate, LO / HI, no data's time and last value, *No reading yet* for a source that never
+delivered one), the actions (the Mac's in HIG title case with an ellipsis where text input follows), the test alert's
+title and what Mute all covers (*Very low and no data included, on this phone only* / *on this Mac only*). Each line is
+built by one function per platform (Android `AlertCopy` / `MuteText`, Mac `AlertText` / `MuteCopy`), and both check
+every case in both languages (Android `AlertCopyTest`, Mac `MuteCopyTests` and `AlertCopyTests`). Every muted state
+counts down (Android notification chronometer, app and Mac rows / pill tick each minute); Mac notifications say
+"Until 10:42".
 
 **Scope and end** (the user, 2026-10-21: "if the user is high, mutes for 2 h, injects insulin and then goes low, the
 low would be muted, and we don't want that … I don't want muting to stop when merely back in normal range"):
