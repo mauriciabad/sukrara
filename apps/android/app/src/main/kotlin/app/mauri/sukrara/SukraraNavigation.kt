@@ -13,6 +13,10 @@ import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -396,17 +400,21 @@ fun SukraraNavigation(
                         )
                     }
                     entry<NewSensorKey> {
-                        NewSensorRoute(
-                            viewModel = viewModel(factory = graph.sensorUi.newSensorViewModels),
-                            onSignIn = { backStack.add(LibreViewSignInKey) },
-                            onDone = { backStack.remove(NewSensorKey) },
-                        )
+                        BareScreen {
+                            NewSensorRoute(
+                                viewModel = viewModel(factory = graph.sensorUi.newSensorViewModels),
+                                onSignIn = { backStack.add(LibreViewSignInKey) },
+                                onDone = { backStack.remove(NewSensorKey) },
+                            )
+                        }
                     }
                     entry<LibreViewSignInKey> {
-                        LibreViewSignInRoute(
-                            viewModel = viewModel(factory = graph.sensorUi.libreViewViewModels),
-                            onBack = { backStack.remove(LibreViewSignInKey) },
-                        )
+                        BareScreen {
+                            LibreViewSignInRoute(
+                                viewModel = viewModel(factory = graph.sensorUi.libreViewViewModels),
+                                onBack = { backStack.remove(LibreViewSignInKey) },
+                            )
+                        }
                     }
                     entry<SettingsKey> { key ->
                         SettingsScreen(
@@ -653,4 +661,16 @@ private fun copy(
     text: String,
 ) {
     context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Sukrara", text))
+}
+
+/**
+ * A screen without its own page scaffold (New sensor, LibreView sign-in): the theme's background and content colour
+ * under it and its content clear of the status and navigation bars (without it the window's dark background showed
+ * through in the light theme and the step bar sat under the status bar).
+ */
+@Composable
+private fun BareScreen(content: @Composable () -> Unit) {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Box(Modifier.safeDrawingPadding()) { content() }
+    }
 }
