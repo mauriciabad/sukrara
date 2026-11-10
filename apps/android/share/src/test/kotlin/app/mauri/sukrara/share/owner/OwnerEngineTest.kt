@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.Rumor
@@ -96,6 +97,52 @@ class OwnerEngineTest {
             runCurrent()
             val code = crypto.nsec(crypto.generate().secret)
             assertEquals(RestoreIdentity.Result.AlreadySharing, e.restore(backgroundScope, code, null))
+            e.stop()
+        }
+
+    /** Backup › Replace this identity › Start fresh: a new identity over the working one, only when asked. */
+    @Test fun startFreshReplacesAWorkingIdentityOnlyWhenConfirmed() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            runCurrent()
+            val before = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertFalse(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            assertEquals(before, (store.load() as OwnerIdentityStore.Load.Loaded).state)
+
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null), replaceExisting = true))
+            runCurrent()
+            val after = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertFalse(before.identity(crypto).public == after.identity(crypto).public)
+            assertTrue(e.running)
+            val shown = e.state.value as OwnerShareState.Sharing
+            assertEquals("Ana", shown.profile?.name)
+            assertTrue(shown.followers.isEmpty())
+            // the new identity's own backup goes out; the old one publishes nothing more
+            assertTrue(relay.published.any { it.pubkey == after.identity(crypto).public.hex })
+            e.stop()
+        }
+
+    /** Backup › Replace this identity › Restore: another identity over the working one; its own code changes nothing. */
+    @Test fun restoreReplacesAWorkingIdentityWhenConfirmedButNeverWithItself() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, Profile("Ana", null)))
+            runCurrent()
+            val mine = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            val own = crypto.nsec(mine.identity(crypto).secret)
+            assertEquals(RestoreIdentity.Result.SameIdentity, e.restore(backgroundScope, own, null, replaceExisting = true))
+            assertEquals(mine, (store.load() as OwnerIdentityStore.Load.Loaded).state)
+
+            val other = CreateIdentity(ctx)(Profile("Ana", null), NOW - 50)
+            relay.stored += other.publish.filter { it.kind == Wire.KIND_DATA }
+            val code = crypto.nsec(other.state.identity(crypto).secret)
+            val restored = e.restore(backgroundScope, code, null, replaceExisting = true)
+            assertTrue(restored is RestoreIdentity.Result.Restored)
+            runCurrent()
+            val now = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            assertEquals(other.state.identity(crypto).public, now.identity(crypto).public)
+            assertTrue(e.running)
             e.stop()
         }
 

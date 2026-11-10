@@ -137,9 +137,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.stop()
     }
 
-    /// `sukrara:` links (Info.plist CFBundleURLTypes): invite links go to the follow step, `sukrara://treatment/new`
-    /// to Add treatment, `sukrara://open` to the panel. A link that launches the app arrives before
-    /// `applicationDidFinishLaunching` made the windows: it waits in `linkInbox` until then.
+    /// `sukrara:` links (Info.plist CFBundleURLTypes) and the web invite `https://sukrara.mauri.app/join#…` (given to
+    /// the app with `open -a Sukrara <link>` or dropped on it): invite links go to the follow step's confirmation,
+    /// `sukrara://treatment/new` to Add treatment, `sukrara://open` to the panel; anything else is ignored
+    /// (`AppLink`). A link that launches the app arrives before `applicationDidFinishLaunching` made the windows: it
+    /// waits in `linkInbox` until then.
     public func application(_ application: NSApplication, open urls: [URL]) {
         for url in linkInbox.receive(urls) { windows?.open(url) }
     }

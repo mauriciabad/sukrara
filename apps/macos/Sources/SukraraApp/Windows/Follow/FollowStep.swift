@@ -6,44 +6,21 @@ import SukraraShare
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Follow someone: paste or open an invite link, import a QR image, or pair with a phone nearby. Used by the setup
-/// walk and by Settings › General › Follow….
+/// Follow someone: paste, drop or open an invite link (`https://sukrara.mauri.app/join#…` or `sukrara:join#…`), import
+/// a QR image, or pair with a phone nearby. A link is looked up first and shows who is inviting with *Follow* /
+/// *Cancel* (`InviteConfirmDialog`); nothing is sent before *Follow*. Used by the setup walk and by Settings › General ›
+/// Follow….
 struct FollowStep: View {
     @Bindable var follow: FollowModel
     @State private var importing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if case .waiting(let wearer, let pairing?) = follow.status {
-                PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
-            } else if let phone = follow.nearby {
-                NearbyPairingDialog(follow: follow, phone: phone)
-            }
-            Text(L10n.t("Paste the invite link from the wearer's phone (Sukrara › Share › Invite)."))
-            HStack {
-                TextField(L10n.t("Invite link"), text: $follow.linkText)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { Task { await follow.follow() } }
-                    .accessibilityLabel(L10n.t("Invite link"))
-                Button(L10n.t("Follow")) { Task { await follow.follow() } }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(follow.linkText.isEmpty || follow.status == .joining)
-            }
-            Button(L10n.t("Import a QR code image…")) { importing = true }
-            if follow.canFollow, follow.nearby == nil { MacNameField(follow: follow) }
-            if follow.status == .joining {
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text(L10n.t("Looking up the invite…"))
-                    Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
-                }
-            }
-            if case .waiting(let wearer, nil) = follow.status {
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"))
-                    Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
-                }
+            if let invite = follow.invite {
+                InviteConfirmDialog(follow: follow, invite: invite)
+            } else {
+                form
             }
             if let failure = follow.failure {
                 Label(failure.message, systemImage: "exclamationmark.triangle.fill")
@@ -51,6 +28,7 @@ struct FollowStep: View {
                     .accessibilityAddTraits(.isStaticText)
             }
         }
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.invite)
         .onChange(of: follow.canFollow, initial: true) { _, can in follow.searchNearby(can) }
         .onDisappear { follow.searchNearby(false) }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.image]) { result in
@@ -59,8 +37,99 @@ struct FollowStep: View {
                 defer { if ok { url.stopAccessingSecurityScopedResource() } }
                 return QRImport.inviteText(atURL: url)
             }
-            Task { await follow.follow(qrText: text) }
+            Task { await follow.lookUp(qrText: text) }
         }
+        // a link dragged from a browser, Messages or Mail: the same as pasting it
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first, follow.invite == nil, follow.canFollow else { return false }
+            follow.linkText = url.absoluteString
+            Task { await follow.lookUp() }
+            return true
+        }
+    }
+
+    @ViewBuilder private var form: some View {
+        if case .waiting(let wearer, let pairing?) = follow.status {
+            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+        } else if let phone = follow.nearby {
+            NearbyPairingDialog(follow: follow, phone: phone)
+        }
+        Text(
+            L10n.t(
+                "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
+            )
+        )
+        .fixedSize(horizontal: false, vertical: true)
+        HStack {
+            TextField(L10n.t("Invite link"), text: $follow.linkText)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { Task { await follow.lookUp() } }
+                .accessibilityLabel(L10n.t("Invite link"))
+            Button(L10n.t("Continue")) { Task { await follow.lookUp() } }
+                .keyboardShortcut(.defaultAction)
+                .disabled(follow.linkText.isEmpty || follow.status == .joining)
+        }
+        Button(L10n.t("Import a QR code image…")) { importing = true }
+        if follow.canFollow, follow.nearby == nil { MacNameField(follow: follow) }
+        if follow.status == .joining {
+            HStack {
+                ProgressView().controlSize(.small)
+                Text(L10n.t("Looking up the invite…"))
+                Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
+            }
+        }
+        if case .waiting(let wearer, nil) = follow.status {
+            HStack {
+                ProgressView().controlSize(.small)
+                Text(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"))
+                Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
+            }
+        }
+    }
+}
+
+/// The invite was found: who is inviting (the name and picture in it, drawn by the avatar renderer), this Mac's name,
+/// *Follow* / *Cancel* (Escape). Nothing is sent before *Follow*; no Return shortcut, so a link opened by another app
+/// never follows by a stray keypress. The name and picture are the inviter's own words, so the note says to follow only
+/// someone you know sent the link. It arrives with a spring (a fade with Reduce Motion) and a trackpad tap.
+struct InviteConfirmDialog: View {
+    @Bindable var follow: FollowModel
+    let invite: Invite
+
+    var body: some View {
+        let who = Profile.shownName(invite.profile?.name) ?? L10n.t("the person who invited you")
+        GroupBox {
+            HStack(alignment: .top, spacing: 12) {
+                AvatarView(avatar: invite.profile?.avatar, name: who, size: 44)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.t("Follow \(who)?")).font(.headline)
+                    Text(
+                        L10n.t(
+                            "\(who) invited you to see their glucose. Follow asks \(who) to allow this Mac; nothing is shared until they do."
+                        )
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        L10n.t(
+                            "This name and picture come from the invite. Follow only if you know who sent you this link."
+                        )
+                    )
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    MacNameField(follow: follow)
+                    HStack {
+                        Spacer()
+                        Button(L10n.t("Cancel")) { follow.cancelInvite() }
+                            .keyboardShortcut(.cancelAction)
+                        Button(L10n.t("Follow")) { Task { await follow.confirmInvite() } }
+                            .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+            .padding(4)
+        }
+        .accessibilityElement(children: .contain)
+        .onAppear { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
     }
 }
 
