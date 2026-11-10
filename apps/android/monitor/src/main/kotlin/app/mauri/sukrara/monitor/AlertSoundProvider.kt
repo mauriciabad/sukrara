@@ -16,6 +16,8 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.SoundSettings
 import app.mauri.sukrara.monitor.alerts.AlertNotifier
 import app.mauri.sukrara.monitor.alerts.AlertSoundPicker
+import app.mauri.sukrara.monitor.lockedboot.LockedBootStore
+import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -26,6 +28,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * a random variant). **Exported, read-only, nothing secret**: the system's player runs in another process and must
  * open it (a per-URI grant can't be attached to a channel). canonicalize = identity, or a backup / restore resets the
  * channels to the default sound. A sound the person picks in the channel's system settings overrides all of this.
+ * Direct-boot aware: before the first unlock after a restart it reads only the device-protected [LockedBootStore].
  */
 class AlertSoundProvider : ContentProvider() {
     override fun onCreate() = true
@@ -35,15 +38,20 @@ class AlertSoundProvider : ContentProvider() {
         val kind = uri.lastPathSegment?.let(AlertKind::fromWire) ?: return null
         val module = ctx.alertsModule
         val sounds =
-            module?.let { m ->
-                runBlocking {
-                    withTimeoutOrNull(1_000) {
-                        m.store.settings
-                            .first()
-                            .sounds
+            if (!ctx.userUnlocked) {
+                // before the first unlock: the sound the plan saved (only the locked boot's alarm rings then)
+                LockedBootStore.of(ctx).read()?.let { SoundSettings(pack = it.sound, shuffle = it.shuffle) } ?: SoundSettings()
+            } else {
+                module?.let { m ->
+                    runBlocking {
+                        withTimeoutOrNull(1_000) {
+                            m.store.settings
+                                .first()
+                                .sounds
+                        }
                     }
-                }
-            } ?: SoundSettings()
+                } ?: SoundSettings()
+            }
         val picker = module?.soundPicker ?: AlertSoundPicker()
         // a file that can't be opened falls back to the system sound, never to silence
         return open(ctx, picker.pick(kind, sounds, System.currentTimeMillis())) ?: open(ctx, AlertSoundPicker.SYSTEM)

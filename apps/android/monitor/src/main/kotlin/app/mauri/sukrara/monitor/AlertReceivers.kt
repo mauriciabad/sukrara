@@ -11,6 +11,7 @@ import android.util.Log
 import app.mauri.sukrara.alerts.AlertLimits
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.monitor.alerts.AlertsModule
+import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -19,8 +20,9 @@ interface AlertsHost {
     val alerts: AlertsModule
 }
 
+/** The one [AlertsModule]; null before the first unlock after a restart (the app graph needs the unlocked storage). */
 internal val Context.alertsModule: AlertsModule?
-    get() = (applicationContext as? AlertsHost)?.alerts
+    get() = if (!userUnlocked) null else (applicationContext as? AlertsHost)?.alerts
 
 private const val TAG = "Sukrara.alerts"
 

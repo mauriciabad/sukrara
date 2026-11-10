@@ -172,6 +172,9 @@ object NotificationIds {
 
     /** "Monitoring stopped — tap to resume". */
     const val MONITORING_STOPPED = 2
+
+    /** Before the first unlock after a restart: "Unlock to resume monitoring", ringing as *No data* (lockedboot). */
+    const val LOCKED_BOOT = 3
     const val SENSOR = 10
     const val SENSOR_COUNTDOWN = 11
     const val SENSOR_ENDED = 12

@@ -24,6 +24,7 @@ import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.graph.GraphSettings
+import app.mauri.sukrara.monitor.lockedboot.LockedBootStore
 import app.mauri.sukrara.monitor.readiness.AndroidAlertReadiness
 import app.mauri.sukrara.monitor.readiness.NotificationCooldown
 import app.mauri.sukrara.monitor.sensorend.AndroidSensorEndPresenter
@@ -123,6 +124,7 @@ class AlertsModule(
             hub::setAlerts,
             clock,
             log = log,
+            lockedBoot = LockedBootStore.of(ctx)::write,
         )
     val controls: AlertControls get() = runtime
 

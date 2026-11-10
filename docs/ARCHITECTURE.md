@@ -343,6 +343,7 @@ read (new app id, no migration). Nothing is in cloud backup or device transfer (
 | History | `databases/sukrara.db` (Room v1, schema in `core/data/schemas/`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox` | `ReadingsRepository`, `TreatmentsRepository`, DAOs for the sharing ledger |
 | Other files | `files/<path>` atomic tmp + fsync + rename | `DataModule.fileStore(path, codec)` → `Loaded / Missing / Corrupt` |
 | Diagnostics | `files/diag/diag.log` + `.1`, 512 KB each, `Redact` scrubs keys / tokens | `DiagLog` |
+| Before the first unlock | the only file in **device-protected** storage: `/data/user_de/…/files/locked-boot.json` (times and the *No data* rule, never a value; docs/30). Everything above is credential-encrypted: unreadable after a restart until the first unlock, so `App` builds no graph then and only `LockedBootReceiver` and `AlertSoundProvider` run | `LockedBootStore` (`:monitor`), written by `AlertRuntime` |
 | Network | one OkHttp client (15 s connect, 30 s read, 60 s call, UA `Sukrara/<version>`, no body logging); one `SukraraJson` (`ignoreUnknownKeys`, `explicitNulls = false`) | `DataModule.http`, `DataModule.json` |
 
 Retention (`Retention`, applied in `ready()`): readings 90 days, seen wraps / rejects / sent outbox 14 days.
