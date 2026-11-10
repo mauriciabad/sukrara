@@ -127,9 +127,9 @@ class AlertMachine(
     fun uiState(now: Long): AlertUiState {
         val own = AlertUiState.of(local, localSettings, doses, now)
         val m = mirror ?: return own
-        return AlertUiState(
-            own.quiet + AlertUiState.ofMirror(m, settings, now).quiet,
-            maxOf(own.muteAllUntil, m.muteAllUntil.takeIf { it > now } ?: 0),
+        return own.copy(
+            quiet = own.quiet + AlertUiState.ofMirror(m, settings, now).quiet,
+            muteAllUntil = maxOf(own.muteAllUntil, m.muteAllUntil.takeIf { it > now } ?: 0),
         )
     }
 
