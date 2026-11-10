@@ -82,6 +82,22 @@ func fixtureSetHasCases(_ set: String) {
         }
     }
 
+    /// The reading's time: the clock time, the day with it from 12 h (or another day), the date after 6 days.
+    @Test func timeKinds() throws {
+        let times = Self.root.child("times")
+        let fileNow = try #require(times.number("now"))
+        let cases = try #require(times["cases"] as? [[String: Any]])
+        #expect(!cases.isEmpty)
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        for c in cases.map(JSON.init) {
+            let at = c.number("now") ?? fileNow, age = try #require(c.number("age"))
+            #expect(
+                Freshness.timeKind(at - age, now: at, calendar: utc).rawValue == c.string("expect"),
+                "\(c.string("name") ?? "?")")
+        }
+    }
+
     @Test(arguments: GraphFixtures.cases("freshness/freshness.json"))
     func look(_ c: JSON) {
         let e = c.expect

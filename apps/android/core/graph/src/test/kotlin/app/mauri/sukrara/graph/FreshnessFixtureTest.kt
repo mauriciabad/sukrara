@@ -31,6 +31,31 @@ class FreshnessFixtureTest {
         }
     }
 
+    /** The reading's time: the clock time, the day with it from 12 h (or another day), the date after 6 days. */
+    @Test fun times() {
+        val times = file["times"]!!.jsonObject
+        val now = times["now"].long()!!
+        val utc = java.time.ZoneOffset.UTC
+        val fails =
+            times["cases"]!!.jsonArray.mapNotNull { e ->
+                val c = e.jsonObject
+                val at = c["now"].long() ?: now
+                val got = Freshness.timeKind(at - c["age"].long()!!, at, utc).key
+                c["name"].str().takeIf { got != c["expect"].str() }?.let { "$it: got $got" }
+            }
+        assertTrue(fails.joinToString("\n"), fails.isEmpty())
+        // and the words: 07:14 this morning is "Fri 07:14" from 19:14 on, as yesterday's 23:00 is "Thu 23:00"
+        Clock.hour24Source = { true }
+        try {
+            val morning = now - (12 * 3600 + 46 * 60)
+            assertEquals("07:14", Freshness.timeText(morning, morning + 12 * 3600, java.util.Locale.UK, utc))
+            assertEquals("Fri 07:14", Freshness.timeText(morning, now, java.util.Locale.UK, utc))
+            assertEquals("Thu 23:00", Freshness.timeText(now - 21 * 3600, now, java.util.Locale.UK, utc))
+        } finally {
+            Clock.hour24Source = null
+        }
+    }
+
     @Test fun cases() {
         val now = 1_800_000_000L
         val cases = file["cases"] as JsonArray

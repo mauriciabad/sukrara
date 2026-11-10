@@ -24,26 +24,31 @@ import Testing
 
     @Test func freshReadingGetsAnEntryAtEveryFreshnessStep() {
         let dates = WidgetTimeline.dates(snapshot(readingAge: 30), now: nowDate)
-        // reading at now-30: late after 90 s, struck after 5 min, hidden after 20 min, no graph after 3 h (+1 s each)
-        #expect(offsets(dates) == [0, 61, 271, 1171, 10771])
-        #expect(WidgetTimeline.reloadAfter(dates) == nowDate.addingTimeInterval(10772))
+        // reading at now-30: late after 90 s, struck after 5 min, hidden after 20 min, no graph after 3 h, its time
+        // with the day after 12 h (+1 s each); the date after 6 days is past the horizon
+        #expect(offsets(dates) == [0, 61, 271, 1171, 10771, 43171])
+        #expect(WidgetTimeline.reloadAfter(dates) == nowDate.addingTimeInterval(43172))
     }
 
     @Test func eachEntryAgesTheSameSnapshot() {
         let snap = snapshot(readingAge: 30)
         let dates = WidgetTimeline.dates(snap, now: nowDate)
         let faces = dates.map { GlucoseCard.face(snap.data(at: $0), unit: .mgdl, surface: .widgetValue) }
-        #expect(faces.map(\.state) == [.value, .value, .value, .noReadings, .noReadings])
-        #expect(faces.map(\.strike) == [false, false, true, false, false])
+        #expect(faces.map(\.state) == [.value, .value, .value, .noReadings, .noReadings, .noReadings])
+        #expect(faces.map(\.strike) == [false, false, true, false, false, false])
         #expect(faces[0].text == "112")
         #expect(faces[3].text == nil)  // never a number after 20 min
     }
 
     @Test func aStaleSnapshotOnlyKeepsTheStepsStillAhead() {
-        #expect(offsets(WidgetTimeline.dates(snapshot(readingAge: 600), now: nowDate)) == [0, 601, 10201])
+        #expect(offsets(WidgetTimeline.dates(snapshot(readingAge: 600), now: nowDate)) == [0, 601, 10201, 42601])
+        // 4 h old: only "No reading since 08:00" gaining its day at 12 h is ahead
         let gone = WidgetTimeline.dates(snapshot(readingAge: 4 * 3600), now: nowDate)
-        #expect(offsets(gone) == [0])
-        #expect(WidgetTimeline.reloadAfter(gone) == nil)
+        #expect(offsets(gone) == [0, 28801])
+        // a week old: nothing changes any more
+        let old = WidgetTimeline.dates(snapshot(readingAge: 7 * 86400), now: nowDate)
+        #expect(offsets(old) == [0])
+        #expect(WidgetTimeline.reloadAfter(old) == nil)
     }
 
     @Test func noSnapshotIsOneEntryAndNoReload() {

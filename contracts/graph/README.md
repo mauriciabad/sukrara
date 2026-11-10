@@ -145,7 +145,10 @@ What every glucose surface shows as the latest reading ages (90 s time, 5 min st
 JDK 21) and `-graphselftest` (Mac) render every case through one adapter per surface id and fail when a listed surface
 has none; `tools/check` `freshness-surface` scans the listed files (no value formatted outside the look, no own
 thresholds). A new glucose surface: add it to the registry, write its adapter on its platform. `steps` pins the redraw
-times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays with Android's alarm.
+times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays with Android's alarm. `times` pins what the
+reading's time says (`Freshness.timeKind`: `time` = the clock time, today's and at most 12 h old; `day` = the weekday
+with it, from 12 h or on another day; `date` after 6 days), run by `FreshnessFixtureTest.times` and
+`FreshnessFixtureTests.timeKinds` in UTC.
 
 ## Surfaces and layout across surfaces (`surfaces/surfaces.json`, `layout/*.json`)
 

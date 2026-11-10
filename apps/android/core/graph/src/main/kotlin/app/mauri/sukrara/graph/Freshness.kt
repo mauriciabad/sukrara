@@ -83,7 +83,15 @@ enum class Freshness(
         const val STALE_S = 5 * 60L
         const val OLD_S = 20 * 60L
         const val GONE_S = 3 * 3600L
-        private val STEPS = listOf(LATE_S, STALE_S, OLD_S, GONE_S)
+
+        /** From this age [timeText] names the day too: a bare clock time could be today's or yesterday's. */
+        const val DAY_S = 12 * 3600L
+
+        /** From this age [timeText] says the date instead: a weekday could be this week's or last week's. */
+        const val DATE_S = 6 * 86400L
+
+        /** Every age at which a surface's picture changes: the steps, then the time text's day and date. */
+        private val STEPS = listOf(LATE_S, STALE_S, OLD_S, GONE_S, DAY_S, DATE_S)
 
         fun of(ageS: Long?): Freshness =
             when {
@@ -95,10 +103,13 @@ enum class Freshness(
                 else -> GONE
             }
 
-        /** The next age (s) at which [of] changes, so a surface knows when to redraw without a new reading. */
+        /**
+         * The next age (s) at which [of] or [timeText] changes, so a surface knows when to redraw without a new reading
+         * (else a widget last drawn at 3 h still says *No reading since 7:14* the next morning).
+         */
         fun nextChangeS(ageS: Long): Long? = STEPS.firstOrNull { it >= ageS }?.plus(1)
 
-        /** When (epoch s) the step of a reading taken at [t] changes next, seen at [nowS]; null = never again / none. */
+        /** When (epoch s) what a reading taken at [t] looks like changes next, seen at [nowS]; null = never again / none. */
         fun nextChangeAt(
             t: Long?,
             nowS: Long,
@@ -157,7 +168,10 @@ enum class Freshness(
                 else -> sgv.toString()
             }
 
-        /** "14:05" today, "Tue 14:05" this week, "12 Oct" before; the clock time in the phone's 12/24-hour setting. */
+        /**
+         * "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days ([timeKind]);
+         * the clock time in the phone's 12/24-hour setting.
+         */
         fun timeText(
             t: Long,
             nowS: Long,
@@ -165,14 +179,42 @@ enum class Freshness(
             zone: ZoneId = ZoneId.systemDefault(),
         ): String {
             val at = Instant.ofEpochSecond(t).atZone(zone)
-            val now = Instant.ofEpochSecond(nowS).atZone(zone)
             val time = Clock.time(t, locale = locale, zone = zone)
-            return when {
-                at.toLocalDate() == now.toLocalDate() -> time
-                nowS - t < 6 * 86400 -> at.dayOfWeek.getDisplayName(TextStyle.SHORT, locale) + " " + time
-                else -> "${at.dayOfMonth} ${at.month.getDisplayName(TextStyle.SHORT, locale)}"
+            return when (timeKind(t, nowS, zone)) {
+                TimeKind.TIME -> time
+                TimeKind.DAY -> at.dayOfWeek.getDisplayName(TextStyle.SHORT, locale) + " " + time
+                TimeKind.DATE -> "${at.dayOfMonth} ${at.month.getDisplayName(TextStyle.SHORT, locale)}"
             }
         }
+
+        /**
+         * Which form [timeText] writes for [t] seen at [nowS] (contracts/graph/freshness `times`): the clock time alone
+         * while it is today's and at most [DAY_S] old, the day with it from then or on another day, the date after
+         * [DATE_S]. A future time (a sensor's *Ready at*) is a clock time unless it falls on another day.
+         */
+        fun timeKind(
+            t: Long,
+            nowS: Long,
+            zone: ZoneId = ZoneId.systemDefault(),
+        ): TimeKind {
+            val day = Instant.ofEpochSecond(t).atZone(zone).toLocalDate()
+            val today = Instant.ofEpochSecond(nowS).atZone(zone).toLocalDate()
+            val age = nowS - t
+            return when {
+                day == today && age <= DAY_S -> TimeKind.TIME
+                age <= DATE_S -> TimeKind.DAY
+                else -> TimeKind.DATE
+            }
+        }
+    }
+
+    /** [timeText]'s three forms ("14:05", "Tue 14:05", "12 Oct"), by their contract names. */
+    enum class TimeKind(
+        val key: String,
+    ) {
+        TIME("time"),
+        DAY("day"),
+        DATE("date"),
     }
 }
 

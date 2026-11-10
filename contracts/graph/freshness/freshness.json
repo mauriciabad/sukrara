@@ -17,9 +17,31 @@
     "step where a value is hidden); face = no chart, the value's face takes its place (from 3 h / no reading)."
   ],
   "steps": {
-    "_about": "A reading at 0, then nothing: the times (s) at which every surface must redraw by itself (Freshness.nextChangeAt).",
-    "from": [0, 30, 91, 200, 301, 1201, 5000, 10801],
-    "next": [91, 91, 301, 301, 1201, 10801, 10801, null]
+    "_about": "A reading at 0, then nothing: the times (s) at which every surface must redraw by itself (Freshness.nextChangeAt): the steps, then the time text gaining the day (12 h) and turning into the date (6 days).",
+    "from": [0, 30, 91, 200, 301, 1201, 5000, 10801, 43200, 43201, 100000, 518401],
+    "next": [91, 91, 301, 301, 1201, 10801, 10801, 43201, 43201, 518401, 518401, null]
+  },
+  "times": {
+    "_about": [
+      "What the reading's time says on every surface (Freshness.timeText, decided by Freshness.timeKind on both platforms):",
+      "time = the clock time alone ('7:14 AM') while it is today's and at most 12 h old; day = the weekday with it ('Tue",
+      "7:14 AM') from 12 h or on another day, since a bare clock time a day later reads as today's; date = the date ('12 Oct')",
+      "after 6 days. A case: age (s before now; negative = ahead, a sensor's Ready at), optional now (epoch s, default the",
+      "file's: Friday 15 Jan 2027 20:00 UTC); zone UTC."
+    ],
+    "now": 1800043200,
+    "cases": [
+      {"name": "half an hour ago", "age": 1800, "expect": "time"},
+      {"name": "12 h ago, same day", "age": 43200, "expect": "time"},
+      {"name": "over 12 h, same day", "age": 43201, "expect": "day"},
+      {"name": "this midnight", "age": 72000, "expect": "day"},
+      {"name": "yesterday, 20 h ago", "age": 72001, "expect": "day"},
+      {"name": "yesterday evening, 9 h ago", "now": 1800000000, "age": 32400, "expect": "day"},
+      {"name": "6 days ago", "age": 518400, "expect": "day"},
+      {"name": "over 6 days ago", "age": 518401, "expect": "date"},
+      {"name": "ahead, today", "age": -1800, "expect": "time"},
+      {"name": "ahead, tomorrow", "age": -18000, "expect": "day"}
+    ]
   },
   "cases": [
     {"name": "fresh", "age": 30, "sgv": 123, "rate": 1.2,
