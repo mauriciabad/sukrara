@@ -1,0 +1,33 @@
+{
+ "about": "What TalkBack and VoiceOver say for each slot beside the value (#25): a report ring by the number it draws, the last treatment by its kind, amount and age. Run by SpokenFixtureTest (Android, A11y.metric / A11y.last) and SpokenFixtureTests (Mac, the same). Format: ../README.md, 'Spoken sentence'.",
+ "cases": [
+  {"name": "time in range, one day", "slot": {"kind": "TIR", "range": "IN_RANGE", "window": 86400, "text": "86"},
+   "expect": {"en": "86% in range over 1 day", "es": "86% en rango durante 1 día"}},
+  {"name": "very good, a week", "slot": {"kind": "TIR", "range": "TIGHT", "window": 604800, "text": "54"},
+   "expect": {"en": "54% very good over 7 days", "es": "54% muy bien durante 7 días"}},
+  {"name": "a share with decimals near the goal", "slot": {"kind": "TIR", "range": "IN_RANGE", "window": 43200, "text": "69.6"},
+   "expect": {"en": "69.6% in range over 12 hours", "es": "69,6% en rango durante 12 horas"}},
+  {"name": "one hour", "slot": {"kind": "TIR", "range": "IN_RANGE", "window": 3600, "text": "90"},
+   "expect": {"en": "90% in range over 1 hour", "es": "90% en rango durante 1 hora"}},
+  {"name": "a tiny share: the sign in words", "slot": {"kind": "TIR", "range": "IN_RANGE", "window": 86400, "text": "<0.1"},
+   "expect": {"en": "Less than 0.1% in range over 1 day", "es": "Menos de 0,1% en rango durante 1 día"}},
+  {"name": "almost all: the sign in words", "slot": {"kind": "TIR", "range": "IN_RANGE", "window": 86400, "text": ">99.9"},
+   "expect": {"en": "More than 99.9% in range over 1 day", "es": "Más de 99,9% en rango durante 1 día"}},
+  {"name": "GMI", "slot": {"kind": "GMI", "window": 1209600, "text": "6.7"},
+   "expect": {"en": "GMI 6.7% over 14 days", "es": "GMI 6,7% durante 14 días"}},
+  {"name": "average, without repeating the unit", "slot": {"kind": "AVERAGE", "window": 86400, "text": "141"},
+   "expect": {"en": "Average 141 over 1 day", "es": "Media 141 durante 1 día"}},
+  {"name": "CV in words", "slot": {"kind": "CV", "window": 86400, "text": "37"},
+   "expect": {"en": "Variability 37% over 1 day", "es": "Variabilidad 37% durante 1 día"}},
+  {"name": "last rapid insulin", "last": {"k": "rapid", "a": 4.5, "age": 720},
+   "expect": {"en": "Rapid insulin 4.5 units, 12 min ago", "es": "Insulina rápida 4,5 unidades, hace 12 min"}},
+  {"name": "last long-acting insulin, one unit", "last": {"k": "long", "a": 1, "age": 10800},
+   "expect": {"en": "Long-acting insulin 1 unit, 3 h ago", "es": "Insulina lenta 1 unidad, hace 3 h"}},
+  {"name": "last carbs, just now", "last": {"k": "carbs", "a": 45, "age": 30},
+   "expect": {"en": "Carbs 45 grams, just now", "es": "Hidratos 45 gramos, ahora mismo"}},
+  {"name": "last note", "last": {"k": "note", "a": 0, "age": 600},
+   "expect": {"en": "Note, 10 min ago", "es": "Nota, hace 10 min"}},
+  {"name": "insulin with the carbs drawn inside it", "last": {"k": "rapid", "a": 3, "age": 600}, "with": {"k": "carbs", "a": 30, "age": 900},
+   "expect": {"en": "Rapid insulin 3 units, 10 min ago. Carbs 30 grams, 15 min ago", "es": "Insulina rápida 3 unidades, hace 10 min. Hidratos 30 gramos, hace 15 min"}}
+ ]
+}

@@ -36,10 +36,6 @@
     <string name="card_no_readings_yet">Aún no hay lecturas</string>
     <string name="card_no_reading_since">Sin lecturas desde</string>
     <string name="card_sensor_ended">Sensor terminado</string>
-    <plurals name="card_sensor_left">
-        <item quantity="one">Sensor: queda %1$s</item>
-        <item quantity="other">Sensor: quedan %1$s</item>
-    </plurals>
     <string name="card_warming_up">Calentando</string>
     <string name="card_ready_at">Listo a las %1$s</string>
     <string name="card_almost_ready">Casi listo</string>
@@ -55,20 +51,74 @@
     <string name="trend_rising_fast">subiendo rápido</string>
     <string name="trend_falling">bajando</string>
     <string name="trend_falling_fast">bajando rápido</string>
-    <string name="a11y_value">%1$s miligramos por decilitro</string>
+    <string name="a11y_unit_mgdl">miligramos por decilitro</string>
+    <string name="a11y_value">%1$s %2$s</string>
+    <string name="a11y_below">por debajo de %1$s</string>
+    <string name="a11y_above">por encima de %1$s</string>
     <string name="a11y_value_old">lectura antigua</string>
-    <string name="a11y_low_reading">por debajo de 40 miligramos por decilitro</string>
-    <string name="a11y_high_reading">por encima de 400 miligramos por decilitro</string>
-    <string name="a11y_band_very_low">muy baja</string>
-    <string name="a11y_band_low">baja</string>
-    <string name="a11y_band_in_range">en rango</string>
-    <string name="a11y_band_high">alta</string>
-    <string name="a11y_band_very_high">muy alta</string>
-    <string name="a11y_band_extremely_high">extremadamente alta</string>
+    <string name="a11y_in_range">en rango</string>
     <string name="a11y_ago">hace %1$s</string>
     <string name="a11y_just_now">ahora mismo</string>
     <string name="a11y_no_readings">Glucosa: aún no hay lecturas</string>
     <string name="a11y_no_reading_since">Glucosa: sin lecturas desde %1$s</string>
+    <string name="a11y_last_reading">Glucosa: última lectura %1$s</string>
+    <plurals name="a11y_warming_up">
+        <item quantity="one">Sensor calentando, queda %1$s</item>
+        <item quantity="other">Sensor calentando, quedan %1$s</item>
+    </plurals>
+    <string name="a11y_almost_ready">Sensor casi listo, esperando la primera lectura</string>
+    <string name="a11y_sensor_ended">Sensor terminado. Cambiar sensor</string>
+    <string name="a11y_sensor_ends">El sensor termina en %1$s</string>
+    <plurals name="a11y_muted_left">
+        <item quantity="one">Alertas silenciadas, queda %1$s</item>
+        <item quantity="other">Alertas silenciadas, quedan %1$s</item>
+    </plurals>
+    <string name="a11y_muted_forever">Alertas silenciadas hasta que lo desactives</string>
+    <plurals name="a11y_low_muted_left">
+        <item quantity="one">Alertas de glucosa baja silenciadas, queda %1$s</item>
+        <item quantity="other">Alertas de glucosa baja silenciadas, quedan %1$s</item>
+    </plurals>
+    <plurals name="a11y_high_muted_left">
+        <item quantity="one">Alertas de glucosa alta silenciadas, queda %1$s</item>
+        <item quantity="other">Alertas de glucosa alta silenciadas, quedan %1$s</item>
+    </plurals>
+    <string name="a11y_low_muted_forever">Alertas de glucosa baja silenciadas hasta que lo desactives</string>
+    <string name="a11y_high_muted_forever">Alertas de glucosa alta silenciadas hasta que lo desactives</string>
+    <plurals name="a11y_low_muted_after_carbs">
+        <item quantity="one">Alertas de glucosa baja silenciadas tras los hidratos, queda %1$s</item>
+        <item quantity="other">Alertas de glucosa baja silenciadas tras los hidratos, quedan %1$s</item>
+    </plurals>
+    <plurals name="a11y_high_muted_after_insulin">
+        <item quantity="one">Alertas de glucosa alta silenciadas tras la insulina, queda %1$s</item>
+        <item quantity="other">Alertas de glucosa alta silenciadas tras la insulina, quedan %1$s</item>
+    </plurals>
+    <string name="a11y_slot_in_range">%1$s%% en rango durante %2$s</string>
+    <string name="a11y_slot_very_good">%1$s%% muy bien durante %2$s</string>
+    <string name="a11y_slot_gmi">GMI %1$s%% durante %2$s</string>
+    <string name="a11y_slot_average">Media %1$s durante %2$s</string>
+    <string name="a11y_slot_cv">Variabilidad %1$s%% durante %2$s</string>
+    <string name="a11y_less_than">menos de %1$s</string>
+    <string name="a11y_more_than">más de %1$s</string>
+    <string name="a11y_last_rapid">Insulina rápida %1$s, %2$s</string>
+    <string name="a11y_last_long">Insulina lenta %1$s, %2$s</string>
+    <string name="a11y_last_carbs">Hidratos %1$s, %2$s</string>
+    <string name="a11y_last_note">Nota, %1$s</string>
+    <plurals name="a11y_units">
+        <item quantity="one">%1$s unidad</item>
+        <item quantity="other">%1$s unidades</item>
+    </plurals>
+    <plurals name="a11y_grams">
+        <item quantity="one">%1$s gramo</item>
+        <item quantity="other">%1$s gramos</item>
+    </plurals>
+    <plurals name="a11y_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <plurals name="a11y_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
     <string name="a11y_chart">Últimas %1$d horas: %2$d%% en rango, %3$d%% por debajo, %4$d%% por encima</string>
     <string name="a11y_chart_empty">Últimas %1$d horas: sin datos</string>
 </resources>

@@ -90,6 +90,7 @@ import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
+import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.graph.TreatmentMarks
@@ -442,7 +443,6 @@ private fun GlucoseSection(
                     treatments = state.chartTreatments,
                     now = state.now,
                     config = state.config,
-                    description = cardDescription(state, resources),
                     modifier = Modifier.padding(horizontal = 16.dp),
                     actions = if (canMute) a11y else emptyList(),
                     pill = pill,
@@ -533,16 +533,14 @@ internal fun pillAction(state: HomeUiState): PillAction {
     )
 }
 
-/** TalkBack's words for the pill: what it shows. */
+/** TalkBack's words for the pill: what it shows, as the card's sentence says it ([A11y.status]). */
 internal fun pillWords(
     state: HomeUiState,
     resources: android.content.res.Resources,
 ): String {
     val words = CardWords.of(resources)
     if (state.glucose.sensor == SensorState.Ended) return words.replaceSensor
-    return app.mauri.sukrara.graph.StatusBadge
-        .describe(state.glucose.alerts.status, state.now.epochSecond, words)
-        .orEmpty()
+    return A11y.status(state.glucose.alerts.status, state.now.epochSecond, words).orEmpty()
 }
 
 /** Before there is anything to draw: the reason in the card's place, announced politely. */

@@ -225,7 +225,8 @@ class LiveNotification(
         val bg = NotificationCard.background(look, mgdl, config)
         b.setColorized(true).setColor(bg)
         val art = frame?.let { art(it, content, bg, now) } ?: return
-        val description = resolve(content.title, now)
+        // TalkBack: the card's one sentence, as on every other surface (never the title's arrow)
+        val description = art.description
         b
             .setShowWhen(false) // the late time is in the card
             .setStyle(Notification.DecoratedCustomViewStyle())
@@ -291,7 +292,7 @@ class LiveNotification(
                     NotificationCard.columnDp(context),
                     redrawGraph,
                 )
-            NotificationArt(drawn.header, drawn.collapsed, if (redrawGraph) drawn.graph else cached?.graph)
+            NotificationArt(drawn.header, drawn.collapsed, if (redrawGraph) drawn.graph else cached?.graph, drawn.description)
         }.onSuccess {
             artCache = it
             artKey = key

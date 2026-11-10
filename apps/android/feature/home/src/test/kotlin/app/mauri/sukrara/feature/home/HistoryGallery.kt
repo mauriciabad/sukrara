@@ -84,7 +84,6 @@ class HistoryGallery {
                             treatments = emptyList(),
                             now = NOW,
                             config = GraphConfig(),
-                            description = "",
                             scroll = scroll,
                         )
                     }

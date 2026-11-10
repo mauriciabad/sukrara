@@ -29,7 +29,6 @@ fun PanelPreview(
         treatments = state.chartTreatments,
         now = state.now,
         config = state.config,
-        description = cardDescription(state, resources),
         modifier = modifier.padding(horizontal = 16.dp),
         pill = pillAction(state),
         pillWords = pillWords(state, resources),

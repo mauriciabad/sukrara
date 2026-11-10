@@ -14,6 +14,7 @@ import androidx.core.graphics.createBitmap
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardModel
 import app.mauri.sukrara.graph.CardPart
 import app.mauri.sukrara.graph.CardSurface
@@ -55,6 +56,8 @@ class NotificationArt(
     val header: Bitmap,
     val collapsed: Bitmap,
     val graph: Bitmap?,
+    /** What TalkBack says for the card: the renderer's one sentence ([A11y.card]). */
+    val description: String,
 )
 
 /**
@@ -172,6 +175,6 @@ object NotificationCard {
                     plot.recycle()
                 }
             }
-        return NotificationArt(header(HEADER_DP), header(COLLAPSED_DP), chart)
+        return NotificationArt(header(HEADER_DP), header(COLLAPSED_DP), chart, A11y.card(model, style, CardSurface.NOTIFICATION))
     }
 }

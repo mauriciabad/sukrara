@@ -29,12 +29,10 @@
       ],
       "SensorBadge": [
         "look",
-        "describe",
         "Look"
       ],
       "StatusBadge": [
         "look",
-        "describe",
         "Look"
       ],
       "Slots": [
@@ -294,13 +292,11 @@
       ],
       "SensorBadge": [
         "look",
-        "describe",
         "Look",
         "flag"
       ],
       "StatusBadge": [
         "look",
-        "describe",
         "Look"
       ],
       "Slots": [],

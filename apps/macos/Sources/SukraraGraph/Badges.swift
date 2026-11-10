@@ -46,21 +46,6 @@ enum StatusBadge {
         }
     }
 
-    /// For screen readers, in `w`'s language (the mute lines read like MuteCopy's: "Low alerts muted · 12 min left").
-    static func describe(_ s: AlertStatus, now: TimeInterval, words w: CardWords) -> String? {
-        func left(_ until: TimeInterval) -> String { Durations.text(BadgeCopy.leftMin(until - now)) }
-        switch s.current(at: now) {
-        case .none: return nil
-        case .needed(let k): return k == .low ? w.eatCarbs : w.takeInsulin
-        // only Mute all has no end
-        case .paused(_, let until) where until >= AlertStatus.never: return w.mutedForever
-        case .paused(let k, let until): return w.sideMuted(k == .low, left(until))
-        case .taken(let k, let tr, let until): return w.sideAfter(k == .low, tr.k == "carbs", left(until))
-        case .muted(let until):
-            return until > now && until < AlertStatus.never ? w.mutedLeft(left(until)) : w.mutedForever
-        }
-    }
-
     /// Material Symbols "notifications_paused" (Apache 2.0), viewBox 0 -960 960 960.
     static let bellPaused =
         "M370-320h220v-72H480l110-136v-72H370v72h110L370-392v72ZM160-200v-80h80v-280q0-83 50-147.5"

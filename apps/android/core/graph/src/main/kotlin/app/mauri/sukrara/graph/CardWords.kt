@@ -7,6 +7,8 @@ import android.content.res.Resources
 import app.mauri.sukrara.core.graph.R
 import app.mauri.sukrara.core.model.DurationWords
 import app.mauri.sukrara.core.model.Durations
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 /**
  * Every word the card draws, read once from the graph's strings (en + es) so the renderer itself needs no Context:
@@ -62,10 +64,6 @@ class CardWords private constructor(
 
     fun readyAt(time: String): String = r.getString(R.string.card_ready_at, time)
 
-    /** "Sensor: 13d left" for [min] minutes left. */
-    fun sensorLeft(min: Long): String =
-        r.getQuantityString(R.plurals.card_sensor_left, Durations.wholeQuantity(min), Durations.whole(min, durations))
-
     /** A slot's window: "1d", "12h". */
     fun period(windowS: Long): String =
         if (windowS % 86_400 == 0L) {
@@ -98,6 +96,20 @@ class CardWords private constructor(
         id: Int,
         vararg args: Any,
     ): String = r.getString(id, *args)
+
+    internal fun plural(
+        id: Int,
+        quantity: Int,
+        vararg args: Any,
+    ): String = r.getQuantityString(id, quantity, *args)
+
+    /** The language these words are in (a spoken sentence's capital letter, the range word in lower case). */
+    val locale: Locale = r.configuration.locales[0]
+
+    private val decimalSeparator = DecimalFormatSymbols.getInstance(locale).decimalSeparator
+
+    /** A number the card drew ("6.7", "6,7") with this language's decimal separator, so it is read as one number. */
+    internal fun decimal(number: String): String = number.replace('.', decimalSeparator).replace(',', decimalSeparator)
 
     companion object {
         /** The words for [resources]' language (a widget / notification / Compose context's). */

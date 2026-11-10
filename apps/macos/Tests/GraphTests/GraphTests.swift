@@ -191,10 +191,16 @@ func fixtureSetHasCases(_ set: String) {
         readings.append(GraphReading(t: now - age, v: 110, rate: 0))
         let last = Freshness.timeText(now - age, now: now)
         let cases = [
-            (SensorInfo(start: now - 1200, end: now + 1_208_400, warmupEnd: now + 2400), "Warming up · 40m"),
-            (SensorInfo(start: now - 3900, end: now + 1_205_700, warmupEnd: now - 300), "Almost ready"),
+            (
+                SensorInfo(start: now - 1200, end: now + 1_208_400, warmupEnd: now + 2400), "Warming up · 40m",
+                "Sensor warming up, 40 min left. "
+            ),
+            (
+                SensorInfo(start: now - 3900, end: now + 1_205_700, warmupEnd: now - 300), "Almost ready",
+                "Sensor almost ready, waiting for the first reading. "
+            ),
         ]
-        for (sensor, want) in cases {
+        for (sensor, want, said) in cases {
             var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true)
             st.sensor = sensor
             for size in [
@@ -212,7 +218,7 @@ func fixtureSetHasCases(_ set: String) {
             let spoken = GlucoseCard.accessibilityLabel(
                 CardData(readings: readings, sensor: sensor, now: now), unit: .mgdl, surface: .widgetGraph,
                 config: GraphConfig(), words: .en)
-            #expect(spoken.hasPrefix("Warming up. "), "\(spoken)")
+            #expect(spoken.hasPrefix(said), "\(spoken)")
         }
     }
 
