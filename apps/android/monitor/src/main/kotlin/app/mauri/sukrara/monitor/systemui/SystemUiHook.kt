@@ -136,9 +136,10 @@ class SystemUiHook : XposedModule() {
     // --- our system icons: colour, order, fit -----------------------------------------------------------------------
 
     /**
-     * Range colour for our number icons: System UI's Compose `StatusBarIcon` tints every icon with one colour filter
-     * and draws it with `Image(painter, contentDescription, …, colorFilter, …)`. Ours are recognised by their
-     * description ([SlotIcons.isValue]); their filter gets the range colour (in range: System UI's own tint).
+     * Range colour for our number icons: System UI's Compose `StatusBarIcon` tints every icon with a colour filter and
+     * draws it with `Image(painter, contentDescription, …, colorFilter, …)`. Ours are recognised by their description
+     * ([SlotIcons.isValue]) and drawn with a filter of their own in the range colour ([TintFilter]; in range: System
+     * UI's own tint). System UI's filter is never changed (#118): were it shared, other icons would take our colour.
      */
     private fun hookIconTint(cl: ClassLoader) {
         val image =
@@ -149,28 +150,26 @@ class SystemUiHook : XposedModule() {
                     it.parameterTypes[6].name == "androidx.compose.ui.graphics.ColorFilter"
             } ?: return log("no Compose Image(…, ColorFilter, …)")
         val filterClass = cl.find("androidx.compose.ui.graphics.BlendModeColorFilter") ?: return log("no Compose BlendModeColorFilter")
-        // StatusBarIcon makes a fresh filter object per draw, so that object is recoloured: its native filter lives in
-        // the base class
-        val native =
-            filterClass.superclass
-                ?.declaredFields
-                ?.firstOrNull { it.type == ColorFilter::class.java }
-                ?.apply { isAccessible = true } ?: return log("no ColorFilter.nativeColorFilter")
-        val colorField = runCatching { filterClass.getDeclaredField("color").apply { isAccessible = true } }.getOrNull()
+        val tint = TintFilter.of(filterClass, ColorFilter::class.java) ?: return log("no BlendModeColorFilter(color, blendMode, …)")
         hook(image).setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE).intercept { chain ->
             val desc = chain.getArg(1) as? String
             val filter = chain.getArg(6)
-            if (desc != null && SlotIcons.isValue(desc) && filterClass.isInstance(filter)) {
-                runCatching {
-                    val color = HookText.iconColor(state, nowS(), baseColor) ?: return@runCatching
-                    native.set(filter, BlendModeColorFilter(color, BlendMode.SRC_IN))
-                    // Compose's own copy of the colour (packed sRGB: ARGB in the high 32 bits), for equals()
-                    colorField?.setLong(filter, (color.toLong() and 0xFFFFFFFFL) shl 32)
+            val ours =
+                try {
+                    val mine = desc != null && SlotIcons.isValue(desc) && filter != null && filterClass.isInstance(filter)
+                    val color = if (mine) HookText.iconColor(state, nowS(), baseColor) else null
+                    color?.let { tint.make(checkNotNull(filter), it, BlendModeColorFilter(it, BlendMode.SRC_IN)) }
+                } catch (t: Throwable) {
+                    log("icon tint failed: $t")
+                    null
                 }
+            if (ours == null) {
+                chain.proceed()
+            } else {
+                chain.proceed(chain.args.toTypedArray().also { it[6] = ours })
             }
-            chain.proceed()
         }
-        log("icon tint hook: ok")
+        log("icon tint hook: ok (${if (tint.takesNative) "platform filter" else "Compose's own"})")
     }
 
     /** The clock's colour, last seen (decides which palette reads on this status bar). */

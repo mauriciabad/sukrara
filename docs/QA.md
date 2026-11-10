@@ -108,6 +108,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Keep filling until even the pair can't fit (larger font / display size): number and arrow become the one dot
       together, never the arrow alone; removing icons brings both back.
 - [ ] No readings (> 20 min) / sensor ended: the single icon keeps the same priority.
+- [ ] Range colour (#118): out of range with *Colour* on, the number is in the range colour while Wi-Fi, battery,
+      mobile and every other icon keep the bar's tint; still so after the value goes back in range (number in the
+      bar's tint), after a light / dark bar change (an app with a light status bar, the shade) and on the lock screen.
+      `logcat -s LSPosedFramework Sukrara`: `icon tint hook: ok (platform filter)` (or `(Compose's own)`), no `icon tint
+      failed`.
 - [ ] Placement *After the Bluetooth icon* with Bluetooth off: the value sits where Bluetooth would be (not far left);
       turning Bluetooth on puts it right after the icon.
 - [ ] Restart System UI (home's *Restart System UI* card, or the Settings action): number then arrow from the first
