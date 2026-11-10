@@ -371,6 +371,7 @@ final class RecordingSender: TreatmentActions {
             var names: [String] = []
             func join(link: String) async throws(FollowFailure) { calls += 1 }
             func joinNearby(name: String) async throws(FollowFailure) { calls += 1 }
+            func confirmNearby(same: Bool) async -> Bool { false }
             func setProfile(name: String, avatar: Avatar?) async { names.append(name) }
             func setName(_ name: String) async { names.append(name) }
             func cancelJoin() async {}
@@ -386,6 +387,34 @@ final class RecordingSender: TreatmentActions {
         await m.follow()
         #expect(a.calls == 1 && m.failure == nil)
         #expect(a.names == ["Ana's MacBook"])  // the typed name goes with the request
+    }
+
+    /// Nearby: asking shows "Asking Marta's phone…"; *Different Code* ends the join and says why; *Same Code* keeps it.
+    @Test func nearbyCodesSameOrDifferent() async {
+        final class Pairing: FollowActions {
+            var confirmed: [Bool] = []
+            func join(link: String) async throws(FollowFailure) {}
+            func joinNearby(name: String) async throws(FollowFailure) {}
+            func confirmNearby(same: Bool) async -> Bool {
+                confirmed.append(same)
+                return true
+            }
+            func setProfile(name: String, avatar: Avatar?) async {}
+            func setName(_ name: String) async {}
+            func cancelJoin() async {}
+            func unfollow() async {}
+        }
+        let a = Pairing()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        m.nearby = NearbyPhone(wearer: "Marta")
+        await m.askNearby()
+        #expect(m.status == .waiting(wearer: "Marta", pairing: .init(code: nil, confirmed: false)))
+        m.status = .waiting(wearer: "Marta", pairing: .init(code: "021472", confirmed: false))
+        await m.confirmNearby(same: true)
+        #expect(m.failure == nil && a.confirmed == [true])
+        await m.confirmNearby(same: false)
+        #expect(m.failure == .codesDiffered && m.status == .notFollowing && a.confirmed == [true, false])
+        #expect(m.failure?.message.hasPrefix("The codes didn't match") == true)
     }
 }
 

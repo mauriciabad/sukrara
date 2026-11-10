@@ -83,9 +83,9 @@ import Testing
         var s = FollowerSnapshot.empty
         let check = LinkState.PairingCheck(code: "021472", confirmed: false)
         s.link = .requested(code: "1234", wearer: "Marta", pairing: check)
-        #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", code: "021472"))
+        #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", pairing: check))
         s.link = .requested(code: "1234", wearer: "Marta", pairing: nil)
-        #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", code: nil))
+        #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", pairing: nil))
         s.link = .following(wearer: "Marta", canWrite: false)
         s.readings = [Reading(t: Date(timeIntervalSince1970: 100), mgdl: 120)]
         #expect(

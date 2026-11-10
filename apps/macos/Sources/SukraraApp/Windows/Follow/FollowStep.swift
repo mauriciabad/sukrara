@@ -14,7 +14,11 @@ struct FollowStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let phone = follow.nearby { NearbyPairingDialog(follow: follow, phone: phone) }
+            if case .waiting(let wearer, let pairing?) = follow.status {
+                PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+            } else if let phone = follow.nearby {
+                NearbyPairingDialog(follow: follow, phone: phone)
+            }
             Text(L10n.t("Paste the invite link from the wearer's phone (Sukrara › Share › Invite)."))
             HStack {
                 TextField(L10n.t("Invite link"), text: $follow.linkText)
@@ -34,13 +38,12 @@ struct FollowStep: View {
                     Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
                 }
             }
-            if case .waiting(let wearer, let code) = follow.status, follow.nearby == nil {
+            if case .waiting(let wearer, nil) = follow.status {
                 HStack {
                     ProgressView().controlSize(.small)
                     Text(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"))
                     Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
                 }
-                if let code { Text(L10n.t("Code to type on the phone: \(code)")).font(.title3.monospaced()) }
             }
             if let failure = follow.failure {
                 Label(failure.message, systemImage: "exclamationmark.triangle.fill")
@@ -81,8 +84,8 @@ struct MacNameField: View {
     }
 }
 
-/// A phone nearby offers pairing: its avatar, this Mac's name (editable), "Ask to follow" / "Not now"; while it
-/// waits, "Waiting for <wearer> to approve" with Cancel.
+/// A phone nearby offers pairing: its avatar, this Mac's name (editable), "Ask to follow" / "Not now". Asking
+/// moves on to `PairingCodeView`.
 struct NearbyPairingDialog: View {
     @Bindable var follow: FollowModel
     let phone: NearbyPhone
@@ -92,21 +95,79 @@ struct NearbyPairingDialog: View {
             HStack(alignment: .top, spacing: 12) {
                 AvatarView(avatar: phone.avatar, name: phone.wearer, size: 44)
                 VStack(alignment: .leading, spacing: 8) {
-                    if case .waiting = follow.status {
-                        Text(L10n.t("Waiting for \(phone.wearer) to approve"))
-                        Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
-                    } else {
-                        Text(L10n.t("\(phone.wearer)'s phone is nearby")).font(.headline)
-                        MacNameField(follow: follow)
-                        HStack {
-                            Button(L10n.t("Ask to follow")) { Task { await follow.askNearby() } }
-                            Button(L10n.t("Not now")) { follow.nearby = nil }
-                        }
+                    Text(L10n.t("\(phone.wearer)'s phone is nearby")).font(.headline)
+                    MacNameField(follow: follow)
+                    HStack {
+                        Button(L10n.t("Ask to follow")) { Task { await follow.askNearby() } }
+                        Button(L10n.t("Not now")) { follow.nearby = nil }
                     }
                 }
             }
             .padding(4)
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// A nearby join waiting (PROTOCOL-v2 "Nearby pairing"): "Asking Marta's phone…" until the phone answers, then the
+/// 6-digit code both devices show with *Same Code* / *Different Code*; after *Same Code*, waiting for the wearer's
+/// Allow. Cancel ends the join at any point (the follower key goes). Nothing of the wearer's is used before *Same
+/// Code*. The code counts in with a spring (not with Reduce Motion), a trackpad tap confirms it arrived, and
+/// VoiceOver reads it digit by digit.
+struct PairingCodeView: View {
+    @Bindable var follow: FollowModel
+    let wearer: String
+    let check: LinkState.PairingCheck
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                if let code = check.code {
+                    Text(
+                        check.confirmed
+                            ? L10n.t("Same code. Waiting for \(wearer) to allow this Mac.")
+                            : L10n.t("Does \(wearer)'s phone show this code?")
+                    )
+                    .font(.headline)
+                    Text(NearbyPairing.spaced(code))
+                        .font(.system(size: 34, weight: .semibold, design: .monospaced))
+                        .contentTransition(.numericText())
+                        .accessibilityLabel(code.map(String.init).joined(separator: " "))
+                        .frame(maxWidth: .infinity)
+                    if check.confirmed {
+                        Button(L10n.t("Cancel")) { Task { await follow.unfollow() } }
+                    } else {
+                        Text(
+                            L10n.t(
+                                "Click Same Code only if every digit matches: another phone nearby could pretend to be \(wearer)."
+                            )
+                        )
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        HStack {
+                            Button(L10n.t("Different Code")) { Task { await follow.confirmNearby(same: false) } }
+                            Spacer()
+                            // no Return shortcut: comparing is the point, and Return belongs to the link field
+                            Button(L10n.t("Same Code")) { Task { await follow.confirmNearby(same: true) } }
+                                .buttonStyle(.borderedProminent)
+                        }
+                    }
+                } else {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text(L10n.t("Asking \(wearer)'s phone…"))
+                        Spacer()
+                        Button(L10n.t("Cancel")) { Task { await follow.unfollow() } }
+                    }
+                }
+            }
+            .padding(4)
+            .animation(reduceMotion ? nil : .spring, value: check)
+        }
+        .accessibilityElement(children: .contain)
+        .onChange(of: check.code) { _, code in
+            if code != nil { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
+        }
     }
 }

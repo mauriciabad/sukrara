@@ -8,6 +8,8 @@ import SukraraShare
 /// Why following didn't start (`FollowerJoinError`, mapped by the runtime adapter).
 public enum FollowFailure: Error, Equatable, Sendable {
     case invalidLink, notFound, expired, used, offline, fingerprintMismatch, alreadyFollowing, keychain, noQRCode
+    /// A nearby join the person ended because the two devices showed different pairing codes.
+    case codesDiffered
 
     /// The text the follow window shows; every one says what to do next.
     public var message: String {
@@ -24,6 +26,8 @@ public enum FollowFailure: Error, Equatable, Sendable {
             )
         case .keychain: L10n.t("Sukrara couldn't save the follow key in the Keychain. Try again.")
         case .noQRCode: L10n.t("No Sukrara invite QR code found in that image.")
+        case .codesDiffered:
+            L10n.t("The codes didn't match, so nothing was shared. Try again next to the wearer's phone.")
         }
     }
 }
@@ -32,7 +36,8 @@ public enum FollowFailure: Error, Equatable, Sendable {
 public enum FollowStatus: Equatable, Sendable {
     case notFollowing
     case joining
-    case waiting(wearer: String?, code: String?)
+    /// `pairing`: a nearby join's code comparison (nil for a link).
+    case waiting(wearer: String?, pairing: LinkState.PairingCheck?)
     case following(wearer: String?, lastReading: Date?, canWrite: Bool)
     case declined, inviteUsed, revoked
     case broken(String)
@@ -53,6 +58,8 @@ public struct NearbyPhone: Equatable, Sendable {
 public protocol FollowActions: AnyObject {
     func join(link: String) async throws(FollowFailure)
     func joinNearby(name: String) async throws(FollowFailure)
+    /// The pairing codes on both devices: the same (the wearer's key is used), or different (the join ends).
+    func confirmNearby(same: Bool) async -> Bool
     /// How this Mac appears to the wearer (used by the next join; sent at once while following).
     func setProfile(name: String, avatar: Avatar?) async
     /// The name for the next join, keeping the picture the runtime has.
@@ -129,13 +136,21 @@ public final class FollowModel {
     public func askNearby() async {
         failure = nil
         guard let phone = nearby else { return }
-        status = .waiting(wearer: phone.wearer, code: nil)
+        status = .waiting(wearer: phone.wearer, pairing: .init(code: nil, confirmed: false))
         do {
             try await actions?.joinNearby(name: macName)
         } catch {
             failure = error
             status = .notFollowing
         }
+    }
+
+    /// *Same Code* lets the wearer's key in; *Different Code* ends the join and says why.
+    public func confirmNearby(same: Bool) async {
+        failure = nil
+        guard await actions?.confirmNearby(same: same) == true, !same else { return }
+        failure = .codesDiffered
+        status = .notFollowing
     }
 
     /// Saves How You Appear: the wearer sees it as soon as it reaches them.

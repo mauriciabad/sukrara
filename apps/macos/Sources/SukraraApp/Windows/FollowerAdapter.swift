@@ -74,7 +74,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         switch snapshot.link {
         case .notFollowing: .notFollowing
         case .joining: .joining
-        case .requested(_, let wearer, let pairing): .waiting(wearer: wearer, code: pairing?.code)
+        case .requested(_, let wearer, let pairing): .waiting(wearer: wearer, pairing: pairing)
         case .following(let wearer, let canWrite):
             .following(wearer: wearer, lastReading: snapshot.readings.last?.t, canWrite: canWrite)
         case .declined: .declined
