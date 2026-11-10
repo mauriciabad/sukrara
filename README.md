@@ -42,7 +42,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   warm-up countdown in a ring, haptics on the tap, the screen kept on, every failure handled on the same screen
   (ended sensor, Libre 1/2, a tag that isn't a sensor, another app holding the sensor, Bluetooth off, a wrong ID or PIN).
 - **Settings › Sensor**: the current sensor (status, serial, start, end and time left), the reading source (Libre 3
-  directly or Juggluco, saying first what changes), the LibreView account (email and receiver ID, sign in / out; the
+  directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account (email and receiver ID, sign in / out; the
   password is never stored) and *Pair new sensor*.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
   every card: never by colour alone) and a 6 h chart you can scroll and pinch-zoom through the

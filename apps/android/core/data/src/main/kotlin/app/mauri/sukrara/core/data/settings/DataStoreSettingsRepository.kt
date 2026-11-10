@@ -57,9 +57,14 @@ class PreferenceStores(
     }
 }
 
-/** The Android stores the schema names (`store:key` of every Android setting). */
+/** The schema's Android store of secrets: the Keystore [app.mauri.sukrara.core.model.storage.SecureStore], not a DataStore. */
+const val SECURE_STORE = "secure"
+
+/** The Preferences DataStore files the schema names (`store:key` of every Android setting but the secrets). */
 fun schemaStores(): Set<String> =
-    SettingsSpec.SETTINGS.mapNotNull { info -> info.android.substringBefore(':').takeIf { it.isNotEmpty() } }.toSet()
+    SettingsSpec.SETTINGS
+        .mapNotNull { info -> info.android.substringBefore(':').takeIf { it.isNotEmpty() && it != SECURE_STORE } }
+        .toSet()
 
 /** [SettingsRepository] on [PreferenceStores]. Accepts only [Setting]s (store and key from the schema). */
 class DataStoreSettingsRepository(private val stores: PreferenceStores) : SettingsRepository {

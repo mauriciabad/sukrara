@@ -56,11 +56,25 @@ class SensorSettingsBridgeTest {
             forgotten = true
         }
 
-        override fun retry() {
-            detail.value = if (paired) detail.value else SensorStatus.NoSensor
+        override suspend fun signOut() = Unit
+
+        override val jugglucoSecretSet = MutableStateFlow<Boolean?>(null)
+        var secret: String? = null
+        var retries = 0
+
+        override suspend fun refreshJugglucoSecret() {
+            jugglucoSecretSet.value = secret != null
         }
 
-        override suspend fun signOut() = Unit
+        override suspend fun saveJugglucoSecret(secret: String) {
+            this.secret = secret.trim().ifEmpty { null }
+            refreshJugglucoSecret()
+        }
+
+        override fun retry() {
+            retries++
+            detail.value = if (paired) detail.value else SensorStatus.NoSensor
+        }
     }
 
     private val source = SchemaSettings.text("source.source", SensorSourceKind.Direct.id, SensorSourceKind.entries.map { it.id }.toSet())
@@ -94,6 +108,8 @@ class SensorSettingsBridgeTest {
             assertEquals(SourceLink.Searching, b.state.first().link)
             sensors.detail.value = SensorStatus.Juggluco(JugglucoStatus.Unreachable("refused"))
             assertEquals(SourceLink.JugglucoUnreachable, b.state.first().link)
+            sensors.detail.value = SensorStatus.Juggluco(JugglucoStatus.Refused)
+            assertEquals("a wrong or missing API secret is a visible error", SourceLink.JugglucoRefused, b.state.first().link)
         }
 
     @Test fun `a paired sensor with monitoring stopped says stopped, never no sensor`() =
@@ -149,6 +165,21 @@ class SensorSettingsBridgeTest {
             runCurrent()
             assertEquals(listOf("source changed", "start"), events)
             assertFalse(sensors.tapOn.value)
+        }
+
+    @Test fun `the Juggluco secret is saved, shown only as set, and Juggluco is asked again at once`() =
+        runTest {
+            settings.set(source, SensorSourceKind.Juggluco.id)
+            val b = bridge()
+            assertEquals(false, b.state.first().jugglucoSecret)
+            b.setJugglucoSecret(" s3cret ")
+            runCurrent()
+            assertEquals("s3cret", sensors.secret)
+            assertEquals(true, b.state.first { it.jugglucoSecret == true }.jugglucoSecret)
+            assertEquals(1, sensors.retries)
+            b.setJugglucoSecret("")
+            runCurrent()
+            assertEquals(null, sensors.secret)
         }
 
     @Test fun `forgetting the sensor disarms monitoring, then the service picks its source again`() =

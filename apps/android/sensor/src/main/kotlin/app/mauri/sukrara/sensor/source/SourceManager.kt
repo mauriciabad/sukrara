@@ -387,7 +387,7 @@ class SourceManager internal constructor(
                 override fun onStatus(status: JugglucoStatus) {
                     scope.launch {
                         publish(SensorStatus.Juggluco(status))
-                        if (status is JugglucoStatus.Unreachable) interrupted()
+                        if (status is JugglucoStatus.Unreachable || status == JugglucoStatus.Refused) interrupted()
                     }
                 }
 

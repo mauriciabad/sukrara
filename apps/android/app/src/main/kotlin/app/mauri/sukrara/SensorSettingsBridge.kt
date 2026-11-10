@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -65,6 +66,14 @@ interface SensorSettingsSensors {
     fun retry()
 
     suspend fun signOut()
+
+    /** Juggluco's API secret is saved (null until read: [refreshJugglucoSecret]). */
+    val jugglucoSecretSet: Flow<Boolean?>
+
+    suspend fun refreshJugglucoSecret()
+
+    /** Saves Juggluco's API secret; blank removes it. */
+    suspend fun saveJugglucoSecret(secret: String)
 }
 
 /** [SensorSettingsSensors] on the real [SensorModule]. */
@@ -92,6 +101,12 @@ class SensorModulePort(private val m: SensorModule) : SensorSettingsSensors {
     override fun retry() = m.source.retry()
 
     override suspend fun signOut() = m.libreView.signOut()
+
+    override val jugglucoSecretSet: Flow<Boolean?> = m.jugglucoSecret.isSet
+
+    override suspend fun refreshJugglucoSecret() = m.jugglucoSecret.refresh()
+
+    override suspend fun saveJugglucoSecret(secret: String) = m.jugglucoSecret.save(secret)
 }
 
 /**
@@ -134,10 +149,9 @@ class SensorSettingsBridge(
             combine(sensors.sensorInfo, sensors.tapOn, recheck, paired) { info, tapOn, _, paired ->
                 Triple(info, OpenOnScan(tapOn, tapOn && sensors.tapBlocked()).takeIf { sensors.tapAvailable }, paired)
             },
-            sensors.email,
-            sensors.receiverId,
+            combine(sensors.email, sensors.receiverId, sensors.jugglucoSecretSet.onStart { sensors.refreshJugglucoSecret() }, ::Triple),
             service,
-        ) { (source, sensor, detail), (info, openOnScan, paired), email, receiverId, service ->
+        ) { (source, sensor, detail), (info, openOnScan, paired), (email, receiverId, secretSet), service ->
             val kind = SensorSourceKind.fromId(source)
             SensorSettingsState(
                 source = if (kind == SensorSourceKind.Juggluco) SourceChoice.Juggluco else SourceChoice.Libre3Direct,
@@ -149,6 +163,7 @@ class SensorSettingsBridge(
                 paired = paired,
                 openOnScan = openOnScan,
                 stopped = stopped(detail, service, somethingToRead = paired || kind == SensorSourceKind.Juggluco),
+                jugglucoSecret = secretSet,
             )
         }
 
@@ -160,6 +175,7 @@ class SensorSettingsBridge(
                     JugglucoStatus.Live -> SourceLink.Receiving
                     JugglucoStatus.FetchingHistory -> SourceLink.Connecting
                     is JugglucoStatus.Unreachable -> SourceLink.JugglucoUnreachable
+                    JugglucoStatus.Refused -> SourceLink.JugglucoRefused
                 }
             }
 
@@ -238,6 +254,14 @@ class SensorSettingsBridge(
 
     override fun resume() {
         scope.launch { startMonitoring() }
+    }
+
+    override fun setJugglucoSecret(secret: String) {
+        scope.launch {
+            sensors.saveJugglucoSecret(secret)
+            // reconnect now with it (a refused source would otherwise wait out its backoff)
+            if (SensorSourceKind.fromId(settings.flow(sourceSetting).first()) == SensorSourceKind.Juggluco) sensors.retry()
+        }
     }
 
     override fun forget() {

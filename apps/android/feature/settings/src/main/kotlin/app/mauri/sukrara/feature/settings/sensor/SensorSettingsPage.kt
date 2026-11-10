@@ -12,14 +12,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -27,6 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,6 +74,7 @@ class SensorSettingsActions(
     val forget: () -> Unit = {},
     val allowTaps: () -> Unit = {},
     val resume: () -> Unit = {},
+    val setJugglucoSecret: (String) -> Unit = {},
 )
 
 /** Settings › Sensor with its ViewModel; the "ends in" time moves every minute. */
@@ -103,6 +111,7 @@ fun SensorSettingsScreen(
             viewModel::forget,
             viewModel::allowTaps,
             viewModel::resume,
+            viewModel::setJugglucoSecret,
         ),
         onBack,
     )
@@ -123,7 +132,8 @@ fun SensorSettingsContent(
     SettingsPage(stringResource(R.string.st_sensor), onBack) {
         if (state == null) return@SettingsPage
         var confirming by rememberSaveable { mutableStateOf<SourceChoice?>(null) }
-        StateNotice(state, actions) { confirming = SourceChoice.Juggluco }
+        var editingSecret by rememberSaveable { mutableStateOf(false) }
+        StateNotice(state, actions, editSecret = { editingSecret = true }) { confirming = SourceChoice.Juggluco }
         // Android blocks the sensor taps while *Open Sukrara when you scan a sensor* is on: the pens page's card
         if (state.source == SourceChoice.Libre3Direct && state.openOnScan?.let { it.on && it.blocked } == true) {
             TapsBlockedCard(BlockedTapsKind.Sensor, actions.allowTaps)
@@ -131,7 +141,15 @@ fun SensorSettingsContent(
         SensorGroup(state, now, zone, actions)
         if (state.source == SourceChoice.Libre3Direct) ThisPhoneGroup(state, actions)
         SourceGroup(state.source) { confirming = it }
+        if (state.source == SourceChoice.Juggluco) JugglucoGroup(state.jugglucoSecret == true) { editingSecret = true }
         AccountGroup(state.account, actions)
+        if (editingSecret) {
+            JugglucoSecretDialog(
+                isSet = state.jugglucoSecret == true,
+                onSave = actions.setJugglucoSecret,
+                onClose = { editingSecret = false },
+            )
+        }
         FooterText(stringResource(R.string.st_sensor_footer))
         confirming?.let { target ->
             val toJuggluco = target == SourceChoice.Juggluco
@@ -151,12 +169,20 @@ fun SensorSettingsContent(
 private fun StateNotice(
     state: SensorSettingsState,
     actions: SensorSettingsActions,
+    editSecret: () -> Unit,
     useJuggluco: () -> Unit,
 ) {
     val context = LocalContext.current
     val pair = stringResource(R.string.st_sensor_pair_new) to actions.pairNewSensor
     if (state.stopped) {
         StateStrip(stringResource(R.string.st_sensor_stopped_text), listOf(stringResource(R.string.st_sensor_resume) to actions.resume))
+        return
+    }
+    if (state.link == SourceLink.JugglucoRefused) {
+        StateStrip(
+            stringResource(R.string.st_sensor_juggluco_refused_text),
+            listOf(stringResource(R.string.st_sensor_juggluco_secret_change) to editSecret),
+        )
         return
     }
     if (state.link == SourceLink.JugglucoUnreachable) {
@@ -240,6 +266,21 @@ private fun SensorGroup(
     actions: SensorSettingsActions,
 ) {
     SettingsGroup(title = stringResource(R.string.st_sensor_current)) {
+        // the active source, plainly: what Sukrara reads glucose from right now
+        InfoRow(
+            stringResource(R.string.st_sensor_reading_from),
+            summary =
+                stringResource(
+                    if (state.source ==
+                        SourceChoice.Juggluco
+                    ) {
+                        R.string.st_sensor_reading_from_juggluco
+                    } else {
+                        R.string.st_sensor_reading_from_direct
+                    },
+                ),
+            icon = DsR.drawable.ds_ic_dia_sensor,
+        )
         state.family?.let { f ->
             InfoRow(
                 stringResource(R.string.st_sensor_family),
@@ -370,6 +411,10 @@ private fun statusText(
                     stringResource(R.string.st_sensor_status_juggluco_unreachable)
                 }
 
+                SourceLink.JugglucoRefused -> {
+                    stringResource(R.string.st_sensor_status_juggluco_refused)
+                }
+
                 SourceLink.Connecting -> {
                     stringResource(
                         if (state.source ==
@@ -438,6 +483,74 @@ private fun statusText(
             )
         }
     }
+}
+
+/** Juggluco's web-server API secret: *Set* / *Not set* (never shown), the row opens [JugglucoSecretDialog]. */
+@Composable
+private fun JugglucoGroup(
+    isSet: Boolean,
+    onEdit: () -> Unit,
+) {
+    SettingsGroup(title = stringResource(R.string.st_sensor_juggluco)) {
+        NavigationRow(
+            stringResource(R.string.st_sensor_juggluco_secret),
+            onEdit,
+            icon = DsR.drawable.ds_ic_key,
+            summary = stringResource(if (isSet) R.string.st_sensor_juggluco_secret_set else R.string.st_sensor_juggluco_secret_none),
+        )
+    }
+    FooterText(stringResource(R.string.st_sensor_juggluco_secret_footer))
+}
+
+/**
+ * Types Juggluco's API secret (hidden; never kept in saved state, a rotation asks again): *Save* (blank = none),
+ * *Remove* while one is saved, *Cancel* changes nothing.
+ */
+@Composable
+private fun JugglucoSecretDialog(
+    isSet: Boolean,
+    onSave: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    var typed by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.st_sensor_juggluco_secret)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.st_sensor_juggluco_secret_dialog_text))
+                OutlinedTextField(
+                    typed,
+                    { typed = it },
+                    label = { Text(stringResource(R.string.st_sensor_juggluco_secret)) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(typed)
+                    onClose()
+                },
+                enabled = typed.isNotBlank(),
+            ) { Text(stringResource(R.string.st_sensor_juggluco_secret_save)) }
+        },
+        dismissButton = {
+            Row {
+                if (isSet) {
+                    TextButton(onClick = {
+                        onSave("")
+                        onClose()
+                    }) { Text(stringResource(R.string.st_sensor_juggluco_secret_remove)) }
+                }
+                TextButton(onClick = onClose) { Text(stringResource(R.string.st_cancel)) }
+            }
+        },
+    )
 }
 
 /** Libre 3 direct ↔ Juggluco: tapping the other one asks first ([onChoose]); the current one does nothing. */
