@@ -28,6 +28,12 @@ enum class AlertRequirement(
     /** The alert channels may break through Do Not Disturb and still have their importance. */
     AlertChannel,
 
+    /**
+     * The alarm-level channels override Do Not Disturb (Do Not Disturb access granted, so their `setBypassDnd` holds):
+     * a mode that silences alarms (a Bedtime or custom mode) still lets them ring. Only while a kind rings like an alarm.
+     */
+    AlarmsInDnd,
+
     /** Bluetooth on and the nearby-devices permission (wearer only: the sensor talks over Bluetooth). */
     Bluetooth,
 }

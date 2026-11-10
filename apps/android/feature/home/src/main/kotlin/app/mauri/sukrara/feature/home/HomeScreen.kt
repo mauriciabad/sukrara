@@ -852,6 +852,7 @@ private fun requirementText(requirement: AlertRequirement): String =
             AlertRequirement.ExactAlarm -> R.string.req_exact_alarm
             AlertRequirement.BatteryExemption -> R.string.req_battery
             AlertRequirement.AlertChannel -> R.string.req_channel
+            AlertRequirement.AlarmsInDnd -> R.string.req_dnd
             AlertRequirement.Bluetooth -> R.string.req_bluetooth
         },
     )

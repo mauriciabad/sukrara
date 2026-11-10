@@ -58,6 +58,7 @@
     <string name="req_exact_alarm">Sukrara no puede programar alarmas exactas.</string>
     <string name="req_battery">La optimización de batería puede detener Sukrara en segundo plano.</string>
     <string name="req_channel">El sonido de las alertas no puede saltarse el modo No molestar.</string>
+    <string name="req_dnd">Las alarmas no pueden saltarse un modo No molestar que las silencia. Da a Sukrara acceso a No molestar.</string>
     <string name="req_bluetooth">El Bluetooth o el permiso de dispositivos cercanos está desactivado.</string>
     <string name="banner_data_title">Algunos datos guardados estaban dañados</string>
     <plurals name="banner_data_text">

@@ -28,6 +28,8 @@
     <string name="ds_req_battery_why">Keeps Sukrara reading the sensor in the background.</string>
     <string name="ds_req_channel">Alert sound and Do Not Disturb</string>
     <string name="ds_req_channel_why">The alert categories must keep their sound and may break through Do Not Disturb.</string>
+    <string name="ds_req_dnd">Alarms in Do Not Disturb</string>
+    <string name="ds_req_dnd_why">Lets the alerts that ring like an alarm break through a Do Not Disturb mode that silences alarms, such as a bedtime mode.</string>
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">The sensor sends readings over Bluetooth.</string>
 

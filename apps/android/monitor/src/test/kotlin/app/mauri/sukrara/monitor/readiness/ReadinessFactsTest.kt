@@ -54,6 +54,19 @@ class ReadinessFactsTest {
 
     @Test fun theStepThatWorksAgainLeavesTheChecklist() = assertTrue(allGood.copy(failedSteps = emptySet()).readiness().ready)
 
+    @Test fun alarmsThatCantOverrideDoNotDisturbAreAnItemOnlyWhileAKindRingsLikeAnAlarm() {
+        assertEquals(setOf(AlertRequirement.AlarmsInDnd), allGood.copy(alarmsBypassDnd = false).readiness().missing)
+        assertTrue(allGood.copy(anyAlarmKind = false, alarmsBypassDnd = false).readiness().ready)
+    }
+
+    @Test fun theChannelsAreCreatedAgainOnceDoNotDisturbAccessIsGranted() {
+        // access granted, an alarm channel created before it: create again (Android applies the bypass now)
+        assertTrue(AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, false)))
+        // no access: creating again changes nothing; all overriding already: nothing to do
+        assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = false, alarmChannelsBypass = listOf(false)))
+        assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, true)))
+    }
+
     @Test fun fullScreenOnlyMattersWhenAKindRingsLikeAnAlarm() =
         assertTrue(allGood.copy(anyAlarmKind = false, fullScreenAllowed = false).readiness().ready)
 

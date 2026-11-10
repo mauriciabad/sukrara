@@ -26,6 +26,8 @@ data class ReadinessFacts(
     val alertChannelSilenced: Boolean,
     /** Do Not Disturb is on now and would silence the alarm-level alerts. */
     val dndSilencesAlarms: Boolean,
+    /** Every alarm-level channel in use overrides Do Not Disturb (needs Do Not Disturb access; #15). */
+    val alarmsBypassDnd: Boolean = true,
     /** The role's source talks to the sensor over Bluetooth (the wearer's own sensor, not Juggluco or a follower). */
     val needsBluetooth: Boolean,
     val bluetoothOn: Boolean,
@@ -40,6 +42,7 @@ data class ReadinessFacts(
                 if (!exactAlarmAllowed) add(AlertRequirement.ExactAlarm)
                 if (!batteryExempt || backgroundRestricted) add(AlertRequirement.BatteryExemption)
                 if (alertChannelSilenced || dndSilencesAlarms) add(AlertRequirement.AlertChannel)
+                if (anyAlarmKind && !alarmsBypassDnd) add(AlertRequirement.AlarmsInDnd)
                 if (needsBluetooth && !(bluetoothOn && bluetoothPermitted)) add(AlertRequirement.Bluetooth)
             },
             failedSteps,

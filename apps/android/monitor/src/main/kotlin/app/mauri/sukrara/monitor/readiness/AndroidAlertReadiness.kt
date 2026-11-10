@@ -51,7 +51,8 @@ import kotlinx.coroutines.flow.stateIn
  * Items: the alert runtime's last steps worked ([failedSteps], the hub's alert state); notifications on; the
  * full-screen intent when a kind rings like an alarm; exact alarms; the battery exemption (and not "Restricted"); the
  * alert channels in use not blocked or silenced, and Do Not Disturb not silencing the alarm-level ones (a non-alarm
- * alert in Do Not Disturb is the person's choice: "Like an alarm" is the way through); Bluetooth on and allowed when
+ * alert in Do Not Disturb is the person's choice: "Like an alarm" is the way through); the alarm-level channels
+ * overriding Do Not Disturb (access granted; [syncDndBypass] applies it); Bluetooth on and allowed when
  * [needsBluetooth].
  */
 class AndroidAlertReadiness(
@@ -110,6 +111,19 @@ class AndroidAlertReadiness(
                     }
                 }
 
+                // no access yet: Android's Do Not Disturb access list (the per-app page is a system API); with access, a
+                // channel still not overriding is one the person edited (Android keeps their choice): its own page
+                AlertRequirement.AlarmsInDnd -> {
+                    if (!nm.isNotificationPolicyAccessGranted) {
+                        Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                    } else {
+                        alarmKinds(last.settings)
+                            .mapNotNull { nm.getNotificationChannel(AlertChannels.id(it, alarm = true)) }
+                            .firstOrNull { !it.canBypassDnd() }
+                            ?.let { channelSettings(it.id) } ?: appNotificationSettings()
+                    }
+                }
+
                 // the channel page holds both the importance and "Override Do Not Disturb"
                 AlertRequirement.AlertChannel -> {
                     channelsInUse(last.settings).firstOrNull { it.silenced() || it.blockedByDnd() }?.let { channelSettings(it.id) }
@@ -136,6 +150,7 @@ class AndroidAlertReadiness(
     )
 
     private fun facts(inputs: Inputs): ReadinessFacts {
+        syncDndBypass()
         val channels = channelsInUse(inputs.settings)
         val alertGroupBlocked =
             listOf(Channels.Group.ALERTS, Channels.Group.ALERTS_ALARM).any { nm.getNotificationChannelGroup(it.id)?.isBlocked == true }
@@ -151,10 +166,31 @@ class AndroidAlertReadiness(
             backgroundRestricted = ctx.getSystemService(ActivityManager::class.java).isBackgroundRestricted,
             alertChannelSilenced = alertGroupBlocked || channels.any { it.silenced() },
             dndSilencesAlarms = channels.any { it.blockedByDnd() },
+            alarmsBypassDnd = alarmsBypassDnd(inputs.settings),
             needsBluetooth = inputs.needsBluetooth,
             bluetoothOn = bluetooth?.isEnabled == true,
             bluetoothPermitted = bluetoothPermitted(),
         )
+    }
+
+    /**
+     * `setBypassDnd(true)` only sticks when the app holds Do Not Disturb access as the channel is created or updated
+     * (AOSP PreferencesHelper.createNotificationChannel, frameworks/base main: an existing channel takes the app's
+     * bypass only `if (existing.getUserLockedFields() == 0 && hasDndAccess)`; NotificationManagerService passes
+     * `mConditionProviders.isPackageOrComponentAllowed(pkg)`). So once the person grants access (they come back to the
+     * app: a resume refresh, or the registered-only ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED), the channels are
+     * created again: the alarm ones take the bypass, and Android keeps every choice the person made (a channel they
+     * edited keeps its own override setting; ids never change). #15.
+     */
+    private fun syncDndBypass() {
+        val bypass = ALARM_CHANNELS.mapNotNull { nm.getNotificationChannel(it)?.canBypassDnd() }
+        if (needsDndSync(nm.isNotificationPolicyAccessGranted, bypass)) runCatching { AlertChannels.ensure(ctx) }
+    }
+
+    /** Every alarm-level channel in use overrides Do Not Disturb (one not created yet will, exactly when access is granted). */
+    private fun alarmsBypassDnd(s: AlertSettings): Boolean {
+        val access = nm.isNotificationPolicyAccessGranted
+        return alarmKinds(s).all { nm.getNotificationChannel(AlertChannels.id(it, alarm = true))?.canBypassDnd() ?: access }
     }
 
     private fun alarmKinds(s: AlertSettings) = if (s.on) AlertKind.entries.filter { s.rule(it).on && s.rule(it).alarm } else emptyList()
@@ -212,6 +248,8 @@ class AndroidAlertReadiness(
                     addAction(NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED)
                     addAction(NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED)
                     addAction(AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)
+                    // sent to registered receivers only (NotificationManagerService, FLAG_RECEIVER_REGISTERED_ONLY)
+                    addAction(NotificationManager.ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED)
                 }
             // system broadcasts reach a not-exported receiver
             ContextCompat.registerReceiver(ctx, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -237,8 +275,15 @@ class AndroidAlertReadiness(
             false
         }
 
-    private companion object {
+    internal companion object {
         const val STOP_AFTER_MS = 5_000L
+
+        /** The channels are created again when access is granted and an alarm channel doesn't override yet. */
+        fun needsDndSync(
+            accessGranted: Boolean,
+            alarmChannelsBypass: List<Boolean>,
+        ) = accessGranted && alarmChannelsBypass.any { !it }
+
         val ALARM_CHANNELS: Set<String> = AlertKind.entries.map { AlertChannels.id(it, alarm = true) }.toSet()
     }
 }

@@ -329,6 +329,16 @@ build signed with that entitlement; today's builds show it as a normal notificat
   *Monitoring stopped* notice posts at once (Android is stopping the service, a waiting post could die with it), and an
   unrelated alert that comes within 1 s *after* an info sound landed is still muted (rare: the info already waited
   1.1 s past every alert).
+- **The alarm channels' Do Not Disturb override needs access (#15, 2026-11-10, from the AOSP source, main).**
+  `PreferencesHelper.createNotificationChannel` keeps an app's `setBypassDnd(true)` only when the app holds Do Not
+  Disturb access as the channel is created or updated (`if (existing.getUserLockedFields() == 0 && hasDndAccess)`), so
+  `alert_alarm.*` channels created before the person granted access never overrode a mode that silences alarms. The
+  app now declares `ACCESS_NOTIFICATION_POLICY` (to be listed under Do Not Disturb access), the checklist has *Alarms
+  in Do Not Disturb* (while a kind rings like an alarm; Fix opens `ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`), and
+  every checklist read creates the channels again once access is granted and an alarm channel doesn't override yet:
+  the existing ids take the bypass, and a channel the person edited keeps their choice (Fix then opens its page; no
+  versioned ids needed). `ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED` is registered-only, so the resume refresh
+  is what catches the grant. Not checked on an emulator yet (DND on, very low after granting).
 - **Two sounds at once after an app update (2026-10-18, user report).** Measured on the Pixel (`dumpsys audio`,
   `notification_alert` events): every Sukrara update made SystemUI start two players within 0.5 s, the system
   default sound (`USAGE_NOTIFICATION`, LSPosed's "Module update complete" notification, channel

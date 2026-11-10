@@ -27,6 +27,8 @@
     <string name="ds_req_battery_why">Mantiene a Sukrara leyendo el sensor en segundo plano.</string>
     <string name="ds_req_channel">Sonido de alerta y No molestar</string>
     <string name="ds_req_channel_why">Las categorías de alerta deben conservar su sonido y poder saltarse No molestar.</string>
+    <string name="ds_req_dnd">Alarmas en No molestar</string>
+    <string name="ds_req_dnd_why">Permite que las alertas que suenan como una alarma se salten un modo No molestar que silencia las alarmas, como el modo descanso.</string>
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">El sensor envía las lecturas por Bluetooth.</string>
 
