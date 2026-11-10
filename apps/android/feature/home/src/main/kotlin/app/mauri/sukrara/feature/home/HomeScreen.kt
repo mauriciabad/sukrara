@@ -689,6 +689,10 @@ private fun reasonText(
             stringResource(R.string.reason_ended_title) to stringResource(R.string.reason_ended_body)
         }
 
+        is NoDataReason.ClockBehind -> {
+            stringResource(R.string.reason_clock_title) to stringResource(R.string.reason_clock_body, spanText(reason.ahead.toMinutes()))
+        }
+
         is NoDataReason.WarmingUp -> {
             stringResource(R.string.reason_warmup_title) to stringResource(R.string.reason_warmup_body, clockTime(reason.readyAt))
         }
@@ -725,6 +729,7 @@ private fun actionLabel(reason: NoDataReason): String =
             NoDataReason.UsedByAnotherApp -> R.string.reason_taken_over_action
             NoDataReason.ScanNeeded -> R.string.reason_scan_action
             NoDataReason.PairAgain -> R.string.reason_pair_again_action
+            is NoDataReason.ClockBehind -> R.string.reason_clock_action
             NoDataReason.SensorEnded -> R.string.reason_ended_action
             NoDataReason.LinkRevoked -> R.string.reason_revoked_action
             else -> R.string.reason_no_readings_action

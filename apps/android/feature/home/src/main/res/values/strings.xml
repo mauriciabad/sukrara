@@ -40,6 +40,9 @@
     <string name="reason_ended_title">Sensor ended</string>
     <string name="reason_ended_body">This sensor has reached its end. Apply a new one and pair it.</string>
     <string name="reason_ended_action">Pair new sensor</string>
+    <string name="reason_clock_title">Phone clock is behind</string>
+    <string name="reason_clock_body">Readings arrive %1$s ahead of this phone\'s time, so Sukrara can\'t show them and alerts may say there is no data. Set the date and time to automatic.</string>
+    <string name="reason_clock_action">Date &amp; time settings</string>
     <string name="reason_warmup_title">Sensor warming up</string>
     <string name="reason_warmup_body">The first reading comes at about %1$s. Nothing to do until then.</string>
     <string name="reason_revoked_title">You no longer follow this person</string>

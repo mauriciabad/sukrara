@@ -610,6 +610,10 @@ private fun route(
             open(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) {}
         }
 
+        HomeAction.OpenDateSettings -> {
+            open(context, Intent(Settings.ACTION_DATE_SETTINGS)) {}
+        }
+
         HomeAction.ResumeMonitoring -> {
             home.resumeMonitoring()
         }

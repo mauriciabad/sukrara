@@ -38,6 +38,9 @@
     <string name="reason_ended_title">El sensor ha terminado</string>
     <string name="reason_ended_body">Este sensor ha llegado a su fin. Ponte uno nuevo y emparéjalo.</string>
     <string name="reason_ended_action">Emparejar sensor nuevo</string>
+    <string name="reason_clock_title">El reloj del móvil va atrasado</string>
+    <string name="reason_clock_body">Las lecturas llegan %1$s por delante de la hora de este móvil, así que Sukrara no puede mostrarlas y las alertas pueden decir que no hay datos. Pon la fecha y la hora en automático.</string>
+    <string name="reason_clock_action">Ajustes de fecha y hora</string>
     <string name="reason_warmup_title">El sensor se está calentando</string>
     <string name="reason_warmup_body">La primera lectura llega hacia las %1$s. No hace falta hacer nada hasta entonces.</string>
     <string name="reason_revoked_title">Ya no sigues a esta persona</string>

@@ -57,7 +57,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   one banner at a time for what needs you (monitoring stopped, alerts may not ring,
   damaged saved data, finish setup), the last 24 h of treatments with delete + undo, and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
   there's no value it says why and what to do (Bluetooth off, the sensor used by another app, a scan or a new pairing
-  needed, the sensor warming up or ended…).
+  needed, the phone's clock behind the readings, the sensor warming up or ended…).
 - A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
   freshness steps as the card: from 5 min the number is struck through, from 20 min it's gone. Tap → *Add treatment*.
   Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status

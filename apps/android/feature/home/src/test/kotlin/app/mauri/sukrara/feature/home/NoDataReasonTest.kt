@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home
 
+import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
@@ -102,6 +103,21 @@ class NoDataReasonTest {
             val state = Samples.wearer(ageMin = 25, sensor = SensorState.ActionNeeded(a))
             assertEquals(a.name, NoDataReason.NoReadings(state.latest!!.t), reason(state))
         }
+    }
+
+    @Test fun `a phone clock behind the readings says so even while the last value shows`() {
+        val ahead = Duration.ofMinutes(12)
+        for (state in listOf(Samples.wearer(), Samples.wearer(ageMin = 25), Samples.wearer().copy(role = Role.Follower))) {
+            val r = reason(state.copy(clockBehind = ClockBehind(NOW + ahead, ahead)))
+            assertEquals(NoDataReason.ClockBehind(ahead), r)
+            assertEquals(HomeAction.OpenDateSettings, r?.action)
+            assertFalse(r!!.fullPage)
+        }
+    }
+
+    @Test fun `an ended sensor comes before the clock`() {
+        val state = Samples.wearer(sensor = SensorState.Ended).copy(clockBehind = ClockBehind(NOW, Duration.ofMinutes(9)))
+        assertEquals(NoDataReason.SensorEnded, reason(state))
     }
 
     @Test fun `ended and warming up replace any number`() {

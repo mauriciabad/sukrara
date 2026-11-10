@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.graph.GlucoseLook
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -84,6 +85,14 @@ sealed interface NoDataReason {
         override val action = HomeAction.PairSensor
     }
 
+    /**
+     * The phone's clock is behind the readings by [ahead], so the new ones are dropped (#50): they'd look fresh for too
+     * long. Set the date and time right (automatic); the next reading clears it.
+     */
+    data class ClockBehind(val ahead: Duration) : NoDataReason {
+        override val action = HomeAction.OpenDateSettings
+    }
+
     data class WarmingUp(val readyAt: Instant) : NoDataReason {
         override val action: HomeAction? = null
     }
@@ -118,6 +127,7 @@ sealed interface NoDataReason {
             val valueShown = look.shown
             val sensor = state.sensor
             val needed = (sensor as? SensorState.ActionNeeded)?.action?.reason()
+            val clock = state.clockBehind
             return when {
                 state.notMonitoring == NotMonitoringReason.SetupIncomplete -> SetupIncomplete
 
@@ -126,6 +136,9 @@ sealed interface NoDataReason {
                 state.sensor == SensorState.CoreMissing -> CoreMissing
 
                 state.sensor == SensorState.Ended -> SensorEnded
+
+                // even while the last value shows: every new reading is being dropped, and its age reads wrong
+                clock != null -> ClockBehind(clock.ahead)
 
                 sensor is SensorState.WarmingUp && look.state == GlucoseLook.State.WARMING_UP -> WarmingUp(sensor.readyAt)
 
@@ -171,6 +184,9 @@ sealed interface HomeAction {
     data object OpenSensor : HomeAction
 
     data object EnableBluetooth : HomeAction
+
+    /** Android's date and time settings (the phone's clock is behind). */
+    data object OpenDateSettings : HomeAction
 
     data object ResumeMonitoring : HomeAction
 

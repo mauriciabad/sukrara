@@ -462,10 +462,14 @@ are muted*, and *Mute alerts* while nothing is muted, which opens the lengths). 
 person's actions (dismiss, delete, undo, unmute, a quiet's way out); passive updates never vibrate or bounce; reduced motion snaps.
 
 **No data reasons** (never a bare "---"; the first match wins; a reason is given only when the card itself hides the
-number). The card always stays, with its chart (the renderer draws *No reading since …* + `sensors_off`, the warm-up
+number, or when every new reading is being dropped: the phone's clock). The card always stays, with its chart (the renderer draws *No reading since …* + `sensors_off`, the warm-up
 countdown or *Sensor ended* + *Replace sensor*), and the reason sits **under** it, compact: title, one explanation, the
 action, no icon. Only when there is nothing to draw (not set up, no sensor yet, core missing) a full-width reason takes
-the card's place. Reasons: *Sukrara isn't set up yet* → Set up; *Not monitoring: no sensor yet* before the first reading ever, and on
+the card's place. Reasons: *Sukrara isn't set up yet* → Set up; *Phone clock is behind* (wearer and follower, #50: the
+newest reading came stamped more than 5 min ahead of this phone's time, so it and the next ones are dropped; the
+explanation says by how much, e.g. *12 min*, and that alerts may say there is no data; shown under the card even while
+the last value is still on screen, after *Sensor ended*) → Date & time settings (Android's page); it leaves with the
+next reading the phone accepts; *Not monitoring: no sensor yet* before the first reading ever, and on
 the wearer after *Forget this sensor* (under the card, which keeps the older readings; never *No readings from the
 sensor*, which says it reconnects) (no "no data" alarm is armed in this state; follower: *not following anyone yet*
 → Join) → Pair sensor; *This build
@@ -526,7 +530,8 @@ leaves when the quiet ends); *sensor's
 last day* → *Pair new sensor* (or keep the sensor; it leaves when the new one runs); *no data* → the reason's action (or wait: warming up,
 core missing explains why); *sensor used by another app* / *scan the sensor again* / *pair the sensor again* → the
 reason's action opens the new-sensor flow (*Cancel* there leaves everything as it was); the reason leaves with the next
-reading; *banner* → its action, or close (non-safety), safety banners leave when fixed (*Alerts may not ring* for a failed alert step → *Copy report*; it leaves when the step works again, tried with every reading); *not muted* → *Mute alerts*
+reading; *phone clock is behind* → *Date & time settings* (set the time to automatic; back returns home), the reason
+leaves with the next accepted reading; *banner* → its action, or close (non-safety), safety banners leave when fixed (*Alerts may not ring* for a failed alert step → *Copy report*; it leaves when the step works again, tried with every reading); *not muted* → *Mute alerts*
 (button or TalkBack action) → a length or Cancel; *muted* → Unmute or Change time (button, sheet and TalkBack action),
 or its end; *treatment deleted* → Undo (while the snackbar shows; TalkBack: its action) or let it go; *damaged data* → Review → Got it /
 Back; *not set up* → the reason panel's Set up; invite links open setup over home (Back returns home). *Glucose report* → another period (the picker), or scroll past it; nothing to undo (it changes nothing).
@@ -785,7 +790,9 @@ tests `GlucoseHubTest`, `MonitorServiceLogicTest`).
   stored as 39 and any above 400 as 401, without a rate, so the follower's card shows *LO* / *HI* and the graph, uploads
   and the CSV export (39 / 401, never "LO" / "HI": Tidepool's LibreView import refuses a non-numeric cell) all agree;
   0, negatives and values above 1000 are dropped as malformed; a reading stamped more than 5 min ahead of the phone's clock is dropped
-  (it would look fresh for too long); the gap then shows and alarms as no data. The hub keeps the last 24 h for every surface.
+  (it would look fresh for too long); the gap then shows and alarms as no data, and the hub says the phone's clock is
+  behind (`GlucoseState.clockBehind`, #50: home's *Phone clock is behind*) until it accepts a reading at least as new
+  (older backfill doesn't clear it). The hub keeps the last 24 h for every surface.
 - Bluetooth off → the wearer sees *Bluetooth is off*; on → the source reconnects with a fresh connection.
 - **Monitoring stopped**: when Android refuses to start the service (background start not allowed, permission) the
   hub says Stopped and a notification on `status` says *Monitoring stopped* · *No glucose readings or alerts until it
