@@ -77,6 +77,23 @@ Debug commands that replace the sensor or make up data live only in `src/debug` 
 `sukrara-snap` and test targets (Mac): a release build cannot contain them (`debug` check, `verify-apk.sh`,
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
 
+**Relays in debug builds.** A debug build connects to no relay at all (`LaunchPlan`: release builds always use the
+public relays) until the `RELAYS` debug command points it somewhere. For sharing tests run the local test relay
+(`tools/relay/relay.py`, standard-library Python, in memory, listens on this computer's loopback only) and point every
+emulator at it; the emulator reaches the computer's `127.0.0.1` as `10.0.2.2`:
+
+```sh
+python3 tools/relay/relay.py --port 7447            # logs every connection, REQ and EVENT
+adb -s emulator-5554 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver \
+    -a app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447
+```
+
+The command saves the choice and ends the app process, so every relay connection is made again from it (open the
+app). `--es urls off` goes back to no relay; `--es urls public` uses the public relays on purpose (only when a test
+needs them). Check with `adb shell cat /proc/net/tcp6` that the app's uid (`dumpsys package app.mauri.sukrara | grep
+uid=`) has no socket other than `…0202000A:1D17` (10.0.2.2:7447). The relay's own tests: `python3
+tools/relay/test_relay.py` (CI runs them).
+
 ## Orchestration that worked
 
 One worktree per agent from the integration branch (`next`), a shared interface committed before dispatch,

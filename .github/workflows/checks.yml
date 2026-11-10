@@ -63,6 +63,8 @@ jobs:
         run: tools/check/run.sh --selftest
       - name: Generated settings code is up to date
         run: python3 tools/settings/gen.py --check
+      - name: The local test relay's tests (loopback only)
+        run: python3 tools/relay/test_relay.py
       - name: Scripts parse
         run: for f in tools/*.sh tools/*/*.sh; do bash -n "$f" || exit 1; done
 

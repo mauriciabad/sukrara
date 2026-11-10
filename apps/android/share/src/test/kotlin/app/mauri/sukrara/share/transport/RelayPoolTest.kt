@@ -35,8 +35,39 @@ class RelayPoolTest {
     private val factory = WebSocketFactory { _, onEvent -> FakeSocket(onEvent).also { sockets += it } }
     private val identity = crypto.generate()
 
-    private fun TestScope.pool(relays: List<String> = listOf("wss://a.example")) =
-        RelayPool(relays, { identity }, crypto, factory, StandardTestDispatcher(testScheduler), { 1_000L }, jitter = { 1.0 })
+    private fun TestScope.pool(
+        relays: List<String> = listOf("wss://a.example"),
+        access: RelayAccess = RelayAccess.Public,
+    ) = RelayPool(
+        relays,
+        { identity },
+        crypto,
+        factory,
+        StandardTestDispatcher(testScheduler),
+        { 1_000L },
+        jitter = { 1.0 },
+        access = access,
+    )
+
+    @Test fun anOffPoolOpensNothing() =
+        runTest {
+            val p = pool(Wire.DEFAULT_RELAYS, RelayAccess.Off)
+            p.start()
+            runCurrent()
+            assertEquals(0, sockets.size)
+            assertEquals(emptySet<String>(), p.status.value.keys)
+            p.close()
+        }
+
+    @Test fun aLocalPoolOpensOnlyTheLocalRelay() =
+        runTest {
+            val p = pool(Wire.DEFAULT_RELAYS, RelayAccess.Local(listOf("ws://10.0.2.2:7447")))
+            p.start()
+            runCurrent()
+            assertEquals(1, sockets.size)
+            assertEquals(setOf("ws://10.0.2.2:7447"), p.status.value.keys)
+            p.close()
+        }
 
     @Test fun onlySecureRelaysAreOpened() =
         runTest {

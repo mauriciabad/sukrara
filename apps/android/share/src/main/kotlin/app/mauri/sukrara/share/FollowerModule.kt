@@ -20,6 +20,7 @@ import app.mauri.sukrara.share.follower.FollowerStore
 import app.mauri.sukrara.share.follower.RelayTransportFactory
 import app.mauri.sukrara.share.follower.WearerSettingsCache
 import app.mauri.sukrara.share.transport.OkHttpWebSockets
+import app.mauri.sukrara.share.transport.RelayAccess
 import app.mauri.sukrara.share.transport.RelayPool
 
 /**
@@ -34,13 +35,23 @@ class FollowerModule(
     private val clock: Clock,
     private val dispatchers: DispatcherProvider,
     private val notices: (FollowerNotice, Profile?) -> Unit,
+    /** Where the relay connections go (the app's `LaunchPlan`; release: the relays the wearer names). */
+    private val relayAccess: RelayAccess = RelayAccess.Public,
 ) {
     private val crypto by lazy { SdkNostrCrypto() }
 
     val engine: FollowerEngine by lazy {
         val relays =
             RelayTransportFactory { urls, auth ->
-                RelayPool(urls, auth, crypto, OkHttpWebSockets(data.http), dispatchers.io, { clock.now().epochSecond })
+                RelayPool(
+                    urls,
+                    auth,
+                    crypto,
+                    OkHttpWebSockets(data.http),
+                    dispatchers.io,
+                    { clock.now().epochSecond },
+                    access = relayAccess,
+                )
             }
         FollowerEngine(
             crypto = crypto,

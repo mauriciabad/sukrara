@@ -105,7 +105,7 @@ class FollowerStore(private val secure: SecureStore, private val crypto: NostrCr
         }
 
     companion object {
-        const val NAME = "follower"
+        const val NAME = "identity.follower"
     }
 }
 

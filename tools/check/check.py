@@ -45,7 +45,7 @@ Checks
               listed in the registry's value_text_ok with the reason; a single line is marked '// card-ok: <why>'.
   clock       every clock time goes through Clock with the one 24-hour setting (Android :core:model Clock.kt, Mac
               SukraraCore Clock.swift; no own hour24 flag or time formatter elsewhere)
-  debug       debug code is compiled out of release builds: Android DebugReceiver / DebugFakes / Synthetic* only in
+  debug       debug code is compiled out of release builds: Android DebugReceiver / DebugFakes / DebugRelays / Synthetic* in
               src/debug (never named in src/main or src/release, manifests included); Mac debugsend / DebugFakes /
               Synthetic* only inside #if DEBUG or in the snapshot / test targets
   settings    THE settings schema contracts/settings/settings.json (the user, 2026-10-21: settings must not diverge
@@ -300,8 +300,8 @@ STRING_KEY = re.compile(r'<(string|plurals)\s+name="([^"]+)"([^>]*)>')
 # Debug commands that replace the sensor or make up data must not exist in a release build (2026-10-18: `cmd sensorEnd` on
 # the user's release build faked a sensor over the real one; 2026-10-19: the release app never shows a value, an alert,
 # a treatment or a sensor state that isn't real). The apps compile them out: Android src/debug, Mac #if DEBUG / test targets.
-DEBUG_NAMES = re.compile(r"\b(DebugReceiver|DebugFakes|Synthetic\w*)\b")
-DEBUG_FILE = re.compile(r"(^|/)(DebugReceiver|DebugFakes|Synthetic\w*)\.kt$")
+DEBUG_NAMES = re.compile(r"\b(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\b")
+DEBUG_FILE = re.compile(r"(^|/)(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\.kt$")
 MAC_DEBUG_NAMES = re.compile(r"\b(debugsend|DebugFakes|Synthetic\w*)\b")
 ANDROID_DEBUG_DIRS = ("/src/debug/", "/src/test/", "/src/androidTest/", "/src/testDebug/")
 MAC_DEBUG_TARGETS = (MAC + "Tests/", MAC_SOURCES + "sukrara-snap/")

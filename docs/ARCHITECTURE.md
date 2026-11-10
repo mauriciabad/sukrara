@@ -183,6 +183,13 @@ the standard domain with schema keys, URL scheme `sukrara`, widget kinds `app.ma
   creates a Bluetooth central, relay pool, alert engine, widget feed, notification request or the Juggluco source
   (`lan`).
 
+Android's launch gate for relays is `app/…/LaunchPlan.kt` (pure, `LaunchPlanTest`): `LaunchPlan.of(debugBuild,
+relayChoice)` gives the launch's `RelayAccess`, which every `RelayPool` applies to the relays the protocol names
+(`ShareOwnerModule`, `FollowerModule`). Release builds: `Public` (the `wss://` relays named), whatever else is passed.
+Debug builds: `Off` (no relay) unless the debug `RELAYS` command (`src/debug` `DebugRelays`, read through
+`BuildVariant.relayChoice`) chose `public` or local URLs (`Local`: every pool goes only there, `ws://` allowed; the
+debug build's network security config adds cleartext to `10.0.2.2`). The local test relay is `tools/relay/relay.py`.
+
 Test fixtures: `Contracts.url("alerts/scenarios")` (`SukraraTesting`) resolves `SUKRARA_CONTRACTS` or walks up from
 the test source to `contracts/`.
 

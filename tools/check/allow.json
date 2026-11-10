@@ -70,6 +70,11 @@
       "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift",
       "contains": "URL(string: \"http://\\(address):\\(port)\")",
       "reason": "Mac Juggluco on this network (opt-in switch, off by default; Settings says it is plain http): built only from a LanAddress that isPrivate (10/8, 172.16/12, 192.168/16), never a public address or a name"
+    },
+    {
+      "path": "apps/android/app/src/main/kotlin/app/mauri/sukrara/LaunchPlan.kt",
+      "contains": "url.startsWith(\"ws://\")",
+      "reason": "LaunchPlan accepts a ws:// test relay only from a debug build's RELAYS command (src/debug, a local relay such as ws://10.0.2.2:7447); release builds always get the public wss:// relays whatever the choice (LaunchPlanTest); opens nothing"
     }
   ],
   "network_ok": [
@@ -83,7 +88,7 @@
     },
     {
       "path": "apps/android/share/src/main/kotlin/app/mauri/sukrara/share/transport/WebSocket.kt",
-      "reason": "Nostr sharing: relay WebSockets; RelayPool passes only wss:// URLs (Wire.secureRelays), never cleartext"
+      "reason": "Nostr sharing: relay WebSockets to the URLs RelayPool keeps through the launch's RelayAccess: release builds wss:// only (Wire.secureRelays); a debug build's RELAYS choice may add a local ws:// test relay (cleartext permitted only to 10.0.2.2 / loopback by the debug network security config)"
     },
     {
       "path": "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/UpdateCheck.kt",
