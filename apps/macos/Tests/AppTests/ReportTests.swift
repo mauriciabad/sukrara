@@ -86,6 +86,9 @@ import Testing
         #expect(rows(week.text) == 7 * 288)
         #expect(rows(all.text) == 20 * 288)
         #expect(week.name.hasPrefix("sukrara-glucose-") && week.name.hasSuffix(".csv"))
+        // the save panel's name for a period comes from its range alone, the same as the written file's
+        #expect(m.csvName(.d7, now: now) == week.name && m.csvName(.all, now: now) == all.name)
+        #expect(m.csvName(.sensor, now: now) == nil)
         #expect(m.csv(.sensor, now: now) == nil, "no sensor known: no This sensor range")
         #expect(!GlucoseCsv.Period.offered(sensor: m.sensor).contains(.sensor))
     }

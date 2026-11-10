@@ -18,7 +18,7 @@ public protocol TreatmentActions: AnyObject {
     func send(_ treatment: Treatment) async -> Bool
 }
 
-/// The Treatments window's state: entries newest first, delivery per entry, and delete with undo (⌘Z or the
+/// The Treatments window's state: entries newest first, delivery per entry, and edit / delete with undo (⌘Z or the
 /// toast's Undo for 10 s).
 @Observable
 public final class TreatmentsModel {
@@ -31,15 +31,28 @@ public final class TreatmentsModel {
         public var id: String { treatment.id }
     }
 
+    /// The last edit or delete, which the toast's Undo (⌘Z) takes back until `until`.
+    public struct Undo: Equatable, Sendable {
+        public enum Kind: Equatable, Sendable { case deleted, changed }
+        public var kind: Kind
+        /// The entry as it was before: Undo sends it again as a newer version.
+        public var before: Row
+        /// The entry the toast names (the deleted one, or the changed one as it is now).
+        public var shown: Treatment
+        public var until: Date
+    }
+
     public private(set) var rows: [Row]
     /// Counts changes of the clock's look (24-hour time, time zone): the rows' times are drawn again.
     public var clockStyle = 0
-    /// The entry the toast offers to bring back, and when the offer ends.
-    public private(set) var undo: (row: Row, until: Date)?
+    /// What the toast offers to take back, and when the offer ends.
+    public private(set) var undo: Undo?
     /// The wearer allowed this Mac to add treatments.
     public var canWrite: Bool
     /// This Mac follows someone (else there is nobody to add treatments for).
     public var isFollowing = false
+    /// The wearer's name as the follow shows it (nil = not following): the rows' "Logged on Ana's phone".
+    public var wearer: String?
     @ObservationIgnored private weak var actions: (any TreatmentActions)?
     @ObservationIgnored private let now: () -> Date
 
@@ -65,18 +78,23 @@ public final class TreatmentsModel {
             .max { $0.t < $1.t }
     }
 
-    /// Only entries this Mac (or the wearer allowed it to) wrote can be changed: never the phone's or a pen's.
-    public func canChange(_ row: Row) -> Bool { canWrite && row.treatment.o == .mac }
+    /// This Mac wrote the entry: it has a delivery state (the runtime keeps one for every entry this Mac sent; they
+    /// travel as `o: follower`, like every writer's). Never the phone's, a pen's or another follower's.
+    public func isMine(_ row: Row) -> Bool { row.delivery != nil }
+
+    /// Only the entries this Mac wrote can be edited or deleted, and only while the wearer allows it to write.
+    public func canChange(_ row: Row) -> Bool { canWrite && isMine(row) }
 
     public var undoAvailable: Bool { undo.map { $0.until > now() } ?? false }
 
     public func delete(_ row: Row) async {
         guard canChange(row), let i = rows.firstIndex(of: row) else { return }
         rows.remove(at: i)
-        undo = (row, now().addingTimeInterval(Self.undoSeconds))
+        undo = Undo(
+            kind: .deleted, before: row, shown: row.treatment, until: now().addingTimeInterval(Self.undoSeconds))
         var t = row.treatment
         t.del = true
-        t.u = Self.millis(now())
+        t.u = version(after: t)
         // Not sent = not deleted: the entry comes back (the phone still has it) instead of vanishing only here.
         if await actions?.send(t) != true {
             undo = nil
@@ -84,16 +102,35 @@ public final class TreatmentsModel {
         }
     }
 
-    /// Brings the last deleted entry back (a newer version wins over the tombstone).
-    public func undoDelete() async {
-        guard undoAvailable, let (row, _) = undo else { return }
+    /// Saves a changed amount (0 for a note), note text and time as a newer version of the entry; nothing happens
+    /// when nothing changed. A send no relay took shows *Not sent* with Retry, like a new entry.
+    public func edit(_ row: Row, amount: Double, note: String, at t: Int64) async {
+        guard canChange(row), let current = rows.first(where: { $0.id == row.id }) else { return }
+        var e = current.treatment
+        e.a = amount
+        e.n = Treatment.truncated(note)
+        e.t = t
+        guard e.a != current.treatment.a || e.n != current.treatment.n || e.t != current.treatment.t else { return }
+        e.u = version(after: current.treatment)
+        undo = Undo(kind: .changed, before: current, shown: e, until: now().addingTimeInterval(Self.undoSeconds))
+        insert(Row(treatment: e, delivery: .sending))
+        await send(e)
+    }
+
+    /// Takes back the last edit or delete: the entry as it was, sent as a newer version (it wins over the tombstone
+    /// or the change).
+    public func undoLast() async {
+        guard undoAvailable, let u = undo else { return }
         undo = nil
-        var t = row.treatment
+        var t = u.before.treatment
         t.del = false
-        t.u = Self.millis(now())
+        t.u = version(after: rows.first { $0.id == t.id }?.treatment ?? u.shown)
         insert(Row(treatment: t, delivery: .sending))
         await send(t)
     }
+
+    /// A version strictly newer than `t`'s (the clock's milliseconds, or one more when the clock hasn't moved on).
+    private func version(after t: Treatment) -> Int64 { max(Self.millis(now()), t.u + 1) }
 
     public func add(_ treatments: [Treatment]) async {
         for t in treatments {
@@ -121,7 +158,8 @@ public final class TreatmentsModel {
         self.canWrite = canWrite
         let failedRows = rows.filter { $0.delivery == .failed }
         let failed = Set(failedRows.map(\.id))
-        let synced = treatments.filter { !$0.del && $0.id != undo?.row.id }
+        let hidden = undo?.kind == .deleted ? undo?.before.id : nil
+        let synced = treatments.filter { !$0.del && $0.id != hidden }
             .map { t in
                 let d = deliveries[t.id]
                 return Row(treatment: t, delivery: failed.contains(t.id) && d == .sending ? .failed : d)

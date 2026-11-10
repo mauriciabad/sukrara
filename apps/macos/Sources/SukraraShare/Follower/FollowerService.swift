@@ -58,6 +58,8 @@ public enum FollowerJoinError: Error, Equatable, Sendable {
     case invalidLink
     /// No invite for this link reached the relays in time (the phone may be offline, or the link was replaced).
     case notFound
+    /// No relay answered the lookup at all: this Mac couldn't reach the internet.
+    case offline
     case expired
     /// The invite was sealed by someone else than the link names.
     case fingerprintMismatch

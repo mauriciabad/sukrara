@@ -6,9 +6,10 @@ import Foundation
 /// The Mac's settings store: the app's UserDefaults (or an injected suite in tests and snapshots). Keys come only
 /// from the generated `SettingsSpec.Keys` through `MacSettings`; a stored value of the wrong type reads as the
 /// default.
-public final class DefaultsSettingsStore: SettingsStoring, @unchecked Sendable {
-    // UserDefaults is documented thread-safe; the class holds no other state.
-    private let defaults: UserDefaults
+public final class DefaultsSettingsStore: SettingsStoring, Sendable {
+    // UserDefaults is documented thread-safe but not marked Sendable: only this property opts out of the check, so any
+    // other state added here is checked.
+    nonisolated(unsafe) private let defaults: UserDefaults
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

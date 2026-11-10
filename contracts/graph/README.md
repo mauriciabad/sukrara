@@ -3,7 +3,8 @@
 "One graph everywhere" as data: each `*.json` here holds `cases` that both renderers must decide the same way.
 
 - Android: `GraphFixtureTest` in `:core:graph` (`cd apps/android && ./gradlew :core:graph:test`)
-- Mac: `GraphTests` (`cd apps/macos && swift test --filter GraphTests`)
+- Mac: `GraphTests` (`cd apps/macos && swift test --filter GraphTests`); `status.json` also through the alert engine and
+  `CardAlertsMapping` in `StatusFixtureTests` (AppTests)
 - CI runs both (`.github/workflows/checks.yml`); `tools/check` reminds you to add a case when the card code changes.
 
 A case: `name`; optional `settings` (alert settings JSON, ../alerts/SPEC.md §3, missing keys = defaults);
