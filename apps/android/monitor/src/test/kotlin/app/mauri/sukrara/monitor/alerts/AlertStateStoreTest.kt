@@ -89,4 +89,12 @@ class AlertStateStoreTest {
             assertEquals(75.0, stored.rule(AlertKind.LOW).threshold, 0.0)
             assertEquals(200.0, stored.rule(AlertKind.HIGH).threshold, 0.0)
         }
+
+    @Test fun theRuntimeReadsTheHubWithoutItsOwnAlertState() {
+        val state = rig.wearerState(latest = rig.reading(60))
+        val published = state.copy(alerts = AlertUiState(firingKinds = setOf("low"), mutedUntil = rig.clock.now()))
+        // publishing the alert state (hub.setAlerts) is no new input for the rules (#44)
+        assertEquals(AlertFeed.of(state), AlertFeed.of(published))
+        assertFalse(AlertFeed.of(state) == AlertFeed.of(state.copy(latest = rig.reading(55))))
+    }
 }

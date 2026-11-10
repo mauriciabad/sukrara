@@ -40,7 +40,9 @@ import app.mauri.sukrara.monitor.lockedboot.LockedBootPlan
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -130,7 +132,9 @@ class AlertRuntime(
         scope.launch { store.settings.collect { safely { onSettings(it) } } }
         scope.launch { wearerSettings.collect { safely { onWearerSettings(it) } } }
         scope.launch { treatments.collect { safely { onDoses(dosesOf(it)) } } }
-        scope.launch { state.collect { safely { onState(it) } } }
+        // only what the rules read: the hub's alerts field is this runtime's own output (publishUi → hub.setAlerts), so
+        // observing the whole state took the mutex again after every publish (#44)
+        scope.launch { state.map(AlertFeed::of).distinctUntilChanged().collect { safely { onFeed(it) } } }
         scope.launch { remoteEvents.collect { safely { process(AlertInput.Remote(it)) } } }
     }
 
@@ -227,12 +231,14 @@ class AlertRuntime(
         AlertKind.fromWire(kind)?.let { process(input(it)) }
     }
 
-    internal suspend fun onState(state: GlucoseState) {
+    internal suspend fun onState(state: GlucoseState) = onFeed(AlertFeed.of(state))
+
+    private suspend fun onFeed(state: AlertFeed) {
         val r = state.role ?: return // setup not done, or the hub hasn't loaded yet: never act on that
         mutex.withLock {
             ensureStarted()
             val now = now()
-            who = state.link?.wearerName
+            who = state.wearerName
             val monitoringNow = state.monitoringStartedAt != null
             val window = windowOf(state.sensor)
             // before no data turns on: it counts from the source's start, never from an older source's last reading
@@ -661,5 +667,22 @@ class AlertRuntime(
                 muteAllUntil >= Rules.NEVER -> AlertUiState.UNTIL_TURNED_OFF
                 else -> Instant.ofEpochSecond(muteAllUntil)
             }
+    }
+}
+
+/**
+ * The part of the hub's [GlucoseState] the alert rules read: role, the follower's link name, when monitoring started, the
+ * sensor and the newest reading. Never the hub's `alerts` (the runtime's own output), so publishing the alert state
+ * doesn't feed back into the runtime (#44).
+ */
+internal data class AlertFeed(
+    val role: Role?,
+    val wearerName: String?,
+    val monitoringStartedAt: Instant?,
+    val sensor: SensorState,
+    val latest: Reading?,
+) {
+    companion object {
+        fun of(s: GlucoseState) = AlertFeed(s.role, s.link?.wearerName, s.monitoringStartedAt, s.sensor, s.latest)
     }
 }
