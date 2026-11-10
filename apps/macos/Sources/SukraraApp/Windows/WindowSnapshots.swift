@@ -50,8 +50,21 @@
             var out: [(String, AnyView)] = []
             for step in SetupFlow.Step.allCases {
                 let m = SetupModel(store: store, follow: follow(.notFollowing))
+                m.loginItem = LoginItem(service: SnapLogin(status: .notRegistered))
                 m.flow.open(step)
                 out.append(("setup-\(step.rawValue)", AnyView(SetupView(model: m, close: {}))))
+            }
+            // Open at login after the button: waiting for approval, refused, on (the step stays until it's on)
+            let refusedLogin = LoginItem(service: SnapLogin(status: .notRegistered, refuses: true))
+            refusedLogin.set(true)
+            for (name, item) in [
+                ("approval", LoginItem(service: SnapLogin(status: .requiresApproval))),
+                ("failed", refusedLogin), ("on", LoginItem(service: SnapLogin(status: .enabled))),
+            ] {
+                let m = SetupModel(store: store, follow: follow(.notFollowing))
+                m.loginItem = item
+                m.flow.open(.openAtLogin)
+                out.append(("setup-openAtLogin-\(name)", AnyView(SetupView(model: m, close: {}))))
             }
             let doneModel = SetupModel(store: store, follow: follow(.notFollowing))
             doneModel.flow = SetupFlow(states: [

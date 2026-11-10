@@ -12,9 +12,10 @@ public final class SetupModel {
     public let follow: FollowModel
     public let alerts: AlertSettingsStore
     @ObservationIgnored let store: any SettingsStoring
-    /// Asks for notification permission / registers the login item; true = granted.
+    /// Asks for notification permission; true = granted.
     @ObservationIgnored var requestNotifications: () async -> Bool = { false }
-    @ObservationIgnored var setOpenAtLogin: (Bool) -> Void = { _ in }
+    /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
+    var loginItem: LoginItem?
 
     public init(store: any SettingsStoring, follow: FollowModel) {
         self.store = store
@@ -25,6 +26,16 @@ public final class SetupModel {
 
     func complete(_ s: SetupFlow.Step) { flow.complete(s); flow.save(to: store) }
     func skip(_ s: SetupFlow.Step) { flow.skip(s); flow.save(to: store) }
+
+    /// The Open at login step's primary action: asks macOS, and the step is done only once Sukrara is a login item.
+    /// Waiting for approval or refused, the step stays with the reason and Open Login Items… (Skip leaves it for
+    /// Finish Setup…); after approving in System Settings the same button finds it on.
+    func openAtLogin() {
+        guard let loginItem else { return }
+        loginItem.refresh()
+        if loginItem.status != .on { loginItem.set(true) }
+        if loginItem.status == .on { complete(.openAtLogin) }
+    }
 }
 
 /// First-run setup: Welcome → Follow → Alerts (thresholds confirmed) → Notifications → Open at login → Done.
@@ -59,6 +70,7 @@ public struct SetupView: View {
                 case .openAtLogin:
                     page(.openAtLogin, L10n.t("Open at login")) {
                         Text(L10n.t("Sukrara starts when you log in, so the menu bar always shows the glucose."))
+                        OpenAtLoginState(loginItem: model.loginItem)
                     }
                 case nil: done
                 }
@@ -111,7 +123,7 @@ public struct SetupView: View {
                 Button(L10n.t("Skip")) { model.skip(step) }
                 Button(primaryTitle(step)) { Task { await primary(step) } }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(step == .follow && !followDone)
+                    .disabled((step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil))
             }
         }
     }
@@ -127,7 +139,7 @@ public struct SetupView: View {
         switch s {
         case .alerts: L10n.t("Use these")
         case .notifications: L10n.t("Allow…")
-        case .openAtLogin: L10n.t("Open at login")
+        case .openAtLogin: model.loginItem?.status == .on ? L10n.t("Continue") : L10n.t("Open at login")
         default: L10n.t("Continue")
         }
     }
@@ -136,9 +148,7 @@ public struct SetupView: View {
         switch s {
         case .notifications:
             if await model.requestNotifications() { model.complete(s) } else { model.skip(s) }
-        case .openAtLogin:
-            model.setOpenAtLogin(true)
-            model.complete(s)
+        case .openAtLogin: model.openAtLogin()
         default: model.complete(s)
         }
     }
@@ -154,6 +164,35 @@ public struct SetupView: View {
                 if !model.flow.isComplete { Button(L10n.t("Finish now")) { model.flow.resume() } }
                 Button(L10n.t("Done"), action: close).keyboardShortcut(.defaultAction)
             }
+        }
+    }
+}
+
+/// Where Open at login stands under the step's text: on; waiting for approval or refused, with the reason and Open
+/// Login Items… (the step stays until macOS has it on); a run that may not touch login items says so.
+struct OpenAtLoginState: View {
+    let loginItem: LoginItem?
+
+    var body: some View {
+        if let loginItem {
+            if let note = OpenAtLoginRows.note(loginItem.status, error: loginItem.lastError) {
+                // the colour only on the symbol: the words keep full contrast
+                Label {
+                    Text(note)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                Button(L10n.t("Open Login Items…"), action: loginItem.openSettings)
+            } else if loginItem.status == .on {
+                Label {
+                    Text(L10n.t("Sukrara opens at login."))
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                }
+            }
+        } else {
+            Text(L10n.t("Not available in this run (development or test build).")).foregroundStyle(.secondary)
         }
     }
 }

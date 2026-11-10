@@ -30,7 +30,7 @@ final class WindowCoordinator {
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
         report = ReportModel(store: store, app: model)
         setup.requestNotifications = requestNotifications
-        setup.setOpenAtLogin = { [weak model] on in model?.loginItem?.set(on) }
+        setup.loginItem = model.loginItem
         follow.searchNearby = { [weak adapter] on in adapter?.searchNearby(on) }
     }
 

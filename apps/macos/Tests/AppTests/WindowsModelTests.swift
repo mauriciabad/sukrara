@@ -132,6 +132,34 @@ func scratchStore() -> DefaultsSettingsStore {
         #expect(item.status == .off && item.lastError != nil)
     }
 
+    /// #108: setup's Open at login step is done only once macOS has the login item on.
+    @Test func theSetupStepCompletesOnlyWhenTheLoginItemIsOn() {
+        let fake = FakeLogin()
+        fake.fail = true
+        let model = SetupModel(store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil))
+        model.loginItem = LoginItem(service: fake)
+        model.flow.open(.openAtLogin)
+        model.openAtLogin()  // refused: the step stays, with the reason
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+        #expect(model.loginItem?.lastError != nil && model.loginItem?.offersLoginItems == true)
+        fake.fail = false
+        fake.next = .requiresApproval
+        model.openAtLogin()  // waiting for approval: still not done
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+        #expect(model.loginItem?.status == .needsApproval)
+        fake.status = .enabled  // allowed in System Settings › Login Items
+        model.openAtLogin()
+        #expect(model.flow.states[.openAtLogin] == .done && model.flow.current == nil)
+        #expect(fake.calls == ["register", "register"])  // found on: not registered again
+    }
+
+    @Test func withoutALoginItemTheSetupStepDoesNothing() {
+        let model = SetupModel(store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil))
+        model.flow.open(.openAtLogin)
+        model.openAtLogin()
+        #expect(model.flow.current == .openAtLogin && model.flow.states[.openAtLogin] == nil)
+    }
+
     @Test func everyStateBeyondOnAndOffHasALine() {
         #expect(OpenAtLoginRows.note(.on, error: nil) == nil && OpenAtLoginRows.note(.off, error: nil) == nil)
         #expect(OpenAtLoginRows.note(.needsApproval, error: nil) != nil)

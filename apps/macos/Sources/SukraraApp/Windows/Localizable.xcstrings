@@ -2225,6 +2225,22 @@
         }
       }
     },
+    "Sukrara opens at login." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara opens at login."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara se abre al iniciar sesión."
+          }
+        }
+      }
+    },
     "Sukrara Settings" : {
       "localizations" : {
         "en" : {
