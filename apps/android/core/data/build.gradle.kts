@@ -11,7 +11,7 @@ plugins {
 
 android {
     testOptions.unitTests.isIncludeAndroidResources = true
-    // the exported schemas, for MigrationTestHelper under Robolectric
+    // the exported schema, for MigrationTestHelper.createDatabase under Robolectric
     sourceSets["test"].assets.srcDir("$projectDir/schemas")
 }
 

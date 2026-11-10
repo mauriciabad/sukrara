@@ -5,6 +5,8 @@ package app.mauri.sukrara.core.data
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import app.mauri.sukrara.core.data.db.QuarantiningOpenHelperFactory
 import app.mauri.sukrara.core.data.db.RoomPenLedgerRepository
 import app.mauri.sukrara.core.data.db.RoomReadingsRepository
@@ -34,6 +36,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
@@ -98,12 +101,27 @@ class DataModule(
         KeystoreSecureStore(secureDir, secretBox, corruption, clock, dispatchers.io)
     }
 
+    /**
+     * True once this process opened a database of another version and replaced it with an empty one (no migrations,
+     * [SukraraDatabase]): setup offers Import history again.
+     */
+    val databaseReplaced = MutableStateFlow(false)
+
     val database: SukraraDatabase by lazy {
         Room
             .databaseBuilder(context, SukraraDatabase::class.java, SukraraDatabase.FILE)
             .openHelperFactory(QuarantiningOpenHelperFactory(::quarantineDatabase))
-            .addMigrations(*SukraraDatabase.MIGRATIONS)
-            .setQueryCoroutineContext(dispatchers.io)
+            // no migrations: another version (older or newer) is dropped, every table, and created afresh
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+            .addCallback(
+                object : RoomDatabase.Callback() {
+                    override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+                        databaseReplaced.value = true
+                        diagLog.log("database", "another version was replaced by an empty database")
+                    }
+                },
+            ).setQueryCoroutineContext(dispatchers.io)
             .build()
     }
 

@@ -131,10 +131,15 @@ case_ "an image in the frozen PoC passes" pass "" poc/spikes/brand/assets/x/icon
 case_ "an nsec in app code fails" fail secrets apps/android/x/src/main/kotlin/K.kt "$HDR
 val k = \"nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\""
 
-case_ "a changed committed Room schema fails" fail room-schema \
-  apps/android/core/data/schemas/app.mauri.sukrara.core.data.db.SukraraDatabase/1.json '{"formatVersion": 1}'
+schema="$(git -C "$root" ls-files 'apps/android/core/data/schemas/*.json' | tail -1)"
+case_ "a changed committed Room schema fails" fail room-schema "$schema" '{"formatVersion": 1}'
 case_ "a new Room schema version passes" pass "" \
   apps/android/core/data/schemas/app.mauri.sukrara.core.data.db.SukraraDatabase/99.json '{"formatVersion": 1}'
+gone "the current Room schema deleted without a newer one fails" fail room-schema "$schema"
+case_ "a Room migration fails" fail room-schema apps/android/core/data/src/main/kotlin/M.kt "$HDR
+val m = Room.databaseBuilder(c, D::class.java, \"d\").addMigrations(m12)"
+case_ "the destructive fallback passes" pass "" apps/android/core/data/src/main/kotlin/M.kt "$HDR
+val m = Room.databaseBuilder(c, D::class.java, \"d\").fallbackToDestructiveMigration(dropAllTables = true)"
 
 case_ "an unlisted beta library fails" fail prerelease apps/android/gradle/libs.versions.toml '[versions]
 foo = "2.0.0-beta03"'

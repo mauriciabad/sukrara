@@ -5,15 +5,16 @@ package app.mauri.sukrara.core.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * The install's one database (`databases/sukrara.db`): glucose history, treatments and the sharing ledger. A phone is
- * either wearer or follower, so tables have no role column. Every schema change bumps [version], exports the schema to
- * `core/data/schemas/` and adds a migration with a `MigrationTestHelper` test (no destructive fallback).
+ * either wearer or follower, so tables have no role column.
  *
- * 2: the pen ledger (`pen_ledger`), written with the treatments of a pen change in one transaction.
+ * No migrations, ever (the owner, 2026-11-10: "no backwards compatibility for anything, databases included"): a schema
+ * change bumps [version] and replaces the exported `core/data/schemas/<version>.json` (only the current one is kept);
+ * a phone whose database has any other version gets a new, empty one (`DataModule.database`: destructive replace,
+ * upgrade and downgrade, every table dropped). History comes back through Import history (LibreView, Tidepool or a
+ * file, deduplicated), never through a migration. `DatabaseSchemaTest` and the `room-schema` check enforce it.
  */
 @Database(
     entities = [
@@ -42,19 +43,5 @@ abstract class SukraraDatabase : RoomDatabase() {
 
     companion object {
         const val FILE = "sukrara.db"
-
-        /**
-         * 1 → 2: the pen ledger moves into the database (the old `files/state/pens.json` isn't read: a known pen's
-         * next tap rebuilds its record from the pen entries in the log, docs/29).
-         */
-        val MIGRATION_1_2 =
-            object : Migration(1, 2) {
-                override fun migrate(db: SupportSQLiteDatabase) {
-                    db.execSQL("CREATE TABLE IF NOT EXISTS `pen_ledger` (`id` INTEGER NOT NULL, `json` TEXT NOT NULL, PRIMARY KEY(`id`))")
-                }
-            }
-
-        /** Every migration, in order (`DataModule` and the migration tests use this list). */
-        val MIGRATIONS = arrayOf(MIGRATION_1_2)
     }
 }
