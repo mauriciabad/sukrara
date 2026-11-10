@@ -37,6 +37,8 @@ data class LvSession(
     val lastName: String? = null,
     val guardianFirstName: String? = null,
     val guardianLastName: String? = null,
+    /** The account's id (a GUID; the sensor's receiver ID comes from it), null when the answer had none. */
+    val accountId: String? = null,
 ) {
     /** The sensor registration repeats the profile: only send it when sign-in returned it (never blank it). */
     val hasProfile: Boolean get() = dateOfBirth != null && firstName != null && lastName != null
@@ -159,6 +161,7 @@ class LibreViewClient internal constructor(
                 field("LastName"),
                 field("GuardianFirstName"),
                 field("GuardianLastName"),
+                field("AccountId")?.takeIf { it.isNotBlank() },
             ),
         )
     }

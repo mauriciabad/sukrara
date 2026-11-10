@@ -27,6 +27,7 @@ fun uploadStatusText(
         UploadStatus.Off -> stringResource(R.string.in_status_off)
         UploadStatus.Setup -> stringResource(R.string.in_status_setup)
         UploadStatus.AuthFailed -> stringResource(R.string.in_status_auth)
+        UploadStatus.CredentialUnreadable -> stringResource(R.string.in_status_unreadable)
         is UploadStatus.Paused -> stringResource(R.string.in_status_paused, status.other)
         UploadStatus.Waiting -> stringResource(R.string.in_status_waiting)
         is UploadStatus.Ok -> pluralStringResource(R.plurals.in_status_ok, status.count, ago(status.at, now), status.count)

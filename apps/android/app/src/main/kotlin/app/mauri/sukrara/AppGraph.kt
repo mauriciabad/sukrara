@@ -45,6 +45,7 @@ import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.libreview.LvGlucose
 import app.mauri.sukrara.integrations.libreview.LvReadings
 import app.mauri.sukrara.integrations.libreview.LvState
+import app.mauri.sukrara.integrations.libreview.LvUnsent
 import app.mauri.sukrara.integrations.localserver.LanPin
 import app.mauri.sukrara.integrations.nightscout.NsState
 import app.mauri.sukrara.integrations.tidepool.TpState
@@ -69,6 +70,7 @@ import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.PairingLoad
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
+import app.mauri.sukrara.sensor.pairing.ReceiverIds
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import app.mauri.sukrara.share.FollowerModule
@@ -346,6 +348,8 @@ class AppGraph(
             nightscoutState = data.typedStore("nightscout-upload", NsState.serializer(), NsState(), whenCorrupt = NsState()),
             // a lost state re-sends nothing old (each part starts again from now) but can't retract versions sent before
             libreViewState = data.typedStore("libreview-upload", LvState.serializer(), LvState(), whenCorrupt = LvState()),
+            // a lost one only loses history the sensor's own backfill may bring back
+            libreViewUnsent = data.typedStore("libreview-unsent", LvUnsent.serializer(), LvUnsent(), whenCorrupt = LvUnsent()),
             // a lost state re-sends what the phone keeps; Tidepool replaces each datum by its origin id (no duplicates)
             tidepoolState = data.typedStore("tidepool-upload", TpState.serializer(), TpState(), whenCorrupt = TpState()),
             // a lost state may send the current reading once more (the throttle and life count start again)
@@ -388,6 +392,8 @@ class AppGraph(
                     b.current?.let { LiveReading(it.mgdl, it.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount) }
                 },
             libreViewEmail = sensor.libreView.email,
+            sensorReceiverId = sensor.libreView.receiverId,
+            receiverIdOf = ReceiverIds::fromAccountId,
             role = role.data.map { it.role },
             jugglucoIsSource = data.settings.flow(SensorSource).map { SensorSourceKind.fromId(it) == SensorSourceKind.Juggluco },
             http = data.http,

@@ -1274,7 +1274,14 @@ without a notification. Back leaves the page.
   the Keystore-encrypted secure store (`libreview`); the password never leaves the dialog's memory and that request.
   Wrong password: "LibreView didn't accept this email and password". If another device uploads for the account
   (LibreLink, the Libre 3 app, Juggluco), the dialog says so and offers *Take over* (`SetDevice:true`, that device stops
-  uploading) or *Cancel*: Sukrara never takes over by itself.
+  uploading) or *Cancel*: Sukrara never takes over by itself. "The same account" as the last sign-in (what LibreView
+  has stays remembered) is decided by LibreView's AccountId (kept in `libreview-upload`), by the email only when one
+  side has no AccountId. If the account isn't the one Sukrara starts and takes over sensors with (Settings › Sensor ›
+  LibreView account: its receiver ID ≠ `ReceiverIds.fromAccountId(AccountId)`), nothing is saved yet and the dialog
+  asks *Not your sensor's LibreView account* (glucose and entries would go to this account; the clinic won't see them
+  in the other one) with *Upload to this account* or *Cancel* (that sign-in is forgotten; a take-over already made stays,
+  LibreView gives no AccountId before it). While signed in to such an account the *Account* group says *Not the account
+  in Settings › Sensor* (warning icon). No receiver ID on the phone (Settings › Sensor not signed in): no question.
 - *Upload to LibreView* (enabled once signed in; turning it off always works, also after signing out or on a follower
   phone, which sees "Only the phone that wears the sensor uploads"), *Status* ("Last upload 4 min ago · 3 items", "On ·
   nothing sent yet", "<reason> Trying again soon.", "LibreView asks you to sign in again (another app may have taken
@@ -1293,8 +1300,9 @@ without a notification. Back leaves the page.
   another device wait 2 min. Glucose: only readings Sukrara takes from a Libre 3 itself (the sensor link tags each
   batch with its serial; Juggluco's readings never go up), record number = the serial's base | life count; the newest
   reading as current (< 5 min old), the 5-minute history, `sensorstart` once per sensor after `PUT /api/nisperson`
-  registered it (skipped if sign-in didn't return the profile, so it can't blank it). Unsent history is kept in memory
-  (3 days): readings lost to a restart come back with the sensor's backfill.
+  registered it (skipped if sign-in didn't return the profile, so it can't blank it). History LibreView hasn't got yet
+  is also kept in the typed store `libreview-unsent` (one sensor, at most 3 days, only what would go up; rewritten
+  when it changes and after each upload), so a restart or a process death never loses it: the next cycle sends it.
 - When: after each new Libre 3 reading, entry change or setting change, and every 5 minutes. At most 100 entries and
   288 readings per upload; a bigger catch-up continues at once. Network or server trouble retries after 30 s doubling
   to 15 min (±20 %); a token LibreView no longer accepts (401 / 403 / `wrongDeviceInToken`) stops until the person
@@ -1312,7 +1320,8 @@ without a notification. Back leaves the page.
   too." in the Undo snackbar; Undo sends it up again as a new record (a retracted entry has no live record to retract).
 
 **States and exits**: *Signed out* → *Account* → dialog (*Cancel* keeps nothing). *Another device uploads* → *Take
-over* or *Cancel*. *Off* (default) → main switch. *On · nothing sent yet / last upload* → main switch off, *Sign out*.
+over* or *Cancel*. *Not your sensor's LibreView account* → *Upload to this account*, or *Cancel* / back (nothing saved).
+*Signed in to another account than the sensor's* → *Account* (sign in with the sensor's) or *Sign out*. *Off* (default) → main switch. *On · nothing sent yet / last upload* → main switch off, *Sign out*.
 *Trying again* → retries by itself; switch off to stop. *Sign in again* → the status row or *Account*. *Refused* → change
 or switch off. *Follower phone* → switch shown off and disabled with the reason. Back leaves the page.
 
@@ -1334,8 +1343,11 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   a retry with "That address doesn't work. Check it, including https://.".
 - *Upload to my Nightscout* (enabled once a site is saved; a follower phone sees "Only the phone that wears the sensor
   uploads"), *Status* ("Last upload 3 min ago · 12 items", "On · nothing sent yet", "<reason> Trying again soon.",
-  "The site refused the token or secret: change it" — tapping it opens the site dialog —, "Paused: another app
-  (<device>) uploads to this site" with *Upload anyway*).
+  "The site refused the token or secret: change it" — tapping it opens the site dialog —, "The saved token can't be read:
+  enter it again" when the secure store can't decrypt it any more — tapping it opens the site dialog, which then needs
+  the token or secret typed again — (a Keystore that is only busy is never shown as "Set up the site first": it reads as
+  "<reason> Trying again soon." and is tried again with the backoff), "Paused: another app (<device>) uploads to this
+  site" with *Upload anyway*).
 - *What to send*: *Glucose readings* (every reading, the last 30 days included), *Insulin, carbs and notes* (edits and
   deletions too), *Sensor changes*, *Phone battery*; all on, disabled while the upload is off. *Advanced*: *API* (v1
   recommended; v3 only with an access token, a secret keeps v1) and *Remove this site* (confirmation; forgets the site,
@@ -1357,13 +1369,28 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   within 2 min of another uploader's reading count as covered (a backfill never doubles someone else's data), and
   another device's readings in the last 30 min **pause everything** (readings, entries, sensor, battery) until *Upload
   anyway*. Failures retry after 30 s doubling to 15 min (±20 %, or the site's Retry-After); 401 / 403 stops until the
-  token is changed. Upload only: nothing is read back except those reading dates.
+  token is changed.
+- Entries another app already uploaded (AndroidAPS's pump bolus, xDrip+, a pump's app, the careportal) are never
+  doubled: Nightscout merges a treatment only on its `identifier` (or, without one, on time + eventType), so the site
+  would keep both and count the insulin / carbs twice for everyone reading it, loops included. Before an entry goes up
+  the first time (and after an edit of a linked one) the site's treatments within ±2 min are read (`/api/v1/treatments.json`
+  by `created_at`, both APIs): one from another uploader with the same amount in the field Nightscout counts — rapid
+  insulin ↔ `insulin` (±0.01 U), carbs ↔ `carbs` (±0.5 g), whatever its eventType (`Meal Bolus`, `SMB`, `<none>`…); a
+  note or long-acting dose ↔ a `Note` with the same text — **links** the entry instead of sending it (`NsState.linked`,
+  `NsDocs.sameTreatment`; `NsDocsTest`, `NightscoutUploaderTest`). Never one of Sukrara's own documents, a soft-deleted
+  one, or the same field of one already linked (a `Meal Bolus` covers one insulin and one carbs entry). The other app's
+  document stays as it is: deleting a linked entry sends nothing; an edit that no longer matches goes up as Sukrara's
+  own. A site that refuses that lookup drops the entry like a refused document (never sent blind). Upload only: nothing
+  is read back except those reading dates and treatments.
 
 **States and exits**: *Not set up* → *Site* → dialog (Cancel keeps nothing). *Off* (default) → main switch. *On ·
 nothing sent yet / last upload* → main switch off, *Remove this site*. *Trying again* → retries by itself; switch off to
-stop. *Token refused* → the status row or *Site* opens the dialog; saving a new token resumes. *Paused (another
-uploader)* → *Upload anyway*, or switch off. *Follower phone* → the switch is disabled with the reason. Back leaves the
-page.
+stop. *Token refused* → the status row or *Site* opens the dialog; saving a new token resumes. *Saved token can't be
+read* → the status row or *Site* opens the dialog; entering the token again resumes; the switch and *Remove this site*
+still work. *Keystore busy* → retries by itself; switch off to stop. *Paused (another
+uploader)* → *Upload anyway*, or switch off. *Entry linked to another app's* (no state of its own: it shows as sent) →
+change it in Sukrara so it no longer matches (it goes up as Sukrara's own), or change / delete it in the app that
+uploaded it. *Follower phone* → the switch is disabled with the reason. Back leaves the page.
 
 ## Languages
 
