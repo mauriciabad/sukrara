@@ -73,6 +73,7 @@ import app.mauri.sukrara.pen.PenTag
 import app.mauri.sukrara.pen.PenTapHint
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.protocol.event.AlertCodec
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.PairingLoad
@@ -591,6 +592,8 @@ class AppGraph(
             // what followers on *Settings from: Wearer* use (cold: the alert runtime is built when the engine reads it)
             settings = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
             relays = launch.relays,
+            // the live events' ss / se / sw (PROTOCOL-v2 "Sensor life"): followers see a warm-up and an end with no reading
+            sensor = sensor.source.sensorInfo.map { it?.let { i -> SensorLife(i.startEpoch, i.endEpoch, i.warmupEndEpoch) } },
         )
     }
 

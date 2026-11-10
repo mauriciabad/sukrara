@@ -34,7 +34,7 @@ All content is JSON, NIP-44 v2 encrypted. Every event has a NIP-40 `expiration`.
 | **access request** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` | — | `{"v":2,"type":"request","token":t,"profile":{"name":"Mom","avatar":{…}}}`; a [nearby](#nearby-pairing) request adds `"n":na` |
 | **profile update** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"profile","profile":{…}}` (applied only for an approved, non-revoked `F`) |
 | **key delivery** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"key","sid","epoch":n,"g":nsec(G_n),"devices":[…],"relays":[…]}` |
-| **rekey request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"rekey","have":gk}` (follower saw an unknown `gk`; `have` = the newest epoch's `gk` it holds; owners only log it) |
+| **rekey request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"rekey","have":gk}` (follower saw an unknown `gk`; `have` = the `gk` of the newest epoch it holds, never the unknown one; owners only log it) |
 | **history request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"history","since":hourStart}` (follower's backfill found hours missing) |
 | **revoked notice** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"revoked"}` (courtesy; security comes from rotation) |
 | **invite used** | rumor kind 30501 in gift wrap to `F` | seal by `I` | exp +7 d | `{"v":2,"type":"invite-used"}`: another follower's request had already claimed this invite |
@@ -114,14 +114,6 @@ entries, deletes.
   `HELLO` without `id` is supported.
 - BLE: every treatment event is pushed to subscribed centrals like any publish; the `HELLO` backlog also carries the
   treatment events of the last 30 days (newest 200), after the chunks and before live.
-- BLE link rules (2026-10-28, refine spec/ogs-ble.md B§4.1/B§6): every frame fits one ATT Write Request /
-  notification (`min(ATT_MTU−3, 512)`; CoreBluetooth's MTU is its `.withoutResponse` write length + 3, never the
-  `.withResponse` length, which is always 512 and makes the stack send a long write). The wearer still accepts a long
-  (Prepare/Execute) write on RX from any central: parts in offset order, at most 512 bytes, then judged as one frame.
-  **Which owner:** once the follower knows `sid`, only `m` over one of its last 4 nonces proves the wearer's phone (a
-  pairing `i` is public, so it never does); before `sid`, `i` = the stream's `I` does. A phone proved to be another
-  wearer's is avoided for **10 minutes** (that phone only, by its connection id: never the one connected since).
-  Pinned by `ble/default-mtu.json` (a Mac follower ↔ Android wearer at ATT MTU 23, plain and long write).
 - Sukrara for Mac follows over v2 like any follower; while it is a writer, its entries go over v2 only (not the
   legacy Mac link), so "Can add entries" governs the Mac too. The legacy link (SPEC §2) refuses entries unless the
   wearer explicitly allows that unauthenticated path on the phone.
@@ -155,6 +147,31 @@ Verified on Android (two emulators, 2026-10-16, `spikes/showcase-android/evidenc
 reach the follower over relays and over BLE with the follower offline; writer entry accepted (echo) in < 5 s over
 relays, ≈ 0.1 s over BLE, and after 3 min when the wearer's relays were off (*not accepted yet* → *accepted*).
 
+## Bluetooth link
+
+The rules every app follows on the Bluetooth link (they refine the OGS BLE draft's B§4.1 and B§6; the messages,
+framing header and limits are in [docs/07](../../docs/07-bluetooth-followers.md)). Pinned by
+[ble/link-rules.json](ble/link-rules.json) (Android `BleLinkRulesTest` + `NearbyLinkRulesTest`, Mac
+`BleLinkRulesTests`) and [ble/default-mtu.json](ble/default-mtu.json) (a Mac follower ↔ Android wearer at ATT MTU 23,
+plain and long write).
+
+- **Frames**: every frame fits one ATT Write Request or notification: at most `min(ATT_MTU − 3, 512)` bytes, the
+  6-byte header included. CoreBluetooth's ATT MTU is its `.withoutResponse` write length + 3, never the
+  `.withResponse` length (always 512, which makes the stack send a long write).
+- **Long writes**: the wearer still accepts a long (Prepare / Execute) write on RX from any central: parts in offset
+  order, at most 512 bytes in all, each echoed in the Prepare Write Response, then judged as one frame on Execute Write
+  (same limits as a plain write; out of order or over 512 bytes = refused and the central dropped). Each central has
+  at most one such queue (≤ 512 bytes); it is dropped by an Execute Write that cancels, by the central disconnecting,
+  and **30 s after its last part** without an Execute Write, like a reassembly buffer.
+- **Which owner**: a follower writes nothing but `HELLO` until the phone's `INFO` proves it is its wearer's. Once the
+  follower knows `sid`, `m` is checked first: only `m` over one of its **last 4** `HELLO` nonces makes the phone its
+  wearer's (a recorded `INFO` answers an older nonce; a pairing `i` is public, so a copied `i` never proves anything),
+  and an `i` naming another identity still makes it another wearer's. Before `sid` (request pending), `i` = the
+  stream's `I` is its wearer's, another `i` is another wearer's, and no `i` is unknown: receive, but don't write.
+- **Leaving a phone**: a phone proved to be another wearer's is left and avoided for **10 minutes**, and the scan goes
+  on (that phone only, by its connection id: never the one connected since). While joining, a phone with nothing to
+  pair with is left for **5 s** (it may open *Pair nearby* in a moment).
+
 ## Alerts — v2 addition, 2026-10-17 (investigation 15)
 
 The wearer's app sends every glucose alert it fires or clears, so followers can alert at the same moment. Rules and
@@ -183,10 +200,15 @@ end (start + the patch info's warm-up, 60 min). All three are left out when the 
 owner's source gives the start only (`sgv.json?sensor=Y`): end = start + 15 days, warm-up 60 min.
 
 - Every reading's live event carries them. A new sensor has no readings for its warm-up, so the owner also publishes
-  a **reading-less live event** `{"v":2,"ss","se","sw"}` (same kind, envelope and expiry) whenever its sensor info
-  changes (new sensor, ended early) and every chunk tick (5 min) while the sensor warms up.
+  a **reading-less live event** `{"v":2,"ss","se","sw"}` (same kind, envelope and expiry, relays and Bluetooth)
+  whenever its sensor info changes (the first sensor it knows after starting, a new sensor, one that ended early; a
+  sensor removed is `{"v":2}`) and every chunk tick (5 min) while the sensor warms up: from `ss` until the first
+  reading at or after `ss`, at most until 15 min past `sw`. Live events are ephemeral (relays don't keep them), so the tick is
+  what a follower connecting during the warm-up gets. Android `PublishReadings` (`PublishReadingsTest`).
 - Followers and the Mac take the sensor from the live event with the newest `created_at` (an older one from a backlog
   doesn't overwrite it); a live event without `se` clears what they knew. A reading-less event adds no reading.
+  Pinned by [sync/sensor-life.json](sync/sensor-life.json) (ended early, removed, a new one warming up, its first
+  reading, a late backlog copy of an old reading).
 - They draw the value card's sensor badge, warm-up and countdown ring from it (docs/FEATURES.md, "Sensor life") and
   keep `no_data` quiet while the sensor has ended or warms up (spikes/alerts/SPEC.md §2).
 - No serial on the wire (the start identifies the sensor). Chunks don't carry it; the BLE companion path relays the
@@ -377,16 +399,18 @@ all unmerged as of 2026-10.)
 
 ## Acceptance rules (followers)
 
-- Roster: author == `I`, under the `gk` of its own `epoch`; the highest `(epoch, created_at)` wins. A key delivery for
-  epoch n+1 outranks every roster of epoch ≤ n (its `devices` apply until roster n+1 arrives), so a late or refreshed
-  roster from a replaced phone can't bring the old device back ([sync/rotation.json](sync/rotation.json)).
+- Roster: author == `I`, under the `gk` of its own `epoch` (a roster whose `epoch` isn't its `gk`'s is rejected:
+  `roster-epoch-mismatch`); the highest `(epoch, created_at)` wins, not the newest `created_at` alone. A key delivery
+  for epoch n+1 outranks every roster of epoch ≤ n (its `devices` apply until roster n+1 arrives), so a late or
+  refreshed roster from a replaced phone can't bring the old device back ([sync/rotation.json](sync/rotation.json)).
 - Data (live/chunk): author ∈ current `roster.devices`, `gk` matches a known epoch, decrypts, `v == 2`. A chunk's `c`
   must be `H("cgm2:glucose:"+sid)` and its `d` must be `H("cgm2:h:"+sid+":"+h)` for the payload's own hour `h`. A
   live reading, a chunk's hour or any reading in it later than now + 300 s is rejected (`reading-in-future`).
 - Unknown `gk`: a rekey request only when the event is signed by `I` or a roster device (≤ 1 per `gk` per 5 min), so a
   stranger can't make followers send them, and only when its `created_at` is newer than the newest key delivery's
-  rumor (an older event is a backfill of hours from before the follower's latest key, not a missed rotation). The
-  event isn't remembered as seen: it is read once the key arrives.
+  rumor (an older event is a backfill of hours from before the follower's latest key, not a missed rotation). Its
+  `have` is the `gk` of the newest epoch the follower holds (the OGS vectors' `rekey-request`). The event isn't
+  remembered as seen: it is read once the key arrives.
 - Author not (yet) in the roster: rejected but not remembered as seen — the roster that adds it (a new phone, a new
   writer) may arrive later, and the event is judged again when a relay or Bluetooth delivers it again.
 - Revoked notice vs key delivery: both live 30 d on relays and come back in any order after a restart, so they are
@@ -400,6 +424,10 @@ all unmerged as of 2026-10.)
 - Treatments: see [Treatments](#treatments-insulin--carbs--notes--v2-addition-2026-10-16) (writer scope).
 - Never trust a reading because of *where* it came from inside the app — each stored reading records `via`
   (`relay:<host>`), and the follower DB is separate from the owner role's DB.
+- Cross-checked: every follower sequence in [sync/](sync) and the [OGS vectors](ogs/ogs-draft1.json) (byte for byte,
+  and their scenario) run through the independent Python reference follower (`poc/spec/reference`, OGS draft 1, frozen)
+  with the rules above that it predates added in `tools/protocol/sync_crosscheck.py` (CI, `rules` job): the same
+  verdict at every step, the same rekey `have` and the same final state as Android and the Mac.
 
 ## Backup to a password manager
 

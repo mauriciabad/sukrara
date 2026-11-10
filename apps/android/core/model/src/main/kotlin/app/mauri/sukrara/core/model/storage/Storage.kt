@@ -126,7 +126,10 @@ data class TreatmentRecord(
     val penJson: String? = null,
 )
 
-/** Treatments (Room), last-writer-wins on `Treatment.modifiedAt`. Deleted ones stay as tombstones for sync. */
+/**
+ * Treatments (Room), merged by the contract's `(u, o)` ([app.mauri.sukrara.core.model.supersedes]). Deleted ones stay
+ * as tombstones for sync.
+ */
 interface TreatmentsRepository {
     /** Not-deleted treatments with `at` in [from, to), oldest first, updated live. */
     fun between(
@@ -136,7 +139,10 @@ interface TreatmentsRepository {
 
     suspend fun get(id: String): TreatmentRecord?
 
-    /** Stores [record] unless a version with a later (or equal) `modifiedAt` is stored; returns true when stored. */
+    /**
+     * Stores [record] only if it [supersedes][app.mauri.sukrara.core.model.supersedes] the stored version (or none is
+     * stored); returns true when stored.
+     */
     suspend fun upsertIfNewer(record: TreatmentRecord): Boolean
 
     /** Every record changed after [since], tombstones included (sync). */

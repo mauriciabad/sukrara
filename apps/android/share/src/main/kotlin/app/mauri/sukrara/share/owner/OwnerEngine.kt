@@ -14,6 +14,7 @@ import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.AlertPayload
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.owner.usecase.ApproveRequest
@@ -63,7 +64,7 @@ import app.mauri.sukrara.protocol.invite.NearbyPairing as PairingCode
 
 /**
  * The wearer's sharing coordinator: loads the identity, keeps the relay subscriptions, feeds readings from the
- * [GlucoseHub] to [PublishReadings], the treatment log and the mirrored settings to followers ([SyncTreatments],
+ * [GlucoseHub] and the wearer's sensor to [PublishReadings], the treatment log and the mirrored settings to followers ([SyncTreatments],
  * [PublishSettingsMirror]), runs every use-case one at a time (serial dispatcher + one lock held across the
  * suspending store / ledger calls, so no update overwrites another), persists before publishing, and
  * exposes [state]. Relay failures stay in the per-relay status. Logs nothing that holds keys or glucose values.
@@ -82,6 +83,8 @@ class OwnerEngine(
     private val nearby: OwnerNearby = OwnerNearby.None,
     /** *Over the internet* and the upload interval (Settings › Sharing); read at start and followed while running. */
     private val relayPolicy: Flow<RelayPolicy> = flowOf(RelayPolicy()),
+    /** The wearer's current sensor (null = none known): every live event carries it (PROTOCOL-v2 "Sensor life"). */
+    private val sensor: Flow<SensorLife?> = flowOf(null),
     /** Called for a new access request (the notification with Allow / Deny lives in the app layer). */
     private val onRequest: (PendingRequest) -> Unit = {},
 ) {
@@ -262,6 +265,9 @@ class OwnerEngine(
             listOf(
                 scope.launch(serial) { transport.inbound.collect { locked { onInbound(it) } } },
                 scope.launch(serial) { readingsFrom(hub) },
+                scope.launch(serial) {
+                    sensor.distinctUntilChanged().collect { w -> locked { owner?.let { publish(readings.onSensor(it, w, now())) } } }
+                },
                 scope.launch(serial) { transport.status.collect { render() } },
                 scope.launch(serial) {
                     while (true) {

@@ -166,6 +166,17 @@ pick one), so a recorded `INFO` can't be replayed to impersonate the wearer's ph
 like every other derived value. A follower whose request is pending (no `sid` yet) and meets a phone that isn't
 pairing receives but doesn't write, rather than leaving it.
 
+**Cross-check with the reference** (2026-11-10, #53): `tools/protocol/sync_crosscheck.py` feeds every follower sequence
+in `contracts/protocol/sync` to the reference follower and requires the apps' verdict at every step, the same rekey
+`have` and the same final state; it also regenerates the OGS vectors and runs their scenario. It runs in CI (`rules`
+job). Added there, because the reference is frozen with the PoC: the PROTOCOL-v2 rules the reference predates, as a
+subclass of its follower (a newer epoch's key outranks older-epoch rosters, rekey `have` = the newest held gk and only
+for events newer than the latest key, revoked notice vs key delivery by rumor time, a restart, authors not yet in the
+roster judged again, the settings rule, readings in the future), and one change to the vectors: the rekey request's
+`have` is now the newest held gk (`a10d4e6e`, G1), as both apps send it, instead of the unknown one. Left out: editing
+`poc/spec/reference` itself (frozen; the standalone OGS repository carries its own copy), and the draft-3 reference
+(`ogs/d3`), which no app speaks.
+
 **Still open (not rejected):** P1, P2, P7, P8, P9 and P11 change the wire for draft 2 and wait for v1; the rest of P10
 (expiration and roster-epoch checks on receivers, strict `(epoch, created_at)` roster order on the Mac); P14 (CGMS
 bridge). Not covered by P12: a *connected* central can still read the phone's name from Android's GAP service.

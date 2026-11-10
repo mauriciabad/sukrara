@@ -5,6 +5,7 @@ package app.mauri.sukrara.share.follower
 
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
@@ -25,6 +26,7 @@ import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.RumorCodec
+import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.SettingsCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.follow.FollowStatus
@@ -239,6 +241,27 @@ class FollowerEngineTest {
             assertEquals(SourceId.Relay, received.flatten().single().source)
             assertEquals(SourceStatus.Live(Instant.ofEpochSecond(NOW - 30)), e.status.value)
             assertEquals(Instant.ofEpochSecond(NOW - 30), links.last()?.lastHeardAt)
+        }
+
+    /** #55: the wearer's new sensor reaches the follower while it warms up, before any reading (and its end after). */
+    @Test fun aWarmUpAndASensorEndArriveWithoutAReading() =
+        runTest {
+            val e = engine()
+            val (wearer, published) = approve(joined(e))
+            deliverAll(published)
+            runCurrent()
+            val publisher = PublishReadings(ctx)
+            val fresh = SensorLife(NOW - 60, NOW + 15 * Wire.DAY, NOW + 3540)
+            deliverAll(publisher.onSensor(wearer, fresh, NOW))
+            runCurrent()
+            assertEquals(SensorState.WarmingUp(Instant.ofEpochSecond(NOW + 3540)), e.sensor.value)
+            assertTrue(received.isEmpty())
+            // it never gave a reading and ended early, after its warm-up
+            clock.instant = Instant.ofEpochSecond(NOW + 3600)
+            deliverAll(publisher.onSensor(wearer, fresh.copy(end = NOW + 3590), NOW + 3600))
+            runCurrent()
+            assertEquals(SensorState.Ended, e.sensor.value)
+            assertTrue(received.isEmpty())
         }
 
     @Test fun aStrangerSigningLiveEventsIsNotBelieved() =

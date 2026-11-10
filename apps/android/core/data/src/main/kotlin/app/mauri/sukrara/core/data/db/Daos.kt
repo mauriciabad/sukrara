@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import app.mauri.sukrara.core.model.supersedes
 import kotlinx.coroutines.flow.Flow
 
 /** A count with the first and last time in epoch ms (null when the count is 0). */
@@ -104,11 +105,11 @@ interface TreatmentDao {
     @Query("DELETE FROM treatments")
     suspend fun deleteAll()
 
-    /** Last writer wins: stores [treatment] only if nothing with the same or a later `modifiedAt` is stored. */
+    /** The contract's merge ([supersedes]): stores [treatment] only if it is newer by `(u, o)` than the stored version. */
     @Transaction
     suspend fun upsertIfNewer(treatment: TreatmentEntity): Boolean {
         val stored = get(treatment.id)
-        if (stored != null && stored.modifiedAt >= treatment.modifiedAt) return false
+        if (stored != null && !treatment.toRecord().treatment.supersedes(stored.toRecord().treatment)) return false
         upsert(treatment)
         return true
     }

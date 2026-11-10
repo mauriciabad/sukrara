@@ -7,6 +7,7 @@ import app.mauri.sukrara.protocol.event.EventFactory
 import app.mauri.sukrara.protocol.event.LivePayload
 import app.mauri.sukrara.protocol.event.RosterPayload
 import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.follow.FollowResult
@@ -128,6 +129,15 @@ class AcceptanceRulesTest {
         assertNull((m.feed(live(v.now - 60), v.now) as FollowResult.Ignored).rekey)
         val first = m.feed(live(v.now + 10), v.now + 10) as FollowResult.Ignored
         assertEquals(Rumor.Rekey(Wire.gk(g1.public)), first.rekey)
+        // `have` names the newest epoch held, not the unknown one: the OGS vectors' rekey request, byte for byte
+        val vector =
+            v.plaintexts
+                .getValue("rekey-request")
+                .jsonObject
+                .getValue("rumor")
+                .jsonObject
+                .str("content")
+        assertEquals(vector, RumorCodec.encode(first.rekey!!))
         assertNull((m.feed(live(v.now + 11), v.now + 60) as FollowResult.Ignored).rekey)
         assertNotNull((m.feed(live(v.now + 12), v.now + 311) as FollowResult.Ignored).rekey)
         val stranger = factory.live(v.key("X"), crypto.generate().public, LivePayload(WireReading(v.now + 20, 120, null), null), v.now + 20)

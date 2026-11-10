@@ -107,6 +107,9 @@ or when the card's *Eat carbs* pill opened it), *Now* / *Earlier…* (*When*: *T
 / 30 / 60 chips, resolved when saving; the chip then reads *16 min ago*), the quiet line (*Highs quiet for 44 min ·
 lows quiet for 14 min*: what the entries quiet on this phone from the chosen time; none while alerts are off or a
 follower mirrors the wearer's alerts), the limits line, *Open Sukrara*, and the lock-screen countdown (*Closes unsaved in N s* + *Unlock*; same rules, `LockCountdownTest`). Saves go through `TreatmentLog` (each version strictly newer, undo = a newer version, `WriterScope`) and the share layer's `TreatmentSync`. *Cancel* carries the countdown ring (24 dp, seconds inside, empties every frame, fills in with the dialog, pulses once at 5 s with one `SEGMENT_TICK` haptic only if something was typed, shrinks and fades away after an unlock; reduced motion: steps once a second, no fill-in, no pulse; TalkBack: digits hidden, Cancel's state *Closes in N seconds* in 5 s steps). The *When?* picker's Cancel carries the same ring while the countdown runs behind it (Cancel closes the picker only). With 10 s left TalkBack hears *Closes in 10 seconds* once (a polite live region; not while the unlock prompt holds the time, never per second; `LockCountdown.announceDue`). The Quick Settings tile's subtitle is the glucose as the card's face shows it (surface `quick-tile`, `TileSubtitleTest`): `123 ↗`, struck with the ring from 5 min (`1̶2̶3̶ ○`, a tile can't draw a line), *No reading since 00:32* from 20 min, *Sensor ended*, *Warming up · 12 min*, nothing before the first reading, *Open Sukrara to set up* when this phone can't add entries; redrawn each minute while the shade is open. Saving insulin near a pen entry asks *Already logged by your pen?* (`PenDuplicateDialog`, see [Insulin pens](#insulin-pens-docs29); Mac: `TreatmentsModel.penDuplicate`, *Already logged by the pen?*). Not included yet (#75): editing an entry from the home list (`TreatmentLog.edit` supports it; home offers delete and undo).
+- Two versions of one entry merge the same on every device and in every store (Android's database, the wearer's log
+  and a follower's copy; the Mac's log; SPEC §1, cases in `contracts/treatments/merge.json`): the later `u` wins, and
+  on an equal `u` the greater origin (`phone` > `mac` > `follower`), whatever order they arrive in.
 - Every writer sends `o: follower` (the Mac too; its own rows stay `mac` locally). Mac following someone: Delete (context menu, ⌫, Undo) works only on entries made on this Mac; the wearer's and other followers' rows are read-only.
 
 ## Mac menu and windows
@@ -406,7 +409,7 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
 - Ended sensor in the status bar: a checkered flag from each platform's icon set (Android: Material Symbols `sports_score`, `:monitor` `res/drawable/monitor_ic_sensor_ended.xml` = `SensorLife.FLAG_PATH`; Mac: SF Symbol `flag.checkered`) instead of a stale value: the notification icon, the root system-icon slots (flag in the trend slot, number slot removed) and the LSPosed SystemUI text (no number, the flag drawn in the text colour; it switches by itself at the end, `sensorEnd` in the hook broadcast). The wearer's and the follower's notification and status bar re-render as soon as the sensor info changes. Mac menubar: the SF Symbol `flag.checkered` as a template image (follows light / dark), no text, tooltip `Sensor ended — replace sensor`; a timer switches it at the end. The flag also marks the sensor-end settings: Android Settings → *Sensor end* (its row icon) and the Mac's Settings → Graph → *Sensor countdown*.
 - `no_data` alerts stay quiet while the sensor has ended or warms up (Android and Mac, wearer and followers); a running one clears; a warm-up that brings no reading alerts 15 min after its end (scenarios in `contracts/alerts/scenarios/other.txt`).
 - **One warm-up rule** for the card and the alerts (#87): the 15-min grace, the 60-min default warm-up and the 15-day default wear live in one place per platform (Android `:core:model` `SensorTiming`, Mac `SukraraCore` `SensorTiming`); the card's badge, the alert engine's quiet `no_data` and the sensor source all decide warming up with it, so the badge never says *Warming up* while the alerts say *No data*, or the reverse. Both apps check the numbers and the cases in `contracts/sensor/life.json`.
-- Followers and the Mac get the sensor from the live events' `ss`/`se`/`sw` (PROTOCOL-v2 "Sensor life"): every reading's live event carries it, and the owner publishes a reading-less live event when the sensor changes and every 5 min while it warms up; the newest by `created_at` wins, one without `se` clears it. Mac: kept in UserDefaults (`sensorStart`, `sensorEnd`, `sensorWarmupEnd`) and in the widget snapshot (`sensor`).
+- Followers and the Mac get the sensor from the live events' `ss`/`se`/`sw` (PROTOCOL-v2 "Sensor life"): every reading's live event carries it, and the wearer's phone publishes a reading-less live event (relays and Bluetooth) when the sensor changes (the first one it knows after starting, a new sensor, one that ended early, none any more) and every 5 min while it warms up, so a follower sees a new sensor warming up and a sensor end before any reading (`PublishReadings`, cases in `contracts/protocol/sync/sensor-life.json`); the newest by `created_at` wins, one without `se` clears it. Mac: kept in UserDefaults (`sensorStart`, `sensorEnd`, `sensorWarmupEnd`) and in the widget snapshot (`sensor`).
 - Debug builds: `SYNTHETIC --ei endsInMin N` makes the synthetic sensor end N minutes from now, `--ei warmupMin W` makes it a new sensor warming up for W more minutes (the debug commands: [Sensor reminders and countdowns](#sensor-reminders-and-countdowns)).
 - Libre 3, ended sensor (`sensor/libre3/PatchState`; seen on the owner's Libre 3 Plus: `state=5 currentLifeCount=21635`, then no glucose and a reconnect every 2 min for ever): the BLE patch state ≥ 5 (5 expired, 6 terminated, 7 error, 8 error terminated) or a life count ≥ the wear length marks the sensor ended (its end moves to now if earlier). States 6–8 stop at once; an expired sensor (5, or past its wear length) keeps the session for one glucose wait (120 s, a possible grace period) and then stops for good: no reconnects (the saved pairing's `ended` flag) until a new sensor is scanned. Out-of-range values (outside 39–501 mg/dL) are dropped and never stop the 120 s glucose wait, so a stream of them ends in a reconnect, never in silence.
 
@@ -1150,11 +1153,15 @@ past the other app's event; blocks again if it's still running) or *Help*.
   their phone*, *Bluetooth is off* (*Turn on Bluetooth*), *Needs the Nearby devices permission* (*Allow Nearby devices*:
   scan + connect, `neverForLocation`) or *not connected* (monitoring stopped).
 - `HELLO` carries a fresh random nonce; the phone's `INFO` answers `m = H("cgm2:ble:"+sid+":"+nonce)`. A follower writes
-  nothing to a phone (requests, rekeys, history requests, treatments) until its `INFO` proves our stream (`m` over one
-  of its last 4 nonces; once the follower knows the stream id a pairing `i` never proves it). Another wearer's phone is
+  nothing to a phone (requests, rekeys, history requests, treatments) until its `INFO` proves our stream. Once the
+  follower knows the stream id, `m` is checked first: only `m` over one of its last 4 nonces proves it (a pairing `i`
+  never does) and an `i` naming another identity still makes it another wearer's; before that, the pairing `i` = our
+  wearer's identity does. One text for both apps: PROTOCOL-v2 "Bluetooth link", cases in
+  `contracts/protocol/ble/link-rules.json`. Another wearer's phone is
   avoided for 10 minutes (that phone only, by its current Bluetooth address / Mac peripheral id: never the one connected
-  since; a phone that rotates its address sooner can be tried again) and the scan goes on; on
-  the Mac, a phone with nothing to pair with (not following yet) is left for a minute. A pending request: receive only.
+  since; a phone that rotates its address sooner can be tried again) and the scan goes on; while not following yet, a
+  phone with nothing to pair with is left for 5 s (Android *Find phones nearby*, the Mac). A pending request:
+  receive only.
   After a new key the follower sends `HELLO` again with its proof. Entries still pending go to the phone as soon as it
   proved it's the wearer's; one counts as delivered on a relay's OK or the wearer's echo (a bare write response doesn't).
 - Reliability (Android follower): scan by service UUID (starts spaced: at most 4 per 30 s; restarted every 25 min), one
@@ -1163,7 +1170,9 @@ past the other app's event; blocks again if it's still running) or *Help*.
   connections fail, a new `BluetoothGatt` per connection.
 - Frame sizes: every frame fits one ATT write / notification at the link's MTU (Android central: the negotiated MTU;
   Mac: CoreBluetooth's write-without-response length + 3), so a Mac at the default MTU 23 needs no long write; the
-  wearer's phone still accepts a long (Prepare/Execute) write as one frame (`contracts/protocol/ble/default-mtu.json`).
+  wearer's phone still accepts a long (Prepare/Execute) write as one frame (`contracts/protocol/ble/default-mtu.json`);
+  parts it holds for a device that never sends the Execute Write are dropped 30 s after the last one, like a reassembly
+  buffer.
 - Limits: reassembly drops a message idle for 30 s or over 256 KiB, at most 16 open at once (Android and Mac). The
   wearer's phone takes at most 8 follower devices at once (a connection counts only once it writes to the service), checks
   each write before answering (a malformed frame, a long write out of offset order or over 512 bytes, or more than

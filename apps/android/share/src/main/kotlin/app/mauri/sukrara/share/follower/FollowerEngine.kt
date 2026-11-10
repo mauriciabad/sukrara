@@ -1090,13 +1090,13 @@ class FollowerEngine(
 
         const val NEARBY_VIA = "ble"
 
-        /** B§6: another wearer's phone is avoided for 10 minutes. */
+        /** PROTOCOL-v2 "Bluetooth link": another wearer's phone is avoided for 10 minutes (link-rules.json). */
         const val LEAVE_OTHER_PHONE_S = 600L
 
         /**
          * *Find phones nearby*: every phone is read again after this long, offering *Pair nearby* or not (one may open
-         * pairing in a moment: it is listed within about 10 s). About one scan start per read, within the app's 4 per
-         * 30 s ([app.mauri.sukrara.share.ble.ScanStartBudget]) for a phone or two.
+         * pairing in a moment: it is listed within about 10 s; link-rules.json `nothing_to_pair`). About one scan start
+         * per read, within the app's 4 per 30 s ([app.mauri.sukrara.share.ble.ScanStartBudget]) for a phone or two.
          */
         const val NEARBY_RECHECK_S = 5L
 
