@@ -16,7 +16,8 @@ The reference (poc/spec/reference, OGS draft 1, its own secp256k1 / NIP-44 code)
 read-only (no bytecode written next to it) and the PROTOCOL-v2 rules it predates are added here, one method each:
 `Follower` (rosters ranked by a newer epoch's key, rekey `have` = the newest held gk and only for events newer than
 the latest key, revoked notice vs key delivery ordered by the rumor's `created_at`, a restart, events from an author
-not yet in the roster not remembered, the settings rule, readings in the future) and `aligned_vectors` (the rekey
+not yet in the roster not remembered, the settings rule, readings in the future (a live event rejected whole, its
+sensor fields too), a roster without a profile keeping the last one) and `aligned_vectors` (the rekey
 request's `have`). Both apps implement the same rules (Android `StreamFollower`, Mac `FollowerSession`). Standard
 library only.
 """
@@ -125,6 +126,13 @@ class Follower(ref.Follower):
                 return Result("ignored", "settings-older")
             self.settings = {"u": u, "graph": body.get("graph"), "alerts": body.get("alerts")}
             return Result("accepted", "settings")
+        if d == m.d_roster(self.sid):
+            # Profiles are replaced, never removed: a roster without a valid profile keeps the last one.
+            kept = self.profile
+            r = super()._on_data(ev, n, G, author, now)
+            if r.verdict == "accepted" and self.profile is None:
+                self.profile = kept
+            return r
         if cc == m.c_glucose(self.sid) and author in self.devices:
             h, rows = m.parse_chunk(json.loads(decrypt(G, author, ev["content"])))
             if d == m.d_chunk(self.sid, h) and (h > now + FUTURE_TOLERANCE or
@@ -210,6 +218,7 @@ def state_json(f: Follower) -> dict:
         "epochs": sorted(n for n, _ in f.epochs.values()),
         "devices": f.devices,
         "writers": f.writers,
+        "wearer": f.profile,
         "readings": [[r.t, r.sgv, r.rate] for _, r in sorted(f.readings.items())],
         "sensor": f.sensor and {"ss": f.sensor.ss, "se": f.sensor.se, "sw": f.sensor.sw},
         "treatments": [{"id": t.id, "k": t.k, "a": t.a, "u": t.u, "o": t.o, "del": t.deleted}

@@ -135,7 +135,7 @@
     <string name="in_ns_test_ok_plain">Conectado</string>
     <string name="in_ns_test_auth">El sitio ha rechazado este token o secreto</string>
     <string name="in_ns_test_failed">No se ha podido conectar. %1$s</string>
-    <string name="in_ns_problem_https">Usa https://: Sukrara solo envía tus datos cifrados</string>
+    <string name="in_ns_problem_https">Usa https://: Sukrara solo envía tus datos cifrados. Un servidor en casa necesita un certificado: Let\'s Encrypt y Tailscale lo dan gratis.</string>
     <string name="in_ns_problem_url">Esto no es una dirección web</string>
 
     <!-- LibreView upload -->

@@ -17,7 +17,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
-/** One file of a release ("Sukrara on other devices": the Mac dmg, the APK, …). */
+/** One file of a release: the APK, the Mac dmg and zip, the Android R8 mapping. */
 data class ReleaseAsset(val name: String, val url: String)
 
 /** One GitHub release of mauriciabad/sukrara. */
@@ -148,6 +148,16 @@ object UpdateCheck {
                         ReleaseAsset(name, url)
                     },
             )
+        }
+
+    /**
+     * The files About offers under *Sukrara on other devices*: the Mac's (the `.dmg` and the Mac `.zip`) and nothing
+     * else, so the APK and the R8 mapping (`Sukrara-<version>-android-mapping.txt.gz`, for crash traces) never show as
+     * downloads.
+     */
+    fun otherDevices(release: Release): List<ReleaseAsset> =
+        release.assets.filter { a ->
+            a.name.endsWith(".dmg") || (a.name.contains("mac", ignoreCase = true) && a.name.endsWith(".zip"))
         }
 
     private fun JsonObject.string(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
