@@ -38,6 +38,29 @@ class ApproveRemoveRotateTest {
         return approved.state to created.link.token
     }
 
+    /** A name with a trailing space showed as "?" (#158): stored trimmed; a blank one is stored empty for *Someone*. */
+    @Test fun aRequestersNameIsStoredTrimmedAndABlankOneEmpty() {
+        for ((typed, stored) in listOf("Bo " to "Bo", "   " to "", "\u202EMo\u0000m" to "Mom")) {
+            val created = CreateInvite(ctx)(CreateIdentity(ctx)(null, NOW).state, "", NOW)
+            val handled =
+                HandleInbox(ctx)(created.step.state, OwnerFixtures.request(bob, created.step.state, created.link.token, typed), NOW)
+            assertEquals(
+                typed,
+                stored,
+                handled.step.state.pending
+                    .single()
+                    .name,
+            )
+            val approved = ApproveRequest(ctx)(handled.step.state, bob.public.hex, NOW)!!
+            assertEquals(
+                stored,
+                approved.state.followers
+                    .single()
+                    .name,
+            )
+        }
+    }
+
     @Test fun inviteLinkOpensForTheFollowerAndClaimIsSingleUse() {
         val s0 = CreateIdentity(ctx)(null, NOW).state
         val created = CreateInvite(ctx)(s0, "  Alice  ", NOW)

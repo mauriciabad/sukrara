@@ -927,6 +927,11 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   notification goes as soon as the request is answered anywhere (notification or app) or sharing pauses (another app
   sharing as you). An Allow that didn't happen (invite expired, request no longer waiting, sharing paused) is replaced
   by *Couldn't give access* (open Sukrara to send a new invite). Sharing runs only while the phone is the wearer.
+- **Names someone else chose** (a follower's, the wearer's) are trimmed when typed, when received and when shown
+  (control and direction-changing characters dropped too; `Profile.shownName` on both apps,
+  `contracts/protocol/identity/profile-v1.json` `received` / `shown`); one that is empty reads *Someone* (*Alguien*) in
+  the access request (notification, dialog, followers list) and *the person who invited you* / *the wearer* where the
+  sentence names the wearer, never "?" or nothing.
 - **Treatments** (PROTOCOL-v2 §Treatments): every change of the phone's treatment log (add, edit, delete, undo) goes
   to followers at once, signed by this phone's device key; the whole log of the last 30 days (deleted entries too)
   again on start, on a new epoch (restore, removing a follower), when a follower is approved, and weekly. **Can add

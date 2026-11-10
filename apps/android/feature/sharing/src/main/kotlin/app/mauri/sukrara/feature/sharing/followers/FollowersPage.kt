@@ -53,7 +53,6 @@ import app.mauri.sukrara.feature.sharing.NearbyUi
 import app.mauri.sukrara.feature.sharing.PairNearbyRow
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
-import app.mauri.sukrara.feature.sharing.share.shownName
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.settings.SettingsSpec
@@ -176,7 +175,7 @@ fun FollowersPage(
                     val title =
                         row.device?.let {
                             val device = stringResource(if (it == "mac") R.string.sh_nearby_mac else R.string.sh_nearby_phone)
-                            stringResource(R.string.sh_nearby_device_name, shownName(f.name), device)
+                            stringResource(R.string.sh_nearby_device_name, Profile.shownName(f.name), device)
                         } ?: f.name
                     PersonRow(
                         f.avatarJson,
@@ -296,7 +295,7 @@ internal fun PersonRow(
     summary: String,
     onClick: (() -> Unit)?,
 ) {
-    val shown = shownName(name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
+    val shown = Profile.shownName(name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
     Row(
         Modifier
             .fillMaxWidth()
@@ -332,7 +331,7 @@ fun FollowerDialog(
 ) {
     var confirming by rememberSaveable { mutableStateOf(false) }
     val haptics = rememberHaptics()
-    val name = shownName(follower.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
+    val name = Profile.shownName(follower.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
     if (!confirming) {
         AlertDialog(
             onDismissRequest = onClose,

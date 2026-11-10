@@ -21,7 +21,7 @@ class FollowerNotifications(
     private val post: (Notification) -> Unit,
 ) {
     fun show(notice: FollowerNotice, wearer: Profile?) {
-        val name = wearer?.name?.takeIf { it.isNotBlank() } ?: context.getString(R.string.share_follow_someone)
+        val name = Profile.shownName(wearer?.name.orEmpty()).ifEmpty { context.getString(R.string.share_follow_someone) }
         val (title, text) =
             when (notice) {
                 FollowerNotice.InviteUsed -> R.string.share_follow_used_title to R.string.share_follow_used_text

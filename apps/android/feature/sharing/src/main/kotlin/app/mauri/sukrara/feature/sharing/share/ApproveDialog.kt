@@ -50,6 +50,7 @@ import androidx.compose.ui.window.DialogProperties
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.owner.PendingRequest
 import kotlinx.coroutines.delay
@@ -64,12 +65,6 @@ fun labelMatches(label: String, name: String): Boolean? {
     if (l.isEmpty()) return null
     return n.isNotEmpty() && (l == n || l.split(' ').contains(n) || n.split(' ').contains(l))
 }
-
-/** A name someone else chose, safe to show: no control or direction-changing characters, one line, trimmed. */
-fun shownName(name: String): String =
-    name
-        .filterNot { Character.isISOControl(it) || Character.getType(it) == Character.FORMAT.toInt() }
-        .trim()
 
 /** How long Allow stays inactive after a request appears, so a tap meant for the screen below can't allow it. */
 const val ALLOW_ARM_MS = 600L
@@ -96,7 +91,7 @@ fun ApproveDialog(
 ) {
     val haptics = rememberHaptics()
     val cs = MaterialTheme.colorScheme
-    val name = shownName(request.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
+    val name = Profile.shownName(request.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
     val leaked = request.others > 0
     // a leaked link: anyone could have asked, so the match code is typed, never just compared. Pair nearby: both phones
     // show the same pairing code, which only matches when this request is the phone in front of you (§Nearby pairing)

@@ -7,6 +7,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.R
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -59,6 +60,9 @@ class AndroidRequestNotifications(
     private val post: (Notification) -> Unit,
     private val remove: () -> Unit,
 ) : RequestNotifications {
+    /** The follower's name, or *Someone* when it has none (an empty or blank name never shows as "?" or nothing). */
+    private fun shown(name: String) = Profile.shownName(name).ifEmpty { context.getString(R.string.share_request_someone) }
+
     override fun show(request: PendingRequest) {
         val time = time(request.at)
         val text =
@@ -70,7 +74,7 @@ class AndroidRequestNotifications(
             }
         val builder =
             base()
-                .setContentTitle(context.getString(R.string.share_request_title, request.name))
+                .setContentTitle(context.getString(R.string.share_request_title, shown(request.name)))
                 .setContentText(text)
                 .setStyle(Notification.BigTextStyle().bigText(text))
         // a code to type or compare needs the app: no Allow from the notification

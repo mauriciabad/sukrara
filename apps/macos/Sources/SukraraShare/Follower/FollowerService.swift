@@ -49,7 +49,7 @@ public struct NearbyOffer: Sendable, Equatable {
         self.commit = commit
     }
 
-    public var wearerName: String? { invite.profile?.name }
+    public var wearerName: String? { Profile.shownName(invite.profile?.name) }
     public var wearerAvatar: Avatar? { invite.profile?.avatar }
 }
 

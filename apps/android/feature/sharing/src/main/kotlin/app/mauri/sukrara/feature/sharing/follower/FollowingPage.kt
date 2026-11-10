@@ -43,6 +43,7 @@ import app.mauri.sukrara.feature.sharing.PairingCodeCard
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
 import app.mauri.sukrara.feature.sharing.setup.NoteCard
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.ble.NearbyStatus
@@ -126,7 +127,7 @@ fun FollowingContent(
 ) {
     var confirming by rememberSaveable { mutableStateOf(false) }
     val someone = stringResource(R.string.sh_join_someone)
-    val name = (state as? FollowState.Following)?.wearer?.name?.takeIf { it.isNotBlank() } ?: someone
+    val name = Profile.shownName((state as? FollowState.Following)?.wearer?.name.orEmpty()).ifEmpty { someone }
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

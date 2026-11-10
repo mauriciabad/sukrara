@@ -75,6 +75,24 @@ class ProfileFixtureTest {
             assertEquals(o.getValue("body"), Json.parseToJsonElement(RumorCodec.encode(Rumor.ProfileUpdate(profile))))
         }
 
+    @Test fun receivedNames() =
+        fx.getValue("received").jsonArray.forEach {
+            val o = it.jsonObject
+            assertEquals(o.str("name"), Profile.of(o.getValue("in"))!!.name)
+        }
+
+    @Test fun shownNames() =
+        fx.getValue("shown").jsonArray.forEach {
+            val o = it.jsonObject
+            val expected =
+                o
+                    .getValue("shown")
+                    .takeUnless { e -> e is JsonNull }
+                    ?.jsonPrimitive
+                    ?.content
+            assertEquals(o.str("name"), expected.orEmpty(), Profile.shownName(o.str("name")))
+        }
+
     @Test fun dots() =
         ContractFiles.json("protocol/identity/avatar-v1.json").getValue("dots").jsonArray.forEach {
             val o = it.jsonObject
