@@ -27,7 +27,8 @@ enum RingOrder {
 }
 
 /// The ring order as a reorderable list: drag a range (the list draws the insertion line), or Move Up / Move Down
-/// from its context menu and VoiceOver's actions; each row says its position.
+/// from its context menu and VoiceOver's actions. No position numbers on screen (the user, 2026-10-21); VoiceOver
+/// reads each row's place ("2 of 6").
 struct RingOrderList: View {
     let order: [Band]
     let set: ([Band]) -> Void
@@ -42,8 +43,6 @@ struct RingOrderList: View {
                         .accessibilityHidden(true)
                     Text(Self.name(band))
                     Spacer()
-                    Text(L10n.t("\(String(i + 1)) of \(String(order.count))")).foregroundStyle(.secondary)
-                        .font(.caption).accessibilityHidden(true)
                 }
                 .contextMenu {
                     Button(L10n.t("Move Up")) { set(RingOrder.step(order, i, by: -1)) }.disabled(i == 0)

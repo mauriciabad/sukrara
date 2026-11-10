@@ -514,16 +514,20 @@ private struct AlertBlocks: View {
     var body: some View {
         let ui = alerts.ui
         if let until = ui.muteAllUntil, let line = MuteCopy.allLine(until: until, now: now) {
-            HStack {
+            // the line above its exits (as a side's): beside them, "1 h left" broke between "1" and "h"
+            VStack(alignment: .leading, spacing: 4) {
                 Label(line, systemImage: "bell.slash.fill")
-                Spacer()
-                Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
-                    .accessibilityLabel(L10n.t("Alerts: Unmute"))
-                Menu(L10n.t("Change Time")) {
-                    MuteAllLengths(alerts: alerts, now: now, custom: $custom, offerCustom: true)
+                HStack {
+                    Button(L10n.t("Unmute")) { alerts.perform(.unmuteAll) }
+                        .accessibilityLabel(L10n.t("Alerts: Unmute"))
+                    Menu(L10n.t("Change Time")) {
+                        MuteAllLengths(alerts: alerts, now: now, custom: $custom, offerCustom: true)
+                    }
+                    .fixedSize()
+                    .accessibilityLabel(L10n.t("Alerts: Change time"))
                 }
-                .fixedSize()
-                .accessibilityLabel(L10n.t("Alerts: Change time"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
         ForEach(ui.quiets, id: \.kind) { q in
@@ -537,6 +541,7 @@ private struct AlertBlocks: View {
                 HStack {
                     QuietMenu(alerts: alerts, side: q.side, now: now)
                 }
+                .fixedSize()
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }

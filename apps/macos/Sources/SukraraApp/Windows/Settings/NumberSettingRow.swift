@@ -31,7 +31,10 @@ struct NumberSettingRow: View {
             .accessibilityValue(Self.word(format, value))
             if isCustom && format.custom && !readOnly {
                 HStack {
+                    // no title beside it: in a Form it took a column of its own and broke as "Val-ue"
                     TextField(L10n.t("Value"), text: $text)  // settings-ok: number input
+                        .labelsHidden()
+                        .textFieldStyle(.roundedBorder)
                         .frame(width: 70)
                         .onSubmit(commit)
                         .accessibilityLabel(label)

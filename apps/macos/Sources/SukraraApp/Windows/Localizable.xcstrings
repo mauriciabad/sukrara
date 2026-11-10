@@ -1985,18 +1985,18 @@
         }
       }
     },
-    "Some steps were skipped. \"Finish setup\" in the Sukrara menu takes you back to them." : {
+    "Some steps were skipped. \"Finish Setup…\" in the Sukrara menu takes you back to them." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Some steps were skipped. \"Finish setup\" in the Sukrara menu takes you back to them."
+            "value" : "Some steps were skipped. \"Finish Setup…\" in the Sukrara menu takes you back to them."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Has omitido algunos pasos. «Terminar configuración» en el menú de Sukrara te lleva de vuelta a ellos."
+            "value" : "Has omitido algunos pasos. «Terminar configuración…» en el menú de Sukrara te lleva de vuelta a ellos."
           }
         }
       }
