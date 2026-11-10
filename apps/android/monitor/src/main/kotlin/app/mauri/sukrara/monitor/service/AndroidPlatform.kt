@@ -71,6 +71,7 @@ class AndroidStoppedNotice(
                 .addAction(Notification.Action.Builder(null, context.getString(R.string.monitor_action_resume), resume).build())
                 .setAutoCancel(true)
                 .build()
+        // at once, not through SoundGap: Android is stopping the service, a waiting post could die with the process
         runCatching { nm.notify(NotificationIds.MONITORING_STOPPED, notification) }
             .onFailure { Log.w(TAG, "stopped notice: ${it.javaClass.simpleName}") }
     }

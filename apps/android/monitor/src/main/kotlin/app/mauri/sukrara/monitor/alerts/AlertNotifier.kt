@@ -24,6 +24,7 @@ import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
+import app.mauri.sukrara.monitor.notify.SoundGap
 
 /**
  * The alert notifications ([AlertPresenter]): one slot per [AlertGroup] (level, rate, no data), all in the `alerts`
@@ -62,6 +63,8 @@ class AlertNotifier(private val ctx: Context) : AlertPresenter {
         }
         if (alarm && !silent && nm.canUseFullScreenIntent()) b.setFullScreenIntent(openApp(), true)
         post(kind.group, b.build(), AlertChannels.id(kind, alarm))
+        // the app's info notifications wait until Android's one-sound-per-second limit can't mute this one
+        if (!silent) SoundGap.shared.alertRang()
     }
 
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
@@ -99,6 +102,7 @@ class AlertNotifier(private val ctx: Context) : AlertPresenter {
                 .setTimeoutAfter(TEST_TIMEOUT_MS)
                 .build()
         post(NotificationIds.ALERT_TEST, n, AlertChannels.id(kind, alarm))
+        SoundGap.shared.alertRang()
     }
 
     override fun clear(group: AlertGroup) = NotificationGroups.cancel(ctx, idOf(group), NotificationGroups.Group.ALERTS)

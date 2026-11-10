@@ -6,6 +6,7 @@ package app.mauri.sukrara.monitor.notify
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import app.mauri.sukrara.monitor.R
 
 /**
@@ -16,7 +17,7 @@ import app.mauri.sukrara.monitor.R
  * each ring and show their own title, the summary never alerts: `GROUP_ALERT_CHILDREN`) and [Group.INFO] (sensor end,
  * status). One group per alert would be sparse groups and get merged with anything (measured on API 36/37).
  * The ongoing glucose notification stays ungrouped (alone in the silent section; a promoted Live Update can't be in
- * a group).
+ * a group). A post in [Group.INFO] that would sound waits for [SoundGap], so it never mutes an alert.
  */
 object NotificationGroups {
     enum class Group(val key: String, val summaryId: Int, private val nameRes: Int) {
@@ -27,16 +28,30 @@ object NotificationGroups {
         fun name(ctx: Context): String = ctx.getString(nameRes)
     }
 
-    /** Posts [n] (built with `setGroup(group.key)`) after its group's summary. */
+    /**
+     * Posts [n] (built with `setGroup(group.key)`) after its group's summary: an alert at once, an info notification that
+     * would sound after [SoundGap]'s wait (a failure then is logged: the caller has moved on).
+     */
     fun post(ctx: Context, id: Int, n: Notification, group: Group, channelId: String) {
         check(n.group == group.key) { "notification $id is not in ${group.key}" }
+        if (group == Group.ALERTS) return notify(ctx, id, n, group, channelId)
+        SoundGap.shared.submit(id, SoundGap.sounds(ctx, channelId)) {
+            runCatching { notify(ctx, id, n, group, channelId) }.onFailure { Log.w(TAG, "post $id: ${it.javaClass.simpleName}") }
+        }
+    }
+
+    private fun notify(ctx: Context, id: Int, n: Notification, group: Group, channelId: String) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.notify(group.summaryId, summary(ctx, group, channelId, n.smallIcon.resId))
         nm.notify(id, n)
     }
 
-    /** Cancels [id], and its group's summary once no child is left (a summary alone counts as ungrouped). */
+    /**
+     * Cancels [id] (and a post of it still waiting in [SoundGap]), and its group's summary once no child is left (a
+     * summary alone counts as ungrouped).
+     */
     fun cancel(ctx: Context, id: Int, group: Group) {
+        SoundGap.shared.cancel(id)
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.cancel(id)
         tidy(ctx, group, except = id)
@@ -60,3 +75,5 @@ object NotificationGroups {
             .setOnlyAlertOnce(true)
             .build()
 }
+
+private const val TAG = "Sukrara.notify"

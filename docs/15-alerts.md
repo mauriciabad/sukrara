@@ -321,7 +321,14 @@ build signed with that entitlement; today's builds show it as a normal notificat
   must be heard first (`ringOrder`: alarm level, most severe, then level → rate → no data; `AlertRingOrderTest`); the
   others show quietly. Only ringing alerts of different groups that follow each other move: a restart's silent re-post,
   a Clear or a second alert of the same group keeps the engine's order, so nothing replaces or outlives what the engine
-  decided.
+  decided. The limit counts every notification of the app, so a sensor or status notice posted in the same second as
+  an alert (the sensor lost, then *No data*) muted the alert (#130). Since 2026-11-10 every info notification that
+  would sound (its channel at default importance or above, with a sound or a vibration) goes through `SoundGap`: it
+  waits 1.1 s, so an alert decided at the same moment rings first, and posts only 1.1 s after the last alert sound; a
+  newer post of the same id replaces the waiting one, a cancel drops it (`SoundGapTest`). Alerts never wait. Left: the
+  *Monitoring stopped* notice posts at once (Android is stopping the service, a waiting post could die with it), and an
+  unrelated alert that comes within 1 s *after* an info sound landed is still muted (rare: the info already waited
+  1.1 s past every alert).
 - **Two sounds at once after an app update (2026-10-18, user report).** Measured on the Pixel (`dumpsys audio`,
   `notification_alert` events): every Sukrara update made SystemUI start two players within 0.5 s, the system
   default sound (`USAGE_NOTIFICATION`, LSPosed's "Module update complete" notification, channel

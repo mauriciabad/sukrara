@@ -8,8 +8,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.NavTargets
+import app.mauri.sukrara.monitor.notify.SoundGap
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -17,6 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.time.Duration
 
 /**
  * The *Sensor ended* notification (its tap and *Replace sensor*) opens the app's own activity with the new-sensor
@@ -42,6 +45,8 @@ class SensorEndedIntentTest {
 
     @Test fun `tap and Replace sensor open the app's activity with the new-sensor action`() {
         AndroidSensorEndPresenter(ctx).ended()
+        // a sounding info notification waits for SoundGap
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(SoundGap.GAP_MS))
         val posted = shadowOf(nm).getNotification(AndroidSensorEndPresenter.id(SensorNotice.ENDED))
         for (pending in listOf(posted.contentIntent, posted.actions.single().actionIntent)) {
             val intent = shadowOf(pending).savedIntent
