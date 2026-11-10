@@ -13,6 +13,11 @@
     <string name="ds_unit_d">días</string>
     <string name="ds_unit_min">min</string>
     <string name="ds_unit_s">s</string>
+    <plurals name="ds_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
     <string name="ds_req_notifications">Notificaciones</string>
     <string name="ds_req_notifications_why">Sin ellas ninguna alerta puede mostrarse ni sonar.</string>
