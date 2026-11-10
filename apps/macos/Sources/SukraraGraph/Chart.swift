@@ -104,7 +104,7 @@ enum GlucoseGraph {
                 : TreatmentMarks.layout(
                     shownMarks, x: { left + CGFloat(($0 - from) / st.window) * (right - left) }, now: now,
                     minX: area.minX, maxX: area.maxX, lanes: lanes(area.height, d: d), d: d, show: show,
-                    textScale: ts)
+                    words: st.words, textScale: ts)
             let lane1: CGFloat = layout?.twoLanes == true ? TreatmentMarks.laneH * t : 0
             let textRow = labels || !(layout?.labels.isEmpty ?? true)
             let top = area.minY + 3 * d
@@ -183,6 +183,10 @@ enum GlucoseGraph {
         ctx.setLineWidth(1 * d)
         ctx.setLineDash(phase: 0, lengths: [2 * d, 3 * d])
         var lastLabelEnd = -CGFloat.infinity
+        // the sensor badge as drawn (at the chart's text size), with its erased outline, at the start of the hour row:
+        // an hour label the outline would cut into is left out
+        let badgeEnd: CGFloat? =
+            labels ? sensor.map { area.minX + SensorBadge.width($0, h: Self.sensorDp * t) + Self.badgeCut * d } : nil
         while hour.timeIntervalSince1970 <= end {
             let gx = x(hour.timeIntervalSince1970)
             if gx > left + sideW * 0.6 {
@@ -197,9 +201,17 @@ enum GlucoseGraph {
                     let lx = min(max(gx - tw / 2, left), right - tw)
                     // a label squeezed against the right edge would touch its neighbour; a treatment label wins
                     if lx > lastLabelEnd + 6 * d && !(layout?.blocks(lx - 3 * d, lx + tw + 3 * d) ?? false) {
-                        Ink.draw(ctx, s, x: lx, y: area.maxY - 2 * d - lane1, text, pal.inkSoft)
-                        rec.add("time.text", nil, s)
-                        if rec.first("chart.hours") == nil { rec.add("chart.hours") }
+                        let base = area.maxY - 2 * d - lane1
+                        let box = CGRect(x: lx, y: base - 10 * d * 0.72, width: tw, height: 10 * d * 0.72)
+                        if let badgeEnd, lx < badgeEnd {
+                            // under the sensor badge (a stray "M" of "9 AM" was left beside "8d"): left out, as a
+                            // treatment label leaves it out, and laid out as if drawn so the others stay where they are
+                            rec.add("chart.hour.covered", box, s)
+                        } else {
+                            Ink.draw(ctx, s, x: lx, y: base, text, pal.inkSoft)
+                            rec.add("time.text", box, s)
+                            if rec.first("chart.hours") == nil { rec.add("chart.hours") }
+                        }
                         lastLabelEnd = lx + tw
                     }
                 }
@@ -423,7 +435,7 @@ enum GlucoseGraph {
         // The "Now" pill of a scrolled chart (the action pill, StatusBadge): top right in the plot, fading in and out
         // with `view.now`; the surface makes its box (chart.now) clickable.
         if let view, view.now > 0 {
-            let ph = Self.nowPill * d, look = StatusBadge.backToNow
+            let ph = Self.nowPill * d, look = StatusBadge.backToNow(st.words)
             let pw = StatusBadge.width(look, h: ph)
             let px = right - pw - Self.nowInset * d, py = top + Self.nowInset * d
             ctx.saveGState()
@@ -448,8 +460,10 @@ enum GlucoseGraph {
                 CGPath(roundedRect: cut, cornerWidth: cut.height / 2, cornerHeight: cut.height / 2, transform: nil))
             ctx.fillPath()
             ctx.restoreGState()
-            SensorBadge.draw(ctx, x: area.minX, y: sy, h: sensorDp * t, sensor, pal)
+            let drawnW = SensorBadge.draw(ctx, x: area.minX, y: sy, h: sensorDp * t, sensor, pal)
             rec.add("chart.sensor", box, sensor.label)
+            // the badge as drawn (the font's width, not the room it keeps free): what an hour label may not touch
+            rec.add("chart.sensor.drawn", CGRect(x: area.minX, y: sy, width: drawnW, height: sensorDp * t))
         }
     }
 

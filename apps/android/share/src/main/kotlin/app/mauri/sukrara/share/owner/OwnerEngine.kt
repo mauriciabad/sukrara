@@ -413,20 +413,28 @@ class OwnerEngine(
         locked { owner?.let { send(treatments.publish(it, record, now())) } }
     }
 
-    /** First-run "share with followers": a new identity. Refuses while an identity exists or is unreadable. */
-    suspend fun createIdentity(scope: CoroutineScope, profile: Profile?): Boolean =
+    /**
+     * A new identity with how the wearer appears: setup's *Start fresh*, or over the working one with [replaceExisting]
+     * (Backup › Replace this identity, after the person confirmed that every follower must be invited again: the old
+     * identity stops publishing at once). Never over an identity that can't be read; nothing changes when the new one
+     * can't be saved.
+     */
+    suspend fun createIdentity(scope: CoroutineScope, profile: Profile?, replaceExisting: Boolean = false): Boolean =
         locked {
-            if (owner != null || store.load() !is OwnerIdentityStore.Load.Missing) return@locked false
+            val replacing = owner != null
+            if (replacing && !replaceExisting) return@locked false
+            if (!replacing && store.load() !is OwnerIdentityStore.Load.Missing) return@locked false
             val step = CreateIdentity(ctx)(profile, now())
             if (!store.save(step.state)) return@locked false
+            if (replacing) halt()
             run(scope, step.state)
             true
         }
 
     /**
      * Restore from a recovery code. The UI gates it (setup's `RestoreGate`: this phone's sensor runs). Replaces an unreadable
-     * identity only on success, and a working one only with [replaceExisting] (the UI confirms first); nothing
-     * changes on any error.
+     * identity only on success, and a working one only with [replaceExisting] (Backup › Replace this identity confirms
+     * first); the identity this phone already shares as is never "replaced" by itself. Nothing changes on any error.
      */
     suspend fun restore(scope: CoroutineScope, code: String, password: String?, replaceExisting: Boolean = false): RestoreIdentity.Result =
         locked {
@@ -434,6 +442,7 @@ class OwnerEngine(
             val use = RestoreIdentity(ctx)
             val (identity, error) = use.parse(code, password)
             if (identity == null) return@locked error!!
+            if (owner?.identity(ctx.crypto)?.public == identity.public) return@locked RestoreIdentity.Result.SameIdentity
             transport.start()
             val found = transport.fetch(use.identityEventsFilter(identity), FETCH_TIMEOUT_MS)
             val result = use.restore(identity, found.events, found.answered, now())

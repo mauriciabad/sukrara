@@ -204,12 +204,14 @@ class GraphFixtureTest {
         val file = Fixtures.read("labels/labels.json")
         val pctLabel = file["pctLabel"].double()!!.toFloat()
         val valueLabel = file["valueLabel"].double()!!.toFloat()
-        val w = Scenes.words()
+        // a case's `locale` (es) lays the labels out with that language's times ("1 h 35 min")
+        val words = mapOf("en" to Scenes.words(), "es" to Scenes.words(Locale.forLanguageTag("es")))
         val now = Scenes.NOW
         val all = cases("labels/labels.json")
         assertTrue("no label cases", all.isNotEmpty())
         val fails = ArrayList<String>()
         for (c in all) {
+            val w = words.getValue(c["locale"].str() ?: "en")
             val chart = c["chart"]!!.jsonObject
             val cw = chart["w"].double()!!.toFloat()
             val lanes = GlucoseGraph.lanes(chart["h"].double()!!.toFloat(), 1f)

@@ -24,6 +24,7 @@ import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.Category
 import app.mauri.sukrara.designsystem.rows.CategoryIcon
 import app.mauri.sukrara.designsystem.rows.NavigationRow
@@ -316,7 +317,8 @@ fun SettingsOverviewContent(
         }
         SettingsGroup {
             if (closedTips > 0) {
-                NavigationRow(
+                // brings the tips back here and on home (nothing opens): an action, confirmed by the haptic and the snackbar
+                ActionRow(
                     stringResource(R.string.st_show_closed_tips),
                     {
                         haptics.confirm()

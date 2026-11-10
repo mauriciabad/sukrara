@@ -117,6 +117,32 @@
                 "labels": [
                   {"ids": ["r1", "c1"], "text": "6u · 60g 8h", "lane": 0, "x": 38.5},
                   {"ids": ["r2", "c2", "c3"], "text": "4.5u · 45g · 15g 40m", "lane": 1, "x": 83.5},
-                  {"ids": ["r3"], "text": "2u 20m", "lane": 0, "x": 114}]}}
+                  {"ids": ["r3"], "text": "2u 20m", "lane": 0, "x": 114}]}},
+    {"name": "es, 4×2, 3 h: the meal, snack and correction with Spanish times (#77): '1 h 35 min', '40 min' are wider than '1h 35m', '40m'", "locale": "es", "chart": {"w": 300, "h": 93}, "hours": 3, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c1", "k": "carbs", "a": 45, "t": -5700}, {"id": "c2", "k": "carbs", "a": 15, "t": -2400}, {"id": "r2", "k": "rapid", "a": 2, "t": -1200}],
+     "expect": {"plot": [43, 273.5], "lanes": 2, "dropped": [],
+                "labels": [
+                  {"ids": ["r1", "c1"], "text": "4.5u · 45g 1 h 35 min", "lane": 0, "x": 152},
+                  {"ids": ["c2"], "text": "15g 40 min", "lane": 1, "x": 222},
+                  {"ids": ["r2"], "text": "2u 20 min", "lane": 0, "x": 248}]}},
+    {"name": "es, 2×2 graph widget, 12 h: the crowded right end with Spanish times", "locale": "es", "chart": {"w": 150, "h": 150}, "hours": 12, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 6, "t": -29400}, {"id": "c1", "k": "carbs", "a": 60, "t": -28800}, {"id": "r2", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c2", "k": "carbs", "a": 45, "t": -5700}, {"id": "c3", "k": "carbs", "a": 15, "t": -2400}, {"id": "r3", "k": "rapid", "a": 2, "t": -1200}],
+     "expect": {"plot": [0, 123.5], "lanes": 2, "dropped": [],
+                "labels": [
+                  {"ids": ["r1", "c1"], "text": "6u · 60g 8 h", "lane": 0, "x": 40.5},
+                  {"ids": ["r2", "c2"], "text": "4.5u · 45g 1 h 35 min", "lane": 1, "x": 98},
+                  {"ids": ["r3", "c3"], "text": "2u · 15g 20 min", "lane": 0, "x": 112}]}},
+    {"name": "es, 4×1 side by side, 6 h: one lane with Spanish times: the snacks between the meal and the correction", "locale": "es", "chart": {"w": 198, "h": 70}, "hours": 6, "pct": true, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 4.5, "t": -5700}, {"id": "c1", "k": "carbs", "a": 45, "t": -5700}, {"id": "c2", "k": "carbs", "a": 15, "t": -3600}, {"id": "c3", "k": "carbs", "a": 10, "t": -2400}, {"id": "r2", "k": "rapid", "a": 2, "t": -1200}],
+     "expect": {"plot": [0, 171.5], "lanes": 1, "dropped": [["c3"], ["c2"]],
+                "labels": [
+                  {"ids": ["r1", "c1"], "text": "4.5u · 45g 1 h 35 min", "lane": 0, "x": 81.5},
+                  {"ids": ["r2"], "text": "2u 20 min", "lane": 0, "x": 162}]}},
+    {"name": "es, no time in range yet: a fresh bolus is 'ahora'", "locale": "es", "chart": {"w": 300, "h": 93}, "hours": 12, "pct": false, "marks": "all", "treatments": [{"id": "r1", "k": "rapid", "a": 0.5, "t": 0}],
+     "expect": {"plot": [0, 273.5], "lanes": 2, "dropped": [],
+                "labels": [
+                  {"ids": ["r1"], "text": "0.5u ahora", "lane": 0, "x": 273}]}},
+    {"name": "es, 4×1 side by side, 6 h: one lane: squeezed between the left edge and a newer label with Spanish times ('4 h 7 min')", "locale": "es", "chart": {"w": 198, "h": 70}, "hours": 6, "pct": true, "marks": "all", "treatments": [{"id": "c1", "k": "carbs", "a": 20, "t": -20340}, {"id": "r1", "k": "rapid", "a": 2, "t": -14820}],
+     "expect": {"plot": [0, 171.5], "lanes": 1, "dropped": [],
+                "labels": [
+                  {"ids": ["c1"], "text": "20g", "lane": 0, "x": 10},
+                  {"ids": ["r1"], "text": "2u 4 h 7 min", "lane": 0, "x": 54}]}}
   ]
 }

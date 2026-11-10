@@ -42,6 +42,17 @@ import Testing
         #expect(m.shownAlerts[.low].repeatMin == AlertSettings()[.low].repeatMin && !m.alertsMirrored)
     }
 
+    /// A mirrored row says where its value comes from in words (#106), never only a dimmed switch.
+    @Test func readOnlyRowsNameTheirSource() {
+        let m = model()
+        #expect(m.mirrorSource == "from Ana")
+        m.useDefaults()
+        #expect(m.mirrorSource == "Sukrara's default")
+        m.useOwn()
+        #expect(m.mirrorSource.isEmpty && !m.alertsMirrored)
+        #expect(ReadOnlyValue.onOff(true) == "On" && ReadOnlyValue.onOff(false) == "Off")
+    }
+
     @Test func defaultsNeverOverwriteThisMacsOwnValues() {
         let m = model()
         m.useOwn()

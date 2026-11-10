@@ -52,6 +52,29 @@ struct RecordedFetcher: HTTPFetching {
         #expect(UpdateCheck.pick(list, installed: AppVersion("1.0.0")!) == nil)
     }
 
+    @Test func onlyTheProjectsReleasePagesAreOpened() throws {
+        #expect(UpdateCheck.isReleaseURL(URL(string: "https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1")!))
+        let outside = [
+            "https://github.com/mauriciabad/sukrara/releases/",
+            "https://github.com/mauriciabad/sukrara/releases",
+            "https://github.com/someone/sukrara/releases/tag/v1.0",
+            "https://github.com.evil.example/mauriciabad/sukrara/releases/tag/v1.0",
+            "http://github.com/mauriciabad/sukrara/releases/tag/v1.0",
+            "https://evil.example/https://github.com/mauriciabad/sukrara/releases/tag/v1.0",
+            "https://github.com/mauriciabad/sukrara/releases/../../other/repo",
+            "https://github.com/mauriciabad/sukrara/releases/%2e%2e/%2E%2E/other",
+        ]
+        for text in outside {
+            #expect(!UpdateCheck.isReleaseURL(URL(string: text)!), "\(text)")
+        }
+        // a release page elsewhere opens the releases page instead
+        let foreign = GitHubRelease(
+            tagName: "v9.0.0", htmlURL: URL(string: "https://evil.example/releases/tag/v9.0.0")!, draft: false,
+            prerelease: false, name: nil)
+        #expect(foreign.pageURL == UpdateCheck.releasesPageURL)
+        for release in try releases() { #expect(release.pageURL == release.htmlURL) }
+    }
+
     @Test func nothingNewerIsUpToDateOnlyWhenAsked() async {
         let defaults = UserDefaults(suiteName: "update-\(UUID().uuidString)")!
         let check = UpdateCheck(

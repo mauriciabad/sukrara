@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import SukraraCore
 
 /// Whether this Mac follows a wearer, for the menu and the follow window. Every state has a visible exit:
 /// `notFollowing` → join; `joining` → cancel; `requested` → cancel request (= stop following); `following` → stop
@@ -21,8 +22,8 @@ public enum LinkState: Sendable, Equatable {
     case inviteUsed
     /// The wearer stopped sharing with this Mac.
     case revoked
-    /// Following can't continue: the reason in words (Keychain unreadable, state damaged).
-    case broken(String)
+    /// Following can't continue: why (Keychain unreadable, state damaged), worded by the app.
+    case broken(LinkProblem)
 
     /// A nearby join waiting (PROTOCOL-v2 "Nearby pairing"): `code` = the 6 digits both devices show (nil until the
     /// wearer's phone answered); `confirmed` = the person said the phone shows the same.

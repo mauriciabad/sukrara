@@ -10,10 +10,16 @@ extension AlertSettings {
     /// What the wearer didn't send keeps the value it is applied to (`inUse` applies it to the defaults); what isn't
     /// mirrored (alerts on/off, alarm, sounds, no data, notification actions) is always this Mac's, so a mirrored
     /// payload can't silence this Mac.
+    /// The kinds whose on / threshold / repeat follow the wearer: every kind but the schema's `mirrorExcept` (no data is
+    /// this Mac's own alarm: a wearer's payload never changes or silences it).
+    static var mirroredKinds: [AlertKind] {
+        let perKind = SettingsSpec.settings.filter { $0.mirror && $0.wire?.contains("{kind}") == true }
+        return AlertKind.allCases.filter { kind in perKind.allSatisfy { $0.mirrors(kind: kind.rawValue) } }
+    }
+
     func mirroring(_ wearer: WearerSettings) -> AlertSettings {
         var s = self
-        // no data is this Mac's own alarm (schema `mirrorExcept`): a wearer's payload never changes or silences it
-        for kind in AlertKind.allCases where kind != .noData {
+        for kind in Self.mirroredKinds {
             var rule = s[kind]
             if let on = wearer.bool("alerts.kind.on", kind: kind.rawValue) { rule.on = on }
             if let threshold = wearer.number("alerts.threshold.\(kind.rawValue)") { rule.threshold = threshold }
@@ -38,7 +44,7 @@ extension AlertSettings {
     func withMirroredDefaults() -> AlertSettings {
         var s = self
         let d = AlertSettings()
-        for kind in AlertKind.allCases where kind != .noData {
+        for kind in Self.mirroredKinds {
             var rule = s[kind]
             rule.on = d[kind].on
             rule.threshold = d[kind].threshold

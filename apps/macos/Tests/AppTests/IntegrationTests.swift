@@ -111,7 +111,7 @@ import Testing
         let model = FollowModel(status: following, actions: nil)
         model.linkText = Wire.inviteScheme + String(repeating: "a", count: 32)
         #expect(InviteLink.parse(model.linkText) != nil)
-        await model.follow()
+        await model.lookUp()
         #expect(model.status == following)
         #expect(model.failure == .alreadyFollowing)
     }

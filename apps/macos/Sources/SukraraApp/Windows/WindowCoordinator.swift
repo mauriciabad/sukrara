@@ -83,7 +83,9 @@ final class WindowCoordinator {
 
     func openFollow() { openSetup(at: .follow) }
 
-    func openSettings() {
+    /// Settings on its last pane, or on `pane` (a no-data reason's way out).
+    func openSettings(pane: SettingsModel.Pane? = nil) {
+        if let pane { settings.pane = pane }
         windows.show(.settings, title: L10n.t("Sukrara Settings")) {
             SettingsWindowContent(model: settings, app: model) { [weak self] in self?.openFollow() }
         }
@@ -133,9 +135,11 @@ final class WindowCoordinator {
     /// Opens the menu bar panel (set by `AppDelegate`; `sukrara://open`).
     var openPanel: () -> Void = {}
 
-    /// `sukrara:` links: `sukrara://treatment/new` opens Add treatment, `sukrara://open` (a widget click with no
-    /// data) the panel; anything else is treated as an invite link: it opens Follow and starts following (nothing
-    /// reaches the relays unless it parses as an invite).
+    /// Links opened on this Mac: `sukrara://treatment/new` opens Add treatment, `sukrara://open` (a widget click with
+    /// no data) the panel; an invite link (`sukrara:join#…`, any other `sukrara:` link, or
+    /// `https://sukrara.mauri.app/join#…`) opens Follow, looks the invite up and shows who is inviting with *Follow* /
+    /// *Cancel*: it never follows by itself (nothing reaches the relays unless it parses as an invite). Other links are
+    /// ignored.
     func open(_ url: URL) {
         switch AppLink(url) {
         case .newTreatment:
@@ -143,34 +147,47 @@ final class WindowCoordinator {
         case .panel:
             openPanel()
         case .invite(let text):
-            follow.linkText = text
             openFollow()
-            Task { await follow.follow() }
+            Task { await follow.open(link: text) }
+        case nil:
+            break
         }
     }
 
 }
 
-/// Where a `sukrara:` link goes (`WindowCoordinator.open`).
+/// Where a link opened on this Mac goes (`WindowCoordinator.open`).
 enum AppLink: Equatable {
     /// `sukrara://treatment/new`: the widget's quick Add treatment.
     case newTreatment
     /// `sukrara://open`: the widget with no data asks for the app.
     case panel
-    /// Anything else: an invite link (`sukrara:join#…`), checked by the follow step before it reaches the relays.
+    /// An invite link (`https://sukrara.mauri.app/join#…`, `sukrara:join#…` or any other `sukrara:` link), checked by
+    /// the follow step before it reaches the relays.
     case invite(String)
 
-    init(_ url: URL) {
-        switch (url.host(), url.path()) {
-        case ("treatment", "/new"): self = .newTreatment
-        case ("open", ""), ("open", "/"): self = .panel
-        default: self = .invite(url.absoluteString)
+    /// nil: not Sukrara's (an `https` link elsewhere than the invite page).
+    init?(_ url: URL) {
+        if url.scheme == SukraraIDs.urlScheme {
+            switch (url.host(), url.path()) {
+            case ("treatment", "/new"): self = .newTreatment
+            case ("open", ""), ("open", "/"): self = .panel
+            default: self = .invite(url.absoluteString)
+            }
+        } else if url.scheme == "https", url.host() == Self.inviteHost, url.path() == "/join" {
+            self = .invite(url.absoluteString)
+        } else {
+            return nil
         }
     }
+
+    /// The web invite's host (`Wire.inviteBase`).
+    static let inviteHost = "sukrara.mauri.app"
 }
 
-/// The `sukrara:` links macOS hands the app, held until the windows exist: a link that launches Sukrara arrives
-/// before `applicationDidFinishLaunching`, and opening it then would drop it. Other schemes are ignored.
+/// The links macOS hands the app (`sukrara:` and the web invite: `AppLink`), held until the windows exist: a link that
+/// launches Sukrara arrives before `applicationDidFinishLaunching`, and opening it then would drop it. Other links are
+/// ignored.
 struct LinkInbox {
     /// Links that arrived before launch finished, in order.
     private(set) var pending: [URL] = []
@@ -179,7 +196,7 @@ struct LinkInbox {
 
     /// The links to open now; before launch finished they wait (none now).
     mutating func receive(_ urls: [URL]) -> [URL] {
-        let ours = urls.filter { $0.scheme == SukraraIDs.urlScheme }
+        let ours = urls.filter { AppLink($0) != nil }
         guard isOpen else {
             pending += ours
             return []

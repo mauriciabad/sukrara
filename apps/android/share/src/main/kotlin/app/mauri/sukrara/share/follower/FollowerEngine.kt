@@ -113,6 +113,16 @@ data class PairingCheck(val code: String?, val confirmed: Boolean)
 /** How a join went. [CodesDiffered]: a *Pair nearby* join the person ended because the two phones showed different codes. */
 enum class JoinResult { Joined, InvalidLink, NotFound, Offline, Expired, WrongWearer, AlreadyFollowing, KeyStoreFailed, CodesDiffered }
 
+/**
+ * What looking up an invite link found: the invite, with who is inviting (shown with *Follow* / *Cancel* before
+ * anything is sent), or why there is none ([Failed.result] is never [JoinResult.Joined]).
+ */
+sealed interface InviteLookup {
+    data class Found(val invite: Invite) : InviteLookup
+
+    data class Failed(val result: JoinResult) : InviteLookup
+}
+
 /** What the wearer told this follower (a notification on the info channel). */
 enum class FollowerNotice { InviteUsed, Declined, Revoked }
 
@@ -293,13 +303,12 @@ class FollowerEngine(
 
     /**
      * Opens the invite behind [text] (its wrap on the default relays, AUTH as the invite key, up to [joinTimeoutMs]:
-     * the wearer's phone may still be publishing it), then makes a new follower key F and saves the record. The access
-     * request goes out once the monitoring service connects. A follow that ended (declined, used by another phone,
-     * removed) is replaced; a running one isn't.
+     * the wearer's phone may still be publishing it). Only reads: no key is made, nothing is saved or sent, so the
+     * person sees who is inviting before asking ([join]).
      */
-    suspend fun join(text: String, me: Profile?): JoinResult {
-        val link = InviteLink.parse(text) ?: return JoinResult.InvalidLink
-        if (!canJoin()) return JoinResult.AlreadyFollowing
+    suspend fun lookUp(text: String): InviteLookup {
+        val link = InviteLink.parse(text) ?: return InviteLookup.Failed(JoinResult.InvalidLink)
+        if (!canJoin()) return InviteLookup.Failed(JoinResult.AlreadyFollowing)
         val key = Invites.inviteKey(crypto, link)
         val lookup = transports.create(Wire.DEFAULT_RELAYS) { key }
         val opened: Invites.Result
@@ -324,20 +333,34 @@ class FollowerEngine(
         } finally {
             lookup.stop()
         }
-        val invite =
-            when (opened) {
-                is Invites.Result.Opened -> {
-                    opened.invite
-                }
+        return when (opened) {
+            is Invites.Result.Opened -> {
+                InviteLookup.Found(opened.invite)
+            }
 
-                is Invites.Result.Failed -> {
-                    return when (opened.reason) {
+            is Invites.Result.Failed -> {
+                InviteLookup.Failed(
+                    when (opened.reason) {
                         InviteFailure.Expired -> JoinResult.Expired
                         InviteFailure.FingerprintMismatch -> JoinResult.WrongWearer
                         else -> if (anyAnswered) JoinResult.NotFound else JoinResult.Offline
-                    }
-                }
+                    },
+                )
             }
+        }
+    }
+
+    /**
+     * The person tapped *Follow* on the invite [lookUp] found: makes a new follower key F and saves the record. The
+     * access request goes out once the monitoring service connects. A follow that ended (declined, used by another
+     * phone, removed) is replaced; a running one isn't. An invite that expired while the person decided is refused.
+     */
+    suspend fun join(
+        invite: Invite,
+        me: Profile?,
+    ): JoinResult {
+        if (invite.expiry <= now()) return JoinResult.Expired
+        if (!canJoin()) return JoinResult.AlreadyFollowing
         return joinWith(invite, me)
     }
 

@@ -24,14 +24,32 @@ object SecretName {
     const val IDENTITY_FOLLOWER = "identity.follower"
     const val NIGHTSCOUT = "nightscout"
     const val NIGHTSCOUT_API = "nightscout-api"
+
+    /** The Nightscout API's home-network listener's own secret (it travels over Wi-Fi in cleartext). */
+    const val NIGHTSCOUT_API_LAN = "nightscout-api-lan"
     const val TIDEPOOL = "tidepool"
+
+    /** The Tidepool account's email (the page shows it; kept out of the plain state file). */
+    const val TIDEPOOL_EMAIL = "tidepool-email"
     const val LIBREVIEW = "libreview"
     const val SENSOR = "sensor"
 
     /** Juggluco's web-server API secret (schema `source.jugglucoSecret`, store `secure`). */
     const val JUGGLUCO = "juggluco"
 
-    val ALL = setOf(IDENTITY_OWNER, IDENTITY_FOLLOWER, NIGHTSCOUT, NIGHTSCOUT_API, TIDEPOOL, LIBREVIEW, SENSOR, JUGGLUCO)
+    val ALL =
+        setOf(
+            IDENTITY_OWNER,
+            IDENTITY_FOLLOWER,
+            NIGHTSCOUT,
+            NIGHTSCOUT_API,
+            NIGHTSCOUT_API_LAN,
+            TIDEPOOL,
+            TIDEPOOL_EMAIL,
+            LIBREVIEW,
+            SENSOR,
+            JUGGLUCO,
+        )
 
     fun alias(name: String) = "sukrara.$name"
 }

@@ -83,7 +83,7 @@
                 let links = PanelLinks(
                     setup: setupModel, treatments: treatments, openSetup: {}, openFollow: {},
                     openAddTreatment: { _ in },
-                    openTreatments: {}, openReport: {}, openSettings: {})
+                    openTreatments: {}, openReport: {}, openSettings: {}, openSettingsPane: { _ in })
                 return Scene(
                     view: AnyView(
                         VStack(alignment: .leading, spacing: 8) {
@@ -111,10 +111,18 @@
                 ("panel-waiting-first-reading", scene(readings: [])),
                 ("panel-not-following", scene(link: .notFollowing, readings: [])),
                 ("panel-revoked", scene(link: .revoked, readings: [])),
+                // the no-data reasons with their ways out (#72)
+                (
+                    "panel-waiting-approval",
+                    scene(link: .requested(code: "4821", wearer: "Marta", pairing: nil), readings: [])
+                ),
+                ("panel-declined", scene(link: .declined, readings: [])),
+                ("panel-broken", scene(link: .broken(.stateDamaged), readings: [])),
+                ("panel-wearer-silent", scene(readings: ending(131, rate: 0, age: 45 * 60))),
                 (
                     "panel-keychain-retrying",
                     scene(
-                        link: .broken("Can't read the follower key from the Keychain"),
+                        link: .broken(.keyUnreadable),
                         readings: ending(112, rate: -0.4), keychainUnreadable: true)
                 ),
                 (

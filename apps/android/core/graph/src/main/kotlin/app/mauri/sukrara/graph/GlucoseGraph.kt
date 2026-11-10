@@ -265,7 +265,29 @@ object GlucoseGraph {
                 strokeWidth = 1 * d
                 pathEffect = DashPathEffect(floatArrayOf(2 * d, 3 * d), 0f)
             }
-        drawHours(cv, from, end, st, left, right, top, plotBottom, sideW, area.bottom - 2 * d - lane1, d, t, text, grid, layout, rec, ::x)
+        // the sensor badge as drawn (at the chart's text size), with its erased outline, at the start of the hour row:
+        // an hour label the outline would cut into is left out
+        val badgeEnd = if (sensor != null && labels) area.left + SensorBadge.width(sensor, SENSOR_DP * t) + BADGE_CUT_DP * d else null
+        drawHours(
+            cv,
+            from,
+            end,
+            st,
+            left,
+            right,
+            top,
+            plotBottom,
+            sideW,
+            area.bottom - 2 * d - lane1,
+            d,
+            t,
+            text,
+            grid,
+            layout,
+            badgeEnd,
+            rec,
+            ::x,
+        )
         // the values on the right, left-aligned SIDE_GAP_DP after the plot
         for ((v, ly) in values) {
             val s = label(v)
@@ -405,8 +427,10 @@ object GlucoseGraph {
                 box.height() / 2 + c,
                 Paint(Paint.ANTI_ALIAS_FLAG).apply { blendMode = BlendMode.DST_OUT },
             )
-            SensorBadge.draw(cv, area.left, sy, SENSOR_DP * t, sensor, pal)
+            val drawnW = SensorBadge.draw(cv, area.left, sy, SENSOR_DP * t, sensor, pal)
             rec.add("chart.sensor", box, sensor.label, exact = true)
+            // the badge as drawn (the font's width, not the room it keeps free): what an hour label may not touch
+            rec.add("chart.sensor.drawn", RectF(area.left, sy, area.left + drawnW, sy + SENSOR_DP * t))
         }
         cv.restoreToCount(chartLayer)
     }
@@ -448,6 +472,7 @@ object GlucoseGraph {
         text: Paint,
         grid: Paint,
         layout: TreatmentMarks.Layout?,
+        badgeEnd: Float?,
         rec: CardLayout,
         x: (Long) -> Float,
     ) {
@@ -475,10 +500,17 @@ object GlucoseGraph {
                     val lx = (gx - tw / 2).coerceIn(left, right - tw)
                     // a label squeezed against its neighbour is left out; a treatment label wins
                     if (lx > labelEnd + 6 * d && layout?.blocks(lx - 3 * d, lx + tw + 3 * d) != true) {
-                        cv.drawText(s, lx, baseline, text)
-                        rec.add("time.text", info = s)
-                        if (!anyLabel) rec.add("chart.hours")
-                        anyLabel = true
+                        val box = RectF(lx, baseline - text.textSize * 0.72f, lx + tw, baseline)
+                        if (badgeEnd != null && lx < badgeEnd) {
+                            // under the sensor badge (a stray "M" of "9 AM" was left beside "8d"): left out, as a
+                            // treatment label leaves it out, and laid out as if drawn so the others stay where they are
+                            rec.add("chart.hour.covered", box, s)
+                        } else {
+                            cv.drawText(s, lx, baseline, text)
+                            rec.add("time.text", box, s)
+                            if (!anyLabel) rec.add("chart.hours")
+                            anyLabel = true
+                        }
                         labelEnd = lx + tw
                     }
                 }

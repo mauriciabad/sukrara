@@ -90,7 +90,7 @@ public enum Freshness: Sendable {
 
     /// "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days (`timeKind`);
     /// the time in the Mac's 12/24-hour setting (`Clock`). A clock time doesn't tick.
-    static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
+    public static func timeText(_ t: TimeInterval, now: TimeInterval) -> String {
         let d = Date(timeIntervalSince1970: t)
         let time = Clock.time(d)
         switch timeKind(t, now: now) {

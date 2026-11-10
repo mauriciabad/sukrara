@@ -111,4 +111,33 @@
         <item quantity="many">%1$s unidades</item>
         <item quantity="other">%1$s unidades</item>
     </plurals>
+    <string name="ds_pen_q_doses">¿Purgado o inyección?</string>
+    <string name="ds_pen_q_same">¿Es la misma inyección?</string>
+    <string name="ds_pen_q_doses_line">%1$s a las %2$s</string>
+    <string name="ds_pen_and">%1$s y %2$s</string>
+    <string name="ds_pen_q_same_one">Pluma %1$s a las %2$s · tuya %3$s a las %4$s</string>
+    <string name="ds_pen_q_same_line">Pluma %1$s a las %2$s</string>
+    <plurals name="ds_pen_q_nearby">
+        <item quantity="one">%d entrada escrita cerca</item>
+        <item quantity="many">%d entradas escritas cerca</item>
+        <item quantity="other">%d entradas escritas cerca</item>
+    </plurals>
+    <plurals name="ds_pen_q_more">
+        <item quantity="one">%d más por revisar</item>
+        <item quantity="many">%d más por revisar</item>
+        <item quantity="other">%d más por revisar</item>
+    </plurals>
+    <string name="ds_pen_q_log">Registrar %1$s</string>
+    <string name="ds_pen_q_all_priming">Todo purgado</string>
+    <string name="ds_pen_q_same_yes">La misma</string>
+    <string name="ds_pen_q_different">Inyecciones distintas</string>
+    <string name="ds_pen_q_choose">Elegir</string>
+    <string name="ds_pen_q_sheet_pen">Tu pluma: %1$s a las %2$s</string>
+    <string name="ds_pen_q_sheet_ask">¿Es una de las entradas que escribiste? Esa entrada pasa a ser la de la pluma, así la dosis no se registra dos veces.</string>
+    <string name="ds_pen_q_candidate">%1$s a las %2$s</string>
+    <string name="ds_pen_q_by_phone">Escrita en este móvil</string>
+    <string name="ds_pen_q_by_mac">Escrita en el Mac</string>
+    <string name="ds_pen_q_by_follower">Añadida por alguien que te sigue</string>
+    <string name="ds_pen_q_none">Ninguna</string>
+    <string name="ds_pen_q_none_text">Registrar la dosis de la pluma como una inyección aparte</string>
 </resources>

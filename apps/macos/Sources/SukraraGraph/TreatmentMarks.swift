@@ -45,12 +45,11 @@ enum TreatmentMarks {
     /// An amount as the card writes it: "4", "4.5".
     static func number(_ a: Double) -> String { a == a.rounded() ? String(Int(a)) : String(format: "%.1f", a) }
 
-    /// A short duration: "now" under a minute, "12m", "1h 5m", "3h" (whole hours drop the minutes; from 6 h only
-    /// hours), "2d" from two days. `up` rounds partial minutes up (time left: "1m" until it is over).
-    static func duration(_ s: TimeInterval, up: Bool = false) -> String {
-        let sec = Int64(max(0, s))
-        let m = up ? (sec + 59) / 60 : sec / 60
-        return m < 1 ? "now" : Durations.compact(Int(m))
+    /// A short duration in the card's language (`CardWords.duration`): "now" under a minute, "12m", "1h 5m", "3h"
+    /// (whole hours drop the minutes; from 6 h only hours), "2d" from two days; Spanish "ahora", "12 min", "1 h 5 min".
+    /// `up` rounds partial minutes up (time left: "1m" until it is over).
+    static func duration(_ s: TimeInterval, up: Bool = false, words: CardWords) -> String {
+        words.duration(s, up: up)
     }
 
     private static let order = ["rapid": 0, "long": 1, "carbs": 2, "note": 3]
@@ -133,7 +132,7 @@ enum TreatmentMarks {
     /// `textScale` = the chart's text scale (`GlucoseGraph.textScale`): the labels' size, not the markers' spacing.
     static func layout(
         _ marks: [GraphMark], x: (TimeInterval) -> CGFloat, now: TimeInterval?, minX: CGFloat, maxX: CGFloat,
-        lanes: Int, d: CGFloat, show: MarkShow = .defaults, textScale: CGFloat = 1
+        lanes: Int, d: CGFloat, show: MarkShow = .defaults, words: CardWords, textScale: CGFloat = 1
     ) -> Layout {
         let items = marks.filter { amount($0) != nil && order[$0.k] != nil && show.label($0.k) }
             .sorted { ($0.t, order[$0.k]!, $0.a, $0.id) < ($1.t, order[$1.k]!, $1.a, $1.id) }
@@ -154,7 +153,7 @@ enum TreatmentMarks {
             let amounts = shownAmounts.compactMap { amount($0) }
             // the time once, since the newest member that wants it
             let timeOf = g.last { show.has($0.k, MarkShow.time) }
-            let time = timeOf.flatMap { m in now.map { duration($0 - m.t) } }
+            let time = timeOf.flatMap { m in now.map { words.duration($0 - m.t) } }
             let cx = (x(g.first!.t) + x(g.last!.t)) / 2
             var placed: Label?
             var tries: [(Int, String?)] = []

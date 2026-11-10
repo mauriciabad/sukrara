@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.integrations.CurrentSensor
@@ -134,6 +135,8 @@ class LibreViewUploader(
     private val clock: Clock,
     private val io: CoroutineDispatcher,
     private val log: (String) -> Unit = {},
+    /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
+    private val hold: UploadHold = UploadHold.NONE,
 ) {
     /** A sign-in to another account than the sensor's, waiting for the person's choice (memory only). */
     private class PendingAccount(
@@ -455,7 +458,7 @@ class LibreViewUploader(
                 // a switched-off part still corrects what LibreView already has
                 val records = treatments.changedSince(clock.now() - Duration.ofDays(31))
                 LibreViewQueue
-                    .entries(records, state.ledger, if (s.treatments) state.entriesFrom else Long.MAX_VALUE, nowS)
+                    .entries(records, state.ledger, if (s.treatments) state.entriesFrom else Long.MAX_VALUE, nowS, hold)
             } else {
                 emptyList()
             }

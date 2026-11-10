@@ -254,6 +254,31 @@ fun NavigationRow(
 }
 
 /**
+ * Does something right here (copy, show, bring back) instead of opening a screen: no chevron, TalkBack reads a
+ * button and [onClickLabel] ("copy") as what a tap does. The caller confirms the result (a haptic, a changed summary).
+ */
+@Composable
+fun ActionRow(
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+    @DrawableRes icon: Int? = null,
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    leading: (@Composable () -> Unit)? = null,
+) {
+    RowFrame(
+        title,
+        summary,
+        icon,
+        enabled,
+        modifier.clickable(enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick),
+        leading = leading,
+    )
+}
+
+/**
  * A value that opens a choice or number dialog: the current [value] below the title. [readOnly]: shown at full
  * contrast but not opened (a follower's mirrored setting; TalkBack: "disabled").
  */
