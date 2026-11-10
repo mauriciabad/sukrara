@@ -106,7 +106,9 @@ every surface (`muted`, "Muted · 1h 20m" in range; the paused badge out of rang
 After *Mute…* Android replaces the alert's notification with a silent "Low alerts muted" / "Until 10:42" with a count-down chronometer to the end (round f31), whose two buttons
 are the ways out, *Unmute* and *Change time* (the same Mute… input); it goes when the mute ends (or the alert comes back). Android
 asks an app to update a notification after a direct reply. macOS removes a notification once any of its actions is
-used. The history records "Low muted for 1 h (notification)", never "Low cleared": the episode goes on.
+used, so the Mac posts an alert that is still up again without sound after *Remind less* / *Remind as usual* (with the
+other button) and after a *Mute…* reply that isn't a length (nothing changes): an action never makes an active alert
+vanish. The history records "Low muted for 1 h (notification)", never "Low cleared": the episode goes on.
 
 **The actions act on the device they're tapped on only** (user, 2026-10-21: "Mac notifications should work on their
 own. Mac and Android don't have to be from the same person, so if someone wants to mute, it shouldn't mute the

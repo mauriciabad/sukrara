@@ -4,6 +4,7 @@
 import Foundation
 import SukraraAlerts
 import SukraraCore
+import SukraraGraph
 import Testing
 
 @testable import SukraraApp
@@ -63,6 +64,42 @@ import Testing
         #expect(m.settingsFrom == .custom && m.editable)
         #expect(m.graph.bands.tight == 130 && m.graph.ringOrder.first == .veryLow)
         #expect(m.alerts.settings[.low].threshold == 75)
+    }
+
+    @Test func resetToDefaultsChangesOnlyTheMirroredSettings() {
+        let m = model()
+        m.useOwn()
+        m.setNumber(150, MacSettings.bandTight)
+        m.setNumber(3, MacSettings.ringCount)
+        m.setPlaceHours(6, .menubar)
+        m.alerts.update {
+            $0[.low].threshold = 80
+            $0[.high].repeatMin = 60
+            $0.muteAfterCarbs = QuietRule(on: false, min: 30)
+            $0[.noData].threshold = 45
+            $0[.low].alarm = !AlertSettings()[.low].alarm
+            $0.sounds.pack = "arcade"
+            $0.notificationActions.muteMin = 60
+        }
+        let before = m.alerts.settings
+        m.resetToDefaults()
+        let d = AlertSettings()
+        #expect(m.settingsFrom == .custom && m.graph == GraphConfig())
+        #expect(
+            m.alerts.settings[.low].threshold == d[.low].threshold
+                && m.alerts.settings[.high].repeatMin == d[.high].repeatMin)
+        #expect(m.alerts.settings.muteAfterCarbs == d.muteAfterCarbs)
+        // what isn't mirrored stays this Mac's own
+        #expect(m.alerts.settings[.noData] == before[.noData] && m.alerts.settings[.low].alarm == before[.low].alarm)
+        #expect(m.alerts.settings.sounds == before.sounds && m.alerts.settings.notificationActions.muteMin == 60)
+        #expect(m.placeHours(.menubar) == 6)
+    }
+
+    @Test func resetToDefaultsDoesNothingOutsideCustom() {
+        let m = model()
+        m.alerts.update { $0[.low].threshold = 80 }
+        m.resetToDefaults()
+        #expect(m.settingsFrom == .wearer && m.alerts.settings[.low].threshold == 80)
     }
 
     @Test func thePaneIsRemembered() {

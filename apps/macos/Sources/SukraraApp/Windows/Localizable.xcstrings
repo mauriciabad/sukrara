@@ -3713,6 +3713,70 @@
         }
       }
     },
+    "Reset to Defaults…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Defaults…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer los predeterminados…"
+          }
+        }
+      }
+    },
+    "Reset to Sukrara's defaults?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Sukrara's defaults?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Restablecer los predeterminados de Sukrara?"
+          }
+        }
+      }
+    },
+    "Reset to Defaults" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Defaults"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer"
+          }
+        }
+      }
+    },
+    "This Mac's ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules go back to Sukrara's defaults. Sounds, the no-data alert, Mute all and the notification's buttons stay." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's ranges, graph, rings, lines, last treatment, sensor countdown, alert rules and quiet rules go back to Sukrara's defaults. Sounds, the no-data alert, Mute all and the notification's buttons stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los rangos, el gráfico, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor, las reglas de alerta y las de silencio de este Mac vuelven a los predeterminados de Sukrara. Los sonidos, la alerta sin datos, Silenciar todas las alertas y los botones de la notificación se mantienen."
+          }
+        }
+      }
+    },
     "Reset Treatments" : {
       "localizations" : {
         "en" : {

@@ -159,6 +159,29 @@ func fixtureSetHasCases(_ set: String) {
         #expect(spoken.contains("old reading") == (want == "dimmed"), "\(spoken)")
     }
 
+    /// An ended sensor on a card without a value says "Sensor ended" with the flag over the chart, never the last
+    /// reading's time (a gap), at every graph widget size; VoiceOver says it too (GraphOnlyAgeTest.endedIsNeverAGap).
+    @Test func anEndedSensorIsNeverAGap() {
+        let age = 4200.0
+        var readings = (1...60).reversed().map { GraphReading(t: now - age - Double($0) * 60, v: 120, rate: 0) }
+        readings.append(GraphReading(t: now - age, v: 118, rate: 0.2))
+        let sensor = SensorInfo(start: now - 15 * 86400 - 3600, end: now - 3600, warmupEnd: now - 15 * 86400)
+        var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true)
+        st.sensor = sensor
+        for size in [CGSize(width: 138, height: 138), CGSize(width: 332, height: 138), CGSize(width: 60, height: 60)] {
+            let lay = GlucoseCard.draw(
+                cardContext(size), size: size, readings: readings, marks: [], now: now, st,
+                GraphPalette.of(dark: false), surface: .widgetGraph, part: .all)
+            #expect(lay.first("graph.age")?.info == "ended", "\(size)")
+            let last = Freshness.timeText(now - age, now: now)
+            #expect(!lay.all("time.text").contains { $0.info == last }, "\(size)")
+        }
+        let spoken = GlucoseCard.accessibilityLabel(
+            CardData(readings: readings, sensor: sensor, now: now), unit: .mgdl, surface: .widgetGraph,
+            config: GraphConfig(), words: .en)
+        #expect(spoken.hasPrefix("Sensor ended. Replace sensor"), "\(spoken)")
+    }
+
     /// The age pill never grows past the chart, however narrow the widget (GraphOnlyAgeTest.pillStaysInsideTheChart).
     @Test(arguments: [40.0, 60.0, 90.0, 140.0, 332.0])
     func agePillStaysInsideTheChart(_ w: Double) {
