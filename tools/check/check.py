@@ -679,7 +679,8 @@ SWIFT_LITERAL_KEY = re.compile(r"\bforKey:\s*\"|@AppStorage\(\s*\"")
 KT_NUMBER_INPUT = re.compile(r"\b(NumberRange|IntChoiceDialog|NumberChoiceDialog|Slider)\(|KeyboardType\.(Number|Decimal)\b"
                              r"|\blistOf\(\s*-?\d+(?:\.\d+)?\s*[,)]")
 SWIFT_NUMBER_INPUT = re.compile(r"\bStepper\(|TextField\([^)]*\bvalue:|ForEach\(\s*(\d+\s*\.\.[.<]\s*\d|\[\s*-?\d)")
-KT_SETTINGS_SCREENS = ANDROID + "feature/settings/src/main/*"
+# the settings screens: every page of :feature:settings and a placed widget's own settings
+KT_SETTINGS_SCREENS = [ANDROID + "feature/settings/src/main/*", ANDROID + "widgets/src/main/*/WidgetConfigActivity.kt"]
 SWIFT_SETTINGS_SCREENS = MAC_SOURCES + "SukraraApp/Settings/*"
 
 
@@ -799,7 +800,7 @@ def check_settings(ch, rep):
             continue
         src = ch.blob(p) or ""
         kt = lang == "kt"
-        screen = match(p, [KT_SETTINGS_SCREENS]) and "fun NumberDialog(" not in src if kt else \
+        screen = match(p, KT_SETTINGS_SCREENS) and "fun NumberDialog(" not in src if kt else \
             match(p, [SWIFT_SETTINGS_SCREENS]) and "struct NumberSettingRow" not in src
         for n, l in code_lines(src):
             if re.search(r"\bNumberSpec\(", l) and "class NumberSpec" not in l and "struct NumberSpec" not in l:

@@ -85,8 +85,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   one spoken *Closes in 10 seconds* with TalkBack).
 - **Home-screen widgets** (*Glucose*, *Glucose graph*, *Glucose and graph*) drawn by the same card renderer at the
   widget's real size (*Glucose* down to one cell), with the same card as their picker preview; home offers *Add
-  widget* until a graph widget is placed (or says how to add it by hand when the launcher can't), and a tap opens
-  *Add treatment*.
+  widget* until a graph widget is placed (or says how to add it by hand when the launcher can't) and then opens its
+  settings; a tap opens *Add treatment* (a new sensor once yours has ended); they switch to the dark theme with the
+  phone.
 - **Settings** for daily use (every row searchable, accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
   (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with

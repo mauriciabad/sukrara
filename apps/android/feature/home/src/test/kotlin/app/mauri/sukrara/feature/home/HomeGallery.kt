@@ -36,6 +36,7 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.graph.CardSurface
+import app.mauri.sukrara.graph.RoundedFont
 import app.mauri.sukrara.protocol.event.Avatar
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -147,6 +148,8 @@ class HomeGallery {
         only: List<String>? = null,
         prefix: String = "",
     ) {
+        // the card's rounded face, as the app loads it at start (App.onCreate)
+        RoundedFont.init(ApplicationProvider.getApplicationContext())
         var current by mutableStateOf(states.first().second)
         compose.mainClock.autoAdvance = true
         compose.setContent {
