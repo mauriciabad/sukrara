@@ -40,7 +40,7 @@ jobs:
           gh release download "$TAG" -R "${{ github.repository }}" -p "Sukrara-$VER.dmg" -D dl
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "sha256=$(sha256sum "dl/Sukrara-$VER.dmg" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: mauriciabad/homebrew-tap
           ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}

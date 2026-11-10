@@ -28,7 +28,10 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Version | `tools/release/version.sh` → `0.12.0 12000 prerelease` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs the rules on every push and the Android / Mac jobs when their paths (or
-`contracts/`, `tools/`, `VERSION`, `assets/`) change; `gate` is the only required check.
+`contracts/`, `tools/`, `VERSION`, `assets/`) change; `gate` is the only required check. Every `uses:` is pinned to a
+commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`); Dependabot
+(`.github/dependabot.yml`) moves both weekly. Look a tag's SHA up with `gh api repos/<owner>/<action>/commits/<tag>
+--jq .sha`.
 
 ## Devices
 
