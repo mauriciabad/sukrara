@@ -29,12 +29,21 @@ struct GeneralPane: View {
                 )
                 .font(.callout).foregroundStyle(.secondary)
             }
-            Section(L10n.t("Glucose")) {
+            Section {
                 Picker(L10n.t("Unit"), selection: $model.unit) {
                     Text("mg/dL").tag(GlucoseUnit.mgdl)
                     Text("mmol/L").tag(GlucoseUnit.mmol)
                 }
                 .pickerStyle(.segmented)
+                Toggle(isOn: $model.readAloudShortcut) {
+                    Text(L10n.t("Read glucose aloud with \(GlobalShortcut.symbols)"))
+                    Text(
+                        L10n.t(
+                            "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu."
+                        ))
+                }
+            } header: {
+                Text(L10n.t("Glucose"))
             }
             Section {
                 JugglucoRows(model: model.juggluco)

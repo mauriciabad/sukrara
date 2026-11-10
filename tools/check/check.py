@@ -33,7 +33,8 @@ Checks
               again"). Whole tree, every app, from THE registry contracts/graph/surfaces/surfaces.json:
               a file that calls the card renderer (GlucoseCard.draw / image / face) must be a registered file of the
               surface it names; the CardSurface enums list exactly the registry; a glyph surface takes its value from
-              GlucoseCard.face; every surface is rendered by the cross-surface tests (the registry's 'tests').
+              GlucoseCard.face (a place that only speaks: from THE sentence, A11y, naming its surface, which asks
+              GlucoseCard.face itself); every surface is rendered by the cross-surface tests (the registry's 'tests').
   card-api    outside the renderer's files ('owners'), the renderer's namespaces (every top-level Kotlin object /
               Swift enum in them that paints, i.e. has a function taking a Canvas / CGContext, found automatically
               so a new painter is covered the moment it exists; plus the registry's 'api' keys, e.g. Freshness)
@@ -561,7 +562,8 @@ def check_card(ch, rep):
                                 "'// card-ok: <why>'." % (p, n, ("surface " + ", ".join(s["id"] for s in mine)) if mine else "not a registered surface", SURFACES))
             if not swift and "CardSurface.TEST" in text:
                 rep.add("FAIL", "card-surface", "%s: CardSurface.TEST is for tests only." % p)
-        # each surface names itself in its files; a glyph surface asks GlucoseCard.face
+        # each surface names itself in its files; a glyph surface asks GlucoseCard.face, or speaks THE sentence (A11y
+        # asks GlucoseCard.face for the surface it is given)
         for s in surfaces:
             c = by_id.get(s["id"])
             if any(f not in files for f in s["files"]):
@@ -570,7 +572,9 @@ def check_card(ch, rep):
             if c and not re.search(re.escape(const(c)) + r"\b", joined):
                 rep.add("FAIL", "card-surface", "surface '%s' (%s) never names %s in its files %s: move the entry to the files that\n"
                         "draw it, or remove the surface from %s and the enum." % (s["id"], plat, const(c), ", ".join(s["files"]), SURFACES))
-            if s["kind"] == "glyph" and "GlucoseCard.face(" not in joined:
+            # the surface among the call's own arguments (no nested call before it)
+            spoken = c is not None and re.search(r"\bA11y\.\w+\([^()]*" + re.escape(const(c)) + r"\b", joined)
+            if s["kind"] == "glyph" and "GlucoseCard.face(" not in joined and not spoken:
                 rep.add("FAIL", "card-surface", "glyph surface '%s' (%s) must take the value / trend / freshness from GlucoseCard.face." % (s["id"], plat))
         # every surface is rendered by a cross-surface test
         harness = "\n".join(ch.blob(p) for p in sorted(files) if match(p, tests))

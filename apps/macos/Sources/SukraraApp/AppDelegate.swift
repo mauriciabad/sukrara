@@ -25,6 +25,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsPending = false
     /// `sukrara:` links held until the windows exist (a link that launches the app arrives before them).
     private var linkInbox = LinkInbox()
+    /// *Read Glucose Aloud* and its system-wide keys (none in a snapshot run).
+    private let readAloud = ReadAloud()
+    private var shortcut: GlobalShortcut?
 
     public init(plan: LaunchPlan) {
         let services = AppServices(plan: plan)
@@ -89,6 +92,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             model?.loadHistory()
         }
         self.statusItem = statusItem
+        statusItem.readAloud = { [weak self] in self?.readGlucoseAloud() }
+        contextMenu.readAloud = { [weak self] in self?.readGlucoseAloud() }
+        // only the real app takes the system-wide keys: a render, a synthetic or an offline dev run never answers them
+        // (the person's own copy may be running beside it)
+        if model.plan.mode == .normal && !model.plan.isOffline {
+            shortcut = GlobalShortcut { [weak self] in self?.readGlucoseAloud() }
+        }
+        contextMenu.shortcutOn = { [weak self] in self?.shortcut?.isOn == true }
+        shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
         windows.statusItemFrame = { [weak statusItem] in statusItem?.screenFrame }
         if let updates = model.updates {
             // the result shows in the panel: open it once the check is done
@@ -112,6 +124,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // after the first-run setup window: an invite link that launched the app opens its Follow step
         for url in linkInbox.launched() { windows.open(url) }
         AppLog.app.info("launched (offline: \(self.model.plan.isOffline, privacy: .public))")
+    }
+
+    /// Read Glucose Aloud (menu, VoiceOver action, ⌃⇧⌘G): what VoiceOver says for the menu bar value, said now.
+    private func readGlucoseAloud() {
+        readAloud.toggle(model.menubarTitle.accessibilityLabel, from: statusItem?.accessibilityElement)
     }
 
     /// A panel row: close the panel, then open its window.
@@ -216,6 +233,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.widgetGraph != widgetGraph { model.widgetGraph = widgetGraph }
         if changed { model.feedWidget(settingsChanged: true) }
         model.lanConfig = lanConfig
+        shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
     }
 
     /// The wearer's mirrored settings arrived, changed or went away (stopped following).

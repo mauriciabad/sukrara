@@ -17,11 +17,9 @@ import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.graph.CardSurface
-import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
-import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.stats.Bands
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -162,17 +160,19 @@ class RootStatusBar(
             input.prefs.on && input.root && HookPosition.isSystemIcons(input.prefs.position) && input.unit == GlucoseUnit.MGDL
         // the module draws its text instead while the icons aren't on screen (no root, daemon failed, mmol/L), so the
         // value never vanishes from the bar and the notification icon is hidden only while one of them shows
+        // TalkBack's words in the person's language (#159): System UI can't load the app's translations
+        val res = context.resources
         val iconsShown =
             if (wantIcons) {
-                val l = look(input.state, now)
-                val since = input.state.latest?.let { Freshness.timeText(it.t.epochSecond, now) }
-                val range = input.state.latest?.let { RangeState.of(it.mgdl, input.bands) }
-                show(SlotIcons.plan(l, since, range))
+                show(SlotIcons.plan(look(input.state, now), SystemUiWords.icons(input.state, input.bands, now, res)))
             } else {
                 stopDaemon()
                 false
             }
-        val hook = hookState(input.state, input.prefs, input.bands, input.unit).copy(iconsShown = iconsShown)
+        val hook =
+            hookState(input.state, input.prefs, input.bands, input.unit).copy(iconsShown = iconsShown).let {
+                if (it.text) it.copy(spoken = SystemUiWords.text(input.state, it, input.bands, now, res)) else it
+            }
         if (hook.enabled || sentOn) send(hook, ask = !asked)
         if (hook.enabled) asked = true
         sentOn = hook.enabled

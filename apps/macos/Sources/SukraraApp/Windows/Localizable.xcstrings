@@ -1041,6 +1041,22 @@
         }
       }
     },
+    "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From any app: the value, its trend and how old it is, in VoiceOver's voice when VoiceOver is on. Turn it off if another app uses these keys. Read Glucose Aloud is also in the menu bar value's right-click menu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde cualquier app: el valor, su tendencia y su antigüedad, con la voz de VoiceOver si VoiceOver está activado. Desactívalo si otra app usa estas teclas. Leer la glucosa en voz alta también está en el menú contextual del valor de la barra de menús."
+          }
+        }
+      }
+    },
     "General" : {
       "localizations" : {
         "en" : {
@@ -1933,6 +1949,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rápida"
+          }
+        }
+      }
+    },
+    "Read Glucose Aloud" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read Glucose Aloud"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa en voz alta"
+          }
+        }
+      }
+    },
+    "Read glucose aloud with %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read glucose aloud with %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa en voz alta con %@"
           }
         }
       }

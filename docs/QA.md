@@ -32,6 +32,10 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
 - [ ] Spanish: switch the per-app language (Settings → Apps → Sukrara → Language) and repeat for the changed screens;
       no clipped or English-only text outside the settings pages.
 - [ ] Rotation / small window (`small_phone`) keeps the layout usable.
+- [ ] Read glucose aloud (#159; emulator with synthetic glucose, sound on): long-press the Sukrara icon → *Read glucose
+      aloud* says the value, trend, range and age (Spanish per-app language: in Spanish) and nothing opens; again while
+      it speaks stops it; drag it to the home screen and tap it there; with TalkBack, the icon's *Actions* menu offers
+      it. Without a voice for the language (emulator without the Spanish voice): the toast says where to add one.
 - [ ] Screen transitions (a change to `Motion.kt` / `ScreenHost`, a page's scaffold or a vendored SPA widget): set
       Animator duration scale to 5×, `screenrecord` home ↔ settings, a settings page push / pop and a predictive back
       swipe, and step the frames: no page drawn from scratch at the start or end of a move (empty chart, rows in another
@@ -123,9 +127,19 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       together when there's no room.
 - [ ] Number and arrow about 3 dp apart (as on the app's card), closer than the other icons; the gap to the icons
       beside them unchanged (6 dp); still close after a reading, after a no-readings / ended spell and with the row
-      full. `logcat`: `icon fit hooks: 1, gap hooks: 1`. TalkBack on the icons: *Glucose 120 mg/dL ↗*, *Glucose trend ↗*.
+      full. `logcat`: `icon fit hooks: 1, gap hooks: 1`.
 - [ ] Without the module (or `settings put global sukrara_hook_disabled 1` + System UI restart): leftmost, SystemUI's
       own fit (the arrow alone can show in a full row; documented).
+- [ ] TalkBack in the person's language (#159), phone in English, then Sukrara in Spanish (Settings › System ›
+      Languages › App languages): explore the status bar. The number says *Sukrara: 120 milligrams per decilitre,
+      rising, high* (*Sukrara: 120 miligramos por decilitro, subiendo, alta*), the arrow *Sukrara, rising* (*subiendo*);
+      struck: *…, old reading, …* and *Sukrara, old reading*; no readings: *Sukrara. Glucose: no reading since 9:50*;
+      ended: *Sukrara. Sensor ended. Replace sensor*. The module still orders, colours and fits the pair in Spanish
+      (same checks as above), and an out-of-range number keeps its colour.
+- [ ] The module's text (a clock placement, or a `slot:` one in mmol/L): TalkBack says *Sukrara: 6,2 milimoles por
+      litro, bajando, en rango*; force-stop Sukrara (`adb shell am force-stop app.mauri.sukrara` is not read-only: only
+      on a test phone) and wait 6 min, then 21 min: TalkBack follows the struck value and *Sukrara. Glucosa: sin lecturas
+      desde …* in Spanish, never the earlier words.
 
 ## Q6 Mac menubar panel
 
@@ -151,6 +165,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       Shift-click stay in range; a custom value (7 h, 45 days, 183 mg/dL) survives a relaunch and shows in the panel /
       widgets; the per-place windows; ring order: drag a range onto another (insertion line), Control-click Move Up /
       Down, VoiceOver actions; Details… of an alert in Custom vs Wearer; *Send Test Alert*. Snapshots: `sukrara-snap windows` → `settings-*.png`.
+- [ ] Read Glucose Aloud (#159): ⌃⇧⌘G in another app says the menu bar value's sentence in the Mac's language (also
+      in Spanish); again while it speaks stops it; with VoiceOver on, VoiceOver says it in its own voice; the status
+      item's right-click menu has *Read Glucose Aloud ⌃⇧⌘G* first; VoiceOver on the value → VO-Command-Space → *Read
+      Glucose Aloud*. Settings › General › *Read glucose aloud with ⌃⇧⌘G* off: the keys do nothing (and reach other
+      apps), the menu item stays without the keys; on again: they work at once.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets

@@ -816,9 +816,11 @@ class SystemUiHook : XposedModule() {
                 }
                 visibility = VISIBLE
                 val base = reference?.get()?.currentTextColor ?: currentTextColor
+                val now = nowS()
+                val look = HookText.face(st, now)
                 val v =
                     HookText.of(
-                        HookText.face(st, nowS()),
+                        look,
                         st.color,
                         HookText.rangeColor(st.mgdl, st.bands, base),
                         base,
@@ -853,7 +855,8 @@ class SystemUiHook : XposedModule() {
                 val s = (textSize * if (v.mark == HookText.Mark.ARROW || v.mark == HookText.Mark.RING) 0.95f else 1.05f).toInt()
                 drawable?.setBounds(0, 0, s, s)
                 setCompoundDrawables(null, null, drawable, null)
-                contentDescription = v.desc
+                // the app's sentence in the person's language (#159); the English line only for a face it sent none for
+                contentDescription = HookText.spoken(st, look, now) ?: v.desc
             }
     }
 

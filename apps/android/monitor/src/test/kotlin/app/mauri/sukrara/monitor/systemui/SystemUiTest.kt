@@ -15,7 +15,6 @@ import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphPalette
-import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.stats.Bands
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,7 +39,10 @@ class SystemUiTest {
         return GlucoseState.Initial.copy(role = Role.Wearer, latest = reading, recent = listOfNotNull(reading), sensor = sensor)
     }
 
-    private fun icons(s: GlucoseState) = SlotIcons.plan(RootStatusBar.look(s, nowS), "11:58")
+    /** The app's words (SystemUiWordsTest checks them in English and Spanish). */
+    private val words = SlotIcons.Words("the sentence", "the trend")
+
+    private fun icons(s: GlucoseState) = SlotIcons.plan(RootStatusBar.look(s, nowS), words)
 
     private val seen = mutableSetOf<CardSurface>()
 
@@ -54,9 +56,24 @@ class SystemUiTest {
         val p = icons(state(138, rate = 0.0))
         assertEquals("sb_n138", p.number)
         assertEquals("sb_t18", p.trend) // flat: straight right, the middle of 37 steps
+        assertEquals("Sukrara: the sentence", p.desc)
+        assertEquals("Sukrara, the trend", p.trendDesc)
         assertTrue(SlotIcons.isValue(p.desc))
+        assertTrue(SlotIcons.isOurs(p.desc))
         assertTrue(SlotIcons.isTrend(p.trendDesc))
         assertFalse(SlotIcons.isValue(p.trendDesc))
+        assertFalse(SlotIcons.isOurs(p.trendDesc))
+    }
+
+    @Test fun `the module recognises only our marks, in any language`() {
+        assertTrue(SlotIcons.isValue("Sukrara: 112 miligramos por decilitro, bajando, en rango"))
+        assertTrue(SlotIcons.isTrend("Sukrara, bajando"))
+        assertTrue(SlotIcons.isOurs("Sukrara. Sensor terminado. Cambiar sensor"))
+        assertFalse(SlotIcons.isValue("Sukrara. Sensor ended. Replace sensor")) // a single icon is never coloured
+        // another app's icons, System UI's own
+        for (other in listOf("Glucose 120 mg/dL", "xDrip+ 120", "Wi-Fi three bars.", "Sukrara notification", "")) {
+            assertFalse(other, SlotIcons.isOurs(other) || SlotIcons.isTrend(other))
+        }
     }
 
     @Test fun `no rate is the no-trend ring`() = assertEquals("sb_t_none", icons(state(rate = null)).trend)
@@ -65,19 +82,22 @@ class SystemUiTest {
         val p = icons(state(138, ageS = 6 * 60))
         assertEquals("sb_s138", p.number)
         assertEquals("sb_t_none_s", p.trend)
-        assertTrue(p.desc.endsWith("(old)"))
+        assertTrue(SlotIcons.isValue(p.desc))
     }
 
     @Test fun `from 20 minutes only the no-readings icon`() {
         val p = icons(state(138, ageS = 21 * 60))
         assertNull(p.number)
         assertEquals("monitor_ic_no_readings", p.trend)
+        assertEquals("Sukrara. the sentence", p.desc)
         assertTrue(SlotIcons.isOurs(p.desc))
-        assertTrue(p.desc.endsWith("11:58"))
+        assertFalse(SlotIcons.isValue(p.desc))
+        // the single icon sits in the trend slot and says the sentence there
+        assertEquals("set ${SlotIcons.SLOT_TREND} 3 0 Sukrara. the sentence", SlotIcons.commands(p) { 3 }[0])
     }
 
     @Test fun `an ended sensor is the flag and a warm-up shows nothing`() {
-        assertEquals(SlotIcons.Plan("monitor_ic_sensor_ended", null, "Sukrara: sensor ended"), icons(state(sensor = SensorState.Ended)))
+        assertEquals(SlotIcons.Plan("monitor_ic_sensor_ended", null, "Sukrara. the sentence"), icons(state(sensor = SensorState.Ended)))
         val warming = state(mgdl = null, sensor = SensorState.WarmingUp(now.plusSeconds(1800)))
         assertEquals(SlotIcons.Plan.EMPTY, icons(warming))
         assertEquals(SlotIcons.Plan.EMPTY, icons(state(mgdl = null)))
@@ -113,8 +133,14 @@ class SystemUiTest {
     @Test fun `commands send the trend first, then the number, and remove what is gone`() {
         val ids = mapOf("sb_t18" to 7, "sb_n138" to 9)
         val cmds = SlotIcons.commands(icons(state(138, rate = 0.0)), { ids.getValue(it) })
-        assertEquals("set ${SlotIcons.SLOT_TREND} 7 0 Sukrara glucose trend →", cmds[0])
-        assertEquals("set ${SlotIcons.SLOT_NUMBER} 9 0 Sukrara glucose 138 mg/dL →", cmds[1])
+        assertEquals("set ${SlotIcons.SLOT_TREND} 7 0 Sukrara, the trend", cmds[0])
+        assertEquals("set ${SlotIcons.SLOT_NUMBER} 9 0 Sukrara: the sentence", cmds[1])
+        // a sentence on one line, whatever its words (the daemon reads a line per command)
+        val two =
+            SlotIcons.commands(
+                SlotIcons.plan(RootStatusBar.look(state(138, rate = 0.0), nowS), SlotIcons.Words("a\nb", "c\rd")),
+            ) { 1 }
+        assertEquals(listOf("set ${SlotIcons.SLOT_TREND} 1 0 Sukrara, c d", "set ${SlotIcons.SLOT_NUMBER} 1 0 Sukrara: a b"), two)
         val gone = SlotIcons.commands(SlotIcons.Plan.EMPTY) { 1 }
         assertEquals(listOf("remove ${SlotIcons.SLOT_TREND}", "remove ${SlotIcons.SLOT_NUMBER}"), gone)
         // every command the app builds is one the daemon accepts
@@ -161,16 +187,43 @@ class SystemUiTest {
         position: String = HookPosition.AFTER_CLOCK,
     ) = HookState(true, position, true, true, Bands(), mgdl, nowS - ageS, rate, ended, readyAt)
 
-    @Test fun `TalkBack hears an out-of-range value's range, as the colour shows it`() {
+    @Test fun `without the app's words TalkBack hears the short English line, range included`() {
         val white = 0xFFFFFFFF.toInt()
         val low = hook(mgdl = 62)
         assertEquals("Glucose 62, low", HookText.of(HookText.face(low, nowS), true, null, white, HookText.range(low)).desc)
         assertEquals("Glucose 138", HookText.of(HookText.face(hook(), nowS), true, null, white, HookText.range(hook())).desc)
         val old = hook(mgdl = 62, ageS = 6 * 60)
         assertEquals("Glucose 62 (old)", HookText.of(HookText.face(old, nowS), true, null, white, HookText.range(old)).desc)
-        val p = SlotIcons.plan(HookText.face(low, nowS), "11:58", RangeState.LOW)
-        assertTrue(p.desc, p.desc.contains("62 mg/dL low"))
-        assertTrue(SlotIcons.isValue(p.desc))
+        assertNull(HookText.spoken(low, HookText.face(low, nowS), nowS))
+    }
+
+    @Test fun `the spoken sentence is picked by the face the module shows`() {
+        fun key(
+            s: HookState,
+            at: Long = nowS,
+        ) = HookText.spokenKey(s, HookText.face(s, at), at)
+        assertEquals("value", key(hook()))
+        assertEquals("old", key(hook(ageS = 6 * 60)))
+        assertEquals("since:time", key(hook(ageS = 25 * 60)))
+        assertEquals("ended", key(hook(ended = true)))
+        // a warm-up's minutes left, rounded up as the sentence says them; 0 = almost ready
+        assertEquals("warmup:30", key(hook(mgdl = 0, readyAt = nowS + 1790)))
+        assertEquals("warmup:0", key(hook(mgdl = 0, readyAt = nowS - 60)))
+        val s = hook().copy(spoken = mapOf("value" to "Sukrara: 138", "old" to "Sukrara: 138 old"))
+        assertEquals("Sukrara: 138", HookText.spoken(s, HookText.face(s, nowS), nowS))
+        val later = nowS + 6 * 60
+        assertEquals("Sukrara: 138 old", HookText.spoken(s, HookText.face(s, later), later))
+        assertEquals(SlotIcons.VALUE, HookText.mark(HookText.face(s, nowS)))
+        assertEquals(SlotIcons.SINGLE, HookText.mark(HookText.face(hook(ended = true), nowS)))
+    }
+
+    @Test fun `the sentences from the app are clamped`() {
+        assertEquals(mapOf("value" to "a b"), HookState.spoken(arrayOf("value"), arrayOf("a\nb")))
+        assertEquals(emptyMap<String, String>(), HookState.spoken(arrayOf("value"), arrayOf("a", "b")))
+        assertEquals(emptyMap<String, String>(), HookState.spoken(null, arrayOf("a")))
+        val many = HookState.spoken(Array(40) { "k$it" }, Array(40) { "x".repeat(1000) })
+        assertEquals(HookState.MAX_SPOKEN, many.size)
+        assertTrue(many.values.all { it.length == HookState.MAX_SPOKEN_CHARS })
     }
 
     @Test fun `the hook text follows the card's decision`() {

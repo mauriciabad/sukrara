@@ -129,6 +129,12 @@ public final class SettingsModel {
         set { store.set(newValue.rawValue, for: MacSettings.unit); revision += 1 }
     }
 
+    /// Read Glucose Aloud from any app with its keys (schema `general.readAloudShortcut`); the app follows the change.
+    public var readAloudShortcut: Bool {
+        get { _ = revision; return store.value(MacSettings.readAloudShortcut) }
+        set { store.set(newValue, for: MacSettings.readAloudShortcut); revision += 1 }
+    }
+
     /// The shown value of a number setting: this Mac's in Custom, else the source's (`GraphSource`).
     public func number(_ n: MacSettings.Number) -> Double {
         _ = revision
