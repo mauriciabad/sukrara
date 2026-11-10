@@ -3,17 +3,21 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Checks a Mac bundle before it is installed or released:
-#   tools/release/verify-app.sh <Sukrara.app> [--unsigned]
+#   tools/release/verify-app.sh <Sukrara.app> [--unsigned | --notarized]
 # - bundle id app.mauri.sukrara, version / build = tools/release/version.sh (dev builds may add .<yyMMddHHmm>)
 # - the widget extension (app.mauri.sukrara.widget) is inside
 # - signed (unless --unsigned): codesign --verify --deep --strict, team QWUV9H4A3G on the app and the appex; the
 #   entitlements only a provisioning profile grants all there with an embedded profile, none without
 # - a release build: no debug entry points in any binary (debugsend, DebugFakes, Synthetic*, the snapshot renderer)
+# - --notarized (mac-release.sh with a Developer ID, #91): the app and the appex signed by "Developer ID Application"
+#   with the hardened runtime and a secure timestamp, the notarization ticket stapled, and Gatekeeper accepting the app
+#   as "Notarized Developer ID"
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
-app="${1:?usage: verify-app.sh <Sukrara.app> [--unsigned]}"
-unsigned="${2:-}"
+app="${1:?usage: verify-app.sh <Sukrara.app> [--unsigned | --notarized]}"
+mode="${2:-}"
+case "$mode" in "" | --unsigned | --notarized) ;; *) echo "unknown argument '$mode' (--unsigned, --notarized)" >&2; exit 2 ;; esac
 fail=0
 bad() { echo "FAIL $*"; fail=1; }
 ok() { echo "ok   $*"; }
@@ -33,7 +37,7 @@ appex="$app/Contents/PlugIns/SukraraWidget.appex"
 if [ -d "$appex" ] && [ "$(plist "$appex" CFBundleIdentifier)" = app.mauri.sukrara.widget ]; then ok "widget extension inside"
 else bad "SukraraWidget.appex (app.mauri.sukrara.widget) missing"; fi
 
-if [ "$unsigned" != --unsigned ]; then
+if [ "$mode" != --unsigned ]; then
   if codesign --verify --deep --strict "$app" 2>/dev/null; then ok "signature verifies"; else bad "codesign --verify --deep --strict fails"; fi
   for b in "$app" "$appex"; do
     team="$(codesign -dv "$b" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
@@ -50,6 +54,23 @@ if [ "$unsigned" != --unsigned ]; then
   done
   [ -f "$app/Contents/embedded.provisionprofile" ] \
     || echo "note no provisioning profile: alarms not Time Sensitive, login keychain, no universal links"
+fi
+
+if [ "$mode" = --notarized ]; then
+  for b in "$app" "$appex"; do
+    info="$(codesign -dvv "$b" 2>&1 || true)"
+    case "$info" in *"Authority=Developer ID Application:"*) ok "Developer ID: $(basename "$b")" ;;
+      *) bad "$(basename "$b") isn't signed by a Developer ID Application identity" ;; esac
+    case "$info" in *"flags="*"(runtime)"*) ok "hardened runtime: $(basename "$b")" ;;
+      *) bad "$(basename "$b") has no hardened runtime (notarization requires it)" ;; esac
+    # "Timestamp=" is a secure timestamp from Apple; "Signed Time=" is the Mac's own clock (--timestamp=none)
+    case "$info" in *"Timestamp="*) ok "secure timestamp: $(basename "$b")" ;;
+      *) bad "$(basename "$b") has no secure timestamp (notarization requires it)" ;; esac
+  done
+  if xcrun stapler validate -q "$app" 2>/dev/null; then ok "notarization ticket stapled"; else bad "no stapled notarization ticket"; fi
+  gk="$(spctl --assess --type execute -vv "$app" 2>&1 || true)"
+  case "$gk" in *accepted*"Notarized Developer ID"*) ok "Gatekeeper: Notarized Developer ID" ;;
+    *) bad "Gatekeeper doesn't accept it as notarized: $(echo "$gk" | tr '\n' ' ')" ;; esac
 fi
 
 # The snapshot renderer's own strings ("sukrara-snap: …", "usage: sukrara-snap <…", its "sukrara-snap-<uuid>" scratch

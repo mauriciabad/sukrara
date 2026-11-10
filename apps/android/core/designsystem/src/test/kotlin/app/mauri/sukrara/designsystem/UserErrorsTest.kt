@@ -18,6 +18,10 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.security.cert.CertPathBuilderException
+import java.security.cert.CertPathValidatorException
+import java.security.cert.CertificateException
+import java.security.cert.CertificateExpiredException
 import java.util.Locale
 import javax.net.ssl.SSLHandshakeException
 
@@ -35,11 +39,28 @@ class UserErrorsTest {
                 Trouble.NoInternet,
             SocketTimeoutException("timeout") to Trouble.TimedOut,
             SSLHandshakeException("Chain validation failed for ns.example.org") to Trouble.SecureConnection,
+            // a self-signed or private-CA site (#121): Android's chain, the JVM's, and wrapped by OkHttp
+            handshake(CertificateException(CertPathValidatorException("Trust anchor for certification path not found."))) to
+                Trouble.UntrustedCertificate,
+            handshake(
+                CertificateException("PKIX path building failed", CertPathBuilderException("unable to find valid certification path")),
+            ) to
+                Trouble.UntrustedCertificate,
+            IOException("canceled", handshake(CertPathValidatorException("Trust anchor for certification path not found."))) to
+                Trouble.UntrustedCertificate,
+            // out of date (or the phone's clock) isn't "untrusted": check the date and time
+            handshake(CertificateException(CertPathValidatorException("timestamp check failed", CertificateExpiredException("expired")))) to
+                Trouble.SecureConnection,
+            handshake(
+                CertPathValidatorException("validity check failed", null, null, -1, CertPathValidatorException.BasicReason.EXPIRED),
+            ) to Trouble.SecureConnection,
             IOException("unexpected end of stream on http://192.168.1.20:1337/...") to Trouble.Other,
             // OkHttp / coroutines wrap the cause
             IOException("canceled", SocketTimeoutException("timeout")) to Trouble.TimedOut,
             IllegalStateException("boom") to Trouble.Other,
         )
+
+    private fun handshake(cause: Throwable) = SSLHandshakeException(cause.toString()).apply { initCause(cause) }
 
     private fun words(
         t: Trouble,

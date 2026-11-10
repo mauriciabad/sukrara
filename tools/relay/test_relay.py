@@ -84,8 +84,12 @@ class WireTest(unittest.TestCase):
         await pub.send(["EVENT", live])
         self.assertEqual(await pub.recv(), ["OK", live["id"], True, ""])
         self.assertEqual(await sub.recv(), ["EVENT", "s", live])
+        # Since Python 3.12 wait_closed() waits for every open connection: close the clients first, or it never ends.
+        for c in (sub, pub):
+            c.writer.close()
+            await c.writer.wait_closed()
         server.close()
-        await server.wait_closed()
+        await asyncio.wait_for(server.wait_closed(), 5)
 
 
 class Client:

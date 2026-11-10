@@ -10,6 +10,11 @@ import java.net.ConnectException
 import java.net.NoRouteToHostException
 import java.net.SocketException
 import java.net.UnknownHostException
+import java.security.cert.CertPathBuilderException
+import java.security.cert.CertPathValidatorException
+import java.security.cert.CertificateException
+import java.security.cert.CertificateExpiredException
+import java.security.cert.CertificateNotYetValidException
 import javax.net.ssl.SSLException
 
 /**
@@ -31,8 +36,14 @@ enum class Trouble(
 
     TimedOut(R.string.ds_err_timed_out),
 
-    /** TLS failed: a wrong address, a bad certificate or the phone's clock. */
+    /** TLS failed: a wrong address, an expired certificate or the phone's clock. */
     SecureConnection(R.string.ds_err_secure),
+
+    /**
+     * The certificate doesn't chain to a public authority (self-signed, a private CA): only system CAs are trusted, never
+     * user-installed ones (#121), so the text says why and what a self-hoster can do instead.
+     */
+    UntrustedCertificate(R.string.ds_err_untrusted_cert),
 
     /** The service refused the sign-in, token or secret. */
     SignIn(R.string.ds_err_sign_in),
@@ -63,6 +74,25 @@ object UserErrors {
         return Trouble.Other
     }
 
+    /**
+     * A TLS failure caused by a certificate the phone doesn't trust (Android: `CertPathValidatorException` "Trust anchor
+     * for certification path not found"; the JVM: a `CertificateException` over a `CertPathBuilderException`), unless
+     * it is only out of date: an expired or not yet valid certificate, or the phone's clock, keeps [Trouble.SecureConnection].
+     */
+    private fun untrusted(e: SSLException): Boolean {
+        val causes = generateSequence(e.cause) { c -> c.cause.takeIf { it !== c } }.take(8).toList()
+        val dated =
+            causes.any {
+                it is CertificateExpiredException ||
+                    it is CertificateNotYetValidException ||
+                    (it as? CertPathValidatorException)?.reason.let { r ->
+                        r == CertPathValidatorException.BasicReason.EXPIRED || r == CertPathValidatorException.BasicReason.NOT_YET_VALID
+                    }
+            }
+        val cert = causes.any { it is CertificateException || it is CertPathValidatorException || it is CertPathBuilderException }
+        return cert && !dated
+    }
+
     /** The kind of a non-2xx HTTP status [code]. */
     fun ofHttp(code: Int): Trouble =
         when {
@@ -80,7 +110,7 @@ object UserErrors {
         return when (t) {
             is UnknownHostException -> Trouble.ServerNotFound
 
-            is SSLException -> Trouble.SecureConnection
+            is SSLException -> if (untrusted(t)) Trouble.UntrustedCertificate else Trouble.SecureConnection
 
             // SocketTimeoutException is one; a call's own timeout is a plain InterruptedIOException
             is InterruptedIOException -> Trouble.TimedOut

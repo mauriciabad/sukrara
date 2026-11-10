@@ -345,9 +345,13 @@ class NightscoutUploaderTest {
     @Test
     fun `site rules accept https anywhere and http only to this phone`() {
         assertNull(NsSite.parse("https://ns.example.org/").problem)
+        assertNull(NsSite.parse("https://192.168.1.10:1337").problem)
         assertNull(NsSite.parse("http://127.0.0.1:1337").problem)
         assertEquals(NsSiteProblem.Https, NsSite.parse("http://127.0.0.2:1337").problem)
+        // https only on the home network too (#93)
         assertEquals(NsSiteProblem.Https, NsSite.parse("http://192.168.1.10:1337").problem)
+        assertEquals(NsSiteProblem.Https, NsSite.parse("http://10.0.0.5").problem)
+        assertEquals(NsSiteProblem.Https, NsSite.parse("http://nightscout.local:1337").problem)
         assertEquals(NsSiteProblem.Https, NsSite.parse("http://ns.example.org").problem)
         assertEquals(NsSiteProblem.Url, NsSite.parse("https://user:pw@ns.example.org").problem)
         assertEquals(NsSiteProblem.Url, NsSite.parse("ftp://ns.example.org").problem)
