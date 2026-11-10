@@ -8,12 +8,16 @@
     ".c",
     ".h",
     ".js",
-    ".mjs"
+    ".mjs",
+    ".xml",
+    ".yml",
+    ".yaml"
   ],
   "header_exempt": [
     "*.gradle.kts",
     "*/gradlew",
-    "assets/brand/*"
+    "assets/brand/*",
+    "*/lint-baseline.xml"
   ],
   "images_ok": [
     "docs/img/*",
