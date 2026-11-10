@@ -6,6 +6,7 @@ package app.mauri.sukrara.core.data.settings
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -68,6 +69,8 @@ object SurfaceSettings {
                 warmup = w.warmup ?: d.warmup,
                 unlock = w.unlock ?: d.unlock,
                 evening = w.evening ?: d.evening,
+                endedRepeatHours =
+                    w.endedRepeatHours?.let { SettingsSpec.ENDED_REPEAT_HOURS.coerce(it.toDouble()).toInt() } ?: d.endedRepeatHours,
             ).normalized()
     }
 
@@ -82,6 +85,7 @@ object SurfaceSettings {
                 c.evening,
                 c.nightStart,
                 c.nightEnd,
+                c.endedRepeatHours,
             ),
         )
 
@@ -100,6 +104,7 @@ object SurfaceSettings {
         val evening: Boolean? = null,
         val nightStart: Int? = null,
         val nightEnd: Int? = null,
+        val endedRepeatHours: Int? = null,
     )
 }
 

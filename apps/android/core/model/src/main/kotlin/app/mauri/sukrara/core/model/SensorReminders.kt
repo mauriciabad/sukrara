@@ -27,7 +27,9 @@ data class SensorReminder(
  * Settings › Sensor end (schema `sensor.reminders`): the [reminders]; [unlock] = a morning (or evening) reminder comes
  * at the first unlock if that is earlier; [evening] = one more reminder the evening before a night-time end, the night
  * being [nightStart]–[nightEnd] (minutes of the day, may wrap midnight: Android doesn't share its Bedtime schedule);
- * [countdown] = the end countdown in the last `sensor.countdownHours`; [warmup] = the warm-up countdown.
+ * [countdown] = the end countdown in the last `sensor.countdownHours`; [warmup] = the warm-up countdown;
+ * [endedRepeatHours] = *Sensor ended* comes again every so many hours until a new sensor, out of the night (0 = once;
+ * schema number `endedRepeatHours` in `sensor.reminders`).
  */
 data class SensorEndConfig(
     val reminders: List<SensorReminder> = SensorReminder.DEFAULTS,
@@ -37,8 +39,10 @@ data class SensorEndConfig(
     val evening: Boolean = true,
     val nightStart: Int = DEFAULT_NIGHT_START,
     val nightEnd: Int = DEFAULT_NIGHT_END,
+    val endedRepeatHours: Int = DEFAULT_ENDED_REPEAT_HOURS,
 ) {
     init {
+        require(endedRepeatHours >= 0)
         require(nightStart in 0 until SensorReminder.MINUTES_PER_DAY && nightEnd in 0 until SensorReminder.MINUTES_PER_DAY)
         require(nightStart != nightEnd) { "the night needs two different times" }
     }
@@ -57,5 +61,8 @@ data class SensorEndConfig(
         const val MAX_REMINDERS = 6
         const val DEFAULT_NIGHT_START = 23 * 60
         const val DEFAULT_NIGHT_END = 7 * 60
+
+        /** The schema's default for `endedRepeatHours` (`SettingsSpec.ENDED_REPEAT_HOURS`, pinned by a test). */
+        const val DEFAULT_ENDED_REPEAT_HOURS = 2
     }
 }

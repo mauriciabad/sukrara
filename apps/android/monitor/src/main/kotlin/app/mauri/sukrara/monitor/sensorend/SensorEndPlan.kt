@@ -19,7 +19,8 @@ import java.time.temporal.ChronoUnit
  * *time*, so one an unlock brought forward isn't shown again at its time); the countdowns dismissed (swiped away);
  * the notices shown; [firstReading] = the first reading since the start (a restart must not bring the warm-up back);
  * [lastUnlock] = the latest unlock that brings a reminder forward; [config] = the settings the slots were planned
- * with (a change means the slots already past never fire); [parked] = the hub has no sensor right now (forgotten, or
+ * with (a change means the slots already past never fire); [lastEnded] = when *Sensor ended* last showed (its repeats
+ * count from it); [parked] = the hub has no sensor right now (forgotten, or
  * not read yet): nothing is shown or planned, and the same sensor coming back keeps what was announced (#102).
  */
 @Serializable
@@ -36,6 +37,7 @@ data class SensorEndMemory(
     val firstReading: Long = 0,
     val lastUnlock: Long = 0,
     val config: Int = 0,
+    val lastEnded: Long = 0,
     val parked: Boolean = false,
 ) {
     val known: Boolean get() = end > 0
@@ -76,18 +78,24 @@ data class Slot(
  * - Slots that passed before the planner knew them (a new sensor, edited settings) never fire; a slot missed while
  *   the phone was off fires late if the sensor hasn't ended, and of several missed only the latest one.
  * - The end countdown runs from end − countdownHours to the end (0 h = none), unless dismissed for this sensor.
- * - At the end one "Sensor ended", at most [ENDED_GRACE] after it (not days later after a reboot).
+ * - The countdown takes the place of a reminder shown before its window (it says the same, #140); one that comes
+ *   during the window stays.
+ * - At the end one "Sensor ended", at most [ENDED_GRACE] after it (not days later after a reboot); then, with
+ *   `endedRepeatHours`, again every so many hours from the last one until a new sensor, at most [ENDED_REPEAT_FOR]
+ *   after the end, never in the night window (one due then waits for the wake-up time).
  * - Warm-up: a countdown from the start to the warm-up end while no reading came, unless dismissed. **It never goes
  *   below zero**: at the warm-up end it becomes "Almost ready" without a timer and gives up `grace` later. The first
  *   reading ends it; one "Sensor ready" follows if the countdown was shown, within [READY_GRACE] of that reading.
- * - A progress tick is inexact (non-waking, at most [TICK_WINDOW] late): used only when it fires before the next
- *   event even if late, so an event (warm-up end, sensor end) is never left to a late tick.
+ * - Two alarms: the next event (reminder, window start, warm-up end and give-up, the end, *Sensor ended* again) is
+ *   always set exact and waking; a progress tick (non-waking: it waits while the phone sleeps) only refreshes a bar
+ *   before it. A sleeping phone never leaves the end to a tick (#140: the countdown's timer ran below zero).
  */
 object SensorEndPlan {
     const val TICK = 15 * 60L
     const val WARMUP_TICK = 5 * 60L
     const val TICK_WINDOW = 60L
     const val ENDED_GRACE = 12 * 3600L
+    const val ENDED_REPEAT_FOR = 3 * 86_400L
     const val READY_GRACE = 3600L
     const val WARMUP_GRACE = 15 * 60L
     const val SAME_SENSOR_S = 24 * 3600L
@@ -101,15 +109,17 @@ object SensorEndPlan {
         val remind: Long?,
         val countdown: Boolean,
         val ended: Boolean,
-        /** When to run again, or null = nothing left for this sensor. */
+        /** The next event (exact, waking), or null = nothing left for this sensor. */
         val next: Long?,
-        /** [next] is a reminder / window start / end (exact, waking) rather than a progress tick. */
-        val nextExact: Boolean,
+        /** A progress refresh before [next] (non-waking: late while the phone sleeps), or null. */
+        val tick: Long? = null,
         val warmup: Boolean = false,
         /** ... past its end, still without a reading: "Almost ready", no timer. */
         val warmupWaiting: Boolean = false,
         val ready: Boolean = false,
         val remindText: ReminderText = ReminderText.ENDS,
+        /** The countdown takes the place of the reminder shown before its window. */
+        val dropReminder: Boolean = false,
     )
 
     private fun local(
@@ -153,6 +163,29 @@ object SensorEndPlan {
             if (cfg.unlock) epoch(evening.minusMinutes(EVENING_UNLOCK.toLong()), zone) else null,
             evening = true,
         )
+    }
+
+    /** [t], or the night window's end (wake-up) when [t] is in the night. */
+    fun outOfNight(
+        t: Long,
+        cfg: SensorEndConfig,
+        zone: ZoneId,
+    ): Long {
+        if (!inNight(t, cfg, zone)) return t
+        val l = local(t, zone)
+        val wake = at(l.toLocalDate(), cfg.nightEnd)
+        return epoch(if (wake.isAfter(l)) wake else wake.plusDays(1), zone)
+    }
+
+    /** When *Sensor ended* comes again after the one at [last] (0 = none yet: from the [end]), or null (off, past it). */
+    fun endedAgainAt(
+        end: Long,
+        last: Long,
+        cfg: SensorEndConfig,
+        zone: ZoneId,
+    ): Long? {
+        if (cfg.endedRepeatHours <= 0) return null
+        return outOfNight(maxOf(last, end) + cfg.endedRepeatHours * 3600L, cfg, zone).takeIf { it < end + ENDED_REPEAT_FOR }
     }
 
     /** The reminder slots after [start] and before [end], earliest first (two at one time: the evening one). */
@@ -245,7 +278,15 @@ object SensorEndPlan {
         val last = maxOf(mem.lastReminder, remind ?: 0)
         val win = if (cfg.countdown && hours > 0) windowStart(end, hours) else null
         val countdown = win != null && now in win until end && !mem.countdownDismissed
-        val ended = now >= end && now < end + ENDED_GRACE && !mem.endedShown
+        val firstEnded = now >= end && now < end + ENDED_GRACE && !mem.endedShown
+        val againAt = if (now >= end) endedAgainAt(end, mem.lastEnded, cfg, zone) else null
+        val ended = firstEnded || (againAt != null && now >= againAt && !inNight(now, cfg, zone))
+        // a repeat due in the night waits for the wake-up
+        val nextEnded =
+            endedAgainAt(end, if (ended) now else mem.lastEnded, cfg, zone)
+                ?.let { maxOf(it, outOfNight(now, cfg, zone)) }
+                ?.takeIf { it > now && it < end + ENDED_REPEAT_FOR }
+        val dropReminder = countdown && remind == null && win != null && mem.lastReminder < win
         val warmingUp = cfg.warmup && warmupEnd > start && now in start until warmupEnd + grace && first == null && now < end
         val warmup = warmingUp && !mem.warmupDismissed
         val ready = first != null && mem.warmupShown && !mem.warmupDismissed && !mem.readyShown && now < first + READY_GRACE && now < end
@@ -257,6 +298,7 @@ object SensorEndPlan {
                 end.takeIf { it > now },
                 warmupEnd.takeIf { warmingUp && it > now },
                 (warmupEnd + grace).takeIf { warmingUp && it > now },
+                nextEnded,
             ).minOrNull()
         // "Almost ready" has no timer and no bar to refresh: no tick
         val tick =
@@ -264,12 +306,8 @@ object SensorEndPlan {
                 warmup && !waiting -> now + WARMUP_TICK
                 countdown -> now + TICK
                 else -> null
-            }
-        return if (tick != null && (event == null || tick + TICK_WINDOW < event)) {
-            Plan(remind, countdown, ended, tick, false, warmup, waiting, ready, remindText)
-        } else {
-            Plan(remind, countdown, ended, event, event != null, warmup, waiting, ready, remindText)
-        }
+            }?.takeIf { event == null || it + TICK_WINDOW < event }
+        return Plan(remind, countdown, ended, event, tick, warmup, waiting, ready, remindText, dropReminder)
     }
 
     /** Calendar days from [now] to [end] in [zone]: 0 = today, 1 = tomorrow … */
@@ -282,15 +320,18 @@ object SensorEndPlan {
         return ChronoUnit.DAYS.between(day(now), day(end))
     }
 
-    /** The end countdown's bar: the time left in the window, per mille (1000 at its start, 0 at the end). */
-    fun leftPerMille(
+    /**
+     * The end countdown's bar: the time gone in the window, per mille (0 at its start, 1000 at the end). It fills toward
+     * the end like a journey's ProgressStyle bar and the warm-up's (#140); the timer says the time left.
+     */
+    fun endPerMille(
         end: Long,
         hours: Int,
         now: Long,
     ): Int {
         val span = hours * 3600L
-        if (span <= 0) return 0
-        return (((end - now).coerceIn(0, span) * 1000) / span).toInt()
+        if (span <= 0) return 1000
+        return 1000 - (((end - now).coerceIn(0, span) * 1000) / span).toInt()
     }
 
     /** The warm-up's bar: the time done, per mille. */

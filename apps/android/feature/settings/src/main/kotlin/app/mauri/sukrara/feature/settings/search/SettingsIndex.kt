@@ -238,6 +238,7 @@ object SettingsIndex {
                     R.string.st_sensorend_countdown to R.string.st_sensorend_countdown_summary,
                     R.string.st_sensorend_countdown_hours to null,
                     R.string.st_sensorend_warmup to R.string.st_sensorend_warmup_summary,
+                    R.string.st_sensorend_again to null,
                 ),
             )
             addAll(

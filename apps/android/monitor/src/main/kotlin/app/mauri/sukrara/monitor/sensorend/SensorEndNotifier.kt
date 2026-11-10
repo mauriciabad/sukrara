@@ -32,9 +32,12 @@ interface SensorEndPresenter {
     fun cancel(notice: SensorNotice)
 }
 
-/** The notifier's one alarm: [exact] = an event (waking, on time), else a progress tick (non-waking); null cancels. */
+/**
+ * The notifier's two alarms: [event] = the next moment that matters (exact, waking, on time), [tick] = a progress
+ * refresh before it (non-waking); null cancels each.
+ */
 fun interface SensorEndAlarm {
-    fun set(at: Long?, exact: Boolean)
+    fun set(event: Long?, tick: Long?)
 }
 
 /** The settings the notifier plans with: Settings › Sensor end, the countdown hours, the glucose chip. */
@@ -103,7 +106,7 @@ class SensorEndNotifier(
     suspend fun check() =
         mutex.withLock {
             val before = store.data.first()
-            if (!before.known || before.parked) return@withLock alarm.set(null, true)
+            if (!before.known || before.parked) return@withLock alarm.set(null, null)
             val s = settings()
             val now = clock.now().epochSecond
             apply(SensorEndPlan.remember(before, before.start, before.end, before.warmupEnd, s.config.hashCode(), now), null, s, now)
@@ -119,24 +122,29 @@ class SensorEndNotifier(
             apply(before.copy(lastUnlock = now), null, s, now)
         }
 
-    /** A countdown was swiped away: not shown again for this sensor ([warmup] = the warm-up one, and no "ready"). */
+    /**
+     * A countdown was swiped away: not shown again for this sensor ([warmup] = the warm-up one, and no "ready"). The end
+     * countdown also goes by itself at the end (its timeout sends the same intent): that is no swipe.
+     */
     suspend fun dismissed(warmup: Boolean) =
         mutex.withLock {
-            store.update { if (warmup) it.copy(warmupDismissed = true) else it.copy(countdownDismissed = true) }
+            val now = clock.now().epochSecond
+            val timedOut = !warmup && store.data.first().let { it.known && now >= it.end - SensorEndPlan.TICK_WINDOW }
+            if (!timedOut) store.update { if (warmup) it.copy(warmupDismissed = true) else it.copy(countdownDismissed = true) }
             presenter.cancel(if (warmup) SensorNotice.WARMUP else SensorNotice.COUNTDOWN)
         }
 
     private suspend fun forget(before: SensorEndMemory) {
         SensorNotice.entries.forEach(presenter::cancel)
         if (before != SensorEndMemory()) store.update { SensorEndMemory() }
-        alarm.set(null, true)
+        alarm.set(null, null)
     }
 
     /** No sensor now: nothing shows or is planned, what was announced for the sensor stays ([SensorEndMemory.parked]). */
     private suspend fun park(before: SensorEndMemory) {
         SensorNotice.entries.forEach(presenter::cancel)
         if (before.known && !before.parked) store.update { it.copy(parked = true) }
-        alarm.set(null, true)
+        alarm.set(null, null)
     }
 
     /**
@@ -156,7 +164,7 @@ class SensorEndNotifier(
         // remembered: after a restart the warm-up must not come back before the next reading
         if (first != null && mem.firstReading == 0L) mem = mem.copy(firstReading = first)
         p.remind?.let { mem = mem.copy(lastReminder = it) }
-        if (p.ended) mem = mem.copy(endedShown = true)
+        if (p.ended) mem = mem.copy(endedShown = true, lastEnded = now)
         store.update { mem }
 
         if (p.warmup) {
@@ -177,10 +185,11 @@ class SensorEndNotifier(
         } else {
             presenter.cancel(SensorNotice.COUNTDOWN)
         }
+        if (p.dropReminder) presenter.cancel(SensorNotice.REMINDER)
         if (p.ended) {
             presenter.cancel(SensorNotice.REMINDER)
             presenter.ended()
         }
-        alarm.set(p.next, p.nextExact)
+        alarm.set(p.next, p.tick)
     }
 }

@@ -120,15 +120,53 @@ class SensorEndPlanTest {
         assertFalse(SensorEndPlan.plan(cfg, 8, t("2026-03-10T15:00"), zone, m.copy(endedShown = true)).ended)
     }
 
+    /** #140: a sleeping phone holds a non-waking tick back, so the end is always its own exact alarm. */
     @Test
     fun `a progress tick never stands in for an event`() {
         val m = mem("2026-03-10T14:30").copy(lastReminder = t("2026-03-10T09:00"))
         val p = SensorEndPlan.plan(cfg, 8, t("2026-03-10T14:20"), zone, m)
         assertEquals(m.end, p.next)
-        assertTrue(p.nextExact)
+        assertNull(p.tick) // it would land after the end
         val early = SensorEndPlan.plan(cfg, 8, t("2026-03-10T10:00"), zone, m)
-        assertEquals(t("2026-03-10T10:15"), early.next)
-        assertFalse(early.nextExact)
+        assertEquals(m.end, early.next)
+        assertEquals(t("2026-03-10T10:15"), early.tick)
+    }
+
+    /** #140: the countdown takes the place of the reminder shown before its window; one shown during it stays. */
+    @Test
+    fun `the countdown replaces an earlier reminder`() {
+        val m = mem("2026-03-10T14:30")
+        val dayBefore = cfg.copy(reminders = listOf(SensorReminder(1, 9 * 60)))
+        val before = m.copy(lastReminder = t("2026-03-09T09:00"))
+        assertTrue(SensorEndPlan.plan(dayBefore, 4, t("2026-03-10T10:31"), zone, before).dropReminder)
+        assertFalse(SensorEndPlan.plan(dayBefore, 4, t("2026-03-10T10:29"), zone, before).dropReminder) // window at 10:30
+        val during = m.copy(lastReminder = t("2026-03-10T09:00"))
+        assertFalse(SensorEndPlan.plan(cfg, 4, t("2026-03-10T09:30"), zone, during).dropReminder) // no countdown yet
+        assertFalse(SensorEndPlan.plan(cfg, 8, t("2026-03-10T09:30"), zone, during).dropReminder) // 09:00 is in its window
+    }
+
+    /** #140: after the end *Sensor ended* comes again every 2 h (default), never in the night, until a new sensor. */
+    @Test
+    fun `sensor ended again every few hours, out of the night`() {
+        val m = mem("2026-03-10T14:30")
+        val first = SensorEndPlan.plan(cfg, 8, t("2026-03-10T14:30"), zone, m)
+        assertTrue(first.ended)
+        assertEquals(t("2026-03-10T16:30"), first.next)
+        val shown = m.copy(endedShown = true, lastEnded = t("2026-03-10T14:30"))
+        assertFalse(SensorEndPlan.plan(cfg, 8, t("2026-03-10T16:00"), zone, shown).ended)
+        assertTrue(SensorEndPlan.plan(cfg, 8, t("2026-03-10T16:30"), zone, shown).ended)
+        // 22:30 → the next (00:30) is in the night: at the wake-up, 07:00
+        val evening = SensorEndPlan.plan(cfg, 8, t("2026-03-10T22:30"), zone, shown.copy(lastEnded = t("2026-03-10T20:30")))
+        assertTrue(evening.ended)
+        assertEquals(t("2026-03-11T07:00"), evening.next)
+        val night = shown.copy(lastEnded = t("2026-03-10T22:30"))
+        assertFalse(SensorEndPlan.plan(cfg, 8, t("2026-03-11T03:00"), zone, night).ended)
+        assertTrue(SensorEndPlan.plan(cfg, 8, t("2026-03-11T07:00"), zone, night).ended)
+        // at most 3 days after the end, and not at all when off
+        assertFalse(SensorEndPlan.plan(cfg, 8, t("2026-03-13T16:00"), zone, shown.copy(lastEnded = t("2026-03-13T13:00"))).ended)
+        val off = cfg.copy(endedRepeatHours = 0)
+        assertFalse(SensorEndPlan.plan(off, 8, t("2026-03-10T16:30"), zone, shown).ended)
+        assertNull(SensorEndPlan.plan(off, 8, t("2026-03-10T14:30"), zone, m).next)
     }
 
     @Test
@@ -141,7 +179,7 @@ class SensorEndPlanTest {
         val waiting = SensorEndPlan.plan(cfg, 8, start + 3600 + 60, zone, m.copy(warmupShown = true))
         assertTrue(waiting.warmup)
         assertTrue(waiting.warmupWaiting)
-        assertTrue(waiting.nextExact) // the give-up time, no tick
+        assertNull(waiting.tick) // no timer, no bar to refresh: the give-up time only
         assertFalse(SensorEndPlan.plan(cfg, 8, start + 3600 + 15 * 60, zone, m).warmup)
         assertFalse(SensorEndPlan.plan(cfg.copy(warmup = false), 8, start + 600, zone, m).warmup)
     }
@@ -224,8 +262,10 @@ class SensorEndPlanTest {
 
     @Test
     fun `bars`() {
-        assertEquals(1000, SensorEndPlan.leftPerMille(10_000, 1, 10_000 - 3600))
-        assertEquals(500, SensorEndPlan.leftPerMille(10_000, 1, 10_000 - 1800))
+        // the end countdown fills toward the end (#140), like the warm-up's
+        assertEquals(0, SensorEndPlan.endPerMille(10_000, 1, 10_000 - 3600))
+        assertEquals(500, SensorEndPlan.endPerMille(10_000, 1, 10_000 - 1800))
+        assertEquals(1000, SensorEndPlan.endPerMille(10_000, 1, 10_000))
         assertEquals(500, SensorEndPlan.warmupPerMille(0, 3600, 1800))
     }
 }

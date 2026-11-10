@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.sensorend
 
+import android.app.Notification
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
@@ -60,5 +61,21 @@ class SensorCountdownNotificationTest {
         presenter.cancel(SensorNotice.WARMUP)
         // no child left: the summary goes too (alone it would count as ungrouped)
         assertFalse(shadowOf(nm).activeNotifications.any { it.id == NotificationIds.INFO_SUMMARY })
+    }
+
+    /** #140: the end countdown's bar fills toward the end, and it goes by itself at the end (never a timer below zero). */
+    @Test fun `the end countdown fills toward the end and times out at it`() {
+        val now = System.currentTimeMillis() / 1000
+        val end = now + 6 * 3600
+        presenter.countdown(end, hours = 8, now = now, promote = false)
+        val n = posted(SensorNotice.COUNTDOWN)
+        assertTrue(kotlin.math.abs(n.timeoutAfter - 6 * 3600_000L) < 60_000)
+        val style = Notification.Builder.recoverBuilder(ctx, n).style as Notification.ProgressStyle
+        assertEquals(250, style.progress) // 2 h of 8 gone
+    }
+
+    @Test fun `the warm-up countdown has no timeout`() {
+        presenter.warmup(start = now - 600, warmupEnd = now + 3000, now = now, waiting = false)
+        assertEquals(0L, posted(SensorNotice.WARMUP).timeoutAfter)
     }
 }
