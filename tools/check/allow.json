@@ -1,5 +1,5 @@
 {
-  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference.",
+  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
   "header_exts": [
     ".kt",
     ".swift",
@@ -215,5 +215,11 @@
     "package:com.freestylelibre.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.freestylelibre.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)"
+  },
+  "prerelease_ok": {
+    "material3": {
+      "version": "1.5.0-rc01",
+      "reason": "Settings and setup rows are Material 3 Expressive SegmentedListItems, which exist only in 1.5 (1.4.0, the newest stable and the Compose BOM 2026.09.00 one, has none). 1.5.0-rc01 (2026-11-04) has no API changes since beta01, only fixes. The owner prefers the newest libraries (#81): move to 1.5.0 as soon as it is stable, then drop this entry."
+    }
   }
 }

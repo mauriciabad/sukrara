@@ -34,4 +34,13 @@ mkdir -p "$dist" "$HOME/.android/sukrara-mappings"
 cp "$apk" "$dist/Sukrara-$version.apk"
 cp "$mapping" "$HOME/.android/sukrara-mappings/$version-mapping.txt"
 echo "mapping archived: $HOME/.android/sukrara-mappings/$version-mapping.txt"
+# #81: a pre-release library in a release is recorded in its notes, with why (tools/check/allow.json prerelease_ok)
+python3 -I -c '
+import json, sys
+ok = json.load(open(sys.argv[1])).get("prerelease_ok", {})
+if ok:
+    print("release notes, pre-release libraries in this build:")
+    for name, e in sorted(ok.items()):
+        print("  - %s %s: %s" % (name, e["version"], e["reason"]))
+' "$root/tools/check/allow.json"
 echo "$dist/Sukrara-$version.apk"

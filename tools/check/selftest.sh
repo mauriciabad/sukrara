@@ -68,6 +68,10 @@ case_ "an image in the frozen PoC passes" pass "" poc/spikes/brand/assets/x/icon
 case_ "an nsec in app code fails" fail secrets apps/android/x/src/main/kotlin/K.kt "$HDR
 val k = \"nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\""
 
+case_ "an unlisted beta library fails" fail prerelease apps/android/gradle/libs.versions.toml '[versions]
+foo = "2.0.0-beta03"'
+case_ "a listed pre-release that is stable now fails" fail prerelease apps/android/gradle/libs.versions.toml '[versions]
+material3 = "1.5.0"'
 if command -v swift >/dev/null 2>&1; then  # the format check needs a Swift toolchain (NOTE without one)
   case_ "unformatted Mac Swift fails" fail format apps/macos/Sources/SukraraCore/F.swift "$HDR
 let  x=1"
