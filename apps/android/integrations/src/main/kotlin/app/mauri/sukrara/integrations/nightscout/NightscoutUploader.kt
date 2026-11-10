@@ -76,7 +76,7 @@ sealed interface NsTestResult {
 /**
  * Settings › Share with apps › Nightscout upload: the wearer's readings (30 days back), treatments, sensor starts and
  * the phone's battery to the person's own Nightscout site. Off by default; wearer only; upload only (nothing is read
- * back into Sukrara except the site's entry dates for the duplicate check).
+ * back into Sukrara: the site's entry dates and the treatments around a new entry are read only for the duplicate checks).
  *
  * The token / API secret lives only in the [SecureStore] (`nightscout`). One cycle after every reading, every changed
  * entry and every 5 minutes plans what the site lacks ([NightscoutQueue]) and sends it. A refused credential stops
@@ -373,8 +373,10 @@ class NsFailure(
 
 /**
  * Sends one [NightscoutQueue.Plan] (blocking: IO). Entries go oldest first in batches, each batch remembered at once
- * through [save] so a 30-day backfill keeps its progress through a failure; then treatments, then the sensor start. A
- * document the site refuses (a 4xx other than 401 / 403) counts as sent: one bad document must not block the rest.
+ * through [save] so a 30-day backfill keeps its progress through a failure; then treatments (each one the site has no
+ * version of ours of is first looked up: another uploader's same treatment links it instead, [NsDocs.sameTreatment]),
+ * then the sensor start. A document the site refuses (a 4xx other than 401 / 403) counts as sent: one bad document must
+ * not block the rest.
  */
 object NightscoutSync {
     data class Result(
@@ -419,7 +421,31 @@ object NightscoutSync {
         }
         for (r in plan.upserts + plan.deletes) {
             val t = r.treatment
-            val o = if (t.deleted) client.deleteTreatment(t.id) else client.upsertTreatment(NsDocs.treatment(t, cfg.device, zone))
+            // another uploader may have it already (a pump's bolus via AndroidAPS, xDrip+): linked, never doubled
+            var lookup: Outcome? = null
+            if (NightscoutQueue.needsLookup(st, r)) {
+                val (docs, lo) = client.treatmentsAround(t.at.toEpochMilli(), NightscoutQueue.SAME_TREATMENT_S * 1000)
+                if (docs == null) {
+                    lookup = lo
+                } else {
+                    val other =
+                        NsDocs.sameTreatment(
+                            t,
+                            docs,
+                            st.linked
+                                .filterKeys { it != t.id }
+                                .values
+                                .toSet(),
+                        )
+                    if (other != null) {
+                        st = NightscoutQueue.linked(st, r, other).also(save)
+                        continue
+                    }
+                    st = NightscoutQueue.unlinked(st, t.id)
+                }
+            }
+            val o =
+                lookup ?: if (t.deleted) client.deleteTreatment(t.id) else client.upsertTreatment(NsDocs.treatment(t, cfg.device, zone))
             when (o) {
                 is Outcome.Ok -> sent++
                 is Outcome.Rejected -> dropped++

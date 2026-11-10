@@ -1354,13 +1354,26 @@ or switch off. *Follower phone* → switch shown off and disabled with the reaso
   within 2 min of another uploader's reading count as covered (a backfill never doubles someone else's data), and
   another device's readings in the last 30 min **pause everything** (readings, entries, sensor, battery) until *Upload
   anyway*. Failures retry after 30 s doubling to 15 min (±20 %, or the site's Retry-After); 401 / 403 stops until the
-  token is changed. Upload only: nothing is read back except those reading dates.
+  token is changed.
+- Entries another app already uploaded (AndroidAPS's pump bolus, xDrip+, a pump's app, the careportal) are never
+  doubled: Nightscout merges a treatment only on its `identifier` (or, without one, on time + eventType), so the site
+  would keep both and count the insulin / carbs twice for everyone reading it, loops included. Before an entry goes up
+  the first time (and after an edit of a linked one) the site's treatments within ±2 min are read (`/api/v1/treatments.json`
+  by `created_at`, both APIs): one from another uploader with the same amount in the field Nightscout counts — rapid
+  insulin ↔ `insulin` (±0.01 U), carbs ↔ `carbs` (±0.5 g), whatever its eventType (`Meal Bolus`, `SMB`, `<none>`…); a
+  note or long-acting dose ↔ a `Note` with the same text — **links** the entry instead of sending it (`NsState.linked`,
+  `NsDocs.sameTreatment`; `NsDocsTest`, `NightscoutUploaderTest`). Never one of Sukrara's own documents, a soft-deleted
+  one, or the same field of one already linked (a `Meal Bolus` covers one insulin and one carbs entry). The other app's
+  document stays as it is: deleting a linked entry sends nothing; an edit that no longer matches goes up as Sukrara's
+  own. A site that refuses that lookup drops the entry like a refused document (never sent blind). Upload only: nothing
+  is read back except those reading dates and treatments.
 
 **States and exits**: *Not set up* → *Site* → dialog (Cancel keeps nothing). *Off* (default) → main switch. *On ·
 nothing sent yet / last upload* → main switch off, *Remove this site*. *Trying again* → retries by itself; switch off to
 stop. *Token refused* → the status row or *Site* opens the dialog; saving a new token resumes. *Paused (another
-uploader)* → *Upload anyway*, or switch off. *Follower phone* → the switch is disabled with the reason. Back leaves the
-page.
+uploader)* → *Upload anyway*, or switch off. *Entry linked to another app's* (no state of its own: it shows as sent) →
+change it in Sukrara so it no longer matches (it goes up as Sukrara's own), or change / delete it in the app that
+uploaded it. *Follower phone* → the switch is disabled with the reason. Back leaves the page.
 
 ## Languages
 

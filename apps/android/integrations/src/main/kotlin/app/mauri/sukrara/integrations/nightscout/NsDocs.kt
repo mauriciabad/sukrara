@@ -9,15 +9,22 @@ import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
@@ -230,6 +237,58 @@ object NsDocs {
                 },
             )
         }
+
+    /**
+     * The site's document that already is [t], uploaded by another app (AndroidAPS, xDrip+, a pump's app, Nightscout's
+     * careportal), as `<_id>:<field>`; null when there is none. Nightscout merges a new treatment only on its
+     * `identifier` / `_id`, or for a document without either on time + eventType: ours always carries its own identifier,
+     * so the site would keep both and count the insulin / carbs twice (IOB / COB, and every loop reading the site).
+     *
+     * The same = within [NightscoutQueue.SAME_TREATMENT_S] of [t] and the same amount in the field Nightscout counts,
+     * whatever the eventType (AndroidAPS writes `Meal Bolus`, `Correction Bolus`, `SMB`…, xDrip+ often `<none>`): rapid
+     * insulin ↔ `insulin` (±0.01 U), carbs ↔ `carbs` (±0.5 g); a note or long-acting dose ↔ a `Note` with the same text.
+     * Never ours (our identifier, or `app` / `enteredBy` Sukrara: another Sukrara entry is its own), never a soft-deleted
+     * one (`isValid: false`), never one in [taken] (each of their documents stands for one entry of ours per field, so a
+     * `Meal Bolus` covers one insulin and one carbs entry).
+     */
+    fun sameTreatment(
+        t: Treatment,
+        docs: List<JsonObject>,
+        taken: Set<String>,
+    ): String? {
+        val field =
+            when (t.kind) {
+                TreatmentKind.RapidInsulin -> "insulin"
+                TreatmentKind.Carbs -> "carbs"
+                TreatmentKind.LongInsulin, TreatmentKind.Note -> "notes"
+            }
+        val ourNotes = treatment(t, "", ZoneOffset.UTC)["notes"]?.jsonPrimitive?.contentOrNull
+        return docs
+            .asSequence()
+            .filter { d ->
+                val id = d.text("_id")
+                id != null && "$id:$field" !in taken &&
+                    d.text("identifier") != t.id && d.text("app") != APP && d.text("enteredBy") != APP &&
+                    d["isValid"]?.jsonPrimitive?.booleanOrNull != false
+            }.filter { d -> d.time()?.let { abs(it.epochSecond - t.at.epochSecond) <= NightscoutQueue.SAME_TREATMENT_S } == true }
+            .filter { d ->
+                when (t.kind) {
+                    TreatmentKind.RapidInsulin -> d.number("insulin")?.let { abs(it - t.amount) <= 0.01 } == true
+                    TreatmentKind.Carbs -> d.number("carbs")?.let { abs(it - t.amount) <= 0.5 } == true
+                    else -> d.text("eventType") == "Note" && ourNotes != null && d.text("notes")?.trim() == ourNotes
+                }
+            }.minByOrNull { d -> abs(d.time()!!.epochSecond - t.at.epochSecond) }
+            ?.let { "${it.text("_id")}:$field" }
+    }
+
+    private fun JsonObject.text(k: String) = (this[k] as? JsonPrimitive)?.contentOrNull
+
+    private fun JsonObject.number(k: String) = (this[k] as? JsonPrimitive)?.let { it.doubleOrNull ?: it.contentOrNull?.toDoubleOrNull() }
+
+    /** `created_at` (any ISO offset), else `date` / `mills` ms. */
+    private fun JsonObject.time(): Instant? =
+        text("created_at")?.let { runCatching { OffsetDateTime.parse(it).toInstant() }.getOrNull() }
+            ?: (number("date") ?: number("mills"))?.let { Instant.ofEpochMilli(it.toLong()) }
 
     private fun units(a: Double): String = if (a == Math.floor(a)) a.toLong().toString() else String.format(Locale.ROOT, "%.1f", a)
 }

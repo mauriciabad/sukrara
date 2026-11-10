@@ -28,8 +28,13 @@ data class NsState(
     val from: Long = 0,
     /** Reading minutes (epoch s / 60) the site has, as ranges. */
     val minutes: List<Span> = emptyList(),
-    /** Treatment id → the version (`modifiedAt` ms) the site has. */
+    /** Treatment id → the version (`modifiedAt` ms) the site has (ours, or another uploader's it is linked to). */
     val treatments: Map<String, Long> = emptyMap(),
+    /**
+     * Treatment id → another uploader's document that already is this treatment on the site (`<_id>:<field>`, see
+     * [NsDocs.sameTreatment]): nothing of ours goes up for it, so Nightscout never counts it twice.
+     */
+    val linked: Map<String, String> = emptyMap(),
     /** Sensor serials whose start went up. */
     val sensors: List<String> = emptyList(),
     val batteryPercent: Int = -1,
@@ -126,7 +131,12 @@ object NightscoutQueue {
                 if (had == t.modifiedAt.toEpochMilli()) continue
                 when {
                     had == null && (t.deleted || t.at.epochSecond < from) -> if (t.deleted) settled += r
+
+                    // linked: the site holds only the other app's document, and that stays as it is
+                    t.deleted && t.id in state.linked -> settled += r
+
                     t.deleted -> deletes += r
+
                     else -> upserts += r
                 }
             }
@@ -151,11 +161,36 @@ object NightscoutQueue {
         ts: List<TreatmentRecord>,
     ): NsState = state.copy(treatments = state.treatments + ts.associate { it.treatment.id to it.treatment.modifiedAt.toEpochMilli() })
 
-    /** Forgets treatment versions no longer in the stores' window (bounded memory). */
+    /** Forgets treatment versions and links no longer in the stores' window (bounded memory). */
     fun prune(
         state: NsState,
         known: Set<String>,
-    ): NsState = state.copy(treatments = state.treatments.filterKeys { it in known })
+    ): NsState = state.copy(treatments = state.treatments.filterKeys { it in known }, linked = state.linked.filterKeys { it in known })
+
+    /** How far apart (s) another uploader's treatment and ours may be and still be the same one. */
+    const val SAME_TREATMENT_S = 120L
+
+    /**
+     * Whether [r] is looked up on the site before it goes up: the site has no version of ours yet (first upload, or the
+     * remembered state was lost), or it is linked to another uploader's document (an edit is checked again).
+     */
+    fun needsLookup(
+        state: NsState,
+        r: TreatmentRecord,
+    ): Boolean = !r.treatment.deleted && (r.treatment.id !in state.treatments || r.treatment.id in state.linked)
+
+    /** [r] already is another uploader's [other] on the site: remembered as handled, nothing of ours goes up. */
+    fun linked(
+        state: NsState,
+        r: TreatmentRecord,
+        other: String,
+    ): NsState = sentTreatments(state, listOf(r)).let { it.copy(linked = it.linked + (r.treatment.id to other)) }
+
+    /** [id] no longer matches what it was linked to: ours goes up. */
+    fun unlinked(
+        state: NsState,
+        id: String,
+    ): NsState = if (id in state.linked) state.copy(linked = state.linked - id) else state
 
     fun sentSensor(
         state: NsState,

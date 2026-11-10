@@ -239,6 +239,24 @@ class NsClient(
         return list to o
     }
 
+    /**
+     * The site's treatments with `created_at` in [atMs] ± [marginMs], every uploader's (read-only). v1 on both APIs:
+     * v1 stores `created_at` as UTC ISO text, so the range compares as text, and v3's `date` isn't set on v1 documents.
+     */
+    fun treatmentsAround(
+        atMs: Long,
+        marginMs: Long,
+    ): Pair<List<JsonObject>?, Outcome> {
+        val from = enc(NsDocs.isoUtc(java.time.Instant.ofEpochMilli(atMs - marginMs)))
+        val to = enc(NsDocs.isoUtc(java.time.Instant.ofEpochMilli(atMs + marginMs)))
+        val (r, o) = call("GET", "/api/v1/treatments.json?find[created_at][\$gte]=$from&find[created_at][\$lte]=$to&count=100")
+        if (o !is Outcome.Ok) return null to o
+        val list =
+            runCatching { Json.parseToJsonElement(r!!.body).jsonArray.mapNotNull { it as? JsonObject } }.getOrNull()
+                ?: return null to Outcome.Retry("unreadable treatments list")
+        return list to o
+    }
+
     /** `date` (ms) → `device` of the site's sgv entries in [fromMs, toMs]. */
     fun entriesBetween(
         fromMs: Long,
