@@ -327,8 +327,10 @@ profile = {"name": "Alex", "avatar": {"v": 1, "c": 0, "s": "cube", "a": 45, "n":
 
 **Share (follower joins)**
 1. Owner taps *Share* → app makes a token, shows QR + share-sheet link.
-2. Follower app (role "I follow someone") scans/opens it, generates `F`, sends an *access request* to `I` on the
-   invite's relays, shows the match code, waits.
+2. Follower app (role "I follow someone") scans/opens it and fetches the invite wrap (reading only), then shows who is
+   inviting (the wrap's `profile`) with *Follow* / *Cancel*; an opened link never asks by itself (another app can open
+   a `sukrara:` link it made up). *Follow* generates `F`, sends an *access request* to `I` on the invite's relays,
+   shows the match code, waits. Android `FollowerEngine.lookUp` / `join`, Mac `FollowerRuntime.lookUp` / `join(invite:)`.
 3. Owner app sees the request (checked on every chunk publish ≈ 5 min, immediately while the app is open), shows
    "Mom's phone wants to see your glucose · code 4821 — Allow / Deny".
 4. Allow → owner sends a *key delivery* for the current epoch, records `F` in the follower list and the owner backup,

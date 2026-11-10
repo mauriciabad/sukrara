@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.UploadLoop
@@ -112,6 +113,8 @@ class NightscoutUploader(
     private val clock: Clock,
     private val io: CoroutineDispatcher,
     private val log: (String) -> Unit = {},
+    /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
+    private val hold: UploadHold = UploadHold.NONE,
 ) {
     private val credential = MutableStateFlow<NsCredentialKind?>(null)
     private val saved = MutableStateFlow(NsSaved.None)
@@ -299,7 +302,7 @@ class NightscoutUploader(
             if (full) fullScanMs = nowMs
             val ts = treatments.changedSince(since - Duration.ofDays(1))
             state = NightscoutQueue.prune(state, ts.map { it.treatment.id }.toSet())
-            val plan = NightscoutQueue.plan(rs, ts, sensor.first(), state, s.options, nowS)
+            val plan = NightscoutQueue.plan(rs, ts, sensor.first(), state, s.options, nowS, hold)
             var sent = 0
             if (!plan.isEmpty) {
                 val r = withContext(io) { NightscoutSync.send(c, cfg, plan, state, rs, clock.zone, nowS) { st -> state = st } }

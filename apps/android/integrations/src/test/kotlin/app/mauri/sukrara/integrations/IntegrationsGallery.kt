@@ -125,9 +125,10 @@ class IntegrationsGallery {
                     NsApiUi(
                         true,
                         NsApiState.Listening(now - Duration.ofMinutes(1), "192.168.1.23"),
-                        SecretView.Shown("0f1e2d3c4b5a69788796a5b4c3d2e1f0"),
+                        SecretView.Shown("0f1e2d3c4b5a69788796a5b4c3d2e1f0", "9a8b7c6d5e4f30211203f4e5d6c7b8a9"),
                         lanOn = true,
-                        lan = LanState.Listening("192.168.1.23"),
+                        lan = LanState.Listening("192.168.1.23", "192.168.1.40", now - Duration.ofMinutes(2)),
+                        lanSecretMade = true,
                     ),
                     now,
                     NsApiActions(),

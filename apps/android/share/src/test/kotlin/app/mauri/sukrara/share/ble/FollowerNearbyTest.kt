@@ -27,6 +27,7 @@ import app.mauri.sukrara.share.follower.FollowerCodec
 import app.mauri.sukrara.share.follower.FollowerEngine
 import app.mauri.sukrara.share.follower.FollowerRecord
 import app.mauri.sukrara.share.follower.FollowerStore
+import app.mauri.sukrara.share.follower.InviteLookup
 import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
@@ -83,8 +84,11 @@ class FollowerNearbyTest {
     /** Joined, attached, and approved by the wearer (its events over Bluetooth only). */
     private fun TestScope.following(e: FollowerEngine): Pair<FakeNearbyTransport, Job> {
         lookup.stored += created.step.publish.first { it.kind == Wire.KIND_WRAP }
+        var found: InviteLookup? = null
+        backgroundScope.launch { found = e.lookUp(created.link.link) }
+        runCurrent()
         var result: JoinResult? = null
-        backgroundScope.launch { result = e.join(created.link.link, Profile("Bea", null)) }
+        backgroundScope.launch { result = e.join((found as InviteLookup.Found).invite, Profile("Bea", null)) }
         runCurrent()
         assertEquals(JoinResult.Joined, result)
         val job = backgroundScope.launch { e.readings.collect { received += it } }

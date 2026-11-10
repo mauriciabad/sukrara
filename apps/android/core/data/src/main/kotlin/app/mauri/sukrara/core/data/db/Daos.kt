@@ -132,3 +132,40 @@ interface OutboxDao {
     @Query("DELETE FROM outbox WHERE sent_at IS NOT NULL AND sent_at < :cutoff")
     suspend fun deleteSentBefore(cutoff: Long): Int
 }
+
+@Dao
+interface PenLedgerDao {
+    @Query("SELECT json FROM pen_ledger WHERE id = 0")
+    suspend fun ledger(): String?
+
+    @Upsert
+    suspend fun put(ledger: PenLedgerEntity)
+
+    /** Insulin and pen entries, tombstones included (the pen engine's view of the log; carbs and notes never matter). */
+    @Query("SELECT * FROM treatments WHERE kind IN ('RapidInsulin', 'LongInsulin') OR pen_json IS NOT NULL")
+    suspend fun insulin(): List<TreatmentEntity>
+
+    @Query("SELECT modified_at FROM treatments WHERE id = :id")
+    suspend fun modifiedAt(id: String): Long?
+
+    @Upsert
+    suspend fun upsertTreatment(treatment: TreatmentEntity)
+
+    /**
+     * One pen change: the ledger and every one of [treatments] newer than the stored version (last writer wins, as
+     * [TreatmentDao.upsertIfNewer]), all or nothing. Returns the ids it stored.
+     */
+    @Transaction
+    suspend fun commit(
+        ledger: PenLedgerEntity,
+        treatments: List<TreatmentEntity>,
+    ): List<String> {
+        val stored =
+            treatments.filter { t ->
+                val had = modifiedAt(t.id)
+                (had == null || had < t.modifiedAt).also { newer -> if (newer) upsertTreatment(t) }
+            }
+        put(ledger)
+        return stored.map { it.id }
+    }
+}

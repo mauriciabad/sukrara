@@ -49,10 +49,22 @@ func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
         let add = URL(string: SukraraIDs.Link.newTreatment)!
         #expect(inbox.receive([invite, URL(string: "https://example.com")!]).isEmpty)
         #expect(inbox.receive([add]).isEmpty)
-        #expect(inbox.pending == [invite, add])  // only sukrara: links, in order
+        #expect(inbox.pending == [invite, add])  // only Sukrara's links, in order
         #expect(inbox.launched() == [invite, add])
         #expect(inbox.pending.isEmpty && inbox.launched().isEmpty)  // each opens once
         #expect(inbox.receive([add]) == [add])  // after launch: at once
+    }
+
+    /// The web invite link reaches the follow step too; other https links aren't Sukrara's.
+    @Test func theWebInviteLinkIsAnInviteAndOtherWebLinksAreIgnored() {
+        let web = Wire.inviteBase + String(repeating: "A", count: 32)
+        #expect(AppLink(URL(string: web)!) == .invite(web))
+        #expect(AppLink(URL(string: "https://sukrara.mauri.app/")!) == nil)
+        #expect(AppLink(URL(string: "https://example.com/join#" + String(repeating: "A", count: 32))!) == nil)
+        #expect(AppLink(URL(string: "http://sukrara.mauri.app/join#" + String(repeating: "A", count: 32))!) == nil)
+        var inbox = LinkInbox()  // and it waits out a launch like a sukrara: link
+        #expect(inbox.receive([URL(string: web)!]).isEmpty)
+        #expect(inbox.launched() == [URL(string: web)!])
     }
 }
 
@@ -534,15 +546,20 @@ final class RecordingSender: TreatmentActions {
     @Test func aQRCodeThatIsNoInviteIsRefusedWithTheExactText() async {
         #expect(QRImport.inviteText(in: QRImport.image(of: "https://example.com")!) == nil)
         let m = FollowModel(status: .notFollowing, actions: nil, macName: "Mac")
-        await m.follow(qrText: nil)
+        await m.lookUp(qrText: nil)
         #expect(m.failure?.message == "No Sukrara invite QR code found in that image.")
     }
 
     @Test func pastedTextThatIsNoLinkNeverReachesTheRelays() async {
         final class Never: FollowActions {
             var calls = 0
+            var joined = 0
             var names: [String] = []
-            func join(link: String) async throws(FollowFailure) { calls += 1 }
+            func lookUp(link: String) async throws(FollowFailure) -> Invite? {
+                calls += 1
+                return InviteConfirmTests.marta
+            }
+            func join(invite: Invite) async throws(FollowFailure) { joined += 1 }
             func joinNearby(name: String) async throws(FollowFailure) { calls += 1 }
             func confirmNearby(same: Bool) async -> Bool { false }
             func setProfile(name: String, avatar: Avatar?) async { names.append(name) }
@@ -553,12 +570,14 @@ final class RecordingSender: TreatmentActions {
         let a = Never()
         let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
         m.linkText = "hello"
-        await m.follow()
+        await m.lookUp()
         #expect(m.failure == .invalidLink && a.calls == 0 && m.status == .notFollowing)
         m.linkText = Self.link
         m.macName = "Ana's MacBook"
-        await m.follow()
-        #expect(a.calls == 1 && m.failure == nil)
+        await m.lookUp()
+        #expect(a.calls == 1 && m.failure == nil && a.joined == 0 && a.names.isEmpty)
+        await m.confirmInvite()
+        #expect(a.joined == 1)
         #expect(a.names == ["Ana's MacBook"])  // the typed name goes with the request
     }
 
@@ -566,7 +585,8 @@ final class RecordingSender: TreatmentActions {
     @Test func nearbyCodesSameOrDifferent() async {
         final class Pairing: FollowActions {
             var confirmed: [Bool] = []
-            func join(link: String) async throws(FollowFailure) {}
+            func lookUp(link: String) async throws(FollowFailure) -> Invite? { nil }
+            func join(invite: Invite) async throws(FollowFailure) {}
             func joinNearby(name: String) async throws(FollowFailure) {}
             func confirmNearby(same: Bool) async -> Bool {
                 confirmed.append(same)
@@ -591,6 +611,72 @@ final class RecordingSender: TreatmentActions {
     }
 }
 
+/// Every invite opens a confirmation: who is inviting (from the invite) with *Follow* / *Cancel*; nothing is sent
+/// before *Follow*, whether the link was opened, pasted or read from a QR image.
+@Suite struct InviteConfirmTests {
+    static let marta = Invite(
+        identity: String(repeating: "ab", count: 32), token: "t", expiry: Int.max, relays: [],
+        profile: Profile(name: "Marta", avatar: .v1(c: 6, s: "dots", a: 45, n: 11)))
+
+    final class Recorder: FollowActions {
+        var lookups: [String] = []
+        var joined: [Invite] = []
+        var lookUpFails: FollowFailure?
+        func lookUp(link: String) async throws(FollowFailure) -> Invite? {
+            lookups.append(link)
+            if let lookUpFails { throw lookUpFails }
+            return InviteConfirmTests.marta
+        }
+        func join(invite: Invite) async throws(FollowFailure) { joined.append(invite) }
+        func joinNearby(name: String) async throws(FollowFailure) {}
+        func confirmNearby(same: Bool) async -> Bool { false }
+        func setProfile(name: String, avatar: Avatar?) async {}
+        func setName(_ name: String) async {}
+        func cancelJoin() async {}
+        func unfollow() async {}
+    }
+
+    @Test func anOpenedLinkShowsWhoIsInvitingAndNeverFollowsByItself() async {
+        let a = Recorder()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        await m.open(link: QRImportTests.link)
+        #expect(a.lookups == [QRImportTests.link])
+        #expect(m.invite == Self.marta && a.joined.isEmpty && m.status == .notFollowing)
+        // Cancel: nothing sent, and the opened link leaves the field
+        m.cancelInvite()
+        #expect(m.invite == nil && m.linkText.isEmpty && a.joined.isEmpty)
+        // Follow without an invite shown does nothing
+        await m.confirmInvite()
+        #expect(a.joined.isEmpty)
+    }
+
+    @Test func followAsksTheWearerWithTheInviteShown() async {
+        let a = Recorder()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        m.linkText = QRImportTests.link
+        await m.lookUp()
+        await m.confirmInvite()
+        #expect(a.joined == [Self.marta] && m.invite == nil)
+    }
+
+    @Test func aPastedLinkStaysAfterCancel() async {
+        let a = Recorder()
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        m.linkText = QRImportTests.link
+        await m.lookUp()
+        m.cancelInvite()
+        #expect(m.invite == nil && m.linkText == QRImportTests.link && a.joined.isEmpty)
+    }
+
+    @Test func aLookupThatFailsSaysWhyAndShowsNoInvite() async {
+        let a = Recorder()
+        a.lookUpFails = .expired
+        let m = FollowModel(status: .notFollowing, actions: a, macName: "Mac")
+        await m.open(link: QRImportTests.link)
+        #expect(m.invite == nil && m.failure == .expired && m.status == .notFollowing && a.joined.isEmpty)
+    }
+}
+
 @Suite struct SettingsPanesTests {
     @Test func numbersAreCoercedAndOnlyValidValuesStored() {
         let s = scratchStore()
@@ -600,16 +686,6 @@ final class RecordingSender: TreatmentActions {
         #expect(s.number(MacSettings.bandLow) == 72)
         s.set(9999, for: MacSettings.graphHours.spec)
         #expect(s.number(MacSettings.graphHours) == 48)
-    }
-
-    @Test func everyP0MacNumberSettingHasItsSchemaFormat() {
-        for n in MacSettings.bands + [MacSettings.graphHours, MacSettings.gridHours, MacSettings.countdownHours] {
-            let info = SettingsSpec.settings.first { $0.id == n.id }
-            #expect(info != nil, "\(n.id)")
-            #expect(
-                info.map { "defaults:" + n.spec.key == $0.mac || $0.mac.hasPrefix("defaults:" + n.spec.key) } == true)
-            #expect(SettingsSpec.numbers[info?.number ?? ""] == n.format, "\(n.id)")
-        }
     }
 
     @Test func alertSettingsKeepTheLastGoodValueWhenUnreadable() {

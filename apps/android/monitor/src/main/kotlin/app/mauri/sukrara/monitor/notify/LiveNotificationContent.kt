@@ -41,10 +41,16 @@ data class NotificationPrefs(
 )
 
 /**
- * The wearer's sharing as the glucose notification's sub text says it ("2 followers · 1 nearby"): [followers] = active
- * followers, [nearby] = follower devices connected over Bluetooth now. Null = no sharing identity on this phone.
+ * Who can read along, as the glucose notification's sub text says it ("2 followers · 1 nearby · Nightscout API on
+ * Wi-Fi"): [followers] = the wearer's active followers, [nearby] = follower devices connected over Bluetooth now (both
+ * the wearer's only), [wifi] = the Nightscout API listens on the home Wi-Fi now (either role: devices on the network
+ * can read). Null = none of it on this phone.
  */
-data class SharingLine(val followers: Int, val nearby: Int)
+data class SharingLine(
+    val followers: Int,
+    val nearby: Int,
+    val wifi: Boolean = false,
+)
 
 /**
  * What the glucose notification shows, decided from the hub state and [NotificationPrefs] alone. Equal contents = the
@@ -73,7 +79,10 @@ data class LiveNotificationContent(
     val mgdl: Int? = null,
     /** [NotificationPrefs.cardKey] while [layout] is [Layout.CARD]. */
     val cardKey: Any? = null,
-    /** The sub text on a wearer with followers ([NotificationPrefs.sharing]); null on a follower or with none. */
+    /**
+     * The sub text ([NotificationPrefs.sharing]): a wearer's followers, and the Nightscout API on the Wi-Fi in either
+     * role; null with none of it.
+     */
     val sharing: SharingLine? = null,
 ) {
     /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value itself; the others are the states' icons. */
@@ -116,7 +125,12 @@ data class LiveNotificationContent(
             prefs: NotificationPrefs = NotificationPrefs(),
         ): LiveNotificationContent {
             if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state)
-            val sharing = prefs.sharing.takeIf { state.role == Role.Wearer && it != null && (it.followers > 0 || it.nearby > 0) }
+            val sharing =
+                prefs.sharing?.let { s ->
+                    // followers are the wearer's; the API on the Wi-Fi is either role's
+                    val line = if (state.role == Role.Wearer) s else s.copy(followers = 0, nearby = 0)
+                    line.takeIf { state.role != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
+                }
             return content(state, now, face, prefs).copy(sharing = sharing)
         }
 

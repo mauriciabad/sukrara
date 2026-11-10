@@ -5,9 +5,11 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.feature.sharing.FollowerSharing
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.FollowState
 import app.mauri.sukrara.share.follower.FollowerEngine
+import app.mauri.sukrara.share.follower.InviteLookup
 import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
@@ -32,10 +34,12 @@ class AppFollowerSharing(
 
     override fun refreshNearby() = engine.refreshNearby()
 
+    override suspend fun lookUp(link: String): InviteLookup = engine.lookUp(link)
+
     override suspend fun join(
-        link: String,
+        invite: Invite,
         me: Profile?,
-    ): JoinResult = started(engine.join(link, me))
+    ): JoinResult = started(engine.join(invite, me))
 
     override fun findNearby(): Flow<NearbySearch> = engine.findNearby()
 

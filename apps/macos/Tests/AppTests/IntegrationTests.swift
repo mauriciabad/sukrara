@@ -27,7 +27,8 @@ actor StopRecordingFollower: FollowerService {
         stopped = true
     }
     func reconnect() async {}
-    func join(link: String) async throws(FollowerJoinError) { throw .alreadyFollowing }
+    func lookUp(link: String) async throws(FollowerJoinError) -> Invite { throw .alreadyFollowing }
+    func join(invite: Invite) async throws(FollowerJoinError) { throw .alreadyFollowing }
     func cancelJoin() async {}
     func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) { throw .alreadyFollowing }
     func confirmNearby(same: Bool) async -> Bool { false }
@@ -165,7 +166,7 @@ actor StopRecordingFollower: FollowerService {
         let model = FollowModel(status: following, actions: nil)
         model.linkText = Wire.inviteScheme + String(repeating: "a", count: 32)
         #expect(InviteLink.parse(model.linkText) != nil)
-        await model.follow()
+        await model.lookUp()
         #expect(model.status == following)
         #expect(model.failure == .alreadyFollowing)
     }

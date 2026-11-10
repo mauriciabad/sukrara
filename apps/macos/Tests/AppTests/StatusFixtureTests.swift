@@ -117,7 +117,7 @@ nonisolated struct StatusCase: @unchecked Sendable, CustomTestStringConvertible 
         if e["until"] != nil {
             #expect(card.status.until == end(e["until"])?.timeIntervalSince1970, "\(path): until")
         }
-        let look = StatusBadge.look(card.status, now: t)
+        let look = StatusBadge.look(card.status, now: t, words: .en)  // the fixture's words are English
         if let b = e["badge"] as? [String: Any] {
             let want = StatusBadge.Look(
                 kind: b["kind"] as? String ?? "", text: b["text"] as? String ?? "", short: b["short"] as? String ?? "",

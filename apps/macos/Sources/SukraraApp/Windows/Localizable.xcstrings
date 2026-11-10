@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ te ha invitado a ver su glucosa. Seguir pide a %2$@ que dé acceso a este Mac; no se comparte nada hasta que lo haga."
+          }
+        }
+      }
+    },
     "%@ (off)" : {
       "localizations" : {
         "en" : {
@@ -337,6 +353,22 @@
         }
       }
     },
+    "Ask them for a new invite to follow again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask them for a new invite to follow again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pídele una invitación nueva para volver a seguirle."
+          }
+        }
+      }
+    },
     "Ask to follow" : {
       "localizations" : {
         "en" : {
@@ -445,6 +477,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se puede conectar por internet. Revisa la conexión a internet y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Can't read the follower key from the Keychain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read the follower key from the Keychain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer la clave para seguir en el Llavero"
+          }
+        }
+      }
+    },
+    "Can't remove the follower key from the Keychain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't remove the follower key from the Keychain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede borrar la clave para seguir del Llavero"
           }
         }
       }
@@ -769,6 +833,22 @@
         }
       }
     },
+    "Each invite works once. Ask the wearer for a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each invite works once. Ask the wearer for a new one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada invitación sirve una vez. Pide una nueva a quien lleva el sensor."
+          }
+        }
+      }
+    },
     "Edit %@" : {
       "localizations" : {
         "en" : {
@@ -813,6 +893,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escribe %@–%@ %@"
+          }
+        }
+      }
+    },
+    "Enter the API secret set in Juggluco." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the API secret set in Juggluco."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe el secreto de la API que pusiste en Juggluco."
           }
         }
       }
@@ -909,6 +1005,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seguir"
+          }
+        }
+      }
+    },
+    "Follow %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow %@?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Seguir a %@?"
           }
         }
       }
@@ -1021,6 +1133,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Siguiendo a %@"
+          }
+        }
+      }
+    },
+    "Following Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Following Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de seguimiento…"
           }
         }
       }
@@ -1217,6 +1345,22 @@
         }
       }
     },
+    "Juggluco Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de Juggluco…"
+          }
+        }
+      }
+    },
     "Keep the order: very low below low, low below high, high below very high, very high below extremely high." : {
       "localizations" : {
         "en" : {
@@ -1245,6 +1389,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Última lectura %@"
+          }
+        }
+      }
+    },
+    "Last reading %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last reading %@. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última lectura: %@. %@"
           }
         }
       }
@@ -1469,6 +1629,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aún no hay lecturas"
+          }
+        }
+      }
+    },
+    "No readings from the wearer's phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No readings from the wearer's phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay lecturas del móvil de quien lleva el sensor"
           }
         }
       }
@@ -1745,6 +1921,22 @@
         }
       }
     },
+    "Nothing heard yet. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing heard yet. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no ha llegado nada. %@"
+          }
+        }
+      }
+    },
     "Notifications are off: alerts can't reach you." : {
       "localizations" : {
         "en" : {
@@ -1889,6 +2081,38 @@
         }
       }
     },
+    "Open the invite link from the person you follow, or follow their phone nearby. No alerts ring until their first reading arrives." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the invite link from the person you follow, or follow their phone nearby. No alerts ring until their first reading arrives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el enlace de invitación de la persona a la que sigues, o sigue su móvil cercano. No suena ninguna alerta hasta que llegue su primera lectura."
+          }
+        }
+      }
+    },
+    "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pega o arrastra aquí el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar). Empieza por https://sukrara.mauri.app/join#"
+          }
+        }
+      }
+    },
     "Open System Settings…" : {
       "localizations" : {
         "en" : {
@@ -1901,22 +2125,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abrir Ajustes del Sistema…"
-          }
-        }
-      }
-    },
-    "Paste the invite link from the wearer's phone (Sukrara › Share › Invite)." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paste the invite link from the wearer's phone (Sukrara › Share › Invite)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pega el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar)."
           }
         }
       }
@@ -2529,6 +2737,22 @@
         }
       }
     },
+    "Sukrara keeps trying while the Mac is unlocked." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara keeps trying while the Mac is unlocked."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara lo sigue intentando mientras el Mac está desbloqueado."
+          }
+        }
+      }
+    },
     "Sukrara shows the glucose of someone you follow in the menu bar and alerts you when it's out of range." : {
       "localizations" : {
         "en" : {
@@ -2557,6 +2781,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara se abre al iniciar sesión, así la barra de menús siempre muestra la glucosa."
+          }
+        }
+      }
+    },
+    "Sukrara's default" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara's default"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "predeterminado de Sukrara"
           }
         }
       }
@@ -2641,6 +2881,54 @@
         }
       }
     },
+    "The follower state is damaged; stop following and join again" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The follower state is damaged; stop following and join again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los datos para seguir están dañados; deja de seguir y vuelve a unirte"
+          }
+        }
+      }
+    },
+    "The phone may be asleep, off or on another network." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone may be asleep, off or on another network."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El móvil puede estar en reposo, apagado o en otra red."
+          }
+        }
+      }
+    },
+    "the person who invited you" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the person who invited you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la persona que te invitó"
+          }
+        }
+      }
+    },
     "The wearer declined. Ask them for a new invite." : {
       "localizations" : {
         "en" : {
@@ -2689,6 +2977,22 @@
         }
       }
     },
+    "Their phone may be off, offline or out of battery." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their phone may be off, offline or out of battery."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su móvil puede estar apagado, sin conexión o sin batería."
+          }
+        }
+      }
+    },
     "Their readings are removed from this Mac. To follow again, they have to send a new invite." : {
       "localizations" : {
         "en" : {
@@ -2701,6 +3005,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
+          }
+        }
+      }
+    },
+    "They allow it on their phone. No alerts ring until their first reading arrives." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They allow it on their phone. No alerts ring until their first reading arrives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo permite en su móvil. No suena ninguna alerta hasta que llegue su primera lectura."
+          }
+        }
+      }
+    },
+    "They removed this Mac from their followers. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They removed this Mac from their followers. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitó este Mac de sus seguidores. %@"
           }
         }
       }
@@ -2833,6 +3169,22 @@
         }
       }
     },
+    "This name and picture come from the invite. Follow only if you know who sent you this link." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This name and picture come from the invite. Follow only if you know who sent you this link."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este nombre y esta imagen vienen de la invitación. Sigue solo si sabes quién te ha enviado este enlace."
+          }
+        }
+      }
+    },
     "Threshold" : {
       "localizations" : {
         "en" : {
@@ -2877,6 +3229,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tratamientos…"
+          }
+        }
+      }
+    },
+    "Turn on Juggluco's web server on the phone, on this network, or enter its address." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Juggluco's web server on the phone, on this network, or enter its address."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activa el servidor web de Juggluco en el móvil, en esta red, o escribe su dirección."
           }
         }
       }
@@ -3229,6 +3597,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Te damos la bienvenida a Sukrara"
+          }
+        }
+      }
+    },
+    "from %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de %@"
           }
         }
       }
@@ -5292,7 +5676,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas de %@: cambiar la hora"
+            "value" : "Alertas %@: cambiar la hora"
           }
         }
       }
@@ -5308,7 +5692,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas de %@: silenciar"
+            "value" : "Alertas %@: silenciar"
           }
         }
       }

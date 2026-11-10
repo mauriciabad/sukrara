@@ -14,6 +14,12 @@ object NavTargets {
     /** Boolean extra of [ACTION_QUICK_TREATMENT]: open with Carbs focused (a low is going on). */
     const val EXTRA_FOCUS_CARBS = "app.mauri.sukrara.extra.FOCUS_CARBS"
 
+    /** Boolean extra of [ACTION_QUICK_TREATMENT]: open with Long-acting focused (a rapid pen's dose was just read). */
+    const val EXTRA_FOCUS_LONG = "app.mauri.sukrara.extra.FOCUS_LONG"
+
+    /** Long extra of [ACTION_QUICK_TREATMENT]: *When* starts at this time (epoch ms; a pen read's injection), not now. */
+    const val EXTRA_AT = "app.mauri.sukrara.extra.AT"
+
     /**
      * The new-sensor / sensor setup flow. Intents for it target [SENSOR_SETUP_ACTIVITY] explicitly (not exported:
      * only Sukrara's own PendingIntents reach it); the main activity ignores the action from any other app.

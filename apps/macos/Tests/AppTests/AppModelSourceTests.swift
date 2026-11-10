@@ -104,9 +104,11 @@ import Testing
     }
 
     @Test func aRefusedLocalNetworkSaysSoWithItsWayOut() {
+        let reason = AppModel.lanWait(.localNetworkDenied)
+        #expect(reason == .juggluco(.localNetworkDenied) && reason?.action == .juggluco)
         #expect(
-            AppModel.lanReason(.localNetworkDenied) == "Not monitoring: macOS doesn't let Sukrara use the local network"
-        )
+            reason.map { NoDataText.of($0, now: 0).title }
+                == "Not monitoring: macOS doesn't let Sukrara use the local network")
         let denied = JugglucoModel.line(.localNetworkDenied)
         #expect(denied.localNetwork && denied.retry)
         #expect(JugglucoModel.line(.notFound).localNetwork)  // macOS doesn't always say: the hint stays

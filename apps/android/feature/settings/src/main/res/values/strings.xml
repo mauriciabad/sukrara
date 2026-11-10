@@ -574,14 +574,9 @@
     <string name="st_pen_h_incomplete">%1$s · incomplete</string>
     <string name="st_pen_seg_priming">Priming</string>
     <string name="st_pen_nothing_injected">Nothing injected</string>
-    <string name="st_pen_done">Done</string>
     <string name="st_pen_add_to_entry">Add to the %1$s entry</string>
     <string name="st_pen_log_as_injection">Log as injection</string>
     <string name="st_pen_log_injection">Log this injection</string>
-    <string name="st_pen_different">Different</string>
-    <string name="st_pen_same">Same injection</string>
-    <string name="st_pen_all_priming">All priming</string>
-    <string name="st_pen_log_units">Log %1$s</string>
     <plurals name="st_pen_older">
         <item quantity="one">%1$d earlier dose left out</item>
         <item quantity="other">%1$d earlier doses left out</item>
@@ -595,7 +590,6 @@
         <item quantity="other">%1$d earlier doses</item>
     </plurals>
     <string name="st_pen_changed_since_open">That entry changed or was deleted meanwhile</string>
-    <string name="st_pen_q_several">Several of your entries are nearby: answer it on the pen read card or its notification.</string>
     <string name="st_clinic_title">Share your data with your clinic</string>
     <string name="st_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>
     <string name="st_clinic_libreview">LibreView</string>

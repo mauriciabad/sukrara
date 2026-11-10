@@ -46,7 +46,8 @@
         func start() async {}
         func stop() async {}
         func reconnect() async {}
-        func join(link: String) async throws(FollowerJoinError) { throw .alreadyFollowing }
+        func lookUp(link: String) async throws(FollowerJoinError) -> Invite { throw .alreadyFollowing }
+        func join(invite: Invite) async throws(FollowerJoinError) { throw .alreadyFollowing }
         func cancelJoin() async {}
         func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) { throw .alreadyFollowing }
         func confirmNearby(same: Bool) async -> Bool { false }

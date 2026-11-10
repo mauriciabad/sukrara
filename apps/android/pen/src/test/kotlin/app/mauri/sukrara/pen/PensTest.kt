@@ -8,7 +8,6 @@ import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
-import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PenEngine
 import app.mauri.sukrara.pen.engine.PenRules
@@ -27,16 +26,37 @@ class PensTest {
     private val clock = FakeClock(Instant.parse("2026-10-20T13:30:00Z"))
     private val start = clock.instant.epochSecond
 
-    /** The log as the repository behaves: last writer wins on `modifiedAt`, creator kept. */
+    /**
+     * The database as it behaves: one commit = the ledger and its entries, last writer wins on `modifiedAt`, creator
+     * kept; the pen sees insulin and pen entries only.
+     */
     private class Log : PenLog {
         val records = linkedMapOf<String, TreatmentRecord>()
+        var ledger: String? = null
         var writer = true
 
-        override suspend fun all() = records.values.toList()
+        /** Each commit's entry ids, in order (one commit per pen change). */
+        val commits = mutableListOf<List<String>>()
+
+        override suspend fun ledger() = ledger
+
+        override suspend fun all() =
+            records.values.filter {
+                it.penJson != null || it.treatment.kind == TreatmentKind.RapidInsulin || it.treatment.kind == TreatmentKind.LongInsulin
+            }
 
         override fun canWrite() = writer
 
-        override suspend fun store(record: TreatmentRecord) {
+        override suspend fun commit(
+            ledger: String,
+            records: List<TreatmentRecord>,
+        ) {
+            commits += records.map { it.treatment.id }
+            this.ledger = ledger
+            records.forEach(::store)
+        }
+
+        fun store(record: TreatmentRecord) {
             val old = records[record.treatment.id]
             if (old != null && old.treatment.modifiedAt >= record.treatment.modifiedAt) return
             records[record.treatment.id] = record.copy(creator = old?.creator ?: "wearer", author = "wearer")
@@ -51,7 +71,6 @@ class PensTest {
 
     private val pens =
         Pens(
-            store = InMemoryStateStore(Ledger()),
             log = log,
             clock = clock,
             rules = { PenRules() },
@@ -472,6 +491,76 @@ class PensTest {
                     .big,
             )
         }
+
+    @Test fun oneReadIsOneCommitOfTheLedgerAndAllItsEntries() =
+        runTest {
+            bigRead()
+            // the big read wrote two entries, its pen's model and its Review record: all in the last commit
+            assertEquals(2, log.commits.last().size)
+            val stored =
+                kotlinx.serialization.json.Json
+                    .decodeFromString(Ledger.serializer(), log.ledger!!)
+            val pen = stored.pens.getValue("AB1234567")
+            assertEquals(log.commits.last().toSet(), pen.big!!.entries.toSet())
+            assertTrue(pen.model.isNotEmpty())
+            assertEquals(pens.ledger.value, stored)
+            // its undo is one commit too (entries back, its Review gone)
+            val before = log.commits.size
+            assertEquals(BigUndo.Done, pens.undoBig("AB1234567"))
+            assertEquals(before + 1, log.commits.size)
+        }
+
+    @Test fun theLedgerComesBackAfterARestartAndADamagedOneStartsEmpty() =
+        runTest {
+            pens.onRead(read(600 to 4.5))
+            clock.instant = clock.instant.plusSeconds(600)
+            pens.onRead(read(600 to 4.5, -8 to 1.0, -9 to 8.5))
+            val again = Pens(log = log, clock = clock, rules = { PenRules() }, available = { true }, reading = { reading }, setReading = {})
+            assertEquals(pens.ledger.value, again.load())
+            // the same doses read by the restarted runtime: nothing new
+            clock.instant = clock.instant.plusSeconds(60)
+            val st = again.onRead(read(600 to 4.5, -8 to 1.0, -9 to 8.5))!!
+            assertTrue(st.report!!.created.isEmpty() && st.report!!.updated.isEmpty())
+            // a damaged ledger reads as empty; the pen's entries in the log keep it from logging them twice
+            log.ledger = "{not json"
+            val damaged =
+                Pens(log = log, clock = clock, rules = { PenRules() }, available = { true }, reading = { reading }, setReading = {})
+            assertTrue(damaged.load().pens.isEmpty())
+            val back = damaged.onRead(read(600 to 4.5, -8 to 1.0, -9 to 8.5))!!
+            assertTrue(back.report!!.returning)
+            assertEquals(1, log.live().size)
+        }
+
+    @Test fun carbsAndNotesNeverReachThePen() =
+        runTest {
+            log.store(
+                TreatmentRecord(
+                    Treatment("c1", TreatmentKind.Carbs, 40.0, clock.instant, modifiedAt = clock.instant, origin = TreatmentOrigin.Phone),
+                ),
+            )
+            assertTrue(log.all().isEmpty())
+        }
+
+    @Test fun anUploadHoldsAPenEntryUntilItsLastDoseIsOneSessionOld() {
+        val w =
+            app.mauri.sukrara.pen.engine.PenEntry(
+                "id",
+                "rapid",
+                9.5,
+                start,
+                u = 5,
+                pen = "AB1",
+                pd =
+                    listOf(
+                        app.mauri.sukrara.pen.engine
+                            .PdDose(start, 8.5),
+                        app.mauri.sukrara.pen.engine
+                            .PdDose(start + 240, 1.0),
+                    ),
+            )
+        assertEquals(start + 240, PenRecords.lastDose(PenRecords.record(w, null)))
+        assertNull(PenRecords.lastDose(PenRecords.record(w.copy(pen = null, pd = null), null)))
+    }
 
     @Test fun recordsRoundTripThePenKeys() {
         val w =

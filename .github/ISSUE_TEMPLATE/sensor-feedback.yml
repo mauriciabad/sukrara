@@ -1,3 +1,6 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Opened from Sukrara's "untested sensor" banner on the wearer's home screen (investigation 23, docs/23-sensors.md).
 # The app pre-fills `sensor`, `app-version`, `android` and `phone` through the URL (field ids = query keys); nothing else.
 name: Sensor feedback

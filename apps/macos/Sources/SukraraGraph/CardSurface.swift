@@ -74,7 +74,11 @@ extension CardSurface {
     /// What this surface's card shows with the app's graph settings `cfg` and the placement's `overrides`; `sensor` =
     /// the sensor's state. The ONE place a surface's style is decided: the app, the widget and the layout tests ask it,
     /// so the tests render exactly what the surfaces show. A glyph surface has no card (its text is `GlucoseCard.face`).
-    func style(_ cfg: GraphConfig, _ overrides: PlaceOverrides = PlaceOverrides(), sensor: SensorInfo?) -> CardStyle {
+    /// `words` = the language the card draws in (the app and the widget: the person's; the tests: each case's).
+    func style(
+        _ cfg: GraphConfig, _ overrides: PlaceOverrides = PlaceOverrides(), sensor: SensorInfo?,
+        words: CardWords = .en
+    ) -> CardStyle {
         var g = cfg.graphStyle(hours: overrides.hours)
         g.side = overrides.side ?? cfg.side
         var rc = cfg
@@ -90,6 +94,6 @@ extension CardSurface {
         case .widgetCombined: st = rc.cardStyle(graph: g)
         }
         st.sensor = sensor
-        return st
+        return st.speaking(words)
     }
 }

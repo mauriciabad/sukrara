@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.integrations.upload.UploadLoop
@@ -79,8 +80,10 @@ sealed interface TpSignIn {
  * carbs and notes to the person's Tidepool account, so they and their clinic see them there. Off by default. The
  * wearer uploads their own data; a follower uploads the person they follow only after their own separate choice.
  *
- * Sign-in sends the password once and keeps only the session (SecureStore `tidepool`); a refused session is refreshed
- * once, and when Tidepool ends it the session is wiped and the page asks to sign in again. Each role has its own upload
+ * Sign-in sends the password once and keeps only the session (SecureStore `tidepool`) and the account's email (SecureStore
+ * `tidepool-email`, for the page; never in plain files); signing in again ends the session it replaces on Tidepool too.
+ * A refused session is refreshed once, and when Tidepool ends it the session is wiped and the page asks to sign in
+ * again (the email stays, to sign in with). Each role has its own upload
  * record on the account (found again by device id, or created; one deleted on Tidepool is created again). What
  * Tidepool has is remembered, so an edit or a delete corrects it. A failing cycle backs off up to an hour.
  */
@@ -99,11 +102,16 @@ class TidepoolUploader(
     private val log: (String) -> Unit = {},
     /** Tidepool's API; tests point it at a MockWebServer on loopback. */
     baseUrl: String = TidepoolClient.API,
+    /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
+    private val hold: UploadHold = UploadHold.NONE,
 ) {
     private val client = TidepoolClient(http, version, baseUrl)
 
     /** Null until [load] read the secure store. */
     private val signedIn = MutableStateFlow<Boolean?>(null)
+
+    /** The account's email as the page shows it ("" until [load] read it, or when it can't be read). */
+    private val email = MutableStateFlow("")
 
     /** Whether a session is saved; null until [load] ran. */
     val signedInKnown: Flow<Boolean?> = signedIn
@@ -116,9 +124,9 @@ class TidepoolUploader(
     val settingsFlow: Flow<TpSettings> = settings.flow(SETTING).map(::decode)
 
     val page: Flow<TpPageState> =
-        combine(settingsFlow, signedIn, store.data, role) { s, known, st, r ->
+        combine(settingsFlow, signedIn, store.data, role, email) { s, known, st, r, mail ->
             val signed = known == true
-            TpPageState(s, signed, st.email, status(s, signed, st, r), r)
+            TpPageState(s, signed, mail, status(s, signed, st, r), r)
         }
 
     /** The upload's status, for the Share with apps row ([tidepoolStatusText] words it). */
@@ -133,6 +141,8 @@ class TidepoolUploader(
                 // it exists: never shown as "signed out"
                 true
             }
+        // only a convenience: one that can't be read is typed again at the next sign-in
+        email.value = runCatching { secure.read(EMAIL)?.decodeToString() }.getOrNull().orEmpty()
     }
 
     fun start(scope: CoroutineScope) {
@@ -148,12 +158,17 @@ class TidepoolUploader(
 
     // MARK: page actions
 
-    /** Signs in with the Tidepool account; the password is used for this request only. Another account starts afresh. */
+    /**
+     * Signs in with the Tidepool account; the password is used for this request only. Another account starts afresh,
+     * and the session this one replaces is ended on Tidepool (best effort), never left open.
+     */
     suspend fun signIn(
         email: String,
         password: String,
     ): TpSignIn =
         mutex.withLock {
+            // read before the login replaces it in the client
+            val replaced = client.session ?: runCatching { readSession() }.getOrNull()
             when (val answer = withContext(io) { client.login(email, password) }) {
                 is TpLogin.SignedIn -> {
                     withContext(NonCancellable) {
@@ -161,7 +176,6 @@ class TidepoolUploader(
                         store.update {
                             val base = if (it.account == account) it else TpState(account = account)
                             base.copy(
-                                email = email.trim(),
                                 signedOutByTidepool = false,
                                 failures = 0,
                                 nextAttemptMs = 0,
@@ -169,7 +183,11 @@ class TidepoolUploader(
                             )
                         }
                         writeSession(answer.session)
+                        val mail = email.trim()
+                        runCatching { secure.write(EMAIL, mail.toByteArray()) }
+                        this@TidepoolUploader.email.value = mail
                         signedIn.value = true
+                        if (replaced != null && replaced.token != answer.session.token) withContext(io) { client.logout(replaced) }
                         log("tidepool: signed in")
                         loop.kick()
                         TpSignIn.Done
@@ -272,7 +290,7 @@ class TidepoolUploader(
             if (s.glucose) readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own } else emptyList()
         if (full) fullScanMs = nowMs
         val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)) else emptyList()
-        val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS)
+        val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS, hold = hold)
         if (plan.count == 0) {
             if (!plan.isEmpty) rs = TidepoolQueue.applied(rs, plan, emptyMap(), nowS)
             store.update { it.withRole(r, rs).copy(failures = 0, nextAttemptMs = 0, lastError = null) }
@@ -398,6 +416,9 @@ class TidepoolUploader(
     companion object {
         const val INTERVAL_MS = 5 * 60_000L
         const val NAME = "tidepool"
+
+        /** The signed-in account's email (the page's "Signed in as"). */
+        const val EMAIL = "tidepool-email"
         private const val FULL_SCAN_EVERY_MS = 30 * 60_000L
         private val RECENT: Duration = Duration.ofHours(6)
         val SETTING = SchemaSettings.text("apps.tidepool", default = "")

@@ -557,7 +557,7 @@ public struct TreatmentsView: View {
     /// "now", "12m ago", "3h 5m ago".
     static func since(_ at: Date, now: Date) -> String {
         let min = Int(max(0, now.timeIntervalSince(at)) / 60)
-        return min < 1 ? L10n.t("just now") : L10n.t("\(Durations.compact(min)) ago")
+        return min < 1 ? L10n.t("just now") : L10n.t("\(Durations.compact(min, .current)) ago")
     }
 
     /// "Today", "Yesterday", "Monday 26 Oct".

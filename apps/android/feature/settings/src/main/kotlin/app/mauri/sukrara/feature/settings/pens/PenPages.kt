@@ -57,11 +57,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenCheck
 import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenInfo
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.PenReadUndo
 import app.mauri.sukrara.core.model.PenReview
 import app.mauri.sukrara.core.model.PenSessionInfo
@@ -73,6 +75,10 @@ import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.pen.PenDoseRow
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
+import app.mauri.sukrara.designsystem.pen.PenQuestionAnswers
+import app.mauri.sukrara.designsystem.pen.PenSameSheet
+import app.mauri.sukrara.designsystem.pen.penQuestionLine
+import app.mauri.sukrara.designsystem.pen.penSpoken
 import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -148,6 +154,8 @@ class PenViewModel(
     private val port: PensPort,
     val serial: String,
     settings: SettingsRepository,
+    /** Now, epoch s (the days of *Doses read*, the offer's and *Review*'s windows; fixed in the screens' goldens). */
+    val now: () -> Long = { System.currentTimeMillis() / 1000 },
 ) : ViewModel() {
     val pen: StateFlow<PenInfo?> =
         port.pens.map { l -> l.firstOrNull { it.serial == serial } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -162,7 +170,7 @@ class PenViewModel(
     /** A new pen's newest injection before Sukrara, under the offer window: *Log it*. */
     val offer: StateFlow<PenSessionInfo?> =
         combine(sessions, settings.flow(Offer)) { s, h ->
-            val now = System.currentTimeMillis() / 1000
+            val now = now()
             s
                 ?.filter { it.status == PenSessionStatus.Before && it.units > 0 && now - it.t < (h * 3600).toLong() }
                 ?.maxByOrNull { it.t }
@@ -173,6 +181,12 @@ class PenViewModel(
         combine(pen, sessions) { p, s -> p?.review to s }
             .scan(null as ReviewUi?) { prev, (r, s) -> if (s == null) prev else ReviewUi.next(prev, r, s) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** This pen's open questions (a waiting session's sheet answers its own). */
+    val questions: StateFlow<List<PenQuestionInfo>> =
+        port.questions
+            .map { l -> l.filter { it.serial == serial } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** What the page's parts do (the sheets and cards get this, never the ViewModel). */
     val actions = PenActions(port, serial, viewModelScope)
@@ -264,21 +278,11 @@ class PenActions(
                 )
         }
 
-    fun accept(
-        q: String,
-        keys: List<String>,
-    ) = launch { if (!port.acceptSuggestion(q, keys)) snack.value = PenSnack(R.string.st_pen_changed_since) }
-
-    fun allPriming(
-        q: String,
-        keys: List<String>,
-    ) = launch { if (!port.allPriming(q, keys)) snack.value = PenSnack(R.string.st_pen_changed_since) }
-
-    fun same(
-        q: String,
-        keys: List<String>,
-        same: Boolean,
-    ) = launch { if (!port.answerMatch(q, keys, same)) snack.value = PenSnack(R.string.st_pen_changed_since) }
+    /** A waiting session's question answered as it was shown (refused when it changed since). */
+    fun answer(
+        q: PenQuestionInfo,
+        a: PenAnswer,
+    ) = launch { if (!port.answer(q, a)) snack.value = PenSnack(R.string.st_pen_changed_since) }
 
     /** An entry the page listed is gone (deleted elsewhere): the list follows, the snackbar says why nothing opened. */
     fun gone() {
@@ -369,7 +373,7 @@ fun PenPage(
         }
         if (pen.untested && pen.check == PenCheck.None) {
             SettingsGroup(title = stringResource(R.string.st_pen_check_title)) {
-                CardRow { DisplayCheck(pen, confirmed, { confirmed = true }, vm.actions) }
+                CardRow { DisplayCheck(pen, confirmed, { confirmed = true }, vm.actions, vm.now) }
             }
         }
         if (pen.untested && pen.check == PenCheck.Failed) {
@@ -391,7 +395,7 @@ fun PenPage(
                 { choosingKind = true },
                 icon = DsR.drawable.ds_ic_dia_insulin_rapid,
             )
-            pen.review?.takeIf { System.currentTimeMillis() / 1000 - it.at < REVIEW_SHOWN_S }?.let { r ->
+            pen.review?.takeIf { vm.now() - it.at < REVIEW_SHOWN_S }?.let { r ->
                 NavigationRow(
                     stringResource(R.string.st_pen_review_row),
                     openReview,
@@ -467,6 +471,7 @@ private fun DisplayCheck(
     confirmed: Boolean,
     onConfirm: () -> Unit,
     vm: PenActions,
+    clock: () -> Long,
 ) {
     val haptics = rememberHaptics()
     var left by remember { mutableIntStateOf(10) }
@@ -477,10 +482,11 @@ private fun DisplayCheck(
         }
     }
     // the display counts hours from now: the line and the 10-minute limit follow the clock while the page is open
-    val now by produceState(System.currentTimeMillis() / 1000) {
+    val currentClock by rememberUpdatedState(clock)
+    val now by produceState(currentClock()) {
         while (true) {
             kotlinx.coroutines.delay(15_000)
-            value = System.currentTimeMillis() / 1000
+            value = currentClock()
         }
     }
     val held = pen.held?.takeIf { now - it.readAt <= CHECK_FRESH_S }
@@ -573,27 +579,29 @@ fun DosesReadPage(
 ) {
     val sessions by vm.sessions.collectAsStateWithLifecycle()
     val pen by vm.pen.collectAsStateWithLifecycle()
+    val questions by vm.questions.collectAsStateWithLifecycle()
     var unfold by rememberSaveable { mutableStateOf(false) }
     var open by remember { mutableStateOf<PenSessionInfo?>(null) }
     val host = remember { SnackbarHostState() }
     PenSnackbar(vm.actions, host)
     if (review) {
         val ui by vm.review.collectAsStateWithLifecycle()
-        ReviewPage(ui, pen, host, vm.actions::undoRead, onBack, { open = it }, modifier)
-        open?.let { s -> SessionSheet(s, vm.actions) { open = null } }
+        ReviewPage(ui, pen, host, vm.actions::undoRead, onBack, { open = it }, modifier, vm.now())
+        open?.let { s -> SessionSheet(s, questions, vm.actions) { open = null } }
         return
     }
     val all = sessions.orEmpty()
     val (before, rest) = all.partition { it.status == PenSessionStatus.Before }
     SettingsPage(stringResource(R.string.st_pen_doses_read), onBack, modifier, snackbar = host) {
-        val since = System.currentTimeMillis() / 1000 - 30 * 86400L
+        val now = vm.now()
+        val since = now - 30 * 86400L
         val recent = all.filter { it.t >= since }
         val logged = recent.filter { it.entry != null && it.status != PenSessionStatus.NotLogged }.sumOf { it.units }
         val primed = recent.filter { it.status != PenSessionStatus.Before && it.status != PenSessionStatus.Ignored }.sumOf { it.primed }
         FooterText(stringResource(R.string.st_pen_totals, units(round1(logged)), units(round1(primed))))
         if (sessions != null && all.isEmpty()) SettingsGroup { InfoRow(stringResource(R.string.st_pen_no_doses)) }
-        rest.groupBy { dayOf(it.t) }.forEach { (day, list) ->
-            SettingsGroup(title = dayTitle(day)) {
+        rest.groupBy { dayOf(it.t, now) }.forEach { (day, list) ->
+            SettingsGroup(title = dayTitle(day, now)) {
                 for (s in list) {
                     SessionRow(
                         s,
@@ -613,20 +621,32 @@ fun DosesReadPage(
             }
         }
     }
-    open?.let { s -> SessionSheet(s, vm.actions) { open = null } }
+    open?.let { s -> SessionSheet(s, questions, vm.actions) { open = null } }
 }
 
 /** The sheet a session opens: its entry's (correct each dose), its question's answers, or what logging it would do. */
 @Composable
 private fun SessionSheet(
     s: PenSessionInfo,
+    questions: List<PenQuestionInfo>,
     actions: PenActions,
     close: () -> Unit,
 ) {
     when {
-        s.entry != null && s.status != PenSessionStatus.NotLogged -> EntrySheet(s.entry!!, actions, close)
-        s.status == PenSessionStatus.Waiting && s.question != null -> QuestionSheet(s, actions, close)
-        else -> LogSheet(s, actions, close)
+        s.entry != null && s.status != PenSessionStatus.NotLogged -> {
+            EntrySheet(s.entry!!, actions, close)
+        }
+
+        s.status == PenSessionStatus.Waiting && s.question != null -> {
+            // answered elsewhere meanwhile (home, the notification): the row follows, nothing opens
+            val q = questions.firstOrNull { it.id == s.question }
+            val closing by rememberUpdatedState(close)
+            if (q != null) QuestionSheet(q, actions, close) else LaunchedEffect(s.question) { closing() }
+        }
+
+        else -> {
+            LogSheet(s, actions, close)
+        }
     }
 }
 
@@ -645,6 +665,7 @@ private fun ReviewPage(
     onBack: () -> Unit,
     onOpen: (PenSessionInfo) -> Unit,
     modifier: Modifier = Modifier,
+    now: Long = System.currentTimeMillis() / 1000,
 ) {
     var undoing by rememberSaveable { mutableStateOf(false) }
     val haptics = rememberHaptics()
@@ -674,8 +695,8 @@ private fun ReviewPage(
         }
         val list = ui?.sessions.orEmpty()
         if (ui != null && list.isEmpty()) SettingsGroup { InfoRow(stringResource(R.string.st_pen_review_none)) }
-        list.groupBy { dayOf(it.t) }.forEach { (day, l) ->
-            SettingsGroup(title = dayTitle(day)) {
+        list.groupBy { dayOf(it.t, now) }.forEach { (day, l) ->
+            SettingsGroup(title = dayTitle(day, now)) {
                 for (s in l) SessionRow(s, enabled = s.status != PenSessionStatus.Ignored && pen?.let { usable(it) } == true) { onOpen(s) }
             }
         }
@@ -701,24 +722,31 @@ private fun usable(p: PenInfo) = !p.untested || p.check == PenCheck.Ok
 
 private fun round1(x: Double) = Math.round(x * 10) / 10.0
 
-/** Days since today (0 = today, 1 = yesterday), or the session's day label. */
-private fun dayOf(t: Long): Long {
+/** Days from [t] to [now] (0 = today, 1 = yesterday), both epoch s, in the phone's zone. */
+private fun dayOf(
+    t: Long,
+    now: Long,
+): Long {
     val zone = java.time.ZoneId.systemDefault()
-    val d =
+    val day = { x: Long ->
         java.time.Instant
-            .ofEpochSecond(t)
+            .ofEpochSecond(x)
             .atZone(zone)
             .toLocalDate()
+    }
     return java.time.temporal.ChronoUnit.DAYS
-        .between(d, java.time.LocalDate.now(zone))
+        .between(day(t), day(now))
 }
 
 @Composable
-private fun dayTitle(daysAgo: Long): String =
+private fun dayTitle(
+    daysAgo: Long,
+    now: Long,
+): String =
     when (daysAgo) {
         0L -> stringResource(R.string.st_pen_today)
         1L -> stringResource(R.string.st_pen_yesterday)
-        else -> Clock.dayLabel(System.currentTimeMillis() / 1000 - daysAgo * 86400)
+        else -> Clock.dayLabel(now - daysAgo * 86400)
     }
 
 @Composable
@@ -884,58 +912,49 @@ private fun LogSheet(
     }
 }
 
-/** A session waiting on a question: its doses as they are and the question's answers (the read card's). */
+/**
+ * A session waiting on a question: its doses as they are (the suggestion's roles) and the question's answers, the read
+ * card's and home's; with several typed entries nearby *Choose* opens the shared *Same injection?* sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuestionSheet(
-    s: PenSessionInfo,
+    q: PenQuestionInfo,
     vm: PenActions,
     onDismiss: () -> Unit,
 ) {
-    val q = s.question ?: return
+    var choosing by rememberSaveable(q.id) { mutableStateOf(false) }
+    val haptics = rememberHaptics()
+    val answer = { a: PenAnswer ->
+        haptics.confirm()
+        vm.answer(q, a)
+        onDismiss()
+    }
+    if (choosing) {
+        PenSameSheet(q, { Clock.time(it) }, onAnswer = answer, onDismiss = onDismiss)
+        return
+    }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                stringResource(if (s.sameQuestion) R.string.st_pen_h_same else R.string.st_pen_h_question),
+                stringResource(if (q.same) R.string.st_pen_h_same else R.string.st_pen_h_question),
                 style = MaterialTheme.typography.headlineSmall,
             )
-            s.doses.forEach { d ->
-                Text(
-                    "${Clock.time(d.t)}  ·  ${units(d.units)}" + if (d.primed) " · " + stringResource(R.string.st_pen_seg_priming) else "",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-            val keys = s.doses.map { it.key }
-            if (s.sameQuestion && s.candidates > 1) {
-                // several typed entries nearby: which one is answered on the read card or the notification
-                Text(stringResource(R.string.st_pen_q_several), style = MaterialTheme.typography.bodyMedium)
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                if (s.sameQuestion && s.candidates > 1) {
-                    Button(onClick = onDismiss) { Text(stringResource(R.string.st_pen_done)) }
-                } else if (s.sameQuestion) {
-                    FilledTonalButton(onClick = {
-                        vm.same(q, keys, false)
-                        onDismiss()
-                    }) { Text(stringResource(R.string.st_pen_different)) }
-                    Button(onClick = {
-                        vm.same(q, keys, true)
-                        onDismiss()
-                    }) { Text(stringResource(R.string.st_pen_same)) }
-                } else {
-                    FilledTonalButton(onClick = {
-                        vm.allPriming(q, keys)
-                        onDismiss()
-                    }) { Text(stringResource(R.string.st_pen_all_priming)) }
-                    Button(onClick = {
-                        vm.accept(q, keys)
-                        onDismiss()
-                    }) { Text(stringResource(R.string.st_pen_log_units, units(s.units))) }
-                }
-            }
+            val line = penQuestionLine(q) { Clock.time(it) }
+            val spoken = penSpoken(line)
+            Text(
+                line,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { contentDescription = spoken },
+            )
+            HorizontalDivider()
+            q.doses.forEach { d -> PenDoseRow(d, d.primed, { Clock.time(it) }, null) }
+            HorizontalDivider()
+            PenQuestionAnswers(q, { _, a -> answer(a) }, { choosing = true })
         }
     }
 }

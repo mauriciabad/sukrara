@@ -283,14 +283,15 @@ func fixtureSetHasCases(_ set: String) {
             start: start, end: now + (c.number("end") ?? 0),
             warmupEnd: c.number("warmup").map { now + $0 } ?? start + 3600)
         let e = c.expect
-        let look = try #require(SensorBadge.look(info, now: now, latest: c.number("latest").map { now + $0 }))
+        let look = try #require(
+            SensorBadge.look(info, now: now, latest: c.number("latest").map { now + $0 }, words: .en))
         let ring = SensorBadge.ring(look, info, now: now, hours: Int(c.number("countdownHours") ?? 8))
         #expect(look.label == e.string("label"))
         #expect(look.ended == e.bool("ended"))
         #expect(abs(look.life - (e.number("life") ?? .nan)) <= 0.001)
         #expect(look.warmup == e.string("warmup"))
         if let want = e.number("ring") { #expect(abs((ring ?? .nan) - want) <= 0.001) } else { #expect(ring == nil) }
-        let pill = look.ended ? StatusBadge.replaceSensor : nil
+        let pill = look.ended ? StatusBadge.replaceSensor(.en) : nil
         let wp = e.child("pill")
         #expect(pill?.kind == wp.string("kind") && pill?.text == wp.string("text") && pill?.short == wp.string("short"))
     }
@@ -324,7 +325,7 @@ func fixtureSetHasCases(_ set: String) {
             case "ended": SensorInfo(start: now - 15 * 86400 - 3600, end: now - 3600, warmupEnd: now - 15 * 86400)
             default: nil
             }
-        let look = SensorBadge.look(info, now: now, latest: kind == "warmup" ? nil : latest)
+        let look = SensorBadge.look(info, now: now, latest: kind == "warmup" ? nil : latest, words: .en)
         #expect(GlucoseCard.sensorSpot(st, look, Freshness.of(age: now - latest)).rawValue == c.expect.string("spot"))
         let chart = c.child("chart")
         if let h = chart.number("h") {
@@ -431,7 +432,7 @@ func fixtureSetHasCases(_ set: String) {
         let lay = TreatmentMarks.layout(
             marks, x: { left + CGFloat(($0 - from) / window) * (right - left) }, now: now, minX: 0, maxX: w,
             lanes: lanes,
-            d: 1, show: Self.marksOf(c["marks"]))
+            d: 1, show: Self.marksOf(c["marks"]), words: c.string("locale") == "es" ? .es : .en)
         let got = lay.labels.sorted { $0.left + $0.w / 2 < $1.left + $1.w / 2 }
         // the width model holds the real text (SF Pro) of every label
         let bold = Ink.font(TreatmentMarks.labelSize, .bold), medium = Ink.font(TreatmentMarks.labelSize, .medium)

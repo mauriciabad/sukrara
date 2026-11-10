@@ -50,20 +50,27 @@ struct PanelView: View {
                             .foregroundStyle(.secondary)
                     }
                 #endif
-                if let reason = model.notMonitoringReason {
-                    let retrying = model.alertingOnLastData
-                    Label(
-                        reason,
-                        systemImage: retrying
-                            ? "arrow.triangle.2.circlepath" : "antenna.radiowaves.left.and.right.slash"
-                    )
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityLabel(reason)
+                let reason = model.noDataReason
+                // the Keychain retrying: the alerts go on over the last readings, so they stay on screen under its line
+                let retrying = model.alertingOnLastData
+                let block = reason.map { reason in
+                    ReasonBlock(
+                        text: NoDataText.of(reason, now: context.date.timeIntervalSince1970, lastData: retrying),
+                        act: links.flatMap { reasonAction(reason.action, $0) },
+                        symbol: reason.action == .follow ? "person.badge.plus" : "gearshape",
+                        icon: retrying ? "arrow.triangle.2.circlepath" : GlucoseCard.noReadingsSymbol)
                 }
-                // the Keychain retrying: the alerts go on over the last readings, so they stay on screen
-                if model.notMonitoringReason == nil || model.alertingOnLastData { card }
-                if let links { SetupRows(links: links, needsFollow: model.needsFollow) }
+                if retrying, let block { block }
+                if model.notMonitoringReason == nil || retrying {
+                    card
+                }
+                // why there's no value and what to do: in the card's place, or under a card whose value is hidden
+                if !retrying, let block { block }
+                if let links {
+                    // a reason about the link offers its own way out (Follow Someone…, Following Settings…)
+                    let linkAction = reason?.action == .follow || reason?.action == .following
+                    SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
+                }
                 if model.notificationPermission.needsAttention { notificationsWarning }
                 if model.focusCanHoldAlerts { focusNote }
                 if let alerts = model.alerts { AlertBlocks(alerts: alerts, now: context.date, custom: $customMute) }
@@ -80,6 +87,16 @@ struct PanelView: View {
                 scroll = ChartScroll()
                 ease = ChartEase()
             }
+        }
+    }
+
+    /// What a reason's button does: follow someone, or open the settings pane that holds its exit.
+    private func reasonAction(_ action: NoDataReason.Action?, _ links: PanelLinks) -> (() -> Void)? {
+        switch action {
+        case nil: nil
+        case .follow: links.openFollow
+        case .following: { links.openSettingsPane(.following) }
+        case .juggluco: { links.openSettingsPane(.general) }
         }
     }
 
@@ -340,6 +357,41 @@ struct PanelLinks {
     let openTreatments: () -> Void
     let openReport: () -> Void
     let openSettings: () -> Void
+    /// Settings on one pane (a no-data reason's way out: Following, Juggluco in General).
+    let openSettingsPane: (SettingsModel.Pane) -> Void
+}
+
+/// Why there's no value and what to do about it (#72; Android's no-data reasons): the reason in a line with the "no
+/// readings" symbol, why in a sentence, and its action as a button. VoiceOver reads the reason and why as one element,
+/// then the button.
+private struct ReasonBlock: View {
+    let text: NoDataText
+    var act: (() -> Void)?
+    var symbol = "person.badge.plus"
+    /// The reason's own symbol (the Keychain retrying: the circling arrows).
+    var icon = GlucoseCard.noReadingsSymbol
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Label(text.title, systemImage: icon)
+                    .font(.callout.weight(.medium))
+                if let body = text.body {
+                    Text(body)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 28)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            if let action = text.action, let act {
+                Button(action, systemImage: symbol, action: act)
+                    .padding(.leading, 28)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 /// Whether the panel's Add Treatment… can open, and why not in words (on the row, its tooltip and VoiceOver hint):
@@ -621,7 +673,7 @@ struct MuteAllLengths: View {
                 alerts.perform(.muteAll(until: now.addingTimeInterval(TimeInterval(minutes * 60))))
             }
         }
-        Button(MuteCopy.menuForever) { alerts.perform(.muteAll(until: muteAllForever)) }
+        Button(MuteCopy.menuForever()) { alerts.perform(.muteAll(until: muteAllForever)) }
         if offerCustom {
             Divider()
             Button(L10n.t("Custom…")) { custom = true }
@@ -686,10 +738,8 @@ private struct UpdateRow: View {
                 Label(L10n.t("Sukrara \(version.description) is available"), systemImage: "arrow.down.circle")
                 Spacer()
                 Button(L10n.t("Later")) { updates.later() }
-                Button(L10n.t("Download")) {
-                    // only the project's own release page
-                    if release.htmlURL.host() == "github.com" { NSWorkspace.shared.open(release.htmlURL) }
-                }
+                // only the project's own release pages (UpdateCheck.isReleaseURL)
+                Button(L10n.t("Download")) { NSWorkspace.shared.open(release.pageURL) }
             }
         case .failed:
             HStack {

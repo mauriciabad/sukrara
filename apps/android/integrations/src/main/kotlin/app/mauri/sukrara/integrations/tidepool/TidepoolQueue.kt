@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
+import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.upload.SentRanges
 import app.mauri.sukrara.integrations.upload.Span
@@ -49,7 +50,6 @@ data class TpRoleState(
  */
 @Serializable
 data class TpState(
-    val email: String = "",
     val account: String = "",
     val roles: Map<String, TpRoleState> = emptyMap(),
     /** Tidepool ended the session (the token was wiped): the page asks to sign in again. */
@@ -126,6 +126,8 @@ object TidepoolQueue {
         withTreatments: Boolean,
         notes: Boolean,
         nowS: Long,
+        /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
+        hold: UploadHold = UploadHold.NONE,
     ): Plan {
         val from = maxOf(state.from, nowS - WINDOW_S)
         val sent = SentRanges.expand(state.slots)
@@ -151,6 +153,7 @@ object TidepoolQueue {
                 val u = t.modifiedAt.toEpochMilli()
                 val had = state.treatments[t.id]
                 if (had != null && had.u == u) continue
+                if ((hold.until(rec) ?: 0L) > nowS) continue
                 // another device's entry: give it a moment to settle
                 if (t.origin != TreatmentOrigin.Phone && nowS - (rec.receivedAt ?: t.modifiedAt).epochSecond < GRACE_S) continue
                 // never sent: nothing to undo

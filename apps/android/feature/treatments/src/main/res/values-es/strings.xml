@@ -53,4 +53,17 @@
     <string name="treatment_pen_duplicate_title">¿Ya registrada por tu pluma?</string>
     <string name="treatment_pen_duplicate_text">Tu pluma registró %1$s a las %2$s. ¿Registrar también esta dosis?</string>
     <string name="treatment_pen_duplicate_log">Registrar igualmente</string>
+    <string name="treatment_pen_hint">¿Te has inyectado? Acerca la pluma al móvil.</string>
+    <string name="treatment_pen_reading">Leyendo la pluma…</string>
+    <string name="treatment_pen_logged">Registrada desde tu pluma</string>
+    <string name="treatment_pen_logged_primed">Registrada desde tu pluma · %1$s de purgado</string>
+    <plurals name="treatment_pen_also">
+        <item quantity="one">También registrada: %d inyección anterior</item>
+        <item quantity="many">También registradas: %d inyecciones anteriores</item>
+        <item quantity="other">También registradas: %d inyecciones anteriores</item>
+    </plurals>
+    <string name="treatment_pen_undo">Deshacer</string>
+    <string name="treatment_pen_undone">Lectura de la pluma deshecha</string>
+    <string name="treatment_pen_undo_failed">No se pudo deshacer: algo cambió desde entonces</string>
+    <string name="treatment_saved_tap_hint">%1$s · La próxima vez, acerca la pluma</string>
 </resources>

@@ -269,10 +269,13 @@ public final class AppModel {
         if settingsChanged { widgetSettings += 1 }
         let data = cardData
         let look = self.look  // the menu bar's face: the same value text and state the widget shows
+        let reason = noDataReason
         let state =
             "\(monitoring ? "monitoring" : "idle") \(look.state.rawValue) \(data.alerts.status) settings \(widgetSettings)"
+            + " reason \(reason.map { String(describing: $0) } ?? "none")"
         widget.update(
-            WidgetSnapshot(writtenAt: clock.now.timeIntervalSince1970, data: data, config: widgetGraph, unit: unit),
+            WidgetSnapshot(
+                writtenAt: clock.now.timeIntervalSince1970, data: data, config: widgetGraph, unit: unit, reason: reason),
             shown: .init(value: look.text ?? "—", state: state))
     }
 
@@ -407,44 +410,58 @@ public final class AppModel {
     /// The menu bar title text (tests, VoiceOver fallbacks).
     public var statusTitle: String { menubarTitle.text }
 
-    /// Why nothing is monitored, in words (the panel's first line), or nil while a value can be shown. Before the
-    /// first reading the app says so instead of "no data" — and no no-data alarm is armed.
-    public var notMonitoringReason: String? {
-        if plan.isOffline && plan.mode != .fixture {
-            return L10n.t("Not monitoring: offline development build (no sensor, internet or alerts)")
-        }
+    /// Why there's no value to show and what can be done (#72; Android's no-data reasons), or nil while a value can be
+    /// shown. Before the first reading the app says so instead of "no data" — and no no-data alarm is armed. Once a
+    /// value is hidden (20 min and more without a reading) it says why under the card: the wearer's phone is silent,
+    /// or Juggluco can't be reached.
+    public var noDataReason: NoDataReason? {
+        if plan.isOffline && plan.mode != .fixture { return .offlineBuild }
         // shown over the stored readings too: with the Keychain unreadable no new reading can arrive, and the alerts
         // go on over the last ones (no data included) while the runtime retries
-        if keychainUnreadable, !lanMonitoring {
-            return followMonitoring
-                ? L10n.t("Can't read the follower key from the Keychain. Retrying; alerting on the last data.")
-                : L10n.t("Not monitoring: can't read the follower key from the Keychain. Retrying…")
+        if keychainUnreadable, !lanMonitoring { return .broken(.keyUnreadable) }
+        if case .broken(let why) = link, !lanMonitoring { return .broken(why) }
+        guard readings.isEmpty else {
+            guard look.state == .noReadings else { return nil }
+            if followMonitoring { return .wearerSilent(since: readings.last?.t.timeIntervalSince1970) }
+            return lanMonitoring ? Self.lanWait(lanSnapshot.state) : nil
         }
-        if case .broken(let why) = link, !lanMonitoring { return L10n.t("Not monitoring: \(why)") }
-        guard readings.isEmpty else { return nil }
-        if !followMonitoring, lanSent != nil, let why = Self.lanReason(lanSnapshot.state) { return why }
+        if !followMonitoring, lanSent != nil, let wait = Self.lanWait(lanSnapshot.state) { return wait }
         switch link {
-        case .notFollowing, .joining: return L10n.t("Not monitoring: not following anyone yet")
-        case .requested: return L10n.t("Not monitoring: waiting for the wearer to allow this Mac")
-        case .following: return L10n.t("Waiting for the first reading from the wearer")
-        case .declined: return L10n.t("Not monitoring: the wearer declined")
-        case .inviteUsed: return L10n.t("Not monitoring: the invite was used by another device")
-        case .revoked: return L10n.t("Not monitoring: the wearer stopped sharing")
-        case .broken(let why): return L10n.t("Not monitoring: \(why)")
+        case .notFollowing, .joining: return .notFollowing
+        case .requested: return .waitingApproval
+        case .following: return .wearerSilent(since: nil)
+        case .declined: return .declined
+        case .inviteUsed: return .inviteUsed
+        case .revoked: return .revoked
+        case .broken(let why): return .broken(why)
         }
     }
 
-    /// Why Juggluco gives no reading yet, in words (nil when it is off).
-    static func lanReason(_ state: LanState) -> String? {
+    /// The reason in words when it takes the card's place (no reading to draw, an offline run, a broken link), else
+    /// nil: the panel's first line, the menu bar's tooltip and VoiceOver.
+    public var notMonitoringReason: String? {
+        guard let reason = noDataReason else { return nil }
+        let replacesCard: Bool =
+            switch reason {
+            case .offlineBuild, .broken: true
+            default: readings.isEmpty
+            }
+        // the Keychain retrying over stored readings: the line says so above the card (`alertingOnLastData`)
+        return replacesCard
+            ? NoDataText.of(reason, now: now.timeIntervalSince1970, lastData: alertingOnLastData).title : nil
+    }
+
+    /// Why Juggluco gives no reading (nil when it is off).
+    static func lanWait(_ state: LanState) -> NoDataReason? {
         switch state {
         case .off: nil
-        case .looking: L10n.t("Not monitoring: looking for Juggluco on this network")
-        case .notFound: L10n.t("Not monitoring: Juggluco wasn't found on this network")
-        case .connected: L10n.t("Waiting for the first reading from Juggluco")
-        case .unreachable(let host): L10n.t("Not monitoring: can't reach Juggluco at \(host)")
-        case .unauthorized: L10n.t("Not monitoring: Juggluco refused the API secret")
-        case .refused(let typed): L10n.t("Not monitoring: \(typed) isn't an address on your home network")
-        case .localNetworkDenied: L10n.t("Not monitoring: macOS doesn't let Sukrara use the local network")
+        case .looking: .juggluco(.looking)
+        case .notFound: .juggluco(.notFound)
+        case .connected: .juggluco(.firstReading)
+        case .unreachable(let host): .juggluco(.unreachable(host: host))
+        case .unauthorized: .juggluco(.refusedSecret)
+        case .refused(let typed): .juggluco(.notHomeNetwork(typed: typed))
+        case .localNetworkDenied: .juggluco(.localNetworkDenied)
         }
     }
 
