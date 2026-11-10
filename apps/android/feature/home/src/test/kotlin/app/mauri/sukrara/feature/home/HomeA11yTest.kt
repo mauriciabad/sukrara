@@ -142,9 +142,18 @@ class HomeA11yTest {
 
     @Test fun `the history without the drag - earlier, later, zoom and back to now`() {
         showCard()
-        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in"), actions())
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Show 3 hours"), actions())
         act("Show earlier")
-        assertEquals(listOf("Show earlier", "Show later", "Zoom out", "Zoom in", "Back to now"), actions())
+        assertEquals(listOf("Show earlier", "Show later", "Zoom out", "Zoom in", "Show 3 hours", "Back to now"), actions())
+    }
+
+    /** #95: the double tap's close look, for TalkBack too: 3 h, then *Back to now* (the place's own window). */
+    @Test fun `the close look shows 3 hours and back`() {
+        showCard()
+        act("Show 3 hours")
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Back to now"), actions())
+        act("Back to now")
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Show 3 hours"), actions())
     }
 
     /** #126: an action that would change nothing isn't offered (the history is a day, 2 h is the shortest window). */
@@ -152,12 +161,12 @@ class HomeA11yTest {
         showCard()
         // 12 h → the whole day: nothing older to show, no longer window
         act("Zoom out")
-        assertEquals(listOf("Zoom in", "Back to now"), actions())
-        // 24 h → 12 h → 6 h → 3 h → 2 h: the shortest
+        assertEquals(listOf("Zoom in", "Show 3 hours", "Back to now"), actions())
+        // 24 h → 12 h → 6 h → 3 h → 2 h: the shortest (the history is a little under a day, so "3 h" is just under 3 h)
         repeat(3) { act("Zoom in") }
-        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Back to now"), actions())
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Show 3 hours", "Back to now"), actions())
         act("Zoom in")
-        assertEquals(listOf("Show earlier", "Zoom out", "Back to now"), actions())
+        assertEquals(listOf("Show earlier", "Zoom out", "Show 3 hours", "Back to now"), actions())
     }
 
     /** #126: rotating (the activity recreated) keeps the window the person scrolled and zoomed to. */
@@ -167,7 +176,7 @@ class HomeA11yTest {
         act("Show earlier")
         repeat(3) { act("Zoom in") }
         val before = actions()
-        assertEquals(listOf("Show earlier", "Show later", "Zoom out", "Back to now"), before)
+        assertEquals(listOf("Show earlier", "Show later", "Zoom out", "Show 3 hours", "Back to now"), before)
         restoration.emulateSavedInstanceStateRestore()
         draw()
         // still scrolled back (Show later) and still at 2 h (no Zoom in)
@@ -177,7 +186,7 @@ class HomeA11yTest {
         rotating = false
         restoration.emulateSavedInstanceStateRestore()
         draw()
-        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in"), actions())
+        assertEquals(listOf("Show earlier", "Zoom out", "Zoom in", "Show 3 hours"), actions())
     }
 
     @Test fun `turning Remove animations on applies at once`() {

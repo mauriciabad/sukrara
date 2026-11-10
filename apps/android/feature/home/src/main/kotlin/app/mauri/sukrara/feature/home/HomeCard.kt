@@ -5,6 +5,8 @@ package app.mauri.sukrara.feature.home
 
 import android.content.res.Resources
 import android.graphics.RectF
+import android.os.SystemClock
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
@@ -56,6 +58,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -294,6 +297,28 @@ fun PanelCard(
         }
     }
 
+    // the double tap (#95): the place's window ↔ 3 h around the tapped moment ([anchor], 0..1 of the plot), eased like
+    // the way back to now and confirmed with a tick
+    val hostView = LocalView.current
+
+    fun closeLook(anchor: Double) {
+        val (end1, span1) = scroll.closeLook(anchor, default, first, latestNow) ?: return
+        val end0 = (scroll.endS ?: latestNow).toDouble()
+        val span0 = scroll.span(default).toDouble()
+        hostView.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+        scope.launch {
+            state.scroll {
+                if (!reduced) {
+                    Animatable(0f).animateTo(1f, spring(1f, EASE_STIFFNESS)) {
+                        scroll.set(end0 + (end1 - end0) * value, span0 + (span1 - span0) * value, default, latestNow)
+                    }
+                }
+                scroll.set(end1, span1, default, latestNow)
+            }
+        }
+    }
+    val closeLookIn by remember(scroll, default) { derivedStateOf { scroll.closeLookIn(default) } }
+
     fun page(forward: Boolean) {
         val span = scroll.span(default)
         scroll.by((if (forward) 1 else -1) * span / 2.0, first + span, latestNow)
@@ -303,6 +328,7 @@ fun PanelCard(
     val zoomIn = stringResource(R.string.home_chart_zoom_in)
     val zoomOut = stringResource(R.string.home_chart_zoom_out)
     val backToNow = stringResource(R.string.home_chart_back)
+    val threeHours = stringResource(R.string.home_chart_three_hours)
     val chartActions =
         if (base == null) {
             emptyList()
@@ -312,6 +338,7 @@ fun PanelCard(
                 if (scrolledBack) add(CustomAccessibilityAction(later) { true.also { page(forward = true) } })
                 if (canZoomOut) add(CustomAccessibilityAction(zoomOut) { true.also { scroll.step(out = true, default, first, latestNow) } })
                 if (canZoomIn) add(CustomAccessibilityAction(zoomIn) { true.also { scroll.step(out = false, default, first, latestNow) } })
+                if (closeLookIn) add(CustomAccessibilityAction(threeHours) { true.also { closeLook(1.0) } })
                 if (away) add(CustomAccessibilityAction(backToNow) { true.also { back() } })
             }
         }
@@ -334,7 +361,28 @@ fun PanelCard(
                         scope.launch { state.scroll { with(fling) { performFling(-vx) } } }
                     }
                 }.pointerInput(scroll, default, reduced) {
-                    detectTapGestures { p -> if (scroll.away && laid.now?.contains(p.x, p.y) == true) back() }
+                    // a tap on the Now pill goes back at once; two taps in a row anywhere else are the close look (counted
+                    // here rather than with onDoubleTap, which would hold every single tap for the double-tap timeout)
+                    var lastTap = 0L
+                    var lastAt = Offset.Zero
+                    detectTapGestures { p ->
+                        if (scroll.away && laid.now?.contains(p.x, p.y) == true) {
+                            back()
+                            lastTap = 0L
+                            return@detectTapGestures
+                        }
+                        val t = SystemClock.uptimeMillis()
+                        val twice =
+                            lastTap != 0L && t - lastTap <= viewConfiguration.doubleTapTimeoutMillis &&
+                                (p - lastAt).getDistance() <= 48.dp.toPx()
+                        if (twice && base != null) {
+                            closeLook(((p.x - laid.plotLeft) / laid.plotW.coerceAtLeast(1f)).toDouble())
+                            lastTap = 0L
+                        } else {
+                            lastTap = t
+                            lastAt = p
+                        }
+                    }
                 },
         ) {
             val view =

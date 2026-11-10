@@ -465,13 +465,19 @@ Wearer only (`:feature:sensor` `newsensor/NewSensorScreen.kt`; rules in `NewSens
 
 Android (`:feature:home`: `HomeScreen`, `HomeViewModel`, `NoDataReason`, `banners/HomeBanners`, `HomeCard` = the
 registered `app-panel` card surface; tests `NoDataReasonTest`, `BannerSlotTest`, `HomeViewModelTest`, `HomeGallery`).
-Glucose first: the card (value, arrow, slots, 6 h chart through the one renderer) with the sensor's time left under it
+Glucose first: the card (value, arrow, slots, chart through the one renderer) with the sensor's time left under it
 in the card's spoken words (*Sensor ends in 13 days*, *… in 4 h 59 min* in the last day, partial minutes up;
 *Sensor ended 2 h ago* once the end has passed and the sensor still reports; es *El sensor termina en …*; in the
 sensor's last day, the wearer gets a tonal *Pair new sensor* button there). In a new sensor's first 12 hours (from its
 start, derived from its end like every surface: `EarlyReadings`, `EarlyReadingsTest`; any role) a note above that line
 says *New sensor: readings can be less accurate until 21:40. If one doesn't match how you feel, check with a meter.*
-(es *Sensor nuevo: …*); it slides away by itself at the 12 h mark. The chart scrolls through the
+(es *Sensor nuevo: …*); it slides away by itself at the 12 h mark. The chart shows the App place's *Time shown*
+(Settings › Graph; the 12 h default: the whole night on waking, as the Libre 3 app's home graph; #95: one default
+everywhere, and the person's setting is respected on the main screen too; someone who always wants 6 h sets App = 6 h).
+A **double tap** on the chart switches to 3 h around the tapped moment for the close look before a bolus, and from
+3 h back to the place's window (the Mac's two-finger double tap, the same rule: `ChartScroll.closeLook`,
+`ChartEase.smartZoom`), easing there like the way back to now (at once with reduced motion) with a light haptic tick;
+TalkBack offers it as *Show 3 hours* (es *Ver 3 horas*) while it would change the window. The chart scrolls through the
 stored 31 days (drag, fling, stretch at the ends) and two fingers zoom its time axis from 2 h to 31 days; the y range
 and the plot's bottom ease to the visible window; the renderer's *Now* pill (tap, or TalkBack *Back to now*) returns.
 TalkBack (#74, `HomeA11yTest`): the card is one node with the renderer's sentence and custom actions
@@ -566,7 +572,8 @@ kept copies found at the next start keep it). *Copy report* (store kind and name
 file's name; never an error message, which can quote the damaged readings or keys), *Got it* (acknowledges it; the banner leaves when none is left), Back. No exception or
 file names on screen.
 
-**States and exits**: *value* → scroll/zoom the chart → *Now* (tap or TalkBack *Back to now*); *quiet sheet* (the
+**States and exits**: *value* → scroll/zoom the chart → *Now* (tap or TalkBack *Back to now*); *close look* (double
+tap or TalkBack *Show 3 hours*: 3 h) → double tap again, *Now* or *Back to now* (the place's window); *quiet sheet* (the
 pill or a chip) → *Unmute* / *Alert me anyway* / *Remind as usual* / *Change to* a length, Mute all's *Unmute* /
 *Change time*, *Alert settings*, or back / swipe down / tap outside (nothing changes); a quiet chip → its sheet (it
 leaves when the quiet ends); *sensor's
