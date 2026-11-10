@@ -4,9 +4,7 @@
 package app.mauri.sukrara.core.data
 
 import androidx.room.Room
-import androidx.room.testing.MigrationTestHelper
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.platform.app.InstrumentationRegistry
 import app.mauri.sukrara.core.data.db.RoomPenLedgerRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
 import app.mauri.sukrara.core.data.db.SukraraDatabase
@@ -19,7 +17,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -27,7 +24,7 @@ import java.time.Instant
 
 /**
  * The pen ledger in the database (docs/29): a pen change stores the ledger and its entries in one transaction (a
- * failing write leaves neither), the pen reads only insulin and pen entries, and version 1 databases gain the table.
+ * failing write leaves neither) and the pen reads only insulin and pen entries.
  */
 @RunWith(RobolectricTestRunner::class)
 class PenLedgerStoreTest {
@@ -39,9 +36,6 @@ class PenLedgerStoreTest {
     private val pens = RoomPenLedgerRepository(db.penLedger())
     private val treatments = RoomTreatmentsRepository(db.treatments())
     private val t0 = Instant.parse("2026-10-20T13:00:00Z")
-
-    @get:Rule
-    val migrations = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), SukraraDatabase::class.java)
 
     @After
     fun close() = db.close()
@@ -100,28 +94,4 @@ class PenLedgerStoreTest {
             treatments.upsertIfNewer(record("gone").let { it.copy(treatment = it.treatment.copy(deleted = true)) })
             assertEquals(setOf("rapid", "long", "gone"), pens.insulin().map { it.treatment.id }.toSet())
         }
-
-    @Test fun version1GainsThePenLedger() {
-        migrations.createDatabase(MIGRATED, 1).use { v1 ->
-            v1.execSQL(
-                "INSERT INTO treatments (id, kind, amount, at, note, modified_at, deleted, origin, creator, author, via, " +
-                    "received_at, delivery, pen_json) VALUES ('t1', 'RapidInsulin', 8.5, 0, '', 1, 0, 'Phone', null, null, null, null, " +
-                    "'Local', null)",
-            )
-        }
-        migrations.runMigrationsAndValidate(MIGRATED, 2, true, *SukraraDatabase.MIGRATIONS).use { v2 ->
-            v2.query("SELECT COUNT(*) FROM treatments").use {
-                it.moveToFirst()
-                assertEquals(1, it.getInt(0))
-            }
-            v2.query("SELECT COUNT(*) FROM pen_ledger").use {
-                it.moveToFirst()
-                assertEquals(0, it.getInt(0))
-            }
-        }
-    }
-
-    private companion object {
-        const val MIGRATED = "migration-test.db"
-    }
 }

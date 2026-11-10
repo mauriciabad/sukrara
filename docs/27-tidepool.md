@@ -182,3 +182,21 @@ readings). The same happens when an upload is deleted in Tidepool web. Removing 
 | `wizard` records for carbs (AAPS) | AAPS adds a fake 0.0001 U bolus to carry carbs; `food` is the real type |
 | Every 1-minute reading | Tidepool counts samples; 5-minute slots match LibreView's historic rate and the CSV export |
 | Mac uploader | not this round (parity-skip): the phone has the store, the queue and the account; the Mac would upload the same data twice |
+
+## In Sukrara: Import history (reading the history back)
+
+*2026-11-10.* The new apps start fresh, so the history comes back from Tidepool through the sign-in this upload
+already has (Settings › Share with apps › Import history, and setup's *Bring your history back*).
+
+| Added | Where |
+|---|---|
+| `GET /data/{userId}?startDate=&endDate=&type=cbg,bolus,insulin,food,wizard`, one request per week of the last 90 days, and `GET /message/notes/{userId}?starttime=&endtime=` (404 = no notes) | `tidepool/TidepoolClient.kt` (`data`, `notes`, `Retry-After` on `TpFailure`) |
+| The signed-in session lent to the import under the upload's lock (one session, refreshed tokens kept, a session Tidepool ended signs out the same way) | `TidepoolUploader.withAccount` |
+| Mapping back: cbg (mmol/L × 18.01559, Tidepool's factor: what Sukrara sent returns as the same mg/dL), bolus normal + extended and `insulin` (long / intermediate → long-acting) as insulin, `food` net grams and a `wizard`'s `carbInput` as carbs, datum notes, notes (not replies) as note entries; an entry Sukrara sent (`origin.id` `sukrara-tr-<id>`) returns with its id | `history/TidepoolHistory.kt` |
+| Rate: one request a second; a 429 / 503 waits for `Retry-After` (30 s without, at most 2 min), three tries; progress per week | `history/HistoryImporter.kt`; `HistoryImporterTest` (MockWebServer) |
+| Imported readings and entries never go back up (to Tidepool or any service) | `TidepoolUploader` and every other uploader filter them; `TidepoolUploaderTest` |
+
+| Discarded | Why |
+|---|---|
+| `smbg`, `basal`, pump settings and the rest of a pump's records | Sukrara has no record for them |
+| Re-uploading imported history to Tidepool (or anywhere) | the service has it already or got it from the same place: a second copy counts twice |

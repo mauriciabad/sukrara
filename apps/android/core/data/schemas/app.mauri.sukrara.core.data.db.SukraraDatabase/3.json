@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 1,
-    "identityHash": "83962b355a468a53ae4c6cfdda6202e9",
+    "version": 3,
+    "identityHash": "ad495e025b8bc798b698b58930841a85",
     "entities": [
       {
         "tableName": "readings",
@@ -117,7 +117,7 @@
       },
       {
         "tableName": "treatments",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `kind` TEXT NOT NULL, `amount` REAL NOT NULL, `at` INTEGER NOT NULL, `note` TEXT NOT NULL, `modified_at` INTEGER NOT NULL, `deleted` INTEGER NOT NULL, `origin` TEXT NOT NULL, `creator` TEXT, `author` TEXT, `via` TEXT, `received_at` INTEGER, `delivery` TEXT NOT NULL, `pen_json` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `kind` TEXT NOT NULL, `amount` REAL NOT NULL, `at` INTEGER NOT NULL, `note` TEXT NOT NULL, `modified_at` INTEGER NOT NULL, `deleted` INTEGER NOT NULL, `origin` TEXT NOT NULL, `creator` TEXT, `author` TEXT, `via` TEXT, `received_at` INTEGER, `delivery` TEXT NOT NULL, `pen_json` TEXT, `imported_from` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -196,6 +196,11 @@
           {
             "fieldPath": "penJson",
             "columnName": "pen_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "importedFrom",
+            "columnName": "imported_from",
             "affinity": "TEXT"
           }
         ],
@@ -277,11 +282,35 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_outbox_sent_at` ON `${TABLE_NAME}` (`sent_at`)"
           }
         ]
+      },
+      {
+        "tableName": "pen_ledger",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `json` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '83962b355a468a53ae4c6cfdda6202e9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ad495e025b8bc798b698b58930841a85')"
     ]
   }
 }

@@ -20,6 +20,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
@@ -51,7 +52,12 @@ class TpFailure(
     why: String,
     /** The request's path without the user id (a 404 there says which thing is gone). */
     val path: String = "",
+    /** Tidepool's `Retry-After` (seconds) on a 429 / 503, when it sent one. */
+    val retryAfterS: Long? = null,
 ) : Exception(why) {
+    /** Tidepool asked to slow down or is busy: the same request may be tried again later. */
+    val busy: Boolean get() = code == 429 || code == 503
+
     /** [code] in plain words (the message stays in the log). */
     val trouble: Trouble get() = if (code == 0) Trouble.Other else UserErrors.ofHttp(code)
 
@@ -175,6 +181,29 @@ class TidepoolClient(
         authed("DELETE", "/v1/data_sets/$dataSetId/data", TidepoolData.selectors(originIds).toString())
     }
 
+    // MARK: reading back (Import history)
+
+    /**
+     * The account's data of [types] with `time` in [[start], [end]) (`GET /data/{userId}`, Tidepool's data API), as
+     * Tidepool returns it (glucose in mmol/L).
+     */
+    fun data(
+        start: Instant,
+        end: Instant,
+        types: List<String>,
+    ): JsonArray =
+        parse(authed("GET", "/data/${uid()}?startDate=$start&endDate=$end&type=${types.joinToString(",")}", null)) as? JsonArray
+            ?: JsonArray(emptyList())
+
+    /** The account's notes (message service) in [[start], [end]]; Tidepool answers 404 when there are none. */
+    fun notes(
+        start: Instant,
+        end: Instant,
+    ): JsonArray {
+        val text = authed("GET", "/message/notes/${uid()}?starttime=$start&endtime=$end", null, okMissing = true, missing = "{}")
+        return ((parse(text) as? JsonObject)?.get("messages") as? JsonArray) ?: JsonArray(emptyList())
+    }
+
     // MARK: notes
 
     fun sendNote(body: JsonObject): String =
@@ -219,7 +248,7 @@ class TidepoolClient(
         if (okMissing && r.code == 404) return missing
         if (r.code !in 200..299) {
             val where = path.substringBefore('?').replace(s.userId, "{user}")
-            throw TpFailure(r.code, "$method $where: HTTP ${r.code}", where)
+            throw TpFailure(r.code, "$method $where: HTTP ${r.code}", where, r.retryAfter?.trim()?.toLongOrNull())
         }
         return r.body
     }
@@ -228,6 +257,7 @@ class TidepoolClient(
         val code: Int,
         val body: String,
         val token: String?,
+        val retryAfter: String? = null,
     )
 
     private fun http(
@@ -254,7 +284,7 @@ class TidepoolClient(
                     body?.toRequestBody(JSON) ?: if (method == "POST" || method == "PUT") ByteArray(0).toRequestBody() else null,
                 ).build()
         return client.newCall(request).execute().use { r ->
-            Reply(r.code, r.body?.string().orEmpty(), r.header(TOKEN_HEADER))
+            Reply(r.code, r.body?.string().orEmpty(), r.header(TOKEN_HEADER), r.header("Retry-After"))
         }
     }
 }

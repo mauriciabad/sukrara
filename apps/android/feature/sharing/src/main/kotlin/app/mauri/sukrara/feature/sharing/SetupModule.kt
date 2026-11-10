@@ -19,12 +19,14 @@ import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.SetupFacts
 import app.mauri.sukrara.feature.sharing.setup.SetupMachine
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
+import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
 import app.mauri.sukrara.feature.sharing.share.LaterRequests
 import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.Instant
@@ -123,6 +125,14 @@ class SetupModule(
 
     /** Access requests put off with Later in the approve dialog (process memory). */
     val laterRequests = LaterRequests()
+
+    /** Import history still to offer on its own ([SetupMachine.historyDue]): the app opens that one step once. */
+    val historyDue: Flow<Boolean> by lazy {
+        combine(roles.role, setupStore.data) { r, record -> SetupMachine.historyDue(record, r) }.distinctUntilChanged()
+    }
+
+    /** The database was replaced by an empty one (a version change): offer Import history again. */
+    suspend fun offerHistoryAgain() = setupStore.update { SetupMachine.reopen(it, SetupStep.History) }
 
     /** Home and setup call this on resume: permissions change in the system's settings. */
     fun refresh() {

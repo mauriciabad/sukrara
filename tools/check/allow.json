@@ -112,7 +112,7 @@
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/tidepool/TidepoolClient.kt",
-      "reason": "Tidepool upload: fixed https api.tidepool.org (tests: MockWebServer on loopback); redirects never followed; the session token never in logs or reasons"
+      "reason": "Tidepool upload and Import history's download (GET /data, /message/notes): fixed https api.tidepool.org (tests: MockWebServer on loopback); redirects never followed; the session token never in logs or reasons"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/LanWatcher.kt",

@@ -24,7 +24,7 @@ class SetupMachineTest {
 
     @Test
     fun `the exact step order`() {
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Identity), m.steps(facts))
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Identity, SetupStep.History), m.steps(facts))
     }
 
     @Test
@@ -103,13 +103,13 @@ class SetupMachineTest {
         val r = m.confirmAlerts(m.skip(m.completePermissions(wearer()), Sensor))
         assertEquals(Identity, m.next(m.completeIdentity(r, facts), facts))
         val shared = facts.copy(hasIdentity = true)
-        assertNull(m.next(m.completeIdentity(r, shared), shared))
+        assertEquals(SetupStep.History, m.next(m.completeIdentity(r, shared), shared))
     }
 
     @Test
     fun `skipped steps become Finish-setup items and drop out when their fact changes`() {
         var r = wearer()
-        for (s in listOf(Permissions, Sensor, Alerts, Identity)) r = m.skip(r, s)
+        for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
         assertNull(m.next(r, facts))
         assertEquals(FinishItem.entries, m.finishItems(r, facts))
         val later = facts.copy(ownSensorLive = true, hasIdentity = true)
@@ -119,11 +119,34 @@ class SetupMachineTest {
     @Test
     fun `a reopened item shows its step again, then back to home`() {
         var r = wearer()
-        for (s in listOf(Permissions, Sensor, Alerts, Identity)) r = m.skip(r, s)
+        for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
         r = m.reopen(r, Alerts)
         assertEquals(Alerts, m.next(r, facts))
         r = m.skip(r, Alerts)
         assertNull(m.next(r, facts))
+    }
+
+    @Test
+    fun `bring your history back is offered once, to a wearer, and again after the database was replaced`() {
+        val done =
+            m.completeIdentity(
+                m.confirmAlerts(m.completeSensor(m.completePermissions(wearer()), facts.copy(ownSensorLive = true))),
+                facts.copy(hasIdentity = true),
+            )
+        val live = facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true)
+        assertEquals(SetupStep.History, m.next(done, live))
+        assertTrue(m.historyDue(done, Role.Wearer))
+        // either answer is final, and it never becomes a Finish-setup item
+        for (answered in listOf(m.completeHistory(done), m.skip(done, SetupStep.History))) {
+            assertNull(m.next(answered, live))
+            assertTrue(m.finishItems(answered, live).isEmpty())
+            assertTrue(!m.historyDue(answered, Role.Wearer))
+            // a replaced database offers it again
+            assertTrue(m.historyDue(m.reopen(answered, SetupStep.History), Role.Wearer))
+        }
+        // never to a follower (their history is the wearer's) or before a role
+        assertTrue(SetupStep.History !in m.steps(facts.copy(role = Role.Follower)))
+        assertTrue(!m.historyDue(done, Role.Follower) && !m.historyDue(done, null))
     }
 
     @Test
