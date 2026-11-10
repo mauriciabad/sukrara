@@ -5,8 +5,9 @@
 # Builds the Android release APK for a GitHub release: assembleFullRelease (the full flavor) with THE release key
 # (password from the Keychain, never on a command line), verify-apk.sh, then copies it to
 # apps/android/app/build/dist/Sukrara-<version>.apk
-# and archives its R8 mapping in ~/.android/sukrara-mappings/<version>-mapping.txt (crash traces from a phone are
-# unreadable without it; it isn't a release asset because About lists every non-APK asset as a download).
+# with its R8 mapping gzipped next to it, Sukrara-<version>-android-mapping.txt.gz, a release asset (crash traces from a
+# phone are unreadable without it; it isn't secret, the source is public; About lists only the Mac files as downloads),
+# and a copy in ~/.android/sukrara-mappings/<version>-mapping.txt.
 # Refuses unless tools/check/strict exists. Prints the APK path on the last line.
 set -eu
 . "$(dirname "$0")/lib.sh"
@@ -34,7 +35,9 @@ dist="$root/apps/android/app/build/dist"
 mkdir -p "$dist" "$HOME/.android/sukrara-mappings"
 cp "$apk" "$dist/Sukrara-$version.apk"
 cp "$mapping" "$HOME/.android/sukrara-mappings/$version-mapping.txt"
-echo "mapping archived: $HOME/.android/sukrara-mappings/$version-mapping.txt"
+# -n: no file name or time inside, so the same mapping gives the same .gz
+gzip -9 -n -c "$mapping" > "$dist/Sukrara-$version-android-mapping.txt.gz"
+echo "mapping: $dist/Sukrara-$version-android-mapping.txt.gz (release asset), copy in $HOME/.android/sukrara-mappings/$version-mapping.txt"
 # #81: a pre-release library in a release is recorded in its notes, with why (tools/check/allow.json prerelease_ok)
 python3 -I -c '
 import json, sys

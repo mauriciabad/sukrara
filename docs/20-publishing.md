@@ -302,11 +302,19 @@ module's `consumer-rules.pro` (the module that uses the reflective / JNI library
 ### Cutting a release
 
 On `main` (clean, pushed), with `tools/check/strict` committed: `tools/release/android-release.sh` (signed APK →
-`apps/android/app/build/dist/Sukrara-<version>.apk`, verified; the R8 mapping is archived in
-`~/.android/sukrara-mappings/`, not uploaded, because About lists every non-APK asset as a download) and
+`apps/android/app/build/dist/Sukrara-<version>.apk`, verified, and its R8 mapping gzipped next to it as
+`Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`) and
 `tools/release/mac-release.sh` (bundle → `verify-app.sh` → dmg + zip in `apps/macos/build/`). Then tag `v<version>`
-on `main` and `gh release create v<version> --verify-tag --prerelease --latest=false` with the three files while the
-version is 0.x (`Sukrara-<version>.apk`, `Sukrara-<version>.dmg`, `Sukrara-mac-<version>.zip`). A prerelease never
+on `main` and `gh release create v<version> --verify-tag --prerelease --latest=false` with the four files while the
+version is 0.x (`Sukrara-<version>.apk`, `Sukrara-<version>-android-mapping.txt.gz`, `Sukrara-<version>.dmg`,
+`Sukrara-mac-<version>.zip`). The mapping is a release asset (#96) so it lives as long as the APK it decodes and anyone
+reading a crash trace in an issue can use it (`retrace` from the Android SDK's cmdline-tools: `gunzip` it, then `retrace
+mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists only the Mac `.dmg` and
+`.zip` as downloads (`UpdateCheck.otherDevices`), so neither the APK nor the mapping shows there. **Once:** the first
+release with that allowlist goes up without the mapping (installs older than it list every non-APK file as a download;
+its mapping stays in `~/.android/sukrara-mappings/`); attach the mapping from the release after it on. Play builds need no
+separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
+crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never
 bumps the Homebrew cask (`homebrew-tap.yml` skips it, also when dispatched by hand) and never becomes *Latest*. **The Mac app is not notarized yet**: there is no Developer
 ID identity or notarytool profile on the release Mac (checked 2026-10-27), so the dmg is Apple Development signed and
 the first open needs *Open Anyway* (README › Install). `NOTARY_PROFILE` in `bundle.sh` / `dmg.sh` / `mac-release.sh`
