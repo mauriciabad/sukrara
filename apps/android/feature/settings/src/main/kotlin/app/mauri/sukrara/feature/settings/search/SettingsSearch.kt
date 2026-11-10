@@ -142,10 +142,10 @@ class RecentSearch(
 
 /**
  * The search field at the top of the settings overview, with its results below it: "Page › row" rows that open the
- * page ([onOpen]) or another feature's page ([onOpenOther]); only rows this phone shows ([pens], [wearer]).
- * [onActiveChange] tells the overview to hide its rows while a query is typed. While the field is focused and empty,
- * the [recent] searches show as chips (tap = search it again) with *Clear*. Exits: the clear button, Back (clears the
- * query first), opening a result.
+ * page ([onOpen]) or another feature's page ([onOpenOther]); only rows this phone and build show ([pens], [wearer],
+ * [build]). [onActiveChange] tells the overview to hide its rows while a query is typed. While the field is focused and
+ * empty, the [recent] searches show as chips (tap = search it again) with *Clear*. Exits: the clear button, Back
+ * (clears the query first), opening a result.
  */
 @Composable
 fun SettingsSearchBar(
@@ -154,6 +154,7 @@ fun SettingsSearchBar(
     modifier: Modifier = Modifier,
     pens: Boolean = false,
     wearer: Boolean = true,
+    build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     recent: RecentSearch = RecentSearch(),
     initialQuery: String = "",
     onActiveChange: (Boolean) -> Unit = {},
@@ -164,8 +165,8 @@ fun SettingsSearchBar(
     var query by rememberSaveable { mutableStateOf(initialQuery) }
     var focused by remember { mutableStateOf(false) }
     val items =
-        remember(res, pens, wearer) {
-            SettingsIndex.entries.filter { it.shownOn(pens, wearer) }.map { e ->
+        remember(res, pens, wearer, build) {
+            SettingsIndex.entries.filter { it.shownOn(pens, wearer, build) }.map { e ->
                 val page = listOfNotNull(e.parent, e.page).joinToString(" › ") { res.getString(it) }
                 SearchItem(res.getString(e.title), e.summary?.let(res::getString), page, e.target)
             }

@@ -31,6 +31,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
+import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.OtherPage
 import app.mauri.sukrara.feature.settings.search.RecentSearch
 import app.mauri.sukrara.feature.settings.search.SettingsSearchBar
@@ -54,6 +55,8 @@ class OverviewActions(
     val restoreClosedTips: () -> Unit = {},
     /** Settings › Insulin pens is offered (the wearer's phone with NFC). */
     val pens: Boolean = false,
+    /** What this build has: both in the GitHub build, neither in the Google Play build (search shows only those rows). */
+    val build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     /** The sharing profile (name and picture followers see). */
     val openProfile: () -> Unit = {},
     /** Backup of the sharing identity (password manager, recovery code). */
@@ -103,6 +106,7 @@ fun SettingsOverviewContent(
             },
             pens = actions.pens,
             wearer = sharing.wearer,
+            build = actions.build,
             recent = recent,
             initialQuery = searchQuery,
             onActiveChange = { searching = it },

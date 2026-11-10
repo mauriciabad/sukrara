@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import app.mauri.sukrara.buildlogic.NativeCore
+import app.mauri.sukrara.buildlogic.RELEASE_ROOT
 import com.android.build.api.artifact.SingleArtifact
 import java.util.zip.ZipFile
 
@@ -59,7 +60,7 @@ val verifyJuggluco =
         val problem = jugglucoProblem // a plain String: the configuration cache can't hold script references
         doLast { problem?.let { throw GradleException("Release build without the Libre 3 core: $it") } }
     }
-tasks.named { it == "preReleaseBuild" }.configureEach { dependsOn(verifyJuggluco) }
+tasks.named { RELEASE_ROOT.matches(it) }.configureEach { dependsOn(verifyJuggluco) }
 
 /** Fails unless every archive with [extension] in [outputs] contains [entry]. */
 fun registerLibraryCheck(
@@ -101,13 +102,20 @@ tasks.withType<Test>().configureEach {
 }
 
 androidComponents {
-    // ManifestTest reads the merged debug manifest (every module's components) through the public artifact API.
+    // ManifestTest reads the merged debug manifests (every module's components) through the public artifact API: the
+    // full flavor's, and the play flavor's to check what the Play build leaves out.
     onVariants(selector().withBuildType("debug")) { variant ->
         val manifest = variant.artifacts.get(SingleArtifact.MERGED_MANIFEST)
+        val property = if (variant.flavorName == "play") "sukrara.playManifest" else "sukrara.mergedManifest"
         tasks.withType<Test>().configureEach {
-            inputs.file(manifest).withPropertyName("mergedManifest")
-            jvmArgumentProviders += CommandLineArgumentProvider { listOf("-Dsukrara.mergedManifest=${manifest.get().asFile}") }
+            inputs.file(manifest).withPropertyName(property)
+            jvmArgumentProviders += CommandLineArgumentProvider { listOf("-D$property=${manifest.get().asFile}") }
         }
+    }
+    // The Play build isn't an LSPosed module: LSPosed finds modules by these files (docs/20-publishing.md › Flavors).
+    onVariants(selector().withFlavor("store" to "play")) { variant ->
+        variant.packaging.resources.excludes
+            .add("META-INF/xposed/**")
     }
     onVariants(selector().withBuildType("release")) { variant ->
         val name = variant.name.replaceFirstChar { it.uppercase() }
@@ -123,6 +131,8 @@ androidComponents {
         tasks.named { it == "bundle$name" }.configureEach { dependsOn(bundle) }
     }
     // Release unit tests would compile the release variant (and its guards) in `./gradlew check`; the debug unit
-    // tests cover the same code.
+    // tests cover the same code. The play flavor differs only in app/src/play (ManifestTest checks its manifest from
+    // the full flavor's run; tools/release/play-bundle.sh checks the bundle).
     beforeVariants(selector().withBuildType("release")) { it.hostTests.values.forEach { t -> t.enable = false } }
+    beforeVariants(selector().withFlavor("store" to "play")) { it.hostTests.values.forEach { t -> t.enable = false } }
 }

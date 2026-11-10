@@ -283,6 +283,8 @@ class SettingsGallery {
             },
             "about-update" to { AboutContent("0.12.0", UpdateState.Available(release), {}) {} },
             "about-offline" to { AboutContent("0.12.0", UpdateState.Offline, {}) {} },
+            // the Google Play build: no update check
+            "about-play" to { AboutContent("0.12.0", null, {}) {} },
             "sensor" to { SensorSettingsContent(sensorWorking, now, zone, SensorSettingsActions()) {} },
             "sensor-this-phone" to {
                 SensorSettingsContent(
