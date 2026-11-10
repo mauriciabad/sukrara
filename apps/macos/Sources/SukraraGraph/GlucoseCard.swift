@@ -305,7 +305,9 @@ public enum GlucoseCard {
         let time = fr.showTime ? Freshness.timeText(r.t, now: now) : ""
         let smallH = fr.showTime ? CTFontGetSize(small) * 1.25 : 0
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
-        let badgeRow = look != nil && box.height - badgeH * 1.25 - smallH >= 26 * d
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
+        let range = RangeState.shown(face, sgv: r.sgv, bands: bands, pill: look)
+        let badgeRow = (look != nil || range != nil) && box.height - badgeH * 1.25 - smallH >= 26 * d
         // the late time shares the badge's row (after the badge) when there is one
         let timeH = badgeRow ? badgeH * 1.25 : smallH
         let numBox = CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - timeH)
@@ -345,14 +347,30 @@ public enum GlucoseCard {
                 "value.trend", CGRect(x: x, y: numBox.midY - arrowSize / 2, width: arrowSize, height: arrowSize), "ring"
             )
         }
-        if badgeRow, let look {
+        if badgeRow {
             let top = numBox.maxY + badgeH * 0.25
-            let bw = StatusBadge.draw(
-                ctx, x: box.minX, y: top, h: badgeH, maxW: box.width, look, dark: pal.dark, knockout: pal.knockout)
-            rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
+            var tx = box.minX
+            if let look {
+                // the pill keeps room for the range word: its short words or its icon rather than no word
+                let keep = range.map { RangeTag.width($0.words, h: badgeH) + badgeH * 0.35 } ?? 0
+                let maxW = box.width - keep >= badgeH ? box.width - keep : box.width
+                let bw = StatusBadge.draw(
+                    ctx, x: box.minX, y: top, h: badgeH, maxW: maxW, look, dark: pal.dark, knockout: pal.knockout)
+                rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
+                tx += bw + badgeH * 0.35
+            }
+            if let range {
+                if tx + RangeTag.width(range.words, h: badgeH) <= box.maxX {
+                    let b = RangeTag.draw(ctx, x: tx, y: top, h: badgeH, range.words, tint: color, pal)
+                    rec.add("value.range", b, "\(range.rawValue) [row]")
+                    tx = b.maxX + badgeH * 0.35
+                } else {
+                    rec.add("value.range", nil, "\(range.rawValue) [row] (no room)")
+                }
+            }
             if fr.showTime {
+                // the late time shares the row
                 let t = Ink.font(badgeH * 0.56, .regular)
-                let tx = box.minX + bw + badgeH * 0.35
                 if tx + Ink.width(time, t) <= box.maxX {
                     Ink.draw(ctx, time, x: tx, y: top + badgeH / 2 + badgeH * 0.56 * 0.36, t, pal.inkSoft)
                     rec.add(
@@ -374,6 +392,17 @@ public enum GlucoseCard {
                     "\(look.kind) [icon]")
             } else if let look {
                 rec.add("value.status", nil, "\(look.kind) (no room)")
+            }
+            // no row: the range word beside the arrow (after the pill's icon) when it fits
+            if let range {
+                let ix = x + arrowSize * 1.15 + (iconBadge ? iconH * 1.3 : 0)
+                let th = min(iconH, 20 * d)
+                if ix + RangeTag.width(range.words, h: th) <= box.maxX {
+                    let b = RangeTag.draw(ctx, x: ix, y: numBox.midY - th / 2, h: th, range.words, tint: color, pal)
+                    rec.add("value.range", b, "\(range.rawValue) [beside]")
+                } else {
+                    rec.add("value.range", nil, "\(range.rawValue) (no room)")
+                }
             }
             if fr.showTime {
                 Ink.draw(ctx, time, x: box.minX, y: baseY + CTFontGetSize(small) * 1.25, small, pal.inkSoft)
@@ -426,33 +455,63 @@ public enum GlucoseCard {
         }
     }
 
-    /// A new sensor warming up: the time left ("42m") where the number goes, in the secondary colour, the sensor disc
-    /// beside it filling up, and "Ready at 19:45" under it (GlucoseCard.drawWarmup on Android).
+    /// The largest a warming-up sensor's words are drawn (pt): the size of "Sensor ended", never a value's (#27).
+    static let warmupTextMax: CGFloat = 20
+
+    /// A new sensor warming up, labelled so it can never pass for a value (#27): the disc filling and "Warming up · 42m"
+    /// ("Almost ready" past the warm-up's end) at the size of "Sensor ended" (at most `warmupTextMax`, never the
+    /// number's), and under it "Ready at 19:45" / "Waiting for the first reading" when there is room. A box too narrow for
+    /// one line puts the time left on its own line under the words, at the same size (GlucoseCard.drawWarmup on Android).
     private static func drawWarmup(
         _ ctx: CGContext, _ box: CGRect, _ look: SensorBadge.Look, _ small: CTFont, _ now: TimeInterval,
         _ pal: GraphPalette, d: CGFloat, rec: CardLayout
     ) {
         guard let s = look.warmup else { return }
+        let waiting = look.waiting(now: now)
+        let title = waiting ? s : "Warming up · \(s)"
         let line = look.warmupLine(now: now)
-        let numBox = CGRect(
-            x: box.minX, y: box.minY, width: box.width, height: box.height - CTFontGetSize(small) * 1.25)
-        var numSize = numBox.height * 1.18
-        let need = Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * 0.6
-        if need > box.width { numSize *= box.width / need }
-        let num = Ink.font(numSize, .bold, rounded: true)
-        let capH = CTFontGetCapHeight(num)
-        let baseY = numBox.midY + capH / 2
-        Ink.draw(ctx, s, x: box.minX - numSize * 0.04, y: baseY, num, pal.inkSoft)
-        let dh = capH * 0.5
-        SensorBadge.draw(
-            ctx, x: box.minX + Ink.width(s, num) + numSize * 0.12, y: numBox.midY - dh / 2, h: dh, look, pal,
-            label: false)
-        var t = small
-        let lw = Ink.width(line, t)
-        if lw > box.width, lw > 0 { t = Ink.font(CTFontGetSize(small) * box.width / lw, .regular) }
-        Ink.draw(ctx, line, x: box.minX, y: baseY + CTFontGetSize(small) * 1.25, t, pal.inkSoft)
-        if !look.waiting(now: now) { rec.add("time.text", nil, line) }
-        rec.add("value.warmup", CGRect(x: box.minX, y: numBox.midY - capH / 2, width: need, height: capH), s)
+        var subSize = min(CTFontGetSize(small), 15 * d)
+        let subH = subSize * 1.3
+        let withSub = box.height - subH >= 20 * d
+        let textBox =
+            withSub ? CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - subH) : box
+        var size = min(textBox.height * 0.5, warmupTextMax * d)
+        func width(_ t: String, _ s: CGFloat) -> CGFloat { Ink.width(t, Ink.font(s, .semibold)) }
+        // the disc before the words, as the flag before "Sensor ended"
+        let one = size * 1.3 + width(title, size)
+        let lines: [String]
+        if one <= box.width || waiting || box.width / one >= 0.6 {
+            if one > box.width { size *= max(0.45, box.width / one) }
+            lines = [title]
+        } else {
+            // two lines: the words, then the time left under them (never alone at a bigger size)
+            size = min(textBox.height / 2.6, warmupTextMax * d)
+            let widest = size * 1.3 + max(width("Warming up", size), width(s, size))
+            if widest > box.width { size *= max(0.45, box.width / widest) }
+            lines = ["Warming up", s]
+        }
+        let f = Ink.font(size, .semibold)
+        let lh = size * 1.25
+        let lw = Ink.width(line, Ink.font(subSize, .regular))
+        if withSub, lw > box.width, lw > 0 { subSize *= box.width / lw }
+        // the words and the line under them as one group, centred in the box
+        let groupH = CGFloat(lines.count) * lh + (withSub ? subSize * 1.3 : 0)
+        let top = box.midY - groupH / 2
+        let base = top + lh / 2 + size * 0.36
+        let ds = size * 1.05
+        SensorBadge.draw(ctx, x: box.minX, y: base - size * 0.36 - ds / 2, h: ds, look, pal, label: false)
+        let x = box.minX + size * 1.3
+        for (i, t) in lines.enumerated() { Ink.draw(ctx, t, x: x, y: base + CGFloat(i) * lh, f, pal.inkSoft) }
+        let textW = lines.map { Ink.width($0, f) }.max() ?? 0
+        rec.add("value.warmup", CGRect(x: box.minX, y: base - size, width: x + textW - box.minX, height: size), s)
+        rec.add("value.warmup.text", nil, title)
+        if withSub {
+            Ink.draw(
+                ctx, line, x: box.minX, y: top + CGFloat(lines.count) * lh + subSize * 1.05,
+                Ink.font(subSize, .regular),
+                pal.inkSoft)
+            if !waiting { rec.add("time.text", nil, line) }
+        }
     }
 
     /// Same geometry as GlucoseNotification.drawArrow / the menubar TrendArrow: unit arrow pointing +x.

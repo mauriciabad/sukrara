@@ -1,0 +1,24 @@
+{
+ "about": "The range word under an out-of-range value (#26: never the range by colour alone). Run by GraphFixtureTest.range (Android, RangeState) and RangeFixtureTests (Mac, RangeState). Format: ../README.md, 'Range word'.",
+ "cases": [
+  {"name": "low, no pill: says Low", "sgv": 64, "expect": {"range": "low", "text": "Low"}},
+  {"name": "very low", "sgv": 50, "expect": {"range": "very_low", "text": "Very low"}},
+  {"name": "high", "sgv": 200, "expect": {"range": "high", "text": "High"}},
+  {"name": "very high (its orange looks like low's red to protan / deutan eyes)", "sgv": 262, "expect": {"range": "very_high", "text": "Very high"}},
+  {"name": "extremely high from its own bound", "sgv": 300, "expect": {"range": "extremely_high", "text": "Extremely high"}},
+  {"name": "in range: nothing", "sgv": 120, "expect": {"range": null}},
+  {"name": "very good range: nothing", "sgv": 100, "expect": {"range": null}},
+  {"name": "the high bound itself is in range", "sgv": 180, "expect": {"range": null}},
+  {"name": "the low bound itself is in range", "sgv": 70, "expect": {"range": null}},
+  {"name": "Eat carbs already says the side in words", "sgv": 64, "pill": {"kind": "carbs", "tonal": false}, "expect": {"range": null}},
+  {"name": "Take insulin already says the side in words", "sgv": 240, "pill": {"kind": "rapid", "tonal": false}, "expect": {"range": null}},
+  {"name": "a carbs mute pill says what was done, not the range", "sgv": 64, "pill": {"kind": "carbs", "tonal": true}, "expect": {"range": "low", "text": "Low"}},
+  {"name": "a high side's mute pill", "sgv": 240, "pill": {"kind": "rapid", "tonal": true}, "expect": {"range": "high", "text": "High"}},
+  {"name": "late but not struck (3 min): still says it", "sgv": 64, "age": 180, "expect": {"range": "low", "text": "Low"}},
+  {"name": "struck (6 min): grey, no range colour to back up", "sgv": 64, "age": 360, "expect": {"range": null}},
+  {"name": "LO: the text already says it", "sgv": 39, "expect": {"range": null}},
+  {"name": "HI: the text already says it", "sgv": 401, "expect": {"range": null}},
+  {"name": "the person's high 200: 190 is in range", "sgv": 190, "bands": {"high": 200}, "expect": {"range": null}},
+  {"name": "the person's low 80: 75 is low", "sgv": 75, "bands": {"low": 80}, "expect": {"range": "low", "text": "Low"}}
+ ]
+}

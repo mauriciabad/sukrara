@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor.systemui
 
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
 import java.util.Locale
@@ -59,11 +60,13 @@ object SlotIcons {
      * The icons for [look]: fresh or late = the number and the trend arrow (5° steps, a double arrow from ±3); from
      * 5 min the number struck through at half strength beside the struck "no trend" ring; from 20 min only the "no
      * readings" icon in the trend slot ([since] = the last reading's time); an ended sensor the flag. A warming-up
-     * sensor shows nothing: there is no number to draw yet (the notification and the card show the countdown).
+     * sensor shows nothing: there is no number to draw yet (the notification and the card show the countdown). [range]
+     * = the value's range: TalkBack says it, as the icons' colour shows it (#26: never by colour alone).
      */
     fun plan(
         look: GlucoseLook,
         since: String?,
+        range: RangeState? = null,
     ): Plan =
         when (look.state) {
             GlucoseLook.State.ENDED -> {
@@ -96,7 +99,8 @@ object SlotIcons {
                         else -> "sb_t_none"
                     }
                 val mark = if (look.strike) "(old)" else TrendAngle.text(rate)
-                Plan(trend, number, "$VALUE$text mg/dL $mark", "$TREND$mark")
+                val words = range?.takeIf { !look.strike }?.let { " " + it.key.replace('_', ' ') }.orEmpty()
+                Plan(trend, number, "$VALUE$text mg/dL$words $mark", "$TREND$mark")
             }
         }
 

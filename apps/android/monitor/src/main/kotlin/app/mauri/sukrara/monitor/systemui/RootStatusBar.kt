@@ -20,6 +20,7 @@ import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.stats.Bands
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -161,7 +162,8 @@ class RootStatusBar(
             if (wantIcons) {
                 val l = look(input.state, now)
                 val since = input.state.latest?.let { Freshness.timeText(it.t.epochSecond, now) }
-                show(SlotIcons.plan(l, since))
+                val range = input.state.latest?.let { RangeState.of(it.mgdl, input.bands) }
+                show(SlotIcons.plan(l, since, range))
             } else {
                 stopDaemon()
                 false

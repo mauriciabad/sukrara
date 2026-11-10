@@ -160,6 +160,7 @@ class MonitoringService : Service() {
                 cardKey =
                     listOf(now.epochSecond / 60, inputs.treatments, inputs.config, dark, Clock.signature(), state.alerts.treatmentQuiet),
                 sharing = inputs.sharing,
+                bands = inputs.config.bands,
             )
         m.notification.post(m.notification.content(state, now, prefs), now, frame, force)
     }

@@ -38,6 +38,20 @@ class PillContrastTest {
         }
     }
 
+    /** The range word (#26) on its tint of every out-of-range colour, on the card and the app's background. */
+    @Test fun `range words reach 4_5 to 1`() {
+        for (dark in listOf(false, true)) {
+            val pal = GraphPalette.of(dark)
+            for (tint in listOf(pal.veryLow, pal.low, pal.high, pal.veryHigh, pal.extremelyHigh)) {
+                for (ground in grounds(dark)) {
+                    val bg = ColorUtils.compositeColors(RangeTag.background(tint, dark), ground)
+                    val ratio = ColorUtils.calculateContrast(RangeTag.ink(pal, null), bg)
+                    assertTrue("range tag ${Integer.toHexString(tint)} on ${Integer.toHexString(ground)}: $ratio", ratio >= 4.5)
+                }
+            }
+        }
+    }
+
     @Test fun `light pills reach 4_5 to 1`() = check(dark = false)
 
     @Test fun `dark pills reach 4_5 to 1`() = check(dark = true)

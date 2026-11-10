@@ -105,6 +105,14 @@ The ring's crown / laurel and the % column's crown (docs/FEATURES.md, "Time-in-r
 | `crown` | whether the column's 100 wears the crown |
 | `flower` | the laurel's flower (`Bloom`): `none`, `lavender` (95), `forget_me_not` (96), `daisy` (97), `cherry` (98), `rosette` (99 and the crowned 100) |
 
+## Range word (`range/range.json`)
+
+The range in words under an out-of-range value, so no card says it by colour alone (#26, WCAG 1.4.1; docs/FEATURES.md,
+"Range in words"): `RangeState.shown` on both platforms. A case: `name`; `sgv`; optional `age` (the reading's, s,
+default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, tonal}`, the status pill the card draws;
+absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
+`text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
+
 ## Trend arrow (`trend/trend.json`)
 
 The one trend arrow per platform (`TrendAngle`): a case is `rate` (mg/dL/min, null = no trend) and `expect`
@@ -147,6 +155,9 @@ times (`Freshness.nextChangeAt`), which `FreshnessFixtureTest.night` replays wit
 - `layout/rules.json` `distribution`: the distribution's dot pitch, dot radius and the outline erased around the dots
   (`cut`, dp); both renderers' constants must equal them and every drawn distribution's erased box
   (`chart.distribution.cut`) is its dots' box (`chart.distribution.dots`) plus `cut` on the right and the top.
+- `layout/rules.json` `warmup`: a warming-up sensor's time left never passes for a value (#27): every render whose
+  value's place shows the warm-up (`value.warmup`) draws it at most `maxText` dp tall and labelled
+  (`value.warmup.text` starts with one of `words`: `Warming up · 40m`, `Almost ready`).
 - `layout/scenes.json` `scroll`: scrolled charts (the app panel, the Mac dropdown), each case a scene and how far back
   (`back`, s) the window ends and, zoomed, how long it is (`span`, s), rendered through the scrollable surfaces' entry paths (`PanelCard` with a `ChartScroll`,
   `CardView.scrollEnd`): the chart must equal the chart of the visible data alone (every reading and treatment outside

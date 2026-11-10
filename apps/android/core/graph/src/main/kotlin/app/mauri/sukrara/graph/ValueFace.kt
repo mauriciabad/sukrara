@@ -29,6 +29,11 @@ internal class ValueFace(
     private val w = model.words
     private val nowS = model.nowS
 
+    companion object {
+        /** The largest a warming-up sensor's words are drawn (dp): the size of "Sensor ended", never a value's. */
+        const val WARMUP_TEXT_DP = 20f
+    }
+
     /** Draw into [box] with the status pill [look] (null = none) and the value in [ink] (null = its range colour). */
     fun draw(
         cv: Canvas,
@@ -96,7 +101,12 @@ internal class ValueFace(
         }
     }
 
-    /** A new sensor warming up: its time left where the number goes, the disc filling beside it, "Ready at …" under it. */
+    /**
+     * A new sensor warming up, labelled so it can never pass for a value (#27): the disc filling and "Warming up · 42m"
+     * ("Almost ready" past the warm-up's end) at the size of "Sensor ended" (at most [WARMUP_TEXT_DP], never the
+     * number's), and under it "Ready at 19:45" / "Waiting for the first reading" when there is room. A box too narrow
+     * for one line puts the time left on its own line under the words, at the same size.
+     */
     private fun drawWarmup(
         cv: Canvas,
         box: RectF,
@@ -104,28 +114,51 @@ internal class ValueFace(
         small: Paint,
     ) {
         val s = look.warmup ?: return
+        val waiting = look.waiting(nowS)
+        val title = if (waiting) w.almostReady else "${w.warmingUp} · $s"
         val line = look.warmupLine(nowS, w)
-        val numBox = RectF(box.left, box.top, box.right, box.bottom - small.textSize * 1.25f)
-        val num =
+        val p =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
-                typeface = RoundedFont.typeface(700)
-                textSize =
-                    numBox.height() * 1.18f
+                typeface = Typeface.create(Typeface.DEFAULT, 600, false)
             }
-        val need = num.measureText(s) + num.textSize * 0.6f
-        if (need > box.width()) num.textSize *= box.width() / need
-        val capH = num.textSize * ValueGlyphs.CAP
-        val cy = numBox.centerY()
-        val baseY = cy + capH / 2
-        cv.drawText(s, box.left - num.textSize * 0.04f, baseY, num)
-        val dh = capH * 0.5f
-        SensorBadge.disc(cv, box.left + num.measureText(s) + num.textSize * 0.12f, cy - dh / 2, dh, look, pal)
-        val t = Paint(small)
-        if (t.measureText(line) > box.width()) t.textSize *= box.width() / t.measureText(line)
-        cv.drawText(line, box.left, baseY + small.textSize * 1.25f, t)
-        rec.add("value.warmup", RectF(box.left, cy - capH / 2, box.left + need, cy + capH / 2), s)
-        if (!look.waiting(nowS)) rec.add("time.text", info = line)
+        val sub = Paint(small).apply { textSize = min(small.textSize, 15 * d) }
+        val subH = sub.textSize * 1.3f
+        val withSub = box.height() - subH >= 20 * d
+        val textBox = if (withSub) RectF(box.left, box.top, box.right, box.bottom - subH) else box
+        p.textSize = min(textBox.height() * 0.5f, WARMUP_TEXT_DP * d)
+
+        // the disc before the words, as the flag before "Sensor ended"
+        fun iconW() = p.textSize * 1.3f
+        val one = iconW() + p.measureText(title)
+        val lines =
+            if (one <= box.width() || waiting || box.width() / one >= 0.6f) {
+                if (one > box.width()) p.textSize *= (box.width() / one).coerceAtLeast(0.45f)
+                listOf(title)
+            } else {
+                // two lines: the words, then the time left under them (never alone at a bigger size)
+                p.textSize = min(textBox.height() / 2.6f, WARMUP_TEXT_DP * d)
+                val widest = iconW() + max(p.measureText(w.warmingUp), p.measureText(s))
+                if (widest > box.width()) p.textSize *= (box.width() / widest).coerceAtLeast(0.45f)
+                listOf(w.warmingUp, s)
+            }
+        val lh = p.textSize * 1.25f
+        if (withSub && sub.measureText(line) > box.width()) sub.textSize *= box.width() / sub.measureText(line)
+        // the words and the line under them as one group, centred in the box
+        val groupH = lines.size * lh + if (withSub) sub.textSize * 1.3f else 0f
+        val top = box.centerY() - groupH / 2
+        val base = top + lh / 2 + p.textSize * 0.36f
+        val ds = p.textSize * 1.05f
+        SensorBadge.disc(cv, box.left, base - p.textSize * 0.36f - ds / 2, ds, look, pal)
+        val x = box.left + iconW()
+        lines.forEachIndexed { i, t -> cv.drawText(t, x, base + i * lh, p) }
+        val textW = lines.maxOf { p.measureText(it) }
+        rec.add("value.warmup", RectF(box.left, base - p.textSize, x + textW, base), s)
+        rec.add("value.warmup.text", info = title)
+        if (withSub) {
+            cv.drawText(line, box.left, top + lines.size * lh + sub.textSize * 1.05f, sub)
+            if (!waiting) rec.add("time.text", info = line)
+        }
     }
 
     /** No reading yet / none for 20 min: the "no readings" icon (only with a last reading) and the words. */
@@ -203,7 +236,12 @@ internal class ValueFace(
             exact = true,
         )
         val badgeH = (box.height() * 0.24f).coerceIn(14 * d, 24 * d)
-        val badgeRow = look != null && box.height() - badgeH * 1.25f - (if (fr.showTime) small.textSize * 1.25f else 0f) >= 26 * d
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
+        val range = RangeState.shown(face, r.sgv, bands, look)
+        val rangeText = range?.let(w::range)
+        val badgeRow =
+            (look != null || range != null) &&
+                box.height() - badgeH * 1.25f - (if (fr.showTime) small.textSize * 1.25f else 0f) >= 26 * d
         val timeH =
             if (badgeRow) {
                 badgeH * 1.25f
@@ -278,17 +316,32 @@ internal class ValueFace(
             rec.add("value.trend", markBox, "ring")
         }
         val time = if (fr.showTime) Freshness.timeText(r.t, nowS) else null
-        if (badgeRow && look != null) {
+        if (badgeRow) {
             val top = numBox.bottom + badgeH * 0.25f
-            val bw = StatusBadge.draw(cv, box.left, top, badgeH, box.width(), look, pal.dark)
-            rec.add("value.status", RectF(box.left, top, box.left + bw, top + badgeH), "${look.kind} [row]")
+            var rx = box.left
+            if (look != null) {
+                // the pill keeps room for the range word: its short words or its icon rather than no word
+                val keep = rangeText?.let { RangeTag.width(it, badgeH) + badgeH * 0.35f } ?: 0f
+                val maxW = if (box.width() - keep >= badgeH) box.width() - keep else box.width()
+                val bw = StatusBadge.draw(cv, box.left, top, badgeH, maxW, look, pal.dark)
+                rec.add("value.status", RectF(box.left, top, box.left + bw, top + badgeH), "${look.kind} [row]")
+                rx += bw + badgeH * 0.35f
+            }
+            if (range != null && rangeText != null) {
+                if (rx + RangeTag.width(rangeText, badgeH) <= box.right) {
+                    val b = RangeTag.draw(cv, rx, top, badgeH, rangeText, color, pal, ink)
+                    rec.add("value.range", b, "${range.key} [row]")
+                    rx = b.right + badgeH * 0.35f
+                } else {
+                    rec.add("value.range", info = "${range.key} [row] (no room)")
+                }
+            }
             if (time != null) {
-                // the late time shares the pill's row
+                // the late time shares the row
                 val t = Paint(small).apply { textSize = badgeH * 0.56f }
-                val tx = box.left + bw + badgeH * 0.35f
-                if (tx + t.measureText(time) <= box.right) {
-                    cv.drawText(time, tx, top + badgeH / 2 + t.textSize * 0.36f, t)
-                    rec.add("value.time", RectF(tx, top, tx + t.measureText(time), top + badgeH), "[badge row]")
+                if (rx + t.measureText(time) <= box.right) {
+                    cv.drawText(time, rx, top + badgeH / 2 + t.textSize * 0.36f, t)
+                    rec.add("value.time", RectF(rx, top, rx + t.measureText(time), top + badgeH), "[badge row]")
                     rec.add("time.text", info = time)
                 } else {
                     rec.add("value.time", info = "[badge row] (no room)")
@@ -296,13 +349,23 @@ internal class ValueFace(
             }
             return
         }
+        // no row: the pill's icon, then the range word, beside the arrow when they fit
+        val ih = min(numBox.height() * 0.5f, 24 * d)
+        var ix = x + arrowSize * 1.15f
         if (iconBadge && look != null) {
-            val ih = min(numBox.height() * 0.5f, 24 * d)
-            val ix = x + arrowSize * 1.15f
             StatusBadge.draw(cv, ix, cy - ih / 2, ih, ih, look, pal.dark)
             rec.add("value.status", RectF(ix, cy - ih / 2, ix + ih, cy + ih / 2), "${look.kind} [icon]")
+            ix += ih * 1.3f
         } else if (look != null) {
             rec.add("value.status", info = "${look.kind} (no room)")
+        }
+        if (range != null && rangeText != null) {
+            val th = min(ih, 20 * d)
+            if (ix + RangeTag.width(rangeText, th) <= box.right) {
+                rec.add("value.range", RangeTag.draw(cv, ix, cy - th / 2, th, rangeText, color, pal, ink), "${range.key} [beside]")
+            } else {
+                rec.add("value.range", info = "${range.key} (no room)")
+            }
         }
         if (time != null) {
             cv.drawText(time, box.left, baseY + small.textSize * 1.25f, small)

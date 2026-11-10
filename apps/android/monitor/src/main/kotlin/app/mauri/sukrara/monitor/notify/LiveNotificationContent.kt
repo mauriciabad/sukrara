@@ -9,7 +9,9 @@ import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.monitor.R
 import java.time.Instant
 
@@ -31,6 +33,8 @@ data class NotificationPrefs(
     val numberIcon: Boolean = true,
     val cardKey: Any? = null,
     val sharing: SharingLine? = null,
+    /** The person's ranges: the title says an out-of-range value's range in words (#26). */
+    val bands: Bands = Bands(),
 )
 
 /**
@@ -198,7 +202,11 @@ data class LiveNotificationContent(
                     else -> Icon.NO_TREND
                 }
             return LiveNotificationContent(
-                title = UiText(R.string.monitor_notif_value, listOf(look.text!!, look.arrowText!!)),
+                // the range in words too, never by colour alone (#26): "64 mg/dL ↘ · Low"
+                title =
+                    RangeState.shown(look, reading.mgdl, prefs.bands, null)?.let {
+                        UiText(R.string.monitor_notif_value_range, listOf(look.text!!, look.arrowText!!, UiText(it.words)))
+                    } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, look.arrowText!!)),
                 text = if (look.fresh.showTime) UiText(R.string.monitor_notif_reading_at, listOf(reading.t)) else detail,
                 strike = look.strike,
                 chip = chip,

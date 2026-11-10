@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.toPoint
 import app.mauri.sukrara.monitor.LiveNotification
 import app.mauri.sukrara.monitor.R
@@ -28,6 +29,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Duration
 import java.time.Instant
+import app.mauri.sukrara.core.graph.R as GraphR
 
 /** The glucose notification's content (surface notification-text) from the hub state and the card's face rule. */
 class LiveNotificationContentTest {
@@ -111,6 +113,16 @@ class LiveNotificationContentTest {
         assertEquals(1.2, c.trendRate!!, 0.0)
         assertNull(c.readingAt)
         assertEquals(false, c.strike)
+    }
+
+    @Test
+    fun `an out-of-range value says its range in words in the title, never by colour alone`() {
+        val low = content(state(mgdl = 62))
+        assertEquals(R.string.monitor_notif_value_range, low.title.res)
+        assertEquals(UiText(GraphR.string.card_range_low), low.title.args[2])
+        val high = content(state(mgdl = 200), NotificationPrefs(bands = Bands(high = 210)))
+        assertEquals("in the person's ranges", R.string.monitor_notif_value, high.title.res)
+        assertEquals("struck: grey, no word", R.string.monitor_notif_value, content(state(mgdl = 62, ageS = 10 * 60)).title.res)
     }
 
     @Test

@@ -44,7 +44,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Settings › Sensor**: the current sensor (status, serial, start, end and time left), the reading source (Libre 3
   directly or Juggluco, saying first what changes), the LibreView account (email and receiver ID, sign in / out; the
   password is never stored) and *Pair new sensor*.
-- **Home screen**, glucose first: the value, trend arrow and a 6 h chart you can scroll and pinch-zoom through the
+- **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
+  every card: never by colour alone) and a 6 h chart you can scroll and pinch-zoom through the
   last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
   beside the value in a ring of its quiet time left (on the widgets and the notification too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
   focused, a mute's pill its ways out), a chip for each other quiet alert, a **Mute alerts** button (30 min … 8 h,
@@ -160,7 +161,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   a pill that counts down while a treatment quiets the alert; the widgets too.
 - **Desktop widgets** (Glucose, Glucose graph, Glucose + graph) with the same card; they age by themselves (struck
   through at 5 min, the graph dimmed with the reading's time, no value at 20 min) and a tap opens Add treatment.
-- VoiceOver reads the value as one sentence with the range in words.
+- VoiceOver reads the value as one sentence with the range in words; every card writes it under an out-of-range value
+  (*Low*, *Very high*) and the status item's tooltip says it.
 
 **Not included**: the LSPosed lock-screen widget, Dexcom / Aidex / SmartGuide (untested) sensors, and the pen list and
 dose review.
