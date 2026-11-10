@@ -1,5 +1,5 @@
 {
-  "_about": "Path groups that must change together (tools/check/check.py 'parity'). Globs are fnmatch ('*' crosses '/'). A group fires when a 'trigger' side (default: any side) changed and another side didn't; skip with 'Parity-skip: <group>: <reason>'. 'fail' groups fail a range / merge, 'warn' groups only remind. App sides only: the frozen PoC (poc/) is in no group. Every glob must match a tracked file (static check 'parity-globs'): a dead glob silently turns a group off. Not grouped (one platform only, so nothing to pair): the doctor's report (no app has it) and the CSV export writer (Mac SukraraCore/Export only; Android has no CSV export) — add the group back with the second platform.",
+  "_about": "Path groups that must change together (tools/check/check.py 'parity'). Globs are fnmatch ('*' crosses '/'). A group fires when a 'trigger' side (default: any side) changed and another side didn't; skip with 'Parity-skip: <group>: <reason>'. 'fail' groups fail a range / merge, 'warn' groups only remind. App sides only: the frozen PoC (poc/) is in no group. Every glob must match a tracked file (static check 'parity-globs'): a dead glob silently turns a group off. The glucose report's numbers are in 'graph' (Android :core:graph GlucoseMetrics, Mac SukraraGraph Report); the CSV export in 'export' (the shared cases) and 'export-impl' (the two writers).",
   "groups": [
     {
       "name": "graph",
@@ -112,13 +112,26 @@
       }
     },
     {
-      "name": "export-fixtures",
+      "name": "export",
       "level": "fail",
       "trigger": ["fixtures"],
-      "why": "The CSV export cases (contracts/export) are what the writer must produce (Mac only: Android has no CSV export; add its side with the writer)",
+      "why": "The CSV export cases (contracts/export) are the bytes both writers must produce: Android GlucoseCsv (GlucoseCsvTest) and Mac GlucoseCsv (CoreTests) change with them",
       "sides": {
         "fixtures": ["contracts/export/*"],
+        "android": [
+          "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/export/*",
+          "apps/android/integrations/src/test/kotlin/app/mauri/sukrara/integrations/export/*"
+        ],
         "mac": ["apps/macos/Sources/SukraraCore/Export/*", "apps/macos/Tests/CoreTests/*"]
+      }
+    },
+    {
+      "name": "export-impl",
+      "level": "warn",
+      "why": "One CSV export writer changed on one platform only: both write the same bytes (contracts/export), check the other",
+      "sides": {
+        "android": ["apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/export/GlucoseCsv.kt"],
+        "mac": ["apps/macos/Sources/SukraraCore/Export/*"]
       }
     },
     {
