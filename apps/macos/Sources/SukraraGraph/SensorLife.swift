@@ -30,9 +30,10 @@ enum SensorLife {
 
     static func ended(end: TimeInterval, now: TimeInterval) -> Bool { now >= end }
 
-    /// ≥ 24 h left → whole days ("13d"), ≥ 1 h → hours ("20h"), else minutes ("45m", "0m" once ended); floor.
-    static func label(end: TimeInterval, now: TimeInterval) -> String {
-        Durations.whole(Int(max(0, (end - now).rounded(.down))) / 60)
+    /// ≥ 24 h left → whole days ("13d"), ≥ 1 h → hours ("20h"), else minutes ("45m", "0m" once ended); floor. Spanish
+    /// "13 d", "20 h", "45 min" (`w`).
+    static func label(end: TimeInterval, now: TimeInterval, _ w: DurationWords = .en) -> String {
+        Durations.whole(Int(max(0, (end - now).rounded(.down))) / 60, w)
     }
 
     /// The disc's arc: the share of the sensor's life left, 1 → 0.
@@ -54,10 +55,10 @@ enum SensorLife {
     /// The warm-up's time left as the card's figure: whole minutes rounded up ("42m"), from 60 of them hours ("1h": one
     /// rounding, so 59:15 left is "1h" everywhere, never "60m"). From the warm-up's end until the first reading
     /// "Almost ready": a countdown never shows "0m" or less.
-    static func warmupLabel(_ s: SensorInfo, now: TimeInterval) -> String {
-        if waitingFirstReading(s, now: now) { return "Almost ready" }
+    static func warmupLabel(_ s: SensorInfo, now: TimeInterval, _ w: CardWords = .en) -> String {
+        if waitingFirstReading(s, now: now) { return w.drawn.almostReady }
         let min = (Int((s.warmupEnd - now).rounded(.down)) + 59) / 60
-        return Durations.whole(min)
+        return Durations.whole(min, w.drawn.durations)
     }
 
     /// While warming up: the warm-up's time is over and the first reading hasn't come yet.
@@ -81,6 +82,13 @@ enum SensorBadge {
         var fill: Double
         var readyAt: TimeInterval
         var end: TimeInterval = 0
+        /// The language the label and the warm-up line are in.
+        var words: CardWords = .en
+
+        static func == (a: Look, b: Look) -> Bool {
+            a.label == b.label && a.life == b.life && a.ended == b.ended && a.warmup == b.warmup && a.fill == b.fill
+                && a.readyAt == b.readyAt && a.end == b.end && a.words.language == b.words.language
+        }
 
         /// Warming up past the warm-up's end: `warmup` is "Almost ready", the line under it "Waiting for the first reading".
         func waiting(now: TimeInterval) -> Bool { warmup != nil && now >= readyAt }
@@ -88,17 +96,19 @@ enum SensorBadge {
         /// The line under the warm-up figure: "Ready at 19:45", or "Waiting for the first reading" once that's past.
         func warmupLine(now: TimeInterval) -> String {
             waiting(now: now)
-                ? "Waiting for the first reading" : "Ready at \(Freshness.timeText(readyAt, now: now))"
+                ? words.drawn.waitingReading : words.drawn.readyAt(Freshness.timeText(readyAt, now: now))
         }
     }
 
-    static func look(_ s: SensorInfo?, now: TimeInterval, latest: TimeInterval?) -> Look? {
+    /// The sensor's look at `now` in the card's language `words`.
+    static func look(_ s: SensorInfo?, now: TimeInterval, latest: TimeInterval?, words: CardWords) -> Look? {
         guard let s else { return nil }
         let warm = SensorLife.warming(s, latest: latest, now: now)
         return Look(
-            label: SensorLife.label(end: s.end, now: now), life: SensorLife.lifeFraction(s, now: now),
-            ended: SensorLife.ended(end: s.end, now: now), warmup: warm ? SensorLife.warmupLabel(s, now: now) : nil,
-            fill: SensorLife.warmupFraction(s, now: now), readyAt: s.warmupEnd, end: s.end)
+            label: SensorLife.label(end: s.end, now: now, words.drawn.durations),
+            life: SensorLife.lifeFraction(s, now: now), ended: SensorLife.ended(end: s.end, now: now),
+            warmup: warm ? SensorLife.warmupLabel(s, now: now, words) : nil,
+            fill: SensorLife.warmupFraction(s, now: now), readyAt: s.warmupEnd, end: s.end, words: words)
     }
 
     /// The ring over the main ring: the warm-up filling up, else the end countdown draining (nil = none).

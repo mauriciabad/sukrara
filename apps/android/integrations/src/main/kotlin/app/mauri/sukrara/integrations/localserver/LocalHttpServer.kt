@@ -16,12 +16,16 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-/** One parsed request: [path] without the leading `/`, the decoded [query] and the lower-case [headers]. */
+/**
+ * One parsed request: [path] without the leading `/`, the decoded [query], the lower-case [headers] and the [caller]'s
+ * address (shown for the home-network listener; never logged).
+ */
 data class HttpRequest(
     val method: String,
     val path: String,
     val query: Map<String, String>,
     val headers: Map<String, String>,
+    val caller: String? = null,
 )
 
 /** One answer: a status line (`200 OK`), the body and its content type. */
@@ -138,7 +142,7 @@ class LocalHttpServer(
                         }
 
                         else -> {
-                            parse(head)?.let { req ->
+                            parse(head)?.copy(caller = c.inetAddress?.hostAddress)?.let { req ->
                                 when {
                                     !hostOk(req.headers["host"]) -> FORBIDDEN
                                     req.method == "GET" || req.method == "HEAD" -> route(req)

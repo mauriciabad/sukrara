@@ -112,4 +112,37 @@
         <item quantity="one">%1$s unit</item>
         <item quantity="other">%1$s units</item>
     </plurals>
+    <!-- A pen question (home's card under the glucose card, the Same injection? sheet, Doses read) -->
+    <string name="ds_pen_q_doses">Priming or injected?</string>
+    <string name="ds_pen_q_same">Same injection?</string>
+    <!-- %1$s the doses ("1u and 1.5u"), %2$s their time -->
+    <string name="ds_pen_q_doses_line">%1$s at %2$s</string>
+    <string name="ds_pen_and">%1$s and %2$s</string>
+    <!-- %1$s / %2$s the pen's injection, %3$s / %4$s the entry typed by hand -->
+    <string name="ds_pen_q_same_one">Pen %1$s at %2$s · yours %3$s at %4$s</string>
+    <string name="ds_pen_q_same_line">Pen %1$s at %2$s</string>
+    <plurals name="ds_pen_q_nearby">
+        <item quantity="one">%d typed entry nearby</item>
+        <item quantity="other">%d typed entries nearby</item>
+    </plurals>
+    <plurals name="ds_pen_q_more">
+        <item quantity="one">%d more to check</item>
+        <item quantity="other">%d more to check</item>
+    </plurals>
+    <!-- Answer: log the suggested amount, e.g. Log 1.5u [CHAR LIMIT=15] -->
+    <string name="ds_pen_q_log">Log %1$s</string>
+    <string name="ds_pen_q_all_priming">All priming</string>
+    <string name="ds_pen_q_same_yes">Same injection</string>
+    <string name="ds_pen_q_different">Different injections</string>
+    <!-- Opens the sheet with the typed entries to choose from [CHAR LIMIT=15] -->
+    <string name="ds_pen_q_choose">Choose</string>
+    <string name="ds_pen_q_sheet_pen">Your pen: %1$s at %2$s</string>
+    <string name="ds_pen_q_sheet_ask">Is it one of the entries you typed? That entry becomes the pen\'s, so the dose isn\'t logged twice.</string>
+    <!-- A typed entry: amount and time -->
+    <string name="ds_pen_q_candidate">%1$s at %2$s</string>
+    <string name="ds_pen_q_by_phone">Typed on this phone</string>
+    <string name="ds_pen_q_by_mac">Typed on the Mac</string>
+    <string name="ds_pen_q_by_follower">Added by someone who follows you</string>
+    <string name="ds_pen_q_none">None of these</string>
+    <string name="ds_pen_q_none_text">Log the pen\'s dose as an injection of its own</string>
 </resources>

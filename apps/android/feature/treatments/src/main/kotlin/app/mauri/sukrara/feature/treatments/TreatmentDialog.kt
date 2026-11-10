@@ -169,8 +169,10 @@ class TreatmentFormState(
     }
 }
 
+/** The form, kept through a rotation; [at] = *When* to start with (a pen read's injection), else now. */
 @Composable
-fun rememberTreatmentFormState(): TreatmentFormState = rememberSaveable(saver = TreatmentFormState.Saver) { TreatmentFormState() }
+fun rememberTreatmentFormState(at: Instant? = null): TreatmentFormState =
+    rememberSaveable(saver = TreatmentFormState.Saver) { TreatmentFormState(at = at) }
 
 /** The edit form for [t], kept across a configuration change. */
 @Composable
@@ -202,10 +204,13 @@ data class DraftLine(
  * Add insulin, carbs and a note in one go: rapid, long-acting and carbs side by side, a note below, all optional;
  * each filled field becomes its own entry at the chosen time (default now). Laid out like an M3 basic dialog (28 dp
  * corners, surface-container-high, 24 dp padding, confirming action last). The first field is focused so the number
- * pad is up at once — Carbs instead when [focusCarbs] (a low is going on). Next walks the fields, Done saves.
+ * pad is up at once — Carbs instead when [focusCarbs] (a low is going on), Long-acting when [focusLong] (a rapid pen's
+ * dose was just read). Next walks the fields, Done saves.
  *
  * [onOpenApp] adds *Open Sukrara* (the quick dialog, where a tap no longer opens the app); [lock] shows the
- * lock-screen countdown with *Unlock*; [draft] says the form holds what a countdown kept, with *Discard*.
+ * lock-screen countdown with *Unlock*; [draft] says the form holds what a countdown kept, with *Discard*; [penLine] is
+ * the pen's line under the fields (reading a pen into the dialog). Editing one entry ([TreatmentFormState.editing]):
+ * that kind's field only, its note and its time, under *Edit carbs* / … .
  */
 @Composable
 fun TreatmentDialogContent(
@@ -220,9 +225,12 @@ fun TreatmentDialogContent(
     lock: LockInfo? = null,
     quiet: QuietRules = QuietRules.NONE,
     draft: DraftLine? = null,
+    focusLong: Boolean = false,
+    penLine: (@Composable () -> Unit)? = null,
 ) {
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
+    val longFocus = remember { FocusRequester() }
     val carbsFocus = remember { FocusRequester() }
     val noteFocus = remember { FocusRequester() }
     var picking by remember { mutableStateOf(false) }
@@ -239,10 +247,11 @@ fun TreatmentDialogContent(
     LaunchedEffect(Unit) {
         runCatching {
             when {
-                form.editing == TreatmentKind.Note -> noteFocus.requestFocus()
-                form.editing == TreatmentKind.Carbs || (form.editing == null && focusCarbs) -> carbsFocus.requestFocus()
-                else -> first.requestFocus()
-            }
+                form.editing == TreatmentKind.Note -> noteFocus
+                form.editing == TreatmentKind.Carbs || (form.editing == null && focusCarbs) -> carbsFocus
+                form.editing == TreatmentKind.LongInsulin || (form.editing == null && focusLong) -> longFocus
+                else -> first
+            }.requestFocus()
         }
     }
 
@@ -270,8 +279,13 @@ fun TreatmentDialogContent(
                     )
                 }
                 if (TreatmentKind.LongInsulin in shown) {
-                    val focus = if (form.editing == null) fieldModifier else fieldModifier.focusRequester(first)
-                    AmountField(form.long, { form.long = it }, R.string.treatment_long, R.string.treatment_unit_u, focus)
+                    AmountField(
+                        form.long,
+                        { form.long = it },
+                        R.string.treatment_long,
+                        R.string.treatment_unit_u,
+                        fieldModifier.focusRequester(longFocus),
+                    )
                 }
                 if (TreatmentKind.Carbs in shown) {
                     AmountField(form.carbs, {
@@ -303,6 +317,7 @@ fun TreatmentDialogContent(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("treatment-limits"),
                 )
             }
+            penLine?.invoke()
             QuietLine(form, quiet, now)
             WhenRow(form, zone, now, onPick = { picking = true })
             if (lock != null) {

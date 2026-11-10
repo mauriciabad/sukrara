@@ -32,20 +32,25 @@ fun interface MirroredSettingsSource {
 
 /**
  * Which settings followers mirror: exactly the rows of THE schema (contracts/settings/settings.json) with
- * `"mirror": true`, at their `wire` path; `{kind}` = the alert kinds other than `no_data`. Everything else (sounds,
- * the notification actions, the alerts main switch, no data) stays on the wearer's phone.
+ * `"mirror": true`, at their `wire` path; `{kind}` = each alert kind (options `alertKind`) but the row's
+ * `mirrorExcept` (no data). Everything else (sounds, the notification actions, the alerts main switch, no data) stays
+ * on the wearer's phone.
  */
 object SettingsMirror {
-    /** contracts/alerts/SPEC.md kinds, without `no_data` (per device, never mirrored). */
-    val MIRRORED_ALERT_KINDS = listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast")
-
     /** Wire paths (`graph.low`, `alerts.alerts.low.mgdl`, …) of the mirrored rows, in schema order. */
     val paths: List<List<String>> =
         SettingsSpec.SETTINGS
-            .filter { it.mirror }
-            .mapNotNull { it.wire }
-            .flatMap { wire ->
-                if ("{kind}" in wire) MIRRORED_ALERT_KINDS.map { wire.replace("{kind}", it) } else listOf(wire)
+            .filter { it.mirror && it.wire != null }
+            .flatMap { info ->
+                val wire = info.wire!!
+                if ("{kind}" !in wire) {
+                    listOf(wire)
+                } else {
+                    SettingsSpec.OPTIONS
+                        .getValue("alertKind")
+                        .filter { info.mirrors(it) }
+                        .map { wire.replace("{kind}", it) }
+                }
             }.distinct()
             .map { it.split('.') }
 

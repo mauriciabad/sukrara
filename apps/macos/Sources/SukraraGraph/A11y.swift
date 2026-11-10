@@ -4,13 +4,33 @@
 import Foundation
 import SukraraCore
 
-/// The words VoiceOver says for a card, English and Spanish (Android: core/graph `values*/strings.xml`, the `a11y_*`,
-/// `trend_*` and `card_range_*` strings, same wording; contracts/graph/spoken holds the sentences both say). Kept in
-/// code, not a String Catalog: the widget extension links this module and a SwiftPM resource bundle isn't packaged
-/// into the appex.
+/// Every word of a card, English and Spanish: what it draws (`drawn`: the pill, durations, periods, the value's place)
+/// and what VoiceOver says (Android: core/graph `values*/strings.xml`, the same wording; contracts/graph/words holds the
+/// drawn words of both languages, contracts/graph/spoken the sentences both say). Kept in code, not a String Catalog:
+/// the widget extension links this module and a SwiftPM resource bundle isn't packaged into the appex.
 public struct CardWords: Sendable {
     /// The language: a sentence's capital letter, the decimal separator.
     let locale: Locale
+    /// What the card draws.
+    let drawn: Drawn
+
+    /// The words the card draws (Android `CardWords`: the `badge_*`, `chart_*`, `duration_*`, `period_*`, `slot_*` and
+    /// `card_*` strings).
+    struct Drawn: Sendable {
+        let durations: DurationWords
+        let eatCarbs, carbsShort, takeInsulin, insulinShort, muted, replaceSensor, replaceSensorShort, backToNow: String
+        /// "now" for a duration under a minute (a treatment logged this minute).
+        let now: String
+        /// "Muted · 1h 20m" (Mute all, timed).
+        let mutedFor: @Sendable (String) -> String
+        /// "45m left" / "quedan 45 min": `one` = a single unit of 1 ("queda 1 min").
+        let timeLeft: @Sendable (_ left: String, _ one: Bool) -> String
+        /// A slot's window: "1d", "12h" / "1 d", "12 h".
+        let periodDays, periodHours: @Sendable (Int) -> String
+        let average, gmi, cv: String
+        let noReadingsYet, noReadingSince, sensorEnded, warmingUp, almostReady, waitingReading: String
+        let readyAt: @Sendable (String) -> String
+    }
     let unit: (mgdl: String, mmol: String)
     let below, above: @Sendable (String) -> String
     let old, inRange, justNow: String
@@ -46,7 +66,16 @@ public struct CardWords: Sendable {
     let chartEmpty: @Sendable (_ hours: Int) -> String
 
     public static let en = CardWords(
-        locale: Locale(identifier: "en"), unit: ("milligrams per decilitre", "millimoles per litre"),
+        locale: Locale(identifier: "en"),
+        drawn: Drawn(
+            durations: .en, eatCarbs: "Eat carbs", carbsShort: "Carbs", takeInsulin: "Take insulin",
+            insulinShort: "Insulin", muted: "Muted", replaceSensor: "Replace sensor", replaceSensorShort: "Sensor",
+            backToNow: "Now", now: "now", mutedFor: { "Muted · \($0)" }, timeLeft: { left, _ in "\(left) left" },
+            periodDays: { "\($0)d" }, periodHours: { "\($0)h" }, average: "avg", gmi: "GMI", cv: "CV",
+            noReadingsYet: "No readings yet", noReadingSince: "No reading since", sensorEnded: "Sensor ended",
+            warmingUp: "Warming up", almostReady: "Almost ready", waitingReading: "Waiting for the first reading",
+            readyAt: { "Ready at \($0)" }),
+        unit: ("milligrams per decilitre", "millimoles per litre"),
         below: { "below \($0)" }, above: { "above \($0)" }, old: "old reading", inRange: "in range",
         justNow: "just now", ago: { "\($0) ago" },
         trend: ("trend unknown", "steady", "rising", "rising fast", "falling", "falling fast"),
@@ -74,7 +103,16 @@ public struct CardWords: Sendable {
         chartEmpty: { "Last \($0) hours: no data" })
 
     public static let es = CardWords(
-        locale: Locale(identifier: "es"), unit: ("miligramos por decilitro", "milimoles por litro"),
+        locale: Locale(identifier: "es"),
+        drawn: Drawn(
+            durations: .es, eatCarbs: "Come hidratos", carbsShort: "Hidratos", takeInsulin: "Ponte insulina",
+            insulinShort: "Insulina", muted: "Silenciadas", replaceSensor: "Cambiar sensor",
+            replaceSensorShort: "Sensor", backToNow: "Ahora", now: "ahora", mutedFor: { "Silenciadas · \($0)" },
+            timeLeft: { "\(queda($1)) \($0)" }, periodDays: { "\($0) d" }, periodHours: { "\($0) h" },
+            average: "media", gmi: "GMI", cv: "CV", noReadingsYet: "Aún no hay lecturas",
+            noReadingSince: "Sin lecturas desde", sensorEnded: "Sensor terminado", warmingUp: "Calentando",
+            almostReady: "Casi listo", waitingReading: "Esperando la primera lectura", readyAt: { "Listo a las \($0)" }),
+        unit: ("miligramos por decilitro", "milimoles por litro"),
         below: { "por debajo de \($0)" }, above: { "por encima de \($0)" }, old: "lectura antigua",
         inRange: "en rango", justNow: "ahora mismo", ago: { "hace \($0)" },
         trend: ("tendencia desconocida", "estable", "subiendo", "subiendo rápido", "bajando", "bajando rápido"),
@@ -104,9 +142,55 @@ public struct CardWords: Sendable {
 
     private static func queda(_ one: Bool) -> String { one ? "queda" : "quedan" }
 
-    /// The user's language among the two the app speaks (the system's preferred order; English otherwise).
-    public static var current: CardWords {
-        Bundle.preferredLocalizations(from: ["en", "es"]).first == "es" ? .es : .en
+    /// The user's language among the two the app speaks (`AppLanguage`: the system's preferred order; English
+    /// otherwise).
+    public static var current: CardWords { AppLanguage.current == .es ? .es : .en }
+
+    /// The language's code ("en", "es").
+    public var language: String { locale.identifier }
+
+    // MARK: drawn words
+
+    /// A short duration as the card draws it: "now" under a minute, else `Durations.compact` ("12m" / "12 min");
+    /// `up` rounds partial minutes up (time left: "1m" until it is over).
+    func duration(_ s: TimeInterval, up: Bool = false) -> String {
+        let sec = Int64(max(0, s))
+        let m = up ? (sec + 59) / 60 : sec / 60
+        return m < 1 ? drawn.now : Durations.compact(Int(m), drawn.durations)
+    }
+
+    /// The pill's time left of a mute ending in `minutes`: "45m left" / "quedan 45 min".
+    func timeLeft(_ minutes: Int) -> String {
+        drawn.timeLeft(Durations.compact(minutes, drawn.durations), Durations.compactIsOne(minutes))
+    }
+
+    /// A slot's window: "1d", "12h" ("1 d", "12 h").
+    func period(_ window: TimeInterval) -> String {
+        let s = Int(window)
+        return s % 86_400 == 0 ? drawn.periodDays(s / 86_400) : drawn.periodHours(s / 3_600)
+    }
+
+    /// A slot kind's short name under its number ("avg", "GMI", "CV"; a ring has none).
+    func short(_ kind: SlotKind) -> String {
+        switch kind {
+        case .tir: ""
+        case .gmi: drawn.gmi
+        case .average: drawn.average
+        case .cv: drawn.cv
+        }
+    }
+
+    /// The range word the card draws under an out-of-range value ("Low", "Very high" / "Baja", "Muy alta").
+    func rangeWord(_ r: RangeState) -> String {
+        let word =
+            switch r {
+            case .veryLow: range.veryLow
+            case .low: range.low
+            case .high: range.high
+            case .veryHigh: range.veryHigh
+            case .extremelyHigh: range.extremelyHigh
+            }
+        return sentence(word)
     }
 
     func unit(_ u: GlucoseUnit) -> String { u == .mgdl ? unit.mgdl : unit.mmol }
@@ -222,7 +306,7 @@ enum A11y {
         let spoken = slots.compactMap { slot($0, now: data.now, unit: unit, words: w) }
         let now = data.now
         let fr = Freshness.of(age: data.latest.map { now - $0.t })
-        let life = SensorBadge.look(style.sensor, now: now, latest: data.latest?.t).flatMap { s in
+        let life = SensorBadge.look(style.sensor, now: now, latest: data.latest?.t, words: w).flatMap { s in
             GlucoseCard.sensorSpot(style, s, fr) == .graph
                 || (s.warmup == nil && !s.ended && !slots.isEmpty
                     && SensorLife.countdownFraction(end: s.end, now: now, hours: style.countdownHours) != nil)
@@ -253,7 +337,7 @@ enum A11y {
     /// What the status pill says, in full words: the action an alert asks for, or the mute and its time left. Nothing
     /// when the card draws no pill (`StatusBadge.look`: none, or a mute that has ended).
     static func status(_ s: AlertStatus, now: TimeInterval, words w: CardWords) -> String? {
-        guard StatusBadge.look(s, now: now) != nil else { return nil }
+        guard StatusBadge.look(s, now: now, words: w) != nil else { return nil }
         switch s.current(at: now) {
         case .none: return nil
         case .needed(let k): return k == .low ? w.eatCarbs : w.takeInsulin
@@ -331,7 +415,7 @@ enum A11y {
 
     /// The sensor's own states where the value goes: warming up (its time left) or ended.
     private static func sensorState(_ data: CardData, words w: CardWords) -> String {
-        guard let s = SensorBadge.look(data.sensor, now: data.now, latest: data.latest?.t), !s.ended else {
+        guard let s = SensorBadge.look(data.sensor, now: data.now, latest: data.latest?.t, words: w), !s.ended else {
             return w.sensorEnded
         }
         if s.waiting(now: data.now) { return w.almostReady }

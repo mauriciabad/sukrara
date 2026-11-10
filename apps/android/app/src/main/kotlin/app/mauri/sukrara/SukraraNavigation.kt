@@ -56,6 +56,8 @@ import app.mauri.sukrara.feature.settings.SettingsScreen
 import app.mauri.sukrara.feature.settings.TestAlert
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityPage
+import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityViewModel
 import app.mauri.sukrara.feature.sharing.follower.FollowingPage
 import app.mauri.sukrara.feature.sharing.follower.FollowingViewModel
 import app.mauri.sukrara.feature.sharing.following
@@ -116,6 +118,10 @@ data object ProfileRoute : NavKey
 /** Backup: password manager, recovery code, relay backup (home's "Not backed up" card, Settings › Sharing). */
 @Serializable
 data object BackupRoute : NavKey
+
+/** Backup › Replace this identity: restore another or start fresh over the working one (confirmed). */
+@Serializable
+data object ReplaceIdentityRoute : NavKey
 
 /** Setup opened on one [step] (Settings › Sharing's Set up opens the identity step); Back returns where it was opened. */
 @Serializable
@@ -388,6 +394,23 @@ fun SukraraNavigation(
                             BackupPage(
                                 viewModel = viewModel(factory = SharingViewModel.factory(graph.setup.sharing)),
                                 onSetUpSharing = { backStack.push(SetupStepRoute(SetupStep.Identity)) },
+                                onReplace = { backStack.push(ReplaceIdentityRoute) },
+                            )
+                        }
+                    }
+                    entry<ReplaceIdentityRoute> {
+                        val vm: ReplaceIdentityViewModel = viewModel(factory = ReplaceIdentityViewModel.factory(graph.setup))
+                        val close = { backStack.pop(ReplaceIdentityRoute) }
+                        SettingsPage(stringResource(SharingR.string.sh_replace_title), { vm.back(close) }) {
+                            ReplaceIdentityPage(
+                                viewModel = vm,
+                                onClose = close,
+                                // back to Backup (it is under this page)
+                                onBackUp = close,
+                                onInvite = {
+                                    backStack.pop(ReplaceIdentityRoute)
+                                    backStack.push(ShareRoute)
+                                },
                             )
                         }
                     }
@@ -665,6 +688,11 @@ private fun route(
 
         HomeAction.AllowTaps -> {
             TagIntents.openAllow(context)
+        }
+
+        is HomeAction.OpenPen -> {
+            backStack.push(SettingsKey("pens"))
+            backStack.push(SettingsKey("pen", serial = action.serial))
         }
 
         // the module's state changes by itself once System UI says hello again; a failure is said in a toast

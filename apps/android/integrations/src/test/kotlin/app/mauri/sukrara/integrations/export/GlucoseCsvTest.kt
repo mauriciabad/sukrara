@@ -25,20 +25,33 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 
-/** Every case of `contracts/export/libreview-csv.json` gives the same bytes as the reference writer (and the Mac). */
+/**
+ * Every case of every case file in `contracts/export` (`libreview-csv.json`, …) gives the same bytes as the reference
+ * writer (and the Mac's `GlucoseCsvFixtureTests`, which reads the same files). Parity group `export`.
+ */
 class GlucoseCsvTest {
+    private val files =
+        File(Contracts.root, "export")
+            .listFiles { f -> f.isFile && f.extension == "json" }
+            .orEmpty()
+            .sortedBy { it.name }
+
     private val cases =
-        Json
-            .parseToJsonElement(Contracts.file("export/libreview-csv.json").readText())
-            .jsonObject["cases"]!!
-            .jsonArray
-            .map { it.jsonObject }
+        files.flatMap { file ->
+            Json
+                .parseToJsonElement(file.readText())
+                .jsonObject["cases"]!!
+                .jsonArray
+                .map { it.jsonObject }
+        }
 
     @Test
     fun `every contract case matches byte for byte`() {
+        check("libreview-csv.json" in files.map { it.name })
         check(cases.size >= 7)
         for (c in cases) {
             val expect = c["expect"]!!.jsonArray.joinToString("") { it.jsonPrimitive.content + "\r\n" }

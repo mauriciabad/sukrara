@@ -23,9 +23,11 @@ import java.util.TimeZone
 
 /**
  * Roborazzi goldens of the card (synthetic readings only): one phone-width card per scene, light + dark, default +
- * largest font (the card scales its text with the box, so "largest font" is the taller box a surface gives it).
- * The Goldens workflow (CI, Linux) records src/test/snapshots; `verifyRoborazziDebug` compares, `compareRoborazziDebug`
- * shows a local diff.
+ * largest font (the card scales its text with the box, so "largest font" is the taller box a surface gives it); the
+ * same scenes in Spanish (the longest words: range words, warm-up, sensor ended, no readings); and the app panel as
+ * it draws itself (its style, header over chart). The widgets' and the notification's goldens are their modules'
+ * (WidgetShotsTest, NotificationCardShotsTest). The Goldens workflow (CI, Linux) records src/test/snapshots;
+ * `verifyRoborazziDebug` compares, `compareRoborazziDebug` shows a local diff.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -51,8 +53,7 @@ class CardScreenshotTest {
 
     private val style = CardStyle(rings = listOf(RingSpec(86_400), RingSpec(7 * 86_400L)), last = LastPlace.NEAR_VALUE, sensorTime = true)
 
-    private fun scenes(): List<Pair<String, CardModel>> {
-        val w = Scenes.words()
+    private fun scenes(w: CardWords = Scenes.words()): List<Pair<String, CardModel>> {
         val meal =
             listOf(
                 Scenes.treatment("i1", TreatmentKind.RapidInsulin, 4.5, 40 * 60),
@@ -97,6 +98,43 @@ class CardScreenshotTest {
     fun cards() {
         for ((name, model) in scenes()) {
             for (dark in listOf(false, true)) for (large in listOf(false, true)) shoot(name, model, dark, large)
+        }
+    }
+
+    /** Every scene in Spanish, light: the words and the 24-hour clock of a Spanish phone (`card-es-<scene>-light`). */
+    @Test
+    fun spanish() {
+        val es = Locale.forLanguageTag("es-ES")
+        Locale.setDefault(es)
+        for ((name, model) in scenes(Scenes.words(es))) shoot("es-$name", model, dark = false, large = false)
+    }
+
+    /**
+     * The app panel as PanelCard draws it: [GraphConfig.appPanelStyle] (the default settings), the header row over the
+     * chart at the registry's widest size (`panel-<scene>-<theme>`).
+     */
+    @Test
+    fun appPanel() {
+        val st = GraphConfig().appPanelStyle()
+        val w = Scenes.words()
+        val panel =
+            listOf(
+                "in-range" to scenes(w).first { it.first == "in-range" }.second,
+                "low" to scenes(w).first { it.first == "low" }.second,
+            )
+        for ((name, model) in panel) {
+            for (dark in listOf(false, true)) {
+                val pal = GraphPalette.of(dark)
+                val header = GlucoseCard.image(379f, 120f, d, model, st, pal, CardSurface.APP_PANEL, CardPart.HEADER)
+                val graph = GlucoseCard.image(379f, 180f, d, model, st, pal, CardSurface.APP_PANEL, CardPart.GRAPH)
+                val bmp = Bitmap.createBitmap(header.width, header.height + graph.height, Bitmap.Config.ARGB_8888)
+                Canvas(bmp).apply {
+                    drawColor(pal.bg)
+                    drawBitmap(header, 0f, 0f, null)
+                    drawBitmap(graph, 0f, header.height.toFloat(), null)
+                }
+                bmp.captureRoboImage("src/test/snapshots/panel-$name-${if (dark) "dark" else "light"}.png")
+            }
         }
     }
 

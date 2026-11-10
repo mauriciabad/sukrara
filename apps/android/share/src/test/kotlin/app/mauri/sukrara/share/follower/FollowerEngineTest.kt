@@ -28,6 +28,7 @@ import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.event.SettingsCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
@@ -116,11 +117,20 @@ class FollowerEngineTest {
         runCurrent()
     }
 
-    /** Joins, connects, and returns the request the follower sent. */
-    private fun TestScope.joined(e: FollowerEngine): SignedEvent {
+    /** Looks up the invite (its wrap is on the relays) and returns what the person is shown. */
+    private fun TestScope.lookedUp(e: FollowerEngine): Invite {
         lookup.stored += inviteWrap
+        var found: InviteLookup? = null
+        backgroundScope.launch { found = e.lookUp(created.link.link) }
+        runCurrent()
+        return (found as InviteLookup.Found).invite
+    }
+
+    /** Looks up, taps Follow, connects, and returns the request the follower sent. */
+    private fun TestScope.joined(e: FollowerEngine): SignedEvent {
+        val invite = lookedUp(e)
         var result: JoinResult? = null
-        backgroundScope.launch { result = e.join(created.link.link, Profile("Bea", null)) }
+        backgroundScope.launch { result = e.join(invite, Profile("Bea", null)) }
         runCurrent()
         assertEquals(JoinResult.Joined, result)
         attach(e)
@@ -167,14 +177,39 @@ class FollowerEngineTest {
             assertEquals(setOf(FollowerEngine.INBOX), relay.subscriptions.keys)
         }
 
+    @Test fun lookingUpShowsWhoIsInvitingAndSavesOrSendsNothing() =
+        runTest {
+            val e = engine()
+            val invite = lookedUp(e)
+            assertEquals("Ana", invite.profile?.name)
+            assertEquals(created.link.token, invite.token)
+            assertFalse(lookup.started)
+            // no key, no record, no request until the person taps Follow
+            assertNull(secure.read(FollowerStore.NAME))
+            assertEquals(FollowState.NotFollowing, e.state.value)
+            assertTrue(lookup.published.isEmpty())
+            assertTrue(relay.published.isEmpty())
+        }
+
+    @Test fun anInviteThatExpiredWhileThePersonDecidedIsRefused() =
+        runTest {
+            val e = engine()
+            val invite = lookedUp(e)
+            var result: JoinResult? = null
+            backgroundScope.launch { result = e.join(invite.copy(expiry = NOW - 1), null) }
+            runCurrent()
+            assertEquals(JoinResult.Expired, result)
+            assertNull(secure.read(FollowerStore.NAME))
+        }
+
     @Test fun anInviteThatNeverAppearsIsNotFoundAndNothingIsSaved() =
         runTest {
             val e = engine(timeoutMs = 10_000)
-            var result: JoinResult? = null
-            backgroundScope.launch { result = e.join(created.link.link, null) }
+            var result: InviteLookup? = null
+            backgroundScope.launch { result = e.lookUp(created.link.link) }
             advanceTimeBy(30_000)
             runCurrent()
-            assertEquals(JoinResult.NotFound, result)
+            assertEquals(InviteLookup.Failed(JoinResult.NotFound), result)
             assertNull(secure.read(FollowerStore.NAME))
             assertEquals(FollowState.NotFollowing, e.state.value)
         }
@@ -182,10 +217,10 @@ class FollowerEngineTest {
     @Test fun anythingButAnInviteLinkIsRefusedAtOnce() =
         runTest {
             val e = engine()
-            var result: JoinResult? = null
-            backgroundScope.launch { result = e.join("https://example.com/join#abc", null) }
+            var result: InviteLookup? = null
+            backgroundScope.launch { result = e.lookUp("https://example.com/join#abc") }
             runCurrent()
-            assertEquals(JoinResult.InvalidLink, result)
+            assertEquals(InviteLookup.Failed(JoinResult.InvalidLink), result)
         }
 
     @Test fun approvedFollowerGetsTheKeyRosterAndReadings() =
@@ -447,9 +482,9 @@ class FollowerEngineTest {
             settingsCache.update { WearerSettingsCache("{}") }
             cacheWritesFail = true
             val e = engine()
-            lookup.stored += inviteWrap
+            val invite = lookedUp(e)
             var failed: Throwable? = null
-            backgroundScope.launch { runCatching { e.join(created.link.link, null) }.onFailure { failed = it } }
+            backgroundScope.launch { runCatching { e.join(invite, null) }.onFailure { failed = it } }
             runCurrent()
             assertTrue(failed is java.io.IOException)
             // no record: nothing can later open as "unreadable" and fall back to the previous wearer's thresholds

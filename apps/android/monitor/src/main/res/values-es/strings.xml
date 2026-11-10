@@ -107,6 +107,7 @@
         <item quantity="many">%d cerca</item>
         <item quantity="other">%d cerca</item>
     </plurals>
+    <string name="monitor_sub_wifi">API de Nightscout en el Wi-Fi</string>
     <string name="monitor_notif_not_monitoring">Sin monitorizar: aún no hay sensor</string>
     <string name="monitor_notif_sensor_ended">Sensor terminado</string>
     <string name="monitor_notif_warming_up">Sensor calentando · listo a las %1$s</string>

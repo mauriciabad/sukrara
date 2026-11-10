@@ -12,7 +12,9 @@ import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SystemAccessState
@@ -25,6 +27,7 @@ import app.mauri.sukrara.feature.home.DataProblem
 import app.mauri.sukrara.feature.home.HomeAlertAction
 import app.mauri.sukrara.feature.home.HomeDeps
 import app.mauri.sukrara.feature.home.HomeProfile
+import app.mauri.sukrara.feature.home.PenRead
 import app.mauri.sukrara.feature.home.UploadMarks
 import app.mauri.sukrara.feature.home.banners.BannerMemory
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
@@ -78,6 +81,10 @@ class HomeModule(
     private val penEntryOf: suspend (String) -> PenEntryInfo? = { null },
     /** The pens on this phone while they can be used (the wearer's with NFC), else null: the sheet is read only. */
     private val penPort: () -> PensPort? = { null },
+    /** The open pen questions while this phone reads pens (none on a follower); a function: pens are built later. */
+    private val penQuestionsOf: () -> Flow<List<PenQuestionInfo>> = { flowOf(emptyList()) },
+    /** The newest pen read while reading is On (the pen hints). */
+    private val penReadOf: () -> Flow<PenRead?> = { flowOf(null) },
     /** The wearer's clinic upload is set (null on a follower): the *Share your data with your clinic* banner. */
     private val clinicUploadSet: () -> Flow<Boolean?> = { emptyFlow() },
     /** What the clinic upload has of the entries (the list's cloud marks); a function: integrations start later. */
@@ -105,6 +112,15 @@ class HomeModule(
     ): PenEntryInfo? = penPort()?.correct(shown, primed)
 
     override suspend fun restorePen(was: PenEntryInfo): Boolean = penPort()?.restore(was) == true
+
+    override val penQuestions: Flow<List<PenQuestionInfo>> get() = penQuestionsOf()
+
+    override suspend fun answerPen(
+        question: PenQuestionInfo,
+        answer: PenAnswer,
+    ): Boolean = penPort()?.answer(question, answer) == true
+
+    override val penRead: Flow<PenRead?> get() = penReadOf()
 
     override val readiness: StateFlow<AlertReadiness?> get() = readinessSource.readiness
 

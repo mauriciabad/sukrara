@@ -26,6 +26,13 @@ object GlucoseCard {
     /** A slot is only drawn when its window has at least this much data. */
     const val MIN_COVERAGE = 0.25
 
+    /**
+     * Slots beside the value smaller than this (dp) are at most [CROWDED_MAX]: three rings that small read as one
+     * cluttered row of near-equal numbers (#71; layout/rules.json `crowdedSlots`).
+     */
+    const val CROWDED_DP = 56f
+    const val CROWDED_MAX = 2
+
     /** Tests: every [CardLayout] drawn and every [GlucoseLook] decided, as it happens (null in the app). */
     @Volatile var observer: ((CardLayout) -> Unit)? = null
 
@@ -333,7 +340,8 @@ object GlucoseCard {
         val size = if (st.slotDisc != null) min(box.height(), 84 * d) else min(box.height() * 0.96f, 84 * d)
         if (size < 30 * d) return 0f
         val gap = if (st.slotDisc != null) 6 * d else size * 0.14f
-        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(4)
+        val most = if (!dedicated && size < CROWDED_DP * d) CROWDED_MAX else 4
+        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(most)
         if (fit < 1) return 0f
         val (rings, fallback) = slotInputs(st, last, model, bands)
         var items = Slots.arrange(rings, st.last, last, fallback, fit, st.unit)

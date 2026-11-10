@@ -583,14 +583,9 @@
     <string name="st_pen_h_incomplete">%1$s · incompleta</string>
     <string name="st_pen_seg_priming">Purgado</string>
     <string name="st_pen_nothing_injected">Nada inyectado</string>
-    <string name="st_pen_done">Hecho</string>
     <string name="st_pen_add_to_entry">Añadir a la entrada de las %1$s</string>
     <string name="st_pen_log_as_injection">Registrar como inyección</string>
     <string name="st_pen_log_injection">Registrar esta inyección</string>
-    <string name="st_pen_different">Distintas</string>
-    <string name="st_pen_same">La misma</string>
-    <string name="st_pen_all_priming">Todo purgado</string>
-    <string name="st_pen_log_units">Registrar %1$s</string>
     <plurals name="st_pen_older">
         <item quantity="one">%1$d dosis anterior sin registrar</item>
         <item quantity="many">%1$d dosis anteriores sin registrar</item>
@@ -607,7 +602,6 @@
         <item quantity="other">%1$d dosis anteriores</item>
     </plurals>
     <string name="st_pen_changed_since_open">Esa entrada cambió o se borró mientras tanto</string>
-    <string name="st_pen_q_several">Hay varias entradas tuyas cerca: respóndela en la tarjeta de lectura de la pluma o en su notificación.</string>
     <string name="st_clinic_title">Comparte tus datos con tu clínica</string>
     <string name="st_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
     <string name="st_clinic_libreview">LibreView</string>

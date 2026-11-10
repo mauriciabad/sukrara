@@ -59,7 +59,6 @@ public enum Band: Int, CaseIterable, Codable, Sendable {
     }
     /// The Kotlin enum spelling (settings, `ringOrder`).
     var name: String { ["VERY_LOW", "LOW", "TIGHT", "TARGET", "HIGH", "VERY_HIGH"][rawValue] }
-    var label: String { ["Very low", "Low", "Very good", "In range", "High", "Very high"][rawValue] }
     init?(name: String) {
         guard let b = Band.allCases.first(where: { $0.name == name }) else { return nil }
         self = b
@@ -79,7 +78,6 @@ func ringOrderText(_ o: [Band]) -> String { o.map(\.name).joined(separator: ",")
 
 public enum TirRange: String, Codable, CaseIterable, Sendable {
     case inRange = "IN_RANGE", tight = "TIGHT"
-    var label: String { self == .tight ? "Very good" : "In range" }
 }
 
 /// Share of time per band in a window (each reading stands for the time until the next one, capped at 15 min).

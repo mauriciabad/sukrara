@@ -189,4 +189,9 @@ sealed interface HomeAction {
 
     /** Sukrara's System UI module waits for a restart: restart System UI with root. */
     data object RestartSystemUi : HomeAction
+
+    /** Settings › Insulin pens › this pen (*Pen read 2d ago* on the treatments' title). */
+    data class OpenPen(
+        val serial: String,
+    ) : HomeAction
 }

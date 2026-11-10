@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.pen.engine.Ledger
+import app.mauri.sukrara.pen.engine.PenEntry
 import kotlinx.coroutines.launch
 
 /** Where the pen notifications go (`AppGraph` wires the `:monitor` channels and Sukrara's info group). */
@@ -69,6 +70,7 @@ class PenNotices(
             is PenAction.Same -> ctx.getString(if (a.entry != null) R.string.pen_m_same else R.string.pen_m_different)
             is PenAction.OpenPen -> ctx.getString(R.string.pen_check_it)
             is PenAction.Review -> ctx.getString(R.string.pen_review)
+            is PenAction.Choose -> ctx.getString(R.string.pen_choose)
         }
 
     /** One read's result, only when [enabled] (Settings → Insulin pens → *Notification after each read*). */
@@ -118,7 +120,12 @@ class PenNotices(
                     .Builder(
                         null,
                         ctx.getString(R.string.pen_add_treatment),
-                        PendingIntent.getActivity(ctx, 401, addTreatment(ctx), PendingIntent.FLAG_IMMUTABLE),
+                        PendingIntent.getActivity(
+                            ctx,
+                            401,
+                            addTreatment(ctx, st.entries.maxByOrNull { it.t }),
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                        ),
                     ).build(),
             )
             if (canUndo) b.addAction(action(PenAction.Undo, label(PenAction.Undo)))
@@ -158,7 +165,14 @@ class PenNotices(
             b.setContentTitle(ctx.resources.getQuantityString(R.plurals.pen_q_several, open.size, open.size))
         } else {
             b.setContentTitle(text.questionTitle(q)).setContentText(text.questionLine(q, l, log))
-            text.questionActions(q, l, log).forEach { b.addAction(action(it, label(it))) }
+            text.questionActions(q, l, log).forEach { a ->
+                // *Choose* opens the app (home's card and its sheet); the answers act from the notification
+                if (a is PenAction.Choose) {
+                    b.addAction(Notification.Action.Builder(null, label(a), openApp()).build())
+                } else {
+                    b.addAction(action(a, label(a)))
+                }
+            }
         }
         ports.post(PenNotificationPorts.Kind.Check, b.build())
     }
@@ -178,9 +192,28 @@ class PenNotices(
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     companion object {
-        /** The quick Add treatment dialog over the current app. */
-        fun addTreatment(ctx: Context): Intent =
-            Intent(NavTargets.ACTION_QUICK_TREATMENT).setPackage(ctx.packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        /**
+         * The quick Add treatment dialog over the current app; after a read, at the time of its newest injection
+         * [after] with the other insulin focused (a rapid dose read: Long-acting; a long one: Rapid).
+         */
+        fun addTreatment(
+            ctx: Context,
+            after: PenEntry? = null,
+        ): Intent =
+            Intent(NavTargets.ACTION_QUICK_TREATMENT)
+                .setPackage(ctx.packageName)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .apply {
+                    if (after != null) {
+                        putExtra(NavTargets.EXTRA_AT, after.t * 1000)
+                        putExtra(NavTargets.EXTRA_FOCUS_LONG, after.k != "long")
+                    }
+                }
+
+        /** Sukrara's home (a question chosen on its card). */
+        fun home(
+            ctx: Context,
+        ): Intent? = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         /** Settings › Insulin pens › this pen (the app's main screen); [review]: its last big read in Doses read. */
         fun penPage(

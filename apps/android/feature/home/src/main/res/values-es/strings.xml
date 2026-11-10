@@ -204,4 +204,6 @@
     <string name="report_goal_met">objetivo cumplido</string>
     <string name="report_goal_missed">objetivo no cumplido</string>
     <string name="report_footer">Datos del sensor durante el %1$s %% del periodo. Rangos y objetivos del consenso internacional.</string>
+    <string name="home_pen_read_ago">Pluma leída hace %1$s</string>
+    <string name="home_pen_hint_carbs">¿Te has inyectado? Acerca la pluma al móvil.</string>
 </resources>

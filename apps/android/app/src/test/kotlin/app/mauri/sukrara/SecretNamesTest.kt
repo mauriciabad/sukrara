@@ -26,7 +26,9 @@ class SecretNamesTest {
                 FollowerStore.NAME,
                 NightscoutUploader.NAME,
                 NightscoutApiServer.SECRET,
+                NightscoutApiServer.LAN_SECRET,
                 TidepoolUploader.NAME,
+                TidepoolUploader.EMAIL,
                 LibreViewUploader.NAME,
                 PairingStore.NAME,
                 SecretName.JUGGLUCO, // JugglucoSecret writes it by this name

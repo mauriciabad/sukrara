@@ -13,8 +13,12 @@
     /// `sukrara-snap windows <dir>`: every window state with synthetic data, light + dark, default + large text.
     /// Offline: a scratch defaults suite, no runtime behind the models (actions nil).
     public enum WindowSnapshots {
-        /// Renders the windows' text in one language (`es`), whatever the Mac's.
-        public static func useLanguage(_ language: String) { L10n.use(language: language) }
+        /// Renders every word in one language (`es`), whatever the Mac's: the windows' (String Catalog) and the
+        /// card's, the widget's and the mute lines' (`AppLanguage`).
+        public static func useLanguage(_ language: String) {
+            L10n.use(language: language)
+            AppLanguage.forced = AppLanguage(rawValue: language)
+        }
 
         public static func render(to dir: URL) throws -> Int {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -123,11 +127,16 @@
             )
             let bad = follow(.notFollowing)
             bad.linkText = "hello"
-            Task { await bad.follow() }
+            Task { await bad.lookUp() }
             out.append(("follow-error-invalid", AnyView(FollowStep(follow: bad).padding().frame(width: 520))))
             let noQR = follow(.notFollowing)
-            Task { await noQR.follow(qrText: nil) }
+            Task { await noQR.lookUp(qrText: nil) }
             out.append(("follow-error-noqr", AnyView(FollowStep(follow: noQR).padding().frame(width: 520))))
+            let invited = follow(.notFollowing)
+            invited.invite = Invite(
+                identity: String(repeating: "ab", count: 32), token: "t", expiry: Int.max, relays: [],
+                profile: Profile(name: "Marta", avatar: .v1(c: 6, s: "dots", a: 45, n: 11)))
+            out.append(("follow-invite-confirm", AnyView(FollowStep(follow: invited).padding().frame(width: 520))))
             let following = follow(
                 .following(wearer: "Marta", lastReading: Date().addingTimeInterval(-180), canWrite: true))
             let settings = SettingsModel(store: store, follow: following, version: "0.12.0")

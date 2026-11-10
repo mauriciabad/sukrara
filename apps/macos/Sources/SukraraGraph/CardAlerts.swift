@@ -97,13 +97,14 @@ public struct CardAlerts: Sendable, Equatable, Codable {
     func muteUntil(_ m: GraphMark) -> TimeInterval? { muteEnds[m.id] }
 }
 
-/// The badge's mute wording (contracts/alerts/copy.json, English; the screen reader's is `CardWords`).
+/// The badge's mute wording (contracts/alerts/copy.json `pill`, en + es; the words are `CardWords`).
 enum BadgeCopy {
     /// Whole minutes left of `seconds`, partial minutes rounded up ("1 min" until it is over).
     static func leftMin(_ seconds: TimeInterval) -> Int { (Int(max(0, seconds).rounded(.down)) + 59) / 60 }
-    /// The pill while Mute all runs in range: "Muted · 1h 12m".
-    static func pill(leftMin: Int) -> String { "Muted · \(Durations.compact(leftMin))" }
-    static let pillForever = "Muted"
+    /// The pill while Mute all runs in range: "Muted · 1h 12m" / "Silenciadas · 1 h 12 min".
+    static func pill(leftMin: Int, _ w: CardWords) -> String {
+        w.drawn.mutedFor(Durations.compact(leftMin, w.drawn.durations))
+    }
 }
 
 /// The treatment-mark options of the settings schema (`contracts/settings/settings.json` "options": markKind,

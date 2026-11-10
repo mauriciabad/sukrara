@@ -6,6 +6,7 @@ package app.mauri.sukrara.core.data
 import android.content.Context
 import androidx.room.Room
 import app.mauri.sukrara.core.data.db.QuarantiningOpenHelperFactory
+import app.mauri.sukrara.core.data.db.RoomPenLedgerRepository
 import app.mauri.sukrara.core.data.db.RoomReadingsRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
 import app.mauri.sukrara.core.data.db.SukraraDatabase
@@ -25,6 +26,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.storage.PenLedgerRepository
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -56,7 +58,7 @@ data class Retention(
  * - `datastore/<store>.preferences_pb`: settings, one file per schema store;
  * - `files/state/<name>.json`: typed state ([typedStore]);
  * - `files/secure/<name>.bin`: secrets ([secureStore]);
- * - `databases/sukrara.db`: readings, treatments, sharing ledger;
+ * - `databases/sukrara.db`: readings, treatments, sharing ledger, the pen ledger;
  * - `files/diag/`: the diagnostic log.
  */
 class DataModule(
@@ -100,6 +102,7 @@ class DataModule(
         Room
             .databaseBuilder(context, SukraraDatabase::class.java, SukraraDatabase.FILE)
             .openHelperFactory(QuarantiningOpenHelperFactory(::quarantineDatabase))
+            .addMigrations(*SukraraDatabase.MIGRATIONS)
             .setQueryCoroutineContext(dispatchers.io)
             .build()
     }
@@ -114,6 +117,9 @@ class DataModule(
     fun readingsFor(role: Flow<Role?>): ReadingsRepository = RoomReadingsRepository(database.readings(), role.map(SourceId::notOf))
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
+
+    /** The pen ledger, stored with the treatments of each pen change in one transaction (`:pen`). */
+    val penLedger: PenLedgerRepository by lazy { RoomPenLedgerRepository(database.penLedger()) }
 
     /**
      * The typed state file `files/state/<name>.json`. [whenCorrupt] is what the store continues from if the file is

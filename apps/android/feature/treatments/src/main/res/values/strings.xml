@@ -65,4 +65,19 @@
     <string name="treatment_pen_duplicate_title">Already logged by your pen?</string>
     <string name="treatment_pen_duplicate_text">Your pen logged %1$s at %2$s. Log this dose too?</string>
     <string name="treatment_pen_duplicate_log">Log anyway</string>
+    <!-- The pen read into the dialog (docs/29): under the fields while pens can be read and no insulin is typed -->
+    <string name="treatment_pen_hint">Injected? Hold your pen to the phone.</string>
+    <string name="treatment_pen_reading">Reading your pen…</string>
+    <!-- The insulin field was filled from a pen read, already in the log -->
+    <string name="treatment_pen_logged">Logged from your pen</string>
+    <string name="treatment_pen_logged_primed">Logged from your pen · %1$s primed</string>
+    <plurals name="treatment_pen_also">
+        <item quantity="one">Also logged: %d earlier injection</item>
+        <item quantity="other">Also logged: %d earlier injections</item>
+    </plurals>
+    <string name="treatment_pen_undo">Undo</string>
+    <string name="treatment_pen_undone">Pen read undone</string>
+    <string name="treatment_pen_undo_failed">Couldn\'t undo: something changed since</string>
+    <!-- The snackbar after rapid insulin typed by hand while a pen is read: %1$s = "Saved: 4.5u rapid insulin" -->
+    <string name="treatment_saved_tap_hint">%1$s · Next time, just tap your pen</string>
 </resources>

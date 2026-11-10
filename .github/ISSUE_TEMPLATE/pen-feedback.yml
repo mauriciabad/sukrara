@@ -1,3 +1,6 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Opened from Sukrara's untested insulin pen page (investigation 29, docs/29-novopen.md).
 # The app pre-fills `pen`, `app-version`, `android` and `phone` through the URL (field ids = query keys); nothing else.
 name: Pen feedback

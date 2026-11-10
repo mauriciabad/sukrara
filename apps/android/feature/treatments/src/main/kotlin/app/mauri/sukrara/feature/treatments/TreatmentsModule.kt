@@ -46,6 +46,8 @@ class TreatmentsModule(
     private val drafts: StateStore<TreatmentDraft> = MemoryDraftStore(),
     /** *Treatment not saved*, the notification that offers [drafts]' entry. */
     private val draftNotice: DraftNotice = DraftNotice.None,
+    /** Reading a pen into the open dialog (the wearer's phone with pens); a function: pens are built later. */
+    val pen: () -> DialogPen? = { null },
 ) {
     val log = TreatmentLog(repository, sync, clock)
 

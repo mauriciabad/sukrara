@@ -8,6 +8,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.nfc.NfcAdapter
+import android.nfc.Tag
 import android.os.Bundle
 import android.os.PowerManager
 import android.os.SystemClock
@@ -61,14 +63,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import app.mauri.sukrara.core.model.NavTargets
+import app.mauri.sukrara.core.model.PenFill
 import app.mauri.sukrara.core.model.PenNearEntry
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -86,6 +92,11 @@ import java.time.Instant
  *
  * With [NavTargets.EXTRA_TREATMENT_ID] (a row of home's list) it edits that stored entry instead: its kind's amount,
  * its time and its note, Save changes it (a newer version, synced) and *Undo* brings the old one back.
+ *
+ * On the wearer's phone with pens (reading On, unlocked) the dialog holds the NFC reader: a pen held to the phone is
+ * read and logged at once like a tap anywhere ([DialogPen]); its newest injection fills Rapid / Long-acting (counting
+ * up) and *When*, under the fields *Logged from your pen* with *Undo*. *Save* never logs that dose again; a field
+ * changed afterwards is a typed dose again (and asks *Already logged by your pen?*).
  */
 class QuickTreatmentActivity : ComponentActivity() {
     private val module by lazy { treatmentsModule }
@@ -110,9 +121,15 @@ class QuickTreatmentActivity : ComponentActivity() {
     /** The form holds the kept draft (when it was kept), with *Discard*; null = an ordinary form. */
     private var draftAt by mutableStateOf<Instant?>(null)
 
+    /** Look for a kept draft once the form exists (a fresh dialog only). */
+    private var offerDraft = false
+
     /** After Save: the dialog leaves, then [confirmation] shows the snackbar. */
     private var leaving by mutableStateOf(false)
     private var confirmation by mutableStateOf<Confirmation?>(null)
+
+    /** What the snackbar will say once the dialog has left. */
+    private var pending: Confirmation? = null
 
     private val screen =
         object : BroadcastReceiver() {
@@ -146,19 +163,27 @@ class QuickTreatmentActivity : ComponentActivity() {
         )
         enableEdgeToEdge()
         val focusCarbs = QuickTreatmentIntents.focusCarbs(intent) || module.lowNow()
+        val focusLong = !focusCarbs && QuickTreatmentIntents.focusLong(intent)
+        // *Add treatment* after a pen read: at that injection's time (within the current minute it is simply now)
+        val startAt = QuickTreatmentIntents.at(intent)?.takeIf { Duration.between(it, module.clock.now()) >= Duration.ofMinutes(1) }
         carriedMs = savedInstanceState?.getLong(KEY_LEFT, -1L)?.takeIf { it >= 0 }
+        // a question open before a rotation is asked again (Save was already pressed for it)
+        duplicate = PenDuplicate.restore(savedInstanceState)
+        saved = duplicate != null
+        // a field filled by a pen read stays the pen's after a rotation (its Undo stays with the read card)
+        penLine = PenFills.restore(savedInstanceState)
         draftAt = savedInstanceState?.getLong(KEY_DRAFT, -1L)?.takeIf { it >= 0 }?.let(Instant::ofEpochMilli)
         setContent {
             val edited = editing
             // editing: nothing until the entry is read (a moment), then its own form
             if (editId != null && edited == null) return@setContent
-            form = if (edited != null) rememberEditFormState(edited) else rememberTreatmentFormState()
+            form = if (edited != null) rememberEditFormState(edited) else rememberTreatmentFormState(startAt)
             SukraraTheme {
                 val c = confirmation
                 if (c != null) {
                     ConfirmationLayer(c)
                 } else {
-                    FormLayer(focusCarbs)
+                    FormLayer(focusCarbs, focusLong)
                 }
             }
         }
@@ -178,15 +203,16 @@ class QuickTreatmentActivity : ComponentActivity() {
         offerDraft = savedInstanceState == null && editId == null
     }
 
-    /** Look for a kept draft once the form exists (a fresh dialog only). */
-    private var offerDraft = false
-
     @Composable
-    private fun FormLayer(focusCarbs: Boolean) {
+    private fun FormLayer(
+        focusCarbs: Boolean,
+        focusLong: Boolean,
+    ) {
         val cd = countdown
         val quiet by module.hints.quiet.collectAsState(QuietRules.NONE)
         val reduced = LocalReducedMotion.current
         LaunchedEffect(cd) { if (cd != null) runCountdown(cd) }
+        PenFillEffects()
         LaunchedEffect(Unit) {
             if (!offerDraft) return@LaunchedEffect
             offerDraft = false
@@ -231,12 +257,17 @@ class QuickTreatmentActivity : ComponentActivity() {
                     lock = cd?.let { lockInfo(it) },
                     quiet = quiet,
                     draft = draftAt?.let { DraftLine(it, ::discardDraft) },
+                    focusLong = focusLong,
+                    penLine =
+                        penLine?.let { line ->
+                            { PenFillLine(line, showHint = form.rapid.isBlank() && form.long.isBlank(), onUndo = ::undoPen) }
+                        },
                     // the card swallows taps so they don't reach the scrim
                     modifier = Modifier.pointerInput(Unit) { detectTapGestures { } },
                 )
             }
             duplicate?.let { d ->
-                PenDuplicateDialog(d.second, onCancel = { cancelDuplicate() }, onLog = { store(d.first, d.third) })
+                PenDuplicateDialog(d.pen, onCancel = { cancelDuplicate() }, onLog = { store(d.entries, d.at) })
             }
         }
     }
@@ -252,9 +283,7 @@ class QuickTreatmentActivity : ComponentActivity() {
             val a11y = getSystemService(AccessibilityManager::class.java)
             val flags = AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
             // raised for TalkBack and *Time to take action*, never shorter than its own time
-            delay(
-                maxOf(ms, a11y.getRecommendedTimeoutMillis(ms, flags)).toLong(),
-            )
+            delay(maxOf(ms, a11y.getRecommendedTimeoutMillis(ms, flags)).toLong())
             finish()
         }
         val reduced = LocalReducedMotion.current
@@ -275,11 +304,19 @@ class QuickTreatmentActivity : ComponentActivity() {
         } else if (!keyguard.isKeyguardLocked) {
             endLock()
         }
+        startPenReader()
+    }
+
+    override fun onPause() {
+        stopPenReader()
+        super.onPause()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         countdown?.let { outState.putLong(KEY_LEFT, it.remaining(SystemClock.elapsedRealtime())) }
+        duplicate?.save(outState)
+        (penLine as? PenLine.Filled)?.let { PenFills.save(it, outState) }
         draftAt?.let { outState.putLong(KEY_DRAFT, it.toEpochMilli()) }
     }
 
@@ -294,26 +331,37 @@ class QuickTreatmentActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** A typed insulin dose a pen already logged: the entries and time waiting for *Log anyway*. */
-    private var duplicate by mutableStateOf<Triple<List<NewEntry>, PenNearEntry, Instant?>?>(null)
+    /**
+     * A typed insulin dose a pen already logged: the entries and time waiting for *Log anyway*. While it is asked the
+     * lock-screen countdown stands still (the dialog must not close under the question); *Cancel* resumes it.
+     */
+    private var duplicate by mutableStateOf<PenDuplicate?>(null)
 
-    /** What the snackbar will say once the dialog has left. */
-    private var pending: Confirmation? = null
+    /** Whether the lock-screen countdown stands still for *Already logged by your pen?* (tests). */
+    internal val countdownPaused: Boolean get() = countdown?.paused == true
 
     private fun save(
-        entries: List<NewEntry>,
-        at: Instant?,
+        typed: List<NewEntry>,
+        at: java.time.Instant?,
     ) {
         if (saved) return
-        saved = true
         editing?.let { t ->
-            storeEdit(t, entries.single(), at)
+            saved = true
+            storeEdit(t, typed.single(), at)
             return
         }
+        // the dose a pen read filled in is in the log already: Save never logs it again
+        val entries = PenFills.withoutFilled(typed, penLine, form)
+        if (entries.isEmpty()) {
+            finish()
+            return
+        }
+        saved = true
         lifecycleScope.launch {
             val d = module.penDuplicate(entries, at)
             if (d != null) {
-                duplicate = Triple(entries, d.second, at)
+                duplicate = PenDuplicate(entries, d.second, at)
+                countdown?.pause(SystemClock.elapsedRealtime())
             } else {
                 store(entries, at)
             }
@@ -323,12 +371,13 @@ class QuickTreatmentActivity : ComponentActivity() {
     /** *Cancel* on *Already logged by your pen?*: back to the form, nothing saved. */
     private fun cancelDuplicate() {
         duplicate = null
+        countdown?.resume(SystemClock.elapsedRealtime())
         saved = false
     }
 
     private fun store(
         entries: List<NewEntry>,
-        at: Instant?,
+        at: java.time.Instant?,
     ) {
         duplicate = null
         val outbox =
@@ -342,7 +391,10 @@ class QuickTreatmentActivity : ComponentActivity() {
         if (draftAt != null) module.dropDraft()
         val text =
             getString(if (outbox) R.string.treatment_sent_snack else R.string.treatment_saved_snack, EntryWords.of(resources, entries))
-        leave(Confirmation(text, saved))
+        // rapid insulin typed by hand while a pen is read: once a day, three times, the quicker way
+        val hint = tapHint && entries.any { it.kind == TreatmentKind.RapidInsulin }
+        if (hint) module.pen()?.tapHintShown()
+        leave(Confirmation(if (hint) getString(R.string.treatment_saved_tap_hint, text) else text, saved))
     }
 
     /** Save on an edit: [t] becomes [entry] at [at]; the snackbar's *Undo* brings [t] back. */
@@ -359,9 +411,10 @@ class QuickTreatmentActivity : ComponentActivity() {
         leave(Confirmation(getString(R.string.treatment_changed_snack, EntryWords.one(resources, entry)), saved))
     }
 
-    /** The dialog leaves (the countdown ends with it, the keyboard goes), then [c] shows. */
+    /** The dialog leaves (the countdown ends with it, the pen reader and the keyboard go), then [c] shows. */
     private fun leave(c: Confirmation) {
         endLock()
+        stopPenReader()
         pending = c
         WindowCompat.getInsetsController(window, window.decorView).hide(WindowInsetsCompat.Type.ime())
         leaving = true
@@ -390,6 +443,116 @@ class QuickTreatmentActivity : ComponentActivity() {
         form.fill(TreatmentFormState())
         draftAt = null
         module.dropDraft()
+    }
+
+    /** What the dialog shows of the pen (null = pens can't be read into it now). */
+    private var penLine by mutableStateOf<PenLine?>(null)
+
+    /** A read that logged a dose, waiting to be counted into its field. */
+    private var pendingFill by mutableStateOf<PenFill.Logged?>(null)
+    private var penReader: DialogPen? = null
+    private var tapHint = false
+
+    /** Holds the NFC reader while the dialog is open, unlocked, and pens can be read (Android reads tags unlocked only). */
+    private fun startPenReader() {
+        if (editId != null || leaving) return
+        val pen = module.pen() ?: return
+        lifecycleScope.launch {
+            val ok = runCatching { pen.readable() }.getOrDefault(false)
+            tapHint = ok && runCatching { pen.tapHintDue() }.getOrDefault(false)
+            val nfc = NfcAdapter.getDefaultAdapter(this@QuickTreatmentActivity)
+            if (!ok || nfc == null || keyguard.isKeyguardLocked || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+            if (penLine == null) penLine = PenLine.Ready
+            penReader = pen
+            runCatching {
+                nfc.enableReaderMode(this@QuickTreatmentActivity, { tag -> onTag(pen, tag) }, READER_FLAGS, null)
+            }
+        }
+    }
+
+    private fun stopPenReader() {
+        if (penReader == null) return
+        penReader = null
+        runCatching { NfcAdapter.getDefaultAdapter(this)?.disableReaderMode(this) }
+    }
+
+    /** A tag while the reader is held (a binder thread): a pen is read and logged, anything else is left alone. */
+    private fun onTag(
+        pen: DialogPen,
+        tag: Tag,
+    ) {
+        if (!pen.mightBePen(tag)) return
+        val view = window.decorView
+        lifecycleScope.launch {
+            val fill = runCatching { pen.read(tag, view) { penLine = PenLine.Reading } }.getOrNull()
+            if (fill == null) {
+                if (penLine == PenLine.Reading) penLine = PenLine.Ready
+            } else {
+                penRead(fill)
+            }
+        }
+    }
+
+    /** What a pen read brought into the dialog (also the tests' way in: Robolectric and the emulator have no NFC). */
+    internal fun penRead(fill: PenFill) {
+        when (fill) {
+            is PenFill.Logged -> pendingFill = fill
+            is PenFill.Said -> penLine = PenLine.Said(fill.text, fill.error)
+        }
+    }
+
+    /**
+     * A logged dose counts into its field in the pen dial's 0.5u steps (at once with reduced motion), *When* moves to
+     * its time, then the line says it is logged; a field changed afterwards is typed again; the read's words go after 3 s.
+     */
+    @Composable
+    private fun PenFillEffects() {
+        val reduced = LocalReducedMotion.current
+        LaunchedEffect(pendingFill) {
+            val f = pendingFill ?: return@LaunchedEffect
+            val set: (String) -> Unit = if (f.kind == "long") ({ form.long = it }) else ({ form.rapid = it })
+            if (!reduced) {
+                val steps = (f.units * 2).toInt().coerceIn(1, MAX_COUNT_STEPS)
+                for (k in 1 until steps) {
+                    set(PenFills.number(Math.round(f.units * k / steps * 2) / 2.0))
+                    delay(COUNT_MS / steps)
+                }
+            }
+            val text = PenFills.number(f.units)
+            set(text)
+            form.at = Instant.ofEpochSecond(f.t).takeIf { Duration.between(it, module.clock.now()) >= Duration.ofMinutes(1) }
+            form.ago = null
+            penLine = PenLine.Filled(f, text)
+            pendingFill = null
+        }
+        LaunchedEffect(form.rapid, form.long) {
+            val l = penLine as? PenLine.Filled ?: return@LaunchedEffect
+            if (pendingFill == null && PenFills.fieldText(l, form) != l.text) penLine = PenLine.Ready
+        }
+        val line = penLine
+        LaunchedEffect(line) {
+            if (line is PenLine.Said) {
+                delay(SAID_MS)
+                if (penLine === line) penLine = if (penReader != null) PenLine.Ready else null
+            }
+        }
+    }
+
+    /** *Undo* under the fields: the read back (refused, and said, once something changed since). */
+    private fun undoPen() {
+        val l = penLine as? PenLine.Filled ?: return
+        val pen = module.pen() ?: return
+        lifecycleScope.launch {
+            if (runCatching { pen.undo() }.getOrDefault(false)) {
+                if (PenFills.fieldText(l, form) == l.text) PenFills.setField(l.fill.kind, form, "")
+                if (form.at?.epochSecond == l.fill.t) form.at = null
+                window.decorView.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                penLine = PenLine.Said(getString(R.string.treatment_pen_undone))
+            } else {
+                window.decorView.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                penLine = PenLine.Said(getString(R.string.treatment_pen_undo_failed), error = true)
+            }
+        }
     }
 
     /**
@@ -448,12 +611,18 @@ class QuickTreatmentActivity : ComponentActivity() {
         val left = carriedMs?.coerceAtMost(full) ?: full
         carriedMs = null
         announced = false
-        countdown = LockCountdown(full, start - (full - left)).also { if (left < full) it.firstFrame(start - (full - left)) }
+        countdown =
+            LockCountdown(full, start - (full - left)).also {
+                if (left < full) it.firstFrame(start - (full - left))
+                if (duplicate != null) it.pause(start)
+            }
     }
 
     private fun endLock() {
         countdown?.stop()
         countdown = null
+        // unlocked: a pen can be read into the dialog now
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && penReader == null && !leaving) startPenReader()
     }
 
     private fun unlock() {
@@ -477,7 +646,7 @@ class QuickTreatmentActivity : ComponentActivity() {
 
     private fun resumeAfterPrompt() {
         unlocking = false
-        countdown?.resume(SystemClock.elapsedRealtime())
+        if (duplicate == null) countdown?.resume(SystemClock.elapsedRealtime())
         if (!keyguard.isKeyguardLocked) endLock()
     }
 
@@ -518,6 +687,11 @@ class QuickTreatmentActivity : ComponentActivity() {
         /** How long the snackbar offers Undo (a short snackbar's 4 s), and how long *Undone* stays. */
         const val SNACK_MS = 4_000
         const val UNDONE_MS = 1_500
+        const val READER_FLAGS =
+            NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
+        const val MAX_COUNT_STEPS = 20
+        const val COUNT_MS = 350L
+        const val SAID_MS = 3000L
     }
 }
 

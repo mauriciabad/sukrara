@@ -12,7 +12,9 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingHistory
@@ -145,7 +147,25 @@ interface HomeDeps {
 
     /** The snackbar's *Undo* ([PensPort.restore]). */
     suspend fun restorePen(was: PenEntryInfo): Boolean = false
+
+    /** The open pen questions while this phone reads pens (the wearer's), oldest first: home's question card. */
+    val penQuestions: Flow<List<PenQuestionInfo>> get() = flowOf(emptyList())
+
+    /** An answer from the question card or its sheet ([PensPort.answer]); false = it changed since, nothing logged. */
+    suspend fun answerPen(
+        question: PenQuestionInfo,
+        answer: PenAnswer,
+    ): Boolean = false
+
+    /** Pen reading is On with a pen known: its newest read (the hints); null = no pen hints. */
+    val penRead: Flow<PenRead?> get() = flowOf(null)
 }
+
+/** The newest read of the person's pens (the pen hints): which pen and when (epoch s). */
+data class PenRead(
+    val serial: String,
+    val at: Long,
+)
 
 /** The pen entry sheet open on home: the entry, the row it came from, and what this phone may change of it. */
 data class PenSheet(
@@ -379,6 +399,24 @@ class HomeViewModel(
 
     /** The pen sheet's last result, for the snackbar (null once shown). */
     val penNotice: StateFlow<PenNotice?> = _penNotice
+
+    /** The open pen questions (the card under the glucose card). */
+    val penQuestions: StateFlow<List<PenQuestionInfo>> =
+        deps.penQuestions.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The newest pen read while reading is On (the hints). */
+    val penRead: StateFlow<PenRead?> = deps.penRead.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** The question card's answer; a question that changed since says so on the snackbar (nothing was logged). */
+    fun answerPen(
+        q: PenQuestionInfo,
+        a: PenAnswer,
+    ) {
+        viewModelScope.launch {
+            val done = runCatching { deps.answerPen(q, a) }.getOrDefault(false)
+            if (!done) _penNotice.value = PenNotice(PenNotice.Kind.ChangedSince)
+        }
+    }
 
     /** A pen row was tapped: its sheet opens with the entry as stored now (an entry deleted meanwhile opens nothing). */
     fun openPen(treatment: Treatment) {

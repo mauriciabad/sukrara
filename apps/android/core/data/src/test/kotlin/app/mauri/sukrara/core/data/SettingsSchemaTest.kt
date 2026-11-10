@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.schemaStores
 import app.mauri.sukrara.settings.SettingsSpec
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -70,6 +71,22 @@ class SettingsSchemaTest {
                 .entries()
                 .none { it.store == SECURE_STORE },
         )
+    }
+
+    @Test
+    fun `mirrorExcept names alert kinds of mirrored kind rows, and no data is never mirrored`() {
+        val kinds = SettingsSpec.OPTIONS.getValue("alertKind")
+        for (info in SettingsSpec.SETTINGS.filter { it.mirrorExcept.isNotEmpty() }) {
+            assertTrue(info.id, info.mirror && info.wire.orEmpty().contains("{kind}"))
+            assertTrue(info.id, kinds.containsAll(info.mirrorExcept))
+        }
+        val perKind = SettingsSpec.SETTINGS.filter { it.mirror && it.wire.orEmpty().contains("{kind}") }
+        assertTrue(perKind.isNotEmpty())
+        for (info in perKind) {
+            assertFalse(info.id, info.mirrors("no_data"))
+            assertTrue(info.id, (kinds - "no_data").all { info.mirrors(it) })
+        }
+        assertFalse(SettingsSpec.SETTINGS.single { it.id == "alerts.threshold.no_data" }.mirrors())
     }
 
     @Test(expected = IllegalArgumentException::class)

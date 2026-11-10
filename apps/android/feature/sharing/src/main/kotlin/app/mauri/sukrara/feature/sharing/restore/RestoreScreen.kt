@@ -48,6 +48,7 @@ import app.mauri.sukrara.feature.sharing.setup.ConfirmDialog
 import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.feature.sharing.setup.NumberedItem
 import app.mauri.sukrara.feature.sharing.setup.RestoreBlock
+import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.SetupActions
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
@@ -82,7 +83,7 @@ internal fun ColumnScope.IdentityStep(
 
         else -> {
             if (share is OwnerShareState.IdentityUnreadable) NoteCard(stringResource(R.string.sh_identity_unreadable), error = true)
-            RestoreForm(u, actions)
+            RestoreForm(u.gate, u.restore, u.busy, actions.restore, actions.clearRestoreError)
             if (share is OwnerShareState.NoIdentity) {
                 HorizontalDivider()
                 StartFresh(enabled = !u.busy, actions)
@@ -92,10 +93,19 @@ internal fun ColumnScope.IdentityStep(
     }
 }
 
+/**
+ * The recovery code form (setup's identity step, Backup › Replace this identity): the gate as a checklist, the password
+ * manager, the code (and its password for an `ncryptsec`), [action] (default *Restore*) and every result inline.
+ * [onRestore] gets the typed code; the code never leaves this composition otherwise.
+ */
 @Composable
-private fun ColumnScope.RestoreForm(
-    u: SetupUi,
-    actions: SetupActions,
+internal fun ColumnScope.RestoreForm(
+    gate: RestoreGate,
+    restore: RestoreUi,
+    busy: Boolean,
+    onRestore: (code: String, password: String?) -> Unit,
+    onClearError: () -> Unit,
+    action: String = stringResource(R.string.sh_restore_action),
 ) {
     // the secret stays in this composition only: never saved state, cleared once restored
     var code by remember { mutableStateOf("") }
@@ -103,7 +113,7 @@ private fun ColumnScope.RestoreForm(
     Text(stringResource(R.string.sh_restore_title), style = MaterialTheme.typography.titleMedium)
     NoteCard(stringResource(R.string.sh_restore_warning))
     // the gate as a numbered checklist that ticks itself: 1 sensor live here, 2 the code
-    val sensorLive = RestoreBlock.NoLiveReading !in u.gate.blocks
+    val sensorLive = RestoreBlock.NoLiveReading !in gate.blocks
     NumberedItem(1, stringResource(R.string.sh_restore_step_sensor), done = sensorLive) {
         if (!sensorLive) Text(stringResource(R.string.sh_restore_block_no_reading), style = MaterialTheme.typography.bodyMedium)
     }
@@ -114,7 +124,7 @@ private fun ColumnScope.RestoreForm(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    val restoring = u.restore is RestoreUi.Busy
+    val restoring = restore is RestoreUi.Busy
     // the password manager fills the same field (masked; an ncryptsec then asks for its password), then restores
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -125,7 +135,7 @@ private fun ColumnScope.RestoreForm(
             val activity = context.findActivity() ?: return@OutlinedButton
             asking = true
             managerError = null
-            actions.clearRestoreError()
+            onClearError()
             scope.launch {
                 when (val got = PasswordManager.get(activity)) {
                     is PasswordManager.Got.Secret -> {
@@ -138,7 +148,7 @@ private fun ColumnScope.RestoreForm(
 
                             else -> {
                                 code = text
-                                if (text.startsWith("nsec1")) actions.restore(text, null)
+                                if (text.startsWith("nsec1")) onRestore(text, null)
                             }
                         }
                     }
@@ -159,7 +169,7 @@ private fun ColumnScope.RestoreForm(
             }
         },
         // the gate first: the secret is never fetched while the restore couldn't run
-        enabled = u.gate.open && !restoring && !u.busy && !asking,
+        enabled = gate.open && !restoring && !busy && !asking,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
     ) { Text(stringResource(R.string.sh_restore_manager)) }
     managerError?.let {
@@ -174,7 +184,7 @@ private fun ColumnScope.RestoreForm(
         value = code,
         onValueChange = {
             code = it
-            actions.clearRestoreError()
+            onClearError()
         },
         label = { Text(stringResource(R.string.sh_restore_code)) },
         singleLine = true,
@@ -188,7 +198,7 @@ private fun ColumnScope.RestoreForm(
             value = password,
             onValueChange = {
                 password = it
-                actions.clearRestoreError()
+                onClearError()
             },
             label = { Text(stringResource(R.string.sh_restore_password)) },
             singleLine = true,
@@ -198,7 +208,7 @@ private fun ColumnScope.RestoreForm(
             visualTransformation = PasswordVisualTransformation(),
         )
     }
-    when (val r = u.restore) {
+    when (val r = restore) {
         RestoreUi.Busy -> {
             Row(Modifier.semantics { liveRegion = LiveRegionMode.Polite }, verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.heightIn(max = 24.dp))
@@ -228,9 +238,9 @@ private fun ColumnScope.RestoreForm(
         }
     }
     StepButtons(
-        stringResource(R.string.sh_restore_action),
-        onPrimary = { actions.restore(code, password) },
-        enabled = u.gate.open && code.isNotBlank() && !restoring && !u.busy,
+        action,
+        onPrimary = { onRestore(code, password) },
+        enabled = gate.open && code.isNotBlank() && !restoring && !busy,
     )
 }
 
@@ -280,5 +290,6 @@ fun restoreError(result: RestoreIdentity.Result): String =
         RestoreIdentity.Result.BackupUnreadable -> stringResource(R.string.sh_restore_err_unreadable)
         RestoreIdentity.Result.BackupOutdated -> stringResource(R.string.sh_restore_err_outdated)
         RestoreIdentity.Result.AlreadySharing -> stringResource(R.string.sh_restore_err_already)
+        RestoreIdentity.Result.SameIdentity -> stringResource(R.string.sh_restore_err_same)
         is RestoreIdentity.Result.Restored -> ""
     }
