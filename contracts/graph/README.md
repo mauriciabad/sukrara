@@ -27,7 +27,9 @@ labels"). Run by `GraphFixtureTest.labels` (Android) and `-graphselftest` (Mac),
 width of each label fits the width model. A case: `name`; optional `locale` (`es`: the labels' times in Spanish, "1 h 35 min", "ahora": the widths the Spanish card lays out, #77); `chart` `{w, h}` (the chart's area, dp); `hours` (window);
 `pct` (time in range has data, so the % column shows where the chart is ≥ 240 dp wide); `treatments` as above
 (`k`: rapid | long | carbs | note; times relative to "now"). Optional `marks` (Treatments on the graph): absent = the defaults (carbs: point
-only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). The file's `pctLabel` and `valueLabel` stand in for the widest
+only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). Optional
+`fontScale` (the system font size, absent = 1): the chart's text scale is it capped to 1…1.3 (`GlucoseGraph.textScale`):
+the labels, their rows and the side columns' widest labels grow by it; the geometry (marker spacing, the gap between labels, the 90 dp second-row threshold) doesn't. The file's `pctLabel` and `valueLabel` stand in for the widest
 % label and the widest value on the right (dp; the real ones are measured with the drawing font): each side column is
 it plus the gap of `layout/rules.json` on each side. `expect`:
 

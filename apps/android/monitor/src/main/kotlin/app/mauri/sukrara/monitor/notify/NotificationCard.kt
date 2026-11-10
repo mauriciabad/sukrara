@@ -118,6 +118,8 @@ object NotificationCard {
     ): NotificationArt {
         RoundedFont.init(context)
         val d = min(context.resources.displayMetrics.density, MAX_DENSITY)
+        // the chart's words follow the system font size (the renderer caps it)
+        val fontScale = context.resources.configuration.fontScale
         val surface =
             context.getColor(
                 if (dark) android.R.color.system_surface_container_high_dark else android.R.color.system_surface_container_high_light,
@@ -137,6 +139,7 @@ object NotificationCard {
                     d,
                     CardSurface.NOTIFICATION,
                     CardPart.HEADER,
+                    fontScale = fontScale,
                 )
             }
 
@@ -158,6 +161,7 @@ object NotificationCard {
                     d,
                     CardSurface.NOTIFICATION,
                     CardPart.GRAPH,
+                    fontScale = fontScale,
                 )
                 createBitmap(w, h).also { out ->
                     Canvas(out).apply {

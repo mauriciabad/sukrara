@@ -129,9 +129,10 @@ enum TreatmentMarks {
     /// anchored mid-group; newest group first, each in the first of lane 0 / lane 1 with the time, lane 0 / lane 1
     /// without it that has a free place (`place`), else no label.
     /// Nothing else takes room in the lanes: the sensor badge is drawn over the row, masking what passes under it.
+    /// `textScale` = the chart's text scale (`GlucoseGraph.textScale`): the labels' size, not the markers' spacing.
     static func layout(
         _ marks: [GraphMark], x: (TimeInterval) -> CGFloat, now: TimeInterval?, minX: CGFloat, maxX: CGFloat,
-        lanes: Int, d: CGFloat, show: MarkShow = .defaults, words: CardWords
+        lanes: Int, d: CGFloat, show: MarkShow = .defaults, words: CardWords, textScale: CGFloat = 1
     ) -> Layout {
         let items = marks.filter { amount($0) != nil && order[$0.k] != nil && show.label($0.k) }
             .sorted { ($0.t, order[$0.k]!, $0.a, $0.id) < ($1.t, order[$1.k]!, $1.a, $1.id) }
@@ -143,7 +144,7 @@ enum TreatmentMarks {
                 groups.append([m])
             }
         }
-        let size = labelSize * d, gap = labelGap * d
+        let size = labelSize * d * textScale, gap = labelGap * d
         var taken: [[(CGFloat, CGFloat)]] = [[], []]
         var labels: [Label] = [], dropped: [[GraphMark]] = []
         for g in groups.sorted(by: { $0.last!.t > $1.last!.t }) {
@@ -204,7 +205,8 @@ enum TreatmentMarks {
     static func draw(
         _ ctx: CGContext, _ marks: [GraphMark], x: (TimeInterval) -> CGFloat, left: CGFloat, right: CGFloat,
         bottom: CGFloat, dark: Bool, d: CGFloat, layout: Layout?, base0: CGFloat, base1: CGFloat, sep sepColor: CGColor,
-        now: TimeInterval? = nil, muteUntil: ((GraphMark) -> TimeInterval?)? = nil, show: MarkShow = .defaults
+        now: TimeInterval? = nil, muteUntil: ((GraphMark) -> TimeInterval?)? = nil, show: MarkShow = .defaults,
+        textScale: CGFloat = 1
     ) {
         let items = marks.filter { order[$0.k] != nil }.map { ($0, x($0.t)) }.filter {
             $0.1 >= left - 1 && $0.1 <= right + 1
@@ -242,7 +244,7 @@ enum TreatmentMarks {
         }
 
         guard let layout, !layout.labels.isEmpty else { return }
-        let bold = Ink.font(labelSize * d, .bold), medium = Ink.font(labelSize * d, .medium)
+        let bold = Ink.font(labelSize * d * textScale, .bold), medium = Ink.font(labelSize * d * textScale, .medium)
         // pieces (text, font, colour) and the start of the real text, centred in its modelled box
         let drawn: [(Label, [(String, CTFont, CGColor)], CGFloat)] = layout.labels.map { l in
             var pieces: [(String, CTFont, CGColor)] = []

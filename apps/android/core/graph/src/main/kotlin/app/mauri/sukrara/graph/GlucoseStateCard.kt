@@ -34,7 +34,7 @@ fun cardModelOf(
         words = words,
         status = state.alerts.status,
         muteRule = muteRuleOf(state.alerts),
-        sensor = state.sensor.cardInfo(),
+        sensor = state.sensor.cardSensor(now),
         metricsOf = slots,
     )
 
@@ -71,5 +71,14 @@ fun SensorState.cardInfo(): SensorInfo? =
             null
         }
     }
+
+/**
+ * The sensor as a card draws it at [now]: [cardInfo], and an ended sensor whose dates the source didn't send
+ * ([SensorState.Ended]) as ending at [now], so every card says *Sensor ended* with *Replace sensor* in the value's
+ * place (as the app panel and the text surfaces do) instead of the last reading's age.
+ */
+fun SensorState.cardSensor(now: Instant): SensorInfo? =
+    cardInfo()
+        ?: if (this == SensorState.Ended) SensorInfo(startS = now.epochSecond - WEAR_S, endS = now.epochSecond) else null
 
 private const val WEAR_S = SensorTiming.DEFAULT_WEAR_MIN * 60L

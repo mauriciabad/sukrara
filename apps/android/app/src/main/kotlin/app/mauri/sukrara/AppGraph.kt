@@ -30,6 +30,7 @@ import app.mauri.sukrara.feature.sensor.SensorUiModule
 import app.mauri.sukrara.feature.settings.AlertPlayback
 import app.mauri.sukrara.feature.settings.AlertSettingsStore
 import app.mauri.sukrara.feature.settings.AppOutput
+import app.mauri.sukrara.feature.settings.BackupState
 import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
@@ -302,12 +303,21 @@ class AppGraph(
                     data.diagLog,
                     // an imported alert settings value passes their codec (SPEC §3) or is refused
                     data.settingsTransfer(mapOf("alerts:alerts" to { t -> AlertSettingsCodec.decode(t)?.let(AlertSettingsCodec::encode) })),
+                    monitor.notification.counts,
+                    { data.readings.spanOf(setOf(SourceId.Relay)).count },
                 )
             },
             overviewSharing =
                 combine(role.data, shareOwner.ownerEngine.state) { r, own ->
                     val sharing = own as? OwnerShareState.Sharing
-                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.backedUp)
+                    val backup =
+                        when (own) {
+                            is OwnerShareState.Sharing -> if (own.backedUp) BackupState.Saved else BackupState.NotSaved
+                            is OwnerShareState.IdentityUnreadable -> BackupState.Unreadable
+                            is OwnerShareState.AnotherAppSharingAsYou -> BackupState.Paused
+                            OwnerShareState.Loading, OwnerShareState.NoIdentity -> BackupState.NoIdentity
+                        }
+                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.profile?.avatar, backup)
                 },
             alertPlayback =
                 object : AlertPlayback {

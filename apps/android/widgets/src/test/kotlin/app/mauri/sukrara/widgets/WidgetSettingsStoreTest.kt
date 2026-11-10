@@ -5,6 +5,7 @@ package app.mauri.sukrara.widgets
 
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.core.testing.InMemoryStateStore
+import app.mauri.sukrara.graph.PlaceOverrides
 import app.mauri.sukrara.graph.stats.TirRange
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -34,6 +35,16 @@ class WidgetSettingsStoreTest {
                     .byId.keys,
             )
         }
+
+    /** The one number input's formats (placeHours, ringCount): a stored value outside them reads as the nearest valid one. */
+    @Test
+    fun `a stored value outside its format applies as the nearest valid one`() {
+        assertEquals(PlaceOverrides(hours = 7, rings = 1), WidgetOverrides(hours = 7, rings = 1).toPlace())
+        assertEquals(48, WidgetOverrides(hours = 90).toPlace().hours)
+        assertEquals("0 = same as the app", null, WidgetOverrides(hours = 0).toPlace().hours)
+        assertEquals(2, WidgetOverrides(rings = 9).toPlace().rings)
+        assertEquals(PlaceOverrides(), WidgetOverrides().toPlace())
+    }
 
     @Test
     fun `all "same as the app" stores nothing`() =

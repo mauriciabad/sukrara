@@ -6,6 +6,7 @@ package app.mauri.sukrara.widgets
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.graph.PlaceOverrides
 import app.mauri.sukrara.graph.stats.TirRange
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerialName
@@ -23,7 +24,15 @@ data class WidgetOverrides(
     @SerialName("widgetSide") val side: Boolean? = null,
     @SerialName("widgetSensor") val sensorTime: Boolean? = null,
 ) {
-    fun toPlace() = PlaceOverrides(hours, rings, ringRange, side, sensorTime)
+    /** As the card applies them: a stored value outside its format comes back as the nearest valid one. */
+    fun toPlace() =
+        PlaceOverrides(
+            hours?.let { SettingsSpec.PLACE_HOURS.coerce(it.toDouble()).toInt() }?.takeIf { it > 0 },
+            rings?.let { SettingsSpec.RING_COUNT.coerce(it.toDouble()).toInt() },
+            ringRange,
+            side,
+            sensorTime,
+        )
 }
 
 /** Every placed widget's overrides by appWidgetId (the typed state file "widgets"). */

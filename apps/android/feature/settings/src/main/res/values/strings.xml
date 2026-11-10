@@ -620,6 +620,8 @@
     <string name="st_backup_saved">Backed up · your followers stay if you change phones</string>
     <string name="st_backup_not_saved">Not backed up · save it so a new phone keeps your followers</string>
     <string name="st_backup_no_identity">Nothing to back up until you share</string>
+    <string name="st_backup_unreadable">Your sharing identity can\'t be read · restore it from your recovery code</string>
+    <string name="st_backup_paused">Paused · another app is sharing as you</string>
     <string name="st_export_title">Export data</string>
     <string name="st_export_summary">Readings and treatments as a file</string>
     <string name="st_adv_title">Advanced</string>
@@ -663,11 +665,43 @@
         <item quantity="one">%1$d of %2$d relay connected</item>
         <item quantity="other">%1$d of %2$d relays connected</item>
     </plurals>
+    <!-- Advanced › Statistics: counts only, nothing personal -->
+    <string name="st_adv_stats">Statistics</string>
+    <string name="st_adv_sent">Sent to your followers</string>
+    <string name="st_adv_received">Readings on this phone</string>
+    <string name="st_adv_notification">Glucose notification</string>
+    <string name="st_adv_stats_footer">Sent, refused and notification counts start again when Sukrara restarts; the readings are all those stored on this phone.</string>
+    <plurals name="st_adv_live">
+        <item quantity="one">%d live reading</item>
+        <item quantity="other">%d live readings</item>
+    </plurals>
+    <plurals name="st_adv_chunks">
+        <item quantity="one">%d hour of history</item>
+        <item quantity="other">%d hours of history</item>
+    </plurals>
+    <plurals name="st_adv_stored">
+        <item quantity="one">%d stored</item>
+        <item quantity="other">%d stored</item>
+    </plurals>
+    <plurals name="st_adv_refused">
+        <item quantity="one">%d event refused</item>
+        <item quantity="other">%d events refused</item>
+    </plurals>
+    <plurals name="st_adv_posts">
+        <item quantity="one">%d update</item>
+        <item quantity="other">%d updates</item>
+    </plurals>
+    <plurals name="st_adv_skipped">
+        <item quantity="one">%d skipped (nothing new)</item>
+        <item quantity="other">%d skipped (nothing new)</item>
+    </plurals>
     <!-- settings search -->
     <string name="st_search_hint">Search settings</string>
     <string name="st_search_clear">Clear search</string>
     <string name="st_search_none">No settings match “%1$s”</string>
     <string name="st_search_in">In %1$s</string>
+    <string name="st_search_recent">Recent searches</string>
+    <string name="st_search_recent_clear">Clear</string>
     <string name="st_profile_title">Your profile</string>
     <string name="st_active_now">Active now</string>
     <string name="st_from_title">Settings from</string>

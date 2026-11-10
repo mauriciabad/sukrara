@@ -823,7 +823,8 @@ SWIFT_LITERAL_KEY = re.compile(r"\bforKey:\s*\"|@AppStorage\(\s*\"")
 KT_NUMBER_INPUT = re.compile(r"\b(NumberRange|IntChoiceDialog|NumberChoiceDialog|Slider)\(|KeyboardType\.(Number|Decimal)\b"
                              r"|\blistOf\(\s*-?\d+(?:\.\d+)?\s*[,)]")
 SWIFT_NUMBER_INPUT = re.compile(r"\bStepper\(|TextField\([^)]*\bvalue:|ForEach\(\s*(\d+\s*\.\.[.<]\s*\d|\[\s*-?\d)")
-KT_SETTINGS_SCREENS = ANDROID + "feature/settings/src/main/*"
+# the settings screens: every page of :feature:settings and a placed widget's own settings
+KT_SETTINGS_SCREENS = [ANDROID + "feature/settings/src/main/*", ANDROID + "widgets/src/main/*/WidgetConfigActivity.kt"]
 SWIFT_SETTINGS_SCREENS = MAC_SOURCES + "SukraraApp/Windows/Settings/*"
 
 
@@ -952,7 +953,7 @@ def check_settings(ch, rep):
             continue
         src = ch.blob(p) or ""
         kt = lang == "kt"
-        screen = match(p, [KT_SETTINGS_SCREENS]) and "fun NumberDialog(" not in src if kt else \
+        screen = match(p, KT_SETTINGS_SCREENS) and "fun NumberDialog(" not in src if kt else \
             match(p, [SWIFT_SETTINGS_SCREENS]) and "struct NumberSettingRow" not in src
         for n, l in code_lines(src):
             if re.search(r"\bNumberSpec\(", l) and "class NumberSpec" not in l and "struct NumberSpec" not in l:
@@ -981,7 +982,7 @@ def check_paths(ch, rep):
     named += sorted(CLOCK_OK)
     for p in named:
         rep.pending(present, p, "paths", "named by tools/check/check.py")
-    for glob in (ANDROID_KT, KT_MODEL + "*.kt", MAC_SOURCES + "*.swift", KT_SETTINGS_SCREENS, SWIFT_SETTINGS_SCREENS,
+    for glob in (ANDROID_KT, KT_MODEL + "*.kt", MAC_SOURCES + "*.swift", *KT_SETTINGS_SCREENS, SWIFT_SETTINGS_SCREENS,
                  *SWIFT_FORMATTED, *(d + "*" for d in MAC_DEBUG_TARGETS)):
         if not any(fnmatch.fnmatchcase(p, glob) for p in files):
             rep.add("FAIL", "paths", "tools/check/check.py scans '%s', which matches no tracked file: point it at the\n"
