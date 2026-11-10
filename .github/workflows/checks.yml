@@ -97,7 +97,8 @@ jobs:
       - name: Alert sounds survive release resource shrinking
         working-directory: apps/android
         run: |
-          ./gradlew --no-daemon :app:assembleRelease -x verifyReleaseSigning
+          # no Libre 3 core on CI (a separate checkout): skip its checks, the sounds are what this step verifies
+          ./gradlew --no-daemon :app:assembleRelease -x verifyReleaseSigning -x verifyJuggluco -x verifyReleaseApkNativeCore
           ../../tools/release/verify-sounds.sh app/build/outputs/apk/release/app-release-unsigned.apk
       - name: Roborazzi diffs
         if: failure()
