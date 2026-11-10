@@ -4,25 +4,23 @@
 package app.mauri.sukrara.sensor.brand
 
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.sensor.ble.BleLink
 import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.ble.SensorEvents
 import java.util.UUID
 
 /**
- * What the scanned families' driver tests share: the recorded traces in `src/test/resources/traces` (open-source
+ * What the scanned families' driver tests share: the recorded traces in `contracts/sensor/traces` (open-source
  * fixtures only, see its README), a scripted link and an event recorder.
  */
 internal class Trace(val entries: List<Pair<String, ByteArray>>) {
     operator fun get(label: String): ByteArray = entries.firstOrNull { it.first == label }?.second ?: error("no '$label' in this trace")
 
     companion object {
-        fun resource(name: String): Trace {
-            val text =
-                Trace::class.java.classLoader!!
-                    .getResourceAsStream("traces/$name.txt")!!
-                    .reader()
-                    .readText()
+        /** `contracts/sensor/traces/<name>.txt`. */
+        fun of(name: String): Trace {
+            val text = Contracts.file("sensor/traces/$name.txt").readText()
             return Trace(
                 text
                     .lineSequence()

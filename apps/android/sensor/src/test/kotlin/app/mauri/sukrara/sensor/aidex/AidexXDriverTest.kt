@@ -25,7 +25,7 @@ import org.junit.Test
  * must match the recorded bytes, and the decrypted replies the recorded plaintexts. Untested on a real sensor.
  */
 class AidexXDriverTest {
-    private val trace = Trace.resource("aidex-x")
+    private val trace = Trace.of("aidex-x")
     private val serial = String(trace["serial"], Charsets.US_ASCII)
     private val iv = AidexX.iv(serial)
     private var nowMs = 1_800_000_000_000L

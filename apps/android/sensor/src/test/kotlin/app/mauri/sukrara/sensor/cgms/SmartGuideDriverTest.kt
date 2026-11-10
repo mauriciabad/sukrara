@@ -26,7 +26,7 @@ import org.junit.Test
  * (`accu/java.cpp`, GPL-3). Untested on a real sensor.
  */
 class SmartGuideDriverTest {
-    private val trace = Trace.resource("smartguide")
+    private val trace = Trace.of("smartguide")
     private val nowMs = 1_800_000_000_000L
     private val nowS = nowMs / 1000
     private val chars = setOf(CgmService.MEASUREMENT, CgmService.STATUS, CgmService.RACP, CgmService.SOCP)

@@ -10,13 +10,13 @@ import org.junit.Test
 class CrcTest {
     @Test
     fun dexcomFramesCarryXmodem() {
-        val trace = Trace.resource("g6-session")
+        val trace = Trace.of("g6-session")
         for ((label, b) in trace.entries) assertEquals(label, b.u16le(b.size - 2), Crc.xmodem(b, 0, b.size - 2))
     }
 
     @Test
     fun cgmServiceFramesCarryMcrf4xx() {
-        val trace = Trace.resource("smartguide")
+        val trace = Trace.of("smartguide")
         for (label in listOf("error-1", "error-2", "low-1", "low-2", "status")) {
             val b = trace[label]
             assertEquals(label, b.u16le(b.size - 2), Crc.mcrf4xx(b, 0, b.size - 2))

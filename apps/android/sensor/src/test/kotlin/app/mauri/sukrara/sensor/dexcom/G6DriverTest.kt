@@ -22,7 +22,7 @@ import org.junit.Test
 
 /** Dexcom G6 / ONE: the handshake keyed by the typed transmitter id, frames from DiaBLE (MIT). Untested on hardware. */
 class G6DriverTest {
-    private val trace = Trace.resource("g6-session")
+    private val trace = Trace.of("g6-session")
     private val nowMs = 1_800_000_000_000L
     private val nowS = nowMs / 1000
     private val token = ByteArray(8) { (0x10 + it).toByte() }
