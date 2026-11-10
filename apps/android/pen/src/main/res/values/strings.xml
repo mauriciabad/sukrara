@@ -88,4 +88,6 @@
     <string name="pen_check_it">Check it</string>
     <string name="pen_notusable_title">Pen not usable</string>
     <string name="pen_notusable_text">%1$s didn\'t match its display, so Sukrara logs nothing from it. Type its doses by hand.</string>
+    <!-- A pen injection near several typed entries: opens home to choose which one it is [CHAR LIMIT=15] -->
+    <string name="pen_choose">Choose</string>
 </resources>

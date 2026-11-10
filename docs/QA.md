@@ -435,6 +435,8 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
 - [ ] Entry sheet: flip a dose → header updates, *Save* → snackbar *Entry changed · Undo*; all priming → *Remove from
       log*; TalkBack reads one node per dose with *Mark as injected / priming*.
 - [ ] Type 8u rapid within 45 min of a pen entry → *Already logged by your pen?*; carbs in the same save are saved.
+      Rotate with the question open: it is asked again. Over the lock screen the countdown ring stands still while it is
+      open; *Cancel* → the form, the ring runs again.
 - [ ] On Android 17 a pen tap from another app opens the card (no `does not have DISPATCH_NFC_MESSAGE permission` in
       logcat `NfcDispatcher`); a Libre tap with Sukrara closed opens the New sensor screen (0.11.47).
 - [ ] Taps blocked (the debug `PEN_TAGS --ez blocked true` command on the emulator, with *Open Sukrara when you scan
@@ -455,7 +457,22 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       Juggluco's App info; on the emulator Android's App info page for a missing app); `false` + resume → gone.
 - [ ] A bank / transit card or a passport held to the phone (reading on): nothing at all (no card, no vibration, no
       notification); only a pen tap shows the card (the filter is IsoDep + NfcA since 0.11.46).
-- [ ] Failed read → red card, REJECT haptic, nothing logged; a second one within 2 min adds the tips.
+- [ ] Failed read → red card, REJECT haptic, nothing logged; a second one within 2 min adds the tips. The card springs
+      up; while reading the wavy ring fills with a tick per segment; a logged dose pops a check and counts up (*8.5u
+      logged*); a failure shakes once. *Remove animations* on: none of it, a still ring, final numbers.
+- [ ] Home question card (`PEN_READ` with `1, 1.5` 40 min ago, and a typed 8u near an 8.5u read twice for *Same
+      injection?*): under the glucose card, never above it; *Log 1.5u* / *All priming* answer it and the next one fades
+      in; several typed entries → *Choose* → the sheet (radio rows, *None of these*, *Save* disabled until a choice);
+      the same sheet from Doses read; TalkBack reads amounts as units. Light, dark, largest font.
+- [ ] Add treatment with a pen (a real pen, on the phone, by the user): *Injected? Hold your pen to the phone.* under
+      the fields; holding the pen → *Reading your pen…*, the dose counts into Rapid (Long-acting for a long pen) and
+      *When* moves to its time, *Logged from your pen · 1.5u primed* + *Undo*; type carbs, *Save* → only the carbs are
+      new; change the dose by hand → *Already logged by your pen?*. A read card's *Add treatment* → the dialog at the
+      injection's time with the other insulin focused. Rapid typed by hand with a pen known → toast *… · Next time,
+      just tap your pen* (once a day, 3 times). A day without a read → *Pen read 1d ago* on the treatments' title opens
+      the pen. Carbs typed alone → *Injected? Hold your pen to the phone.* under the treatments for an hour.
+- [ ] Uploads (LibreView / Nightscout / Tidepool on): a pen dose goes up only 10 min after its last dose; a top-up
+      within those 10 min goes up as one entry.
 - [ ] *Notification after each read* off (default): a read posts no *Pen reads* notification (*Pen doses to check*
       still posts). On: the read's notification, silent, no heads-up; `dumpsys notification --noredact` shows it in
       Sukrara's info group (`g:app.mauri.sukrara.INFO`), never in `g:Aggregate_…` with the glucose card or an alert

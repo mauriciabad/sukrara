@@ -88,4 +88,5 @@
     <string name="pen_check_it">Comprobar</string>
     <string name="pen_notusable_title">Pluma no utilizable</string>
     <string name="pen_notusable_text">%1$s no coincidió con su pantalla, así que Sukrara no registra nada de ella. Escribe sus dosis a mano.</string>
+    <string name="pen_choose">Elegir</string>
 </resources>

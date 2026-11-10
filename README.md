@@ -97,7 +97,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   now*, the log, your sharing identity), and About with an update check against this repo's releases.
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
-  by your pen?*), with *Undo*; it asks when unsure. Settings › Insulin pens lists your pens: each pen's page (name,
+  by your pen?*), with *Undo*; it asks when unsure, on a card under the glucose card (*Priming or injected?*, *Same
+  injection?* with your typed entries to choose from). Holding the pen while Add treatment is open fills the dose and
+  its time in the dialog (already logged, with *Undo*). Uploads wait until the pen's session is over. Settings › Insulin pens lists your pens: each pen's page (name,
   insulin type, forget), its *Doses read* with per-dose *Priming* / *Injected* corrections (also from the entry's row
   on home, *from the pen*, read only on a follower), the untested NovoPen 6's display check, where this phone's NFC
   antenna is, and what gets in the way (tag intents blocked, NFC off, Juggluco also reading pens) with the way to fix

@@ -204,4 +204,8 @@
     <string name="report_goal_met">goal met</string>
     <string name="report_goal_missed">goal not met</string>
     <string name="report_footer">Sensor data for %1$s %% of the period. Ranges and goals of the international consensus.</string>
+    <!-- The treatments title: the pen was last read long ago, e.g. Pen read 2d ago; opens the pen [CHAR LIMIT=30] -->
+    <string name="home_pen_read_ago">Pen read %1$s ago</string>
+    <!-- Under the treatments: carbs logged without rapid insulin near them, while a pen is read -->
+    <string name="home_pen_hint_carbs">Injected? Hold your pen to the phone.</string>
 </resources>

@@ -85,14 +85,27 @@ class TreatmentLog(
     }
 
     /**
-     * Stores a version made on this phone by the pen reader: `modifiedAt` exactly as given (the pen engine tells its
-     * own writes from the user's edits by it), the stored `creator` kept, `author` = this phone. Only the wearer.
+     * Stores the versions one pen change made on this phone, through [commit] (the pen ledger and these records in one
+     * transaction): `modifiedAt` exactly as given (the pen engine tells its own writes from the user's edits by it),
+     * the stored `creator` kept, `author` = this phone; then the stored ones go to sharing. Only the wearer writes
+     * records (a change of the ledger alone has none).
      */
-    suspend fun storeFromPen(record: TreatmentRecord) {
+    suspend fun storeFromPen(
+        records: List<TreatmentRecord>,
+        commit: suspend (List<TreatmentRecord>) -> List<TreatmentRecord>,
+    ) {
+        if (records.isEmpty()) {
+            commit(records)
+            return
+        }
         val writer = sync.writer.value ?: throw NotAllowed()
         if (writer.throughOutbox) throw NotAllowed()
-        val stored = repository.get(record.treatment.id)
-        write(record.copy(creator = stored?.creator ?: writer.key, author = writer.key, delivery = writer.delivery))
+        val mine =
+            records.map { r ->
+                val stored = repository.get(r.treatment.id)
+                r.copy(creator = stored?.creator ?: writer.key, author = writer.key, delivery = writer.delivery)
+            }
+        for (r in commit(mine)) sync.publish(r)
     }
 
     /** Whether the pen reader may write now (the wearer's phone, sharing or not). */

@@ -151,3 +151,38 @@ interface TreatmentsRepository {
     /** Removes every entry (a follower stopped following: the wearer's log goes with it). */
     suspend fun deleteAll()
 }
+
+/**
+ * The pen ledger (one JSON document owned by `:pen`; the wearer's phone only, never synced) stored next to the
+ * treatments a pen change writes: [commit] stores both in one transaction (docs/29), so a crash can never leave a dose
+ * in the ledger pointing at an entry that isn't in the log, or an entry the ledger doesn't know it wrote.
+ */
+interface PenLedgerRepository {
+    /** The stored ledger, or null before the first pen. */
+    suspend fun ledger(): String?
+
+    /** Insulin entries and pen entries, tombstones included: all the pen engine compares a read with. */
+    suspend fun insulin(): List<TreatmentRecord>
+
+    /**
+     * Stores [ledger] and each of [records] that is newer (`modifiedAt`) than the stored version, in one transaction;
+     * returns the records it stored (sharing then gets them).
+     */
+    suspend fun commit(
+        ledger: String,
+        records: List<TreatmentRecord>,
+    ): List<TreatmentRecord>
+}
+
+/**
+ * Until when the uploads to a service (LibreView, Nightscout, Tidepool) hold an entry back, epoch s: a pen entry
+ * while its session can still grow (until 10 min after its last dose, docs/29), so a top-up isn't sent as a
+ * change right after the first version. Null = send it now.
+ */
+fun interface UploadHold {
+    fun until(record: TreatmentRecord): Long?
+
+    companion object {
+        val NONE = UploadHold { null }
+    }
+}

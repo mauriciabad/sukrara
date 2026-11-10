@@ -670,6 +670,11 @@ private fun route(
             TagIntents.openAllow(context)
         }
 
+        is HomeAction.OpenPen -> {
+            backStack.push(SettingsKey("pens"))
+            backStack.push(SettingsKey("pen", serial = action.serial))
+        }
+
         // the module's state changes by itself once System UI says hello again; a failure is said in a toast
         HomeAction.RestartSystemUi -> {
             val graph = context.graph

@@ -9,6 +9,12 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+android {
+    testOptions.unitTests.isIncludeAndroidResources = true
+    // the exported schemas, for MigrationTestHelper under Robolectric
+    sourceSets["test"].assets.srcDir("$projectDir/schemas")
+}
+
 dependencies {
     api(project(":core:model"))
     implementation(libs.androidx.datastore.preferences)
