@@ -1035,12 +1035,8 @@ private fun Treatments(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 marks[t.id]?.let { mark ->
-                    if (mark == UploadMark.Stopped) {
-                        // the way out: the LibreView page (sign in again, or see why it refused)
-                        IconButton(onClick = openClinicUpload) { UploadMarkIcon(mark) }
-                    } else {
-                        UploadMarkIcon(mark)
-                    }
+                    // every mark opens the LibreView page: what it has, why an entry waits, the way back in when stopped
+                    IconButton(onClick = openClinicUpload) { UploadMarkIcon(mark) }
                 }
                 if (t.id !in readOnly) {
                     IconButton(onClick = { onDelete(t) }) {
@@ -1069,7 +1065,7 @@ private fun UploadMarkIcon(mark: UploadMark) {
         painterResource(icon),
         contentDescription = stringResource(label),
         tint = MaterialTheme.colorScheme.outline,
-        modifier = Modifier.padding(start = 8.dp).size(18.dp),
+        modifier = Modifier.size(18.dp),
     )
 }
 

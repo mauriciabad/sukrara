@@ -121,7 +121,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   internet (on by default, *Over Bluetooth nearby*); Settings › Sharing lists the devices connected now and the ones
   paired nearby that are out of range, says when
   Bluetooth is off or the Nearby devices permission is missing, and offers the fix; the live notification says
-  *2 followers · 1 nearby*.
+  *2 followers · 1 nearby* (and *Nightscout API on Wi-Fi* while devices on your home Wi-Fi can read it).
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a
   picture of it, read on the phone), see who is inviting (their name and picture from the invite) and tap *Follow* or
   *Cancel*, or find their phone nearby over
@@ -140,7 +140,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   never doubled), to **Tidepool** (both roles; a follower only after its own
   choice; password used once), an **xDrip+-compatible server** on this phone for **Garmin** watches (off until you
   switch it on; loopback only), a **Nightscout API on this phone** for apps like xDrip+ and GlucoDataHandler (off by
-  default, API secret required; an extra opt-in also serves devices on your home Wi-Fi, with a plain warning),
+  default, API secret required; an extra opt-in also serves devices on your home Wi-Fi with a plain warning and its
+  own Wi-Fi secret you can replace any time),
   **glucose broadcasts** to the apps you allow (AndroidAPS, GlucoDataHandler, xDrip+: the Libre 3 read by this phone
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
   readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.

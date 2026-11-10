@@ -47,6 +47,7 @@ import app.mauri.sukrara.integrations.libreview.LvReadings
 import app.mauri.sukrara.integrations.libreview.LvState
 import app.mauri.sukrara.integrations.libreview.LvUnsent
 import app.mauri.sukrara.integrations.localserver.LanPin
+import app.mauri.sukrara.integrations.localserver.LanState
 import app.mauri.sukrara.integrations.nightscout.NsState
 import app.mauri.sukrara.integrations.tidepool.TpState
 import app.mauri.sukrara.monitor.MonitorModule
@@ -194,14 +195,19 @@ class AppGraph(
             graphConfig = graphConfig,
             // cold: the owner engine is built when the service first draws the notification
             sharing =
-                flow {
-                    val owner = shareOwner.ownerEngine
-                    emitAll(
-                        combine(owner.state, owner.nearbyLinks) { s, links ->
-                            (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
-                        },
-                    )
-                }.distinctUntilChanged(),
+                combine(
+                    flow {
+                        val owner = shareOwner.ownerEngine
+                        emitAll(
+                            combine(owner.state, owner.nearbyLinks) { s, links ->
+                                (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
+                            },
+                        )
+                    },
+                    // the Nightscout API open to the home Wi-Fi: said on the notification while it listens there
+                    flow { emitAll(integrations.nightscoutApi.lan) }.map { it is LanState.Listening },
+                ) { line, wifi -> if (line == null && !wifi) null else (line ?: SharingLine(0, 0)).copy(wifi = wifi) }
+                    .distinctUntilChanged(),
             sourceChanges = sourceChanges,
         )
     }

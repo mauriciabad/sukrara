@@ -490,7 +490,7 @@ widget*; (6) *Share with your clinic*. 0–2 are *safety* banners: error-contain
 done); 4–6 close for good (typed state `home-banners`). A banner whose input isn't known on this build yet is never
 shown. Not shown: tips, the quiet all-green reliability row, the clinic report card.
 The alert checklist (Android, `:monitor` `AndroidAlertReadiness`, ONE instance `AlertsModule.readiness` for home's
-banner, Settings › Alert reliability and the setup step; THE one answer to "may an alert not reach the person?"): the alert runtime's last steps worked (its `failedSteps`; first in the order, *Copy report*, not in setup); notifications on; full-screen alerts while a kind rings like an
+banner, Settings › Alert reliability and the setup step; THE one answer to "may an alert not reach the person?"; it judges the rules the alert runtime runs, so on a follower the mirrored rows *Settings from* chooses (the wearer's or the defaults) over this phone's own, `AlertMirror.inUse`, `AndroidAlertReadinessTest`): the alert runtime's last steps worked (its `failedSteps`; first in the order, *Copy report*, not in setup); notifications on; full-screen alerts while a kind rings like an
 alarm; exact alarms; battery exemption and not *Restricted*; the alert channels in use not blocked or below sound, and Do
 Not Disturb not silencing the alarm-level ones (total silence, or Priority without alarms and the channel not overriding
 it; a non-alarm alert in Do Not Disturb is the person's choice); while a kind rings like an alarm, its alarm channel overriding Do Not Disturb (*Alarms in Do Not Disturb*: Fix opens Do Not Disturb access; once granted the channels are created again and take the override; a channel the person edited keeps their choice and Fix opens its page); *Sound while the phone is unlocked* answered (Android's *Notification cooldown › Vibrate only when unlocked* drops every notification sound, alarms included, while the phone is unlocked, and Android hides it from apps: the person opens the cooldown page and answers *It's off* or *Keep it on*, schema `alerts.unlockedSound`; home's banner for it opens Settings › Alert reliability; were Android ever to tell the app, its answer wins and nothing is asked); Bluetooth on and allowed for the wearer's own sensor (not
@@ -635,8 +635,9 @@ with your clinic*, *Finish setup*'s *Later*) and the Settings overview's *Share 
 into one memory. Every close shows a snackbar *Tip closed. Settings › Show closed tips brings it back.* with *Undo* (es
 *Consejo cerrado…*, *Deshacer*), over home or the settings overview wherever it was closed; *Undo* puts the tip back at
 once. The Settings overview (wearer and follower, above *About*) shows *Show closed tips* with *2 tips closed* while any
-tip is closed (Finish setup's *Later* doesn't count: it comes back after a day by itself); a tap brings every closed tip
-back (snackbar *Closed tips will show again where they apply*) and the row goes away. A tip that comes back shows only
+tip is closed (Finish setup's *Later* doesn't count: it comes back after a day by itself); it is an action row (no
+chevron: nothing opens; TalkBack *button*), and a tap brings every closed tip back with a confirming haptic (snackbar
+*Closed tips will show again where they apply*) and the row goes away. A tip that comes back shows only
 where its own conditions hold (no clinic upload set up, no widget placed, …). Safety banners can't be closed. A safety
 banner's action is always on screen without scrolling (#73): while one shows, the card gives up height for it (300 dp
 down to 200 dp, easing with the spatial spring; reduced motion: at once) and takes it back when the banner goes; its
@@ -737,7 +738,10 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   warming up · ready at 14:05*; *Bluetooth is off: turn it on to get readings* under the value on a wearer.
 - Sub text on a wearer with followers, in every state: *2 followers* (active ones), then *· 1 nearby* while follower
   devices are connected over Bluetooth (`SharingLine`, from the owner engine's followers and named Bluetooth links).
-  None without followers (no "0 followers" on the lock screen) and none on a follower phone.
+  None without followers (no "0 followers" on the lock screen) and none on a follower phone. In either role, while the
+  Nightscout API listens on the home Wi-Fi the line also says *Nightscout API on Wi-Fi* (alone on a follower or a wearer
+  without followers), so the person sees from the lock screen that devices on the network can read
+  (`LiveNotificationContentTest`).
 - **Tap → quick Add treatment** (`NavTargets.ACTION_QUICK_TREATMENT`, Carbs focused while a low / very-low alert fires);
   action *Open Sukrara*. Until the quick-treatment dialog is in the build the tap opens the app.
 - Swiped away (Android 14+ lets the person dismiss a foreground notification): it is posted again (delete intent).
@@ -1236,8 +1240,10 @@ digit by digit).
   `api-secret: <SHA-1 of it>` or the secret itself (xDrip+, Home Assistant), `?token=` (watch faces, Nightguard,
   LoopFollow) or `Authorization: Bearer`, compared in constant time; no `?secret=`. Only `api/v1/status` answers
   without it, with server facts only (no name, no thresholds, no glucose). Routes: `api/v1/entries[/sgv|/current]`
-  (`count` up to 10 080, `find[date|dateString][$gt|$gte|$lt|$lte]`, sgv only), `api/v1/treatments` (not deleted, the
-  last 30 days, the upload's mapping), `api/v1/verifyauth`, `api/v2/properties` (`bgnow`, `delta`, `direction` only:
+  (`count` up to 10 080, `find[date|dateString][$gt|$gte|$lt|$lte]`, sgv only; each entry's `_id` is its second in hex
+  then 64 bits of its source and millisecond, so two sources' readings in one second never share one), `api/v1/treatments`
+  (not deleted, the last 30 days, the upload's mapping; `enteredBy` and `device` say `Sukrara`, or `Sukrara (following)`
+  on a follower's phone, as its readings do), `api/v1/verifyauth`, `api/v2/properties` (`bgnow`, `delta`, `direction` only:
   no insulin / carbs on board or pump data), `devicestatus` / `profile` / `food` → `[]`, `api/v3/*` → 404 so clients
   fall back to v1. Readings of the last 7 days, newest first; each entry's `device` says where it came from:
   `Sukrara · FreeStyle Libre 3`, `Sukrara · Juggluco`, `Sukrara · Dexcom G7 (untested)` (and the other untested
@@ -1245,9 +1251,11 @@ digit by digit).
   (a wearer never serves readings left from following someone, and the other way round), is never served. The stores
   are read only while the API is on; a secure-store failure shows *The API secret can't be read* instead of a crash.
   LO / HI go out as 39 / 401 with direction `NONE`, and no slope is taken across them. The page: the switch with
-  "On · http://127.0.0.1:17581 · last asked 2 min ago", *Show API secret* (screenshots blocked while it shows; tap to
-  copy, marked sensitive for the clipboard preview; the xDrip+ address `http://<secret>@127.0.0.1:17581` and the
-  token address), *Hide API secret*, *New secret* (confirmed: apps using the old one stop reading), and a footer that
+  "On · http://127.0.0.1:17581 · last asked 2 min ago", *Show API secret* (screenshots blocked while it shows; the
+  secret is an action row: a tap copies it, marked sensitive for the clipboard preview, with a confirming haptic and
+  "Copied · it leaves the clipboard in a minute": `SecretClipboard` clears it 60 s later unless something else was
+  copied since (`SecretClipboardTest`); the xDrip+ address `http://<secret>@127.0.0.1:17581` and the token address),
+  *Hide API secret*, *New secret* (confirmed: apps on this phone using the old one stop reading), and a footer that
   says only apps on this phone can reach it and that it isn't a source for a closed loop. Requests are never logged.
 - *On your home Wi-Fi* (inside the API page while it is on; `LanPolicy`, `LanWatcher`; tests `LanPolicyTest`,
   `NightscoutApiTest`): *Also on this Wi-Fi*, **off by default** (schema `apps.nightscoutLan`). Turning it on asks first
@@ -1255,26 +1263,35 @@ digit by digit).
   someone on the same Wi-Fi can see the secret), then Android 17's local network access (Nearby devices). On, a second
   listener binds only the phone's private IPv4 Wi-Fi address (RFC 1918, prefix 8–30; never 0.0.0.0, a public, VPN or
   hotspot address) on port 17581, drops callers outside that subnet without an answer, and answers only a Host header
-  that is exactly that address; same secret, routes and bounds, plus a write deadline (a caller that stops reading is
-  cut off). It is pinned to the Wi-Fi the phone is on when it is turned on (or *Allow on this Wi-Fi* is tapped); away
+  that is exactly that address; same routes and bounds, plus a write deadline (a caller that stops reading is cut off),
+  but **its own secret**: the Wi-Fi secret (secure store `nightscout-api-lan`, made the first time the option is turned
+  on, kept when it is turned off) travels unencrypted on the Wi-Fi, so it never opens the phone apps' listener and the
+  phone apps' secret never works on the Wi-Fi; *New Wi-Fi secret* (confirmed, in this group whenever one exists)
+  replaces it alone (`NightscoutApiTest`). With the secrets shown, the page lists the Wi-Fi secret (tap to copy, as
+  above) and the Wi-Fi address with it. It is pinned to the Wi-Fi the phone is on when it is turned on (or *Allow on this Wi-Fi* is tapped); away
   from a qualifying Wi-Fi turning it on is refused ("Not turned on: it works only while the phone is on a home Wi-Fi with
   a password") and nothing is pinned, so it never opens on a network joined later. A lost pin pauses it until *Allow on this Wi-Fi*. Android hides the Wi-Fi's name without location permission
   (never asked), so "the same Wi-Fi" is a fingerprint of subnet, gateway, DHCP server and DNS domain, which tells most
   networks apart but not two look-alike routers. Open, WEP, OWE or unknown-security Wi-Fi is refused (a café's WPA2
   password still passes: the warning says it works wherever you turn it on). The Wi-Fi is watched (one ConnectivityManager
   callback) only while the option is on; a new address on the same Wi-Fi rebinds. Turning the API off turns this off
-  too. Status: "On · http://192.168.1.23:17581 for devices on this Wi-Fi", "Paused · the phone isn't on Wi-Fi", "…
+  too. Status: "On · http://192.168.1.23:17581 for devices on this Wi-Fi · last read by 192.168.1.40 2 minutes ago" (the
+  last device that read with the Wi-Fi secret, in memory only; "no device has read it yet"), "Paused · the phone isn't on Wi-Fi", "…
   doesn't look like a home network", "… has no password", "… isn't the Wi-Fi you turned it on in" (+ *Allow on this
   Wi-Fi*), "… Android doesn't allow local network access" (+ *Open Android settings*, which says to keep Nearby devices
-  allowed: the sensor needs it). The API's status line and the Share with apps row add "also on Wi-Fi 192.168.1.23";
-  with the secret shown the page lists the Wi-Fi address too.
+  allowed: the sensor needs it), "Paused · its Wi-Fi secret can't be read" (+ *New Wi-Fi secret*). The API's status
+  line and the Share with apps row add "also on Wi-Fi 192.168.1.23", and the glucose notification's sub text says
+  *Nightscout API on Wi-Fi* while it listens.
 - *Send glucose to apps* (wearer; `broadcasts/` `Broadcaster`, `BroadcastPlan`, `BroadcastPayloads`, `BroadcastsPage`;
   tests `BroadcastPlanTest`): every app on the phone that declares a receiver for the xDrip+ `BgEstimate`, LibreLink
   `GLUCOSE_READING` / `SENSOR_ACTIVATE` or Juggluco `glucodata.Minute` broadcast (manifest `<queries>`), with its
   package name and format and a switch each, **none on by default** (schema `apps.broadcasts`). Allowing an app pins the
   SHA-256 of its signing certificate; before every send `hasSigningCertificate` checks it, so a reinstall with another
   key gets nothing ("this app changed since you allowed it": tap → a confirmation that it may be another app and that
-  AndroidAPS may dose from these readings → *Allow again*; or *Remove*). A follower's page still lists apps allowed
+  AndroidAPS may dose from these readings, with the certificate's SHA-256 when it was allowed and the one it has now
+  (`AB:CD:…`, to compare with what its developer publishes) → *Allow again*; a new signature that isn't one certificate
+  can't be pinned, so the dialog says so and offers only *Cancel*; or *Remove*). The changed, removed and *Remove* rows
+  are action rows (no chevron). A follower's page still lists apps allowed
   earlier with *Remove*. An allowed app that was
   uninstalled stays listed as "Not installed · Tap to remove". What goes out (a closed loop may dose from it): only the
   Libre 3 driver's live reading on the wearer's phone (never history, Juggluco, an untested family, a follower feed or
@@ -1309,13 +1326,16 @@ digit by digit).
 *Port in use* → turn the other app's server off, then the switch off and on. *Left to Juggluco* → change the source in
 Settings › Sensor, or switch the server off. *Nightscout API off* (default) → its switch. *On* → switch off (the secret
 stays). *Port in use* → as for the xDrip+ server. *Secret can't be read* → *New secret* (the API starts with it).
-*Secret shown* → *Hide API secret* or Back. *New secret* dialog → *Cancel* keeps the old one. *Home Wi-Fi off* (default)
+*Secret shown* → *Hide API secret* or Back. *Copied* → the clipboard clears itself after a minute (copy something else
+to keep that instead). *New secret* dialog → *Cancel* keeps the old one. *Home Wi-Fi off* (default)
 → its switch → the warning dialog (*Cancel* keeps it off) → Android's permission. *On / listening* → switch off (or the
-API's switch). *Paused: another Wi-Fi* → *Allow on this Wi-Fi* or switch off. *Paused: no permission* → *Open Android
+API's switch). *Wi-Fi secret exists* → *New Wi-Fi secret* (dialog; *Cancel* keeps it). *Paused: Wi-Fi secret can't be
+read* → *New Wi-Fi secret* or switch off. *Paused: another Wi-Fi* → *Allow on this Wi-Fi* or switch off. *Paused: no permission* → *Open Android
 settings* or switch off. *Paused: no Wi-Fi / not a home network / no password* → join the home Wi-Fi or switch off.
 *Home Wi-Fi refused* (not on a qualifying Wi-Fi) → join it and switch on again. *Paused: API not running* → see the API's
 own state above. *Broadcasts: no app allowed* (default) → an app's switch. *Allowed* → its switch off. *App changed* →
-tap → confirm *Allow again* (*Cancel* keeps it blocked), or *Remove*. *Not installed* → tap to remove. *No app listens* → install one, come back (the list refreshes on return).
+tap → the dialog with both certificates → *Allow again* (*Cancel* keeps it blocked; a signature that can't be pinned
+offers only *Cancel*), or *Remove*. *Not installed* → tap to remove. *No app listens* → install one, come back (the list refreshes on return).
 *Health Connect off* (default) → switch → Health Connect's sheet. *Denied* → *Open Health Connect*, then the switch.
 *On* → switch off (records stay; *Open Health Connect* to delete them). *Permission removed* → *Open Health Connect* or
 switch off. *Slowed down / refused* → retries by itself, or switch off. *Nightscout upload*,
@@ -1346,15 +1366,17 @@ Android (`apps/android/pen`: `opennov/` reader, `engine/PenEngine`, `Pens` runti
   `:integrations` `tidepool/`: `TidepoolClient`, `TidepoolData`, `TidepoolQueue`, `TidepoolUploader`, `TidepoolPage`;
   tests against MockWebServer only). **Off by default** (schema `apps.tidepool`). Sign-in uses Tidepool's own login
   (`POST /auth/login`): the password is used once and never stored; only the session token and the account's user id
-  are kept, Keystore-encrypted (secure store `tidepool`). A refused login says Tidepool didn't accept the email and
-  password.
+  are kept, Keystore-encrypted (secure store `tidepool`), and the account's email for the page (secure store
+  `tidepool-email`, never in the plain state file). Signing in again (another account or the same) ends the session it
+  replaces on Tidepool too. A refused login says Tidepool didn't accept the email and password and changes nothing.
 - *Upload to Tidepool* main switch (enabled once signed in), *Status*, *Glucose* (one reading per 5 minutes, the last
   30 days included, each tagged with its sensor model; untested families are labelled) and *Insulin, carbs and notes*
   (edits and deletes follow; a note on its own becomes a Tidepool note), each unavailable while the upload is off.
 - Wearer: uploads its own readings and entries. Follower: *Upload the person you follow*, **off by default**; until it
   is on nothing is sent. Only the role's own readings go up (the wearer's sensor sources, or the followed person's
   feed), never ones left from the other role. A note removed on Tidepool's web page and then edited here goes up again
-  as a new note; a 403 is a failed request (retried), not a sign-out.
+  as a new note, and later edits go to that one; a 403 is a failed request (retried), not a sign-out
+  (`TidepoolUploaderTest`).
 - One upload record per account, install and role (found again by device id, made when missing; if Tidepool deleted
   it, a new one is made). Every datum has an origin id, so sending it again replaces it (no duplicates); an edited
   entry is sent again, a deleted one deleted. Every 5 minutes and at once on an entry or setting change; failures retry
@@ -1422,7 +1444,8 @@ without a notification. Back leaves the page.
   cloud after each entry the upload covers, by the uploader's own rules (`LibreViewQueue.mark`): cloud with a tick =
   "In LibreView" (the version LibreView has), cloud with an arrow = "Not in LibreView yet" (a new entry) or "LibreView
   has an older version: updating" (edited), crossed-out cloud = "LibreView upload stopped" (sign in again, or LibreView
-  refused the last upload; tapping it opens the LibreView page). Entries changed before the upload was switched on, or
+  refused the last upload). Every mark is a button to the LibreView page (TalkBack reads its words, then *button*;
+  `UploadMarkTest`). Entries changed before the upload was switched on, or
   older than 30 days, get none. Deleting an entry LibreView has while the upload runs (not stopped) says "Treatment deleted. It will be removed from LibreView
   too." in the Undo snackbar; Undo sends it up again as a new record (a retracted entry has no live record to retract).
 

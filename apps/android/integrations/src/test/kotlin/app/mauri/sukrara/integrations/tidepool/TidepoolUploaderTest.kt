@@ -68,6 +68,9 @@ class TidepoolUploaderTest {
     private val gone = mutableSetOf<String>()
     private var failData = false
 
+    /** Notes removed on Tidepool's web page: their edit answers 404. */
+    private val removedNotes = mutableSetOf<String>()
+
     private lateinit var uploader: TidepoolUploader
 
     private fun token(): String = "tok-${nextToken++}".also { valid += it }
@@ -85,6 +88,8 @@ class TidepoolUploaderTest {
                         val pair = basic?.let { String(Base64.getDecoder().decode(it)) }
                         return if (pair == "me@example.com:secret-pw") {
                             MockResponse().setHeader("X-Tidepool-Session-Token", token()).setBody("""{"userid":"u1"}""")
+                        } else if (pair == "other@example.com:other-pw") {
+                            MockResponse().setHeader("X-Tidepool-Session-Token", token()).setBody("""{"userid":"u2"}""")
                         } else {
                             MockResponse().setResponseCode(401)
                         }
@@ -132,6 +137,10 @@ class TidepoolUploaderTest {
 
                         path == "/message/send/u1" -> {
                             MockResponse().setBody("""{"id":"msg-${requests.size}"}""")
+                        }
+
+                        path.startsWith("/message/edit/") && path.removePrefix("/message/edit/") in removedNotes -> {
+                            MockResponse().setResponseCode(404)
                         }
 
                         path.startsWith("/message/") -> {
@@ -198,6 +207,100 @@ class TidepoolUploaderTest {
             assertFalse("secret-pw" in store.data.first().toString())
             assertFalse("secret-pw" in settings.toString())
             assertEquals("me@example.com", uploader.page.first().email)
+            // the email is in the secure store only, never in the plain state file
+            assertFalse("me@example.com" in store.data.first().toString())
+            assertEquals("me@example.com", secure.read(TidepoolUploader.EMAIL)!!.decodeToString())
+            // and is read back from there after a restart
+            val again =
+                TidepoolUploader(
+                    settings,
+                    secure,
+                    store,
+                    readings,
+                    treatments,
+                    role,
+                    OkHttpClient(),
+                    "1.0-test",
+                    clock,
+                    Dispatchers.Unconfined,
+                    baseUrl = server.url("/").toString(),
+                )
+            again.load()
+            assertEquals("me@example.com", again.page.first().email)
+        }
+
+    @Test
+    fun `signing in again ends the session it replaces`() =
+        runBlocking {
+            signedInAndOn()
+            assertEquals(TpSignIn.Done, uploader.signIn("other@example.com", "other-pw"))
+            val ended = requests.filter { it.path == "/auth/logout" }.map { it.getHeader("X-Tidepool-Session-Token") }
+            assertEquals(listOf("tok-1"), ended)
+            assertTrue("tok-2" in secure.read(TidepoolUploader.NAME)!!.decodeToString())
+            assertEquals("other@example.com", uploader.page.first().email)
+            // a wrong password replaces nothing and ends nothing
+            assertEquals(TpSignIn.BadCredentials, uploader.signIn("me@example.com", "nope"))
+            assertEquals(1, requests.count { it.path == "/auth/logout" })
+            assertTrue("tok-2" in secure.read(TidepoolUploader.NAME)!!.decodeToString())
+        }
+
+    @Test
+    fun `each role uploads only its own person's readings`() =
+        runBlocking {
+            signedInAndOn()
+            // left from following someone earlier, next to this phone's own sensor
+            readings.upsert(
+                listOf(
+                    Reading(now - Duration.ofMinutes(10), 150, null, SourceId.Relay),
+                    Reading(now - Duration.ofMinutes(4), 120, null, SourceId.Libre3),
+                ),
+            )
+            uploader.cycle()
+            assertEquals(listOf(120), data().map { it["value"]!!.jsonPrimitive.content.toInt() })
+
+            // now following: only the followed person's readings, never this phone's own from before
+            role.value = Role.Follower
+            uploader.change { it.copy(uploadFollowed = true) }
+            readings.upsert(listOf(Reading(now - Duration.ofMinutes(1), 160, null, SourceId.Nearby)))
+            uploader.cycle()
+            val following = data("ds-2").map { it["value"]!!.jsonPrimitive.content.toInt() }
+            assertEquals(listOf(150, 160), following)
+        }
+
+    @Test
+    fun `a note removed on Tidepool goes up again as a new note when it is edited`() =
+        runBlocking {
+            signedInAndOn()
+            treatments.upsertIfNewer(entry("n1", TreatmentKind.Note, 0.0, 15, note = "walk"))
+            uploader.cycle()
+            val first =
+                store.data
+                    .first()
+                    .role(Role.Wearer)
+                    .notes
+                    .getValue("n1")
+            removedNotes += first
+            clock.advance(Duration.ofMinutes(1))
+            treatments.replace(entry("n1", TreatmentKind.Note, 0.0, 15, note = "long walk", modified = clock.now()))
+            uploader.cycle()
+            val sent = posted("/message/send/u1")
+            assertEquals(2, sent.size)
+            assertTrue("long walk" in sent.last())
+            val second =
+                store.data
+                    .first()
+                    .role(Role.Wearer)
+                    .notes
+                    .getValue("n1")
+            assertNotEquals(first, second)
+            assertEquals(UploadStatus.Ok(clock.now(), 1), status())
+            // the next edit goes to the new note, never to the removed one again
+            clock.advance(Duration.ofMinutes(1))
+            treatments.replace(entry("n1", TreatmentKind.Note, 0.0, 15, note = "longer walk", modified = clock.now()))
+            uploader.cycle()
+            assertEquals(1, requests.count { it.method == "PUT" && it.path == "/message/edit/$first" })
+            assertTrue(requests.any { it.method == "PUT" && it.path == "/message/edit/$second" })
+            assertEquals(2, posted("/message/send/u1").size)
         }
 
     @Test
