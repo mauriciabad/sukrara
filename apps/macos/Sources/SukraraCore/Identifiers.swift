@@ -13,6 +13,12 @@ public enum SukraraIDs {
     /// Info.plist key carrying the App Group, so app and widget read the same value the bundle was signed with.
     public static let appGroupInfoKey = "SukraraAppGroup"
     public static let keychainService = "app.mauri.sukrara"
+    /// The data-protection keychain group (`keychain-access-groups`; only a provisioning profile grants it, so
+    /// `Bundle/bundle.sh` adds it only with one).
+    public static let keychainAccessGroup = "\(teamID).app.mauri.sukrara"
+    /// Universal links for the web invite (`com.apple.developer.associated-domains`, with a provisioning profile; the
+    /// site serves `docs/.well-known/apple-app-site-association`).
+    public static let associatedDomain = "applinks:sukrara.mauri.app"
     /// The standard defaults domain (= the bundle id); keys come from the settings schema.
     public static let defaultsDomain = appBundleID
     public static let urlScheme = "sukrara"

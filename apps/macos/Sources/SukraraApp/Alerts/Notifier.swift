@@ -213,7 +213,16 @@ final class Notifier: AlertNotifying {
 /// notifications), never by tests or offline runs.
 final class SystemNotificationCenter: NotificationPosting {
     private let center = UNUserNotificationCenter.current()
-    private(set) var timeSensitiveAllowed = false
+    /// The build's Time Sensitive entitlement (`Entitlements.timeSensitive`).
+    private let entitled: Bool
+    /// Whether the alarms break through a Focus, as of the last `refresh`.
+    private(set) var timeSensitive: TimeSensitive
+    var timeSensitiveAllowed: Bool { timeSensitive == .on }
+
+    init(entitled: Bool) {
+        self.entitled = entitled
+        timeSensitive = entitled ? .on : .unavailable
+    }
 
     func add(_ request: UNNotificationRequest) {
         center.add(request) { error in
@@ -228,8 +237,9 @@ final class SystemNotificationCenter: NotificationPosting {
     /// Re-reads what the user allows (launch, app activation, panel open).
     func refresh() async -> NotificationPermission {
         let s = await center.notificationSettings()
-        timeSensitiveAllowed = s.timeSensitiveSetting == .enabled
-        return NotificationPermission(s)
+        let permission = NotificationPermission(s)
+        timeSensitive = TimeSensitive(setting: s.timeSensitiveSetting, entitled: entitled, permission: permission)
+        return permission
     }
 }
 

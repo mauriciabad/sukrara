@@ -80,8 +80,12 @@ public final class AppModel {
     /// "Now" for the card: moved by the freshness ticker at each freshness step, so a value greys and strikes on time.
     private(set) var now: Date
     var notificationPermission: NotificationPermission = .allowed
-    /// Alerts can't break through Focus / Do Not Disturb (no Time Sensitive permission): the panel says so.
-    var focusCanHoldAlerts = false
+    /// Whether the alarms break through a Focus (nil: this run posts no notifications).
+    var timeSensitive: TimeSensitive?
+    /// A Focus / Do Not Disturb can hold the alarms back (no Time Sensitive): the panel says so and how to change it.
+    var focusCanHoldAlerts: Bool {
+        notificationPermission == .allowed && timeSensitive.map { $0 != .on } == true
+    }
 
     @ObservationIgnored let alerts: AlertController?
     @ObservationIgnored let updates: UpdateCheck?

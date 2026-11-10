@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["QWUV9H4A3G.app.mauri.sukrara"],
+        "components": [
+          {
+            "/": "/join",
+            "comment": "Invites (https://sukrara.mauri.app/join#…) open the Mac app's follow step, which asks before following"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -39,13 +39,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.graph = GraphConfig.load(from: store, wearer: nil, place: .menubar)
         model.widgetGraph = GraphConfig.load(from: store, wearer: nil, place: .widget)
         if model.lan != nil {
-            secrets = KeychainStore(service: plan.data.keychainService)
+            secrets = services.secrets
             lanSecret = JugglucoModel.secret(secrets)
         }
     }
 
     /// The Keychain holding Juggluco's API secret (nil when this run has no Juggluco source).
-    private var secrets: KeychainStore?
+    private var secrets: (any SecretStoring)?
     /// Juggluco's API secret, read once from the Keychain and kept as the Settings window changes it.
     private var lanSecret = ""
 
@@ -124,7 +124,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if case .snapshot = model.plan.mode {} else { windows.showSetupIfFirstRun() }
         // after the first-run setup window: an invite link that launched the app opens its Follow step
         for url in linkInbox.launched() { windows.open(url) }
-        AppLog.app.info("launched (offline: \(self.model.plan.isOffline, privacy: .public))")
+        AppLog.app.info(
+            "launched (offline: \(self.model.plan.isOffline, privacy: .public); \(self.services.entitlements.summary, privacy: .public))"
+        )
     }
 
     /// Read Glucose Aloud (menu, VoiceOver action, ⌃⇧⌘G): what VoiceOver says for the menu bar value, said now.
@@ -188,6 +190,21 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     /// waits in `linkInbox` until then.
     public func application(_ application: NSApplication, open urls: [URL]) {
         for url in linkInbox.receive(urls) { windows?.open(url) }
+    }
+
+    /// A universal link: the web invite clicked in Safari, Mail, Messages… opens the app (Associated Domains,
+    /// `applinks:sukrara.mauri.app`, only in a build with a provisioning profile; the site's
+    /// `.well-known/apple-app-site-association` lists the app). It goes the way of every link: the follow step's
+    /// confirmation, waiting out a launch in `linkInbox`. Anything else isn't Sukrara's (Safari opens it).
+    public func application(
+        _ application: NSApplication, continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void
+    ) -> Bool {
+        guard let url = AppLink.universal(type: userActivity.activityType, url: userActivity.webpageURL) else {
+            return false
+        }
+        for url in linkInbox.receive([url]) { windows?.open(url) }
+        return true
     }
 
     /// Timers don't run while the Mac sleeps and a clock change moves every deadline: re-check alerts and freshness.
@@ -278,7 +295,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             let permission = await center.refresh()
             model.notificationPermission = permission
-            model.focusCanHoldAlerts = permission == .allowed && !center.timeSensitiveAllowed
+            model.timeSensitive = center.timeSensitive
+            windows?.settings.timeSensitive = center.timeSensitive
         }
     }
 }

@@ -184,6 +184,16 @@ enum AppLink: Equatable {
 
     /// The web invite's host (`Wire.inviteBase`).
     static let inviteHost = "sukrara.mauri.app"
+
+    /// A universal link's page when it is the web invite (`https://sukrara.mauri.app/join#…` in a browsing-web
+    /// activity), else nil: the system hands over only what the site's `apple-app-site-association` lists, but the
+    /// app still opens nothing else.
+    static func universal(type: String, url: URL?) -> URL? {
+        guard type == NSUserActivityTypeBrowsingWeb, let url, url.scheme == "https", case .invite = AppLink(url) else {
+            return nil
+        }
+        return url
+    }
 }
 
 /// The links macOS hands the app (`sukrara:` and the web invite: `AppLink`), held until the windows exist: a link that

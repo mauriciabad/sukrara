@@ -176,6 +176,12 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       item's right-click menu has *Read Glucose Aloud ⌃⇧⌘G* first; VoiceOver on the value → VO-Command-Space → *Read
       Glucose Aloud*. Settings › General › *Read glucose aloud with ⌃⇧⌘G* off: the keys do nothing (and reach other
       apps), the menu item stays without the keys; on again: they work at once.
+- [ ] Provisioning profile (#19, #34; installed with `tools/install.sh mac`): the first launch after a build without
+      the profile moves the follower key into the data-protection keychain (at most one Keychain prompt for the old
+      item, *Always Allow*); it keeps following after a relaunch, and Keychain Access no longer lists `app.mauri.sukrara`
+      in the login keychain. *Stop following* → relaunch → still not following. The web invite link clicked in Safari,
+      Mail or Messages (once the site serves `/.well-known/apple-app-site-association`) opens the Follow step with
+      *Follow* / *Cancel*, never following by itself; while launching, it waits for the launch.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets
@@ -200,6 +206,12 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the
       headline and timing with Android.
+- [ ] Mac Time Sensitive (#19, a build with the provisioning profile: `bundle.sh` prints *profile "…"*): Settings ›
+      Alerts says *Alarms are Time Sensitive…*; turn on Do Not Disturb, *Send Test Alert* on an alert set *Like an
+      alarm* shows and plays, one without it is held back. System Settings › Notifications › Sukrara › *Time Sensitive
+      Notifications* off → the panel, setup and Settings › Alerts say they're off with *Open Notification Settings*
+      (it opens Sukrara's page; on again → the line goes when Sukrara is active again). A build without the profile
+      (`--no-profile`): the Focus line with *Open Focus Settings*. In Spanish too.
 - [ ] Never on the user's phone with real alarms unless the user asked.
 
 ### Before the first unlock (emulator; docs/30)

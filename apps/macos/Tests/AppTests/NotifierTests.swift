@@ -177,3 +177,42 @@ final class FakeCenter: NotificationPosting {
         #expect(center.removed == [Notifier.monitoringStoppedID])
     }
 }
+
+/// #19: whether the alarms break through a Focus, from the build's Time Sensitive entitlement (only a provisioning
+/// profile grants it) and the system's answer; the panel warns only while a Focus can hold them back.
+@Suite struct TimeSensitiveTests {
+    @Test func aBuildWithoutTheEntitlementSaysAFocusCanHoldTheAlarms() {
+        for setting in [UNNotificationSetting.notSupported, .disabled] {
+            for permission in [NotificationPermission.notAsked, .allowed, .denied, .quiet] {
+                #expect(TimeSensitive(setting: setting, entitled: false, permission: permission) == .unavailable)
+            }
+        }
+    }
+
+    @Test func anEntitledBuildIsOnUnlessThePersonTurnedItOff() {
+        #expect(TimeSensitive(setting: .enabled, entitled: true, permission: .allowed) == .on)
+        // not asked yet: the system's answer means nothing, the alarms will be Time Sensitive
+        #expect(TimeSensitive(setting: .notSupported, entitled: true, permission: .notAsked) == .on)
+        #expect(TimeSensitive(setting: .disabled, entitled: true, permission: .notAsked) == .on)
+        #expect(TimeSensitive(setting: .disabled, entitled: true, permission: .allowed) == .turnedOff)
+        // the system says no even though the build is entitled: the truth, a Focus can hold them back
+        #expect(TimeSensitive(setting: .notSupported, entitled: true, permission: .allowed) == .unavailable)
+    }
+
+    @Test func eachStateSaysWhatItMeansAndOnlyOnIsSilentInThePanel() {
+        let states: [TimeSensitive] = [.on, .turnedOff, .unavailable]
+        #expect(Set(states.map(\.text)).count == 3)
+        let scratch = FileManager.default.temporaryDirectory.appending(path: "sukrara-ts-\(UUID().uuidString)")
+        let plan = LaunchPlan(mode: .normal, services: .none, data: .isolated(root: scratch))
+        let model = AppModel(plan: plan)
+        #expect(!model.focusCanHoldAlerts)  // nil: this run posts no notifications
+        for state in states {
+            model.timeSensitive = state
+            for permission in [NotificationPermission.notAsked, .allowed, .denied, .quiet] {
+                model.notificationPermission = permission
+                // notifications off or quiet have their own warning; a Focus matters once they reach the person
+                #expect(model.focusCanHoldAlerts == (permission == .allowed && state != .on), "\(state) \(permission)")
+            }
+        }
+    }
+}

@@ -66,6 +66,49 @@ func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
         #expect(inbox.receive([URL(string: web)!]).isEmpty)
         #expect(inbox.launched() == [URL(string: web)!])
     }
+
+    /// #34: a universal link (the web invite clicked in Safari, Mail, Messages…) goes where a handed-over invite goes,
+    /// the follow step's confirmation; nothing else the system might hand over opens anything.
+    @Test func aUniversalLinkIsTheWebInviteOnly() {
+        let web = URL(string: Wire.inviteBase + String(repeating: "A", count: 32))!
+        let browsing = NSUserActivityTypeBrowsingWeb
+        #expect(AppLink.universal(type: browsing, url: web) == web)
+        #expect(AppLink(web) == .invite(web.absoluteString))
+        #expect(AppLink.universal(type: "app.mauri.sukrara.handoff", url: web) == nil)
+        #expect(AppLink.universal(type: browsing, url: nil) == nil)
+        #expect(AppLink.universal(type: browsing, url: URL(string: "https://sukrara.mauri.app/privacy")) == nil)
+        #expect(AppLink.universal(type: browsing, url: URL(string: "https://sukrara.mauri.app/join/")) == nil)
+        #expect(AppLink.universal(type: browsing, url: URL(string: "sukrara:join#AAAA")) == nil)
+    }
+
+    /// The site's `apple-app-site-association` hands this app exactly the invite page, and the profile build's
+    /// entitlement names that site: the three agree with `AppLink`.
+    @Test func theSiteAssociationListsTheInvitePageForThisApp() throws {
+        struct Association: Decodable {
+            struct Links: Decodable {
+                struct Detail: Decodable {
+                    var appIDs: [String]
+                    var components: [[String: String]]
+                }
+                var details: [Detail]
+            }
+            var applinks: Links
+        }
+        let repo = LocalizationTests.macRoot.deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: repo.appending(path: "docs/.well-known/apple-app-site-association"))
+        let details = try JSONDecoder().decode(Association.self, from: data).applinks.details
+        #expect(details.count == 1)
+        #expect(details.first?.appIDs == ["\(SukraraIDs.teamID).\(SukraraIDs.appBundleID)"])
+        #expect(details.first?.components.map { $0["/"] } == ["/join"])
+        #expect(details.first?.components.allSatisfy { $0["#"] == nil && $0["?"] == nil } == true)  // any invite
+        #expect(AppLink(URL(string: "https://\(AppLink.inviteHost)/join#AAAA")!) != nil)
+        #expect(SukraraIDs.associatedDomain == "applinks:\(AppLink.inviteHost)")
+        let entitlements = try String(
+            contentsOf: LocalizationTests.macRoot.appending(path: "Bundle/app-profile.entitlements.in"), encoding: .utf8
+        )
+        #expect(entitlements.contains("<string>\(SukraraIDs.associatedDomain)</string>"))
+        #expect(entitlements.contains("<string>@TEAM@.\(SukraraIDs.appBundleID)</string>"))  // the keychain group
+    }
 }
 
 /// Open at login over a fake `SMAppService` (never the real login items).

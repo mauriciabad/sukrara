@@ -42,7 +42,10 @@ commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`)
 - **Mac**: the owner's copy is `~/Applications/Sukrara.app` (team-signed, with the widget). Never overwrite it with a
   test build; test builds run from another path, offline (`LaunchMode`: snapshot / test runs start no Bluetooth,
   relays or alerts). After replacing the app, `pkill -f SukraraWidget.appex` and keep `pluginkit -mAv | grep sukrara`
-  pointing only at `~/Applications/Sukrara.app`.
+  pointing only at `~/Applications/Sukrara.app`. `Bundle/bundle.sh` signs with the provisioning profiles in
+  `~/.apple-dev/profiles` when they're there (Developer ID, Time Sensitive, data-protection keychain, universal links:
+  docs/20-publishing.md); such a test build also claims `https://sukrara.mauri.app/join`, so unregister it after
+  testing (`lsregister -u <app>`, `pluginkit -r <appex>`).
 
 ## Install (one build line)
 

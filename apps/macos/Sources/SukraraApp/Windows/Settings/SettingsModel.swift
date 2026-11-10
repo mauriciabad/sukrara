@@ -20,6 +20,9 @@ public final class SettingsModel {
     public let juggluco: JugglucoModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
+    /// Whether the alarms break through a Focus (Settings › Alerts, the setup's notification step); nil: this run
+    /// posts no notifications.
+    var timeSensitive: TimeSensitive?
     /// The pane shown; the window reopens on it.
     public var pane: Pane {
         didSet { store.set(pane.rawValue, for: MacSettings.settingsPane) }

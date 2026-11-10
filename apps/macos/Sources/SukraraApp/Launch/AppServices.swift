@@ -33,10 +33,19 @@ final class AppServices: ServiceStarting {
     /// A tap on a notification's body: open the panel.
     var openPanel: (() -> Void)?
     let defaults: UserDefaults
+    /// What this build's provisioning profile grants (none without one): Time Sensitive alarms and the
+    /// data-protection keychain.
+    let entitlements: Entitlements
+    /// The follower key and Juggluco's secret, in the keychain this build may use (`KeychainStore.secrets`).
+    let secrets: any SecretStoring
 
     /// `widget`: creates the widget feed when the plan allows it (tests write to a scratch file).
-    init(plan: LaunchPlan, widget: @escaping () -> WidgetFeed = { WidgetFeed() }) {
+    init(
+        plan: LaunchPlan, entitlements: Entitlements = .current(), widget: @escaping () -> WidgetFeed = { WidgetFeed() }
+    ) {
         self.plan = plan
+        self.entitlements = entitlements
+        secrets = KeychainStore.secrets(service: plan.data.keychainService, entitlements: entitlements)
         makeWidget = widget
         defaults = plan.data.defaultsSuite.flatMap(UserDefaults.init(suiteName:)) ?? .standard
     }
@@ -80,7 +89,7 @@ final class AppServices: ServiceStarting {
     func start(_ service: Service) {
         switch service {
         case .notifications:
-            let center = SystemNotificationCenter()
+            let center = SystemNotificationCenter(entitled: entitlements.timeSensitive)
             self.center = center
             let un = UNUserNotificationCenter.current()
             un.delegate = responder
@@ -140,7 +149,7 @@ final class AppServices: ServiceStarting {
             let nearby: FollowerRuntime.NearbyFactory? =
                 plan.services.ble ? { @Sendable identity in NearbyCentral(identity: identity, crypto: crypto) } : nil
             follower = FollowerRuntime(
-                secrets: KeychainStore(service: plan.data.keychainService),
+                secrets: secrets,
                 stores: .files(plan.data.paths, clock: SystemClock()), crypto: crypto, clock: SystemClock(),
                 me: Profile(name: Host.current().localizedName ?? "Mac", avatar: nil),
                 makeRelays: { relays, key in RelayPool(relays: relays, authKey: key, crypto: crypto) },
