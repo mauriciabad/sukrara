@@ -331,6 +331,8 @@ public enum ToFollowerMessage: Equatable, Sendable {
     case revoked
     case inviteUsed
     case declined
+    /// The wearer opened its nearby pairing nonce `nb` to the request that claimed the offer.
+    case pair(nonce: String)
     case unknown(String)
 
     public static func decode(_ json: String) throws(PayloadError) -> ToFollowerMessage {
@@ -342,13 +344,16 @@ public enum ToFollowerMessage: Equatable, Sendable {
         case "revoked": return .revoked
         case "invite-used": return .inviteUsed
         case "declined": return .declined
+        case "pair":
+            guard let n = o.string("n"), Hex.isKey(n) else { throw PayloadError("pair without n") }
+            return .pair(nonce: n)
         default: return .unknown(type)
         }
     }
 }
 
 /// Key delivery: the read key `g` (nsec) of epoch `n` for stream `sid`.
-public struct KeyDelivery: Equatable, Sendable {
+public struct KeyDelivery: Codable, Equatable, Sendable {
     public let sid: String
     public let epoch: Int
     public let nsec: String

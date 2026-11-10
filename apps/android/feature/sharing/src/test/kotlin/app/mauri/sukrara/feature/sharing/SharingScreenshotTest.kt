@@ -30,6 +30,7 @@ import app.mauri.sukrara.feature.sharing.followers.FollowersPage
 import app.mauri.sukrara.feature.sharing.profile.ProfileSave
 import app.mauri.sukrara.feature.sharing.profile.ProfileScreen
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
+import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.ScanInvite
@@ -49,10 +50,14 @@ import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.owner.IdentityCheck
 import app.mauri.sukrara.share.ble.NearbyStatus
+import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
+import app.mauri.sukrara.share.follower.PairingCheck
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
@@ -150,6 +155,21 @@ class SharingScreenshotTest {
             writers = setOf("k1"),
         )
 
+    /** The join step while a *Pair nearby* join waits on [check]. */
+    private fun pairingUi(check: PairingCheck) =
+        ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(
+            follow =
+                FollowState.Following(
+                    status = FollowStatus.Requested,
+                    wearer = me,
+                    code = "1234",
+                    canWrite = false,
+                    lastHeardAt = null,
+                    relays = emptyMap(),
+                    pairing = check,
+                ),
+        )
+
     private fun scenes(): List<Pair<String, @Composable () -> Unit>> {
         // the app passes Settings' threshold rows; this module only sees their slot
         val a =
@@ -207,7 +227,7 @@ class SharingScreenshotTest {
                 val offer =
                     NearbyOffer(
                         "phone",
-                        BleMessages.Pairing(PublicKeyHex("ab".repeat(32)), emptyList(), "t".repeat(22), 1_761_600_600, me),
+                        BleMessages.Pairing(PublicKeyHex("ab".repeat(32)), emptyList(), "t".repeat(22), 1_761_600_600, me, "c".repeat(64)),
                     )
                 SetupContent(
                     ui(
@@ -228,11 +248,27 @@ class SharingScreenshotTest {
                     a,
                 )
             },
+            "setup-join-pair-asking" to { SetupContent(pairingUi(PairingCheck(null, confirmed = false)), a) },
+            "setup-join-pair-compare" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = false)), a) },
+            "setup-join-pair-waiting" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = true)), a) },
+            "setup-join-pair-differed" to {
+                SetupContent(
+                    ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Failed(JoinResult.CodesDiffered)),
+                    a,
+                )
+            },
             "setup-join-scan-why" to { ScanScene(ScanState.Rationale) },
             "setup-join-scan-off" to { ScanScene(ScanState.Denied) },
             "setup-join-scan-no-camera" to { ScanScene(ScanState.NoCamera) },
             "approve-nearby" to {
-                ApproveDialog(request.copy(nearby = true), working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime)
+                ApproveDialog(
+                    request.copy(nearby = true, code = "021472", label = ""),
+                    working = false,
+                    onAllow = {},
+                    onDeny = {},
+                    onLater = {},
+                    time = ::utcTime,
+                )
             },
             "followers-empty" to {
                 FollowersPage(OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0), FollowersActions())

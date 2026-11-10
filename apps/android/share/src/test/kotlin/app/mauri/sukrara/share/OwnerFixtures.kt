@@ -26,12 +26,19 @@ object OwnerFixtures {
         return OwnerContext(crypto, RandomBytes { n -> random.nextBytes(n) })
     }
 
-    /** A follower's request (30500 `request`) gift-wrapped to the wearer's identity. */
-    fun request(follower: KeyPair, s: OwnerState, token: String, name: String, now: Long = NOW): SignedEvent =
+    /** A follower's request (30500 `request`) gift-wrapped to the wearer's identity ([nonce]: a nearby request's `n`). */
+    fun request(
+        follower: KeyPair,
+        s: OwnerState,
+        token: String,
+        name: String,
+        now: Long = NOW,
+        nonce: String? = null,
+    ): SignedEvent =
         EventFactory(crypto).gift(
             follower,
             s.identity(crypto).public,
-            Rumor.Request(token, Profile(name, null)),
+            Rumor.Request(token, Profile(name, null), nonce),
             now,
             now + Wire.TTL_REQUEST,
         )

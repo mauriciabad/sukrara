@@ -56,6 +56,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import app.mauri.sukrara.protocol.invite.NearbyPairing as PairingCode
 
 /**
  * The wearer's sharing coordinator: loads the identity, keeps the relay subscriptions, feeds readings from the
@@ -153,7 +154,15 @@ class OwnerEngine(
                 val s = owner?.takeIf { it.conflict == null } ?: return null
                 val invite = s.invites.firstOrNull { it.token == p.token } ?: return null
                 if (invite.claimedBy != null || invite.done || invite.expiry <= now()) return null
-                return BleMessages.Pairing(s.identity(ctx.crypto).public, s.relays, p.token, p.expiry, ControlEvents.profile(s))
+                val nonce = invite.pairNonce ?: return null
+                return BleMessages.Pairing(
+                    s.identity(ctx.crypto).public,
+                    s.relays,
+                    p.token,
+                    p.expiry,
+                    ControlEvents.profile(s),
+                    PairingCode.commit(nonce),
+                )
             }
 
             override fun onEvent(event: SignedEvent, peer: String) {

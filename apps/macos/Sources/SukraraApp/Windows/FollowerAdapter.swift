@@ -35,6 +35,8 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         }
     }
 
+    func confirmNearby(same: Bool) async -> Bool { await follower.confirmNearby(same: same) }
+
     func setProfile(name: String, avatar: Avatar?) async { await follower.setProfile(name: name, avatar: avatar) }
 
     func setName(_ name: String) async { await follower.setProfile(name: name, avatar: me?.avatar) }
@@ -72,7 +74,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         switch snapshot.link {
         case .notFollowing: .notFollowing
         case .joining: .joining
-        case .requested(let code, let wearer, let nearby): .waiting(wearer: wearer, code: nearby ? code : nil)
+        case .requested(_, let wearer, let pairing): .waiting(wearer: wearer, code: pairing?.code)
         case .following(let wearer, let canWrite):
             .following(wearer: wearer, lastReading: snapshot.readings.last?.t, canWrite: canWrite)
         case .declined: .declined

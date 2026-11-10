@@ -16,8 +16,11 @@ import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.Wire
+import app.mauri.sukrara.protocol.event.Rumor
+import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.protocol.invite.Invites
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
@@ -126,7 +129,7 @@ class OwnerNearbyTest {
             assertEquals(listOf(mom.public.hex), nearby.forgotten)
         }
 
-    @Test fun pairNearbyOffersAnInviteInInfoUntilTheFirstRequestAndAllowNeedsTheTypedCode() =
+    @Test fun pairNearbyOffersAnInviteInInfoUntilTheFirstRequestAndBothPhonesShowTheSameCode() =
         runTest {
             val clock = FakeClock(Instant.ofEpochSecond(NOW))
             val e = engine(clock)
@@ -143,23 +146,43 @@ class OwnerNearbyTest {
             assertEquals(NOW + 600, pairing.expiry)
             assertEquals(e.nearbyPairing.value!!.token, pairing.token)
             assertTrue("no invite wrap on the relays", relay.published.none { it.kind == Wire.KIND_WRAP })
-            assertTrue(state().invites.single { it.token == pairing.token }.nearby)
-            // a restore keeps it a nearby invite (its request still needs the typed code)
+            val invite = state().invites.single { it.token == pairing.token }
+            assertTrue(invite.nearby)
+            // the offer carries only the commitment to the wearer's nonce
+            assertEquals(NearbyPairing.commit(invite.pairNonce!!), pairing.commit)
+            // a restore keeps it a nearby invite
             val st = state()
             val restored = ControlEvents.fromBackup(crypto, st.identityHex, st.deviceHex, ControlEvents.backupPayload(crypto, st))!!
             assertTrue(restored.invites.single { it.token == pairing.token }.nearby)
 
+            // a request without the follower's nonce claims nothing
+            val stranger = crypto.generate()
+            host.onEvent(OwnerFixtures.request(stranger, state(), pairing.token, "Mom"), "cc:dd")
+            runCurrent()
+            assertNull(e.pendingRequest(stranger.public.hex))
+            assertNotNull(host.pairing())
+
             val mom = crypto.generate()
-            host.onEvent(OwnerFixtures.request(mom, state(), pairing.token, "Mom"), "aa:bb")
+            val na = "ab".repeat(32)
+            host.onEvent(OwnerFixtures.request(mom, state(), pairing.token, "Mom", nonce = na), "aa:bb")
             runCurrent()
             val request = e.pendingRequest(mom.public.hex)!!
-            assertTrue(request.nearby && request.needsTypedCode)
+            assertTrue(request.nearby && !request.needsTypedCode && !request.allowFromNotification)
+            assertEquals(
+                NearbyPairing.code(state().identity(crypto).public, mom.public, pairing.token, na, invite.pairNonce!!),
+                request.code,
+            )
             assertNull("single use: the first request closes it", host.pairing())
             assertNull(e.nearbyPairing.value)
+            // the claimer gets the wearer's nonce at once (relays and Bluetooth), so its phone shows the same code
+            val opened =
+                relay.published.filter { it.kind == Wire.KIND_WRAP && it.tag("p") == mom.public.hex }.mapNotNull { w ->
+                    crypto.unwrap(mom.secret, w)?.let { RumorCodec.decode(it.kind, it.content) }
+                }
+            assertEquals(listOf(Rumor.PairNonce(invite.pairNonce!!)), opened)
 
-            assertEquals(ApproveResult.NeedsCode, e.approve(mom.public.hex))
-            assertEquals(ApproveResult.NeedsCode, e.approve(mom.public.hex, "0000".takeIf { it != request.code } ?: "0001"))
-            assertEquals(ApproveResult.Allowed, e.approve(mom.public.hex, request.code))
+            // the code is compared, not typed: Allow sends the key
+            assertEquals(ApproveResult.Allowed, e.approve(mom.public.hex))
             runCurrent()
             assertEquals(listOf(mom.public), host.followers().toList())
         }

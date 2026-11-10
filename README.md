@@ -112,8 +112,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   *2 followers · 1 nearby*.
 - **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a
   picture of it, read on the phone), or find their phone nearby over
-  Bluetooth while they have *Pair nearby* on (Settings › Sharing; they type the code your phone shows), wait for them to allow you (with
-  the 4-digit code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
+  Bluetooth while they have *Pair nearby* on (Settings › Sharing; both phones show the same 6-digit code and you each
+  confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the 4-digit
+  code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
   home, widgets, the live notification and your own alerts (including *no data*); near their phone they also arrive over
   Bluetooth, without internet. Add entries when they let you;
   notifications say when an invite was used, declined or your access removed; *Stop following* in Settings › Sharing.

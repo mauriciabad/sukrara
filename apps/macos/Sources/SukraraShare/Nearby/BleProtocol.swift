@@ -108,10 +108,20 @@ public struct BleReassembler: Sendable {
 
 /// What the wearer's phone says in INFO: `nonce` + `m` always; `i`, `relays`, `pair` only while "Pair nearby" is open.
 public struct BleInfo: Equatable, Sendable {
+    /// The *Pair nearby* offer: the invite token, its expiry, the wearer's profile and `commit` = `c`, the wearer's
+    /// commitment to its pairing nonce (PROTOCOL-v2 "Nearby pairing").
     public struct Pairing: Equatable, Sendable {
         public let token: String
         public let expiry: Int
         public let profile: Profile?
+        public let commit: String
+
+        public init(token: String, expiry: Int, profile: Profile?, commit: String) {
+            self.token = token
+            self.expiry = expiry
+            self.profile = profile
+            self.commit = commit
+        }
     }
 
     public let nonce: String?
@@ -147,12 +157,17 @@ public struct BleInfo: Equatable, Sendable {
         return .ours
     }
 
-    /// The invite a nearby pairing offer stands for (the token is the invite token; the code is checked by the wearer).
-    public var invite: Invite? {
-        guard let identity, Hex.isKey(identity), let pairing else { return nil }
-        return Invite(
+    /// The invite a nearby pairing offer stands for (the token is the invite token), nil when it has none or it
+    /// can't be listed at `now`: expired, or claiming to last longer than 10 minutes plus clock skew (a fake offer
+    /// can't stay listed). Nothing in it is trusted until both devices show the same pairing code.
+    public func offer(now: Int) -> NearbyOffer? {
+        guard let identity, Hex.isKey(identity), let pairing,
+            NearbyPairing.offerExpiryOK(pairing.expiry, now: now)
+        else { return nil }
+        let invite = Invite(
             identity: identity, token: pairing.token, expiry: pairing.expiry, relays: relays,
             profile: pairing.profile)
+        return NearbyOffer(invite: invite, commit: pairing.commit)
     }
 }
 
@@ -180,7 +195,7 @@ public enum BleMessage: Equatable, Sendable {
             if let identity = info.identity { body["i"] = identity }
             if !info.relays.isEmpty { body["relays"] = info.relays }
             if let pairing = info.pairing {
-                var pair: [String: Any] = ["t": pairing.token, "x": pairing.expiry]
+                var pair: [String: Any] = ["t": pairing.token, "x": pairing.expiry, "c": pairing.commit]
                 if let profile = pairing.profile { pair["profile"] = profile.wireObject() }
                 body["pair"] = pair
             }
@@ -201,9 +216,12 @@ public enum BleMessage: Equatable, Sendable {
             guard let o = array[1] as? [String: Any] else { return nil }
             let pair = o["pair"] as? [String: Any]
             let pairing = pair.flatMap { p -> BleInfo.Pairing? in
-                guard let t = p["t"] as? String, let x = (p["x"] as? NSNumber)?.intValue else { return nil }
+                guard let t = p["t"] as? String, let x = (p["x"] as? NSNumber)?.intValue,
+                    let c = p["c"] as? String, Hex.isKey(c)
+                else { return nil }
                 return .init(
-                    token: t, expiry: x, profile: (p["profile"] as? [String: Any]).flatMap(Profile.init(wire:)))
+                    token: t, expiry: x, profile: (p["profile"] as? [String: Any]).flatMap(Profile.init(wire:)),
+                    commit: c)
             }
             return .info(
                 BleInfo(

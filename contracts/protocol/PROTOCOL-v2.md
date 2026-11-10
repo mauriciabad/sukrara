@@ -31,7 +31,7 @@ All content is JSON, NIP-44 v2 encrypted. Every event has a NIP-40 `expiration`.
 | **roster** | 30078 | `I` | `["d", H("cgm2:roster:"+sid)]`, `["gk", gk_n]`, exp now+30 d (refreshed weekly) | `{"v":2,"epoch":n,"devices":[hex D…],"writers":[hex W…],"relays":[…],"profile":{…}}` → `G_n` (`profile`: the wearer's, see [Profiles](#profiles)) |
 | **owner backup** | 30078 | `I` | `["d", H("cgm2:backup:"+I.pub_hex)]`, exp now+90 d (refreshed weekly) | `{"v":2,"sid","epochs":[{"n","g":nsec}],"followers":[{"f":hex,"name","avatar","since","revoked"?}],"invites":[{"t","x"}],"relays":[…],"profile":{…}}` → **`I` itself** |
 | **invite** | rumor kind 30502 in gift wrap to `invite_key(secret)` | seal by `I` | wrap exp = invite expiry | `{"v":3,"type":"invite","x":expiry,"r":[relays],"profile":{…}}` ([PROTOCOL-identity](PROTOCOL-identity.md#short-invites-v3)) |
-| **access request** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` | — | `{"v":2,"type":"request","token":t,"profile":{"name":"Mom","avatar":{…}}}` |
+| **access request** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` | — | `{"v":2,"type":"request","token":t,"profile":{"name":"Mom","avatar":{…}}}`; a [nearby](#nearby-pairing) request adds `"n":na` |
 | **profile update** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"profile","profile":{…}}` (applied only for an approved, non-revoked `F`) |
 | **key delivery** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"key","sid","epoch":n,"g":nsec(G_n),"devices":[…],"relays":[…]}` |
 | **rekey request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"rekey","have":gk}` (follower saw an unknown `gk`; `have` = the newest epoch's `gk` it holds; owners only log it) |
@@ -39,6 +39,7 @@ All content is JSON, NIP-44 v2 encrypted. Every event has a NIP-40 `expiration`.
 | **revoked notice** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"revoked"}` (courtesy; security comes from rotation) |
 | **invite used** | rumor kind 30501 in gift wrap to `F` | seal by `I` | exp +7 d | `{"v":2,"type":"invite-used"}`: another follower's request had already claimed this invite |
 | **declined** | rumor kind 30501 in gift wrap to `F` | seal by `I` | exp +7 d | `{"v":2,"type":"declined"}`: the owner denied the request (no key follows) |
+| **pairing nonce** | rumor kind 30501 in gift wrap to `F` | seal by `I` | exp +7 d | `{"v":2,"type":"pair","n":nb}`: opens the [nearby pairing](#nearby-pairing) commitment to the follower whose request claimed it |
 
 Gift wraps (kind 1059) are signed by a random one-time key and `p`-tag the recipient; the **seal's signer** is the
 authenticated sender. Their NIP-40 `expiration` is **absolute** (now + TTL): NIP-59 backdates the wrap's `created_at`
@@ -232,17 +233,54 @@ follower sees who is inviting before asking.
   requesters still get `invite-used`.
 - A leak before the intended follower uses the link lets someone ask in their place with any name and picture.
   Protection: the single claim, the `invite-used` notice to the real follower (who then tells the owner), and the
-  owner's Allow.
+  owner's Allow. When others tried the invite (`others` > 0) the owner types the follower's **match code** =
+  `int(sha256(F.pub_hex + token)) mod 10000`, zero-padded to 4 digits, shown on the follower's phone, before Allow.
 
-**Nearby pairing** (BLE INFO `pair: {t, x, profile}`, 10 minutes) reaches every phone in range, so it keeps the
-**match code** = `int(sha256(F.pub_hex + token)) mod 10000`, zero-padded to 4 digits: the follower shows it and the **owner types it**
-to allow (copy-entry beats compare-and-confirm in usability studies). The single-claim rule applies too.
+## Nearby pairing
+
+*Pair nearby* (BLE INFO `pair`, 10 minutes) reaches every phone in range, and anyone can advertise an offer with any
+name and picture. So both phones check each other with a **numeric comparison** (as Bluetooth LE Secure Connections
+pairing and Quick Share do): each side commits to a random nonce before it sees the other's, both derive the same
+6-digit **pairing code**, and each person confirms on their own phone that the two screens show the same code. A
+phone in the middle (posing as the wearer to the follower and as the follower to the wearer) has to fix its nonce on
+each side before it learns the other side's, so the two codes it causes match with probability 10⁻⁶ per attempt.
+
+- **Offer** (wearer): opening *Pair nearby* makes a single-use invite token `t` and a fresh 32-byte nonce `nb`
+  (lowercase hex), kept only in memory and in the claimed request. While open, `INFO` carries `"i":I, "relays":[…],
+  "pair":{"t":t, "x":expiry, "profile":{…}, "c":C(nb)}` with `C(nb)` = lowercase hex SHA-256 of
+  `"cgm2:pair-c:" + nb` (64 hex). Every follower sees the same `c`; `nb` is revealed only to the request that claims the
+  invite.
+- **Listing** (follower): an offer is listed only with a valid `t`, a 64-hex `c`, and `now < x ≤ now + 600 + 120` (the
+  10 minutes plus clock skew: an offer that claims to last longer is ignored, so a fake one can't stay listed).
+- **Request** (follower): joining makes `F` and a fresh 32-byte nonce `na` *after* reading the offer, keeps `(t, c,
+  na)` and sends the access request with `"n":na` (over Bluetooth and the relays, as any request).
+- **Claim** (wearer): the first request with `t` and a 64-hex `n` claims the invite (single claim as for links; a
+  nearby request without `n` claims nothing). The wearer computes the code and sends the **pairing nonce** `pair`
+  `{"n":nb}` to that `F` at once (gift wrap, relays and Bluetooth). Later requests get `invite-used`; a repeated
+  request from the claiming `F` changes nothing.
+- **Code** = `int(SHA-256("cgm2:pair-code:" + I + ":" + F + ":" + t + ":" + na + ":" + nb)) mod 1000000`, zero-padded
+  to 6 digits (`I`, `F` = x-only public keys, lowercase hex), shown as `482 913` and read digit by digit by TalkBack /
+  VoiceOver.
+- **Follower** on `pair` (sealed by `I`, while `requested` and joined nearby, no code yet): `C(nb)` must equal the
+  offer's `c` (else `rejected:pair-commit`: not the phone that made the offer); then `accepted:pair` and the code is
+  shown with *Same code on <wearer>'s phone?* A key delivery that arrives **before the person confirmed** is held, not
+  used (`ignored:unconfirmed`): nothing from the stream is read until the person confirms. Confirming applies the held
+  key (`accepted:key`) or lets the next one in; *Different code* ends the follow (the key `F` is discarded, nothing is
+  sent). `declined` and `invite-used` apply as for links.
+- **Wearer** shows the same code in the request (*Allow only if <name>'s phone shows this code*) and Allow sends the key
+  as for a link; nearby requests are never allowed from the notification (the code must be compared).
+- Vectors: [ble/nearby-pairing.json](ble/nearby-pairing.json) (commitment, code, offer expiry, the messages, and a
+  follower sequence of real signed events), read by Android `NearbyPairingVectorsTest` and Mac
+  `NearbyPairingVectorsTests`.
+- A code derived only from the offer (`t`, `I`) wouldn't do: anyone in range sees the offer and can grind its own
+  `(I', t')` to show the same few digits. The match code of [Invite link / QR](#invite-link--qr) stays for leaked
+  links: there the token is secret and the request encrypted, so nobody can grind a key against it.
 
 ## Profiles
 
 A name and a generated picture per person, so lists show faces instead of keys. **Never published**: they travel
 only inside encrypted messages (invite wrap, access request, profile update, roster, owner backup). Self-asserted:
-they help people recognise each other, they authenticate nothing (that's the match code's job).
+they help people recognise each other, they authenticate nothing (that's the pairing code's and match code's job).
 
 ```
 profile = {"name": "Alex", "avatar": {"v": 1, "c": 0, "s": "cube", "a": 45, "n": 1497950029}}

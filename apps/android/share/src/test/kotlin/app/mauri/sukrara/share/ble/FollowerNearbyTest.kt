@@ -12,21 +12,30 @@ import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.follow.FollowerState
+import app.mauri.sukrara.protocol.follow.HeldKey
+import app.mauri.sukrara.protocol.follow.NearbyPair
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
 import app.mauri.sukrara.share.OwnerFixtures.crypto
 import app.mauri.sukrara.share.follower.FollowState
+import app.mauri.sukrara.share.follower.FollowerCodec
 import app.mauri.sukrara.share.follower.FollowerEngine
+import app.mauri.sukrara.share.follower.FollowerRecord
 import app.mauri.sukrara.share.follower.FollowerStore
 import app.mauri.sukrara.share.follower.JoinResult
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
+import app.mauri.sukrara.share.follower.PairingCheck
 import app.mauri.sukrara.share.owner.usecase.ApproveRequest
 import app.mauri.sukrara.share.owner.usecase.CreateIdentity
 import app.mauri.sukrara.share.owner.usecase.CreateInvite
 import app.mauri.sukrara.share.owner.usecase.HandleInbox
+import app.mauri.sukrara.share.owner.usecase.OpenNearbyPairing
 import app.mauri.sukrara.share.owner.usecase.PublishReadings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -36,6 +45,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -147,7 +157,7 @@ class FollowerNearbyTest {
         runTest {
             val e = engine()
             val wearerKey = wearer0.identity(crypto).public
-            val pairing = BleMessages.Pairing(wearerKey, emptyList(), created.link.token, NOW + 600, Profile("Ana", null))
+            val (open, pairing) = openPairing()
             var search: NearbySearch? = null
             val finding = backgroundScope.launch { e.findNearby().collect { search = it } }
             runCurrent()
@@ -187,21 +197,119 @@ class FollowerNearbyTest {
             nb.info(BleMessages.Owner.Ours)
             runCurrent()
             val request = nb.sent.single { it.kind == Wire.KIND_WRAP }
-            val handled = HandleInbox(ctx)(created.step.state, request, NOW)
-            assertEquals(
-                "Bea",
+            val handled = HandleInbox(ctx)(open.step.state, request, NOW)
+            val pending =
                 handled.step.state.pending
                     .single()
-                    .name,
+            assertEquals("Bea", pending.name)
+            assertTrue(pending.nearby && !pending.allowFromNotification)
+            // the wearer's phone opens its nonce to the claimer at once: both phones show the same 6 digits
+            assertEquals(6, pending.code.length)
+            handled.step.publish.forEach { nb.deliver(it) }
+            runCurrent()
+            assertEquals(PairingCheck(pending.code, confirmed = false), (e.state.value as FollowState.Following).pairing)
+        }
+
+    /**
+     * #20 / #113: whoever answers (the real wearer or a phone posing as it), its key is not used until the person said
+     * the wearer's phone shows the same code; then the follow starts. A different code ends the join with nothing sent.
+     */
+    @Test fun aNearbyKeyIsUsedOnlyAfterThePersonConfirmedTheCode() =
+        runTest {
+            val e = engine()
+            val (open, pairing) = openPairing()
+            assertEquals(JoinResult.Joined, e.joinNearby(NearbyOffer("ana", pairing), Profile("Bea", null)))
+            backgroundScope.launch { e.readings.collect { received += it } }
+            runCurrent()
+            val nb = nearbys.last()
+            nb.info(BleMessages.Owner.Ours)
+            runCurrent()
+            val handled = HandleInbox(ctx)(open.step.state, nb.sent.first { it.kind == Wire.KIND_WRAP }, NOW)
+            val follower =
+                handled.step.state.pending
+                    .single()
+                    .follower
+            val approved = ApproveRequest(ctx)(handled.step.state, follower, NOW)!!
+            // the key arrives before the code was compared (and before the code itself): held, not used
+            approved.publish.forEach { nb.deliver(it) }
+            runCurrent()
+            var state = e.state.value as FollowState.Following
+            assertEquals(FollowStatus.Requested, state.status)
+            assertEquals(PairingCheck(null, confirmed = false), state.pairing)
+            assertNull(nb.identity.sid)
+            assertFalse("nothing to confirm without a code", e.confirmNearby(same = true))
+            handled.step.publish.forEach { nb.deliver(it) }
+            runCurrent()
+            assertTrue(e.confirmNearby(same = true))
+            runCurrent()
+            state = e.state.value as FollowState.Following
+            assertEquals(FollowStatus.Active, state.status)
+            assertNull(state.pairing)
+            assertEquals(approved.state.sid, nb.identity.sid)
+        }
+
+    /** A key held for the comparison survives a restart (the record keeps the whole pairing). */
+    @Test fun theNearbyPairingIsKeptInTheRecord() {
+        val f = crypto.generate()
+        val key = Rumor.KeyDelivery("ab".repeat(32), 1, crypto.nsec(crypto.generate().secret), listOf("cd".repeat(32)), emptyList())
+        val pair = NearbyPair("tok", "c".repeat(64), "a".repeat(64), "012345", confirmed = false, held = HeldKey(key, NOW))
+        val record =
+            FollowerRecord(
+                stream = FollowerState(f, wearer0.identity(crypto).public, FollowStatus.Requested, pair = pair),
+                token = "tok",
+                code = "1234",
+                me = null,
+                wearer = null,
+                joinedAt = NOW,
             )
+        assertEquals(pair, FollowerCodec.decode(crypto, FollowerCodec.encode(record))!!.stream.pair)
+    }
+
+    @Test fun aDifferentCodeEndsTheJoin() =
+        runTest {
+            val e = engine()
+            val (open, pairing) = openPairing()
+            assertEquals(JoinResult.Joined, e.joinNearby(NearbyOffer("ana", pairing), null))
+            backgroundScope.launch { e.readings.collect { received += it } }
+            runCurrent()
+            val nb = nearbys.last()
+            nb.info(BleMessages.Owner.Ours)
+            runCurrent()
+            val handled = HandleInbox(ctx)(open.step.state, nb.sent.first { it.kind == Wire.KIND_WRAP }, NOW)
+            handled.step.publish.forEach { nb.deliver(it) }
+            runCurrent()
+            val sent = nb.sent.size
+            assertTrue(e.confirmNearby(same = false))
+            runCurrent()
+            assertEquals(FollowState.NotFollowing, e.state.value)
+            assertEquals("nothing is sent", sent, nb.sent.size)
         }
 
     @Test fun anExpiredOfferIsNotJoined() =
         runTest {
             val e = engine()
-            val pairing = BleMessages.Pairing(wearer0.identity(crypto).public, emptyList(), created.link.token, NOW, null)
+            val pairing = openPairing().second.copy(expiry = NOW)
             assertEquals(JoinResult.Expired, e.joinNearby(NearbyOffer("ana", pairing), null))
         }
+
+    /** *Pair nearby* opened on the wearer's phone, and the offer its INFO carries. */
+    private fun openPairing(): Pair<OpenNearbyPairing.Opened, BleMessages.Pairing> {
+        val open = OpenNearbyPairing(ctx)(wearer0, NOW)
+        val nonce =
+            open.step.state.invites
+                .single { it.nearby }
+                .pairNonce!!
+        val pairing =
+            BleMessages.Pairing(
+                wearer0.identity(crypto).public,
+                emptyList(),
+                open.token,
+                open.expiry,
+                Profile("Ana", null),
+                NearbyPairing.commit(nonce),
+            )
+        return open to pairing
+    }
 
     @Test fun theAccessRequestGoesToTheRelaysAndOverBluetooth() =
         runTest {

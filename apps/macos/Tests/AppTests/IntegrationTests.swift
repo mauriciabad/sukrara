@@ -81,9 +81,10 @@ import Testing
 
     @Test func linkStatesMapToTheFollowWindow() {
         var s = FollowerSnapshot.empty
-        s.link = .requested(code: "1234", wearer: "Marta", nearby: true)
-        #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", code: "1234"))
-        s.link = .requested(code: "1234", wearer: "Marta", nearby: false)
+        let check = LinkState.PairingCheck(code: "021472", confirmed: false)
+        s.link = .requested(code: "1234", wearer: "Marta", pairing: check)
+        #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", code: "021472"))
+        s.link = .requested(code: "1234", wearer: "Marta", pairing: nil)
         #expect(FollowerAdapter.status(s) == .waiting(wearer: "Marta", code: nil))
         s.link = .following(wearer: "Marta", canWrite: false)
         s.readings = [Reading(t: Date(timeIntervalSince1970: 100), mgdl: 120)]

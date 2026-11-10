@@ -197,7 +197,7 @@ struct FollowerRuntimeTests {
     @Test func treatmentOutboxGoesSendingSentAccepted() async throws {
         // The OGS writer W (roster-1-writer lists it), waiting for its key.
         var state = FollowerState(
-            follower: v.secret("W"), identity: v.pub("I"), token: "t", code: "0000", nearby: false,
+            follower: v.secret("W"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
             me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
         state.status = .requested
         let secrets = InMemorySecretStore()
@@ -267,11 +267,11 @@ final class FlakySecretStore: SecretStoring, @unchecked Sendable {
 /// Mac still follows, so the app keeps alerting on the stored readings.
 struct KeychainRetryTests {
     let v = OgsVectors.shared
-    let requested = LinkState.requested(code: "0000", wearer: nil, nearby: false)
+    let requested = LinkState.requested(code: "0000", wearer: nil, pairing: nil)
 
     func secrets() throws -> FlakySecretStore {
         var state = FollowerState(
-            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", nearby: false,
+            follower: v.secret("F"), identity: v.pub("I"), token: "t", code: "0000", pair: nil,
             me: Profile(name: "Mac", avatar: nil), wearer: nil, relays: Wire.defaultRelays)
         state.status = .requested
         let secrets = FlakySecretStore()

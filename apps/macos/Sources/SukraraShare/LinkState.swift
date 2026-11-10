@@ -10,8 +10,9 @@ public enum LinkState: Sendable, Equatable {
     case notFollowing
     /// Looking up the invite on the relays.
     case joining
-    /// Access asked; the wearer allows it on their phone (nearby: by typing `code`).
-    case requested(code: String, wearer: String?, nearby: Bool)
+    /// Access asked; the wearer allows it on their phone. `code`: the match code a wearer may ask for after a leaked
+    /// link. `pairing`: a nearby join's code comparison (nil for a link).
+    case requested(code: String, wearer: String?, pairing: PairingCheck?)
     /// Following. `canWrite`: the wearer allowed this Mac to add treatments.
     case following(wearer: String?, canWrite: Bool)
     /// The wearer said no.
@@ -22,6 +23,18 @@ public enum LinkState: Sendable, Equatable {
     case revoked
     /// Following can't continue: the reason in words (Keychain unreadable, state damaged).
     case broken(String)
+
+    /// A nearby join waiting (PROTOCOL-v2 "Nearby pairing"): `code` = the 6 digits both devices show (nil until the
+    /// wearer's phone answered); `confirmed` = the person said the phone shows the same.
+    public struct PairingCheck: Sendable, Equatable {
+        public var code: String?
+        public var confirmed: Bool
+
+        public init(code: String?, confirmed: Bool) {
+            self.code = code
+            self.confirmed = confirmed
+        }
+    }
 
     /// Readings may be shown as the wearer's (only while following).
     public var isFollowing: Bool {

@@ -26,7 +26,7 @@ struct SyncFixtureTests {
         let now = fixture["now"] as! Int
         var state = FollowerState(
             follower: SecretKeyHex(followerKey["sec"]!)!, identity: fixture["identity"] as! String, token: "t",
-            code: "0000", nearby: false, me: Profile(name: "Mac", avatar: nil), wearer: nil,
+            code: "0000", pair: nil, me: Profile(name: "Mac", avatar: nil), wearer: nil,
             relays: Wire.defaultRelays)
         state.status = .requested
         let crypto = NostrSDKCrypto()

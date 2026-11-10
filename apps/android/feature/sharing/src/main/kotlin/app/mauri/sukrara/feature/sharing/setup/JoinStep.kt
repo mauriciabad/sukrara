@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.feature.sharing.PairingCodeCard
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.share.follower.FollowState
@@ -41,7 +42,8 @@ import app.mauri.sukrara.share.follower.JoinResult
 /**
  * The follower's join step: paste the wearer's invite link (an invite opened on this phone fills it in; [ScanInvite]
  * reads it from their QR code, live or from a picture), with the name
- * the wearer will see; then "waiting for Ana" with the 4-digit code the wearer may ask for. A follow that ended
+ * the wearer will see; then "waiting for Ana" with the 4-digit code the wearer may ask for (a *Pair nearby* join shows
+ * the 6-digit pairing code to compare instead, [PairingCodeCard]; *Different code* ends it). A follow that ended
  * (declined, the invite used by another phone, access removed) says so and asks for a new link here. Back returns to the
  * role (this phone wears the sensor after all).
  */
@@ -54,6 +56,23 @@ internal fun ColumnScope.JoinStep(
     StepHeader(stringResource(R.string.sh_join_title), stringResource(R.string.sh_join_body))
     if (follow is FollowState.Following && follow.status in WAITING) {
         val name = follow.wearer?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.sh_join_someone)
+        val pairing = follow.pairing
+        if (pairing != null) {
+            // Pair nearby: both phones show one code; nothing from the wearer is used until the person confirms it
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AvatarImage(follow.wearer?.avatar, name, size = 48.dp)
+                Text(
+                    stringResource(R.string.sh_join_waiting, name),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+            PairingCodeCard(pairing, name, onSame = { actions.confirmNearby(true) }, onDifferent = { actions.confirmNearby(false) })
+            if (pairing.confirmed) NoteCard(stringResource(R.string.sh_join_waiting_note, name))
+            // never blocks: the Following page shows the same card until the codes are compared
+            StepButtons(stringResource(R.string.sh_setup_continue), onPrimary = actions.completeJoin)
+            return
+        }
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
             modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
@@ -161,5 +180,6 @@ private fun joinError(r: JoinResult): Int =
         JoinResult.Expired -> R.string.sh_join_err_expired
         JoinResult.WrongWearer -> R.string.sh_join_err_wrong
         JoinResult.AlreadyFollowing -> R.string.sh_join_err_already
+        JoinResult.CodesDiffered -> R.string.sh_join_err_mismatch
         JoinResult.KeyStoreFailed, JoinResult.Joined -> R.string.sh_join_err_store
     }

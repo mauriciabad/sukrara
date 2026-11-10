@@ -1004,21 +1004,33 @@ past the other app's event; blocks again if it's still running) or *Help*.
 - **Pair nearby** (Android wearer, Settings › Sharing › Bluetooth, shown while Bluetooth can serve): a switch that opens
   a single-use invite for 10 minutes (`OwnerEngine.openNearbyPairing`; no link and no invite wrap on the relays, the
   backup records the token). While open the phone advertises even with no follower and its `INFO` carries `i`, `relays`
-  and `pair` (token, expiry, the wearer's profile; B§7.3); the summary counts down (*Open · closes in 9:41*). It closes
-  at the first request with it, after 10 minutes, with the switch (*Stop*), when *Share over Bluetooth* is turned off
-  or when sharing stops or the app restarts; each drops the unclaimed invite (a restore keeps an invite nearby). A request made
-  with it is marked nearby: the approve dialog says anyone in Bluetooth range could have asked and Allow needs the code
-  typed from the follower's phone (never compare-only), and its notification has no Allow (*Open Sukrara and type the
-  code*).
+  and `pair` (token, expiry, the wearer's profile and `c`, the commitment to a fresh pairing nonce; PROTOCOL-v2
+  §Nearby pairing); the summary counts down (*Open · closes in 9:41*). It closes at the first request with it (one that
+  carries the follower's nonce `n`; one without claims nothing), after 10 minutes, with the switch (*Stop*), when *Share
+  over Bluetooth* is turned off or when sharing stops or the app restarts; each drops the unclaimed invite (a restore
+  keeps an invite nearby). The request that claims it gets the wearer's nonce at once (`pair`, over the relays and
+  Bluetooth), so both phones show the same **6-digit pairing code** (`021 472`; a numeric comparison as in Bluetooth LE
+  Secure Connections pairing: a phone in the middle can't make the two codes match). The approve dialog says anyone in
+  Bluetooth range can ask and shows the code big (*Allow only if their phone shows this same code*; TalkBack reads it
+  digit by digit); its notification has no Allow (*Open Sukrara and check that their phone shows the same code*).
+  Vectors: `contracts/protocol/ble/nearby-pairing.json` (`NearbyPairingVectorsTest`, Mac `NearbyPairingVectorsTests`).
 - **Find phones nearby** (Android follower, setup's join step, under the link field): looks over Bluetooth while the list
   shows (`FollowerEngine.findNearby`): each phone found is connected in turn, sent a `HELLO` without a proof, its `INFO`
   read and the phone left (nothing else is written: with no identity every phone is "unknown", B§6): a phone offering
-  nothing for a minute, one offering for 5 s. Phones with an open, unexpired `pair` are listed with the wearer's
-  picture and name (by invite); one that stops offering leaves the list at its next read, one that stops answering
-  after 12 s. Scans share the app's scan-start budget with the follow link (Android allows 5 starts per 30 s). A follow that ended never asks again over Bluetooth. A tap joins with that offer (no relay lookup)
-  as the name typed above; the follow's own Bluetooth link then sends the request to the phone whose `INFO` names that
-  identity, and to the relays. The join step shows the match code as for a link. The Mac follower does the same from its
-  follow window.
+  nothing for a minute, one offering for 5 s. Phones with an open `pair` that carries a commitment `c` and expires
+  within the next 10 minutes plus 2 minutes of clock skew are listed with the wearer's picture and name (by invite; an
+  offer claiming to last longer is ignored, so a fake one can't stay listed); one that stops offering leaves the list
+  at its next read, one that stops answering after 12 s. Scans share the app's scan-start budget with the follow link
+  (Android allows 5 starts per 30 s). A follow that ended never asks again over Bluetooth. A tap joins with that offer
+  (no relay lookup) as the name typed above, with a fresh pairing nonce `n` made then; the follow's own Bluetooth link
+  then sends the request to the phone whose `INFO` names that identity, and to the relays. The name and picture prove
+  nothing: the join step (and the Following page) shows *Asking Ana's phone…*, then the 6-digit code with *Does Ana's
+  phone show this code?* and *Same code* / *Different code* (a tick when it arrives; TalkBack reads it digit by digit).
+  A wearer's nonce that doesn't open the offer's commitment is refused (not the phone that made the offer). Nothing of
+  the wearer's is used before *Same code*: a key that arrives first is held (kept in the follower record) and used on
+  *Same code*, so a phone posing as the wearer that approves at once still shows only a code nobody confirms. *Different
+  code* ends the join (the follower key goes, nothing is sent) and says *The codes didn't match, so nothing was shared*.
+  The Mac follower does the same from its follow window.
 - Mac follower: gift wraps (access request, rekey, history request) carry an absolute expiration (7 d; history 1 d); a key
   delivery naming another stream id is rejected; a chunk whose `c`/`d` tags don't match its hour is rejected; a rekey
   request goes out only for an unknown key on an event from the wearer's identity or device.
@@ -1029,9 +1041,13 @@ stays, and its next tap opens the app's Android settings page); no follower yet 
 device in *Nearby devices* → its follower dialog (*Close*, *Remove* → confirm → removed and disconnected). Follower:
 the Bluetooth line follows the link by itself; Bluetooth off → *Turn on Bluetooth*; permission missing → *Allow Nearby
 devices*; *Stop following* ends Bluetooth with the relays. *Pair nearby* open → its switch (*Stop*), or it closes by
-itself (first request, 10 minutes); the request it brings → the approve dialog (*Later*, *Deny*, *Allow* with the typed
-code). *Find phones nearby* → *Stop looking*, a phone (asks to follow → waiting with the code), Bluetooth off / permission
-missing → the same fix rows; leaving the join step stops looking. Every state works with TalkBack (rows are buttons with text).
+itself (first request, 10 minutes); the request it brings → the approve dialog with the pairing code (*Later*, *Deny*,
+*Allow* once their phone shows the same code). *Find phones nearby* → *Stop looking*, a phone (asks to follow →
+*Asking Ana's phone…* → the code with *Same code* (→ waiting for Ana's Allow, then following) / *Different code* (→ the
+join ends with the reason, back to the link and the list); *Continue* leaves the join step meanwhile and the Following
+page shows the same card; *Stop following* ends it in every state), Bluetooth off / permission missing → the same fix
+rows; leaving the join step stops looking. Every state works with TalkBack (rows are buttons with text, the code is read
+digit by digit).
 
 ## Share with apps on this phone (investigation 22)
 

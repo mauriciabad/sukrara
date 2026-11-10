@@ -23,8 +23,11 @@ sealed interface Rumor {
     val kind: Int
     val type: String
 
-    /** Follower → owner (30500): asks for access with the invite token, self-asserted profile. */
-    data class Request(val token: String, val profile: Profile?) : Rumor {
+    /**
+     * Follower → owner (30500): asks for access with the invite token, self-asserted profile; [nonce] = `n`, the
+     * follower's pairing nonce, only for a *Pair nearby* invite (PROTOCOL-v2 §Nearby pairing).
+     */
+    data class Request(val token: String, val profile: Profile?, val nonce: String? = null) : Rumor {
         override val kind = Wire.KIND_TO_OWNER
         override val type = "request"
     }
@@ -79,6 +82,12 @@ sealed interface Rumor {
         override val type = "declined"
     }
 
+    /** Owner → follower (30501): opens the nearby offer's commitment to the request that claimed it ([nonce] = `nb`). */
+    data class PairNonce(val nonce: String) : Rumor {
+        override val kind = Wire.KIND_TO_FOLLOWER
+        override val type = "pair"
+    }
+
     /** The invite (30502, v 3), wrapped to the invite key: expiry, relays and the wearer's profile. */
     data class Invite(val expiry: Long, val relays: List<String>, val profile: Profile?) : Rumor {
         override val kind = Wire.KIND_INVITE
@@ -99,6 +108,11 @@ object RumorCodec {
             is Rumor.Request -> {
                 put("token", r.token)
                 put("profile", r.profile?.toJson() ?: JsonNull)
+                r.nonce?.let { put("n", it) }
+            }
+
+            is Rumor.PairNonce -> {
+                put("n", r.nonce)
             }
 
             is Rumor.ProfileUpdate -> {
@@ -165,11 +179,29 @@ object RumorCodec {
 
     private fun toOwner(type: String, o: JsonObject): Rumor? =
         when (type) {
-            "request" -> Rumor.Request(o.string("token") ?: throw InvalidPayload("request without token"), Profile.of(o["profile"]))
-            "profile" -> Profile.of(o.obj("profile"))?.let(Rumor::ProfileUpdate) ?: throw InvalidPayload("profile update without profile")
-            "rekey" -> Rumor.Rekey(o.string("have") ?: throw InvalidPayload("rekey without have"))
-            "history" -> Rumor.History(o.long("since"))
-            else -> null
+            "request" -> {
+                Rumor.Request(
+                    o.string("token") ?: throw InvalidPayload("request without token"),
+                    Profile.of(o["profile"]),
+                    o.string("n")?.takeIf(Hex::isKey),
+                )
+            }
+
+            "profile" -> {
+                Profile.of(o.obj("profile"))?.let(Rumor::ProfileUpdate) ?: throw InvalidPayload("profile update without profile")
+            }
+
+            "rekey" -> {
+                Rumor.Rekey(o.string("have") ?: throw InvalidPayload("rekey without have"))
+            }
+
+            "history" -> {
+                Rumor.History(o.long("since"))
+            }
+
+            else -> {
+                null
+            }
         }
 
     private fun toFollower(type: String, o: JsonObject): Rumor? =
@@ -196,6 +228,10 @@ object RumorCodec {
 
             "declined" -> {
                 Rumor.Declined
+            }
+
+            "pair" -> {
+                Rumor.PairNonce(o.string("n")?.takeIf(Hex::isKey) ?: throw InvalidPayload("pair without n"))
             }
 
             else -> {

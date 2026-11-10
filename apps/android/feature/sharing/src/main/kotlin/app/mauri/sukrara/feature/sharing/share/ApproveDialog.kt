@@ -50,6 +50,7 @@ import androidx.compose.ui.window.DialogProperties
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.owner.PendingRequest
 import kotlinx.coroutines.delay
 import java.text.DateFormat
@@ -77,6 +78,8 @@ const val ALLOW_ARM_MS = 600L
  * Someone used an invite and asks to follow. The follower's picture and name head it; a card shows the invite they
  * used (the wearer's own label, whether the name matches it, when it was sent and asked); then the code to compare
  * with the one on the follower's phone. When other phones also tried the same link, the wearer types that code instead.
+ * A *Pair nearby* request shows the 6-digit pairing code big, under a warning to allow only if the follower's phone
+ * shows the same (it never comes from the notification).
  * Allow is armed after [ALLOW_ARM_MS] and once per tap; Deny refuses; Later (also Back) keeps the request waiting.
  * Not dismissed by tapping outside.
  */
@@ -95,7 +98,8 @@ fun ApproveDialog(
     val cs = MaterialTheme.colorScheme
     val name = shownName(request.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
     val leaked = request.others > 0
-    // a leaked link or Pair nearby: anyone could have asked, so the code is typed, never just compared (B§7.3)
+    // a leaked link: anyone could have asked, so the match code is typed, never just compared. Pair nearby: both phones
+    // show the same pairing code, which only matches when this request is the phone in front of you (§Nearby pairing)
     val typeCode = request.needsTypedCode
     var armed by remember(request.follower) { mutableStateOf(false) }
     var typed by remember(request.follower) { mutableStateOf("") }
@@ -126,20 +130,30 @@ fun ApproveDialog(
                 )
                 Spacer(Modifier.height(16.dp))
                 InviteCard(request, name, time)
-                if (typeCode) {
+                if (typeCode || request.nearby) {
                     Spacer(Modifier.height(12.dp))
                     Surface(shape = MaterialTheme.shapes.large, color = cs.errorContainer, modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            if (leaked) {
-                                pluralStringResource(R.plurals.sh_approve_others, request.others, request.others)
-                            } else {
+                            if (request.nearby) {
                                 stringResource(R.string.sh_approve_nearby)
+                            } else {
+                                pluralStringResource(R.plurals.sh_approve_others, request.others, request.others)
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             color = cs.onErrorContainer,
                             modifier = Modifier.padding(16.dp),
                         )
                     }
+                }
+                if (request.nearby) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        NearbyPairing.spaced(request.code),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.semantics { contentDescription = request.code.toList().joinToString(" ") },
+                    )
+                } else if (typeCode) {
                     Spacer(Modifier.height(12.dp))
                     val wrong = typed.length == CODE_LEN && typed != request.code
                     OutlinedTextField(
@@ -229,7 +243,7 @@ private fun InviteCard(
                     modifier = Modifier.weight(1f, fill = false),
                 )
                 // a hint only: anyone can type any name; the leaked-link case relies on the code instead
-                if (!request.needsTypedCode) {
+                if (!request.needsTypedCode && !request.nearby) {
                     when (labelMatches(request.label, name)) {
                         true -> Pill(stringResource(R.string.sh_approve_label_matches), cs.primaryContainer, cs.onPrimaryContainer)
                         false -> Pill(stringResource(R.string.sh_approve_label_differs), cs.tertiaryContainer, cs.onTertiaryContainer)

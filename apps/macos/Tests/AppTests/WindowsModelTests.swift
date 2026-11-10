@@ -135,7 +135,7 @@ func scratchStore() -> DefaultsSettingsStore {
         #expect(AddTreatmentAvailability(link: .following(wearer: "Ana", canWrite: true)).reason == nil)
         let notWriter = AddTreatmentAvailability(link: .following(wearer: "Ana", canWrite: false))
         #expect(notWriter == .notWriter(wearer: "Ana") && notWriter.reason?.hasPrefix("Ana hasn't") == true)
-        let waiting = AddTreatmentAvailability(link: .requested(code: "1234", wearer: "Ana", nearby: false))
+        let waiting = AddTreatmentAvailability(link: .requested(code: "1234", wearer: "Ana", pairing: nil))
         #expect(waiting.reason == "Waiting for Ana to approve this Mac")
         #expect(AddTreatmentAvailability(link: .revoked) == .revoked)
         #expect(AddTreatmentAvailability(link: .declined) == .ended)

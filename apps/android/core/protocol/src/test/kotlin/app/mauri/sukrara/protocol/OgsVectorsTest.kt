@@ -12,10 +12,13 @@ import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.RosterCodec
 import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.event.TreatmentCodec
+import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.protocol.testing.OgsVectors
 import app.mauri.sukrara.protocol.testing.OgsVectors.Companion.str
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -127,12 +130,22 @@ class OgsVectorsTest {
                     .str("x")
                     .toLong(),
                 Profile.of(pair.getValue("pair").jsonObject["profile"]),
+                NearbyPairing.commit("00".repeat(32)),
             )
-        assertEquals(ble.getValue("info_pairing"), json(BleMessages.info(v.sid, nonce, pairing, v.now)))
+        // Sukrara's offer is draft 1's plus the commitment `c` (PROTOCOL-v2 §Nearby pairing; nearby-pairing.json)
+        val withCommit =
+            JsonArray(
+                listOf(
+                    JsonPrimitive("INFO"),
+                    JsonObject(pair + ("pair" to JsonObject(pair.getValue("pair").jsonObject + ("c" to JsonPrimitive(pairing.commit))))),
+                ),
+            )
+        assertEquals(withCommit, json(BleMessages.info(v.sid, nonce, pairing, v.now)))
         assertEquals(ble.getValue("info"), json(BleMessages.info(v.sid, nonce, pairing, pairing.expiry)))
-        // the follower reads the offer back (Find phones nearby); expired or absent = none
-        assertEquals(pairing.copy(relays = Wire.secureRelays(pairing.relays)), BleMessages.pairing(pair, v.now))
-        assertEquals(null, BleMessages.pairing(pair, pairing.expiry))
+        // the follower reads the offer back (Find phones nearby); expired, absent or without a commitment = none
+        assertEquals(pairing.copy(relays = Wire.secureRelays(pairing.relays)), BleMessages.pairing(withCommit[1].jsonObject, v.now))
+        assertEquals(null, BleMessages.pairing(pair, v.now))
+        assertEquals(null, BleMessages.pairing(withCommit[1].jsonObject, pairing.expiry))
         assertEquals(null, BleMessages.pairing((ble.getValue("info") as JsonArray)[1].jsonObject, v.now))
         assertEquals(ble.getValue("hello"), json(BleMessages.hello(nonce, null)))
         val hello = BleMessages.parse(BleMessages.hello(nonce, null))!!

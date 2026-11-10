@@ -260,7 +260,7 @@ public actor FollowerRuntime: FollowerService {
         let result = await task.value
         joinTask = nil
         switch result {
-        case .success(let invite): try await begin(invite: invite, nearby: false)
+        case .success(let invite): try await begin(invite: invite, commit: nil)
         case .failure(let why):
             if session == nil { link = .notFollowing }
             await publishSnapshot()
@@ -272,7 +272,33 @@ public actor FollowerRuntime: FollowerService {
 
     public func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) {
         guard session == nil else { throw .alreadyFollowing }
-        try await begin(invite: offer.invite, nearby: true)
+        try await begin(invite: offer.invite, commit: offer.commit)
+    }
+
+    public func confirmNearby(same: Bool) async -> Bool {
+        guard let pair = session?.state.pair, !pair.confirmed else { return false }
+        guard same else {
+            // the codes differ: whoever answered isn't the phone in front of the person; nothing of it was used
+            await unfollow()
+            return true
+        }
+        guard var current = session, let outcome = current.confirmPairing() else { return false }
+        let started = generation
+        let before = current.state
+        session = current
+        persist(force: true)
+        await apply(outcome.deltas, generation: started)
+        guard generation == started else { return true }
+        if current.state.relays != relayURLs {
+            await reconnect()  // the key moved the stream to other relays
+        } else {
+            if outcome.resubscribe { await resubscribe() }
+            if before.sid != current.state.sid || before.epochs != current.state.epochs {
+                await nearby?.update(identity: nearbyIdentity)
+            }
+        }
+        await publishSnapshot()
+        return true
     }
 
     public func searchNearby(_ on: Bool) async {
@@ -320,14 +346,14 @@ public actor FollowerRuntime: FollowerService {
         return Task.isCancelled ? .failure(.cancelled) : result
     }
 
-    private func begin(invite: Invite, nearby: Bool) async throws(FollowerJoinError) {
+    private func begin(invite: Invite, commit: String?) async throws(FollowerJoinError) {
         guard session == nil, !beginning else { throw .alreadyFollowing }
         beginning = true
         defer { beginning = false }
         endKeychainRetry()  // following someone new: the unreadable item is overwritten
         let joined: FollowerSession
         do {
-            joined = try FollowerSession.join(invite: invite, me: me, nearby: nearby, crypto: crypto, now: now)
+            joined = try FollowerSession.join(invite: invite, me: me, commit: commit, crypto: crypto, now: now)
         } catch .expired {
             link = .notFollowing
             await publishSnapshot()
@@ -350,7 +376,7 @@ public actor FollowerRuntime: FollowerService {
         persisted = joined.state
         persistedAt = clock.now
         nearbyOffer = nil
-        Self.log.info("joined a wearer (nearby: \(nearby, privacy: .public))")
+        Self.log.info("joined a wearer (nearby: \(commit != nil, privacy: .public))")
         await serially(.reconnect)
     }
 
@@ -505,8 +531,8 @@ public actor FollowerRuntime: FollowerService {
             await publishSnapshot()
         case .info(let info, let owner, let phone):
             if session == nil {
-                if let invite = info.invite, invite.expiry > now {
-                    nearbyOffer = NearbyOffer(invite: invite)
+                if let offer = info.offer(now: now) {
+                    nearbyOffer = offer
                     await publishSnapshot()
                 } else {
                     // nothing to pair with: keep both radios idle
@@ -677,7 +703,9 @@ public actor FollowerRuntime: FollowerService {
         if let state = session?.state {
             switch state.status {
             case .new, .requested:
-                link = .requested(code: state.code, wearer: state.wearer?.name, nearby: state.nearby)
+                link = .requested(
+                    code: state.code, wearer: state.wearer?.name,
+                    pairing: state.pair.map { LinkState.PairingCheck(code: $0.code, confirmed: $0.confirmed) })
             case .active: link = .following(wearer: state.wearer?.name, canWrite: session?.canWrite ?? false)
             case .declined: link = .declined
             case .inviteUsed: link = .inviteUsed

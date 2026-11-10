@@ -63,8 +63,8 @@ class AndroidRequestNotifications(
         val time = time(request.at)
         val text =
             when {
-                request.others > 0 -> context.getString(R.string.share_request_others)
                 request.nearby -> context.getString(R.string.share_request_nearby)
+                request.others > 0 -> context.getString(R.string.share_request_others)
                 request.label.isNotBlank() -> context.getString(R.string.share_request_for, request.label, time)
                 else -> context.getString(R.string.share_request_from, time)
             }
@@ -73,8 +73,8 @@ class AndroidRequestNotifications(
                 .setContentTitle(context.getString(R.string.share_request_title, request.name))
                 .setContentText(text)
                 .setStyle(Notification.BigTextStyle().bigText(text))
-        // the typed code needs the app: no Allow from the notification
-        if (!request.needsTypedCode) {
+        // a code to type or compare needs the app: no Allow from the notification
+        if (request.allowFromNotification) {
             builder.addAction(action(RequestActionReceiver.ACTION_DENY, R.string.share_request_deny, request.follower, auth = false))
             builder.addAction(action(RequestActionReceiver.ACTION_ALLOW, R.string.share_request_allow, request.follower, auth = true))
         }

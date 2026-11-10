@@ -52,6 +52,13 @@ class AppFollowerSharing(
         return result
     }
 
+    override suspend fun confirmNearby(same: Boolean): Boolean {
+        val done = engine.confirmNearby(same)
+        // the codes differed: the join is gone, nothing was ever trusted; the role stays (setup's join step again)
+        if (done && !same) resetMonitoring()
+        return done
+    }
+
     override suspend fun stopFollowing(): Boolean {
         if (!engine.unfollow()) return false
         resetMonitoring()
