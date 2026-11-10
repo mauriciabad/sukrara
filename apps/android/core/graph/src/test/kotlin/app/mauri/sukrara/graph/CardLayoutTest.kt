@@ -21,6 +21,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -36,10 +37,11 @@ import kotlin.math.abs
 
 /**
  * The layout rules of contracts/graph/layout (rules.json over scenes.json; expect.json = the answers the Mac checks
- * too), run on the renderer itself. Each registered card surface is
- * stood in for by its shape (parts and sizes from surfaces.json, its place's settings): every rule must hold across
- * all of them, and every shared answer they produce must equal expect.json (this test never rewrites it). Once the
- * surfaces exist, their real entry paths replace the stand-ins.
+ * too), run on the renderer itself. Every registered card surface is drawn with the style its entry path uses (the
+ * widgets' [widgetCardStyle], the notification's [notificationCardStyle], the app panel's
+ * [GraphConfig.appPanelStyle]) at its sizes and parts from surfaces.json ([shapesAreTheRegisteredCardSurfaces] keeps
+ * them equal): every rule must hold across all of them, and every shared answer they produce must equal expect.json
+ * (this test never rewrites it).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -223,8 +225,9 @@ class CardLayoutTest {
             Shape("widget-combined", GraphPlace.WIDGETS, listOf(CardPart.ALL to 0f), sizes("widget-combined")) {
                 widgetCardStyle(CardSurface.WIDGET_COMBINED, it)
             },
+            // the panel's real style (GraphConfig.appPanelStyle, what HomeCard's PanelCard draws with)
             Shape("app-panel", GraphPlace.APP, listOf(CardPart.HEADER to 120f, CardPart.GRAPH to 180f), sizes("app-panel")) {
-                full(it, GraphPlace.APP)
+                it.appPanelStyle()
             },
             // the notification's real style (WidgetStyle.kt notificationCardStyle, what :monitor draws with)
             Shape("notification", GraphPlace.NOTIFICATION, listOf(CardPart.HEADER to 64f, CardPart.GRAPH to 96f), sizes("notification")) {
@@ -239,6 +242,32 @@ class CardLayoutTest {
                 full(it, GraphPlace.APP, graph = false)
             },
         )
+
+    /** The shapes that are layout coverage only, not surfaces of the app (see [shapes]). */
+    private val coverageOnly = setOf("lockscreen-shape", "value-only-shape")
+
+    /**
+     * The shapes are the registry: one per Android card surface of surfaces.json with exactly its parts and sizes, so
+     * a surface added, resized or split into other parts is drawn here the same round.
+     */
+    @Test
+    fun shapesAreTheRegisteredCardSurfaces() {
+        val registered =
+            Fixtures
+                .read("surfaces/surfaces.json")["android"]!!
+                .jsonObject["surfaces"]!!
+                .jsonArray
+                .map { it.jsonObject }
+                .filter { it["kind"].str() == "card" }
+        val shapes = shapes().associateBy { it.id }
+        assertEquals("card surfaces of surfaces.json", registered.map { it["id"].str()!! }.toSet(), shapes.keys - coverageOnly)
+        for (s in registered) {
+            val id = s["id"].str()!!
+            val parts = s["parts"]!!.jsonArray.map { it.str()!! }
+            assertEquals("$id parts", parts, shapes.getValue(id).parts.map { it.first.name.lowercase() })
+            assertEquals("$id sizes", sizes(id), shapes.getValue(id).sizes)
+        }
+    }
 
     /** The alert settings' default mutes after insulin and carbs (the schema's defaults). */
     private val defaultMutes =
