@@ -4,8 +4,12 @@
 package app.mauri.sukrara.feature.home
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
@@ -13,6 +17,7 @@ import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +37,8 @@ class HomeTextTest {
     private fun show(
         glucose: GlucoseState,
         widgetBanner: Boolean? = null,
+        fromPen: Set<String> = emptySet(),
+        callbacks: HomeCallbacks = HomeCallbacks(),
     ) {
         val look = homeLook(glucose, NOW)
         val treatments =
@@ -49,8 +56,9 @@ class HomeTextTest {
                 treatments = treatments,
                 undo = null,
                 widgetPinnable = widgetBanner != false,
+                fromPen = fromPen,
             )
-        compose.setContent { SukraraTheme(dark = false, dynamic = false) { HomeContent(state, HomeCallbacks()) } }
+        compose.setContent { SukraraTheme(dark = false, dynamic = false) { HomeContent(state, callbacks) } }
     }
 
     @Test fun widgetBannerAdds() {
@@ -74,6 +82,15 @@ class HomeTextTest {
         compose.onNodeWithText("25m").assertExists()
         compose.onNodeWithText("4.5u rapid insulin").assertExists()
         compose.onNodeWithText("3h").assertExists()
+    }
+
+    /** A pen's entry says where it came from and is one button that opens its sheet; typed rows are not buttons. */
+    @Test fun penRowOpensItsSheet() {
+        val opened = mutableListOf<String>()
+        show(Samples.wearer(), fromPen = setOf("b"), callbacks = HomeCallbacks(pen = PenCallbacks(open = { opened += it.id })))
+        compose.onNode(hasText("4.5u rapid insulin · from the pen") and hasClickAction()).performScrollTo().performClick()
+        assertEquals(listOf("b"), opened)
+        compose.onNode(hasText("30g carbs") and hasClickAction()).assertDoesNotExist()
     }
 
     @Test fun muteAllUntilTurnedOff() {

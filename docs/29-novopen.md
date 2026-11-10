@@ -202,6 +202,16 @@ Android (Kotlin, `app/src/main/kotlin/app/mauri/sukrara/pen/`, `ui/Pen*.kt`); th
 | 0.11.52: the treatment dialog's pen icon is gone (title row back to *Add treatment* + *When?*); the dialog still reads a held pen, and *Nothing new* / red *Couldn't read the pen* show under the fields for 3 s (polite live region) | `ui/PenDialog.kt` `PenReadWord`, `ui/TreatmentDialog.kt`; deleted `ic_dia_pen_nfc.xml`, `pen_dialog_read_a11y` |
 | 0.11.50: *Replace your entry* / *Replace with 8.5u* instead of *Log it* / *Log 8.5u* / *Log this injection* when the dose matches a hand-typed entry (it replaces it, never doubles) | `ui/PenSettings.kt`, `ui/PenUi.kt` |
 
+**Rebuilt in `apps/android` (issue #145).** Added: the big read's card (*23 injections logged · Since 2 Oct* with
+*Review* and *Undo*) and notification, its *Review* (Doses read filtered to the read) with *Undo this read*, the pens
+page's antenna spot, the *Juggluco also reads pens* row (`:pen`, `feature/settings/pens`, `designsystem/nfc`).
+Changed: the big read is kept in the pen's ledger (`Pen.big`) instead of the read card's memory, so *Review* and *Undo
+this read* also work after a restart or from the pen page (*Review the last read*, 7 days); *Undo this read* is
+refused only when an entry of the read changed since (each entry's `u`), not by any later pen change, so an everyday
+read in between doesn't take the undo away. Kept as decided: the read logs at once and is flagged (nothing blocks a
+read, row below); the 72 h threshold stays a fixed engine guard. Discarded: the unused `pen_read_big` plural (*Check N
+injections*, from the superseded "hold big reads" rule).
+
 | Discarded or changed | Why |
 |---|---|
 | DESIGN's "every dose after the first large one is injected" | a split dose around a cartridge change (`5, 0.5, 0.5, 1, 3`) logged 10u; priming now = small doses before the **last** large one (PRODUCT §3.2) |

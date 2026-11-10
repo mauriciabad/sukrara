@@ -23,4 +23,7 @@ object NavTargets {
     /** Settings › Insulin pens › one pen ([EXTRA_PEN_SERIAL]); without the extra, the pens page. */
     const val ACTION_PEN_PAGE = "app.mauri.sukrara.action.PEN_PAGE"
     const val EXTRA_PEN_SERIAL = "app.mauri.sukrara.extra.PEN_SERIAL"
+
+    /** Boolean extra of [ACTION_PEN_PAGE]: that pen's last big read in *Doses read* (*Review*, *Undo this read*). */
+    const val EXTRA_PEN_REVIEW = "app.mauri.sukrara.extra.PEN_REVIEW"
 }

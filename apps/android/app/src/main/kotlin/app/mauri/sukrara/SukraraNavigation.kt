@@ -34,6 +34,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import app.mauri.sukrara.alerts.AlertKind
+import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.feature.home.DataProblemScreen
@@ -156,11 +157,12 @@ data class SettingsKey(
     val page: String,
     val kind: String? = null,
     val serial: String? = null,
+    val review: Boolean = false,
 ) : NavKey {
     fun route(): SettingsRoute =
         when (page) {
             "pen" -> serial?.let(SettingsRoute::Pen) ?: SettingsRoute.Pens
-            "pendoses" -> serial?.let(SettingsRoute::PenDoses) ?: SettingsRoute.Pens
+            "pendoses" -> serial?.let { SettingsRoute.PenDoses(it, review) } ?: SettingsRoute.Pens
             "alerts" -> SettingsRoute.Alerts
             "kind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::AlertKindPage) ?: SettingsRoute.Alerts
             "ranges" -> SettingsRoute.Ranges
@@ -191,7 +193,7 @@ data class SettingsKey(
                 SettingsRoute.LockScreen -> SettingsKey("lock")
                 SettingsRoute.Pens -> SettingsKey("pens")
                 is SettingsRoute.Pen -> SettingsKey("pen", serial = route.serial)
-                is SettingsRoute.PenDoses -> SettingsKey("pendoses", serial = route.serial)
+                is SettingsRoute.PenDoses -> SettingsKey("pendoses", serial = route.serial, review = route.review)
                 SettingsRoute.Reliability -> SettingsKey("reliability")
                 SettingsRoute.StatusBar -> SettingsKey("statusbar")
                 SettingsRoute.SensorEnd -> SettingsKey("sensorend")
@@ -203,6 +205,12 @@ data class SettingsKey(
             }
     }
 }
+
+/** A pen page asked for from outside (the read card, a notification): the pen, and whether its big read's Review. */
+data class PenTarget(
+    val serial: String,
+    val review: Boolean = false,
+)
 
 /** The new-sensor flow: home's Pair sensor, the "Sensor ended" notification, [NavTargets.ACTION_SENSOR_SETUP]. */
 @Serializable
@@ -231,7 +239,7 @@ fun SukraraNavigation(
     openNewSensor: Boolean,
     onNewSensorShow: () -> Unit,
     modifier: Modifier = Modifier,
-    openPen: String? = null,
+    openPen: PenTarget? = null,
     onPenShow: () -> Unit = {},
     openHealthConnect: Boolean = false,
     onHealthConnectShow: () -> Unit = {},
@@ -247,14 +255,17 @@ fun SukraraNavigation(
         }
         healthShown()
     }
-    // the pen read card's *Check it*: Settings › Insulin pens › that pen, on top of what is open
+    // the pen read card's *Check it* / *Review*: Settings › Insulin pens › that pen (› its last big read), on top of
+    // what is open; Back walks up through the pen's pages
     val penShown by rememberUpdatedState(onPenShow)
     LaunchedEffect(openPen) {
-        val serial = openPen ?: return@LaunchedEffect
-        val page = SettingsKey("pen", serial = serial)
+        val target = openPen ?: return@LaunchedEffect
+        val pen = SettingsKey("pen", serial = target.serial)
+        val page = if (target.review) SettingsKey("pendoses", serial = target.serial, review = true) else pen
         if (backStack.last() != page) {
             if (SettingsKey("pens") !in backStack) backStack.add(SettingsKey("pens"))
-            backStack.add(page)
+            if (backStack.last() != pen) backStack.add(pen)
+            if (page != pen) backStack.add(page)
         }
         penShown()
     }
@@ -607,9 +618,8 @@ private fun route(
             backStack.push(TidepoolRoute)
         }
 
-        HomeAction.AllowPenTaps -> {
-            context.graph.pens.port
-                .openTagSettings()
+        HomeAction.AllowTaps -> {
+            TagIntents.openAllow(context)
         }
 
         // the module's state changes by itself once System UI says hello again; a failure is said in a toast
@@ -632,10 +642,12 @@ private fun route(
             }
         }
 
-        HomeAction.TurnOffPens -> {
+        // only what is blocked goes off (pen reading, *Open Sukrara when you scan a sensor*); Settings turns it on again
+        is HomeAction.TurnOffTaps -> {
             val graph = context.graph
             graph.scope.launch {
-                graph.pens.turnOff()
+                if (action.taps.pen) graph.pens.turnOff()
+                if (action.taps.sensor) graph.sensor.tapLaunch.set(false)
                 home.refresh()
             }
         }

@@ -30,7 +30,25 @@ data class PenInfo(
     val opened: Boolean,
     /** Untested and unchecked: the newest dose of the read waiting for the check (units, epoch s, read at), or null. */
     val held: PenHeldDose?,
+    /** The pen's last big read (an injection older than 72 h), while it can be reviewed; else null. */
+    val review: PenReview? = null,
 )
+
+/**
+ * A read that logged an injection older than 72 h (*N injections logged · Since 2 Oct · Review*): when it was read
+ * ([at]), its oldest injection ([since]), how many entries it logged and replaced, and its doses' [keys] (the sessions
+ * *Review* lists, also after *Undo this read* made them *Not logged*). Times epoch s.
+ */
+data class PenReview(
+    val at: Long,
+    val since: Long,
+    val entries: Int,
+    val merged: Int,
+    val keys: Set<String>,
+)
+
+/** How *Undo this read* went: undone, refused because its entries changed since, or nothing (left) to undo. */
+enum class PenReadUndo { Done, Changed, Gone }
 
 /** The newest dose of an untested pen's held read, as the pen's display shows it. */
 data class PenHeldDose(
@@ -101,6 +119,8 @@ data class PenTaps(
     val nfcOff: Boolean,
     /** *Notification after each read* is on but its channel or the app's notifications are off. */
     val notifyBlocked: Boolean,
+    /** Juggluco (it reads NovoPens too) is installed: both apps react to the same tap, a dose could be logged twice. */
+    val juggluco: Boolean = false,
 )
 
 /**
@@ -185,6 +205,12 @@ interface PensPort {
         same: Boolean,
     ): Boolean
 
+    /**
+     * *Undo this read* (Review of the pen's last big read): its entries back as they were, its doses *Not logged*.
+     * [PenReadUndo.Changed] when any of its entries changed since (nothing is touched then).
+     */
+    suspend fun undoRead(serial: String): PenReadUndo
+
     /** The display check of an untested pen: *It matches* (the held read is applied) / *It doesn't* / *Check again*. */
     suspend fun checkPassed(
         serial: String,
@@ -204,6 +230,9 @@ interface PensPort {
     fun openNfcSettings()
 
     fun openNotifySettings()
+
+    /** Juggluco's App info (where the person can turn it off or uninstall it). */
+    fun openJugglucoInfo()
 }
 
 /** The treatment dialog's *Already logged by your pen?*: a live pen entry of [kind] within the match window of [at]. */

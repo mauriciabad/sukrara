@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.nfc.NfcAdapter
 import android.os.Bundle
+import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.NavTargets
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,13 @@ class SensorTapLaunch(context: Context) {
     val on: StateFlow<Boolean> = state.asStateFlow()
 
     /** Android 16+ lets the person block an app's tag intents: the switch is on but no tap reaches Sukrara. */
-    fun blocked(): Boolean = runCatching { NfcAdapter.getDefaultAdapter(app)?.isTagIntentAllowed == false }.getOrDefault(false)
+    fun blocked(): Boolean = TagIntents.blocked(app)
+
+    /** On, and Android blocks the taps (home's banner, the sensor page's card). */
+    fun onButBlocked(): Boolean = state.value && blocked()
+
+    /** Android's screen that allows the taps. */
+    fun openAllow(): Boolean = TagIntents.openAllow(app)
 
     fun set(on: Boolean) {
         if (state.value == on) return

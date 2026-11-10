@@ -22,6 +22,7 @@ import app.mauri.sukrara.share.owner.usecase.SyncTreatments
 import app.mauri.sukrara.share.owner.usecase.SyncTreatments.Verdict
 import app.mauri.sukrara.share.owner.usecase.TreatmentWire
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -159,6 +160,19 @@ class TreatmentsSyncTest {
         assertEquals(false, filter.matches(event("owner-carbs")))
         val removed = owner.copy(followers = owner.followers.map { if (it.key == w.public.hex) it.copy(revoked = now) else it })
         assertEquals(null, sync.writerFilter(removed, now))
+    }
+
+    @Test fun aPenEntrysKeysSurviveTheWireIntoTheStore() {
+        val stored =
+            TreatmentRecord(
+                wearerRecord("owner-carbs").treatment,
+                penJson = """{"pr":1.5,"pen":"AB12","pd":[{"t":1000,"a":1.5,"p":true},{"t":1060,"a":8.5}]}""",
+            )
+        val wire = TreatmentWire.toPayload(stored)
+        val back = Json.parseToJsonElement(TreatmentWire.penJson(wire)!!)
+        assertEquals(Json.parseToJsonElement(stored.penJson!!), back)
+        // a hand-typed entry has no pen keys
+        assertEquals(null, TreatmentWire.penJson(wire.copy(primed = null, pen = null, penDoses = null)))
     }
 
     private fun plainOf(ev: SignedEvent) = crypto.decrypt(key("G1").secret, PublicKeyHex(ev.pubkey), ev.content)!!

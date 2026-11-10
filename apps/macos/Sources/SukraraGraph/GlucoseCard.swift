@@ -82,11 +82,9 @@ public enum GlucoseCard {
             }
         }
         if age != .none, let latest {
-            // over the plot itself, clear of the % column and the y axis labels; an ended sensor says so instead of
-            // the reading's time, which would read as a gap
-            drawAgeLabel(
-                ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, ended: sl?.ended == true, pal, d: d,
-                rec: rec)
+            // over the plot itself, clear of the % column and the y axis labels; a sensor that ended or is warming up
+            // says so instead of the reading's time, which would read as a gap
+            drawAgeLabel(ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, sensor: sl, pal, d: d, rec: rec)
         }
         // a graph-only card without its chart: the value's face alone
         if noChart && !st.value {
@@ -196,16 +194,28 @@ public enum GlucoseCard {
     }
 
     /// A card without a value: the reading's time centred over the top of the chart's `plot` on a background pill,
-    /// after the "no readings" icon from 20 min (`age`, freshness.json `graph_only`; GlucoseCard.kt `drawAgeLabel`);
-    /// once the sensor has `ended`, the checkered flag and "Sensor ended" (the value's place's words) instead, so it never
-    /// reads as a gap in the readings. The text shrinks to fit the plot's width (down to 60 %) and the pill never grows
-    /// past it.
+    /// after the "no readings" icon from 20 min (`age`, freshness.json `graph_only`; GlucoseCard.kt `drawAgeLabel`).
+    /// The sensor's own states instead, as the value's place says them, so they never read as a gap in the readings:
+    /// once it has ended the checkered flag and "Sensor ended"; while a new one warms up its disc filling and
+    /// "Warming up · 40m" ("Almost ready" past the warm-up's end), the time left always labelled and at the pill's size,
+    /// never a figure that could pass for a value (#27). The text shrinks to fit the plot's width (down to 60 %) and the
+    /// pill never grows past it.
     private static func drawAgeLabel(
         _ ctx: CGContext, _ plot: CGRect, _ r: GraphReading, _ now: TimeInterval, _ age: Freshness.AgeMark,
-        ended: Bool, _ pal: GraphPalette, d: CGFloat, rec: CardLayout
+        sensor: SensorBadge.Look?, _ pal: GraphPalette, d: CGFloat, rec: CardLayout
     ) {
-        let text = ended ? "Sensor ended" : Freshness.timeText(r.t, now: now)
-        let hasIcon = ended || age == .noReadings
+        let warmup = sensor?.warmup
+        let ended = sensor?.ended == true && warmup == nil
+        let text =
+            if let warmup {
+                sensor?.waiting(now: now) == true ? warmup : "Warming up · \(warmup)"
+            } else if ended {
+                "Sensor ended"
+            } else {
+                Freshness.timeText(r.t, now: now)
+            }
+        let own = warmup != nil || ended
+        let hasIcon = own || age == .noReadings
         var size = min(max(10 * d, plot.height * 0.12), 16 * d)
         func width(_ s: CGFloat) -> CGFloat {
             (hasIcon ? s * 1.45 : 0) + Ink.width(text, Ink.font(s, .semibold)) + s
@@ -225,7 +235,9 @@ public enum GlucoseCard {
         }
         ctx.saveGState()
         ctx.clip(to: box)
-        if ended {
+        if warmup != nil, let sensor {
+            SensorBadge.draw(ctx, x: box.minX + padX, y: box.midY - icon / 2, h: icon, sensor, pal, label: false)
+        } else if ended {
             _ = SensorBadge.flag(ctx, x: box.minX + padX, y: box.midY - icon / 2, size: icon, color: pal.inkSoft)
         } else if icon > 0 {
             _ = SensorBadge.symbol(
@@ -234,8 +246,8 @@ public enum GlucoseCard {
         }
         Ink.draw(ctx, text, x: box.minX + padX + icon + gap, y: box.midY + size * 0.36, font, pal.inkSoft)
         ctx.restoreGState()
-        rec.add("graph.age", box, ended ? "ended" : age.rawValue)
-        if !ended { rec.add("time.text", nil, text) }
+        rec.add("graph.age", box, warmup != nil ? "warmup" : ended ? "ended" : age.rawValue)
+        if own { rec.add("graph.age.text", nil, text) } else { rec.add("time.text", nil, text) }
     }
 
     /// The number + arrow, and under it the late reading's time and/or the status badge (`look`). The badge takes a

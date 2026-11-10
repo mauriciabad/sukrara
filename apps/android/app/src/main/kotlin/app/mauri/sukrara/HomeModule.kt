@@ -11,6 +11,8 @@ import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.PenEntryInfo
+import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.Treatment
@@ -22,6 +24,7 @@ import app.mauri.sukrara.feature.home.HomeDeps
 import app.mauri.sukrara.feature.home.HomeProfile
 import app.mauri.sukrara.feature.home.UploadMarks
 import app.mauri.sukrara.feature.home.banners.BannerMemory
+import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.feature.treatments.TreatmentLog
 import app.mauri.sukrara.graph.GraphConfig
@@ -66,8 +69,12 @@ class HomeModule(
     private val treatmentLog: () -> TreatmentLog,
     /** The wearer's sharing state (profile row, "Not backed up"); a function: sharing is built on first use. */
     private val sharing: () -> Flow<OwnerShareState> = { emptyFlow() },
-    /** Pen reading is On and Android blocks the taps (home's banner); read on every resume. */
-    private val penTapsBlocked: suspend () -> Boolean = { false },
+    /** The NFC taps that are on but blocked by Android (home's banner); read on every resume. */
+    private val tapsBlocked: suspend () -> BlockedTaps = { BlockedTaps() },
+    /** A pen entry with its doses (any role), for home's pen entry sheet. */
+    private val penEntryOf: suspend (String) -> PenEntryInfo? = { null },
+    /** The pens on this phone while they can be used (the wearer's with NFC), else null: the sheet is read only. */
+    private val penPort: () -> PensPort? = { null },
     /** The wearer's clinic upload is set (null on a follower): the *Share your data with your clinic* banner. */
     private val clinicUploadSet: () -> Flow<Boolean?> = { emptyFlow() },
     /** What the clinic upload has of the entries (the list's cloud marks); a function: integrations start later. */
@@ -80,6 +87,21 @@ class HomeModule(
     private val build: Long = 0,
 ) : HomeDeps {
     override val treatments: TreatmentsRepository get() = data.treatments
+
+    // the stored record carries the pen keys on every role (a follower stores them as received)
+    override suspend fun penEntries(ids: Collection<String>): Set<String> =
+        ids.filterTo(HashSet()) { id -> data.treatments.get(id)?.penJson != null }
+
+    override suspend fun penEntry(id: String): PenEntryInfo? = penEntryOf(id)
+
+    override fun pensEditable(): Boolean = penPort() != null
+
+    override suspend fun correctPen(
+        shown: PenEntryInfo,
+        primed: List<Boolean>,
+    ): PenEntryInfo? = penPort()?.correct(shown, primed)
+
+    override suspend fun restorePen(was: PenEntryInfo): Boolean = penPort()?.restore(was) == true
 
     override val readiness: StateFlow<AlertReadiness?> get() = readinessSource.readiness
 
@@ -132,7 +154,7 @@ class HomeModule(
         readinessSource.refresh()
         refreshSetup()
         env.update { it.copy(widgetPlaced = widgetPlaced(), widgetPinnable = widgetPinnable()) }
-        scope.launch { runCatching { penTapsBlocked() }.getOrNull()?.let { b -> env.update { it.copy(penTapsBlocked = b) } } }
+        scope.launch { runCatching { tapsBlocked() }.getOrNull()?.let { b -> env.update { it.copy(tapsBlocked = b) } } }
     }
 
     override fun acknowledge(problem: DataProblem) {

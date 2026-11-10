@@ -21,7 +21,7 @@
   "age|scene=perfect;face=true": "",
   "age|scene=stale;face=false": "graph.age dimmed",
   "age|scene=stale;face=true": "",
-  "age|scene=warmup;face=false": "graph.age no_readings",
+  "age|scene=warmup;face=false": "graph.age warmup",
   "age|scene=warmup;face=true": "",
   "chart|scene=ended;settings=clock12;graph=false;side=-;hours=-": "",
   "chart|scene=ended;settings=clock12;graph=true;side=true;hours=12": "chart.distribution | chart.hours | chart.lines 100",

@@ -101,11 +101,8 @@ object GlucoseCard {
             GlucoseGraph.draw(cv, chart, input, graph, pal, d, sl.takeIf { spot == SensorSpot.GRAPH }, rec, view)
             dimmed?.let(cv::restoreToCount)
         }
-        // an ended sensor says so instead of the reading's time, which would read as a gap
-        if (age != Freshness.AgeMark.NONE && latest != null) {
-            val ended = if (sl?.ended == true) model.words.sensorEnded else null
-            drawAgeLabel(cv, chart, latest.t, nowS, age, ended, pal, d, rec)
-        }
+        // a sensor that ended or is warming up says so instead of the reading's time, which would read as a gap
+        if (age != Freshness.AgeMark.NONE && latest != null) drawAgeLabel(cv, chart, latest.t, nowS, age, sl, model.words, pal, d, rec)
         // a graph-only card without its chart: the value's face alone (a graph card has no slots or badge)
         if (noChart && !st.value) value.draw(cv, chart, null, null)
         if (st.value && part != CardPart.GRAPH) {
@@ -126,10 +123,12 @@ object GlucoseCard {
 
     /**
      * A card without a value: the reading's time centred over the top of [chart] on a background pill, after the
-     * "no readings" icon from 20 min ([age], freshness.json `graph_only`; GlucoseCard.swift `drawAgeLabel`); once the
-     * sensor has ended, the checkered flag and [ended] ("Sensor ended", the value's place's words) instead, so it never
-     * reads as a gap in the readings. The text shrinks to fit the chart's width (down to 60 %) and the pill never grows
-     * past it.
+     * "no readings" icon from 20 min ([age], freshness.json `graph_only`; GlucoseCard.swift `drawAgeLabel`). The
+     * sensor's own states instead, as the value's place says them, so they never read as a gap in the readings: once it
+     * has ended the checkered flag and "Sensor ended"; while a new one warms up its disc filling and "Warming up · 40m"
+     * ("Almost ready" past the warm-up's end), the time left always labelled and at the pill's size, never a figure
+     * that could pass for a value (#27). The text shrinks to fit the chart's width (down to 60 %) and the pill never
+     * grows past it.
      */
     private fun drawAgeLabel(
         cv: Canvas,
@@ -137,18 +136,27 @@ object GlucoseCard {
         t: Long,
         nowS: Long,
         age: Freshness.AgeMark,
-        ended: String?,
+        sensor: SensorBadge.Look?,
+        w: CardWords,
         pal: GraphPalette,
         d: Float,
         rec: CardLayout,
     ) {
-        val text = ended ?: Freshness.timeText(t, nowS)
+        val warmup = sensor?.warmup
+        val ended = sensor?.ended == true && warmup == null
+        val text =
+            when {
+                warmup != null -> if (sensor?.waiting(nowS) == true) warmup else "${w.warmingUp} · $warmup"
+                ended -> w.sensorEnded
+                else -> Freshness.timeText(t, nowS)
+            }
+        val own = warmup != null || ended
         val ink =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
                 typeface = RoundedFont.typeface(600)
             }
-        val hasIcon = ended != null || age == Freshness.AgeMark.NO_READINGS
+        val hasIcon = own || age == Freshness.AgeMark.NO_READINGS
 
         // the pill's width at text size s: icon + gap + text + padding (the same proportions as below)
         fun width(s: Float): Float {
@@ -170,15 +178,23 @@ object GlucoseCard {
         cv.drawRoundRect(box, bh / 2, bh / 2, bg)
         val clip = cv.save()
         cv.clipRect(box)
-        if (ended != null) {
-            SensorBadge.flag(cv, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
-        } else if (icon > 0) {
-            Glyphs.drawSymbol(cv, Glyphs.noReadings, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+        when {
+            warmup != null -> SensorBadge.disc(cv, box.left + padX, box.centerY() - icon / 2, icon, checkNotNull(sensor), pal)
+            ended -> SensorBadge.flag(cv, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
+            icon > 0 -> Glyphs.drawSymbol(cv, Glyphs.noReadings, box.left + padX, box.centerY() - icon / 2, icon, pal.inkSoft)
         }
         cv.drawText(text, box.left + padX + icon + gap, box.centerY() + size * 0.36f, ink)
         cv.restoreToCount(clip)
-        rec.add("graph.age", box, if (ended != null) "ended" else age.key)
-        if (ended == null) rec.add("time.text", info = text)
+        rec.add(
+            "graph.age",
+            box,
+            when {
+                warmup != null -> "warmup"
+                ended -> "ended"
+                else -> age.key
+            },
+        )
+        if (own) rec.add("graph.age.text", info = text) else rec.add("time.text", info = text)
     }
 
     /** [draw] into a new bitmap of [wDp] × [hDp] dp at [d] px per dp (widgets, the notification, the lock screen). */
