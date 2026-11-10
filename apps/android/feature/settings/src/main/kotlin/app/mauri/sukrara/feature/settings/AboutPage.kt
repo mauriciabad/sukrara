@@ -43,15 +43,6 @@ class AboutViewModel(
     }
 }
 
-/** What a release file is for, from its name ("Mac", "Android"); unknown kinds show their file name. */
-@Composable
-private fun platformOf(name: String): String =
-    when {
-        name.endsWith(".apk") -> stringResource(R.string.st_asset_android)
-        name.endsWith(".dmg") || (name.contains("mac", ignoreCase = true) && name.endsWith(".zip")) -> stringResource(R.string.st_asset_mac)
-        else -> name
-    }
-
 /**
  * About: version, update check (none when [update] is null: the Google Play build), Sukrara on other devices, report a
  * problem, source code, privacy policy.
@@ -108,11 +99,11 @@ fun AboutContent(
                 is UpdateState.UpToDate -> update.latest
                 else -> null
             }
-        val others = latest?.assets.orEmpty().filterNot { it.name.endsWith(".apk") }
+        val others = latest?.let(UpdateCheck::otherDevices).orEmpty()
         if (others.isNotEmpty()) {
             SettingsGroup(title = stringResource(R.string.st_other_devices)) {
                 for (asset in others) {
-                    NavigationRow(platformOf(asset.name), {
+                    NavigationRow(stringResource(R.string.st_asset_mac), {
                         context.openUrl(asset.url)
                     }, summary = asset.name, icon = DsR.drawable.ds_ic_download)
                 }

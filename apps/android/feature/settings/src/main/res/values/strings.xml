@@ -161,7 +161,6 @@
     <string name="st_update_offline">Couldn\'t check for updates</string>
     <string name="st_update_offline_summary">Open the releases page</string>
     <string name="st_other_devices">Sukrara on other devices</string>
-    <string name="st_asset_android">Android</string>
     <string name="st_asset_mac">Mac</string>
     <string name="st_report_problem">Report a problem</string>
     <string name="st_report_problem_summary">Opens the project\'s issues on GitHub</string>

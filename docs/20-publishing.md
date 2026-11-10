@@ -101,6 +101,63 @@ rm /tmp/tapkey /tmp/tapkey.pub
   and the widgets read a new container (the host rewrites it on the next reading). Combine it with the
   `app.mauri.sukrara` rename so it happens once.
 
+### Mac release: Developer ID and notarization
+
+Built 2026-11-10 ([#91](https://github.com/mauriciabad/sukrara/issues/91), notarization first, Sparkle next):
+`tools/release/mac-release.sh` switches Developer ID signing and notarization on by itself once the credentials below
+exist on the release Mac; until then it builds as before (Apple Development, *Open Anyway*). **The owner creates, once**
+(about an hour, as the account holder):
+
+1. **Team ID**: developer.apple.com › Account › *Membership details*. If it isn't `QWUV9H4A3G` (the free personal
+   team's), say so before the first notarized release: `TEAM` in `apps/macos/Bundle/bundle.sh`, the team check in
+   `tools/release/verify-app.sh` and the App Group `<TEAM>.app.mauri.sukrara` (`SukraraIDs.appGroup` and its test, the
+   entitlements: #19) change together, and the widgets read a new container.
+2. **Certificate: Developer ID Application.** Not *Developer ID Installer* (Sukrara ships a dmg, not a pkg) and not
+   *Apple Distribution* (that's the App Store). Xcode › Settings › Accounts › the paid team › *Manage Certificates…* ›
+   + › *Developer ID Application* (the private key is made in the login keychain); or developer.apple.com ›
+   Certificates › + › *Developer ID Application* (G2 Sub-CA) with a CSR from Keychain Access › Certificate Assistant ›
+   *Request a Certificate From a Certificate Authority*. Check: `security find-identity -v -p codesigning` lists
+   `"Developer ID Application: … (<TEAM ID>)"`. Back it up: Keychain Access › My Certificates › that identity ›
+   *Export…* as `.p12` with a strong password, into the password manager (like the Android key; never the repo).
+3. **App ID and provisioning profile: none for notarization.** The entitlements (a team-prefixed App Group, nothing
+   restricted) need no profile. Explicit App IDs (`app.mauri.sukrara`, `app.mauri.sukrara.widget`, macOS) and a
+   *Developer ID* provisioning profile only if #19 decides an entitlement needs one (e.g. Time Sensitive
+   notifications, which is worth checking while enrolling); that's #19's change, not the release script's.
+4. **Notary credentials**, stored in the login keychain as the notarytool profile **`sukrara`**, one of:
+   - *App Store Connect API key* (recommended: not tied to the Apple Account's password or 2FA, revocable on its own):
+     App Store Connect › Users and Access › Integrations › App Store Connect API › *Team Keys* › + (name
+     `sukrara-notary`, access *Developer*); download `AuthKey_<KEY ID>.p8` (offered only once) and note the Key ID and
+     the Issuer ID. Then
+     `xcrun notarytool store-credentials sukrara --key ~/Downloads/AuthKey_<KEY ID>.p8 --key-id <KEY ID> --issuer <ISSUER ID>`,
+     the `.p8` into the password manager, and the download deleted.
+   - *App-specific password*: account.apple.com › Sign-In and Security › *App-Specific Passwords* › + (`sukrara-notary`).
+     Then `xcrun notarytool store-credentials sukrara --apple-id <Apple Account e-mail> --team-id <TEAM ID>` (it asks
+     for the password, so it stays out of the shell history).
+
+   Check: `xcrun notarytool history --keychain-profile sukrara` answers (an empty list the first time).
+
+**What the release then does by itself**: `mac-release.sh` finds the Developer ID identity (`SIGN_ID` picks another by
+name or SHA-1) and refuses unless the profile `sukrara` answers (`NOTARY_PROFILE` names another); a Developer ID build
+is never released unnotarized. `bundle.sh` signs the widget, then the app, with the hardened runtime and a secure
+timestamp, submits the app to notarytool (`--wait`) and staples it. `verify-app.sh --notarized` checks, on the app and
+the widget, the Developer ID authority, the hardened runtime, the secure timestamp, the stapled ticket and Gatekeeper's
+verdict (`spctl`: *Notarized Developer ID*). `dmg.sh` signs, notarizes and staples the dmg, and `mac-release.sh` checks
+its ticket and Gatekeeper's verdict. A rejected submission stops the release (`apps/macos/build/notary.log`; details with
+`xcrun notarytool log <submission id> --keychain-profile sukrara`). After the first notarized release: README › Install
+and docs/DEVELOPMENT.md drop *Open Anyway* / "no notarization yet", and the cask can aim at the official tap.
+
+**Sparkle next (prepared, not built).** The owner's part: download Sparkle 2's release archive
+(github.com/sparkle-project/Sparkle/releases), run `./bin/generate_keys` once (the EdDSA private key goes into the login
+keychain; it prints the public key for `SUPublicEDKey`) and back the key up with `./bin/generate_keys -x
+sukrara-sparkle.key` into the password manager, then delete that file (without the key no update can be signed, and
+every user would have to reinstall by hand). The build, one change after notarization works: `apps/macos/Package.swift`
+adds Sparkle; `bundle.sh` embeds `Sparkle.framework` and signs it inside-out (its XPC services and `Updater.app` first);
+`Info.plist.in` gets `SUFeedURL` (`https://sukrara.mauri.app/appcast.xml`) and `SUPublicEDKey`; `mac-release.sh` signs
+the dmg with `sign_update` and adds its appcast item (the GitHub release dmg as the enclosure) to `docs/appcast.xml`;
+Sparkle replaces `UpdateCheck.swift`; `LaunchMode` starts no updater in test, snapshot and dev runs;
+`update.skippedVersion` leaves contracts/settings (Sparkle keeps its own); `verify-app.sh` checks the framework's
+signature; README, FEATURES; the cask sets `auto_updates true`.
+
 ### In-app updates: Sparkle 2
 
 Sparkle 2 (current 2.9 line [[S1]](https://sparkle-project.org/documentation/)): `generate_keys` puts an **EdDSA** private key in the login keychain and prints
@@ -159,12 +216,64 @@ open testing at once, with no *Apply for production* step) and no new fee.
   [#142](https://github.com/mauriciabad/sukrara/issues/142), the reviewer-access decision
   [#141](https://github.com/mauriciabad/sukrara/issues/141)): Privacy policy (the page exists:
   https://sukrara.mauri.app/privacy, from `docs/privacy.md`, linked in Settings › About), **Sign in details** (open
-  question: the app shows nothing without a sensor or a follow invite from another phone, and debug fakes are compiled
-  out of release, so reviewers need instructions and probably a demo video; answering "No restrictions" risks a
-  rejection), Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
+  decided: *Restricted* with instructions and a demo video, see [Reviewer access](#google-play-reviewer-access-app-access)),
+  Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
   drafted in [Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts));
   the sensitive-permission declarations (foreground service, full-screen intent, Health Connect) appear after the
   first upload. The bundle to upload comes from `tools/release/play-bundle.sh` ([Flavors](#flavors)).
+
+### Google Play: reviewer access (App access)
+
+Decided 2026-11-10 ([#141](https://github.com/mauriciabad/sukrara/issues/141)): **"All or some functionality in my
+app is restricted"**, with written instructions and a short demo video. The release build has no demo data (the
+synthetic sensor is in `src/debug/` only), and a labelled demo mode in the release build is out: someone could take a
+made-up 110 for their own glucose during a real low. A standing reviewer follow invite isn't possible either (invites
+are single-use, expire, and the wearer approves each request: PROTOCOL-v2), so it stays the fallback if Play rejects
+this (it would need a reusable, auto-approved invite and an always-on synthetic wearer). For hardware-dependent apps,
+instructions plus a video of the app working are the usual route; Juggluco (sensor-only, no account) was on Play for
+years this way.
+
+**Where**: Play Console › Sukrara › Policy and programs › App content › *App access* › *All or some functionality in my
+app is restricted* › *Add instructions*. Then *Target audience* (plan: 13+) unblocks.
+
+**The instructions** (English, as entered; under 500 characters):
+
+- *Instruction name*: `Sensor-dependent features`
+- *Username / email / phone* and *Password*: empty (Sukrara has no account or sign-in)
+- *Any other information required to access your app*:
+
+> Sukrara has no account or login. It shows glucose from a continuous glucose monitor (CGM) worn by the user, such as
+> a FreeStyle Libre 3, read over Bluetooth, or follows a person who wears one through an invite from their phone.
+> Without a sensor, home shows "Not monitoring: no sensor yet". You can still review the setup, every Settings page and
+> each alert's "Send a test alert" (Settings › Alerts › an alert). This video shows the app with a sensor (test build,
+> simulated data): <video link>
+
+**The demo video** (at most 2 min, no sound needed but the alert sound helps; English UI): recorded on the emulator
+from a **debug** build with the debug synthetic sensor (never the owner's phone, data or account), uploaded to YouTube
+as *Unlisted* (Play's reviewers must open it without signing in), the link pasted into the text above. Before
+recording: a fresh emulator install, wearer role, alerts on with the default thresholds, the synthetic source on
+(`adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.SYNTHETIC --ez on true
+--ei cycle 100`, so the curve reaches its low within the first minute; `cycle 135` is the lowest point) and a local
+relay for the invite shot (`… -a app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447`, docs/DEVELOPMENT.md;
+never the public relays from a debug build). Record with
+the emulator's *Extended controls › Record screen* or `adb shell screenrecord --time-limit 180 /sdcard/review.mp4`.
+Every shot carries the overlay **"Test build · simulated sensor data"** (added in the editor, top of the frame, never
+covering the value).
+
+| # | Time | Shot | What it shows the reviewer |
+|---|---|---|---|
+| 1 | 0:00–0:06 | Title card: "Sukrara · test build · simulated sensor data. No real person's glucose." | that the data is made up |
+| 2 | 0:06–0:25 | Home: the glucose value with its trend arrow and the graph moving as new readings arrive; open the reading's sheet | the core function: live glucose from the sensor |
+| 3 | 0:25–0:50 | The curve crosses the low threshold: the low alert fires (full-screen on the lock screen, its sound), then *Mute* | why it needs full-screen intents, exact alarms and a foreground service |
+| 4 | 0:50–1:05 | *Eat carbs* pill → log 15 g → the quiet line on the graph and the notification | treatments and how they quiet alerts |
+| 5 | 1:05–1:20 | The glucose notification and a home-screen widget showing the same value | the ongoing notification (foreground service) |
+| 6 | 1:20–1:35 | Settings › Sharing › *Share with someone* › *Create invite*: the invite QR code and its note ("you still allow them") | following, and that the wearer approves each follower |
+| 7 | 1:35–1:50 | Settings › Alerts › *Low* › *Send a test alert* | what a reviewer can do without a sensor |
+| 8 | 1:50–2:00 | Synthetic source off (`--ez on false`), back to home: "Not monitoring: no sensor yet" | what a reviewer will see on their own device |
+
+**Who keeps it current**: the owner re-records the video (same shot list) when home, the alert screen, setup or
+Settings › Sharing change visibly, and before a release whose store listing screenshots change; the instructions text
+changes with them. Health data in it is synthetic only; never the owner's screenshots (CLAUDE.md).
 
 ### Google Play: a brand-new personal account (research, 2026-10-18)
 
@@ -302,15 +411,23 @@ module's `consumer-rules.pro` (the module that uses the reflective / JNI library
 ### Cutting a release
 
 On `main` (clean, pushed), with `tools/check/strict` committed: `tools/release/android-release.sh` (signed APK →
-`apps/android/app/build/dist/Sukrara-<version>.apk`, verified; the R8 mapping is archived in
-`~/.android/sukrara-mappings/`, not uploaded, because About lists every non-APK asset as a download) and
+`apps/android/app/build/dist/Sukrara-<version>.apk`, verified, and its R8 mapping gzipped next to it as
+`Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`) and
 `tools/release/mac-release.sh` (bundle → `verify-app.sh` → dmg + zip in `apps/macos/build/`). Then tag `v<version>`
-on `main` and `gh release create v<version> --verify-tag --prerelease --latest=false` with the three files while the
-version is 0.x (`Sukrara-<version>.apk`, `Sukrara-<version>.dmg`, `Sukrara-mac-<version>.zip`). A prerelease never
-bumps the Homebrew cask (`homebrew-tap.yml` skips it, also when dispatched by hand) and never becomes *Latest*. **The Mac app is not notarized yet**: there is no Developer
-ID identity or notarytool profile on the release Mac (checked 2026-10-27), so the dmg is Apple Development signed and
-the first open needs *Open Anyway* (README › Install). `NOTARY_PROFILE` in `bundle.sh` / `dmg.sh` / `mac-release.sh`
-takes over once a Developer ID exists.
+on `main` and `gh release create v<version> --verify-tag --prerelease --latest=false` with the four files while the
+version is 0.x (`Sukrara-<version>.apk`, `Sukrara-<version>-android-mapping.txt.gz`, `Sukrara-<version>.dmg`,
+`Sukrara-mac-<version>.zip`). The mapping is a release asset (#96) so it lives as long as the APK it decodes and anyone
+reading a crash trace in an issue can use it (`retrace` from the Android SDK's cmdline-tools: `gunzip` it, then `retrace
+mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists only the Mac `.dmg` and
+`.zip` as downloads (`UpdateCheck.otherDevices`), so neither the APK nor the mapping shows there. **Once:** the first
+release with that allowlist goes up without the mapping (installs older than it list every non-APK file as a download;
+its mapping stays in `~/.android/sukrara-mappings/`); attach the mapping from the release after it on. Play builds need no
+separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
+crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never
+bumps the Homebrew cask (`homebrew-tap.yml` skips it, also when dispatched by hand) and never becomes *Latest*. **Mac
+notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on the release
+Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); until then the dmg is
+Apple Development signed and the first open needs *Open Anyway* (README › Install).
 
 ### Alternatives to Play
 

@@ -171,6 +171,7 @@ public enum SettingsSpec {
         SettingInfo(id: "general.unit", type: "enum", number: nil, mirror: false, wire: nil, android: "settings:unit", mac: "defaults:unit", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "setup.steps", type: "setup", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:setupSteps", path: nil, only: "mac", reason: "The Mac's first-run walk (welcome, follow, alerts, notifications, open at login); Android's first run is its own role / permission flow with its own state", mirrorExcept: []),
         SettingInfo(id: "general.openAtLogin", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "system:SMAppService.mainApp", path: nil, only: "mac", reason: "A menu bar app starts as a login item; Android starts Sukrara's service on boot by itself", mirrorExcept: []),
+        SettingInfo(id: "general.readAloudShortcut", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:readAloudShortcut", path: nil, only: "mac", reason: "A system-wide keyboard shortcut is the Mac's way to ask from any app, and it may clash with another app's; Android asks through the Read glucose aloud app shortcut (launcher, TalkBack's actions on the app icon), which needs no setting", mirrorExcept: []),
         SettingInfo(id: "source.jugglucoLan", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:jugglucoLan", path: nil, only: "mac", reason: "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)", mirrorExcept: []),
         SettingInfo(id: "source.jugglucoAddress", type: "string", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:jugglucoAddress", path: nil, only: "mac", reason: "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)", mirrorExcept: []),
         SettingInfo(id: "source.jugglucoSecret", type: "secret", number: nil, mirror: false, wire: nil, android: "secure:juggluco", mac: "keychain:jugglucoSecret", path: nil, only: nil, reason: nil, mirrorExcept: []),
@@ -249,6 +250,7 @@ public enum SettingsSpec {
         public static let alerts = "alerts"
         public static let unit = "unit"
         public static let setupSteps = "setupSteps"
+        public static let readAloudShortcut = "readAloudShortcut"
         public static let jugglucoLan = "jugglucoLan"
         public static let jugglucoAddress = "jugglucoAddress"
         public static let settingsPane = "settingsPane"

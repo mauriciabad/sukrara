@@ -74,6 +74,10 @@ struct SyncFixtureTests {
         #expect(session.state.epochs.map(\.n).sorted() == expected["epochs"] as? [Int], "\(name)")
         #expect(session.state.devices == expected["devices"] as? [String], "\(name)")
         #expect(session.state.writers == expected["writers"] as? [String], "\(name)")
+        // the wearer's profile: a roster without one keeps the last one (PROTOCOL-v2 Profiles)
+        #expect(
+            session.state.wearer.map { JSONText.encode($0.wireObject()) }
+                == (expected["wearer"] as? [String: Any]).map { JSONText.encode($0) }, "\(name) wearer")
         let gotReadings = readings.values.sorted { $0.t < $1.t }.map { r -> [Double?] in
             [Double(r.t), Double(r.sgv), r.rate]
         }

@@ -298,9 +298,10 @@ class NightscoutUploader(
             // the whole window after a comparison with the site and every 30 min; in between only the last hours
             val full = state.reconciledMs != before || nowMs - fullScanMs >= FULL_SCAN_EVERY_MS
             val start = if (full) maxOf(Instant.ofEpochSecond(state.from), since) else clock.now() - RECENT
-            val rs = readings.range(start - Duration.ofMinutes(15), clock.now() + Duration.ofMinutes(1))
+            // imported history never goes up: Nightscout has it already or got it from the same place (counted twice)
+            val rs = readings.range(start - Duration.ofMinutes(15), clock.now() + Duration.ofMinutes(1)).filterNot { it.imported }
             if (full) fullScanMs = nowMs
-            val ts = treatments.changedSince(since - Duration.ofDays(1))
+            val ts = treatments.changedSince(since - Duration.ofDays(1)).filterNot { it.imported }
             state = NightscoutQueue.prune(state, ts.map { it.treatment.id }.toSet())
             val plan = NightscoutQueue.plan(rs, ts, sensor.first(), state, s.options, nowS, hold)
             var sent = 0

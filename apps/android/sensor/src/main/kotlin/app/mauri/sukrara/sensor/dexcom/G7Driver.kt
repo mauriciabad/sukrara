@@ -111,8 +111,10 @@ internal class G7Driver(
             Dexcom.State.Ended -> {
                 return when {
                     old -> wrongDevice("ended, ${egv.secondsSinceStart / 3600} h old")
+
                     // ended or failed before this pairing's first reading: a sensor pulled early, still bonded
                     first -> wrongDevice("ended before this pairing's first reading (state ${egv.state})")
+
                     else -> ended("algorithm state ${egv.state}")
                 }
             }

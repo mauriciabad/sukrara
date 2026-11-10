@@ -159,10 +159,16 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   **glucose broadcasts** to the apps you allow (AndroidAPS, GlucoDataHandler, xDrip+: the Libre 3 read by this phone
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
   readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.
+- **Import history** (wearer; also setup's last step, *Bring your history back*): the new app starts empty and brings
+  back the last 90 days from **Tidepool** (signed in), **LibreView**'s *Download glucose data* file or a **Sukrara
+  export** (this app's or the earlier app's), with progress and *Stop*. Nothing is ever counted twice (the sensor's own
+  readings win; importing again adds only what is missing), and imported history is never uploaded again.
 - English and Spanish (Spain) everywhere.
 - **TalkBack hears one sentence** for the glucose card everywhere (home, widgets, the notification card, the Quick
-  Settings tile): the value, trend, range in words and age, the alert or mute, the slots and the chart summary, the
-  same words as the Mac's VoiceOver.
+  Settings tile, and in your language on the root status-bar icons and the System UI text): the value, trend, range in
+  words and age, the alert or mute, the slots and the chart summary, the same words as the Mac's VoiceOver.
+- **Read glucose aloud**: the app shortcut (long-press the Sukrara icon, TalkBack's actions on it, or pin it to the
+  home screen) says the value, trend, range and age with the phone's voice, without opening anything; again to stop.
 
 **Mac (you follow someone, from the menu bar)**
 - The value in its range colour, the card's trend arrow at its angle and the mute bell in the **menu bar**, struck
@@ -202,6 +208,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   under an out-of-range value (*Low*, *Very high*) and the status item's tooltip says it.
 - English and Spanish (Spain) by the Mac's language: the windows, the panel's lines and every word the card draws
   (*Come hidratos*, *quedan 45 min*, *Calentando · 40 min*), the same words as Android's.
+- **Read Glucose Aloud** from any app with ⌃⇧⌘G (switch it off in Settings › General), from the menu bar value's
+  right-click menu or its VoiceOver action: the same sentence, in VoiceOver's voice when VoiceOver is on.
 
 **Not included**: the LSPosed lock-screen widget, Dexcom / Aidex / SmartGuide (untested) sensors, and the pen list and
 dose review.

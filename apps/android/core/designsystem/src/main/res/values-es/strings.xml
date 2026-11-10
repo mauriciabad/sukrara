@@ -84,6 +84,7 @@
     <string name="ds_err_cant_connect">No se puede conectar con el servidor. Comprueba que funciona y que la dirección es correcta.</string>
     <string name="ds_err_timed_out">El servidor no ha respondido a tiempo.</string>
     <string name="ds_err_secure">No se ha podido establecer una conexión segura. Revisa la dirección y la fecha y hora del móvil.</string>
+    <string name="ds_err_untrusted_cert">El certificado del sitio no es de confianza: es autofirmado o de una autoridad privada. Si el servidor es tuyo, dale un certificado gratuito (Let\'s Encrypt, Tailscale) o ponlo detrás de un proxy inverso que tenga uno.</string>
     <string name="ds_err_sign_in">La sesión ha caducado o la contraseña o el secreto no son correctos. Vuelve a iniciar sesión.</string>
     <string name="ds_err_server">El servicio tiene un problema ahora mismo.</string>
     <string name="ds_err_refused">El servicio no ha aceptado los datos.</string>

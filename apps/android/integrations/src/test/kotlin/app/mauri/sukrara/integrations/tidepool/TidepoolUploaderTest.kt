@@ -9,8 +9,10 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.storage.ImportSource
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
+import app.mauri.sukrara.core.testing.InMemoryHistoryImport
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
@@ -265,6 +267,30 @@ class TidepoolUploaderTest {
             uploader.cycle()
             val following = data("ds-2").map { it["value"]!!.jsonPrimitive.content.toInt() }
             assertEquals(listOf(150, 160), following)
+        }
+
+    @Test
+    fun `imported history never goes up`() =
+        runBlocking {
+            signedInAndOn()
+            readings.upsert(listOf(Reading(now - Duration.ofMinutes(4), 120, null, SourceId.Libre3)))
+            InMemoryHistoryImport(readings, treatments).apply {
+                importReadings(listOf(Reading(now - Duration.ofMinutes(30), 140, null, ImportSource.Tidepool.readings)))
+                importTreatments(listOf(entry("imp", TreatmentKind.Carbs, 30.0, 40).copy(importedFrom = ImportSource.LibreView)))
+            }
+            treatments.upsertIfNewer(entry("own", TreatmentKind.Carbs, 20.0, 20))
+            uploader.cycle()
+            assertEquals(
+                listOf(120),
+                data().filter { it["type"]!!.jsonPrimitive.content == "cbg" }.map { it["value"]!!.jsonPrimitive.content.toInt() },
+            )
+            assertEquals(
+                listOf(TidepoolData.treatmentOrigin("own")),
+                data()
+                    .filter {
+                        it["type"]!!.jsonPrimitive.content == "food"
+                    }.map { it["origin"]!!.jsonObject["id"]!!.jsonPrimitive.content },
+            )
         }
 
     @Test

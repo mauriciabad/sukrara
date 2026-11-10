@@ -4,7 +4,6 @@
 package app.mauri.sukrara.monitor.systemui
 
 import app.mauri.sukrara.graph.GlucoseLook
-import app.mauri.sukrara.graph.RangeState
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
 import java.util.Locale
@@ -14,9 +13,11 @@ import java.util.Locale
  * drawables in this APK, one per value (System UI's Compose status bar ignores the icon level). What they show is the
  * card's decision ([app.mauri.sukrara.graph.GlucoseCard.face] for `CardSurface.STATUS_ICONS`).
  *
- * The TalkBack texts are also how the System UI module recognises our icons in its row ([isOurs], [isTrend]); they
- * stay English and start with "Sukrara" because System UI reads them too (the module can't load this app's
- * translations there, and another app's glucose icons must never match).
+ * What TalkBack says on them is THE sentence ([app.mauri.sukrara.graph.A11y], in the person's language, built by the
+ * app: [Words]) after a mark that names Sukrara and tells the System UI module which icon it is ([isOurs], [isTrend],
+ * [isValue]): System UI can't load this app's translations, so the mark is the only part the module reads, the same in
+ * every language. "Sukrara: " before the number's sentence, "Sukrara, " before the trend's words, "Sukrara. " before
+ * a single icon's (no readings, sensor ended); another app's icons never start so (#159).
  */
 object SlotIcons {
     /** Slot names, distinct from any other app's (System UI keys icons by slot name). */
@@ -26,19 +27,28 @@ object SlotIcons {
     /** Our slots in the order they show: the number, then the trend. */
     val ORDER = listOf(SLOT_NUMBER, SLOT_TREND)
 
-    private const val VALUE = "Sukrara glucose "
-    private const val NO_READINGS = "Sukrara: no glucose readings since "
-    private const val ENDED = "Sukrara: sensor ended"
-    private const val TREND = "Sukrara glucose trend "
+    /** The marks before the words: the number (and the module's text with a value), the trend, a single icon. */
+    const val VALUE = "Sukrara: "
+    const val TREND = "Sukrara, "
+    const val SINGLE = "Sukrara. "
 
-    /** One of our icons, by its description. */
-    fun isOurs(description: String) = listOf(VALUE, NO_READINGS, ENDED).any(description::startsWith)
+    /** One of our icons other than the trend beside a number, by its description. */
+    fun isOurs(description: String) = description.startsWith(VALUE) || description.startsWith(SINGLE)
 
     /** The trend icon beside a number. */
     fun isTrend(description: String) = description.startsWith(TREND)
 
     /** A number icon (the module colours these by range). */
-    fun isValue(description: String) = description.startsWith(VALUE) && !isTrend(description)
+    fun isValue(description: String) = description.startsWith(VALUE)
+
+    /**
+     * What TalkBack says, in the person's language: [sentence] for the value (or why there is none: no reading since,
+     * sensor ended), [trend] for the trend beside the number ("falling", "trend unknown", "old reading" when struck).
+     */
+    data class Words(
+        val sentence: String,
+        val trend: String,
+    )
 
     /**
      * What the two slots show: drawable names (null = remove the slot) and what TalkBack says ([desc] on the number,
@@ -58,22 +68,21 @@ object SlotIcons {
     /**
      * The icons for [look]: fresh or late = the number and the trend arrow (5° steps, a double arrow from ±3); from
      * 5 min the number struck through at half strength beside the struck "no trend" ring; from 20 min only the "no
-     * readings" icon in the trend slot ([since] = the last reading's time); an ended sensor the flag. A warming-up
-     * sensor shows nothing: there is no number to draw yet (the notification and the card show the countdown). [range]
-     * = the value's range: TalkBack says it, as the icons' colour shows it (#26: never by colour alone).
+     * readings" icon in the trend slot; an ended sensor the flag. A warming-up sensor shows nothing: there is no number
+     * to draw yet (the notification and the card show the countdown). TalkBack says [words] after each icon's mark,
+     * the range in words too, as the icons' colour shows it (#26: never by colour alone).
      */
     fun plan(
         look: GlucoseLook,
-        since: String?,
-        range: RangeState? = null,
+        words: Words,
     ): Plan =
         when (look.state) {
             GlucoseLook.State.ENDED -> {
-                Plan("monitor_ic_sensor_ended", null, ENDED)
+                Plan("monitor_ic_sensor_ended", null, SINGLE + words.sentence)
             }
 
             GlucoseLook.State.NO_READINGS -> {
-                Plan("monitor_ic_no_readings", null, "$NO_READINGS${since ?: "?"}")
+                Plan("monitor_ic_no_readings", null, SINGLE + words.sentence)
             }
 
             GlucoseLook.State.NONE, GlucoseLook.State.WARMING_UP -> {
@@ -97,9 +106,7 @@ object SlotIcons {
                         look.strike -> "sb_t_none_s"
                         else -> "sb_t_none"
                     }
-                val mark = if (look.strike) "(old)" else TrendAngle.text(rate)
-                val words = range?.takeIf { !look.strike }?.let { " " + it.key.replace('_', ' ') }.orEmpty()
-                Plan(trend, number, "$VALUE$text mg/dL$words $mark", "$TREND$mark")
+                Plan(trend, number, VALUE + words.sentence, TREND + words.trend)
             }
         }
 

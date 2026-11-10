@@ -8,6 +8,9 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.storage.HistoryImport
+import app.mauri.sukrara.core.model.storage.HistoryImportStore
+import app.mauri.sukrara.core.model.storage.ImportSource
 import app.mauri.sukrara.core.model.storage.PenLedgerRepository
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.StoredSpan
@@ -51,7 +54,7 @@ class RoomReadingsRepository(
     override suspend fun deleteFrom(sources: Set<SourceId>): Int = if (sources.isEmpty()) 0 else dao.deleteFrom(sources.map { it.id })
 
     override suspend fun upsert(readings: List<Reading>) {
-        if (readings.isNotEmpty()) dao.upsert(readings.map { it.toEntity() })
+        if (readings.isNotEmpty()) dao.upsertOwnFirst(readings.map { it.toEntity() }, IMPORTED, HistoryImport.SAME_READING.toMillis())
     }
 
     override suspend fun deleteBefore(cutoff: Instant): Int = dao.deleteBefore(cutoff.toEpochMilli())
@@ -74,6 +77,38 @@ class RoomTreatmentsRepository(private val dao: TreatmentDao) : TreatmentsReposi
     override suspend fun span(): StoredSpan = dao.span().toSpan()
 
     override suspend fun deleteAll() = dao.deleteAll()
+}
+
+/** The sources Import history stores readings under. */
+private val IMPORTED = SourceId.Imported.map { it.id }
+
+/**
+ * THE import path in Room ([HistoryImportStore]): each batch is compared with everything stored around it (any source;
+ * entries also by id, tombstones included) and stored in one transaction, by [HistoryImport]'s rules.
+ */
+class RoomHistoryImport(
+    private val readings: ReadingDao,
+    private val treatments: TreatmentDao,
+) : HistoryImportStore {
+    override suspend fun importReadings(batch: List<Reading>): Int {
+        if (batch.isEmpty()) return 0
+        val tolerance = HistoryImport.SAME_READING.toMillis()
+        val from = batch.minOf { it.t.toEpochMilli() } - tolerance
+        val to = batch.maxOf { it.t.toEpochMilli() } + tolerance
+        return readings.importAround(from, to) { stored ->
+            HistoryImport.readings(stored.map { it.toReading() }, batch).map { it.toEntity() }
+        }
+    }
+
+    override suspend fun importTreatments(batch: List<TreatmentRecord>): Int {
+        if (batch.isEmpty()) return 0
+        val tolerance = HistoryImport.SAME_TREATMENT_S * 1000
+        val from = batch.minOf { it.treatment.at.toEpochMilli() } - tolerance
+        val to = batch.maxOf { it.treatment.at.toEpochMilli() } + tolerance
+        return treatments.importAround(from, to, batch.map { it.treatment.id }) { stored ->
+            HistoryImport.treatments(stored.map { it.toRecord() }, batch).map { it.toEntity() }
+        }
+    }
 }
 
 internal fun SpanRow.toSpan() = StoredSpan(count, oldest?.let(Instant::ofEpochMilli), newest?.let(Instant::ofEpochMilli))
@@ -113,6 +148,7 @@ internal fun TreatmentRecord.toEntity() =
         receivedAt = receivedAt?.toEpochMilli(),
         delivery = delivery.name,
         penJson = penJson,
+        importedFrom = importedFrom?.id,
     )
 
 internal fun TreatmentEntity.toRecord() =
@@ -134,4 +170,5 @@ internal fun TreatmentEntity.toRecord() =
         receivedAt = receivedAt?.let(Instant::ofEpochMilli),
         delivery = TreatmentDelivery.valueOf(delivery),
         penJson = penJson,
+        importedFrom = ImportSource.of(importedFrom),
     )

@@ -14,6 +14,7 @@ import app.mauri.sukrara.protocol.KeyPair
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.SecretKey
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.testing.ContractFiles
 import app.mauri.sukrara.share.FakeRelayTransport
@@ -40,7 +41,7 @@ import java.time.Instant
  * The follower sequences in contracts/protocol/sync through the real [FollowerEngine] (not only `StreamFollower`, which
  * `SyncFixturesTest` pins): a seeded follower record, every step's event delivered by a fake relay, `{"restart"}` =
  * a new engine on the same SecureStore (what a process restart keeps). The engine must leave the fixture's expected
- * status, keys, devices, writers, readings, sensor, treatments and settings — what the person sees.
+ * status, keys, devices, writers, the wearer's profile, readings, sensor, treatments and settings — what the person sees.
  */
 class FollowerSyncFixtureTest {
     private val files =
@@ -142,6 +143,7 @@ class FollowerSyncFixtureTest {
             )
             assertEquals("$name devices", expected.strs("devices"), s.devices)
             assertEquals("$name writers", expected.strs("writers"), s.writers)
+            assertEquals("$name wearer", Profile.of(expected["wearer"]), record.wearer)
             val firstPerT = received.groupBy { it.t.epochSecond }.mapValues { it.value.first().mgdl }.toSortedMap()
             val want =
                 expected.getValue("readings").jsonArray.associate { r ->

@@ -86,6 +86,7 @@
     <string name="ds_err_cant_connect">Can\'t connect to the server. Check that it\'s running and the address is right.</string>
     <string name="ds_err_timed_out">The server didn\'t answer in time.</string>
     <string name="ds_err_secure">Couldn\'t make a secure connection. Check the address and the phone\'s date and time.</string>
+    <string name="ds_err_untrusted_cert">The site\'s certificate isn\'t trusted: it\'s self-signed or from a private authority. If it\'s your own server, give it a free certificate (Let\'s Encrypt, Tailscale) or put it behind a reverse proxy that has one.</string>
     <string name="ds_err_sign_in">The sign-in expired or the password or secret is wrong. Sign in again.</string>
     <string name="ds_err_server">The service has a problem right now.</string>
     <string name="ds_err_refused">The service didn\'t accept the data.</string>

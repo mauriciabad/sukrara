@@ -45,9 +45,10 @@ sections your change touches.
 - **Phone / Mac installs contain all merged work:** install only with `tools/install.sh phone|mac` (refuses a dirty
   tree, a HEAD without origin/main / the integration branches / the last installed commit, or failing checks; verifies
   the signed build first).
-- **Cleartext only where it's validated:** the app permits cleartext so a home-network Nightscout works; every
-  `http://` / `ws://` URL or scheme and every place that opens a connection in the Android app needs an entry in
-  `tools/check/allow.json` (`cleartext_ok` / `network_ok`) with the reason. *(check `cleartext`, everything outside `poc/`)*
+- **Cleartext only where it's validated:** the app permits cleartext only to this phone (loopback); Nightscout is
+  https only, the home network too; every `http://` / `ws://` URL or scheme and every place that opens a connection in
+  the Android app needs an entry in `tools/check/allow.json` (`cleartext_ok` / `network_ok`) with the reason. *(check
+  `cleartext`, everything outside `poc/`)*
 - **Test and snapshot runs never touch the owner's devices:** every Mac snapshot / test run and every dev build runs
   offline — no Bluetooth, relays or alert engine. The Mac decides this in one pure, unit-tested place, `LaunchMode`
   (normal | snapshot (DEBUG) | test → the services it may start). Tests never use real relays or sensors.

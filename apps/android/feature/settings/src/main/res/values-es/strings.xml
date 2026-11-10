@@ -160,7 +160,6 @@
     <string name="st_update_offline">No se pudo buscar actualizaciones</string>
     <string name="st_update_offline_summary">Abrir la página de versiones</string>
     <string name="st_other_devices">Sukrara en otros dispositivos</string>
-    <string name="st_asset_android">Android</string>
     <string name="st_asset_mac">Mac</string>
     <string name="st_report_problem">Informar de un problema</string>
     <string name="st_report_problem_summary">Abre las incidencias del proyecto en GitHub</string>

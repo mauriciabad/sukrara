@@ -538,6 +538,17 @@ class SetupViewModel(
 
     fun skip(step: SetupStep) = record { SetupMachine.skip(it, step) }
 
+    /** *Bring it back*: the history step is done (written first, while this screen still lives), then [open] runs. */
+    fun openHistoryImport(open: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                m.setupStore.update(SetupMachine::completeHistory)
+            } finally {
+                open()
+            }
+        }
+    }
+
     private fun record(change: (SetupRecord) -> SetupRecord) =
         act {
             m.setupStore.update(change)

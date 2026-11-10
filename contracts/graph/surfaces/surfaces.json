@@ -60,7 +60,8 @@
         "timeText",
         "nextChangeAt",
         "nextChangeS",
-        "valueText"
+        "valueText",
+        "timeKind"
       ]
     },
     "value_text_ok": [
@@ -258,19 +259,21 @@
         "id": "status-icons",
         "kind": "glyph",
         "files": [
-          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/RootStatusBar.kt"
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/RootStatusBar.kt",
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/SystemUiWords.kt"
         ],
         "entry": "look",
-        "what": "the root status bar's system icons (number + trend drawables, no-readings / ended icon) and their TalkBack text"
+        "what": "the root status bar's system icons (number + trend drawables, no-readings / ended icon) and their TalkBack text (THE sentence in the person's language, after the icon's mark)"
       },
       {
         "id": "status-hook",
         "kind": "glyph",
         "files": [
-          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/HookText.kt"
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/HookText.kt",
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/SystemUiWords.kt"
         ],
         "entry": "face",
-        "what": "the System UI module's value beside the clock / the icons (text, arrow, struck, no-readings, flag) and the range colour of the system icons"
+        "what": "the System UI module's value beside the clock / the icons (text, arrow, struck, no-readings, flag), the range colour of the system icons and the text's TalkBack words (the app's sentences by face)"
       },
       {
         "id": "quick-tile",
@@ -280,6 +283,15 @@
         ],
         "entry": "face",
         "what": "the Add treatment Quick Settings tile's subtitle: the value and trend as text (struck when late), or the sensor's words"
+      },
+      {
+        "id": "read-aloud",
+        "kind": "glyph",
+        "files": [
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/readaloud/ReadAloud.kt"
+        ],
+        "entry": "sentence",
+        "what": "Read glucose aloud (the app shortcut): THE glucose sentence with its age and the pill's words, said by text-to-speech"
       }
     ]
   },

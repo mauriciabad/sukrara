@@ -6,6 +6,7 @@ package app.mauri.sukrara.protocol.testing
 import app.mauri.sukrara.protocol.NostrCrypto
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.event.AlertPayload
+import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.event.TreatmentPayload
@@ -24,7 +25,8 @@ import kotlinx.serialization.json.put
 /**
  * What a follower engine stores from [StreamFollower]'s accepted items — the minimal reducer the fixtures' expected
  * state is written against (the follower engine does the same into Room): first reading per `t` wins, the newest live event's
- * sensor, treatments merged by `(u, o)` unless overridden, newest settings, every accepted alert.
+ * sensor, treatments merged by `(u, o)` unless overridden, newest settings, every accepted alert, the wearer's profile
+ * from the newest roster that has one (a roster without a profile keeps the last one).
  */
 class FollowerModel(private val crypto: NostrCrypto, initial: FollowerState) {
     var follower = StreamFollower(crypto, initial)
@@ -34,6 +36,7 @@ class FollowerModel(private val crypto: NostrCrypto, initial: FollowerState) {
     val treatments = linkedMapOf<String, TreatmentPayload>()
     var settings: SettingsPayload? = null
     val alerts = mutableListOf<AlertPayload>()
+    var wearer: Profile? = null
 
     fun feed(ev: SignedEvent, now: Long): FollowResult {
         val r = follower.onEvent(ev, now)
@@ -65,6 +68,7 @@ class FollowerModel(private val crypto: NostrCrypto, initial: FollowerState) {
             )
             put("devices", buildJsonArray { s.devices.forEach { add(JsonPrimitive(it)) } })
             put("writers", buildJsonArray { s.writers.forEach { add(JsonPrimitive(it)) } })
+            put("wearer", wearer?.toJson() ?: JsonNull)
             put(
                 "readings",
                 buildJsonArray {
@@ -142,6 +146,10 @@ class FollowerModel(private val crypto: NostrCrypto, initial: FollowerState) {
 
             is Item.Alert -> {
                 alerts += item.alert
+            }
+
+            is Item.Roster -> {
+                wearer = item.roster.profile ?: wearer
             }
 
             else -> {

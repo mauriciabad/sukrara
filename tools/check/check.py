@@ -33,7 +33,8 @@ Checks
               again"). Whole tree, every app, from THE registry contracts/graph/surfaces/surfaces.json:
               a file that calls the card renderer (GlucoseCard.draw / image / face) must be a registered file of the
               surface it names; the CardSurface enums list exactly the registry; a glyph surface takes its value from
-              GlucoseCard.face; every surface is rendered by the cross-surface tests (the registry's 'tests').
+              GlucoseCard.face (a place that only speaks: from THE sentence, A11y, naming its surface, which asks
+              GlucoseCard.face itself); every surface is rendered by the cross-surface tests (the registry's 'tests').
   card-api    outside the renderer's files ('owners'), the renderer's namespaces (every top-level Kotlin object /
               Swift enum in them that paints, i.e. has a function taking a Canvas / CGContext, found automatically
               so a new painter is covered the moment it exists; plus the registry's 'api' keys, e.g. Freshness)
@@ -87,9 +88,13 @@ Checks
               check pointed at a moved file guards nothing (#88: the durations check named a model path that no
               longer existed). A pending file while tools/check/strict is absent, a failure once it exists. The
               folders / globs they scan and qa.json's paths match a tracked file. Whole tree.
-  room-schema a committed Room schema (apps/android/*/schemas/<database>/<version>.json) never changes or goes: phones
-              have databases at that version. A schema change bumps the version, exports a new file and adds a
-              migration (DatabaseSchemaTest opens every exported version through the app's builder).
+  room-schema no migrations, ever (the owner, 2026-11-10: "a fresh start, no backwards compatibility for anything,
+              databases included"): a database of another version is replaced by an empty one (DataModule's
+              destructive fallback; DatabaseSchemaTest). A committed Room schema (apps/android/*/schemas/<database>/
+              <version>.json) never changes (phones have that version's identity hash: Room refuses a changed schema
+              under the same version); a schema change bumps the version, commits the new file and deletes the old
+              one (only the current version is kept, so an old one goes only when a newer one replaces it). No
+              migration code in Android sources (Migration, addMigrations, AutoMigration, runMigrationsAndValidate).
   qa          prints the docs/QA.md sections the change touches
 """
 import fnmatch
@@ -705,7 +710,8 @@ def check_card(ch, rep):
                                 "'// card-ok: <why>'." % (p, n, ("surface " + ", ".join(s["id"] for s in mine)) if mine else "not a registered surface", SURFACES))
             if not swift and "CardSurface.TEST" in text:
                 rep.add("FAIL", "card-surface", "%s: CardSurface.TEST is for tests only." % p)
-        # each surface names itself in its files; a glyph surface asks GlucoseCard.face
+        # each surface names itself in its files; a glyph surface asks GlucoseCard.face, or speaks THE sentence (A11y
+        # asks GlucoseCard.face for the surface it is given)
         for s in surfaces:
             c = by_id.get(s["id"])
             if any(f not in files for f in s["files"]):
@@ -714,7 +720,9 @@ def check_card(ch, rep):
             if c and not re.search(re.escape(const(c)) + r"\b", joined):
                 rep.add("FAIL", "card-surface", "surface '%s' (%s) never names %s in its files %s: move the entry to the files that\n"
                         "draw it, or remove the surface from %s and the enum." % (s["id"], plat, const(c), ", ".join(s["files"]), SURFACES))
-            if s["kind"] == "glyph" and "GlucoseCard.face(" not in joined:
+            # the surface among the call's own arguments (no nested call before it)
+            spoken = c is not None and re.search(r"\bA11y\.\w+\([^()]*" + re.escape(const(c)) + r"\b", joined)
+            if s["kind"] == "glyph" and "GlucoseCard.face(" not in joined and not spoken:
                 rep.add("FAIL", "card-surface", "glyph surface '%s' (%s) must take the value / trend / freshness from GlucoseCard.face." % (s["id"], plat))
         # every surface is rendered by a cross-surface test
         harness = "\n".join(ch.blob(p) for p in sorted(files) if match(p, tests))
@@ -995,15 +1003,42 @@ def check_paths(ch, rep):
 
 
 ROOM_SCHEMAS = ANDROID + "*/schemas/*/*.json"
+ROOM_MIGRATION = re.compile(r"\b(Migration\s*\(|addMigrations\b|AutoMigration\b|AutoMigrationSpec\b|"
+                            r"runMigrationsAndValidate\b|import\s+androidx\.room\.migration\.)")
+
+
+def schema_version(path):
+    name = os.path.basename(path)
+    return int(name[:-5]) if name.endswith(".json") and name[:-5].isdigit() else None
 
 
 def check_room_schema(ch, rep):
     """room-schema: see the module doc."""
+    files = None
     for p, (st, _) in sorted(ch.files.items()):
-        if match(p, [ROOM_SCHEMAS]) and st in "MDR":
-            rep.add("FAIL", "room-schema", "%s %s: a committed database schema is what phones have. Keep it, bump the\n"
-                    "@Database version, commit the new <version>.json and add the migration (DatabaseSchemaTest)."
-                    % (p, {"M": "changed", "D": "deleted", "R": "moved"}[st]))
+        if not match(p, [ROOM_SCHEMAS]) or st not in "MDR":
+            continue
+        if st == "M":
+            rep.add("FAIL", "room-schema", "%s changed: phones have databases of that version and Room refuses a changed\n"
+                    "schema under the same version. Bump the @Database version instead (the new <version>.json\n"
+                    "replaces this one; phones get an empty database, no migration)." % p)
+            continue
+        # a version bump often shows as a rename N.json -> N+1.json (the files are alike): the old one went
+        old = ch.origin.get(p, p) if st == "R" else p
+        files = tree_files(ch) if files is None else files
+        folder, v = os.path.dirname(old), schema_version(old)
+        newer = [f for f in files if os.path.dirname(f) == folder and (schema_version(f) or 0) > (v or 0)]
+        if v is None or not newer:
+            rep.add("FAIL", "room-schema", "%s %s without a newer version replacing it: the committed schema is the\n"
+                    "current database version. Keep it until a version bump commits the next <version>.json."
+                    % (old, "moved" if st == "R" else "deleted"))
+    for p in ch.live():
+        if p.startswith(ANDROID) and p.endswith(".kt") and "/src/" in p:
+            for n, line in code_lines(ch.blob(p)):
+                if ROOM_MIGRATION.search(line):
+                    rep.add("FAIL", "room-schema", "%s:%d: no migrations (a database of another version is replaced by an\n"
+                            "empty one; history comes back through Import history). Bump the version only." % (p, n))
+                    break
 
 
 def check_static(ch, rep):

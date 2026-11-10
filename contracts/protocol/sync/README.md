@@ -10,8 +10,8 @@ test keys (the OGS draft-1 vector keys plus `D2` = sha256("sukrara/sync/D2")); a
 
 | file | what it pins |
 |---|---|
-| `join-readings.json` | key delivery → roster → hour chunk → live (reading + sensor) → reading-less sensor update → outsider rejected |
-| `sensor-life.json` | the wearer's sensor without readings: ended early, removed (`{"v":2}`), a new one warming up (reading-less live events), its first reading, a late backlog copy of an old reading that can't bring the old sensor back |
+| `join-readings.json` | key delivery → roster with the wearer's profile → hour chunk → live (reading + sensor), a 1-minute jump from 80 to 300 accepted unchanged (followers make no plausibility check) → reading-less sensor update → outsider rejected → a roster without a profile (the wearer's is kept) |
+| `sensor-life.json` | the wearer's sensor without readings: ended early, removed (`{"v":2}`), a new one warming up (reading-less live events), its first reading, a late backlog copy of an old reading that can't bring the old sensor back, a live event from a clock more than 5 min ahead rejected whole (its `ss` / `se` / `sw` don't change the sensor) |
 | `treatments-writer.json` | writer scope: wearer entry, writer's own entry and edit, writer hijack rejected, wearer tombstone, older `(u,o)` ignored |
 | `settings-mirror.json` | mirrored settings: newest `u` wins, only from a roster device; the payload holds every mirrored setting (graph + alerts) |
 | `rotation.json` | phone change / revoke: epoch 2 with a new device, old device and old epoch rejected, late epoch-1 roster ignored. Also the identity-restore case (same wire sequence: new device key, new epoch delivered to every follower, roster with only the new device); Mac `ProtocolCompatTests` replays it through the runtime |
@@ -32,6 +32,8 @@ step must send, none when absent; a step `{"restart": true}` relaunches the foll
 ids and rekey throttles forgotten), `expected`:
 
 - `status` (`new|requested|active|declined|inviteused|revoked`), `epochs` (sorted), `devices`, `writers`;
+- `wearer`: the wearer's profile `{name, avatar}` from the newest accepted roster that carries one (a roster without a
+  profile keeps the last one), `null` when none did;
 - `readings`: `[t, sgv, rate|null]` sorted by `t`, first reading per `t` kept;
 - `sensor`: `{ss, se, sw}` from the newest live event (`null` when none or cleared);
 - `treatments`: `[{id, k, a, u, o, del}]` sorted by `id`, merged by `(u, o)` (a wearer entry overrides a forged writer copy);
@@ -62,4 +64,5 @@ the same final state. The reference is frozen with the PoC (OGS draft 1), so the
 added in the tool, one method each: a newer epoch's key outranks every older-epoch roster (`rotation`), rekey `have` =
 the newest held gk and only for events newer than the latest key, revoked notice vs key delivery ordered by the
 rumor's `created_at` and a restart (`revoke-reapprove`), an author not yet in the roster judged again, the settings
-rule (`settings-mirror`), readings in the future.
+rule (`settings-mirror`), readings in the future (a live event rejected whole), a roster without a profile keeping the
+last one (`join-readings`).

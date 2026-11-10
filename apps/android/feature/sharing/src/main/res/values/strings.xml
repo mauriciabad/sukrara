@@ -574,4 +574,10 @@
     <string name="sh_scan_no_camera">Couldn\'t open a camera on this device. Paste the link or pick a picture of the code.</string>
     <string name="sh_scan_read">Invite read. Add your name if you like and tap Join.</string>
     <string name="sh_scan_picture_none">No Sukrara invite QR code in that picture. Try a sharper screenshot, or paste the link.</string>
+    <!-- setup: Bring your history back (offered once) -->
+    <string name="sh_setup_history_title">Bring your history back</string>
+    <string name="sh_setup_history_body">Sukrara starts with an empty history. Bring back the last 90 days from Tidepool, LibreView or a file you exported from the earlier app, so your graph, reports and last doses are there again.</string>
+    <string name="sh_setup_history_note">Nothing is counted twice: your sensor\'s own readings win, and importing again only adds what is missing. You can also do it later in Settings › Share with apps › Import history.</string>
+    <string name="sh_setup_history_open">Bring it back</string>
+    <string name="sh_setup_history_skip">Start empty</string>
 </resources>

@@ -129,7 +129,8 @@ class ChartScroll(
     }
 
     /** Whether a double tap would show [CLOSE_S] (else it goes back to the place's own length, or does nothing). */
-    fun closeLookIn(default: Long): Boolean = default > CLOSE_S && abs((spanS?.let { exactSpan } ?: default.toDouble()) - CLOSE_S) >= SAME_SPAN_S
+    fun closeLookIn(default: Long): Boolean =
+        default > CLOSE_S && abs((spanS?.let { exactSpan } ?: default.toDouble()) - CLOSE_S) >= SAME_SPAN_S
 
     /** Puts the window at [end] with length [span] (the way back to now animates through this). */
     fun set(

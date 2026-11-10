@@ -33,6 +33,10 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
 - [ ] Spanish: switch the per-app language (Settings → Apps → Sukrara → Language) and repeat for the changed screens;
       no clipped or English-only text outside the settings pages.
 - [ ] Rotation / small window (`small_phone`) keeps the layout usable.
+- [ ] Read glucose aloud (#159; emulator with synthetic glucose, sound on): long-press the Sukrara icon → *Read glucose
+      aloud* says the value, trend, range and age (Spanish per-app language: in Spanish) and nothing opens; again while
+      it speaks stops it; drag it to the home screen and tap it there; with TalkBack, the icon's *Actions* menu offers
+      it. Without a voice for the language (emulator without the Spanish voice): the toast says where to add one.
 - [ ] Screen transitions (a change to `Motion.kt` / `ScreenHost`, a page's scaffold or a vendored SPA widget): set
       Animator duration scale to 5×, `screenrecord` home ↔ settings, a settings page push / pop and a predictive back
       swipe, and step the frames: no page drawn from scratch at the start or end of a move (empty chart, rows in another
@@ -109,6 +113,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Keep filling until even the pair can't fit (larger font / display size): number and arrow become the one dot
       together, never the arrow alone; removing icons brings both back.
 - [ ] No readings (> 20 min) / sensor ended: the single icon keeps the same priority.
+- [ ] Range colour (#118): out of range with *Colour* on, the number is in the range colour while Wi-Fi, battery,
+      mobile and every other icon keep the bar's tint; still so after the value goes back in range (number in the
+      bar's tint), after a light / dark bar change (an app with a light status bar, the shade) and on the lock screen.
+      `logcat -s LSPosedFramework Sukrara`: `icon tint hook: ok (platform filter)` (or `(Compose's own)`), no `icon tint
+      failed`.
 - [ ] Placement *After the Bluetooth icon* with Bluetooth off: the value sits where Bluetooth would be (not far left);
       turning Bluetooth on puts it right after the icon.
 - [ ] Restart System UI (home's *Restart System UI* card, or the Settings action): number then arrow from the first
@@ -119,9 +128,19 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       together when there's no room.
 - [ ] Number and arrow about 3 dp apart (as on the app's card), closer than the other icons; the gap to the icons
       beside them unchanged (6 dp); still close after a reading, after a no-readings / ended spell and with the row
-      full. `logcat`: `icon fit hooks: 1, gap hooks: 1`. TalkBack on the icons: *Glucose 120 mg/dL ↗*, *Glucose trend ↗*.
+      full. `logcat`: `icon fit hooks: 1, gap hooks: 1`.
 - [ ] Without the module (or `settings put global sukrara_hook_disabled 1` + System UI restart): leftmost, SystemUI's
       own fit (the arrow alone can show in a full row; documented).
+- [ ] TalkBack in the person's language (#159), phone in English, then Sukrara in Spanish (Settings › System ›
+      Languages › App languages): explore the status bar. The number says *Sukrara: 120 milligrams per decilitre,
+      rising, high* (*Sukrara: 120 miligramos por decilitro, subiendo, alta*), the arrow *Sukrara, rising* (*subiendo*);
+      struck: *…, old reading, …* and *Sukrara, old reading*; no readings: *Sukrara. Glucose: no reading since 9:50*;
+      ended: *Sukrara. Sensor ended. Replace sensor*. The module still orders, colours and fits the pair in Spanish
+      (same checks as above), and an out-of-range number keeps its colour.
+- [ ] The module's text (a clock placement, or a `slot:` one in mmol/L): TalkBack says *Sukrara: 6,2 milimoles por
+      litro, bajando, en rango*; force-stop Sukrara (`adb shell am force-stop app.mauri.sukrara` is not read-only: only
+      on a test phone) and wait 6 min, then 21 min: TalkBack follows the struck value and *Sukrara. Glucosa: sin lecturas
+      desde …* in Spanish, never the earlier words.
 
 ## Q6 Mac menubar panel
 
@@ -147,6 +166,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       Shift-click stay in range; a custom value (7 h, 45 days, 183 mg/dL) survives a relaunch and shows in the panel /
       widgets; the per-place windows; ring order: drag a range onto another (insertion line), Control-click Move Up /
       Down, VoiceOver actions; Details… of an alert in Custom vs Wearer; *Send Test Alert*. Snapshots: `sukrara-snap windows` → `settings-*.png`.
+- [ ] Read Glucose Aloud (#159): ⌃⇧⌘G in another app says the menu bar value's sentence in the Mac's language (also
+      in Spanish); again while it speaks stops it; with VoiceOver on, VoiceOver says it in its own voice; the status
+      item's right-click menu has *Read Glucose Aloud ⌃⇧⌘G* first; VoiceOver on the value → VO-Command-Space → *Read
+      Glucose Aloud*. Settings › General › *Read glucose aloud with ⌃⇧⌘G* off: the keys do nothing (and reach other
+      apps), the menu item stays without the keys; on again: they work at once.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets
@@ -384,9 +408,13 @@ afterwards). Never a hosted site, never the user's phone.
       `poc/spikes/nightscout-upload` `cli check` (24/24) and `followers/run.sh` pass against the same site.
 - [ ] Emulator (wearer, debug = synthetic glucose; `adb reverse tcp:1337 tcp:1337`): Settings → Share with apps →
       Nightscout → *Nightscout upload*: *Not set up*, main switch greyed. A follower has no such row.
-- [ ] Site dialog: `http://my.ns.example` → "Use https:// …"; `http://192.168.1.20:1337` → allowed with the
-      "Not encrypted" warning (also under the site row once saved); `http://localhost:1337` + the access token → *Test*
-      shows "Connected · Nightscout 15.0.8"; a wrong token → "The site refused the token or secret". *Save*.
+- [ ] Site dialog: `http://my.ns.example` and `http://192.168.1.20:1337` (https only, the home network too) → "Use
+      https:// … Let's Encrypt and Tailscale give one free", *Save* disabled; a self-signed site on the Mac
+      (`openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=localhost -days 1 -keyout k.pem -out c.pem`, `openssl
+      s_server -accept 8443 -cert c.pem -key k.pem -www`, `adb reverse tcp:8443 tcp:8443`) → `https://localhost:8443`
+      *Test* → "Couldn't connect. The site's certificate isn't trusted: … Let's Encrypt, Tailscale … reverse proxy …"
+      (Spanish too); `http://localhost:1337` + the access token → *Test* shows "Connected · Nightscout 15.0.8"; a wrong
+      token → "The site refused the token or secret". *Save*.
 - [ ] Main switch on → `adb logcat -s Sukrara.nightscout` shows `sent N`; status "Up to date · last upload …"; the site
       shows the last 30 days, the treatments, SAGE and the phone battery. A new reading is on the site within seconds.
 - [ ] Add carbs, edit the amount, move it, delete it: the site follows (1 → 1 → 0 documents). Long-acting 14u: the
@@ -552,6 +580,28 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
    home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with
    *Cancel*; *Cancel* says *Cancelled. Nothing changed…* and the follower keeps following once the relay is back.
+
+## Q23 Import history
+
+Synthetic data only: a throwaway Tidepool account and files written from the emulator, never the owner's.
+
+- [ ] Fresh install (emulator, wearer): setup's last step *Bring your history back*; *Start empty* goes home and the
+      step never comes back; reinstall, *Bring it back* opens Settings › Share with apps › Import history and Back
+      lands on home.
+- [ ] An update that bumps the database version over an install with history (debug build): the history is empty, no
+      crash, and the next launch opens *Bring your history back* on its own; Back counts as *Start empty*.
+- [ ] *Choose a file* with an export from Export data › Everything on this phone (and one from the earlier app's
+      Export data › All time): the card shows progress and the counts; the graph and the report have the history;
+      choosing the same file again adds 0 ("… were already here").
+- [ ] A LibreView-layout file in mmol/L with day-first dates (`integrations/src/test/resources/history/`): the values
+      read in mg/dL as expected; a random CSV says "This isn't a glucose file…".
+- [ ] Tidepool (a test account with data): *Sign in to Tidepool first* opens the Tidepool page; signed in, the row
+      imports the last 90 days with the progress bar moving week by week; *Stop* half way keeps what was added and a
+      second run completes it with no duplicates; the Tidepool upload (if on) never sends the imported data back.
+- [ ] The sensor's own backfill after an import (emulator `SYNTHETIC` over imported readings): no two points within 2
+      minutes on the graph.
+- [ ] TalkBack: the progress card reads the added counts as they change; *Stop* and *OK* are buttons. Largest font,
+      dark theme, Spanish.
 
 ## Q20 The person and the feel
 
