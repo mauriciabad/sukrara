@@ -36,13 +36,15 @@ data class WidgetOverrides(
 }
 
 /**
- * Every placed widget's overrides by appWidgetId (the typed state file "widgets"), and the ids under which System UI's
- * module hosts the lock-screen widget ([lock]: the system doesn't list those to the app, so the app keeps them).
+ * Every placed widget's overrides by appWidgetId (the typed state file "widgets"), the ids under which System UI's
+ * module hosts the lock-screen widget ([lock]: the system doesn't list those to the app, so the app keeps them), and
+ * the size each home-screen placement really has ([measured], by [WidgetProbe]; one per orientation it was seen in).
  */
 @Serializable
 data class WidgetPlacements(
     val byId: Map<Int, WidgetOverrides> = emptyMap(),
     val lock: Set<Int> = emptySet(),
+    val measured: Map<Int, List<MeasuredSize>> = emptyMap(),
 ) {
     operator fun get(appWidgetId: Int): WidgetOverrides = byId[appWidgetId] ?: WidgetOverrides()
 }
@@ -63,7 +65,21 @@ class WidgetSettingsStore(
     }
 
     suspend fun forget(appWidgetIds: IntArray) =
-        store.update { p -> p.copy(byId = p.byId - appWidgetIds.toSet(), lock = p.lock - appWidgetIds.toSet()) }
+        store.update { p ->
+            p.copy(byId = p.byId - appWidgetIds.toSet(), lock = p.lock - appWidgetIds.toSet(), measured = p.measured - appWidgetIds.toSet())
+        }
+
+    /** Placement [appWidgetId] measured [size] ([WidgetProbe]): it replaces what was measured for that reported size. */
+    suspend fun measured(
+        appWidgetId: Int,
+        size: MeasuredSize,
+    ) = store.update { p ->
+        val kept = p.measured[appWidgetId].orEmpty().filterNot { it.matches(size.reportedW, size.reportedH) }
+        p.copy(measured = p.measured + (appWidgetId to kept + size))
+    }
+
+    /** Placement [appWidgetId] was resized: its old measurements no longer hold. */
+    suspend fun forgetMeasured(appWidgetId: Int) = store.update { p -> p.copy(measured = p.measured - appWidgetId) }
 
     /** System UI's module hosts the lock-screen widget under these ids (it bound one, or sent its options). */
     suspend fun rememberLock(appWidgetIds: Collection<Int>) =

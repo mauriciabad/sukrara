@@ -45,6 +45,8 @@ class ManifestTest {
             "app.mauri.sukrara.widgets.GraphWidgetReceiver",
             "app.mauri.sukrara.widgets.CombinedWidgetReceiver",
             "app.mauri.sukrara.widgets.WidgetConfigActivity",
+            // the widgets' size probe: the launcher loads its images (a nonce in progress only, no data; WidgetProbe)
+            "app.mauri.sukrara.widgets.ProbeProvider",
             // the lock-screen widget: the system's widget broadcasts (System UI's module hosts it; exported as in the PoC,
             // where it was checked on the phone); they only redraw it
             "app.mauri.sukrara.widgets.LockWidgetReceiver",

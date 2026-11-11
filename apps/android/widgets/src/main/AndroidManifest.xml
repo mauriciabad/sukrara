@@ -65,6 +65,13 @@
         <receiver
             android:name="app.mauri.sukrara.widgets.WidgetRedrawReceiver"
             android:exported="false" />
+        <!-- WidgetProbe: measures the size the launcher really gives a widget (it loads one of the probe's images).
+             Exported so the launcher can read it, as in the PoC: it answers only a probe in progress (a random
+             nonce in the path), returns a 1×1 transparent PNG and nothing else. -->
+        <provider
+            android:name="app.mauri.sukrara.widgets.ProbeProvider"
+            android:authorities="${applicationId}.widgetprobe"
+            android:exported="true" />
         <!-- requestPinAppWidget's success callback (explicit PendingIntent from this app) -->
         <receiver
             android:name="app.mauri.sukrara.widgets.WidgetPresence$PinnedReceiver"

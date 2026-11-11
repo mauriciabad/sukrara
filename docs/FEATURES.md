@@ -750,12 +750,20 @@ shown.
 
 Android (`apps/android/widgets`, Glance; tests `WidgetUpdaterTest`, `WidgetTapTest`, `WidgetSettingsStoreTest`,
 `WidgetManifestTest`, Roborazzi `WidgetShotsTest`). Three widgets, each a registered card surface drawn only by the
-renderer at the placement's real size (`SizeMode.Exact` → `LocalSize`; the PoC's exported `WidgetProbe` provider is
-gone): *Glucose* (value, trend, rings / last treatment), *Glucose graph* (the chart alone) and *Glucose and graph*
+renderer at the placement's real size: Glance composes for the size the launcher reports (`SizeMode.Exact` →
+`LocalSize`), and Pixel Launcher reports a wrong one (296×202 dp for a 4×2 it lays out at 244×149, so the card came out
+squashed: the owner in #181), so, as in the PoC, `WidgetProbe` measures the size the launcher really lays the widget
+out at (16 tiny probe layouts whose images name their size; the exported `ProbeProvider` sees which one the launcher
+loads; two rounds, ≈ 4 %), once per placement and orientation, when it's placed or resized and while the screen is on
+(the widget is blank for about a second; stored with the placement in the `widgets` state file as `measured`), and the
+picture is shown at its own aspect ratio (`ContentScale.Fit`), so a size a few dp off leaves a sliver of background,
+never a stretched card: *Glucose* (value, trend, rings / last treatment), *Glucose graph* (the chart alone) and *Glucose and graph*
 (value + slots + chart). Sizes: *Glucose* is placed at 2×1 and resizes down to one cell, where the renderer keeps
 the value and its arrow and drops the rings (surfaces.json `widget-value` 48×48 in `CardLayoutTest`; `WidgetShotsTest`
-`oneCell`); *Glucose and graph* is placed at 4×3; *Glucose graph* at 4×2. Their style is `widgetCardStyle` (`:core:graph`), the same one `CardLayoutTest` renders. Light
-and dark palettes, the system corner radius, the widget fills its cell. Freshness as on every surface: the number is
+`oneCell`); *Glucose and graph* is placed at 4×3; *Glucose graph* at 4×2. Their style is `widgetCardStyle` (`:core:graph`), the same one `CardLayoutTest` renders. The
+phone's dynamic colours (#181, as in the PoC): the background is Glance's widget background (`system_accent2_50` light,
+`system_accent2_800` dark, the wallpaper's tint) and the text and grid the system's on-surface colours (`widgetPalette`);
+the values keep Sukrara's range colours. The system corner radius, the widget fills its cell. Freshness as on every surface: the number is
 struck through and greyed from 5 min and replaced by *no readings since …* from 20 min; the graph goes after 3 h.
 *Glucose graph* has no value, so the renderer marks its age on the chart (contracts/graph/freshness `graph_only`, same
 rule on the Mac): the reading's time on a pill over the chart's top at every age (a widget the launcher stops
@@ -799,7 +807,8 @@ TalkBack reads the renderer's value sentence plus, with a chart, its summary.
 - **Picker preview** (`WidgetPreview.kt`): on Android 15+ the picker shows each widget drawn by the renderer over a
   sample day (`previewFrame`: in range, 120 and rising, source `widget-preview`; never the person's readings, and
   only in the picker and the pin dialog), composed at two sizes per widget (`CardWidget.providePreview`,
-  `previewSizeMode`) and handed to the system when the widgets start (`setWidgetPreviews`; rate-limited by the
+  `previewSizeMode`) and shown at the picture's own aspect ratio wherever the picker or the pin dialog lays it out
+  (`ContentScale.Fit`: they stretched it before, #181), handed to the system when the widgets start (`setWidgetPreviews`; rate-limited by the
   system, a refused call keeps the previous preview). Older launchers show the static layout (`previewLayout`).
 - The lock-screen widget around the fingerprint icon (root + the LSPosed module) lives here too, a card surface of its
   own, redrawn with these ([Lock screen widget](#lock-screen-widget)).

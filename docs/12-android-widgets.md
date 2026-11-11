@@ -190,3 +190,28 @@ promotion that "should never block or hinder the user's primary actions"
   right size. Counting the value-only or lock screen widget as "placed": they aren't the main surface. A Mac
   equivalent (`WidgetCenter.getCurrentConfigurations`): the menubar is the Mac's main surface and macOS can't place
   a widget for the user, so a banner could only say where to look.
+
+## In Sukrara: back to the PoC's look (apps/android, #181, 2026-11-11)
+
+The owner: the new widgets were worse than the PoC's (squashed card, stretched preview, no wallpaper colour, a "%"
+in the rings, a "now" label). The PoC is the reference; side-by-side renders of both in the same scenarios
+(the PoC's `GlucoseCard` in a scratch copy of the frozen spike, the new renderer through `renderWidget`) showed the
+rest of the card already matched.
+
+- **Added back: the size probe** (`WidgetProbe`, `ProbeProvider`, from the PoC's v0.10.6 / v0.10.8). The new app had
+  dropped it and drew for the launcher's reported size, which Pixel Launcher gets wrong (296×202 for 244×149), so
+  `FillBounds` squashed the card. The measurement now lives with the placement in the `widgets` state file
+  (`WidgetPlacements.measured`), not in a separate preferences file; it is forgotten on resize and removal.
+- **Added: the picture keeps its aspect ratio** (`ContentScale.Fit`) on the widget, in the picker and in the pin
+  dialog. A measurement a few dp off, or a launcher that never answers the probe, leaves a sliver of background
+  instead of a stretched card. The pin dialog keeps its generated preview (without it Pixel Launcher shows a blank
+  card): Fit is what stops the stretch the PoC saw there.
+- **Added back: dynamic colour** (`widgetPalette`): Glance's widget background (`system_accent2_50` / `_800`) and the
+  system's on-surface colours for text and grid, as the PoC's `GlanceTheme` + `systemPalette`; the value colours stay
+  Sukrara's. The card's background colour is now the widget's own (the PoC used surface_container there, a slightly
+  different tone behind erased outlines).
+- **Renderer, both platforms**: the ring's number without "%" and as heavy as in the PoC, no "now" beside a fresh
+  value, and small slots no longer capped at two (the PoC's 4×2 shows the last treatment, 7d and 1d).
+- **Kept although the PoC differs**: the trend arrow snaps to the 45° bands (#4, one picture per word, as the text
+  arrows and the alerts); the graph-only widget's age pill over the chart (a safety decision, 2026-10-27); the range
+  word under an out-of-range value (#26, WCAG 1.4.1).

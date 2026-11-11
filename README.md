@@ -112,7 +112,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   one spoken *Closes in 10 seconds* with TalkBack). After *Save* a snackbar says what was saved, with *Undo*; what the
   countdown closes on is kept as a draft and offered after the unlock (*Treatment not saved*, *Discard*).
 - **Home-screen widgets** (*Glucose*, *Glucose graph*, *Glucose and graph*) drawn by the same card renderer at the
-  widget's real size (*Glucose* down to one cell), with the same card as their picker preview; home offers *Add
+  size the launcher really gives them (measured, never stretched; *Glucose* down to one cell), on the wallpaper's
+  colours, with the same card as their picker preview; home offers *Add
   widget* until a graph widget is placed (or says how to add it by hand when the launcher can't) and then opens its
   settings; a tap opens *Add treatment* (a new sensor once yours has ended); they switch to the dark theme with the
   phone.

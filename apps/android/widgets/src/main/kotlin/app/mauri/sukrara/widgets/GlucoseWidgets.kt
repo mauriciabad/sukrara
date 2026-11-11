@@ -53,9 +53,11 @@ import kotlin.math.sqrt
 
 /*
  * The three home-screen widgets: registered card surfaces (contracts/graph/surfaces/surfaces.json) that draw the one
- * card ([GlucoseCard]) into a bitmap at each placement's real size ([SizeMode.Exact] → [LocalSize]). A widget only
- * chooses its size, its place's settings ([widgetCardStyle] with the placement's overrides) and the part; its words
- * for TalkBack come from the renderer ([describeCard]).
+ * card ([GlucoseCard]) into a bitmap at each placement's real size: the size Glance composes for ([SizeMode.Exact] →
+ * [LocalSize]) is the one the launcher reports, which can be wrong, so the measured one ([WidgetProbe]) wins, and the
+ * picture is shown at its own aspect ratio, never stretched. The background and the text take the phone's dynamic
+ * colours ([widgetPalette]), as in the PoC. A widget only chooses its size, its place's settings ([widgetCardStyle] with
+ * the placement's overrides) and the part; its words for TalkBack come from the renderer ([describeCard]).
  */
 
 /** The widget kinds and their registered card surfaces. */
@@ -92,6 +94,28 @@ private const val MARGIN_DP = 10f
  * one bitmap per reported size (portrait + landscape), so each stays under a third with room to spare.
  */
 private const val SHARE_OF_LIMIT = 1.5f / 3f
+
+/**
+ * The home-screen widgets' colours (#181, as in the PoC): the phone's dynamic colours (Material You) for the background
+ * and the text, Sukrara's range colours for the values. The background is Glance's own widget background
+ * (`glance_colorWidgetBackground`: system_accent2_50 / system_accent2_800), so what the card erases around its marks
+ * matches what is behind it.
+ */
+fun widgetPalette(
+    context: Context,
+    dark: Boolean,
+): GraphPalette {
+    fun c(
+        light: Int,
+        night: Int,
+    ) = context.getColor(if (dark) night else light)
+    return GraphPalette.of(dark).copy(
+        bg = c(android.R.color.system_accent2_50, android.R.color.system_accent2_800),
+        ink = c(android.R.color.system_on_surface_light, android.R.color.system_on_surface_dark),
+        inkSoft = c(android.R.color.system_on_surface_variant_light, android.R.color.system_on_surface_variant_dark),
+        grid = c(android.R.color.system_outline_variant_light, android.R.color.system_outline_variant_dark),
+    )
+}
 
 /** The card's model for [frame] (the phone's language). */
 fun widgetModel(
@@ -137,7 +161,7 @@ fun renderWidget(
     val style = widgetStyle(kind, frame, overrides)
     // the chart's words follow the system font size (the renderer caps it)
     val fontScale = context.resources.configuration.fontScale
-    GlucoseCard.draw(canvas, w, h, model, style, GraphPalette.of(frame.dark), d, kind.surface, CardPart.ALL, fontScale = fontScale)
+    GlucoseCard.draw(canvas, w, h, model, style, widgetPalette(context, frame.dark), d, kind.surface, CardPart.ALL, fontScale = fontScale)
     return bmp
 }
 
@@ -239,24 +263,27 @@ private fun WidgetContent(
     appWidgetId: Int,
 ) {
     val context = LocalContext.current
-    val size: DpSize = LocalSize.current
+    val reported: DpSize = LocalSize.current
     val overrides = frame.placements[appWidgetId]
-    val bitmap = remember(frame, size, overrides) { renderWidget(context, kind, size.width.value, size.height.value, frame, overrides) }
+    // the launcher's reported size can be wrong (Pixel Launcher): draw for the measured one
+    val (w, h) = frame.placements.realSize(appWidgetId, reported.width.value, reported.height.value)
+    val bitmap = remember(frame, w, h, overrides) { renderWidget(context, kind, w, h, frame, overrides) }
     val description = remember(frame, overrides) { describeCard(context, kind, frame, overrides) }
     val tap = remember(frame) { WidgetTap.intent(context, widgetTap(context, frame)) }
     Box(
         GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
-            .background(Color(GraphPalette.of(frame.dark).bg))
+            .background(Color(widgetPalette(context, frame.dark).bg))
             .cornerRadius(android.R.dimen.system_app_widget_background_radius)
             .clickable(actionStartActivity(tap)),
     ) {
+        // at its own aspect ratio: a size a few dp off leaves a sliver of background, never a stretched card
         Image(
             ImageProvider(bitmap),
             contentDescription = description,
             modifier = GlanceModifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds,
+            contentScale = ContentScale.Fit,
         )
     }
 }
@@ -274,14 +301,15 @@ private fun PreviewContent(
         GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
-            .background(Color(GraphPalette.of(frame.dark).bg))
+            .background(Color(widgetPalette(context, frame.dark).bg))
             .cornerRadius(android.R.dimen.system_app_widget_background_radius),
     ) {
+        // the picker lays a preview out at its own size: at the picture's aspect ratio, never stretched
         Image(
             ImageProvider(bitmap),
             contentDescription = null,
             modifier = GlanceModifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds,
+            contentScale = ContentScale.Fit,
         )
     }
 }
@@ -306,6 +334,18 @@ abstract class CardWidgetReceiver(
         super.onUpdate(context, appWidgetManager, appWidgetIds)
         context.widgetsHost.widgets.presence
             .refresh()
+    }
+
+    /** Placed or resized: the reported size changed, so the real one is measured again ([WidgetProbe]). */
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        val host = context.widgetsHost
+        host.widgets.resized(appWidgetId) { host.awaitReady() }
     }
 
     override fun onDisabled(context: Context) {

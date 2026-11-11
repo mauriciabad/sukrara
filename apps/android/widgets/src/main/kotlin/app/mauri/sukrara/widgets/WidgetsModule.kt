@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.graph.GraphConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -46,6 +47,9 @@ class WidgetsModule(
     val settings = WidgetSettingsStore(store)
 
     val presence = WidgetPresence(context, scope)
+
+    /** The size each placement really has (Pixel Launcher reports another one, docs/10 "the launcher's reported size"). */
+    private val probe = WidgetProbe(context, settings)
 
     /** The lock-screen widget's ids, as last read (the redraw alarm runs while one is hosted too). */
     @Volatile private var lockIds: Set<Int> = emptySet()
@@ -92,6 +96,22 @@ class WidgetsModule(
         }
     }
 
+    /**
+     * Placement [appWidgetId] was placed or resized: once the launcher has applied Glance's update for its new options,
+     * measure its real size again (the next redraw does, while the screen is on).
+     */
+    fun resized(
+        appWidgetId: Int,
+        ready: suspend () -> Unit,
+    ) {
+        scope.launch {
+            ready()
+            delay(RESIZE_SETTLE_MS)
+            probe.allow(appWidgetId)
+            settings.forgetMeasured(appWidgetId)
+        }
+    }
+
     /** A placement was removed (storage is ready): forget its settings, recheck the banner. */
     suspend fun forget(appWidgetId: Int) {
         settings.forget(intArrayOf(appWidgetId))
@@ -110,6 +130,11 @@ class WidgetsModule(
      * system no longer knows is forgotten.
      */
     private suspend fun redrawPlaced() {
+        // a placement without a measured size (just placed, resized, or the app was updated): measure it first, while a
+        // launcher is on screen to answer; the measurement redraws it at its real size
+        if (context.getSystemService(PowerManager::class.java).isInteractive) {
+            runCatching { probe.measureDue(settings.placements.first()) }.onFailure { Log.w(TAG, "probe: $it") }
+        }
         val manager = GlanceAppWidgetManager(context)
         for (kind in WidgetKind.entries) {
             val widget = kind.widget()
@@ -128,6 +153,9 @@ class WidgetsModule(
 
     private companion object {
         const val TAG = "Sukrara.widgets"
+
+        /** How long after a resize the probe waits for the launcher to apply Glance's own update (PoC: 1.5 s). */
+        const val RESIZE_SETTLE_MS = 1_500L
 
         /** Screen on / off from the system broadcasts (registered while the app runs), starting from now. */
         fun screenOn(context: Context): Flow<Boolean> =

@@ -59,6 +59,37 @@ class WidgetSettingsStoreTest {
             )
         }
 
+    /**
+     * WidgetProbe's measurement (#181: Pixel Launcher reports 296×202 dp for a 4×2 it lays out at 244×149): the widget is
+     * drawn for the measured size, also for the launcher's near-duplicate reported sizes, per orientation; a resize or
+     * removal forgets it, and an unmeasured size draws as reported.
+     */
+    @Test
+    fun `a measured size replaces the reported one until the widget is resized or removed`() =
+        runTest {
+            assertEquals("unmeasured: as reported", 296f to 202f, backing.data.first().realSize(7, 296f, 202f))
+            store.measured(7, MeasuredSize(296f, 201.9f, 244.2f, 148.6f))
+            store.measured(7, MeasuredSize(640f, 120f, 560f, 110f))
+            val p = backing.data.first()
+            assertEquals(244.2f to 148.6f, p.realSize(7, 296f, 202f))
+            assertEquals("the launcher's near-duplicate size", 244.2f to 148.6f, p.realSize(7, 296f, 201.1f))
+            assertEquals("the other orientation", 560f to 110f, p.realSize(7, 640f, 120f))
+            assertEquals("another reported size: not measured", 320f to 170f, p.realSize(7, 320f, 170f))
+            assertEquals("another placement", 296f to 202f, p.realSize(8, 296f, 202f))
+            store.measured(7, MeasuredSize(296f, 202f, 240f, 150f))
+            assertEquals("measured again: the new one", 240f to 150f, backing.data.first().realSize(7, 296f, 202f))
+            store.forgetMeasured(7)
+            assertEquals(296f to 202f, backing.data.first().realSize(7, 296f, 202f))
+            store.measured(7, MeasuredSize(296f, 202f, 240f, 150f))
+            store.forget(intArrayOf(7))
+            assertTrue(
+                backing.data
+                    .first()
+                    .measured
+                    .isEmpty(),
+            )
+        }
+
     @Test
     fun `fields are stored under the schema keys of widget overrides`() {
         val json = Json.encodeToString(WidgetOverrides.serializer(), WidgetOverrides(1, 2, TirRange.TIGHT, true, false))
