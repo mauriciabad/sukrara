@@ -31,6 +31,7 @@ import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerIdentityStore
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
+import app.mauri.sukrara.share.owner.SeenWraps
 import app.mauri.sukrara.share.owner.usecase.CreateIdentity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -66,7 +67,7 @@ class PairingLiveTest {
             ownerStore,
             bus.link(),
             NoHub,
-            { _, _ -> true },
+            SeenWraps.None,
             InMemoryTreatmentsRepository(),
             clock,
             StandardTestDispatcher(testScheduler),

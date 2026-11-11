@@ -85,7 +85,7 @@ class OwnerWiringTest {
                     store,
                     relay,
                     hub,
-                    { _, _ -> true },
+                    SeenWraps.None,
                     log,
                     FakeClock(Instant.ofEpochSecond(now)),
                     StandardTestDispatcher(testScheduler),

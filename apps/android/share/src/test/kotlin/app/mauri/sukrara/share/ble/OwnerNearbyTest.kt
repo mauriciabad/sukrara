@@ -28,6 +28,7 @@ import app.mauri.sukrara.share.OwnerFixtures.crypto
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerIdentityStore
+import app.mauri.sukrara.share.owner.SeenWraps
 import app.mauri.sukrara.share.owner.usecase.ControlEvents
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -54,7 +55,7 @@ class OwnerNearbyTest {
             store,
             relay,
             NoHub,
-            { _, _ -> true },
+            SeenWraps.None,
             InMemoryTreatmentsRepository(),
             clock,
             StandardTestDispatcher(testScheduler),

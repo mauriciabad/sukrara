@@ -129,7 +129,21 @@ interface OwnerNearby {
     }
 }
 
-/** Gift wraps already handled (the sharing ledger in Room); [markSeen] is false for one seen before. */
-fun interface SeenWraps {
-    suspend fun markSeen(id: String, at: Long): Boolean
+/**
+ * Gift wraps the wearer's inbox already handled (the sharing ledger in Room, kept longer than a wrap lives on the
+ * relays). A wrap is [mark]ed only once its handling is saved: one whose handling failed comes back with the relays'
+ * next delivery (a reconnect, a restart) and is handled then.
+ */
+interface SeenWraps {
+    suspend fun seen(id: String): Boolean
+
+    /** [at]: epoch seconds. */
+    suspend fun mark(id: String, at: Long)
+
+    /** Remembers nothing: every delivery is handled. */
+    data object None : SeenWraps {
+        override suspend fun seen(id: String) = false
+
+        override suspend fun mark(id: String, at: Long) = Unit
+    }
 }

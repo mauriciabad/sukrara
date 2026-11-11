@@ -104,7 +104,9 @@ class HandleInbox(private val ctx: OwnerContext) {
             }
 
             is Rumor.ProfileUpdate -> {
-                if (known?.active == true) {
+                // never an older one over a newer one: wraps come in any order (their created_at is randomised); the same
+                // second: the later to arrive
+                if (known?.active == true && u.createdAt >= known.profileAt) {
                     val updated =
                         known.copy(
                             name = rumor.profile.name.ifBlank { known.name },
@@ -112,6 +114,7 @@ class HandleInbox(private val ctx: OwnerContext) {
                                 rumor.profile.avatar
                                     ?.json
                                     ?.toString(),
+                            profileAt = u.createdAt,
                         )
                     val next = s.copy(followers = s.followers.map { if (it.key == sender) updated else it })
                     Handled(ControlEvents.backup(ctx, next, now))

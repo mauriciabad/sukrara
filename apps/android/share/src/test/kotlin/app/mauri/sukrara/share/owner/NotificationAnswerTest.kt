@@ -64,7 +64,7 @@ class NotificationAnswerTest {
             store,
             relay,
             FakeHub(),
-            { _, _ -> true },
+            SeenWraps.None,
             InMemoryTreatmentsRepository(),
             FakeClock(Instant.ofEpochSecond(NOW + 60)),
             StandardTestDispatcher(testScheduler),

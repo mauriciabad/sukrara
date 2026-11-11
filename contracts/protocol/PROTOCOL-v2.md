@@ -32,7 +32,7 @@ All content is JSON, NIP-44 v2 encrypted. Every event has a NIP-40 `expiration`.
 | **owner backup** | 30078 | `I` | `["d", H("cgm2:backup:"+I.pub_hex)]`, exp now+90 d (refreshed weekly) | `{"v":2,"sid","epochs":[{"n","g":nsec}],"followers":[{"f":hex,"name","avatar","since","revoked"?}],"invites":[{"t","x"}],"relays":[…],"profile":{…}}` → **`I` itself** |
 | **invite** | rumor kind 30502 in gift wrap to `invite_key(secret)` | seal by `I` | wrap exp = invite expiry | `{"v":3,"type":"invite","x":expiry,"r":[relays],"profile":{…}}` ([PROTOCOL-identity](PROTOCOL-identity.md#short-invites-v3)) |
 | **access request** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` | — | `{"v":2,"type":"request","token":t,"profile":{"name":"Mom","avatar":{…}}}`; a [nearby](#nearby-pairing) request adds `"n":na` |
-| **profile update** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"profile","profile":{…}}` (applied only for an approved, non-revoked `F`) |
+| **profile update** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"profile","profile":{…}}` (applied only for an approved, non-revoked `F`, and only when its rumor `created_at` is not older than the last one applied) |
 | **key delivery** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"key","sid","epoch":n,"g":nsec(G_n),"devices":[…],"relays":[…]}` |
 | **rekey request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"rekey","have":gk}` (follower saw an unknown `gk`; `have` = the `gk` of the newest epoch it holds, never the unknown one; owners only log it) |
 | **history request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"history","since":hourStart}` (follower's backfill found hours missing) |
@@ -66,6 +66,10 @@ whose `sid` differs from the one the follower already has is rejected: a stream'
 - **Addressable events need strictly increasing `created_at`** per (author, kind, `d`) — two versions in the same
   second are rejected ("replaced: have newer event"), which can leave a stale owner backup.
 - Gift wraps' outer `created_at` is randomised up to 2 days into the past (NIP-59): subscribe with `since` ≥ 3 days.
+- The owner's inbox (wraps to `I`) is subscribed **without `since`**, so a phone that was off still gets every request
+  the relays keep; the relays send them all again at each connect. The owner handles each wrap once: it remembers the
+  ids it handled for 14 days (longer than any wrap to `I` lives, 7 d), verifies a wrap before it counts, and remembers
+  it only once its handling is saved, so a wrap whose handling failed is handled when it comes again.
 - **What a relay sends is not trusted**: an `EVENT` for a subscription that isn't open, or that doesn't match that
   subscription's filter, is dropped before its signature is checked. A relay that sends more than 2000 events at once
   or more than 20 per second after that (a token bucket per connection) loses its socket and reconnects with a growing

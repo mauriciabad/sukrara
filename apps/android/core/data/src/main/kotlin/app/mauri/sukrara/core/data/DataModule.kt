@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.data.db.RoomHistoryImport
 import app.mauri.sukrara.core.data.db.RoomPenLedgerRepository
 import app.mauri.sukrara.core.data.db.RoomReadingsRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
+import app.mauri.sukrara.core.data.db.SeenWrapEntity
 import app.mauri.sukrara.core.data.db.SukraraDatabase
 import app.mauri.sukrara.core.data.diag.DiagLog
 import app.mauri.sukrara.core.data.files.FileCodec
@@ -55,6 +56,7 @@ import java.time.Duration
 /** How long history is kept. */
 data class Retention(
     val readings: Duration = Duration.ofDays(90),
+    /** Longer than a gift wrap to the wearer lives on the relays (7 days), so none is handled twice. */
     val seenWraps: Duration = Duration.ofDays(14),
     val rejects: Duration = Duration.ofDays(14),
     val sentOutbox: Duration = Duration.ofDays(14),
@@ -186,11 +188,16 @@ class DataModule(
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
 
-    /** The sharing ledger: marks gift wrap [id] seen at [at]; false when it was already (the wearer's inbox handles each once). */
+    /** The sharing ledger: whether the wearer's inbox already handled gift wrap [id]. */
+    suspend fun wrapSeen(id: String): Boolean = database.seenWraps().contains(id)
+
+    /** Records gift wrap [id] as handled at [at] (epoch seconds); kept [Retention.seenWraps]. */
     suspend fun markWrapSeen(
         id: String,
         at: Long,
-    ): Boolean = database.seenWraps().markSeen(id, at)
+    ) {
+        database.seenWraps().insert(SeenWrapEntity(id, at))
+    }
 
     private val recentReadings by lazy {
         RecentReadings(
@@ -303,7 +310,8 @@ class DataModule(
     suspend fun prune() {
         val now = clock.now()
         database.readings().deleteBefore((now - retention.readings).toEpochMilli())
-        database.seenWraps().deleteBefore((now - retention.seenWraps).toEpochMilli())
+        // epoch seconds, as the owner engine marks them
+        database.seenWraps().deleteBefore((now - retention.seenWraps).epochSecond)
         database.rejects().deleteBefore((now - retention.rejects).toEpochMilli())
         database.outbox().deleteSentBefore((now - retention.sentOutbox).toEpochMilli())
     }

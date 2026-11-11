@@ -95,7 +95,7 @@ class IdentityConflictTest {
             val hub = FakeHub()
             val clock = FakeClock(Instant.ofEpochSecond(NOW))
             val engine =
-                OwnerEngine(OwnerFixtures.context(), store, relay, hub, { _, _ -> true }, InMemoryTreatmentsRepository(), clock, dispatcher)
+                OwnerEngine(OwnerFixtures.context(), store, relay, hub, SeenWraps.None, InMemoryTreatmentsRepository(), clock, dispatcher)
             engine.start(backgroundScope)
             runCurrent()
             assertTrue(engine.state.value is OwnerShareState.Sharing)
@@ -149,7 +149,7 @@ class IdentityConflictTest {
                         store,
                         relay,
                         FakeHub(),
-                        { _, _ -> true },
+                        SeenWraps.None,
                         InMemoryTreatmentsRepository(),
                         clock,
                         dispatcher,

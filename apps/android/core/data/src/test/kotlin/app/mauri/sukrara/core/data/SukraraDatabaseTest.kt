@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.data.db.OutboxEntity
 import app.mauri.sukrara.core.data.db.RejectEntity
 import app.mauri.sukrara.core.data.db.RoomReadingsRepository
 import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
+import app.mauri.sukrara.core.data.db.SeenWrapEntity
 import app.mauri.sukrara.core.data.db.SukraraDatabase
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
@@ -233,8 +234,10 @@ class SukraraDatabaseTest {
     @Test
     fun `seen wraps dedupe, rejects and outbox`() =
         runTest {
-            assertTrue(db.seenWraps().markSeen("w1", 1))
-            assertFalse(db.seenWraps().markSeen("w1", 2))
+            assertFalse(db.seenWraps().contains("w1"))
+            assertTrue(db.seenWraps().insert(SeenWrapEntity("w1", 1)) != -1L)
+            assertTrue(db.seenWraps().insert(SeenWrapEntity("w1", 2)) == -1L)
+            assertTrue(db.seenWraps().contains("w1"))
             db.rejects().insert(RejectEntity(at = 5, why = "bad signature", author = null, via = "relay.example"))
             assertEquals(
                 "bad signature",

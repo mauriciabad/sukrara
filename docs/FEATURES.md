@@ -1723,7 +1723,13 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   messages*) and is retried with the same backoff (Android; the Mac's URLSession caps messages at 1 MiB). On both
   apps an event a relay sends for a subscription that isn't open, or that doesn't match it, is dropped unread; a relay
   that sends more than 2000 events at once or 20 a second after that loses its socket (*too many events*) the same
-  way; a follower remembers at most 5000 seen events (the least recently seen forgotten first). Relay lists from a
+  way; a follower remembers at most 5000 seen events (the least recently seen forgotten first). The wearer's phone
+  handles each gift wrap to its identity (request, profile update, rekey, history request) once, across relays,
+  Bluetooth and restarts: it remembers the ones it handled for 14 days (a wrap lives 7 days on the relays), and marks
+  one only once its handling is saved, so one whose handling failed is handled when the relays send it again (the next
+  connect or start). A follower's older profile update never replaces a newer one, whatever order they come in
+  (#78: the list used to empty at every start, so old requests got their key or *revoked* notice again and an older
+  rename could come back; `InboxReplayTest`, `DataModuleTest`). Relay lists from a
   roster, key delivery, backup, invite or nearby pairing keep at most 8 `wss://` relays with a public host (no
   `localhost`, `.local` / `.lan` names or private addresses; `contracts/protocol/relays/relay-lists.json`); a debug
   build's local test relay comes from the `RELAYS` debug command, never from a list. Readings (live or in an hour

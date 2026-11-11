@@ -18,7 +18,7 @@ data class ReadingEntity(
     val rate: Double?,
 )
 
-/** A Nostr gift wrap already processed (dedupe across relays); pruned with the readings. */
+/** A Nostr gift wrap the wearer's inbox already handled (dedupe across relays and restarts); [at]: epoch seconds. */
 @Entity(tableName = "seen_wraps")
 data class SeenWrapEntity(
     @PrimaryKey val id: String,

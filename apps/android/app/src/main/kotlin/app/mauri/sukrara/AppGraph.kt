@@ -696,7 +696,12 @@ class AppGraph(
             http = data.http,
             settings = data.settings,
             treatments = data.treatments,
-            seen = SeenWraps(data::markWrapSeen),
+            seen =
+                object : SeenWraps {
+                    override suspend fun seen(id: String) = data.wrapSeen(id)
+
+                    override suspend fun mark(id: String, at: Long) = data.markWrapSeen(id, at)
+                },
             hub = monitor.hub,
             clock = clock,
             dispatchers = dispatchers,

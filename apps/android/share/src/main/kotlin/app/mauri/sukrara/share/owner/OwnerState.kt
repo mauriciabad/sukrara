@@ -25,6 +25,8 @@ data class FollowerRecord(
     val revoked: Long? = null,
     /** The follower's generated picture as JSON (PROTOCOL-v2 "Profiles"), null if it never sent one. */
     val avatarJson: String? = null,
+    /** When the follower wrote the profile update applied last (its rumor's created_at, epoch s): an older one is ignored. */
+    val profileAt: Long = 0,
 ) {
     val active: Boolean get() = revoked == null
 }

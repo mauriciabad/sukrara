@@ -106,15 +106,14 @@ interface ReadingDao {
 
 @Dao
 interface SeenWrapDao {
-    /** Records [id]; returns false when it was already seen (the caller skips the event). */
+    /** Records [id]; returns -1 when it was already seen (the first time is kept). */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(wrap: SeenWrapEntity): Long
 
-    suspend fun markSeen(
-        id: String,
-        at: Long,
-    ): Boolean = insert(SeenWrapEntity(id, at)) != -1L
+    @Query("SELECT EXISTS(SELECT 1 FROM seen_wraps WHERE id = :id)")
+    suspend fun contains(id: String): Boolean
 
+    /** [cutoff]: epoch seconds, as [SeenWrapEntity.at]. */
     @Query("DELETE FROM seen_wraps WHERE at < :cutoff")
     suspend fun deleteBefore(cutoff: Long): Int
 }

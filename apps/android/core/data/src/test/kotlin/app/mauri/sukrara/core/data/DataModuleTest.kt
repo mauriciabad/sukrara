@@ -63,6 +63,23 @@ class DataModuleTest {
             )
         }
 
+    /**
+     * #78: the sharing ledger holds epoch seconds (the owner engine's clock); its prune used a milliseconds cutoff, so
+     * every start emptied it and the wearer handled again every gift wrap the relays still kept.
+     */
+    @Test
+    fun `ready keeps the gift wraps seen in the last 14 days and drops older ones`() =
+        runTest {
+            val now = clock.now()
+            data.markWrapSeen("today", now.epochSecond)
+            data.markWrapSeen("last-week", (now - Duration.ofDays(7)).epochSecond)
+            data.markWrapSeen("long-ago", (now - Duration.ofDays(15)).epochSecond)
+
+            data.ready()
+
+            assertEquals(listOf(true, true, false), listOf("today", "last-week", "long-ago").map { data.wrapSeen(it) })
+        }
+
     @Test
     fun `ready re-reports damaged files kept by an earlier run`() =
         runTest {

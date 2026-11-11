@@ -45,7 +45,7 @@ class RelayPolicyTest {
             store,
             relay,
             hub,
-            { _, _ -> true },
+            SeenWraps.None,
             InMemoryTreatmentsRepository(),
             FakeClock(Instant.ofEpochSecond(NOW)),
             StandardTestDispatcher(testScheduler),

@@ -257,9 +257,7 @@ class OwnerEngine(
         val s = owner ?: return
         when (ev.kind) {
             Wire.KIND_WRAP -> {
-                // verified before it is marked seen: anyone in range could send a forged event with a real wrap's id
-                val ours = ev.tag("p") == identityPub && s.conflict == null && ctx.crypto.verify(ev)
-                if (ours && seen.markSeen(ev.id, now())) inbox(s, ev)
+                if (ev.tag("p") == identityPub && s.conflict == null) inboxOnce(s, ev)
             }
 
             Wire.KIND_DATA -> {
@@ -370,7 +368,7 @@ class OwnerEngine(
             is RelayInbound.Event -> {
                 when (m.subscription) {
                     OWN -> conflicts.check(s, m.event, now())?.let { commit(it) }
-                    INBOX -> if (s.conflict == null && seen.markSeen(m.event.id, now())) inbox(owner ?: s, m.event)
+                    INBOX -> if (s.conflict == null) inboxOnce(owner ?: s, m.event)
                     WRITERS -> treatments.receive(s, m.event, now(), m.relay).echo?.let(::send)
                 }
             }
@@ -379,6 +377,18 @@ class OwnerEngine(
                 Unit
             }
         }
+    }
+
+    /**
+     * A gift wrap to the identity, handled once across relays, Bluetooth and restarts (the relays send every one they
+     * keep again at each start: the inbox has no `since`). Marked seen only after its handling is saved, so one whose
+     * handling failed is handled when it comes again (the next reconnect or start). Verified before it is marked: a
+     * nearby phone or a relay could send a forged event with a real wrap's id.
+     */
+    private suspend fun inboxOnce(s: OwnerState, wrap: SignedEvent) {
+        if (seen.seen(wrap.id) || !ctx.crypto.verify(wrap)) return
+        inbox(s, wrap)
+        seen.mark(wrap.id, now())
     }
 
     private suspend fun inbox(s: OwnerState, wrap: SignedEvent) {
