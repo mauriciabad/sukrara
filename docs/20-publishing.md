@@ -736,7 +736,7 @@ No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
 | Short description (≤ 80) | `Live glucose and alarms from your CGM sensor, shared with family. No account.` (77) | `Glucosa en directo y alarmas de tu sensor, compartidas en familia. Sin cuenta.` (78) |
 | App icon | 512 × 512 PNG from `assets/brand/` (the Android launcher icon's art) | the same |
-| Feature graphic | 1024 × 500, still to make (the brand's wordmark over the card; no device frame needed) | the same, or a Spanish one |
+| Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
 | Contact | `support-googleplay@a.mauri.app`, https://sukrara.mauri.app (set) | the same |

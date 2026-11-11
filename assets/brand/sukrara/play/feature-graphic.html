@@ -1,0 +1,102 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Google Play feature graphic (1024 × 500, no alpha). Render: see README.md in this folder.
+  The glucose shown is synthetic (a smooth made-up curve), never a person's data.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sukrara feature graphic</title>
+<style>
+  @font-face { font-family: "Brand Rounded"; src: local("SF Pro Rounded"), url("file:///System/Library/Fonts/SFNSRounded.ttf"); font-weight: 100 1000; }
+  @font-face { font-family: "Brand Sans"; src: local("SF Pro"), url("file:///System/Library/Fonts/SFNS.ttf"); font-weight: 100 1000; }
+  html, body { margin: 0; padding: 0; background: #0B2E5E; }
+  svg { display: block; }
+  .word { font-family: "Brand Sans", "Helvetica Neue", Arial, sans-serif; font-weight: 700; letter-spacing: -2px; }
+  .num { font-family: "Brand Rounded", "Helvetica Neue", Arial, sans-serif; font-weight: 700; letter-spacing: -3px; }
+</style>
+</head>
+<body>
+<svg id="fg" xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1BB5C9"/>
+      <stop offset="1" stop-color="#0B2E5E"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C6F432" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#C6F432" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sheen" cx="0.2" cy="0" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#051a38" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="cardclip"><rect x="0" y="0" width="372" height="300" rx="34"/></clipPath>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#sheen)"/>
+
+  <!-- logo + wordmark -->
+  <g transform="translate(96,146)">
+    <circle cx="126" cy="7" r="80" fill="url(#glow)"/>
+    <circle cx="126" cy="7" r="54" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2"/>
+    <circle cx="126" cy="7" r="74" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/>
+    <g transform="translate(-112,-118) scale(3.3)">
+      <path d="M46.92,44.53Q49.00,43.33 51.08,44.53L61.07,50.30Q63.15,51.50 61.07,52.70L51.08,58.47Q49.00,59.67 46.92,58.47L36.93,52.70Q34.85,51.50 36.93,50.30Z" fill="#FFFFFF"/>
+      <path d="M33.70,55.90Q33.70,53.50 35.78,54.70L45.77,60.46Q47.85,61.66 47.85,64.06L47.85,75.60Q47.85,78.00 45.77,76.80L35.78,71.03Q33.70,69.83 33.70,67.43Z" fill="#FFFFFF" fill-opacity="0.78"/>
+      <path d="M50.15,64.06Q50.15,61.66 52.23,60.47L62.22,54.70Q64.30,53.50 64.30,55.90L64.30,67.43Q64.30,69.83 62.22,71.03L52.23,76.80Q50.15,78.00 50.15,75.60Z" fill="#FFFFFF" fill-opacity="0.55"/>
+      <path d="M59.50,38.00A10.50,10.50 0 1,0 80.50,38.00A10.50,10.50 0 1,0 59.50,38.00Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="2.60"/>
+      <path d="M64.40,38.00A5.60,5.60 0 1,0 75.60,38.00A5.60,5.60 0 1,0 64.40,38.00Z" fill="#C6F432"/>
+    </g>
+    <text class="word" x="-4" y="236" font-size="92" fill="#FFFFFF">Sukrara</text>
+  </g>
+
+  <!-- the card -->
+  <g transform="translate(560,100)" filter="url(#shadow)">
+    <rect x="0" y="0" width="372" height="300" rx="34" fill="#FFFFFF"/>
+    <g clip-path="url(#cardclip)">
+      <text class="num" x="28" y="112" font-size="104" fill="#18A24A">108</text>
+      <!-- steady arrow -->
+      <g transform="translate(234,74)" fill="#18A24A">
+        <rect x="0" y="-7.5" width="44" height="15" rx="2"/>
+        <path d="M34,-25 L64,0 L34,25 Z" stroke="#18A24A" stroke-width="4" stroke-linejoin="round"/>
+      </g>
+      <g id="chart"></g>
+    </g>
+  </g>
+</svg>
+<script>
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+  // Synthetic glucose: smooth, made up, stays near the range and ends steady at 108.
+  const g = t => 104 + 66 * Math.exp(-(((t - 0.42) / 0.14) ** 2)) + 7 * Math.sin(t * 11 + 0.5) * (1 - t) + 4 * (1 - t);
+  const N = 64, ts = [...Array(N)].map((_, i) => i / (N - 1));
+  const raw = ts.map(g), shift = 108 - raw[N - 1];
+  const vals = raw.map(v => v + shift);
+
+  // chart inside the card: x 28..344, y 140..276, scale 40..250 mg/dL
+  const chart = document.getElementById("chart");
+  const X0 = 28, X1 = 336, Y0 = 146, Y1 = 272, LO = 60, HI = 200;
+  const y = v => Y1 - (v - LO) / (HI - LO) * (Y1 - Y0);
+  el("rect", { x: X0, y: y(180), width: X1 - X0, height: y(140) - y(180), fill: "#6AA121", "fill-opacity": 0.08 }, chart);
+  el("rect", { x: X0, y: y(140), width: X1 - X0, height: y(70) - y(140), fill: "#18A24A", "fill-opacity": 0.12 }, chart);
+  for (const v of [70, 180]) el("line", { x1: X0, x2: X1, y1: y(v), y2: y(v), stroke: "#9aa0a8", "stroke-width": 1.2, "stroke-dasharray": "2 5", "stroke-linecap": "round" }, chart);
+  const colour = v => v < 70 ? "#D93025" : v > 180 ? "#E37400" : v > 160 ? "#6AA121" : "#18A24A";
+  vals.forEach((v, i) => {
+    const cx = X0 + ts[i] * (X1 - X0);
+    el("circle", { cx, cy: y(v), r: 3.1, fill: colour(v) }, chart);
+  });
+  const last = { cx: X1, cy: y(vals[N - 1]) };
+  el("circle", { cx: last.cx, cy: last.cy, r: 11, fill: "#18A24A", "fill-opacity": 0.18 }, chart);
+  el("circle", { cx: last.cx, cy: last.cy, r: 6, fill: "#18A24A" }, chart);
+
+</script>
+</body>
+</html>
