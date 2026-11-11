@@ -4,6 +4,10 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **Sharing (Android, wearer)**: each message from a follower is handled once, also across restarts (#78). Before, every
+  start handled again every message the relays still kept: an allowed follower got its key again, an ended follow
+  got its notice again, and an older name change could replace a newer one.
+
 ## 0.14.0 — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app (GitHub prerelease)
 
 - **The Android GitHub version updates itself** (#188): once a day it looks for a new version and says so in a quiet
