@@ -7,6 +7,7 @@
     {"paths": ["apps/macos/Sources/SukraraWidget/*"], "qa": ["Q7 Mac widgets"]},
     {"paths": ["apps/android/feature/home/*", "apps/android/app/src/main/*"], "qa": ["Q1 App home and screens"]},
     {"paths": ["apps/android/widgets/*"], "qa": ["Q3 Android widgets"]},
+    {"paths": ["apps/android/update/*", "apps/android/feature/settings/*/AboutPage.kt", "tools/updates/*"], "qa": ["Q25 Updates (Android, GitHub version)", "Q10 Release build"]},
     {"paths": ["apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/*", "apps/android/feature/settings/*/lock/*"], "qa": ["Q4 Lock screen widget", "Q5b Root status bar in a full row"]},
     {"paths": ["apps/android/widgets/*LockWidget*", "apps/android/widgets/*widget_lock*"], "qa": ["Q4 Lock screen widget"]},
     {"paths": ["apps/android/monitor/*"], "qa": ["Q5 Glucose notification", "Q8 Alerts on a device"]},

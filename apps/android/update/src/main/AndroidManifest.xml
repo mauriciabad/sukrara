@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The GitHub version's updater (#188). Merged only into the full flavor (app/build.gradle.kts fullImplementation):
+     the Google Play build declares none of this (Play's policy forbids self-updates; ManifestTest, the Play check of verify-apk.sh). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Installing the checked update with PackageInstaller; the person allows *Install unknown apps* once -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Install updates automatically (off by default): Android 12+ installs an update without its prompt only for an
+         installer that declares this (install-time; it may still ask: the update says so) -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+
+    <application>
+        <!-- The notification's buttons, the install session's status (Android sends it through Sukrara's own
+             PendingIntent) and the new version's first start. Not exported: the system broadcast still arrives. -->
+        <receiver
+            android:name=".UpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

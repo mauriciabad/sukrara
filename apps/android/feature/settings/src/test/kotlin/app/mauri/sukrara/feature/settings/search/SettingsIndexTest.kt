@@ -28,11 +28,13 @@ import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.core.model.UpdateState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.designsystem.rows.ROW_TAG
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.AboutContent
+import app.mauri.sukrara.feature.settings.AboutUpdates
 import app.mauri.sukrara.feature.settings.AlertKindActions
 import app.mauri.sukrara.feature.settings.AlertKindContent
 import app.mauri.sukrara.feature.settings.AlertPlayback
@@ -49,7 +51,6 @@ import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.RangesContent
 import app.mauri.sukrara.feature.settings.SettingsOverviewContent
 import app.mauri.sukrara.feature.settings.SettingsRoute
-import app.mauri.sukrara.feature.settings.UpdateState
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
@@ -242,7 +243,14 @@ class SettingsIndexTest {
             Scene(
                 "about",
                 SearchTarget.Page(SettingsRoute.About),
-            ) { AboutContent("0.12.0", Distribution.GitHub, UpdateState.UpToDate, {}) {} },
+            ) {
+                AboutContent(
+                    "0.12.0",
+                    Distribution.GitHub,
+                    UpdateState.UpToDate,
+                    AboutUpdates({}, {}, {}, {}, automaticChecks = true, automaticInstall = false, {}, {}),
+                ) {}
+            },
             Scene("threshold review", SearchTarget.Page(SettingsRoute.ThresholdReview)) {
                 AlertThresholdReviewContent(AlertSettings(), { _, _ -> }, {}, {})
             },

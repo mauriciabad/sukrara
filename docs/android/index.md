@@ -58,11 +58,11 @@ your data. Settings › About shows which one you have, next to the version numb
 
 | | GitHub version | Google Play version |
 |---|---|---|
-| Updates | Sukrara checks GitHub for a newer release when you open Settings › About and takes you to it; Obtainium can install it for you | Google Play updates it, like any app from Play |
+| Updates | Sukrara updates itself: once a day it looks for a newer release, tells you in a quiet notification and installs it with one tap, after checking it is Sukrara's own (or, if you turn it on, by itself), never while an alert is showing; Obtainium works too | Google Play updates it, like any app from Play |
 | Where to get it | [GitHub releases](https://github.com/mauriciabad/sukrara/releases), [Obtainium](https://obtainium.imranr.dev/) | Google Play (in preparation) |
 | Features | all of them | all of them |
 
-**What the Google Play version leaves out:** only the update check, because Google Play brings the updates. Everything
+**What the Google Play version leaves out:** only Sukrara's own updater, because Google Play brings the updates. Everything
 else, alerts, sharing, widgets and the glucose in the status bar included, is in both. If a store version ever has to
 leave something else out, it is listed here.
 

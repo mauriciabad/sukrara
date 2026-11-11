@@ -44,4 +44,7 @@ object NavTargets {
 
     /** Boolean extra of [ACTION_PEN_PAGE]: that pen's last big read in *Doses read* (*Review*, *Undo this read*). */
     const val EXTRA_PEN_REVIEW = "app.mauri.sukrara.extra.PEN_REVIEW"
+
+    /** Settings › About (the update notification's tap, #188): MainActivity opens it on top of what is open. */
+    const val ACTION_ABOUT_PAGE = "app.mauri.sukrara.action.ABOUT_PAGE"
 }

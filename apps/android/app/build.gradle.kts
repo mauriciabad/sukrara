@@ -32,6 +32,8 @@ dependencies {
     implementation(project(":feature:sharing"))
     implementation(project(":feature:sensor"))
     implementation(project(":feature:treatments"))
+    // the GitHub version's updater (#188): the full flavor only; the Google Play build has none of it (Play updates it)
+    "fullImplementation"(project(":update"))
     // R8 must see the LSPosed API the System UI module implements (LSPosed provides it at run time; :monitor compiles
     // against it): without it R8 took the hooks' `intercept` for dead code and 0.12.0's module failed every hook with
     // AbstractMethodError. compileOnly reaches R8 as a library, nothing is packaged (monitor consumer-rules.pro).

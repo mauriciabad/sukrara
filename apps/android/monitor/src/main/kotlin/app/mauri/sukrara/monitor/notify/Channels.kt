@@ -60,6 +60,12 @@ object Channels {
     const val TREATMENT_DRAFT = "treatment.draft"
 
     /**
+     * *App updates* (#188): the GitHub version's update notification, low importance, in [Group.INFO]. Not in [ALL]: only
+     * the updater (`:update`, the full flavor) creates it, so the Google Play build never shows the channel.
+     */
+    const val UPDATES = "app.updates"
+
+    /**
      * Channels that were replaced, deleted by [create]: `sensor.countdown` and `glucose` were low importance, which the
      * phone's "hide silent notifications" lock-screen option hides (#148, #94); a channel's importance can't be raised,
      * so [SENSOR_COUNTDOWN] and [GLUCOSE] are new ids.
@@ -278,6 +284,9 @@ object NotificationIds {
     /** *Treatment not saved*: what the quick dialog's lock-screen countdown closed on. */
     const val TREATMENT_DRAFT = 22
     const val REQUESTS = 30
+
+    /** The GitHub version's update notification (#188; `:update`): available, downloading, waiting, failed… */
+    const val UPDATE = 40
 
     /** What the followed wearer said: invite used, declined, access removed. */
     const val FOLLOWING = 31

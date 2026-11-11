@@ -126,6 +126,9 @@ class SettingsPagesTest {
             "follower.settingsFrom",
             // the overview's search: its recent queries
             "settings.searchRecent",
+            // Settings › About (the GitHub version's updater, #188)
+            "update.automaticChecks",
+            "update.automaticInstall",
         )
 
     /** Shown by another chunk's screen (sensor 18, sharing / setup 24, home 16, pens 19, integrations 26, widgets 20). */
@@ -235,7 +238,7 @@ class SettingsPagesTest {
                 override val appVersion = "0.12.0"
                 override val prerelease = true
                 override val distribution = Distribution.GitHub
-                override val releases = ReleasesSource { Result.success(emptyList()) }
+                override val updates = null
                 override val clock = FakeClock()
                 override val sensor = flowOf(app.mauri.sukrara.core.model.SensorState.None)
                 override val appsShared = flowOf(emptySet<AppOutput>())

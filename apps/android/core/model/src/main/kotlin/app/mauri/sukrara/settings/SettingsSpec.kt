@@ -199,8 +199,8 @@ object SettingsSpec {
         SettingInfo("source.jugglucoAddress", "string", null, false, null, "", "defaults:jugglucoAddress", null, "mac", "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)", listOf()),
         SettingInfo("source.jugglucoSecret", "secret", null, false, null, "secure:juggluco", "keychain:jugglucoSecret", null, null, null, listOf()),
         SettingInfo("settings.pane", "enum", null, false, null, "", "defaults:settingsPane", null, "mac", "The Mac Settings window reopens on the last pane it showed (HIG Settings); Android settings are a navigation stack that starts at its top", listOf()),
-        SettingInfo("update.automaticChecks", "bool", null, false, null, "", "system:SPUUpdater.automaticallyChecksForUpdates", null, "mac", "The GitHub Mac version updates itself with Sparkle (signed appcast, Install and Relaunch), which keeps these switches in its own defaults keys; Android's GitHub version only shows a newer release on its About page, and the store versions (Google Play, the Mac App Store) are updated by their store", listOf()),
-        SettingInfo("update.automaticInstall", "bool", null, false, null, "", "system:SPUUpdater.automaticallyDownloadsUpdates", null, "mac", "The GitHub Mac version updates itself with Sparkle (signed appcast, Install and Relaunch), which keeps these switches in its own defaults keys; Android's GitHub version only shows a newer release on its About page, and the store versions (Google Play, the Mac App Store) are updated by their store", listOf()),
+        SettingInfo("update.automaticChecks", "bool", null, false, null, "settings:updateChecks", "system:SPUUpdater.automaticallyChecksForUpdates", null, null, null, listOf()),
+        SettingInfo("update.automaticInstall", "bool", null, false, null, "settings:updateInstall", "system:SPUUpdater.automaticallyDownloadsUpdates", null, null, null, listOf()),
         SettingInfo("report.days", "enum", null, false, null, "", "defaults:reportDays", null, "mac", "Both reports offer the same 1 / 7 / 14 / 30-day choice in the report itself; the Mac's report window remembers the last one, Android's card starts at 14 days", listOf()),
         SettingInfo("source.source", "enum", null, false, null, "settings:source", "", null, "android", "Only the wearer's phone reads a sensor; the Mac follows (its source is the follow link, Settings › General)", listOf()),
         SettingInfo("sharing.nostr", "bool", null, false, null, "sharing:relaySharing", "", null, "android", "The wearer's phone publishes; a Mac follower only reads", listOf()),
@@ -292,6 +292,8 @@ object SettingsSpec {
         const val UNLOCKED_SOUND = "unlockedSound"
         const val UNIT = "unit"
         const val JUGGLUCO = "juggluco"
+        const val UPDATE_CHECKS = "updateChecks"
+        const val UPDATE_INSTALL = "updateInstall"
         const val SOURCE = "source"
         const val RELAY_SHARING = "relaySharing"
         const val RELAY_INTERVAL = "relayInterval"

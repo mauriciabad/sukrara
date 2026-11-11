@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.core.data.settings.UpdateSettings
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.designsystem.rows.SettingsChrome
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
@@ -55,6 +56,7 @@ import app.mauri.sukrara.feature.settings.statusbar.liveUpdatesAllowed
 import app.mauri.sukrara.feature.settings.statusbar.openLiveUpdateSettings
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -210,7 +212,7 @@ private fun SettingsPages(
                     build =
                         buildSet {
                             if (deps.systemAccess != null) add(BuildFeature.Root)
-                            if (deps.releases != null) add(BuildFeature.UpdateCheck)
+                            if (deps.updates != null) add(BuildFeature.UpdateCheck)
                         },
                     openProfile = openProfile,
                     openBackup = openBackup,
@@ -428,10 +430,37 @@ private fun SettingsPages(
         }
 
         SettingsRoute.About -> {
-            // the Google Play build has no update check (deps.releases null): Play brings the updates
-            val vm = viewModel { AboutViewModel(deps.releases, deps.appVersion, deps.prerelease) }
-            val state by vm.state.collectAsStateWithLifecycle()
-            AboutContent(vm.installed, deps.distribution, state, vm::check, onBack)
+            // the Google Play build has no updater (deps.updates null): Play brings the updates
+            val updates = deps.updates
+            LaunchedEffect(updates) { updates?.check() }
+            val state by (updates?.state ?: remember { MutableStateFlow(null) }).collectAsStateWithLifecycle()
+            val checks by deps.settings
+                .flow(
+                    UpdateSettings.AutomaticChecks,
+                ).collectAsStateWithLifecycle(UpdateSettings.AutomaticChecks.default)
+            val install by deps.settings
+                .flow(
+                    UpdateSettings.AutomaticInstall,
+                ).collectAsStateWithLifecycle(UpdateSettings.AutomaticInstall.default)
+            val scope = rememberCoroutineScope()
+            AboutContent(
+                deps.appVersion,
+                deps.distribution,
+                state,
+                updates?.let {
+                    AboutUpdates(
+                        check = it::check,
+                        update = it::update,
+                        cancel = it::cancel,
+                        confirm = it::confirm,
+                        automaticChecks = checks,
+                        automaticInstall = install,
+                        setAutomaticChecks = { on -> scope.launch { deps.settings.set(UpdateSettings.AutomaticChecks, on) } },
+                        setAutomaticInstall = { on -> scope.launch { deps.settings.set(UpdateSettings.AutomaticInstall, on) } },
+                    )
+                },
+                onBack,
+            )
         }
 
         SettingsRoute.Advanced -> {

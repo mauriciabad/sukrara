@@ -20,6 +20,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.data.settings.SettingsFrom
+import app.mauri.sukrara.core.model.AlertHold
 import app.mauri.sukrara.core.model.AlertNote
 import app.mauri.sukrara.core.model.AlertNoteType
 import app.mauri.sukrara.core.model.AlertQuietReason
@@ -37,6 +38,9 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.UnlockedSound
+import app.mauri.sukrara.core.model.UpdateFailure
+import app.mauri.sukrara.core.model.UpdateRelease
+import app.mauri.sukrara.core.model.UpdateState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
@@ -116,12 +120,12 @@ class SettingsGallery {
                 ),
         )
     private val release =
-        Release(
-            "v0.12.1",
-            "https://example.invalid/r",
-            prerelease = true,
-            draft = false,
-        )
+        UpdateRelease("0.12.1", "https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1", prerelease = true, installable = true)
+
+    /** About's updater with the daily check on and automatic installs off (the defaults). */
+    private val updates = AboutUpdates({}, {}, {}, {}, automaticChecks = true, automaticInstall = false, {}, {})
+
+    private fun about(state: UpdateState?) = @Composable { AboutContent("0.12.0", Distribution.GitHub, state, updates) {} }
 
     private val sensorWorking =
         SensorSettingsState(
@@ -292,10 +296,20 @@ class SettingsGallery {
                     {},
                 ) {}
             },
-            "about-update" to { AboutContent("0.12.0", Distribution.GitHub, UpdateState.Available(release), {}) {} },
-            "about-offline" to { AboutContent("0.12.0", Distribution.GitHub, UpdateState.Offline, {}) {} },
-            // the Google Play build: no update check
-            "about-play" to { AboutContent("0.12.0", Distribution.GooglePlay, null, {}) {} },
+            // the GitHub version's update, one picture per state (#188)
+            "about-update" to about(UpdateState.Available(release)),
+            "about-update-page" to about(UpdateState.Available(release.copy(installable = false))),
+            "about-uptodate" to about(UpdateState.UpToDate),
+            "about-offline" to about(UpdateState.Offline),
+            "about-downloading" to about(UpdateState.Downloading(release, 0.42f)),
+            "about-waiting" to about(UpdateState.Waiting(release, AlertHold(setOf("very_low"), veryLow = true))),
+            "about-confirm" to about(UpdateState.Confirm(release)),
+            "about-installing" to about(UpdateState.Installing(release)),
+            "about-failed" to about(UpdateState.Failed(release, UpdateFailure.Signature)),
+            "about-auto-off" to
+                { AboutContent("0.12.0", Distribution.GitHub, UpdateState.UpToDate, AboutUpdates({}, {}, {}, {}, false, true, {}, {})) {} },
+            // the Google Play build: no updater
+            "about-play" to { AboutContent("0.12.0", Distribution.GooglePlay, null, null) {} },
             "sensor" to { SensorSettingsContent(sensorWorking, now, zone, SensorSettingsActions()) {} },
             "sensor-this-phone" to {
                 SensorSettingsContent(

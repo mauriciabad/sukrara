@@ -11,6 +11,7 @@ import app.mauri.sukrara.alerts.SoundSettings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.AlertControls
+import app.mauri.sukrara.core.model.AlertHold
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
@@ -202,6 +203,9 @@ class AlertsModule(
             log("$name failed: ${e.javaClass.simpleName}")
         }
     }
+
+    /** What an app update must wait for now ([AlertHolds]): the alerts showing, a very low that is on. */
+    suspend fun hold(): AlertHold = AlertHolds.of(store.load().machine, hub.state.value.alerts.firingKinds)
 
     /** "Start fresh" / leaving a role: alerts and their saved state go, the sensor-end notices too. */
     suspend fun reset() {

@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.data.DataModule
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.data.userUnlocked
+import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
@@ -326,6 +327,12 @@ class AppGraph(
         )
     }
 
+    /**
+     * THE updater of the GitHub version (#188, `:update`: the daily check, the notification, the checked install); null
+     * in the Google Play build (Play brings the updates). [App] starts it.
+     */
+    val updates: AppUpdates? by lazy { Store.updates(this) }
+
     val settingsUi by lazy {
         SettingsModule(
             // the pages show the settings in use (a follower's mirrored rows per *Settings from*); writes go to this phone's own
@@ -345,7 +352,7 @@ class AppGraph(
             sensor = monitor.hub.state.map { it.sensor },
             systemAccess = monitor.root?.access,
             distribution = Store.distribution,
-            releases = { Store.releases(this) },
+            updates = { updates },
             pensAvailable = { pens.available() },
             pens = { pens.port.takeIf { pens.available() } },
             clinicBanner =

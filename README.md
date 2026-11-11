@@ -124,8 +124,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
-  now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with an update check
-  against this repo's releases, a link to the website's [Mac page](https://sukrara.mauri.app/mac/) and the
+  now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with the GitHub
+  version's update (below), a link to the website's [Mac page](https://sukrara.mauri.app/mac/) and the
   [privacy policy](https://sukrara.mauri.app/privacy).
 - **Screens move like Android's own Settings**: pages slide in and out, the back gesture shows the page you'll land on
   (let go early to stay), setup fades in over the app; nothing moves with *Remove animations* on.
@@ -263,9 +263,13 @@ Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releas
 sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
 
 Android comes in two versions, the same app with the same key (installs over each other, keeping the data): the
-**GitHub version** (GitHub releases, Obtainium), which checks GitHub for updates in Settings › About, and the **Google
-Play version** (in preparation), which Play updates and which therefore has no update check of its own; that is the
-only difference. Settings › About says which one is installed, that Sukrara isn't a medical device (setup's Welcome
+**GitHub version** (GitHub releases, Obtainium), which **updates itself**: once a day it looks for a new version and
+says so in a quiet notification (*Update*, *Release notes*; never in the alerts), downloads it, checks that it is the
+release's file and signed with Sukrara's key, and installs it, never while an alert is showing or a very low is on;
+monitoring comes back by itself right after. Android asks you once to allow installs from Sukrara; with *Install
+updates automatically* on (Settings › About › Updates, off by default) it updates without a tap where Android allows
+it ([docs/FEATURES.md › Updates](docs/FEATURES.md#updates-android-github-version)). The **Google Play version** (in
+preparation) is updated by Play and therefore has no updater of its own; that is the only difference. Settings › About says which one is installed, that Sukrara isn't a medical device (setup's Welcome
 too), links the privacy policy and links to the website's
 [Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 

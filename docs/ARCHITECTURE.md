@@ -85,6 +85,29 @@ libxposed API `compileOnly`); its pure parts are `HookText`, `IconFit`, `SlotIco
 `HookCode.VERSION`) implements `:core:model`'s `SystemAccessPort` for Settings › Status bar and › Lock screen. The
 same `HookState` carries `SurfaceSettings.LockWidget*`; `StateGate` sends it only while a feature needs it.
 
+### Updates (GitHub version only: `:update`)
+
+`:update` is a dependency of the `full` flavor only (`app/build.gradle.kts` `fullImplementation`), so the Google Play
+build has none of it: no classes, no `UpdateReceiver`, no `REQUEST_INSTALL_PACKAGES` /
+`UPDATE_PACKAGES_WITHOUT_USER_ACTION` (`ManifestTest`, `verify-apk.sh --play`). `Store` (`app/src/full`) builds
+`UpdateModule` from the graph (`UpdatePorts`: version, OkHttp, the `update` typed store, the `update.*` settings, the
+alert hold, the notification ports of `:monitor`'s `Channels.UPDATES` / `NotificationIds.UPDATE` in the `info` group);
+`App.onCreate` starts it, so its workers and receiver find it (`UpdateModule.current`). Settings › About sees it as the
+`AppUpdates` port of `:core:model` (null in the Play build).
+- Pure: `Releases` (List-releases JSON → `Release` + its `ApkAsset`: `Sukrara-<version>.apk`, GitHub's `sha256:`
+  digest, size, only under the endpoint's download prefix; version compare; prereleases while 0.x), `ApkCheck.verify`
+  (hash, the one signer = `UpdateEndpoint.RELEASE_CERT` = `tools/release/android-cert.sha256`, package, newer),
+  `InstallGate` (no install while `AlertHold` isn't quiet; silent only when automatic and installs are allowed),
+  `UpdateEndpoint` (GitHub, or a debug build's local test server from `BuildVariant.updateServer`).
+- Android: `Downloader` (https on every hop, size-capped, hashed while streaming, `.part` then rename),
+  `ApkCheck.facts` (`PackageManager.getPackageArchiveInfo` with signing certificates), `Installer` (a
+  PackageInstaller session; status to `UpdateReceiver`), `UpdateNotifier` (channel *App updates*, low importance),
+  `UpdateCheckWorker` (daily, while `update.automaticChecks`) and `UpdateInstallWorker` (one at a time; a held
+  install retries with WorkManager's backoff), `UpdateReceiver` (the notification's buttons, the session status,
+  `MY_PACKAGE_REPLACED`: cleans up; `:monitor`'s `BootReceiver` restarts monitoring from the same broadcast).
+- `AlertHolds` (`:monitor`): what an install waits for, from the alert runtime's saved `AlertState` (episodes whose
+  notification is up, a very low that is on, a follower's mirrored alerts) and the hub's live `firingKinds`.
+
 ### Sharing
 
 **First-run setup and wearer sharing screens: `:feature:sharing`** (package `app.mauri.sukrara.feature.sharing`).
@@ -577,8 +600,8 @@ every app). Alert scenario expectations change only with the owner's OK.
 
 `VERSION` → every app. Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
 `verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
-`verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no update
-check: `app/src/play`, `Store`; `:monitor`'s `RootFeatures` stays optional for the fallback if Play rejects root);
+`verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no updater:
+`app/src/play`, `Store`, no `:update`; `:monitor`'s `RootFeatures` stays optional for the fallback if Play rejects root);
 Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`; a notarized dmg is signed with the Sparkle
 EdDSA key and added to `docs/appcast.xml` by `tools/release/appcast.py`). 0.x versions are GitHub prereleases; every
-app's update check includes prereleases only on a prerelease build (the Mac's Sparkle: the `prerelease` channel).
+app's updater includes prereleases only on a prerelease build (the Mac's Sparkle: the `prerelease` channel).

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The GitHub version's update notification (#188); Settings › About shows the same states (feature/settings). -->
+<resources>
+    <string name="up_channel">App updates</string>
+    <string name="up_channel_description">A newer Sukrara (the GitHub version): download, install, or why it didn\'t</string>
+    <string name="up_available">Sukrara %1$s is available</string>
+    <string name="up_available_text">Update to install it. Monitoring comes back by itself right after.</string>
+    <string name="up_available_page">Open the release to download it.</string>
+    <string name="up_downloading">Downloading Sukrara %1$s</string>
+    <string name="up_waiting">Sukrara %1$s is ready to install</string>
+    <string name="up_waiting_text">It installs once no alert is showing.</string>
+    <string name="up_confirm">Sukrara %1$s is ready to install</string>
+    <string name="up_confirm_text">Tap Install to confirm.</string>
+    <string name="up_confirm_auto">Android asks you to confirm this update. Tap Install.</string>
+    <string name="up_installing">Installing Sukrara %1$s…</string>
+    <string name="up_failed">The update to %1$s didn\'t install</string>
+    <string name="up_failed_download">The download stopped. Sukrara %1$s keeps running; nothing changed.</string>
+    <string name="up_failed_hash">The file isn\'t the release\'s, so it was deleted. Sukrara %1$s keeps running; nothing changed.</string>
+    <string name="up_failed_signature">It isn\'t signed by Sukrara, so it was refused. Sukrara %1$s keeps running; nothing changed.</string>
+    <string name="up_failed_install">Android didn\'t install it. Sukrara %1$s keeps running; nothing changed.</string>
+    <string name="up_updated">Sukrara updated to %1$s</string>
+    <string name="up_updated_text">Monitoring is back. See what\'s new in the release notes.</string>
+    <string name="up_action_update">Update</string>
+    <string name="up_action_notes">Release notes</string>
+    <string name="up_action_cancel">Cancel</string>
+    <string name="up_action_install">Install</string>
+    <string name="up_action_retry">Try again</string>
+</resources>

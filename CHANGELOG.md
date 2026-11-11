@@ -4,6 +4,12 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **The Android GitHub version updates itself** (#188): once a day it looks for a new version and says so in a quiet
+  notification (*Update*, *Release notes*), downloads it, checks it is the release's file signed with Sukrara's key,
+  and installs it, never while an alert is showing or a very low is on; monitoring comes back by itself right after.
+  Android asks once to allow installs from Sukrara. *Install updates automatically* (Settings › About › Updates, off)
+  installs without a tap where Android allows it. The Google Play version keeps updating through Play. Updating to
+  this version is still by hand; from then on Sukrara does it.
 - **The Mac updates itself** (GitHub and Homebrew version, #91): once a day it looks for a new version, signed by
   Sukrara and checked before it installs, and offers it in the menu bar panel; *Install and Relaunch* is one click.
   Settings › General › About has *Check for Updates…*, automatic checks (on) and automatic install (off). The App

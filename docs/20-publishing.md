@@ -35,8 +35,8 @@ unused).
 | Mac, non-developers | Notarized dmg from sukrara.mauri.app / GitHub Releases + **Sparkle 2** in-app updates | Paid Apple Developer Program (Developer ID) | 99 USD/year |
 | Mac, developers | **Own tap** `mauriciabad/homebrew-tap` → `brew install --cask mauriciabad/tap/sukrara`; later the official cask | Official cask needs Gatekeeper-passing (notarized) builds + notability | 0 |
 | Mac App Store | **Go** (2026-11-11): a sandboxed build without the update check, TestFlight first ([review risk](#mac-app-store-review-risk-2026-11-11-186)) | The App Store Connect app record and the distribution certificates (the owner) | (same 99 USD) |
-| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the update check (decided 2026-11-11, [Flavors](#flavors)) | Health/medical declarations; `USE_EXACT_ALARM` and root-feature review (no 12-tester rule: the account predates it) | paid (old account) |
-| Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; the "full" flavor with the update check | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
+| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the updater (decided 2026-11-11, [Flavors](#flavors)) | Health/medical declarations; `USE_EXACT_ALARM` and root-feature review (no 12-tester rule: the account predates it) | paid (old account) |
+| Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; the "full" flavor with the updater (#188) | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
 | Android, F-Droid main repo | Later, optional | Build from source incl. Juggluco core + rust-nostr; likely *NonFreeNet* anti-feature | 0 |
 | Garmin | Connect IQ Store, free app | Developer account; privacy policy; no medical claims | 0 |
 
@@ -682,10 +682,11 @@ on `main` and `gh release create v<version> --verify-tag --prerelease --latest=f
 version is 0.x (`Sukrara-<version>.apk`, `Sukrara-<version>-android-mapping.txt.gz`, `Sukrara-<version>.dmg`,
 `Sukrara-mac-<version>.zip`). The mapping is a release asset (#96) so it lives as long as the APK it decodes and anyone
 reading a crash trace in an issue can use it (`retrace` from the Android SDK's cmdline-tools: `gunzip` it, then `retrace
-mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists only the Mac `.dmg` and
-`.zip` as downloads (`UpdateCheck.otherDevices`), so neither the APK nor the mapping shows there. **Once:** the first
-release with that allowlist goes up without the mapping (installs older than it list every non-APK file as a download;
-its mapping stays in `~/.android/sukrara-mappings/`); attach the mapping from the release after it on. Play builds need no
+mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists no download (*Sukrara on
+other devices* opens the website, #179). The Android GitHub version's updater (#188) takes only the asset named exactly
+`Sukrara-<version>.apk` of a release, and only with the SHA-256 GitHub lists for it (the asset's `digest`, which GitHub
+computes on upload): keep that name, and never replace an asset by hand after publishing without expecting installs
+to refuse it until the digest matches. Play builds need no
 separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
 crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never becomes *Latest*; a 0.x one
 bumps the Homebrew cask (`homebrew-tap.yml` on *published*), a 1.x+ prerelease never does (also when dispatched by
@@ -752,8 +753,8 @@ below). The website and About call them the *GitHub version* and the *Google Pla
 
 | Flavor | Channel | Build | Contents |
 |---|---|---|---|
-| `full` (default) | GitHub releases, Obtainium (later IzzyOnDroid, F-Droid) | `tools/release/android-release.sh` (`:app:assembleFullRelease`, APK) | everything, and About's update check |
-| `play` | Google Play | `tools/release/play-bundle.sh` (`:app:bundlePlayRelease`, app bundle) | everything except the update check |
+| `full` (default) | GitHub releases, Obtainium (later IzzyOnDroid, F-Droid) | `tools/release/android-release.sh` (`:app:assembleFullRelease`, APK) | everything, and the updater (#188: daily check, notification, checked install) |
+| `play` | Google Play | `tools/release/play-bundle.sh` (`:app:bundlePlayRelease`, app bundle) | everything except the updater |
 
 **The owner's decision (2026-11-11) and why**
 
@@ -780,16 +781,19 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)); the answer is that it runs only
   with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar items and its
   lock-screen widget.
-- **No update check in the Play build**: an app from Play may not update itself, or send people to updates, other than
-  through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646). `Store.releases()`
-  returns null: About has no update rows; `GitHubReleases` and its URL aren't in the bundle (`verify-apk.sh --play`).
+- **No updater in the Play build**: an app from Play may not update itself, or send people to updates, other than
+  through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646). The updater is its own
+  module, `:update`, a dependency of the `full` flavor only (#188): the Play build has no update check, notification,
+  download, worker, receiver or `REQUEST_INSTALL_PACKAGES` (`allow.json` `play_permissions` removes it), and
+  `Store.updates()` returns null, so About has no update rows (`ManifestTest`; `verify-apk.sh --play`: no
+  `app.mauri.sukrara.update` class in the mapping, no updater in the manifest, no `api.github.com` in the dex).
 - **About says which version it is** (*0.12.0 · Google Play version* / *GitHub version*) and links to the website's
   [Versions](https://sukrara.mauri.app/android/#versions) (`docs/android/index.md`: same app and key; who updates
-  each; where to get each; anything a store version leaves out, today only the update check). No disabled rows and no
+  each; where to get each; anything a store version leaves out, today only the updater). No disabled rows and no
   "install elsewhere to unlock" prompts in the Play build (Device and Network Abuse: no means to reach a non-compliant
   APK).
 - **The split stays for now**: the flavors and their code remain until Play approves a release with the root features;
-  then the split can go (the update check would then be the only thing `Store` decides).
+  then the split can go (the updater would then be the only thing `Store` decides).
 
 **If Play rejects …** (resubmit after each; the code is all still there):
 
@@ -810,23 +814,24 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   `SettingsSearchTest`); FEATURES.md and the website's Versions say the Play version leaves the status bar out.
 
 Not in either release build, so there is nothing to leave out: `DUMP` (only the debug build's `DebugReceiver` declares
-it), `REQUEST_INSTALL_PACKAGES` (the update check opens the release page in the browser; Sukrara never installs
-APKs), `QUERY_ALL_PACKAGES` (the queries are listed one by one in `allow.json`).
+it), `QUERY_ALL_PACKAGES` (the queries are listed one by one in `allow.json`). `REQUEST_INSTALL_PACKAGES` is in the
+GitHub build only (the updater installs its checked update with PackageInstaller).
 
 The bundle has no language splits (`bundle.language.enableSplit = false`): Sukrara has its own language setting, and a
 split that Play didn't install would leave that choice without strings. arm64 only, like the APK.
 
 **Checks.** `ManifestTest` also reads the play flavor's merged manifest: its permissions are `allow.json`'s with
 `play_permissions` applied (empty now), `USE_EXACT_ALARM` and no `SCHEDULE_EXACT_ALARM`, the System UI module's
-provider, hello receiver and permission, and the same components as the GitHub build. `tools/release/play-bundle.sh`
+provider, hello receiver and permission, and the same components as the GitHub build but the updater's receiver. `tools/release/play-bundle.sh`
 builds the bundle signed with the release key (password from the Keychain, `--no-daemon`) and checks it: signer =
 `android-cert.sha256`, base module only, arm64 only, the Libre 3 core, the R8 mapping in `BUNDLE-METADATA` (Play
 deobfuscates crash reports with it), `META-INF/xposed` inside. Then `bundletool validate` and `verify-apk.sh --play` on
 bundletool's universal APK when bundletool is there (`$BUNDLETOOL` = the `bundletool-all` jar from its GitHub releases,
 or `bundletool` on PATH); without it, `verify-apk.sh --play` on the play APK that Gradle builds from the same R8
 output. `verify-apk.sh` checks the System UI module in both builds (`META-INF/xposed`, its manifest entries, every
-LSPosed hook class keeps `intercept`) and, with `--play`, no update check (no `GitHubReleases` in the mapping, no
-`api.github.com` in the dex). It copies `Sukrara-<version>-play.aab` to `apps/android/app/build/dist/` and archives
+LSPosed hook class keeps `intercept`) and, with `--play`, no updater (no `app.mauri.sukrara.update` class in the
+mapping, no updater receiver or `REQUEST_INSTALL_PACKAGES` in the manifest, no `api.github.com` in the dex); without
+it, that the GitHub build has the updater's receiver. It copies `Sukrara-<version>-play.aab` to `apps/android/app/build/dist/` and archives
 the mapping in `~/.android/sukrara-mappings/<version>-play-mapping.txt`. CI's `android-play` job runs it with
 `--unsigned` (no key, no Juggluco checkout: every check except the signer and the Libre 3 core).
 
@@ -1208,7 +1213,7 @@ its own update check; the root features are in both since 2026-11-11); register 
    in the last `.poc` build, settings export/import, Juggluco core pinned. Done: the rename, settings export / import,
    the pinned core, the flavors and `tools/release/play-bundle.sh` (2026-11-10, [Flavors](#flavors)); the migration
    screen was dropped (the app starts clean). The owner then kept `USE_EXACT_ALARM` and the root features in `play`
-   (2026-11-11); `play` only leaves out the update check.
+   (2026-11-11); `play` only leaves out the updater.
 8. *(agent)* Privacy page, store listing (with the not-a-medical-device statement and Abbott disclaimer), synthetic
    screenshots, Fastlane metadata, FGS demo video script; drafts of the Health apps, data safety, FGS and exact-alarm
    answers. *(user)* submits the forms (only the account owner can). Done: the privacy page and the drafts

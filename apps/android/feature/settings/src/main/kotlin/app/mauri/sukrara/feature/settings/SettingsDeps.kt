@@ -8,6 +8,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.SensorState
@@ -47,8 +48,11 @@ interface SettingsDeps {
     /** Which version this is (About: *Google Play version* / *GitHub version*). */
     val distribution: Distribution
 
-    /** About's update check against the GitHub releases; null in the Google Play build (updates come from Play). */
-    val releases: ReleasesSource?
+    /**
+     * The GitHub version's updater (About's check, *Update*, the switches; #188); null in the Google Play build (updates
+     * come from Play).
+     */
+    val updates: AppUpdates?
 
     val clock: Clock
 
@@ -199,10 +203,4 @@ interface AlertSettingsStore {
     val settings: Flow<AlertSettings>
 
     suspend fun update(transform: (AlertSettings) -> AlertSettings)
-}
-
-/** The project's GitHub releases, newest first (no network in tests: a fake returns recorded JSON). */
-fun interface ReleasesSource {
-    /** The releases, or a failure when offline / the API refused (rate limit). */
-    suspend fun fetch(): Result<List<Release>>
 }

@@ -71,6 +71,9 @@ class App :
         locales = resources.configuration.locales
         night = resources.configuration.isNight
         graph
+        // the GitHub version's updater (#188; none in the Google Play build): built now so its worker and receiver find
+        // it in this process; it reads its settings only after the unlock
+        Store.start(graph)
         if (!userUnlocked) afterUnlock()
     }
 

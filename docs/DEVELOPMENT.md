@@ -143,7 +143,7 @@ Debug commands that replace the sensor or make up data live only in `src/debug` 
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
 
 The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
-app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO` and `RELAYS` (their
+app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS` and `UPDATES` (their
 extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"; docs/QA.md "Emulator"). The Mac's:
 `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` (a debug dev run's
 QR scanner reads the made-up `SyntheticCamera` feed, never the Mac's camera). The `debug-docs` check fails when
@@ -166,6 +166,22 @@ app). `--es urls off` goes back to no relay; `--es urls public` uses the public 
 needs them). Check with `adb shell cat /proc/net/tcp6` that the app's uid (`dumpsys package app.mauri.sukrara | grep
 uid=`) has no socket other than `…0202000A:1D17` (10.0.2.2:7447). The relay's own tests: `python3
 tools/relay/test_relay.py` (CI runs them).
+
+**Updates in debug builds.** A debug build of the GitHub version reads the GitHub releases and trusts only the release
+key, like a release build, so it never installs anything. To test the updater (#188) on an emulator, serve a local test
+release (`tools/updates/serve.py`, standard-library Python, loopback only) with a newer debug build of your own (the
+same code with a higher `VERSION`, never committed) and point the app at it; it then trusts the debug key and checks
+once at every start (docs/QA.md Q25):
+
+```sh
+python3 tools/updates/serve.py new.apk --port 8765
+adb -s emulator-5584 shell pm grant app.mauri.sukrara android.permission.ACCESS_LOCAL_NETWORK
+adb -s emulator-5584 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver \
+    -a app.mauri.sukrara.debug.UPDATES --es server http://10.0.2.2:8765/
+```
+
+`--es server off` goes back to GitHub; `--es cert <sha256>` trusts another certificate. Android 17 treats 10.0.2.2 as
+the local network, hence the grant.
 
 ## Orchestration that worked
 

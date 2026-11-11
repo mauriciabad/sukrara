@@ -104,8 +104,8 @@
       "reason": "Nostr sharing: relay WebSockets to the URLs RelayPool keeps through the launch's RelayAccess: release builds wss:// only (Wire.secureRelays); a debug build's RELAYS choice may add a local ws:// test relay (cleartext permitted only to 10.0.2.2 / loopback by the debug network security config)"
     },
     {
-      "path": "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/UpdateCheck.kt",
-      "reason": "About page update check: GET the fixed https URL api.github.com/repos/mauriciabad/sukrara/releases once per page open (no user-entered host, nothing sent)"
+      "path": "apps/android/update/src/main/kotlin/app/mauri/sukrara/update/Downloader.kt",
+      "reason": "The GitHub version's updater (#188, full flavor only): GET the fixed https URL api.github.com/repos/mauriciabad/sukrara/releases (About's check, the daily check) and the release APK under github.com/mauriciabad/sukrara/releases/download/ (Releases.parse keeps no other link); every hop https (a network interceptor refuses anything else, redirects never go https to http); nothing sent. Only a debug build's UPDATES command points it at a local test server (http to 10.0.2.2 / loopback, the debug network security config)"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/NsClient.kt",
@@ -174,7 +174,9 @@
     "android.permission.USE_FULL_SCREEN_INTENT": "the urgent-low alarm over the lock screen (:monitor)",
     "android.permission.ACCESS_NOTIFICATION_POLICY": "Do Not Disturb access: alarm-level alerts override a mode that silences alarms (:monitor)",
     "android.permission.VIBRATE": "alert and pen-read haptics (:monitor, :pen)",
-    "android.permission.WAKE_LOCK": "androidx.work (the pen sync worker); Sukrara takes no wake lock itself",
+    "android.permission.WAKE_LOCK": "androidx.work (the pen sync worker, the updater's workers); Sukrara takes no wake lock itself",
+    "android.permission.REQUEST_INSTALL_PACKAGES": "the GitHub version installs its own checked update with PackageInstaller (#188; :update, the full flavor only: play_permissions removes it)",
+    "android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION": "Install updates automatically (opt-in): Android 12+ skips its prompt only for an installer declaring it (#188; :update, the full flavor only: play_permissions removes it)",
     "android.permission.READ_CALENDAR": "sensor end in the calendar, opt-in (:monitor SensorCalendar)",
     "android.permission.WRITE_CALENDAR": "sensor end in the calendar, opt-in (:monitor SensorCalendar)",
     "android.permission.BLUETOOTH_CONNECT": "the sensor link and nearby sharing (:sensor, :share)",
@@ -187,8 +189,11 @@
     "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
   },
   "play_permissions": {
-    "_why": "Empty since the owner's decision of 2026-11-11 (#142): the Play build declares exactly `permissions`, USE_EXACT_ALARM (with Play's exact-alarm declaration) and the System UI module's SYSTEMUI_STATE included. If Play rejects one, its fallback (app/src/play/AndroidManifest.xml, docs/20-publishing.md › Flavors) adds the entries here: remove USE_EXACT_ALARM + add SCHEDULE_EXACT_ALARM, or remove SYSTEMUI_STATE.",
-    "remove": {},
+    "_why": "The Play build declares `permissions` without the GitHub version's updater (#188: Play brings the updates and its policy forbids an app updating itself). Since the owner's decision of 2026-11-11 (#142) it keeps USE_EXACT_ALARM (with Play's exact-alarm declaration) and the System UI module's SYSTEMUI_STATE. If Play rejects one, its fallback (app/src/play/AndroidManifest.xml, docs/20-publishing.md › Flavors) adds the entries here: remove USE_EXACT_ALARM + add SCHEDULE_EXACT_ALARM, or remove SYSTEMUI_STATE.",
+    "remove": {
+      "android.permission.REQUEST_INSTALL_PACKAGES": "no updater in the Play build: :update is a full-flavor dependency only",
+      "android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION": "no updater in the Play build: :update is a full-flavor dependency only"
+    },
     "add": {}
   },
   "queries": {

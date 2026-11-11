@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.core.content.edit
 import app.mauri.sukrara.LaunchPlan
 import app.mauri.sukrara.RoleRecord
 import app.mauri.sukrara.alerts.AlertKind
@@ -23,6 +24,7 @@ import app.mauri.sukrara.pen.opennov.PenDose
 import app.mauri.sukrara.pen.opennov.PenRead
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -55,6 +57,7 @@ object DebugFakes {
             PREFIX + "PEN_JUGGLUCO" to ::penJuggluco,
             PREFIX + "ALERTS" to ::alerts,
             PREFIX + "RELAYS" to ::relays,
+            PREFIX + "UPDATES" to ::updates,
         )
 
     /** Runs [action] when it is a known fake; false otherwise. */
@@ -102,6 +105,68 @@ object DebugFakes {
             context.stopService(Intent(context, MonitoringService::class.java))
             graph.monitor.starter.start(StartReason.App)
         }
+    }
+
+    /**
+     * `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]`: the GitHub version's updater (#188) reads
+     * its releases from a local test server instead of GitHub (`<server>releases` in GitHub's List-releases form, APKs
+     * under `<server>download/`) and trusts the certificate [cert] (SHA-256, upper-case hex as apksigner prints it; by
+     * default this build's own, the debug key) instead of the release key; it checks once at every start too. `off` =
+     * GitHub and the release key again. Saved, then the app process ends: open the app. The full flavor only (the
+     * play flavor has no updater). Release builds have no such choice.
+     */
+    private fun updates(
+        context: Context,
+        intent: Intent,
+    ) {
+        val server = intent.getStringExtra("server")?.trim().orEmpty()
+        val prefs = context.getSharedPreferences(UPDATES_PREFS, Context.MODE_PRIVATE)
+        if (server == "off") {
+            // written before the process ends below
+            prefs.edit(commit = true) { clear() }
+        } else {
+            // an http(s) URL ending in / (OkHttp parses only those); cleartext reaches 10.0.2.2 / loopback only (the
+            // debug network security config)
+            if (server.toHttpUrlOrNull() == null || !server.endsWith("/")) {
+                Log.w("SukraraDebug", "UPDATES: '$server' isn't off or a server URL ending in /; nothing changed")
+                return
+            }
+            val cert = intent.getStringExtra("cert")?.trim()?.uppercase() ?: ownCert(context)
+            prefs.edit(commit = true) {
+                putString("server", server)
+                putString("cert", cert)
+            }
+        }
+        Log.i("SukraraDebug", "UPDATES: $server from the next start; ending the app process now")
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
+    /** The `UPDATES` command's test server and certificate (BuildVariant), or null: GitHub and the release key. */
+    fun updateServer(context: Context): Pair<String, String>? {
+        val prefs = context.getSharedPreferences(UPDATES_PREFS, Context.MODE_PRIVATE)
+        val server = prefs.getString("server", null) ?: return null
+        val cert = prefs.getString("cert", null) ?: return null
+        return server to cert
+    }
+
+    private const val UPDATES_PREFS = "debug_updates"
+
+    /** This build's signing certificate (the debug key), SHA-256 upper-case hex. */
+    private fun ownCert(context: Context): String {
+        val info =
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                android.content.pm.PackageManager.PackageInfoFlags
+                    .of(
+                        android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+                            .toLong(),
+                    ),
+            )
+        val der = checkNotNull(info.signingInfo).apkContentsSigners.first().toByteArray()
+        return java.security.MessageDigest
+            .getInstance("SHA-256")
+            .digest(der)
+            .joinToString("") { "%02X".format(it) }
     }
 
     /**

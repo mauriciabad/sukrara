@@ -1,0 +1,12 @@
+[
+  {"tag_name": "v0.12.2-rc1", "html_url": "https://github.com/mauriciabad/sukrara/releases/tag/v0.12.2-rc1", "draft": true, "prerelease": true, "assets": []},
+  {"tag_name": "v0.12.1", "html_url": "https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1", "draft": false, "prerelease": true, "assets": [
+    {"name": "Sukrara-0.12.1-android-mapping.txt.gz", "browser_download_url": "https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/Sukrara-0.12.1-android-mapping.txt.gz", "size": 6879626, "digest": "sha256:9740bab78c63537ea30a79fa61aa88cec7cecb720a130d5cceebc069ac162de6"},
+    {"name": "Sukrara-0.12.1.apk", "browser_download_url": "https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/Sukrara-0.12.1.apk", "size": 21998103, "digest": "sha256:CECB94AB15BA22A86503602BAD0A6175EB9013B6A0803E8773FC5163EDCB3C6D"},
+    {"name": "Sukrara-0.12.1.dmg", "browser_download_url": "https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/Sukrara-0.12.1.dmg", "size": 14042199, "digest": "sha256:0db5e209fbef18fe28f7565c6574f629797af495980c2e641dde0af07fbcd52d"}
+  ]},
+  {"tag_name": "v0.11.53", "html_url": "https://github.com/mauriciabad/sukrara/releases/tag/v0.11.53", "draft": false, "prerelease": false, "assets": [
+    {"name": "Sukrara-0.11.53.apk", "browser_download_url": "https://github.com/mauriciabad/sukrara/releases/download/v0.11.53/Sukrara-0.11.53.apk", "size": 20694419}
+  ], "body": "unused"},
+  {"html_url": "https://github.com/mauriciabad/sukrara/releases/tag/broken", "draft": false, "prerelease": false, "assets": []}
+]

@@ -149,8 +149,8 @@ class ManifestTest {
 
     /**
      * The Google Play build's merged manifest (play flavor, app/src/play). The owner's decision of 2026-11-11 (#142): it
-     * keeps `USE_EXACT_ALARM` (Play's exact-alarm declaration) and the root features; only the update check is left
-     * out, which is code, not manifest (verify-apk.sh --play).
+     * keeps `USE_EXACT_ALARM` (Play's exact-alarm declaration) and the root features; only the updater is left out
+     * (#188: `:update` is a full-flavor dependency; verify-apk.sh --play checks the code too).
      */
     private val play: Element by lazy {
         DocumentBuilderFactory
@@ -195,11 +195,28 @@ class ManifestTest {
         assertTrue(play.names("permission").any { it.endsWith(".permission.SYSTEMUI_STATE") })
     }
 
+    /** The GitHub version's updater (#188): its receiver, never exported, and the permission to install. */
+    private val updater = setOf("app.mauri.sukrara.update.UpdateReceiver")
+
     @Test
-    fun `the Play build has the same components as the GitHub build`() {
+    fun `the Play build has the same components as the GitHub build but the updater`() {
         val tags = listOf("activity", "activity-alias", "service", "receiver", "provider")
         // the debug-only components are in both debug manifests alike, so the sets compare whole
-        assertEquals(tags.flatMap { root.names(it) }.toSortedSet(), tags.flatMap { play.names(it) }.toSortedSet())
+        assertEquals((tags.flatMap { root.names(it) } - updater).toSortedSet(), tags.flatMap { play.names(it) }.toSortedSet())
+        assertTrue(play.names("receiver").none { it.startsWith("app.mauri.sukrara.update.") })
+    }
+
+    /** Play's policy forbids an app updating itself: no install permission and no updater in the Play build. */
+    @Test
+    fun `only the GitHub build may install its update`() {
+        for (p in listOf("android.permission.REQUEST_INSTALL_PACKAGES", "android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION")) {
+            assertTrue(p, p in elements("uses-permission").map { it.attr("name") })
+            assertFalse(p, p in play.names("uses-permission"))
+        }
+        val receiver = named("app.mauri.sukrara.update.UpdateReceiver")
+        assertEquals("false", receiver.attr("exported"))
+        val actions = receiver.getElementsByTagName("action").let { l -> (0 until l.length).map { (l.item(it) as Element).attr("name") } }
+        assertEquals(listOf("android.intent.action.MY_PACKAGE_REPLACED"), actions)
     }
 
     @Test

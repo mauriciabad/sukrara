@@ -273,6 +273,8 @@ fun SukraraNavigation(
     onPenShow: () -> Unit = {},
     openHealthConnect: Boolean = false,
     onHealthConnectShow: () -> Unit = {},
+    openAbout: Boolean = false,
+    onAboutShow: () -> Unit = {},
 ) {
     val backStack = rememberNavBackStack(HomeRoute)
     // Health Connect's "why does this app need it" link: the page that says what is written and why
@@ -284,6 +286,14 @@ fun SukraraNavigation(
             backStack.add(HealthConnectRoute)
         }
         healthShown()
+    }
+    // the update notification's tap (#188): Settings › About on top of what is open; Back returns there
+    val aboutShown by rememberUpdatedState(onAboutShow)
+    LaunchedEffect(openAbout) {
+        if (!openAbout) return@LaunchedEffect
+        val about = SettingsKey("about")
+        if (backStack.last() != about) backStack.add(about)
+        aboutShown()
     }
     // the pen read card's *Check it* / *Review*: Settings › Insulin pens › that pen (› its last big read), on top of
     // what is open; Back walks up through the pen's pages

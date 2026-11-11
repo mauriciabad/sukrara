@@ -6,6 +6,7 @@ package app.mauri.sukrara.feature.settings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessPort
@@ -36,8 +37,8 @@ class SettingsModule(
     systemAccess: SystemAccessPort?,
     /** Which version this is: Google Play or GitHub (About). */
     distribution: Distribution,
-    /** About's update check (built when About first opens); returns null in the Google Play build. */
-    releases: () -> ReleasesSource?,
+    /** The GitHub version's updater (About); returns null in the Google Play build. */
+    updates: () -> AppUpdates?,
     alertPlayback: AlertPlayback,
     pensAvailable: () -> Boolean = { false },
     pens: () -> app.mauri.sukrara.core.model.PensPort? = { null },
@@ -61,7 +62,7 @@ class SettingsModule(
             override val appVersion = appVersion
             override val prerelease = prerelease
             override val distribution = distribution
-            override val releases: ReleasesSource? by lazy { releases() }
+            override val updates: AppUpdates? by lazy { updates() }
             override val clock = clock
             override val sensor = sensor
             override val appsShared = appsShared

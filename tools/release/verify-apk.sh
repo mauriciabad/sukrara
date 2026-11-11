@@ -5,9 +5,10 @@
 # Checks a release APK before it reaches a phone or a GitHub release:
 #   tools/release/verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt>
 # --play: the Google Play build (play flavor; tools/release/play-bundle.sh passes the bundle's universal APK): the
-#   permissions are allow.json's with `play_permissions` applied, and no update check is inside (no GitHubReleases in
-#   the R8 mapping, no api.github.com in the dex). Both builds: the System UI module (META-INF/xposed, its manifest
-#   entries, every LSPosed hook class keeps `intercept`).
+#   permissions are allow.json's with `play_permissions` applied (no install permissions), and no updater is
+#   inside (#188: no app.mauri.sukrara.update class in the R8 mapping, no UpdateReceiver in the manifest, no
+#   api.github.com in the dex). The GitHub build has the updater's receiver. Both builds: the System UI module
+#   (META-INF/xposed, its manifest entries, every LSPosed hook class keeps `intercept`).
 # --unsigned: CI only (no release key, no Juggluco checkout): skips the signer and the Libre 3 core, checks the rest.
 # - signature verifies and the signer certificate is THE release key (tools/release/android-cert.sha256)
 # - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh, not debuggable
@@ -102,15 +103,20 @@ if [ -z "$hookers" ]; then bad "no LSPosed hook class in the dex (XposedInterfac
 elif printf '%s\n' "$hookers" | grep -q ' empty$'; then bad "LSPosed hooks without intercept (R8 removed it): $(printf '%s\n' "$hookers" | grep ' empty$' | tr '\n' ' ')"
 else ok "every LSPosed hook keeps intercept ($(printf '%s\n' "$hookers" | grep -c ' ok$') hook classes)"; fi
 
-# The Google Play build: no GitHub update check, Play brings the updates (docs/20-publishing.md › Flavors).
+# The Google Play build: no updater, Play brings the updates and its policy forbids an app updating itself
+# (docs/20-publishing.md › Flavors, #188). The GitHub build updates itself (:update).
 if [ $play = 1 ]; then
-  gone='^app\.mauri\.sukrara\.feature\.settings\.GitHubReleases[^ ]*'
+  gone='^app\.mauri\.sukrara\.update\.[^ ]*'
   if [ -f "$mapping" ] && grep -Eq "$gone ->" "$mapping"; then
-    bad "R8 mapping lists the update check: $(grep -Eo "$gone" "$mapping" | head -3 | tr '\n' ' ')"
-  else ok "no update-check class (R8 mapping)"; fi
+    bad "R8 mapping lists the updater: $(grep -Eo "$gone" "$mapping" | head -3 | tr '\n' ' ')"
+  else ok "no updater class (R8 mapping)"; fi
+  if printf '%s\n' "$manifest" | grep -Eq '"app\.mauri\.sukrara\.update\.|"android\.permission\.(REQUEST_INSTALL_PACKAGES|UPDATE_PACKAGES_WITHOUT_USER_ACTION)"'; then
+    bad "the manifest has the updater or its install permissions"
+  else ok "no updater and no install permission (manifest)"; fi
   if unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -aq 'api.github.com'; then bad "dex contains the GitHub update check's URL"
   else ok "no GitHub update check URL (dex)"; fi
-fi
+elif printf '%s\n' "$manifest" | grep -q '"app.mauri.sukrara.update.UpdateReceiver"'; then ok "the updater's receiver is in (GitHub build)"
+else bad "no app.mauri.sukrara.update.UpdateReceiver: the GitHub build couldn't finish its own update"; fi
 
 # Cleartext only to this phone's loopback: the debug build's config also allows 10.0.2.2 (a local test relay).
 nsc_file="$("$aapt2" dump resources "$apk" | grep -A1 ' xml/network_security_config$' | sed -n 's/.*(file) \([^ ]*\) type=XML.*/\1/p' | head -1)"

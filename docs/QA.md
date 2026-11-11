@@ -20,7 +20,8 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   true]` (made-up alerts through the real notifier, outside the alert rules), `PEN_READ …`, `PEN_TAGS --ez blocked
   true|false` and `PEN_JUGGLUCO --ez installed true|false` (docs/FEATURES.md "Sensor reminders and countdowns",
   "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
-  = no relay: Q22). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  = no relay: Q22), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local
+  test release and trusts the debug key: Q25). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
   stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
@@ -359,11 +360,13 @@ survive it; the app's data is cleared before each path, so every path starts fro
 over nothing:
 
 - [ ] `play-bundle.sh` exits 0 with bundletool (`$BUNDLETOOL`), and `verify-apk.sh --play` FAILs on the full flavor's
-  APK (the GitHub update check's classes and URL): the Play check bites.
+  APK (the updater's classes, receiver and `REQUEST_INSTALL_PACKAGES`): the Play check bites.
 - [ ] Settings › About: *0.13.0 · Google Play version* (the version from `VERSION`), *About the versions* (opens
   sukrara.mauri.app/android/#versions, the *Versions* section), *Sukrara for Mac*, *Report a problem*, *Source code*,
-  *Privacy policy* (opens sukrara.mauri.app/privacy); no update rows, no disabled row, nothing that says to install
-  another version. Searching "check again" finds nothing; "versions" finds *About the versions*.
+  *Privacy policy* (opens sukrara.mauri.app/privacy); no update rows, no *Updates* switches, no disabled row,
+  nothing that says to install another version. Searching "check again" or "install updates" finds nothing;
+  "versions" finds *About the versions*. Android's Settings › Apps › Sukrara › Notifications has no *App updates*
+  channel, and *Install unknown apps* doesn't list Sukrara.
 - [ ] The same app as the GitHub build otherwise: Settings › Status bar has *With root* (searching "root" finds its
   rows); a fresh install's alert checklist has no *Alarms and reminders* item (`USE_EXACT_ALARM` is granted at
   install).
@@ -770,6 +773,44 @@ test password manager: create a vault, turn its *Educational hints* off, lock it
       fails, Settings › Advanced › *Log* shows the `password manager:` line with the error's type and number.
 - [ ] TalkBack reads the row as a button (SPA's stock *double-tap to activate*), each card when it appears, its title
       as a heading; largest font and Spanish wrap the full-width buttons.
+
+## Q25 Updates (Android, GitHub version)
+
+docs/FEATURES.md › Updates (Android, GitHub version), #188. On an emulator only (never the owner's phone), a debug
+build of the GitHub version (`:app:assembleFullDebug`) as the running version and a newer one (the same code with a
+higher `VERSION`, never committed) as the "release", both signed with the debug key; a third copy re-signed with
+another key (`apksigner sign --ks other.jks`) for the refusal:
+
+```sh
+python3 tools/updates/serve.py new.apk --port 8765     # [--digest <64 hex>] lists another SHA-256
+adb -s emulator-5584 shell pm grant app.mauri.sukrara android.permission.ACCESS_LOCAL_NETWORK   # 10.0.2.2 is local
+adb -s emulator-5584 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver \
+    -a app.mauri.sukrara.debug.UPDATES --es server http://10.0.2.2:8765/
+```
+
+The command ends the app; open it again: with a test server it checks once at start (otherwise an hour after start,
+then daily). `SYNTHETIC --ez on true` for monitoring; `--ei cycle 135` brings a low (an alert), `--ei cycle 0` ends it.
+
+- [ ] *Sukrara 0.x is available* arrives once, silent, under *Silent* in the shade, never in the *Glucose alerts*
+  group; *Update* and *Release notes* (opens the test page); tapping it opens Settings › About. A second check of the
+  same version posts nothing.
+- [ ] *Update* while a low alert is showing: *Downloading…* with progress, then *… is ready to install* · *It installs
+  once no alert is showing* (*Cancel*); nothing installs. Once the alert is gone, within the next retry (5 min, then
+  longer) Android asks (*Install unknown apps* for Sukrara the first time, then *Update this app?*) → *Update*.
+- [ ] The new version is running (About's version) and the glucose notification is back within a minute without
+  opening the app (`adb shell dumpsys activity services app.mauri.sukrara`: MonitoringService in the foreground).
+- [ ] The re-signed APK (serve it instead): *The update to 0.x didn't install* · *It isn't signed by Sukrara…
+  keeps running; nothing changed.*; the running version is unchanged; nothing left in `files/no_backup/update` once
+  refused. `--digest` with another hash: the same with *The file isn't the release's*.
+- [ ] Android's own *Cancel* in its prompt: *Android didn't install it… keeps running* with *Try again*.
+- [ ] Settings › About shows each state with its way out (Q19), *Release notes*, *Check again*; the *Updates* group's
+  two switches (the second dimmed with *Needs the automatic check* while the first is off); search finds both.
+- [ ] *Install updates automatically* on (Wi-Fi): after the check the update installs without a tap once allowed
+  (or says *Android asks you to confirm this update* and offers *Install*); the new version posts *Sukrara updated to
+  0.x* with *Release notes*.
+- [ ] TalkBack reads every update row and the notification's buttons; Spanish strings fit.
+- [ ] The release (not emulator): after publishing, the GitHub version on the owner's phone shows the update within a
+  day, the asset is `Sukrara-<version>.apk` with GitHub's digest, and it installs and comes back monitoring.
 
 ## Q20 The person and the feel
 

@@ -22,7 +22,7 @@ sealed interface SearchTarget {
 enum class Seen { Everyone, Wearer, Follower }
 
 /**
- * What a build may leave out (docs/20-publishing.md › Flavors): the Google Play build has no update check; root is in
+ * What a build may leave out (docs/20-publishing.md › Flavors): the Google Play build has no updater; root is in
  * both builds since 2026-11-11 (#142) and stays here for the fallback if Play rejects it.
  */
 enum class BuildFeature { Root, UpdateCheck }
@@ -348,7 +348,16 @@ object SettingsIndex {
                     R.string.st_about_version to null,
                 ),
             )
-            addAll(page(SettingsRoute.About, R.string.st_update_check_again to null, needs = BuildFeature.UpdateCheck))
+            // the GitHub version's updater (#188): its answer's way out and its two switches
+            addAll(
+                page(
+                    SettingsRoute.About,
+                    R.string.st_update_check_again to null,
+                    R.string.st_update_auto_checks to R.string.st_update_auto_checks_summary,
+                    R.string.st_update_auto_install to R.string.st_update_auto_install_summary,
+                    needs = BuildFeature.UpdateCheck,
+                ),
+            )
             addAll(
                 page(
                     SettingsRoute.About,

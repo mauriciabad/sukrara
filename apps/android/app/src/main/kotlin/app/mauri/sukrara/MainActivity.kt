@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
     /** Health Connect asked for the privacy rationale, until the navigation has opened the Health Connect page. */
     private var openHealth by mutableStateOf(false)
 
+    /** The update notification asked for Settings › About, until the navigation has opened it. */
+    private var openAbout by mutableStateOf(false)
+
     /** The 24-hour setting and time zone the screens show times in ([ClockText.signature]), read again on every return. */
     private var clockLook by mutableStateOf(ClockText.signature())
 
@@ -55,6 +58,7 @@ class MainActivity : ComponentActivity() {
             askNewSensor(intent)
             openPen = penPage(intent)
             openHealth = healthRationale(intent)
+            openAbout = intent?.action == NavTargets.ACTION_ABOUT_PAGE
         }
         val graph = graph
         setContent {
@@ -72,6 +76,8 @@ class MainActivity : ComponentActivity() {
                         onPenShow = { openPen = null },
                         openHealthConnect = openHealth,
                         onHealthConnectShow = { openHealth = false },
+                        openAbout = openAbout,
+                        onAboutShow = { openAbout = false },
                     )
                 }
             }
@@ -84,6 +90,7 @@ class MainActivity : ComponentActivity() {
         askNewSensor(intent)
         penPage(intent)?.let { openPen = it }
         if (healthRationale(intent)) openHealth = true
+        if (intent.action == NavTargets.ACTION_ABOUT_PAGE) openAbout = true
     }
 
     /**

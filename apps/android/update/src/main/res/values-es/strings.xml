@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="up_channel">Actualizaciones de la app</string>
+    <string name="up_channel_description">Un Sukrara más nuevo (la versión de GitHub): descarga, instalación o por qué no se instaló</string>
+    <string name="up_available">Sukrara %1$s está disponible</string>
+    <string name="up_available_text">Actualiza para instalarlo. La monitorización vuelve sola justo después.</string>
+    <string name="up_available_page">Abre la versión para descargarla.</string>
+    <string name="up_downloading">Descargando Sukrara %1$s</string>
+    <string name="up_waiting">Sukrara %1$s está listo para instalar</string>
+    <string name="up_waiting_text">Se instala cuando no haya ninguna alerta a la vista.</string>
+    <string name="up_confirm">Sukrara %1$s está listo para instalar</string>
+    <string name="up_confirm_text">Toca Instalar para confirmar.</string>
+    <string name="up_confirm_auto">Android te pide que confirmes esta actualización. Toca Instalar.</string>
+    <string name="up_installing">Instalando Sukrara %1$s…</string>
+    <string name="up_failed">La actualización a %1$s no se instaló</string>
+    <string name="up_failed_download">La descarga se detuvo. Sukrara %1$s sigue funcionando; no ha cambiado nada.</string>
+    <string name="up_failed_hash">El archivo no es el de la versión, así que se ha borrado. Sukrara %1$s sigue funcionando; no ha cambiado nada.</string>
+    <string name="up_failed_signature">No está firmado por Sukrara, así que se ha rechazado. Sukrara %1$s sigue funcionando; no ha cambiado nada.</string>
+    <string name="up_failed_install">Android no lo instaló. Sukrara %1$s sigue funcionando; no ha cambiado nada.</string>
+    <string name="up_updated">Sukrara se ha actualizado a %1$s</string>
+    <string name="up_updated_text">La monitorización ha vuelto. Mira las novedades en las notas de la versión.</string>
+    <string name="up_action_update">Actualizar</string>
+    <string name="up_action_notes">Notas de la versión</string>
+    <string name="up_action_cancel">Cancelar</string>
+    <string name="up_action_install">Instalar</string>
+    <string name="up_action_retry">Reintentar</string>
+</resources>

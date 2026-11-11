@@ -37,7 +37,7 @@ rootProject.name = "Sukrara"
 
 include(":app")
 include(":core:model", ":core:testing", ":core:alerts", ":core:protocol", ":core:data", ":core:designsystem", ":core:graph")
-include(":monitor", ":sensor", ":share", ":integrations", ":pen", ":widgets")
+include(":monitor", ":sensor", ":share", ":integrations", ":pen", ":widgets", ":update")
 include(":feature:home", ":feature:settings", ":feature:sharing", ":feature:sensor", ":feature:treatments")
 // AOSP SettingsLib SPA (frameworks/base/packages/SettingsLib/Spa/spa), vendored: settingslib-spa/NOTICE
 include(":settingslib-spa")
