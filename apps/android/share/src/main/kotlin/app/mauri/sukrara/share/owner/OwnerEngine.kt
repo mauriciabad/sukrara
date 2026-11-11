@@ -40,6 +40,7 @@ import app.mauri.sukrara.share.owner.usecase.SetWriter
 import app.mauri.sukrara.share.owner.usecase.Step
 import app.mauri.sukrara.share.owner.usecase.SyncTreatments
 import app.mauri.sukrara.share.owner.usecase.TellFollowers
+import app.mauri.sukrara.share.transport.NetworkWatch
 import app.mauri.sukrara.share.transport.RelayFilter
 import app.mauri.sukrara.share.transport.RelayInbound
 import app.mauri.sukrara.share.transport.RelayTransport
@@ -94,6 +95,8 @@ class OwnerEngine(
     private val sensor: Flow<SensorLife?> = flowOf(null),
     /** Called for a new access request (the notification with Allow / Deny lives in the app layer). */
     private val onRequest: (PendingRequest) -> Unit = {},
+    /** The network came back: the relays reconnect at once. Watched only while sharing runs. */
+    private val network: NetworkWatch = NetworkWatch.None,
 ) {
     private val serial = dispatcher.limitedParallelism(1)
     private val lock = Mutex()
@@ -151,6 +154,8 @@ class OwnerEngine(
     private fun halt() {
         jobs.forEach { it.cancel() }
         jobs = emptyList()
+        networkWatch?.close()
+        networkWatch = null
         transport.stop()
         nearby.stop()
         pairingTimer?.cancel()
@@ -160,6 +165,9 @@ class OwnerEngine(
     }
 
     @Volatile private var runScope: CoroutineScope? = null
+
+    /** The network watch while sharing runs ([run] opens it, [halt] closes it). */
+    private var networkWatch: AutoCloseable? = null
 
     /** The identity's public key while running (the backup's `d`, the inbox's `#p`). */
     @Volatile private var identityPub: String? = null
@@ -301,6 +309,8 @@ class OwnerEngine(
         transport.subscribe(INBOX, listOf(RelayFilter(kinds = listOf(Wire.KIND_WRAP), p = listOf(identity))))
         transport.subscribe(OWN, listOf(RelayFilter(kinds = listOf(Wire.KIND_DATA), authors = listOf(identity), since = now() - Wire.DAY)))
         if (policy.on) transport.start() else transport.stop()
+        networkWatch?.close()
+        networkWatch = network.watch { transport.reconnectNow() }
         // before the first send: the Bluetooth backlog caches what goes out from here on
         nearby.start(nearbyHost)
         s.pendingControl.mapNotNull { SignedEvent.parse(it.eventJson) }.forEach(::send)

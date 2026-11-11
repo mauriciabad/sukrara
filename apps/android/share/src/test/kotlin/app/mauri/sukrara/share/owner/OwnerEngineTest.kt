@@ -26,6 +26,7 @@ import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.invite.InviteLink
+import app.mauri.sukrara.share.FakeNetworkWatch
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
@@ -49,6 +50,8 @@ class OwnerEngineTest {
     private val relay = FakeRelayTransport()
     private val store = OwnerIdentityStore(InMemorySecureStore())
 
+    private val network = FakeNetworkWatch()
+
     private fun TestScope.engine() =
         OwnerEngine(
             ctx,
@@ -59,7 +62,46 @@ class OwnerEngineTest {
             InMemoryTreatmentsRepository(),
             FakeClock(Instant.ofEpochSecond(NOW)),
             StandardTestDispatcher(testScheduler),
+            network = network,
         )
+
+    /**
+     * #78: the network watch (relays reconnect at once when the network comes back) runs exactly while sharing does:
+     * opened by the start, closed by the stop, so no callback is left registered for a sharing that ended.
+     */
+    @Test fun theNetworkWatchRunsOnlyWhileSharingRuns() =
+        runTest {
+            store.save(CreateIdentity(ctx)(null, NOW).state)
+            val e = engine()
+            assertEquals("nothing before the start", 0, network.opened)
+            e.start(backgroundScope)
+            runCurrent()
+            assertEquals(1, network.open)
+            network.networkBack()
+            assertEquals(1, relay.reconnects)
+
+            e.stop()
+            runCurrent()
+            assertEquals(0, network.open)
+            assertEquals(1, network.closed)
+            network.networkBack()
+            assertEquals("a stopped sharing hears nothing", 1, relay.reconnects)
+
+            e.start(backgroundScope)
+            runCurrent()
+            assertEquals("a new start opens one again", 1, network.open)
+            e.stop()
+        }
+
+    /** A phone with no identity shares nothing: it watches no network either. */
+    @Test fun noIdentityOpensNoNetworkWatch() =
+        runTest {
+            val e = engine()
+            e.start(backgroundScope)
+            runCurrent()
+            assertEquals(OwnerShareState.NoIdentity, e.state.value)
+            assertEquals(0, network.opened)
+        }
 
     @Test fun aRotationInterruptedByACrashIsResentOnStartUntilARelayAccepts() =
         runTest {

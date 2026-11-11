@@ -90,7 +90,9 @@ import app.mauri.sukrara.share.FollowerModule
 import app.mauri.sukrara.share.ShareOwnerModule
 import app.mauri.sukrara.share.follower.FollowState
 import app.mauri.sukrara.share.follower.FollowerNotifications
+import app.mauri.sukrara.share.follower.WearerSettingsCache
 import app.mauri.sukrara.share.owner.OwnerShareState
+import app.mauri.sukrara.share.owner.SeenWraps
 import app.mauri.sukrara.share.owner.followRole
 import app.mauri.sukrara.share.owner.requests.AndroidRequestNotifications
 import app.mauri.sukrara.widgets.WidgetPlacements
@@ -541,7 +543,23 @@ class AppGraph(
             FollowerNotifications(app, Channels.REQUESTS, info.key) {
                 NotificationGroups.post(app, NotificationIds.FOLLOWING, it, info, Channels.REQUESTS)
             }
-        FollowerModule(app, data, monitor.hub, clock, dispatchers, notifications::show, launch.relays)
+        FollowerModule(
+            context = app,
+            secure = data.secureStore,
+            http = data.http,
+            // the database first: before the unlock it refuses, and this block runs again at the next use (the typed
+            // store below can be made only once)
+            readings = data.readings,
+            treatments = data.treatments,
+            // a damaged copy reads as none: the record (when readable) has the same settings
+            wearerSettings =
+                data.typedStore("wearer_settings", WearerSettingsCache.serializer(), WearerSettingsCache(), WearerSettingsCache()),
+            hub = monitor.hub,
+            clock = clock,
+            dispatchers = dispatchers,
+            notices = notifications::show,
+            relayAccess = launch.relays,
+        )
     }
 
     /**
@@ -667,7 +685,11 @@ class AppGraph(
         val info = NotificationGroups.Group.INFO
         ShareOwnerModule(
             context = app,
-            data = data,
+            secure = data.secureStore,
+            http = data.http,
+            settings = data.settings,
+            treatments = data.treatments,
+            seen = SeenWraps(data::markWrapSeen),
             hub = monitor.hub,
             clock = clock,
             dispatchers = dispatchers,
@@ -682,7 +704,7 @@ class AppGraph(
                     remove = { NotificationGroups.cancel(app, NotificationIds.REQUESTS, info) },
                 ),
             // what followers on *Settings from: Wearer* use (cold: the alert runtime is built when the engine reads it)
-            settings = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
+            mirrored = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
             relays = launch.relays,
             // the live events' ss / se / sw (PROTOCOL-v2 "Sensor life"): followers see a warm-up and an end with no reading
             sensor = sensor.source.sensorInfo.map { it?.let { i -> SensorLife(i.startEpoch, i.endEpoch, i.warmupEndEpoch) } },

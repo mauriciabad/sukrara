@@ -482,6 +482,9 @@ TTLs, JSON field names and number forms, invite link `https://sukrara.mauri.app/
   pings every 60 s), backoff 2 s → 5 min × jitter, subscriptions + a 1-hour outbox re-sent after reconnects (a newer
   live / addressable event replaces the older), NIP-42 AUTH as the identity. nostr-sdk's Client isn't used: one relay
   behaviour on both platforms, and the pool is unit-tested against fake sockets. Tests use `FakeRelayTransport`.
+  `NetworkWatch` (Android: `AndroidNetworkWatch`, the default-network callback) makes the relays reconnect when a new
+  network comes up; each engine opens it while it runs (the owner's sharing, the follower's connection) and closes it
+  when it stops. Tests use `FakeNetworkWatch`.
 - `owner/` — `OwnerState` (typed state, `@Serializable`, redacted) in `OwnerIdentityStore` (SecureStore
   `identity.owner`; unreadable ≠ missing). Use-cases in `owner/usecase` are pure `(state, input, now) → Step(state,
   events)`: `CreateIdentity`, `RestoreIdentity` (+ `restoreAllowed` gate), `ExportRecovery`, `CreateInvite`,
@@ -489,7 +492,8 @@ TTLs, JSON field names and number forms, invite link `https://sukrara.mauri.app/
   `IdentityConflictDetector`; control events (deliveries, notices, roster, backup) wait in `pendingControl` until a
   relay answers OK, so a rotation interrupted by a crash still reaches every follower. `OwnerEngine` runs them on one
   serial dispatcher, persists before publishing and exposes `StateFlow<OwnerShareState>`; `ShareOwnerModule` (A4)
-  builds it for `AppGraph`.
+  builds it for `AppGraph` from only the storage it uses (the secure store, the settings, the treatment log, the
+  seen-wraps ledger as a `SeenWraps` port), not the whole `DataModule`; `FollowerModule` likewise.
 - `ble/` — Bluetooth share (ogs-ble). Pure protocol cores without android.bluetooth, JVM-tested with fake frames:
   `NearbyServerCore` (wearer: per-central framing, HELLO → INFO + backlog, identity proof, pushes, B§8 limits) and
   `NearbyLink` (follower: HELLO + proof, the which-owner gate, one write in flight). Thin adapters run them on one

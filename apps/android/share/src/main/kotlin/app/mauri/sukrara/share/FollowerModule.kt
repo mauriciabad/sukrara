@@ -4,12 +4,13 @@
 package app.mauri.sukrara.share
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import app.mauri.sukrara.core.data.DataModule
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
+import app.mauri.sukrara.core.model.storage.ReadingsRepository
+import app.mauri.sukrara.core.model.storage.SecureStore
+import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.ble.NearbyTransportFactory
@@ -19,18 +20,26 @@ import app.mauri.sukrara.share.follower.FollowerNotice
 import app.mauri.sukrara.share.follower.FollowerStore
 import app.mauri.sukrara.share.follower.RelayTransportFactory
 import app.mauri.sukrara.share.follower.WearerSettingsCache
+import app.mauri.sukrara.share.transport.AndroidNetworkWatch
 import app.mauri.sukrara.share.transport.OkHttpWebSockets
 import app.mauri.sukrara.share.transport.RelayAccess
 import app.mauri.sukrara.share.transport.RelayPool
+import okhttp3.OkHttpClient
 
 /**
  * The follower role's sharing graph (composed by `AppGraph`). Nothing is built until first use; the engine connects
  * only while the monitoring service hosts it as the follower's reading source. [notices] = the notification for what
- * the wearer said (invite used, declined, access removed).
+ * the wearer said (invite used, declined, access removed). It takes only the storage it uses: the follower record's
+ * [secure] store, every stored reading and treatment (the wearer's, written and wiped by the engine), and a plain
+ * copy of the wearer's settings ([wearerSettings]; a damaged copy reads as none: the record has the same settings).
  */
 class FollowerModule(
     private val context: Context,
-    private val data: DataModule,
+    private val secure: SecureStore,
+    private val http: OkHttpClient,
+    private val readings: ReadingsRepository,
+    private val treatments: TreatmentsRepository,
+    private val wearerSettings: StateStore<WearerSettingsCache>,
     private val hub: GlucoseHub,
     private val clock: Clock,
     private val dispatchers: DispatcherProvider,
@@ -47,7 +56,7 @@ class FollowerModule(
                     urls,
                     auth,
                     crypto,
-                    OkHttpWebSockets(data.http),
+                    OkHttpWebSockets(http),
                     dispatchers.io,
                     { clock.now().epochSecond },
                     access = relayAccess,
@@ -55,27 +64,17 @@ class FollowerModule(
             }
         FollowerEngine(
             crypto = crypto,
-            store = FollowerStore(data.secureStore, crypto),
+            store = FollowerStore(secure, crypto),
             transports = relays,
-            readingsRepo = data.readings,
-            treatments = data.treatments,
+            readingsRepo = readings,
+            treatments = treatments,
             clock = clock,
             dispatcher = dispatchers.default,
             setLink = hub::setLink,
             onNotice = notices,
             nearbyTransports = NearbyTransportFactory { identity -> AndroidNearbyCentral(context, crypto, identity) },
-            // a damaged copy reads as none: the record (when readable) has the same settings
-            settingsCache =
-                data.typedStore("wearer_settings", WearerSettingsCache.serializer(), WearerSettingsCache(), WearerSettingsCache()),
-        ).also { watchNetwork(it) }
-    }
-
-    /** The network came back: reconnect relays now instead of waiting out the backoff. */
-    private fun watchNetwork(engine: FollowerEngine) {
-        context.getSystemService(ConnectivityManager::class.java)?.registerDefaultNetworkCallback(
-            object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) = engine.reconnectNow()
-            },
+            settingsCache = wearerSettings,
+            network = AndroidNetworkWatch(context),
         )
     }
 }

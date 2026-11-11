@@ -186,6 +186,12 @@ class DataModule(
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
 
+    /** The sharing ledger: marks gift wrap [id] seen at [at]; false when it was already (the wearer's inbox handles each once). */
+    suspend fun markWrapSeen(
+        id: String,
+        at: Long,
+    ): Boolean = database.seenWraps().markSeen(id, at)
+
     private val recentReadings by lazy {
         RecentReadings(
             File(deviceFiles, DeviceProtected.RECENT_READINGS),

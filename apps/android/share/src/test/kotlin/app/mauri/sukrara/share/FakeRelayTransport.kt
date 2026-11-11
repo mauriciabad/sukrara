@@ -48,7 +48,12 @@ class FakeRelayTransport(var answering: Int = 1) : RelayTransport {
         published += event
     }
 
-    override fun reconnectNow() = Unit
+    /** How often the engine asked to reconnect now (the network came back). */
+    var reconnects = 0
+
+    override fun reconnectNow() {
+        reconnects++
+    }
 
     override suspend fun fetch(filters: List<RelayFilter>, timeoutMs: Long): FetchResult =
         if (answering == 0) FetchResult(emptyList(), 0) else FetchResult(stored.filter { e -> filters.any { it.matches(e) } }, answering)

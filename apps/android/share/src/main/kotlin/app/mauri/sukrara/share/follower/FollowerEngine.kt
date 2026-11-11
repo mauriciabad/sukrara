@@ -46,6 +46,7 @@ import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.ble.NearbyTransport
 import app.mauri.sukrara.share.ble.NearbyTransportFactory
 import app.mauri.sukrara.share.owner.usecase.TreatmentWire
+import app.mauri.sukrara.share.transport.NetworkWatch
 import app.mauri.sukrara.share.transport.RelayFilter
 import app.mauri.sukrara.share.transport.RelayInbound
 import app.mauri.sukrara.share.transport.RelayStatus
@@ -177,6 +178,8 @@ class FollowerEngine(
      * start still gives the alert runtime and the card the wearer's settings instead of this phone's own.
      */
     private val settingsCache: StateStore<WearerSettingsCache>? = null,
+    /** The network came back: the relays reconnect at once. Watched only while connected (the service hosts it). */
+    private val network: NetworkWatch = NetworkWatch.None,
 ) : ReadingSource {
     private val serial = dispatcher.limitedParallelism(1)
     private val lock = Mutex()
@@ -232,6 +235,7 @@ class FollowerEngine(
 
     // the connection (while attached)
     @Volatile private var transport: RelayTransport? = null
+    private var networkWatch: AutoCloseable? = null
     private var sink: ProducerScope<List<Reading>>? = null
     private var jobs = emptyList<Job>()
     private var subscribed = emptyMap<String, RelayFilter>()
@@ -612,6 +616,8 @@ class FollowerEngine(
             )
         resubscribe()
         t.start()
+        networkWatch?.close()
+        networkWatch = network.watch(::reconnectNow)
         startNearby(out, r)
         if (r.stream.status == FollowStatus.New || r.stream.status == FollowStatus.Requested) sendRequest()
         resendPending()
@@ -695,6 +701,8 @@ class FollowerEngine(
     private fun disconnect() {
         jobs.forEach { it.cancel() }
         jobs = emptyList()
+        networkWatch?.close()
+        networkWatch = null
         transport?.stop()
         transport = null
         nearby?.stop()

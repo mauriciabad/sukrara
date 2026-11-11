@@ -31,6 +31,7 @@ import app.mauri.sukrara.protocol.event.SettingsCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.invite.Invite
+import app.mauri.sukrara.share.FakeNetworkWatch
 import app.mauri.sukrara.share.FakeRelayTransport
 import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
@@ -105,7 +106,10 @@ class FollowerEngineTest {
         onNotice = { n, _ -> notices += n },
         joinTimeoutMs = timeoutMs,
         settingsCache = settingsCache,
+        network = network,
     )
+
+    private val network = FakeNetworkWatch()
 
     private var lookupFirst = true
 
@@ -161,6 +165,34 @@ class FollowerEngineTest {
             relay.deliver(sub, ev)
         }
     }
+
+    /**
+     * #78: the network watch (relays reconnect at once when the network comes back) runs exactly while the monitoring
+     * service hosts the engine as its source: opened on connect, closed when it detaches.
+     */
+    @Test fun theNetworkWatchRunsOnlyWhileAttached() =
+        runTest {
+            val e = engine()
+            val invite = lookedUp(e)
+            var result: JoinResult? = null
+            backgroundScope.launch { result = e.join(invite, Profile("Bea", null)) }
+            runCurrent()
+            assertEquals(JoinResult.Joined, result)
+            assertEquals("not attached: no watch", 0, network.opened)
+
+            val attached = backgroundScope.launch { e.readings.collect { } }
+            runCurrent()
+            assertEquals(1, network.open)
+            network.networkBack()
+            assertEquals(1, relay.reconnects)
+
+            attached.cancel()
+            runCurrent()
+            assertEquals(0, network.open)
+            assertEquals(1, network.closed)
+            network.networkBack()
+            assertEquals("detached: nothing to reconnect", 1, relay.reconnects)
+        }
 
     @Test fun joinOpensTheInviteAndTheRequestGoesOutOnConnect() =
         runTest {

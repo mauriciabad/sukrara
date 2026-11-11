@@ -26,9 +26,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
-    // the sharing ledger (seen gift wraps) is a :core:data Room DAO
-    implementation(libs.androidx.room.runtime)
     testImplementation(project(":core:testing"))
+    // the Android network watch on ConnectivityManager
+    testImplementation(libs.robolectric)
     testImplementation(testFixtures(project(":core:protocol")))
     // Host unit tests can't load the AAR's Android .so: the JVM build of the same bindings (same classes, desktop
     // natives in its resources) runs the adapter there. Test classpath only, never in an APK.
