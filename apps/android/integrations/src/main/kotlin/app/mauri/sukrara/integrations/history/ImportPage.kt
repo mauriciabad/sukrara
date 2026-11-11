@@ -49,8 +49,8 @@ import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -181,11 +181,11 @@ fun ImportContent(
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
     if (!ui.wearer) {
-        IntroText(stringResource(R.string.in_import_follower))
+        SettingsIntro(stringResource(R.string.in_import_follower))
         return@Column
     }
     var libreView by rememberSaveable { mutableStateOf(false) }
-    IntroText(stringResource(R.string.in_import_intro))
+    SettingsIntro(stringResource(R.string.in_import_intro))
     Reveal(ui.state !is ImportState.Idle) {
         SettingsGroup { CardRow { ImportStatus(ui, actions) } }
     }
@@ -201,7 +201,6 @@ fun ImportContent(
                         stringResource(R.string.in_import_tidepool_summary, ui.tidepoolEmail)
                     },
                 enabled = !ui.running,
-                onClickLabel = stringResource(R.string.in_import_action),
             )
         } else {
             NavigationRow(

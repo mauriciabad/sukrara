@@ -280,7 +280,7 @@ fun PensContent(
             listOf("ask", "on", "off").map { Choice(readingLabels.getValue(it), it) },
             ui.reading,
             { choosing = false },
-            vm::setReading,
+            onChoose = vm::setReading,
         )
     }
     if (editing >= 0) {

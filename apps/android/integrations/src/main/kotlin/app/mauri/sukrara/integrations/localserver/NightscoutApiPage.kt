@@ -39,9 +39,9 @@ import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.SecretClipboard
 import app.mauri.sukrara.integrations.ui.ago
 import kotlinx.coroutines.CancellationException
@@ -271,7 +271,7 @@ fun NightscoutApiContent(
     actions: NsApiActions,
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
-    IntroText(stringResource(R.string.in_nsapi_intro))
+    SettingsIntro(stringResource(R.string.in_nsapi_intro))
     SettingsGroup {
         SwitchRow(
             stringResource(R.string.in_nsapi_switch),
@@ -390,7 +390,6 @@ private fun CopyRow(
             copied = true
         },
         summary = if (copied) stringResource(R.string.in_nsapi_copied) else hint,
-        onClickLabel = stringResource(R.string.in_nsapi_copy_action),
     )
 }
 

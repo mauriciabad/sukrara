@@ -20,9 +20,9 @@ import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.ago
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -128,7 +128,7 @@ fun HealthConnectContent(
     actions: HcActions,
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
-    IntroText(stringResource(R.string.in_hc_intro))
+    SettingsIntro(stringResource(R.string.in_hc_intro))
     if (ui.status == HcStatus.Follower || ui.status == HcStatus.Unavailable) {
         val why = if (ui.status == HcStatus.Follower) R.string.in_hc_follower else R.string.in_hc_unavailable
         SettingsGroup {

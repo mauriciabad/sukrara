@@ -4,34 +4,16 @@
 package app.mauri.sukrara.feature.settings.statusbar
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.designsystem.banner.SettingsBannerCard
+import app.mauri.sukrara.designsystem.dialog.Choice
+import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.errors.Trouble
-import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
@@ -169,55 +151,29 @@ private fun PlacementDialog(
     onClose: () -> Unit,
     onPick: (String) -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.st_root_placement)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()).selectableGroup()) {
-                for (pos in HookPosition.ALL) {
-                    val full = module || !HookPosition.needsModule(pos)
-                    val icons = !full && HookPosition.isSystemIcons(pos)
-                    val enabled = full || icons
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .selectable(pos == current, enabled = enabled, role = Role.RadioButton) {
-                                onPick(pos)
-                                onClose()
-                            }.padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = pos == current, onClick = null, enabled = enabled)
-                        Column(Modifier.padding(start = 16.dp)) {
-                            val color =
-                                if (enabled) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.38f,
-                                    )
-                                }
-                            Text(stringResource(placementLabel(pos)), color = color)
-                            if (!full) {
-                                Text(
-                                    stringResource(if (icons) R.string.st_root_pos_needs_module_icons else R.string.st_root_module_needed),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.st_root_cancel)) } },
-    )
+    val options =
+        HookPosition.ALL.map { pos ->
+            val full = module || !HookPosition.needsModule(pos)
+            val icons = !full && HookPosition.isSystemIcons(pos)
+            Choice(
+                stringResource(placementLabel(pos)),
+                pos,
+                sub =
+                    if (full) {
+                        null
+                    } else {
+                        stringResource(if (icons) R.string.st_root_pos_needs_module_icons else R.string.st_root_module_needed)
+                    },
+                enabled = full || icons,
+            )
+        }
+    ChoiceDialog(stringResource(R.string.st_root_placement), options, current, onClose, onChoose = onPick)
 }
 
 /**
  * The one step a root feature is missing, with its fix: root for Sukrara (Check again), then the LSPosed module
- * (enable it; add System UI to its scope; restart System UI). Module steps show only while the value is on.
+ * (enable it; add System UI to its scope; restart System UI). Module steps show only while the value is on. SPA's
+ * SettingsBanner, the reason the last try failed under its text.
  */
 @Composable
 fun AccessBanner(
@@ -279,25 +235,20 @@ fun AccessBanner(
             }
         }
     step ?: return
-    SettingsGroup(modifier = modifier) {
-        CardRow(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-            Text(stringResource(step.first), style = MaterialTheme.typography.titleSmall)
-            Text(step.second, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    SettingsBannerCard(
+        DsR.drawable.ds_ic_warning,
+        stringResource(step.first),
+        step.second,
+        modifier,
+        action = step.third?.let { (label, _) -> stringResource(if (busy) R.string.st_access_restarting else label) },
+        onAction = { step.third?.second?.invoke() },
+        actionEnabled = !busy,
+        note =
             problem?.let {
-                Text(
-                    when (it) {
-                        is AccessProblem.Said -> stringResource(R.string.st_access_failed, it.text)
-                        is AccessProblem.Failed -> stringResource(it.why.text)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            step.third?.let { (label, run) ->
-                Button(onClick = run, enabled = !busy, modifier = Modifier.align(Alignment.End)) {
-                    Text(stringResource(if (busy) R.string.st_access_restarting else label))
+                when (it) {
+                    is AccessProblem.Said -> stringResource(R.string.st_access_failed, it.text)
+                    is AccessProblem.Failed -> stringResource(it.why.text)
                 }
-            }
-        }
-    }
+            },
+    )
 }

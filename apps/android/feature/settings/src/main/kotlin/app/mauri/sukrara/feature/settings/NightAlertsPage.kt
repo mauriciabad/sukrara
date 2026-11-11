@@ -17,7 +17,9 @@ import app.mauri.sukrara.designsystem.alerts.rememberAlertWords
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.FooterText
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
@@ -77,15 +79,10 @@ fun NightAlertsContent(
             )
         }
         header()
+        // what the page is for (TopIntroPreference), then its main switch (MainSwitchPreference)
+        SettingsIntro(stringResource(R.string.st_night_use_summary))
+        MainSwitchRow(stringResource(R.string.st_night_use), n.on, { on -> edit(NightEdits.on(on)) }, readOnly = ui.mirrored)
         SettingsGroup {
-            SwitchRow(
-                stringResource(R.string.st_night_use),
-                n.on,
-                { on -> edit(NightEdits.on(on)) },
-                summary = stringResource(R.string.st_night_use_summary),
-                icon = DsR.drawable.ds_ic_bedtime,
-                readOnly = ui.mirrored,
-            )
             ValueRow(
                 stringResource(R.string.st_night_from),
                 Clock.minuteOfDay(n.fromMin),
@@ -162,16 +159,14 @@ fun NightKindContent(
     val label = numberLabeler()
     val readOnly = ui.mirrors(kind)
     SettingsPage(stringResource(R.string.st_night_kind_title, kindName(kind)), onBack) {
-        SettingsGroup {
-            SwitchRow(
-                stringResource(R.string.st_kind_use, kindInSentence(kind)),
-                rule.on,
-                { on -> edit(NightEdits.rule(kind) { it.copy(on = on) }) },
-                summary = stringResource(R.string.st_night_always).takeIf { kind == AlertKind.VERY_LOW },
-                icon = kindIcon(kind),
-                readOnly = readOnly || kind == AlertKind.VERY_LOW,
-            )
-        }
+        // the page's main switch; very low is always on at night, and the page says so
+        MainSwitchRow(
+            stringResource(R.string.st_kind_use, kindInSentence(kind)),
+            rule.on,
+            { on -> edit(NightEdits.rule(kind) { it.copy(on = on) }) },
+            readOnly = readOnly || kind == AlertKind.VERY_LOW,
+            note = stringResource(R.string.st_night_always).takeIf { kind == AlertKind.VERY_LOW },
+        )
         SettingsGroup(title = stringResource(R.string.st_alert_when)) {
             ValueRow(
                 stringResource(R.string.st_threshold),

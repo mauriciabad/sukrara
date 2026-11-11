@@ -65,7 +65,6 @@
     <string name="in_nsapi_show_secret_summary">Las apps lo necesitan para leer. No se pueden hacer capturas mientras se ve.</string>
     <string name="in_nsapi_secret_label">Secreto de la API de Nightscout</string>
     <string name="in_nsapi_copy">Para apps de este móvil · Toca para copiar</string>
-    <string name="in_nsapi_copy_action">copiar</string>
     <string name="in_nsapi_copied">Copiado · sale del portapapeles en un minuto</string>
     <string name="in_nsapi_xdrip_url">Dirección para xDrip+</string>
     <string name="in_nsapi_token_url">Dirección con token (esferas de reloj, otras apps)</string>
@@ -287,7 +286,6 @@
     <string name="in_import_tidepool_summary_plain">Descargar los últimos 90 días de tu cuenta de Tidepool</string>
     <string name="in_import_tidepool_sign_in">Primero inicia sesión en Tidepool</string>
     <string name="in_import_tidepool_sign_in_action">Iniciar sesión en Tidepool</string>
-    <string name="in_import_action">importar</string>
     <string name="in_import_libreview_summary">LibreView da tu historial como archivo: descárgalo allí y elígelo aquí</string>
     <string name="in_import_libreview_title">Historial desde LibreView</string>
     <string name="in_import_libreview_steps">1. Abre LibreView e inicia sesión.\n2. Historial de glucosa › Descargar datos de glucosa.\n3. Elige ese archivo aquí.\n\nLibreView no deja que las apps descarguen tu historial, así que este paso es tuyo.</string>

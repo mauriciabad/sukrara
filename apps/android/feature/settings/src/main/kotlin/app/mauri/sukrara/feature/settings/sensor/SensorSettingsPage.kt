@@ -10,14 +10,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -41,12 +36,11 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
-import app.mauri.sukrara.designsystem.haptics.rememberHaptics
-import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
+import app.mauri.sukrara.designsystem.rows.RadioRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
@@ -563,55 +557,22 @@ private fun JugglucoSecretDialog(
     )
 }
 
-/** Libre 3 direct ↔ Juggluco: tapping the other one asks first ([onChoose]); the current one does nothing. */
+/** Libre 3 direct ↔ Juggluco, SPA's inline radio rows: tapping the other one asks first ([onChoose]); the current one does nothing. */
 @Composable
 private fun SourceGroup(
     current: SourceChoice,
     onChoose: (SourceChoice) -> Unit,
 ) {
-    val haptics = rememberHaptics()
     SettingsGroup(Modifier.selectableGroup(), title = stringResource(R.string.st_sensor_source)) {
         for (source in SourceChoice.entries) {
             val selected = source == current
-            CardRow {
-                Row(
-                    Modifier.selectable(selected, role = Role.RadioButton) {
-                        if (!selected) {
-                            haptics.toggle(true)
-                            onChoose(source)
-                        }
-                    },
-                ) {
-                    RadioButton(selected = selected, onClick = null)
-                    Column(Modifier.padding(start = 16.dp).weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            stringResource(
-                                if (source ==
-                                    SourceChoice.Juggluco
-                                ) {
-                                    R.string.st_sensor_source_juggluco
-                                } else {
-                                    R.string.st_sensor_source_direct
-                                },
-                            ),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Text(
-                            stringResource(
-                                if (source ==
-                                    SourceChoice.Juggluco
-                                ) {
-                                    R.string.st_sensor_source_juggluco_why
-                                } else {
-                                    R.string.st_sensor_source_direct_why
-                                },
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
+            val juggluco = source == SourceChoice.Juggluco
+            RadioRow(
+                stringResource(if (juggluco) R.string.st_sensor_source_juggluco else R.string.st_sensor_source_direct),
+                selected,
+                { if (!selected) onChoose(source) },
+                summary = stringResource(if (juggluco) R.string.st_sensor_source_juggluco_why else R.string.st_sensor_source_direct_why),
+            )
         }
     }
 }
@@ -623,10 +584,12 @@ private fun AccountGroup(
 ) {
     SettingsGroup(title = stringResource(R.string.st_sensor_libreview)) {
         if (account == null) {
-            CardRow {
-                Text(stringResource(R.string.st_sensor_signed_out_text), style = MaterialTheme.typography.bodyLarge)
-                Button(onClick = actions.signIn, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.st_sensor_sign_in)) }
-            }
+            NavigationRow(
+                stringResource(R.string.st_sensor_sign_in),
+                actions.signIn,
+                summary = stringResource(R.string.st_sensor_signed_out_text),
+                icon = DsR.drawable.ds_ic_account_circle,
+            )
         } else {
             InfoRow(stringResource(R.string.st_sensor_signed_in_as), summary = account.email, icon = DsR.drawable.ds_ic_account_circle)
             account.receiverId?.let {

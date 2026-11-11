@@ -43,12 +43,13 @@ import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import app.mauri.sukrara.settings.SettingsSpec
@@ -185,7 +186,7 @@ fun LibreViewContent(
     val s = state.settings
     val on = s.on && wearer && state.signedIn
     var choosingInterval by rememberSaveable { mutableStateOf(false) }
-    IntroText(stringResource(R.string.in_lv_intro))
+    SettingsIntro(stringResource(R.string.in_lv_intro))
     SettingsGroup {
         ValueRow(
             stringResource(R.string.in_lv_account),
@@ -212,21 +213,22 @@ fun LibreViewContent(
             )
         }
     }
-    SettingsGroup {
-        SwitchRow(
-            stringResource(R.string.in_lv_main),
-            s.on,
-            { v -> actions.change { it.copy(on = v) } },
-            // switching off always works (signed out, or no longer the wearer); switching on needs an account
-            enabled = s.on || (wearer && state.signedIn),
-            summary =
-                when {
-                    !wearer -> stringResource(R.string.in_status_follower)
-                    !state.signedIn -> stringResource(R.string.in_lv_main_needs_account)
-                    else -> null
-                },
-        )
-        if (on) {
+    // the page's main switch (SPA MainSwitchPreference); while it can't be turned on, the page says why
+    MainSwitchRow(
+        stringResource(R.string.in_lv_main),
+        s.on,
+        { v -> actions.change { it.copy(on = v) } },
+        // switching off always works (signed out, or no longer the wearer); switching on needs an account
+        enabled = s.on || (wearer && state.signedIn),
+        note =
+            when {
+                !wearer -> stringResource(R.string.in_status_follower)
+                !state.signedIn -> stringResource(R.string.in_lv_main_needs_account)
+                else -> null
+            },
+    )
+    if (on) {
+        SettingsGroup {
             val status = state.status
             if (status == UploadStatus.AuthFailed) {
                 ValueRow(stringResource(R.string.in_ns_status), libreViewStatusText(status, now), {

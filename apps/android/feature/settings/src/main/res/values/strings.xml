@@ -3,12 +3,10 @@
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
-    <string name="st_back">Back</string>
     <string name="st_cancel">Cancel</string>
     <string name="st_settings_title">Settings</string>
     <string name="st_alerts_title">Alerts</string>
-    <string name="st_alerts_main">Alerts</string>
-    <string name="st_alerts_main_on">Sukrara alerts you as set up below</string>
+    <string name="st_alerts_main">Glucose alerts</string>
     <string name="st_alerts_main_off">All alerts are off: nothing will alert you</string>
     <string name="st_alerts_off_title">Turn off all alerts?</string>
     <string name="st_alerts_off_text">No low, high or no-data alert will sound until you turn alerts on again here. To silence them for a while, use Mute all instead.</string>
@@ -319,7 +317,6 @@
     <string name="st_root_placement">Placement</string>
     <string name="st_root_hide_icon">Hide Sukrara\'s notification icon</string>
     <string name="st_root_hide_icon_summary">The notification stays in the shade and on the lock screen</string>
-    <string name="st_root_cancel">Cancel</string>
     <string name="st_root_pos_needs_module_icons">Needs the LSPosed module. Until then, first among the system icons</string>
     <string name="st_root_pos_after_clock">After the clock</string>
     <string name="st_root_pos_before_clock">Before the clock</string>
@@ -622,10 +619,7 @@
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>
     </plurals>
-    <plurals name="st_pen_earlier">
-        <item quantity="one">%1$d earlier dose</item>
-        <item quantity="other">%1$d earlier doses</item>
-    </plurals>
+    <string name="st_pen_earlier_doses">Earlier doses</string>
     <string name="st_pen_changed_since_open">That entry changed or was deleted meanwhile</string>
     <string name="st_clinic_title">Share your data with your clinic</string>
     <string name="st_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>

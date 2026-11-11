@@ -35,7 +35,8 @@ fun MainSwitchPreference(model: SwitchPreferenceModel) {
 }
 
 @Composable
-internal fun MainSwitchPreference(model: SwitchPreferenceModel, modifier: Modifier) {
+// Sukrara: public (was internal) so a read-only main switch can set its semantics the way RestrictedMainSwitchPreference does
+fun MainSwitchPreference(model: SwitchPreferenceModel, modifier: Modifier) {
     Surface(
         modifier = Modifier.padding(SettingsSpace.small1),
         color = MaterialTheme.colorScheme.primaryContainer,

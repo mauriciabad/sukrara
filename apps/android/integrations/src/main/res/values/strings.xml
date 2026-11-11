@@ -66,7 +66,6 @@
     <string name="in_nsapi_show_secret_summary">Apps need it to read. Screenshots are blocked while it shows.</string>
     <string name="in_nsapi_secret_label">Nightscout API secret</string>
     <string name="in_nsapi_copy">For apps on this phone · Tap to copy</string>
-    <string name="in_nsapi_copy_action">copy</string>
     <string name="in_nsapi_copied">Copied · it leaves the clipboard in a minute</string>
     <string name="in_nsapi_xdrip_url">Address for xDrip+</string>
     <string name="in_nsapi_token_url">Address with token (watch faces, other apps)</string>
@@ -291,7 +290,6 @@
     <string name="in_import_tidepool_summary_plain">Download the last 90 days from your Tidepool account</string>
     <string name="in_import_tidepool_sign_in">Sign in to Tidepool first</string>
     <string name="in_import_tidepool_sign_in_action">Sign in to Tidepool</string>
-    <string name="in_import_action">import</string>
     <string name="in_import_libreview_summary">LibreView gives your history as a file: download it there, then choose it here</string>
     <string name="in_import_libreview_title">History from LibreView</string>
     <string name="in_import_libreview_steps">1. Open LibreView and sign in.\n2. Glucose History › Download glucose data.\n3. Choose that file here.\n\nLibreView has no way for apps to download your history, so this one step is yours.</string>

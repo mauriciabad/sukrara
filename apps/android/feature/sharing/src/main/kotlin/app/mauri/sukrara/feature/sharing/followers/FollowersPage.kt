@@ -43,6 +43,7 @@ import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
+import app.mauri.sukrara.designsystem.rows.NumberButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
@@ -106,7 +107,7 @@ fun FollowersPage(
     val everyReading = stringResource(R.string.sh_interval_every_reading)
     val active = state.followers.filter { it.active }
     val removed = state.followers.filter { !it.active }.sortedByDescending { it.revoked }
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SettingsGroup {
             YouRow(state.profile, active.size, actions.profile)
             NavigationRow(
@@ -186,26 +187,23 @@ fun FollowersPage(
             }
         }
         if (removed.isNotEmpty()) {
-            Row(Modifier.padding(horizontal = 16.dp)) {
-                FilledTonalButton(
-                    onClick = { showRemoved = !showRemoved },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) {
-                    Badge(containerColor = MaterialTheme.colorScheme.secondary) { Text(removed.size.toString()) }
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(if (showRemoved) R.string.sh_followers_removed_hide else R.string.sh_followers_removed_show))
-                }
+            // the hidden rest of the list: SettingsLib's NumberButtonPreference (*2 Removed*); *See less* folds it again
+            if (!showRemoved) {
+                NumberButton(removed.size, stringResource(R.string.sh_followers_removed_show), { showRemoved = true })
             }
             Reveal(showRemoved) {
-                SettingsGroup(title = stringResource(R.string.sh_followers_removed)) {
-                    for (f in removed) {
-                        PersonRow(
-                            f.avatarJson,
-                            f.name,
-                            stringResource(R.string.sh_followers_removed_at, date(f.revoked ?: 0)),
-                            onClick = null,
-                        )
+                Column {
+                    SettingsGroup(title = stringResource(R.string.sh_followers_removed)) {
+                        for (f in removed) {
+                            PersonRow(
+                                f.avatarJson,
+                                f.name,
+                                stringResource(R.string.sh_followers_removed_at, date(f.revoked ?: 0)),
+                                onClick = null,
+                            )
+                        }
                     }
+                    NumberButton(null, stringResource(R.string.sh_followers_removed_hide), { showRemoved = false })
                 }
             }
         }
@@ -261,33 +259,16 @@ private fun YouRow(
     onClick: () -> Unit,
 ) {
     val name = profile?.name?.ifBlank { null }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .background(MaterialTheme.colorScheme.surfaceBright)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        AvatarImage(profile?.avatar, name.orEmpty(), size = 48.dp)
-        Column(Modifier.weight(1f)) {
-            Text(
-                name ?: stringResource(R.string.sh_profile_add_name),
-                style = MaterialTheme.typography.titleMedium,
-                color = if (name == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                stringResource(R.string.sh_profile_row_summary, pluralStringResource(R.plurals.sh_followers_count, followers, followers)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    NavigationRow(
+        name ?: stringResource(R.string.sh_profile_add_name),
+        onClick,
+        summary = stringResource(R.string.sh_profile_row_summary, pluralStringResource(R.plurals.sh_followers_count, followers, followers)),
+        // the picture followers see, decorative: the name says who
+        leading = { AvatarImage(profile?.avatar, name.orEmpty(), size = 40.dp) },
+    )
 }
 
-/** A person: picture, name, a line about them; tappable when [onClick] is set. */
+/** A person (a follower, a request) as SPA's Preference with their picture; [onClick] null: a fact, not tappable. */
 @Composable
 internal fun PersonRow(
     avatarJson: String?,
@@ -296,21 +277,11 @@ internal fun PersonRow(
     onClick: (() -> Unit)?,
 ) {
     val shown = Profile.shownName(name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .background(MaterialTheme.colorScheme.surfaceBright)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        AvatarImage(avatarJson, shown, size = 40.dp)
-        Column(Modifier.weight(1f)) {
-            Text(shown, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
-            Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    val picture: @Composable () -> Unit = { AvatarImage(avatarJson, shown, size = 40.dp) }
+    if (onClick != null) {
+        NavigationRow(shown, onClick, summary = summary, leading = picture)
+    } else {
+        InfoRow(shown, summary = summary, leading = picture)
     }
 }
 

@@ -28,9 +28,9 @@ import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.ago
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -184,7 +184,7 @@ fun BroadcastsContent(
     actions: BcActions,
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
-    IntroText(stringResource(R.string.in_bc_intro))
+    SettingsIntro(stringResource(R.string.in_bc_intro))
     if (!ui.wearer) {
         SettingsGroup {
             InfoRow(stringResource(R.string.in_bc_follower))

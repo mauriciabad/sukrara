@@ -100,6 +100,16 @@ changes (screen on only). Each `CardWidget` composes that frame at `LocalSize` t
 `GlucoseCard.draw` with `widgetCardStyle` (in `:core:graph`, shared with `CardLayoutTest`) and `cardModelOf`
 (`GlucoseState` → `CardModel`).
 
+**Settings pages: `:settingslib-spa` + `:core:designsystem` `rows/`.** `:settingslib-spa` is AOSP SettingsLib SPA
+(`frameworks/base/packages/SettingsLib/Spa/spa`, android17-release), the code the stock Settings app draws its Compose
+pages with, vendored as upstream wrote it (Apache-2.0 headers, its `NOTICE` lists every change; no Sukrara convention
+plugin, so no GPL header or ktlint on it; `tools/check` allow.json `vendored`). Pages never call it for rows: the one
+row layer in `:core:designsystem` does (`SettingsScaffoldPage` = SettingsScaffold in SettingsTheme, `SettingsGroup` =
+Category with a heading title, `SwitchRow` / `SplitSwitchRow` / `MainSwitchRow` / `NavigationRow` / `ValueRow` /
+`RadioRow` / `CheckboxRow` / `FooterText` / `SettingsIntro` / `SectionButton` / `NumberButton`, `SettingsBannerCard`,
+the `ChoiceDialog` / `NumberDialog` on SPA's SettingsDialog). `:feature:settings`' `SettingsPage` (also what the app
+puts around other features' pages) is that scaffold; a glucose card inside a page is drawn in `SukraraTheme`.
+
 **The one card renderer: `:core:graph`** (package `app.mauri.sukrara.graph`, flat so `tools/check` card-api matches
 the `api` names in `contracts/graph/surfaces/surfaces.json`).
 

@@ -114,12 +114,14 @@ interface PreferenceModel {
 fun Preference(
     model: PreferenceModel,
     singleLineSummary: Boolean = false,
+    // Sukrara: the row's own modifier (a read-only row's semantics), applied before the click
+    rowModifier: Modifier = Modifier,
 ) {
     val onClickWithLog = wrapOnClickWithLog(model.onClick)
     val enabled = model.enabled()
     val modifier = if (onClickWithLog != null) {
-        Modifier.clickable(enabled = enabled, onClick = onClickWithLog)
-    } else Modifier
+        rowModifier.clickable(enabled = enabled, onClick = onClickWithLog)
+    } else rowModifier
     BasePreference(
         title = model.title,
         titleContentDescription = model.titleContentDescription,

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.broadcasts.BcStatus
 import app.mauri.sukrara.integrations.broadcasts.broadcastStatusText
@@ -28,7 +29,6 @@ import app.mauri.sukrara.integrations.localserver.NsApiState
 import app.mauri.sukrara.integrations.localserver.XdripState
 import app.mauri.sukrara.integrations.localserver.nsApiStatusText
 import app.mauri.sukrara.integrations.tidepool.tidepoolStatusText
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.ago
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
@@ -192,7 +192,7 @@ fun AppsContent(
     actions: AppsActions,
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
-    IntroText(stringResource(if (ui.wearer) R.string.in_apps_intro_wearer else R.string.in_apps_intro_follower))
+    SettingsIntro(stringResource(if (ui.wearer) R.string.in_apps_intro_wearer else R.string.in_apps_intro_follower))
     SettingsGroup(title = stringResource(R.string.in_apps_clinic_group)) {
         if (ui.wearer) {
             NavigationRow(stringResource(R.string.in_lv_title), actions.openLibreView, summary = libreViewStatusText(ui.libreView, now))

@@ -19,6 +19,12 @@ Changes against the AOSP sources (each is also marked "Sukrara:" in the code whe
 - AndroidManifest.xml: the namespace is set by Gradle; no uses-sdk.
 - widget/editor/DropdownTextBox.kt: DropdownMenu instead of the scoped ExposedDropdownMenu that
   material3 1.5.0-beta01 hides.
+- widget/preference/SwitchPreference.kt, MainSwitchPreference.kt: SwitchPreference(model, modifier)
+  and MainSwitchPreference(model, modifier) are public (were internal), so a read-only row (a
+  follower's mirrored setting) sets its switch semantics the way
+  restricted/RestrictedBaseSwitchPreference.kt does.
+- widget/preference/Preference.kt: Preference takes an optional rowModifier (applied before the
+  click), for the same read-only rows' semantics.
 - widget/scaffold/CustomizedAppBar.kt: pages open with the large title expanded, like Android 17's
   View-based Settings pages (BasePreferencesFragment.onResume → setExpanded(true)); SPA's expressive
   bar starts collapsed.

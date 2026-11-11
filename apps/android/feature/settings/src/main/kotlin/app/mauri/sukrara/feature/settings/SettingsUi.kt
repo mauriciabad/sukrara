@@ -12,36 +12,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -51,6 +35,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.model.DurationWords
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
+import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.settings.NumberSpec
@@ -59,10 +44,10 @@ import java.time.ZoneId
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * A settings page: large collapsing title, a back button, the groups scrolling below. [scroll] false: the content
+ * A settings page: SPA's SettingsScaffold in its SettingsTheme (:core:designsystem [SettingsScaffoldPage]): the large
+ * title that collapses into the top bar, the round back button, the groups scrolling below. [scroll] false: the content
  * scrolls itself (a page from another feature, placed here by the app) and fills the space below the bar.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage(
     title: String,
@@ -71,36 +56,7 @@ fun SettingsPage(
     scroll: Boolean = true,
     snackbar: SnackbarHostState? = null,
     content: @Composable ColumnScope.() -> Unit,
-) {
-    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    Scaffold(
-        modifier = modifier.fillMaxSize().nestedScroll(bar.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        snackbarHost = { snackbar?.let { SnackbarHost(it) } },
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painterResource(R.drawable.st_ic_arrow_back), contentDescription = stringResource(R.string.st_back))
-                    }
-                },
-                scrollBehavior = bar,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            )
-        },
-    ) { padding ->
-        if (scroll) {
-            Column(Modifier.padding(padding).verticalScroll(rememberScrollState())) {
-                content()
-                Spacer(Modifier.height(24.dp))
-            }
-        } else {
-            // the bar and the system bars are already padded: the page's own inset padding adds nothing twice
-            Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize(), content = content)
-        }
-    }
-}
+) = SettingsScaffoldPage(title, onBack, modifier, scroll, snackbar, content)
 
 /**
  * A persistent state with its exits (Mute all, a side muted, Remind less): what is on, until when, and the buttons that

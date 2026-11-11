@@ -157,7 +157,7 @@ fun RangesContent(
             GlucoseUnit.entries.map { Choice(it.symbol, it) },
             prefs.unit,
             { choosingUnit = false },
-            onUnit,
+            onChoose = onUnit,
         )
     }
     editing?.let { i ->

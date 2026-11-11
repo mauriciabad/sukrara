@@ -83,7 +83,9 @@ import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
+import app.mauri.sukrara.designsystem.rows.NumberButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsHeader
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
@@ -440,7 +442,7 @@ fun PenPage(
             ),
             pen.kind,
             { choosingKind = false },
-            vm.actions::setKind,
+            onChoose = vm.actions::setKind,
         )
     }
     if (forgetting) {
@@ -611,13 +613,16 @@ fun DosesReadPage(
             }
         }
         if (before.isNotEmpty()) {
-            val n = before.sumOf { it.doses.size }
-            SettingsGroup(title = stringResource(R.string.st_pen_before_title)) {
-                NavigationRow(
-                    if (unfold) stringResource(R.string.st_pen_see_less) else pluralStringResource(R.plurals.st_pen_earlier, n, n),
-                    { unfold = !unfold },
-                )
-                if (unfold) for (s in before) SessionRow(s, enabled = pen?.let { usable(it) } == true) { open = s }
+            // the hidden rest of the list: SettingsLib's NumberButtonPreference under it (*See less* folds it again)
+            val title = stringResource(R.string.st_pen_before_title)
+            if (unfold) {
+                SettingsGroup(title = title) {
+                    for (s in before) SessionRow(s, enabled = pen?.let { usable(it) } == true) { open = s }
+                }
+                NumberButton(null, stringResource(R.string.st_pen_see_less), { unfold = false })
+            } else {
+                SettingsHeader(title, Modifier.padding(start = 16.dp))
+                NumberButton(before.sumOf { it.doses.size }, stringResource(R.string.st_pen_earlier_doses), { unfold = true })
             }
         }
     }

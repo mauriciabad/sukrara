@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Theme, motion, haptics and the shared settings rows.
+// Theme, motion, haptics and the shared settings rows (drawn by AOSP SettingsLib SPA, :settingslib-spa).
 plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
@@ -16,6 +16,9 @@ dependencies {
     api(project(":core:alerts"))
     // the generated pictures (AvatarImage) draw the protocol's Avatar numbers
     api(project(":core:protocol"))
+    // the settings pages, rows and dialogs are the stock Settings app's Compose components (rows/, #168); features
+    // place SPA's own pieces (paddings, theme) beside the rows
+    api(project(":settingslib-spa"))
     testImplementation(libs.junit)
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.serialization.json)

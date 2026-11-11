@@ -92,8 +92,9 @@ fun SwitchPreference(model: SwitchPreferenceModel) {
     SwitchPreference(model = model, modifier = Modifier)
 }
 
+// Sukrara: public (was internal) so a read-only row can set its semantics the way RestrictedSwitchPreference does
 @Composable
-internal fun SwitchPreference(model: SwitchPreferenceModel, modifier: Modifier) {
+fun SwitchPreference(model: SwitchPreferenceModel, modifier: Modifier) {
     InternalSwitchPreference(
         title = model.title,
         modifier = modifier,

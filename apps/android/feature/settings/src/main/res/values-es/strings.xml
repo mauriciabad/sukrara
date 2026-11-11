@@ -3,12 +3,10 @@
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
-    <string name="st_back">Atrás</string>
     <string name="st_cancel">Cancelar</string>
     <string name="st_settings_title">Ajustes</string>
     <string name="st_alerts_title">Alertas</string>
-    <string name="st_alerts_main">Alertas</string>
-    <string name="st_alerts_main_on">Sukrara te avisa como se configura abajo</string>
+    <string name="st_alerts_main">Alertas de glucosa</string>
     <string name="st_alerts_main_off">Todas las alertas están desactivadas: nada te avisará</string>
     <string name="st_alerts_off_title">¿Desactivar todas las alertas?</string>
     <string name="st_alerts_off_text">No sonará ninguna alerta de bajo, alto ni sin datos hasta que vuelvas a activarlas aquí. Para silenciarlas un rato, usa Silenciar todo.</string>
@@ -319,7 +317,6 @@
     <string name="st_root_placement">Posición</string>
     <string name="st_root_hide_icon">Ocultar el icono de notificación de Sukrara</string>
     <string name="st_root_hide_icon_summary">La notificación sigue en el panel y en la pantalla de bloqueo</string>
-    <string name="st_root_cancel">Cancelar</string>
     <string name="st_root_pos_needs_module_icons">Necesita el módulo LSPosed. Mientras tanto, el primero de los iconos del sistema</string>
     <string name="st_root_pos_after_clock">Después del reloj</string>
     <string name="st_root_pos_before_clock">Antes del reloj</string>
@@ -629,11 +626,7 @@
         <item quantity="many">%1$d horas</item>
         <item quantity="other">%1$d horas</item>
     </plurals>
-    <plurals name="st_pen_earlier">
-        <item quantity="one">%1$d dosis anterior</item>
-        <item quantity="many">%1$d dosis anteriores</item>
-        <item quantity="other">%1$d dosis anteriores</item>
-    </plurals>
+    <string name="st_pen_earlier_doses">Dosis anteriores</string>
     <string name="st_pen_changed_since_open">Esa entrada cambió o se borró mientras tanto</string>
     <string name="st_clinic_title">Comparte tus datos con tu clínica</string>
     <string name="st_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
