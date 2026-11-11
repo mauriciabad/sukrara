@@ -226,6 +226,12 @@ codesign --verify --deep --strict "$APP"
 for C in "$APP" "$APPEX"; do
   if codesign -d --entitlements - "$C" 2>/dev/null | grep -q get-task-allow; then die "$C has get-task-allow"; fi
 done
+# the QR scanner: the hardened runtime blocks the camera without the entitlement, and macOS ends an app that opens it
+# without a usage description
+codesign -d --entitlements - "$APP" 2>/dev/null | grep -q com.apple.security.device.camera \
+  || die "$APP was signed without com.apple.security.device.camera (the QR scanner's camera)"
+plutil -extract NSCameraUsageDescription raw -o - "$APP/Contents/Info.plist" >/dev/null 2>&1 \
+  || die "Info.plist has no NSCameraUsageDescription"
 # a profile build carries what the profile grants (else the app falls back to the login keychain without a word)
 if [ -n "$PROFILE" ]; then
   SIGNED=$(codesign -d --entitlements - "$APP" 2>/dev/null)

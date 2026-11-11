@@ -9,3 +9,6 @@
 
 /* Asked before the local network is first used: Juggluco on the home network */
 "NSLocalNetworkUsageDescription" = "Leer la glucosa de Juggluco en tu red doméstica, cuando lo activas en Ajustes.";
+
+/* Asked before the camera is first used: the follow step's QR scanner */
+"NSCameraUsageDescription" = "Leer el código QR de invitación en el móvil de quien lleva el sensor, para seguirle. No se graba ni se envía nada.";
