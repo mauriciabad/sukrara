@@ -215,7 +215,7 @@ class LibreViewUploader(
         }
         scope.launch {
             val now = clock.now()
-            treatments.between(now - Duration.ofDays(31), now + Duration.ofDays(3650)).drop(1).collect { changed() }
+            treatments.since(now - Duration.ofDays(31)).drop(1).collect { changed() }
         }
         scope.launch { settingsFlow.distinctUntilChanged().drop(1).collect { changed() } }
         scope.launch { role.distinctUntilChanged().drop(1).collect { loop.kick() } }

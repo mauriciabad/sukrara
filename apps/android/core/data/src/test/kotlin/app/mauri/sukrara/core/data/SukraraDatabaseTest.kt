@@ -219,6 +219,18 @@ class SukraraDatabaseTest {
         }
 
     @Test
+    fun `since gives every live treatment from its start on, however late, oldest first`() =
+        runTest {
+            fun at(id: String, at: Instant, deleted: Boolean = false) =
+                record(1, 4.0, deleted).let { r -> r.copy(treatment = r.treatment.copy(id = id, at = at, deleted = deleted)) }
+            treatments.upsertIfNewer(at("before", t0.minusSeconds(1)))
+            treatments.upsertIfNewer(at("far", t0.plus(Duration.ofDays(20_000))))
+            treatments.upsertIfNewer(at("start", t0))
+            treatments.upsertIfNewer(at("gone", t0.plusSeconds(60), deleted = true))
+            assertEquals(listOf("start", "far"), treatments.since(t0).first().map { it.id })
+        }
+
+    @Test
     fun `seen wraps dedupe, rejects and outbox`() =
         runTest {
             assertTrue(db.seenWraps().markSeen("w1", 1))

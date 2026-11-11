@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.SensorSetup
 import app.mauri.sukrara.sensor.ble.FailReason
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
@@ -126,6 +127,19 @@ class PairingStore(private val secure: SecureStore) {
             PairingLoad.Corrupt("record unreadable (${e.javaClass.simpleName})")
         }
     }
+
+    /**
+     * Whether a sensor is set up, without opening the record: [load] != [PairingLoad.None] (a damaged or unreadable one
+     * counts, as it does there), for the cheap checks that run on every monitoring start.
+     */
+    suspend fun exists(): Boolean =
+        try {
+            secure.exists(NAME)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            true
+        }
 
     /** Replaces the saved sensor (an NFC tap: always a new PIN, so the caller passes kAuth = null). */
     suspend fun save(p: Pairing) = writes.withLock { write(p) }

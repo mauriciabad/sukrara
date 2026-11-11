@@ -33,6 +33,7 @@ class MonitorServiceLogicTest {
     private var allowed = true
     private var launches = 0
     private var somethingToMonitor = true
+    private val asked = mutableListOf<Role>()
     private val notice =
         object : StoppedNotice {
             var shown = 0
@@ -74,7 +75,10 @@ class MonitorServiceLogicTest {
         hub.start()
         runCurrent()
         val starter =
-            MonitorStarter(hub, { somethingToMonitor }, {
+            MonitorStarter(hub, { r ->
+                asked += r
+                somethingToMonitor
+            }, {
                 launches++
                 allowed
             }, notice)
@@ -107,6 +111,7 @@ class MonitorServiceLogicTest {
             assertEquals(StartResult.NotNeeded, starter.start(StartReason.Boot))
             assertEquals(0, launches)
             assertEquals(0, notice.shown)
+            assertEquals("asked for the hub's role, never without one", listOf(Role.Wearer), asked)
         }
 
     @Test

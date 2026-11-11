@@ -23,7 +23,6 @@ import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
 import app.mauri.sukrara.monitor.service.bluetoothPower
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
@@ -33,6 +32,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The one monitoring foreground service, for both roles (`connectedDevice`: the sensor / the nearby wearer over
@@ -41,14 +41,16 @@ import kotlinx.coroutines.launch
  * the health check covers the cases it doesn't.
  *
  * `onCreate` does no I/O: it goes to the foreground at once with what the hub has in memory, then waits for the app's
- * storage in its own scope.
+ * storage in its own scope, off the main thread (#78): picking the source (the pairing, the settings), the alert runtime
+ * and the sensor-end planner never hold up the app's UI or its broadcasts. Only the receivers register on the main
+ * thread, where [onDestroy] unregisters them.
  *
  * Direct-boot aware: before the first unlock after a restart it runs on the wearer's phone reading its own sensor,
  * from device-protected storage only (docs/30-direct-boot.md, #160), and goes on running through the unlock.
  */
 class MonitoringService : Service() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val monitor: MonitorModule get() = monitorHost.monitor
+    private val scope by lazy { CoroutineScope(SupervisorJob() + monitor.dispatchers.default) }
     private var bluetoothReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
 
@@ -118,8 +120,12 @@ class MonitoringService : Service() {
         m.healthCheck.schedule()
         // the alert runtime follows the hub while the service runs (its exact alarm covers the time it doesn't)
         awaitAlertsModule()?.attach(scope)
-        watchBluetooth(m)
-        watchScreen(m)
+        // on the main thread like onDestroy: a service that ends meanwhile never leaves a receiver behind (cancelled
+        // first, this doesn't run)
+        withContext(m.dispatchers.main) {
+            watchBluetooth(m)
+            watchScreen(m)
+        }
         scope.launch {
             // a freshness step redraws; a repost (screen on: the card wasn't drawn while off; swiped away) forces a post
             val reposts = m.repostTicks.map { true }

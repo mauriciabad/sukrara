@@ -116,6 +116,40 @@ class PairingStoreTest {
             assertEquals(PairingLoad.Corrupt("secure storage unreadable (GeneralSecurityException)"), PairingStore(broken).load())
         }
 
+    /**
+     * The starter's cheap check: a pairing exists exactly when [PairingStore.load] isn't None (a damaged or unreadable
+     * one too: its source shows "scan the sensor again"), and it never opens the record.
+     */
+    @Test
+    fun existsMatchesLoadWithoutOpeningTheRecord() =
+        runTest {
+            var reads = 0
+            val secure =
+                object : SecureStore by InMemorySecureStore() {
+                    override suspend fun read(name: String): ByteArray? {
+                        reads++
+                        throw AssertionError("opened")
+                    }
+
+                    override suspend fun exists(name: String) = name == PairingStore.NAME
+                }
+            assertTrue(PairingStore(secure).exists())
+            assertEquals(0, reads)
+
+            val memory = InMemorySecureStore()
+            val store = PairingStore(memory)
+            assertFalse(store.exists())
+            memory.write(PairingStore.NAME, "not json".encodeToByteArray())
+            assertTrue(store.load() is PairingLoad.Corrupt)
+            assertTrue(store.exists())
+
+            val unreachable =
+                object : SecureStore by memory {
+                    override suspend fun exists(name: String): Boolean = throw IllegalStateException("locked")
+                }
+            assertTrue("can't tell: counts as paired, as load's Corrupt does", PairingStore(unreachable).exists())
+        }
+
     @Test
     fun noSecretsInToString() {
         val text = pairing.copy(kAuth = ByteArray(149) { 0x44 }).toString()

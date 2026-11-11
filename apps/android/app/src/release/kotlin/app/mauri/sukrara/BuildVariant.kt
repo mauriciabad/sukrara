@@ -15,5 +15,8 @@ internal object BuildVariant {
     fun relayChoice(context: Context): String? = null
 
     @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
+    suspend fun hasWearerSource(graph: AppGraph): Boolean = false
+
+    @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
     suspend fun wearerSource(graph: AppGraph): ReadingSource? = null
 }

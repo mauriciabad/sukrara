@@ -83,7 +83,6 @@ import app.mauri.sukrara.protocol.event.AlertCodec
 import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
-import app.mauri.sukrara.sensor.pairing.PairingLoad
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
@@ -237,9 +236,10 @@ class AppGraph(
                 ),
             role = role.data.map { it.role },
             source = ::readingSource,
+            canMonitor = ::canMonitor,
             settings = followerSettings.settings,
             // before the unlock the treatments are locked away: the card shows none (they come at the unlock)
-            treatments = whenUnlocked(emptyList()) { recentTreatments() },
+            treatments = recentTreatments,
             graphConfig = graphConfig,
             // cold: the owner engine is built when the service first draws the notification (not before the unlock: the
             // sharing identity is credential-encrypted)
@@ -275,7 +275,7 @@ class AppGraph(
             sensorEndRecord = data.typedStore("sensor_end", SensorEndMemory.serializer(), SensorEndMemory(), SensorEndMemory()),
             // before the unlock no dose or carbs mute an alert (they are locked away): an alert may ring that a treatment
             // would have muted, never the other way round
-            treatments = whenUnlocked(emptyList()) { recentTreatments() },
+            treatments = recentTreatments,
             // the alert alarm found the service dead: bring it back (a refusal shows "Monitoring stopped")
             restarter = { startMonitoring(StartReason.AlertCheck) },
             clock = clock,
@@ -633,7 +633,7 @@ class AppGraph(
             scope = scope,
             clock = clock,
             glucose = monitor.hub.state,
-            treatments = recentTreatments(),
+            treatments = recentTreatments,
             graphConfig = graphConfig,
             storedHistory = monitor.storedHistory,
             freshnessTicks = monitor.freshnessTicks,
@@ -768,7 +768,7 @@ class AppGraph(
             }
         PensModule(
             context = app,
-            logChanges = data.treatments.between(Instant.EPOCH, Instant.parse("2200-01-01T00:00:00Z")),
+            logChanges = data.treatments.since(Instant.EPOCH),
             // a lost one only shows *Next time, just tap your pen* again (at most 3 times)
             tapHints = data.typedStore("pen-hints", PenTapHint.serializer(), PenTapHint(), whenCorrupt = PenTapHint()),
             log =
@@ -819,7 +819,7 @@ class AppGraph(
     val monitorsLocked: Deferred<Boolean> =
         scope.async(dispatchers.io, CoroutineStart.LAZY) {
             monitorReady.await()
-            !unlocked.value && role.data.first().role == Role.Wearer && readingSource(Role.Wearer) != null
+            !unlocked.value && role.data.first().role == Role.Wearer && canMonitor(Role.Wearer)
         }
 
     /**
@@ -905,21 +905,37 @@ class AppGraph(
             Role.Follower -> if (unlocked.value) follower.engine.takeIf { it.isFollowing() } else null
         }
 
+    /**
+     * Whether [readingSource] gives the role a source, without building one: no pairing decrypted, no made-up source
+     * built (the starter asks on every start and health check).
+     */
+    private suspend fun canMonitor(role: Role): Boolean =
+        when (role) {
+            Role.Wearer -> BuildVariant.hasWearerSource(this) || readsSensor()
+            Role.Follower -> unlocked.value && follower.engine.isFollowing()
+        }
+
     /** Whether the role's source talks to the sensor over Bluetooth: the wearer's own sensor (not Juggluco). */
     private fun needsBluetooth(): Flow<Boolean> =
         combine(role.data, data.settings.flow(SensorSource)) { r, source ->
             r.role == Role.Wearer && SensorSourceKind.fromId(source) != SensorSourceKind.Juggluco
         }
 
-    /** Treatments of the last [TREATMENTS_WINDOW] (and any later), the window moving forward every hour. */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun recentTreatments(): Flow<List<Treatment>> =
-        flow {
-            while (true) {
-                emit(clock.now() - TREATMENTS_WINDOW)
-                delay(Duration.ofHours(1).toMillis())
-            }
-        }.flatMapLatest { from -> data.treatments.between(from, from + Duration.ofDays(3650)) }
+    /**
+     * THE treatments of the last [TREATMENTS_WINDOW] (and any later), the window moving forward every hour: one query
+     * for the glucose notification, the alert runtime and the widgets. None before the unlock (they are
+     * credential-encrypted).
+     */
+    private val recentTreatments: Flow<List<Treatment>> by lazy {
+        whenUnlocked(emptyList()) {
+            flow {
+                while (true) {
+                    emit(clock.now() - TREATMENTS_WINDOW)
+                    delay(Duration.ofHours(1).toMillis())
+                }
+            }.flatMapLatest { from -> data.treatments.since(from) }
+        }.shareIn(scope, SharingStarted.WhileSubscribed(SHARE_STOP_MS), replay = 1)
+    }
 
     private suspend fun step(
         name: String,
@@ -934,13 +950,16 @@ class AppGraph(
         }
     }
 
-    private suspend fun sensorSource(): ReadingSource? {
+    private suspend fun sensorSource(): ReadingSource? =
+        if (readsSensor()) RunWhileAttached(sensor.source, sensor.source::start, sensor.source::stop) else null
+
+    /**
+     * The wearer reads a sensor: Juggluco is the source (not before the first unlock: it doesn't run then, nor does its
+     * secret open), or a sensor is paired (a damaged pairing too: its source shows "scan the sensor again").
+     */
+    private suspend fun readsSensor(): Boolean {
         val juggluco = SensorSourceKind.fromId(data.settings.flow(SensorSource).first()) == SensorSourceKind.Juggluco
-        // Juggluco doesn't run before the first unlock either (nor does its secret open: credential-encrypted)
-        if (juggluco && !unlocked.value) return null
-        // a damaged pairing still runs the source: it shows "scan the sensor again"
-        val paired = sensor.pairings.load() != PairingLoad.None
-        return if (juggluco || paired) RunWhileAttached(sensor.source, sensor.source::start, sensor.source::stop) else null
+        return if (juggluco) unlocked.value else sensor.pairings.exists()
     }
 
     private companion object {

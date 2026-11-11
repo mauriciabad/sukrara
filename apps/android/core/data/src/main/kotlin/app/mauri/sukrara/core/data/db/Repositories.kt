@@ -66,6 +66,13 @@ class RoomTreatmentsRepository(private val dao: TreatmentDao) : TreatmentsReposi
         to: Instant,
     ): Flow<List<Treatment>> = dao.between(from.toEpochMilli(), to.toEpochMilli()).map { rows -> rows.map { it.toRecord().treatment } }
 
+    override fun since(from: Instant): Flow<List<Treatment>> =
+        dao.since(from.toEpochMilli()).map { rows ->
+            rows.map {
+                it.toRecord().treatment
+            }
+        }
+
     override suspend fun get(id: String): TreatmentRecord? = dao.get(id)?.toRecord()
 
     override suspend fun upsertIfNewer(record: TreatmentRecord): Boolean = dao.upsertIfNewer(record.toEntity())

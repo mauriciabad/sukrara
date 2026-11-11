@@ -8,6 +8,7 @@ import android.app.ForegroundServiceStartNotAllowedException
 import android.app.Notification
 import android.app.Service
 import android.content.pm.ServiceInfo
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.StopReason
@@ -21,6 +22,7 @@ import kotlinx.coroutines.cancel
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,7 +53,13 @@ class MonitoringServiceLifecycleTest {
 
         override suspend fun awaitReady() = awaitCancellation()
 
-        override suspend fun awaitMonitor() = awaitCancellation()
+        /** The thread the service's work started on (its first step waits for the graph). */
+        @Volatile var workedOn: Thread? = null
+
+        override suspend fun awaitMonitor() {
+            workedOn = Thread.currentThread()
+            awaitCancellation()
+        }
     }
 
     private val host: Host = ApplicationProvider.getApplicationContext()
@@ -77,6 +85,19 @@ class MonitoringServiceLifecycleTest {
         controller.destroy()
         assertFalse(MonitoringService.isRunning)
         assertEquals(ServiceState.NotRunning, host.monitor.hub.state.value.service)
+    }
+
+    /**
+     * #78: the work after the foreground (the source's pairing and settings, the alert runtime, the sensor-end planner)
+     * runs off the main thread, so a slow Keystore or disk never holds up the app (an ANR).
+     */
+    @Test fun `its work runs off the main thread`() {
+        val controller = Robolectric.buildService(MonitoringService::class.java).create()
+        val until = System.nanoTime() + 5_000_000_000L
+        while (host.workedOn == null && System.nanoTime() < until) Thread.sleep(10)
+        val worker = requireNotNull(host.workedOn) { "the service's work never started" }
+        assertNotEquals(Looper.getMainLooper().thread, worker)
+        controller.destroy()
     }
 
     @Test fun `refused the foreground it stops itself and says monitoring stopped`() {

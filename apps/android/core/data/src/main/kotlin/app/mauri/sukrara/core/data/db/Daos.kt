@@ -139,6 +139,9 @@ interface TreatmentDao {
         to: Long,
     ): Flow<List<TreatmentEntity>>
 
+    @Query("SELECT * FROM treatments WHERE deleted = 0 AND at >= :from ORDER BY at")
+    fun since(from: Long): Flow<List<TreatmentEntity>>
+
     @Query("SELECT * FROM treatments WHERE id = :id")
     suspend fun get(id: String): TreatmentEntity?
 

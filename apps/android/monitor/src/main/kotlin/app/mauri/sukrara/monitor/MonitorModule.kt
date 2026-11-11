@@ -55,12 +55,15 @@ import kotlinx.coroutines.flow.shareIn
 class MonitorModule(
     private val context: Context,
     scope: CoroutineScope,
-    dispatchers: DispatcherProvider,
+    /** Also the monitoring service's: it runs on [DispatcherProvider.default], its receivers register on `main`. */
+    val dispatchers: DispatcherProvider,
     val clock: Clock,
     readings: ReadingsRepository,
     record: StateStore<MonitorRecord>,
     role: Flow<Role?>,
     val source: suspend (Role) -> ReadingSource?,
+    /** Whether [source] would give a source, without building it (the starter asks on every start and health check). */
+    canMonitor: suspend (Role) -> Boolean,
     settings: SettingsRepository,
     treatments: Flow<List<Treatment>>,
     val graphConfig: Flow<GraphConfig>,
@@ -93,10 +96,7 @@ class MonitorModule(
     val starter =
         MonitorStarter(
             hub = hubImpl,
-            hasSomethingToMonitor = {
-                hubImpl.state.value.role
-                    ?.let { source(it) } != null
-            },
+            canMonitor = canMonitor,
             launcher = AndroidServiceLauncher(context),
             notice = AndroidStoppedNotice(context),
             log = { android.util.Log.i("Sukrara.monitor", it) },

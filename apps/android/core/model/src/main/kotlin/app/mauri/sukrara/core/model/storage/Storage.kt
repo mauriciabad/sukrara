@@ -61,6 +61,17 @@ interface SecureStore {
     )
 
     suspend fun delete(name: String)
+
+    /**
+     * Whether a secret is stored, without opening it: what [read] != null says, an unreadable one included. Stores
+     * that can tell without decrypting (a file check) override it.
+     */
+    suspend fun exists(name: String): Boolean =
+        try {
+            read(name) != null
+        } catch (_: SecretUnreadableException) {
+            true
+        }
 }
 
 /** A stored secret exists but can't be decrypted now. The file stays in place (a damaged one is also copied aside). */
@@ -149,6 +160,9 @@ interface TreatmentsRepository {
         from: Instant,
         to: Instant,
     ): Flow<List<Treatment>>
+
+    /** Not-deleted treatments with `at` at or after [from] (later ones included, however far), oldest first, updated live. */
+    fun since(from: Instant): Flow<List<Treatment>>
 
     suspend fun get(id: String): TreatmentRecord?
 

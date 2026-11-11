@@ -236,7 +236,7 @@ class NightscoutApiServer(
                     if (!o) {
                         flowOf(emptyList())
                     } else {
-                        hourly(TREATMENTS_WINDOW).flatMapLatest { from -> treatments.between(from, from + Duration.ofDays(3650)) }
+                        hourly(TREATMENTS_WINDOW).flatMapLatest { from -> treatments.since(from) }
                     }
                 }.catch { emit(emptyList()) }
                 .collect { recentTreatments = it }

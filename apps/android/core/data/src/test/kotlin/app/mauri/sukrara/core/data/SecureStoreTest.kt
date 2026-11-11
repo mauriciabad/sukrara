@@ -115,6 +115,22 @@ class SecureStoreTest {
             assertArrayEquals(secret, store.read(SecretName.TIDEPOOL))
         }
 
+    /** The monitoring start's check: a file check that never opens the secret, so a damaged one exists too. */
+    @Test
+    fun `exists says whether a secret is stored without opening it`() =
+        runTest {
+            assertFalse(store.exists(SecretName.SENSOR))
+            store.write(SecretName.SENSOR, secret)
+            box.busy = true
+            assertTrue("no Keystore call: a busy Keystore doesn't matter", store.exists(SecretName.SENSOR))
+            box.busy = false
+            File(dir, "sensor.bin").writeBytes(byteArrayOf(9, 1, 2, 3))
+            assertTrue("a damaged secret exists, as read throwing says", store.exists(SecretName.SENSOR))
+            assertTrue("nothing opened, nothing reported", log.files.value.isEmpty())
+            store.delete(SecretName.SENSOR)
+            assertFalse(store.exists(SecretName.SENSOR))
+        }
+
     @Test(expected = IllegalArgumentException::class)
     fun `unknown names are refused`() =
         runTest {

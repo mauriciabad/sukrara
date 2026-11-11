@@ -17,6 +17,9 @@ internal object BuildVariant {
     /** What the `RELAYS` command saved (null = nothing: `LaunchPlan` connects to no relay). */
     fun relayChoice(context: Context): String? = DebugRelays.choice(context)
 
+    /** Whether [wearerSource] gives a source, without building it (the starter's cheap check). */
+    suspend fun hasWearerSource(graph: AppGraph): Boolean = withContext(graph.dispatchers.io) { SyntheticSource.isOn(graph.app) }
+
     suspend fun wearerSource(graph: AppGraph): ReadingSource? =
         withContext(graph.dispatchers.io) {
             if (SyntheticSource.isOn(graph.app)) {

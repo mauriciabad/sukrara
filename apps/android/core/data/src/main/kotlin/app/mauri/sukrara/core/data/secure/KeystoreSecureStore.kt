@@ -123,6 +123,9 @@ class KeystoreSecureStore(
             }
         }
 
+    /** A file check: no Keystore, no decryption (a damaged secret exists too, as [read] throwing says). */
+    override suspend fun exists(name: String): Boolean = withContext(io) { fileOf(name).exists() }
+
     private fun fileOf(name: String): File {
         require(name in SecretName.ALL) { "unknown secret '$name': add it to SecretName" }
         return File(dirOf(name), "$name.bin")

@@ -161,6 +161,14 @@ class InMemoryTreatmentsRepository : TreatmentsRepository {
                 .sortedBy { it.at }
         }
 
+    override fun since(from: Instant): Flow<List<Treatment>> =
+        records.map { all ->
+            all.values
+                .map { it.treatment }
+                .filter { !it.deleted && it.at >= from }
+                .sortedBy { it.at }
+        }
+
     override suspend fun get(id: String): TreatmentRecord? = records.value[id]
 
     override suspend fun upsertIfNewer(record: TreatmentRecord): Boolean {
