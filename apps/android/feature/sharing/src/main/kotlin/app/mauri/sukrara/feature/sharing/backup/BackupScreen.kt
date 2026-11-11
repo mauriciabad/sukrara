@@ -153,7 +153,6 @@ fun BackupScreen(
                         else -> stringResource(R.string.sh_backup_recommended)
                     },
                 enabled = !asking,
-                onClickLabel = stringResource(R.string.sh_backup_save_action),
                 onClick = onSave,
             )
             NavigationRow(

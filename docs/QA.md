@@ -696,8 +696,8 @@ test password manager: create a vault, turn its *Educational hints* off, lock it
       manager vault, setup's *Restore from password manager* takes it.
 - [ ] Owner's phone (TEST identity, after `tools/install.sh phone`): the same with the real password manager; if it
       fails, Settings › Advanced › *Log* shows the `password manager:` line with the error's type and number.
-- [ ] TalkBack reads the row as a button (*double-tap to save*), each card when it appears, its title as a heading;
-      largest font and Spanish wrap the full-width buttons.
+- [ ] TalkBack reads the row as a button (SPA's stock *double-tap to activate*), each card when it appears, its title
+      as a heading; largest font and Spanish wrap the full-width buttons.
 
 ## Q20 The person and the feel
 

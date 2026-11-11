@@ -274,8 +274,6 @@
     <string name="sh_backup_relays_not_yet">Aún no se ha subido: se sube cuando el teléfono tiene conexión</string>
     <!-- Save row summary while the system's password manager sheet is open -->
     <string name="sh_backup_asking">Esperando a tu gestor de contraseñas…</string>
-    <!-- What tapping the save row does (TalkBack) -->
-    <string name="sh_backup_save_action">guardar</string>
     <!-- Save result: saved, and where a new phone finds it -->
     <string name="sh_backup_saved">Guardada en tu gestor de contraseñas. En un teléfono nuevo, elige Restaurar desde el gestor de contraseñas al configurar Sukrara.</string>
     <!-- Save result: the person closed the system's sheet -->

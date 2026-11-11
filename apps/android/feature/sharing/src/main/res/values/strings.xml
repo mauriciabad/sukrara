@@ -400,8 +400,6 @@
     <string name="sh_backup_relays_not_yet">Not uploaded yet: it goes out when the phone is online</string>
     <!-- Save row summary while the system's password manager sheet is open -->
     <string name="sh_backup_asking">Waiting for your password manager…</string>
-    <!-- What tapping the save row does (TalkBack: "Double-tap to save") -->
-    <string name="sh_backup_save_action">save</string>
     <!-- Save result: saved, and where a new phone finds it -->
     <string name="sh_backup_saved">Saved to your password manager. On a new phone, choose Restore from password manager when Sukrara sets up.</string>
     <!-- Save result: the person closed the system's sheet -->
