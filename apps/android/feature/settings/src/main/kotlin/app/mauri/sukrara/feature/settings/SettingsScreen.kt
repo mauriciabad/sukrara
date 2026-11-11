@@ -55,6 +55,8 @@ import app.mauri.sukrara.feature.settings.statusbar.liveUpdatesAllowed
 import app.mauri.sukrara.feature.settings.statusbar.openLiveUpdateSettings
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -227,7 +229,9 @@ private fun SettingsPages(
         SettingsRoute.Alerts -> {
             val vm = alertsViewModel(deps)
             val ui by vm.ui.collectAsStateWithLifecycle()
-            val confirmedAt by SchemaPrefs.thresholdsConfirmedAt(deps.settings).collectAsStateWithLifecycle(null)
+            // one flow per page, not one per recomposition (a new flow restarted the collection each time)
+            val confirmedAt by remember(deps.settings) { SchemaPrefs.thresholdsConfirmedAt(deps.settings) }
+                .collectAsStateWithLifecycle(null)
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             ui?.let {
                 AlertsSettingsContent(
@@ -451,13 +455,11 @@ private fun SettingsPages(
         SettingsRoute.ThresholdReview -> {
             val vm = viewModel { ThresholdReviewViewModel(deps.alertSettings, deps.settings, deps.clock) }
             val draft by vm.draft.collectAsStateWithLifecycle()
+            // the review ends once: a double tap on Confirm (or Cancel during the save) leaves once
+            val finish by rememberUpdatedState(onReviewFinish)
+            LaunchedEffect(vm) { finish(vm.result.filterNotNull().first()) }
             draft?.let { d: AlertSettings ->
-                AlertThresholdReviewContent(
-                    d,
-                    vm::setThreshold,
-                    { vm.confirm(onReviewFinish) },
-                    { onReviewFinish(ThresholdReviewResult.Cancelled) },
-                )
+                AlertThresholdReviewContent(d, vm::setThreshold, vm::confirm, vm::cancel)
             }
         }
     }

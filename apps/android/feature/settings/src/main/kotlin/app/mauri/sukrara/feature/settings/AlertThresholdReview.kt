@@ -58,6 +58,14 @@ class ThresholdReviewViewModel(
     /** Null while the stored settings load. */
     val draft: StateFlow<AlertSettings?> = _draft.asStateFlow()
 
+    private val _result = MutableStateFlow<ThresholdReviewResult?>(null)
+
+    /** How the review ended, once (null while it's open): the screen leaves on it. */
+    val result: StateFlow<ThresholdReviewResult?> = _result.asStateFlow()
+
+    /** Confirm or Cancel was pressed: every later press (a double tap, Cancel during the save) is ignored. */
+    private var finishing = false
+
     init {
         viewModelScope.launch { _draft.value = store.settings.first() }
     }
@@ -69,9 +77,14 @@ class ThresholdReviewViewModel(
         _draft.value = _draft.value?.let(AlertEdits.threshold(kind, value))
     }
 
-    /** Saves the reviewed thresholds onto the stored settings (other fields stay as stored) and the confirmation. */
-    fun confirm(onDone: (ThresholdReviewResult) -> Unit) {
+    /**
+     * Saves the reviewed thresholds onto the stored settings (other fields stay as stored) and the confirmation, then
+     * ends the review with them ([result]). Only the first Confirm or Cancel counts.
+     */
+    fun confirm() {
         val reviewed = _draft.value ?: return
+        if (finishing) return
+        finishing = true
         viewModelScope.launch {
             var saved = reviewed
             store.update { current ->
@@ -82,8 +95,15 @@ class ThresholdReviewViewModel(
                     .also { saved = it }
             }
             settings.set(SchemaPrefs.ThresholdsConfirmedAt, clock.now().toString())
-            onDone(ThresholdReviewResult.Confirmed(saved))
+            _result.value = ThresholdReviewResult.Confirmed(saved)
         }
+    }
+
+    /** Ends the review without storing anything, unless Confirm came first. */
+    fun cancel() {
+        if (finishing) return
+        finishing = true
+        _result.value = ThresholdReviewResult.Cancelled
     }
 
     companion object {
