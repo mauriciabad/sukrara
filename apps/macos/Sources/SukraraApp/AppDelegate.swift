@@ -61,6 +61,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             await services.requestNotifications()
         }
         self.windows = windows
+        windows.follow.makeCamera = services.scannerCamera
         let juggluco = windows.settings.juggluco
         juggluco.secrets = secrets
         juggluco.available = { [weak model] in model?.lan != nil }

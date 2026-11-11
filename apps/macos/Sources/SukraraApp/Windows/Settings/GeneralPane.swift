@@ -210,7 +210,8 @@ struct OpenAtLoginRows: View {
     }
 }
 
-/// The link with the wearer, in words, with its exits (Follow… / Stop following… / Cancel / Follow again).
+/// The link with the wearer, in words, with its exits (Follow… / Scan QR Code… / Stop following… / Cancel / Follow
+/// again).
 struct FollowingRows: View {
     @Bindable var follow: FollowModel
     var openFollow: () -> Void
@@ -220,6 +221,7 @@ struct FollowingRows: View {
         case .notFollowing:
             row(L10n.t("Not following anyone"), "person.crop.circle.badge.questionmark")
             Button(L10n.t("Follow…"), action: openFollow)
+            ScanQRButton(follow: follow, openFollow: openFollow)
         case .joining:
             row(L10n.t("Looking up the invite…"), "arrow.triangle.2.circlepath")
             Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
@@ -272,6 +274,7 @@ struct FollowingRows: View {
         case .declined, .inviteUsed, .revoked, .broken:
             row(Self.endText(follow.status), "exclamationmark.triangle")
             Button(L10n.t("Follow again…"), action: openFollow)
+            ScanQRButton(follow: follow, openFollow: openFollow)
         }
     }
 

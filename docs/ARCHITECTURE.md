@@ -192,7 +192,10 @@ the standard domain with schema keys, URL scheme `sukrara`, widget kinds `app.ma
 - `ServicesPlan` is an **upper limit**: the app ANDs it with the user's settings (`limited(by:)`) and starts services
   only through `ServicesPlan.start(using: some ServiceStarting)`. The app's `ServiceStarting` is the only code that
   creates a Bluetooth central, relay pool, alert engine, widget feed, notification request or the Juggluco source
-  (`lan`).
+  (`lan`), and the only place that may hand out the Mac's camera (`camera`: `SystemCamera` for the follow step's QR
+  scanner, which runs the capture session only while the scanner is on screen). A dev, fixture or snapshot run never
+  gets it: a debug run's scanner reads the made-up `SyntheticCamera` feed, a release dev copy says it doesn't use the
+  camera.
 
 Android's launch gate for relays is `app/…/LaunchPlan.kt` (pure, `LaunchPlanTest`): `LaunchPlan.of(debugBuild,
 relayChoice)` gives the launch's `RelayAccess`, which every `RelayPool` applies to the relays the protocol names

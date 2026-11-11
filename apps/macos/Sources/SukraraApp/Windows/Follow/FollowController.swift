@@ -110,6 +110,12 @@ public final class FollowModel {
     @ObservationIgnored private weak var actions: (any FollowActions)?
     /// Look for phones offering nearby pairing (on while a follow step is on screen and not following).
     @ObservationIgnored public var searchNearby: (Bool) -> Void = { _ in }
+    /// The QR scanner while it's open in the follow step (`startScanning`), nil otherwise.
+    var scanner: QRScanner?
+    /// Makes the scanner's camera (`AppServices.scannerCamera`); nil = this run doesn't use a camera.
+    @ObservationIgnored var makeCamera: (() -> any QRCamera)?
+    /// How long the scanner shows the invite it read before looking it up (tests: zero).
+    @ObservationIgnored var scanHandoff: Duration = .milliseconds(450)
 
     public init(
         status: FollowStatus, actions: (any FollowActions)?, macName: String = Host.current().localizedName ?? "Mac"
@@ -124,6 +130,7 @@ public final class FollowModel {
     public func lookUp() async {
         failure = nil
         invite = nil
+        stopScanning()
         let link = linkText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard InviteLink.parse(link) != nil else {
             failure = .invalidLink

@@ -353,6 +353,22 @@
         }
       }
     },
+    "Allow Camera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Camera"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitir cámara"
+          }
+        }
+      }
+    },
     "Allow notifications" : {
       "localizations" : {
         "en" : {
@@ -509,6 +525,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Atrás"
+          }
+        }
+      }
+    },
+    "Camera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cámara"
+          }
+        }
+      }
+    },
+    "Camera access is off for Sukrara. Turn it on in System Settings › Privacy & Security › Camera, then come back here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera access is off for Sukrara. Turn it on in System Settings › Privacy & Security › Camera, then come back here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El acceso a la cámara está desactivado para Sukrara. Actívalo en Ajustes del Sistema › Privacidad y seguridad › Cámara y vuelve aquí."
+          }
+        }
+      }
+    },
+    "Camera view for the QR code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera view for the QR code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista de la cámara para el código QR"
           }
         }
       }
@@ -1105,6 +1169,22 @@
         }
       }
     },
+    "Fit the QR code inside the frame" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fit the QR code inside the frame"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encaja el código QR dentro del marco"
+          }
+        }
+      }
+    },
     "Follow" : {
       "localizations" : {
         "en" : {
@@ -1441,6 +1521,22 @@
         }
       }
     },
+    "Hold the wearer's phone up to the camera with their invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold the wearer's phone up to the camera with their invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pon delante de la cámara el móvil de quien lleva el sensor con su código QR de invitación a la vista (Sukrara › Compartir › Invitar). Se lee en este Mac: no se graba ni se envía nada."
+          }
+        }
+      }
+    },
     "If a very low gets no answer" : {
       "localizations" : {
         "en" : {
@@ -1517,6 +1613,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enlace de invitación"
+          }
+        }
+      }
+    },
+    "Invite read" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitación leída"
           }
         }
       }
@@ -1761,6 +1873,22 @@
         }
       }
     },
+    "No camera found. Connect one, or use your iPhone as this Mac's camera (Continuity Camera: the iPhone nearby with Wi-Fi and Bluetooth on). Scanning starts as soon as a camera is there." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No camera found. Connect one, or use your iPhone as this Mac's camera (Continuity Camera: the iPhone nearby with Wi-Fi and Bluetooth on). Scanning starts as soon as a camera is there."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha encontrado ninguna cámara. Conecta una o usa tu iPhone como cámara de este Mac (Cámara de Continuidad: el iPhone cerca, con la Wi-Fi y el Bluetooth activados). El escaneo empieza en cuanto haya una cámara."
+          }
+        }
+      }
+    },
     "Open Website" : {
       "localizations" : {
         "en" : {
@@ -1809,6 +1937,54 @@
         }
       }
     },
+    "Read the invite QR code on the wearer's phone with this Mac's camera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the invite QR code on the wearer's phone with this Mac's camera"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lee el código QR de invitación del móvil de quien lleva el sensor con la cámara de este Mac"
+          }
+        }
+      }
+    },
+    "Scan QR Code…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan QR Code…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escanear código QR…"
+          }
+        }
+      }
+    },
+    "Scan the invite QR code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan the invite QR code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escanea el código QR de invitación"
+          }
+        }
+      }
+    },
     "Reads the sensor, alerts and shares with this Mac" : {
       "localizations" : {
         "en" : {
@@ -1837,6 +2013,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "Sukrara uses the camera to read the invite QR code on the wearer's phone. It's read on this Mac: nothing is recorded or sent." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara uses the camera to read the invite QR code on the wearer's phone. It's read on this Mac: nothing is recorded or sent."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara usa la cámara para leer el código QR de invitación en el móvil de quien lleva el sensor. Se lee en este Mac: no se graba ni se envía nada."
+          }
+        }
+      }
+    },
+    "That QR code isn't a Sukrara invite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That QR code isn't a Sukrara invite"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ese código QR no es una invitación de Sukrara"
+          }
+        }
+      }
+    },
+    "This offline run doesn't use the camera." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This offline run doesn't use the camera."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta ejecución sin conexión no usa la cámara."
           }
         }
       }
@@ -7389,6 +7613,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Antes"
+          }
+        }
+      }
+    },
+    "You can also paste the link or import a picture of the code." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can also paste the link or import a picture of the code."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "También puedes pegar el enlace o importar una imagen del código."
           }
         }
       }

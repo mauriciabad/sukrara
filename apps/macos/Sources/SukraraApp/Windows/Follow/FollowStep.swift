@@ -6,10 +6,10 @@ import SukraraShare
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Follow someone: paste, drop or open an invite link (`https://sukrara.mauri.app/join#…` or `sukrara:join#…`), import
-/// a QR image, or pair with a phone nearby. A link is looked up first and shows who is inviting with *Follow* /
-/// *Cancel* (`InviteConfirmDialog`); nothing is sent before *Follow*. Used by the setup walk and by Settings › General ›
-/// Follow….
+/// Follow someone: paste, drop or open an invite link (`https://sukrara.mauri.app/join#…` or `sukrara:join#…`), scan
+/// the invite QR code with the Mac's camera (`QRScannerView`), import a QR image, or pair with a phone nearby. A link
+/// is looked up first and shows who is inviting with *Follow* / *Cancel* (`InviteConfirmDialog`); nothing is sent
+/// before *Follow*. Used by the setup walk and by Settings › General › Follow….
 struct FollowStep: View {
     @Bindable var follow: FollowModel
     @State private var importing = false
@@ -19,6 +19,9 @@ struct FollowStep: View {
         VStack(alignment: .leading, spacing: 12) {
             if let invite = follow.invite {
                 InviteConfirmDialog(follow: follow, invite: invite)
+            } else if let scanner = follow.scanner, follow.canFollow {
+                QRScannerView(scanner: scanner) { follow.stopScanning() }
+                    .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top)))
             } else {
                 form
             }
@@ -29,8 +32,12 @@ struct FollowStep: View {
             }
         }
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.invite)
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.scanner == nil)
         .onChange(of: follow.canFollow, initial: true) { _, can in follow.searchNearby(can) }
-        .onDisappear { follow.searchNearby(false) }
+        .onDisappear {
+            follow.searchNearby(false)
+            follow.stopScanning()
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.image]) { result in
             let text = (try? result.get()).flatMap { url -> String? in
                 let ok = url.startAccessingSecurityScopedResource()
@@ -69,7 +76,16 @@ struct FollowStep: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(follow.linkText.isEmpty || follow.status == .joining)
         }
-        Button(L10n.t("Import a QR code image…")) { importing = true }
+        HStack {
+            Button {
+                follow.startScanning()
+            } label: {
+                Label(L10n.t("Scan QR Code…"), systemImage: "qrcode.viewfinder")
+            }
+            .disabled(!follow.canFollow)
+            .help(L10n.t("Read the invite QR code on the wearer's phone with this Mac's camera"))
+            Button(L10n.t("Import a QR code image…")) { importing = true }
+        }
         if follow.canFollow, follow.nearby == nil { MacNameField(follow: follow) }
         if follow.status == .joining {
             HStack {

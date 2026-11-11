@@ -9,8 +9,9 @@ import SukraraShare
 @preconcurrency import UserNotifications
 
 /// The app's `ServiceStarting`: the only code that creates the notification center, copies alert sounds, runs the
-/// alert engine, writes the widget's data, checks for updates or touches the login item. `ServicesPlan.start(using:)`
-/// calls it, so an offline run (dev build, snapshot) creates none of them. Bluetooth runs inside the follower runtime.
+/// alert engine, writes the widget's data, checks for updates, touches the login item or may open the camera.
+/// `ServicesPlan.start(using:)` calls it, so an offline run (dev build, snapshot) creates none of them. Bluetooth runs
+/// inside the follower runtime.
 final class AppServices: ServiceStarting {
     let plan: LaunchPlan
     private(set) var center: SystemNotificationCenter?
@@ -24,6 +25,9 @@ final class AppServices: ServiceStarting {
     private(set) var lan: JugglucoLanSource?
     /// Hands the card to the widgets (App Group file + timeline reloads). Fed by `AppModel` on every change.
     private(set) var widget: WidgetFeed?
+    /// Makes the Mac's camera for the QR scanner (`SystemCamera`; it opens the camera only while the scanner is on
+    /// screen). nil unless the plan allows `.camera`: never in a dev, fixture or snapshot run.
+    private(set) var makeCamera: (() -> any QRCamera)?
     private let makeWidget: () -> WidgetFeed
     let responder = NotificationResponder()
     /// The daily update check (owned here, cancelled by `stop`).
@@ -158,12 +162,27 @@ final class AppServices: ServiceStarting {
             widget = makeWidget()
         case .ble:
             break  // Bluetooth runs inside the follower runtime (`relays`)
+        case .camera:
+            makeCamera = { SystemCamera() }
         case .lan:
             lan = JugglucoLanSource(
                 http: URLSessionLanHTTP(),
                 store: ReadingsFileStore(
                     directory: plan.data.paths.appSupport.appending(path: "juggluco", directoryHint: .isDirectory)))
         }
+    }
+
+    /// The QR scanner's camera in this run: the Mac's when the plan allows it; in a debug dev or fixture run the made-up
+    /// feed (`SyntheticCamera`: never the real camera); none in a snapshot run or a release dev copy (the scanner says
+    /// this run doesn't use the camera).
+    var scannerCamera: (() -> any QRCamera)? {
+        if let makeCamera { return makeCamera }
+        #if DEBUG
+            if case .snapshot = plan.mode { return nil }
+            return { SyntheticCamera.feed() }
+        #else
+            return nil
+        #endif
     }
 
     /// Quit: ends the long-lived work this class started itself (the follower and Juggluco stop with the model).

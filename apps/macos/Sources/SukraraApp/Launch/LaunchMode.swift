@@ -31,22 +31,25 @@ public struct SnapshotRequest: Equatable, Sendable {
 }
 
 /// Something that reaches outside the process: the user's sensor or phone, relays, notifications, the widget, the
-/// network (update check) and the system's login items.
+/// network (update check), the system's login items and the camera.
 public enum Service: CaseIterable, Sendable {
     // notifications first: the alert notifier needs the center when `alerts` starts
     case notifications, ble, relays, alerts, widgetFeed, updateCheck, loginItem
     /// Juggluco's web server on the home network (created idle; it connects only while the person's switch is on).
     case lan
+    /// The Mac's camera for the follow step's QR scanner (nothing opens at launch: the camera runs only while the
+    /// scanner is on screen).
+    case camera
 }
 
 /// The services a launch MAY start: an upper limit. The app ANDs it with the user's settings
 /// (`limited(by:)`) and starts services only through `ServicesPlan.start(using:)`.
 public struct ServicesPlan: Equatable, Sendable {
-    public var ble, relays, alerts, widgetFeed, notifications, updateCheck, loginItem, lan: Bool
+    public var ble, relays, alerts, widgetFeed, notifications, updateCheck, loginItem, lan, camera: Bool
 
     public init(
         ble: Bool, relays: Bool, alerts: Bool, widgetFeed: Bool, notifications: Bool, updateCheck: Bool = false,
-        loginItem: Bool = false, lan: Bool = false
+        loginItem: Bool = false, lan: Bool = false, camera: Bool = false
     ) {
         self.ble = ble
         self.relays = relays
@@ -56,11 +59,12 @@ public struct ServicesPlan: Equatable, Sendable {
         self.updateCheck = updateCheck
         self.loginItem = loginItem
         self.lan = lan
+        self.camera = camera
     }
 
     public static let all = ServicesPlan(
         ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updateCheck: true,
-        loginItem: true, lan: true)
+        loginItem: true, lan: true, camera: true)
     public static let none = ServicesPlan(
         ble: false, relays: false, alerts: false, widgetFeed: false, notifications: false)
 
@@ -74,6 +78,7 @@ public struct ServicesPlan: Equatable, Sendable {
         case .updateCheck: updateCheck
         case .loginItem: loginItem
         case .lan: lan
+        case .camera: camera
         }
     }
 
@@ -90,7 +95,8 @@ public struct ServicesPlan: Equatable, Sendable {
             notifications: notifications && wanted.notifications,
             updateCheck: updateCheck && wanted.updateCheck,
             loginItem: loginItem && wanted.loginItem,
-            lan: lan && wanted.lan
+            lan: lan && wanted.lan,
+            camera: camera && wanted.camera
         )
     }
 

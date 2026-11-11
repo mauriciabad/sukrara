@@ -6,8 +6,10 @@
 #   tools/release/verify-app.sh <Sukrara.app> [--unsigned | --notarized]
 # - bundle id app.mauri.sukrara, version / build = tools/release/version.sh (dev builds may add .<yyMMddHHmm>)
 # - the widget extension (app.mauri.sukrara.widget) is inside
+# - the camera's usage description (the QR scanner; macOS ends an app that opens the camera without one)
 # - signed (unless --unsigned): codesign --verify --deep --strict, team QWUV9H4A3G on the app and the appex; the
-#   entitlements only a provisioning profile grants all there with an embedded profile, none without
+#   camera entitlement (the hardened runtime blocks the camera without it); the entitlements only a provisioning
+#   profile grants all there with an embedded profile, none without
 # - a release build: no debug entry points in any binary (debugsend, DebugFakes, Synthetic*, the snapshot renderer)
 # - --notarized (mac-release.sh with a Developer ID, #91): the app and the appex signed by "Developer ID Application"
 #   with the hardened runtime and a secure timestamp, the notarization ticket stapled, and Gatekeeper accepting the app
@@ -33,6 +35,8 @@ case "$(plist "$app" CFBundleVersion)" in
   "$want_code" | "$want_code".*) ok "build $(plist "$app" CFBundleVersion)" ;;
   *) bad "CFBundleVersion '$(plist "$app" CFBundleVersion)' (want $want_code[.yyMMddHHmm])" ;;
 esac
+[ -n "$(plist "$app" NSCameraUsageDescription)" ] && ok "camera usage description (QR scanner)" \
+  || bad "no NSCameraUsageDescription: macOS ends the app when the QR scanner opens the camera"
 appex="$app/Contents/PlugIns/SukraraWidget.appex"
 if [ -d "$appex" ] && [ "$(plist "$appex" CFBundleIdentifier)" = app.mauri.sukrara.widget ]; then ok "widget extension inside"
 else bad "SukraraWidget.appex (app.mauri.sukrara.widget) missing"; fi
@@ -46,6 +50,9 @@ if [ "$mode" != --unsigned ]; then
   # Only a provisioning profile grants these (bundle.sh): with one embedded the app has them all; without, none (macOS
   # refuses to launch an app that claims them without a profile).
   ents="$(codesign -d --entitlements - "$app" 2>/dev/null || true)"
+  # the QR scanner: the hardened runtime blocks the camera without it (no provisioning profile needed)
+  echo "$ents" | grep -q com.apple.security.device.camera && ok "com.apple.security.device.camera (QR scanner)" \
+    || bad "no com.apple.security.device.camera: the hardened runtime blocks the QR scanner's camera"
   for e in com.apple.developer.usernotifications.time-sensitive keychain-access-groups \
     com.apple.developer.associated-domains; do
     if [ -f "$app/Contents/embedded.provisionprofile" ]; then
