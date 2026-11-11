@@ -4,9 +4,11 @@
 package app.mauri.sukrara.graph
 
 import android.graphics.Canvas
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.long
 import app.mauri.sukrara.graph.Fixtures.str
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -51,7 +53,15 @@ class GraphOnlyAgeTest {
         val cases = Fixtures.read("freshness/freshness.json")["cases"] as JsonArray
         assertTrue(cases.isNotEmpty())
         val words = Scenes.words()
-        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = false)
+        val st =
+            CardStyle(
+                graph = GraphStyle(),
+                rings = emptyList(),
+                value = false,
+                sensorTime = false,
+                bands = Bands(),
+                unit = GlucoseUnit.MGDL,
+            )
         val fails =
             cases.mapNotNull { e ->
                 val c = e.jsonObject
@@ -97,7 +107,15 @@ class GraphOnlyAgeTest {
         h: Float = 138f,
     ): CardLayout {
         val readings = (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, 118, 0.2)
-        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = false)
+        val st =
+            CardStyle(
+                graph = GraphStyle(),
+                rings = emptyList(),
+                value = false,
+                sensorTime = false,
+                bands = Bands(),
+                unit = GlucoseUnit.MGDL,
+            )
         val model = CardModel(readings, emptyList(), now, Scenes.words())
         return GlucoseCard.draw(Canvas(), w, h, model, st, GraphPalette.of(false), 1f, CardSurface.WIDGET_GRAPH, CardPart.ALL)
     }
@@ -118,7 +136,8 @@ class GraphOnlyAgeTest {
         val age = 4200L
         val readings = (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, 118, 0.2)
         val sensor = SensorInfo(now - 15 * 86_400L - 3600, now - 3600, now - 15 * 86_400L)
-        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true)
+        val st =
+            CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true, bands = Bands(), unit = GlucoseUnit.MGDL)
         val model = CardModel(readings, emptyList(), now, Scenes.words(), sensor = sensor)
         val last = Freshness.timeText(now - age, now)
         for ((w, h) in listOf(170f to 170f, 320f to 80f, 320f to 170f, 60f to 60f)) {
@@ -136,7 +155,8 @@ class GraphOnlyAgeTest {
     @Test fun warmupIsNeverAGap() {
         val age = 7500L // off the hour: a 24-hour hour label never equals the reading's time
         val readings = (60 downTo 1).map { GlucosePoint(now - age - it * 60L, 120, 0.0) } + GlucosePoint(now - age, 110, 0.0)
-        val st = CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true)
+        val st =
+            CardStyle(graph = GraphStyle(), rings = emptyList(), value = false, sensorTime = true, bands = Bands(), unit = GlucoseUnit.MGDL)
         val last = Freshness.timeText(now - age, now)
         val cases =
             listOf(

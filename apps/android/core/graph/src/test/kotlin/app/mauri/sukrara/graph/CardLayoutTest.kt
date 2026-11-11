@@ -84,13 +84,21 @@ class CardLayoutTest {
         val style: (GraphConfig) -> CardStyle,
     )
 
+    /**
+     * One surface × size × scene × settings render: a card surface's [layouts], or a glyph surface's [faces] (its
+     * [GlucoseCard.face], what it writes or reads out; [unit] = the settings' unit).
+     */
     private class Render(
         val shape: String,
         val size: String,
         val scene: String,
         val settings: String,
         val layouts: List<CardLayout>,
+        val faces: List<GlucoseLook> = emptyList(),
+        val unit: GlucoseUnit = GlucoseUnit.MGDL,
     ) {
+        val glyph: Boolean get() = layouts.isEmpty()
+
         override fun toString() = "$shape $size"
     }
 
@@ -268,7 +276,25 @@ class CardLayoutTest {
             val parts = s["parts"]!!.jsonArray.map { it.str()!! }
             assertEquals("$id parts", parts, shapes.getValue(id).parts.map { it.first.name.lowercase() })
             assertEquals("$id sizes", sizes(id), shapes.getValue(id).sizes)
+            // its value among its parts, or the registry says why not (the Mac's LayoutTests checks the same)
+            assertTrue(
+                "$id draws $parts but not its value: or set \"no_value\" with the reason",
+                s["no_value"] != null || parts.any { it in setOf("all", "header", "value") },
+            )
         }
+    }
+
+    /** The glyph surfaces of surfaces.json: each takes the value from [GlucoseCard.face] ([renderAll] asks it as they do). */
+    private fun glyphSurfaces(): List<CardSurface> {
+        val ids =
+            Fixtures
+                .read("surfaces/surfaces.json")["android"]!!
+                .jsonObject["surfaces"]!!
+                .jsonArray
+                .map { it.jsonObject }
+                .filter { it["kind"].str() == "glyph" }
+                .map { it["id"].str()!! }
+        return ids.map { id -> CardSurface.entries.first { it.id == id } }
     }
 
     /** The alert settings' default mutes after insulin and carbs (the schema's defaults). */
@@ -324,6 +350,17 @@ class CardLayoutTest {
                         muteRule = defaultMutes,
                         sensor = sc.sensor,
                     )
+                // the glyph surfaces (status bar, tile, notification text, widget description, read aloud): what
+                // GlucoseCard.face says for the newest reading, the sensor and the unit, as each of them asks it; the
+                // settings that change it (the unit) and the clock variants, as on the Mac (LayoutTests)
+                if ((sid == "default" || sid == "mmol" || sid.startsWith("clock")) && sc.readings.isNotEmpty()) {
+                    val latest = sc.readings.last()
+                    val look = SensorBadge.look(sc.sensor, now, latest.t, words)
+                    for (g in glyphSurfaces()) {
+                        val face = GlucoseCard.face(latest, now, look, g, cfg.unit, words.locale)
+                        out += Render(g.id, "-", sc.id, sid, emptyList(), listOf(face), cfg.unit)
+                    }
+                }
                 for (shape in shapes()) {
                     val st = shape.style(cfg)
                     for ((w, h) in shape.sizes) {
@@ -362,6 +399,12 @@ class CardLayoutTest {
 
     /** The inputs a rule's `by` may name, for one render (the same facts as the Mac's -graphselftest). */
     private fun facts(r: Render): Map<String, String> {
+        if (r.glyph) {
+            // a glyph surface has no card style: only its scene, settings, unit and whether it shows a face
+            return mapOf("scene" to r.scene, "settings" to r.settings, "unit" to r.unit.key, "face" to "${r.faces.isNotEmpty()}") +
+                listOf("labels", "side", "hours", "sensorTime", "badge", "rings", "chart", "pctWide", "part", "box").associateWith { "-" } +
+                mapOf("value" to "glyph", "graph" to "false", "lane2" to "false", "sensorShown" to "false")
+        }
         val st = r.layouts.first().style
         val chart = r.layouts.firstNotNullOfOrNull { l -> l.first("chart")?.box }
         val slots = r.layouts.firstOrNull { it.first("slots") != null }
@@ -397,6 +440,13 @@ class CardLayoutTest {
         rule: JsonObject,
     ): List<String> {
         val names = rule["elements"]!!.jsonArray.map { it.str()!! }.toSet()
+        if (r.glyph) {
+            return r.faces
+                .flatMap(::faceElements)
+                .filter { it.first in names }
+                .map { "${it.first} ${it.second}".trim() }
+                .sorted()
+        }
         val box = rule["box"].bool() == true
         val chart = r.layouts.firstNotNullOfOrNull { it.first("chart")?.box }
         val els = r.layouts.flatMap { l -> l.elements.filter { it.name in names }.map { l to it } }
@@ -415,6 +465,35 @@ class CardLayoutTest {
             }.distinct()
             .sorted()
     }
+
+    /** What a glyph surface shows of the value's place, named as the card's elements (the Mac's faceElements). */
+    private fun faceElements(f: GlucoseLook): List<Pair<String, String>> =
+        when (f.state) {
+            GlucoseLook.State.VALUE -> {
+                val rate = f.rate
+                listOf(
+                    "value.number" to (f.text.orEmpty() + if (f.strike) " struck" else ""),
+                    "value.trend" to
+                        when {
+                            f.trend != TrendMark.ARROW || rate == null -> "ring"
+                            TrendAngle.isDouble(rate) -> "arrow double"
+                            else -> "arrow single"
+                        },
+                )
+            }
+
+            GlucoseLook.State.WARMING_UP -> {
+                listOf("value.warmup" to f.warmup.orEmpty())
+            }
+
+            GlucoseLook.State.ENDED -> {
+                listOf("value.ended" to "")
+            }
+
+            else -> {
+                listOf("value.none" to f.state.name)
+            }
+        }
 
     private fun isSubsequence(
         a: List<String>,
@@ -644,6 +723,29 @@ class CardLayoutTest {
         }
         if (warmShown == 0) problems += "warmup: no render shows a warming-up sensor (rule untested)"
 
+        // one clock: every time a render draws follows its settings' 24-hour choice (the Mac's LayoutTests too)
+        val hour24 = settings().associate { it.first to it.third }
+
+        fun cycleOf(t: String): Boolean? =
+            when {
+                Regex("(?i)\\b(am|pm|a\\.\\s?m\\.|p\\.\\s?m\\.)").containsMatchIn(t) -> false
+                Regex("\\d{1,2}:\\d{2}").containsMatchIn(t) -> true
+                else -> null
+            }
+        for (r in renders) {
+            val want = hour24.getValue(r.settings)
+            val bad = r.layouts.flatMap { it.all("time.text") }.firstOrNull { e -> cycleOf(e.info)?.let { it != want } == true }
+            if (bad !=
+                null
+            ) {
+                problems += "clock: $r (${r.scene}/${r.settings}) shows \"${bad.info}\", want ${if (want) 24 else 12}-hour time"
+            }
+        }
+        for (v in listOf("clock12", "clock24")) {
+            val shown = renders.any { r -> r.settings == v && r.layouts.any { l -> l.all("time.text").any { cycleOf(it.info) != null } } }
+            if (!shown) problems += "clock: no render in $v shows a time (rule untested)"
+        }
+
         // treatment labels only up to maxHours
         val maxHours = rulesFile["treatmentLabels"]!!.jsonObject["maxHours"].long()!!
         assertTrue("treatmentLabels maxHours", GlucoseGraph.LABELS_MAX_S == maxHours * 3600)
@@ -658,13 +760,9 @@ class CardLayoutTest {
         // the shared answers: every one these shapes produce is the one the Mac checks against
         val expectFile = Fixtures.read("layout/expect.json")
         if (System.getProperty("layout.write") == "true") {
-            // Android's answers added or updated; the answers only the Mac produces (glyph surfaces) stay
-            val merged =
-                expectFile["answers"]!!
-                    .jsonObject
-                    .mapValues { it.value.str()!! }
-                    .toSortedMap()
-                    .apply { putAll(answers) }
+            // exactly Android's answers: its card and glyph surfaces cover every input the Mac's surfaces render (the
+            // Mac fails an answer that isn't here), so an answer nobody renders any more goes
+            val merged = answers.toSortedMap()
 
             // the file's own style: "/" escaped
             fun q(s: String) = JsonPrimitive(s).toString().replace("/", "\\/")
@@ -682,10 +780,20 @@ class CardLayoutTest {
                     "changed: $k\n      want ${expect[k].str()}\n      got  $v"
                 }
         val matched = answers.keys.count { it in expect }
-        assertTrue("no shared answer matched expect.json (the stand-ins no longer cover its inputs)", matched > 0)
+        assertTrue("no shared answer matched expect.json (the surfaces no longer cover its inputs)", matched > 0)
         if (diffs.isNotEmpty()) {
             fail("${diffs.size} of $matched shared answers differ from layout/expect.json:\n  " + diffs.take(30).joinToString("\n  "))
         }
-        println("layout: ${renders.size} renders, $matched shared answers equal expect.json, ${answers.size - matched} not in it")
+        // exactly these answers: a new one, or one no surface renders any more, is a change to review (-Dlayout.write=true)
+        val missing = answers.keys - expect.keys
+        val gone = expect.keys - answers.keys
+        if (missing.isNotEmpty() || gone.isNotEmpty()) {
+            fail(
+                "layout/expect.json is out of date: ${missing.size} new, ${gone.size} no surface renders any more " +
+                    "(run with -Dlayout.write=true, review the diff, make the Mac follow):\n  " +
+                    (missing.map { "new: $it" } + gone.map { "gone: $it" }).take(30).joinToString("\n  "),
+            )
+        }
+        println("layout: ${renders.size} renders, $matched shared answers equal expect.json")
     }
 }

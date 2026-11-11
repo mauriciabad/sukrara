@@ -67,6 +67,7 @@ class SpokenFixtureTest {
                     value = card?.get("value").bool() ?: true,
                     badge = card?.get("badge").bool() ?: true,
                     sensorTime = card?.get("sensorTime").bool() ?: false,
+                    bands = Bands(),
                     unit = GlucoseUnit.of(c["unit"].str()),
                 )
             for ((lang, locale) in languages) {
@@ -168,7 +169,7 @@ class SpokenFixtureTest {
     /** A new reading's live announcement (home's polite live region): as it came in, with no age or alert. */
     @Test
     fun aReadingIsSaidAsItCame() {
-        val style = CardStyle(sensorTime = false)
+        val style = CardStyle(sensorTime = false, bands = Bands(), unit = GlucoseUnit.MGDL)
         val m =
             Scenes
                 .model(listOf(GlucosePoint(now - 420, 112, -1.5)), Scenes.words(), sensor = null)

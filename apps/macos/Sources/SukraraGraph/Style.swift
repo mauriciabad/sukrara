@@ -315,8 +315,9 @@ struct CardStyle {
     /// every place passes its own setting.
     var sensorTime: Bool
     /// The ranges the value's colour and the slots count in: the user's (`GraphConfig.cardStyle` sets them), also on a
-    /// card without a chart (the value widget used the built-in 180 after the high bound moved, 2026-10-21).
-    var bands = Bands()
+    /// card without a chart (the value widget used the built-in 180 after the high bound moved, 2026-10-21). No
+    /// default, like `sensorTime`: every place passes the user's (#83).
+    var bands: Bands
     /// The unit every number of the card is written in (the user's setting): the value, the chart's range labels,
     /// the spoken sentence (contracts/settings/units.json).
     var unit: GlucoseUnit = .mgdl

@@ -8,6 +8,7 @@ import android.graphics.Canvas
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.After
@@ -51,7 +52,14 @@ class CardScreenshotTest {
         Locale.setDefault(savedLocale)
     }
 
-    private val style = CardStyle(rings = listOf(RingSpec(86_400), RingSpec(7 * 86_400L)), last = LastPlace.NEAR_VALUE, sensorTime = true)
+    private val style =
+        CardStyle(
+            rings = listOf(RingSpec(86_400), RingSpec(7 * 86_400L)),
+            last = LastPlace.NEAR_VALUE,
+            sensorTime = true,
+            bands = Bands(),
+            unit = GlucoseUnit.MGDL,
+        )
 
     private fun scenes(w: CardWords = Scenes.words()): List<Pair<String, CardModel>> {
         val meal =

@@ -5,6 +5,7 @@ package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -157,6 +158,8 @@ class GraphFixtureTest {
                     graph = if (graph) GraphStyle(axisLabels = card["axisLabels"]?.toString() != "false") else null,
                     value = card["value"].toString() == "true",
                     sensorTime = card["sensorTime"]?.toString() != "false",
+                    bands = Bands(),
+                    unit = GlucoseUnit.MGDL,
                 )
             val now = Scenes.NOW
             val info =

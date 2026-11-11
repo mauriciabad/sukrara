@@ -148,7 +148,7 @@ data class RingSpec(
 /**
  * What a whole card shows: value header and/or chart, up to three rings (main first), the last-treatment slot ([last],
  * [lastElse] while there's none) and the status badge under the value ([badge]). A surface builds it from its place's
- * settings only; [sensorTime] has no default so every place passes its own.
+ * settings only; [sensorTime], [bands] and [unit] have no default so every place passes its own.
  */
 data class CardStyle(
     val graph: GraphStyle? = GraphStyle(),
@@ -163,13 +163,16 @@ data class CardStyle(
     val slotDisc: Int? = null,
     /** The value in this colour instead of its range colour (a surface whose own colour already says the range). */
     val valueInk: Int? = null,
-    /** The ranges the value's colour and the slots count in: the user's, also on a card without a chart. */
-    val bands: Bands = graph?.bands ?: Bands(),
+    /**
+     * The ranges the value's colour and the slots count in: the user's ([GraphConfig.bands]), also on a card without a
+     * chart. No default, like [sensorTime]: a value-only card once fell back to the built-in ranges (#83).
+     */
+    val bands: Bands,
     /**
      * The unit every number of the card is written in ([GraphConfig.unit]): the value, the chart's range labels, the
-     * spoken sentence (contracts/settings/units.json). Also on a card without a chart.
+     * spoken sentence (contracts/settings/units.json). Also on a card without a chart; no default either.
      */
-    val unit: GlucoseUnit = graph?.unit ?: GlucoseUnit.MGDL,
+    val unit: GlucoseUnit,
 )
 
 /**

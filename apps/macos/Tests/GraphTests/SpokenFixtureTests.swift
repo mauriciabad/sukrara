@@ -43,7 +43,7 @@ import Testing
             graph: card.number("graph").map { GraphStyle(window: $0 * 3600) }, rings: rings,
             value: card.bool("value") ?? true, badge: card.bool("badge") ?? true, sensor: sensor,
             countdownHours: card.number("countdownHours").map { Int($0) } ?? SensorLife.defaultCountdownHours,
-            sensorTime: card.bool("sensorTime") ?? false)
+            sensorTime: card.bool("sensorTime") ?? false, bands: Bands())
         let unit: GlucoseUnit = c.string("unit") == "mmol" ? .mmol : .mgdl
         style.unit = unit
         let data = CardData(

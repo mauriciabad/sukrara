@@ -128,7 +128,7 @@ func fixtureSetHasCases(_ set: String) {
             readings = (1...60).reversed().map { GraphReading(t: t - Double($0) * 60, v: 120, rate: 0) }
             readings.append(GraphReading(t: t, v: sgv, rate: c.number("rate")))
         }
-        var st = CardStyle(graph: GraphStyle(), rings: [], sensorTime: false)
+        var st = CardStyle(graph: GraphStyle(), rings: [], sensorTime: false, bands: Bands())
         if c.bool("ended") == true {
             st.sensor = SensorInfo(start: now - 15 * 86400 - 3600, end: now - 3600, warmupEnd: now - 15 * 86400)
         }
@@ -165,7 +165,7 @@ func fixtureSetHasCases(_ set: String) {
             readings = (1...60).reversed().map { GraphReading(t: now - age - Double($0) * 60, v: 120, rate: 0) }
             readings.append(GraphReading(t: now - age, v: sgv, rate: c.number("rate")))
         }
-        let st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: false)
+        let st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: false, bands: Bands())
         let size = CGSize(width: 332, height: 138)
         let lay = GlucoseCard.draw(
             cardContext(size), size: size, readings: readings, marks: [], now: now, st, GraphPalette.of(dark: false),
@@ -192,7 +192,7 @@ func fixtureSetHasCases(_ set: String) {
         var readings = (1...60).reversed().map { GraphReading(t: now - age - Double($0) * 60, v: 120, rate: 0) }
         readings.append(GraphReading(t: now - age, v: 118, rate: 0.2))
         let sensor = SensorInfo(start: now - 15 * 86400 - 3600, end: now - 3600, warmupEnd: now - 15 * 86400)
-        var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true)
+        var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true, bands: Bands())
         st.sensor = sensor
         for size in [CGSize(width: 138, height: 138), CGSize(width: 332, height: 138), CGSize(width: 60, height: 60)] {
             let lay = GlucoseCard.draw(
@@ -227,7 +227,7 @@ func fixtureSetHasCases(_ set: String) {
             ),
         ]
         for (sensor, want, said) in cases {
-            var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true)
+            var st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: true, bands: Bands())
             st.sensor = sensor
             for size in [
                 CGSize(width: 138, height: 138), CGSize(width: 332, height: 138), CGSize(width: 60, height: 60),
@@ -254,7 +254,7 @@ func fixtureSetHasCases(_ set: String) {
         for age in [10.0, 400.0, 1500.0] {
             var readings = (1...60).reversed().map { GraphReading(t: now - age - Double($0) * 60, v: 120, rate: 0) }
             readings.append(GraphReading(t: now - age, v: 118, rate: 0.2))
-            let st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: false)
+            let st = CardStyle(graph: GraphStyle(), rings: [], value: false, sensorTime: false, bands: Bands())
             let size = CGSize(width: w, height: 60)
             let lay = GlucoseCard.draw(
                 cardContext(size), size: size, readings: readings, marks: [], now: now, st,
@@ -329,7 +329,7 @@ func fixtureSetHasCases(_ set: String) {
         g.axisLabels = card.bool("axisLabels") ?? true
         let st = CardStyle(
             graph: card.bool("graph") == true ? g : nil, value: card.bool("value") ?? true,
-            sensorTime: card.bool("sensorTime") ?? true)
+            sensorTime: card.bool("sensorTime") ?? true, bands: Bands())
         let latest = now - (c.number("age") ?? 60)
         let kind = c.string("sensor") ?? "none"
         let info: SensorInfo? =

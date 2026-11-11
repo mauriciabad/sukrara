@@ -339,7 +339,7 @@ public enum GlucoseCard {
         // a fresh value says "now" where the time goes (#70): in the pill's row, else beside the arrow; never a row of its
         // own. Beside a plain number + arrow it gets room unless that costs the number more than `nowKeep` of its size
         // (ValueFace.kt).
-        let nowWord = "now"
+        let nowWord = w.drawn.now
         let smallH = fr.showTime ? CTFontGetSize(small) * 1.25 : 0
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
         // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it

@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import CoreGraphics
 import Foundation
 import SukraraCore
 import SukraraTesting
@@ -111,5 +112,28 @@ import Testing
         #expect(paused?.text == "quedan 45 min" && paused?.short == "45 min")
         #expect(StatusBadge.look(.muted(until: now + 80 * 60), now: now, words: es)?.text == "Silenciadas · 1 h 20 min")
         #expect(StatusBadge.replaceSensor(es).text == "Cambiar sensor" && StatusBadge.backToNow(es).text == "Ahora")
+    }
+
+    /// A fresh value says "now" in the card's language where the time goes (#83: the Spanish snapshots drew "now"):
+    /// "ahora" is wider than "now" in the same place and font.
+    @Test func aFreshValueSaysNowInTheCardsLanguage() throws {
+        let now = GraphFixtures.now
+        let readings = [GraphReading(t: now - 30, v: 112, rate: 0.4)]
+        func nowWidth(_ w: CardWords) throws -> CGFloat {
+            let st = CardStyle(graph: nil, rings: [], sensorTime: false, bands: Bands()).speaking(w)
+            let size = CGSize(width: 340, height: 120)
+            let ctx = try #require(
+                CGContext(
+                    data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0,
+                    space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            let lay = GlucoseCard.draw(
+                ctx, size: size, readings: readings, marks: [], now: now, st, GraphPalette.of(dark: false),
+                surface: .widgetValue, part: .all)
+            let time = try #require(lay.first("value.time"), "a fresh value says now")
+            return try #require(time.box?.width, "\(time.info)")
+        }
+        let en = try nowWidth(.en), es = try nowWidth(.es)
+        #expect(es > en * 1.3, "\"ahora\" (\(es) pt) drawn as wide as \"now\" (\(en) pt)")
     }
 }
