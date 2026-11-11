@@ -212,6 +212,26 @@
     <string name="sh_share_send_message">Follow my glucose with Sukrara: %1$s</string>
     <!-- Button: another invite -->
     <string name="sh_share_another">Invite someone else</string>
+    <!-- Share screen: someone used the invite shown; %1$s = their name -->
+    <string name="sh_share_asked_title">%1$s asked to follow you</string>
+    <!-- Share screen: the invite is claimed -->
+    <string name="sh_share_asked_body">Nobody else can use this invite now. Allow or deny their request.</string>
+    <!-- Share screen: open the request again -->
+    <string name="sh_share_review">Review request</string>
+    <!-- Share screen: the request was allowed; %1$s = name -->
+    <string name="sh_share_following_title">%1$s follows you now</string>
+    <!-- Share screen: allowed -->
+    <string name="sh_share_following_body">They see your glucose on their phone or Mac. You can remove them any time in Settings › Sharing.</string>
+    <!-- Share screen: back to Settings › Sharing -->
+    <string name="sh_share_done">Done</string>
+    <!-- Share screen: the request was denied; %1$s = name -->
+    <string name="sh_share_denied_title">You didn\'t allow %1$s</string>
+    <!-- Share screen: denied -->
+    <string name="sh_share_denied_body">Nobody can use this invite any more. Create another one to invite someone.</string>
+    <!-- Share screen: nobody used the invite in time -->
+    <string name="sh_share_expired_title">This invite expired</string>
+    <!-- Share screen: expired -->
+    <string name="sh_share_expired_body">Nobody used it. Create another one to invite someone.</string>
     <!-- Share: heading -->
     <string name="sh_share_they_see">They\'ll see</string>
     <!-- Share: what followers see -->
@@ -220,10 +240,6 @@
     <string name="sh_approve_title">%1$s wants to follow you</string>
     <!-- A follower without a name -->
     <string name="sh_approve_unnamed">Someone</string>
-    <!-- Approve: the invite label; %1$s = label -->
-    <string name="sh_approve_invite_for">Invite for: %1$s</string>
-    <!-- Approve: compare the code -->
-    <string name="sh_approve_code_intro">Check that their phone shows this code:</string>
     <!-- Approve: what allowing means -->
     <string name="sh_approve_they_see">If you allow, they see your glucose until you remove them.</string>
     <!-- Approve: allow -->
@@ -256,8 +272,8 @@
     <string name="sh_followers_remove_text">They stop seeing your data. To follow again they need a new invite.</string>
     <!-- Approve: other phones tried the same link -->
     <plurals name="sh_approve_others">
-        <item quantity="one">%1$d other phone also tried this link. Only allow if you know who it is.</item>
-        <item quantity="other">%1$d other phones also tried this link. Only allow if you know who it is.</item>
+        <item quantity="one">%1$d other device also tried this link. Allow only after typing the code their screen shows.</item>
+        <item quantity="other">%1$d other devices also tried this link. Allow only after typing the code their screen shows.</item>
     </plurals>
     <!-- Followers group title -->
     <plurals name="sh_followers_count">
@@ -315,17 +331,17 @@
     <!-- Profile row summary; %1$s = "2 followers" -->
     <string name="sh_profile_row_summary">%1$s · How you appear</string>
     <!-- Approve, leaked link: field for the code on the follower's phone -->
-    <string name="sh_approve_type_code">Code on their phone</string>
+    <string name="sh_approve_type_code">Code on their screen</string>
     <!-- Approve: typed code differs -->
-    <string name="sh_approve_code_wrong">That\'s not the code on their phone.</string>
+    <string name="sh_approve_code_wrong">That\'s not the code on their screen.</string>
     <!-- Approve: Allow didn't work -->
     <string name="sh_approve_failed">Couldn\'t give access: the invite expired or was already used. Send a new invite.</string>
     <!-- Approve: decide later (the request keeps waiting) -->
     <string name="sh_approve_later">Later</string>
     <!-- Approve: the invite card's heading -->
     <string name="sh_approve_your_invite">Your invite</string>
-    <!-- Approve: invite without a label -->
-    <string name="sh_approve_no_label">Invite without a name</string>
+    <!-- Approve: heading over the label the wearer gave the invite -->
+    <string name="sh_approve_your_invite_for">Your invite for</string>
     <!-- Approve: the name looks like the invite's label (a hint) -->
     <string name="sh_approve_label_matches">Name matches</string>
     <!-- Approve: the name differs from the invite's label -->
@@ -494,10 +510,11 @@
     <string name="sh_join_someone">the person who invited you</string>
     <string name="sh_join_waiting">Waiting for %1$s to allow you</string>
     <string name="sh_join_active">You follow %1$s</string>
-    <string name="sh_join_code_hint">If they ask for a code, tell them:</string>
+    <!-- Follower waiting (link): the match code the wearer types only when another device also tried the link; %1$s = wearer, %2$s = code -->
+    <string name="sh_follow_code">If %1$s asks for a code: %2$s</string>
     <string name="sh_join_waiting_note">%1$s gets a notification to allow you. Their readings appear on home as soon as they do; you can continue setup meanwhile.</string>
     <string name="sh_join_declined">%1$s didn\'t allow you. Ask them for a new link and paste it here.</string>
-    <string name="sh_join_used">Another phone used this invite from %1$s first. Ask them for a new link and paste it here.</string>
+    <string name="sh_join_used">Another device used this invite from %1$s first. Ask them for a new link and paste it here.</string>
     <string name="sh_join_revoked">%1$s stopped sharing with you. Paste a new link to follow again.</string>
     <string name="sh_join_err_invalid">That isn\'t a Sukrara invite link. It starts with https://sukrara.mauri.app/join#</string>
     <string name="sh_join_err_not_found">This invite wasn\'t found. It may have been cancelled: ask for a new link.</string>
@@ -514,7 +531,6 @@
     <string name="sh_following_title">Following</string>
     <string name="sh_following_waiting">Waiting for %1$s to allow you</string>
     <string name="sh_following_active">You follow %1$s</string>
-    <string name="sh_following_code">If they ask for a code: %1$s</string>
     <string name="sh_following_last_heard">Last reading arrived %1$s</string>
     <string name="sh_following_never">No reading has arrived yet</string>
     <string name="sh_following_can_write">You can add entries to their log</string>
@@ -565,7 +581,7 @@
     <string name="sh_pair_nearby">Pair nearby</string>
     <string name="sh_pair_nearby_off">For 10 minutes, a phone nearby can ask to follow you without a link. Both phones then show the same code.</string>
     <string name="sh_pair_nearby_on">Open · closes in %1$s. On their phone: Find phones nearby, when joining.</string>
-    <string name="sh_approve_nearby">Asked with Pair nearby: any phone in Bluetooth range can ask. Allow only if their phone shows this same code.</string>
+    <string name="sh_approve_nearby">Asked with Pair nearby: any phone or Mac in Bluetooth range can ask. Allow only if their screen shows this same code.</string>
     <string name="sh_pair_asking">Asking %1$s\'s phone…</string>
     <string name="sh_pair_compare">Does %1$s\'s phone show this code?</string>
     <string name="sh_pair_waiting">Same code. Waiting for %1$s to allow you.</string>

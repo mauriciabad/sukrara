@@ -228,8 +228,7 @@ struct FollowingRows: View {
         case .waiting(let wearer, let pairing?):
             PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
         case .waiting(let wearer, nil):
-            row(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"), "hourglass")
-            Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
+            WaitingForWearer(follow: follow, wearer: wearer ?? L10n.t("the wearer"))
         case .following(let wearer, let last, let canWrite):
             Label {
                 Text(L10n.t("Following \(wearer ?? L10n.t("the wearer"))"))

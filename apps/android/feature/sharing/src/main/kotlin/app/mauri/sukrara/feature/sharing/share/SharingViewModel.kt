@@ -15,10 +15,18 @@ import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -41,11 +49,44 @@ data class ApproveUi(val request: PendingRequest, val working: Boolean, val refu
  * Share screen, approve dialog, followers page and How you appear: every action goes through [OwnerSharing] (the
  * engine). Backup has its own ([app.mauri.sukrara.feature.sharing.backup.BackupViewModel]).
  */
-class SharingViewModel(private val sharing: OwnerSharing) : ViewModel() {
+class SharingViewModel(
+    private val sharing: OwnerSharing,
+    /** Epoch seconds (an invite's expiry). */
+    private val now: () -> Long = { System.currentTimeMillis() / 1000 },
+) : ViewModel() {
     val state: StateFlow<OwnerShareState> = sharing.state
 
     private val _invite = MutableStateFlow<InviteUi>(InviteUi.None)
     val invite: StateFlow<InviteUi> = _invite.asStateFlow()
+
+    /** The watch over the invite shown (kept across the screen's pauses, so a denied request still has its name). */
+    private var watch: Pair<String, InviteWatch>? = null
+
+    /**
+     * What happened to the invite shown, live: asked, allowed (a new follower), denied or expired ([InviteProgress]);
+     * [InviteProgress.Open] while none is shown.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val progress: StateFlow<InviteProgress> =
+        _invite
+            .flatMapLatest { ui ->
+                val shown = (ui as? InviteUi.Ready)?.invite ?: return@flatMapLatest flowOf(InviteProgress.Open)
+                val w = watch?.takeIf { it.first == shown.token }?.second ?: InviteWatch(shown.token, shown.expiresAt)
+                watch = shown.token to w
+                combine(sharing.state, ticks(shown.expiresAt)) { s, t -> w.progress(s, t) }
+            }.distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), InviteProgress.Open)
+
+    /** The time now, and once more when [expiresAt] passes (an unused invite then shows as expired). */
+    private fun ticks(expiresAt: Long): Flow<Long> =
+        flow {
+            emit(now())
+            val wait = expiresAt - now()
+            if (wait > 0) {
+                delay(wait * 1000)
+                emit(now())
+            }
+        }
 
     private val _approve = MutableStateFlow<ApproveUi?>(null)
     val approve: StateFlow<ApproveUi?> = _approve.asStateFlow()

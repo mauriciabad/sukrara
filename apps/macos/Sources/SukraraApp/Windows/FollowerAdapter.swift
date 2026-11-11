@@ -94,6 +94,14 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         }
     }
 
+    /// The match code while a link join waits for the wearer (PROTOCOL-v2 "Invite link / QR": they type it only when
+    /// another device also tried the same link); nil for a nearby join (its pairing code is compared instead) and in
+    /// every other state.
+    static func matchCode(_ snapshot: FollowerSnapshot) -> String? {
+        guard case .requested(let code, _, nil) = snapshot.link, !code.isEmpty else { return nil }
+        return code
+    }
+
     /// How the readings arrive while following: always over the relays, and the Bluetooth path's state when it runs.
     static func source(_ snapshot: FollowerSnapshot) -> String? {
         guard snapshot.link.isFollowing else { return nil }

@@ -137,6 +137,54 @@ struct FollowerRuntimeTests {
         await h.runtime.stop()
     }
 
+    /// A notice from the wearer's identity (`declined`, `invite-used`) gift-wrapped to `follower`.
+    func notice(_ type: String, to follower: String) throws -> SignedEvent {
+        try crypto.giftWrap(
+            kind: Wire.kindToFollower, content: #"{"v":2,"type":"\#(type)"}"#, from: v.secret("I"), to: follower,
+            expiration: v.now + 3600)
+    }
+
+    /// The follower key in the Keychain now, and its public key.
+    func followerKey(_ h: RuntimeHarness) throws -> (state: FollowerState, pub: String) {
+        let state = try FollowerState.decode(try #require(try h.secrets.read(account: KeychainStore.followerAccount)))
+        return (state, try crypto.publicKey(of: state.follower))
+    }
+
+    /// #173 / #174: a request waits with its match code, then moves on by itself as the wearer answers (no reconnect,
+    /// no polling): Deny → declined, another device first → invite used, Allow → following. A follow that ended takes a
+    /// new invite (it replaces the ended one, as on Android, so "Follow again…" works).
+    @Test func aWaitingRequestMovesOnByItselfAndAnEndedOneTakesANewInvite() async throws {
+        let hub = FakeRelayHub(stored: [v.event("invite")])
+        let h = RuntimeHarness(now: v.now, hub: hub)
+        await h.runtime.start()
+        let invite = (v.derivations["invite"] as! [String: Any])["link"] as! String
+
+        try await h.runtime.lookUpAndFollow(link: invite)
+        var (state, follower) = try followerKey(h)
+        #expect(await h.runtime.currentLink == .requested(code: state.code, wearer: "Alex", pairing: nil))
+        #expect(state.code == Wire.matchCode(followerPublicKey: follower, token: state.token))
+        await hub.inject(try notice("declined", to: follower))
+        #expect(await eventually { await h.runtime.currentLink == .declined })
+
+        // the person pastes a new link: the ended follow is replaced (a new key, a new request)
+        try await h.runtime.lookUpAndFollow(link: invite)
+        let declinedKey = follower
+        (state, follower) = try followerKey(h)
+        #expect(follower != declinedKey)
+        #expect(state.status == .requested)
+        await hub.inject(try notice("invite-used", to: follower))
+        #expect(await eventually { await h.runtime.currentLink == .inviteUsed })
+
+        try await h.runtime.lookUpAndFollow(link: invite)
+        (state, follower) = try followerKey(h)
+        #expect(await h.runtime.currentLink == .requested(code: state.code, wearer: "Alex", pairing: nil))
+        await hub.inject(try keyDelivery(to: follower))
+        #expect(await eventually { await h.runtime.currentLink == .following(wearer: "Alex", canWrite: false) })
+        // following: a new invite never replaces it
+        await #expect(throws: FollowerJoinError.alreadyFollowing) { try await h.runtime.lookUp(link: invite) }
+        await h.runtime.stop()
+    }
+
     /// How You Appear: the typed name goes with the request; a change while following is sent at once and kept in
     /// the Keychain state; the snapshot carries both profiles.
     @Test func profileGoesWithTheRequestAndUpdatesWhileFollowing() async throws {

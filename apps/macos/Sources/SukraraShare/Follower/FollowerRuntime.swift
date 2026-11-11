@@ -248,8 +248,15 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - joining
 
+    /// Nobody followed, or a follow that ended (the wearer declined, another device used the invite, the wearer
+    /// removed this Mac): a new invite replaces it, as on Android. A follow that waits or runs is never replaced.
+    private var canJoin: Bool {
+        guard let status = session?.state.status else { return true }
+        return status == .declined || status == .inviteUsed || status == .revoked
+    }
+
     public func lookUp(link text: String) async throws(FollowerJoinError) -> Invite {
-        guard session == nil else { throw .alreadyFollowing }
+        guard canJoin else { throw .alreadyFollowing }
         guard let parsed = InviteLink.parse(text) else { throw .invalidLink }
         link = .joining
         await publishSnapshot()
@@ -267,14 +274,14 @@ public actor FollowerRuntime: FollowerService {
     }
 
     public func join(invite: Invite) async throws(FollowerJoinError) {
-        guard session == nil else { throw .alreadyFollowing }
+        guard canJoin else { throw .alreadyFollowing }
         try await begin(invite: invite, commit: nil)
     }
 
     public func cancelJoin() { joinTask?.cancel() }
 
     public func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) {
-        guard session == nil else { throw .alreadyFollowing }
+        guard canJoin else { throw .alreadyFollowing }
         try await begin(invite: offer.invite, commit: offer.commit)
     }
 
@@ -360,7 +367,7 @@ public actor FollowerRuntime: FollowerService {
     }
 
     private func begin(invite: Invite, commit: String?) async throws(FollowerJoinError) {
-        guard session == nil, !beginning else { throw .alreadyFollowing }
+        guard canJoin, !beginning else { throw .alreadyFollowing }
         beginning = true
         defer { beginning = false }
         endKeychainRetry()  // following someone new: the unreadable item is overwritten

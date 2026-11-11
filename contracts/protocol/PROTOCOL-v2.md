@@ -275,7 +275,8 @@ follower sees who is inviting before asking.
 - A leak before the intended follower uses the link lets someone ask in their place with any name and picture.
   Protection: the single claim, the `invite-used` notice to the real follower (who then tells the owner), and the
   owner's Allow. When others tried the invite (`others` > 0) the owner types the follower's **match code** =
-  `int(sha256(F.pub_hex + token)) mod 10000`, zero-padded to 4 digits, shown on the follower's phone, before Allow.
+  `int(sha256(F.pub_hex + token)) mod 10000`, zero-padded to 4 digits, shown on the follower's screen (phone or Mac,
+  a secondary line: "If Ana asks for a code: 4821"), before Allow. With `others` = 0 the owner sees no code at all.
 
 ## Nearby pairing
 
@@ -364,9 +365,12 @@ profile = {"name": "Alex", "avatar": {"v": 1, "c": 0, "s": "cube", "a": 45, "n":
 2. Follower app (role "I follow someone") scans/opens it and fetches the invite wrap (reading only), then shows who is
    inviting (the wrap's `profile`) with *Follow* / *Cancel*; an opened link never asks by itself (another app can open
    a `sukrara:` link it made up). *Follow* generates `F`, sends an *access request* to `I` on the invite's relays,
-   shows the match code, waits. Android `FollowerEngine.lookUp` / `join`, Mac `FollowerRuntime.lookUp` / `join(invite:)`.
-3. Owner app sees the request (checked on every chunk publish ≈ 5 min, immediately while the app is open), shows
-   "Mom's phone wants to see your glucose · code 4821 — Allow / Deny".
+   shows the match code as a secondary line (the owner asks for it only when `others` > 0), waits. The answer (key
+   delivery, `declined`, `invite-used`) arrives on the open inbox subscription and moves it on at once, no reconnect.
+   Android `FollowerEngine.lookUp` / `join`, Mac `FollowerRuntime.lookUp` / `join(invite:)`.
+3. Owner app sees the request at once (its inbox subscription is open while sharing runs), shows "Mom's phone wants
+   to see your glucose — Allow / Deny" with the owner's label for the invite and no code; the follower's match code is
+   typed only when `others` > 0 (see [Invite link / QR](#invite-link--qr)).
 4. Allow → owner sends a *key delivery* for the current epoch, records `F` in the follower list and the owner backup,
    and republishes the last 24 h of chunks (paced, newest hour first) so the new follower gets a complete, fresh copy.
 5. Follower decrypts the delivery, then: fetch roster → backfill chunks (`#c` + `authors = roster.devices`) → follow live.

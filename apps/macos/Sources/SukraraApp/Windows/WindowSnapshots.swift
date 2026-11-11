@@ -151,6 +151,15 @@
                 let waiting = follow(.waiting(wearer: "Marta", pairing: check))
                 out.append((name, AnyView(FollowStep(follow: waiting).padding().frame(width: 520))))
             }
+            // #173 / #174: a link join waiting with its match code, the Allow arrived, a request that ended
+            let linkWaiting = follow(.waiting(wearer: "Marta", pairing: nil))
+            linkWaiting.matchCode = "4821"
+            out.append(("follow-link-waiting", AnyView(FollowStep(follow: linkWaiting).padding().frame(width: 520))))
+            let allowed = follow(.following(wearer: "Marta", lastReading: nil, canWrite: false))
+            out.append(("follow-link-allowed", AnyView(FollowStep(follow: allowed).padding().frame(width: 520))))
+            let declined = follow(.declined)
+            declined.wearer = Profile(name: "Marta", avatar: nil)
+            out.append(("follow-link-declined", AnyView(FollowStep(follow: declined).padding().frame(width: 520))))
             let draft = IdentityDraft(name: "Ana's MacBook", avatar: .v1(c: 5, s: "drop", a: 45, n: 7))
             out.append(
                 (

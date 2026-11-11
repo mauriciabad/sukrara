@@ -17,6 +17,22 @@
         }
       }
     },
+    "%@ didn't allow you. Ask them for a new link and paste it here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ didn't allow you. Ask them for a new link and paste it here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no te ha dado acceso. Pídele un enlace nuevo y pégalo aquí."
+          }
+        }
+      }
+    },
     "%@ invited you to see their glucose. Follow asks %@ to allow this Mac; nothing is shared until they do." : {
       "localizations" : {
         "en" : {
@@ -45,6 +61,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ (desactivada)"
+          }
+        }
+      }
+    },
+    "%@ stopped sharing with you. Paste a new link to follow again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ stopped sharing with you. Paste a new link to follow again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ha dejado de compartir contigo. Pega un enlace nuevo para volver a seguirle."
           }
         }
       }
@@ -429,6 +461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Siempre activa"
+          }
+        }
+      }
+    },
+    "Another device used this invite from %@ first. Ask them for a new link and paste it here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another device used this invite from %@ first. Ask them for a new link and paste it here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otro dispositivo usó antes esta invitación de %@. Pídele un enlace nuevo y pégalo aquí."
           }
         }
       }
@@ -1521,6 +1569,22 @@
         }
       }
     },
+    "If %@ asks for a code: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If %@ asks for a code: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si %1$@ te pide un código: %2$@"
+          }
+        }
+      }
+    },
     "Hold the wearer's phone up to the camera with their invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent." : {
       "localizations" : {
         "en" : {
@@ -1937,6 +2001,22 @@
         }
       }
     },
+    "Same code. Waiting for %@ to allow you." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same code. Waiting for %@ to allow you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mismo código. Esperando a que %@ te dé acceso."
+          }
+        }
+      }
+    },
     "Read the invite QR code on the wearer's phone with this Mac's camera" : {
       "localizations" : {
         "en" : {
@@ -2013,6 +2093,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "Their glucose shows in the menu bar now." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their glucose shows in the menu bar now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su glucosa ya se ve en la barra de menús."
+          }
+        }
+      }
+    },
+    "This Mac already follows someone. Stop following in Settings › Following first, then open the link again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac already follows someone. Stop following in Settings › Following first, then open the link again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este Mac ya sigue a alguien. Primero deja de seguir en Ajustes › Seguimiento y luego vuelve a abrir el enlace."
+          }
+        }
+      }
+    },
+    "Waiting for %@ to allow you" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to allow you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando a que %@ te dé acceso"
           }
         }
       }
@@ -2977,22 +3105,6 @@
         }
       }
     },
-    "Same code. Waiting for %@ to allow this Mac." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Same code. Waiting for %@ to allow this Mac."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mismo código. Esperando a que %@ permita este Mac."
-          }
-        }
-      }
-    },
     "Save" : {
       "localizations" : {
         "en" : {
@@ -3713,22 +3825,6 @@
         }
       }
     },
-    "This Mac already follows someone. Stop following in Settings › General first, then open the link again." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This Mac already follows someone. Stop following in Settings › General first, then open the link again."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este Mac ya sigue a alguien. Primero deja de seguir en Ajustes › General y luego vuelve a abrir el enlace."
-          }
-        }
-      }
-    },
     "This Mac's own thresholds and ranges are replaced by the defaults." : {
       "localizations" : {
         "en" : {
@@ -4173,22 +4269,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Incluidas muy baja y sin datos, solo en este Mac"
-          }
-        }
-      }
-    },
-    "Waiting for %@ to approve" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for %@ to approve"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esperando la aprobación de %@"
           }
         }
       }
@@ -7613,6 +7693,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Antes"
+          }
+        }
+      }
+    },
+    "You follow %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You follow %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigues a %@"
           }
         }
       }

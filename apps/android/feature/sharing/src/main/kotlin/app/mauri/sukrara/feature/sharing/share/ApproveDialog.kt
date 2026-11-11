@@ -7,7 +7,6 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -71,10 +70,10 @@ const val ALLOW_ARM_MS = 600L
 
 /**
  * Someone used an invite and asks to follow. The follower's picture and name head it; a card shows the invite they
- * used (the wearer's own label, whether the name matches it, when it was sent and asked); then the code to compare
- * with the one on the follower's phone. When other phones also tried the same link, the wearer types that code instead.
- * A *Pair nearby* request shows the 6-digit pairing code big, under a warning to allow only if the follower's phone
- * shows the same (it never comes from the notification).
+ * used (the wearer's own label, whether the name matches it, when it was sent and asked). An ordinary link shows no
+ * code: it works once and the wearer's Allow is the check. When other devices also tried the same link, the wearer
+ * types the code the follower's screen shows. A *Pair nearby* request shows the 6-digit pairing code big, under a
+ * warning to allow only if the follower's screen shows the same (it never comes from the notification).
  * Allow is armed after [ALLOW_ARM_MS] and once per tap; Deny refuses; Later (also Back) keeps the request waiting.
  * Not dismissed by tapping outside.
  */
@@ -92,7 +91,6 @@ fun ApproveDialog(
     val haptics = rememberHaptics()
     val cs = MaterialTheme.colorScheme
     val name = Profile.shownName(request.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
-    val leaked = request.others > 0
     // a leaked link: anyone could have asked, so the match code is typed, never just compared. Pair nearby: both phones
     // show the same pairing code, which only matches when this request is the phone in front of you (§Nearby pairing)
     val typeCode = request.needsTypedCode
@@ -166,17 +164,9 @@ fun ApproveDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         modifier = Modifier.fillMaxWidth(),
                     )
-                } else {
-                    Spacer(Modifier.height(12.dp))
-                    Text(stringResource(R.string.sh_approve_code_intro), style = MaterialTheme.typography.bodyMedium)
-                    val spaced = request.code.toList().joinToString(" ")
-                    Text(
-                        request.code,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.semantics { contentDescription = spaced },
-                    )
                 }
+                // an ordinary link nobody else tried: no code (PROTOCOL-v2 "Invite link / QR": single use, the wearer's
+                // Allow); the follower's screen keeps its match code for the leaked case only
                 Spacer(Modifier.height(12.dp))
                 Text(stringResource(R.string.sh_approve_they_see), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                 Spacer(Modifier.height(20.dp))
@@ -212,7 +202,11 @@ fun ApproveDialog(
     }
 }
 
-/** The invite the request used: the wearer's label for it, a match hint, and when it was sent and asked. */
+/**
+ * The invite the request used: *Your invite for* over the wearer's own label (whole, up to two lines: it is how the
+ * wearer recognises the invite), a match hint, and when it was sent and asked. Without a label the heading is just
+ * *Your invite*; *Pair nearby* names itself. The hint wraps under the label when the line is full, never cutting it.
+ */
 @Composable
 private fun InviteCard(
     request: PendingRequest,
@@ -220,23 +214,27 @@ private fun InviteCard(
     time: (Long) -> String,
 ) {
     val cs = MaterialTheme.colorScheme
+    val label =
+        request.label
+            .trim()
+            .takeUnless { request.nearby }
+            .orEmpty()
     Surface(shape = MaterialTheme.shapes.large, color = cs.surfaceContainerHighest, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.sh_approve_your_invite), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    if (request.nearby) {
-                        stringResource(R.string.sh_approve_invite_nearby)
-                    } else if (request.label.isNotBlank()) {
-                        stringResource(R.string.sh_approve_invite_for, request.label)
-                    } else {
-                        stringResource(R.string.sh_approve_no_label)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
+            Text(
+                stringResource(if (label.isEmpty()) R.string.sh_approve_your_invite else R.string.sh_approve_your_invite_for),
+                style = MaterialTheme.typography.labelMedium,
+                color = cs.onSurfaceVariant,
+            )
+            when {
+                request.nearby -> InviteTitle(stringResource(R.string.sh_approve_invite_nearby))
+                label.isNotEmpty() -> InviteTitle(label)
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
                 // a hint only: anyone can type any name; the leaked-link case relies on the code instead
                 if (!request.needsTypedCode && !request.nearby) {
                     when (labelMatches(request.label, name)) {
@@ -245,18 +243,23 @@ private fun InviteCard(
                         null -> Unit
                     }
                 }
+                Text(
+                    if (request.inviteSentAt > 0) {
+                        stringResource(R.string.sh_approve_sent_asked, time(request.inviteSentAt), time(request.at))
+                    } else {
+                        stringResource(R.string.sh_approve_asked, time(request.at))
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cs.onSurfaceVariant,
+                )
             }
-            Text(
-                if (request.inviteSentAt > 0) {
-                    stringResource(R.string.sh_approve_sent_asked, time(request.inviteSentAt), time(request.at))
-                } else {
-                    stringResource(R.string.sh_approve_asked, time(request.at))
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = cs.onSurfaceVariant,
-            )
         }
     }
+}
+
+@Composable
+private fun InviteTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable

@@ -161,6 +161,34 @@ actor StopRecordingFollower: FollowerService {
         #expect(FollowerAdapter.failure(.offline)?.message.contains("internet") == true)
     }
 
+    /// #173: a link join shows its match code in the follow window (the wearer asks for it only for a leaked link); a
+    /// nearby join compares its pairing code instead, and nothing else shows one.
+    @Test func theMatchCodeShowsOnlyWhileALinkJoinWaits() {
+        var s = FollowerSnapshot.empty
+        s.link = .requested(code: "4821", wearer: "Marta", pairing: nil)
+        #expect(FollowerAdapter.matchCode(s) == "4821")
+        s.link = .requested(code: "4821", wearer: "Marta", pairing: .init(code: "021472", confirmed: false))
+        #expect(FollowerAdapter.matchCode(s) == nil)
+        for link in [LinkState.following(wearer: "Marta", canWrite: false), .declined, .inviteUsed, .notFollowing] {
+            s.link = link
+            #expect(FollowerAdapter.matchCode(s) == nil)
+        }
+        // the same words as Android's join step and Following page (en here)
+        #expect(L10n.t("If \("Marta") asks for a code: \("4821")") == "If Marta asks for a code: 4821")
+        #expect(L10n.t("Waiting for \("Marta") to allow you") == "Waiting for Marta to allow you")
+    }
+
+    /// #174: the follow step says how a request ended, with its way on (a new link pasted there).
+    @Test func anEndedFollowSaysWhyInTheFollowStep() {
+        #expect(
+            FollowEnded.text(.declined, wearer: "Marta")
+                == "Marta didn't allow you. Ask them for a new link and paste it here.")
+        #expect(FollowEnded.text(.inviteUsed, wearer: "Marta")?.hasPrefix("Another device used this invite") == true)
+        #expect(FollowEnded.text(.revoked, wearer: "Marta")?.hasPrefix("Marta stopped sharing with you") == true)
+        #expect(FollowEnded.text(.waiting(wearer: "Marta", pairing: nil), wearer: "Marta") == nil)
+        #expect(FollowEnded.text(.notFollowing, wearer: "Marta") == nil)
+    }
+
     @Test func anInviteWhileFollowingKeepsTheStatus() async {
         let following = FollowStatus.following(wearer: "Marta", lastReading: nil, canWrite: false)
         let model = FollowModel(status: following, actions: nil)

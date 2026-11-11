@@ -611,11 +611,18 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    nothing.
 4. Wearer: *Share with someone* → *Create invite*. Follower: `adb shell am start -a android.intent.action.VIEW -d
    '<link>' -p app.mauri.sukrara` → *I follow someone* → *Join*: the relay logs the invite lookup (`REQ q-…`, 1
-   stored) and the request (kind 1059); the follower shows *Waiting for <name> to allow you* with a 4-digit code.
-5. Wearer: the request (notification and Sharing) shows the same code → *Allow*. Follower: *You follow <name>*, then
+   stored) and the request (kind 1059); the follower shows *Waiting for <name> to allow you* with *If <name> asks for a
+   code: NNNN* as one quiet line.
+5. Wearer (left on the share screen with the QR): within seconds the screen turns into *<name> asked to follow you*
+   and the approve dialog shows over it, with the whole label under *Your invite for* and **no code** (an ordinary
+   link) → *Allow*. Without touching either phone: the share screen says *<name> follows you now* (*Done* → Settings ›
+   Sharing lists them) and the follower's card turns into *You follow <name>* (#174), then
    home shows the wearer's value and graph; the next minute's reading arrives on both. Both uids still have only the
    10.0.2.2 socket.
-6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
+6. Optional on the same pair: Deny instead of Allow (wearer: *You didn't allow <name>*; follower: *<name> didn't allow
+   you…* by itself), a third emulator opening the same link first or second (the second shows *Another device used
+   this invite…* by itself; the wearer's dialog asks to type the code the first one's screen shows), an invite left
+   unused until it expires (*This invite expired*), a writer's treatment, Mute mirroring, Remove follower.
    Allow / Deny after Android stopped the app (#167): a new request showing, end the wearer's process
    (`adb shell run-as app.mauri.sukrara kill <pid>`; the notification stays), then the notification's *Allow*: the
    follower is let in within seconds, the notification leaves, and the wearer keeps sharing (Settings › Sharing still

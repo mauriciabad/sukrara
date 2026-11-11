@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.sharing
 
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.share.ShareOwnerModule
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
@@ -18,8 +19,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 
-/** A created invite: the link (also the QR) and when it stops working (epoch s). */
-data class Invite(val link: String, val label: String, val expiresAt: Long)
+/**
+ * A created invite: the link (also the QR), when it stops working (epoch s) and its request token (the engine's
+ * `InviteRecord.token`: the share screen follows what happens to it).
+ */
+data class Invite(val link: String, val label: String, val expiresAt: Long, val token: String = "")
 
 /**
  * What the sharing screens do with the wearer's sharing (the [OwnerEngine]); a port so screens and view models
@@ -161,7 +165,7 @@ class EngineOwnerSharing(
 
     override suspend fun createInvite(label: String): Invite? {
         val at = now()
-        return engine.createInvite(label)?.let { Invite(it, label.trim(), at + CreateInvite.TTL) }
+        return engine.createInvite(label)?.let { Invite(it, label.trim(), at + CreateInvite.TTL, InviteLink.parse(it)?.token.orEmpty()) }
     }
 
     override suspend fun approve(follower: String, typedCode: String?): ApproveResult = engine.approve(follower, typedCode)
