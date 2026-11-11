@@ -267,6 +267,11 @@ Play version** (in preparation), which Play updates and which therefore has no u
 only difference. Settings › About says which one is installed and links to the website's
 [Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
+The Mac app likewise: the **GitHub version** (the dmg and the Homebrew cask), which checks GitHub for updates, and the
+**App Store version** (in preparation, TestFlight first), sandboxed and updated by the Mac App Store, so without an
+update check of its own. Settings › General › About says which one is installed, that Sukrara isn't a medical device,
+and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](docs/FEATURES.md#mac-app-store-version-mac)).
+
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With
   [Obtainium](https://obtainium.imranr.dev/), turn on *Include prereleases*.
@@ -311,7 +316,7 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity; the provisioning profiles in `~/.apple-dev/profiles` are used when there, `--no-profile` skips them) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
-| Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh` |
+| Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh`, `tools/release/mac-appstore.sh` (Mac App Store) |
 
 Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: [CHANGELOG.md](CHANGELOG.md). The investigations, one
 report each: `docs/NN-*.md`.

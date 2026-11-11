@@ -4,8 +4,8 @@ title: Privacy policy · Sukrara
 
 # Privacy policy
 
-*Sukrara for Android (the Google Play build and the GitHub build), Sukrara for Mac and this website. Last changed
-2026-11-10; every change is in [the project's history](https://github.com/mauriciabad/sukrara/commits/main/docs/privacy.md).*
+*Sukrara for Android (the Google Play build and the GitHub build), Sukrara for Mac (the App Store version and the
+GitHub version) and this website. Last changed 2026-11-11; every change is in [the project's history](https://github.com/mauriciabad/sukrara/commits/main/docs/privacy.md).*
 
 **In short:** Sukrara has no account, no server of its own, no analytics, no ads and no crash reporting. Your glucose,
 treatments and settings stay on your phone. Something leaves the phone only when you turn on a feature that sends it,
@@ -76,9 +76,11 @@ The Mac app follows a wearer: it connects to the same relays and to the wearer's
 follow request (with a name, by default the computer's name, and a picture), the encrypted messages that keep the
 follow working (new keys, a request for missed readings) and, if allowed, the entries you add, all end-to-end
 encrypted.
-*Juggluco on this network*, when you turn it on, reads glucose from Juggluco on your home network. Once a day, and when
-you choose *Check for Updates…*, it asks GitHub for the list of releases. It keeps readings 31 days and your keys in
-the Mac's login Keychain, on that Mac only.
+*Juggluco on this network*, when you turn it on, reads glucose from Juggluco on your home network. The version from
+GitHub (the dmg or Homebrew) asks GitHub for the list of releases once a day and when you choose *Check for Updates…*;
+the App Store version doesn't (the App Store updates it). It keeps readings 31 days and your keys in the Mac's
+Keychain, on that Mac only; nothing goes to iCloud. The camera reads an invite QR code only while the scanner is open:
+nothing is recorded or sent.
 
 ## How long things last, and how to delete them
 

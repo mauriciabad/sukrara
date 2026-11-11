@@ -65,6 +65,13 @@ public struct ServicesPlan: Equatable, Sendable {
     public static let all = ServicesPlan(
         ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updateCheck: true,
         loginItem: true, lan: true, camera: true)
+    /// Everything the installed app of `distribution` starts: all, except the update check in the App Store version
+    /// (only the store updates it).
+    public static func all(for distribution: Distribution) -> ServicesPlan {
+        var plan = all
+        plan.updateCheck = distribution.hasOwnUpdateCheck
+        return plan
+    }
     public static let none = ServicesPlan(
         ble: false, relays: false, alerts: false, widgetFeed: false, notifications: false)
 
@@ -134,17 +141,36 @@ public struct DataScope: Equatable, Sendable {
     }
 }
 
+/// Where this copy of Sukrara comes from (`SukraraDistribution` in the Info.plist, which `Bundle/bundle.sh` fills).
+/// Like Android's flavors: the same app, only the update check differs.
+public enum Distribution: String, Equatable, Sendable {
+    /// GitHub releases, the dmg and the Homebrew cask (Developer ID, notarized): asks GitHub for updates.
+    case github
+    /// The Mac App Store and TestFlight (sandboxed): updates come only from the store (App Review 2.4.5 vii).
+    case appStore
+
+    /// The Info.plist value; anything else (a bare `swift build` executable has no Info.plist) is the GitHub version.
+    public init(infoValue: Any?) {
+        self = (infoValue as? String).flatMap(Distribution.init(rawValue:)) ?? .github
+    }
+
+    /// Whether this version looks for updates itself (the store updates the App Store version).
+    public var hasOwnUpdateCheck: Bool { self == .github }
+}
+
 /// How this build was made and where it runs from.
 public struct BuildInfo: Equatable, Sendable {
     public var isDebugBuild: Bool
     public var bundlePath: String
     /// Whether the executable runs from an app bundle (false for a bare `swift build` executable).
     public var isBundle: Bool
+    public var distribution: Distribution
 
-    public init(isDebugBuild: Bool, bundlePath: String, isBundle: Bool) {
+    public init(isDebugBuild: Bool, bundlePath: String, isBundle: Bool, distribution: Distribution = .github) {
         self.isDebugBuild = isDebugBuild
         self.bundlePath = bundlePath
         self.isBundle = isBundle
+        self.distribution = distribution
     }
 
     /// A dev build: a debug build, a bare executable, or a bundle inside a git checkout (`build/Sukrara.app`).
@@ -199,6 +225,8 @@ public struct LaunchPlan: Equatable, Sendable {
     public var mode: LaunchMode
     public var services: ServicesPlan
     public var data: DataScope
+    /// Which version this is (About says so; the App Store version has no update check).
+    public var distribution: Distribution = .github
 
     /// True when this run must not monitor (dev build or snapshot): the UI says so instead of looking like
     /// "no data".
@@ -224,7 +252,9 @@ public struct LaunchPlan: Equatable, Sendable {
             throw .unknownArgument(unknown)
         }
         guard build.isDevBuild(home: home, exists: exists) else {
-            return LaunchPlan(mode: .normal, services: .all, data: .user(home: home))
+            return LaunchPlan(
+                mode: .normal, services: .all(for: build.distribution), data: .user(home: home),
+                distribution: build.distribution)
         }
         guard env["SUKRARA_DEV"] == "1" else {
             throw .devBuildNeedsOptIn(bundlePath: build.bundlePath)
@@ -236,7 +266,9 @@ public struct LaunchPlan: Equatable, Sendable {
         guard devHome.standardizedFileURL.path != home.standardizedFileURL.path else { throw .devHomeIsUserHome }
         let fixture = env["SUKRARA_FIXTURE"] == "1"
         if fixture && !build.isDebugBuild { throw .debugOnly }
-        return LaunchPlan(mode: fixture ? .fixture : .normal, services: .none, data: .isolated(root: devHome))
+        return LaunchPlan(
+            mode: fixture ? .fixture : .normal, services: .none, data: .isolated(root: devHome),
+            distribution: build.distribution)
     }
 
     /// `args` without the `-Apple…` / `-NS…` defaults pairs (a key and its value) the system reads for the language,
@@ -262,6 +294,7 @@ public struct LaunchPlan: Equatable, Sendable {
         scratch: URL
     ) throws(LaunchError) -> LaunchPlan {
         guard build.isDebugBuild else { throw .debugOnly }
-        return LaunchPlan(mode: .snapshot(request), services: .none, data: .isolated(root: scratch))
+        return LaunchPlan(
+            mode: .snapshot(request), services: .none, data: .isolated(root: scratch), distribution: build.distribution)
     }
 }

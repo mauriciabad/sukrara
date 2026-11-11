@@ -34,15 +34,21 @@ public final class SettingsModel {
     public var confirmingReset = false
     public var confirmingResetAll = false
     public let version: String
+    /// Which version this is (Settings › General › About says so).
+    public let distribution: Distribution
     private var revision = 0
 
-    public init(store: any SettingsStoring, follow: FollowModel, wearer: WearerSettings? = nil, version: String) {
+    public init(
+        store: any SettingsStoring, follow: FollowModel, wearer: WearerSettings? = nil, version: String,
+        distribution: Distribution = .github
+    ) {
         self.store = store
         self.alerts = AlertSettingsStore(store: store)
         self.follow = follow
         self.juggluco = JugglucoModel(store: store)
         self.wearer = wearer
         self.version = version
+        self.distribution = distribution
         pane = Pane(rawValue: store.value(MacSettings.settingsPane)) ?? .general
     }
 

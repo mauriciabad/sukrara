@@ -39,7 +39,8 @@ public enum AppMain {
         return BuildInfo(
             isDebugBuild: debug,
             bundlePath: Bundle.main.bundlePath,
-            isBundle: Bundle.main.bundleIdentifier != nil
+            isBundle: Bundle.main.bundleIdentifier != nil,
+            distribution: Distribution(infoValue: Bundle.main.object(forInfoDictionaryKey: "SukraraDistribution"))
         )
     }
 

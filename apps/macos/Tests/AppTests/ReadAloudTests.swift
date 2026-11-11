@@ -40,6 +40,20 @@ import Testing
         #expect(ContextMenu().menu.items.first?.isEnabled == false)
     }
 
+    /// The App Store version has no Check for Updates… at all (not a disabled one); the GitHub version always has it.
+    @Test func theAppStoreVersionsMenuHasNoUpdateItem() {
+        let title = L10n.t("Check for Updates…")
+        let github = ContextMenu()
+        #expect(github.menu.items.contains { $0.title == title })
+        let store = ContextMenu()
+        store.hasUpdateCheck = false
+        store.checkForUpdates = {}
+        #expect(!store.menu.items.contains { $0.title == title })
+        #expect(store.menu.items.contains { $0.title == L10n.t("Quit Sukrara") })
+        #expect(GeneralPane.versionText("0.13.0", .appStore) == L10n.t("0.13.0 · App Store version"))
+        #expect(GeneralPane.versionText("0.13.0", .github) == L10n.t("0.13.0 · GitHub version"))
+    }
+
     @Test func theShortcutIsControlShiftCommandGNeverVoiceOversKeys() {
         #expect(GlobalShortcut.keyCode == UInt32(kVK_ANSI_G))
         #expect(GlobalShortcut.carbonModifiers == UInt32(controlKey | shiftKey | cmdKey))

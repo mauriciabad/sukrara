@@ -5,14 +5,16 @@ import SukraraCore
 import SukraraShare
 import SwiftUI
 
-/// General: Settings from (with what's in use and Copy the wearer's settings…), units, open at login, updates,
-/// version, Quit, Sukrara on other devices (the website's page per app).
+/// General: Settings from (with what's in use and Copy the wearer's settings…), units, open at login, About (the
+/// version and which one, the update check in the GitHub version, not a medical device, the privacy policy, Quit),
+/// Sukrara on other devices (the website's page per app).
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
     var loginItem: LoginItem?
     var updateResult: String?
-    var checkForUpdates: () -> Void
+    /// nil when this run has no update check: the App Store version (the store updates it) and offline dev runs.
+    var checkForUpdates: (() -> Void)?
     var openFollow: () -> Void
 
     var body: some View {
@@ -65,14 +67,24 @@ struct GeneralPane: View {
             Section(L10n.t("Startup")) {
                 OpenAtLoginRows(loginItem: loginItem)
             }
-            Section(L10n.t("Updates")) {
+            Section(L10n.t("About")) {
                 HStack {
-                    Text(L10n.t("Version \(model.version)"))
+                    Text(Self.versionText(model.version, model.distribution))
                     Spacer()
-                    Button(L10n.t("Check now"), action: checkForUpdates)
+                    if let checkForUpdates { Button(L10n.t("Check now"), action: checkForUpdates) }
                 }
                 if let r = updateResult { Text(r).foregroundStyle(.secondary) }
+                // App Review 1.4.1: the reminder to check before acting on a value (also on setup's first step)
+                Text(
+                    L10n.t(
+                        "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor's app or a meter, and ask your doctor, before you decide on a treatment."
+                    )
+                )
+                .font(.callout).foregroundStyle(.secondary)
                 HStack {
+                    // App Review 5.1.1: the privacy policy is linked inside the app too
+                    Link(L10n.t("Privacy Policy"), destination: Self.privacyURL)
+                        .help(Self.privacyURL.absoluteString)
                     Spacer()
                     Button(L10n.t("Quit Sukrara")) { NSApp.terminate(nil) }
                 }
@@ -91,6 +103,18 @@ struct GeneralPane: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+extension GeneralPane {
+    static let privacyURL = URL(string: "https://sukrara.mauri.app/privacy")!
+
+    /// "0.13.0 · GitHub version" / "0.13.0 · App Store version" (Android: "· Google Play version").
+    static func versionText(_ version: String, _ distribution: Distribution) -> String {
+        switch distribution {
+        case .github: L10n.t("\(version) · GitHub version")
+        case .appStore: L10n.t("\(version) · App Store version")
+        }
     }
 }
 
@@ -299,7 +323,7 @@ struct SettingsView: View {
     var loginItem: LoginItem?
     /// The last update check's result in words (UpdateCheck), nil before one ran.
     var updateResult: String?
-    var checkForUpdates: () -> Void
+    var checkForUpdates: (() -> Void)?
     var openFollow: () -> Void
     var reconnect: (() -> Void)? = nil
     /// The running alert rules (Send Test Alert, Active now); nil in an offline run.

@@ -104,6 +104,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.shortcutOn = { [weak self] in self?.shortcut?.isOn == true }
         shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
         windows.statusItemFrame = { [weak statusItem] in statusItem?.screenFrame }
+        contextMenu.hasUpdateCheck = model.plan.distribution.hasOwnUpdateCheck
         if let updates = model.updates {
             // the result shows in the panel: open it once the check is done
             contextMenu.checkForUpdates = { [weak statusItem] in

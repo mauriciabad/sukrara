@@ -125,6 +125,12 @@ public struct SetupView: View {
                 L10n.t(
                     "Sukrara shows the glucose of someone you follow in the menu bar and alerts you when it's out of range."
                 ))
+            Text(
+                L10n.t(
+                    "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor's app or a meter, and ask your doctor, before you decide on a treatment."
+                )
+            )
+            .font(.callout).foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button(L10n.t("Set up later")) {

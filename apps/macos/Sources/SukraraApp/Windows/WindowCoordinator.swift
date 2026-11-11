@@ -25,7 +25,8 @@ final class WindowCoordinator {
         let adapter = model.follower.map(FollowerAdapter.init(follower:))
         self.adapter = adapter
         follow = FollowModel(status: .notFollowing, actions: adapter)
-        settings = SettingsModel(store: store, follow: follow, version: Self.version)
+        settings = SettingsModel(
+            store: store, follow: follow, version: Self.version, distribution: model.plan.distribution)
         setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
         report = ReportModel(store: store, app: model)
@@ -235,7 +236,7 @@ private struct SettingsWindowContent: View {
             model: model,
             loginItem: app.loginItem,
             updateResult: app.updates.flatMap { Self.text($0.state) },
-            checkForUpdates: { [updates = app.updates] in Task { await updates?.check(userAsked: true) } },
+            checkForUpdates: app.updates.map { updates in { Task { await updates.check(userAsked: true) } } },
             openFollow: openFollow,
             reconnect: app.follower == nil ? nil : { [weak app] in app?.networkCameBack() },
             alerts: app.alerts)

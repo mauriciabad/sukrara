@@ -81,6 +81,38 @@
         }
       }
     },
+    "%@ · App Store version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · App Store version"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · versión de App Store"
+          }
+        }
+      }
+    },
+    "%@ · GitHub version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · GitHub version"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · versión de GitHub"
+          }
+        }
+      }
+    },
     "%@'s phone is nearby" : {
       "localizations" : {
         "en" : {
@@ -173,6 +205,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un móvil"
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de"
           }
         }
       }
@@ -1969,6 +2017,22 @@
         }
       }
     },
+    "Privacy Policy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Política de privacidad"
+          }
+        }
+      }
+    },
     "Same code. Waiting for %@ to allow you." : {
       "localizations" : {
         "en" : {
@@ -2061,6 +2125,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor's app or a meter, and ask your doctor, before you decide on a treatment." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor's app or a meter, and ask your doctor, before you decide on a treatment."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara no es un producto sanitario: los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar. Mira la app de tu sensor o un glucómetro, y consulta a tu médico, antes de decidir un tratamiento."
           }
         }
       }
@@ -4001,22 +4081,6 @@
         }
       }
     },
-    "Updates" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updates"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualizaciones"
-          }
-        }
-      }
-    },
     "Use %@'s settings" : {
       "localizations" : {
         "en" : {
@@ -4109,22 +4173,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Valor"
-          }
-        }
-      }
-    },
-    "Version %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Version %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Versión %@"
           }
         }
       }
