@@ -289,7 +289,7 @@
     <string name="st_sensor_forget_title">Forget this sensor?</string>
     <string name="st_sensor_forget_text">Sukrara stops reading it and won\'t warn about missing data until you pair a sensor again. Your readings so far stay.</string>
     <string name="st_sensor_forget_confirm">Forget</string>
-    <string name="st_sensor_footer">Your LibreView password is used once to learn the receiver ID and is never stored.</string>
+    <string name="st_sensor_footer">One LibreView account for Sukrara: its email and password stay encrypted on this phone, and signing out on its screen signs out everywhere.</string>
     <!-- Settings › Status bar -->
     <string name="st_statusbar_title">Status bar</string>
     <string name="st_overview_statusbar">Live Update chip and notification icon</string>

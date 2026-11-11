@@ -118,7 +118,8 @@ fun SensorSettingsScreen(
 
 /**
  * The current sensor and its state, the reading source (with a plain confirmation of what changes), the LibreView
- * account (sign in / out; the password is never stored) and Pair new sensor. Every problem state shows its way out.
+ * account (who is signed in and the receiver ID; the row opens the one account screen) and Pair new sensor. Every
+ * problem state shows its way out.
  */
 @Composable
 fun SensorSettingsContent(

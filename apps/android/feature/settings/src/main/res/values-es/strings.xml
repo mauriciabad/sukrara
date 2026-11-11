@@ -289,7 +289,7 @@
     <string name="st_sensor_forget_title">¿Olvidar este sensor?</string>
     <string name="st_sensor_forget_text">Sukrara deja de leerlo y no avisará de que faltan datos hasta que emparejes un sensor de nuevo. Tus lecturas hasta ahora se quedan.</string>
     <string name="st_sensor_forget_confirm">Olvidar</string>
-    <string name="st_sensor_footer">Tu contraseña de LibreView se usa una vez para obtener el ID de receptor y nunca se guarda.</string>
+    <string name="st_sensor_footer">Una sola cuenta de LibreView para Sukrara: su correo y contraseña se guardan cifrados en este teléfono, y cerrar sesión en su pantalla la cierra en todas partes.</string>
     <!-- Ajustes › Barra de estado -->
     <string name="st_statusbar_title">Barra de estado</string>
     <string name="st_overview_statusbar">Chip de Actualización en vivo e icono de notificación</string>

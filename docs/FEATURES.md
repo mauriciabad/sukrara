@@ -258,8 +258,8 @@ damaged setup file never asks for the role again or turns alerts off.
   alert that matters most (`TestAlert.kind`: the first alert that is on and rings like an alarm, else the first that is
   on; hidden while none is on) and then says *Sent: check your notifications. It goes away by itself in 2 min.* (TalkBack
   hears it; it can be sent again). *Continue anyway* / *Later*.
-- **Sensor**: *Set up sensor* opens the new-sensor flow (Libre 3 start / takeover with the LibreView receiver
-  ID, or Juggluco). Until a reading arrives it says "Not monitoring: no sensor yet. No alert can ring until a reading
+- **Sensor**: *Set up sensor* opens the new-sensor flow (Libre 3 start / takeover with the LibreView receiver ID: the
+  app's one [LibreView account](#libreview-account), signed in here once for everything, or Juggluco). Until a reading arrives it says "Not monitoring: no sensor yet. No alert can ring until a reading
   arrives."; the step completes only with a live reading from this phone's own sensor (≤ 15 min old): "Reading
   received. Sukrara is monitoring."
 - **Alert thresholds**: Settings › Review alert thresholds' own rows (`AlertThresholdRows`, passed in by the app)

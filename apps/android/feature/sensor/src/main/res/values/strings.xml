@@ -15,7 +15,7 @@
     <string name="newsensor_nfc_off_title">Turn on NFC</string>
     <string name="newsensor_nfc_off_text">The sensor is started by holding the phone to it. NFC has to be on for that.</string>
     <string name="newsensor_signin_title">Sign in to LibreView</string>
-    <string name="newsensor_signin_text">Sukrara starts the sensor with your LibreView account, like the Libre app does. Then the Libre app can take it back later. Sukrara uploads nothing.</string>
+    <string name="newsensor_signin_text">Sukrara starts the sensor with your LibreView account, like the Libre app does. Then the Libre app can take it back later. You sign in once, and nothing goes to LibreView unless you turn its upload on.</string>
     <string name="newsensor_official_title">Stop the Libre app first</string>
     <string name="newsensor_official_text">If the Libre app and Sukrara both read the sensor, it can stop working. Swiping it away isn\'t enough: force-stop it (App info › Force stop) or uninstall it before you go on.</string>
     <string name="newsensor_bt_permission_title">Allow nearby devices</string>
@@ -70,7 +70,7 @@
     <string name="newsensor_action_allow">Allow</string>
     <string name="newsensor_action_app_settings">Open app settings</string>
 
-    <!-- LibreView sign-in (receiver ID only). -->
+    <!-- THE LibreView account of the app: signed in once, used by the sensor, the upload and the import. -->
     <string name="libreview_title">LibreView account</string>
     <string name="libreview_intro">Sign in once. Sukrara keeps your LibreView email and password encrypted on this phone and uses them to start and take over sensors and, when you turn it on, to send your data to LibreView.</string>
     <string name="libreview_again">LibreView no longer accepts the saved password. Sign in again.</string>
