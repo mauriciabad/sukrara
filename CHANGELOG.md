@@ -2,6 +2,26 @@
 
 Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
+## 0.13.0 — fixes from the first days of 0.12.0, monitoring before the first unlock (GitHub prerelease)
+
+The first build submitted to Google Play. Not tested on a real sensor yet. Install and notes: the
+[v0.13.0 release](https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0).
+
+- **Android, after a restart**: the wearer's own sensor is read, alerts ring and the glucose notification shows
+  before the first unlock (#160). Alert, unit, graph, sensor and status-bar settings moved to storage that works
+  before the unlock and start fresh after the update, and the sensor is paired again.
+- **Settings** drawn with Android's own settings components and screens that move like the earlier app (#168, #169);
+  Share with someone right in the dark theme (#170).
+- **Fixes**: the phone's 24-hour setting (#166); Allow / Deny from a sharing request never turns sharing off (#167);
+  Save to password manager in one go (#171); pairing codes the same on both screens, both sides move on by
+  themselves (#173, #174); setup resumes where it was left, Android and Mac (#175); *Import history* reads
+  LibreView's file in every date layout, and one LibreView sign-in for the whole app (#176, #177); root asked for when
+  a root feature is turned on, and the LSPosed hooks work in release builds (#178).
+- **New**: the LSPosed lock-screen widget around the fingerprint icon (#66); scan an invite QR code with the Mac's
+  camera (#172); alarm channels the person edited take the Do Not Disturb override (#15); About opens the website's
+  page for the other devices (#179) and says which version it is (GitHub or Google Play).
+- **Google Play build**: the same app as the GitHub one, without its own update check.
+
 ## 0.12.0 — first release of the Android and Mac apps (GitHub prerelease)
 
 Not tested on a real sensor yet. Install, what's in it and how to bring your history over: the
