@@ -201,7 +201,8 @@ signature (re-running replaces that version's item). Only the dmg is the update;
 unnotarized build never goes in. Then, in this order: publish the GitHub release with that exact dmg (any rebuild
 changes the signature: run `mac-release.sh` again), **then** commit `docs/appcast.xml` and merge it to `main`; Pages
 deploys it within minutes and every GitHub install sees the update at its next daily check. Committing it first would
-offer a download that isn't there yet. `UpdatesTests` checks every item (the GitHub URL, a 64-byte signature, the
+offer a download that isn't there yet. `tools/release/release.py` keeps that order (its `github`, then `sparkle` step) and checks the
+dmg on the release is the one the item signs. `UpdatesTests` checks every item (the GitHub URL, a 64-byte signature, the
 channel, the build number, newest first).
 
 **The key.** Made on 2026-11-11 with `generate_keys` on the release Mac: the private key is in the login keychain
@@ -443,7 +444,8 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
    questionnaire, review notes and the demo video; the EU trader status.
 4. **Submit** for review.
 
-**Next uploads**: `tools/release/mac-appstore.sh` (build, pkg, `altool --validate-app`), then `--upload`; each upload
+**Next uploads**: `tools/release/release.py` (its `testflight` step), or by hand `tools/release/mac-appstore.sh`
+(build, pkg, `altool --validate-app`), then `--upload`; each upload
 gets a new `CFBundleVersion` and goes to the Owner group by itself once its export question is answered (or once
 `ITSAppUsesNonExemptEncryption` is in the Info.plist).
 
@@ -669,7 +671,10 @@ module's `consumer-rules.pro` (the module that uses the reflective / JNI library
 
 ### Cutting a release
 
-On `main` (clean, pushed), with `tools/check/strict` committed: `tools/release/android-release.sh` (signed APK →
+**One command does it** (#187): `tools/release/release.py <version>` on the release Mac, from a clean `next`
+([docs/DEVELOPMENT.md › Release](DEVELOPMENT.md#release) has the steps; [One-command release](#one-command-release-187)
+below has the store parts). What it runs, and what a release by hand would be: with `tools/check/strict` committed,
+`tools/release/android-release.sh` (signed APK →
 `apps/android/app/build/dist/Sukrara-<version>.apk`, verified, and its R8 mapping gzipped next to it as
 `Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`) and
 `tools/release/mac-release.sh` (bundle → `verify-app.sh` → dmg + zip in `apps/macos/build/`). Then tag `v<version>`
@@ -687,6 +692,46 @@ bumps the Homebrew cask (`homebrew-tap.yml` on *published*), a 1.x+ prerelease n
 hand). **Mac notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on
 the release Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); they do
 since 0.12.0, and a Developer ID build is never released unnotarized.
+
+### One-command release (#187)
+
+Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub, Sparkle, Homebrew, Google Play
+(internal testing) and TestFlight; the keys stay on the release Mac, none is a GitHub secret. The store calls are in
+`tools/release/stores.py` (Python stdlib; the JWTs are signed by `openssl`, the Play key going to it on stdin, the
+`.p8` staying in its file; nothing prints a key):
+
+- **Google Play**: Android Publisher v3 with the service account `~/.android/sukrara-play.json` (testing tracks only):
+  edits.insert → bundles.upload (Play's versionCode and sha256 must be the local bundle's) → tracks.update `internal`
+  (one release, `status: completed`, the version's name, notes en-US + es-ES from
+  `apps/android/fastlane/metadata/android/<lang>/changelogs/<versionCode>.txt`) → edits.commit. A versionCode already
+  on the track is left alone (re-running is safe); if Play refuses to send other pending Console changes for review,
+  the commit is retried with `changesNotSentForReview=true` and the summary says the Console has changes waiting.
+  Checked read-only on 2026-11-11 (`stores.py play-tracks`): the edit opens, `internal` has 0.13.0 (13000,
+  *completed*), production / beta / alpha are empty, the only bundle is 13000; the edit was deleted, nothing
+  committed. The app isn't a draft app any more (a draft app would only take `status: draft`).
+- **TestFlight**: `mac-appstore.sh --upload`, then the App Store Connect API (key `VCB5XBQ3QZ`, *Developer*) until the
+  build is `VALID`. Checked read-only (`stores.py asc-builds`): app 6833533014, build 0.13.0 (13000.261111.1531)
+  `VALID`, `usesNonExemptEncryption` unset (*Missing Compliance*).
+- **Export compliance stays one click per build** (TestFlight › the build › *Manage*) until the owner decides. Sukrara
+  uses non-exempt encryption (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), so `ITSAppUsesNonExemptEncryption`
+  `NO` would be false, and `YES` needs an `ITSEncryptionExportComplianceCode` from an approved compliance document;
+  the France question (ANSSI) is the owner's call. The API can answer per build (`PATCH /v1/builds/{id}`,
+  `usesNonExemptEncryption: true`), but that's a write nobody has tried with the *Developer* key, and it doesn't answer
+  France; once the owner has answered the first build and chosen, the release can set it the same way.
+- **`--production` (from 1.0.0, never run yet)**: Play: the same versionCode also on `production` (`status:
+  completed`; managed publishing off so it goes live after review); needs *Release to production* for the service
+  account. App Store: the App Store version created or found, the build attached, a review submission with that
+  version, submitted (`reviewSubmissions` / `reviewSubmissionItems`); needs a key with *App Manager* or *Admin*
+  access (the *Developer* key gets 403). The listing, screenshots, App Privacy and the EU trader status have to be
+  done first in App Store Connect.
+
+**In Sukrara.** Added: the above. Discarded, with the reason: fastlane / `gcloud` / `google-auth` (none is on the
+release Mac; three REST calls and a JWT don't need them, and fewer tools means fewer keys in more places);
+GitHub Actions for the uploads (the keys would have to become secrets); running `./gradlew check` and `swift test`
+again in the gate (the green Checks run on the same commit ran them); waiting for the version commit's Checks run
+before the gate (they run side by side; it's awaited before anything is published); a second `verify-apk.sh` /
+`verify-app.sh --notarized` (`android-release.sh` and `mac-release.sh` run them); Spanish Play notes made from the
+CHANGELOG (it's English and covers the Mac too).
 
 ### Alternatives to Play
 
@@ -1027,7 +1072,8 @@ Every claim above is in the app today (docs/FEATURES.md); change the listing in 
 Prepared on 2026-11-11 (#142); entered the same day by an agent with the owner deciding on screen, except the bundle,
 which the owner uploaded by hand. The bundle: `apps/android/app/build/dist/Sukrara-<version>-play.aab` from
 `tools/release/play-bundle.sh` (signed with the release key = Play's upload key; mapping inside), built from a commit
-on `main`.
+on `main`. From the next release on, `tools/release/release.py` uploads it to internal testing through the API
+([One-command release](#one-command-release-187)).
 
 Done 2026-11-11: App access (*No, no part of the app is restricted*), Target audience (13–15, 16–17, 18 and over),
 Privacy policy, Health apps, the store listing en-US + es-ES (draft), internal testing (release 0.13.0, versionCode

@@ -321,6 +321,7 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity; the provisioning profiles in `~/.apple-dev/profiles` are used when there, `--no-profile` skips them) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
+| A release to every channel (GitHub, Sparkle, Homebrew, Play internal testing, TestFlight) | `tools/release/release.py <version>` ([docs/DEVELOPMENT.md › Release](docs/DEVELOPMENT.md#release)) |
 | Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh`, `tools/release/mac-appstore.sh` (Mac App Store) |
 
 Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: [CHANGELOG.md](CHANGELOG.md). The investigations, one

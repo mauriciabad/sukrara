@@ -25,6 +25,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Settings code after a schema change | `python3 tools/settings/gen.py` (commit both SettingsSpec files) |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
+| A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
 | Version | `tools/release/version.sh` → `0.13.0 13000 prerelease` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs the rules on every push and the Android / Mac jobs when their paths (or
@@ -84,6 +85,48 @@ scratch folders for such a dry run.
   `generate_keys`: service `https://sparkle-project.org`, account `ed25519`), with a backup at `~/.apple-dev/sparkle-eddsa-private.key` (chmod 600) for the
   password manager; its public key is `SUPublicEDKey` in `apps/macos/Bundle/sparkle.plist`. `mac-release.sh` signs the
   notarized dmg with it and writes `docs/appcast.xml` (docs/20-publishing.md › Sparkle: the update feed).
+
+## Release
+
+One command on the release Mac publishes a version to every channel (#187); the keys never leave the Mac:
+`tools/release/release.py <version>` on a clean checkout of `next` (= `origin/next`, its Checks run green). Before it:
+write CHANGELOG.md's `## Unreleased` section (optionally `## Unreleased — <summary>`, which becomes the entry's title)
+and the Google Play notes, `apps/android/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and
+`es-ES/…` (what's new on Android, at most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read
+too). Then the steps, in order; each checks its result and stops with what's done, what's left and the
+`--from <step>` that resumes (every step can run again: it skips what's already there):
+
+1. `preconditions`: the clean `next`, its green Checks run, the version above `VERSION`, a non-empty Unreleased
+   section, the Play notes, no tag yet, `tools/check/strict`, the keys, `gh`.
+2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …
+   (GitHub prerelease)` with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run goes on while
+   the gate runs, and is awaited before anything is published.
+3. `gate`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final --no-build` on
+   the emulator, `play-bundle.sh`, `mac-release.sh` (notarized, Sparkle-signed, `verify-app.sh --notarized`, writes
+   `docs/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`). `./gradlew check` and
+   `swift test` aren't run again: the green Checks run on the same commit ran them.
+4. `github`: Checks on `next` green, `main` fast-forwarded, tag `v<version>`, `gh release create --prerelease
+   --latest=false` (`--latest` from 1.0.0) with the APK, the Android mapping, the dmg and the zip (their sha256 checked
+   against the release's), notes from the CHANGELOG entry with the disclaimer and the files; Checks on `main` green.
+5. `sparkle`: the dmg on the release is the one `docs/appcast.xml` signs → the appcast committed and pushed to `main`
+   and `next` (if `next` moved meanwhile, the commit is merged into it), Pages deployed, and
+   https://sukrara.mauri.app/appcast.xml serves the item.
+6. `homebrew`: the tap's cask (bumped by `homebrew-tap.yml`) at the version, with the dmg's sha256 and
+   `auto_updates true`.
+7. `play`: the play bundle on the **internal** track with the en-US / es-ES notes, through the Android Publisher API
+   (edits.insert → bundles.upload → tracks.update → edits.commit) with the service account
+   `~/.android/sukrara-play.json`; a version code already on the track is left alone.
+8. `testflight`: `mac-appstore.sh --upload` (unless App Store Connect has a build of the version already), then waits
+   until App Store Connect has processed it. A new build shows *Missing Compliance* until its export question is
+   answered: the one click left (docs/20-publishing.md › Mac App Store: signing and App Store Connect).
+9. `summary`: every channel's state (`--from summary` alone shows it any time).
+
+`--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
+nothing. Read-only store checks: `python3 tools/release/stores.py play-tracks` (opens an edit, lists the tracks,
+deletes the edit) and `asc-builds`. `--production` (from 1.0.0; not used yet) also promotes the Play release to
+production and submits the App Store build for review; it needs Play production rights for the service account and an
+App Store Connect key with App Manager access (today's key is *Developer*). Tests: `python3 tools/release/test_release.py`
+(CI).
 
 ## Strings (Android, English + Spain Spanish)
 
