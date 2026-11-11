@@ -320,45 +320,53 @@ offline by design (`LaunchMode`).
 
 ### Mac App Store: signing and App Store Connect (state 2026-11-11)
 
-**What the API key can do**: the team key `VCB5XBQ3QZ` (*Sukrara notary*, access *Developer*; issuer in
-`~/.apple-dev/asc-issuer-id`) reads certificates, App IDs and profiles, and is refused (403) creating a certificate; with no
-distribution certificate there is nothing to make a profile from, and the API can't create the App Store Connect app
-record at all. What exists: certificates *Developer ID Application* and *Apple Development*; App IDs `app.mauri.sukrara`
-and `app.mauri.sukrara.widget`; the two Developer ID profiles; no app record. Ready for the owner: two private keys
-and certificate requests in `~/.apple-dev` (`apple-distribution.key/.csr`, `mac-installer-distribution.key/.csr`,
-chmod 600; back them up with the rest of `~/.apple-dev`).
+**Done 2026-11-11** (an agent in the owner's signed-in Chrome; the API key `VCB5XBQ3QZ`, access *Developer*, reads
+certificates, App IDs, profiles and builds but is refused (403) creating a certificate or a profile, and can't create
+the app record):
 
-**The owner, in order** (about 20 minutes; nothing here is accepted or submitted by an agent):
+- **Agreements**: the *Free Apps* agreement is active; *Paid Apps* (not needed) is unsigned. Business also asks for
+  the **EU trader status** (Digital Services Act): an App Store version in the EU needs it before review; TestFlight
+  doesn't.
+- **Certificates**: *Apple Distribution* (`6642XM688S`) and *Mac Installer Distribution* (`36357R8WPQ`, in the
+  keychain as "3rd Party Mac Developer Installer"), both until 2027-11-11, from the CSRs in `~/.apple-dev`. Key and
+  certificate in `~/.apple-dev` (`apple-distribution.key/.cer`, `mac-installer-distribution.key/.cer`, chmod 600) and
+  imported into the login keychain (`security import` of a throwaway `.p12`, `-T codesign/productbuild`).
+  *Developer ID Application* and *Apple Development* untouched.
+- **App IDs**: unchanged. No App Groups capability needed: validation accepts the team-prefixed group
+  (`QWUV9H4A3G.app.mauri.sukrara`), and the Developer ID profiles stay valid. The SwiftPM resource bundle id passed
+  too.
+- **Profiles** (*Mac App Store Connect*, the Apple Distribution certificate): `Sukrara Mac App Store` (`9YA7458SB6`)
+  and `Sukrara Mac Widget App Store` (`323P8KTP7X`), until 2027-11-11, in `~/.apple-dev/profiles/` as
+  `Sukrara_Mac_App_Store.provisionprofile` and `Sukrara_Mac_Widget_App_Store.provisionprofile`. They grant what the
+  Developer ID ones do (Time Sensitive, Associated Domains, the keychain group).
+- **App record**: *Sukrara*, macOS, English (U.S.), `app.mauri.sukrara`, SKU `sukrara-mac`, full access; Apple ID
+  `6833533014`.
+- **Validation**: the first package was refused (90255, files only root can read): `bundle.sh` copied the profiles
+  with their 600 mode. It installs them with 644 now, and `verify-app.sh` checks every file is readable by everyone.
+- **TestFlight**: build `0.13.0 (13000.261111.1531)` uploaded and processed (*VALID*); internal group **Owner**
+  (the owner's Apple Account, automatic distribution of new builds).
 
-1. **Agreements**: App Store Connect › Business: no pending agreement (a free app needs only the Developer Program
-   agreement; the *Paid Apps* one isn't needed).
-2. **Certificates** (developer.apple.com › Certificates › +): *Apple Distribution* → upload
-   `~/.apple-dev/apple-distribution.csr` → download into `~/.apple-dev/apple-distribution.cer`; then *Mac Installer
-   Distribution* → `~/.apple-dev/mac-installer-distribution.csr` → `~/.apple-dev/mac-installer-distribution.cer`.
-   (Or: a new Team Key with *Admin* access, and an agent does this step and the next through the API.)
-3. **Profiles** (Profiles › + › Distribution › *Mac App Store Connect*): App ID `app.mauri.sukrara`, the Apple Distribution
-   certificate, name `Sukrara Mac App Store`; again for `app.mauri.sukrara.widget`, `Sukrara Mac Widget App Store`.
-   Download both into `~/.apple-dev/profiles/`.
-4. **App record** (App Store Connect › Apps › + › New App): macOS; name *Sukrara* (30 characters at most); primary
-   language English (U.S.); bundle id `app.mauri.sukrara`; SKU `sukrara-mac`; full access.
-5. **Then an agent**: imports the two keys and certificates into the login keychain (`security import`), checks
-   `security find-identity -v` lists *Apple Distribution* and the installer identity, and runs
-   `tools/release/mac-appstore.sh` (build, pkg, `altool --validate-app`). With the owner's OK, `--upload`.
-6. **First TestFlight build** (App Store Connect › TestFlight): the export question: Sukrara uses standard encryption
-   algorithms in addition to the system's (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), none proprietary; App
-   Store Connect then asks about distribution in France (an ANSSI declaration), the owner's call. Then an internal
-   group with the owner's Apple Account. Before installing from TestFlight on this Mac: quit Sukrara (TestFlight
-   replaces `/Applications/Sukrara.app`) and delete `~/Library/Containers/app.mauri.sukrara`, which only holds the
-   agents' offline smoke runs. QA Q6, Q8 and Q22 on it; `tools/install.sh mac` goes back to the GitHub version.
-7. **Listing**, before submitting for review (#186's last step): texts from the Play listing rewritten for the Mac and
+Back up `~/.apple-dev` (both new keys, certificates and profiles) to the password manager with the rest.
+
+**The owner, still to do** (nothing here is accepted or submitted by an agent):
+
+1. **Export compliance** of the build (TestFlight › the build › *Manage*): *Standard encryption algorithms instead
+   of, or in addition to, Apple's* (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), none proprietary; then *Is your
+   app going to be available for distribution in France?*, the owner's call (yes asks for the ANSSI declaration).
+   Until it's answered the build shows *Missing Compliance* and can't be installed.
+2. **Install from TestFlight** (the TestFlight app on the Mac): first quit Sukrara (TestFlight replaces
+   `/Applications/Sukrara.app`, the GitHub version) and delete `~/Library/Containers/app.mauri.sukrara`, which only
+   holds the agents' offline smoke runs. QA Q6, Q8 and Q22 on it; `tools/install.sh mac` goes back to the GitHub
+   version.
+3. **Listing**, before submitting for review (#186's last step): texts from the Play listing rewritten for the Mac and
    the rules in [review risk](#mac-app-store-review-risk-2026-11-11-186), synthetic Mac screenshots, privacy URL
    https://sukrara.mauri.app/privacy, App Privacy *Data Not Collected*, category Medical, the age rating
-   questionnaire, review notes and the demo video.
+   questionnaire, review notes and the demo video; the EU trader status.
+4. **Submit** for review.
 
-**Possible upload findings** (fix when `altool --validate-app` says so): Apple may want the App Group as an App Groups
-capability on both App IDs (macOS team-prefixed groups have needed none so far) or a prefixed id for the SwiftPM
-resource bundle (`macos.SukraraApp.resources`). The App Store version already carries the `DT*` toolchain keys App Store
-Connect reads (copied from that resource bundle) and the 1024 px icon.
+**Next uploads**: `tools/release/mac-appstore.sh` (build, pkg, `altool --validate-app`), then `--upload`; each upload
+gets a new `CFBundleVersion` and goes to the Owner group by itself once its export question is answered (or once
+`ITSAppUsesNonExemptEncryption` is in the Info.plist).
 
 ## Android
 
