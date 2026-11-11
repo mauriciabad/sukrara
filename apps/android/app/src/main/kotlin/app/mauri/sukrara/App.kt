@@ -57,6 +57,8 @@ class App :
 
     override fun onCreate() {
         super.onCreate()
+        // every clock time in the phone's 12/24-hour setting, read live (the locked-boot notice too)
+        PhoneClock.follow(this)
         // the cards' rounded face (the value, the rings) on every surface, the app's panel included
         RoundedFont.init(this)
         locales = resources.configuration.locales
