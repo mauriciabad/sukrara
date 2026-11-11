@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -35,10 +37,12 @@ import java.io.OutputStream
  *   store's [corruption], and the store continues from `whenCorrupt` — a value the owning code chooses on purpose
  *   (there is no default), so it can tell "never set" from "lost" by watching [corruption].
  *
- * Built only through `DataModule.typedStore` (one instance per file, a DataStore rule).
+ * Built only through `DataModule.typedStore` (one instance per file, a DataStore rule). [open] is called before every
+ * read and write: it throws while the file's storage is locked (credential-encrypted storage before the first unlock),
+ * so a locked file is never read as missing; [fileOf] is only resolved then.
  */
 class TypedStore<T> internal constructor(
-    val file: File,
+    fileOf: () -> File,
     serializer: KSerializer<T>,
     initial: T,
     whenCorrupt: T,
@@ -46,7 +50,10 @@ class TypedStore<T> internal constructor(
     private val log: CorruptionLog,
     private val clock: Clock,
     scope: CoroutineScope,
+    private val open: () -> Unit = {},
 ) : StateStore<T> {
+    val file: File by lazy(fileOf)
+
     private val corrupted = MutableStateFlow<CorruptFile?>(null)
 
     /** Set when this store's file was found damaged in this process (the report the UI shows). */
@@ -64,9 +71,14 @@ class TypedStore<T> internal constructor(
             produceFile = { file },
         )
 
-    override val data: Flow<T> = store.data
+    override val data: Flow<T> =
+        flow {
+            open()
+            emitAll(store.data)
+        }
 
     override suspend fun update(transform: (T) -> T) {
+        open()
         store.updateData { transform(it) }
     }
 

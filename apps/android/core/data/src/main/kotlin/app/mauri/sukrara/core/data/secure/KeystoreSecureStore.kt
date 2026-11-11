@@ -62,7 +62,9 @@ object SecretName {
 
 /**
  * [SecureStore] in `files/secure/<name>.bin` = format byte ‖ [SecretBox] output. Unknown names are refused, so every
- * secret is listed in [SecretName] (and docs/ARCHITECTURE.md "Storage").
+ * secret is listed in [SecretName] (and docs/ARCHITECTURE.md "Storage"). [dirOf] is each secret's directory
+ * (device-protected for the sensor pairing, `DeviceProtected.SECRETS`, credential-encrypted for the rest); it throws for
+ * a secret that can't be reached now (credential-encrypted before the first unlock), never reading it as missing.
  *
  * A file that can't be opened is copied aside (`<name>.bin.corrupt-<epochMs>`) and reported, and [read] throws
  * [SecretUnreadableException] — now and on every later read, because the file stays in place: an unreadable identity
@@ -70,12 +72,16 @@ object SecretName {
  * transient Keystore error throws too, without a report. Keys are never deleted: one key per purpose is reused.
  */
 class KeystoreSecureStore(
-    private val dir: File,
+    private val dirOf: (String) -> File,
     private val box: SecretBox,
     private val corruption: CorruptionLog,
     private val clock: Clock,
     private val io: CoroutineDispatcher,
 ) : SecureStore {
+    /** Every secret in [dir]. */
+    constructor(dir: File, box: SecretBox, corruption: CorruptionLog, clock: Clock, io: CoroutineDispatcher) :
+        this({ dir }, box, corruption, clock, io)
+
     private val lock = Mutex()
     private val reported = mutableSetOf<String>()
 
@@ -119,7 +125,7 @@ class KeystoreSecureStore(
 
     private fun fileOf(name: String): File {
         require(name in SecretName.ALL) { "unknown secret '$name': add it to SecretName" }
-        return File(dir, "$name.bin")
+        return File(dirOf(name), "$name.bin")
     }
 
     private fun unreadable(

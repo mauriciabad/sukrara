@@ -18,18 +18,34 @@ import java.io.IOException
  * Rule for callers: log events and states, never glucose values, treatment amounts, keys, tokens or serials (free
  * text can't be scrubbed of those reliably: a number may be a glucose value or a retry count). [Redact] still scrubs
  * what looks like a key, token, secret query parameter or sensor serial, as a second line of defence.
+ *
+ * The files are credential-encrypted: before the first unlock after a restart ([writable] false) the lines wait in
+ * memory (the newest [HELD] of them) and are written at the first line after the unlock.
  */
 class DiagLog(
-    private val dir: File,
+    private val dirOf: () -> File,
     private val clock: Clock,
     io: CoroutineDispatcher,
     private val scope: CoroutineScope,
     private val maxBytes: Long = DEFAULT_MAX_BYTES,
+    private val writable: () -> Boolean = { true },
 ) {
+    constructor(
+        dir: File,
+        clock: Clock,
+        io: CoroutineDispatcher,
+        scope: CoroutineScope,
+        maxBytes: Long = DEFAULT_MAX_BYTES,
+    ) : this({ dir }, clock, io, scope, maxBytes)
+
     /** One writer at a time, in call order. */
     private val writer = io.limitedParallelism(1)
-    private val current = File(dir, NAME)
-    private val previous = File(dir, "$NAME.1")
+    private val dir by lazy(dirOf)
+    private val current by lazy { File(dir, NAME) }
+    private val previous by lazy { File(dir, "$NAME.1") }
+
+    /** Lines logged before the unlock (writer only). */
+    private val held = ArrayDeque<String>()
 
     /** Appends a line off the caller's thread. */
     fun log(
@@ -40,14 +56,25 @@ class DiagLog(
         scope.launch(writer) { append(line) }
     }
 
-    /** Both files, oldest first (for "Copy report"). */
+    /** Both files, oldest first (for "Copy report"), and the lines still waiting for the unlock. */
     suspend fun snapshot(): String =
         withContext(writer) {
-            listOf(previous, current).filter { it.exists() }.joinToString("") { it.readText() }
+            val files = if (writable()) listOf(previous, current).filter { it.exists() }.joinToString("") { it.readText() } else ""
+            files + held.joinToString("")
         }
 
-    /** A failing write (disk full) loses the line, never crashes the app. */
     private fun append(line: String) {
+        if (!writable()) {
+            held.addLast(line)
+            while (held.size > HELD) held.removeFirst()
+            return
+        }
+        while (held.isNotEmpty()) write(held.removeFirst())
+        write(line)
+    }
+
+    /** A failing write (disk full) loses the line, never crashes the app. */
+    private fun write(line: String) {
         val bytes = line.encodeToByteArray()
         try {
             dir.mkdirs()
@@ -64,6 +91,9 @@ class DiagLog(
     private companion object {
         const val NAME = "diag.log"
         const val DEFAULT_MAX_BYTES = 512L * 1024
+
+        /** Lines kept in memory before the first unlock. */
+        const val HELD = 500
     }
 }
 

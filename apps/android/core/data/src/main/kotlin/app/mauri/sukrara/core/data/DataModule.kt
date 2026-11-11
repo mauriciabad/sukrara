@@ -19,6 +19,8 @@ import app.mauri.sukrara.core.data.files.FileStore
 import app.mauri.sukrara.core.data.json.SukraraJson
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.net.Http
+import app.mauri.sukrara.core.data.readings.HubReadings
+import app.mauri.sukrara.core.data.readings.RecentReadings
 import app.mauri.sukrara.core.data.secure.KeystoreSecretBox
 import app.mauri.sukrara.core.data.secure.KeystoreSecureStore
 import app.mauri.sukrara.core.data.secure.SecretBox
@@ -40,6 +42,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
@@ -60,12 +64,18 @@ data class Retention(
  * Storage and network for the whole app (docs/ARCHITECTURE.md "Storage"). `AppGraph` builds it on the main thread,
  * so construction does no I/O: every member is lazy and [ready] opens the database on the IO dispatcher.
  *
- * Layout under the app's private dir (none of it in backups):
+ * Layout under the app's private dirs (none of it in backups), each file in credential-encrypted storage unless
+ * [DeviceProtected] lists it (then the same path under the device-protected dir, `/data/user_de/…`):
  * - `datastore/<store>.preferences_pb`: settings, one file per schema store;
  * - `files/state/<name>.json`: typed state ([typedStore]);
  * - `files/secure/<name>.bin`: secrets ([secureStore]);
  * - `databases/sukrara.db`: readings, treatments, sharing ledger, the pen ledger;
- * - `files/diag/`: the diagnostic log.
+ * - `files/diag/`: the diagnostic log;
+ * - device-protected only: `files/recent-readings.json` and `files/locked-readings.csv` ([hubReadings]).
+ *
+ * Before the first unlock after a restart ([userUnlocked] false) only the device-protected files can be used: every
+ * credential-encrypted one throws [LockedStorageException] when read or written (never "missing"), the diagnostic
+ * log waits in memory, and the history opens at [unlock].
  */
 class DataModule(
     private val context: Context,
@@ -74,6 +84,8 @@ class DataModule(
     private val clock: Clock,
     private val retention: Retention = Retention(),
     private val secretBox: SecretBox = KeystoreSecretBox(),
+    /** The phone was unlocked since it started (credential-encrypted storage is readable). */
+    private val userUnlocked: () -> Boolean = { context.userUnlocked },
 ) {
     /** Lives as long as the process: DataStore instances must never be closed and reopened on the same file. */
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.io)
@@ -84,14 +96,45 @@ class DataModule(
 
     val json: Json = SukraraJson
 
-    private val datastoreDir: File get() = File(context.filesDir.parentFile, "datastore")
-    private val secureDir: File get() = File(context.filesDir, "secure")
+    /** The device-protected `files/` dir: readable before the first unlock ([DeviceProtected]). */
+    private val deviceFiles: File by lazy { context.createDeviceProtectedStorageContext().filesDir }
+
+    /** The credential-encrypted `files/` dir; refused before the first unlock. */
+    private val credentialFiles: File
+        get() {
+            requireUnlocked("files/")
+            return context.filesDir
+        }
+
+    private fun filesDir(deviceProtected: Boolean): File = if (deviceProtected) deviceFiles else credentialFiles
+
+    private fun datastoreDir(deviceProtected: Boolean): File = File(filesDir(deviceProtected).parentFile, "datastore")
+
+    private fun secureDir(deviceProtected: Boolean): File = File(filesDir(deviceProtected), "secure")
+
+    /** Throws [LockedStorageException] for [what] before the first unlock after a restart. */
+    private fun requireUnlocked(what: String) {
+        if (!userUnlocked()) throw LockedStorageException(what)
+    }
+
+    /** The history is open to this process ([hubReadings] reads it): at once when unlocked, else from [unlock]. */
+    private val historyOpen = MutableStateFlow(userUnlocked())
+
+    /**
+     * False from a start before the first unlock until [unlock] ran: whatever needs credential-encrypted storage (the
+     * history, treatments, sharing, uploads) waits for it.
+     */
+    val unlocked: StateFlow<Boolean> = historyOpen.asStateFlow()
 
     val http: OkHttpClient by lazy { Http.client(appVersion) }
 
-    val diagLog: DiagLog by lazy { DiagLog(File(context.filesDir, "diag"), clock, dispatchers.io, scope) }
+    val diagLog: DiagLog by lazy {
+        DiagLog({ File(credentialFiles, "diag") }, clock, dispatchers.io, scope, writable = userUnlocked)
+    }
 
-    private val preferenceStores by lazy { PreferenceStores(datastoreDir, corruption, clock, scope) }
+    private val preferenceStores by lazy {
+        PreferenceStores({ store -> datastoreDir(store in DeviceProtected.SETTINGS) }, corruption, clock, scope)
+    }
 
     val settings: SettingsRepository by lazy { DataStoreSettingsRepository(preferenceStores) }
 
@@ -101,7 +144,7 @@ class DataModule(
     ): SettingsTransfer = SettingsTransfer(preferenceStores, appVersion, normalize)
 
     val secureStore: SecureStore by lazy {
-        KeystoreSecureStore(secureDir, secretBox, corruption, clock, dispatchers.io)
+        KeystoreSecureStore({ name -> secureDir(name in DeviceProtected.SECRETS) }, secretBox, corruption, clock, dispatchers.io)
     }
 
     /** THE LibreView account (one per app): the sensor, the LibreView upload and Import history use it. */
@@ -114,6 +157,7 @@ class DataModule(
     val databaseReplaced = MutableStateFlow(false)
 
     val database: SukraraDatabase by lazy {
+        requireUnlocked("the database")
         Room
             .databaseBuilder(context, SukraraDatabase::class.java, SukraraDatabase.FILE)
             .openHelperFactory(QuarantiningOpenHelperFactory(::quarantineDatabase))
@@ -142,6 +186,43 @@ class DataModule(
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
 
+    private val recentReadings by lazy {
+        RecentReadings(
+            File(deviceFiles, DeviceProtected.RECENT_READINGS),
+            File(deviceFiles, DeviceProtected.LOCKED_READINGS),
+            corruption,
+            clock,
+            dispatchers.io,
+        )
+    }
+
+    private var hub: HubReadings? = null
+
+    /**
+     * THE glucose hub's readings ([HubReadings]): the history once it is open ([readingsFor] [role]), this phone's own
+     * recent readings in device-protected storage before. One per process.
+     */
+    @Synchronized
+    fun hubReadings(role: Flow<Role?>): HubReadings {
+        check(hub == null) { "one hub per process: share the instance" }
+        return HubReadings({ readingsFor(role) }, recentReadings, historyOpen) { diagLog.log("readings", it) }.also { hub = it }
+    }
+
+    /**
+     * The phone is unlocked: the readings taken before it go into the history, which opens ([unlocked]). Also at every
+     * start of an unlocked phone (a process that died before the unlock may have left some). Call off the main thread.
+     */
+    suspend fun unlock() {
+        requireUnlocked("the history")
+        val h = synchronized(this) { hub }
+        if (h != null) {
+            h.unlock()
+        } else {
+            recentReadings.mergeInto(readings)
+            historyOpen.value = true
+        }
+    }
+
     /** THE import path (Import history): every importer stores through it, deduplicated (`HistoryImport`). */
     val historyImport: HistoryImportStore by lazy { RoomHistoryImport(database.readings(), database.treatments()) }
 
@@ -160,7 +241,19 @@ class DataModule(
         whenCorrupt: T,
     ): TypedStore<T> {
         require(name !in typedStores) { "typed store '$name' already exists: share the instance" }
-        val store = TypedStore(File(context.filesDir, "state/$name.json"), serializer, initial, whenCorrupt, json, corruption, clock, scope)
+        val deviceProtected = name in DeviceProtected.STATES
+        val store =
+            TypedStore(
+                { File(filesDir(deviceProtected), "state/$name.json") },
+                serializer,
+                initial,
+                whenCorrupt,
+                json,
+                corruption,
+                clock,
+                scope,
+                open = { if (!deviceProtected) requireUnlocked("typed state '$name'") },
+            )
         typedStores[name] = store
         return store
     }
@@ -169,21 +262,22 @@ class DataModule(
     fun <T> fileStore(
         relativePath: String,
         codec: FileCodec<T>,
-    ): FileStore<T> = FileStore(File(context.filesDir, relativePath), codec, corruption, clock, dispatchers.io)
+    ): FileStore<T> = FileStore(File(credentialFiles, relativePath), codec, corruption, clock, dispatchers.io)
 
     /**
      * Re-reports damaged files earlier runs kept and nobody acknowledged, opens the database and applies retention,
-     * off the main thread. Call from `AppGraph.ready()`.
+     * off the main thread. Call from `AppGraph.ready()`, once the phone is unlocked.
      */
     suspend fun ready() =
         withContext(dispatchers.io) {
             corruption.rescan(
-                listOf(
-                    QuarantineRoot(context.filesDir, StoreKind.File),
-                    QuarantineRoot(secureDir, StoreKind.Secret),
-                    QuarantineRoot(datastoreDir, StoreKind.Settings),
-                    QuarantineRoot(context.getDatabasePath(SukraraDatabase.FILE).parentFile!!, StoreKind.Database),
-                ),
+                listOf(false, true).flatMap { deviceProtected ->
+                    listOf(
+                        QuarantineRoot(filesDir(deviceProtected), StoreKind.File),
+                        QuarantineRoot(secureDir(deviceProtected), StoreKind.Secret),
+                        QuarantineRoot(datastoreDir(deviceProtected), StoreKind.Settings),
+                    )
+                } + QuarantineRoot(context.getDatabasePath(SukraraDatabase.FILE).parentFile!!, StoreKind.Database),
             )
             database.openHelper.writableDatabase
             prune()

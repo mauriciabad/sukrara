@@ -36,7 +36,7 @@ class TypedStoreCorruptionTest {
     private val file by lazy { File(tmp.root, "state/pairing.json") }
 
     private fun store(scope: CoroutineScope) =
-        TypedStore<Pairing?>(file, Pairing.serializer().nullable, initial = null, whenCorrupt = LOST, SukraraJson, log, clock, scope)
+        TypedStore<Pairing?>({ file }, Pairing.serializer().nullable, initial = null, whenCorrupt = LOST, SukraraJson, log, clock, scope)
 
     @Test
     fun `missing file starts at initial, updates persist`() =

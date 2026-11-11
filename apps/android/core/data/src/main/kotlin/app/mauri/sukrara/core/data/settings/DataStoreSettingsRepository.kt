@@ -20,19 +20,25 @@ import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.map
 import java.io.File
 
 /**
  * The Preferences DataStore files, one per schema store (`SettingsSpec.Stores`), each created once (DataStore allows
- * one instance per file). A damaged file is copied aside and reported, then its settings read as defaults.
+ * one instance per file). A damaged file is copied aside and reported, then its settings read as defaults. [dirOf] is
+ * each store's directory (device-protected or credential-encrypted, `DeviceProtected.SETTINGS`); it throws for a store
+ * that can't be opened now (credential-encrypted before the first unlock).
  */
 class PreferenceStores(
-    private val dir: File,
+    private val dirOf: (String) -> File,
     private val corruption: CorruptionLog,
     private val clock: Clock,
     private val scope: CoroutineScope,
 ) {
+    /** Every store in [dir]. */
+    constructor(dir: File, corruption: CorruptionLog, clock: Clock, scope: CoroutineScope) : this({ dir }, corruption, clock, scope)
+
     private val known: Set<String> = schemaStores()
     private val opened = mutableMapOf<String, DataStore<Preferences>>()
 
@@ -40,7 +46,7 @@ class PreferenceStores(
     fun store(name: String): DataStore<Preferences> {
         require(name in known) { "'$name' is not a settings store of the schema" }
         return opened.getOrPut(name) {
-            val file = File(dir, "$name.preferences_pb")
+            val file = File(dirOf(name), "$name.preferences_pb")
             PreferenceDataStoreFactory.create(
                 corruptionHandler =
                     ReplaceFileCorruptionHandler { error ->
@@ -66,13 +72,15 @@ fun schemaStores(): Set<String> =
         .mapNotNull { info -> info.android.substringBefore(':').takeIf { it.isNotEmpty() && it != SECURE_STORE } }
         .toSet()
 
-/** [SettingsRepository] on [PreferenceStores]. Accepts only [Setting]s (store and key from the schema). */
+/**
+ * [SettingsRepository] on [PreferenceStores]. Accepts only [Setting]s (store and key from the schema). A store is opened
+ * when a flow is collected, not when it is made, so a locked store only fails whoever reads it.
+ */
 class DataStoreSettingsRepository(private val stores: PreferenceStores) : SettingsRepository {
     override fun <T> flow(spec: SettingSpec<T>): Flow<T> {
         val setting = spec.asSetting()
-        return stores
-            .store(setting.store)
-            .data
+        return kotlinx.coroutines.flow
+            .flow { emitAll(stores.store(setting.store).data) }
             .map { prefs -> prefs[setting.preferenceKey]?.let(setting.sanitize) ?: setting.default }
             .distinctUntilChanged()
     }
