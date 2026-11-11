@@ -263,8 +263,8 @@ class UpdateModule(
                 // only Android's own install prompt is ever started from here
                 val confirm = prompt?.takeIf { it.action == CONFIRM_INSTALL }
                 confirmIntent = confirm
-                _state.value = UpdateState.Confirm(release)
                 notifier.show(UpdateState.Confirm(release), automatic = pending?.automatic == true, confirm = confirm)
+                _state.value = UpdateState.Confirm(release) // after its notification, as in show()
                 if (confirm != null && inFront()) confirm()
             }
 
@@ -303,9 +303,10 @@ class UpdateModule(
     private fun stateOf(result: Result<Release?>): UpdateState =
         result.fold({ it?.let { r -> UpdateState.Available(r.model()) } ?: UpdateState.UpToDate }, { UpdateState.Offline })
 
+    /** The notification first, then the state: whoever sees a state (About, a test) finds its notification posted. */
     private fun show(state: UpdateState) {
-        _state.value = state
         notifier.show(state)
+        _state.value = state
     }
 
     private fun fail(
