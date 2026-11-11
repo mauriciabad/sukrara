@@ -15,8 +15,8 @@ import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
+import app.mauri.sukrara.feature.sharing.backup.BackupViewModel
 import app.mauri.sukrara.feature.sharing.backup.PasswordManager
-import app.mauri.sukrara.feature.sharing.backup.SaveOutcome
 import app.mauri.sukrara.feature.sharing.backup.findActivity
 import app.mauri.sukrara.feature.sharing.profile.ProfileScreen
 import app.mauri.sukrara.share.owner.OwnerShareState
@@ -49,32 +49,22 @@ fun ProfilePage(
 /** Backup on the engine; the password manager's sheet shows over this activity; [onReplace] opens Replace this identity. */
 @Composable
 fun BackupPage(
-    viewModel: SharingViewModel,
+    viewModel: BackupViewModel,
     onSetUpSharing: () -> Unit,
     modifier: Modifier = Modifier,
     onReplace: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
     when (val s = state) {
         is OwnerShareState.Sharing -> {
             BackupScreen(
                 s,
-                saveToPasswordManager = {
-                    var outcome = SaveOutcome.NoIdentity
-                    if (activity != null) {
-                        viewModel.saveToPasswordManager { id, secret ->
-                            val saved = PasswordManager.save(activity, id, secret)
-                            outcome =
-                                when (saved) {
-                                    PasswordManager.Saved.Saved -> SaveOutcome.Saved
-                                    PasswordManager.Saved.Cancelled -> SaveOutcome.Cancelled
-                                    PasswordManager.Saved.Failed -> SaveOutcome.Failed
-                                }
-                            saved == PasswordManager.Saved.Saved
-                        }
-                    }
-                    outcome
+                ui,
+                onSave = {
+                    // the sheet shows over this activity (there is always one behind a page)
+                    if (activity != null) viewModel.save { id, secret -> PasswordManager.save(activity, id, secret) }
                 },
                 recoveryCode = viewModel::recoveryCode,
                 onRecoveryKeep = viewModel::recoverySaved,

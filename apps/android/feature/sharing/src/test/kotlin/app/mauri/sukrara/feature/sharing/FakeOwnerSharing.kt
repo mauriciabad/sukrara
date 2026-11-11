@@ -76,9 +76,21 @@ class FakeOwnerSharing(
         calls += "recoverySaved"
     }
 
+    /** False: no identity (the engine never asks the password manager); [saveThrows]: the identity can't be read. */
+    var hasIdentity = true
+    var saveThrows: Exception? = null
+
     override suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean {
         calls += "passwordManager"
-        return save("Sukrara · npub1test", "nsec1test")
+        saveThrows?.let { throw it }
+        return hasIdentity && save("Sukrara · npub1test", "nsec1test")
+    }
+
+    /** What went to the diagnostic log. */
+    val logged = mutableListOf<String>()
+
+    override fun log(line: String) {
+        logged += line
     }
 
     override suspend fun restore(

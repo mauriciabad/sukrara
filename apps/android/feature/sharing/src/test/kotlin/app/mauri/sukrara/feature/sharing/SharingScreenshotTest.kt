@@ -22,13 +22,13 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
+import app.mauri.sukrara.feature.sharing.backup.BackupUi
 import app.mauri.sukrara.feature.sharing.backup.FreshUi
 import app.mauri.sukrara.feature.sharing.backup.ReplaceActions
 import app.mauri.sukrara.feature.sharing.backup.ReplaceConfirmDialog
 import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityScreen
 import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
 import app.mauri.sukrara.feature.sharing.backup.ReplaceUi
-import app.mauri.sukrara.feature.sharing.backup.SaveOutcome
 import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
 import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
 import app.mauri.sukrara.feature.sharing.followers.FollowersActions
@@ -330,7 +330,7 @@ class SharingScreenshotTest {
             "approve-refused" to { ApproveRefusedDialog(request, ApproveResult.Gone, {}) },
             "profile" to { ProfileScreen(me, ProfileSave.Idle, {}, {}) },
             "profile-failed" to { ProfileScreen(Profile("", null), ProfileSave.Failed, {}, {}) },
-            "backup-missing" to { BackupScreen(sharing, { SaveOutcome.Saved }, { null }, {}) },
+            "backup-missing" to { BackupScreen(sharing, BackupUi.Idle, {}, { null }, {}) },
             "replace-choose" to { ReplaceIdentityScreen(sharing, ReplaceUi(), ReplaceActions()) },
             "replace-restore" to { ReplaceIdentityScreen(sharing, ReplaceUi(step = ReplaceStep.Restore), ReplaceActions()) },
             "replace-confirm" to {
@@ -351,10 +351,15 @@ class SharingScreenshotTest {
             "backup-done" to {
                 BackupScreen(
                     sharing.copy(passwordManagerSavedAt = 1_761_450_000, recoveryExportedAt = 1_761_460_000),
-                    { SaveOutcome.Saved },
+                    BackupUi.Saved,
+                    {},
                     { null },
                     {},
                 )
+            },
+            "backup-no-manager" to { BackupScreen(sharing, BackupUi.NoPasswordManager, {}, { null }, {}) },
+            "backup-failed-again" to {
+                BackupScreen(sharing.copy(passwordManagerSavedAt = 1_761_450_000), BackupUi.Failed, {}, { null }, {})
             },
         )
     }

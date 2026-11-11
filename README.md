@@ -133,7 +133,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   that springs in, link to send or copy, works once for 24 h), allow or deny their request after comparing a 4-digit
   code (the dialog shows over any screen, with their picture and the invite they used), see followers with their
   pictures, let one *add entries*, remove them (confirmed; removed ones fold away), **Backup** to your password manager
-  or a recovery code (home says *Not backed up* until then; setup restores from either), **Replace this identity**
+  in one tap or a recovery code (when no password manager can take it, the page opens Android's setting for one and
+  asks again on return, or makes the code right there; home says *Not backed up* until then; setup restores from
+  either), **Replace this identity**
   without reinstalling (restore another one or start fresh, confirmed with the followers who lose your readings named;
   their Sukrara is told first and says you stopped sharing instead of warning that no data arrives),
   and a clear screen when another device is sharing as you.

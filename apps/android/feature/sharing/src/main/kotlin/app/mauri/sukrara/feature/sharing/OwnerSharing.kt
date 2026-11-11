@@ -64,6 +64,9 @@ interface OwnerSharing {
      */
     suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean
 
+    /** A line for the diagnostic log ("Copy report"): events and states only, never a key, a code or a password. */
+    fun log(line: String) = Unit
+
     /**
      * Restore from a recovery code; the UI calls it only when the [app.mauri.sukrara.feature.sharing.setup.RestoreGate] is
      * open. Over a working identity only with [replace] (Backup › Replace this identity, confirmed first).
@@ -108,11 +111,15 @@ interface OwnerSharing {
     suspend fun pairNearby(on: Boolean) = Unit
 }
 
-/** [OwnerSharing] on the engine; [scope] = the app's process scope (the engine's relay work outlives screens). */
+/**
+ * [OwnerSharing] on the engine; [scope] = the app's process scope (the engine's relay work outlives screens); [diag]
+ * writes to the diagnostic log.
+ */
 class EngineOwnerSharing(
     private val engine: OwnerEngine,
     private val scope: CoroutineScope,
     private val settings: SettingsRepository,
+    private val diag: (String) -> Unit = {},
     private val now: () -> Long,
 ) : OwnerSharing {
     /** The app starts the engine for a wearer (`followRole`); setup only reads its state. */
@@ -143,6 +150,8 @@ class EngineOwnerSharing(
 
     override suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean =
         engine.saveToPasswordManager(save)
+
+    override fun log(line: String) = diag(line)
 
     override suspend fun restore(
         code: String,
