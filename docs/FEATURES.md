@@ -940,7 +940,8 @@ names each route's kind in one place (`:app` `screenMotion`). Tests: `ScreenMove
   ways (the old screen fades out in 90 ms, then setup fades in and grows from 92 % in 210 ms, emphasized
   decelerate), like the PoC's onboarding; its steps fade through too.
 - A screen with its own Back handles it first, without a gesture preview: setup (Back = the previous step), the
-  new-sensor flow (Back = its Cancel), settings search (Back clears it), Replace this identity's restore step.
+  new-sensor flow (Back = its Cancel; on a finished step Back closes the page like any page, predictive back
+  included), settings search (Back clears it), Replace this identity's restore step (`PageBackHandler`).
 - Dialogs and sheets (choices, numbers, the access request, treatments, home's quiet sheet) keep Material 3's own
   motion and predictive back; the quick treatment window, the system share sheet and system settings are other
   windows with the system's motion.

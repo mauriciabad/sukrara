@@ -4,7 +4,6 @@
 package app.mauri.sukrara.feature.sharing.setup
 
 import android.content.Intent
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -67,6 +66,7 @@ import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.motion.PageBackHandler
 import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
@@ -116,7 +116,7 @@ fun SetupScreen(
         }
         return
     }
-    BackHandler { viewModel.back(onDone) }
+    PageBackHandler { viewModel.back(onDone) }
     val actions = viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport)
     SetupContent(u, actions.copy(sendTestAlert = sendTestAlert), modifier)
 }

@@ -8,14 +8,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -168,14 +168,15 @@ class ScreenHostTest {
         assertEquals(Lifecycle.State.RESUMED, states["settings"])
     }
 
-    /** System Back pops the top page; a page's own back handler comes first; on the last page it's the system's. */
+    /**
+     * System Back pops the top page; a page's own back handler ([PageBackHandler]) comes first while it's on (a flow's
+     * step); off (the flow's finished step), Back pops the page; on the last page it's the system's.
+     */
     @Test fun backPopsAfterThePagesOwnHandler() {
         var ownBack = 0
+        var own by mutableStateOf(true)
         host { s ->
-            if (s == "search") {
-                val state = rememberNavigationEventState(NavigationEventInfo.None)
-                NavigationBackHandler(state, isBackEnabled = true, onBackCompleted = { ownBack++ })
-            }
+            if (s == "search") PageBackHandler(enabled = own) { ownBack++ }
         }
         settle()
         compose.runOnIdle { stack += listOf("settings", "search") }
@@ -185,8 +186,16 @@ class ScreenHostTest {
         assertEquals(1, ownBack)
         assertEquals(listOf("home", "settings", "search"), stack.toList())
 
-        compose.runOnIdle { stack.removeAt(stack.lastIndex) }
+        compose.runOnIdle { own = false }
         settle()
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        settle()
+        assertEquals(1, ownBack)
+        assertEquals(listOf("home", "settings"), stack.toList())
+
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        settle()
+        assertEquals(listOf("home"), stack.toList())
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
         settle()
         assertEquals(listOf("home"), stack.toList())

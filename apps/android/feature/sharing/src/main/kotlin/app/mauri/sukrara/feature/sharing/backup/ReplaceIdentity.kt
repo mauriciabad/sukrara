@@ -4,7 +4,6 @@
 package app.mauri.sukrara.feature.sharing.backup
 
 import android.icu.text.ListFormatter
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,6 +49,7 @@ import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.motion.PageBackHandler
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.sharing.OwnerSharing
@@ -226,7 +226,7 @@ fun ReplaceIdentityPage(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val u by viewModel.ui.collectAsStateWithLifecycle()
     // the form's Back returns to the choice; the choice's leaves the page (the app's own Back)
-    BackHandler(enabled = u.step == ReplaceStep.Restore && !u.busy && !u.done) { viewModel.back(onClose) }
+    PageBackHandler(enabled = u.step == ReplaceStep.Restore && !u.busy && !u.done) { viewModel.back(onClose) }
     val sharing = state as? OwnerShareState.Sharing
     val actions =
         remember(viewModel, onClose, onBackUp, onInvite) {

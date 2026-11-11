@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings.search
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.motion.PageBackHandler
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
@@ -175,7 +175,7 @@ fun SettingsSearchBar(
     val active = query.isNotBlank()
     val activeChanged by rememberUpdatedState(onActiveChange)
     LaunchedEffect(active) { activeChanged(active) }
-    BackHandler(enabled = active || focused) {
+    PageBackHandler(enabled = active || focused) {
         query = ""
         focus.clearFocus()
     }

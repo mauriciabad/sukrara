@@ -13,7 +13,6 @@ import android.icu.util.MeasureUnit
 import android.net.Uri
 import android.nfc.NfcAdapter
 import android.provider.Settings
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -70,6 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.motion.PageBackHandler
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.nfc.DefaultAntenna
@@ -84,7 +84,8 @@ import java.time.Instant
 
 /**
  * The new-sensor flow (start a new Libre 3 or take over a running one), the route the home screen, setup and
- * Settings › Sensor open. [onSignIn] opens the LibreView sign-in; [onDone] leaves (back, Cancel, Close, Done).
+ * Settings › Sensor open. [onSignIn] opens the LibreView sign-in; [onDone] leaves (Cancel, Close, Done; Back on a
+ * finished step is the app's own, which closes the page the same way).
  * Gates are re-checked every time the screen resumes (the person may come back from settings, the sign-in or the
  * other app); NFC reader mode is on only while a tap is accepted.
  */
@@ -132,9 +133,9 @@ fun NewSensorRoute(
     // on for the whole flow, also while a tag is being read (turning it off mid-read restarts polling and can cut the
     // exchange, and the system's own tag dispatch would take the tag); the view model takes a tag only when it may
     NfcReaderMode(enabled = !step.isFinal, onTag = viewModel::onTag)
-    BackHandler {
-        if (step.isFinal) onDone() else viewModel.onCancel() // ignored while the tap is being read
-    }
+    // Back cancels the flow (ignored while the tap is being read); on a final step it closes the page like Done, with
+    // the page's back motion
+    PageBackHandler(enabled = !step.isFinal, onBack = viewModel::onCancel)
 
     val afterPermission: (Boolean) -> Unit = {
         // a paired sensor waiting for Nearby devices connects again; before the tap the gates move on
@@ -479,12 +480,13 @@ private fun Countdown(readyAt: Instant, now: Instant) {
         return
     }
     val minutes = (seconds + 59) / 60
+    // the page redraws every second (the art, the slow-step notes): the words and formatter are made once per language
     val resources = LocalContext.current.resources
-    val shown = Durations.text(minutes, CardWords.of(resources).durations)
-    val spoken =
-        MeasureFormat
-            .getInstance(LocalConfiguration.current.locales[0], MeasureFormat.FormatWidth.WIDE)
-            .format(Measure(minutes, MeasureUnit.MINUTE))
+    val words = remember(resources) { CardWords.of(resources).durations }
+    val locale = LocalConfiguration.current.locales[0]
+    val format = remember(locale) { MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE) }
+    val shown = remember(minutes, words) { Durations.text(minutes, words) }
+    val spoken = remember(minutes, format) { format.format(Measure(minutes, MeasureUnit.MINUTE)) }
     val description = stringResource(R.string.newsensor_ready_in, spoken)
     Text(
         stringResource(R.string.newsensor_ready_in, shown),

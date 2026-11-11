@@ -238,3 +238,19 @@ fun <E : Any> ScreenHost(
         }
     }
 }
+
+/**
+ * A page's own Back while [enabled] (a flow's step going back a step, a search clearing itself): composed inside a
+ * [ScreenHost] page it comes before the host's, so the system back and the predictive back gesture call [onBack]
+ * instead of closing the page (the gesture shows no preview). While it's off, Back closes the page with the host's
+ * motion.
+ */
+@Composable
+fun PageBackHandler(
+    enabled: Boolean = true,
+    onBack: () -> Unit,
+) {
+    val state = rememberNavigationEventState(NavigationEventInfo.None)
+    val currentOnBack by rememberUpdatedState(onBack)
+    NavigationBackHandler(state, isBackEnabled = enabled, onBackCompleted = { currentOnBack() })
+}
