@@ -272,6 +272,9 @@ follower sees who is inviting before asking.
   only on the owner's phone and in the owner backup) is shown next to the requester's name.
 - **Deny** sends `declined`. Approving or denying marks the invite done; it stays until it expires (24 h) so late
   requesters still get `invite-used`.
+- **Unanswered until it expires**: the owner never allows a request on an expired invite (or nearby offer), and
+  nothing is sent to say so. The follower keeps the invite's expiry `x` from when it joined and stops waiting at it,
+  with a local status (*expired*) and a way to join with a new invite; it never sends the request again (#181).
 - A leak before the intended follower uses the link lets someone ask in their place with any name and picture.
   Protection: the single claim, the `invite-used` notice to the real follower (who then tells the owner), and the
   owner's Allow. When others tried the invite (`others` > 0) the owner types the follower's **match code** =

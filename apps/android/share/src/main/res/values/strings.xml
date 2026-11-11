@@ -21,4 +21,6 @@
     <string name="share_follow_declined_text">Your request to follow %1$s was declined. Ask them for a new link if this was a mistake.</string>
     <string name="share_follow_revoked_title">You no longer follow %1$s</string>
     <string name="share_follow_revoked_text">%1$s stopped sharing with you. Their readings no longer reach this phone.</string>
+    <string name="share_follow_expired_title">Invite expired</string>
+    <string name="share_follow_expired_text">The invite from %1$s expired before they allowed you. Ask them for a new link, then join again in Settings › Sharing.</string>
 </resources>

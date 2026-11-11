@@ -114,6 +114,7 @@ internal fun ColumnScope.JoinStep(
             when (follow.status) {
                 FollowStatus.Declined -> R.string.sh_join_declined
                 FollowStatus.InviteUsed -> R.string.sh_join_used
+                FollowStatus.Expired -> R.string.sh_join_expired
                 else -> R.string.sh_join_revoked
             }
         NoteCard(stringResource(ended, name), error = true)

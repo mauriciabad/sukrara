@@ -150,6 +150,28 @@ struct FollowerRuntimeTests {
         return (state, try crypto.publicKey(of: state.follower))
     }
 
+    /// #181: the wearer never answered and the invite expired (the wearer's phone can't allow it any more): a Mac that
+    /// was off past the expiry stops waiting as soon as it starts, sends no new request, and takes a new invite.
+    @Test func anUnansweredInviteEndsAtItsExpiry() async throws {
+        let hub = FakeRelayHub(stored: [v.event("invite")])
+        let secrets = InMemorySecretStore()
+        let h = RuntimeHarness(now: v.now, hub: hub, secrets: secrets)
+        await h.runtime.start()
+        let link = (v.derivations["invite"] as! [String: Any])["link"] as! String
+        let invite = try await h.runtime.lookUp(link: link)
+        try await h.runtime.join(invite: invite)
+        #expect(try followerKey(h).state.inviteExpiry == invite.expiry)
+        #expect(await eventually { await h.runtime.currentLink != .notFollowing })
+        await h.runtime.stop()
+
+        let later = RuntimeHarness(now: invite.expiry + 3600, hub: hub, secrets: secrets, directory: h.directory)
+        await later.runtime.start()
+        #expect(await eventually { await later.runtime.currentLink == .inviteExpired })
+        #expect(try followerKey(later).state.status == .inviteExpired)
+        // and a new invite replaces it ("Follow again…")
+        await #expect(throws: FollowerJoinError.expired) { try await later.runtime.join(invite: invite) }
+    }
+
     /// #173 / #174: a request waits with its match code, then moves on by itself as the wearer answers (no reconnect,
     /// no polling): Deny → declined, another device first → invite used, Allow → following. A follow that ended takes a
     /// new invite (it replaces the ended one, as on Android, so "Follow again…" works).

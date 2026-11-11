@@ -160,7 +160,14 @@ fun FollowingContent(
                     AvatarImage(state.wearer?.avatar, name, size = 64.dp)
                     Text(
                         stringResource(
-                            if (state.status == FollowStatus.Active) R.string.sh_following_active else R.string.sh_following_waiting,
+                            when (state.status) {
+                                FollowStatus.Active -> R.string.sh_following_active
+
+                                FollowStatus.New, FollowStatus.Requested -> R.string.sh_following_waiting
+
+                                // ended: never "Waiting for …" when no answer can come (#181)
+                                else -> R.string.sh_following_ended
+                            },
                             name,
                         ),
                         style = MaterialTheme.typography.titleLarge,
@@ -173,11 +180,12 @@ fun FollowingContent(
                     )
                 }
                 when (state.status) {
-                    FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked -> {
+                    FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked, FollowStatus.Expired -> {
                         val why =
                             when (state.status) {
                                 FollowStatus.Declined -> R.string.sh_join_declined
                                 FollowStatus.InviteUsed -> R.string.sh_join_used
+                                FollowStatus.Expired -> R.string.sh_join_expired
                                 else -> R.string.sh_join_revoked
                             }
                         NoteCard(stringResource(why, name), error = true)

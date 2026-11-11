@@ -26,8 +26,12 @@ import app.mauri.sukrara.protocol.event.TreatmentPayload
 import app.mauri.sukrara.protocol.event.WriterScope
 import app.mauri.sukrara.protocol.invite.NearbyPairing
 
-/** Where a follower stands with the wearer. */
-enum class FollowStatus { New, Requested, Active, Declined, InviteUsed, Revoked }
+/**
+ * Where a follower stands with the wearer. [Expired]: the invite (or the nearby offer) expired before the wearer
+ * answered; the wearer's phone refuses to allow a request on an expired invite, so no answer can come (#181). Local
+ * only: nothing on the wire says it, the follower knows the invite's expiry.
+ */
+enum class FollowStatus { New, Requested, Active, Declined, InviteUsed, Revoked, Expired }
 
 /** A read key the follower holds: epoch [n] and its key pair (secret redacted in logs). */
 data class Epoch(val n: Int, val key: KeyPair)
@@ -170,6 +174,17 @@ sealed interface Item {
 class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
     var state: FollowerState = initial
         private set
+
+    /**
+     * The invite expired unanswered ([FollowStatus.Expired]); false when it was answered (or never asked), a nearby
+     * join's key held for the code comparison included (the wearer allowed it in time).
+     */
+    fun expired(): Boolean {
+        if (state.status != FollowStatus.New && state.status != FollowStatus.Requested) return false
+        if (state.pair?.held != null) return false
+        state = state.copy(status = FollowStatus.Expired)
+        return true
+    }
 
     /** The follower sent its access request: waits for a key, `invite-used` or `declined`. */
     fun requested() {

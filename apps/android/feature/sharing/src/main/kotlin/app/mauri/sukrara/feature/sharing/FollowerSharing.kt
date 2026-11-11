@@ -76,9 +76,9 @@ interface FollowerSharing {
     }
 }
 
-private val ENDED = setOf(FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked)
+private val ENDED = setOf(FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked, FollowStatus.Expired)
 
-/** A follow that ended: declined, the invite used by another phone, or access removed. */
+/** A follow that ended: declined, the invite used by another phone, expired unanswered, or access removed. */
 val FollowState.ended: Boolean
     get() = this is FollowState.Following && status in ENDED
 

@@ -388,6 +388,7 @@
     <string name="sh_join_declined">%1$s no te ha dado acceso. Pídele un enlace nuevo y pégalo aquí.</string>
     <string name="sh_join_used">Otro dispositivo usó antes esta invitación de %1$s. Pídele un enlace nuevo y pégalo aquí.</string>
     <string name="sh_join_revoked">%1$s ha dejado de compartir contigo. Pega un enlace nuevo para volver a seguirle.</string>
+    <string name="sh_join_expired">La invitación de %1$s caducó antes de que te diera acceso. Pídele un enlace nuevo y pégalo aquí.</string>
     <string name="sh_join_err_invalid">No es un enlace de invitación de Sukrara. Empieza por https://sukrara.mauri.app/join#</string>
     <string name="sh_join_err_not_found">No se ha encontrado esta invitación. Puede que la hayan cancelado: pide un enlace nuevo.</string>
     <string name="sh_join_err_offline">No hay conexión a internet. Revisa la conexión y vuelve a intentarlo.</string>
@@ -403,6 +404,7 @@
     <string name="sh_following_title">Siguiendo</string>
     <string name="sh_following_waiting">Esperando a que %1$s te dé acceso</string>
     <string name="sh_following_active">Sigues a %1$s</string>
+    <string name="sh_following_ended">Ya no sigues a %1$s</string>
     <string name="sh_following_last_heard">Última lectura recibida %1$s</string>
     <string name="sh_following_never">Aún no ha llegado ninguna lectura</string>
     <string name="sh_following_can_write">Puedes añadir entradas a su registro</string>

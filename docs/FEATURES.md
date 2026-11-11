@@ -442,10 +442,19 @@ return.
   *pending* (home: *Sending…*) until a relay accepts it or the wearer's phone echoes it (resent on every connect), then
   delivered; nothing within 2 min → *Not sent* with *Retry* (see Treatments). It edits and deletes its own entries
   from home's list.
-- **Notifications** (info channel *Requests*): *Invite already used*, *Ana didn't allow you*, *You no longer follow Ana*;
-  a tap opens the app.
+- **Notifications** (info channel *Requests*): *Invite already used*, *Ana didn't allow you*, *You no longer follow Ana*,
+  *Invite expired*; a tap opens the app.
+- **An invite that expires unanswered** (#181): the wearer's phone can't allow a request on an expired invite (24 h; a
+  nearby offer: 10 min), so the follower stops waiting at the invite's expiry, which it read from the invite when it
+  joined: the follow ends as *expired* (Android `FollowStatus.Expired`, Mac `LinkStatus.inviteExpired`; local, nothing
+  on the wire), the request isn't sent again, *Invite expired* · *The invite from Ana expired before they allowed you.
+  Ask them for a new link…*, and the page offers *Join with a new link*. A phone or Mac that was off past the expiry
+  ends it as soon as it connects (`FollowerEngineTest`, Mac `FollowerRuntimeTests.anUnansweredInviteEndsAtItsExpiry`).
+  Mac: the panel's *Not monitoring: the invite expired before the wearer answered* with *Follow Someone…*, Settings ›
+  Following and the follow window say the same with *Follow again…*; the widget *The invite expired before the wearer
+  answered*.
 - **Following page** (Settings › Sharing on a follower): picture and name, *Waiting for Ana to allow you* with *If Ana
-  asks for a code: 4821* or *You follow Ana* (changes by itself, read by TalkBack, a confirm haptic on Allow), when the last reading arrived, whether this phone may add entries, the relay connection, and
+  asks for a code: 4821*, *You follow Ana* or, once it ended, *Not following Ana* (changes by itself, read by TalkBack, a confirm haptic on Allow), when the last reading arrived, whether this phone may add entries, the relay connection, and
   *Stop following* (confirmed: the key, readings and entries leave the phone, the alert state resets, the role is cleared
   and setup opens). A follow that ended says why with *Join with a new link*.
 - **Invite links** opened on a phone with no role or a follower that follows no one open setup's join step with the link
@@ -461,8 +470,8 @@ scanning (*Cancel*, or an invite read → the link filled), camera explained (*A
 (*Open settings* / *Cancel*), no camera (*Cancel*), picture without an invite (the note; pick again or paste),
 looking up (spinner, the fields locked), who is inviting (*Follow* / *Cancel* / Back → the form, nothing sent), failed
 (the reason; edit the link to clear it, Join again), waiting (the match code line,
-*Continue*; Allow / Deny / a used invite arrive by themselves). Following page: waiting (code, *Stop following*), following (*Stop following*), ended — declined / invite
-used / removed (*Join with a new link* → join step, *Stop following*), key unreadable (*Stop following*), damaged (*Stop
+*Continue*; Allow / Deny / a used invite arrive by themselves; the invite's expiry ends it by itself). Following page: waiting (code, *Stop following*), following (*Stop following*), ended — declined / invite
+used / expired unanswered / removed (*Join with a new link* → join step, *Stop following*), key unreadable (*Stop following*), damaged (*Stop
 following*). Stop following → confirm dialog (Cancel / *Stop following*) → setup's role step. Notifications → tap opens
 the app (Settings › Sharing shows the same state). Invite link on a wearer phone → *Copy link* or Back.
 

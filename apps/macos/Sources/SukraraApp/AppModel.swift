@@ -432,6 +432,7 @@ public final class AppModel {
         case .following: return .wearerSilent(since: nil)
         case .declined: return .declined
         case .inviteUsed: return .inviteUsed
+        case .inviteExpired: return .inviteExpired
         case .revoked: return .revoked
         case .broken(let why): return .broken(why)
         }

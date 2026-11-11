@@ -27,6 +27,7 @@ class FollowerNotifications(
                 FollowerNotice.InviteUsed -> R.string.share_follow_used_title to R.string.share_follow_used_text
                 FollowerNotice.Declined -> R.string.share_follow_declined_title to R.string.share_follow_declined_text
                 FollowerNotice.Revoked -> R.string.share_follow_revoked_title to R.string.share_follow_revoked_text
+                FollowerNotice.Expired -> R.string.share_follow_expired_title to R.string.share_follow_expired_text
             }
         val body = context.getString(text, name)
         val builder =

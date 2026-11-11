@@ -40,7 +40,7 @@ public enum FollowStatus: Equatable, Sendable {
     /// `pairing`: a nearby join's code comparison (nil for a link).
     case waiting(wearer: String?, pairing: LinkState.PairingCheck?)
     case following(wearer: String?, lastReading: Date?, canWrite: Bool)
-    case declined, inviteUsed, revoked
+    case declined, inviteUsed, inviteExpired, revoked
     case broken(LinkProblem)
 }
 
@@ -244,7 +244,7 @@ public final class FollowModel {
     /// Nobody followed and nothing on its way: the states where a nearby phone may be offered.
     public var canFollow: Bool {
         switch status {
-        case .notFollowing, .declined, .inviteUsed, .revoked, .broken: true
+        case .notFollowing, .declined, .inviteUsed, .inviteExpired, .revoked, .broken: true
         case .joining, .waiting, .following: false
         }
     }

@@ -322,7 +322,7 @@ struct FollowingRows: View {
                             "Their readings are removed from this Mac. To follow again, they have to send a new invite."
                         ))
                 }
-        case .declined, .inviteUsed, .revoked, .broken:
+        case .declined, .inviteUsed, .inviteExpired, .revoked, .broken:
             row(Self.endText(follow.status), "exclamationmark.triangle")
             Button(L10n.t("Follow again…"), action: openFollow)
             ScanQRButton(follow: follow, openFollow: openFollow)
@@ -337,6 +337,7 @@ struct FollowingRows: View {
         switch s {
         case .declined: L10n.t("The wearer declined. Ask them for a new invite.")
         case .inviteUsed: L10n.t("Another device used this invite. Ask for a new one.")
+        case .inviteExpired: L10n.t("The invite expired before the wearer answered. Ask them for a new one.")
         case .revoked: L10n.t("The wearer stopped sharing with this Mac.")
         case .broken(let why): L10n.t("Following stopped: \(why.text)")
         default: ""

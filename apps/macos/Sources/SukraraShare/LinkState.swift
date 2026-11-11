@@ -5,7 +5,7 @@ import SukraraCore
 
 /// Whether this Mac follows a wearer, for the menu and the follow window. Every state has a visible exit:
 /// `notFollowing` → join; `joining` → cancel; `requested` → cancel request (= stop following); `following` → stop
-/// following; `declined` / `inviteUsed` / `revoked` / `broken` → stop following, then join again.
+/// following; `declined` / `inviteUsed` / `inviteExpired` / `revoked` / `broken` → stop following, then join again.
 public enum LinkState: Sendable, Equatable {
     /// Not following anyone (first run, or after "Stop following").
     case notFollowing
@@ -20,6 +20,8 @@ public enum LinkState: Sendable, Equatable {
     case declined
     /// Another device used this invite first.
     case inviteUsed
+    /// The invite expired before the wearer answered (#181).
+    case inviteExpired
     /// The wearer stopped sharing with this Mac.
     case revoked
     /// Following can't continue: why (Keychain unreadable, state damaged), worded by the app.

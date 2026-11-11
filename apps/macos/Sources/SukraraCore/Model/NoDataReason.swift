@@ -18,6 +18,8 @@ public enum NoDataReason: Codable, Sendable, Equatable {
     case declined
     /// Another device used the invite first.
     case inviteUsed
+    /// The invite expired before the wearer answered.
+    case inviteExpired
     /// The wearer stopped sharing with this Mac.
     case revoked
     /// Following can't continue.
@@ -40,7 +42,7 @@ public enum NoDataReason: Codable, Sendable, Equatable {
 
     public var action: Action? {
         switch self {
-        case .notFollowing, .declined, .inviteUsed, .revoked: .follow
+        case .notFollowing, .declined, .inviteUsed, .inviteExpired, .revoked: .follow
         case .waitingApproval, .broken: .following
         case .juggluco(.looking), .juggluco(.firstReading): nil
         case .juggluco: .juggluco

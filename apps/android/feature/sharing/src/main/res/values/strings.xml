@@ -516,6 +516,7 @@
     <string name="sh_join_declined">%1$s didn\'t allow you. Ask them for a new link and paste it here.</string>
     <string name="sh_join_used">Another device used this invite from %1$s first. Ask them for a new link and paste it here.</string>
     <string name="sh_join_revoked">%1$s stopped sharing with you. Paste a new link to follow again.</string>
+    <string name="sh_join_expired">The invite from %1$s expired before they allowed you. Ask them for a new link and paste it here.</string>
     <string name="sh_join_err_invalid">That isn\'t a Sukrara invite link. It starts with https://sukrara.mauri.app/join#</string>
     <string name="sh_join_err_not_found">This invite wasn\'t found. It may have been cancelled: ask for a new link.</string>
     <string name="sh_join_err_offline">Can\'t reach the internet. Check the connection and try again.</string>
@@ -531,6 +532,7 @@
     <string name="sh_following_title">Following</string>
     <string name="sh_following_waiting">Waiting for %1$s to allow you</string>
     <string name="sh_following_active">You follow %1$s</string>
+    <string name="sh_following_ended">Not following %1$s</string>
     <string name="sh_following_last_heard">Last reading arrived %1$s</string>
     <string name="sh_following_never">No reading has arrived yet</string>
     <string name="sh_following_can_write">You can add entries to their log</string>

@@ -336,6 +336,40 @@ class FollowerEngineTest {
             assertEquals(listOf(FollowerNotice.Declined), notices)
         }
 
+    /**
+     * #181: the wearer never answered and the invite expired. The wearer's phone can't allow it any more, so the
+     * follower stops waiting at the invite's expiry: *Expired*, told once, and the page offers to join again.
+     */
+    @Test fun anUnansweredInviteEndsAtItsExpiry() =
+        runTest {
+            val e = engine()
+            joined(e)
+            val expiry = created.expiry
+            assertEquals(FollowStatus.Requested, (e.state.value as FollowState.Following).status)
+            clock.instant = Instant.ofEpochSecond(expiry - 60)
+            advanceTimeBy((expiry - NOW - 60) * 1000)
+            runCurrent()
+            assertEquals("still waiting before the expiry", FollowStatus.Requested, (e.state.value as FollowState.Following).status)
+            clock.instant = Instant.ofEpochSecond(expiry + 1)
+            advanceTimeBy(62_000)
+            runCurrent()
+            assertEquals(FollowStatus.Expired, (e.state.value as FollowState.Following).status)
+            assertEquals(listOf(FollowerNotice.Expired), notices)
+        }
+
+    /** #181: a phone that was off past the invite's expiry stops waiting as soon as it connects again. */
+    @Test fun anInviteThatExpiredWhileThePhoneWasOffEndsOnConnect() =
+        runTest {
+            joined(engine())
+            clock.instant = Instant.ofEpochSecond(created.expiry + 3600)
+            val again = engine()
+            attach(again)
+            assertEquals(FollowStatus.Expired, (again.state.value as FollowState.Following).status)
+            assertEquals(listOf(FollowerNotice.Expired), notices)
+            // the request isn't sent again
+            assertEquals(1, relay.published.count { it.kind == Wire.KIND_WRAP })
+        }
+
     @Test fun removedFollowerShowsRevokedAndStopsReading() =
         runTest {
             val e = engine()

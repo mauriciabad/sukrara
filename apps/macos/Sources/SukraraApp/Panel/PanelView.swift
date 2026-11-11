@@ -405,7 +405,7 @@ enum AddTreatmentAvailability: Equatable {
         case .requested(_, let wearer, _): self = .waiting(wearer: wearer)
         case .joining: self = .waiting(wearer: nil)
         case .revoked: self = .revoked
-        case .declined, .inviteUsed, .broken: self = .ended
+        case .declined, .inviteUsed, .inviteExpired, .broken: self = .ended
         case .notFollowing: self = .notFollowing
         }
     }

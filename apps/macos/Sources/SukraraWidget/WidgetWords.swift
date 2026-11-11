@@ -31,6 +31,7 @@ struct WidgetWords: Sendable {
             case .waitingApproval: return ("Waiting for the wearer to allow this Mac", "They allow it on their phone")
             case .declined: return ("The wearer declined", follow)
             case .inviteUsed: return ("The invite was used by another device", follow)
+            case .inviteExpired: return ("The invite expired before the wearer answered", follow)
             case .revoked: return ("The wearer stopped sharing", follow)
             case .broken: return ("Following stopped", why)
             case .wearerSilent: return ("No readings from the wearer yet", "Their phone may be off or offline")
@@ -55,6 +56,7 @@ struct WidgetWords: Sendable {
                 return ("Esperando a que quien lleva el sensor permita este Mac", "Lo permite en su móvil")
             case .declined: return ("Quien lleva el sensor lo rechazó", follow)
             case .inviteUsed: return ("Otro dispositivo usó la invitación", follow)
+            case .inviteExpired: return ("La invitación caducó sin respuesta", follow)
             case .revoked: return ("Quien lleva el sensor dejó de compartir", follow)
             case .broken: return ("Se dejó de seguir", why)
             case .wearerSilent:

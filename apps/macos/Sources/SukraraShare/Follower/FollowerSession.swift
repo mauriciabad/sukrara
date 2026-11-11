@@ -95,8 +95,21 @@ public struct FollowerSession: Sendable {
             code: Wire.matchCode(followerPublicKey: pub, token: invite.token),
             pair: commit.map { FollowerState.NearbyPair(commit: $0, nonce: nonce) }, me: me,
             wearer: invite.profile, relays: invite.relays.isEmpty ? Wire.defaultRelays : invite.relays)
-        guard let session = try? FollowerSession(state: state, crypto: crypto) else { throw .keyFailed }
+        var withExpiry = state
+        withExpiry.inviteExpiry = invite.expiry
+        guard let session = try? FollowerSession(state: withExpiry, crypto: crypto) else { throw .keyFailed }
         return session
+    }
+
+    /// #181: the invite expired while waiting for the wearer's answer, which can't come any more (the wearer's phone
+    /// refuses an expired invite): status `inviteExpired`. True when it ended now. A nearby join's key held for the code
+    /// comparison is an answer (the wearer allowed it in time).
+    public mutating func expireIfUnanswered(now: Int) -> Bool {
+        guard state.status == .new || state.status == .requested, state.pair?.held == nil,
+            let expiry = state.inviteExpiry, expiry <= now
+        else { return false }
+        state.status = .inviteExpired
+        return true
     }
 
     public enum JoinError: Error, Equatable, Sendable {

@@ -103,6 +103,9 @@ struct FollowEnded: View {
         case .declined: L10n.t("\(wearer) didn't allow you. Ask them for a new link and paste it here.")
         case .inviteUsed:
             L10n.t("Another device used this invite from \(wearer) first. Ask them for a new link and paste it here.")
+        case .inviteExpired:
+            L10n.t(
+                "The invite from \(wearer) expired before they allowed you. Ask them for a new link and paste it here.")
         case .revoked: L10n.t("\(wearer) stopped sharing with you. Paste a new link to follow again.")
         default: nil
         }

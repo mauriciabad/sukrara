@@ -78,6 +78,8 @@ public actor FollowerRuntime: FollowerService {
     private var searchingNearby = false
     private var joinTask: Task<Result<Invite, FollowerJoinError>, Never>?
     private var historyTask: Task<Void, Never>?
+    /// Ends the wait for the wearer's answer at the invite's expiry (#181).
+    private var expiryTask: Task<Void, Never>?
     private var lastHistoryRequest: Int?
     private var persisted: FollowerState?
     private var persistedAt = Date.distantPast
@@ -252,7 +254,7 @@ public actor FollowerRuntime: FollowerService {
     /// removed this Mac): a new invite replaces it, as on Android. A follow that waits or runs is never replaced.
     private var canJoin: Bool {
         guard let status = session?.state.status else { return true }
-        return status == .declined || status == .inviteUsed || status == .revoked
+        return status == .declined || status == .inviteUsed || status == .revoked || status == .inviteExpired
     }
 
     public func lookUp(link text: String) async throws(FollowerJoinError) -> Invite {
@@ -469,18 +471,41 @@ public actor FollowerRuntime: FollowerService {
         }
         startNearby()
         await resubscribe()
-        if state.status == .new || state.status == .requested {
+        if !expireIfUnanswered(), state.status == .new || state.status == .requested {
             if var current = self.session, let request = try? current.requestAccess(now: now) {
                 self.session = current
                 persist(force: true)
                 await publish(request)
             }
+            watchExpiry(state.inviteExpiry)
         }
         await resendUnsentTreatments()
         await publishSnapshot()
     }
 
+    /// #181: the wait ends at the invite's expiry ([FollowerSession.expireIfUnanswered]); saved at once.
+    @discardableResult private func expireIfUnanswered() -> Bool {
+        guard var current = session, current.expireIfUnanswered(now: now) else { return false }
+        session = current
+        persist(force: true)
+        return true
+    }
+
+    /// Ends the wait at the invite's expiry while connected.
+    private func watchExpiry(_ expiry: Int?) {
+        expiryTask?.cancel()
+        guard let expiry else { return }
+        let wait = TimeInterval(max(0, expiry - now) + 1)
+        expiryTask = Task { [weak self, sleep] in
+            try? await sleep(wait)
+            guard !Task.isCancelled, let self else { return }
+            if await self.expireIfUnanswered() { await self.publishSnapshot() }
+        }
+    }
+
     private func disconnect() async {
+        expiryTask?.cancel()
+        expiryTask = nil
         relayTask?.cancel()
         relayTask = nil
         historyTask?.cancel()
@@ -731,6 +756,7 @@ public actor FollowerRuntime: FollowerService {
             case .declined: link = .declined
             case .inviteUsed: link = .inviteUsed
             case .revoked: link = .revoked
+            case .inviteExpired: link = .inviteExpired
             }
         }
         let since = clock.now.addingTimeInterval(-Self.snapshotWindow)

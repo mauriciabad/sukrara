@@ -53,6 +53,8 @@ data class FollowerRecord(
     val wearer: Profile?,
     val joinedAt: Long,
     val requestedAt: Long = 0,
+    /** The invite's (or nearby offer's) expiry, epoch s: no answer can come after it (0 = unknown). */
+    val inviteExpiry: Long = 0,
     val sensor: SensorLife? = null,
     val lastHeardAt: Long? = null,
     val historyAskedAt: Long = 0,
@@ -182,6 +184,7 @@ internal object FollowerCodec {
             put("wearer", r.wearer?.toJson() ?: JsonNull)
             put("joinedAt", r.joinedAt)
             put("requestedAt", r.requestedAt)
+            put("inviteExpiry", r.inviteExpiry)
             put(
                 "sensor",
                 r.sensor?.let {
@@ -256,6 +259,7 @@ internal object FollowerCodec {
                 wearer = Profile.of(o["wearer"]),
                 joinedAt = o.long("joinedAt") ?: 0,
                 requestedAt = o.long("requestedAt") ?: 0,
+                inviteExpiry = o.long("inviteExpiry") ?: 0,
                 sensor = sensor,
                 lastHeardAt = o.long("lastHeardAt"),
                 historyAskedAt = o.long("historyAskedAt") ?: 0,

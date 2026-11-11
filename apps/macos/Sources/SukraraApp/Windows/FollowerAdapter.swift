@@ -89,6 +89,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
             .following(wearer: wearer, lastReading: snapshot.readings.last?.t, canWrite: canWrite)
         case .declined: .declined
         case .inviteUsed: .inviteUsed
+        case .inviteExpired: .inviteExpired
         case .revoked: .revoked
         case .broken(let why): .broken(why)
         }

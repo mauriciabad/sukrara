@@ -1041,6 +1041,22 @@
         }
       }
     },
+    "Each invite works for 24 hours. Ask the wearer for a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each invite works for 24 hours. Ask the wearer for a new one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada invitación sirve 24 horas. Pide una nueva a quien lleva el sensor."
+          }
+        }
+      }
+    },
     "Each invite works once. Ask the wearer for a new one." : {
       "localizations" : {
         "en" : {
@@ -2017,6 +2033,22 @@
         }
       }
     },
+    "Not monitoring: the invite expired before the wearer answered" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: the invite expired before the wearer answered"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin monitorizar: la invitación caducó antes de que respondiera quien lleva el sensor"
+          }
+        }
+      }
+    },
     "Once a day, from sukrara.mauri.app. Every update is signed and checked before it installs." : {
       "localizations" : {
         "en" : {
@@ -2237,6 +2269,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara no es un producto sanitario: los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar. Mira la app de tu sensor o un glucómetro, y consulta a tu médico, antes de decidir un tratamiento."
+          }
+        }
+      }
+    },
+    "The invite expired before the wearer answered. Ask them for a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The invite expired before the wearer answered. Ask them for a new one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La invitación caducó antes de que respondiera quien lleva el sensor. Pídele una nueva."
+          }
+        }
+      }
+    },
+    "The invite from %@ expired before they allowed you. Ask them for a new link and paste it here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The invite from %@ expired before they allowed you. Ask them for a new link and paste it here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La invitación de %@ caducó antes de que te diera acceso. Pídele un enlace nuevo y pégalo aquí."
           }
         }
       }

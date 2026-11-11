@@ -21,4 +21,6 @@
     <string name="share_follow_declined_text">Se ha rechazado tu solicitud para seguir a %1$s. Pídele un enlace nuevo si ha sido un error.</string>
     <string name="share_follow_revoked_title">Ya no sigues a %1$s</string>
     <string name="share_follow_revoked_text">%1$s ha dejado de compartir contigo. Sus lecturas ya no llegan a este teléfono.</string>
+    <string name="share_follow_expired_title">Invitación caducada</string>
+    <string name="share_follow_expired_text">La invitación de %1$s caducó antes de que te diera acceso. Pídele un enlace nuevo y vuelve a unirte en Ajustes › Compartir.</string>
 </resources>

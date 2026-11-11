@@ -125,7 +125,7 @@ sealed interface InviteLookup {
 }
 
 /** What the wearer told this follower (a notification on the info channel). */
-enum class FollowerNotice { InviteUsed, Declined, Revoked }
+enum class FollowerNotice { InviteUsed, Declined, Revoked, Expired }
 
 /** A wearer's phone in Bluetooth range with *Pair nearby* open ([phone] = its current address). */
 data class NearbyOffer(val phone: String, val pairing: BleMessages.Pairing)
@@ -492,6 +492,7 @@ class FollowerEngine(
                     me = me,
                     wearer = invite.profile,
                     joinedAt = now(),
+                    inviteExpiry = invite.expiry,
                 )
             // never mix a previous person's history in
             wipeData()
@@ -619,7 +620,10 @@ class FollowerEngine(
         networkWatch?.close()
         networkWatch = network.watch(::reconnectNow)
         startNearby(out, r)
-        if (r.stream.status == FollowStatus.New || r.stream.status == FollowStatus.Requested) sendRequest()
+        if (!expireIfUnanswered() && (r.stream.status == FollowStatus.New || r.stream.status == FollowStatus.Requested)) {
+            sendRequest()
+            watchExpiry(out, r.inviteExpiry)
+        }
         resendPending()
         render()
     }
@@ -711,6 +715,34 @@ class FollowerEngine(
         sink = null
         subscribed = emptyMap()
         if (_status.value != SourceStatus.NotStarted) _status.value = SourceStatus.NotStarted
+    }
+
+    /**
+     * #181: the invite expired while waiting for the wearer's answer. The wearer's phone refuses to allow a request on
+     * an expired invite (`ApproveRequest`), so no answer can come: the follow ends as [FollowStatus.Expired] with a
+     * notice, and the page offers to join again. True when it ended now.
+     */
+    private suspend fun expireIfUnanswered(): Boolean {
+        val r = record ?: return false
+        if (r.inviteExpiry <= 0 || r.inviteExpiry > now()) return false
+        val f = follower ?: return false
+        if (!f.expired()) return false
+        commit(r.copy(stream = f.state), force = true)
+        onNotice(FollowerNotice.Expired, r.wearer)
+        return true
+    }
+
+    /** Ends the wait at the invite's expiry ([expireIfUnanswered]) while attached. */
+    private fun watchExpiry(
+        out: ProducerScope<List<Reading>>,
+        expiry: Long,
+    ) {
+        if (expiry <= 0) return
+        jobs = jobs +
+            out.launch {
+                delay((expiry - now()).coerceAtLeast(0) * 1000 + 1000)
+                locked { safely { expireIfUnanswered() } }
+            }
     }
 
     /** The access request (gift wrap to I, 7 d): on every connect while waiting, as the Mac does. */
@@ -1147,7 +1179,7 @@ class FollowerEngine(
         private const val PERSIST_EVERY = 300L
         private const val RETRY_FIRST_MS = 5_000L
         private const val RETRY_MAX_MS = 300_000L
-        private val ENDED = setOf(FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked)
+        private val ENDED = setOf(FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked, FollowStatus.Expired)
         private val TREATMENT_KINDS = setOf("rapid", "long", "carbs", "note")
 
         const val NEARBY_VIA = "ble"

@@ -34,6 +34,10 @@ struct NoDataText: Equatable {
                 action: L10n.t("Following Settings…"))
         case .declined:
             return NoDataText(title: L10n.t("Not monitoring: the wearer declined"), body: ask, action: follow)
+        case .inviteExpired:
+            return NoDataText(
+                title: L10n.t("Not monitoring: the invite expired before the wearer answered"),
+                body: L10n.t("Each invite works for 24 hours. Ask the wearer for a new one."), action: follow)
         case .inviteUsed:
             return NoDataText(
                 title: L10n.t("Not monitoring: the invite was used by another device"),

@@ -17,6 +17,9 @@ public enum LinkStatus: String, Codable, Sendable {
     case inviteUsed = "inviteused"
     /// The wearer denied the request.
     case declined
+    /// The invite (or nearby offer) expired before the wearer answered: the wearer's phone refuses to allow a request
+    /// on an expired invite, so no answer can come (#181). Local only: nothing on the wire says it.
+    case inviteExpired = "inviteexpired"
 }
 
 /// Persistent follower state, format `v` 1. Holds the follower secret and the read keys: stored only in the
@@ -81,6 +84,8 @@ public struct FollowerState: Codable, Equatable, Sendable {
     public var relays: [String]
     public var status: LinkStatus = .new
     public var requestedAt: Int?
+    /// The invite's (or nearby offer's) expiry, epoch s: no answer can come after it.
+    public var inviteExpiry: Int?
     public var sid: String?
     public var epochs: [Epoch] = []
     public var devices: [String] = []
