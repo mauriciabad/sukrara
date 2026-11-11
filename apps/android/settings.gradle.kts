@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // The module list is owned by the scaffold (docs/ARCHITECTURE.md §Android): later work adds code to these modules,
-// never new modules.
+// never new modules. The one exception is vendored code that must stay as upstream wrote it (:settingslib-spa).
 pluginManagement {
     includeBuild("build-logic")
     repositories {
@@ -39,3 +39,5 @@ include(":app")
 include(":core:model", ":core:testing", ":core:alerts", ":core:protocol", ":core:data", ":core:designsystem", ":core:graph")
 include(":monitor", ":sensor", ":share", ":integrations", ":pen", ":widgets")
 include(":feature:home", ":feature:settings", ":feature:sharing", ":feature:sensor", ":feature:treatments")
+// AOSP SettingsLib SPA (frameworks/base/packages/SettingsLib/Spa/spa), vendored: settingslib-spa/NOTICE
+include(":settingslib-spa")

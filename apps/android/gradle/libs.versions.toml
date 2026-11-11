@@ -41,6 +41,15 @@ androidxTestCore = "1.7.0"
 spotless = "8.10.4"
 ktlint = "1.8.0"
 composeRules = "0.6.8"
+# AOSP SettingsLib SPA (:settingslib-spa, vendored) and what its sources import
+appcompat = "1.7.1"
+# deprecated and frozen at 1.7.8; SPA's widgets draw its icons (the app's own icons are Material Symbols drawables)
+materialIconsExtended = "1.7.8"
+graphicsShapes = "1.1.0"
+navigationCompose = "2.9.7"
+window = "1.5.1"
+# SPA's dialog activity theme (Theme.Material3.DayNight.Dialog.Alert)
+googleMaterial = "1.13.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -93,6 +102,12 @@ roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose"
 roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 compose-rules-ktlint = { module = "io.nlopez.compose.rules:ktlint", version.ref = "composeRules" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-graphics-shapes = { module = "androidx.graphics:graphics-shapes-android", version.ref = "graphicsShapes" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-window = { module = "androidx.window:window", version.ref = "window" }
+google-material = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
 
 # build-logic (convention plugins) compiles against these
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
