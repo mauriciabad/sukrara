@@ -313,7 +313,8 @@ fun SplitSwitchRow(
 /**
  * Opens another screen: SPA's Preference (stock rows show no chevron). [leading] replaces [icon] with other content
  * (the overview's [CategoryIcon], a picture): decorative, the title says what the row is. [warning]: something outside
- * the app blocks what the row is about (icon and summary in the error colour; the row opens the fix).
+ * the app blocks what the row is about (icon and summary in the error colour; the row opens the fix). [onClickLabel]:
+ * what a tap does, for TalkBack, when the title doesn't say it ("Fix").
  */
 @Composable
 fun NavigationRow(
@@ -325,15 +326,19 @@ fun NavigationRow(
     enabled: Boolean = true,
     leading: (@Composable () -> Unit)? = null,
     warning: Boolean = false,
+    onClickLabel: String? = null,
 ) {
     val shown = if (warning) warningText(summary) else summary
-    RowBox(title, modifier) { Preference(model(title, shown, iconOf(icon, leading, warning), enabled, onClick)) }
+    RowBox(title, modifier) {
+        Preference(model(title, shown, iconOf(icon, leading, warning), enabled, onClick), onClickLabel = onClickLabel)
+    }
 }
 
 /**
  * Does something right here (copy, show, bring back) instead of opening a screen: SPA's Preference. [onClickLabel] says
  * what a tap does when the title doesn't ("Copy", "Import": TalkBack "double tap to copy" instead of "to activate").
- * The caller confirms the result (a haptic, a changed summary).
+ * The caller confirms the result (a haptic, a changed summary). [warning] as in [NavigationRow] (a failed step whose
+ * way on is this action).
  */
 @Composable
 fun ActionRow(
@@ -345,8 +350,12 @@ fun ActionRow(
     enabled: Boolean = true,
     leading: (@Composable () -> Unit)? = null,
     onClickLabel: String? = null,
+    warning: Boolean = false,
 ) {
-    RowBox(title, modifier) { Preference(model(title, summary, iconOf(icon, leading), enabled, onClick), onClickLabel = onClickLabel) }
+    val shown = if (warning) warningText(summary) else summary
+    RowBox(title, modifier) {
+        Preference(model(title, shown, iconOf(icon, leading, warning), enabled, onClick), onClickLabel = onClickLabel)
+    }
 }
 
 /**

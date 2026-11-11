@@ -149,15 +149,15 @@ private fun TipCard(
 /**
  * Something to set up or fix, SPA's SettingsBanner (the stock Settings app's), expressive layout: the icon in [tint]
  * (the accent colour; the error colour for a warning), the title with the round dismiss button when [onDismiss] isn't
- * null, the text, an optional [note] in the error colour (why the last try failed), [below] (extra content), then the
+ * null (no [title] or no [text]: a state in one sentence), the text, an optional [note] in the error colour (why the last try failed), [below] (extra content), then the
  * actions as text buttons at the end ([secondary] first). Announced politely by TalkBack when it appears.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsBannerCard(
     @DrawableRes icon: Int,
-    title: String,
-    text: String,
+    title: String?,
+    text: String?,
     modifier: Modifier = Modifier,
     action: String? = null,
     onAction: () -> Unit = {},
@@ -191,8 +191,8 @@ fun SettingsBannerCard(
                             Modifier.padding(start = SettingsDimension.paddingLarge),
                             verticalArrangement = Arrangement.spacedBy(SettingsDimension.itemPaddingAround),
                         ) {
-                            BannerTitleHeader(title, onDismiss)
-                            SettingsBody(text)
+                            if (title != null) BannerTitleHeader(title, onDismiss)
+                            text?.let { SettingsBody(it) }
                             note?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
                         }
                     }

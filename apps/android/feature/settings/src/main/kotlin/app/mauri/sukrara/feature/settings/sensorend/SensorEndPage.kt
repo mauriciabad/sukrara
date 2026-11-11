@@ -42,8 +42,11 @@ import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.designsystem.dialog.DialogButtons
+import app.mauri.sukrara.designsystem.dialog.DialogRadio
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
+import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SectionButton
@@ -55,6 +58,10 @@ import app.mauri.sukrara.feature.settings.SchemaPrefs
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.settings.SettingsSpec
+import com.android.settingslib.spa.framework.theme.SettingsDimension
+import com.android.settingslib.spa.widget.dialog.SettingsDialog
+import com.android.settingslib.spa.widget.ui.SettingsBody
+import com.android.settingslib.spa.widget.ui.SettingsDialogItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -354,7 +361,10 @@ internal fun TimeDialog(
     )
 }
 
-/** A reminder's dialog: days before (radio buttons), its time (opens the time picker), Remove / Cancel / Save. */
+/**
+ * A reminder's dialog, SPA's SettingsDialog: days before (ListPreference's radio rows), its time (a row that opens the
+ * time picker), then *Remove* (an existing reminder, in the error colour), *Cancel* and *Save*.
+ */
 @Composable
 private fun ReminderDialog(
     r: SensorReminder?,
@@ -365,49 +375,47 @@ private fun ReminderDialog(
     var days by rememberSaveable { mutableStateOf(r?.daysBefore ?: 1) }
     var minute by rememberSaveable { mutableStateOf(r?.minuteOfDay ?: (9 * 60)) }
     var picking by remember { mutableStateOf(false) }
-    AlertDialog(
+    val haptics = rememberHaptics()
+    SettingsDialog(
+        title = stringResource(if (r == null) R.string.st_sensorend_reminder_new else R.string.st_sensorend_reminder_edit),
         onDismissRequest = onClose,
-        title = { Text(stringResource(if (r == null) R.string.st_sensorend_reminder_new else R.string.st_sensorend_reminder_edit)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Column(Modifier.selectableGroup()) {
-                    for (d in 0..SensorReminder.MAX_DAYS) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(d == days, role = Role.RadioButton) { days = d }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = d == days, onClick = null)
-                            Text(reminderDays(d), Modifier.padding(start = 16.dp))
-                        }
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            Column(Modifier.selectableGroup()) {
+                for (d in 0..SensorReminder.MAX_DAYS) {
+                    DialogRadio(reminderDays(d), null, d == days, enabled = true) {
+                        if (d != days) haptics.tick()
+                        days = d
                     }
                 }
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                Column(Modifier.fillMaxWidth().clickable(role = Role.Button) { picking = true }.padding(vertical = 8.dp)) {
-                    Text(stringResource(R.string.st_sensorend_time), style = MaterialTheme.typography.bodyLarge)
-                    Text(ClockText.minuteOfDay(minute), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onSave(SensorReminder(days, minute))
-                onClose()
-            }) { Text(stringResource(R.string.st_sensorend_save)) }
-        },
-        dismissButton = {
-            Row {
-                if (r != null) {
-                    TextButton(onClick = {
-                        onRemove()
-                        onClose()
-                    }) { Text(stringResource(R.string.st_sensorend_remove), color = MaterialTheme.colorScheme.error) }
-                }
-                TextButton(onClick = onClose) { Text(stringResource(R.string.st_sensorend_cancel)) }
+            HorizontalDivider(Modifier.padding(vertical = SettingsDimension.paddingSmall))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button) { picking = true }
+                    .padding(SettingsDimension.dialogItemPadding),
+            ) {
+                SettingsDialogItem(stringResource(R.string.st_sensorend_time))
+                SettingsBody(ClockText.minuteOfDay(minute))
             }
-        },
-    )
+            DialogButtons(
+                dismiss = stringResource(R.string.st_sensorend_cancel),
+                onDismiss = onClose,
+                confirm = stringResource(R.string.st_sensorend_save),
+                onConfirm = {
+                    haptics.confirm()
+                    onSave(SensorReminder(days, minute))
+                    onClose()
+                },
+                other = r?.let { stringResource(R.string.st_sensorend_remove) },
+                otherDanger = true,
+                onOther = {
+                    onRemove()
+                    onClose()
+                },
+            )
+        }
+    }
     if (picking) TimeDialog(stringResource(R.string.st_sensorend_time), minute, onClose = { picking = false }) { minute = it }
 }

@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,7 +40,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
+import app.mauri.sukrara.designsystem.dialog.DialogButtons
+import app.mauri.sukrara.designsystem.dialog.DialogRadio
 import app.mauri.sukrara.designsystem.errors.UserErrors
+import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -49,6 +55,8 @@ import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
+import com.android.settingslib.spa.framework.theme.SettingsDimension
+import com.android.settingslib.spa.widget.dialog.SettingsDialog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -251,11 +259,38 @@ private fun SiteDialog(
     val canKeep = state.credential == kind && site.problem == null && site.root == state.settings.url
     val ready = url.isNotBlank() && site.problem == null && (credential.isNotBlank() || canKeep)
     val api = state.settings.api
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.in_ns_dialog_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val haptics = rememberHaptics()
+    val result =
+        when (test) {
+            NsTestUi.Idle -> {
+                null
+            }
+
+            NsTestUi.Testing -> {
+                stringResource(R.string.in_ns_testing)
+            }
+
+            is NsTestUi.Done -> {
+                when (val r = test.result) {
+                    is NsTestResult.Ok -> {
+                        r.version?.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.in_ns_test_ok, it) }
+                            ?: stringResource(R.string.in_ns_test_ok_plain)
+                    }
+
+                    NsTestResult.AuthFailed -> {
+                        stringResource(R.string.in_ns_test_auth)
+                    }
+
+                    is NsTestResult.Failed -> {
+                        stringResource(R.string.in_ns_test_failed, stringResource(r.why.text))
+                    }
+                }
+            }
+        }
+    // SPA's SettingsDialog: the fields with the dialog's padding, the credential kind as ListPreference's radio rows
+    SettingsDialog(title = stringResource(R.string.in_ns_dialog_title), onDismissRequest = onClose) {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            Column(Modifier.padding(SettingsDimension.dialogItemPadding)) {
                 OutlinedTextField(
                     url,
                     {
@@ -269,35 +304,27 @@ private fun SiteDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Column(Modifier.selectableGroup()) {
-                    for (k in NsCredentialKind.entries) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .selectable(kind == k, role = Role.RadioButton) {
-                                    kind = k
-                                    actions.resetTest()
-                                },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(kind == k, onClick = null)
-                            Text(
-                                stringResource(
-                                    if (k ==
-                                        NsCredentialKind.Token
-                                    ) {
-                                        R.string.in_ns_dialog_token
-                                    } else {
-                                        R.string.in_ns_dialog_secret
-                                    },
-                                ),
-                                Modifier.semantics {},
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
+            }
+            Column(Modifier.selectableGroup()) {
+                for (k in NsCredentialKind.entries) {
+                    val label =
+                        stringResource(
+                            if (k ==
+                                NsCredentialKind.Token
+                            ) {
+                                R.string.in_ns_dialog_token
+                            } else {
+                                R.string.in_ns_dialog_secret
+                            },
+                        )
+                    DialogRadio(label, null, kind == k, enabled = true) {
+                        if (kind != k) haptics.tick()
+                        kind = k
+                        actions.resetTest()
                     }
                 }
+            }
+            Column(Modifier.padding(SettingsDimension.dialogItemPadding), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     credential,
                     {
@@ -311,33 +338,6 @@ private fun SiteDialog(
                     supportingText = if (canKeep) ({ Text(stringResource(R.string.in_ns_dialog_keep)) }) else null,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                val result =
-                    when (test) {
-                        NsTestUi.Idle -> {
-                            null
-                        }
-
-                        NsTestUi.Testing -> {
-                            stringResource(R.string.in_ns_testing)
-                        }
-
-                        is NsTestUi.Done -> {
-                            when (val r = test.result) {
-                                is NsTestResult.Ok -> {
-                                    r.version?.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.in_ns_test_ok, it) }
-                                        ?: stringResource(R.string.in_ns_test_ok_plain)
-                                }
-
-                                NsTestResult.AuthFailed -> {
-                                    stringResource(R.string.in_ns_test_auth)
-                                }
-
-                                is NsTestResult.Failed -> {
-                                    stringResource(R.string.in_ns_test_failed, stringResource(r.why.text))
-                                }
-                            }
-                        }
-                    }
                 if (result != null) {
                     Text(
                         result,
@@ -352,22 +352,20 @@ private fun SiteDialog(
                     )
                 }
             }
-        },
-        confirmButton = {
-            Row {
-                TextButton(
-                    onClick = { actions.test(url, kind, credential.ifBlank { null }, api) },
-                    enabled =
-                        ready && test != NsTestUi.Testing,
-                ) {
-                    Text(stringResource(R.string.in_ns_dialog_test))
-                }
-                TextButton(onClick = {
+            DialogButtons(
+                dismiss = stringResource(R.string.in_cancel),
+                onDismiss = onClose,
+                confirm = stringResource(R.string.in_ns_dialog_save),
+                confirmEnabled = ready,
+                onConfirm = {
+                    haptics.confirm()
                     actions.save(url, kind, credential.ifBlank { null }, api)
                     onClose()
-                }, enabled = ready) { Text(stringResource(R.string.in_ns_dialog_save)) }
-            }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.in_cancel)) } },
-    )
+                },
+                other = stringResource(R.string.in_ns_dialog_test),
+                otherEnabled = ready && test != NsTestUi.Testing,
+                onOther = { actions.test(url, kind, credential.ifBlank { null }, api) },
+            )
+        }
+    }
 }

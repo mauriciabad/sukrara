@@ -123,7 +123,12 @@ fun MuteAllStrip(
     val words = rememberAlertWords()
     val now = rememberCountdownNow(alerts.mutedUntil, clock::now)
     val text = MuteText.muteAll(alerts, now, words) ?: return
-    StateStrip(text, listOf(stringResource(R.string.st_unmute) to onUnmute, stringResource(R.string.st_change_time) to onChangeTime))
+    StateStrip(
+        DsR.drawable.ds_ic_notifications_off,
+        text,
+        listOf(stringResource(R.string.st_unmute) to onUnmute, stringResource(R.string.st_change_time) to onChangeTime),
+        headline = true,
+    )
 }
 
 /** The Alerts page: main switch, Mute all, each alert, quiet rules, notification actions, sounds, threshold review. */

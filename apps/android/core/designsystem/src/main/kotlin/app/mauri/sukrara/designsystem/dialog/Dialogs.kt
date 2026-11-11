@@ -6,6 +6,7 @@ package app.mauri.sukrara.designsystem.dialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,10 +18,12 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -90,7 +94,7 @@ fun <T> ChoiceDialog(
                 Box(Modifier.padding(SettingsDimension.dialogItemPadding)) { SettingsBody(message) }
             }
             for (o in options) {
-                DialogRadio(o.label, o.sub, o.value == selected, o.enabled, o.trailing) {
+                DialogRadio(o.label, o.sub, o.value == selected, o.enabled, trailing = o.trailing) {
                     haptics.confirm()
                     onChoose(o.value)
                     onClose()
@@ -103,18 +107,21 @@ fun <T> ChoiceDialog(
 
 /**
  * SPA ListPreference's radio row (its padding, 16 dp gap, SettingsDialogItem and SettingsBody): the whole row selects
- * (TalkBack: "radio button, selected"); [trailing] sits at the row's end, outside the selection (a ▶ preview).
+ * (TalkBack: "radio button, selected"); [trailing] sits at the row's end, outside the selection (a ▶ preview). For a
+ * choice inside a dialog of its own (SPA's SettingsDialog): put a choice's rows in a `Modifier.selectableGroup()`.
  */
+@Suppress("ktlint:compose:lambda-param-event-trailing")
 @Composable
-internal fun DialogRadio(
+fun DialogRadio(
     text: String,
     sub: String?,
     selected: Boolean,
     enabled: Boolean,
+    modifier: Modifier = Modifier,
     trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Row(
             Modifier
                 .weight(1f)
@@ -140,19 +147,34 @@ internal fun DialogRadio(
     }
 }
 
-/** SPA SettingsAlertDialog's expressive buttons at the dialog's end: the outlined dismiss, then the filled confirm. */
+/**
+ * SPA SettingsAlertDialog's expressive buttons at the dialog's end: the outlined dismiss, then the filled confirm.
+ * [other]: a third action before them as a text button (*Test*, *Remove*), in the error colour when [otherDanger]; the
+ * buttons wrap at a large font.
+ */
 @Composable
-internal fun DialogButtons(
+fun DialogButtons(
     dismiss: String,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     confirm: String? = null,
     confirmEnabled: Boolean = true,
     onConfirm: () -> Unit = {},
+    other: String? = null,
+    otherEnabled: Boolean = true,
+    otherDanger: Boolean = false,
+    onOther: () -> Unit = {},
 ) {
-    Row(
-        Modifier.fillMaxWidth().padding(SettingsDimension.dialogItemPadding),
+    FlowRow(
+        modifier.fillMaxWidth().padding(SettingsDimension.dialogItemPadding),
         horizontalArrangement = Arrangement.spacedBy(SettingsSpace.extraSmall4, Alignment.End),
+        verticalArrangement = Arrangement.spacedBy(SettingsSpace.extraSmall4),
     ) {
+        if (other != null) {
+            TextButton(onClick = onOther, enabled = otherEnabled) {
+                Text(other, color = if (otherDanger) MaterialTheme.colorScheme.error else Color.Unspecified)
+            }
+        }
         OutlinedButton(onClick = onDismiss) { Text(dismiss) }
         if (confirm != null) Button(onClick = onConfirm, enabled = confirmEnabled) { Text(confirm) }
     }

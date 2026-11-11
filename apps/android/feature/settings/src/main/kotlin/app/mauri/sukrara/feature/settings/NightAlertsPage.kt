@@ -74,8 +74,10 @@ fun NightAlertsContent(
     SettingsPage(stringResource(R.string.st_night_title), onBack) {
         ui.alerts.nightUntil?.let { until ->
             StateStrip(
+                DsR.drawable.ds_ic_bedtime,
                 MuteText.night(until.epochSecond, words) { ClockText.time(it) },
                 listOf(stringResource(R.string.st_night_turn_off) to { edit(NightEdits.on(false)) }),
+                headline = true,
             )
         }
         header()

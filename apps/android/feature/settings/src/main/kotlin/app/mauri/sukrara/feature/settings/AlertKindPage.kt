@@ -68,7 +68,9 @@ fun QuietStrip(
             null -> stringResource(R.string.st_remind_as_usual) to { actions.remindAsUsual(kind) }
             else -> stringResource(R.string.st_alert_anyway) to { actions.unmute(kind) }
         }
-    StateStrip(text, listOf(exit))
+    // muted: the bell crossed out; quiet after a treatment, falling back or reminding less: snoozed
+    val icon = if (quiet.reason == AlertQuietReason.Muted) DsR.drawable.ds_ic_notifications_off else DsR.drawable.ds_ic_snooze
+    StateStrip(icon, text, listOf(exit), headline = true)
 }
 
 /** One alert's page: on, when it alerts, how often it reminds, like an alarm, its sound. */

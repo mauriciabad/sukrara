@@ -169,11 +169,16 @@ private fun StateNotice(
     val context = LocalContext.current
     val pair = stringResource(R.string.st_sensor_pair_new) to actions.pairNewSensor
     if (state.stopped) {
-        StateStrip(stringResource(R.string.st_sensor_stopped_text), listOf(stringResource(R.string.st_sensor_resume) to actions.resume))
+        StateStrip(
+            DsR.drawable.ds_ic_pause_circle,
+            stringResource(R.string.st_sensor_stopped_text),
+            listOf(stringResource(R.string.st_sensor_resume) to actions.resume),
+        )
         return
     }
     if (state.link == SourceLink.JugglucoRefused) {
         StateStrip(
+            DsR.drawable.ds_ic_key,
             stringResource(R.string.st_sensor_juggluco_refused_text),
             listOf(stringResource(R.string.st_sensor_juggluco_secret_change) to editSecret),
         )
@@ -182,58 +187,84 @@ private fun StateNotice(
     if (state.link == SourceLink.JugglucoUnreachable) {
         val open = context.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE)
         val openJuggluco = stringResource(R.string.st_sensor_open_juggluco) to { open?.let(context::startActivity) ?: Unit }
-        StateStrip(stringResource(R.string.st_sensor_juggluco_unreachable_text), listOfNotNull(openJuggluco.takeIf { open != null }))
+        StateStrip(
+            DsR.drawable.ds_ic_link_off,
+            stringResource(R.string.st_sensor_juggluco_unreachable_text),
+            listOfNotNull(openJuggluco.takeIf { open != null }),
+            warning = true,
+        )
         return
     }
     val skipped = state.family?.skippedOld ?: 0
     val running = state.state is SensorState.Active || state.state is SensorState.WarmingUp
     if (running && state.link == SourceLink.Searching && skipped > 0) {
         val text = pluralStringResource(R.plurals.st_sensor_skipped_old, skipped, skipped, state.family?.label.orEmpty())
-        StateStrip(text, listOf(pair))
+        StateStrip(DsR.drawable.ds_ic_dia_sensor, text, listOf(pair))
         return
     }
     if (running && state.link == SourceLink.NoValueSensorError) {
-        StateStrip(stringResource(R.string.st_sensor_status_no_value_error), listOf(pair))
+        StateStrip(DsR.drawable.ds_ic_error, stringResource(R.string.st_sensor_status_no_value_error), listOf(pair), warning = true)
         return
     }
     when (val s = state.state) {
         SensorState.None -> {
-            if (state.source == SourceChoice.Libre3Direct) StateStrip(stringResource(R.string.st_sensor_none_text), listOf(pair))
+            if (state.source ==
+                SourceChoice.Libre3Direct
+            ) {
+                StateStrip(DsR.drawable.ds_ic_dia_sensor, stringResource(R.string.st_sensor_none_text), listOf(pair))
+            }
         }
 
         SensorState.Ended -> {
-            StateStrip(stringResource(R.string.st_sensor_ended_text), listOf(pair))
+            StateStrip(DsR.drawable.ds_ic_dia_sensor, stringResource(R.string.st_sensor_ended_text), listOf(pair))
         }
 
         is SensorState.ActionNeeded -> {
             when (s.action) {
                 SensorAction.SignInLibreView -> {
                     StateStrip(
+                        DsR.drawable.ds_ic_account_circle,
                         stringResource(R.string.st_sensor_sign_in_needed),
                         listOf(stringResource(R.string.st_sensor_sign_in) to actions.signIn),
                     )
                 }
 
                 SensorAction.GrantBluetooth -> {
-                    StateStrip(stringResource(R.string.st_sensor_bluetooth_permission_text), listOf(pair))
+                    StateStrip(
+                        DsR.drawable.ds_ic_bluetooth,
+                        stringResource(R.string.st_sensor_bluetooth_permission_text),
+                        listOf(pair),
+                        warning = true,
+                    )
                 }
 
                 SensorAction.ScanSensor -> {
-                    StateStrip(stringResource(R.string.st_sensor_scan_again_text), listOf(pair))
+                    StateStrip(DsR.drawable.ds_ic_nfc, stringResource(R.string.st_sensor_scan_again_text), listOf(pair), warning = true)
                 }
 
                 SensorAction.TakeOver -> {
-                    StateStrip(stringResource(R.string.st_sensor_taken_over_text), listOf(pair))
+                    StateStrip(
+                        DsR.drawable.ds_ic_mobile_off,
+                        stringResource(R.string.st_sensor_taken_over_text),
+                        listOf(pair),
+                        warning = true,
+                    )
                 }
 
                 SensorAction.PairAgain -> {
-                    StateStrip(stringResource(R.string.st_sensor_pair_again_text), listOf(pair))
+                    StateStrip(
+                        DsR.drawable.ds_ic_dia_sensor,
+                        stringResource(R.string.st_sensor_pair_again_text),
+                        listOf(pair),
+                        warning = true,
+                    )
                 }
             }
         }
 
         SensorState.BluetoothOff -> {
             StateStrip(
+                DsR.drawable.ds_ic_bluetooth,
                 stringResource(R.string.st_sensor_bluetooth_off_text),
                 listOf(
                     stringResource(R.string.st_sensor_open_bluetooth) to
@@ -245,6 +276,7 @@ private fun StateNotice(
         SensorState.CoreMissing -> {
             if (state.source == SourceChoice.Libre3Direct) {
                 StateStrip(
+                    DsR.drawable.ds_ic_warning,
                     stringResource(R.string.st_sensor_core_missing_text),
                     listOf(stringResource(R.string.st_sensor_to_juggluco_confirm) to useJuggluco),
                 )
