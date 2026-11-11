@@ -214,12 +214,17 @@ class AlertRuntime(
 
     /**
      * #39: the person tapped or swiped an alert, or opened the app: an answer to a very low showing on this phone (the
-     * followers' escalation doesn't come, or is withdrawn). [kind] null = whatever alert is up (the app opened).
+     * followers' escalation doesn't come, or is withdrawn). [kind] null = whatever alert is up (the app opened). In a
+     * process Android had stopped (the swipe's broadcast or the app's start brought it back) the saved alerts are read
+     * first: an answer is never lost to a runtime that hasn't started yet. A store that fails is logged (the app's
+     * start must never crash on it).
      */
-    suspend fun acknowledge(kind: String? = null) {
-        val k = kind?.let(AlertKind::fromWire) ?: firing[AlertGroup.LEVEL]?.kind ?: return
-        if (machine?.role == AlertRole.WEARER) process(AlertInput.Acknowledge(k))
-    }
+    suspend fun acknowledge(kind: String? = null) =
+        safely {
+            start()
+            val k = kind?.let(AlertKind::fromWire) ?: firing[AlertGroup.LEVEL]?.kind ?: return@safely
+            if (machine?.role == AlertRole.WEARER) process(AlertInput.Acknowledge(k))
+        }
 
     /**
      * Shows [kind]'s notification again without sound: a *Mute…* reply that wasn't a length changes nothing, and the

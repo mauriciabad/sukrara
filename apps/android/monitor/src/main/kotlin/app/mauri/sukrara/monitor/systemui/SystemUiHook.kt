@@ -19,6 +19,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
+import android.text.format.DateFormat
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -26,6 +27,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import app.mauri.sukrara.core.data.settings.HookPosition
+import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
 import app.mauri.sukrara.graph.ValueGlyphs
@@ -702,6 +704,9 @@ class SystemUiHook : XposedModule() {
         if (receiverRegistered) return
         receiverRegistered = true
         val app = ctx.applicationContext
+        // a warming-up sensor's ready time in the phone's 12/24-hour setting, read live (#166): the app installs it in
+        // its own process, System UI's needs its own
+        Clock.hour24Source = { DateFormat.is24HourFormat(app) }
         app.registerReceiver(
             object : BroadcastReceiver() {
                 override fun onReceive(

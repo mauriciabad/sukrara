@@ -43,6 +43,17 @@ class RequestNotifier(private val notifications: RequestNotifications) {
         notifications.cancel()
         shown = null
     }
+
+    /**
+     * [follower]'s request was answered from its notification: the notification goes, also in a process the tap just
+     * started (which never showed it, so [onState] can't know). A newer request's notification stays.
+     */
+    @Synchronized
+    fun onAnswered(follower: String) {
+        if (shown != null && shown != follower) return
+        notifications.cancel()
+        shown = null
+    }
 }
 
 /**

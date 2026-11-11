@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -23,6 +24,7 @@ import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.monitor.service.StartReason
 import app.mauri.sukrara.sensor.pairing.PairingLoad
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -42,6 +44,9 @@ class MainActivity : ComponentActivity() {
     /** Health Connect asked for the privacy rationale, until the navigation has opened the Health Connect page. */
     private var openHealth by mutableStateOf(false)
 
+    /** The 24-hour setting and time zone the screens show times in ([Clock.signature]), read again on every return. */
+    private var clockLook by mutableStateOf(Clock.signature())
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -56,7 +61,7 @@ class MainActivity : ComponentActivity() {
             // the person's glucose unit: every number the screens show and every number input follows it
             val unit by remember { graph.graphConfig.map { it.unit }.distinctUntilChanged() }.collectAsState(GlucoseUnit.MGDL)
             SukraraTheme {
-                CompositionLocalProvider(LocalGlucoseUnit provides unit) {
+                CompositionLocalProvider(LocalGlucoseUnit provides unit, LocalClockLook provides clockLook) {
                     SukraraNavigation(
                         graph,
                         deepLink,
@@ -101,6 +106,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // *Use 24-hour format* or the time zone changed while Sukrara was away (#166): every time shown redraws now
+        clockLook = Clock.signature()
         // permissions and the checklist change outside the app
         graph.home.refresh()
         // opening the app is an allowed foreground-service start: (re)start monitoring if something is set up; not
@@ -113,6 +120,12 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { graph.alerts.runtime.acknowledge() }
     }
 }
+
+/**
+ * What the screens' clock times were drawn with ([Clock.signature]). Nothing reads it: a static local, so a new value
+ * recomposes everything below (the remembered state stays) and every time shown formats again in the new setting.
+ */
+private val LocalClockLook = staticCompositionLocalOf { "" }
 
 /**
  * The pen page a pen read card's *Check it* / *Review* asks for (only the wearer's phone has pens; Settings checks
