@@ -70,8 +70,10 @@ class StatusBarViewModel(
         RootActions(
             setOn = { on ->
                 set(SurfaceSettings.RootValue, on)
-                // turning it on is the moment to ask for root
-                if (on) viewModelScope.launch { runCatching { systemAccess?.checkRoot() } }
+                // turning it on is the moment to ask for root (Magisk's prompt; KernelSU / APatch answer at once)
+                if (on && systemAccess?.state?.value?.granted == false) {
+                    viewModelScope.launch { runCatching { systemAccess.checkRoot() } }
+                }
             },
             setPosition = { set(SurfaceSettings.RootPosition, it) },
             setColor = { set(SurfaceSettings.RootColor, it) },
@@ -87,15 +89,16 @@ class StatusBarViewModel(
         )
 
     /**
-     * Back on the page: ask LSPosed again, and root only while the value is on (`su` shows KernelSU's / Magisk's
-     * prompt; someone who never turned it on isn't asked).
+     * Back on the page: look for signs of root and ask LSPosed again (no `su`); ask for root again only while the value
+     * is on and root isn't granted yet: the person may come back from allowing Sukrara in their root manager. Someone
+     * who never turned it on is never asked; granted root isn't asked again (Magisk would toast each time).
      */
     fun refresh() {
         val access = systemAccess ?: return
-        viewModelScope.launch {
-            if (settings.flow(SurfaceSettings.RootValue).first()) runCatching { access.checkRoot() }
-        }
         access.refresh()
+        viewModelScope.launch {
+            if (!access.state.value.granted && settings.flow(SurfaceSettings.RootValue).first()) runCatching { access.checkRoot() }
+        }
     }
 
     private fun <T> set(

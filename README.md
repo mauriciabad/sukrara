@@ -66,7 +66,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   It shows on the lock screen without unlocking (Settings › Status bar › *Glucose on the lock screen* turns that off).
   Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status
   bar); on Android 17 the Live Update expands to the value styled by range.
-- **On a rooted phone** (KernelSU / Magisk): the value and its arrow as **system icons** beside Wi-Fi and the battery;
+- **On a rooted phone** (KernelSU, Magisk or APatch; Sukrara asks for root when you turn it on and says how to allow
+  it): the value and its arrow as **system icons** beside Wi-Fi and the battery;
   with Sukrara's **LSPosed module** in System UI also as text beside the clock, in its range colour, placed next to the
   icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root).
 - **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,

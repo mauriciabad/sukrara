@@ -22,6 +22,7 @@ import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessState
@@ -215,7 +216,7 @@ class SettingsIndexTest {
                 StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {
                     RootStatusBarSection(
                         RootSettings(on = true, position = HookPosition.DEFAULT, color = true, hideIcon = true),
-                        SystemAccessState(root = true, module = ModuleState.Active, framework = "LSPosed"),
+                        SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed"),
                         busy = false,
                         problem = null,
                         choosing = false,

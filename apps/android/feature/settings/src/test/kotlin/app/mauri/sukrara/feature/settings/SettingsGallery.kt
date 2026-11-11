@@ -27,6 +27,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.SensorState
@@ -389,24 +390,48 @@ class SettingsGallery {
             "statusbar-lock-screen-off" to {
                 StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true, lockScreen = false), true, {}, {}, {}, {})
             },
+            // #178: never asked (the value off), asking, root on the phone but not allowed, refused
+            "statusbar-root-unasked" to {
+                StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {
+                    root(rootOn.copy(on = false), SystemAccessState(rootSeen = true, module = ModuleState.Restart))
+                }
+            },
+            "statusbar-root-asking" to {
+                StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {
+                    root(rootOn, SystemAccessState(asking = true, rootSeen = true, module = ModuleState.Restart))
+                }
+            },
+            "statusbar-root-not-allowed" to {
+                StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {
+                    root(rootOn, noRoot.copy(rootSeen = true, module = ModuleState.Restart))
+                }
+            },
+            "statusbar-root-refused" to {
+                StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {
+                    root(rootOn, noRoot.copy(root = RootAccess.Refused, rootSeen = true))
+                }
+            },
             "statusbar-root-icons" to {
                 StatusBarContent(StatusBarPrefs(chip = false, numberIcon = true), true, {}, {}, {}, {}) {
-                    root(rootOn, SystemAccessState(root = true, module = ModuleState.Missing, framework = null))
+                    root(rootOn, SystemAccessState(root = RootAccess.Granted, module = ModuleState.Missing, framework = null))
                 }
             },
             "statusbar-root-restart" to {
                 StatusBarContent(StatusBarPrefs(chip = false, numberIcon = true), true, {}, {}, {}, {}) {
-                    root(rootOn.copy(position = HookPosition.AFTER_CLOCK), SystemAccessState(root = true, module = ModuleState.Update))
+                    root(
+                        rootOn.copy(position = HookPosition.AFTER_CLOCK),
+                        SystemAccessState(root = RootAccess.Granted, module = ModuleState.Update),
+                    )
                 }
             },
             "statusbar-root-active" to {
                 StatusBarContent(StatusBarPrefs(chip = false, numberIcon = true), true, {}, {}, {}, {}) {
-                    root(rootOn, SystemAccessState(root = true, module = ModuleState.Active, framework = "LSPosed 2.0"))
+                    root(rootOn, SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed 2.0"))
                 }
             },
             "statusbar-root-placement" to {
                 StatusBarContent(StatusBarPrefs(chip = false, numberIcon = true), true, {}, {}, {}, {}) {
-                    root(rootOn, SystemAccessState(root = true, module = ModuleState.Missing), choosing = true)
+                    root(rootOn, SystemAccessState(root = RootAccess.Granted, module = ModuleState.Missing), choosing = true)
                 }
             },
             "sensorend" to {
@@ -521,12 +546,14 @@ class SettingsGallery {
                     "from-custom",
                     "overview-search",
                     "advanced",
+                    "statusbar-root-unasked",
+                    "statusbar-root-not-allowed",
                 ),
         )
 }
 
 private val rootOn = RootSettings(on = true, position = HookPosition.DEFAULT, color = true, hideIcon = true)
-private val noRoot = SystemAccessState(root = false, module = ModuleState.Missing)
+private val noRoot = SystemAccessState(root = RootAccess.Missing, module = ModuleState.Missing)
 
 /** The status bar page's root section with made-up access states (no root, no LSPosed: pictures only). */
 @Composable

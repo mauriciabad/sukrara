@@ -132,7 +132,7 @@ class HomeModule(
         scope.launch {
             systemAccess.collect { a ->
                 // as Settings › Status bar: only with root confirmed (asked while the status-bar value is on)
-                val restart = a.module.takeIf { it.needsRestart && a.root == true }
+                val restart = a.module.takeIf { it.needsRestart && a.granted }
                 env.update { it.copy(systemUiRestart = restart, build = build) }
             }
         }

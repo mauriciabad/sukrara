@@ -255,7 +255,10 @@ object NoSystemAccess : app.mauri.sukrara.core.model.SystemAccessPort {
     override val state =
         kotlinx.coroutines.flow.MutableStateFlow(
             app.mauri.sukrara.core.model
-                .SystemAccessState(root = false, module = app.mauri.sukrara.core.model.ModuleState.Missing),
+                .SystemAccessState(
+                    root = app.mauri.sukrara.core.model.RootAccess.Missing,
+                    module = app.mauri.sukrara.core.model.ModuleState.Missing,
+                ),
         )
 
     override suspend fun checkRoot() = Unit

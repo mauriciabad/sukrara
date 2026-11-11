@@ -105,7 +105,7 @@ class RootStatusBar(
                 graphConfig.map { it.bands to it.unit },
                 access.state,
                 ticks,
-            ) { s, p, (bands, unit), a, _ -> Input(s, p, bands, a.root == true, unit) }
+            ) { s, p, (bands, unit), a, _ -> Input(s, p, bands, a.granted, unit) }
                 .conflate()
                 .catch { Log.w(TAG, "inputs failed: ${it.javaClass.simpleName}") }
                 .collect {

@@ -11,7 +11,7 @@ import app.mauri.sukrara.monitor.RootInputs
 class SystemUiRoot private constructor(
     inputs: RootInputs,
 ) : RootFeatures {
-    private val systemAccess = SystemAccess(inputs.io)
+    private val systemAccess = SystemAccess(inputs.io, inputs.scope)
 
     private val statusBar =
         RootStatusBar(

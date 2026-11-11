@@ -7,29 +7,56 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.File
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 
+/** What one `su -c` run gave: [started] false = `su` couldn't be started (not there for Sukrara); [exit] null = no answer in time. */
+class SuResult(
+    val exit: Int?,
+    val output: String,
+    val started: Boolean = true,
+)
+
+/** Runs a command with `su`, waiting up to `waitS` (the root prompt may be showing). Tests pass a fake. */
+fun interface SuShell {
+    fun run(
+        cmd: String,
+        waitS: Long,
+    ): SuResult
+}
+
 /**
- * Root for Sukrara and the Sukrara LSPosed module in System UI, as the status-bar and lock-screen pages and the home
- * card need them. Root: `su -c id -u` (KernelSU / Magisk ask the person the first time). The module: LSPosed's own
- * report (libxposed service: Sukrara enabled, System UI in its scope) plus the module's hello from inside System UI,
- * which carries the code it runs ([HookCode.VERSION]). LSPosed's report is advisory (it only decides which hint shows).
+ * Root for Sukrara and the Sukrara LSPosed module in System UI, as the status-bar page and the home card need them.
+ * Root: `su -c id -u`, only when the person asks for a root feature or one they turned on runs ([checkRoot]); Magisk
+ * shows its prompt then, KernelSU and APatch never prompt and hide `su` from apps they haven't allowed. Signs of root
+ * that need no `su` ([SystemAccessState.rootSeen]: LSPosed, the module's hello, a visible `su` file) only pick the hint.
+ * The module: LSPosed's own report (libxposed service: Sukrara enabled, System UI in its scope) plus the module's hello
+ * from inside System UI, which carries the code it runs ([HookCode.VERSION]). LSPosed's report is advisory too.
  */
 class SystemAccess(
     private val io: CoroutineDispatcher,
+    /** Where [refresh] looks for a `su` file (off the main thread). */
+    private val scope: CoroutineScope,
+    private val shell: SuShell = SuShell(::su),
+    /** Whether a file exists (the `su` paths): tests pass a fake. */
+    private val exists: (String) -> Boolean = { File(it).exists() },
 ) : SystemAccessPort {
     private val _state = MutableStateFlow(SystemAccessState())
     override val state: StateFlow<SystemAccessState> = _state
@@ -38,6 +65,12 @@ class SystemAccess(
 
     /** The module's hello since this app process started: the code System UI runs (null = no hello yet). */
     @Volatile private var helloCode: String? = null
+
+    /** A `su` file is visible to Sukrara (looked for off the main thread: [checkRoot], [lookForSu]). */
+    @Volatile private var suFile = false
+
+    /** One root request at a time: a second one while it runs waits for nothing and changes nothing. */
+    private val requesting = AtomicBoolean(false)
 
     private var listening = false
 
@@ -61,6 +94,7 @@ class SystemAccess(
             )
         }.onFailure { Log.w(TAG, "LSPosed listener: ${it.javaClass.simpleName}") }
         Handler(Looper.getMainLooper()).postDelayed({ refreshModule(checked = true) }, 3_000)
+        scope.launch { lookForSu() }
     }
 
     /** System UI's module said hello with the code it runs. */
@@ -70,15 +104,34 @@ class SystemAccess(
     }
 
     override suspend fun checkRoot() {
-        val ok = withContext(io) { su("id -u", 5).let { it.exit == 0 && it.output.trim() == "0" } }
-        _state.update { it.copy(root = ok) }
+        if (!requesting.compareAndSet(false, true)) return
+        try {
+            _state.update { it.copy(asking = true) }
+            // as long as the restart's: the person may be reading Magisk's prompt
+            val (r, file) = withContext(io) { shell.run("id -u", SU_WAIT_S) to suSeen(exists) }
+            suFile = file
+            _state.update { it.copy(root = rootOf(r), rootSeen = seen(), asking = false) }
+        } finally {
+            // cancelled while asking (the page closed): the last answer stays
+            _state.update { if (it.asking) it.copy(asking = false) else it }
+            requesting.set(false)
+        }
     }
+
+    /** Looks for a `su` file again (back on a page): a sign of root that needs no request. */
+    suspend fun lookForSu() {
+        suFile = withContext(io) { suSeen(exists) }
+        _state.update { it.copy(rootSeen = seen()) }
+    }
+
+    private fun seen() = suFile || service != null || helloCode != null
 
     override suspend fun restartSystemUi(): String? {
         // a kill, not `am crash` (crashes count towards rescue mode); System UI is persistent, Android starts it at once
-        val r = withContext(io) { su("kill \$(pidof ${SystemUi.PACKAGE})", SU_WAIT_S) }
+        val r = withContext(io) { shell.run("kill \$(pidof ${SystemUi.PACKAGE})", SU_WAIT_S) }
         val problem = restartError(r.exit, r.output)
-        if (r.exit == 0) _state.update { it.copy(root = true) }
+        if (r.exit == 0) _state.update { it.copy(root = RootAccess.Granted) }
+        if (!r.started) _state.update { it.copy(root = RootAccess.Missing) }
         if (problem != null) return problem
         helloCode = null
         // it takes a few seconds to start and load the module again: follow it up for 20 s
@@ -115,7 +168,10 @@ class SystemAccess(
             }.onFailure { if (cont.isActive) cont.resume(it.javaClass.simpleName) }
         }
 
-    override fun refresh() = refreshModule()
+    override fun refresh() {
+        refreshModule()
+        scope.launch { lookForSu() }
+    }
 
     private fun refreshModule(checked: Boolean = false) {
         val s = service
@@ -130,7 +186,7 @@ class SystemAccess(
             }
         _state.update { old ->
             val module = decide(lsposed, helloCode, HookCode.VERSION, waiting = !checked && old.module == ModuleState.Checking)
-            old.copy(module = module, framework = lsposed?.framework)
+            old.copy(module = module, framework = lsposed?.framework, rootSeen = seen())
         }
     }
 
@@ -140,32 +196,46 @@ class SystemAccess(
         val inScope: Boolean,
     )
 
-    private class SuResult(
-        val exit: Int?,
-        val output: String,
-    )
-
-    /** Runs [cmd] with `su`, waiting up to [waitS] (the root prompt may be showing); exit null = no answer in time. */
-    private fun su(
-        cmd: String,
-        waitS: Long,
-    ): SuResult =
-        runCatching {
-            val p = ProcessBuilder("su", "-c", cmd).redirectErrorStream(true).start()
-            val done = p.waitFor(waitS, TimeUnit.SECONDS)
-            if (!done) {
-                p.destroyForcibly()
-                SuResult(null, "")
-            } else {
-                SuResult(p.exitValue(), p.inputStream.bufferedReader().readText())
-            }
-        }.getOrElse { SuResult(-1, it.message ?: "su not found") }
-
     companion object {
         private const val TAG = "Sukrara.systemui"
         private const val SU_WAIT_S = 30L
         private const val SCOPE_WAIT_MS = 60_000L
         internal const val TIMED_OUT = "no answer from su"
+
+        /**
+         * Where root managers put `su` for the apps that may see it: Magisk's (unless Sukrara is on its DenyList), the
+         * emulator's debug `su`, KernelSU's and APatch's only for apps they allow. Looking needs no request.
+         */
+        val SU_PATHS = listOf("/system/bin/su", "/system/xbin/su", "/sbin/su", "/debug_ramdisk/su", "/su/bin/su")
+
+        fun suSeen(exists: (String) -> Boolean): Boolean = SU_PATHS.any { runCatching { exists(it) }.getOrDefault(false) }
+
+        /**
+         * What a `su -c id -u` run means: root when it answered 0 as its last line; [RootAccess.Missing] when `su`
+         * couldn't even start (KernelSU / APatch before Sukrara is allowed, or no root); no answer in time; else refused
+         * (Magisk's Deny prints *Permission denied*, the emulator's `su` *not allowed*).
+         */
+        fun rootOf(r: SuResult): RootAccess =
+            when {
+                !r.started -> {
+                    RootAccess.Missing
+                }
+
+                r.exit == null -> {
+                    RootAccess.NoAnswer
+                }
+
+                r.exit == 0 && r.output
+                    .lines()
+                    .lastOrNull { it.isNotBlank() }
+                    ?.trim() == "0" -> {
+                    RootAccess.Granted
+                }
+
+                else -> {
+                    RootAccess.Refused
+                }
+            }
 
         /**
          * The module's state: the hello is the truth (System UI runs the module, with this code or another); without
@@ -208,5 +278,29 @@ class SystemAccess(
                         ?.take(120) ?: "su exit $exit"
                 }
             }
+    }
+}
+
+/** Runs [cmd] with the real `su`, waiting up to [waitS]; not started = `su` can't be run by Sukrara (not there, not allowed). */
+private fun su(
+    cmd: String,
+    waitS: Long,
+): SuResult {
+    val p =
+        try {
+            ProcessBuilder("su", "-c", cmd).redirectErrorStream(true).start()
+        } catch (e: Exception) {
+            return SuResult(-1, e.message ?: "su not found", started = false)
+        }
+    return runCatching {
+        if (!p.waitFor(waitS, TimeUnit.SECONDS)) {
+            p.destroyForcibly()
+            SuResult(null, "")
+        } else {
+            SuResult(p.exitValue(), p.inputStream.bufferedReader().readText())
+        }
+    }.getOrElse {
+        p.destroyForcibly()
+        SuResult(-1, it.message ?: it.javaClass.simpleName)
     }
 }

@@ -105,6 +105,10 @@ The LSPosed lock-screen widget isn't in the app yet (#66); this section covers w
 Phone with root + the LSPosed module (System UI restarted after the install), *Value in the status bar* on with a
 system-icon placement. Read-only checks; screenshots stay off the repo (health data).
 
+- [ ] Root for Sukrara (#178), fresh install, value off: the switch is enabled and reads *Off. Needs root: Sukrara asks
+      for it when you turn it on*; nothing asks for root until it is turned on. Turned on with Sukrara not allowed in
+      KernelSU: *Allow root for Sukrara* (Magisk: its prompt; Deny → *Root refused*). Allow it in the root manager's
+      Superuser list and come back: the card goes by itself, the value shows, a confirm haptic. TalkBack reads the card.
 - [ ] `adb logcat -s LSPosedFramework Sukrara` after the System UI start: `icon fit hooks: 1`, no `icon fit … failed`.
 - [ ] *Before the mobile signal* (the default on a fresh install): glucose right of vibrate / VPN / speakerphone, right
       before the mobile signal, never between mobile and Wi-Fi; Wi-Fi only (mobile hidden): still left of Wi-Fi.
