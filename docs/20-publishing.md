@@ -302,28 +302,53 @@ app is restricted* › *Add instructions*. Then *Target audience* (plan: 13+) un
 > each alert's "Send a test alert" (Settings › Alerts › an alert). This video shows the app with a sensor (test build,
 > simulated data): <video link>
 
-**The demo video** (at most 2 min, no sound needed but the alert sound helps; English UI): recorded on the emulator
-from a **debug** build with the debug synthetic sensor (never the owner's phone, data or account), uploaded to YouTube
-as *Unlisted* (Play's reviewers must open it without signing in), the link pasted into the text above. Before
-recording: a fresh emulator install, wearer role, alerts on with the default thresholds, the synthetic source on
-(`adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.SYNTHETIC --ez on true
---ei cycle 100`, so the curve reaches its low within the first minute; `cycle 135` is the lowest point) and a local
-relay for the invite shot (`… -a app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447`, docs/DEVELOPMENT.md;
-never the public relays from a debug build). Record with
-the emulator's *Extended controls › Record screen* or `adb shell screenrecord --time-limit 180 /sdcard/review.mp4`.
-Every shot carries the overlay **"Test build · simulated sensor data"** (added in the editor, top of the frame, never
-covering the value).
+**The demo video** (at most 2 min, English UI, with the alert sounds): recorded on the emulator from a **debug** build
+with the debug synthetic sensor (never the owner's phone, data or account), uploaded to YouTube as *Unlisted* (Play's
+reviewers must open it without signing in), the link pasted into the text above. **Recorded 2026-11-11** (#142):
+`~/Movies/sukrara-play/sukrara-review-demo.mp4` (1:57, 1080 × 1920, H.264 + AAC; the raw recordings in
+`~/Movies/sukrara-play/raw/`), from the play flavor's debug build of `da4cd537` on an AVD of its own (`play_media`:
+android-37.0 google_apis, 1080 × 1920, 420 dpi), outside the repo. Every frame has the band **"Test build · simulated
+sensor data"** in a strip of its own above the app (the app is scaled under it, so it never covers the value).
+
+How to record it again:
+
+- A fresh install on the emulator, wearer role, every permission through the app's own checklist, default thresholds;
+  in setup, the sensor step never completes with the synthetic source (it isn't one of the wearer's sensors): tap
+  *Later*, then close home's *Finish setup* banner. Turn **Settings › Alerts › Low › *Like an alarm*** on (off by
+  default; without it the low alert has no full-screen intent) and the emulator's lock screen on (`adb shell
+  locksettings set-disabled false`).
+- The local relay for the invite shot (`python3 tools/relay/relay.py --port 7447` and `… -a
+  app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447`, docs/DEVELOPMENT.md; never the public relays from a
+  debug build).
+- The synthetic source: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
+  app.mauri.sukrara.debug.SYNTHETIC --ez on true --ei cycle 110`. The curve crosses the low threshold (70) at cycle
+  minute 113, one reading a minute: `cycle 110` brings the low alert after about 2–2.5 min, `cycle 112` within a
+  minute (`cycle 135` is the lowest point, 45 mg/dL).
+- Record with the emulator's recorder, which also records the sound (`adb -s emulator-NNNN emu screenrecord start
+  --time-limit 1200 raw.webm`, then `… stop`); `adb shell screenrecord` has no audio. Cut, speed up the waits and add
+  the band with ffmpeg; never change what the app shows.
 
 | # | Time | Shot | What it shows the reviewer |
 |---|---|---|---|
 | 1 | 0:00–0:06 | Title card: "Sukrara · test build · simulated sensor data. No real person's glucose." | that the data is made up |
-| 2 | 0:06–0:25 | Home: the glucose value with its trend arrow and the graph moving as new readings arrive; open the reading's sheet | the core function: live glucose from the sensor |
-| 3 | 0:25–0:50 | The curve crosses the low threshold: the low alert fires (full-screen on the lock screen, its sound), then *Mute* | why it needs full-screen intents, exact alarms and a foreground service |
-| 4 | 0:50–1:05 | *Eat carbs* pill → log 15 g → the quiet line on the graph and the notification | treatments and how they quiet alerts |
-| 5 | 1:05–1:20 | The glucose notification and a home-screen widget showing the same value | the ongoing notification (foreground service) |
-| 6 | 1:20–1:35 | Settings › Sharing › *Share with someone* › *Create invite*: the invite QR code and its note ("you still allow them") | following, and that the wearer approves each follower |
-| 7 | 1:35–1:50 | Settings › Alerts › *Low* › *Send a test alert* | what a reviewer can do without a sensor |
-| 8 | 1:50–2:00 | Synthetic source off (`--ez on false`), back to home: "Not monitoring: no sensor yet" | what a reviewer will see on their own device |
+| 2 | 0:06–0:20 | Home: the value with its trend arrow and the graph as a new reading arrives; a double tap for the 3-hour close look and back | the core function: live glucose from the sensor |
+| 3 | 0:20–0:46 | Screen off; the curve crosses the low threshold: the alert wakes the screen with its alarm sound and *Low glucose* shows on the lock screen; the expanded alert's *30 min* Mute chip, which opens the app on *Low alerts muted*; home with the mute pill | why it needs full-screen intents, exact alarms and a foreground service |
+| 4 | 0:46–1:05 | *Add treatment* (Carbs focused while low) → 15 g → *Lows quiet for 15 min* → Save: the carbs on the graph and the quiet ring | treatments and how they quiet alerts |
+| 5 | 1:05–1:16 | The home-screen widgets, then the shade's glucose notification with the same value | the ongoing notification (foreground service) |
+| 6 | 1:16–1:32 | Settings › Sharing › *Share with someone* › name › *Create invite*: the invite QR code and its note ("you still allow them") | following, and that the wearer approves each follower |
+| 7 | 1:32–1:48 | Settings › Alerts › *Low* › *Send a test alert*: the test alert and its sound | what a reviewer can do without a sensor |
+| 8 | 1:48–1:57 | A fresh install without a sensor: "Not monitoring: no sensor yet" (captioned) | what a reviewer will see on their own device |
+
+Shot 8 is a separate fresh-install clip: turning the synthetic source off keeps the last reading on home, struck
+through (the freshness steps), and the "no sensor yet" page shows only with no readings at all.
+
+**Store screenshots** (the same session's emulator, made 2026-11-11): `~/Pictures/sukrara-play/en/` and `…/es/`, eight
+each, 1080 × 1920 PNG without alpha (Play's phone size for promotion), System UI demo mode for the status bar: `01-home`,
+`02-low-alert` (the lock screen with the low alert and the glucose notification), `03-widgets` (the widgets and the
+Live Update chip), `04-treatment` (15 g of carbs typed, never saved), `05-invite`, `06-alerts`, `07-home-dark`,
+`08-alert-reliability`; a labelled copy of each (the same "Test build · simulated sensor data" band) in
+`~/Pictures/sukrara-play/labelled/`. The data is the synthetic curve (about 47 % in range). Spanish through the
+emulator's language (`cmd locale set-device-locale es-ES`).
 
 **Who keeps it current**: the owner re-records the video (same shot list) when home, the alert screen, setup or
 Settings › Sharing change visibly, and before a release whose store listing screenshots change; the instructions text
@@ -655,7 +680,7 @@ of [Reviewer access](#google-play-reviewer-access-app-access), uploaded once as 
 | Declaration | Answer |
 |---|---|
 | Foreground service, type `connectedDevice` | Task: *Connected device* (Bluetooth). Description: "Sukrara monitors the person's glucose sensor (CGM), or the phone of the person they follow. The foreground service keeps the Bluetooth connection to the sensor (or the connection to the wearer's phone) so each reading and every low or high glucose alarm arrives within a minute while the app is closed. It starts when a sensor is paired or someone is followed, shows the current glucose in its notification the whole time, and stops when the sensor is forgotten or following stops." User impact if deferred or stopped: "Readings stop and low glucose alarms, including the very low alarm, don't ring: the person can miss a dangerous low." Video: the reviewer video (shots 2, 5 and 8: running, its notification, stopped) |
-| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | Core use: **alarms**. "Sukrara is a glucose alarm app. The very low glucose alarm (and any alert the person sets to ring like an alarm) shows over the lock screen like an alarm clock, with sound, until the person answers it, because a very low glucose needs immediate action." Video: shot 3 |
+| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | Core use: **alarms**. "Sukrara is a glucose alarm app. The very low glucose alarm, and any alert the person sets to ring like an alarm, is posted with a full-screen intent so that, like an alarm clock, it wakes the screen and shows on the lock screen at once with its alarm sound, because a very low glucose needs immediate action. The person answers it from the lock screen (mute, remind less) or opens the app." Video: shot 3. (Today the full-screen intent opens the app's main screen, which doesn't show over the lock screen: the phone wakes and the alert shows on the lock screen, but there is no full-screen alarm page; the text above says only what happens. A real alarm page over the lock screen would be a feature of its own.) |
 | Exact alarms (`USE_EXACT_ALARM`) | [The exact-alarm declaration](#exact-alarm-declaration) below |
 
 #### Exact alarm declaration
@@ -674,7 +699,7 @@ Where: Play Console › App content › the exact alarm permission declaration (
 > the first thing the store listing describes, and every alert can be tried in Settings › Alerts › an alert › Send a
 > test alert.
 
-Video: the reviewer video (shot 3: the low alarm ringing on the lock screen; shot 7: *Send a test alert*). Precedent
+Video: the reviewer video (shot 3: the low alarm waking the phone on the lock screen; shot 7: *Send a test alert*). Precedent
 if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. If Play rejects it: the
 fallback in [Flavors](#flavors) › *If Play rejects …*.
 
@@ -713,14 +738,14 @@ No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
 | Contact | `support-googleplay@a.mauri.app`, https://sukrara.mauri.app (set) | the same |
 
-**Full description, en-US** (2785 characters):
+**Full description, en-US** (2823 characters):
 
 ```text
 Sukrara shows your glucose live on your phone and rings an alarm when it goes too low or too high, changes fast, or stops arriving. It reads a FreeStyle Libre 3 or Libre 3 Plus sensor directly over Bluetooth, or follows someone who wears one and uses Sukrara.
 
 Glucose alarms that ring on time
 • Very low, low, high, very high and extremely high alarms, rising or falling fast, and a missed-readings alarm when no glucose arrives, each with your own threshold and sound.
-• The very low alarm rings like an alarm clock over the lock screen until you answer it. Alarms repeat while your glucose stays out of range, and a very low you don't answer can alert the people who follow you.
+• The very low alarm rings at alarm volume and wakes the screen like an alarm clock, also in Do Not Disturb when you allow it. Alarms repeat while your glucose stays out of range, and a very low you don't answer can alert the people who follow you.
 • Mute them when you choose. After you log carbs, low alarms give them time to work; after insulin, high alarms do.
 • A checklist makes sure alarms can ring (notifications, Do Not Disturb, battery, Bluetooth), with a test alarm you can send any time.
 
@@ -754,14 +779,14 @@ Sukrara is not a medical device and does not diagnose, treat, cure, or prevent a
 FreeStyle Libre and LibreView are trademarks of Abbott. Sukrara is not affiliated with or endorsed by Abbott. Other product names are trademarks of their owners.
 ```
 
-**Full description, es-ES** (3046 characters):
+**Full description, es-ES** (3079 characters):
 
 ```text
 Sukrara muestra tu glucosa en directo en el teléfono y hace sonar una alarma cuando baja o sube demasiado, cambia rápido o deja de llegar. Lee un sensor FreeStyle Libre 3 o Libre 3 Plus directamente por Bluetooth, o sigue a alguien que lo lleva y usa Sukrara.
 
 Alarmas de glucosa que suenan a tiempo
 • Alarmas de muy baja, baja, alta, muy alta y extremadamente alta, de subida o bajada rápida, y de lecturas perdidas cuando no llega la glucosa, cada una con tu umbral y tu sonido.
-• La alarma de muy baja suena como un despertador sobre la pantalla de bloqueo hasta que respondes. Las alarmas se repiten mientras la glucosa siga fuera de rango, y una muy baja sin respuesta puede avisar a quienes te siguen.
+• La alarma de muy baja suena a volumen de alarma y enciende la pantalla como un despertador, también en No molestar si lo permites. Las alarmas se repiten mientras la glucosa siga fuera de rango, y una muy baja sin respuesta puede avisar a quienes te siguen.
 • Siléncialas cuando quieras. Tras registrar hidratos, las alarmas de baja les dan tiempo para actuar; tras la insulina, las de alta.
 • Una lista comprueba que las alarmas pueden sonar (notificaciones, No molestar, batería, Bluetooth), con una alarma de prueba que puedes enviar cuando quieras.
 
