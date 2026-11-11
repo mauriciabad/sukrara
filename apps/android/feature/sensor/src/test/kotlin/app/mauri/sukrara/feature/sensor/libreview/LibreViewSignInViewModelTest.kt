@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sensor.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.sensor.libreview.SignInResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,17 +23,17 @@ class LibreViewSignInViewModelTest {
     private val dispatcher = StandardTestDispatcher()
 
     private class FakeAccount(var answer: SignInResult) : LibreViewPort {
-        override val email = MutableStateFlow<String?>(null)
+        override val account = MutableStateFlow<LibreViewAccountState>(LibreViewAccountState.SignedOut)
         var calls = 0
 
         override suspend fun signIn(email: String, password: String): SignInResult {
             calls++
-            if (answer is SignInResult.SignedIn) this.email.value = email.trim()
+            if (answer is SignInResult.SignedIn) account.value = LibreViewAccountState.SignedIn(email.trim())
             return answer
         }
 
         override suspend fun signOut() {
-            email.value = null
+            account.value = LibreViewAccountState.SignedOut
         }
     }
 
@@ -56,13 +57,13 @@ class LibreViewSignInViewModelTest {
     @Test fun success() = assertEquals(SignInUi.SignedIn("me@example.com"), result(SignInResult.SignedIn(3078366504)).second)
 
     @Test fun `wrong password`() =
-        assertEquals(SignInUi.SignedOut(SignInError.WrongPassword), result(SignInResult.BadCredentials).second)
+        assertEquals(SignInUi.SignedOut(SignInError.WrongPassword, "me@example.com"), result(SignInResult.BadCredentials).second)
 
     @Test fun `terms to accept in the LibreView app`() =
-        assertEquals(SignInUi.SignedOut(SignInError.AcceptTerms), result(SignInResult.AcceptTerms).second)
+        assertEquals(SignInUi.SignedOut(SignInError.AcceptTerms, "me@example.com"), result(SignInResult.AcceptTerms).second)
 
     @Test fun offline() =
-        assertEquals(SignInUi.SignedOut(SignInError.Failed), result(SignInResult.Failed("UnknownHostException")).second)
+        assertEquals(SignInUi.SignedOut(SignInError.Failed, "me@example.com"), result(SignInResult.Failed("UnknownHostException")).second)
 
     @Test fun `an empty form sends nothing`() =
         runTest(dispatcher) {
@@ -74,15 +75,35 @@ class LibreViewSignInViewModelTest {
             assertEquals(0, account.calls)
         }
 
-    @Test fun `sign out`() =
+    @Test fun `signed in elsewhere shows who, and signing out signs out everywhere`() =
         runTest(dispatcher) {
-            val account = FakeAccount(SignInResult.SignedIn(1)).apply { email.value = "me@example.com" }
+            val account =
+                FakeAccount(SignInResult.SignedIn(1)).apply {
+                    this.account.value =
+                        LibreViewAccountState.SignedIn("me@example.com")
+                }
             val vm = LibreViewSignInViewModel(account)
             runCurrent()
             assertEquals(SignInUi.SignedIn("me@example.com"), vm.ui.value)
             vm.signOut()
             runCurrent()
             assertEquals(SignInUi.SignedOut(), vm.ui.value)
-            assertEquals(null, account.email.value)
+            assertEquals(LibreViewAccountState.SignedOut, account.account.value)
+        }
+
+    @Test fun `a password LibreView no longer accepts asks again with the email filled in`() =
+        runTest(dispatcher) {
+            val account = FakeAccount(SignInResult.BadCredentials)
+            account.account.value = LibreViewAccountState.SignInAgain("me@example.com")
+            val vm = LibreViewSignInViewModel(account)
+            runCurrent()
+            assertEquals(SignInUi.SignedOut(email = "me@example.com", again = true), vm.ui.value)
+            vm.signIn("me@example.com", "still-wrong")
+            runCurrent()
+            assertEquals(SignInUi.SignedOut(SignInError.WrongPassword, "me@example.com", again = true), vm.ui.value)
+            account.answer = SignInResult.SignedIn(1)
+            vm.signIn("me@example.com", "new")
+            runCurrent()
+            assertEquals(SignInUi.SignedIn("me@example.com"), vm.ui.value)
         }
 }

@@ -5,6 +5,7 @@ package app.mauri.sukrara.sensor
 
 import android.content.Context
 import android.util.Log
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -22,6 +23,7 @@ import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SourceManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
 
 /**
@@ -33,6 +35,8 @@ class SensorModule(
     context: Context,
     secure: SecureStore,
     receiverIds: StateStore<ReceiverIdState>,
+    /** THE LibreView account (one per app; the LibreView upload and Import history use it too). */
+    libreViewLogin: LibreViewLogin,
     sourceKind: Flow<SensorSourceKind>,
     http: OkHttpClient,
     clock: Clock,
@@ -68,10 +72,18 @@ class SensorModule(
             log = log,
         )
 
-    val libreView = LibreViewAccount(receiverIds, http, dispatchers.io)
+    val libreView = LibreViewAccount(receiverIds, libreViewLogin, http, dispatchers.io)
 
     /** *Open Sukrara when you scan a sensor* (the tap activity's enabled state). */
     val tapLaunch = SensorTapLaunch(app)
 
-    val nfc = NfcPairing(pairings, receiverIds, onPaired = source::retry, io = dispatchers.io, log = log)
+    val nfc =
+        NfcPairing(
+            pairings,
+            receiverIds,
+            onPaired = source::retry,
+            io = dispatchers.io,
+            log = log,
+            account = { libreView.receiverId.first() },
+        )
 }

@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
+import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Role
@@ -24,7 +27,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -60,21 +62,23 @@ data class LvReadings(
 /** What the LibreView page shows. */
 data class LvPageState(
     val settings: LvSettings,
+    /** The app's LibreView account is signed in (once, on the LibreView account screen: `LibreViewLogin`). */
     val signedIn: Boolean,
+    /** The account's email ("" without one). */
     val email: String,
     val status: UploadStatus,
     /** Sensor glucose goes up from here (null: it isn't uploading). */
     val glucoseFrom: Instant?,
     /** *Upload every* (`apps.libreviewInterval`), minutes. */
     val intervalMin: Double = LibreViewUploader.INTERVAL.default,
-    /** Signed in to another account than the one the sensor uses (Settings › Sensor › LibreView account). */
-    val otherAccount: Boolean = false,
+    /** LibreView no longer accepts the account's saved password: sign in again on the account screen. */
+    val signInAgain: Boolean = false,
 )
 
 /**
  * What LibreView has of the entries while the upload runs (the wearer, signed in, switch on), for home's list: [from] =
  * new entries go up when changed after it (epoch s; 0 = the entries switch is off: no marks); [stopped] = nothing goes
- * up until the person acts (sign in again, or LibreView refused the last upload).
+ * up until the person acts (sign in again, take over from another device, or LibreView refused the last upload).
  */
 data class LvEntryMarks(
     val ledger: Map<String, LvSent>,
@@ -90,33 +94,27 @@ data class LvEntryMarks(
     fun removesOnDelete(t: Treatment): Boolean = !stopped && (ledger[t.id]?.v ?: 0L) != 0L
 }
 
-/** The result of the page's sign-in. */
-sealed interface LvSignIn {
-    data object Done : LvSignIn
+/** The result of *Take over*. */
+sealed interface LvTakeOver {
+    data object Done : LvTakeOver
 
-    /** Another device uploads for this account: the person may take over (that device stops uploading). */
-    data object OtherDevice : LvSignIn
+    /** No account to take over with (signed out, or LibreView refused the saved password): the account screen. */
+    data object SignIn : LvTakeOver
 
-    /**
-     * The account isn't the one the sensor uses (its receiver ID): nothing is saved until the person chooses to upload
-     * to it anyway ([LibreViewUploader.useOtherAccount]) or cancels ([LibreViewUploader.dropOtherAccount]).
-     */
-    data object OtherAccount : LvSignIn
-
-    data object BadCredentials : LvSignIn
-
-    data class Failed(val why: Trouble) : LvSignIn
+    data class Failed(val why: Trouble) : LvTakeOver
 }
 
 /**
  * Settings › Share with apps › LibreView: the wearer's entries and Libre 3 glucose to their LibreView account, the way
  * the FreeStyle Libre 3 app sends them, so their clinic sees them. Off by default; wearer only.
  *
- * Sign-in sends the password once and keeps only the token (SecureStore `libreview`). This phone becomes the account's
- * uploading device only when the person chooses *Take over*. When the token stops working (another device took over,
- * or it expired) nothing goes up until the person signs in again. Glucose and entries go up from the moment they were
- * switched on; what LibreView got is remembered so an edit or a delete corrects it. Libre 3 history not sent yet is
- * kept in [unsent] too, so a process death doesn't lose it. A sign-in to another account than the sensor's asks first.
+ * The account is the app's one LibreView account ([login], issue #177): signed in once on the account screen, never
+ * asked again here. With it the upload signs in by itself (the LibreView app login) and keeps only that login's token
+ * (SecureStore `libreview`); when the token stops working it signs in again by itself. This phone becomes the account's
+ * uploading device only when the person chooses *Take over* (another device uploads: nothing goes up until then).
+ * LibreView refusing the saved password asks to sign in again (the account screen); signing out drops the token.
+ * Glucose and entries go up from the moment they were switched on; what LibreView got is remembered so an edit or a
+ * delete corrects it. Libre 3 history not sent yet is kept in [unsent] too, so a process death doesn't lose it.
  */
 class LibreViewUploader(
     private val settings: SettingsRepository,
@@ -126,10 +124,8 @@ class LibreViewUploader(
     private val treatments: TreatmentsRepository,
     private val readings: Flow<LvReadings>,
     private val sensor: Flow<CurrentSensor?>,
-    /** The receiver ID Sukrara starts and takes over sensors with (Settings › Sensor › LibreView account), or null. */
-    private val sensorReceiverId: Flow<Long?>,
-    /** LibreView AccountId → receiver ID (`ReceiverIds.fromAccountId`). */
-    private val receiverIdOf: (String) -> Long,
+    /** THE LibreView account (one per app; the sensor and Import history use it too). */
+    private val login: LibreViewLogin,
     private val role: Flow<Role?>,
     private val client: LibreViewClient,
     private val clock: Clock,
@@ -138,18 +134,6 @@ class LibreViewUploader(
     /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
     private val hold: UploadHold = UploadHold.NONE,
 ) {
-    /** A sign-in to another account than the sensor's, waiting for the person's choice (memory only). */
-    private class PendingAccount(
-        val email: String,
-        val session: LvSession,
-        val takeOver: Boolean,
-    )
-
-    private var pending: PendingAccount? = null
-
-    /** Null until [load] read the secure store: nothing claims "signed out" before that (no clinic banner flash). */
-    private val signedIn = MutableStateFlow<Boolean?>(null)
-
     /** *Upload every*, ms: the loop's wait, and how often new glucose wakes it. */
     @Volatile private var intervalMs = (INTERVAL.default * 60_000).toLong()
     private val loop = UploadLoop({ intervalMs }, io, { e -> log("libreview cycle: ${e.javaClass.simpleName}") }) { cycle() }
@@ -165,46 +149,42 @@ class LibreViewUploader(
     val intervalFlow: Flow<Double> = settings.flow(INTERVAL)
 
     val page: Flow<LvPageState> =
-        combine(
-            settingsFlow,
-            signedIn,
-            combine(store.data, sensorReceiverId, ::Pair),
-            role,
-            intervalFlow,
-        ) { s, known, (st, rid), r, every ->
-            val signed = known == true
+        combine(settingsFlow, login.account, store.data, role, intervalFlow) { s, a, st, r, every ->
             val from = st.glucoseFrom.takeIf { it > 0 }?.let(Instant::ofEpochSecond)
-            LvPageState(s, signed, st.email, status(s, signed, st, r), from, every, signed && otherAccount(st.accountId, rid))
+            LvPageState(
+                s,
+                a is LibreViewAccountState.SignedIn,
+                a.email.orEmpty(),
+                status(s, a, st, r),
+                from,
+                every,
+                a is LibreViewAccountState.SignInAgain,
+            )
         }
-
-    /** [accountId] isn't the account behind the sensor's receiver ID [rid] (unknown on either side: not "other"). */
-    private fun otherAccount(
-        accountId: String?,
-        rid: Long?,
-    ): Boolean = !accountId.isNullOrEmpty() && rid != null && receiverIdOf(accountId) != rid
 
     /** What LibreView has of the entries while the upload runs (home's cloud marks); null while it's off. */
     val entryMarks: Flow<LvEntryMarks?> =
-        combine(settingsFlow, signedIn, store.data, role) { s, signed, st, r ->
-            if (s.on && signed == true && r == Role.Wearer) {
-                LvEntryMarks(st.ledger, if (s.treatments) st.entriesFrom else 0L, st.authFailed || st.refused)
+        combine(settingsFlow, login.account, store.data, role) { s, a, st, r ->
+            if (s.on && a != LibreViewAccountState.SignedOut && r == Role.Wearer) {
+                val stopped = st.otherDevice || st.refused || a is LibreViewAccountState.SignInAgain
+                LvEntryMarks(st.ledger, if (s.treatments) st.entriesFrom else 0L, stopped)
             } else {
                 null
             }
         }.distinctUntilChanged()
 
-    /** Whether a token is saved; null until [load] ran. */
-    val signedInKnown: Flow<Boolean?> = signedIn
+    /**
+     * Whether the app has a LibreView account (signed in, or one LibreView asks to sign in to again); emits once the
+     * account was read, so nothing claims "signed out" before that (no clinic banner flash).
+     */
+    val signedInKnown: Flow<Boolean?> = login.account.map { it != LibreViewAccountState.SignedOut }
 
-    /** Reads whether a token is saved and the history not sent yet; call once from the app's load step. */
+    /**
+     * Reads the history not sent yet; call once from the app's load step. A token without an account (signed out while
+     * the app wasn't running) goes.
+     */
     suspend fun load() {
-        signedIn.value =
-            try {
-                secure.read(NAME) != null
-            } catch (e: SecretUnreadableException) {
-                // it exists: never shown as "signed out"
-                true
-            }
+        if (login.current() == LibreViewAccountState.SignedOut) dropToken()
         val kept = unsent.data.first()
         if (kept.serial.isNotEmpty()) {
             synchronized(history) {
@@ -239,6 +219,26 @@ class LibreViewUploader(
         }
         scope.launch { settingsFlow.distinctUntilChanged().drop(1).collect { changed() } }
         scope.launch { role.distinctUntilChanged().drop(1).collect { loop.kick() } }
+        scope.launch {
+            login.account
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { followLogin(it) }
+        }
+    }
+
+    /**
+     * The account changed on the account screen: signed out, the token goes (whatever LibreView got stays remembered,
+     * so signing in again still corrects it); signed in, the upload goes on with it.
+     */
+    internal suspend fun followLogin(account: LibreViewAccountState) {
+        if (account == LibreViewAccountState.SignedOut) {
+            mutex.withLock {
+                dropToken()
+                store.update { it.copy(otherDevice = false, refused = false, lastError = null, failures = 0, nextAttemptMs = 0) }
+            }
+        }
+        loop.kick()
     }
 
     /**
@@ -279,113 +279,84 @@ class LibreViewUploader(
     suspend fun setInterval(min: Double) = settings.set(INTERVAL, min)
 
     /**
-     * Signs in with the LibreView app login; the password is used for this request only. [takeOver] = the person chose
-     * to make this phone the account's uploading device. Another account than the last one starts from nothing. An
-     * account that isn't the sensor's ([sensorReceiverId]) is kept aside until the person chooses
-     * ([LvSignIn.OtherAccount]).
+     * *Take over*: another device uploads for the account (LibreLink, the Libre 3 app, Juggluco); this phone becomes the
+     * account's uploading device and that one stops uploading. Only when the person chose it, never by itself.
      */
-    suspend fun signIn(
-        email: String,
-        password: String,
-        takeOver: Boolean,
-    ): LvSignIn =
+    suspend fun takeOver(): LvTakeOver =
         mutex.withLock {
-            pending = null
+            val credentials = login.credentials() ?: return@withLock LvTakeOver.SignIn
             val st = ensureDevice()
-            val answer = withContext(io) { client.signIn(email, password, st.deviceId, takeOver) }
-            when (answer) {
+            when (val answer = withContext(io) { client.signIn(credentials.email, credentials.password, st.deviceId, takeOver = true) }) {
                 is LvAuth.SignedIn -> {
-                    if (otherAccount(answer.session.accountId, sensorReceiverId.first())) {
-                        log("libreview: signed in to another account than the sensor's: asking")
-                        pending = PendingAccount(email, answer.session, takeOver)
-                        LvSignIn.OtherAccount
-                    } else {
-                        saveSignIn(email, answer.session, takeOver)
-                    }
+                    keep(credentials.email, answer.session)
+                    log("libreview: took over")
+                    loop.kick()
+                    LvTakeOver.Done
                 }
 
                 LvAuth.OtherDevice -> {
-                    LvSignIn.OtherDevice
+                    LvTakeOver.Failed(Trouble.Other)
                 }
 
                 LvAuth.BadCredentials -> {
-                    LvSignIn.BadCredentials
+                    login.rejected(credentials)
+                    LvTakeOver.SignIn
                 }
 
                 is LvAuth.Failed -> {
-                    LvSignIn.Failed(answer.why)
+                    LvTakeOver.Failed(answer.why)
                 }
             }
         }
 
-    /** *Upload to this account*: the person chose the account the last sign-in found isn't the sensor's. */
-    suspend fun useOtherAccount(): LvSignIn =
-        mutex.withLock {
-            val p = pending ?: return@withLock LvSignIn.Failed(Trouble.Other)
-            pending = null
-            saveSignIn(p.email, p.session, p.takeOver)
-        }
-
-    /** *Cancel* on the other-account question: that sign-in is forgotten (nothing was saved). */
-    suspend fun dropOtherAccount() = mutex.withLock { pending = null }
-
-    private suspend fun saveSignIn(
+    /**
+     * Keeps a new token of [email]'s account: the same account as the last one (by LibreView's AccountId; by the email
+     * only when one side doesn't know it) keeps what LibreView has; another one starts from nothing. State first, then
+     * the token, both or neither: a token never sits under another account's ledger.
+     */
+    private suspend fun keep(
         email: String,
         session: LvSession,
-        takeOver: Boolean,
-    ): LvSignIn =
-        withContext(NonCancellable) {
-            // state first, then the token, both or neither: a token never sits under another account's ledger
-            val e = email.trim()
-            val nowS = clock.now().epochSecond
-            val s = settingsFlow.first()
-            val id = session.accountId.orEmpty()
-            store.update {
-                // the same account by its AccountId; by the email only when one side doesn't know it
-                val same = if (id.isNotEmpty() && it.accountId.isNotEmpty()) it.accountId == id else it.email.equals(e, ignoreCase = true)
-                val base = if (same) it else LvState(deviceId = it.deviceId)
-                base.copy(
-                    email = e,
-                    accountId = id,
-                    // a new sign-in may bring the profile the sensor registration needs
-                    sensors = base.sensors.map { st -> st.copy(refusedRegistration = false) },
-                    authFailed = false,
-                    refused = false,
-                    failures = 0,
-                    nextAttemptMs = 0,
-                    lastError = null,
-                    glucoseFrom =
-                        if (same) {
-                            it.glucoseFrom
-                        } else if (s.on && s.glucose) {
-                            nowS
-                        } else {
-                            0
-                        },
-                    entriesFrom =
-                        if (same) {
-                            it.entriesFrom
-                        } else if (s.on && s.treatments) {
-                            nowS
-                        } else {
-                            0
-                        },
-                )
-            }
-            secure.write(NAME, json.encodeToString(LvSession.serializer(), session).toByteArray())
-            signedIn.value = true
-            log("libreview: signed in${if (takeOver) " (took over)" else ""}")
-            loop.kick()
-            LvSignIn.Done
+    ) = withContext(NonCancellable) {
+        val e = email.trim()
+        val nowS = clock.now().epochSecond
+        val s = settingsFlow.first()
+        val id = session.accountId.orEmpty()
+        store.update {
+            val same = if (id.isNotEmpty() && it.accountId.isNotEmpty()) it.accountId == id else it.email.equals(e, ignoreCase = true)
+            val base = if (same) it else LvState(deviceId = it.deviceId)
+            base.copy(
+                email = e,
+                accountId = id,
+                // a new sign-in may bring the profile the sensor registration needs
+                sensors = base.sensors.map { st -> st.copy(refusedRegistration = false) },
+                otherDevice = false,
+                refused = false,
+                failures = 0,
+                nextAttemptMs = 0,
+                lastError = null,
+                glucoseFrom =
+                    if (same) {
+                        it.glucoseFrom
+                    } else if (s.on && s.glucose) {
+                        nowS
+                    } else {
+                        0
+                    },
+                entriesFrom =
+                    if (same) {
+                        it.entriesFrom
+                    } else if (s.on && s.treatments) {
+                        nowS
+                    } else {
+                        0
+                    },
+            )
         }
+        secure.write(NAME, json.encodeToString(LvSession.serializer(), session).toByteArray())
+    }
 
-    /** Forgets the token. What LibreView got stays remembered (signing in again still corrects it). */
-    suspend fun signOut() =
-        mutex.withLock {
-            secure.delete(NAME)
-            signedIn.value = false
-            store.update { it.copy(authFailed = false, refused = false, lastError = null, failures = 0, nextAttemptMs = 0) }
-        }
+    private suspend fun dropToken() = secure.delete(NAME)
 
     suspend fun change(transform: (LvSettings) -> LvSettings) {
         var old = LvSettings()
@@ -431,8 +402,10 @@ class LibreViewUploader(
     private suspend fun cycleLocked() {
         val s = settingsFlow.first()
         if (!s.on || role.first() != Role.Wearer) return
+        // no usable account: the page asks to sign in (again)
+        if (login.current() !is LibreViewAccountState.SignedIn) return
         var state = ensureDevice()
-        if (state.authFailed) return
+        if (state.otherDevice) return
         val nowMs = clock.now().toEpochMilli()
         val nowS = nowMs / 1000
         if (nowMs < state.nextAttemptMs) return
@@ -445,13 +418,9 @@ class LibreViewUploader(
                 )
             save(state)
         }
-        val session =
-            try {
-                secure.read(NAME)?.let { json.decodeFromString(LvSession.serializer(), it.decodeToString()) }
-            } catch (e: SecretUnreadableException) {
-                save(failed(state, nowMs, Trouble.Other))
-                return
-            } ?: return
+        val (session, fresh) = session(state, nowMs) ?: return
+        // a new token of another account started from nothing
+        if (fresh) state = store.data.first()
 
         val entries =
             if (!state.refused && (s.treatments || state.ledger.isNotEmpty())) {
@@ -475,7 +444,7 @@ class LibreViewUploader(
                 }
 
                 LvPost.SignInAgain -> {
-                    return save(state.copy(authFailed = true, lastError = null))
+                    return tokenRefused(state, fresh)
                 }
 
                 is LvPost.Retry -> {
@@ -519,8 +488,7 @@ class LibreViewUploader(
             }
 
             LvPost.SignInAgain -> {
-                log("libreview: token refused")
-                save(state.copy(authFailed = true, lastError = null))
+                tokenRefused(state, fresh)
             }
 
             is LvPost.Retry -> {
@@ -542,6 +510,82 @@ class LibreViewUploader(
                 )
                 if (entries.isNotEmpty() && sensorPart != null) loop.kick()
             }
+        }
+    }
+
+    /**
+     * The upload's token: the saved one, or a new one from the account's own login (`SetDevice:false`: it never takes
+     * over by itself), and whether it is new. Null when nothing can go up now; the state says why (another device
+     * uploads, server trouble) or the account does (LibreView refused the saved password: sign in again).
+     */
+    private suspend fun session(
+        state: LvState,
+        nowMs: Long,
+    ): Pair<LvSession, Boolean>? {
+        val saved =
+            try {
+                secure.read(NAME)?.let { json.decodeFromString(LvSession.serializer(), it.decodeToString()) }
+            } catch (e: SecretUnreadableException) {
+                if (e.transient) {
+                    save(failed(state, nowMs, Trouble.Other))
+                    return null
+                }
+                // damaged: the account signs in again
+                dropToken()
+                null
+            } catch (e: IllegalArgumentException) {
+                dropToken()
+                null
+            }
+        if (saved != null) return saved to false
+        val credentials = login.credentials() ?: return null
+        return when (
+            val answer =
+                withContext(
+                    io,
+                ) { client.signIn(credentials.email, credentials.password, state.deviceId, takeOver = false) }
+        ) {
+            is LvAuth.SignedIn -> {
+                keep(credentials.email, answer.session)
+                log("libreview: signed in with the saved account")
+                answer.session to true
+            }
+
+            LvAuth.OtherDevice -> {
+                log("libreview: another device uploads for the account: waiting for Take over")
+                save(state.copy(otherDevice = true, lastError = null))
+                null
+            }
+
+            LvAuth.BadCredentials -> {
+                log("libreview: the saved password was refused: sign in again")
+                login.rejected(credentials)
+                null
+            }
+
+            is LvAuth.Failed -> {
+                save(failed(state, nowMs, answer.why))
+                null
+            }
+        }
+    }
+
+    /**
+     * LibreView no longer takes the token (it expired, or another device took over): the next cycle signs in again with
+     * the saved account, which tells which. A token it gave a moment ago refused too: another device uploads.
+     */
+    private suspend fun tokenRefused(
+        state: LvState,
+        fresh: Boolean,
+    ) {
+        dropToken()
+        if (fresh) {
+            log("libreview: a new token refused: another device uploads")
+            save(state.copy(otherDevice = true, lastError = null))
+        } else {
+            log("libreview: token refused: signing in again")
+            save(state)
+            loop.kick()
         }
     }
 
@@ -581,14 +625,14 @@ class LibreViewUploader(
 
     private fun status(
         s: LvSettings,
-        signed: Boolean,
+        account: LibreViewAccountState,
         st: LvState,
         r: Role?,
     ): UploadStatus =
         when {
             !s.on || r != Role.Wearer -> UploadStatus.Off
-            !signed -> UploadStatus.Setup
-            st.authFailed -> UploadStatus.AuthFailed
+            account !is LibreViewAccountState.SignedIn -> UploadStatus.Setup
+            st.otherDevice -> UploadStatus.AuthFailed
             st.lastError != null -> UploadStatus.Failing(st.lastError, st.lastOkMs.takeIf { it > 0 }?.let(Instant::ofEpochMilli))
             st.lastOkMs > 0 -> UploadStatus.Ok(Instant.ofEpochMilli(st.lastOkMs), st.lastCount)
             else -> UploadStatus.Waiting

@@ -184,3 +184,23 @@ Sources: [YtoTech/libreview-data-export](https://github.com/YtoTech/libreview-da
 | LibreLinkUp graph / logbook | a follower's 12 h for someone they follow; the wearer's own account follows nobody |
 | Automating *Download glucose data* | its captcha exists to stop exactly that |
 | Finger-stick, ketone and servings rows | Sukrara has no record for them (counted as left out) |
+
+*2026-11-11, after 0.12.0 (issues #176 and #177).* The owner's LibreView file was refused ("something about the dates")
+and they imported the earlier app's export instead; and they signed in to LibreView three times (setup, to link a
+sensor, the upload). The file reader only knew fixed two-digit layouts (`MM-dd-yyyy hh:mm a`), while LibreView writes
+the account's own locale: a US account writes one-digit 12-hour times (`11-10-2026 9:15 PM`), others year first with
+AM / PM (Tidepool's driver lists `YYYY-MM-DD hh:mm A`) or a localised AM / PM. The logcat of the owner's phone no
+longer held the import (the import didn't log a refused file then; now it logs the layout with digits as 0).
+
+| Added | Where |
+|---|---|
+| Dates read whatever the layout: the numbers in any order a country uses, one- or two-digit hours, AM / PM in any language's way (before or after the time), seconds, `21.15` / `21 h 15`; which number is the day decided by the file (fits every row → keeps them in order → not in the future and nearest now → day first); the repeated hour of a clock change kept apart; a row without a time left out; `;` / tab and UTF-16 files a spreadsheet saved | `history/FileDates.kt`, `HistoryCsv.kt`; `FileDatesTest`, `HistoryCsvTest` (synthetic US 12-hour, Spanish `p. m.` fixtures), `HistoryImporterTest` (after the earlier app's export: nothing twice) |
+| A file it still can't read says which date and what to do (download it again as it is, the earlier app's export, *Report the problem* with the layout only) | `ImportPage.kt` (`ImportProblem`), `HistoryImporter.kt` |
+| One LibreView account for the app: signed in once (LibreLinkUp login), email + password kept only in the Keystore secure store (`libreview-account`), used by the sensor's receiver ID, the upload (its own app login with them, again by itself when the token stops working) and Import history's steps; one screen with *Sign out* (asks first; everywhere); a refused password asks again with the email filled in | `:core:data` `libreview/LibreViewLogin.kt`, `:sensor` `LibreViewAccount.kt`, `:feature:sensor` `LibreViewSignInScreen.kt`, `:integrations` `LibreViewUploader.kt` / `LibreViewPage.kt`; `LibreViewLoginTest`, `LibreViewAccountTest`, `LibreViewUploaderTest` |
+
+| Discarded | Why |
+|---|---|
+| Keeping the password out of the phone (the earlier rule: "sent once, never saved") | the owner asked to sign in once; the Keystore-encrypted store already holds tokens of the same weight, and signing out deletes it |
+| The upload's own sign-in dialog and its "not your sensor's account" question | one account for the app: the upload and the sensor can't disagree any more |
+| Taking over the uploading device when re-signing in by itself | it would cut off LibreLink / Juggluco without the person choosing: *Take over* stays a tap |
+| Guessing the time zone of a file's times from the readings already on the phone | LibreView writes no offset and the guess could shift a whole day of history; the phone's zone is right unless the person travelled |

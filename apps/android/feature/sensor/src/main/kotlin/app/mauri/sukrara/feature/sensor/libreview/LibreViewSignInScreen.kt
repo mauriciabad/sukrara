@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,7 +46,10 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.feature.sensor.R
 
-/** The LibreView sign-in route (from the new-sensor flow and Settings › Sensor). [onBack] leaves it. */
+/**
+ * THE LibreView account screen (the new-sensor flow and setup's sensor step, Settings › Sensor, Share with apps ›
+ * LibreView): the sign-in form, or who is signed in with *Done* and *Sign out*. [onBack] leaves it.
+ */
 @Composable
 fun LibreViewSignInRoute(
     viewModel: LibreViewSignInViewModel,
@@ -67,7 +72,10 @@ fun LibreViewSignInRoute(
     )
 }
 
-/** Stateless (screenshots render it). The password lives only in this form (never saved state) and the one call. */
+/**
+ * Stateless (screenshots render it). The password lives only in this form (never saved state) and the one call; the
+ * account keeps it encrypted once LibreView accepted it.
+ */
 @Composable
 fun LibreViewSignInContent(
     ui: SignInUi,
@@ -86,14 +94,19 @@ fun LibreViewSignInContent(
             when {
                 page == Page.Loading -> CircularProgressIndicator()
                 page == Page.SignedIn && ui is SignInUi.SignedIn -> SignedIn(ui.email, onSignOut, onBack)
-                else -> Form(ui, canSubmit, onSignIn, onBack)
+                else -> Form(ui, canSubmit, onSignIn, onSignOut, onBack)
             }
         }
     }
 }
 
 @Composable
-private fun SignedIn(email: String, onSignOut: () -> Unit, onBack: () -> Unit) {
+private fun SignedIn(
+    email: String,
+    onSignOut: () -> Unit,
+    onBack: () -> Unit,
+) {
+    var asking by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             stringResource(R.string.libreview_signed_in_as, email),
@@ -101,12 +114,27 @@ private fun SignedIn(email: String, onSignOut: () -> Unit, onBack: () -> Unit) {
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
-            stringResource(R.string.libreview_sign_out_note),
+            stringResource(R.string.libreview_uses),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Button(onBack, Modifier.fillMaxWidth()) { Text(stringResource(R.string.newsensor_action_done)) }
-        OutlinedButton(onSignOut, Modifier.fillMaxWidth()) { Text(stringResource(R.string.libreview_sign_out)) }
+        OutlinedButton({ asking = true }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.libreview_sign_out)) }
+    }
+    if (asking) {
+        // signing out stops more than this screen shows: the upload, the next sensor's start
+        AlertDialog(
+            onDismissRequest = { asking = false },
+            title = { Text(stringResource(R.string.libreview_sign_out_title)) },
+            text = { Text(stringResource(R.string.libreview_sign_out_note)) },
+            confirmButton = {
+                TextButton({
+                    asking = false
+                    onSignOut()
+                }) { Text(stringResource(R.string.libreview_sign_out)) }
+            },
+            dismissButton = { TextButton({ asking = false }) { Text(stringResource(R.string.libreview_cancel)) } },
+        )
     }
 }
 
@@ -115,9 +143,14 @@ private fun Form(
     ui: SignInUi,
     canSubmit: (String, String) -> Boolean,
     onSignIn: (String, String) -> Unit,
+    onSignOut: () -> Unit,
     onBack: () -> Unit,
 ) {
-    var email by rememberSaveable { mutableStateOf("") }
+    val shown = ui as? SignInUi.SignedOut
+    val prefill = shown?.email.orEmpty()
+    var email by rememberSaveable { mutableStateOf(prefill) }
+    // the account LibreView stopped accepting: its email, unless something is typed already
+    LaunchedEffect(prefill) { if (email.isEmpty() && prefill.isNotEmpty()) email = prefill }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     val working = ui == SignInUi.Working
@@ -128,6 +161,13 @@ private fun Form(
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (shown?.again == true) {
+            Text(
+                stringResource(R.string.libreview_again),
+                Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
         Text(
             stringResource(R.string.libreview_intro),
             style = MaterialTheme.typography.bodyMedium,
@@ -157,7 +197,7 @@ private fun Form(
         TextButton({ showPassword = !showPassword }) {
             Text(stringResource(if (showPassword) R.string.libreview_hide_password else R.string.libreview_show_password))
         }
-        (ui as? SignInUi.SignedOut)?.error?.let { error ->
+        shown?.error?.let { error ->
             Text(
                 stringResource(error.message),
                 Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
@@ -169,6 +209,10 @@ private fun Form(
             Text(stringResource(if (working) R.string.libreview_signing_in else R.string.libreview_sign_in))
         }
         TextButton(onBack, Modifier.fillMaxWidth()) { Text(stringResource(R.string.libreview_back)) }
+        // an account LibreView stopped accepting can also just be forgotten (nothing to confirm: it does nothing now)
+        if (shown?.again == true) {
+            TextButton(onSignOut, Modifier.fillMaxWidth(), enabled = !working) { Text(stringResource(R.string.libreview_sign_out)) }
+        }
     }
 }
 

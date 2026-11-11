@@ -3,7 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.sensor.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
+import app.mauri.sukrara.core.data.libreview.LibreViewCredentials
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.testing.Contracts
+import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
 import app.mauri.sukrara.sensor.pairing.ReceiverIds
@@ -19,6 +23,7 @@ import kotlinx.serialization.json.long
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.InetSocketAddress
@@ -67,9 +72,12 @@ class LibreViewAccountTest {
         assertTrue(LibreViewAccount.parse("<html>") is LoginAnswer.Failed)
     }
 
-    /** A local fake LibreLinkUp: the sign-in stores the receiver ID and the email — never the password or the token. */
+    /**
+     * A local fake LibreLinkUp: the sign-in keeps the receiver ID in the plain state and the account (email and
+     * password) only in the secure store, for the upload and the import; signing out forgets both (issue #177).
+     */
     @Test
-    fun signInStoresOnlyTheReceiverIdAndEmail() =
+    fun signInKeepsTheAccountOnceInTheSecureStore() =
         runBlocking {
             val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
             val seen = ArrayList<String>()
@@ -82,20 +90,46 @@ class LibreViewAccountTest {
             server.start()
             try {
                 val state = InMemoryStateStore(ReceiverIdState(own = 99L))
-                val account = LibreViewAccount(state, OkHttpClient(), Dispatchers.IO, "127.0.0.1:${server.address.port}", "http")
+                val secure = InMemorySecureStore()
+                val login = LibreViewLogin(secure)
+                val account = LibreViewAccount(state, login, OkHttpClient(), Dispatchers.IO, "127.0.0.1:${server.address.port}", "http")
+                assertEquals(LibreViewAccountState.SignedOut, account.account.first())
+                assertFalse(account.hasReceiverId())
                 val password = "pa55-word-SYNTHETIC"
                 assertEquals(SignInResult.SignedIn(3078366504L), account.signIn(" owner@example.com ", password))
                 assertTrue(seen.single().contains(password)) // sent once to the server
                 val stored = state.data.first()
-                assertEquals(ReceiverIdState(own = 99L, account = 3078366504L, accountEmail = "owner@example.com"), stored)
+                assertEquals(ReceiverIdState(own = 99L, account = 3078366504L), stored)
                 assertFalse(stored.toString().contains(password))
-                assertFalse(stored.toString().contains("SYNTHETIC")) // no token either
+                assertEquals(LibreViewAccountState.SignedIn("owner@example.com"), account.account.first())
+                assertEquals(LibreViewCredentials("owner@example.com", password), login.credentials())
+                assertTrue(secure.read(LibreViewLogin.NAME) != null)
+                assertTrue(account.hasReceiverId())
 
                 account.signOut()
                 assertEquals(ReceiverIdState(own = 99L), state.data.first()) // Sukrara's own ID survives sign-out
+                assertEquals(LibreViewAccountState.SignedOut, account.account.first())
+                assertNull(secure.read(LibreViewLogin.NAME))
+                assertNull(login.credentials())
             } finally {
                 server.stop(0)
             }
+        }
+
+    /** A receiver ID from before the account was kept (or a damaged account file) is no account: sign in once. */
+    @Test
+    fun aReceiverIdWithoutAnAccountIsNotUsed() =
+        runBlocking {
+            val login = LibreViewLogin(InMemorySecureStore())
+            val account =
+                LibreViewAccount(InMemoryStateStore(ReceiverIdState(own = 99L, account = 5L)), login, OkHttpClient(), Dispatchers.IO)
+            assertNull(account.receiverId.first())
+            login.save("owner@example.com", "pw")
+            assertEquals(5L, account.receiverId.first())
+            // LibreView refused the saved password (the upload found out): the receiver ID still starts sensors
+            login.rejected(LibreViewCredentials("owner@example.com", "pw"))
+            assertEquals(LibreViewAccountState.SignInAgain("owner@example.com"), account.account.first())
+            assertEquals(5L, account.receiverId.first())
         }
 
     @Test
@@ -109,14 +143,16 @@ class LibreViewAccountTest {
             }
             server.start()
             val state = InMemoryStateStore(ReceiverIdState())
+            val login = LibreViewLogin(InMemorySecureStore())
             try {
-                val account = LibreViewAccount(state, OkHttpClient(), Dispatchers.IO, "127.0.0.1:${server.address.port}", "http")
+                val account = LibreViewAccount(state, login, OkHttpClient(), Dispatchers.IO, "127.0.0.1:${server.address.port}", "http")
                 assertEquals(SignInResult.BadCredentials, account.signIn("a@b.c", "x"))
             } finally {
                 server.stop(0)
             }
-            val gone = LibreViewAccount(state, OkHttpClient(), Dispatchers.IO, "127.0.0.1:${server.address.port}", "http")
+            val gone = LibreViewAccount(state, login, OkHttpClient(), Dispatchers.IO, "127.0.0.1:${server.address.port}", "http")
             assertTrue(gone.signIn("a@b.c", "x") is SignInResult.Failed)
             assertEquals(ReceiverIdState(), state.data.first())
+            assertEquals("nothing kept", LibreViewAccountState.SignedOut, login.current())
         }
 }

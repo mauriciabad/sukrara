@@ -54,6 +54,8 @@ class SensorGallery {
             "wrong-password" to SignInUi.SignedOut(SignInError.WrongPassword),
             "accept-terms" to SignInUi.SignedOut(SignInError.AcceptTerms),
             "failed" to SignInUi.SignedOut(SignInError.Failed),
+            // LibreView no longer accepts the saved password (the upload found out): the email is filled in
+            "again" to SignInUi.SignedOut(email = "ana@example.com", again = true),
             "signed-in" to SignInUi.SignedIn("ana@example.com"),
         )
 
@@ -113,6 +115,6 @@ class SensorGallery {
             dark = true,
             fontScale = 1f,
             prefix = "es-",
-            only = setOf("needs-libreview", "takeover-failed", "warming-up", "accept-terms", "signed-in"),
+            only = setOf("needs-libreview", "takeover-failed", "warming-up", "accept-terms", "again", "signed-in"),
         )
 }

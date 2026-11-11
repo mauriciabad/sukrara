@@ -72,7 +72,8 @@
 
     <!-- LibreView sign-in (receiver ID only). -->
     <string name="libreview_title">LibreView account</string>
-    <string name="libreview_intro">Sukrara uses your LibreView account only to start sensors with its ID. Your password is sent once to LibreView and never saved.</string>
+    <string name="libreview_intro">Sign in once. Sukrara keeps your LibreView email and password encrypted on this phone and uses them to start and take over sensors and, when you turn it on, to send your data to LibreView.</string>
+    <string name="libreview_again">LibreView no longer accepts the saved password. Sign in again.</string>
     <string name="libreview_email">Email</string>
     <string name="libreview_password">Password</string>
     <string name="libreview_show_password">Show password</string>
@@ -80,8 +81,11 @@
     <string name="libreview_sign_in">Sign in</string>
     <string name="libreview_signing_in">Signing in…</string>
     <string name="libreview_signed_in_as">Signed in as %1$s</string>
+    <string name="libreview_uses">Sukrara uses this account to start and take over sensors and, when it is on, to send your data to LibreView (Settings › Share with apps › LibreView).</string>
     <string name="libreview_sign_out">Sign out</string>
-    <string name="libreview_sign_out_note">Signing out keeps the current sensor running. Starting the next one asks you to sign in again.</string>
+    <string name="libreview_sign_out_title">Sign out of LibreView?</string>
+    <string name="libreview_cancel">Cancel</string>
+    <string name="libreview_sign_out_note">Sukrara forgets your LibreView email and password. Sending to LibreView stops, and starting or taking over the next sensor asks you to sign in again. The sensor that is running keeps working.</string>
     <string name="libreview_back">Back</string>
     <string name="libreview_error_wrong_password">Wrong email or password.</string>
     <string name="libreview_error_accept_terms">LibreView has new terms. Accept them in the LibreView or Libre app, then sign in again.</string>

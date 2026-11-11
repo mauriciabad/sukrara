@@ -50,6 +50,8 @@ class NfcPairing internal constructor(
     private val onPaired: () -> Unit,
     private val io: CoroutineDispatcher,
     private val log: (String) -> Unit = {},
+    /** The LibreView account's receiver ID, null without an account (`LibreViewAccount.receiverId`). */
+    private val account: suspend () -> Long? = { ids.data.first().account },
 ) {
     suspend fun pair(tag: Tag): PairOutcome =
         withContext(io) {
@@ -60,8 +62,7 @@ class NfcPairing internal constructor(
     /** The account's receiver ID and Sukrara's own one (made once, on the first tap). */
     internal suspend fun receiverIds(): Pair<Long?, Long> {
         ids.update { if (it.own == null) it.copy(own = ReceiverIds.newOwn()) else it }
-        val s = ids.data.first()
-        return s.account to checkNotNull(s.own)
+        return account() to checkNotNull(ids.data.first().own)
     }
 
     internal suspend fun handle(result: Libre3Nfc.Result): PairOutcome =

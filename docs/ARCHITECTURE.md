@@ -329,8 +329,12 @@ The wearer's glucose input. `SensorModule` builds it; the hub reads `SourceManag
   time twice as live per pairing (`SensorStatus.Direct.key`).
 - **Storage**: the whole pairing (family, address, start, PIN, authorization, ended; a scanned family: its id, found address and name, pairing time) is one SecureStore entry `sensor`
   (Keystore alias `sukrara.sensor`): one atomic write; unreadable → `PairingLoad.Corrupt` → *scan the sensor again*.
-  Receiver IDs (Sukrara's own, the LibreView account's + email) in the typed DataStore `receiver-ids.json`. No password or
-  token is stored.
+  Receiver IDs (Sukrara's own, the LibreView account's) in the typed DataStore `receiver-ids.json`; the account's
+  receiver ID counts only while the app has a LibreView account. The account itself (email and password) is THE
+  LibreView account of the app, `:core:data` `libreview/LibreViewLogin` in SecureStore `libreview-account`
+  (`DataModule.libreViewLogin`): signed in once on the account screen (`:feature:sensor` `LibreViewSignInScreen`) through
+  `:sensor` `LibreViewAccount` (LibreLinkUp login), and used by the sensor, the LibreView upload and Import history;
+  signing out there signs out everywhere (issue #177).
 - **Takeover and receiver IDs** (verified from code and docs/02; device test pending): a Libre 3 is bound for life to
   the receiver ID it was started with; NFC takeover (`A8`) succeeds only with that ID and a wrong one changes nothing
   (`B1`). Sukrara starts sensors only with the LibreView account's ID (nothing sent without it) and tries account →
@@ -352,7 +356,7 @@ read (new app id, no migration). Nothing is in cloud backup or device transfer (
 | Typed state (alert episodes, sensor pairing, the wearer's last mirrored settings `wearer_settings`, …) | `files/state/<name>.json` (DataStore + kotlinx JSON) | `DataModule.typedStore(name, serializer, initial, whenCorrupt)` |
 | A follower's settings in use | the stored settings, the mirrored graph rows resolved per `follower.settingsFrom` (Wearer / Default / Custom) | `FollowerSettingsRepository` (`:core:data`), built by `FollowerSettingsBridge` (`:app`, also the alert runtime's mirrored values, the alert pages' values in use and `alerts.source`) |
 | The wearer's settings for its followers | this phone's mirrored graph rows under their wire keys + the whole alert settings (SPEC §3); the owner engine keeps the `"mirror": true` rows and publishes the settings event when they change | `WearerSettingsSource` (`:app`) → `MirroredSettingsSource` of `ShareOwnerModule` |
-| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview`, `sensor`, `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
+| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview` (the upload's token), `libreview-account` (THE LibreView account: email + password), `sensor`, `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
 | History | `databases/sukrara.db` (Room; only the current version's schema in `core/data/schemas/`; **no migrations**: a database of any other version, older or newer, is dropped, every table, and created empty: `fallbackToDestructiveMigration(dropAllTables = true)`, which covers downgrades too, `DataModule.databaseReplaced`, `DatabaseSchemaTest`, check `room-schema`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox`, `pen_ledger` (the pen ledger, one JSON row, written with its entries in one transaction) | `ReadingsRepository`, `TreatmentsRepository`, `PenLedgerRepository`, DAOs for the sharing ledger |
 | Imported history | the same tables: readings under `SourceId.Imported` (`import-libreview`, `import-tidepool`, `import-file`), entries with `imported_from`; stored only through THE import path (`HistoryImport` rules in `:core:model`, pure and property-tested; `RoomHistoryImport`, one transaction per batch); `ReadingDao.upsertOwnFirst` lets the sensor's own reading replace an imported copy | `DataModule.historyImport` (`HistoryImportStore`) |
 | Other files | `files/<path>` atomic tmp + fsync + rename | `DataModule.fileStore(path, codec)` → `Loaded / Missing / Corrupt` |
@@ -457,12 +461,12 @@ content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`,
   typed store `nightscout-upload`, device `Sukrara-<6 hex>` per site).
 - `libreview/` — `LibreViewPayload` (contracts/treatments §3, byte for byte), `LibreViewClient` (Abbott's config →
   sign-in / measurements / sensor registration; https only, no redirects), `LibreViewQueue` (pure: entries LibreView
-  lacks from the version ledger, glucose by life count), `LibreViewUploader` (settings JSON `apps.libreview`; token +
-  profile only in SecureStore `libreview`, the password never stored; ledger, sent life counts, device id and
-  `glucoseFrom` / `entriesFrom` / AccountId in the typed store `libreview-upload`; history not sent yet in
-  `libreview-unsent`). Glucose comes from `:sensor`'s `SourceManager.sensorGlucose` (Libre 3 only, each batch tagged
-  with its serial), mapped in `AppGraph`; so does the sensor screens' receiver ID (`LibreViewAccount.receiverId`) with
-  `ReceiverIds.fromAccountId` for the other-account question.
+  lacks from the version ledger, glucose by life count), `LibreViewUploader` (settings JSON `apps.libreview`; signs in
+  by itself with THE LibreView account, `LibreViewLogin`, and follows it: signed out drops the token, a refused password
+  marks the account *sign in again*; token + profile only in SecureStore `libreview`; ledger, sent life counts, device
+  id, the other-device stop and `glucoseFrom` / `entriesFrom` / AccountId in the typed store `libreview-upload`; history
+  not sent yet in `libreview-unsent`). Glucose comes from `:sensor`'s `SourceManager.sensorGlucose` (Libre 3 only, each
+  batch tagged with its serial), mapped in `AppGraph`.
 - `localserver/` — `LocalHttpServer` (127.0.0.1, fixed pool, bounded head and deadline), `XdripEndpoint` (Juggluco's
   JSON, pure), `XdripServer` (follows `apps.xdrip` and the sensor source; readings from the store, "last asked" in
   memory), `NightscoutApi` (the v1 read API, pure: routes, secret check, per-source `device` labels) and
@@ -485,7 +489,8 @@ content the app wraps in the settings page frame (`AppsRoute`, `LibreViewRoute`,
 - `export/` — `GlucoseCsv` (`contracts/export`), `Exporter` (period → stores), `ExportViewModel` (SAF save, FileProvider
   `${applicationId}.export` share from `cache/export/`).
 - `history/` — Import history (wearer): `HistoryCsv` (reads the `contracts/export` layout back: Sukrara's export, the
-  earlier app's, LibreView's *Download glucose data* file; columns by position, the date layout every row fits),
+  earlier app's, LibreView's *Download glucose data* file; columns by position; `FileDates`: whatever date layout
+  the account's language and country write, the order every row fits, a clock change's repeated hour kept),
   `TidepoolHistory` (Tidepool's data model back into readings / entries; `TidepoolClient.data` / `notes` read it,
   `TidepoolUploader.withAccount` lends the signed-in session under the upload's lock), `HistoryImporter` (the last
   90 days a week at a time through `DataModule.historyImport`, one job in the app scope, *Stop*, a 429 / 503 waits for

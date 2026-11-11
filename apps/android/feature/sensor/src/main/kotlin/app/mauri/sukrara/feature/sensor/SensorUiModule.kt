@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
@@ -69,7 +70,7 @@ class SensorUiModule(
                     coreAvailable = sensors.hasLibre3Core,
                     nfcAvailable = nfc != null,
                     nfcOn = nfc?.isEnabled == true,
-                    signedIn = sensors.libreView.email.first() != null,
+                    signedIn = sensors.libreView.hasReceiverId(),
                     officialAppInstalled = OfficialApps.anyInstalled(app.packageManager),
                     bluetoothPermission = granted(Manifest.permission.BLUETOOTH_CONNECT),
                     bluetoothOn = app.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true,
@@ -116,7 +117,7 @@ class SensorUiModule(
 
     val libreView: LibreViewPort =
         object : LibreViewPort {
-            override val email: Flow<String?> get() = sensors.libreView.email
+            override val account: Flow<LibreViewAccountState> get() = sensors.libreView.account
 
             override suspend fun signIn(email: String, password: String): SignInResult = sensors.libreView.signIn(email, password)
 

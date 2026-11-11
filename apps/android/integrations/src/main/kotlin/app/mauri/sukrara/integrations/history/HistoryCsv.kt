@@ -12,12 +12,9 @@ import app.mauri.sukrara.core.model.storage.HistoryImport
 import app.mauri.sukrara.core.model.storage.ImportSource
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /** What a glucose file holds, ready for the import path. */
@@ -31,12 +28,14 @@ data class FileHistory(
 )
 
 /** Why a file can't be imported. */
-enum class FileProblem {
+sealed interface FileProblem {
     /** Not LibreView's "Glucose Data" layout (any other CSV, a spreadsheet, a picture…). */
-    NotGlucoseData,
+    data object NotGlucoseData : FileProblem
 
-    /** The layout is right but its times can't be read (a date format we don't know). */
-    UnknownDates,
+    /** The layout is right but its times can't be read: [example] is the first time that couldn't (as the file has it). */
+    data class UnknownDates(
+        val example: String,
+    ) : FileProblem
 }
 
 /**
@@ -45,8 +44,10 @@ enum class FileProblem {
  * LibreView driver reads them, so LibreView's translated headers work too; the unit from the glucose column's header.
  *
  * - Time: Sukrara's `Time (ISO 8601)` column (with the offset) when it has one, else `Device Timestamp` in the
- *   person's time zone, in whichever of LibreView's date layouts every row fits (month or day first: the one that
- *   keeps the file in order).
+ *   person's time zone, in whatever layout LibreView wrote it ([FileDates]: day, month or year first, 12 or 24 hours,
+ *   one- or two-digit hours, seconds or not); a row with no time is left out. In the hour a clock change repeats, the
+ *   second pass gets the later offset.
+ * - Comma-separated; a file a spreadsheet saved again with `;` or tabs is read too. UTF-8 or UTF-16 ([decode]).
  * - Record type 0 (historic) and 1 (scan) are readings, LO / HI as the flags; 4 rapid / long insulin (meal + correction
  *   + user change when the rapid column is empty), 5 carbs in grams, 6 a note; the note text goes with its entry.
  *   Strip glucose (finger-stick), ketones, food in servings and non-numeric amounts are counted as skipped: Sukrara
@@ -56,19 +57,6 @@ enum class FileProblem {
  */
 object HistoryCsv {
     private const val MGDL_PER_MMOL = 18.0182
-    private val DATE_LAYOUTS =
-        listOf(
-            "yyyy-MM-dd HH:mm",
-            "dd-MM-yyyy HH:mm",
-            "MM-dd-yyyy HH:mm",
-            "MM-dd-yyyy hh:mm a",
-            "dd/MM/yyyy HH:mm",
-            "MM/dd/yyyy HH:mm",
-            "MM/dd/yyyy hh:mm a",
-            "dd.MM.yyyy HH:mm",
-            "yyyy/MM/dd HH:mm",
-            "yyyy-MM-dd HH:mm:ss",
-        ).map { DateTimeFormatter.ofPattern(it, Locale.US) }
 
     sealed interface Result {
         data class Ok(
@@ -80,26 +68,31 @@ object HistoryCsv {
         ) : Result
     }
 
+    /** Reads [text]. [now] (when known) settles a file whose dates fit both day first and month first: see [FileDates]. */
     fun parse(
         text: String,
         zone: ZoneId,
+        now: Instant? = null,
     ): Result {
-        val rows = rows(text.removePrefix("\uFEFF"))
-        val headerAt = rows.indexOfFirst { isHeader(it) }
-        if (headerAt < 0) return Result.Refused(FileProblem.NotGlucoseData)
+        val body = text.removePrefix("\uFEFF")
+        val (rows, headerAt) =
+            SEPARATORS
+                .asSequence()
+                .map { sep -> rows(body, sep).let { r -> r to r.indexOfFirst { isHeader(it) } } }
+                .firstOrNull { it.second >= 0 }
+                ?: return Result.Refused(FileProblem.NotGlucoseData)
         val header = rows[headerAt]
         val mmol = header.getOrNull(4).orEmpty().contains("mmol", ignoreCase = true)
         val ours = header.getOrNull(19).orEmpty().startsWith("Time (ISO") || rows.take(headerAt).any { "Sukrara" in it }
         val source = if (ours) ImportSource.File else ImportSource.LibreView
         val data = rows.drop(headerAt + 1).filter { it.size >= 14 && it[3].trim().toIntOrNull() != null }
-        val local = data.filter { iso(it) == null }.map { it[2].trim() }
-        val layout = if (local.isEmpty()) null else (layoutFor(local) ?: return Result.Refused(FileProblem.UnknownDates))
+        val times = localTimes(data, zone, now) ?: return Result.Refused(FileProblem.UnknownDates(firstUnread(data, now, zone)))
 
         val readings = ArrayList<Reading>()
         val treatments = ArrayList<TreatmentRecord>()
         var skipped = 0
-        for (row in data) {
-            val at = iso(row) ?: layout?.let { localTime(row[2].trim(), it, zone) }
+        for ((i, row) in data.withIndex()) {
+            val at = iso(row) ?: times[i]
             if (at == null) {
                 skipped++
                 continue
@@ -154,28 +147,44 @@ object HistoryCsv {
             }
         }
 
-    private fun localTime(
-        text: String,
-        layout: DateTimeFormatter,
-        zone: ZoneId,
-    ): Instant? =
-        try {
-            LocalDateTime.parse(text, layout).atZone(zone).toInstant()
-        } catch (e: DateTimeParseException) {
-            null
-        }
-
     /**
-     * The date layout every row fits; when several do (no day above 12), the one that keeps the most rows in order (a
-     * day-month swap scatters them), then the first listed (day before month, as most of the world writes it).
+     * Each row's instant from its `Device Timestamp` (null: an ISO row, or no time), all in the one layout the file
+     * fits; null when some time can't be read in it.
      */
-    internal fun layoutFor(times: List<String>): DateTimeFormatter? {
-        val fitting =
-            DATE_LAYOUTS.mapNotNull { f ->
-                val parsed = times.map { t -> runCatching { LocalDateTime.parse(t, f) }.getOrNull() ?: return@mapNotNull null }
-                f to parsed.zipWithNext().count { (a, b) -> b.isBefore(a) }
-            }
-        return fitting.minByOrNull { it.second }?.first
+    private fun localTimes(
+        data: List<List<String>>,
+        zone: ZoneId,
+        now: Instant?,
+    ): List<Instant?>? {
+        val parts = data.map { row -> if (iso(row) != null || row[2].isBlank()) null else (FileDates.split(row[2]) ?: return null) }
+        val cells = parts.filterNotNull()
+        if (cells.isEmpty()) return parts.map { null }
+        val order = FileDates.orderFor(cells, now?.atZone(zone)?.toLocalDateTime()) ?: return null
+        val local = parts.map { p -> p?.let { FileDates.local(it, order) } }
+        val oldestFirst = FileDates.oldestFirst(local.filterNotNull())
+        // per device (its serial): the clock change's repeated hour follows that device's own order
+        val previous = HashMap<String, Instant>()
+        return local.mapIndexed { i, t ->
+            t?.let { FileDates.instant(it, zone, previous[data[i][1]], oldestFirst).also { at -> previous[data[i][1]] = at } }
+        }
+    }
+
+    /** The first time the file's best-fitting layout can't read (what the error shows). */
+    private fun firstUnread(
+        data: List<List<String>>,
+        now: Instant?,
+        zone: ZoneId,
+    ): String {
+        val cells = data.filter { iso(it) == null && it[2].isNotBlank() }.map { it[2] }
+        cells.firstOrNull { FileDates.split(it) == null }?.let { return it.trim() }
+        val parts = cells.map { FileDates.split(it)!! }
+        val best = FileDates.Order.entries.maxBy { FileDates.fits(parts, it) }
+        return cells
+            .zip(parts)
+            .firstOrNull { FileDates.local(it.second, best) == null }
+            ?.first
+            ?.trim()
+            ?: cells.firstOrNull()?.trim().orEmpty()
     }
 
     /** A glucose cell: a number (mg/dL, or mmol/L with `.` or `,`), or LO / HI; null when it's empty or not a value. */
@@ -223,8 +232,25 @@ object HistoryCsv {
         return TreatmentRecord(Treatment(id, kind, rounded, at, note, at, false, origin), importedFrom = source)
     }
 
-    /** RFC 4180 rows: quoted cells may hold commas, quotes (doubled) and line breaks; CRLF or LF. */
-    internal fun rows(text: String): List<List<String>> {
+    /** What the cells may be separated by: LibreView's comma, then what spreadsheets save (semicolon, tab). */
+    private val SEPARATORS = listOf(',', ';', '\t')
+
+    /**
+     * A chosen file's text: UTF-16 when it starts with that byte-order mark (a spreadsheet's "Unicode text"), else UTF-8
+     * (its mark dropped too).
+     */
+    fun decode(bytes: ByteArray): String =
+        when {
+            bytes.size >= 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte() -> String(bytes, 2, bytes.size - 2, Charsets.UTF_16LE)
+            bytes.size >= 2 && bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte() -> String(bytes, 2, bytes.size - 2, Charsets.UTF_16BE)
+            else -> bytes.decodeToString().removePrefix("\uFEFF")
+        }
+
+    /** RFC 4180 rows: quoted cells may hold [sep], quotes (doubled) and line breaks; CRLF or LF. */
+    internal fun rows(
+        text: String,
+        sep: Char = ',',
+    ): List<List<String>> {
         val out = ArrayList<List<String>>()
         var row = ArrayList<String>()
         val cell = StringBuilder()
@@ -247,7 +273,7 @@ object HistoryCsv {
                         quoted = true
                     }
 
-                    ',' -> {
+                    sep -> {
                         row += cell.toString()
                         cell.clear()
                     }

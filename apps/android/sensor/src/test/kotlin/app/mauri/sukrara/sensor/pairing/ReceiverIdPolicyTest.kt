@@ -112,13 +112,13 @@ class ReceiverIdPolicyTest {
     @Test
     fun ownIdIsMadeOnceAndSurvivesSignOutAndAForgottenSensor() =
         runTest {
-            val ids = InMemoryStateStore(ReceiverIdState(account = account, accountEmail = "a@b.c"))
+            val ids = InMemoryStateStore(ReceiverIdState(account = account))
             val store = PairingStore(InMemorySecureStore())
             val nfc = NfcPairing(store, ids, {}, StandardTestDispatcher(testScheduler))
             val (acc, first) = nfc.receiverIds()
             assertEquals(account, acc)
             assertEquals(first, nfc.receiverIds().second)
-            ids.update { it.copy(account = null, accountEmail = null) } // sign-out
+            ids.update { it.copy(account = null) } // sign-out
             store.forget()
             assertEquals(first, ids.data.first().own)
             assertEquals(null to first, nfc.receiverIds())

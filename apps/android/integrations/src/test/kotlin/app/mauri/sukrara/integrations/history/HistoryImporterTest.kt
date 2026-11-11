@@ -6,8 +6,11 @@ package app.mauri.sukrara.integrations.history
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.ImportSource
+import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryHistoryImport
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
@@ -155,6 +158,49 @@ class HistoryImporterTest {
             assertEquals(0, again.added)
             assertEquals(5, all().size)
             assertTrue(treatments.all.all { it.importedFrom == ImportSource.LibreView })
+        }
+
+    @Test
+    fun `issue 176 - LibreView's file after the earlier app's export adds nothing twice, unread dates say which`() =
+        runBlocking {
+            // what the owner imported instead: the earlier app's export of the same evening (its exact times)
+            val evening = Instant.parse("2026-11-10T02:55:00Z") // 9:55 PM in New York
+            store.importReadings(
+                listOf(
+                    Reading(evening + Duration.ofSeconds(40), 140, null, ImportSource.File.readings),
+                    Reading(evening + Duration.ofMinutes(5).plusSeconds(40), 138, null, ImportSource.File.readings),
+                ),
+            )
+            store.importTreatments(
+                listOf(
+                    TreatmentRecord(
+                        Treatment(
+                            "earlier-app",
+                            TreatmentKind.RapidInsulin,
+                            3.5,
+                            Instant.parse("2026-11-10T18:05:20Z"),
+                            "lunch",
+                            now,
+                            false,
+                            TreatmentOrigin.Phone,
+                        ),
+                        importedFrom = ImportSource.File,
+                    ),
+                ),
+            )
+            val importer = importer()
+            importer.importFile(resource("libreview-us-12h.csv"))
+            val done = importer.state.value as ImportState.Done
+            assertEquals(5, done.tally.readings)
+            // the carbs are new; the bolus is the export's
+            assertEquals(1, done.tally.entries)
+            assertEquals(3, done.tally.alreadyHere)
+            assertEquals(7, all().size)
+            assertEquals(2, treatments.all.size)
+
+            importer.importFile(resource("libreview-us-12h.csv").replace("11-10-2026 11:55 AM", "11-10-2026 noon"))
+            assertEquals(ImportFailure.UnknownDates("11-10-2026 noon"), (importer.state.value as ImportState.Failed).why)
+            assertEquals(7, all().size)
         }
 
     @Test

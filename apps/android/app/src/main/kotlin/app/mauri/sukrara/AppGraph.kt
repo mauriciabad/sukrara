@@ -82,7 +82,6 @@ import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.PairingLoad
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
-import app.mauri.sukrara.sensor.pairing.ReceiverIds
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import app.mauri.sukrara.share.FollowerModule
@@ -178,6 +177,7 @@ class AppGraph(
             secure = data.secureStore,
             // losing it only asks for the LibreView sign-in again
             receiverIds = data.typedStore("receiver-ids", ReceiverIdState.serializer(), ReceiverIdState(), ReceiverIdState()),
+            libreViewLogin = data.libreViewLogin,
             sourceKind = data.settings.flow(SensorSource).map(SensorSourceKind::fromId),
             http = data.http,
             clock = clock,
@@ -427,9 +427,7 @@ class AppGraph(
                 sensor.source.sensorGlucose.mapNotNull { b ->
                     b.current?.let { LiveReading(it.mgdl, it.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount) }
                 },
-            libreViewEmail = sensor.libreView.email,
-            sensorReceiverId = sensor.libreView.receiverId,
-            receiverIdOf = ReceiverIds::fromAccountId,
+            libreViewLogin = data.libreViewLogin,
             role = role.data.map { it.role },
             jugglucoIsSource = data.settings.flow(SensorSource).map { SensorSourceKind.fromId(it) == SensorSourceKind.Juggluco },
             http = data.http,

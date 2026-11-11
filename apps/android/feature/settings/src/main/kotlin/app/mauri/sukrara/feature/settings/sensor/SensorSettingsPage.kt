@@ -64,12 +64,12 @@ import java.time.ZoneId
 import app.mauri.sukrara.core.designsystem.R as DsR
 import app.mauri.sukrara.graph.Clock as ClockText
 
-/** Where the page's buttons lead: the sensor feature's new-sensor flow and LibreView sign-in. */
+/** Where the page's buttons lead: the sensor feature's new-sensor flow and the LibreView account screen. */
 class SensorSettingsActions(
     val pairNewSensor: () -> Unit = {},
+    /** The LibreView account screen: the sign-in, or who is signed in with *Sign out*. */
     val signIn: () -> Unit = {},
     val setSource: (SourceChoice) -> Unit = {},
-    val signOut: () -> Unit = {},
     val setOpenOnScan: (Boolean) -> Unit = {},
     val forget: () -> Unit = {},
     val allowTaps: () -> Unit = {},
@@ -106,7 +106,6 @@ fun SensorSettingsScreen(
             onPairNewSensor,
             onSignIn,
             viewModel::setSource,
-            viewModel::signOut,
             viewModel::setOpenOnScan,
             viewModel::forget,
             viewModel::allowTaps,
@@ -628,7 +627,13 @@ private fun AccountGroup(
                 Button(onClick = actions.signIn, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.st_sensor_sign_in)) }
             }
         } else {
-            InfoRow(stringResource(R.string.st_sensor_signed_in_as), summary = account.email, icon = DsR.drawable.ds_ic_account_circle)
+            // THE account screen (shared with the LibreView upload): who is signed in, *Sign out*, or the sign-in again
+            NavigationRow(
+                stringResource(if (account.signInAgain) R.string.st_sensor_sign_in_again else R.string.st_sensor_signed_in_as),
+                actions.signIn,
+                summary = account.email.ifEmpty { null },
+                icon = DsR.drawable.ds_ic_account_circle,
+            )
             account.receiverId?.let {
                 InfoRow(
                     stringResource(R.string.st_sensor_receiver_id),
@@ -636,14 +641,6 @@ private fun AccountGroup(
                     icon = DsR.drawable.ds_ic_key,
                 )
             }
-            DangerRow(
-                title = stringResource(R.string.st_sensor_sign_out),
-                confirmTitle = stringResource(R.string.st_sensor_sign_out_title),
-                confirmText = stringResource(R.string.st_sensor_sign_out_text),
-                confirmAction = stringResource(R.string.st_sensor_sign_out),
-                onConfirm = actions.signOut,
-                icon = DsR.drawable.ds_ic_link_off,
-            )
         }
     }
 }

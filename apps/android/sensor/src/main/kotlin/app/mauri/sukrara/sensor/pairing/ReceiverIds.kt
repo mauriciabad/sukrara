@@ -41,8 +41,8 @@ object ReceiverIds {
 
 /**
  * The receiver IDs Sukrara knows (typed DataStore, `files/datastore/receiver-ids.json`). [own] survives sign-out and a
- * forgotten sensor. [account] and [accountEmail] are set by a LibreView sign-in and cleared by sign-out. No password
- * and no token are ever stored: the receiver ID never changes for an account.
+ * forgotten sensor. [account] is set by the LibreView sign-in (the account itself: `LibreViewLogin`) and cleared by
+ * sign-out: the receiver ID never changes for an account.
  */
 @Serializable
-data class ReceiverIdState(val own: Long? = null, val account: Long? = null, val accountEmail: String? = null)
+data class ReceiverIdState(val own: Long? = null, val account: Long? = null)

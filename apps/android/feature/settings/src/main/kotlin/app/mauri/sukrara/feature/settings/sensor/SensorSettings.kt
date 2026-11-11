@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.time.Instant
 
 /** Where the wearer's glucose comes from (schema `source.source`). */
@@ -28,8 +27,11 @@ enum class SourceChoice {
 /** The current sensor as the page shows it. */
 data class SensorSummary(val serial: String, val startedAt: Instant, val endsAt: Instant)
 
-/** The signed-in LibreView account: only the email and the receiver ID are kept (never the password). */
-data class LibreViewSummary(val email: String, val receiverId: Long?)
+/**
+ * The app's LibreView account (the one the LibreView sign-in screen keeps; that screen shows it with *Sign out*) and its
+ * receiver ID. [signInAgain]: LibreView no longer accepts the saved password ([email] may be "" when it can't be read).
+ */
+data class LibreViewSummary(val email: String, val receiverId: Long?, val signInAgain: Boolean = false)
 
 /**
  * Whether glucose is actually arriving: the hub's [SensorState] says Active while the link is still connecting or
@@ -110,9 +112,6 @@ interface SensorSettingsPort {
      */
     fun setSource(source: SourceChoice)
 
-    /** Forgets the LibreView account's email and receiver ID; a running sensor keeps working. */
-    suspend fun signOut()
-
     /** *Open Sukrara when you scan a sensor* on or off. */
     fun setOpenOnScan(on: Boolean) = Unit
 
@@ -144,10 +143,6 @@ class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel(
     fun setSource(source: SourceChoice) {
         if (state.value?.source == source) return
         port.setSource(source)
-    }
-
-    fun signOut() {
-        viewModelScope.launch { port.signOut() }
     }
 
     fun setOpenOnScan(on: Boolean) = port.setOpenOnScan(on)

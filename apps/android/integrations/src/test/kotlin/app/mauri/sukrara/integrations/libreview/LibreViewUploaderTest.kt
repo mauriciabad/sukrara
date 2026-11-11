@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -28,7 +30,6 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -36,7 +37,10 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 
-/** The LibreView upload against a fake LibreView (MockWebServer on loopback): no real account is ever contacted. */
+/**
+ * The LibreView upload against a fake LibreView (MockWebServer on loopback): no real account is ever contacted. It uses
+ * the app's one LibreView account (issue #177): signed in once, never asked for here.
+ */
 class LibreViewUploaderTest {
     private val server = MockWebServer()
     private val now = Instant.parse("2026-10-28T12:00:00Z")
@@ -46,8 +50,8 @@ class LibreViewUploaderTest {
     private val store = InMemoryStateStore(LvState())
     private val unsent = InMemoryStateStore(LvUnsent())
 
-    /** The receiver ID of the sensor screens' LibreView account (null: not signed in there). */
-    private val sensorReceiverId = MutableStateFlow<Long?>(null)
+    /** THE LibreView account of the app (signed in once on the account screen; the sensor uses it too). */
+    private val login = LibreViewLogin(secure)
     private val treatments = InMemoryTreatmentsRepository()
     private val role = MutableStateFlow<Role?>(Role.Wearer)
     private val sensor = MutableStateFlow<CurrentSensor?>(null)
@@ -59,6 +63,9 @@ class LibreViewUploaderTest {
     /** `/api/measurements` answers: null = ok. */
     private var measurements: MockResponse? = null
     private var redirectConfig = false
+
+    /** The next `/api/measurements` answers 401: the token expired. */
+    private var refuseTokenOnce = false
     private var refuseRegistration = false
 
     private lateinit var uploader: LibreViewUploader
@@ -102,7 +109,12 @@ class LibreViewUploaderTest {
                         }
 
                         "/api/measurements" -> {
-                            measurements ?: MockResponse().setBody("""{"status":0}""")
+                            if (refuseTokenOnce) {
+                                refuseTokenOnce = false
+                                MockResponse().setResponseCode(401)
+                            } else {
+                                measurements ?: MockResponse().setBody("""{"status":0}""")
+                            }
                         }
 
                         else -> {
@@ -125,8 +137,7 @@ class LibreViewUploaderTest {
             treatments,
             emptyFlow(),
             sensor,
-            sensorReceiverId,
-            ::receiverId,
+            login,
             role,
             LibreViewClient(OkHttpClient(), server.url("/assets").toString(), allowLoopbackHttp = true),
             clock,
@@ -136,8 +147,6 @@ class LibreViewUploaderTest {
     /** The fake's accounts: an alias of "me" is the same account. */
     private fun accountOf(email: String) =
         if (email.startsWith("me")) "01234567-89ab-cdef-0123-456789abcdef" else "fedcba98-7654-3210-fedc-ba9876543210"
-
-    private fun receiverId(accountId: String) = accountId.hashCode().toLong() and 0xffffffffL
 
     @After
     fun tearDown() = server.shutdown()
@@ -153,53 +162,114 @@ class LibreViewUploaderTest {
         Treatment(id, kind, amount, now - Duration.ofMinutes(minAgo), "", modified, deleted, TreatmentOrigin.Phone),
     )
 
-    private fun signedInAndOn() =
+    /** Signed in once on the account screen, the upload switched on: its first cycle signs in by itself. */
+    private fun signedInAndOn(email: String = "me@example.com") =
         runBlocking {
-            assertEquals(LvSignIn.Done, uploader.signIn("me@example.com", "secret-pw", takeOver = false))
+            login.save(email, "secret-pw")
             uploader.change { it.copy(on = true) }
+            uploader.cycle()
+            assertTrue("the upload's own token", secure.read(LibreViewUploader.NAME) != null)
         }
+
+    /** Signs out everywhere (the account screen), the upload following it. */
+    private suspend fun signOut() {
+        login.signOut()
+        uploader.followLogin(login.current())
+    }
+
+    private fun logins() = requests.filter { it.path == "/api/nisperson/getauthentication" }.map { it.body.clone().readUtf8() }
 
     private fun uploads() = requests.filter { it.path == "/api/measurements" }.map { it.body.clone().readUtf8() }
 
     @Test
-    fun `sign-in keeps the token, never the password`() =
+    fun `issue 177 - the account signed in once is used by itself, and only the token is the upload's`() =
         runBlocking {
             signedInAndOn()
             val saved = secure.read(LibreViewUploader.NAME)!!.decodeToString()
             assertTrue("tok-1" in saved)
-            assertFalse("secret-pw" in saved)
+            assertFalse(saved.contains("secret-pw"))
             assertFalse("secret-pw" in store.data.first().toString())
             assertFalse("secret-pw" in settings.toString())
             assertEquals("me@example.com", store.data.first().email)
-            // the config's key goes with the sign-in; nothing is sent with SetDevice:true
+            val page = uploader.page.first()
+            assertTrue(page.signedIn)
+            assertEquals("me@example.com", page.email)
+            assertEquals(UploadStatus.Waiting, page.status)
+            // the config's key goes with the sign-in; it never takes over by itself
             val auth = requests.first { it.path == "/api/nisperson/getauthentication" }
             assertEquals("KEY", auth.getHeader("x-api-key"))
-            assertTrue("\"SetDevice\":false" in auth.body.clone().readUtf8())
+            assertEquals(listOf(false), logins().map { "\"SetDevice\":true" in it })
+            // the token is kept: no new sign-in per cycle
+            treatments.upsertIfNewer(treatment("a", 5, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            assertEquals(1, uploads().size)
+            assertEquals(1, logins().size)
+        }
+
+    @Test
+    fun `no account - nothing is asked here, the page points to the account screen`() =
+        runBlocking {
+            uploader.change { it.copy(on = true) }
+            uploader.cycle()
+            assertTrue(requests.isEmpty())
+            val page = uploader.page.first()
+            assertFalse(page.signedIn)
+            assertEquals(UploadStatus.Setup, page.status)
+            assertEquals(false, uploader.signedInKnown.first())
         }
 
     @Test
     fun `another uploading device is taken over only when asked`() =
         runBlocking {
             otherDevice = true
-            assertEquals(LvSignIn.OtherDevice, uploader.signIn("me@example.com", "secret-pw", takeOver = false))
+            login.save("me@example.com", "secret-pw")
+            uploader.change { it.copy(on = true) }
+            uploader.cycle()
             assertEquals(null, secure.read(LibreViewUploader.NAME))
-            assertEquals(LvSignIn.Done, uploader.signIn("me@example.com", "secret-pw", takeOver = true))
-            val bodies = requests.filter { it.path == "/api/nisperson/getauthentication" }.map { it.body.clone().readUtf8() }
-            assertEquals(listOf(false, true), bodies.map { "\"SetDevice\":true" in it })
+            assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
+            assertTrue(uploader.entryMarks.first()!!.stopped)
+            // nothing more is tried until the person chooses
+            uploader.cycle()
+            assertEquals(1, logins().size)
+            assertEquals(LvTakeOver.Done, uploader.takeOver())
+            assertEquals(listOf(false, true), logins().map { "\"SetDevice\":true" in it })
+            assertEquals(UploadStatus.Waiting, uploader.page.first().status)
+            treatments.upsertIfNewer(treatment("a", 5, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            assertEquals(1, uploads().size)
         }
 
     @Test
-    fun `a wrong password stores nothing`() =
+    fun `a password LibreView refuses asks to sign in again, on the account screen`() =
         runBlocking {
-            assertEquals(LvSignIn.BadCredentials, uploader.signIn("me@example.com", "nope", takeOver = false))
+            login.save("me@example.com", "changed-elsewhere")
+            uploader.change { it.copy(on = true) }
+            uploader.cycle()
             assertEquals(null, secure.read(LibreViewUploader.NAME))
+            assertEquals(LibreViewAccountState.SignInAgain("me@example.com"), login.current())
+            val page = uploader.page.first()
+            assertTrue(page.signInAgain)
+            assertEquals(UploadStatus.Setup, page.status)
+            assertTrue("it set the upload up: no clinic banner", uploader.signedInKnown.first() == true)
+            // not tried again with the refused password
+            uploader.cycle()
+            assertEquals(1, logins().size)
+            assertEquals(LvTakeOver.SignIn, uploader.takeOver())
+            // signed in again on the account screen: it goes on by itself
+            login.save("me@example.com", "secret-pw")
+            uploader.followLogin(login.current())
+            uploader.cycle()
+            assertTrue(secure.read(LibreViewUploader.NAME) != null)
         }
 
     @Test
     fun `a redirect is never followed`() =
         runBlocking {
             redirectConfig = true
-            assertTrue(uploader.signIn("me@example.com", "secret-pw", takeOver = false) is LvSignIn.Failed)
+            login.save("me@example.com", "secret-pw")
+            uploader.change { it.copy(on = true) }
+            uploader.cycle()
+            assertTrue(uploader.page.first().status is UploadStatus.Failing)
             assertEquals(listOf("/assets"), requests.map { it.path })
         }
 
@@ -300,7 +370,9 @@ class LibreViewUploaderTest {
             assertEquals(null, marks.mark(old, clock.now()))
 
             measurements = MockResponse().setBody("""{"status":20,"reason":"wrongDeviceInToken"}""")
+            otherDevice = true
             treatments.upsertIfNewer(treatment("b", 5))
+            uploader.cycle()
             uploader.cycle()
             val stopped = uploader.entryMarks.first()!!
             assertTrue(stopped.stopped)
@@ -308,18 +380,35 @@ class LibreViewUploaderTest {
         }
 
     @Test
-    fun `a token LibreView no longer accepts stops until signing in again`() =
+    fun `an expired token signs in again by itself`() =
         runBlocking {
             signedInAndOn()
-            treatments.upsertIfNewer(treatment("a", 5))
+            treatments.upsertIfNewer(treatment("a", 5, modified = clock.now() + Duration.ofSeconds(1)))
+            refuseTokenOnce = true
+            uploader.cycle()
+            assertEquals(null, secure.read(LibreViewUploader.NAME))
+            uploader.cycle()
+            assertEquals(2, logins().size)
+            assertTrue(uploader.page.first().status is UploadStatus.Ok)
+            assertEquals(2, uploads().size)
+        }
+
+    @Test
+    fun `a token another device took over waits for Take over`() =
+        runBlocking {
+            signedInAndOn()
+            treatments.upsertIfNewer(treatment("a", 5, modified = clock.now() + Duration.ofSeconds(1)))
             measurements = MockResponse().setBody("""{"status":20,"reason":"wrongDeviceInToken"}""")
+            otherDevice = true
+            uploader.cycle()
+            // the next cycle signs in again, and LibreView says another device uploads
             uploader.cycle()
             assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
             val n = requests.size
             uploader.cycle()
             assertEquals(n, requests.size)
             measurements = null
-            uploader.signIn("me@example.com", "secret-pw", takeOver = false)
+            assertEquals(LvTakeOver.Done, uploader.takeOver())
             uploader.cycle()
             assertTrue(uploader.page.first().status is UploadStatus.Ok)
         }
@@ -396,12 +485,19 @@ class LibreViewUploaderTest {
         }
 
     @Test
-    fun `sign out forgets the token`() =
+    fun `signing out anywhere drops the token, and a token without an account goes at the next start`() =
         runBlocking {
             signedInAndOn()
-            uploader.signOut()
+            signOut()
             assertEquals(null, secure.read(LibreViewUploader.NAME))
             assertEquals(UploadStatus.Setup, uploader.page.first().status)
+            assertEquals(null, uploader.entryMarks.first())
+
+            // signed out while the app wasn't running (or an install from before the shared account)
+            secure.write(LibreViewUploader.NAME, "{}".toByteArray())
+            uploader = newUploader()
+            uploader.load()
+            assertEquals(null, secure.read(LibreViewUploader.NAME))
         }
 
     @Test
@@ -445,7 +541,10 @@ class LibreViewUploaderTest {
             assertEquals(0, uploads().size)
             assertTrue(uploader.page.first().status is UploadStatus.Failing)
             refuseRegistration = false
-            uploader.signIn("me@example.com", "secret-pw", takeOver = false)
+            // signed out and in again: the upload's next sign-in may bring the profile
+            signOut()
+            login.save("me@example.com", "secret-pw")
+            uploader.followLogin(login.current())
             uploader.cycle()
             assertEquals(2, requests.count { it.path == "/api/nisperson" })
             assertEquals(1, uploads().size)
@@ -483,7 +582,10 @@ class LibreViewUploaderTest {
                     .ledger.size,
             )
             val device = store.data.first().deviceId
-            uploader.signIn("other@example.com", "secret-pw", takeOver = false)
+            clock.advance(Duration.ofMinutes(1))
+            signOut()
+            login.save("other@example.com", "secret-pw")
+            uploader.cycle()
             assertEquals(emptyMap<String, LvSent>(), store.data.first().ledger)
             assertEquals("other@example.com", store.data.first().email)
             assertEquals("the device id stays", device, store.data.first().deviceId)
@@ -498,7 +600,9 @@ class LibreViewUploaderTest {
             uploader.cycle()
             assertEquals(accountOf("me@example.com"), store.data.first().accountId)
             // another email of the same LibreView account keeps what LibreView has
-            assertEquals(LvSignIn.Done, uploader.signIn("me.too@example.com", "secret-pw", takeOver = false))
+            signOut()
+            login.save("me.too@example.com", "secret-pw")
+            uploader.cycle()
             assertEquals(
                 1,
                 store.data
@@ -506,36 +610,6 @@ class LibreViewUploaderTest {
                     .ledger.size,
             )
             assertEquals("me.too@example.com", store.data.first().email)
-        }
-
-    @Test
-    fun `another account than the sensor's asks first, Cancel saves nothing`() =
-        runBlocking {
-            sensorReceiverId.value = receiverId(accountOf("me@example.com"))
-            assertEquals(LvSignIn.OtherAccount, uploader.signIn("other@example.com", "secret-pw", takeOver = false))
-            assertNull(secure.read(LibreViewUploader.NAME))
-            assertEquals("", store.data.first().email)
-            uploader.dropOtherAccount()
-            assertTrue(uploader.useOtherAccount() is LvSignIn.Failed)
-            assertNull(secure.read(LibreViewUploader.NAME))
-
-            assertEquals(LvSignIn.OtherAccount, uploader.signIn("other@example.com", "secret-pw", takeOver = false))
-            assertEquals(LvSignIn.Done, uploader.useOtherAccount())
-            assertTrue(secure.read(LibreViewUploader.NAME) != null)
-            uploader.load()
-            assertTrue("the page keeps saying so", uploader.page.first().otherAccount)
-
-            // the sensor's own account: no question, no warning
-            assertEquals(LvSignIn.Done, uploader.signIn("me@example.com", "secret-pw", takeOver = false))
-            assertFalse(uploader.page.first().otherAccount)
-        }
-
-    @Test
-    fun `no receiver ID known on this phone means nothing to compare and no question`() =
-        runBlocking {
-            assertEquals(LvSignIn.Done, uploader.signIn("other@example.com", "secret-pw", takeOver = false))
-            uploader.load()
-            assertFalse(uploader.page.first().otherAccount)
         }
 
     @Test

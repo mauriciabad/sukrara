@@ -31,7 +31,12 @@ object SecretName {
 
     /** The Tidepool account's email (the page shows it; kept out of the plain state file). */
     const val TIDEPOOL_EMAIL = "tidepool-email"
+
+    /** The LibreView upload's session token (from its own login with [LIBREVIEW_ACCOUNT]). */
     const val LIBREVIEW = "libreview"
+
+    /** THE LibreView account: email and password, signed in once and used by the sensor, the upload and the import. */
+    const val LIBREVIEW_ACCOUNT = "libreview-account"
     const val SENSOR = "sensor"
 
     /** Juggluco's web-server API secret (schema `source.jugglucoSecret`, store `secure`). */
@@ -47,6 +52,7 @@ object SecretName {
             TIDEPOOL,
             TIDEPOOL_EMAIL,
             LIBREVIEW,
+            LIBREVIEW_ACCOUNT,
             SENSOR,
             JUGGLUCO,
         )

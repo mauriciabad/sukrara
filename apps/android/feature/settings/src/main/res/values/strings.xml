@@ -246,13 +246,11 @@
     <string name="st_sensor_to_direct_text">Sukrara connects to the sensor itself again. Only one app can read it: stop Juggluco’s connection to the sensor first. If Sukrara never paired this sensor, use Pair new sensor.</string>
     <string name="st_sensor_to_direct_confirm">Read directly</string>
     <string name="st_sensor_libreview">LibreView account</string>
-    <string name="st_sensor_signed_out_text">Not signed in. Needed to start a new sensor or take one over from another app on the same account.</string>
+    <string name="st_sensor_signed_out_text">Not signed in. You sign in once: Sukrara uses the account to start a new sensor or take one over from another app on the same account, and to send your data to LibreView.</string>
     <string name="st_sensor_sign_in">Sign in to LibreView</string>
     <string name="st_sensor_signed_in_as">Signed in as</string>
+    <string name="st_sensor_sign_in_again">Sign in to LibreView again</string>
     <string name="st_sensor_receiver_id">Receiver ID</string>
-    <string name="st_sensor_sign_out">Sign out</string>
-    <string name="st_sensor_sign_out_title">Sign out of LibreView?</string>
-    <string name="st_sensor_sign_out_text">Sukrara forgets the account’s email and receiver ID. The sensor that is running keeps working; starting or taking over a sensor needs signing in again.</string>
     <string name="st_sensor_status_connecting">Connecting to the sensor: no readings yet</string>
     <string name="st_sensor_status_connecting_juggluco">Getting readings from Juggluco…</string>
     <string name="st_sensor_status_juggluco_unreachable">Juggluco isn’t answering: no readings</string>
