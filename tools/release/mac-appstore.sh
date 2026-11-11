@@ -7,8 +7,9 @@
 # ~/.apple-dev/profiles), verify-app.sh --app-store, then build/Sukrara-<version>-appstore.pkg signed with the "Mac
 # Installer Distribution" identity (productbuild), checked with pkgutil, and validated by App Store Connect.
 #   tools/release/mac-appstore.sh            build, package, validate (uploads nothing)
-#   tools/release/mac-appstore.sh --upload   … then upload it to App Store Connect, where it becomes a TestFlight
-#                                            build. Only with the owner's OK: every upload is a new build there.
+#   tools/release/mac-appstore.sh --upload   uploads that pkg as it is (nothing is built again) to App Store Connect,
+#                                            where it becomes a TestFlight build: release.py's testflight step uploads
+#                                            the gate's pkg. Only with the owner's OK: every upload is a new build there.
 #   SIGN_ID / INSTALLER_ID   pick the identities by name or SHA-1 (default: the first valid one of each kind)
 #   ASC_KEY                  the App Store Connect API key (default: the AuthKey_<id>.p8 in ~/.apple-dev)
 #   ASC_ISSUER_ID            its issuer (default: ~/.apple-dev/asc-issuer-id); without one, validation is skipped
@@ -20,7 +21,7 @@ upload=0
 for arg in "$@"; do
   case "$arg" in
     --upload) upload=1 ;;
-    -h | --help) sed -n '5,17p' "$0"; exit 0 ;;
+    -h | --help) sed -n '5,16p' "$0"; exit 0 ;;
     *) echo "unknown argument '$arg' (--upload)" >&2; exit 2 ;;
   esac
 done
@@ -30,8 +31,24 @@ fi
 set -- $(version_info)
 version="$1"
 build="$root/apps/macos/build"
+pkg="$build/Sukrara-$version-appstore.pkg"
 checklist="docs/20-publishing.md › Mac App Store: signing"
 die() { echo "mac-appstore.sh: $*" >&2; exit 2; }
+
+# App Store Connect: the API key validates and uploads
+key="${ASC_KEY:-$(ls "$HOME"/.apple-dev/AuthKey_*.p8 2>/dev/null | head -1)}"
+issuer="${ASC_ISSUER_ID:-$(cat "$HOME/.apple-dev/asc-issuer-id" 2>/dev/null || true)}"
+auth="--api-key $(basename "${key:-none}" .p8 | sed 's/^AuthKey_//') --api-issuer $issuer --p8-file-path $key"
+
+if [ "$upload" = 1 ]; then
+  [ -f "$pkg" ] || die "no $pkg: build and validate it first (tools/release/mac-appstore.sh)"
+  [ -n "$key" ] && [ -n "$issuer" ] || die "--upload needs the API key and its issuer (ASC_KEY, ASC_ISSUER_ID)"
+  echo "uploading $pkg (built $(stat -f %Sm "$pkg"))"
+  # shellcheck disable=SC2086 # $auth is word-split on purpose (no spaces in its parts)
+  xcrun altool --upload-package "$pkg" --platform macos $auth
+  echo "uploaded: App Store Connect › Sukrara › TestFlight shows it once processed (minutes)"
+  exit 0
+fi
 
 # The identities by SHA-1 (unambiguous after a renewal). Apple names the installer one "3rd Party Mac Developer
 # Installer" in the keychain (older certificates) or "Mac Installer Distribution".
@@ -53,29 +70,24 @@ SIGN_ID="$SIGN_ID" "$root/apps/macos/Bundle/bundle.sh" --app-store
 codesign -dvv "$build/Sukrara.app" 2>&1 | grep -Eq 'Authority=(Apple Distribution|3rd Party Mac Developer Application):' \
   || die "the app isn't signed for the Mac App Store"
 
-pkg="$build/Sukrara-$version-appstore.pkg"
 rm -f "$pkg"
-productbuild --component "$build/Sukrara.app" /Applications --sign "$installer" "$pkg"
+# On macOS 27 pkgbuild (inside productbuild) prints "write: Permission denied" four times whenever it writes a payload,
+# for any payload, even an empty --root (not with --analyze or --nopayload); the pkg is complete and pkgutil and
+# altool check it below. Only that exact line is dropped, and only when productbuild succeeds.
+err="$(mktemp)"
+if ! productbuild --component "$build/Sukrara.app" /Applications --sign "$installer" "$pkg" 2>"$err"; then
+  cat "$err" >&2; rm -f "$err"; die "productbuild failed"
+fi
+grep -vx 'write: Permission denied' "$err" >&2 || true
+rm -f "$err"
 pkgutil --check-signature "$pkg" | grep -Eq '(3rd Party Mac Developer Installer|Mac Installer Distribution):' \
   || die "$pkg isn't signed by the installer identity"
 echo "packaged $pkg ($(plutil -extract CFBundleVersion raw -o - "$build/Sukrara.app/Contents/Info.plist"))"
 
-# App Store Connect: validate (and upload) with the API key
-key="${ASC_KEY:-$(ls "$HOME"/.apple-dev/AuthKey_*.p8 2>/dev/null | head -1)}"
-issuer="${ASC_ISSUER_ID:-$(cat "$HOME/.apple-dev/asc-issuer-id" 2>/dev/null || true)}"
 if [ -z "$key" ] || [ -z "$issuer" ]; then
-  [ "$upload" = 0 ] || die "--upload needs the API key and its issuer (ASC_KEY, ASC_ISSUER_ID)"
   echo "not validated: no App Store Connect API key or issuer (ASC_KEY, ASC_ISSUER_ID or ~/.apple-dev/asc-issuer-id)"
   exit 0
 fi
-key_id="$(basename "$key" .p8 | sed 's/^AuthKey_//')"
-auth="--api-key $key_id --api-issuer $issuer --p8-file-path $key"
-# shellcheck disable=SC2086 # $auth is word-split on purpose (no spaces in its parts)
+# shellcheck disable=SC2086
 xcrun altool --validate-app "$pkg" --platform macos $auth
-if [ "$upload" = 1 ]; then
-  # shellcheck disable=SC2086
-  xcrun altool --upload-package "$pkg" --platform macos $auth
-  echo "uploaded: App Store Connect › Sukrara › TestFlight shows it once processed (minutes)"
-else
-  echo "ready to upload: tools/release/mac-appstore.sh --upload (only with the owner's OK)"
-fi
+echo "ready to upload: tools/release/mac-appstore.sh --upload (only with the owner's OK; nothing is built again)"

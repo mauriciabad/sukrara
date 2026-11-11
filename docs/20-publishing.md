@@ -443,7 +443,7 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
 4. **Submit** for review.
 
 **Next uploads**: `tools/release/release.py` (its `testflight` step), or by hand `tools/release/mac-appstore.sh`
-(build, pkg, `altool --validate-app`), then `--upload`; each upload
+(build, pkg, `altool --validate-app`), then `--upload` (uploads that pkg, builds nothing); each upload
 gets a new `CFBundleVersion` and goes to the Owner group by itself once its export question is answered (or once
 `ITSAppUsesNonExemptEncryption` is in the Info.plist).
 
@@ -835,9 +835,10 @@ Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub,
   Checked read-only on 2026-11-11 (`stores.py play-tracks`): the edit opens, `internal` has 0.13.0 (13000,
   *completed*), production / beta / alpha are empty, the only bundle is 13000; the edit was deleted, nothing
   committed. The app isn't a draft app any more (a draft app would only take `status: draft`).
-- **TestFlight**: `mac-appstore.sh --upload`, then the App Store Connect API (key `VCB5XBQ3QZ`, *Developer*) until the
-  build is `VALID`. Checked read-only (`stores.py asc-builds`): app 6833533014, build 0.13.0 (13000.261111.1531)
-  `VALID`, `usesNonExemptEncryption` unset (*Missing Compliance*).
+- **TestFlight**: the gate's pkg (its version and build number checked) through `mac-appstore.sh --upload`, then the
+  App Store Connect API (key `VCB5XBQ3QZ`, *Developer*) until the build is `VALID`. Checked read-only (`stores.py
+  asc-builds`): app 6833533014, build 0.13.0 (13000.261111.1531) `VALID`, `usesNonExemptEncryption` unset (*Missing
+  Compliance*).
 - **Export compliance stays one click per build** (TestFlight › the build › *Manage*) until the owner decides. Sukrara
   uses non-exempt encryption (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), so `ITSAppUsesNonExemptEncryption`
   `NO` would be false, and `YES` needs an `ITSEncryptionExportComplianceCode` from an approved compliance document;

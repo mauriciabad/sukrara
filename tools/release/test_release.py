@@ -237,6 +237,104 @@ class AppcastAndRunsTest(unittest.TestCase):
         self.assertEqual(submit("s1")["data"]["attributes"], {"submitted": True})
 
 
+DISTRIBUTION = """<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <pkg-ref id="app.mauri.sukrara">
+        <bundle-version>
+            <bundle CFBundleShortVersionString="0.14.0" CFBundleVersion="14000.261111.2209" id="app.mauri.sukrara" path="Sukrara.app"/>
+        </bundle-version>
+    </pkg-ref>
+    <product id="app.mauri.sukrara" version="0.14.0"/>
+</installer-gui-script>
+"""
+
+
+class FakeAppStoreConnect:
+    """App Store Connect with the builds it has: the upload (mac-appstore.sh --upload) adds one, processed at once."""
+
+    def __init__(self, builds=()):
+        self.list = list(builds)
+
+    def app_id(self):
+        return "app1"
+
+    def builds(self, app, version=None, build=None, limit=10):
+        return [b for b in self.list if version in (None, b["version"]) and build in (None, b["build"])][:limit]
+
+
+class TestFlightTest(unittest.TestCase):
+    """testflight uploads the pkg the gate built and validated; it builds one only when there's none."""
+
+    def test_pkg_build_checks_version_and_build_number(self):
+        self.assertEqual(release.pkg_build(DISTRIBUTION, "0.14.0"), "14000.261111.2209")
+        with self.assertRaisesRegex(ValueError, "version 0.14.0, not 0.15.0"):
+            release.pkg_build(DISTRIBUTION, "0.15.0")
+        with self.assertRaisesRegex(ValueError, r"build number 14000 isn't 14000.<yyMMdd>.<HHmm>"):
+            release.pkg_build(DISTRIBUTION.replace("14000.261111.2209", "14000"), "0.14.0")
+        with self.assertRaisesRegex(ValueError, "build number 13000.261111.2209"):
+            release.pkg_build(DISTRIBUTION.replace("14000.261111.2209", "13000.261111.2209"), "0.14.0")
+        with self.assertRaisesRegex(ValueError, "no app.mauri.sukrara app"):
+            release.pkg_build(DISTRIBUTION.replace('id="app.mauri.sukrara" path', 'id="other" path'), "0.14.0")
+
+    def setUp(self):
+        self.root, self.asc_class, self.tmp = release.ROOT, stores.AppStoreConnect, tempfile.mkdtemp()
+        release.ROOT = self.tmp
+        os.makedirs(os.path.join(self.tmp, release.MAC_BUILD))
+        self.pkg = os.path.join(self.tmp, release.appstore_pkg("0.14.0"))
+
+    def tearDown(self):
+        release.ROOT, stores.AppStoreConnect = self.root, self.asc_class
+        shutil.rmtree(self.tmp)
+
+    def run_step(self, asc, distribution=DISTRIBUTION):
+        """testflight with fake App Store Connect and fake scripts: the commands it ran."""
+        ran, test = [], self
+
+        class Fake(release.Release):
+            def sh(self, cmd, mutate=True, capture=True, cwd=None, check=True, env=None):
+                ran.append(cmd)
+                if cmd == ["tools/release/mac-appstore.sh"]:
+                    open(test.pkg, "w").close()
+                if cmd == ["tools/release/mac-appstore.sh", "--upload"]:
+                    asc.list.insert(0, {"id": "b1", "build": "14000.261111.2209", "version": "0.14.0",
+                                        "state": "VALID", "encryption": None, "expired": False})
+                return ""
+
+            def pkg_distribution(self, pkg):
+                test.assertEqual(pkg, test.pkg)
+                return distribution
+        stores.AppStoreConnect = lambda: asc
+        step = Fake("0.14.0", False, False)
+        step.testflight()
+        return ran, step
+
+    def test_uploads_the_gates_pkg_without_building_again(self):
+        open(self.pkg, "w").close()
+        ran, step = self.run_step(FakeAppStoreConnect())
+        self.assertEqual(ran, [["tools/release/mac-appstore.sh", "--upload"]])
+        self.assertIn("build 14000.261111.2209 shows Missing Compliance", step.notes_state[0])
+
+    def test_builds_the_pkg_once_when_it_is_missing(self):
+        ran, _ = self.run_step(FakeAppStoreConnect())
+        self.assertEqual(ran, [["tools/release/mac-appstore.sh"], ["tools/release/mac-appstore.sh", "--upload"]])
+
+    def test_a_pkg_of_another_version_or_an_uploaded_build_is_not_uploaded(self):
+        open(self.pkg, "w").close()
+        with self.assertRaisesRegex(ValueError, "version 0.15.0, not 0.14.0"):
+            self.run_step(FakeAppStoreConnect(), DISTRIBUTION.replace('"0.14.0"', '"0.15.0"'))
+        invalid = {"id": "b0", "build": "14000.261111.2209", "version": "0.14.0", "state": "INVALID",
+                   "encryption": None, "expired": False}
+        with self.assertRaisesRegex(release.Stop, "has build 14000.261111.2209 already"):
+            self.run_step(FakeAppStoreConnect([invalid]))
+
+    def test_a_build_in_app_store_connect_is_not_uploaded_again(self):
+        valid = {"id": "b0", "build": "14000.261111.2209", "version": "0.14.0", "state": "VALID",
+                 "encryption": True, "expired": False}
+        ran, step = self.run_step(FakeAppStoreConnect([valid]))
+        self.assertEqual(ran, [])
+        self.assertEqual(step.notes_state, [])
+
+
 class CheckoutTest(unittest.TestCase):
     """Any clean checkout whose HEAD is origin/next releases: agents run release.py from their worktrees."""
 

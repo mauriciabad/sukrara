@@ -107,8 +107,8 @@ again: it skips what's already there):
    the gate runs, and is awaited before anything is published.
 3. `gate`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final --no-build` on
    the emulator, `play-bundle.sh`, `mac-release.sh` (notarized, Sparkle-signed, `verify-app.sh --notarized`, writes
-   `docs/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`). `./gradlew check` and
-   `swift test` aren't run again: the green Checks run on the same commit ran them.
+   `docs/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`: the pkg `testflight`
+   uploads). `./gradlew check` and `swift test` aren't run again: the green Checks run on the same commit ran them.
 4. `github`: Checks on `next` green, `main` fast-forwarded, tag `v<version>`, `gh release create --prerelease
    --latest=false` (`--latest` from 1.0.0) with the APK, the Android mapping, the dmg and the zip (their sha256 checked
    against the release's), notes from the CHANGELOG entry with the disclaimer and the files; Checks on `main` green.
@@ -121,9 +121,12 @@ again: it skips what's already there):
 7. `play`: the play bundle on the **internal** track with the en-US / es-ES notes, through the Android Publisher API
    (edits.insert → bundles.upload → tracks.update → edits.commit) with the service account
    `~/.android/sukrara-play.json`; a version code already on the track is left alone.
-8. `testflight`: `mac-appstore.sh --upload` (unless App Store Connect has a build of the version already), then waits
-   until App Store Connect has processed it. A new build shows *Missing Compliance* until its export question is
-   answered: the one click left (docs/20-publishing.md › Mac App Store: signing and App Store Connect).
+8. `testflight`: unless App Store Connect has a build of the version already, the gate's pkg
+   (`build/Sukrara-<version>-appstore.pkg`; missing, e.g. `--from testflight` in a fresh checkout, `mac-appstore.sh`
+   builds and validates it once), its version and build number checked, uploaded with `mac-appstore.sh --upload`
+   (which never builds); then waits until App Store Connect has processed it. A new build shows *Missing Compliance*
+   until its export question is answered: the one click left (docs/20-publishing.md › Mac App Store: signing and App
+   Store Connect).
 9. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes

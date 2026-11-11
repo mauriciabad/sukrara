@@ -28,7 +28,9 @@ left (resume with --from <step>; every step can run again):
                  at https://sukrara.mauri.app/appcast.xml serves the item
   homebrew       the tap's workflow committed the cask for this version (the dmg's sha256)
   play           the play bundle on Google Play's internal track with the en-US / es-ES notes (Android Publisher API)
-  testflight     mac-appstore.sh --upload, then App Store Connect processes the build (export compliance: see below)
+  testflight     the App Store pkg the gate built and validated (built once by mac-appstore.sh if it's missing, e.g.
+                 --from testflight in a fresh checkout), its version and build number checked, uploaded by
+                 mac-appstore.sh --upload; then App Store Connect processes the build (export compliance: summary)
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
@@ -42,11 +44,13 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.request
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import stores  # noqa: E402
@@ -209,6 +213,26 @@ def artifacts(version):
         "dmg": "%s/Sukrara-%s.dmg" % (MAC_BUILD, version),
         "zip": "%s/Sukrara-mac-%s.zip" % (MAC_BUILD, version),
     }
+
+
+def appstore_pkg(version):
+    """The App Store pkg mac-appstore.sh builds and validates (the gate) and uploads with --upload (testflight)."""
+    return "%s/Sukrara-%s-appstore.pkg" % (MAC_BUILD, version)
+
+
+def pkg_build(distribution, version):
+    """The build number (CFBundleVersion) of the app in an App Store pkg, from the pkg's Distribution file, once it is
+    the version's: CFBundleShortVersionString = version, CFBundleVersion = <versionCode>.<yyMMdd>.<HHmm>
+    (bundle.sh --app-store). Raises ValueError when it isn't."""
+    bundles = [b for b in ET.fromstring(distribution).iter("bundle") if b.get("id") == stores.BUNDLE_ID]
+    if not bundles:
+        raise ValueError("the App Store pkg has no %s app" % stores.BUNDLE_ID)
+    short, build = bundles[0].get("CFBundleShortVersionString"), bundles[0].get("CFBundleVersion") or ""
+    if short != version:
+        raise ValueError("the App Store pkg is version %s, not %s" % (short, version))
+    if not re.fullmatch(r"%d\.\d{6}\.\d{4}" % version_code(version), build):
+        raise ValueError("the App Store pkg's build number %s isn't %d.<yyMMdd>.<HHmm>" % (build, version_code(version)))
+    return build
 
 
 def start_problems(head, origin_next, dirty):
@@ -443,11 +467,12 @@ class Release:
         self.sh([r + "play-bundle.sh"], capture=False)
         self.sh([r + "mac-release.sh"], capture=False)
         self.sh(["apps/macos/Bundle/smoke.sh"], capture=False)
-        self.sh([r + "mac-appstore.sh"], capture=False)  # rebuilds build/Sukrara.app as the App Store version
+        # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
+        self.sh([r + "mac-appstore.sh"], capture=False)
         if self.dry:
             print("  would check the files it leaves, docs/appcast.xml's %s item, and that nothing else changed" % self.v)
             return
-        for rel in list(artifacts(self.v).values()) + ["%s/Sukrara-%s-play.aab" % (DIST, self.v)]:
+        for rel in list(artifacts(self.v).values()) + ["%s/Sukrara-%s-play.aab" % (DIST, self.v), appstore_pkg(self.v)]:
             self.ok(os.path.exists(self.path(rel)), "the gate left no %s" % rel)
         self.ok(appcast_item(self.read("docs/appcast.xml"), self.v),
                 "docs/appcast.xml has no item for %s (was the build notarized?)" % self.v)
@@ -628,9 +653,37 @@ class Release:
         self.ok(rel is not None, "the internal track doesn't list %d after the commit" % self.code)
         print("  internal track: %s %d %s" % (rel["name"], self.code, rel["status"]))
 
+    def pkg_distribution(self, pkg):
+        """The Distribution file of a productbuild pkg (pkgutil --expand into a temporary directory)."""
+        tmp = tempfile.mkdtemp()
+        try:
+            self.sh(["pkgutil", "--expand", pkg, os.path.join(tmp, "pkg")], mutate=False)
+            with open(os.path.join(tmp, "pkg", "Distribution"), encoding="utf-8") as f:
+                return f.read()
+        finally:
+            shutil.rmtree(tmp)
+
+    def appstore_build(self):
+        """The build number of the App Store pkg the gate built and validated, its version and build number checked.
+        Without the pkg (--from testflight in a fresh checkout), mac-appstore.sh builds and validates it, once."""
+        pkg = self.path(appstore_pkg(self.v))
+        if not os.path.exists(pkg):
+            print("  no %s (the gate builds it): building it" % appstore_pkg(self.v))
+            self.sh(["tools/release/mac-appstore.sh"], capture=False)
+        return pkg_build(self.pkg_distribution(pkg), self.v)
+
     def testflight(self):
+        pkg = appstore_pkg(self.v)
         if self.dry:
-            print("  would look for a %s build in App Store Connect, else run tools/release/mac-appstore.sh --upload" % self.v)
+            print("  would look for a %s build in App Store Connect, else upload %s" % (self.v, pkg))
+            if os.path.exists(self.path(pkg)):
+                try:
+                    print("  %s is build %s" % (pkg, pkg_build(self.pkg_distribution(self.path(pkg)), self.v)))
+                except ValueError as e:
+                    self.ok(False, str(e))
+            else:
+                print("  no pkg yet (the gate builds it); if the gate left none, would run: tools/release/mac-appstore.sh")
+            print("  would check its version and build number, then run: tools/release/mac-appstore.sh --upload")
             print("  would wait until the build's processingState is VALID")
             if self.production:
                 print("  would submit it for App Review: " + json.dumps(stores.asc_submission_bodies("<app>", "<ver>")[0]))
@@ -642,9 +695,11 @@ class Release:
             build = live[0]["build"]
             print("  App Store Connect has %s (%s) already: not uploaded again" % (build, live[0]["state"]))
         else:
+            build = self.appstore_build()
+            self.ok(not asc.builds(app, build=build, limit=1),
+                    "App Store Connect has build %s already: delete %s and run --from testflight again (it builds a new "
+                    "one)" % (build, pkg))
             self.sh(["tools/release/mac-appstore.sh", "--upload"], capture=False)
-            build = self.sh(["plutil", "-extract", "CFBundleVersion", "raw", "-o", "-",
-                             self.path(MAC_BUILD + "/Sukrara.app/Contents/Info.plist")], mutate=False)
         found = {}
 
         def processed():
