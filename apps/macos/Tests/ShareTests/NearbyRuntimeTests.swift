@@ -178,6 +178,39 @@ struct NearbyRuntimeTests {
         return state.code
     }
 
+    /// #181: a follow that ended (here: declined) is still listed, yet *Find phones nearby* lists a phone offering
+    /// *Pair nearby*, and joining it replaces the ended follow.
+    @Test func anEndedFollowStillListsPhonesOfferingPairing() async throws {
+        let h = RuntimeHarness(now: v.now, hub: FakeRelayHub(stored: [v.event("invite")]))
+        let nearby = FakeNearby()
+        let runtime = runtime(h, nearby)
+        let crypto = NostrSDKCrypto()
+        await runtime.start()
+        try await runtime.lookUpAndFollow(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        let state = try FollowerState.decode(try #require(try h.secrets.read(account: KeychainStore.followerAccount)))
+        let declined = try crypto.giftWrap(
+            kind: Wire.kindToFollower, content: #"{"v":2,"type":"declined"}"#, from: v.secret("I"),
+            to: try crypto.publicKey(of: state.follower), expiration: v.now + 3600)
+        await h.hub.inject(declined)
+        #expect(await eventually { await runtime.currentLink == .declined })
+
+        await runtime.searchNearby(true)
+        let marta = try Offerer(crypto)
+        nearby.info(marta.info(now: v.now), .unknown, phone: UUID())
+        var offer: NearbyOffer?
+        for await snapshot in await runtime.snapshots() {
+            offer = snapshot.nearbyOffer
+            if offer != nil { break }
+        }
+        try await runtime.joinNearby(try #require(offer))
+        #expect(
+            await eventually {
+                if case .requested(_, "Marta", _?) = await runtime.currentLink { return true }
+                return false
+            })
+        await runtime.stop()
+    }
+
     @Test func aPhoneWithNothingToPairWithIsLeftFor5Seconds() async {
         let h = RuntimeHarness(now: v.now)
         let nearby = FakeNearby()

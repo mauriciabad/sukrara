@@ -313,9 +313,11 @@ public actor FollowerRuntime: FollowerService {
         return true
     }
 
+    /// *Find phones nearby* while the follow window can follow (nobody followed, or a follow that ended, #181: an ended
+    /// follow still listed used to keep the search off).
     public func searchNearby(_ on: Bool) async {
         searchingNearby = on
-        if on, nearby == nil, session == nil {
+        if on, nearby == nil, canJoin {
             startNearby()
         } else if !on, session == nil {
             await stopNearby()
@@ -575,7 +577,8 @@ public actor FollowerRuntime: FollowerService {
             nearbyState = state
             await publishSnapshot()
         case .info(let info, let owner, let phone):
-            if session == nil {
+            // nobody followed or a follow that ended: phones offering *Pair nearby* are listed (#181)
+            if canJoin {
                 if let offer = info.offer(now: now) {
                     nearbyOffer = offer
                     await publishSnapshot()
@@ -770,7 +773,7 @@ public actor FollowerRuntime: FollowerService {
             sensor: await stores.sensor.load(), treatments: log.log.live.reversed(), unsentTreatments: log.unsentCount,
             deliveries: log.entries.compactMapValues(\.delivery), wearerSettings: await stores.settings.load(),
             storeIssues: issues, nearby: nearbyState,
-            nearbyOffer: session == nil ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
+            nearbyOffer: canJoin ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
             me: session?.state.me ?? me, wearer: session?.state.wearer)
         guard snapshot != current else { return }
         current = snapshot
