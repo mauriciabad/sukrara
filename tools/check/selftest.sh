@@ -114,7 +114,7 @@ case_ "Mac debugsend inside #if DEBUG passes" pass "" apps/macos/Sources/Sukrara
     let x = 1
 #endif"
 ALL_DEBUG='`SYNTHETIC --ez on true --ei cycle 135`, `ALERTS --es kinds high`, `PEN_READ …`, `PEN_TAGS --ez blocked
-true`, `PEN_JUGGLUCO --ez installed true`, `RELAYS --es urls off`; Mac `sukrara-snap card|windows-es <dir>`,
+true`, `PEN_JUGGLUCO --ez installed true`, `RELAYS --es urls off`, `UPDATES --es server off`; Mac `sukrara-snap card|windows-es <dir>`,
 `SUKRARA_DEV=1 SUKRARA_FIXTURE=1`.'
 case_ "the debug commands the code has pass" pass "" docs/DEVELOPMENT.md "Debug commands: $ALL_DEBUG"
 case_ "a debug command the code doesn't have fails" fail debug-docs docs/DEVELOPMENT.md "Debug commands: $ALL_DEBUG
