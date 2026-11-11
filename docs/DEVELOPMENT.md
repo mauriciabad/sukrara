@@ -63,7 +63,8 @@ Management guards a notarized copy that has run, so the terminal app it runs in 
 first, quits Sukrara the way its menu does (then `pkill` after 10 s), removes and unregisters the other folder's copy
 (`pluginkit -r` its widget, `lsregister -u`), swaps the new bundle in, makes it the `sukrara:` link handler,
 unregisters every other registered copy (worktree and test builds, a mounted dmg: `lsregister -u`, `pluginkit -r`) so
-Spotlight, Launchpad and the widget gallery show one Sukrara, and opens it again (also when a later step fails).
+Spotlight, Launchpad and the widget gallery show one Sukrara, deletes the build copy in `apps/macos/build` (Spotlight
+lists every app on disk, registered or not), and opens it again (also when a later step fails).
 `--dry-run` prints where it would install and what it would remove; `SUKRARA_MAC_APP_DIRS="<dir> <dir>"` points it at
 scratch folders for such a dry run.
 

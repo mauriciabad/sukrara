@@ -136,6 +136,9 @@ else
     while IFS= read -r p; do run "$LSREGISTER" -u "$p"; done
   pluginkit -mAv 2>/dev/null | grep "$BUNDLE_ID.widget" | awk -F'\t' '{print $NF}' | grep -v "^$DEST/" |
     while IFS= read -r p; do run pluginkit -r "$p"; done
+  # The build copy goes too: Spotlight and the Apps launcher list every app on disk, registered or not, so the one
+  # left in apps/macos/build showed as a second Sukrara.
+  run rm -rf "$BUILT"
   run open "$DEST"
   if [ $DRY = 1 ]; then GOT="$VERSION (dry run)"; else
     trap - EXIT
