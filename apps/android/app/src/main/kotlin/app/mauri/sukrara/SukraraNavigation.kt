@@ -299,7 +299,8 @@ fun SukraraNavigation(
             newSensorShown()
         }
     }
-    // first launch (no role yet): setup opens on top of home; Back on its first step leaves it ("setup incomplete")
+    // first launch (no role yet): setup opens on top of home; Back on its first step leaves it ("setup incomplete").
+    // Once a role exists setup never opens by itself: home's Finish setup banner resumes a walk left half-way
     LaunchedEffect(Unit) {
         if (graph.role.data
                 .first()
@@ -308,10 +309,14 @@ fun SukraraNavigation(
             backStack.add(SetupRoute)
         }
     }
-    // a wearer who hasn't answered Bring your history back (setup done before it existed, or the database was replaced by
-    // an update): that one step, once per launch, never over setup itself (which offers it as its last step)
+    // a wearer whose only step left is Bring your history back (setup done before it existed, or the database was
+    // replaced by an update): that one step, once per launch (not again after a rotation or a restored process), never
+    // over setup itself (which offers it as its last step)
+    var historyOffered by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        if (historyOffered) return@LaunchedEffect
         graph.setup.historyDue.first { it }
+        historyOffered = true
         if (backStack.none { it is SetupRoute || it is SetupStepRoute }) backStack.push(SetupStepRoute(SetupStep.History))
     }
     // an invite link says where it works, on top of whatever is open (Back returns there), once per link: a recreated
@@ -644,8 +649,9 @@ private fun route(
     home: HomeModule,
 ) {
     when (action) {
+        // the walk where it was left, or each skipped step (setup decides); a double tap opens it once
         HomeAction.OpenSetup -> {
-            backStack.add(SetupRoute)
+            backStack.push(SetupRoute)
         }
 
         HomeAction.OpenSettings -> {

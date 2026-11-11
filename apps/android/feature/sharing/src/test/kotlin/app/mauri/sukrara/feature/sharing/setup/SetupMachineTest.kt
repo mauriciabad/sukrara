@@ -117,13 +117,65 @@ class SetupMachineTest {
     }
 
     @Test
-    fun `a reopened item shows its step again, then back to home`() {
+    fun `the Finish-setup walk shows each skipped step once, in item order, then home`() {
         var r = wearer()
         for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
-        r = m.reopen(r, Alerts)
-        assertEquals(Alerts, m.next(r, facts))
+        assertEquals(Permissions, m.nextItem(r, facts, emptySet()))
+        assertEquals(Alerts, m.nextItem(r, facts, setOf(Permissions)))
+        // Later on a step shown alone keeps it skipped (on the card) and moves on, never back to it
         r = m.skip(r, Alerts)
-        assertNull(m.next(r, facts))
+        assertEquals(Sensor, m.nextItem(r, facts, setOf(Permissions, Alerts)))
+        assertEquals(Identity, m.nextItem(r, facts, setOf(Permissions, Alerts, Sensor)))
+        assertNull(m.nextItem(r, facts, setOf(Permissions, Alerts, Sensor, Identity)))
+        // a step done meanwhile drops out by itself
+        assertEquals(Identity, m.nextItem(m.confirmAlerts(r), facts.copy(ownSensorLive = true), setOf(Permissions)))
+    }
+
+    @Test
+    fun `leaving the walk half-way loses nothing - home's banner resumes it at the step left`() {
+        // Back on the step after the role, before answering anything
+        var r = wearer()
+        assertEquals(SetupCard.Resume(Permissions), m.card(r, facts))
+        r = m.completePermissions(r)
+        assertEquals(SetupCard.Resume(Sensor), m.card(r, facts))
+        // a skipped step stays skipped; the walk resumes after it
+        r = m.skip(r, Sensor)
+        assertEquals(SetupCard.Resume(Alerts), m.card(r, facts))
+        r = m.skip(m.skip(m.skip(r, Alerts), Identity), SetupStep.History)
+        // the walk is over: the first skipped step that still matters
+        assertEquals(SetupCard.Finish(FinishItem.AlertsNotConfirmed), m.card(r, facts))
+        assertNull(m.card(r, facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true, alertsReady = true)))
+        // before a role home says setup is incomplete (no banner); a follower's join is led to by home's own reason
+        assertNull(m.card(SetupRecord(), none))
+        assertNull(m.card(m.completeWelcome(SetupRecord()), none.copy(role = Role.Follower)))
+    }
+
+    @Test
+    fun `Back walks to the previous step, never into the role once chosen, and leaves on the first`() {
+        assertNull(m.previous(Welcome, none))
+        assertEquals(Welcome, m.previous(SetupStep.Role, none))
+        assertNull(m.previous(Permissions, facts))
+        assertEquals(Permissions, m.previous(Sensor, facts))
+        assertEquals(Identity, m.previous(SetupStep.History, facts))
+        // a follower can still go back to the role from the join step (a phone that wears the sensor after all)
+        val follower = none.copy(role = Role.Follower)
+        assertEquals(SetupStep.Role, m.previous(SetupStep.Join, follower))
+        assertEquals(SetupStep.Join, m.previous(Permissions, follower))
+    }
+
+    @Test
+    fun `a step shown alone is over only when the action answers it`() {
+        val live = facts.copy(ownSensorLive = true)
+        assertTrue(m.answers(Permissions, m::completePermissions))
+        assertTrue(m.answers(Sensor) { m.skip(it, Sensor) })
+        assertTrue(!m.answers(Sensor) { m.completeSensor(it, facts) })
+        assertTrue(m.answers(Sensor) { m.completeSensor(it, live) })
+        assertTrue(m.answers(Alerts, m::confirmAlerts))
+        assertTrue(!m.answers(Identity) { m.completeIdentity(it, facts) })
+        assertTrue(m.answers(Identity) { m.completeIdentity(it, facts.copy(hasIdentity = true)) })
+        assertTrue(!m.answers(SetupStep.Join) { m.skip(it, SetupStep.Join) })
+        // another step's answer doesn't end this one
+        assertTrue(!m.answers(Alerts, m::completePermissions))
     }
 
     @Test
@@ -135,26 +187,26 @@ class SetupMachineTest {
             )
         val live = facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true)
         assertEquals(SetupStep.History, m.next(done, live))
-        assertTrue(m.historyDue(done, Role.Wearer))
+        assertTrue(m.historyDue(done, live))
         // either answer is final, and it never becomes a Finish-setup item
         for (answered in listOf(m.completeHistory(done), m.skip(done, SetupStep.History))) {
             assertNull(m.next(answered, live))
             assertTrue(m.finishItems(answered, live).isEmpty())
-            assertTrue(!m.historyDue(answered, Role.Wearer))
+            assertTrue(!m.historyDue(answered, live))
             // a replaced database offers it again
-            assertTrue(m.historyDue(m.reopen(answered, SetupStep.History), Role.Wearer))
+            assertTrue(m.historyDue(m.reopen(answered, SetupStep.History), live))
         }
         // never to a follower (their history is the wearer's) or before a role
         assertTrue(SetupStep.History !in m.steps(facts.copy(role = Role.Follower)))
-        assertTrue(!m.historyDue(done, Role.Follower) && !m.historyDue(done, null))
+        assertTrue(!m.historyDue(done, live.copy(role = Role.Follower)) && !m.historyDue(done, live.copy(role = null)))
     }
 
     @Test
-    fun `Settings › Sharing's Set up reopens an identity step completed earlier (the identity is gone)`() {
-        val r = m.completeIdentity(wearer(), facts.copy(hasIdentity = true))
-        assertTrue(Identity in r.completed)
-        val reopened = m.reopen(r, Identity)
-        assertTrue(Identity !in reopened.completed && Identity !in reopened.skipped)
+    fun `history is never offered on its own while the walk stopped at an earlier step`() {
+        // the walk left on the step after the role: the banner resumes it there, history comes last in the walk
+        assertTrue(!m.historyDue(wearer(), facts))
+        val skippedAll = listOf(Permissions, Sensor, Alerts, Identity).fold(wearer()) { r, s -> m.skip(r, s) }
+        assertTrue(m.historyDue(skippedAll, facts))
     }
 
     @Test

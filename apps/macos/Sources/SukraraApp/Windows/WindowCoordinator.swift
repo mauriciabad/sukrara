@@ -74,9 +74,9 @@ final class WindowCoordinator {
         if setup.flow.isFirstRun { openSetup() }
     }
 
-    /// "Finish setup" (nil = the first unfinished step) or one step (Follow… → `.follow`).
+    /// "Finish setup" (nil = where the walk was left, else the first unfinished step) or one step (Follow… → `.follow`).
     func openSetup(at step: SetupFlow.Step? = nil) {
-        if let step { setup.flow.open(step) } else if !setup.flow.isFirstRun { setup.flow.resume() }
+        if let step { setup.flow.open(step) } else { setup.flow.reopen() }
         windows.show(.setup, title: L10n.t("Set Up Sukrara")) {
             SetupView(model: setup) { [weak self] in self?.windows.close(.setup) }
         }

@@ -41,8 +41,13 @@ public struct SetupFlow: Equatable, Sendable {
         current = Step.allCases[i - 1]
     }
 
-    /// "Finish setup": reopen at the first unfinished step.
+    /// "Finish now" (the Done page): the first unfinished step.
     public mutating func resume() { current = unfinished.first }
+
+    /// "Finish Setup…": the walk resumes exactly where it was left (the step on screen when the window closed; after a
+    /// relaunch the first step not reached), never back at an earlier skipped step; once the walk is over, the first
+    /// unfinished step. Android's home banner does the same (`SetupMachine.card`).
+    public mutating func reopen() { if current == nil { resume() } }
 
     /// Jump to one step (Finish setup row → that step).
     public mutating func open(_ step: Step) { current = step }

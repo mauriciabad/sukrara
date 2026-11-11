@@ -500,6 +500,15 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       durations everywhere read *1 h* / *2 h*;
       log carbs → *Alert me anyway* in Settings → Alerts › Active now. Mac (`sukrara-snap shell`: `panel-low-muted-*`, `panel-muted-all-*`): the rows under
       the card and the pill's menu.
+- [ ] First-run setup (emulator, fresh install, #175): on every step a rotation, home → back from recents and a process
+      death (home, then `adb shell run-as app.mauri.sukrara kill -9 <pid>`, reopen) return to the same step, also on a
+      step reached with Back. Back on *Let alerts reach you* (the step after the role) goes home with *Finish setup ·
+      Next: Let alerts reach you*; *Continue* resumes the walk there. *Set up sensor* and *Export CSV first* → their
+      Back → the step that opened them. After the walk, the banner's skipped steps come one by one, also after a
+      rotation (*Later* → the next, Back → home, still on the card). Settings › Sharing › *Set up sharing* → Back →
+      Settings › Sharing. Once a role exists nothing of setup opens by itself, except *Bring your history back* at
+      launch when it is the only step left. Mac (`swift test --filter SetupFlowTests`): close the setup window
+      half-way, *Finish Setup…* reopens the same step.
 
 ## Q21 Insulin pens
 
