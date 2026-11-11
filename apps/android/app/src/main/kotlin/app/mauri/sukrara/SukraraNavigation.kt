@@ -32,15 +32,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.designsystem.motion.ScreenHost
+import app.mauri.sukrara.designsystem.motion.ScreenMotion
 import app.mauri.sukrara.feature.home.DataProblemScreen
 import app.mauri.sukrara.feature.home.HomeAction
 import app.mauri.sukrara.feature.home.HomeScreen
@@ -93,7 +97,10 @@ import app.mauri.sukrara.feature.settings.R as SettingsR
 import app.mauri.sukrara.feature.sharing.R as SharingR
 import app.mauri.sukrara.integrations.R as IntegrationsR
 
-/** The app's screens. Each is a key on the back stack (Navigation 3); predictive back comes with NavDisplay. */
+/**
+ * The app's screens. Each is a key on the back stack (Navigation 3), drawn by [AppScreens] with the motion
+ * [screenMotion] gives it (predictive back included).
+ */
 @Serializable
 data object HomeRoute : NavKey
 
@@ -352,9 +359,8 @@ fun SukraraNavigation(
     }
     val context = LocalContext.current
     Box(modifier) {
-        NavDisplay(
+        AppScreens(
             backStack = backStack,
-            onBack = { backStack.removeLastOrNull() },
             entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
             entryProvider =
                 entryProvider {
@@ -383,7 +389,7 @@ fun SukraraNavigation(
                             }
                             return@entry
                         }
-                        // the settings page's title and Back (system / predictive back comes with NavDisplay)
+                        // the settings page's title and Back (system / predictive back comes with AppScreens)
                         SettingsPage(stringResource(SettingsR.string.st_sharing), close, scroll = false) {
                             SharingScreen(
                                 viewModel = viewModel(factory = SharingViewModel.factory(graph.setup.sharing)),
@@ -626,6 +632,37 @@ fun SukraraNavigation(
         }
     }
 }
+
+/**
+ * The back stack's screens with their entries ([entryDecorators]: saved state and view models per screen), moving
+ * between them the way [screenMotion] says; Back pops the top screen.
+ */
+@Composable
+private fun AppScreens(
+    backStack: NavBackStack<NavKey>,
+    entryDecorators: List<NavEntryDecorator<NavKey>>,
+    entryProvider: (NavKey) -> NavEntry<NavKey>,
+) {
+    val entries = rememberDecoratedNavEntries(backStack, entryDecorators, entryProvider)
+    ScreenHost(
+        stack = backStack.zip(entries),
+        key = { (_, entry) -> entry.contentKey },
+        motion = { (route, _) -> screenMotion(route) },
+        onBack = { backStack.removeLastOrNull() },
+    ) { (_, entry) -> entry.Content() }
+}
+
+/**
+ * How each screen comes and goes (docs/FEATURES.md "Screen motion"). Setup is a flow of its own over the app, with no
+ * parent/child relation to what's under it (first run, a single step opened from Settings › Sharing, the history step
+ * once per launch, an invite link): it fades through, as the PoC's onboarding did. Every other screen is a page
+ * opened from another one with Back returning there: the Settings app's page motion and predictive back.
+ */
+fun screenMotion(route: NavKey): ScreenMotion =
+    when (route) {
+        SetupRoute, is SetupStepRoute -> ScreenMotion.FadeThrough
+        else -> ScreenMotion.Page
+    }
 
 /** Adds [key] on top unless it's already there (a double tap opens one page, not two). */
 private fun NavBackStack<NavKey>.push(key: NavKey) {

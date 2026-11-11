@@ -781,6 +781,28 @@ end of an open and the start of a back. Present since the system page motion (0.
 recomposed from scratch mid-move; a back during an open now animates the half-open page back out. Guarded by
 `ScreenHostTest` and a QA Q1 step (record at 5× animator scale, step the frames).
 
+### In Sukrara: screen motion (#169, 2026-11-11)
+
+The owner after 0.12.0: "The animations between screens on the app are wrong. in the poc we had good animations
+depending on the page." Sukrara drew its screens with Navigation 3's `NavDisplay` and its defaults: a 700 ms
+cross-fade for every open and back, and a predictive back that faded the page while shrinking it to 70 %.
+
+Added (FEATURES.md "Screen motion (Android)"): the PoC's `ScreenHost` as `:core:designsystem` `motion/ScreenHost`, on
+Navigation 3's back stack and decorated entries (saved state and view models per screen stay Navigation 3's); the
+system page motion (96 dp slides, 450 ms fast-out-extra-slow-in, the short fades) and the cross-activity predictive
+back (90 % scale, window corners, 20 / 80 % scrim, finger-following, 450 ms finish) for every page; fade through for
+setup, which plays the PoC onboarding's part (no parent/child relation); one function names each route's kind
+(`screenMotion`), every number is in the pure `ScreenMoves` (unit-tested), the host keeps the fixed slots against the
+transition flash. New against the PoC: with reduced motion nothing moves at all (the PoC still moved the page under
+the finger with animations off, since a gesture doesn't run on the frame clock), a gesture started during a move
+first finishes that move (the PoC could draw one page twice), and a page's lifecycle is RESUMED only at rest, as with
+`NavDisplay`. LibreView sign-in lost a back handler that only repeated Back and hid the predictive back.
+
+Discarded: `NavDisplay` (its predictive back scrubs one seekable transition by the gesture's progress: no
+two-phase preview-then-finish, and the finish gets shorter the further the finger went); the PoC's own `Nav` string
+stack (Navigation 3's keys, saved state and view model decorators already do it); SettingsLib SPA's navigation
+(already discarded above); mirroring the slides for right-to-left languages (the PoC didn't, and Sukrara has none).
+
 ## Treatments on the card (2026-10-18 feedback round)
 
 Details and pictures: [16 → Treatments on the card](16-graph.md#treatments-on-the-card-times-mute-lines-badge-last-treatment-2026-10-18).

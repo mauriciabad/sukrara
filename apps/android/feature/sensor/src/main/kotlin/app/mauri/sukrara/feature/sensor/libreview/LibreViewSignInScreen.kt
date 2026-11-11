@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sensor.libreview
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,7 +47,8 @@ import app.mauri.sukrara.feature.sensor.R
 
 /**
  * THE LibreView account screen (the new-sensor flow and setup's sensor step, Settings › Sensor, Share with apps ›
- * LibreView): the sign-in form, or who is signed in with *Done* and *Sign out*. [onBack] leaves it.
+ * LibreView): the sign-in form, or who is signed in with *Done* and *Sign out*. [onBack] leaves it (its *Done* /
+ * *Back* buttons); the system back is the app's own page pop, with its predictive back.
  */
 @Composable
 fun LibreViewSignInRoute(
@@ -58,7 +58,6 @@ fun LibreViewSignInRoute(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
-    BackHandler(onBack = onBack)
     LibreViewSignInContent(
         ui,
         modifier = modifier,

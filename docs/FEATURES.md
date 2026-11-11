@@ -913,6 +913,50 @@ reason) + *OK*; dates it can't read → the first such date and what to do, *Cho
 note only. Every state shows on the page and in the Share with apps row, reachable with TalkBack and without a
 notification. Back leaves the page.
 
+## Screen motion (Android)
+
+How the app's screens come and go (#169: the PoC's motion, docs/10-showcase.md "Motion and back"). One host draws
+every screen of the back stack (`:core:designsystem` `motion/ScreenHost`, every number in `ScreenMoves`); the app
+names each route's kind in one place (`:app` `screenMotion`). Tests: `ScreenMovesTest`, `ScreenHostTest`
+(`:core:designsystem`), `ScreenMotionTest` (`:app`).
+
+- **Pages** (every screen opened from another one, Back returns there): home → Settings and every settings page
+  (alerts and each alert, ranges, graph, pens and a pen, Settings › Sensor, about, advanced, log…), Sharing,
+  Following, Share, How you appear, Backup, Replace this identity, Share with apps and each of its pages (LibreView,
+  Tidepool, Nightscout upload and API, Send glucose to apps, Health Connect, Export, Import), Data problems, New
+  sensor, LibreView sign-in, an invite link's *where it works* page; also when a notification or a link opens them on
+  top of what's shown. They move like the Settings app's pages on Android 16/17 (system activities): **open**: both
+  pages slide 96 dp to the start in 450 ms (fast-out-extra-slow-in), the new page on top fades in over 83 ms after
+  50 ms; **back** (system Back, the page's back button, *Done*): the reverse, the closing page fades out over 83 ms
+  after 35 ms.
+- **Predictive back** on a page: holding the back gesture shrinks the page to 90 % with the screen's corner radius,
+  its end edge 8 dp from the screen's, following the finger up and down; the page under it waits 96 dp to the start
+  at the same scale under a black scrim (20 % light theme, 80 % dark). Releasing finishes the back in 450 ms from
+  there (the page leaves 96 dp to the end, gone by 20 % of the way); letting go early springs it back. On home (no
+  page under it) Back is the system's back-to-home.
+- **Setup** (first run over home, a single step from Settings › Sharing or Following, the history step once per
+  launch, an invite link's join step) has no parent/child relation to what's under it: it **fades through** both
+  ways (the old screen fades out in 90 ms, then setup fades in and grows from 92 % in 210 ms, emphasized
+  decelerate), like the PoC's onboarding; its steps fade through too.
+- A screen with its own Back handles it first, without a gesture preview: setup (Back = the previous step), the
+  new-sensor flow (Back = its Cancel), settings search (Back clears it), Replace this identity's restore step.
+- Dialogs and sheets (choices, numbers, the access request, treatments, home's quiet sheet) keep Material 3's own
+  motion and predictive back; the quick treatment window, the system share sheet and system settings are other
+  windows with the system's motion.
+- A page is composed once per visit: it keeps its composition while it starts or stops moving (no empty chart or
+  re-laid-out rows for a frame), and its lifecycle is resumed only at rest on top (STARTED while it moves or the
+  gesture is held).
+- **Reduced motion** (*Remove animations*): nothing moves: screens change at once and the back gesture shows no
+  preview (Back acts when released).
+
+**States and exits**: *At rest* (one screen) → open a page (its row or button, home's actions, a notification, a
+link) or Back. *Opening / closing* (two screens moving) → Back during an open sends the half-open page back out; a
+new page during a move takes over; nothing to wait for. *Back gesture held* → release to go back, or move the finger
+back / let go before the threshold to stay (the page springs back); the gesture can't trap anyone: the page's back
+button and system Back (TalkBack's *Back* action, three-button navigation) do the same without it. *Reduced motion*
+→ the same states without movement; turning *Remove animations* off or on applies at once. Mac: no screen stack
+(windows and the menu bar panel keep the system's motion).
+
 ## Settings
 - Followers' *Settings from* (round f28; schema `follower.settingsFrom`, Android `WearerSettings`, Mac `WearerSettings`): **Wearer** (default), **Default** or **Custom**. It decides the settings marked `"mirror": true` in `contracts/settings/settings.json`: the six graph ranges, time shown (default), rings beside the value (count, slots, centre count, order, rewards), time in range beside the graph, crown at 100 %, lines across the graph, vertical lines, last-treatment place and fallback, the sensor countdown hours, each alert's on / threshold / remind every (not *No data*) and the three quiet rules. *Wearer* = the wearer's own values from its settings event (PROTOCOL-v2 "Settings"; the defaults until the first one arrives; newest `u` wins); *Default* = the schema's defaults; *Custom* = this device's own. Everything else stays per device in every mode: sounds, like an alarm, the notification's Mute / Remind less, Mute all, *No data*, the alerts main switch, time shown and sensor time left per place. The alert source follows it: *Wearer* mirrors the wearer's alert events, *Default* / *Custom* run the rules on this device (SPEC §3 `source`). Android: `FollowerSettingsRepository` (`:core:data`) is what the cards, the notification and the sensor-end reminders read (a mirrored graph row resolves per choice; everything else and every write is this phone's own), `FollowerSettingsBridge` (`:app`) feeds the alert runtime (`AlertMirror.effective`: only the mirrored alert rows, never no data) and keeps `alerts.source` on the choice; the wearer's phone always reads its own. *Copy the wearer's settings* / *Reset to default* overwrite only the mirrored fields of this phone's own. Tests: `FollowerSettingsTest`, `FollowerSettingsBridgeTest`, `FollowerEngineTest`, Mac `IntegrationTests.wearerValuesReplaceOnlyMirroredFields`.
 - The wearer's phone publishes its mirrored settings (PROTOCOL-v2 "Settings": kind 30078, `d = H("cgm2:settings:"+sid)`, encrypted to the group key) 3 s after a change of one of them, at every start, on a new epoch and weekly, over relays and Bluetooth (backlog key `settings`); followers and the Mac accept it only from a roster device under a known epoch.
