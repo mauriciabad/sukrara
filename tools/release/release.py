@@ -352,7 +352,8 @@ class Release:
         if self.git_ok(["merge-base", "--is-ancestor", mine, "origin/next"]):
             return  # next has it already (a re-run)
         self.sh(["git", "reset", "--keep", "origin/next"])
-        merged = self.git_ok(["merge", "--no-ff", "--no-edit", mine])
+        merged = self.git_ok(["merge", "--no-ff", "-m", "Merge %s (Sukrara %s, on main) into next" % (mine[:8], self.v),
+                              mine])  # git's default message would name this checkout's branch, not next
         if not merged:
             self.git_ok(["merge", "--abort"])
         pushed = merged and self.git_ok(["push", "origin", "HEAD:next"])

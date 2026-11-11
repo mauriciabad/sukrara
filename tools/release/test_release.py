@@ -312,6 +312,8 @@ class WorktreeGitTest(unittest.TestCase):
         r.push_next()
         self.assertEqual(r.head(), appcast)  # never the merge
         nxt = self.git(self.origin, "rev-parse", "next")
+        self.assertEqual(self.git(self.origin, "log", "-1", "--format=%s", "next"),
+                         "Merge %s (Sukrara 0.14.0, on main) into next" % appcast[:8])  # not the worktree's branch
         for c in (appcast, other):
             self.git(self.origin, "merge-base", "--is-ancestor", c, nxt)
         r.push_next()  # a re-run changes nothing
