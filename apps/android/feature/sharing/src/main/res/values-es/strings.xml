@@ -116,12 +116,20 @@
     <string name="sh_share_send_chooser">Enviar invitación</string>
     <string name="sh_share_send_message">Sigue mi glucosa con Sukrara: %1$s</string>
     <string name="sh_share_another">Invitar a otra persona</string>
+    <string name="sh_share_asked_title">%1$s pidió seguirte</string>
+    <string name="sh_share_asked_body">Nadie más puede usar esta invitación. Permite o deniega su solicitud.</string>
+    <string name="sh_share_review">Revisar solicitud</string>
+    <string name="sh_share_following_title">%1$s ya te sigue</string>
+    <string name="sh_share_following_body">Ve tu glucosa en su teléfono o Mac. Puedes quitarle el acceso cuando quieras en Ajustes › Compartir.</string>
+    <string name="sh_share_done">Hecho</string>
+    <string name="sh_share_denied_title">No diste acceso a %1$s</string>
+    <string name="sh_share_denied_body">Nadie puede usar ya esta invitación. Crea otra para invitar a alguien.</string>
+    <string name="sh_share_expired_title">Esta invitación caducó</string>
+    <string name="sh_share_expired_body">Nadie la usó. Crea otra para invitar a alguien.</string>
     <string name="sh_share_they_see">Verán</string>
     <string name="sh_share_they_see_body">Tu glucosa y tendencia, tus alertas, tus tratamientos y el tiempo que le queda al sensor, cifrado de extremo a extremo. Puedes quitarles el acceso cuando quieras.</string>
     <string name="sh_approve_title">%1$s quiere seguirte</string>
     <string name="sh_approve_unnamed">Alguien</string>
-    <string name="sh_approve_invite_for">Invitación para: %1$s</string>
-    <string name="sh_approve_code_intro">Comprueba que su móvil muestra este código:</string>
     <string name="sh_approve_they_see">Si lo permites, verán tu glucosa hasta que les quites el acceso.</string>
     <string name="sh_approve_allow">Permitir</string>
     <string name="sh_approve_deny">Denegar</string>
@@ -138,9 +146,9 @@
     <string name="sh_followers_remove_title">¿Quitar a %1$s?</string>
     <string name="sh_followers_remove_text">Dejarán de ver tus datos. Para volver a seguirte necesitarán una invitación nueva.</string>
     <plurals name="sh_approve_others">
-        <item quantity="one">Otro móvil (%1$d) también ha probado este enlace. Permite solo si sabes quién es.</item>
-        <item quantity="many">Otros %1$d móviles también han probado este enlace. Permite solo si sabes quién es.</item>
-        <item quantity="other">Otros %1$d móviles también han probado este enlace. Permite solo si sabes quién es.</item>
+        <item quantity="one">Otro dispositivo (%1$d) también ha probado este enlace. Permite solo tras escribir el código que muestra su pantalla.</item>
+        <item quantity="many">Otros %1$d dispositivos también han probado este enlace. Permite solo tras escribir el código que muestra su pantalla.</item>
+        <item quantity="other">Otros %1$d dispositivos también han probado este enlace. Permite solo tras escribir el código que muestra su pantalla.</item>
     </plurals>
     <plurals name="sh_followers_count">
         <item quantity="one">%1$d seguidor</item>
@@ -198,17 +206,16 @@
     <!-- Profile row summary; %1$s = "2 followers" -->
     <string name="sh_profile_row_summary">%1$s · Cómo te ven</string>
     <!-- Approve, leaked link: field for the code on the follower's phone -->
-    <string name="sh_approve_type_code">Código de su teléfono</string>
+    <string name="sh_approve_type_code">Código de su pantalla</string>
     <!-- Approve: typed code differs -->
-    <string name="sh_approve_code_wrong">Ese no es el código de su teléfono.</string>
+    <string name="sh_approve_code_wrong">Ese no es el código de su pantalla.</string>
     <!-- Approve: Allow didn't work -->
     <string name="sh_approve_failed">No se pudo dar acceso: la invitación caducó o ya se usó. Envía una nueva.</string>
     <!-- Approve: decide later (the request keeps waiting) -->
     <string name="sh_approve_later">Más tarde</string>
     <!-- Approve: the invite card's heading -->
     <string name="sh_approve_your_invite">Tu invitación</string>
-    <!-- Approve: invite without a label -->
-    <string name="sh_approve_no_label">Invitación sin nombre</string>
+    <string name="sh_approve_your_invite_for">Tu invitación para</string>
     <!-- Approve: the name looks like the invite's label (a hint) -->
     <string name="sh_approve_label_matches">El nombre coincide</string>
     <!-- Approve: the name differs from the invite's label -->
@@ -359,10 +366,10 @@
     <string name="sh_join_someone">la persona que te invitó</string>
     <string name="sh_join_waiting">Esperando a que %1$s te dé acceso</string>
     <string name="sh_join_active">Sigues a %1$s</string>
-    <string name="sh_join_code_hint">Si te pide un código, dile:</string>
+    <string name="sh_follow_code">Si %1$s te pide un código: %2$s</string>
     <string name="sh_join_waiting_note">%1$s recibe una notificación para darte acceso. Sus lecturas aparecerán en inicio en cuanto lo haga; mientras, puedes seguir con la configuración.</string>
     <string name="sh_join_declined">%1$s no te ha dado acceso. Pídele un enlace nuevo y pégalo aquí.</string>
-    <string name="sh_join_used">Otro teléfono usó antes esta invitación de %1$s. Pídele un enlace nuevo y pégalo aquí.</string>
+    <string name="sh_join_used">Otro dispositivo usó antes esta invitación de %1$s. Pídele un enlace nuevo y pégalo aquí.</string>
     <string name="sh_join_revoked">%1$s ha dejado de compartir contigo. Pega un enlace nuevo para volver a seguirle.</string>
     <string name="sh_join_err_invalid">No es un enlace de invitación de Sukrara. Empieza por https://sukrara.mauri.app/join#</string>
     <string name="sh_join_err_not_found">No se ha encontrado esta invitación. Puede que la hayan cancelado: pide un enlace nuevo.</string>
@@ -379,7 +386,6 @@
     <string name="sh_following_title">Siguiendo</string>
     <string name="sh_following_waiting">Esperando a que %1$s te dé acceso</string>
     <string name="sh_following_active">Sigues a %1$s</string>
-    <string name="sh_following_code">Si te pide un código: %1$s</string>
     <string name="sh_following_last_heard">Última lectura recibida %1$s</string>
     <string name="sh_following_never">Aún no ha llegado ninguna lectura</string>
     <string name="sh_following_can_write">Puedes añadir entradas a su registro</string>
@@ -430,7 +436,7 @@
     <string name="sh_pair_nearby">Emparejar cerca</string>
     <string name="sh_pair_nearby_off">Durante 10 minutos, un teléfono cercano puede pedir seguirte sin enlace. Luego los dos teléfonos muestran el mismo código.</string>
     <string name="sh_pair_nearby_on">Abierto · se cierra en %1$s. En su teléfono: Buscar teléfonos cerca, al unirse.</string>
-    <string name="sh_approve_nearby">Pedido con Emparejar cerca: cualquier teléfono al alcance del Bluetooth puede pedirlo. Permite solo si su teléfono muestra este mismo código.</string>
+    <string name="sh_approve_nearby">Pedido con Emparejar cerca: cualquier teléfono o Mac al alcance del Bluetooth puede pedirlo. Permite solo si su pantalla muestra este mismo código.</string>
     <string name="sh_pair_asking">Preguntando al teléfono de %1$s…</string>
     <string name="sh_pair_compare">¿El teléfono de %1$s muestra este código?</string>
     <string name="sh_pair_waiting">Mismo código. Esperando a que %1$s te dé acceso.</string>

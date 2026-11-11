@@ -130,8 +130,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   thresholds → your followers (restore once this phone has your sensor, or start fresh) → home. Any
   step can wait; home's *Finish setup* banner brings it back.
 - **Sharing screens**: *How you appear* (your name and a generated picture, on home's top bar), invite one person (QR
-  that springs in, link to send or copy, works once for 24 h), allow or deny their request after comparing a 4-digit
-  code (the dialog shows over any screen, with their picture and the invite they used), see followers with their
+  that springs in, link to send or copy, works once for 24 h; the screen moves on by itself when they ask, when you
+  allow them and when it expires), allow or deny their request (the dialog shows over any screen, with their picture
+  and the invite they used; you type a code only if another device also tried the link), see followers with their
   pictures, let one *add entries*, remove them (confirmed; removed ones fold away), **Backup** to your password manager
   or a recovery code (home says *Not backed up* until then; setup restores from either), **Replace this identity**
   without reinstalling (restore another one or start fresh, confirmed with the followers who lose your readings named;
@@ -146,8 +147,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   picture of it, read on the phone), see who is inviting (their name and picture from the invite) and tap *Follow* or
   *Cancel*, or find their phone nearby over
   Bluetooth while they have *Pair nearby* on (Settings › Sharing; both phones show the same 6-digit code and you each
-  confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the 4-digit
-  code they may ask for), then their readings, sensor, entries and alerts arrive over the relays and drive
+  confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the code
+  they ask for only if another device also tried it; the screen moves on by itself when they answer), then their readings, sensor, entries and alerts arrive over the relays and drive
   home, widgets, the live notification and your own alerts (including *no data*); near their phone they also arrive over
   Bluetooth, without internet. Add entries when they let you;
   notifications say when an invite was used, declined or your access removed; *Stop following* in Settings › Sharing.
@@ -185,7 +186,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Follow** a wearer with an invite link (pasted, dropped or opened, `https://sukrara.mauri.app/join#…` or
   `sukrara:`; a build with a provisioning profile opens the web invite straight from Safari, Mail or Messages), a QR
   code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
-  confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*; readings,
+  confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*, then waits
+  for the wearer's Allow (with the same code line as Android) and moves on by itself when it arrives; readings,
   alerts and
   treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
   (*How you appear*); the wearer's picture shows in Following and the nearby dialog. A setup window walks Welcome → Follow → Alerts → Notifications → Open at

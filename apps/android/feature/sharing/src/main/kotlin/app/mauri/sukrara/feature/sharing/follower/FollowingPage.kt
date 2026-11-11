@@ -28,7 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -37,7 +39,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
 import app.mauri.sukrara.feature.sharing.FollowerSharing
+import app.mauri.sukrara.feature.sharing.MatchCodeLine
 import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.PairingCodeCard
 import app.mauri.sukrara.feature.sharing.R
@@ -151,6 +155,7 @@ fun FollowingContent(
             }
 
             is FollowState.Following -> {
+                ConfirmWhenAllowed(state.status)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AvatarImage(state.wearer?.avatar, name, size = 64.dp)
                     Text(
@@ -159,7 +164,12 @@ fun FollowingContent(
                             name,
                         ),
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(start = 16.dp).semantics { heading() },
+                        // the status changes by itself (Allow, Deny, removed): TalkBack says so
+                        modifier =
+                            Modifier.padding(start = 16.dp).semantics {
+                                heading()
+                                liveRegion = LiveRegionMode.Polite
+                            },
                     )
                 }
                 when (state.status) {
@@ -181,7 +191,7 @@ fun FollowingContent(
                         if (pairing != null) {
                             PairingCodeCard(pairing, name, onSame = { onConfirmNearby(true) }, onDifferent = { onConfirmNearby(false) })
                         } else {
-                            NoteCard(stringResource(R.string.sh_following_code, state.code.toList().joinToString(" ")))
+                            MatchCodeLine(name, state.code)
                         }
                     }
 

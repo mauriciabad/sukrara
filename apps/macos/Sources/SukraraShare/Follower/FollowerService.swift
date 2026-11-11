@@ -63,6 +63,7 @@ public enum FollowerJoinError: Error, Equatable, Sendable {
     case expired
     /// The invite was sealed by someone else than the link names.
     case fingerprintMismatch
+    /// A follow waits or runs (one that ended, declined, used elsewhere or removed, is replaced by a new join).
     case alreadyFollowing
     case cancelled
     /// The follower key couldn't be stored in the Keychain.

@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -35,6 +34,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
+import app.mauri.sukrara.feature.sharing.MatchCodeLine
 import app.mauri.sukrara.feature.sharing.PairingCodeCard
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.protocol.follow.FollowStatus
@@ -46,7 +47,7 @@ import app.mauri.sukrara.share.follower.JoinResult
  * The follower's join step: paste the wearer's invite link (an invite opened on this phone fills it in and is looked up
  * by itself; [ScanInvite] reads it from their QR code, live or from a picture), with the name the wearer will see;
  * *Join* looks it up and shows who is inviting ([InviteConfirm]: *Follow* / *Cancel*, nothing sent before *Follow*);
- * then "waiting for Ana" with the 4-digit code the wearer may ask for (a *Pair nearby* join shows
+ * then "waiting for Ana" with the match code as one quiet line ([MatchCodeLine]; a *Pair nearby* join shows
  * the 6-digit pairing code to compare instead, [PairingCodeCard]; *Different code* ends it). A follow that ended
  * (declined, the invite used by another phone, access removed) says so and asks for a new link here. Back returns to the
  * role (this phone wears the sensor after all).
@@ -77,6 +78,8 @@ internal fun ColumnScope.JoinStep(
             StepButtons(stringResource(R.string.sh_setup_continue), onPrimary = actions.completeJoin)
             return
         }
+        // the wearer's Allow arrives over the follow's open subscription: the card turns into "You follow Ana"
+        ConfirmWhenAllowed(follow.status)
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
             modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
@@ -97,15 +100,7 @@ internal fun ColumnScope.JoinStep(
                         ),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    if (follow.status != FollowStatus.Active) {
-                        Text(stringResource(R.string.sh_join_code_hint), style = MaterialTheme.typography.bodyMedium)
-                        val spaced = follow.code.toList().joinToString(" ")
-                        Text(
-                            follow.code,
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.semantics { contentDescription = spaced },
-                        )
-                    }
+                    if (follow.status != FollowStatus.Active) MatchCodeLine(name, follow.code)
                 }
             }
         }

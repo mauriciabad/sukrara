@@ -778,6 +778,7 @@ class OwnerEngine(
             passwordManagerSavedAt = s.passwordManagerSavedAt,
             restoredAt = s.restoredAt,
             nearbyPaired = s.nearbyPaired,
+            invites = s.invites,
         )
     }
 

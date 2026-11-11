@@ -23,7 +23,7 @@ public enum FollowFailure: Error, Equatable, Sendable {
         case .fingerprintMismatch: L10n.t("This invite doesn't match the link. Ask for a new invite on the phone.")
         case .alreadyFollowing:
             L10n.t(
-                "This Mac already follows someone. Stop following in Settings › General first, then open the link again."
+                "This Mac already follows someone. Stop following in Settings › Following first, then open the link again."
             )
         case .keychain: L10n.t("Sukrara couldn't save the follow key in the Keychain. Try again.")
         case .noQRCode: L10n.t("No Sukrara invite QR code found in that image.")
@@ -101,6 +101,9 @@ public final class FollowModel {
     public var me: Profile?
     /// The wearer's name and picture (Following, the nearby dialog), nil before any.
     public var wearer: Profile?
+    /// While a link join waits: the match code the wearer types only when another device also tried the same link
+    /// (PROTOCOL-v2 "Invite link / QR"); nil otherwise (a nearby join compares its pairing code instead).
+    public var matchCode: String?
     /// Unfollow asks first ("the wearer has to invite again").
     public var confirmingUnfollow = false
     /// How the readings arrive while following ("Over the internet · Bluetooth: connected to Pixel"), nil otherwise.

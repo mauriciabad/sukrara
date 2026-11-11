@@ -19,6 +19,10 @@ struct FollowStep: View {
         VStack(alignment: .leading, spacing: 12) {
             if let invite = follow.invite {
                 InviteConfirmDialog(follow: follow, invite: invite)
+            } else if case .following(let wearer, _, _) = follow.status {
+                // the wearer's Allow arrived by itself: the step moves on (setup's Continue goes on)
+                FollowingNow(follow: follow, wearer: wearer ?? L10n.t("the wearer"))
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.9).combined(with: .opacity))
             } else {
                 form
             }
@@ -29,6 +33,13 @@ struct FollowStep: View {
             }
         }
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.invite)
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.status)
+        .onChange(of: follow.status) { before, now in
+            // Allow arrived while the step shows: a trackpad tap with the card
+            if case .waiting = before, case .following = now {
+                NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+            }
+        }
         .onChange(of: follow.canFollow, initial: true) { _, can in follow.searchNearby(can) }
         .onDisappear { follow.searchNearby(false) }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.image]) { result in
@@ -49,8 +60,14 @@ struct FollowStep: View {
     }
 
     @ViewBuilder private var form: some View {
+        // declined, used by another device, removed: why, above the field the new link goes in
+        FollowEnded(
+            status: follow.status,
+            wearer: Profile.shownName(follow.wearer?.name) ?? L10n.t("the person who invited you"))
         if case .waiting(let wearer, let pairing?) = follow.status {
             PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+        } else if case .waiting(let wearer, nil) = follow.status {
+            WaitingForWearer(follow: follow, wearer: wearer ?? L10n.t("the wearer"))
         } else if let phone = follow.nearby {
             NearbyPairingDialog(follow: follow, phone: phone)
         }
@@ -75,13 +92,6 @@ struct FollowStep: View {
             HStack {
                 ProgressView().controlSize(.small)
                 Text(L10n.t("Looking up the invite…"))
-                Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
-            }
-        }
-        if case .waiting(let wearer, nil) = follow.status {
-            HStack {
-                ProgressView().controlSize(.small)
-                Text(L10n.t("Waiting for \(wearer ?? L10n.t("the wearer")) to approve"))
                 Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
             }
         }
@@ -195,7 +205,7 @@ struct PairingCodeView: View {
                 if let code = check.code {
                     Text(
                         check.confirmed
-                            ? L10n.t("Same code. Waiting for \(wearer) to allow this Mac.")
+                            ? L10n.t("Same code. Waiting for \(wearer) to allow you.")
                             : L10n.t("Does \(wearer)'s phone show this code?")
                     )
                     .font(.headline)

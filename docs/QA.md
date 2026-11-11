@@ -587,11 +587,18 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    nothing.
 4. Wearer: *Share with someone* → *Create invite*. Follower: `adb shell am start -a android.intent.action.VIEW -d
    '<link>' -p app.mauri.sukrara` → *I follow someone* → *Join*: the relay logs the invite lookup (`REQ q-…`, 1
-   stored) and the request (kind 1059); the follower shows *Waiting for <name> to allow you* with a 4-digit code.
-5. Wearer: the request (notification and Sharing) shows the same code → *Allow*. Follower: *You follow <name>*, then
+   stored) and the request (kind 1059); the follower shows *Waiting for <name> to allow you* with *If <name> asks for a
+   code: NNNN* as one quiet line.
+5. Wearer (left on the share screen with the QR): within seconds the screen turns into *<name> asked to follow you*
+   and the approve dialog shows over it, with the whole label under *Your invite for* and **no code** (an ordinary
+   link) → *Allow*. Without touching either phone: the share screen says *<name> follows you now* (*Done* → Settings ›
+   Sharing lists them) and the follower's card turns into *You follow <name>* (#174), then
    home shows the wearer's value and graph; the next minute's reading arrives on both. Both uids still have only the
    10.0.2.2 socket.
-6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
+6. Optional on the same pair: Deny instead of Allow (wearer: *You didn't allow <name>*; follower: *<name> didn't allow
+   you…* by itself), a third emulator opening the same link first or second (the second shows *Another device used
+   this invite…* by itself; the wearer's dialog asks to type the code the first one's screen shows), an invite left
+   unused until it expires (*This invite expired*), a writer's treatment, Mute mirroring, Remove follower.
 7. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
    fresh*, confirmed. *Telling your followers…* fills (*1 of 1 told*) and ends on *Started fresh*; the relay logs the
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and

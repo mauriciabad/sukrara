@@ -44,6 +44,7 @@ final class WindowCoordinator {
     func apply(_ snapshot: FollowerSnapshot) {
         adapter?.update(snapshot)
         follow.status = FollowerAdapter.status(snapshot)
+        follow.matchCode = FollowerAdapter.matchCode(snapshot)
         follow.source = FollowerAdapter.source(snapshot)
         follow.problem = FollowerAdapter.problem(snapshot)
         follow.nearby = snapshot.nearbyOffer.map {

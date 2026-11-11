@@ -30,6 +30,7 @@ import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
 import app.mauri.sukrara.feature.sharing.backup.ReplaceUi
 import app.mauri.sukrara.feature.sharing.backup.SaveOutcome
 import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
+import app.mauri.sukrara.feature.sharing.follower.FollowingContent
 import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
 import app.mauri.sukrara.feature.sharing.followers.FollowersActions
 import app.mauri.sukrara.feature.sharing.followers.FollowersPage
@@ -51,6 +52,7 @@ import app.mauri.sukrara.feature.sharing.setup.SetupUi
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
 import app.mauri.sukrara.feature.sharing.share.ApproveDialog
 import app.mauri.sukrara.feature.sharing.share.ApproveRefusedDialog
+import app.mauri.sukrara.feature.sharing.share.InviteProgress
 import app.mauri.sukrara.feature.sharing.share.InviteUi
 import app.mauri.sukrara.feature.sharing.share.ShareScreen
 import app.mauri.sukrara.protocol.PublicKeyHex
@@ -165,6 +167,23 @@ class SharingScreenshotTest {
             writers = setOf("k1"),
         )
 
+    private val readyInvite =
+        InviteUi.Ready(Invite("https://sukrara.mauri.app/join#c3ludGhldGljLWludml0ZS1mb3ItdGVzdHM", "Anna", 1_761_600_000, "t"))
+
+    /** The join step after a link join, in [status]. */
+    private fun linkUi(status: FollowStatus) =
+        ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(
+            follow =
+                FollowState.Following(
+                    status = status,
+                    wearer = me,
+                    code = "4821",
+                    canWrite = false,
+                    lastHeardAt = null,
+                    relays = emptyMap(),
+                ),
+        )
+
     /** The join step while a *Pair nearby* join waits on [check]. */
     private fun pairingUi(check: PairingCheck) =
         ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(
@@ -229,6 +248,13 @@ class SharingScreenshotTest {
                     {},
                 )
             },
+            // #174: the share screen moves on with its invite
+            "share-asked" to { ShareScreen(readyInvite, {}, {}, progress = InviteProgress.Asked(request)) },
+            "share-following" to {
+                ShareScreen(readyInvite, {}, {}, progress = InviteProgress.Following(followers[0]))
+            },
+            "share-denied" to { ShareScreen(readyInvite, {}, {}, progress = InviteProgress.Denied("Dad")) },
+            "share-expired" to { ShareScreen(readyInvite, {}, {}, progress = InviteProgress.Expired) },
             "followers" to { FollowersPage(sharing, FollowersActions()) },
             "followers-pair-nearby" to {
                 FollowersPage(
@@ -276,6 +302,12 @@ class SharingScreenshotTest {
                     a,
                 )
             },
+            // a link join waiting: the match code as one quiet line (the wearer asks for it only for a leaked link)
+            "setup-join-waiting" to { SetupContent(linkUi(FollowStatus.Requested), a) },
+            "setup-join-allowed" to { SetupContent(linkUi(FollowStatus.Active), a) },
+            "following-waiting" to {
+                FollowingContent(linkUi(FollowStatus.Requested).follow, failed = false, onStop = {}, onJoinAgain = {})
+            },
             "setup-join-pair-asking" to { SetupContent(pairingUi(PairingCheck(null, confirmed = false)), a) },
             "setup-join-pair-compare" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = false)), a) },
             "setup-join-pair-waiting" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = true)), a) },
@@ -317,6 +349,20 @@ class SharingScreenshotTest {
             },
             "approve" to
                 { ApproveDialog(request, working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime) },
+            // #173: a long label stays whole (two lines), the hint wraps under it
+            "approve-long-label" to {
+                ApproveDialog(
+                    request.copy(name = "Maurici", label = "Maurici's MacBook Pro at the office"),
+                    working = false,
+                    onAllow = {},
+                    onDeny = {},
+                    onLater = {},
+                    time = ::utcTime,
+                )
+            },
+            "approve-no-label" to {
+                ApproveDialog(request.copy(label = ""), working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime)
+            },
             "approve-leaked" to {
                 ApproveDialog(
                     request.copy(others = 2),
