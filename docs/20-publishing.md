@@ -279,6 +279,87 @@ person the app opens normally and shows *Not following*; setup, every Settings p
 video of it following a test wearer: <link>." Plus the demo invite if the owner keeps a test wearer running. No sign-in
 to give: Sukrara has no accounts.
 
+### Mac App Store: the App Store version (2026-11-11, #186)
+
+Built next to the GitHub version, like Android's flavors ([FEATURES › Mac App Store version](FEATURES.md#mac-app-store-version-mac)):
+
+| | GitHub version | App Store version |
+|---|---|---|
+| Build | `Bundle/bundle.sh` → `tools/release/mac-release.sh` (dmg, notarized) | `Bundle/bundle.sh --app-store` → `tools/release/mac-appstore.sh` (pkg) |
+| Binaries | the same `swift build -c release` output | the same |
+| `SukraraDistribution` (Info.plist) | `github` | `appStore` |
+| Update check | once a day + *Check for Updates…* | none: not started (`ServicesPlan.all(for: .appStore)`), no menu item, no *Check now* |
+| About | *0.13.0 · GitHub version* | *0.13.0 · App Store version* |
+| Sandbox | no (hardened runtime) | `Bundle/appstore.entitlements.in`: network client, Bluetooth, files the person picks; plus the camera, the App Group and the profile's entitlements both versions have |
+| Signing | Developer ID + the Developer ID profiles, notarized | Apple Distribution + the Mac App Store profiles; the pkg with Mac Installer Distribution |
+| `CFBundleVersion` | `<versionCode>` | `<versionCode>.<yyMMdd>.<HHmm>` (a new one per upload) |
+| Checks | `verify-app.sh --notarized` | `verify-app.sh --app-store`, `pkgutil --check-signature`, `altool --validate-app` |
+
+**Same bundle id** (`app.mauri.sukrara`, decided 2026-11-11): one App ID with its capabilities (Time Sensitive, Associated
+Domains), so the universal-link file, the App Group (`QWUV9H4A3G.app.mauri.sukrara`), the keychain group and the
+widget's id stay one; a person has one Sukrara, and switching keeps the follow (the follower key is in the shared
+keychain group). A second id would mean a second App ID, profile set, App Group and site entry, and two Sukraras that
+can run side by side and both ring. The cost: the two versions can't be installed at once (TestFlight or the store
+replaces the GitHub version in Applications, and `tools/install.sh mac` puts it back), and the App Store version's data
+lives in its container, so after a switch the readings come back from the wearer's history and the Mac's own settings
+start from the defaults (no migration: CLAUDE.md).
+
+**What the sandbox changed in the shared code**: nothing broke. Every path comes from `homeDirectoryForCurrentUser`,
+which is the container in the sandbox (`~/Library/Containers/app.mauri.sukrara/Data`), so readings, treatments, the log
+and the alert sounds (`Library/Sounds` of the container, where notifications look for them) move there by themselves;
+the App Group, the data-protection keychain, `SMAppService`, the global shortcut (`RegisterEventHotKey`), the camera,
+Bluetooth, the save panel and `Host.current()` work as before (checked with a sandboxed probe and the smoke run: no
+sandbox denial in the log). The Mac app opens no listening socket, so no `network.server`. Fixed on the way, in both
+versions, for App Review: the in-app medical reminder (setup's Welcome and Settings › General › About, 1.4.1) and the
+privacy policy link (About, 5.1.1). `Bundle/smoke.sh` now runs a sandboxed bundle with its dev data in a fresh folder
+in its container (the only place it may write); CI's mac job builds and smoke-runs it unsigned.
+
+**Not yet checked**: what only a running, online App Store build shows (relays, the phone nearby, Juggluco, alerts with
+their sounds, the widget, open at login): QA Q6, Q8, Q22 on the first TestFlight build. The smoke runs here are
+offline by design (`LaunchMode`).
+
+### Mac App Store: signing and App Store Connect (state 2026-11-11)
+
+**What the API key can do**: the team key `VCB5XBQ3QZ` (*Sukrara notary*, access *Developer*; issuer in
+`~/.apple-dev/asc-issuer-id`) reads certificates, App IDs and profiles, and is refused (403) creating a certificate; with no
+distribution certificate there is nothing to make a profile from, and the API can't create the App Store Connect app
+record at all. What exists: certificates *Developer ID Application* and *Apple Development*; App IDs `app.mauri.sukrara`
+and `app.mauri.sukrara.widget`; the two Developer ID profiles; no app record. Ready for the owner: two private keys
+and certificate requests in `~/.apple-dev` (`apple-distribution.key/.csr`, `mac-installer-distribution.key/.csr`,
+chmod 600; back them up with the rest of `~/.apple-dev`).
+
+**The owner, in order** (about 20 minutes; nothing here is accepted or submitted by an agent):
+
+1. **Agreements**: App Store Connect › Business: no pending agreement (a free app needs only the Developer Program
+   agreement; the *Paid Apps* one isn't needed).
+2. **Certificates** (developer.apple.com › Certificates › +): *Apple Distribution* → upload
+   `~/.apple-dev/apple-distribution.csr` → download into `~/.apple-dev/apple-distribution.cer`; then *Mac Installer
+   Distribution* → `~/.apple-dev/mac-installer-distribution.csr` → `~/.apple-dev/mac-installer-distribution.cer`.
+   (Or: a new Team Key with *Admin* access, and an agent does this step and the next through the API.)
+3. **Profiles** (Profiles › + › Distribution › *Mac App Store Connect*): App ID `app.mauri.sukrara`, the Apple Distribution
+   certificate, name `Sukrara Mac App Store`; again for `app.mauri.sukrara.widget`, `Sukrara Mac Widget App Store`.
+   Download both into `~/.apple-dev/profiles/`.
+4. **App record** (App Store Connect › Apps › + › New App): macOS; name *Sukrara* (30 characters at most); primary
+   language English (U.S.); bundle id `app.mauri.sukrara`; SKU `sukrara-mac`; full access.
+5. **Then an agent**: imports the two keys and certificates into the login keychain (`security import`), checks
+   `security find-identity -v` lists *Apple Distribution* and the installer identity, and runs
+   `tools/release/mac-appstore.sh` (build, pkg, `altool --validate-app`). With the owner's OK, `--upload`.
+6. **First TestFlight build** (App Store Connect › TestFlight): the export question: Sukrara uses standard encryption
+   algorithms in addition to the system's (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), none proprietary; App
+   Store Connect then asks about distribution in France (an ANSSI declaration), the owner's call. Then an internal
+   group with the owner's Apple Account. Before installing from TestFlight on this Mac: quit Sukrara (TestFlight
+   replaces `/Applications/Sukrara.app`) and delete `~/Library/Containers/app.mauri.sukrara`, which only holds the
+   agents' offline smoke runs. QA Q6, Q8 and Q22 on it; `tools/install.sh mac` goes back to the GitHub version.
+7. **Listing**, before submitting for review (#186's last step): texts from the Play listing rewritten for the Mac and
+   the rules in [review risk](#mac-app-store-review-risk-2026-11-11-186), synthetic Mac screenshots, privacy URL
+   https://sukrara.mauri.app/privacy, App Privacy *Data Not Collected*, category Medical, the age rating
+   questionnaire, review notes and the demo video.
+
+**Possible upload findings** (fix when `altool --validate-app` says so): Apple may want the App Group as an App Groups
+capability on both App IDs (macOS team-prefixed groups have needed none so far) or a prefixed id for the SwiftPM
+resource bundle (`macos.SukraraApp.resources`). The App Store version already carries the `DT*` toolchain keys App Store
+Connect reads (copied from that resource bundle) and the 1024 px icon.
+
 ## Android
 
 ### Google Play: the account and app as set up (2026-11-10)

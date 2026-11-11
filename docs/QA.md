@@ -225,6 +225,13 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       in Sukrara it scans; with no camera (lid closed, no iPhone) *No camera found…*, then it starts when one connects;
       VoiceOver reads *Camera view for the QR code* and the announcements. Synthetic: `sukrara-snap windows` →
       `follow-scan-*.png`, `settings-following-none-*.png`.
+- [ ] App Store version (#186): offline, `Bundle/bundle.sh --app-store && Bundle/smoke.sh` (sandboxed, *offline,
+      sandboxed* in its last line); `tools/release/verify-app.sh build/Sukrara.app --app-store`. Online only from
+      TestFlight (docs/20-publishing.md › Mac App Store: signing): Settings › General › About says *… · App Store
+      version* without *Check now*, the right-click menu has no *Check for Updates…*; following over the relays, the
+      phone nearby, Juggluco on this network, an alert with its sound and through a Focus, the widgets, open at login,
+      *Export CSV…* to a folder you pick, the QR scanner, a web invite link; both versions show the medical reminder and
+      *Privacy Policy* in About. Then `tools/install.sh mac` back to the GitHub version.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets

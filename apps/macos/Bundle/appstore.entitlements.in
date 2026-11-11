@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The App Store version's sandbox (bundle.sh --app-store merges these into the app's entitlements: app.entitlements.in
+     or, with a provisioning profile, app-profile.entitlements.in). Only what the app uses (App Review asks about every
+     entitlement): network.client for the relays and Juggluco's web server (the Mac app listens on nothing, so no
+     network.server); device.bluetooth for the wearer's phone nearby; files.user-selected.read-write for the report's
+     Save panel. The camera, the App Group and the profile's entitlements come from the file it merges into. The widget
+     is sandboxed in both versions (widget*.entitlements.in). -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key><true/>
+	<key>com.apple.security.network.client</key><true/>
+	<key>com.apple.security.device.bluetooth</key><true/>
+	<key>com.apple.security.files.user-selected.read-write</key><true/>
+</dict>
+</plist>

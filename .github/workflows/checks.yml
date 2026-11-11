@@ -170,6 +170,12 @@ jobs:
         run: |
           Bundle/bundle.sh --unsigned
           Bundle/smoke.sh
+      # the App Store version (#186): the same binaries, sandboxed; it must still start (its data in its container)
+      - name: Unsigned App Store version (sandboxed) + launch smoke
+        working-directory: apps/macos
+        run: |
+          Bundle/bundle.sh --unsigned --app-store
+          Bundle/smoke.sh
 
   poc-android:
     needs: changes

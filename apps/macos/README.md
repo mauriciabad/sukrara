@@ -16,6 +16,9 @@ Bundle/bundle.sh                 # build/Sukrara.app + PlugIns/SukraraWidget.app
 Bundle/bundle.sh --no-profile    # signed, without the profiles
 Bundle/bundle.sh --unsigned      # ad hoc signed, for CI / machines without the identity
 Bundle/bundle.sh --dev           # CFBundleVersion <code>.<yyMMddHHmm> so the widget host refreshes previews
+Bundle/bundle.sh --app-store     # the App Store version: sandboxed, no update check (SukraraDistribution appStore);
+                                 # signed to run here (Bundle/smoke.sh), or for upload with SIGN_ID = Apple Distribution
+                                 # (tools/release/mac-appstore.sh: + the pkg, validation, --upload)
 Bundle/dmg.sh                    # build/Sukrara-<version>.dmg + build/Sukrara-mac-<version>.zip
 ```
 
@@ -45,3 +48,7 @@ hand): it replaces the installed copy wherever it is and leaves one Sukrara on t
 - **Tests never reach real relays, Bluetooth or the user's data**: use the fakes in `Tests/SukraraTesting`.
 - **No debug entry points in release**: debug-only code is `#if DEBUG` or lives in `sukrara-snap` / tests.
 - The widget reads only the App Group snapshot (`SukraraPaths.appGroupSnapshot()`), never a home-based path.
+- **Every feature also works sandboxed** (the App Store version): files only through `SukraraPaths` (the home folder
+  is the container there), the App Group or a panel the person answers; network only as a client; a new entitlement
+  goes into `Bundle/appstore.entitlements.in` and `verify-app.sh --app-store`. The update check is the GitHub
+  version's only (`Distribution`).

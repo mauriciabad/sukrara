@@ -2,7 +2,7 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara -->
 <!-- Copyright (C) 2026 Maurici Abad -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Sukrara.app's Info.plist. bundle.sh fills @VERSION@, @BUILD@ and @GROUP@. -->
+<!-- Sukrara.app's Info.plist. bundle.sh fills @VERSION@, @BUILD@, @GROUP@ and @DISTRIBUTION@. -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -30,6 +30,8 @@
 		</dict>
 	</array>
 	<key>SukraraAppGroup</key><string>@GROUP@</string>
+	<!-- github: GitHub releases, the dmg, the cask; appStore: the Mac App Store and TestFlight (no update check) -->
+	<key>SukraraDistribution</key><string>@DISTRIBUTION@</string>
 	<key>NSBluetoothAlwaysUsageDescription</key><string>Follow a nearby wearer's glucose over Bluetooth.</string>
 	<key>NSLocalNetworkUsageDescription</key><string>Read glucose from Juggluco on your home network, when you turn it on in Settings.</string>
 	<key>NSCameraUsageDescription</key><string>Read the invite QR code on the wearer's phone, to follow them. Nothing is recorded or sent.</string>

@@ -22,6 +22,13 @@
 #   Bundle/bundle.sh --dev       CFBundleVersion <versionCode>.<UTC yyMMddHHmm>: chronod keeps a widget's gallery
 #                                previews while CFBundleVersion stays the same.
 #   NOTARY_PROFILE=<profile>     notarize + staple (needs a Developer ID identity).
+#   Bundle/bundle.sh --app-store the App Store version (#186): the same binaries, sandboxed (appstore.entitlements.in
+#                                merged into the app's), SukraraDistribution = appStore (no update check, About says
+#                                "App Store version"), CFBundleVersion <versionCode>.<UTC yyMMdd>.<HHmm> (every upload
+#                                needs a new one). Signed as above, so it runs on this Mac (Bundle/smoke.sh); with
+#                                SIGN_ID = an "Apple Distribution" identity and its "Mac App Store" profiles (app and
+#                                widget) it is signed for upload instead (tools/release/mac-appstore.sh), and no longer
+#                                runs here. Apple Distribution never signs the GitHub version.
 # Version: <repo>/VERSION (x.y.z); CFBundleVersion = versionCode = x*1000000 + y*1000 + z (0.12.0 → 12000).
 # Never copy the result into /Applications or ~/Applications by hand: tools/install.sh mac does that.
 set -eu
@@ -35,16 +42,21 @@ WIDGET_ID=$TEAM.app.mauri.sukrara.widget
 PROFILES_DIR=${SUKRARA_PROFILES_DIR:-$HOME/.apple-dev/profiles}
 die() { echo "bundle.sh: $*" >&2; exit 1; }
 
-UNSIGNED=0; DEV=0; NO_PROFILE=0
+UNSIGNED=0; DEV=0; NO_PROFILE=0; APP_STORE=0
 for arg in "$@"; do
   case "$arg" in
     --unsigned) UNSIGNED=1 ;;
     --no-profile) NO_PROFILE=1 ;;
     --dev) DEV=1 ;;
-    -h|--help) sed -n '5,25p' "$0"; exit 0 ;;
-    *) die "unknown argument '$arg' (--unsigned, --no-profile, --dev)" ;;
+    --app-store) APP_STORE=1 ;;
+    -h|--help) sed -n '5,32p' "$0"; exit 0 ;;
+    *) die "unknown argument '$arg' (--unsigned, --no-profile, --dev, --app-store)" ;;
   esac
 done
+DISTRIBUTION=github
+[ "$APP_STORE" = 1 ] && DISTRIBUTION=appStore
+# identities that sign only for the Mac App Store (never the GitHub version, never picked by themselves)
+STORE_IDENTITY='"Apple Distribution:|"3rd Party Mac Developer Application:'
 [ "${AD_HOC:-}" = 1 ] && UNSIGNED=1
 [ "$UNSIGNED" = 1 ] && NO_PROFILE=1
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/sukrara-bundle.XXXXXX")
@@ -75,7 +87,9 @@ unfit() {
     i=$((i + 1))
   done
   [ "$LISTED" = 1 ] || { echo "doesn't list the signing certificate"; return; }
-  if [ "$(pget ProvisionsAllDevices)" != true ]; then
+  # a development profile lists its Macs; Developer ID provisions all; a Mac App Store profile lists none (it never
+  # runs outside the store)
+  if [ "$(pget ProvisionsAllDevices)" != true ] && [ -n "$(pvalues ProvisionedDevices)" ]; then
     pvalues ProvisionedDevices | grep -qx "$(udid)" || echo "doesn't list this Mac (Provisioning UDID $(udid))"
   fi
 }
@@ -106,9 +120,10 @@ echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || die "VERSION '$VERSION'
 CODE=$(echo "$VERSION" | awk -F. '{ print $1 * 1000000 + $2 * 1000 + $3 }')
 BUILD=$CODE
 [ "$DEV" = 1 ] && BUILD="$CODE.$(date -u +%y%m%d%H%M)"
+[ "$APP_STORE" = 1 ] && BUILD="$CODE.$(date -u +%y%m%d.%H%M)"
 
 # Identity and provisioning profiles (before building, so a missing one fails fast)
-SIGN=-; TS=--timestamp=none; PROFILE=; WIDGET_PROFILE=
+SIGN=-; TS=--timestamp=none; PROFILE=; WIDGET_PROFILE=; STORE_SIGNED=0
 if [ "$UNSIGNED" = 0 ]; then
   # Valid identities as `<sha1> "<name>"`. Everything below works on the SHA-1: after a certificate renewal two
   # valid identities share a name and signing by name is ambiguous.
@@ -118,8 +133,8 @@ if [ "$UNSIGNED" = 0 ]; then
     LINE=$(echo "$IDS" | grep -F "$SIGN_ID" | head -1)
     [ -n "$LINE" ] || die "SIGN_ID '$SIGN_ID' is not a valid code-signing identity"
   elif [ "$NO_PROFILE" = 0 ]; then
-    # the identity a profile for the app lists (the Developer ID one with the published profiles)
-    for S in $(echo "$IDS" | awk '{print $1}'); do
+    # the identity a profile for the app lists (the Developer ID one with the published profiles); never a store one
+    for S in $(echo "$IDS" | grep -Ev "$STORE_IDENTITY" | awk '{print $1}'); do
       [ -n "$(profile_for "$APP_ID" "$S")" ] && { LINE=$(echo "$IDS" | grep "^$S " | head -1); break; }
     done
   fi
@@ -139,6 +154,13 @@ if [ "$UNSIGNED" = 0 ]; then
   $GROUP would not be granted"
   SIGN=$SHA
   case "$NAME" in '"Developer ID Application:'*) TS=--timestamp ;; esac
+  STORE_SIGNED=0
+  if echo "$NAME" | grep -Eq "^($STORE_IDENTITY)"; then
+    [ "$APP_STORE" = 1 ] || die "$NAME signs only the App Store version (--app-store)"
+    [ "$NO_PROFILE" = 0 ] || die "an App Store upload needs its Mac App Store profiles (no --no-profile)"
+    [ -z "${NOTARY_PROFILE:-}" ] || die "the App Store version isn't notarized (Apple checks it at upload)"
+    STORE_SIGNED=1
+  fi
   if [ "$NO_PROFILE" = 0 ]; then
     PROFILE=$(profile_for "$APP_ID" "$SHA")
     if [ -n "$PROFILE" ]; then
@@ -146,7 +168,11 @@ if [ "$UNSIGNED" = 0 ]; then
       [ -z "$MISSING" ] || die "$PROFILE doesn't grant: $MISSING. Enable it on the App ID app.mauri.sukrara and
   download the profile again (docs/20-publishing.md), or pass --no-profile"
       WIDGET_PROFILE=$(profile_for "$WIDGET_ID" "$SHA")
+      [ "$STORE_SIGNED" = 0 ] || [ -n "$WIDGET_PROFILE" ] || die "no Mac App Store profile for $WIDGET_ID that lists
+  $NAME in $PROFILES_DIR (docs/20-publishing.md › Mac App Store: signing)"
     else
+      [ "$STORE_SIGNED" = 0 ] || die "no Mac App Store profile for $APP_ID that lists $NAME in $PROFILES_DIR
+  (docs/20-publishing.md › Mac App Store: signing)"
       # a profile for the app that can't sign this build: stop rather than build one that can't read the follower key
       WHY=$(for F in "$PROFILES_DIR"/*.provisionprofile; do
         [ -f "$F" ] && [ "$(profile_app_id "$F")" = "$APP_ID" ] && echo "  $(basename "$F"): $(unfit "$F" "$APP_ID" "$SHA")"
@@ -194,7 +220,8 @@ cp -R "$HERE/es.lproj" "$APP/Contents/Resources/"
 [ -n "$SOUNDS" ] && cp "$SOUNDS"/*.caf "$APP/Contents/Resources/Sounds/" 2>/dev/null || true
 
 fill() {
-  sed -e "s/@VERSION@/$VERSION/g" -e "s/@BUILD@/$BUILD/g" -e "s/@GROUP@/$GROUP/g" -e "s/@TEAM@/$TEAM/g" "$1" > "$2"
+  sed -e "s/@VERSION@/$VERSION/g" -e "s/@BUILD@/$BUILD/g" -e "s/@GROUP@/$GROUP/g" -e "s/@TEAM@/$TEAM/g" \
+    -e "s/@DISTRIBUTION@/$DISTRIBUTION/g" "$1" > "$2"
   plutil -lint -s "$2"
 }
 fill "$HERE/Info.plist.in" "$APP/Contents/Info.plist"
@@ -202,12 +229,28 @@ fill "$HERE/Info.plist.in" "$APP/Contents/Info.plist"
 plutil -extract CFBundleLocalizations json -o - "$APP/Contents/Info.plist" | grep -q '"es"' \
   || die "Info.plist has no CFBundleLocalizations with es"
 fill "$HERE/Widget-Info.plist.in" "$APPEX/Contents/Info.plist"
+if [ "$APP_STORE" = 1 ]; then
+  # App Store Connect reads the toolchain from the DT* keys Xcode writes (supported Xcode and SDK): the same values
+  # SwiftPM wrote into the resource bundle it just built with this toolchain.
+  RES_PLIST="$APP/Contents/Resources/Sukrara_SukraraApp.bundle/Contents/Info.plist"
+  for K in BuildMachineOSBuild DTCompiler DTPlatformBuild DTPlatformName DTPlatformVersion DTSDKBuild DTSDKName DTXcode \
+    DTXcodeBuild; do
+    V=$(plutil -extract "$K" raw -o - "$RES_PLIST" 2>/dev/null) || die "the resource bundle has no $K"
+    for P in "$APP/Contents/Info.plist" "$APPEX/Contents/Info.plist"; do plutil -insert "$K" -string "$V" "$P"; done
+  done
+fi
 # With a provisioning profile: embedded, and the entitlements only it grants (the app's are checked by `ungranted`).
 if [ -n "$PROFILE" ]; then
   cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
   fill "$HERE/app-profile.entitlements.in" "$OUT/entitlements/app.plist"
 else
   fill "$HERE/app.entitlements.in" "$OUT/entitlements/app.plist"
+fi
+if [ "$APP_STORE" = 1 ]; then
+  # the App Store version's sandbox, on top of what the app has in both versions
+  fill "$HERE/appstore.entitlements.in" "$WORK/appstore.plist"
+  /usr/libexec/PlistBuddy -c "Merge $WORK/appstore.plist" "$OUT/entitlements/app.plist" >/dev/null
+  plutil -lint -s "$OUT/entitlements/app.plist"
 fi
 if [ -n "$WIDGET_PROFILE" ]; then
   cp "$WIDGET_PROFILE" "$APPEX/Contents/embedded.provisionprofile"
@@ -226,6 +269,12 @@ codesign --verify --deep --strict "$APP"
 for C in "$APP" "$APPEX"; do
   if codesign -d --entitlements - "$C" 2>/dev/null | grep -q get-task-allow; then die "$C has get-task-allow"; fi
 done
+# sandboxed only as the App Store version (the GitHub version reads nothing outside it either, but stays as it is)
+if codesign -d --entitlements - "$APP" 2>/dev/null | grep -q com.apple.security.app-sandbox; then
+  [ "$APP_STORE" = 1 ] || die "$APP is sandboxed but isn't the App Store version"
+else
+  [ "$APP_STORE" = 0 ] || die "$APP is the App Store version but isn't sandboxed"
+fi
 # the QR scanner: the hardened runtime blocks the camera without the entitlement, and macOS ends an app that opens it
 # without a usage description
 codesign -d --entitlements - "$APP" 2>/dev/null | grep -q com.apple.security.device.camera \
@@ -259,4 +308,9 @@ if [ -n "$PROFILE" ]; then
 elif [ "$SIGN" != - ]; then
   SIGNED_BY="$SIGNED_BY, no provisioning profile: alarms not Time Sensitive, login keychain, no universal links"
 fi
-echo "built $APP $VERSION ($BUILD), signed: $SIGNED_BY"
+VARIANT="GitHub version"
+if [ "$APP_STORE" = 1 ]; then
+  if [ "$STORE_SIGNED" = 1 ]; then VARIANT="App Store version, signed for upload (doesn't run here)"
+  else VARIANT="App Store version, sandboxed, signed to run here"; fi
+fi
+echo "built $APP $VERSION ($BUILD), $VARIANT, signed: $SIGNED_BY"

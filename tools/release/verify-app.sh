@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Checks a Mac bundle before it is installed or released:
-#   tools/release/verify-app.sh <Sukrara.app> [--unsigned | --notarized]
+#   tools/release/verify-app.sh <Sukrara.app> [--unsigned | --notarized | --app-store]
 # - bundle id app.mauri.sukrara, version / build = tools/release/version.sh (dev builds may add .<yyMMddHHmm>)
 # - the widget extension (app.mauri.sukrara.widget) is inside
 # - the camera's usage description (the QR scanner; macOS ends an app that opens the camera without one)
@@ -14,12 +14,17 @@
 # - --notarized (mac-release.sh with a Developer ID, #91): the app and the appex signed by "Developer ID Application"
 #   with the hardened runtime and a secure timestamp, the notarization ticket stapled, and Gatekeeper accepting the app
 #   as "Notarized Developer ID"
+# - the GitHub version (no flag, --unsigned, --notarized): SukraraDistribution github and the app not sandboxed
+# - --app-store (bundle.sh --app-store, #186): SukraraDistribution appStore; the app sandboxed with exactly what it uses
+#   (network client, Bluetooth, camera, user-selected files, the App Group; never network.server); with an "Apple
+#   Distribution" signature, a Mac App Store profile (no device list) embedded in the app and the widget
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
-app="${1:?usage: verify-app.sh <Sukrara.app> [--unsigned | --notarized]}"
+app="${1:?usage: verify-app.sh <Sukrara.app> [--unsigned | --notarized | --app-store]}"
 mode="${2:-}"
-case "$mode" in "" | --unsigned | --notarized) ;; *) echo "unknown argument '$mode' (--unsigned, --notarized)" >&2; exit 2 ;; esac
+case "$mode" in "" | --unsigned | --notarized | --app-store) ;;
+  *) echo "unknown argument '$mode' (--unsigned, --notarized, --app-store)" >&2; exit 2 ;; esac
 fail=0
 bad() { echo "FAIL $*"; fail=1; }
 ok() { echo "ok   $*"; }
@@ -37,6 +42,10 @@ case "$(plist "$app" CFBundleVersion)" in
 esac
 [ -n "$(plist "$app" NSCameraUsageDescription)" ] && ok "camera usage description (QR scanner)" \
   || bad "no NSCameraUsageDescription: macOS ends the app when the QR scanner opens the camera"
+want_dist=github
+[ "$mode" = --app-store ] && want_dist=appStore
+dist="$(plist "$app" SukraraDistribution)"
+[ "$dist" = "$want_dist" ] && ok "SukraraDistribution $dist" || bad "SukraraDistribution '$dist' (want $want_dist)"
 appex="$app/Contents/PlugIns/SukraraWidget.appex"
 if [ -d "$appex" ] && [ "$(plist "$appex" CFBundleIdentifier)" = app.mauri.sukrara.widget ]; then ok "widget extension inside"
 else bad "SukraraWidget.appex (app.mauri.sukrara.widget) missing"; fi
@@ -61,6 +70,35 @@ if [ "$mode" != --unsigned ]; then
   done
   [ -f "$app/Contents/embedded.provisionprofile" ] \
     || echo "note no provisioning profile: alarms not Time Sensitive, login keychain, no universal links"
+fi
+
+if [ "$mode" != --unsigned ]; then
+  sandbox_ents="com.apple.security.network.client com.apple.security.device.bluetooth
+    com.apple.security.files.user-selected.read-write com.apple.security.application-groups"
+  if [ "$mode" = --app-store ]; then
+    echo "$ents" | grep -q com.apple.security.app-sandbox && ok "app sandboxed (App Store)" || bad "the App Store version isn't sandboxed"
+    for e in $sandbox_ents; do echo "$ents" | grep -q "$e" && ok "$e" || bad "the App Store version lacks $e"; done
+    if echo "$ents" | grep -q com.apple.security.network.server; then bad "network.server: the Mac app listens on nothing"; fi
+    wents="$(codesign -d --entitlements - "$appex" 2>/dev/null || true)"
+    echo "$wents" | grep -q com.apple.security.app-sandbox && ok "widget sandboxed" || bad "the widget isn't sandboxed"
+    case "$(codesign -dvv "$app" 2>&1)" in
+      *"Authority=Apple Distribution:"* | *"Authority=3rd Party Mac Developer Application:"*)
+        for b in "$app" "$appex"; do
+          prof="$b/Contents/embedded.provisionprofile"
+          decoded="$(mktemp)"
+          # a store profile lists no Macs and doesn't provision all of them (that's Developer ID / development)
+          if [ -f "$prof" ] && security cms -D -i "$prof" -o "$decoded" 2>/dev/null \
+            && ! plutil -extract ProvisionedDevices raw -o - "$decoded" >/dev/null 2>&1 \
+            && ! plutil -extract ProvisionsAllDevices raw -o - "$decoded" >/dev/null 2>&1; then
+            ok "Mac App Store profile: $(basename "$b")"
+          else bad "$(basename "$b") has no Mac App Store provisioning profile"; fi
+          rm -f "$decoded"
+        done ;;
+      *) echo "note signed to run on this Mac, not for upload (tools/release/mac-appstore.sh signs for upload)" ;;
+    esac
+  elif echo "$ents" | grep -q com.apple.security.app-sandbox; then
+    bad "the GitHub version is sandboxed (only bundle.sh --app-store is)"
+  else ok "not sandboxed (GitHub version)"; fi
 fi
 
 if [ "$mode" = --notarized ]; then
