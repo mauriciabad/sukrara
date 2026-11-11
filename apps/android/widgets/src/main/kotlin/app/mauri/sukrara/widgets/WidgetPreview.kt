@@ -35,13 +35,18 @@ import kotlin.math.sin
  * launchers before Android 15.
  */
 
-/** The sizes a kind's generated preview is composed at (the picker picks the closest one). */
+/**
+ * The sizes a kind's generated preview is composed at: the picker and the pin dialog pick the largest that fits their
+ * box and show it at its own aspect ratio (Fit). Besides the small and wide ones, the box Pixel Launcher's picker gives
+ * the kind's target cells (measured on the emulator, #181: 2×1 ≈ 172×108, 4×2 ≈ 358×232, 4×3 ≈ 358×356 dp), so the
+ * picture fills it instead of floating in it.
+ */
 internal val WidgetKind.previewSizes: Set<DpSize>
     get() =
         when (this) {
-            WidgetKind.VALUE -> setOf(DpSize(110.dp, 48.dp), DpSize(250.dp, 80.dp))
-            WidgetKind.GRAPH -> setOf(DpSize(250.dp, 110.dp), DpSize(350.dp, 160.dp))
-            WidgetKind.COMBINED -> setOf(DpSize(250.dp, 170.dp), DpSize(350.dp, 220.dp))
+            WidgetKind.VALUE -> setOf(DpSize(110.dp, 48.dp), DpSize(250.dp, 80.dp), DpSize(172.dp, 108.dp))
+            WidgetKind.GRAPH -> setOf(DpSize(250.dp, 110.dp), DpSize(350.dp, 160.dp), DpSize(358.dp, 232.dp))
+            WidgetKind.COMBINED -> setOf(DpSize(250.dp, 170.dp), DpSize(350.dp, 220.dp), DpSize(358.dp, 356.dp))
         }
 
 /** Where the sample readings come from (never stored: they exist only inside a preview picture). */
