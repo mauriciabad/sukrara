@@ -10,7 +10,7 @@ import SukraraShare
 
 /// The state every surface of the menu bar app renders, composed of small controllers. One instance, owned by
 /// `AppDelegate`. Data comes in through `apply(…)` (the follower runtime); the controllers exist only when the
-/// launch plan allows their service (an offline run has no alert controller, no update check, no login item).
+/// launch plan allows their service (an offline run has no alert controller, no updater, no login item).
 @Observable
 public final class AppModel {
     public let plan: LaunchPlan
@@ -82,7 +82,7 @@ public final class AppModel {
     var notificationPermission: NotificationPermission = .allowed
 
     @ObservationIgnored let alerts: AlertController?
-    @ObservationIgnored let updates: UpdateCheck?
+    @ObservationIgnored let updates: Updates?
     @ObservationIgnored let loginItem: LoginItem?
     @ObservationIgnored let follower: (any FollowerService)?
     /// The widgets' data (nil when the plan doesn't allow the widget feed: dev and snapshot runs).
@@ -97,7 +97,7 @@ public final class AppModel {
 
     init(
         plan: LaunchPlan, clock: any TimeSource = SystemClock(), alerts: AlertController? = nil,
-        updates: UpdateCheck? = nil, loginItem: LoginItem? = nil, follower: (any FollowerService)? = nil,
+        updates: Updates? = nil, loginItem: LoginItem? = nil, follower: (any FollowerService)? = nil,
         widget: WidgetFeed? = nil, lan: (any LanSourcing)? = nil
     ) {
         self.plan = plan

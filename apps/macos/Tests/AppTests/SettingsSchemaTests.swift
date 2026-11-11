@@ -49,7 +49,7 @@ import Testing
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
             t("setup.steps", MacSettings.setupSteps), t("source.jugglucoLan", MacSettings.jugglucoLan),
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
-            t("update.skippedVersion", MacSettings.updateSkippedVersion), t("report.days", MacSettings.reportDays),
+            t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
             t("alerts.throughFocus", MacSettings.throughFocus),
         ]

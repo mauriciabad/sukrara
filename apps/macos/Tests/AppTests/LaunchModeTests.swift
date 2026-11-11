@@ -38,21 +38,21 @@ import Testing
     }
 
     /// The App Store version (#186): everything the GitHub version starts, with the user's data, but never its own
-    /// update check (App Review 2.4.5 vii: the store updates it).
-    @Test func theAppStoreVersionHasNoUpdateCheck() throws {
+    /// updater (App Review 2.4.5 vii: the store updates it).
+    @Test func theAppStoreVersionHasNoUpdater() throws {
         var store = installed
         store.distribution = .appStore
         let p = try plan(store)
         #expect(p.distribution == .appStore)
-        #expect(!p.services.updateCheck)
-        #expect(!p.services.enabled.contains(.updateCheck))
+        #expect(!p.services.updater)
+        #expect(!p.services.enabled.contains(.updater))
         var withoutUpdates = ServicesPlan.all
-        withoutUpdates.updateCheck = false
+        withoutUpdates.updater = false
         #expect(p.services == withoutUpdates)
         #expect(p.data == .user(home: home))
         #expect(try plan(installed).distribution == .github)
         // the limit holds whatever the user's settings ask for
-        #expect(!p.services.limited(by: .all).updateCheck)
+        #expect(!p.services.limited(by: .all).updater)
         // a dev copy of either version stays offline
         var devStore = repoBundle
         devStore.distribution = .appStore
@@ -67,8 +67,8 @@ import Testing
         #expect(Distribution(infoValue: nil) == .github)
         #expect(Distribution(infoValue: "AppStore") == .github)
         #expect(Distribution(infoValue: 1) == .github)
-        #expect(Distribution.github.hasOwnUpdateCheck)
-        #expect(!Distribution.appStore.hasOwnUpdateCheck)
+        #expect(Distribution.github.hasOwnUpdater)
+        #expect(!Distribution.appStore.hasOwnUpdater)
     }
 
     @Test func oldFinderProcessSerialNumberPasses() throws {

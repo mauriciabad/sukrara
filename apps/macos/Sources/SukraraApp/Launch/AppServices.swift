@@ -9,14 +9,16 @@ import SukraraShare
 @preconcurrency import UserNotifications
 
 /// The app's `ServiceStarting`: the only code that creates the notification center, copies alert sounds, runs the
-/// alert engine, writes the widget's data, checks for updates, touches the login item or may open the camera.
+/// alert engine, writes the widget's data, starts the updater, touches the login item or may open the camera.
 /// `ServicesPlan.start(using:)` calls it, so an offline run (dev build, snapshot) creates none of them. Bluetooth runs
 /// inside the follower runtime.
 final class AppServices: ServiceStarting {
     let plan: LaunchPlan
     private(set) var center: SystemNotificationCenter?
     private(set) var alerts: AlertController?
-    private(set) var updates: UpdateCheck?
+    /// The updater (Sparkle) of the GitHub version: nil unless the plan allows `.updater` and this executable has
+    /// one (the App Store executable passes none).
+    private(set) var updates: Updates?
     private(set) var loginItem: LoginItem?
     private(set) var sounds: SoundLibrary?
     /// The follower runtime (relays, and Bluetooth when the plan allows it). Created here, started by `AppModel`.
@@ -30,8 +32,8 @@ final class AppServices: ServiceStarting {
     private(set) var makeCamera: (() -> any QRCamera)?
     private let makeWidget: () -> WidgetFeed
     let responder = NotificationResponder()
-    /// The daily update check (owned here, cancelled by `stop`).
-    private var updateLoop: Task<Void, Never>?
+    /// Makes the updater (the `Sukrara` executable's Sparkle; nil in the App Store executable and in tests).
+    private let makeUpdater: (() -> any UpdaterEngine)?
     /// Re-read what notifications may do (after the authorization prompt).
     var permissionChanged: (() -> Void)?
     /// A tap on a notification's body: open the panel.
@@ -43,11 +45,15 @@ final class AppServices: ServiceStarting {
     /// The follower key and Juggluco's secret, in the keychain this build may use (`KeychainStore.secrets`).
     let secrets: any SecretStoring
 
-    /// `widget`: creates the widget feed when the plan allows it (tests write to a scratch file).
+    /// `widget`: creates the widget feed when the plan allows it (tests write to a scratch file). `updater`: makes the
+    /// updater when the plan allows it.
     init(
-        plan: LaunchPlan, entitlements: Entitlements = .current(), widget: @escaping () -> WidgetFeed = { WidgetFeed() }
+        plan: LaunchPlan, entitlements: Entitlements = .current(),
+        widget: @escaping () -> WidgetFeed = { WidgetFeed() },
+        updater: (() -> any UpdaterEngine)? = nil
     ) {
         self.plan = plan
+        makeUpdater = updater
         self.entitlements = entitlements
         secrets = KeychainStore.secrets(service: plan.data.keychainService, entitlements: entitlements)
         makeWidget = widget
@@ -134,19 +140,11 @@ final class AppServices: ServiceStarting {
                 else { return }
                 alerts.perform(action)
             }
-        case .updateCheck:
-            let installed =
-                (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
-                .flatMap(AppVersion.init) ?? AppVersion("0.0.0")!
-            let check = UpdateCheck(installed: installed, fetcher: URLSessionFetcher(), defaults: defaults)
-            updates = check
-            updateLoop?.cancel()
-            updateLoop = Task {
-                while !Task.isCancelled {
-                    await check.check(userAsked: false)
-                    try? await Task.sleep(for: .seconds(24 * 3600))
-                }
-            }
+        case .updater:
+            guard let makeUpdater else { break }
+            let updates = Updates(engine: makeUpdater())
+            updates.start()
+            self.updates = updates
         case .loginItem:
             loginItem = LoginItem(service: SMAppService.mainApp)
         case .relays:
@@ -186,14 +184,8 @@ final class AppServices: ServiceStarting {
         #endif
     }
 
-    /// Quit: ends the long-lived work this class started itself (the follower and Juggluco stop with the model).
-    func stop() {
-        updateLoop?.cancel()
-        updateLoop = nil
-    }
-
     /// The app's model over what this run started: the follower runtime (the fixture follower in a fixture run), the
-    /// alert engine, the update check, the login item and the widget feed.
+    /// alert engine, the updater, the login item and the widget feed.
     func model(clock: any TimeSource = SystemClock()) -> AppModel {
         var follower: (any FollowerService)? = follower
         #if DEBUG

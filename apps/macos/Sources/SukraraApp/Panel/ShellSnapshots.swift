@@ -49,7 +49,8 @@
                 link: LinkState = .following(wearer: "Marta", canWrite: true), readings: [Reading],
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
                 mode: LaunchMode = .normal, scroll: ChartScroll = ChartScroll(),
-                keychainUnreadable: Bool = false, act: (AlertController) -> Void = { _ in }
+                keychainUnreadable: Bool = false, update: Updates.Reminder = .none,
+                act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
                 own.source = .own
@@ -61,7 +62,9 @@
                 let plan = LaunchPlan(
                     mode: mode, services: mode == .fixture ? .none : .all,
                     data: .isolated(root: FileManager.default.temporaryDirectory.appending(path: suite)))
-                let model = AppModel(plan: plan, alerts: controller)
+                let updates = Updates(engine: StillUpdater())
+                if case .available(let version, let ready) = update { updates.found(version: version, ready: ready) }
+                let model = AppModel(plan: plan, alerts: controller, updates: updates)
                 var snapshot = FollowerSnapshot.empty
                 snapshot.link = link
                 snapshot.readings = readings
@@ -164,6 +167,15 @@
                         setup: SetupFlow(states: [.welcome: .done, .follow: .skipped, .alerts: .done]))
                 ),
                 ("panel-notifications-off", scene(readings: ending(105, rate: 0), permission: .denied)),
+                // a scheduled check found an update (gentle reminder), then the same once it is downloaded
+                (
+                    "panel-update-available",
+                    scene(readings: ending(112, rate: -0.4), update: .available(version: "0.14.0", ready: false))
+                ),
+                (
+                    "panel-update-ready",
+                    scene(readings: ending(112, rate: -0.4), update: .available(version: "0.14.0", ready: true))
+                ),
                 ("panel-fixture", scene(readings: ending(112, rate: -0.4), mode: .fixture)),
                 (
                     "panel-chart-scrolled",

@@ -5,16 +5,17 @@ import AppKit
 
 /// The status item's right-click menu: Read Glucose Aloud (with its system-wide shortcut while that is on),
 /// Treatments…, Glucose Report…, Settings…, Check for Updates… (not in the App Store version: the store updates it),
-/// Quit. An item whose window or service this run doesn't have (an offline dev run has no update check) is disabled
-/// rather than doing nothing.
+/// Quit. An item whose window or service this run doesn't have (an offline dev run has no updater) is disabled rather
+/// than doing nothing; *Check for Updates…* is also dimmed while the updater is busy.
 final class ContextMenu: NSObject {
     /// What the window layer opens (set by the window layer).
     var openTreatments: (() -> Void)?
     var openReport: (() -> Void)?
     var openSettings: (() -> Void)?
-    var checkForUpdates: (() -> Void)?
-    /// This version looks for updates itself (false in the App Store version: no Check for Updates… item at all).
-    var hasUpdateCheck = true
+    /// The updater (Sparkle): *Check for Updates…* runs its check, whose windows say what it found.
+    var updates: Updates?
+    /// This version updates itself (false in the App Store version: no Check for Updates… item at all).
+    var hasUpdater = true
     /// Says the glucose (`ReadAloud`).
     var readAloud: (() -> Void)?
     /// The system-wide shortcut is on: the item shows its keys.
@@ -33,8 +34,9 @@ final class ContextMenu: NSObject {
         menu.addItem(item(L10n.t("Glucose Report…"), #selector(report), enabled: openReport != nil))
         menu.addItem(.separator())
         menu.addItem(item(L10n.t("Settings…"), #selector(settings), key: ",", enabled: openSettings != nil))
-        if hasUpdateCheck {
-            menu.addItem(item(L10n.t("Check for Updates…"), #selector(updates), enabled: checkForUpdates != nil))
+        if hasUpdater {
+            menu.addItem(
+                item(L10n.t("Check for Updates…"), #selector(checkForUpdates), enabled: updates?.canCheck == true))
         }
         menu.addItem(.separator())
         menu.addItem(
@@ -54,5 +56,5 @@ final class ContextMenu: NSObject {
     @objc private func treatments() { openTreatments?() }
     @objc private func report() { openReport?() }
     @objc private func settings() { openSettings?() }
-    @objc private func updates() { checkForUpdates?() }
+    @objc private func checkForUpdates() { updates?.checkNow() }
 }

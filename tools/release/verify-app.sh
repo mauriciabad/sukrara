@@ -15,10 +15,14 @@
 # - --notarized (mac-release.sh with a Developer ID, #91): the app and the appex signed by "Developer ID Application"
 #   with the hardened runtime and a secure timestamp, the notarization ticket stapled, and Gatekeeper accepting the app
 #   as "Notarized Developer ID"
-# - the GitHub version (no flag, --unsigned, --notarized): SukraraDistribution github and the app not sandboxed
-# - --app-store (bundle.sh --app-store, #186): SukraraDistribution appStore; the app sandboxed with exactly what it uses
-#   (network client, Bluetooth, camera, user-selected files, the App Group; never network.server); with an "Apple
-#   Distribution" signature, a Mac App Store profile (no device list) embedded in the app and the widget
+# - the GitHub version (no flag, --unsigned, --notarized): SukraraDistribution github and the app not sandboxed; the
+#   updater (#91): Sparkle.framework in Contents/Frameworks and linked, SUFeedURL the website's appcast, SUPublicEDKey
+#   an EdDSA public key; signed: the framework and its helpers (XPC services, Autoupdate, Updater.app) by the same team
+#   with the hardened runtime (--notarized: Developer ID and a secure timestamp on each)
+# - --app-store (bundle.sh --app-store, #186): SukraraDistribution appStore; no updater at all (no Sparkle file, link,
+#   symbol or SU* Info.plist key: the store updates it); the app sandboxed with exactly what it uses (network client,
+#   Bluetooth, camera, user-selected files, the App Group; never network.server); with an "Apple Distribution"
+#   signature, a Mac App Store profile (no device list) embedded in the app and the widget
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
@@ -48,6 +52,30 @@ want_dist=github
 dist="$(plist "$app" SukraraDistribution)"
 [ "$dist" = "$want_dist" ] && ok "SukraraDistribution $dist" || bad "SukraraDistribution '$dist' (want $want_dist)"
 appex="$app/Contents/PlugIns/SukraraWidget.appex"
+sparkle="$app/Contents/Frameworks/Sparkle.framework"
+sparkle_parts="$sparkle/Versions/B/XPCServices/Installer.xpc $sparkle/Versions/B/XPCServices/Downloader.xpc
+  $sparkle/Versions/B/Autoupdate $sparkle/Versions/B/Updater.app $sparkle"
+if [ "$mode" = --app-store ]; then
+  found_sparkle="$(find "$app" -iname '*sparkle*' | sed "s|^$app/||")"
+  [ -z "$found_sparkle" ] && ok "no Sparkle files (the store updates it)" || bad "Sparkle in the App Store version:" $found_sparkle
+  if otool -L "$app/Contents/MacOS/Sukrara" 2>/dev/null | grep -q Sparkle; then bad "the App Store version links Sparkle"
+  elif strings -a "$app/Contents/MacOS/Sukrara" | grep -Eq 'SPUStandardUpdaterController|SPUStandardUserDriver|SparkleUpdater'; then
+    bad "updater code in the App Store version's binary"
+  else ok "no updater in the binary"; fi
+  su_keys="$(plutil -convert xml1 -o - "$app/Contents/Info.plist" | grep -o '<key>SU[A-Za-z]*</key>' || true)"
+  [ -z "$su_keys" ] && ok "no Sparkle keys in Info.plist" || bad "Sparkle keys in the App Store version's Info.plist:" $su_keys
+else
+  [ -x "$sparkle/Versions/B/Sparkle" ] && ok "Sparkle.framework inside" || bad "no Contents/Frameworks/Sparkle.framework (the updater)"
+  otool -L "$app/Contents/MacOS/Sukrara" 2>/dev/null | grep -q '@rpath/Sparkle.framework/' && ok "links Sparkle" \
+    || bad "the GitHub version doesn't link Sparkle"
+  if otool -l "$app/Contents/MacOS/Sukrara" | grep -q '@executable_path/../Frameworks'; then ok "rpath to Contents/Frameworks"
+  else bad "no @executable_path/../Frameworks rpath: Sparkle wouldn't load"; fi
+  feed="$(plist "$app" SUFeedURL)"
+  [ "$feed" = https://sukrara.mauri.app/appcast.xml ] && ok "SUFeedURL $feed" || bad "SUFeedURL '$feed' (want https://sukrara.mauri.app/appcast.xml)"
+  edkey="$(plist "$app" SUPublicEDKey)"
+  [ "$(printf %s "$edkey" | base64 -D 2>/dev/null | wc -c | tr -d ' ')" = 32 ] && ok "SUPublicEDKey $edkey" \
+    || bad "SUPublicEDKey '$edkey' isn't an EdDSA public key (32 bytes, base64)"
+fi
 if [ -d "$appex" ] && [ "$(plist "$appex" CFBundleIdentifier)" = app.mauri.sukrara.widget ]; then ok "widget extension inside"
 else bad "SukraraWidget.appex (app.mauri.sukrara.widget) missing"; fi
 
@@ -57,6 +85,15 @@ if [ "$mode" != --unsigned ]; then
     team="$(codesign -dv "$b" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
     [ "$team" = QWUV9H4A3G ] && ok "team $team: $(basename "$b")" || bad "$(basename "$b") team '$team' (want QWUV9H4A3G)"
   done
+  if [ "$mode" != --app-store ]; then
+    for b in $sparkle_parts; do
+      info="$(codesign -dv "$b" 2>&1 || true)"
+      team="$(echo "$info" | sed -n 's/^TeamIdentifier=//p')"
+      case "$info" in *"flags="*"runtime"*) rt=1 ;; *) rt=0 ;; esac
+      if [ "$team" = QWUV9H4A3G ] && [ "$rt" = 1 ]; then ok "Sparkle signed (team, hardened runtime): $(basename "$b")"
+      else bad "Sparkle's $(basename "$b"): team '$team', hardened runtime $rt (bundle.sh signs it inside-out)"; fi
+    done
+  fi
   # Only a provisioning profile grants these (bundle.sh): with one embedded the app has them all; without, none (macOS
   # refuses to launch an app that claims them without a profile).
   ents="$(codesign -d --entitlements - "$app" 2>/dev/null || true)"
@@ -103,7 +140,7 @@ if [ "$mode" != --unsigned ]; then
 fi
 
 if [ "$mode" = --notarized ]; then
-  for b in "$app" "$appex"; do
+  for b in "$app" "$appex" $sparkle_parts; do
     info="$(codesign -dvv "$b" 2>&1 || true)"
     case "$info" in *"Authority=Developer ID Application:"*) ok "Developer ID: $(basename "$b")" ;;
       *) bad "$(basename "$b") isn't signed by a Developer ID Application identity" ;; esac

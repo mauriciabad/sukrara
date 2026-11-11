@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Sparkle's keys (#91), merged into the GitHub version's Info.plist by bundle.sh (never the App Store version's).
+     SUFeedURL: the website's appcast (docs/appcast.xml, written by tools/release/mac-release.sh; GitHub Pages, https).
+     SUPublicEDKey: the public half of the EdDSA key that signs every update (the private key is in the release Mac's
+     login keychain, backed up in the owner's password manager: docs/20-publishing.md › Sparkle). Changing it locks
+     every installed copy out of updates until it is reinstalled by hand.
+     SUEnableAutomaticChecks: once a day by default, without Sparkle's first-launch question (schema
+     update.automaticChecks; automatic install, update.automaticInstall, stays off: Sukrara asks first).
+     SUVerifyUpdateBeforeExtraction: the EdDSA signature is checked before the archive is opened. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SUFeedURL</key><string>https://sukrara.mauri.app/appcast.xml</string>
+	<key>SUPublicEDKey</key><string>VM8dSc/QTIcaHv5EgT02zW0gWCNg8rr39HqcgIMJNaM=</string>
+	<key>SUEnableAutomaticChecks</key><true/>
+	<key>SUVerifyUpdateBeforeExtraction</key><true/>
+</dict>
+</plist>

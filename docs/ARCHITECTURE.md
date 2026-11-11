@@ -175,16 +175,24 @@ One SwiftPM package (swift-tools 6.2, Swift 6 language mode, macOS 15, arm64). B
 ### Targets
 
 ```
-Sukrara (exe) ─► SukraraApp ─► SukraraCore, SukraraGraph, SukraraAlerts, SukraraShare ─► NostrSDK 0.45.1
+Sukrara (exe, GitHub version) ─► SukraraUpdater ─► Sparkle 2.10.1 (prebuilt framework)
+                               └─► SukraraApp ─► SukraraCore, SukraraGraph, SukraraAlerts, SukraraShare ─► NostrSDK 0.45.1
+SukraraAppStore (exe, App Store version) ─► SukraraApp           (no updater)
 SukraraWidget (exe, appex) ─► SukraraCore, SukraraGraph          (extension-safe only)
 sukrara-snap (exe, debug) ─► SukraraApp
 Tests: CoreTests GraphTests AlertsTests ShareTests AppTests ─► SukraraTesting (fakes, Contracts.url)
 ```
 
 - `SukraraCore`, `SukraraGraph`: nonisolated, compiled with `-application-extension` so the widget can link them.
-- `SukraraApp`, `Sukrara`, `sukrara-snap`, `AppTests`: `.defaultIsolation(MainActor.self)` +
+- `SukraraApp`, `SukraraUpdater`, `Sukrara`, `SukraraAppStore`, `sukrara-snap`, `AppTests`:
+  `.defaultIsolation(MainActor.self)` +
   `NonisolatedNonsendingByDefault` + `InferIsolatedConformances`. Background work goes into actors / `@concurrent`.
 - `SukraraAlerts` is pure (no UI, no I/O); `SukraraShare` keeps every transport behind a protocol.
+- The updater (#91): `SukraraApp` knows only `UpdaterEngine` and the `Updates` model (the panel's reminder, About's
+  button and switches); `SukraraUpdater` implements it with Sparkle (`SparkleUpdater`, gentle reminders, the
+  prerelease channel). Only the `Sukrara` executable links it (`AppMain.run(updater:)`); the App Store executable
+  passes nil, so its binary has no Sparkle at all. `AppServices` creates the updater only when the launch plan allows
+  `.updater` (the installed GitHub version).
 
 ### The widget extension: built by SwiftPM, wrapped by `Bundle/bundle.sh`
 
@@ -206,7 +214,11 @@ profiles in `~/.apple-dev/profiles` (Developer ID) it embeds them and signs with
 `widget-profile.entitlements.in`: Time Sensitive, `keychain-access-groups`, Associated Domains; without them, with
 the Apple Development identity and `app.entitlements.in` / `widget.entitlements.in`. The app reads what it got at
 launch (`Entitlements.current`: alarms' interruption level, which keychain, universal links). `--unsigned` signs ad
-hoc for CI. `Bundle/dmg.sh` makes the dmg and zip.
+hoc for CI (without the hardened runtime, whose library validation needs a Team ID to load Sparkle). The GitHub
+version gets `Sparkle.framework` in `Contents/Frameworks` (signed inside-out: its XPC services, `Autoupdate`,
+`Updater.app`, then the framework; the rpaths SwiftPM adds for its build folders are removed) and
+`Bundle/sparkle.plist` (feed, EdDSA public key) merged into its Info.plist; `--app-store` builds `SukraraAppStore`
+and checks nothing of Sparkle is in it. `Bundle/dmg.sh` makes the dmg and zip.
 
 ### Ids and paths
 
@@ -223,7 +235,8 @@ the standard domain with schema keys, URL scheme `sukrara`, widget kinds `app.ma
 
 - `LaunchPlan.parse(args, build:, env:, home:, exists:) throws(LaunchError) -> LaunchPlan` (mode + services + data).
   Arguments other than `-psn_…` → exit 2. A dev build (debug build, bare executable, or a bundle inside a git
-  checkout) → exit 3 unless `SUKRARA_DEV=1`; with it: `ServicesPlan.none` and `DataScope.isolated` (separate
+  checkout) → exit 3 unless `SUKRARA_DEV=1`; with it: `ServicesPlan.none` (so no updater either) and
+  `DataScope.isolated` (separate
   home `SUKRARA_DEV_HOME` or `…/Application Support/app.mauri.sukrara.dev`, Keychain service and defaults suite
   `app.mauri.sukrara.dev`). A refused launch writes stderr + os_log and, when started by LaunchServices, shows an
   alert (never a silent exit).
@@ -566,5 +579,6 @@ every app). Alert scenario expectations change only with the owner's OK.
 `verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
 `verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no update
 check: `app/src/play`, `Store`; `:monitor`'s `RootFeatures` stays optional for the fallback if Play rejects root);
-Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`). 0.x versions are GitHub prereleases; every
-app's update check includes prereleases only on a prerelease build.
+Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`; a notarized dmg is signed with the Sparkle
+EdDSA key and added to `docs/appcast.xml` by `tools/release/appcast.py`). 0.x versions are GitHub prereleases; every
+app's update check includes prereleases only on a prerelease build (the Mac's Sparkle: the `prerelease` channel).

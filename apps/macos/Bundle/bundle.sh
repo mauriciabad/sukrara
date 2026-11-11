@@ -17,14 +17,19 @@
 #                                can't sign this build (expired, another certificate) stops the build: a build without
 #                                the data-protection keychain can't read the follower key a profile build moved there.
 #   Bundle/bundle.sh --no-profile  signed without a provisioning profile even when one is there.
-#   Bundle/bundle.sh --unsigned  ad hoc signature (CI, no identity, no profile): verifies structurally, widgets won't
+#   Bundle/bundle.sh --unsigned  ad hoc signature without the hardened runtime (CI, no identity, no profile; with it an
+#                                ad hoc app can't load Sparkle): verifies structurally, widgets won't
 #                                load. AD_HOC=1 does the same.
 #   Bundle/bundle.sh --dev       CFBundleVersion <versionCode>.<UTC yyMMddHHmm>: chronod keeps a widget's gallery
 #                                previews while CFBundleVersion stays the same.
 #   NOTARY_PROFILE=<profile>     notarize + staple (needs a Developer ID identity).
-#   Bundle/bundle.sh --app-store the App Store version (#186): the same binaries, sandboxed (appstore.entitlements.in
-#                                merged into the app's), SukraraDistribution = appStore (no update check, About says
-#                                "App Store version"), CFBundleVersion <versionCode>.<UTC yyMMdd>.<HHmm> (every upload
+#   The GitHub version (#91) is the Sukrara executable with Sparkle.framework in Contents/Frameworks (signed
+#   inside-out: its XPC services, Autoupdate and Updater.app, then the framework) and sparkle.plist's keys (feed, EdDSA
+#   public key) in its Info.plist.
+#   Bundle/bundle.sh --app-store the App Store version (#186): the same app built without the updater (the
+#                                SukraraAppStore executable: no Sparkle linked, embedded or in Info.plist), sandboxed
+#                                (appstore.entitlements.in merged into the app's), SukraraDistribution = appStore (About
+#                                says "App Store version"), CFBundleVersion <versionCode>.<UTC yyMMdd>.<HHmm> (every upload
 #                                needs a new one). Signed as above, so it runs on this Mac (Bundle/smoke.sh); with
 #                                SIGN_ID = an "Apple Distribution" identity and its "Mac App Store" profiles (app and
 #                                widget) it is signed for upload instead (tools/release/mac-appstore.sh), and no longer
@@ -49,7 +54,7 @@ for arg in "$@"; do
     --no-profile) NO_PROFILE=1 ;;
     --dev) DEV=1 ;;
     --app-store) APP_STORE=1 ;;
-    -h|--help) sed -n '5,32p' "$0"; exit 0 ;;
+    -h|--help) sed -n '5,38p' "$0"; exit 0 ;;
     *) die "unknown argument '$arg' (--unsigned, --no-profile, --dev, --app-store)" ;;
   esac
 done
@@ -197,7 +202,10 @@ missing() {
 [ -n "$SOUNDS" ] && ls "$SOUNDS"/*.caf >/dev/null 2>&1 || missing "no alert sounds (*.caf)"
 
 cd "$PKG"
-swift build -c release --product Sukrara
+# the GitHub version's executable links Sparkle; the App Store version's is the same app without it
+PRODUCT=Sukrara
+[ "$APP_STORE" = 1 ] && PRODUCT=SukraraAppStore
+swift build -c release --product "$PRODUCT"
 swift build -c release --product SukraraWidget
 BIN=$(swift build -c release --show-bin-path)
 
@@ -206,8 +214,23 @@ APP=$OUT/Sukrara.app
 APPEX=$APP/Contents/PlugIns/SukraraWidget.appex
 rm -rf "$APP" "$OUT/entitlements"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/Sounds" "$APPEX/Contents/MacOS" "$OUT/entitlements"
-cp "$BIN/Sukrara" "$APP/Contents/MacOS/Sukrara"
+cp "$BIN/$PRODUCT" "$APP/Contents/MacOS/Sukrara"
 cp "$BIN/SukraraWidget" "$APPEX/Contents/MacOS/SukraraWidget"
+# SwiftPM adds its own build folders to the rpaths: a shipped binary searches only its bundle and the system
+for B in "$APP/Contents/MacOS/Sukrara" "$APPEX/Contents/MacOS/SukraraWidget"; do
+  otool -l "$B" | awk '/cmd LC_RPATH/ {getline; getline; print $2}' | while read -r R; do
+    case "$R" in "$PKG"/*) install_name_tool -delete_rpath "$R" "$B" 2>/dev/null ;; esac
+  done
+done
+# Sparkle (the GitHub version only): the framework SwiftPM built against, found through @executable_path/../Frameworks
+SPARKLE=$APP/Contents/Frameworks/Sparkle.framework
+if [ "$APP_STORE" = 0 ]; then
+  [ -d "$BIN/Sparkle.framework" ] || die "no Sparkle.framework in $BIN"
+  mkdir -p "$APP/Contents/Frameworks"
+  ditto "$BIN/Sparkle.framework" "$SPARKLE"
+  rm -rf "$SPARKLE/Versions/B/Headers" "$SPARKLE/Versions/B/PrivateHeaders" "$SPARKLE/Versions/B/Modules" \
+    "$SPARKLE/Headers" "$SPARKLE/PrivateHeaders" "$SPARKLE/Modules"
+fi
 # SwiftPM resource bundles (the windows' String Catalog): a release `Bundle.module` looks only in Contents/Resources
 # and traps when the bundle is missing, so a missing copy is a crash on the first localized text.
 [ -d "$BIN/Sukrara_SukraraApp.bundle" ] || die "no Sukrara_SukraraApp.bundle in $BIN"
@@ -225,6 +248,8 @@ fill() {
   plutil -lint -s "$2"
 }
 fill "$HERE/Info.plist.in" "$APP/Contents/Info.plist"
+# Sparkle's feed and EdDSA public key: the GitHub version only
+[ "$APP_STORE" = 1 ] || /usr/libexec/PlistBuddy -c "Merge $HERE/sparkle.plist" "$APP/Contents/Info.plist" >/dev/null
 # without CFBundleLocalizations the app's nested bundles resolve to English only: Spanish would never show
 plutil -extract CFBundleLocalizations json -o - "$APP/Contents/Info.plist" | grep -q '"es"' \
   || die "Info.plist has no CFBundleLocalizations with es"
@@ -264,9 +289,21 @@ fi
 # No extended attributes or .DS_Store inside the bundle: they break `codesign --strict`.
 xattr -cr "$APP"
 find "$APP" -name .DS_Store -delete
-# Inside-out: the extension first, then the app (which seals the extension's signature into its own).
-codesign --force --sign "$SIGN" --options runtime $TS --entitlements "$OUT/entitlements/widget.plist" "$APPEX"
-codesign --force --sign "$SIGN" --options runtime $TS --entitlements "$OUT/entitlements/app.plist" "$APP"
+# Inside-out: Sparkle's helpers and the framework, the extension, then the app (which seals both into its own). The
+# Downloader XPC service keeps its own (sandbox) entitlements. The hardened runtime needs a Team ID to load the
+# framework (library validation), so an ad hoc build (--unsigned: CI) is signed without it.
+RUNTIME="--options runtime"
+[ "$SIGN" != - ] || RUNTIME=
+if [ -d "$SPARKLE" ]; then
+  SV=$SPARKLE/Versions/B
+  codesign --force --sign "$SIGN" $RUNTIME $TS "$SV/XPCServices/Installer.xpc"
+  codesign --force --sign "$SIGN" $RUNTIME $TS --preserve-metadata=entitlements "$SV/XPCServices/Downloader.xpc"
+  codesign --force --sign "$SIGN" $RUNTIME $TS "$SV/Autoupdate"
+  codesign --force --sign "$SIGN" $RUNTIME $TS "$SV/Updater.app"
+  codesign --force --sign "$SIGN" $RUNTIME $TS "$SPARKLE"
+fi
+codesign --force --sign "$SIGN" $RUNTIME $TS --entitlements "$OUT/entitlements/widget.plist" "$APPEX"
+codesign --force --sign "$SIGN" $RUNTIME $TS --entitlements "$OUT/entitlements/app.plist" "$APP"
 codesign --verify --deep --strict "$APP"
 for C in "$APP" "$APPEX"; do
   if codesign -d --entitlements - "$C" 2>/dev/null | grep -q get-task-allow; then die "$C has get-task-allow"; fi
@@ -276,6 +313,18 @@ if codesign -d --entitlements - "$APP" 2>/dev/null | grep -q com.apple.security.
   [ "$APP_STORE" = 1 ] || die "$APP is sandboxed but isn't the App Store version"
 else
   [ "$APP_STORE" = 0 ] || die "$APP is the App Store version but isn't sandboxed"
+fi
+# the updater: Sparkle in the GitHub version (linked, embedded, feed and key), nothing of it in the App Store version
+if [ "$APP_STORE" = 1 ]; then
+  [ ! -e "$SPARKLE" ] || die "the App Store version contains Sparkle.framework"
+  if otool -L "$APP/Contents/MacOS/Sukrara" | grep -q Sparkle; then die "the App Store version links Sparkle"; fi
+  if plutil -extract SUFeedURL raw -o - "$APP/Contents/Info.plist" >/dev/null 2>&1; then
+    die "the App Store version's Info.plist has Sparkle's SUFeedURL"
+  fi
+else
+  otool -L "$APP/Contents/MacOS/Sukrara" | grep -q '@rpath/Sparkle.framework/' || die "$APP doesn't link Sparkle"
+  [ -x "$SPARKLE/Versions/B/Sparkle" ] || die "$APP has no Sparkle.framework"
+  plutil -extract SUPublicEDKey raw -o - "$APP/Contents/Info.plist" >/dev/null 2>&1 || die "Info.plist has no SUPublicEDKey"
 fi
 # the QR scanner: the hardened runtime blocks the camera without the entitlement, and macOS ends an app that opens it
 # without a usage description
@@ -311,6 +360,7 @@ elif [ "$SIGN" != - ]; then
   SIGNED_BY="$SIGNED_BY, no provisioning profile: alarms not Time Sensitive, login keychain, no universal links"
 fi
 VARIANT="GitHub version"
+[ ! -d "$SPARKLE" ] || VARIANT="$VARIANT, Sparkle $(plutil -extract CFBundleShortVersionString raw -o - "$SPARKLE/Resources/Info.plist" 2>/dev/null || echo "?")"
 if [ "$APP_STORE" = 1 ]; then
   if [ "$STORE_SIGNED" = 1 ]; then VARIANT="App Store version, signed for upload (doesn't run here)"
   else VARIANT="App Store version, sandboxed, signed to run here"; fi

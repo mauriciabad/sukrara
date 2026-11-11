@@ -801,6 +801,22 @@
         }
       }
     },
+    "Check for updates automatically" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for updates automatically"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar actualizaciones automáticamente"
+          }
+        }
+      }
+    },
     "Check for Updates…" : {
       "localizations" : {
         "en" : {
@@ -813,22 +829,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Buscar actualizaciones…"
-          }
-        }
-      }
-    },
-    "Check now" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check now"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comprobar ahora"
           }
         }
       }
@@ -893,22 +893,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se pudo cambiar Abrir al iniciar sesión: %@"
-          }
-        }
-      }
-    },
-    "Couldn't check for updates." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't check for updates."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se han podido buscar actualizaciones."
           }
         }
       }
@@ -1041,18 +1025,18 @@
         }
       }
     },
-    "Download" : {
+    "Download and install updates automatically" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Download"
+            "value" : "Download and install updates automatically"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Descargar"
+            "value" : "Descargar e instalar actualizaciones automáticamente"
           }
         }
       }
@@ -1665,6 +1649,38 @@
         }
       }
     },
+    "Installed when Sukrara quits or the Mac restarts. When off, Sukrara asks first." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed when Sukrara quits or the Mac restarts. When off, Sukrara asks first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se instalan cuando Sukrara se cierra o el Mac se reinicia. Si está desactivado, Sukrara pregunta antes."
+          }
+        }
+      }
+    },
+    "Install…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instalar…"
+          }
+        }
+      }
+    },
     "Insulin up to 100u, carbs up to 500g, at most 23 h 59 min ago." : {
       "localizations" : {
         "en" : {
@@ -1741,6 +1757,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto."
+          }
+        }
+      }
+    },
+    "Last checked %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last checked %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última comprobación %@"
           }
         }
       }
@@ -1969,6 +2001,38 @@
         }
       }
     },
+    "Not checked yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not checked yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no se ha comprobado"
+          }
+        }
+      }
+    },
+    "Once a day, from sukrara.mauri.app. Every update is signed and checked before it installs." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once a day, from sukrara.mauri.app. Every update is signed and checked before it installs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una vez al día, desde sukrara.mauri.app. Cada actualización está firmada y se comprueba antes de instalarse."
+          }
+        }
+      }
+    },
     "Open Website" : {
       "localizations" : {
         "en" : {
@@ -2113,6 +2177,22 @@
         }
       }
     },
+    "Shows what's new and installs it" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows what's new and installs it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra las novedades y la instala"
+          }
+        }
+      }
+    },
     "Starts" : {
       "localizations" : {
         "en" : {
@@ -2125,6 +2205,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "Sukrara %@ is ready to install" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara %@ is ready to install"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara %@ está lista para instalar"
           }
         }
       }
@@ -3425,22 +3521,6 @@
         }
       }
     },
-    "Sukrara %@ is available (see the menu bar panel)." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara %@ is available (see the menu bar panel)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara %@ está disponible (mira el panel de la barra de menús)."
-          }
-        }
-      }
-    },
     "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these." : {
       "localizations" : {
         "en" : {
@@ -3501,22 +3581,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara no ha podido guardar la clave de seguimiento en el Llavero. Vuelve a intentarlo."
-          }
-        }
-      }
-    },
-    "Sukrara is up to date." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara is up to date."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara está actualizada."
           }
         }
       }

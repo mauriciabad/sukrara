@@ -9,7 +9,7 @@ import SwiftUI
 
 /// Connects the windows (setup, settings, treatments) to the running app: one model per window kind over the one
 /// settings store, fed by the follower runtime's snapshots, acting through the `FollowerAdapter` and the app's
-/// services (notification permission, login item, update check). Owned by `AppDelegate`.
+/// services (notification permission, login item, updater). Owned by `AppDelegate`.
 final class WindowCoordinator {
     let windows = AppWindows()
     let follow: FollowModel
@@ -225,7 +225,7 @@ struct LinkInbox {
     }
 }
 
-/// The settings window with the app's live parts: open at login (the login item), the update check's result.
+/// The settings window with the app's live parts: open at login (the login item), the updater.
 private struct SettingsWindowContent: View {
     let model: SettingsModel
     let app: AppModel
@@ -235,19 +235,9 @@ private struct SettingsWindowContent: View {
         SettingsView(
             model: model,
             loginItem: app.loginItem,
-            updateResult: app.updates.flatMap { Self.text($0.state) },
-            checkForUpdates: app.updates.map { updates in { Task { await updates.check(userAsked: true) } } },
+            updates: app.updates,
             openFollow: openFollow,
             reconnect: app.follower == nil ? nil : { [weak app] in app?.networkCameBack() },
             alerts: app.alerts)
-    }
-
-    static func text(_ state: UpdateCheck.State) -> String? {
-        switch state {
-        case .idle: nil
-        case .available(_, let version): L10n.t("Sukrara \(version.description) is available (see the menu bar panel).")
-        case .failed: L10n.t("Couldn't check for updates.")
-        case .upToDate: L10n.t("Sukrara is up to date.")
-        }
     }
 }

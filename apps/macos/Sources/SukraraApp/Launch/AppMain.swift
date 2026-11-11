@@ -8,7 +8,8 @@ import os
 public enum AppMain {
     private static let log = Logger(subsystem: "app.mauri.sukrara", category: "launch")
 
-    public static func run() -> Never {
+    /// `updater`: the GitHub executable's Sparkle (`SukraraUpdater`); the App Store executable passes nil.
+    public static func run(updater: (() -> any UpdaterEngine)?) -> Never {
         let process = ProcessInfo.processInfo
         let plan: LaunchPlan
         do {
@@ -23,7 +24,7 @@ public enum AppMain {
         }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        let delegate = AppDelegate(plan: plan)
+        let delegate = AppDelegate(plan: plan, updater: updater)
         app.delegate = delegate
         // NSApplication holds its delegate weakly: keep it alive for the whole run, whatever the optimizer sees
         withExtendedLifetime(delegate) { app.run() }

@@ -20,6 +20,13 @@
             AppLanguage.forced = AppLanguage(rawValue: language)
         }
 
+        /// The GitHub version's updater as About shows it: automatic checks on, the last check two hours ago.
+        static let updates: Updates = {
+            let updates = Updates(engine: StillUpdater())
+            updates.state(canCheck: true, lastCheck: Date().addingTimeInterval(-2 * 3600))
+            return updates
+        }()
+
         /// Scenes drawn in their real window (title bar and toolbar, e.g. the Treatments window's "+"), by window title.
         static var windowed: [String: String] {
             ["treatments": L10n.t("Treatments"), "treatments-empty": L10n.t("Treatments")]
@@ -238,7 +245,7 @@
                         "settings-general-juggluco-\(name)",
                         AnyView(
                             SettingsView(
-                                model: m, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}
                             ).frame(width: 560, height: 820))
                     ))
             }
@@ -248,7 +255,7 @@
                     AnyView(
                         SettingsView(
                             model: settings, loginItem: LoginItem(service: SnapLogin(status: .enabled)),
-                            updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            updates: Self.updates, openFollow: {}
                         ).frame(width: 560, height: 640))
                 ))
             out.append(
@@ -257,7 +264,7 @@
                     AnyView(
                         SettingsView(
                             model: settings, loginItem: LoginItem(service: SnapLogin(status: .requiresApproval)),
-                            updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            updates: Self.updates, openFollow: {}
                         ).frame(width: 560, height: 700))
                 ))
             let refused = LoginItem(service: SnapLogin(status: .notRegistered, refuses: true))
@@ -267,7 +274,7 @@
                     "settings-general-login-failed",
                     AnyView(
                         SettingsView(
-                            model: settings, loginItem: refused, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            model: settings, loginItem: refused, updates: Self.updates, openFollow: {}
                         ).frame(width: 560, height: 700))
                 ))
             out.append(
@@ -275,7 +282,7 @@
                     "settings-general-login-unavailable",
                     AnyView(
                         SettingsView(
-                            model: settings, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            model: settings, loginItem: nil, updates: Self.updates, openFollow: {}
                         ).frame(width: 560, height: 700))
                 ))
             let alerts = SettingsModel(store: store, follow: following, version: "0.12.0")
@@ -286,7 +293,7 @@
                     "settings-alerts",
                     AnyView(
                         SettingsView(
-                            model: alerts, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            model: alerts, loginItem: nil, updates: Self.updates, openFollow: {}
                         ).frame(width: 560, height: 900))
                 ))
             let mirrored = SettingsModel(
@@ -301,7 +308,7 @@
                     "settings-alerts-mirrored",
                     AnyView(
                         SettingsView(
-                            model: mirrored, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            model: mirrored, loginItem: nil, updates: Self.updates, openFollow: {}
                         ).frame(width: 560, height: 900))
                 ))
             // the Graph and Rings panes: this Mac's own (Custom, a few values changed) and the wearer's (read-only)
@@ -335,7 +342,7 @@
                         name,
                         AnyView(
                             SettingsView(
-                                model: m, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}
                             ).frame(width: 600, height: height))
                     ))
             }
@@ -347,7 +354,7 @@
                     "settings-following-none",
                     AnyView(
                         SettingsView(
-                            model: nobody, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            model: nobody, loginItem: nil, updates: Self.updates, openFollow: {}
                         ).frame(width: 600, height: 560))
                 ))
             let general = SettingsModel(store: ownStore, follow: following, wearer: marta, version: "0.12.0")
@@ -357,7 +364,7 @@
                     "settings-general-custom",
                     AnyView(
                         SettingsView(
-                            model: general, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                            model: general, loginItem: nil, updates: Self.updates, openFollow: {}
                         ).frame(width: 600, height: 860))
                 ))
             out.append(

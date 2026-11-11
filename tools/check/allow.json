@@ -136,8 +136,8 @@
       "reason": "Mac relay WebSockets: RelayPool passes the protocol's wss:// relay list only"
     },
     {
-      "path": "apps/macos/Sources/SukraraApp/System/UpdateCheck.swift",
-      "reason": "Mac update check: GET the fixed https URL of the GitHub releases API (no user-entered host, nothing sent)"
+      "path": "apps/macos/Sources/SukraraUpdater/SparkleUpdater.swift",
+      "reason": "Mac updater, GitHub version only (Sparkle 2): reads the fixed https feed https://sukrara.mauri.app/appcast.xml (SUFeedURL) and downloads the github.com release dmg it names over https; every download is checked against the EdDSA key (SUPublicEDKey) and the Developer ID signature before it installs; never started in dev, fixture, test or snapshot runs (LaunchPlan), never in the App Store executable"
     }
   ],
   "durations_ok": {},

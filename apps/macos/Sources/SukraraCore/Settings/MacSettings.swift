@@ -65,8 +65,6 @@ public enum MacSettings {
     public static let alerts = SettingSpec(key: SettingsSpec.Keys.alerts, defaultValue: Data())
     /// The first-run walk's step states (JSON), owned by `SetupFlow`.
     public static let setupSteps = SettingSpec(key: SettingsSpec.Keys.setupSteps, defaultValue: Data())
-    /// The version *Later* skipped in the update offer ("" = none), owned by `UpdateCheck`.
-    public static let updateSkippedVersion = SettingSpec(key: SettingsSpec.Keys.updateSkippedVersion, defaultValue: "")
 
     /// The six range bands, low to high (their rows keep them in order).
     public static let bands = [bandVeryLow, bandLow, bandTight, bandHigh, bandVeryHigh, bandExtremelyHigh]

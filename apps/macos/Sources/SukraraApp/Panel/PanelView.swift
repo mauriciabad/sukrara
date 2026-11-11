@@ -737,33 +737,24 @@ private struct CustomMuteAll: View {
     }
 }
 
+/// The reminder of an update a scheduled check found (gentle reminders: Sparkle's window comes up by itself only right
+/// after launch or when the Mac was idle, never over what the person is doing). *Install…* brings the updater's window
+/// with the notes and *Install Update* / *Install and Relaunch*; *Later* hides the row until the next check.
 private struct UpdateRow: View {
-    let updates: UpdateCheck
+    let updates: Updates
 
     var body: some View {
-        switch updates.state {
-        case .available(let release, let version):
+        if case .available(let version, let ready) = updates.reminder {
             HStack {
-                Label(L10n.t("Sukrara \(version.description) is available"), systemImage: "arrow.down.circle")
+                Label(
+                    ready
+                        ? L10n.t("Sukrara \(version) is ready to install") : L10n.t("Sukrara \(version) is available"),
+                    systemImage: "arrow.down.circle")
                 Spacer()
                 Button(L10n.t("Later")) { updates.later() }
-                // only the project's own release pages (UpdateCheck.isReleaseURL)
-                Button(L10n.t("Download")) { NSWorkspace.shared.open(release.pageURL) }
+                Button(L10n.t("Install…")) { updates.checkNow() }
+                    .accessibilityHint(L10n.t("Shows what's new and installs it"))
             }
-        case .failed:
-            HStack {
-                Text(L10n.t("Couldn't check for updates."))
-                Spacer()
-                Button(L10n.t("OK")) { updates.dismiss() }
-            }
-        case .upToDate:
-            HStack {
-                Text(L10n.t("Sukrara is up to date."))
-                Spacer()
-                Button(L10n.t("OK")) { updates.dismiss() }
-            }
-        case .idle:
-            EmptyView()
         }
     }
 }

@@ -19,13 +19,19 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [.macOS(.v15)],
     products: [
+        // The GitHub version (dmg, GitHub releases, the Homebrew cask): updates itself with Sparkle.
         .executable(name: "Sukrara", targets: ["Sukrara"]),
+        // The App Store version (#186): the same app without an updater (the store updates it); bundle.sh --app-store.
+        .executable(name: "SukraraAppStore", targets: ["SukraraAppStore"]),
         .executable(name: "SukraraWidget", targets: ["SukraraWidget"]),
         .executable(name: "sukrara-snap", targets: ["sukrara-snap"]),
     ],
     dependencies: [
         // rust-nostr via UniFFI (prebuilt xcframework): keys, NIP-44, event ids and signatures for protocol v2.
-        .package(url: "https://github.com/rust-nostr/nostr-sdk-swift", exact: "0.45.1")
+        .package(url: "https://github.com/rust-nostr/nostr-sdk-swift", exact: "0.45.1"),
+        // In-app updates of the GitHub version (#91): EdDSA-signed appcast, Install and Relaunch. Prebuilt framework;
+        // only the Sukrara executable links it, bundle.sh embeds it in the GitHub version only.
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.1"),
     ],
     targets: [
         // Models, ids, paths, settings spec, store protocols. Nonisolated, extension-safe.
@@ -46,7 +52,19 @@ let package = Package(
             resources: [.process("Windows/Localizable.xcstrings")],
             swiftSettings: mainActorByDefault
         ),
-        .executableTarget(name: "Sukrara", dependencies: ["SukraraApp"], swiftSettings: mainActorByDefault),
+        // Sparkle behind SukraraApp's `UpdaterEngine` (only the GitHub executable links it).
+        .target(
+            name: "SukraraUpdater",
+            dependencies: ["SukraraApp", .product(name: "Sparkle", package: "Sparkle")],
+            swiftSettings: mainActorByDefault
+        ),
+        // The GitHub version's executable: SukraraApp with Sparkle. Sparkle.framework sits in Contents/Frameworks.
+        .executableTarget(
+            name: "Sukrara", dependencies: ["SukraraApp", "SukraraUpdater"], swiftSettings: mainActorByDefault,
+            linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
+        ),
+        // The App Store version's executable: SukraraApp alone, nothing of Sparkle (App Review 2.4.5 vii).
+        .executableTarget(name: "SukraraAppStore", dependencies: ["SukraraApp"], swiftSettings: mainActorByDefault),
         // WidgetKit extension. Xcode links extensions with Foundation's _NSExtensionMain as the entry point (the Swift
         // main traps in ExtensionFoundation); `-u _main` keeps the @main WidgetBundle that nothing else references
         // from being dead-stripped. Bundle/bundle.sh wraps the binary as SukraraWidget.appex.

@@ -31,10 +31,10 @@ public struct SnapshotRequest: Equatable, Sendable {
 }
 
 /// Something that reaches outside the process: the user's sensor or phone, relays, notifications, the widget, the
-/// network (update check), the system's login items and the camera.
+/// network (the updater), the system's login items and the camera.
 public enum Service: CaseIterable, Sendable {
     // notifications first: the alert notifier needs the center when `alerts` starts
-    case notifications, ble, relays, alerts, widgetFeed, updateCheck, loginItem
+    case notifications, ble, relays, alerts, widgetFeed, updater, loginItem
     /// Juggluco's web server on the home network (created idle; it connects only while the person's switch is on).
     case lan
     /// The Mac's camera for the follow step's QR scanner (nothing opens at launch: the camera runs only while the
@@ -45,10 +45,10 @@ public enum Service: CaseIterable, Sendable {
 /// The services a launch MAY start: an upper limit. The app ANDs it with the user's settings
 /// (`limited(by:)`) and starts services only through `ServicesPlan.start(using:)`.
 public struct ServicesPlan: Equatable, Sendable {
-    public var ble, relays, alerts, widgetFeed, notifications, updateCheck, loginItem, lan, camera: Bool
+    public var ble, relays, alerts, widgetFeed, notifications, updater, loginItem, lan, camera: Bool
 
     public init(
-        ble: Bool, relays: Bool, alerts: Bool, widgetFeed: Bool, notifications: Bool, updateCheck: Bool = false,
+        ble: Bool, relays: Bool, alerts: Bool, widgetFeed: Bool, notifications: Bool, updater: Bool = false,
         loginItem: Bool = false, lan: Bool = false, camera: Bool = false
     ) {
         self.ble = ble
@@ -56,20 +56,20 @@ public struct ServicesPlan: Equatable, Sendable {
         self.alerts = alerts
         self.widgetFeed = widgetFeed
         self.notifications = notifications
-        self.updateCheck = updateCheck
+        self.updater = updater
         self.loginItem = loginItem
         self.lan = lan
         self.camera = camera
     }
 
     public static let all = ServicesPlan(
-        ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updateCheck: true,
+        ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updater: true,
         loginItem: true, lan: true, camera: true)
-    /// Everything the installed app of `distribution` starts: all, except the update check in the App Store version
+    /// Everything the installed app of `distribution` starts: all, except the updater in the App Store version
     /// (only the store updates it).
     public static func all(for distribution: Distribution) -> ServicesPlan {
         var plan = all
-        plan.updateCheck = distribution.hasOwnUpdateCheck
+        plan.updater = distribution.hasOwnUpdater
         return plan
     }
     public static let none = ServicesPlan(
@@ -82,7 +82,7 @@ public struct ServicesPlan: Equatable, Sendable {
         case .alerts: alerts
         case .widgetFeed: widgetFeed
         case .notifications: notifications
-        case .updateCheck: updateCheck
+        case .updater: updater
         case .loginItem: loginItem
         case .lan: lan
         case .camera: camera
@@ -100,7 +100,7 @@ public struct ServicesPlan: Equatable, Sendable {
             alerts: alerts && wanted.alerts,
             widgetFeed: widgetFeed && wanted.widgetFeed,
             notifications: notifications && wanted.notifications,
-            updateCheck: updateCheck && wanted.updateCheck,
+            updater: updater && wanted.updater,
             loginItem: loginItem && wanted.loginItem,
             lan: lan && wanted.lan,
             camera: camera && wanted.camera
@@ -142,11 +142,13 @@ public struct DataScope: Equatable, Sendable {
 }
 
 /// Where this copy of Sukrara comes from (`SukraraDistribution` in the Info.plist, which `Bundle/bundle.sh` fills).
-/// Like Android's flavors: the same app, only the update check differs.
+/// Like Android's flavors: the same app, only the updater differs (the App Store version has none).
 public enum Distribution: String, Equatable, Sendable {
-    /// GitHub releases, the dmg and the Homebrew cask (Developer ID, notarized): asks GitHub for updates.
+    /// GitHub releases, the dmg and the Homebrew cask (Developer ID, notarized): updates itself with Sparkle from the
+    /// website's appcast (the `Sukrara` executable, the only one that links Sparkle).
     case github
-    /// The Mac App Store and TestFlight (sandboxed): updates come only from the store (App Review 2.4.5 vii).
+    /// The Mac App Store and TestFlight (sandboxed): updates come only from the store (App Review 2.4.5 vii); the
+    /// `SukraraAppStore` executable has no updater in it.
     case appStore
 
     /// The Info.plist value; anything else (a bare `swift build` executable has no Info.plist) is the GitHub version.
@@ -155,7 +157,7 @@ public enum Distribution: String, Equatable, Sendable {
     }
 
     /// Whether this version looks for updates itself (the store updates the App Store version).
-    public var hasOwnUpdateCheck: Bool { self == .github }
+    public var hasOwnUpdater: Bool { self == .github }
 }
 
 /// How this build was made and where it runs from.
@@ -225,7 +227,7 @@ public struct LaunchPlan: Equatable, Sendable {
     public var mode: LaunchMode
     public var services: ServicesPlan
     public var data: DataScope
-    /// Which version this is (About says so; the App Store version has no update check).
+    /// Which version this is (About says so; the App Store version has no updater).
     public var distribution: Distribution = .github
 
     /// True when this run must not monitor (dev build or snapshot): the UI says so instead of looking like

@@ -228,10 +228,21 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] App Store version (#186): offline, `Bundle/bundle.sh --app-store && Bundle/smoke.sh` (sandboxed, *offline,
       sandboxed* in its last line); `tools/release/verify-app.sh build/Sukrara.app --app-store`. Online only from
       TestFlight (docs/20-publishing.md › Mac App Store: signing): Settings › General › About says *… · App Store
-      version* without *Check now*, the right-click menu has no *Check for Updates…*; following over the relays, the
+      version* without *Check for Updates…* or the update switches, the right-click menu has no *Check for
+      Updates…*; following over the relays, the
       phone nearby, Juggluco on this network, an alert with its sound and through a Focus, the widgets, open at login,
       *Export CSV…* to a folder you pick, the QR scanner, a web invite link; both versions show the medical reminder and
       *Privacy Policy* in About. Then `tools/install.sh mac` back to the GitHub version.
+- [ ] Updates (Sparkle, #91), after a release that added an item to `docs/appcast.xml`: on a Mac with the previous
+      GitHub version installed from its dmg or the cask (not a dev build), right-click › *Check for Updates…* →
+      Sparkle's window with the new version and its notes → *Install Update* → the download → *Install and Relaunch*
+      → Sukrara quits and comes back as the new version (About), still following, alerts and the widgets as before,
+      no Keychain prompt. *Check for Updates…* again → *You're up to date!*. Settings › General › About: *Last checked
+      …* moved; turn *Check for updates automatically* off → the download switch dims; on again. A scheduled find
+      while you work shows the panel row (*Sukrara x.y.z is available*, *Later* / *Install…*), not a window over your
+      app. Offline *Check for Updates…* → Sparkle's error → *OK*, nothing installed. VoiceOver reads the windows, the
+      row and its hint. Never test on the owner's `/Applications/Sukrara.app`: the local end-to-end check is in
+      docs/20-publishing.md › Sparkle: the update feed.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets

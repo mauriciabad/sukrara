@@ -46,8 +46,8 @@ import Testing
         let github = ContextMenu()
         #expect(github.menu.items.contains { $0.title == title })
         let store = ContextMenu()
-        store.hasUpdateCheck = false
-        store.checkForUpdates = {}
+        store.hasUpdater = false
+        store.updates = Updates(engine: StillUpdater())
         #expect(!store.menu.items.contains { $0.title == title })
         #expect(store.menu.items.contains { $0.title == L10n.t("Quit Sukrara") })
         #expect(GeneralPane.versionText("0.13.0", .appStore) == L10n.t("0.13.0 · App Store version"))

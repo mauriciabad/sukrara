@@ -6,15 +6,15 @@ import SukraraShare
 import SwiftUI
 
 /// General: Settings from (with what's in use and Copy the wearer's settings…), units, open at login, About (the
-/// version and which one, the update check in the GitHub version, not a medical device, the privacy policy, Quit),
+/// version and which one, the updater in the GitHub version, not a medical device, the privacy policy, Quit),
 /// Sukrara on other devices (the website's page per app).
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
     var loginItem: LoginItem?
-    var updateResult: String?
-    /// nil when this run has no update check: the App Store version (the store updates it) and offline dev runs.
-    var checkForUpdates: (() -> Void)?
+    /// The updater (Sparkle); nil when this run has none: the App Store version (the store updates it) and offline dev
+    /// runs.
+    var updates: Updates?
     var openFollow: () -> Void
 
     var body: some View {
@@ -71,9 +71,11 @@ struct GeneralPane: View {
                 HStack {
                     Text(Self.versionText(model.version, model.distribution))
                     Spacer()
-                    if let checkForUpdates { Button(L10n.t("Check now"), action: checkForUpdates) }
+                    if let updates {
+                        Button(L10n.t("Check for Updates…"), action: updates.checkNow).disabled(!updates.canCheck)
+                    }
                 }
-                if let r = updateResult { Text(r).foregroundStyle(.secondary) }
+                if let updates { UpdateRows(updates: updates) }
                 // App Review 1.4.1: the reminder to check before acting on a value (also on setup's first step)
                 Text(
                     L10n.t(
@@ -115,6 +117,32 @@ extension GeneralPane {
         case .github: L10n.t("\(version) · GitHub version")
         case .appStore: L10n.t("\(version) · App Store version")
         }
+    }
+}
+
+/// The updater's switches (Sparkle keeps them: schema `update.automaticChecks`, `update.automaticInstall`) and when it
+/// last looked. Off: no check by itself, no reminder; *Check for Updates…* still works.
+struct UpdateRows: View {
+    @Bindable var updates: Updates
+
+    var body: some View {
+        Toggle(isOn: $updates.automaticChecks.animation(.snappy)) {
+            Text(L10n.t("Check for updates automatically"))
+            Text(L10n.t("Once a day, from sukrara.mauri.app. Every update is signed and checked before it installs."))
+        }
+        Toggle(isOn: $updates.automaticDownloads) {
+            Text(L10n.t("Download and install updates automatically"))
+            Text(L10n.t("Installed when Sukrara quits or the Mac restarts. When off, Sukrara asks first."))
+        }
+        .disabled(!updates.automaticChecks)
+        Text(Self.lastCheck(updates.lastCheck)).font(.callout).foregroundStyle(.secondary)
+    }
+
+    /// "Last checked 2 hours ago" / "Not checked yet".
+    static func lastCheck(_ date: Date?) -> String {
+        guard let date else { return L10n.t("Not checked yet") }
+        let ago = date.formatted(.relative(presentation: .named, unitsStyle: .wide))
+        return L10n.t("Last checked \(ago)")
     }
 }
 
@@ -321,9 +349,8 @@ struct SettingsView: View {
     @Bindable var model: SettingsModel
     /// Open at login (LoginItem over SMAppService.mainApp, schema `general.openAtLogin`).
     var loginItem: LoginItem?
-    /// The last update check's result in words (UpdateCheck), nil before one ran.
-    var updateResult: String?
-    var checkForUpdates: (() -> Void)?
+    /// The updater (nil: the App Store version, offline runs).
+    var updates: Updates?
     var openFollow: () -> Void
     var reconnect: (() -> Void)? = nil
     /// The running alert rules (Send Test Alert, Active now); nil in an offline run.
@@ -332,8 +359,7 @@ struct SettingsView: View {
     var body: some View {
         TabView(selection: $model.pane) {
             GeneralPane(
-                model: model, loginItem: loginItem, updateResult: updateResult, checkForUpdates: checkForUpdates,
-                openFollow: openFollow
+                model: model, loginItem: loginItem, updates: updates, openFollow: openFollow
             )
             .tabItem { Label(L10n.t("General"), systemImage: "gearshape") }
             .tag(SettingsModel.Pane.general)

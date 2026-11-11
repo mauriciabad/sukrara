@@ -29,8 +29,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private let readAloud = ReadAloud()
     private var shortcut: GlobalShortcut?
 
-    public init(plan: LaunchPlan) {
-        let services = AppServices(plan: plan)
+    /// `updater`: the GitHub executable's Sparkle (started only when the plan allows `.updater`); nil in the App Store
+    /// executable.
+    public init(plan: LaunchPlan, updater: (() -> any UpdaterEngine)? = nil) {
+        let services = AppServices(plan: plan, updater: updater)
         plan.services.start(using: services)
         self.services = services
         store = DefaultsSettingsStore(defaults: services.defaults)
@@ -104,16 +106,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.shortcutOn = { [weak self] in self?.shortcut?.isOn == true }
         shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
         windows.statusItemFrame = { [weak statusItem] in statusItem?.screenFrame }
-        contextMenu.hasUpdateCheck = model.plan.distribution.hasOwnUpdateCheck
-        if let updates = model.updates {
-            // the result shows in the panel: open it once the check is done
-            contextMenu.checkForUpdates = { [weak statusItem] in
-                Task {
-                    await updates.check(userAsked: true)
-                    statusItem?.showPanel()
-                }
-            }
-        }
+        contextMenu.hasUpdater = model.plan.distribution.hasOwnUpdater
+        contextMenu.updates = model.updates
         services.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         windows.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         services.permissionChanged = { [weak self] in self?.refreshNotificationPermission() }
@@ -165,7 +159,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !quitting else { return .terminateLater }
         quitting = true
         network.cancel()
-        services.stop()
         Task { [weak self] in
             await self?.model.stop()
             self?.answerQuit()

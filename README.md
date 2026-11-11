@@ -231,7 +231,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
   7 days by day with the phone's entries, edit or delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
-- **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, update check,
+- **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, updates,
   Quit, a link to the website's [Android page](https://sukrara.mauri.app/android/)), Graph (time shown per place, treatments on the graph, lines, ranges, sensor countdown and time left), Rings
   (rings and numbers, ring order you drag, last treatment), Alerts (per alert with its summary and details, quiet times, the notification's buttons, sounds with preview, what's
   quiet now) and Following.
@@ -269,9 +269,11 @@ only difference. Settings › About says which one is installed, that Sukrara is
 too), links the privacy policy and links to the website's
 [Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
-The Mac app likewise: the **GitHub version** (the dmg and the Homebrew cask), which checks GitHub for updates, and the
-**App Store version** (in preparation, TestFlight first), sandboxed and updated by the Mac App Store, so without an
-update check of its own. Settings › General › About says which one is installed, that Sukrara isn't a medical device,
+The Mac app likewise: the **GitHub version** (the dmg and the Homebrew cask), which **updates itself**: once a day it
+looks for a new version (signed by Sukrara and checked before it installs) and offers it in the menu bar panel, with
+*Install and Relaunch* in one click (Settings › General › About: *Check for Updates…*, automatic checks, automatic
+install; [docs/FEATURES.md › Updates](docs/FEATURES.md#updates-mac-github-version)); and the **App Store version** (in
+preparation, TestFlight first), sandboxed and updated by the Mac App Store, so without an updater of its own. Settings › General › About says which one is installed, that Sukrara isn't a medical device,
 and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](docs/FEATURES.md#mac-app-store-version-mac)).
 
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
@@ -279,8 +281,9 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   [Obtainium](https://obtainium.imranr.dev/), turn on *Include prereleases*.
 - **Mac** (Apple Silicon, macOS 15+): download `Sukrara-<version>.dmg` and drag **Sukrara** onto **Applications**.
   It's signed with a Developer ID and notarized by Apple, so it opens like any other app. Sukrara lives in the menu
-  bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`; the cask follows every release
-  (`brew upgrade --cask sukrara`).
+  bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
+  updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
+  works).
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
   link handler.

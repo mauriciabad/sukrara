@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The update feed of Sukrara for Mac, GitHub version (Sparkle 2, #91): https://sukrara.mauri.app/appcast.xml, the
+     SUFeedURL of every GitHub build. tools/release/mac-release.sh adds each notarized release (tools/release/appcast.py:
+     the dmg on the GitHub release, its EdDSA signature, the CHANGELOG notes); commit it once the GitHub release is
+     published, so no item names a download that isn't there yet. Prereleases are in the "prerelease" channel, which
+     0.x installs take. Never edit an item's signature or length by hand. -->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Sukrara for Mac</title>
+    <link>https://sukrara.mauri.app/mac/</link>
+    <description>Updates of Sukrara for Mac (the GitHub and Homebrew version).</description>
+    <language>en</language>
+  </channel>
+</rss>
