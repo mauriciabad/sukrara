@@ -37,10 +37,15 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
       aloud* says the value, trend, range and age (Spanish per-app language: in Spanish) and nothing opens; again while
       it speaks stops it; drag it to the home screen and tap it there; with TalkBack, the icon's *Actions* menu offers
       it. Without a voice for the language (emulator without the Spanish voice): the toast says where to add one.
-- [ ] Screen transitions (a change to `Motion.kt` / `ScreenHost`, a page's scaffold or a vendored SPA widget): set
-      Animator duration scale to 5×, `screenrecord` home ↔ settings, a settings page push / pop and a predictive back
-      swipe, and step the frames: no page drawn from scratch at the start or end of a move (empty chart, rows in another
-      layout for one frame). `ScreenHostTest` (run with `GALLERY_JAVA_HOME`) checks a page isn't composed twice.
+- [ ] Screen transitions (a change to `ScreenHost` / `ScreenMotion.kt` / `screenMotion`, a page's scaffold or a
+      vendored SPA widget; FEATURES.md "Screen motion"): set Animator duration scale to 5×, `screenrecord` home ↔
+      settings, a settings page push / pop, setup opening over home (fade through, no slide), and a predictive back
+      swipe held, cancelled and released (the page shrinks to 90 % with rounded corners over the scrimmed page under
+      it, follows the finger up / down, springs back; released, it leaves to the end), and step the frames: no page
+      drawn from scratch at the start or end of a move (empty chart, rows in another layout for one frame). Then
+      *Remove animations* on: every screen change is instant and the back gesture shows no preview. Compare with the
+      PoC (`poc/spikes/showcase-android`) on the same emulator when in doubt. `ScreenHostTest` / `ScreenMovesTest`
+      (`:core:designsystem`) and `ScreenMotionTest` (`:app`) check the same in JVM tests.
 
 ## Q2 Graph and value card
 

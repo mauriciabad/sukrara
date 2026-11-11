@@ -127,6 +127,16 @@ the `api` names in `contracts/graph/surfaces/surfaces.json`).
   goldens in `core/graph/src/test/snapshots` (synthetic data, UTC, en-US; recorded on CI by
   `.github/workflows/goldens.yml`, since macOS renders text a little differently: locally `compareRoborazziDebug`).
 
+**Screens: `:app` `SukraraNavigation` + `:core:designsystem` `motion/ScreenHost`.** The back stack is Navigation 3's
+(`rememberNavBackStack`, one `NavKey` per screen; `rememberDecoratedNavEntries` gives each entry its saved state and
+view models). `ScreenHost` draws it, not Navigation 3's `NavDisplay`: one page at rest, two while moving, each in a
+fixed slot so no page is composed again mid-move; it owns Back and the predictive back gesture (pages' own back
+handlers, composed inside, come first) and gives each page a lifecycle that is RESUMED only at rest. How a screen
+moves is its `ScreenMotion` (Page or FadeThrough), named per route by `screenMotion` in `:app`; every number is in
+`ScreenMoves` (pure, tested). `NavDisplay` was dropped because its predictive back scrubs one seekable transition
+with the gesture's progress, which can't draw the system's two-phase cross-activity back (preview, then a full
+450 ms finish), and its default was a 700 ms cross-fade.
+
 ## Mac (`apps/macos`)
 
 One SwiftPM package (swift-tools 6.2, Swift 6 language mode, macOS 15, arm64). Build, test and bundle commands:

@@ -111,6 +111,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
   now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with an update check
   against this repo's releases and the [privacy policy](https://sukrara.mauri.app/privacy).
+- **Screens move like Android's own Settings**: pages slide in and out, the back gesture shows the page you'll land on
+  (let go early to stay), setup fades in over the app; nothing moves with *Remove animations* on.
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
   by your pen?*), with *Undo*; it asks when unsure, on a card under the glucose card (*Priming or injected?*, *Same

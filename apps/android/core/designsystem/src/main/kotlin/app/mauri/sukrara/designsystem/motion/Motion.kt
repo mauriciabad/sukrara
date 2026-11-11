@@ -47,16 +47,23 @@ object Motion {
         spec: () -> FiniteAnimationSpec<T>,
     ): FiniteAnimationSpec<T> = if (reduced) snap() else spec()
 
-    /** M3 fade through: for screens without a parent/child relation (role choice → setup → home). */
+    /**
+     * M3 fade through: for contents without a parent/child relation (setup's steps, a question that replaces another).
+     * Whole screens fade through in [ScreenHost] ([ScreenMotion.FadeThrough]) with the same numbers.
+     */
     fun fadeThrough(reduced: Boolean = false): ContentTransform {
         if (reduced) return fadeIn(snap()) togetherWith fadeOut(snap())
-        val enter = tween<Float>(210, delayMillis = FADE_OUT_MS, easing = EmphasizedDecelerate)
-        return (fadeIn(enter) + scaleIn(enter, initialScale = 0.92f)) togetherWith
+        val enter = tween<Float>(FADE_IN_MS, delayMillis = FADE_OUT_MS, easing = EmphasizedDecelerate)
+        return (fadeIn(enter) + scaleIn(enter, initialScale = FADE_IN_SCALE)) togetherWith
             fadeOut(tween(FADE_OUT_MS, easing = LinearEasing))
     }
 
-    private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
-    private const val FADE_OUT_MS = 90
+    /** M3 emphasized decelerate, the fade-through's way in. */
+    internal val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+    internal const val FADE_OUT_MS = 90
+    internal const val FADE_IN_MS = 210
+    internal const val FADE_THROUGH_MS = FADE_OUT_MS + FADE_IN_MS
+    internal const val FADE_IN_SCALE = 0.92f
 }
 
 /**

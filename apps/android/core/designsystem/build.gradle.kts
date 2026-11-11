@@ -16,12 +16,20 @@ dependencies {
     api(project(":core:alerts"))
     // the generated pictures (AvatarImage) draw the protocol's Avatar numbers
     api(project(":core:protocol"))
+    // ScreenHost: the back gesture (predictive back) and each screen's lifecycle
+    implementation(libs.androidx.navigationevent.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     testImplementation(libs.junit)
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.serialization.json)
     // UserErrorsTest reads the worded errors back in English and Spanish
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // ScreenHostTest composes the host, moves between pages frame by frame and sends the back gesture (the app's
+    // activity version)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.activity.compose)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 // Robolectric reaches into FileDescriptor internals on JDK 21
