@@ -333,6 +333,7 @@ object SettingsIndex {
             addAll(
                 page(
                     SettingsRoute.About,
+                    R.string.st_device_mac to R.string.st_device_mac_summary,
                     R.string.st_report_problem to R.string.st_report_problem_summary,
                     R.string.st_source_code to R.string.st_license,
                     R.string.st_privacy to R.string.st_privacy_summary,

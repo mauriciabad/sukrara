@@ -6,19 +6,14 @@ package app.mauri.sukrara.feature.settings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
-
-/** One file of a release: the APK, the Mac dmg and zip, the Android R8 mapping. */
-data class ReleaseAsset(val name: String, val url: String)
 
 /** One GitHub release of mauriciabad/sukrara. */
 data class Release(
@@ -26,15 +21,14 @@ data class Release(
     val url: String,
     val prerelease: Boolean,
     val draft: Boolean,
-    val assets: List<ReleaseAsset>,
 )
 
 /** What the About page shows about updates. */
 sealed interface UpdateState {
     data object Checking : UpdateState
 
-    /** No newer release; [latest] = the newest one offered (for its other-device files), if any. */
-    data class UpToDate(val latest: Release?) : UpdateState
+    /** No newer release. */
+    data object UpToDate : UpdateState
 
     data class Available(val release: Release) : UpdateState
 
@@ -50,11 +44,11 @@ object UpdateCheck {
     /** All releases (not `/latest`, which never returns a prerelease). */
     const val API_URL = "https://api.github.com/repos/mauriciabad/sukrara/releases"
 
-    /** The only links the update check opens: the project's own release pages and files. */
+    /** The only links the update check opens: the project's own release pages. */
     const val RELEASE_PREFIX = "$RELEASES_URL/"
 
     /**
-     * Whether [url] is one of the project's release pages or files: under [RELEASE_PREFIX], with nothing that could
+     * Whether [url] is one of the project's release pages: under [RELEASE_PREFIX], with nothing that could
      * leave it once a browser resolves it (dot segments, encoded dots, backslashes, spaces).
      */
     fun isReleaseUrl(url: String): Boolean =
@@ -73,19 +67,13 @@ object UpdateCheck {
         prerelease: Boolean,
     ): Release? = offered(releases, prerelease).filter { compare(it.tag, installed) > 0 }.maxWithOrNull { a, b -> compare(a.tag, b.tag) }
 
-    /** The newest release this install may be offered (its files are listed as "Sukrara on other devices"). */
-    fun latest(
-        releases: List<Release>,
-        prerelease: Boolean,
-    ): Release? = offered(releases, prerelease).maxWithOrNull { a, b -> compare(a.tag, b.tag) }
-
     fun state(
         releases: Result<List<Release>>,
         installed: String,
         prerelease: Boolean,
     ): UpdateState {
         val list = releases.getOrNull() ?: return UpdateState.Offline
-        return newer(list, installed, prerelease)?.let { UpdateState.Available(it) } ?: UpdateState.UpToDate(latest(list, prerelease))
+        return newer(list, installed, prerelease)?.let { UpdateState.Available(it) } ?: UpdateState.UpToDate
     }
 
     private fun offered(
@@ -129,7 +117,7 @@ object UpdateCheck {
 
     /**
      * Parses the List-releases JSON (unknown fields ignored; a release without a tag is skipped). A page link outside
-     * [RELEASE_PREFIX] falls back to the releases page and such a file is dropped, so the app never opens it.
+     * [RELEASE_PREFIX] falls back to the releases page, so the app never opens it.
      */
     fun parse(json: String): List<Release> =
         Json.parseToJsonElement(json).jsonArray.mapNotNull { element ->
@@ -140,24 +128,7 @@ object UpdateCheck {
                 url = o.string("html_url")?.takeIf(::isReleaseUrl) ?: RELEASES_URL,
                 prerelease = o["prerelease"]?.jsonPrimitive?.booleanOrNull ?: false,
                 draft = o["draft"]?.jsonPrimitive?.booleanOrNull ?: false,
-                assets =
-                    (o["assets"] as? JsonArray).orEmpty().mapNotNull { a ->
-                        val ao = a.jsonObject
-                        val name = ao.string("name") ?: return@mapNotNull null
-                        val url = ao.string("browser_download_url")?.takeIf(::isReleaseUrl) ?: return@mapNotNull null
-                        ReleaseAsset(name, url)
-                    },
             )
-        }
-
-    /**
-     * The files About offers under *Sukrara on other devices*: the Mac's (the `.dmg` and the Mac `.zip`) and nothing
-     * else, so the APK and the R8 mapping (`Sukrara-<version>-android-mapping.txt.gz`, for crash traces) never show as
-     * downloads.
-     */
-    fun otherDevices(release: Release): List<ReleaseAsset> =
-        release.assets.filter { a ->
-            a.name.endsWith(".dmg") || (a.name.contains("mac", ignoreCase = true) && a.name.endsWith(".zip"))
         }
 
     private fun JsonObject.string(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull

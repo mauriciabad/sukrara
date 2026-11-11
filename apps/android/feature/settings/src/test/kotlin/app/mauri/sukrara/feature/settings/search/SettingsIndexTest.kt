@@ -232,7 +232,7 @@ class SettingsIndexTest {
                     onBack = {},
                 )
             },
-            Scene("about", SearchTarget.Page(SettingsRoute.About)) { AboutContent("0.12.0", UpdateState.UpToDate(null), {}) {} },
+            Scene("about", SearchTarget.Page(SettingsRoute.About)) { AboutContent("0.12.0", UpdateState.UpToDate, {}) {} },
             Scene("threshold review", SearchTarget.Page(SettingsRoute.ThresholdReview)) {
                 AlertThresholdReviewContent(AlertSettings(), { _, _ -> }, {}, {})
             },
