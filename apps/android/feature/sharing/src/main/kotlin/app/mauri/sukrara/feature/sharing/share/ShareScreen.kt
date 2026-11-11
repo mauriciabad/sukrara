@@ -103,6 +103,9 @@ fun ShareScreen(
     Column(
         modifier
             .fillMaxSize()
+            // its own page (no settings scaffold under it): without a surface the window's dark background showed
+            // through with the light theme's dark text
+            .background(MaterialTheme.colorScheme.surface)
             .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
