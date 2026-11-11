@@ -218,6 +218,18 @@ class AppcastAndRunsTest(unittest.TestCase):
         self.assertEqual(release.pick_run([{"status": "completed", "conclusion": "failure"},
                                            {"status": "completed", "conclusion": "success"}]), "success")
 
+    def test_a_run_started_by_hand_counts_and_a_stuck_push_run_doesnt_block(self):
+        stuck = {"event": "push", "status": "completed", "conclusion": "startup_failure"}
+        queued = {"event": "push", "status": "queued", "conclusion": ""}
+        by_hand = {"event": "workflow_dispatch", "status": "completed", "conclusion": "success"}
+        merge = {"event": "pull_request", "status": "completed", "conclusion": "success"}
+        self.assertEqual(release.commit_runs([stuck, by_hand, merge]), [stuck, by_hand])
+        self.assertEqual(release.pick_run(release.commit_runs([stuck, by_hand])), "success")
+        self.assertEqual(release.pick_run(release.commit_runs([queued, by_hand])), "success")
+        self.assertEqual(release.pick_run(release.commit_runs([stuck, merge])), "failure")  # a PR run tests a merge
+        self.assertEqual(release.pick_run(release.commit_runs([stuck, dict(by_hand, status="in_progress",
+                                                                           conclusion="")])), "pending")
+
     def test_submission_bodies(self):
         create, item, submit = stores.asc_submission_bodies("app1", "ver1")
         self.assertEqual(create["data"]["attributes"], {"platform": "MAC_OS"})

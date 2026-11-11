@@ -99,7 +99,9 @@ checks its result and stops with what's done, what's left and the `--from <step>
 again: it skips what's already there):
 
 1. `preconditions`: a clean tree at `origin/next`, its green Checks run, the version above `VERSION`, a non-empty
-   Unreleased section, the Play notes, no tag yet, `tools/check/strict`, the keys, `gh`.
+   Unreleased section, the Play notes, no tag yet, `tools/check/strict`, the keys, `gh`. Every wait for Checks takes
+   the commit's push run or one started by hand (`gh workflow run checks.yml --ref next` when the push run is stuck,
+   e.g. in a GitHub Actions incident); one green run is enough, a pull_request run doesn't count.
 2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …
    (GitHub prerelease)` with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run goes on while
    the gate runs, and is awaited before anything is published.

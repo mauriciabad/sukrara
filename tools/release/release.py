@@ -11,9 +11,10 @@ worktree, on any branch or a detached HEAD. Every push names its refspec (HEAD:n
 `next` or `main` branch. The steps, in order; each checks its result and stops on failure with what's done and what's
 left (resume with --from <step>; every step can run again):
 
-  preconditions  a clean tree, HEAD = origin/next, a green Checks run on that commit, the new version above VERSION,
-                 CHANGELOG.md's Unreleased section, the Play notes (apps/android/fastlane/metadata/android/<en-US|es-ES>/
-                 changelogs/<versionCode>.txt, at most 500 characters), no tag yet, the keys and gh
+  preconditions  a clean tree, HEAD = origin/next, a green Checks run on that commit (its push or one started by hand),
+                 the new version above VERSION, CHANGELOG.md's Unreleased section, the Play notes
+                 (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
+                 characters), no tag yet, the keys and gh
   version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md), CHANGELOG's Unreleased → the
                  version's entry; commit, push to next (fast-forward; its Checks run is awaited before github)
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
@@ -228,6 +229,12 @@ def resume_problems(dirty):
     return ["the tree has changes besides docs/appcast.xml: %s" % ", ".join(extra)] if extra else []
 
 
+def commit_runs(runs):
+    """The runs that test the commit itself: its push, or one started by hand (workflow_dispatch, e.g. when the push run
+    is stuck in a GitHub Actions incident). A pull_request run tests a merge with the base, not the commit."""
+    return [r for r in runs if r.get("event") in ("push", "workflow_dispatch")]
+
+
 def pick_run(runs):
     """The state of a commit's workflow runs (gh run list --json status,conclusion): 'success' when one succeeded,
     'pending' while one runs (or none started yet), else 'failure'."""
@@ -309,9 +316,9 @@ class Release:
         return json.loads(out) if out else None
 
     def checks_state(self, sha, branch, workflow="checks.yml"):
-        runs = self.gh_json(["run", "list", "-R", REPO, "--workflow", workflow, "--commit", sha, "--branch", branch,
-                             "--event", "push", "--json", "status,conclusion,url", "-L", "20"]) or []
-        state = pick_run(runs)
+        runs = commit_runs(self.gh_json(["run", "list", "-R", REPO, "--workflow", workflow, "--commit", sha, "--branch",
+                                         branch, "--json", "event,status,conclusion,url", "-L", "20"]) or [])
+        state = pick_run(runs)  # one green run is enough: a stuck or failed-to-start one beside it doesn't count
         if state == "failure":
             return "failure (%s)" % ", ".join(r.get("url", "") for r in runs)
         return state
