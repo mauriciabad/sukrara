@@ -358,6 +358,33 @@ private extension DateComponents {
         #expect(f.isComplete && !f.needsFinishing)
     }
 
+    /// #175: closing the window half-way and choosing Finish Setup… resumes exactly there, never at an earlier skipped
+    /// step; after a relaunch at the first step not reached; once the walk is over at the first unfinished step.
+    @Test func finishSetupReopensWhereTheWalkWasLeft() {
+        var f = SetupFlow()
+        f.complete(.welcome)
+        f.skip(.follow)
+        f.reopen()
+        #expect(f.current == .alerts)
+        // Back to a step, window closed: the same step
+        f.back()
+        f.reopen()
+        #expect(f.current == .follow)
+        var relaunched = SetupFlow(states: f.states)
+        relaunched.reopen()
+        #expect(relaunched.current == .alerts)
+        relaunched.complete(.alerts)
+        relaunched.complete(.notifications)
+        relaunched.complete(.openAtLogin)
+        #expect(relaunched.current == nil && relaunched.needsFinishing)
+        relaunched.reopen()
+        #expect(relaunched.current == .follow)
+        // the first run keeps its welcome page
+        var first = SetupFlow()
+        first.reopen()
+        #expect(first.current == .welcome)
+    }
+
     @Test func skipNeverUndoesADoneStep() {
         var f = SetupFlow(states: [.welcome: .done, .follow: .done])
         f.open(.follow)

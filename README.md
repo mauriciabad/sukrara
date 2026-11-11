@@ -190,7 +190,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   alerts and
   treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
   (*How you appear*); the wearer's picture shows in Following and the nearby dialog. A setup window walks Welcome → Follow → Alerts → Notifications → Open at
-  login.
+  login; closed half-way, *Finish Setup…* in the panel reopens it on the same step.
 - **Juggluco on this network** (off by default): while the Mac follows nobody, it reads glucose from Juggluco's web
   server on the home network (found automatically, or by its address; optional API secret in the Keychain), with the
   same card, rings, sensor life and alerts. Plain http, to home-network addresses only; says so when macOS's Local
