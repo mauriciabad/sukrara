@@ -13,16 +13,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -52,10 +48,11 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
+import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.feature.sharing.Invite
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.setup.NoteCard
-import app.mauri.sukrara.feature.sharing.setup.StepHeader
 import app.mauri.sukrara.feature.sharing.setup.startSafely
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -65,29 +62,28 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * "Share with someone": a label only the wearer sees, then a single-use invite as a QR (springs in) and a link to send
- * or copy, its expiry and what the follower will see. Every invite still needs the wearer's Allow. While
- * [internetOff] (an invite link and its request travel over the internet) it says so and offers to turn it on.
+ * "Share with someone", a settings page (SPA's SettingsScaffold and SettingsTheme, so its background and text follow
+ * the light and dark theme like every other page; #170): a label only the wearer sees, then a single-use invite as a
+ * QR (springs in) and a link to send or copy, its expiry and what the follower will see. Every invite still needs the
+ * wearer's Allow. While [internetOff] (an invite link and its request travel over the internet) it says so and offers
+ * to turn it on. [onBack] leaves the page.
  */
 @Composable
 fun ShareScreen(
     invite: InviteUi,
     onCreate: (String) -> Unit,
     onAnother: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     internetOff: Boolean = false,
     onTurnOnInternet: () -> Unit = {},
-) {
+) = SettingsScaffoldPage(stringResource(R.string.sh_share_title), onBack, modifier) {
     var label by rememberSaveable { mutableStateOf("") }
+    SettingsIntro(stringResource(R.string.sh_share_body))
     Column(
-        modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        StepHeader(stringResource(R.string.sh_share_title), stringResource(R.string.sh_share_body))
         when (invite) {
             InviteUi.None, InviteUi.Creating, InviteUi.Failed -> {
                 OutlinedTextField(

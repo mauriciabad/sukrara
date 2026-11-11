@@ -221,10 +221,11 @@ class SharingScreenshotTest {
             "setup-6-identity-conflict" to { SetupContent(ui(SetupStep.Identity, 6, live, share = conflict), a) },
             "setup-7-history" to { SetupContent(ui(SetupStep.History, 7, live), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
-            "share-new" to { ShareScreen(InviteUi.None, {}, {}) },
+            "share-new" to { ShareScreen(InviteUi.None, {}, {}, {}) },
             "share-ready" to {
                 ShareScreen(
                     InviteUi.Ready(Invite("https://sukrara.mauri.app/join#c3ludGhldGljLWludml0ZS1mb3ItdGVzdHM", "Anna", 1_761_600_000)),
+                    {},
                     {},
                     {},
                 )

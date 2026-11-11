@@ -1349,7 +1349,9 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
 - **Screens** (`feature/sharing` `share/`, `followers/`, `conflict/`; Settings › Sharing = `SharingScreen`
   under the settings page's title and Back (system / predictive back too): no identity → *Set up sharing* (setup's
   followers step alone; done or Back → Settings › Sharing, Back also leaves *Restore your followers* on home's
-  Finish setup card), sharing → Followers, conflict → the conflict screen): *Share with someone* (a label only
+  Finish setup card), sharing → Followers, conflict → the conflict screen): *Share with someone* (a settings page
+  like the others: SPA's scaffold with its title and round back button, its background and text in the light or dark
+  theme (#170: the dark theme drew black text on a dark window); a label only
   the wearer sees, *Create invite* → the QR springs in with a confirm haptic, the link as selectable text, *Send link* /
   *Copy*, "works once, until <date>", *They'll see*, *Invite someone else*); *Settings › Sharing* (your row → How you
   appear, *Backup*, *Share with someone*, *Waiting for you* requests → the approve dialog, followers with their
