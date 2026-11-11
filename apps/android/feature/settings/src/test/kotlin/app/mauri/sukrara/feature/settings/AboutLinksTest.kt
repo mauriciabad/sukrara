@@ -8,6 +8,7 @@ import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -78,5 +80,16 @@ class AboutLinksTest {
         assertEquals(UpdateCheck.ISSUES_URL, open(R.string.st_report_problem))
         assertEquals(UpdateCheck.REPO_URL, open(R.string.st_source_code))
         assertEquals("https://sukrara.mauri.app/privacy", open(R.string.st_privacy))
+    }
+
+    @Test
+    fun `About says Sukrara isn't a medical device, on both versions`() {
+        show()
+        val reminder = app.getString(R.string.st_not_medical)
+        assertTrue(reminder.startsWith("Sukrara isn't a medical device"))
+        compose.onNodeWithText(reminder).performScrollTo().assertIsDisplayed()
+        distribution = Distribution.GooglePlay
+        update = null
+        compose.onNodeWithText(reminder).performScrollTo().assertIsDisplayed()
     }
 }

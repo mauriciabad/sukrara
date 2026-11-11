@@ -20,6 +20,7 @@
     <string name="sh_setup_welcome_title">Te damos la bienvenida a Sukrara</string>
     <string name="sh_setup_welcome_body">Sukrara lee tu sensor de glucosa, te avisa cuando lo necesitas y comparte tu glucosa con quien tú elijas.</string>
     <string name="sh_setup_welcome_steps">Unos pocos pasos: elige cómo usas este móvil, permite lo que necesitan las alertas, conecta tu sensor, revisa tus alertas y trae a tus seguidores. Puedes dejar cualquier paso para más tarde.</string>
+    <string name="sh_setup_not_medical">Sukrara no es un producto sanitario: los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar. Mira la app de tu sensor o un glucómetro, y consulta a tu médico, antes de decidir un tratamiento.</string>
     <string name="sh_setup_role_title">¿Cómo usarás este móvil?</string>
     <string name="sh_setup_role_body">Elige una opción. Decide qué hace este móvil.</string>
     <string name="sh_setup_role_wearer">Llevo el sensor</string>

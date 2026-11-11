@@ -194,6 +194,7 @@
     <string name="st_license">Software libre, GPL-3.0 o posterior</string>
     <string name="st_privacy">Política de privacidad</string>
     <string name="st_privacy_summary">Qué se queda en este teléfono y qué se envía, y adónde</string>
+    <string name="st_not_medical">Sukrara no es un producto sanitario: los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar. Mira la app de tu sensor o un glucómetro, y consulta a tu médico, antes de decidir un tratamiento.</string>
     <string name="st_alarm_off_title">¿Quitar la alarma %1$s?</string>
     <string name="st_alarm_off_text">Sonará como una notificación normal: más baja y sin abrirse sobre la pantalla de bloqueo.</string>
     <string name="st_threshold_between">Debe estar por encima de %1$s y por debajo de %2$s (las alertas vecinas)</string>

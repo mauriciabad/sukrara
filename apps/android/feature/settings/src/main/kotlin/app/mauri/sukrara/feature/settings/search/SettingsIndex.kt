@@ -351,6 +351,7 @@ object SettingsIndex {
                     R.string.st_report_problem to R.string.st_report_problem_summary,
                     R.string.st_source_code to R.string.st_license,
                     R.string.st_privacy to R.string.st_privacy_summary,
+                    R.string.st_not_medical to null,
                 ),
             )
             addAll(page(SettingsRoute.ThresholdReview, R.string.st_review_confirm to null))

@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -157,6 +158,17 @@ class SetupFlowTest {
         shows(HOME)
         // Later and Back keep both on the card
         assertEquals(finished, recorded())
+    }
+
+    @Test
+    fun `Welcome says Sukrara isn't a medical device`() {
+        host(open = true)
+        compose
+            .onNodeWithText(
+                "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your " +
+                    "sensor's app or a meter, and ask your doctor, before you decide on a treatment.",
+            ).performScrollTo()
+            .assertIsDisplayed()
     }
 
     private companion object {

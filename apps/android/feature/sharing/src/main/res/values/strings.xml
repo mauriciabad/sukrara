@@ -33,6 +33,8 @@
     <string name="sh_setup_welcome_body">Sukrara reads your glucose sensor, alerts you when you need it and shares your glucose with the people you choose.</string>
     <!-- Setup welcome: what setup will do -->
     <string name="sh_setup_welcome_steps">A few short steps: choose how you use this phone, allow what alerts need, connect your sensor, check your alerts and bring your followers. You can leave any step for later.</string>
+    <!-- Setup welcome: the reminder that Sukrara is not a medical device (the same sentence as Settings › About) -->
+    <string name="sh_setup_not_medical">Sukrara isn\'t a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor\'s app or a meter, and ask your doctor, before you decide on a treatment.</string>
     <!-- Setup role step: title -->
     <string name="sh_setup_role_title">How will you use this phone?</string>
     <!-- Setup role step: explanation -->

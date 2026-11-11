@@ -332,6 +332,12 @@ internal fun ConfirmDialog(
 private fun ColumnScope.WelcomeStep(actions: SetupActions) {
     StepHeader(stringResource(R.string.sh_setup_welcome_title), stringResource(R.string.sh_setup_welcome_body))
     Text(stringResource(R.string.sh_setup_welcome_steps), style = MaterialTheme.typography.bodyLarge)
+    // the reminder Play's health-app policy asks for (the same sentence as Settings › About, and the Mac's welcome)
+    Text(
+        stringResource(R.string.sh_setup_not_medical),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     StepButtons(stringResource(R.string.sh_setup_start), actions.continueWelcome)
 }
 

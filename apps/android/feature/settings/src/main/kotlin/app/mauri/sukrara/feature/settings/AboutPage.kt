@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
@@ -86,7 +87,8 @@ class AboutViewModel(
 /**
  * About: the version and which one it is ([distribution]: Google Play or GitHub), the update check (none when
  * [update] is null: the Google Play build), *About the versions* (the website's explanation), Sukrara on other devices
- * (the website's page per app), report a problem, source code, privacy policy.
+ * (the website's page per app), report a problem, source code, privacy policy, and the reminder that Sukrara isn't a
+ * medical device (the same sentence as setup's welcome; Play's health-app policy, the Mac's About too).
  */
 @Composable
 fun AboutContent(
@@ -163,5 +165,6 @@ fun AboutContent(
                 context.openUrl(PRIVACY_URL)
             }, summary = stringResource(R.string.st_privacy_summary), icon = DsR.drawable.ds_ic_privacy)
         }
+        FooterText(stringResource(R.string.st_not_medical))
     }
 }

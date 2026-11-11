@@ -264,7 +264,8 @@ sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
 Android comes in two versions, the same app with the same key (installs over each other, keeping the data): the
 **GitHub version** (GitHub releases, Obtainium), which checks GitHub for updates in Settings › About, and the **Google
 Play version** (in preparation), which Play updates and which therefore has no update check of its own; that is the
-only difference. Settings › About says which one is installed and links to the website's
+only difference. Settings › About says which one is installed, that Sukrara isn't a medical device (setup's Welcome
+too), links the privacy policy and links to the website's
 [Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
 The Mac app likewise: the **GitHub version** (the dmg and the Homebrew cask), which checks GitHub for updates, and the
