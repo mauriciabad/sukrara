@@ -65,6 +65,7 @@ class LocalHttpServer(
 ) {
     @Volatile private var socket: ServerSocket? = null
     private var pool: ThreadPoolExecutor? = null
+    private var acceptor: Thread? = null
 
     val running: Boolean get() = socket?.isClosed == false
 
@@ -92,16 +93,33 @@ class LocalHttpServer(
             }
         socket = s
         pool = p
-        Thread({ acceptLoop(s, p) }, "sukrara-local-accept").apply { isDaemon = true }.start()
+        acceptor =
+            Thread({ acceptLoop(s, p) }, "sukrara-local-accept").apply {
+                isDaemon = true
+                start()
+            }
         return true
     }
 
+    /**
+     * Stops listening and returns once the port is free, so [bind] on the same port right after works (turning a
+     * server off and on). Closing a socket that a thread is blocked on in `accept()` only marks it: on Linux the port
+     * stays taken until that thread has woken up, so this waits for the accept thread (at most [STOP_WAIT_MS]).
+     */
     @Synchronized
     fun stop() {
         runCatching { socket?.close() }
         socket = null
         pool?.shutdownNow()
         pool = null
+        acceptor?.takeIf { it !== Thread.currentThread() }?.let {
+            try {
+                it.join(STOP_WAIT_MS)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
+        acceptor = null
     }
 
     private fun acceptLoop(
@@ -206,6 +224,7 @@ class LocalHttpServer(
         const val BACKLOG = 8
         const val MAX_HEAD = 8 * 1024
         const val DEADLINE_MS = 5_000L
+        const val STOP_WAIT_MS = 2_000L
         private val METHOD = HttpAnswer("405 Method Not Allowed", "", "text/plain")
         private val BAD = HttpAnswer("400 Bad Request", "", "text/plain")
         private val FORBIDDEN = HttpAnswer("403 Forbidden", "", "text/plain")

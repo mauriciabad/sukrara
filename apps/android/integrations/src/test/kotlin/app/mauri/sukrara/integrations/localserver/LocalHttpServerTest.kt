@@ -115,10 +115,31 @@ class LocalHttpServerTest {
 
     @Test
     fun `stopping frees the port`() {
-        server.bind()
-        val port = server.boundPort
+        // stop() returns once the port is free: binding it right away never races the accept thread (several rounds,
+        // the race showed up once in a while)
+        repeat(ROUNDS) {
+            assertTrue(server.bind())
+            val port = server.boundPort
+            server.stop()
+            assertFalse(server.running)
+            ServerSocket(port, 1, InetAddress.getByName("127.0.0.1")).close()
+        }
+    }
+
+    @Test
+    fun `a stopped server binds its port again at once`() {
+        // turning the setting off and on, or the home-network listener moving: the same port, right after stop()
+        assertTrue(server.bind())
+        val again = LocalHttpServer(server.boundPort, { HttpAnswer.NOT_FOUND })
         server.stop()
-        assertFalse(server.running)
-        ServerSocket(port, 1, InetAddress.getByName("127.0.0.1")).close()
+        repeat(ROUNDS) {
+            assertTrue(again.bind())
+            again.stop()
+        }
+        assertFalse(again.running)
+    }
+
+    private companion object {
+        const val ROUNDS = 50
     }
 }
