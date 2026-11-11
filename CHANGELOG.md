@@ -2,6 +2,16 @@
 
 Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
+## Unreleased
+
+- **Do Not Disturb and Focus are respected by default** (#184): the alert checklist says plainly whether Sukrara
+  alerts in Do Not Disturb (Android) or during a Focus (Mac), with *Let Sukrara through* / *Don't let Sukrara through*
+  (Android: Do Not Disturb access the first time, then the alarm channels' override; Mac: Time Sensitive), and home
+  shows a neutral line while a mode keeps alerts quiet. Updating from 0.13.0: the alarm channels keep the override
+  they have; the Mac's alerts stop being Time Sensitive until you let Sukrara through.
+- ***Sound while the phone is unlocked*** (Android, #183) is answered from a test alert: *Test the sound*, then
+  *I heard it* / *It only vibrated*. The earlier answer is asked again.
+
 ## 0.13.0 — fixes from the first days of 0.12.0, monitoring before the first unlock (GitHub prerelease)
 
 The first build submitted to Google Play. Not tested on a real sensor yet. Install and notes: the
@@ -19,10 +29,7 @@ The first build submitted to Google Play. Not tested on a real sensor yet. Insta
   LibreView's file in every date layout, and one LibreView sign-in for the whole app (#176, #177); root asked for when
   a root feature is turned on, and the LSPosed hooks work in release builds (#178).
 - **New**: the LSPosed lock-screen widget around the fingerprint icon (#66); scan an invite QR code with the Mac's
-  camera (#172); Do Not Disturb and Focus respected by default, with *Let Sukrara through* in the alert checklist
-  (Android: Do Not Disturb access, edited alarm channels keep their choices; Mac: Time Sensitive) and a neutral line
-  on home while a mode keeps alerts quiet (#15, #184); *Sound while the phone is unlocked* answered from a test alert
-  (#183); About opens the website's
+  camera (#172); alarm channels the person edited take the Do Not Disturb override (#15); About opens the website's
   page for the other devices (#179) and says which version it is (GitHub or Google Play).
 - **Google Play build**: the same app as the GitHub one, without its own update check.
 
