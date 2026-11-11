@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sharing.setup
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -35,7 +37,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
 
@@ -97,36 +98,48 @@ data class SetupUi(
     /** *Find phones nearby* while it looks (null = not looking). */
     val nearby: NearbySearch? = null,
     val busy: Boolean,
-    /** Opened from the Finish-setup card: one step, then home. */
+    /** Shown alone (a Finish-setup step, or setup opened on one step): no walk around it; Back leaves. */
     val single: Boolean,
-    /** Back shows the previous step (not on the first step, nor back into the role once chosen). */
+    /** Back shows the previous step ([SetupMachine.previous]); false = Back leaves setup. */
     val canBack: Boolean,
     /** The role step's open confirmation (null = none). */
     val roleChange: RoleChange? = null,
 )
 
 /**
- * [openedOn]: opened on that one step (Settings › Sharing's Set up opens [SetupStep.Identity]); it is shown until it
- * is completed or left, then the screen goes back where it was opened.
+ * Where setup is, kept as screen state in [saved] (a rotation or a process death resumes exactly there; the record
+ * only holds answers, so leaving half-way never loses a step):
+ *
+ * - opened on one step ([openedOn]: Settings › Sharing's *Set up sharing*, *Bring your history back* at launch, the
+ *   join step from an invite link or *Join again*): that step alone until it is answered, then back where it was
+ *   opened;
+ * - opened from home (or at first launch): the walk resumes at the step left (Back walks to the previous one, and on
+ *   its first step leaves); once the walk is over, every skipped step that still matters is shown alone, alerts first
+ *   (home's *Finish setup*): done or *Later* → the next one, Back → home, then home.
  */
 class SetupViewModel(
     private val m: SetupModule,
     private val openedOn: SetupStep? = null,
+    private val saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
-    private val shown = MutableStateFlow<SetupStep?>(null)
+    /** Walk, Finish or Visit ([Mode]); null until setup opened from home has read what is left. */
+    private val mode = saved.getMutableStateFlow(MODE, if (openedOn != null) Mode.Visit.name else null)
+
+    /** Finish / Visit: the step shown alone; null = it was answered and nothing is left (the screen leaves). */
+    private val alone = saved.getMutableStateFlow(ALONE, openedOn?.name)
+
+    /** Finish: the steps already shown in this visit (done or *Later* moves on, never back to one). */
+    private val visited = saved.getMutableStateFlow(VISITED, "")
+
+    /** Walk: the step Back went to (its answer is kept); null = the first unanswered step. */
+    private val shown = saved.getMutableStateFlow<String?>(SHOWN, null)
+
     private val restore = MutableStateFlow<RestoreUi>(RestoreUi.Idle)
     private val joining = MutableStateFlow<JoinUi>(JoinUi.Idle)
     private val busy = MutableStateFlow(false)
-    private val single = MutableStateFlow(false)
 
     /** The role step's confirmation; kept while *Export CSV first* is open, so it shows again on the way back. */
     private val roleChange = MutableStateFlow<RoleChange?>(null)
-
-    /** False until [openedOn] is reopened in the record: no other step flashes and setup doesn't end before it shows. */
-    private val ready = MutableStateFlow(openedOn == null)
-
-    /** The `ui` flow has seen [openedOn] reopened in the record. */
-    private var seenOpen = false
 
     /** The thresholds being edited on the alert step (null = the stored ones). */
     private val editing = MutableStateFlow<AlertSettings?>(null)
@@ -153,16 +166,12 @@ class SetupViewModel(
         combine(
             inputs,
             m.readiness.readiness,
-            shown,
-            combine(restore, busy, single, editing, ready, ::Locals),
+            combine(mode, alone, shown, ::Triple),
+            combine(restore, busy, editing, ::Locals),
             combine(joining, m.pendingInvite, roleChange, ::Triple),
-        ) { i, readiness, override, l, (join, invite, change) ->
-            if (!l.ready) return@combine null
-            // opened on one step: nothing until this flow itself sees the reopened record (no early "setup is over")
-            if (openedOn != null && !seenOpen) {
-                if (openedOn in i.record.completed || openedOn in i.record.skipped) return@combine null
-                seenOpen = true
-            }
+        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, change) ->
+            // opened from home: nothing until the walk-or-finish decision is made (no step flashes, no early "over")
+            val mode = modeName?.let(Mode::valueOf) ?: return@combine null
             val now = m.clock.now()
             val facts =
                 SetupFacts(
@@ -173,13 +182,13 @@ class SetupViewModel(
                     alertsConfirmed = i.alertsConfirmed,
                 )
             val steps = SetupMachine.steps(facts)
+            val single = mode != Mode.Walk
             val step =
-                if (l.single) {
-                    override?.takeIf { it in steps && it !in i.record.completed && it !in i.record.skipped }
+                if (single) {
+                    aloneName?.let(SetupStep::valueOf)?.takeIf { it in steps }
                 } else {
-                    override?.takeIf { it in steps } ?: SetupMachine.next(i.record, facts)
+                    backTo?.let(SetupStep::valueOf)?.takeIf { it in steps } ?: SetupMachine.next(i.record, facts)
                 }
-            val at = steps.indexOf(step)
             SetupUi(
                 step = step,
                 index = (steps.indexOf(step) + 1).coerceAtLeast(1),
@@ -195,23 +204,22 @@ class SetupViewModel(
                 join = join,
                 invite = invite,
                 busy = l.busy,
-                single = l.single,
-                // the join step goes back to the role (a phone that wears the sensor after all)
-                canBack = !l.single && at > 0 && (step == SetupStep.Join || !(facts.role != null && steps[at - 1] == SetupStep.Role)),
+                single = single,
+                canBack = !single && step != null && SetupMachine.previous(step, facts) != null,
                 roleChange = change.takeIf { step == SetupStep.Role },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
-        val step = openedOn
-        if (step != null) {
+        // opened from home: the walk where it stopped, or (the walk is over) the first skipped step that still matters
+        if (mode.value == null) {
             viewModelScope.launch {
-                single.value = true
-                shown.value = step
-                try {
-                    m.setupStore.update { SetupMachine.reopen(it, step) }
-                } finally {
-                    ready.value = true
+                val p = m.progress.first()
+                if (SetupMachine.next(p.record, p.facts) != null) {
+                    mode.value = Mode.Walk.name
+                } else {
+                    showAlone(SetupMachine.nextItem(p.record, p.facts, emptySet()))
+                    mode.value = Mode.Finish.name
                 }
             }
         }
@@ -221,34 +229,11 @@ class SetupViewModel(
         m.refresh()
     }
 
-    /** The Finish-setup steps already shown in this visit: done or *Later* moves on to the next one, never back. */
-    private val visited = mutableSetOf<SetupStep>()
-
     /**
-     * Opened from home after setup was finished: the next Finish-setup row's step not shown yet in this visit (alerts
-     * first). False when there is none left, or when opened on one step ([openedOn]): then the screen goes back.
-     */
-    suspend fun reopenFirstUnfinished(): Boolean {
-        if (openedOn != null || leaving) return false
-        val item = m.finishItems.first().firstOrNull { it.step !in visited } ?: return false
-        visited += item.step
-        open(item.step)
-        return true
-    }
-
-    /** Reopened from the Finish-setup card: shown until it is completed or skipped again (Back skips it again). */
-    fun open(step: SetupStep) {
-        single.value = true
-        shown.value = step
-        record { SetupMachine.reopen(it, step) }
-    }
-
-    /** Set by Back on a reopened step: the screen leaves, no further Finish-setup step opens. */
-    private var leaving = false
-
-    /**
-     * Back: the previous step (its answers are kept); [onLeave] on the first step (leave setup). A reopened step is
-     * left as skipped (written first), so its Finish-setup row stays.
+     * Back: the previous step in the walk (its answer is kept), or [onLeave] (the walk's first step: home's banner
+     * resumes it there later). A step shown alone just leaves and stays as it was (a skipped one stays on home's
+     * banner); only *Bring your history back* on its own is answered by Back (*Start empty*, written first), or it
+     * would come back at every launch.
      */
     fun back(onLeave: () -> Unit) {
         // an invite shown for confirmation: Back is its Cancel (the step stays)
@@ -256,22 +241,21 @@ class SetupViewModel(
         // the join step's list is gone: Bluetooth stops looking
         searching.value = null
         val u = ui.value ?: return onLeave()
+        val step = u.step ?: return onLeave()
         if (u.single) {
-            leaving = true
-            val step = u.step
-            // the skip is written before the screen leaves (leaving clears this view model and its scope)
+            if (step != SetupStep.History) return onLeave()
+            // leaving clears this view model and its scope: the answer is written before the screen leaves
             viewModelScope.launch {
                 try {
-                    if (step != null) m.setupStore.update { SetupMachine.skip(it, step) }
+                    m.setupStore.update { SetupMachine.skip(it, step) }
                 } finally {
                     onLeave()
                 }
             }
             return
         }
-        if (!u.canBack) return onLeave()
-        val steps = SetupMachine.steps(u.facts)
-        shown.value = steps[steps.indexOf(u.step) - 1]
+        val previous = SetupMachine.previous(step, u.facts) ?: return onLeave()
+        shown.value = previous.name
     }
 
     fun readinessFix(r: app.mauri.sukrara.core.model.AlertRequirement) = m.readiness.fix(r)
@@ -485,7 +469,7 @@ class SetupViewModel(
             if (!shownAlerts.ordered) return@act
             m.confirmAlerts(shownAlerts)
             editing.value = null
-            m.setupStore.update(SetupMachine::confirmAlerts)
+            write(SetupMachine::confirmAlerts)
         }
 
     /** P10: called after the person confirmed what Start fresh means, with how they appear to followers. */
@@ -493,7 +477,7 @@ class SetupViewModel(
         act {
             val created = m.sharing.startFresh(profile)
             val facts = ui.value?.facts ?: return@act
-            m.setupStore.update { SetupMachine.completeIdentity(it, facts.copy(hasIdentity = created || facts.hasIdentity)) }
+            write { SetupMachine.completeIdentity(it, facts.copy(hasIdentity = created || facts.hasIdentity)) }
         }
 
     fun completeIdentity() {
@@ -522,14 +506,7 @@ class SetupViewModel(
                 RestoreIdentity.Result.RelaysUnreachable
             }
         restore.value = if (result is RestoreIdentity.Result.Restored) RestoreUi.Restored(result.followers) else RestoreUi.Failed(result)
-        if (result is RestoreIdentity.Result.Restored) {
-            m.setupStore.update {
-                SetupMachine.completeIdentity(
-                    it,
-                    u.facts.copy(hasIdentity = true),
-                )
-            }
-        }
+        if (result is RestoreIdentity.Result.Restored) write { SetupMachine.completeIdentity(it, u.facts.copy(hasIdentity = true)) }
     }
 
     fun clearRestoreError() {
@@ -538,28 +515,58 @@ class SetupViewModel(
 
     fun skip(step: SetupStep) = record { SetupMachine.skip(it, step) }
 
-    /** *Bring it back*: the history step is done (written first, while this screen still lives), then [open] runs. */
+    /**
+     * *Bring it back*: the history step is done (written first, while this screen still lives), then [open] runs
+     * (Import history takes setup's place: there is nothing after this step to come back to).
+     */
     fun openHistoryImport(open: () -> Unit) {
         viewModelScope.launch {
             try {
-                m.setupStore.update(SetupMachine::completeHistory)
+                write(SetupMachine::completeHistory)
             } finally {
                 open()
             }
         }
     }
 
-    private fun record(change: (SetupRecord) -> SetupRecord) =
-        act {
-            m.setupStore.update(change)
+    private fun record(change: (SetupRecord) -> SetupRecord) = act { write(change) }
+
+    /**
+     * Writes [change]. A step shown alone is over once [change] answers it ([SetupMachine.answers]): Finish setup
+     * moves on to the next skipped step not shown yet, a step opened on its own goes back where it was opened.
+     */
+    private suspend fun write(change: (SetupRecord) -> SetupRecord) {
+        m.setupStore.update(change)
+        val step = alone.value?.let(SetupStep::valueOf) ?: return
+        if (mode.value == Mode.Walk.name || !SetupMachine.answers(step, change)) return
+        if (mode.value == Mode.Finish.name) {
+            val p = m.progress.first()
+            showAlone(SetupMachine.nextItem(p.record, p.facts, visitedSteps()))
+        } else {
+            alone.value = null
         }
+    }
+
+    /** Finish setup shows [step] alone next (null = nothing left: home). */
+    private fun showAlone(step: SetupStep?) {
+        if (step != null) visited.value = (visitedSteps() + step).joinToString(",") { it.name }
+        alone.value = step?.name
+    }
+
+    private fun visitedSteps(): Set<SetupStep> =
+        visited.value
+            .split(',')
+            .filter { it.isNotEmpty() }
+            .map(SetupStep::valueOf)
+            .toSet()
 
     private fun act(block: suspend () -> Unit) {
         viewModelScope.launch {
             busy.value = true
             try {
                 block()
-                if (!single.value) shown.update { null }
+                // the walk goes on from the first unanswered step (a step reached with Back was just answered)
+                if (mode.value == Mode.Walk.name) shown.value = null
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -584,15 +591,21 @@ class SetupViewModel(
     private data class Locals(
         val restore: RestoreUi,
         val busy: Boolean,
-        val single: Boolean,
         val editing: AlertSettings?,
-        val ready: Boolean,
     )
 
+    /** How setup was opened ([SetupViewModel]): walking, Finish setup's skipped steps, or one step on its own. */
+    private enum class Mode { Walk, Finish, Visit }
+
     companion object {
+        private const val MODE = "setup.mode"
+        private const val ALONE = "setup.alone"
+        private const val VISITED = "setup.visited"
+        private const val SHOWN = "setup.shown"
+
         fun factory(
             module: SetupModule,
             startAt: SetupStep? = null,
-        ) = viewModelFactory { initializer { SetupViewModel(module, startAt) } }
+        ) = viewModelFactory { initializer { SetupViewModel(module, startAt, createSavedStateHandle()) } }
     }
 }

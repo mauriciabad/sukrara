@@ -25,8 +25,9 @@ enum class SetupStep {
 
     /**
      * Wearer only, last: *Bring your history back* (Import history: LibreView, Tidepool or a file). Offered once: done
-     * or skipped, it never comes back (not on the Finish-setup card); Settings › Share with apps › Import history
-     * stays. Offered again on its own after an update replaced the database (`historyDue`).
+     * or skipped, it never comes back (not among the Finish-setup items); Settings › Share with apps › Import history
+     * stays. Offered on its own at launch when it is the only step left (`historyDue`: setup finished before it
+     * existed, or an update replaced the database).
      */
     History,
     ;
@@ -36,9 +37,10 @@ enum class SetupStep {
 }
 
 /**
- * What setup has recorded, persisted (typed store `setup`). The role is NOT here: it lives in its own store (`role`,
- * the hub and the alert runtime read it), so a damaged setup file only shows the skipped steps again and never turns
- * a running wearer's alerts off.
+ * What the person answered in setup, persisted (typed store `setup`): only answers, never where the screen is (a step
+ * opened on its own is screen state, so leaving it half-way can't lose it). The role is NOT here: it lives in its own
+ * store (`role`, the hub and the alert runtime read it), so a damaged setup file only shows the skipped steps again
+ * and never turns a running wearer's alerts off.
  */
 @Serializable
 data class SetupRecord(
@@ -73,6 +75,17 @@ enum class FinishItem(val step: SetupStep) {
     RestoreFollowers(SetupStep.Identity),
 }
 
+/**
+ * What home's *Finish setup* banner names; its *Continue* opens setup, which picks the same thing ([SetupMachine.card]).
+ */
+sealed interface SetupCard {
+    /** The walk was left before its end (Back on its first step, or never reached): it resumes at [step]. */
+    data class Resume(val step: SetupStep) : SetupCard
+
+    /** The walk is over: the first skipped step that still matters (each is then shown alone, in item order). */
+    data class Finish(val item: FinishItem) : SetupCard
+}
+
 /** Why choosing a role didn't happen. */
 enum class RoleRefusal {
     /** P10: the role is chosen only after the person confirmed what it means. */
@@ -95,17 +108,70 @@ object SetupMachine {
     /** *Bring it back* opens Import history: the step is done (offered once). */
     fun completeHistory(record: SetupRecord): SetupRecord = record.done(SetupStep.History)
 
-    /** The history step still to offer on its own (after setup, an update or a replaced database): wearer, neither done nor skipped. */
+    /**
+     * The history step to offer on its own at launch: a wearer's only step left (setup finished before it existed, or
+     * an update replaced the database). Never while the walk stopped at an earlier step: home's banner resumes the walk,
+     * which offers it last.
+     */
     fun historyDue(
         record: SetupRecord,
-        role: Role?,
-    ): Boolean = role == Role.Wearer && SetupStep.History !in record.completed && SetupStep.History !in record.skipped
+        facts: SetupFacts,
+    ): Boolean = facts.role == Role.Wearer && next(record, facts) == SetupStep.History
 
     /** The step to show now, or null when setup is over (home). Resumes exactly where the person left. */
     fun next(
         record: SetupRecord,
         facts: SetupFacts,
     ): SetupStep? = steps(facts).firstOrNull { !done(it, record, facts) && it !in record.skipped }
+
+    /**
+     * Home's *Finish setup* banner, or null (no role yet: home says setup is incomplete; or nothing left). A walk left
+     * before its end comes first and resumes where it stopped; never the join step (a follower's home already leads
+     * there: no reading yet, or the follow ended).
+     */
+    fun card(
+        record: SetupRecord,
+        facts: SetupFacts,
+    ): SetupCard? {
+        if (facts.role == null) return null
+        val next = next(record, facts)
+        if (next != null) return if (next == SetupStep.Join) null else SetupCard.Resume(next)
+        return finishItems(record, facts).firstOrNull()?.let(SetupCard::Finish)
+    }
+
+    /**
+     * Back in the walk from [step]: the step before it (its answer is kept), or null = Back leaves setup (home's banner
+     * resumes the walk at the step left). Never back into the role once chosen, except from the join step (a phone that
+     * wears the sensor after all).
+     */
+    fun previous(
+        step: SetupStep,
+        facts: SetupFacts,
+    ): SetupStep? {
+        val steps = steps(facts)
+        val before = steps.getOrNull(steps.indexOf(step) - 1) ?: return null
+        return before.takeIf { step == SetupStep.Join || facts.role == null || it != SetupStep.Role }
+    }
+
+    /**
+     * The Finish-setup walk (home's banner after the walk is over): the next skipped step that still matters, not shown
+     * yet in this visit ([shown]), in item order; null = home.
+     */
+    fun nextItem(
+        record: SetupRecord,
+        facts: SetupFacts,
+        shown: Set<SetupStep>,
+    ): SetupStep? = finishItems(record, facts).firstOrNull { it.step !in shown }?.step
+
+    /**
+     * Whether [change] (one of this machine's step actions, its facts already captured) answers [step]: completes or
+     * skips it. A step shown on its own (a Finish-setup item, Settings' *Set up sharing*) is over once this is true,
+     * whatever was recorded for it before.
+     */
+    fun answers(
+        step: SetupStep,
+        change: (SetupRecord) -> SetupRecord,
+    ): Boolean = change(SetupRecord()).let { step in it.completed || step in it.skipped }
 
     /** Welcome and Role are done once a role exists (a damaged setup file never asks for the role again). */
     private fun done(
@@ -190,8 +256,8 @@ object SetupMachine {
     }
 
     /**
-     * Reopened from the Finish-setup card or from Settings › Sharing's Set up (the identity was completed once, but
-     * there is none now): shown again until it is completed or skipped again.
+     * The answer to [step] is forgotten: the walk offers it again. Only for a fact that changed the step's meaning (an
+     * update replaced the database: *Bring your history back* again); a step merely opened on its own is screen state.
      */
     fun reopen(
         record: SetupRecord,

@@ -16,3 +16,26 @@ fun FinishItem.label(context: Context): String =
             FinishItem.RestoreFollowers -> R.string.sh_finish_identity
         },
     )
+
+/** Home's "Finish setup" banner text ("Next: …"): a walk to resume names its step by the step's own title. */
+fun SetupCard.label(context: Context): String =
+    when (this) {
+        is SetupCard.Finish -> {
+            item.label(context)
+        }
+
+        is SetupCard.Resume -> {
+            context.getString(
+                when (step) {
+                    SetupStep.Welcome -> R.string.sh_setup_welcome_title
+                    SetupStep.Role -> R.string.sh_setup_role_title
+                    SetupStep.Join -> R.string.sh_join_title
+                    SetupStep.Permissions -> R.string.sh_setup_permissions_title
+                    SetupStep.Sensor -> R.string.sh_setup_sensor_title
+                    SetupStep.Alerts -> R.string.sh_setup_alerts_title
+                    SetupStep.Identity -> R.string.sh_identity_title
+                    SetupStep.History -> R.string.sh_setup_history_title
+                },
+            )
+        }
+    }

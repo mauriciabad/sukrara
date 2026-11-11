@@ -80,7 +80,7 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /**
  * The first-run setup (brief 24, binding order): welcome → role → permissions → sensor →
  * alert thresholds → sharing identity → bring your history back (wearer) → home. Each step says "Step N of M" to
- * TalkBack, has Back (except the first)
+ * TalkBack, has Back (except the first; there Back leaves, and home's "Finish setup" banner resumes the walk)
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
  * shows the same rows as Settings › Review alert thresholds); [onExportHistory] opens the CSV export on everything
@@ -107,15 +107,12 @@ fun SetupScreen(
     val search by viewModel.nearbySearch.collectAsStateWithLifecycle()
     val u = ui?.copy(nearby = search) ?: return
     val haptics = rememberHaptics()
-    // opened from home after setup was finished: show the first Finish-setup row's step; finishing setup goes home
-    val openedFinished = remember { u.step == null }
+    // nothing left to show (the view model decides: the walk's end, the last Finish-setup step, the one step answered)
     if (u.step == null) {
         val currentOnDone by rememberUpdatedState(onDone)
         LaunchedEffect(Unit) {
-            if (!openedFinished || !viewModel.reopenFirstUnfinished()) {
-                haptics.confirm()
-                currentOnDone()
-            }
+            haptics.confirm()
+            currentOnDone()
         }
         return
     }

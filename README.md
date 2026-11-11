@@ -127,8 +127,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of
   each one. If another device is publishing as the same identity, Sukrara stops and says so instead of fighting it.
 - **First-run setup** in a calm, fixed order: role (confirmed) → what alerts need → sensor → confirm your alert
-  thresholds → your followers (restore once this phone has your sensor, or start fresh) → home. Any
-  step can wait; home's *Finish setup* banner brings it back.
+  thresholds → your followers (restore once this phone has your sensor, or start fresh) → bring your history back →
+  home. Any step can wait, and leaving half-way loses nothing: a rotation, the app closed or Back returns to the same
+  step, and home's *Finish setup* banner resumes the walk where you left it, then brings back each skipped step.
 - **Sharing screens**: *How you appear* (your name and a generated picture, on home's top bar), invite one person (QR
   that springs in, link to send or copy, works once for 24 h), allow or deny their request after comparing a 4-digit
   code (the dialog shows over any screen, with their picture and the invite they used), see followers with their

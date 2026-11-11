@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.sharing
 
 import android.app.Application
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
@@ -26,6 +27,7 @@ import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.RoleChange
+import app.mauri.sukrara.feature.sharing.setup.SetupCard
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupViewModel
@@ -65,7 +67,8 @@ import java.time.Instant
 class SetupViewModelTest {
     private val clock = FakeClock()
     private val hub = FakeHub()
-    private val roles = FakeRoles()
+    private val events = mutableListOf<String>()
+    private val roles = FakeRoles(events)
     private val sharing = FakeOwnerSharing()
     private val alerts = FakeAlerts()
     private val record = InMemoryStateStore(SetupRecord())
@@ -73,28 +76,33 @@ class SetupViewModelTest {
     /** What is stored now (the in-memory store keeps a StateFlow): for checks inside a non-suspending callback. */
     private fun recorded() = (record.data as kotlinx.coroutines.flow.StateFlow<SetupRecord>).value
 
-    private val events = mutableListOf<String>()
     private val settings = InMemorySettingsRepository()
     private val readiness = FakeReadiness()
 
-    private fun vm(startAt: SetupStep? = null): SetupViewModel {
-        val module =
-            SetupModule(
-                ApplicationProvider.getApplicationContext<Application>(),
-                record,
-                roles,
-                hub,
-                sharing,
-                alerts,
-                settings,
-                resetAlerts = { events += "reset" },
-                startMonitoring = { events += "start" },
-                readiness = readiness,
-                clock = clock,
-                follower = follower,
-            )
-        return SetupViewModel(module, startAt)
+    private val module by lazy {
+        SetupModule(
+            ApplicationProvider.getApplicationContext<Application>(),
+            record,
+            roles,
+            hub,
+            sharing,
+            alerts,
+            settings,
+            resetAlerts = { events += "reset" },
+            startMonitoring = { events += "start" },
+            readiness = readiness,
+            clock = clock,
+            follower = follower,
+        )
     }
+
+    private fun vm(
+        startAt: SetupStep? = null,
+        saved: SavedStateHandle = SavedStateHandle(),
+    ) = SetupViewModel(module, startAt, saved)
+
+    /** The same screen after a process death: a new view model over what the old one saved. */
+    private fun SavedStateHandle.restored() = SavedStateHandle(keys().associateWith { get<Any?>(it) })
 
     private var joinedAs: Profile? = null
     private val lookups = mutableListOf<String>()
@@ -357,93 +365,137 @@ class SetupViewModelTest {
             again.ui.first { it?.step == SetupStep.History }
             var left = false
             again.back { left = true }
-            again.ui.first { it?.step == null }
-            assertTrue(left && SetupStep.History in recorded().skipped)
+            record.data.first { SetupStep.History in it.skipped }
+            assertTrue(left)
         }
+
+    /** Setup finished with the sensor and the alerts skipped (home's banner: *Alerts not confirmed*). */
+    private suspend fun finishedWithTwoSkipped(): Set<SetupStep> {
+        roles.role.value = Role.Wearer
+        sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
+        val skipped = setOf(SetupStep.Sensor, SetupStep.Alerts)
+        record.update {
+            SetupRecord(
+                completed = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Identity, SetupStep.History),
+                skipped = skipped,
+            )
+        }
+        return skipped
+    }
 
     @Test
     fun `Finish setup walks every skipped step, alerts first, and Later keeps each on the card`() =
         runTest {
-            roles.role.value = Role.Wearer
-            sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
-            val skipped = setOf(SetupStep.Sensor, SetupStep.Alerts)
-            record.update {
-                SetupRecord(
-                    completed = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Identity, SetupStep.History),
-                    skipped = skipped,
-                )
-            }
+            val skipped = finishedWithTwoSkipped()
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
-            assertEquals(null, vm.ui.first { it != null }!!.step)
-            assertTrue(vm.reopenFirstUnfinished())
-            assertEquals(SetupStep.Alerts, vm.ui.first { it?.step != null }!!.step)
+            val first = vm.ui.first { it != null }!!
+            assertEquals(SetupStep.Alerts, first.step)
+            assertTrue(first.single && !first.canBack)
+            // shown alone, the step is still recorded as skipped: leaving now can't drop it from the card
+            assertEquals(skipped, recorded().skipped)
             vm.skip(SetupStep.Alerts)
-            vm.ui.first { it?.step == null }
-            assertTrue(vm.reopenFirstUnfinished())
-            assertEquals(SetupStep.Sensor, vm.ui.first { it?.step != null }!!.step)
-            // Back on a reopened step leaves it skipped and opens nothing else
+            assertEquals(SetupStep.Sensor, vm.ui.first { it?.step != SetupStep.Alerts }!!.step)
+            // Back on a step shown alone leaves it skipped and opens nothing else
             var left = false
             vm.back { left = true }
             assertTrue(left)
-            assertEquals(skipped, record.data.first { it.skipped == skipped }.skipped)
-            assertEquals(false, vm.reopenFirstUnfinished())
+            assertEquals(skipped, recorded().skipped)
         }
 
-    private inner class FakeRoles : RoleStore {
-        override val role = MutableStateFlow<Role?>(null)
+    @Test
+    fun `Finish setup resumes on the same step after a rotation or a process death, then moves on`() =
+        runTest {
+            finishedWithTwoSkipped()
+            val saved = SavedStateHandle()
+            val before = vm(saved = saved)
+            before.ui.launchIn(backgroundScope)
+            before.ui.first { it?.step == SetupStep.Alerts }
+            before.skip(SetupStep.Alerts)
+            before.ui.first { it?.step == SetupStep.Sensor }
 
-        /** What choosing a role would delete (the same for every role here). */
-        var loss: RoleLoss? = null
-
-        override suspend fun loss(role: Role): RoleLoss? = loss
-
-        override suspend fun set(role: Role) {
-            events += "role:$role"
-            this.role.value = role
-        }
-    }
-
-    /** Setup renders THE alert checklist (the monitor's `AndroidAlertReadiness`); starts with everything allowed. */
-    private class FakeReadiness : AlertReadinessSource {
-        override val readiness = MutableStateFlow(AlertReadiness.Ready)
-
-        override fun refresh() = Unit
-
-        override fun fix(requirement: AlertRequirement) = Unit
-
-        override fun answerUnlockedSound(answer: app.mauri.sukrara.core.model.UnlockedSound) = Unit
-    }
-
-    private class FakeAlerts : AlertSettingsAccess {
-        override val settings = MutableStateFlow(AlertSettings())
-
-        override suspend fun save(settings: AlertSettings) {
-            this.settings.value = settings
-        }
-    }
-
-    private class FakeHub : GlucoseHub {
-        override val state = MutableStateFlow(GlucoseState.Initial)
-
-        fun live(clock: FakeClock) {
-            state.value =
-                state.value.copy(latest = Reading(clock.now(), 120, null, SourceId.Libre3), source = SourceStatus.Live(clock.now()))
+            val after = vm(saved = saved.restored())
+            after.ui.launchIn(backgroundScope)
+            val u = after.ui.first { it != null }!!
+            assertEquals(SetupStep.Sensor, u.step)
+            assertTrue(u.single)
+            // Later on the last one: home (the alerts step, already shown in this visit, doesn't come back)
+            after.skip(SetupStep.Sensor)
+            assertEquals(null, after.ui.first { it?.step != SetupStep.Sensor }!!.step)
         }
 
-        override suspend fun ingest(
-            readings: List<Reading>,
-            from: SourceId,
-        ) = Unit
+    @Test
+    fun `opened from home with the walk left half-way, setup resumes the walk exactly there`() =
+        runTest {
+            roles.role.value = Role.Wearer
+            record.update { SetupRecord(completed = setOf(SetupStep.Welcome, SetupStep.Permissions), skipped = setOf(SetupStep.Sensor)) }
+            assertEquals(SetupCard.Resume(SetupStep.Alerts), module.card.first())
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            val u = vm.ui.first { it != null }!!
+            assertEquals(SetupStep.Alerts, u.step)
+            assertEquals(5, u.index)
+            assertTrue(!u.single && u.canBack)
+        }
 
-        override fun setSource(status: SourceStatus) = Unit
+    @Test
+    fun `Back on the walk's first step after the role leaves setup and keeps every step for the banner`() =
+        runTest {
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            vm.continueWelcome()
+            vm.ui.first { it?.step == SetupStep.Role }
+            vm.chooseRole(Role.Wearer)
+            val u = vm.ui.first { it?.step == SetupStep.Permissions }!!
+            assertFalse(u.canBack)
+            var left = false
+            vm.back { left = true }
+            assertTrue(left)
+            assertEquals(SetupRecord(completed = setOf(SetupStep.Welcome)), recorded())
+            assertEquals(SetupCard.Resume(SetupStep.Permissions), module.card.first())
+            // nothing pops up by itself meanwhile: history waits for its place at the end of the walk
+            assertFalse(module.historyDue.first())
+        }
 
-        override fun setSensor(sensor: SensorState) = Unit
+    @Test
+    fun `a step reached with Back is where setup resumes after a process death`() =
+        runTest {
+            roles.role.value = Role.Wearer
+            val saved = SavedStateHandle()
+            val before = vm(saved = saved)
+            before.ui.launchIn(backgroundScope)
+            before.ui.first { it?.step == SetupStep.Permissions }
+            before.completePermissions()
+            before.ui.first { it?.step == SetupStep.Sensor }
+            before.back {}
+            before.ui.first { it?.step == SetupStep.Permissions }
 
-        override fun setAlerts(alerts: AlertUiState) = Unit
+            val after = vm(saved = saved.restored())
+            after.ui.launchIn(backgroundScope)
+            assertEquals(SetupStep.Permissions, after.ui.first { it != null }!!.step)
+            // its answer is kept: Continue goes on to the first unanswered step
+            after.completePermissions()
+            assertEquals(SetupStep.Sensor, after.ui.first { it?.step != SetupStep.Permissions }!!.step)
+        }
 
-        override fun setLink(link: LinkState?) = Unit
-    }
+    @Test
+    fun `Settings' Set up sharing shows the identity step alone, and Back changes nothing`() =
+        runTest {
+            roles.role.value = Role.Wearer
+            // a walk left on the alert step: the identity step was never reached
+            val walk = SetupRecord(completed = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Sensor))
+            record.update { walk }
+            val vm = vm(startAt = SetupStep.Identity)
+            vm.ui.launchIn(backgroundScope)
+            val u = vm.ui.first { it != null }!!
+            assertEquals(SetupStep.Identity, u.step)
+            assertTrue(u.single)
+            var left = false
+            vm.back { left = true }
+            assertTrue(left)
+            assertEquals(walk, recorded())
+            assertEquals(SetupCard.Resume(SetupStep.Alerts), module.card.first())
+        }
 }
 
 private const val LINK = "https://sukrara.mauri.app/join#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"

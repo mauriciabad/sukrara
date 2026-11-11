@@ -546,7 +546,7 @@ class AppGraph(
             readinessSource = alerts.readiness,
             alertControls = alerts.controls,
             resume = { scope.launch { startMonitoring(StartReason.Resume) } },
-            nextSetupStep = combine(setup.finishItems, locales) { items, _ -> items.firstOrNull()?.label(app) },
+            nextSetupStep = combine(setup.card, locales) { card, _ -> card?.label(app) },
             refreshSetup = setup::refresh,
             widgetPlaced = {
                 widgets.presence.refresh()

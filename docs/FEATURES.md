@@ -239,8 +239,10 @@ follower mirrors the wearer's alerts), the limits line, *Open Sukrara*, and the 
 Android (`apps/android/feature/sharing` `setup/`): a calm ordered journey from install to home. The order is
 binding: **Welcome → Role → Permissions → Sensor → Alert thresholds → Your followers → Bring your history back → home**. "Step N of M" is announced by TalkBack; steps cross-fade with a spring (snaps with reduced
 motion); setup done gives a confirm haptic. Progress is kept in the typed store `setup` (`SetupMachine`, pure;
-`SetupMachineTest`), so setup resumes at the same step after a restart; the role lives in its own store (`role`), so a
-damaged setup file never asks for the role again or turns alerts off.
+`SetupMachineTest`): only what the person answered (each step done or skipped). Where setup is (a step reached with
+Back, the step shown alone, the Finish-setup steps already shown) is screen state saved with the screen, so a rotation,
+leaving with home / recents and a process death all resume exactly there (`SetupViewModelTest`, `SetupFlowTest`); the
+role lives in its own store (`role`), so a damaged setup file never asks for the role again or turns alerts off.
 
 - **Role**: *I wear the sensor* ("This phone reads your sensor and shares it") / *I follow someone* ("This phone shows
   someone else's glucose"), confirmed: "One role per install. Changing it later means reinstalling Sukrara." Choosing
@@ -274,15 +276,23 @@ damaged setup file never asks for the role again or turns alerts off.
   live reading from its own sensor (`RestoreGate`, re-checked just before restoring; `RestoreGateTest`). *Start fresh*
   is confirmed: "Your followers (and your Mac) will need a new invite. To use your old identity again later, restore
   it in Settings › Sharing › Backup › Replace this identity."
-- **Bring your history back** (wearer, last): Import history (below) offered once: *Bring it back* opens it, *Start
-  empty* skips; neither comes back on the Finish-setup card. Offered on its own at launch to a wearer who hasn't
-  answered it (setup finished before it existed, or an update replaced the database).
-- **Finish setup** (home's banner): names the first skipped step that still matters — *Allow what alerts
-  need*, *Alerts not confirmed*, *Connect your sensor*, *Restore your followers*, in that order; its action walks
-  every skipped step in that order, each alone (done or *Later* → the next one, then home; *Later* and Back keep the
-  step on the card); items drop out by themselves when the checklist is complete,
-  a reading arrives, the thresholds are confirmed (also in Settings › Alerts:
-  `alerts.thresholdsConfirmedAt`) or an identity exists. First launch (no role yet) opens setup on top of home.
+- **Bring your history back** (wearer, last): Import history (below) offered once: *Bring it back* opens it (in setup's
+  place: Back from Import history goes home), *Start empty* skips; neither comes back on the Finish-setup card. Offered
+  on its own at launch when it is a wearer's only step left (setup finished before it existed, or an update replaced
+  the database): once per launch (not again after a rotation or a restored process), never over setup itself and never
+  while the walk stopped at an earlier step (home's banner resumes the walk, which offers it last).
+- **Finish setup** (home's banner, `SetupMachine.card`): a walk left before its end (Back on the step after the role,
+  or the app closed half-way) comes first: *Next: <that step's title>* (*Let alerts reach you*, *Connect your sensor*,
+  *Check your alerts*, *Your followers*, *Bring your history back*) and *Continue* resumes the walk exactly there, then
+  on to its end (a follower's unanswered join step is left to home's own no-data reason, which opens it). Once the walk
+  is over it names the first skipped step that still matters — *Allow what alerts need*, *Alerts not confirmed*,
+  *Connect your sensor*, *Restore your followers*, in that order; its action walks every skipped step in that order,
+  each alone (done or *Later* → the next one, then home; *Later* and Back keep the step on the card). A step shown
+  alone stays recorded as it was until it is answered, so leaving it any way never drops it from the card. Items drop
+  out by themselves when the checklist is complete, a reading arrives, the thresholds are confirmed (also in Settings ›
+  Alerts: `alerts.thresholdsConfirmedAt`) or an identity exists. First launch (no role yet) opens setup on top of home;
+  once a role exists setup never opens by itself (only *Bring your history back* as above): the banner, Settings ›
+  Sharing's *Set up sharing* and a follower's join links are its entries.
 
 **States and exits**: every step → *Back* (not into the role once chosen) and its primary action; Permissions,
 Sensor, Alerts and Followers → *Skip* / *Later* (→ the Finish setup banner → reopens each skipped step → completes or
@@ -294,7 +304,13 @@ the code stays, fix and retry; never drops into Start fresh: needs password, wro
 unreachable, no backup, unreadable, another phone still sharing) / restored (followers count) → home; *Start fresh* → confirm
 / *Cancel*; identity unreadable → note + restore; another app sharing as you → the conflict content (below) / *Later*.
 History → *Bring it back* (Import history) / *Start empty* / Back (on its own: = *Start empty*).
-System back on the first step leaves setup (home shows "Not monitoring: setup incomplete" with *Set up*).
+System back on the first step leaves setup (home shows "Not monitoring: setup incomplete" with *Set up*); once the
+role is chosen, Back on the step after it leaves setup too, with nothing lost: home's *Finish setup* banner (*Next:
+<step>*, *Continue*, *Later* for a day) resumes the walk at that step. Sub-screens return to the step that opened
+them: *Set up sensor* (the new-sensor flow: its Back, *Cancel* or *Done*), *Export CSV first* (Back → the same
+dialog). Settings › Sharing's *Set up sharing* → *Your followers* alone → restored / started fresh → Settings ›
+Sharing; Back there changes nothing. Leaving with home or recents, a rotation or a process death → the same step on
+return.
 
 ## Following (Android)
 

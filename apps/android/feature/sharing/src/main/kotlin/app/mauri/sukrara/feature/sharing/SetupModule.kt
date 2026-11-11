@@ -14,8 +14,8 @@ import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
-import app.mauri.sukrara.feature.sharing.setup.FinishItem
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
+import app.mauri.sukrara.feature.sharing.setup.SetupCard
 import app.mauri.sukrara.feature.sharing.setup.SetupFacts
 import app.mauri.sukrara.feature.sharing.setup.SetupMachine
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
@@ -126,9 +126,9 @@ class SetupModule(
     /** Access requests put off with Later in the approve dialog (process memory). */
     val laterRequests = LaterRequests()
 
-    /** Import history still to offer on its own ([SetupMachine.historyDue]): the app opens that one step once. */
+    /** Import history still to offer on its own ([SetupMachine.historyDue]): the app opens that one step once per launch. */
     val historyDue: Flow<Boolean> by lazy {
-        combine(roles.role, setupStore.data) { r, record -> SetupMachine.historyDue(record, r) }.distinctUntilChanged()
+        progress.map { SetupMachine.historyDue(it.record, it.facts) }.distinctUntilChanged()
     }
 
     /** The database was replaced by an empty one (a version change): offer Import history again. */
@@ -139,8 +139,11 @@ class SetupModule(
         readiness.refresh()
     }
 
-    /** The home "Finish setup" card's items ([FinishSetupCard]); empty before a role and once nothing is left. */
-    val finishItems: Flow<List<FinishItem>> by lazy {
+    /**
+     * What the person answered with the facts it is read against: home's banner ([card]), the history step at launch
+     * ([historyDue]) and setup's own start (resume the walk, or walk the skipped steps) read this one flow.
+     */
+    val progress: Flow<SetupProgress> by lazy {
         combine(
             setupStore.data,
             roles.role,
@@ -154,7 +157,8 @@ class SetupModule(
             (share, follow),
             (confirmed, checklist),
             ->
-            val facts =
+            SetupProgress(
+                record,
                 SetupFacts(
                     role = role,
                     following = follow.following,
@@ -162,12 +166,21 @@ class SetupModule(
                     hasIdentity = share is OwnerShareState.Sharing || share is OwnerShareState.AnotherAppSharingAsYou,
                     alertsConfirmed = confirmed != null,
                     alertsReady = checklist.setupReady,
-                )
-            SetupMachine.finishItems(record, facts)
+                ),
+            )
         }
     }
+
+    /** The home "Finish setup" banner ([SetupMachine.card]); null before a role and once nothing is left. */
+    val card: Flow<SetupCard?> by lazy { progress.map { SetupMachine.card(it.record, it.facts) }.distinctUntilChanged() }
 
     private companion object {
         val THRESHOLDS_CONFIRMED_AT = SchemaSettings.text("alerts.thresholdsConfirmedAt", default = "")
     }
 }
+
+/** The setup record and the facts it is read against, at one moment ([SetupModule.progress]). */
+data class SetupProgress(
+    val record: SetupRecord,
+    val facts: SetupFacts,
+)
