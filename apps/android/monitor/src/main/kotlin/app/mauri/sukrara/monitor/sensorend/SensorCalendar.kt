@@ -18,7 +18,7 @@ import android.provider.CalendarContract.Events
 import android.util.Log
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.storage.StateStore
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.monitor.R
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
@@ -174,7 +174,7 @@ class SensorCalendar(
                     current.serial,
                     current.endEpoch,
                     app.getString(R.string.calendar_event_title),
-                    app.getString(R.string.calendar_event_description, current.serial, Clock.dateTime(current.startEpoch)),
+                    app.getString(R.string.calendar_event_description, current.serial, ClockText.dateTime(current.startEpoch)),
                 )
             val v =
                 ContentValues().apply {

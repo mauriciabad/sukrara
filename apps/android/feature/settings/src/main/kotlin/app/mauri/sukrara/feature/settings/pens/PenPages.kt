@@ -89,7 +89,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsHeader
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -146,7 +146,7 @@ internal fun penSummary(p: PenInfo): String =
 
         else -> {
             val kind = stringResource(if (p.kind == "long") R.string.st_pen_kind_long else R.string.st_pen_kind_rapid)
-            val line = stringResource(R.string.st_pen_row, kind, Clock.time(p.lastScan))
+            val line = stringResource(R.string.st_pen_row, kind, ClockText.time(p.lastScan))
             if (p.opened) line else line + " · " + stringResource(R.string.st_pen_review_hint)
         }
     }
@@ -354,16 +354,19 @@ fun PenPage(
                     if (pen.untested) Text(stringResource(R.string.st_pen_untested_tag), color = MaterialTheme.colorScheme.error)
                     Text(stringResource(R.string.st_pen_model, pen.model), style = MaterialTheme.typography.bodyMedium)
                     Text(stringResource(R.string.st_pen_serial, pen.serial), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(R.string.st_pen_started, Clock.dayTime(pen.since)), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.st_pen_started, ClockText.dayTime(pen.since)), style = MaterialTheme.typography.bodyMedium)
                     if (pen.lastScan > 0) {
                         Text(
-                            stringResource(R.string.st_pen_last_read, Clock.dayTime(pen.lastScan)),
+                            stringResource(R.string.st_pen_last_read, ClockText.dayTime(pen.lastScan)),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                     val back = pen.returningSince
                     if (back != null) {
-                        Text(stringResource(R.string.st_pen_returning, Clock.dayTime(back)), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.st_pen_returning, ClockText.dayTime(back)),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     } else if (pen.older > 0) {
                         Text(
                             pluralStringResource(R.plurals.st_pen_older, pen.older, pen.older),
@@ -401,7 +404,7 @@ fun PenPage(
                 NavigationRow(
                     stringResource(R.string.st_pen_review_row),
                     openReview,
-                    summary = pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, Clock.dayLabel(r.at)),
+                    summary = pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, ClockText.dayLabel(r.at)),
                     icon = DsR.drawable.ds_ic_history,
                 )
             }
@@ -550,10 +553,10 @@ private fun OfferCard(
     SettingsGroup {
         CardRow {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.st_pen_offer, units(o.units), Clock.time(o.t)), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.st_pen_offer, units(o.units), ClockText.time(o.t)), style = MaterialTheme.typography.bodyLarge)
                 match?.let {
                     Text(
-                        stringResource(R.string.st_pen_matches, units(it.units), Clock.time(it.t)),
+                        stringResource(R.string.st_pen_matches, units(it.units), ClockText.time(it.t)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -681,11 +684,11 @@ private fun ReviewPage(
                 CardRow {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, Clock.dayLabel(r.at)),
+                            pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, ClockText.dayLabel(r.at)),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            stringResource(R.string.st_pen_review_text, Clock.dayTime(r.since)),
+                            stringResource(R.string.st_pen_review_text, ClockText.dayTime(r.since)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -751,7 +754,7 @@ private fun dayTitle(
     when (daysAgo) {
         0L -> stringResource(R.string.st_pen_today)
         1L -> stringResource(R.string.st_pen_yesterday)
-        else -> Clock.dayLabel(now - daysAgo * 86400)
+        else -> ClockText.dayLabel(now - daysAgo * 86400)
     }
 
 @Composable
@@ -815,7 +818,7 @@ private fun SessionRow(
             }
         }.let { if (s.incomplete) stringResource(R.string.st_pen_h_incomplete, it) else it }
     val amount = units(if (s.status == PenSessionStatus.Priming) s.primed else s.units)
-    NavigationRow("${Clock.time(s.t)}  ·  $amount", onOpen, summary = summary, enabled = enabled)
+    NavigationRow("${ClockText.time(s.t)}  ·  $amount", onOpen, summary = summary, enabled = enabled)
 }
 
 /**
@@ -838,7 +841,7 @@ private fun EntrySheet(
         }
     }
     val entry = e ?: return
-    PenEntrySheet(entry, { Clock.time(it) }, onSave = { vm.correct(entry, it) }, onDismiss = onDismiss)
+    PenEntrySheet(entry, { ClockText.time(it) }, onSave = { vm.correct(entry, it) }, onDismiss = onDismiss)
 }
 
 /**
@@ -881,11 +884,11 @@ private fun LogSheet(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
             HorizontalDivider()
-            s.doses.forEachIndexed { i, d -> PenDoseRow(d, roles[i], { Clock.time(it) }, { roles[i] = it }) }
+            s.doses.forEachIndexed { i, d -> PenDoseRow(d, roles[i], { ClockText.time(it) }, { roles[i] = it }) }
             HorizontalDivider()
             match?.let {
                 Text(
-                    stringResource(R.string.st_pen_matches, units(it.units), Clock.time(it.t)),
+                    stringResource(R.string.st_pen_matches, units(it.units), ClockText.time(it.t)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -896,7 +899,7 @@ private fun LogSheet(
                     FilledTonalButton(onClick = {
                         vm.join(doses(), j.id)
                         onDismiss()
-                    }) { Text(stringResource(R.string.st_pen_add_to_entry, Clock.time(j.t))) }
+                    }) { Text(stringResource(R.string.st_pen_add_to_entry, ClockText.time(j.t))) }
                 }
                 Button(enabled = inj.isNotEmpty(), onClick = {
                     vm.logDoses(doses())
@@ -936,7 +939,7 @@ private fun QuestionSheet(
         onDismiss()
     }
     if (choosing) {
-        PenSameSheet(q, { Clock.time(it) }, onAnswer = answer, onDismiss = onDismiss)
+        PenSameSheet(q, { ClockText.time(it) }, onAnswer = answer, onDismiss = onDismiss)
         return
     }
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -948,7 +951,7 @@ private fun QuestionSheet(
                 stringResource(if (q.same) R.string.st_pen_h_same else R.string.st_pen_h_question),
                 style = MaterialTheme.typography.headlineSmall,
             )
-            val line = penQuestionLine(q) { Clock.time(it) }
+            val line = penQuestionLine(q) { ClockText.time(it) }
             val spoken = penSpoken(line)
             Text(
                 line,
@@ -957,7 +960,7 @@ private fun QuestionSheet(
                 modifier = Modifier.semantics { contentDescription = spoken },
             )
             HorizontalDivider()
-            q.doses.forEach { d -> PenDoseRow(d, d.primed, { Clock.time(it) }, null) }
+            q.doses.forEach { d -> PenDoseRow(d, d.primed, { ClockText.time(it) }, null) }
             HorizontalDivider()
             PenQuestionAnswers(q, { _, a -> answer(a) }, { choosing = true })
         }

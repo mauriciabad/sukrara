@@ -22,7 +22,7 @@ import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.AppActivities
@@ -159,7 +159,7 @@ class AlertNotifier(
             // alerts (GROUP_ALERT_CHILDREN); a ringing alert keeps GROUP_ALERT_ALL and rings as a child
             .apply { if (silent) setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY) }
 
-    private fun clockTime(epochS: Long): String = Clock.time(epochS)
+    private fun clockTime(epochS: Long): String = ClockText.time(epochS)
 
     /**
      * *Mute…* / *Change time*: a direct reply with the lengths as one-tap chips, shortest first (and a typed one); each

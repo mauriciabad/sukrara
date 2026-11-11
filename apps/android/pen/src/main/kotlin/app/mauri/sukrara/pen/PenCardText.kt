@@ -4,12 +4,12 @@
 package app.mauri.sukrara.pen
 
 import android.content.Context
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PenEngine
 import app.mauri.sukrara.pen.engine.PenEntry
 import app.mauri.sukrara.pen.engine.Question
 import java.util.Locale
-import app.mauri.sukrara.graph.Clock as ClockText
 
 /** What the read card (and the notifications) offer. */
 sealed interface PenAction {

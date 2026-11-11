@@ -33,7 +33,7 @@ import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.graph.CardLayout
 import app.mauri.sukrara.graph.CardSurface
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseGraph
 import app.mauri.sukrara.graph.GraphConfig
@@ -95,14 +95,14 @@ class PanelScrollTest {
     @Before fun setUp() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
         Locale.setDefault(Locale.US)
-        Clock.hour24Source = { true }
+        ClockText.hour24Source = { true }
         GlucoseCard.observer = { l -> if (l.surface == CardSurface.APP_PANEL) synchronized(captured) { captured += l } }
         compose.setContent { SukraraTheme(dark = false, dynamic = false) { panel?.invoke() } }
     }
 
     @After fun tearDown() {
         GlucoseCard.observer = null
-        Clock.hour24Source = null
+        ClockText.hour24Source = null
         TimeZone.setDefault(savedZone)
         Locale.setDefault(savedLocale)
     }

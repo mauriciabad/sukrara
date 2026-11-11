@@ -33,13 +33,13 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
+import app.mauri.sukrara.graph.ClockText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
-import app.mauri.sukrara.graph.Clock as ClockText
 
 /**
  * A follower's *Settings from* (null [state] = this phone isn't a follower: nothing is offered). [choose] stores the

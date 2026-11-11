@@ -61,7 +61,7 @@ class CardLayoutTest {
 
     @After
     fun tearDown() {
-        Clock.hour24Source = null
+        ClockText.hour24Source = null
         TimeZone.setDefault(savedZone)
         Locale.setDefault(savedLocale)
     }
@@ -353,7 +353,7 @@ class CardLayoutTest {
         val out = ArrayList<Render>()
         val scenes = scenes()
         for ((sid, cfg, h24) in settings()) {
-            Clock.hour24Source = { h24 }
+            ClockText.hour24Source = { h24 }
             for (sc in scenes) {
                 val model =
                     CardModel(

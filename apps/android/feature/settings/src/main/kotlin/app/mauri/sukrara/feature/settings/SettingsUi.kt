@@ -37,7 +37,7 @@ import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.graph.CardWords
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.settings.NumberSpec
 import java.time.Instant
 import java.time.ZoneId
@@ -247,7 +247,7 @@ fun packName(pack: String): String =
 fun clockTime(
     at: Instant,
     zone: ZoneId,
-): String = Clock.time(at.epochSecond, zone = zone)
+): String = ClockText.time(at.epochSecond, zone = zone)
 
 /** Opens a web page in the browser. */
 fun Context.openUrl(url: String) {

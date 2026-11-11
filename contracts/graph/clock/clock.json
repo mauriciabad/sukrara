@@ -1,5 +1,5 @@
 {
- "about": "Clock times in the phone's / Mac's 12- or 24-hour setting (not the locale's default) and the graph's hour labels, shared by Android (GraphFixtureTest.clock, graph/Clock.kt) and Mac (-graphselftest, Clock in SukraraGraph.swift). Format: ../README.md.",
+ "about": "Clock times in the phone's / Mac's 12- or 24-hour setting (not the locale's default) and the graph's hour labels, shared by Android (GraphFixtureTest.clock, graph/ClockText.kt) and Mac (-graphselftest, Clock in SukraraGraph.swift). Format: ../README.md.",
  "cases": [
   {"name": "en-US, 24 h set: 21:08", "locale": "en-US", "minute": 1268, "hour24": true, "expect": {"time": "21:08", "axis": "21:00"}},
   {"name": "en-US, 12 h (its default)", "locale": "en-US", "minute": 1268, "hour24": false, "expect": {"time": "9:08 PM", "axis": "9 PM"}},

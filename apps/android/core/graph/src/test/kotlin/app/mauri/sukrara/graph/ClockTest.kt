@@ -28,8 +28,8 @@ class ClockTest {
                 val m = c["minute"].long()!!.toInt()
                 val h24 = c["hour24"].bool()!!
                 val x = c["expect"]!!.jsonObject
-                val time = norm(Clock.minuteOfDay(m, h24, locale))
-                val axis = norm(Clock.hourLabel(m / 60, h24, locale))
+                val time = norm(ClockText.minuteOfDay(m, h24, locale))
+                val axis = norm(ClockText.hourLabel(m / 60, h24, locale))
                 if (time == x["time"].str() && axis == x["axis"].str()) {
                     null
                 } else {
@@ -42,11 +42,11 @@ class ClockTest {
     @Test fun `time text today, this week, before`() {
         val now = 1_800_000_000L // Friday 15 Jan 2027, 08:00 UTC
         val utc = ZoneOffset.UTC
-        Clock.hour24Source = { true }
+        ClockText.hour24Source = { true }
         try {
             check(now, utc)
         } finally {
-            Clock.hour24Source = null
+            ClockText.hour24Source = null
         }
     }
 

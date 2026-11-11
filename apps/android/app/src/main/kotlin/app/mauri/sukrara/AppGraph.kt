@@ -46,6 +46,7 @@ import app.mauri.sukrara.feature.treatments.DialogPen
 import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
 import app.mauri.sukrara.feature.treatments.TreatmentDraft
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.integrations.CurrentSensor
@@ -124,7 +125,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
-import app.mauri.sukrara.graph.Clock as ClockText
 
 /**
  * The app's object graph (manual DI, docs/ARCHITECTURE.md §Android DI, apps/android/README.md "DI").

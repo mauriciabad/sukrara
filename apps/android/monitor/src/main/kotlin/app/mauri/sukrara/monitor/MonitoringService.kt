@@ -15,7 +15,7 @@ import android.content.res.Configuration
 import android.util.Log
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.ServiceState
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.monitor.notify.CardFrame
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
@@ -168,7 +168,14 @@ class MonitoringService : Service() {
                 chip = inputs.chip,
                 numberIcon = inputs.numberIcon,
                 cardKey =
-                    listOf(now.epochSecond / 60, inputs.treatments, inputs.config, dark, Clock.signature(), state.alerts.treatmentQuiet),
+                    listOf(
+                        now.epochSecond / 60,
+                        inputs.treatments,
+                        inputs.config,
+                        dark,
+                        ClockText.signature(),
+                        state.alerts.treatmentQuiet,
+                    ),
                 sharing = inputs.sharing,
                 bands = inputs.config.bands,
                 unit = inputs.config.unit,

@@ -11,7 +11,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import app.mauri.sukrara.core.model.NavTargets
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.monitor.AlertCheckReceiver
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.AppActivities
@@ -51,7 +51,7 @@ class AndroidSensorEndPresenter(
         text: ReminderText,
     ) {
         val title =
-            if (text == ReminderText.TONIGHT) ctx.getString(R.string.sensor_end_tonight, Clock.time(end)) else endsText(end, now)
+            if (text == ReminderText.TONIGHT) ctx.getString(R.string.sensor_end_tonight, ClockText.time(end)) else endsText(end, now)
         val body =
             when (text) {
                 ReminderText.ENDS -> R.string.sensor_end_reminder_text
@@ -80,7 +80,7 @@ class AndroidSensorEndPresenter(
         live(
             SensorNotice.COUNTDOWN,
             listOf(end, bar / 10, promote),
-            ctx.getString(R.string.sensor_countdown_title, Clock.time(end)),
+            ctx.getString(R.string.sensor_countdown_title, ClockText.time(end)),
             ctx.getString(R.string.sensor_countdown_text),
             until = end,
             perMille = bar,
@@ -113,7 +113,7 @@ class AndroidSensorEndPresenter(
                 SensorNotice.WARMUP,
                 listOf(false, warmupEnd, bar / 20),
                 ctx.getString(R.string.sensor_warmup_title),
-                ctx.getString(R.string.sensor_warmup_text, Clock.time(warmupEnd)),
+                ctx.getString(R.string.sensor_warmup_text, ClockText.time(warmupEnd)),
                 until = warmupEnd,
                 perMille = bar,
                 promote = true,
@@ -163,7 +163,7 @@ class AndroidSensorEndPresenter(
         now: Long,
     ): String {
         val zone = ZoneId.systemDefault()
-        val at = Clock.time(end)
+        val at = ClockText.time(end)
         val locale = ctx.resources.configuration.locales[0]
         return when (val d = SensorEndPlan.dayOffset(end, now, zone)) {
             0L -> {

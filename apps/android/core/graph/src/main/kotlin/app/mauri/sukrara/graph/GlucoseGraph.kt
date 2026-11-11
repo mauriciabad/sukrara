@@ -495,7 +495,14 @@ object GlucoseGraph {
             if (gx > left + sideW * 0.6f) {
                 if (st.gridHours > 0) cv.drawLine(gx, top, gx, plotBottom, grid)
                 if (st.axisLabels) {
-                    val s = if (step >= 24) Clock.dayLabel(cal.timeInMillis / 1000) else Clock.hourLabel(cal.get(Calendar.HOUR_OF_DAY))
+                    val s =
+                        if (step >=
+                            24
+                        ) {
+                            ClockText.dayLabel(cal.timeInMillis / 1000)
+                        } else {
+                            ClockText.hourLabel(cal.get(Calendar.HOUR_OF_DAY))
+                        }
                     val tw = text.measureText(s)
                     val lx = (gx - tw / 2).coerceIn(left, right - tw)
                     // a label squeezed against its neighbour is left out; a treatment label wins

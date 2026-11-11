@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingHistory
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.stats.MetricsCache
@@ -32,7 +33,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.util.Locale
-import app.mauri.sukrara.graph.Clock as GraphClock
 
 /** Everything a widget's picture is drawn from, at [now]; [dark] = the night palette. */
 data class WidgetFrame(
@@ -154,7 +154,7 @@ class WidgetUpdater(
     }
 
     /**
-     * What a picture depends on: equal keys draw the same picture. [clock] = [GraphClock.signature] (12/24-hour, zone)
+     * What a picture depends on: equal keys draw the same picture. [clock] = [ClockText.signature] (12/24-hour, zone)
      * and [locale] the language every time and word is written in.
      */
     internal data class DrawKey(
@@ -169,7 +169,7 @@ class WidgetUpdater(
                 inputs: WidgetInputs,
                 now: Instant,
                 dark: Boolean,
-                clock: String = GraphClock.signature(),
+                clock: String = ClockText.signature(),
                 locale: Locale = Locale.getDefault(),
             ): DrawKey {
                 // the next step's time is constant within one step, so it identifies the step the reading is in

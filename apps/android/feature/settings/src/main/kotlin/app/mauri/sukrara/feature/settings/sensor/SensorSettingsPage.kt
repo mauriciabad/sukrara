@@ -51,12 +51,12 @@ import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.StateStrip
 import app.mauri.sukrara.feature.settings.TapsBlockedCard
 import app.mauri.sukrara.graph.CardWords
+import app.mauri.sukrara.graph.ClockText
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import app.mauri.sukrara.core.designsystem.R as DsR
-import app.mauri.sukrara.graph.Clock as ClockText
 
 /** Where the page's buttons lead: the sensor feature's new-sensor flow and the LibreView account screen. */
 class SensorSettingsActions(

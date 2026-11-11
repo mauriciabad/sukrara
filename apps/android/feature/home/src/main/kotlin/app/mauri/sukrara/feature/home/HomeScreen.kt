@@ -109,7 +109,7 @@ import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardWords
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.StatusBadge
 import app.mauri.sukrara.graph.TreatmentMarks
@@ -314,7 +314,7 @@ fun HomeContent(
     pen?.let { p ->
         PenEntrySheet(
             p.entry,
-            { Clock.time(it) },
+            { ClockText.time(it) },
             onSave = if (p.editable) callbacks.pen.save else null,
             onDismiss = callbacks.pen.close,
             onDelete = if (p.deletable) callbacks.pen.delete else null,
@@ -348,7 +348,7 @@ private fun HomeColumn(
         // glucose first: the card (or, before any reading, why there is none) is always at the top
         GlucoseSection(state, callbacks, safetyBanner, viewport, onMuteAll)
         // a pen dose waiting to be named sits right under the card (never above it: glucose stays first)
-        PenQuestionCard(penQuestions, { Clock.time(it) }, callbacks.pen.answer, Modifier.padding(horizontal = 16.dp))
+        PenQuestionCard(penQuestions, { ClockText.time(it) }, callbacks.pen.answer, Modifier.padding(horizontal = 16.dp))
         BannerSlot(infoBanner)
         MuteControl(state, callbacks.onAlert, onMuteAll)
         NightLine(state, callbacks.onAction)
@@ -1334,4 +1334,4 @@ private fun sinceTime(
 }
 
 /** The time of day in the phone's 12/24-hour setting (the renderer's one clock formatter). */
-private fun clockTime(t: Instant): String = Clock.time(t.epochSecond)
+private fun clockTime(t: Instant): String = ClockText.time(t.epochSecond)

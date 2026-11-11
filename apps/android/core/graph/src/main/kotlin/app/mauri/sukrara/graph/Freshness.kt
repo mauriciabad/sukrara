@@ -196,7 +196,7 @@ enum class Freshness(
             zone: ZoneId = ZoneId.systemDefault(),
         ): String {
             val at = Instant.ofEpochSecond(t).atZone(zone)
-            val time = Clock.time(t, locale = locale, zone = zone)
+            val time = ClockText.time(t, locale = locale, zone = zone)
             return when (timeKind(t, nowS, zone)) {
                 TimeKind.TIME -> time
                 TimeKind.DAY -> at.dayOfWeek.getDisplayName(TextStyle.SHORT, locale) + " " + time

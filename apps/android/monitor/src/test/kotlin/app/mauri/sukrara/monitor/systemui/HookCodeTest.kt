@@ -28,7 +28,7 @@ class HookCodeTest {
             "$systemUi/SlotIcons.kt",
             "$systemUi/TintFilter.kt",
             "$systemUi/LockWidgetHost.kt",
-            "$graph/Clock.kt",
+            "$graph/ClockText.kt",
             "$graph/Freshness.kt",
             "$graph/GlucoseCard.kt",
             "$graph/ValueGlyphs.kt",

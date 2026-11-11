@@ -53,7 +53,7 @@ import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SchemaPrefs
 import app.mauri.sukrara.feature.settings.SettingsPage
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -144,7 +144,7 @@ fun SensorEndContent(
             c.reminders.forEachIndexed { i, r ->
                 ValueRow(
                     reminderDays(r.daysBefore),
-                    Clock.minuteOfDay(r.minuteOfDay),
+                    ClockText.minuteOfDay(r.minuteOfDay),
                     { editing = i },
                     icon = DsR.drawable.ds_ic_calendar_month,
                 )
@@ -169,19 +169,19 @@ fun SensorEndContent(
                 stringResource(R.string.st_sensorend_evening),
                 c.evening,
                 { v -> actions.change { it.copy(evening = v) } },
-                summary = stringResource(R.string.st_sensorend_evening_summary, Clock.minuteOfDay(evening)),
+                summary = stringResource(R.string.st_sensorend_evening_summary, ClockText.minuteOfDay(evening)),
                 icon = DsR.drawable.ds_ic_bedtime,
             )
             ValueRow(
                 stringResource(R.string.st_sensorend_bedtime),
-                Clock.minuteOfDay(c.nightStart),
+                ClockText.minuteOfDay(c.nightStart),
                 { pickingNight = true },
                 enabled = c.evening || c.endedRepeatHours > 0,
                 icon = DsR.drawable.ds_ic_bedtime,
             )
             ValueRow(
                 stringResource(R.string.st_sensorend_wakeup),
-                Clock.minuteOfDay(c.nightEnd),
+                ClockText.minuteOfDay(c.nightEnd),
                 { pickingNight = false },
                 enabled = c.evening || c.endedRepeatHours > 0,
                 icon = DsR.drawable.ds_ic_sunny,
@@ -302,7 +302,7 @@ private fun currentSensor(
     when (sensor) {
         is SensorState.Active -> {
             sensor.endsAt?.let { end ->
-                val at = Clock.dateTime(end.epochSecond)
+                val at = ClockText.dateTime(end.epochSecond)
                 if (end <=
                     now
                 ) {
@@ -314,7 +314,7 @@ private fun currentSensor(
         }
 
         is SensorState.WarmingUp -> {
-            stringResource(R.string.st_sensorend_current_warming, Clock.time(sensor.readyAt.epochSecond))
+            stringResource(R.string.st_sensorend_current_warming, ClockText.time(sensor.readyAt.epochSecond))
         }
 
         SensorState.Ended -> {
@@ -339,7 +339,7 @@ internal fun TimeDialog(
     onClose: () -> Unit,
     onPick: (Int) -> Unit,
 ) {
-    val state = rememberTimePickerState(minute / 60, minute % 60, is24Hour = Clock.hour24)
+    val state = rememberTimePickerState(minute / 60, minute % 60, is24Hour = ClockText.hour24)
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(title) },
@@ -387,7 +387,7 @@ private fun ReminderDialog(
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 Column(Modifier.fillMaxWidth().clickable(role = Role.Button) { picking = true }.padding(vertical = 8.dp)) {
                     Text(stringResource(R.string.st_sensorend_time), style = MaterialTheme.typography.bodyLarge)
-                    Text(Clock.minuteOfDay(minute), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(ClockText.minuteOfDay(minute), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },

@@ -45,14 +45,14 @@ class FreshnessFixtureTest {
             }
         assertTrue(fails.joinToString("\n"), fails.isEmpty())
         // and the words: 07:14 this morning is "Fri 07:14" from 19:14 on, as yesterday's 23:00 is "Thu 23:00"
-        Clock.hour24Source = { true }
+        ClockText.hour24Source = { true }
         try {
             val morning = now - (12 * 3600 + 46 * 60)
             assertEquals("07:14", Freshness.timeText(morning, morning + 12 * 3600, java.util.Locale.UK, utc))
             assertEquals("Fri 07:14", Freshness.timeText(morning, now, java.util.Locale.UK, utc))
             assertEquals("Thu 23:00", Freshness.timeText(now - 21 * 3600, now, java.util.Locale.UK, utc))
         } finally {
-            Clock.hour24Source = null
+            ClockText.hour24Source = null
         }
     }
 

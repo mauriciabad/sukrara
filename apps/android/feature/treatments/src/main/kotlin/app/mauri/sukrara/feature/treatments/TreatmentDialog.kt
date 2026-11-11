@@ -82,7 +82,7 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.graph.CardWords
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -358,7 +358,7 @@ private fun DraftRow(
         val shown = last ?: return@Reveal
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("treatment-draft")) {
             Text(
-                stringResource(R.string.treatment_draft_line, Clock.time(shown.keptAt.epochSecond, zone = zone)),
+                stringResource(R.string.treatment_draft_line, ClockText.time(shown.keptAt.epochSecond, zone = zone)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
@@ -439,11 +439,11 @@ private fun whenLabel(
         }
 
         at.atZone(zone).toLocalDate() == now.atZone(zone).toLocalDate() -> {
-            stringResource(R.string.treatment_at, Clock.time(at.epochSecond, zone = zone))
+            stringResource(R.string.treatment_at, ClockText.time(at.epochSecond, zone = zone))
         }
 
         else -> {
-            stringResource(R.string.treatment_yesterday, Clock.time(at.epochSecond, zone = zone))
+            stringResource(R.string.treatment_yesterday, ClockText.time(at.epochSecond, zone = zone))
         }
     }
 }
@@ -631,7 +631,7 @@ private fun WhenDialog(
     onDone: () -> Unit,
 ) {
     val initial = (form.at ?: now()).atZone(zone).toLocalTime()
-    val state = rememberTimePickerState(initial.hour, initial.minute, Clock.hour24)
+    val state = rememberTimePickerState(initial.hour, initial.minute, ClockText.hour24)
     var relative by rememberSaveable { mutableStateOf(form.ago != null) }
     var minutes by rememberSaveable { mutableStateOf(form.ago?.toString().orEmpty()) }
     val parsed = TreatmentForm.agoMinutes(minutes)

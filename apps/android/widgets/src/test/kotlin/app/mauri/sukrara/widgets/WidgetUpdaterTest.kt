@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.core.testing.FakeClock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GraphConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +31,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
-import app.mauri.sukrara.graph.Clock as GraphClock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WidgetUpdaterTest {
@@ -151,13 +151,13 @@ class WidgetUpdaterTest {
         val inputs = WidgetInputs(glucose.value, emptyList(), GraphConfig(), WidgetPlacements())
         val zone = TimeZone.getDefault()
         val locale = Locale.getDefault()
-        val source = GraphClock.hour24Source
+        val source = ClockText.hour24Source
         try {
             TimeZone.setDefault(TimeZone.getTimeZone("Europe/Madrid"))
-            GraphClock.hour24Source = { true }
+            ClockText.hour24Source = { true }
             val h24 = WidgetUpdater.DrawKey.of(inputs, t0, false)
             assertEquals(h24, WidgetUpdater.DrawKey.of(inputs, t0, false))
-            GraphClock.hour24Source = { false }
+            ClockText.hour24Source = { false }
             val h12 = WidgetUpdater.DrawKey.of(inputs, t0, false)
             assertNotEquals("12/24-hour", h24, h12)
             TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"))
@@ -168,26 +168,26 @@ class WidgetUpdaterTest {
         } finally {
             TimeZone.setDefault(zone)
             Locale.setDefault(locale)
-            GraphClock.hour24Source = source
+            ClockText.hour24Source = source
         }
     }
 
     @Test
     fun `a tick after a 12-24-hour change redraws at once`() =
         runTest {
-            val source = GraphClock.hour24Source
+            val source = ClockText.hour24Source
             try {
-                GraphClock.hour24Source = { true }
+                ClockText.hour24Source = { true }
                 updater()
                 ticks.emit(Unit)
                 runCurrent()
                 assertEquals("nothing changed", 1, redraws)
-                GraphClock.hour24Source = { false }
+                ClockText.hour24Source = { false }
                 ticks.emit(Unit)
                 runCurrent()
                 assertEquals(2, redraws)
             } finally {
-                GraphClock.hour24Source = source
+                ClockText.hour24Source = source
             }
         }
 

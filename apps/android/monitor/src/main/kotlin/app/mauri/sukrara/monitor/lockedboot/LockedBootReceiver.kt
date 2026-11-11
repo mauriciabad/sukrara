@@ -16,7 +16,7 @@ import androidx.annotation.StringRes
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.data.userUnlocked
 import app.mauri.sukrara.core.model.SystemClock
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.monitor.ALERT_CHECK_BUDGET_MS
 import app.mauri.sukrara.monitor.AlertsHost
 import app.mauri.sukrara.monitor.MonitorHost
@@ -163,7 +163,7 @@ class AndroidLockedBootSurface(
     }
 
     override fun ring(plan: LockedBootPlan) {
-        val since = plan.lastReadingAt?.let { Clock.time(it) }
+        val since = plan.lastReadingAt?.let { ClockText.time(it) }
         val text =
             if (since == null) {
                 ctx.getString(R.string.monitor_locked_boot_text)

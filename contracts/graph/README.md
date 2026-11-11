@@ -81,7 +81,7 @@ start + 60 min). `expect`:
 ## Clock (`clock/*.json`)
 
 Clock times in the device's 12/24-hour setting rather than the locale's default, and the graph's hour labels
-(docs/FEATURES.md, "Languages"). Run by `GraphFixtureTest.clock` (Android, `graph/Clock.kt`) and `-graphselftest`
+(docs/FEATURES.md, "Languages"). Run by `GraphFixtureTest.clock` (Android, `graph/ClockText.kt`) and `-graphselftest`
 (Mac, `Clock`). A case: `name`; `locale` (BCP 47); `minute` (of the day, UTC); `hour24` (the setting). `expect`:
 `time` (the clock time, e.g. `9:08 PM`) and `axis` (the hour label, `21:00` / `9 PM`). U+00A0 and U+202F compare as
 plain spaces.

@@ -19,9 +19,10 @@ import java.util.Locale
  * app installs [hour24Source] (`DateFormat.is24HourFormat`) once at start — the ONE place that setting is read; every
  * surface formats through here with the default [hour24]. The explicit parameters are for the clock fixtures.
  * Mac: `Clock` in SukraraGraph. The pattern is the locale's short time with its hour field switched to the wanted
- * cycle (`h:mm a` ↔ `HH:mm`), like Android's `DateFormat.getTimeFormat` without Android's ICU.
+ * cycle (`h:mm a` ↔ `HH:mm`), like Android's `DateFormat.getTimeFormat` without Android's ICU. Named apart from
+ * `:core:model`'s `Clock` (the time source, "now") so neither shadows the other.
  */
-object Clock {
+object ClockText {
     /** The phone's 24-hour setting, installed by the app; null (JVM tests) = the locale's. */
     @Volatile var hour24Source: (() -> Boolean)? = null
 

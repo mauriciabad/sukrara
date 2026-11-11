@@ -58,7 +58,7 @@ import app.mauri.sukrara.feature.settings.pens.PenViewModel
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensUi
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.Pen
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -316,8 +316,8 @@ class PenShotsTest {
     }
 
     @Test fun sheets() {
-        scene("sheet-entry", screen = true) { PenEntrySheet(entry, { Clock.time(it) }, onSave = {}, onDismiss = {}, onDelete = {}) }
-        scene("sheet-same", screen = true) { PenSameSheet(same, { Clock.time(it) }, onAnswer = {}, onDismiss = {}) }
+        scene("sheet-entry", screen = true) { PenEntrySheet(entry, { ClockText.time(it) }, onSave = {}, onDismiss = {}, onDelete = {}) }
+        scene("sheet-same", screen = true) { PenSameSheet(same, { ClockText.time(it) }, onAnswer = {}, onDismiss = {}) }
     }
 
     private fun home(
@@ -352,7 +352,7 @@ class PenShotsTest {
     @Test fun homeQuestionAndBlockedTaps() {
         scene("home-question") { HomeContent(home(), HomeCallbacks(), penQuestions = listOf(doses, same)) }
         scene("home-question-same") {
-            Box(Modifier.padding(16.dp)) { PenQuestionCard(listOf(same), { Clock.time(it) }, onAnswer = { _, _ -> }) }
+            Box(Modifier.padding(16.dp)) { PenQuestionCard(listOf(same), { ClockText.time(it) }, onAnswer = { _, _ -> }) }
         }
         scene("home-taps-blocked") { HomeContent(home(taps = BlockedTaps(pen = true)), HomeCallbacks()) }
     }

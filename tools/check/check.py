@@ -46,8 +46,8 @@ Checks
               drawText / Text with sgv or mgdl, LO / HI literals): it shows the look's text (GlucoseCard.face), so a
               new surface that skips the renderer fails too. Data and event text (CSV, logs, an alert's reading) is
               listed in the registry's value_text_ok with the reason; a single line is marked '// card-ok: <why>'.
-  clock       every clock time goes through Clock with the one 24-hour setting (Android :core:graph Clock.kt, Mac
-              SukraraCore Clock.swift; no own hour24 flag or time formatter elsewhere)
+  clock       every clock time goes through THE clock formatter with the one 24-hour setting (Android :core:graph
+              ClockText.kt, Mac SukraraCore Clock.swift; no own hour24 flag or time formatter elsewhere)
   debug       debug code is compiled out of release builds: Android DebugReceiver / DebugFakes / DebugRelays / Synthetic* in
               src/debug (never named in src/main or src/release, manifests included); Mac debugsend / DebugFakes /
               Synthetic* only inside #if DEBUG or in the snapshot / test targets
@@ -745,7 +745,7 @@ def check_card(ch, rep):
 
 
 # Android: the card renderer owns clock formatting (brief 08); the time *source* interface is :core:model Clock
-CLOCK_KT = ANDROID + "core/graph/src/main/kotlin/app/mauri/sukrara/graph/Clock.kt"
+CLOCK_KT = ANDROID + "core/graph/src/main/kotlin/app/mauri/sukrara/graph/ClockText.kt"
 CLOCK_SWIFT = MAC_SOURCES + "SukraraCore/Clock.swift"
 # files that write times as data or log text (not the user's clock): path -> why. Add an entry with the reason.
 CLOCK_OK = {}
@@ -760,30 +760,33 @@ def app_code(p):
     return None
 
 
-LOCAL_HOUR24 = re.compile(r"(?<!Clock\.)\bhour24\b")
+# the formatter's own setting (Android ClockText.hour24, Mac Clock.hour24) is the one allowed read
+LOCAL_HOUR24 = re.compile(r"(?<!Clock\.)(?<!ClockText\.)\bhour24\b")
 KT_TIME_FMT = re.compile(r"is24HourFormat\(|getTimeFormat\(|ofLocalizedTime\(|SimpleDateFormat\(\s*\"[^\"]*[Hhk]{1,2}:mm")
 SWIFT_TIME_FMT = re.compile(r"time:\s*\.(shortened|standard|complete)|\.timeStyle|fromTemplate:\s*\"[^\"]*[Hhj]")
 
 
 def check_clock(ch, rep):
-    """clock: every clock time goes through Clock with the one 24-hour setting (the user, 2026-10-21: the value widget
-    wrote "08:59" beside the chart cards' "8:59 AM"). No own hour24 flag, is24HourFormat or time formatter outside
-    Clock (Android :core:graph Clock.kt, Mac SukraraCore Clock.swift; the app injects the system setting into Clock on a
-    line that names Clock.hour24Source). Whole tree; data / log formats are listed in CLOCK_OK."""
+    """clock: every clock time goes through THE clock formatter with the one 24-hour setting (the user, 2026-10-21: the
+    value widget wrote "08:59" beside the chart cards' "8:59 AM"). No own hour24 flag, is24HourFormat or time
+    formatter outside it (Android :core:graph ClockText.kt, Mac SukraraCore Clock.swift; the app injects the system
+    setting on a line that names ClockText.hour24Source / Clock.hour24Source). Whole tree; data / log formats are
+    listed in CLOCK_OK."""
     for p in tree_files(ch):
         lang = app_code(p)
         kt = lang == "kt"
         if not lang or p in (CLOCK_KT, CLOCK_SWIFT) or p in CLOCK_OK:
             continue
         for n, l in code_lines(ch.blob(p) or ""):
-            if "Clock.hour24Source" in l:
+            if "Clock.hour24Source" in l or "ClockText.hour24Source" in l:
                 continue
             if "yyyy" in l:  # ISO / wire timestamps are data, not the user's clock
                 continue
             bad = (KT_TIME_FMT if kt else SWIFT_TIME_FMT).search(l) or LOCAL_HOUR24.search(l)
             if bad:
-                rep.add("FAIL", "clock", "%s:%d formats a clock time or reads the 24-hour setting itself (%s). Use Clock\n"
-                        "(Clock.time / dateTime / minuteOfDay / hourLabel, Freshness.timeText) with its default setting."
+                rep.add("FAIL", "clock", "%s:%d formats a clock time or reads the 24-hour setting itself (%s). Use the clock\n"
+                        "formatter (Android ClockText, Mac Clock: time / dateTime / minuteOfDay / hourLabel, Freshness.timeText)\n"
+                        "with its default setting."
                         % (p, n, bad.group(0)))
 
 

@@ -24,7 +24,7 @@ import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.sensorend.TimeDialog
-import app.mauri.sukrara.graph.Clock
+import app.mauri.sukrara.graph.ClockText
 import kotlin.math.roundToInt
 import app.mauri.sukrara.core.designsystem.R as DsR
 
@@ -50,9 +50,9 @@ object NightEdits {
 fun nightSummary(ui: AlertsUi): String {
     val n = ui.settings.night
     if (!n.on) return stringResource(R.string.st_special_off)
-    val hours = stringResource(R.string.st_night_hours, Clock.minuteOfDay(n.fromMin), Clock.minuteOfDay(n.toMin))
+    val hours = stringResource(R.string.st_night_hours, ClockText.minuteOfDay(n.fromMin), ClockText.minuteOfDay(n.toMin))
     val until = ui.alerts.nightUntil ?: return hours
-    return stringResource(R.string.st_night_now, Clock.time(until.epochSecond))
+    return stringResource(R.string.st_night_now, ClockText.time(until.epochSecond))
 }
 
 /**
@@ -74,7 +74,7 @@ fun NightAlertsContent(
     SettingsPage(stringResource(R.string.st_night_title), onBack) {
         ui.alerts.nightUntil?.let { until ->
             StateStrip(
-                MuteText.night(until.epochSecond, words) { Clock.time(it) },
+                MuteText.night(until.epochSecond, words) { ClockText.time(it) },
                 listOf(stringResource(R.string.st_night_turn_off) to { edit(NightEdits.on(false)) }),
             )
         }
@@ -85,7 +85,7 @@ fun NightAlertsContent(
         SettingsGroup {
             ValueRow(
                 stringResource(R.string.st_night_from),
-                Clock.minuteOfDay(n.fromMin),
+                ClockText.minuteOfDay(n.fromMin),
                 { dialog = "from" },
                 icon = DsR.drawable.ds_ic_bedtime,
                 enabled = n.on,
@@ -93,7 +93,7 @@ fun NightAlertsContent(
             )
             ValueRow(
                 stringResource(R.string.st_night_to),
-                Clock.minuteOfDay(n.toMin),
+                ClockText.minuteOfDay(n.toMin),
                 { dialog = "to" },
                 icon = DsR.drawable.ds_ic_sunny,
                 enabled = n.on,

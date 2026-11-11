@@ -714,7 +714,7 @@ internal fun PenDuplicateDialog(
                 stringResource(
                     R.string.treatment_pen_duplicate_text,
                     amount,
-                    app.mauri.sukrara.graph.Clock
+                    app.mauri.sukrara.graph.ClockText
                         .time(pen.t),
                 ),
             )
