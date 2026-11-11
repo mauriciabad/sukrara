@@ -190,6 +190,27 @@ class AlertMachineTest {
         assertEquals(AlertStatus.Taken(AlertKind.LOW, TreatmentKind.CARBS, t0, t0 + 15 * 60), treated)
     }
 
+    /**
+     * #181: a Mute and carbs together name the one whose end the line counts down to: "muted after carbs · 25 min
+     * left" when the 25 min came from the Mute was the wrong reason.
+     */
+    @Test fun muteAndCarbsTogetherNameTheLongerOne() {
+        val m = machine()
+        m.start(null, null, null, t0)
+        m.handle(AlertInput.Reading(AlertReading(t0, 60)), t0)
+        m.handle(AlertInput.Treatments(Doses(carbs = listOf(t0 + 60))), t0 + 60)
+        // carbs quiet until t0 + 16 min; a 30 min Mute from t0 + 2 min ends later
+        m.handle(AlertInput.Mute(AlertKind.LOW, 30), t0 + 120)
+        val muted = AlertUiState.of(m.engine, m.settings, m.doses, t0 + 180).quiet.single()
+        assertEquals(QuietReason.NOTIFICATION, muted.reason)
+        assertEquals(t0 + 120 + 30 * 60, muted.until)
+        // a 5 min Mute ends before the carbs' window: the carbs are what's quieting it
+        m.handle(AlertInput.Mute(AlertKind.LOW, 5), t0 + 240)
+        val carbs = AlertUiState.of(m.engine, m.settings, m.doses, t0 + 300).quiet.single()
+        assertEquals(QuietReason.CARBS, carbs.reason)
+        assertEquals(t0 + 60 + 15 * 60, carbs.until)
+    }
+
     /** *Alert me anyway* lifts the treatment's quiet from the badge at once too: no *Taken* while the alert is up (#154). */
     @Test fun alertMeAnywayEndsTheBadgesQuiet() {
         val m = machine()

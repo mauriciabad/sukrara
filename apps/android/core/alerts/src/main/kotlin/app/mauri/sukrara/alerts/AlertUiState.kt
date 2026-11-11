@@ -71,11 +71,12 @@ data class AlertUiState(
                 val by = s.mutedBy(e.kind)
                 val muteEnd = snoozes[e.side]?.until?.takeIf { it > 0 }
                 val relax = snoozes[e.side]?.relaxMin ?: 0
+                val doseEnd = if (dose != null && by != null) dose + s.quietSeconds(by) else null
                 val (reason, until) =
                     when {
-                        dose != null && by != null -> {
-                            (if (by == TreatmentKind.RAPID) QuietReason.INSULIN else QuietReason.CARBS) to
-                                maxOf(dose + s.quietSeconds(by), muteEnd ?: 0)
+                        // a Mute and a treatment together: the line names the one it counts down to (#181)
+                        doseEnd != null && (muteEnd == null || doseEnd >= muteEnd) -> {
+                            (if (by == TreatmentKind.RAPID) QuietReason.INSULIN else QuietReason.CARBS) to doseEnd
                         }
 
                         muteEnd != null -> {

@@ -60,9 +60,12 @@ extension AlertEngine {
             let sideMute = snoozes.muteEnd(e.side, at: t)
             let relax = snoozes.relaxMin(e.side)
             var why: QuietReason?
-            if let by = s.quietedBy(e.kind), let tc = cover(e, e.kind, at: t) {
-                why = .treatment(
-                    by, at: tc, until: max(tc.addingTimeInterval(s.quietDuration(by)), sideMute ?? .distantPast))
+            let byTreatment = s.quietedBy(e.kind).flatMap { by in
+                cover(e, e.kind, at: t).map { (by, $0, $0.addingTimeInterval(s.quietDuration(by))) }
+            }
+            // a Mute and a treatment together: the line names the one it counts down to (#181)
+            if let (by, tc, end) = byTreatment, end >= sideMute ?? .distantPast {
+                why = .treatment(by, at: tc, until: end)
             } else if let sideMute {
                 why = .sideMuted(until: sideMute)
             } else if e.isOn, case .fallingBack = e.quiet {

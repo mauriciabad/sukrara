@@ -132,4 +132,18 @@ import Testing
         _ = e.handle(.unmuteAll, at: at(3))
         #expect(e.uiState(at: at(3)).muteAllUntil == nil)
     }
+
+    /// #181: a Mute and carbs together name the one whose end the line counts down to ("muted after carbs · 25 min
+    /// left" when the 25 min came from the Mute was the wrong reason).
+    @Test func muteAndCarbsTogetherNameTheLongerOne() {
+        var e = AlertEngine(context: AlertContext())
+        _ = e.handle(.reading(GlucoseSample(at: at(0), mgdl: 60, rate: 0)), at: at(0))
+        _ = e.handle(.treatments([AlertTreatment(kind: .carbs, at: at(1))]), at: at(1))
+        // carbs quiet until 16 min; a 30 min Mute from 2 min ends later
+        _ = e.handle(.mute(.low, minutes: 30), at: at(2))
+        #expect(e.uiState(at: at(3)).quiets.first?.quiet == .sideMuted(until: at(32)))
+        // a 5 min Mute ends before the carbs' window: the carbs are what's quieting it
+        _ = e.handle(.mute(.low, minutes: 5), at: at(4))
+        #expect(e.uiState(at: at(5)).quiets.first?.quiet == .treatment(.carbs, at: at(1), until: at(16)))
+    }
 }
