@@ -111,8 +111,10 @@ class AlertNotifier(
      * and without Mute / Remind actions, so it can't touch the alert runtime, replace a real alert or be taken for one.
      * No full-screen intent (the person is in the app). It goes away on a tap, a swipe or after [TEST_TIMEOUT_MS].
      * Same category rule as the real alert ([AlertCategory]), so it rings at full volume after another alert.
+     * [ownUnlockedSound] false: the checklist's unlocked test, which must show what Android does while the phone is
+     * unlocked, so Sukrara doesn't add its own sound (#183).
      */
-    fun showTest(kind: AlertKind, settings: AlertSettings) {
+    fun showTest(kind: AlertKind, settings: AlertSettings, ownUnlockedSound: Boolean = true) {
         val alarm = settings.rule(kind).alarm
         val n =
             base(kind, alarm, silent = false)
@@ -124,7 +126,7 @@ class AlertNotifier(
                 .build()
         post(NotificationIds.ALERT_TEST, n, AlertChannels.id(ctx, kind, alarm))
         SoundGap.shared.alertRang()
-        unlocked?.ringing(kind.group, AlertChannels.id(ctx, kind, alarm), alarm)
+        if (ownUnlockedSound) unlocked?.ringing(kind.group, AlertChannels.id(ctx, kind, alarm), alarm)
     }
 
     override fun clear(group: AlertGroup) {

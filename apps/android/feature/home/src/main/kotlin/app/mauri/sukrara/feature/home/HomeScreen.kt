@@ -75,6 +75,7 @@ import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
@@ -352,6 +353,7 @@ private fun HomeColumn(
         BannerSlot(infoBanner)
         MuteControl(state, callbacks.onAlert, onMuteAll)
         NightLine(state, callbacks.onAction)
+        DndLine(state, callbacks.onAction)
         Treatments(
             state,
             { callbacks.onAction(HomeAction.OpenClinicUpload) },
@@ -976,13 +978,22 @@ private fun requirementText(requirement: AlertRequirement): String =
     stringResource(
         when (requirement) {
             AlertRequirement.AlertDelivery -> R.string.req_delivery
+
             AlertRequirement.Notifications -> R.string.req_notifications
+
             AlertRequirement.FullScreenIntent -> R.string.req_full_screen
+
             AlertRequirement.ExactAlarm -> R.string.req_exact_alarm
+
             AlertRequirement.BatteryExemption -> R.string.req_battery
+
             AlertRequirement.AlertChannel -> R.string.req_channel
-            AlertRequirement.AlarmsInDnd -> R.string.req_dnd
+
+            // never missing (a choice, not a fault); DndLine says when a mode holds alerts back
+            AlertRequirement.DoNotDisturb -> DsR.string.ds_dnd_respected
+
             AlertRequirement.SoundWhenUnlocked -> R.string.req_unlocked
+
             AlertRequirement.Bluetooth -> R.string.req_bluetooth
         },
     )
@@ -1011,6 +1022,47 @@ private fun MuteControl(
                 )
                 Text(stringResource(R.string.home_mute_alerts))
             }
+        }
+    }
+}
+
+/**
+ * While a Do Not Disturb mode keeps some or all alerts from making a sound (#184): "Do Not Disturb is on: alerts make no
+ * sound" under the card, in the neutral colours (the person's mode, not a fault), with *Change*, which opens Settings ›
+ * Alert reliability (its *Do Not Disturb* item lets Sukrara through, or not). It goes when the mode ends or lets the
+ * alerts through. TalkBack reads the line, then *Change* as its button.
+ */
+@Composable
+private fun DndLine(
+    state: HomeUiState,
+    onAction: (HomeAction) -> Unit,
+) {
+    val held =
+        state.readiness
+            ?.dnd
+            ?.heldNow
+            ?.takeIf { state.glucose.role != null && it != DndStatus.Held.None }
+    // the last line shown stays while it hides (a plain holder: no state written during composition)
+    val last = remember { arrayOf(DndStatus.Held.All) }
+    if (held != null) last[0] = held
+    val shown = last[0]
+    Reveal(held != null) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("dnd-held"), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painterResource(DsR.drawable.ds_ic_notifications_off),
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp).size(18.dp),
+            )
+            Text(
+                stringResource(if (shown == DndStatus.Held.Some) R.string.home_dnd_held_some else R.string.home_dnd_held_all),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            val label = stringResource(R.string.home_dnd_change_label)
+            TextButton(
+                onClick = { onAction(HomeAction.OpenAlertReliability) },
+                modifier = Modifier.semantics { contentDescription = label },
+            ) { Text(stringResource(R.string.home_dnd_change)) }
         }
     }
 }

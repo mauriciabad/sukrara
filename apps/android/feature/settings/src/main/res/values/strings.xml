@@ -139,7 +139,7 @@
     <string name="st_reliability_ready">Everything alerts need is on</string>
     <string name="st_reliability_footer">The same checks as home\'s reliability row and the setup. Fix opens the Android screen for it; come back and the check updates.</string>
     <string name="st_reliability_test_title">Check it now</string>
-    <string name="st_reliability_test_summary">The real %1$s alert, marked as a test. Try it with Do Not Disturb on.</string>
+    <string name="st_reliability_test_summary">The real %1$s alert, marked as a test. Try it with a mode such as Bedtime on to hear what it lets through.</string>
     <string name="st_reliability_test_none">No alert is on: turn one on in Alerts to test it</string>
     <string name="st_req_ok">On</string>
     <string name="st_req_missing">Missing</string>

@@ -20,9 +20,11 @@ public final class SettingsModel {
     public let juggluco: JugglucoModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
-    /// Whether the alarms break through a Focus (Settings › Alerts, the setup's notification step); nil: this run
+    /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run
     /// posts no notifications.
     var timeSensitive: TimeSensitive?
+    /// Where Sukrara stands with a Focus (#184); nil: this run posts no notifications.
+    var focusStatus: FocusStatus? { timeSensitive.map { FocusStatus(through: throughFocus, timeSensitive: $0) } }
     /// The pane shown; the window reopens on it.
     public var pane: Pane {
         didSet { store.set(pane.rawValue, for: MacSettings.settingsPane) }
@@ -146,6 +148,12 @@ public final class SettingsModel {
     public var readAloudShortcut: Bool {
         get { _ = revision; return store.value(MacSettings.readAloudShortcut) }
         set { store.set(newValue, for: MacSettings.readAloudShortcut); revision += 1 }
+    }
+
+    /// Let Sukrara through a Focus (schema `alerts.throughFocus`); the notifier reads it at each post.
+    public var throughFocus: Bool {
+        get { _ = revision; return store.value(MacSettings.throughFocus) }
+        set { store.set(newValue, for: MacSettings.throughFocus); revision += 1 }
     }
 
     /// The shown value of a number setting: this Mac's in Custom, else the source's (`GraphSource`).

@@ -145,22 +145,6 @@
         }
       }
     },
-    "A Focus (Do Not Disturb, Sleep…) can hold back Sukrara's alarms on this Mac. Allow Sukrara in each Focus, and keep the phone as the alarm." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A Focus (Do Not Disturb, Sleep…) can hold back Sukrara's alarms on this Mac. Allow Sukrara in each Focus, and keep the phone as the alarm."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un modo de concentración (No molestar, Dormir…) puede retener las alarmas de Sukrara en este Mac. Permite Sukrara en cada modo y deja que el móvil sea la alarma."
-          }
-        }
-      }
-    },
     "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count." : {
       "localizations" : {
         "en" : {
@@ -253,22 +237,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustar %@"
-          }
-        }
-      }
-    },
-    "Alarms are Time Sensitive: they show and play during a Focus (Do Not Disturb, Sleep…) that allows Time Sensitive notifications." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alarms are Time Sensitive: they show and play during a Focus (Do Not Disturb, Sleep…) that allows Time Sensitive notifications."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las alarmas son notificaciones urgentes: se muestran y suenan durante un modo de concentración (No molestar, Dormir…) que permita las notificaciones urgentes."
           }
         }
       }
@@ -3917,22 +3885,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Umbral"
-          }
-        }
-      }
-    },
-    "Time Sensitive notifications are off for Sukrara, so a Focus (Do Not Disturb, Sleep…) can hold back its alarms. Turn them on in Sukrara's notification settings." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Time Sensitive notifications are off for Sukrara, so a Focus (Do Not Disturb, Sleep…) can hold back its alarms. Turn them on in Sukrara's notification settings."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las notificaciones urgentes de Sukrara están desactivadas, así que un modo de concentración (No molestar, Dormir…) puede retener sus alarmas. Actívalas en los ajustes de notificaciones de Sukrara."
           }
         }
       }
@@ -8637,6 +8589,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quitar la línea de %@"
+          }
+        }
+      }
+    },
+    "Sukrara alerts during a Focus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara alerts during a Focus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara avisa durante una concentración"
+          }
+        }
+      }
+    },
+    "Sukrara doesn't alert during a Focus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara doesn't alert during a Focus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara no avisa durante una concentración"
+          }
+        }
+      }
+    },
+    "While a Focus (Do Not Disturb, Sleep…) is on, macOS holds Sukrara's alerts back like any app's, unless you allow Sukrara in it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While a Focus (Do Not Disturb, Sleep…) is on, macOS holds Sukrara's alerts back like any app's, unless you allow Sukrara in it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mientras una concentración (No molestar, Dormir…) está activa, macOS retiene las alertas de Sukrara como las de cualquier app, salvo que permitas Sukrara en ella."
+          }
+        }
+      }
+    },
+    "Alerts that ring like an alarm are Time Sensitive: they come through every Focus that allows Time Sensitive notifications." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerts that ring like an alarm are Time Sensitive: they come through every Focus that allows Time Sensitive notifications."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas que suenan como una alarma son urgentes: pasan por cualquier concentración que permita notificaciones urgentes."
+          }
+        }
+      }
+    },
+    "Time Sensitive notifications are off for Sukrara, so a Focus still holds its alerts back. Turn them on in Sukrara's notification settings." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Sensitive notifications are off for Sukrara, so a Focus still holds its alerts back. Turn them on in Sukrara's notification settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las notificaciones urgentes de Sukrara están desactivadas, así que una concentración sigue reteniendo sus alertas. Actívalas en los ajustes de notificaciones de Sukrara."
+          }
+        }
+      }
+    },
+    "This build of Sukrara can't send Time Sensitive alerts. To get its alerts during a Focus, allow Sukrara in that Focus." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This build of Sukrara can't send Time Sensitive alerts. To get its alerts during a Focus, allow Sukrara in that Focus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta versión de Sukrara no puede enviar alertas urgentes. Para recibir sus alertas durante una concentración, permite Sukrara en ella."
+          }
+        }
+      }
+    },
+    "Let Sukrara Through" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let Sukrara Through"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejar pasar a Sukrara"
+          }
+        }
+      }
+    },
+    "Don't Let Sukrara Through" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't Let Sukrara Through"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No dejar pasar a Sukrara"
           }
         }
       }

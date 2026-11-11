@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.rows.CardRow
+import app.mauri.sukrara.designsystem.rows.DndChoice
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
@@ -28,14 +29,18 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * Alert reliability: the same checklist as home's row and the setup step, every item with its state
- * and, while missing, a Fix button that opens the system screen for it (a failed alert step: *Copy report*). The page
- * refreshes when it comes back. *Check it now* sends the real test alert ([TestAlert]; shown once [alerts] are read).
+ * and, while missing, a Fix button that opens the system screen for it (a failed alert step: *Copy report*). Two items
+ * carry their own controls: *Do Not Disturb* (never a fault: where Sukrara stands, and one button to change it, #184)
+ * and *Sound while the phone is unlocked* (a test alert and what it did, #183). The page refreshes when it comes back.
+ * *Check it now* sends the real test alert ([TestAlert]; shown once [alerts] are read).
  */
 @Composable
 internal fun ReliabilityContent(
     readiness: AlertReadiness,
     onFix: (AlertRequirement) -> Unit,
     onAnswerUnlockedSound: (UnlockedSound) -> Unit = {},
+    onTestUnlockedSound: () -> Boolean = { false },
+    onLetThroughDnd: (Boolean) -> Unit = {},
     alerts: AlertSettings? = null,
     playback: AlertPlayback = AlertPlayback.None,
     onBack: () -> Unit,
@@ -49,32 +54,42 @@ internal fun ReliabilityContent(
             // a failed alert step is a state of the moment, not a setting: listed only while it lasts
             for (requirement in AlertRequirement.entries.filter { it.inSetup || it in readiness.missing }) {
                 val missing = requirement in readiness.missing
+                // a choice has no OK / Missing: its statement says where it stands
                 val state =
-                    stringResource(
-                        when {
-                            !missing -> R.string.st_req_ok
-                            requirement == AlertRequirement.AlertDelivery -> R.string.st_req_failed
-                            else -> R.string.st_req_missing
-                        },
-                    )
+                    when {
+                        requirement == AlertRequirement.DoNotDisturb -> null
+                        !missing -> R.string.st_req_ok
+                        requirement == AlertRequirement.AlertDelivery -> R.string.st_req_failed
+                        else -> R.string.st_req_missing
+                    }
                 val titleText = stringResource(requirement.nameRes())
                 CardRow {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(titleText, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            state,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (missing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        )
+                        if (state != null) {
+                            Text(
+                                stringResource(state),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (missing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                     Text(
                         stringResource(requirement.whyRes()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (requirement == AlertRequirement.SoundWhenUnlocked) {
-                        // answered or not, the answer stays changeable here
-                        UnlockedSoundAnswer(readiness.unlockedSound, { onFix(requirement) }, onAnswerUnlockedSound)
+                    if (requirement == AlertRequirement.DoNotDisturb) {
+                        DndChoice(readiness.dnd, onLetThroughDnd)
+                    } else if (requirement == AlertRequirement.SoundWhenUnlocked) {
+                        // answered or not, the answer stays changeable here (test again, or the other answer)
+                        UnlockedSoundAnswer(
+                            readiness.unlockedSound,
+                            readiness.soundTest,
+                            onTestUnlockedSound,
+                            { onFix(requirement) },
+                            onAnswerUnlockedSound,
+                        )
                     } else if (missing && requirement == AlertRequirement.AlertDelivery) {
                         FilledTonalButton(onClick = copyReport) { Text(stringResource(DsR.string.ds_copy_report)) }
                     } else if (missing) {

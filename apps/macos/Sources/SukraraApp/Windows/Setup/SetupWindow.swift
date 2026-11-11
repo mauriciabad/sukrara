@@ -99,8 +99,8 @@ public struct SetupView: View {
                 case .notifications:
                     page(.notifications, L10n.t("Allow notifications")) {
                         Text(L10n.t("Alerts reach you as notifications, even when Sukrara is in the background."))
-                        if let state = model.settings.timeSensitive {
-                            TimeSensitiveNote(state: state).foregroundStyle(.secondary)
+                        if let status = model.settings.focusStatus {
+                            FocusChoice(status: status) { model.settings.throughFocus = $0 }
                         }
                     }
                 case .openAtLogin:

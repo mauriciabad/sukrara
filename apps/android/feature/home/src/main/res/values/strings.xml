@@ -64,9 +64,8 @@
     <string name="req_full_screen">Sukrara can\'t show alarms over the lock screen.</string>
     <string name="req_exact_alarm">Sukrara can\'t schedule exact alarms.</string>
     <string name="req_battery">Battery optimisation may stop Sukrara in the background.</string>
-    <string name="req_channel">The alert sound can\'t break through Do Not Disturb.</string>
-    <string name="req_dnd">Alarms can\'t break through a Do Not Disturb mode that silences them. Allow Sukrara Do Not Disturb access.</string>
-    <string name="req_unlocked">Android may only vibrate for alerts while the phone is unlocked. Check it once.</string>
+    <string name="req_channel">An alert category is silenced in Android\'s settings.</string>
+    <string name="req_unlocked">Check once that alerts make a sound while the phone is unlocked: send a test alert.</string>
     <string name="req_bluetooth">Bluetooth or the nearby devices permission is off.</string>
     <string name="banner_data_title">Some saved data was damaged</string>
     <plurals name="banner_data_text">
@@ -172,6 +171,10 @@
     <string name="home_quiet_side">%1$s alerts</string>
     <string name="home_mute_alerts">Mute alerts</string>
     <string name="home_night_change">Change</string>
+    <string name="home_dnd_held_all">Do Not Disturb is on: alerts make no sound</string>
+    <string name="home_dnd_held_some">Do Not Disturb is on: some alerts make no sound</string>
+    <string name="home_dnd_change">Change</string>
+    <string name="home_dnd_change_label">Change whether Sukrara alerts in Do Not Disturb</string>
     <string name="home_quiet_all">All alerts</string>
     <string name="home_quiet_taken">Quiet after your treatment, so they don\'t ring while it works.</string>
     <string name="home_quiet_muted">You muted them on this phone.</string>

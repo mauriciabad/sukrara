@@ -262,6 +262,10 @@ class SetupViewModel(
 
     fun readinessAnswerUnlocked(answer: app.mauri.sukrara.core.model.UnlockedSound) = m.readiness.answerUnlockedSound(answer)
 
+    fun readinessTestUnlocked(): Boolean = m.readiness.testUnlockedSound()
+
+    fun readinessLetThroughDnd(through: Boolean) = m.readiness.letThroughDnd(through)
+
     fun continueWelcome() = record(SetupMachine::completeWelcome)
 
     /**

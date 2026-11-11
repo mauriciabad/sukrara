@@ -3,9 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.readiness
 
+import android.app.NotificationManager
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.DndStatus
+import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
+import app.mauri.sukrara.monitor.alerts.AlertCategory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -20,7 +25,6 @@ class ReadinessFactsTest {
             batteryExempt = true,
             backgroundRestricted = false,
             alertChannelSilenced = false,
-            dndSilencesAlarms = false,
             needsBluetooth = true,
             bluetoothOn = true,
             bluetoothPermitted = true,
@@ -37,7 +41,6 @@ class ReadinessFactsTest {
                 allGood.copy(batteryExempt = false) to AlertRequirement.BatteryExemption,
                 allGood.copy(backgroundRestricted = true) to AlertRequirement.BatteryExemption,
                 allGood.copy(alertChannelSilenced = true) to AlertRequirement.AlertChannel,
-                allGood.copy(dndSilencesAlarms = true) to AlertRequirement.AlertChannel,
                 allGood.copy(bluetoothOn = false) to AlertRequirement.Bluetooth,
                 allGood.copy(bluetoothPermitted = false) to AlertRequirement.Bluetooth,
             )
@@ -55,24 +58,55 @@ class ReadinessFactsTest {
 
     @Test fun theStepThatWorksAgainLeavesTheChecklist() = assertTrue(allGood.copy(failedSteps = emptySet()).readiness().ready)
 
-    @Test fun alarmsThatCantOverrideDoNotDisturbAreAnItemOnlyWhileAKindRingsLikeAnAlarm() {
-        assertEquals(setOf(AlertRequirement.AlarmsInDnd), allGood.copy(alarmsBypassDnd = false).readiness().missing)
-        assertTrue(allGood.copy(anyAlarmKind = false, alarmsBypassDnd = false).readiness().ready)
+    /** #184: Do Not Disturb is the person's choice: never missing, whatever it is and whatever a mode holds back. */
+    @Test fun doNotDisturbIsAStatusNeverAFault() {
+        for (through in listOf(false, true)) {
+            for (held in DndStatus.Held.entries) {
+                val r = allGood.copy(dnd = DndStatus(through, held)).readiness()
+                assertTrue(r.ready)
+                assertEquals(DndStatus(through, held), r.dnd)
+            }
+        }
     }
 
-    @Test fun theChannelsAreCreatedAgainOnceDoNotDisturbAccessIsGranted() {
-        // access granted, an alarm channel created before it: create again (Android applies the bypass now)
-        assertTrue(AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, false)))
-        // no access: creating again changes nothing; all overriding already: nothing to do
-        assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = false, alarmChannelsBypass = listOf(false)))
-        assertEquals(false, AndroidAlertReadiness.needsDndSync(accessGranted = true, alarmChannelsBypass = listOf(true, true)))
+    @Test fun sukraraIsAnExceptionOnlyWhileEveryAlarmChannelOverrides() {
+        assertTrue(DndHold.through(listOf(true, true)))
+        assertFalse(DndHold.through(listOf(true, false)))
+        assertFalse("no channel yet: no override", DndHold.through(emptyList()))
     }
+
+    private val alarm = DndHold.Channel(alarm = true, bypass = false)
+    private val alarmThrough = alarm.copy(bypass = true)
+    private val notification = DndHold.Channel(alarm = false, bypass = false)
+
+    private fun priority(
+        alarms: Boolean,
+        reminders: Boolean,
+    ) = AlertCategory.Dnd(NotificationManager.INTERRUPTION_FILTER_PRIORITY, alarms, reminders)
+
+    @Test fun whatAModeOnNowHoldsBack() {
+        val off = AlertCategory.Dnd(NotificationManager.INTERRUPTION_FILTER_ALL, false, false)
+        assertEquals(DndStatus.Held.None, DndHold.held(listOf(alarm, notification), off))
+        assertEquals("unknown: no claim", DndStatus.Held.None, DndHold.held(listOf(alarm, notification), null))
+        val total = AlertCategory.Dnd(NotificationManager.INTERRUPTION_FILTER_NONE, false, false)
+        assertEquals(DndStatus.Held.All, DndHold.held(listOf(alarmThrough, notification), total))
+        val alarmsOnly = AlertCategory.Dnd(NotificationManager.INTERRUPTION_FILTER_ALARMS, false, false)
+        assertEquals(DndStatus.Held.Some, DndHold.held(listOf(alarm, notification), alarmsOnly))
+        // Android's default mode lets alarms through, not reminders: the alarm-level alert rings, the other is held
+        assertEquals(DndStatus.Held.Some, DndHold.held(listOf(alarm, notification), priority(alarms = true, reminders = false)))
+        // a Bedtime mode without alarms: the override shows and vibrates, but the alarm volume is muted (#15)
+        assertEquals(DndStatus.Held.All, DndHold.held(listOf(alarmThrough), priority(alarms = false, reminders = false)))
+        assertEquals(DndStatus.Held.None, DndHold.held(listOf(alarm, notification), priority(alarms = true, reminders = true)))
+    }
+
+    @Test fun aNotificationVolumeAlertThatOverridesPassesPriority() =
+        assertTrue(DndHold.sounds(notification.copy(bypass = true), priority(alarms = false, reminders = false)))
 
     @Test fun vibrateOnlyWhenUnlockedIsAskedOnceWhenAndroidWontSay() {
         val hidden = allGood.copy(vibrateOnlyUnlocked = null)
         assertEquals(setOf(AlertRequirement.SoundWhenUnlocked), hidden.readiness().missing)
-        // either answer settles it (Keep it on: Sukrara plays the sound itself), and the answer travels with the checklist
-        for (answer in listOf(UnlockedSound.Off, UnlockedSound.AppPlays)) {
+        // either answer settles it (It only vibrated: Sukrara plays the sound itself), and it travels with the checklist
+        for (answer in listOf(UnlockedSound.Heard, UnlockedSound.OnlyVibrated)) {
             val r = hidden.copy(unlockedSound = answer).readiness()
             assertTrue(r.ready)
             assertEquals(answer, r.unlockedSound)
@@ -80,6 +114,22 @@ class ReadinessFactsTest {
         // Android said: on (Sukrara plays it) or off, nothing to ask
         assertTrue(allGood.copy(vibrateOnlyUnlocked = true).readiness().ready)
         assertTrue(allGood.copy(vibrateOnlyUnlocked = false).readiness().ready)
+    }
+
+    @Test fun theUnlockedTestStateTravelsWithTheChecklist() {
+        for (t in SoundTest.entries) assertEquals(t, allGood.copy(soundTest = t).readiness().soundTest)
+    }
+
+    /** #183: the test goes out on a channel that sounds and vibrates (only there Android drops the sound), alarm first. */
+    @Test fun theUnlockedTestPicksAChannelThatSoundsAndVibrates() {
+        val alarmKinds = setOf("very_low")
+        val vibrates = setOf("low", "high")
+
+        fun pick(on: List<String>) = NotificationCooldown.testKind(on, { it in alarmKinds }) { it in vibrates }
+        assertEquals("low", pick(listOf("very_low", "low", "high")))
+        assertEquals("high", pick(listOf("high", "very_low")))
+        assertEquals("none vibrates: the first, alarm first", "very_low", pick(listOf("rising_fast", "very_low")))
+        assertEquals(null, pick(emptyList()))
     }
 
     @Test fun fullScreenOnlyMattersWhenAKindRingsLikeAnAlarm() =

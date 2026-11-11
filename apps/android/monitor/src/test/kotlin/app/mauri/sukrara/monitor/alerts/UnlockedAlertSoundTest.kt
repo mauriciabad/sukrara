@@ -58,15 +58,15 @@ class UnlockedAlertSoundTest {
     }
 
     @Test fun `Android's answer wins when it gives one, else the person's`() {
-        assertTrue(NotificationCooldown.appPlays(vibrateOnly = true, answer = UnlockedSound.Off))
-        assertFalse(NotificationCooldown.appPlays(vibrateOnly = false, answer = UnlockedSound.AppPlays))
-        assertTrue(NotificationCooldown.appPlays(vibrateOnly = null, answer = UnlockedSound.AppPlays))
-        assertFalse(NotificationCooldown.appPlays(vibrateOnly = null, answer = UnlockedSound.Off))
+        assertTrue(NotificationCooldown.appPlays(vibrateOnly = true, answer = UnlockedSound.Heard))
+        assertFalse(NotificationCooldown.appPlays(vibrateOnly = false, answer = UnlockedSound.OnlyVibrated))
+        assertTrue(NotificationCooldown.appPlays(vibrateOnly = null, answer = UnlockedSound.OnlyVibrated))
+        assertFalse(NotificationCooldown.appPlays(vibrateOnly = null, answer = UnlockedSound.Heard))
         assertFalse(NotificationCooldown.appPlays(vibrateOnly = null, answer = UnlockedSound.Unchecked))
     }
 
     @Test fun `stored answers read back, anything else is not answered`() {
         UnlockedSound.entries.forEach { assertEquals(it, UnlockedSound.of(it.wire)) }
-        assertEquals(UnlockedSound.Unchecked, UnlockedSound.of("never"))
+        assertEquals(UnlockedSound.Unchecked, UnlockedSound.of("app"))
     }
 }

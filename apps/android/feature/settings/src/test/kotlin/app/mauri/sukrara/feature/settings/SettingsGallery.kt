@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -26,12 +27,14 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.testing.FakeClock
@@ -506,23 +509,67 @@ class SettingsGallery {
         }
     }
 
-    /** *Sound while the phone is unlocked*: Open the setting, then an answer the person can change at any time. */
-    @Test fun unlockedSoundIsAnsweredOnTheReliabilityPage() {
+    /**
+     * *Sound while the phone is unlocked* (#183): the answers come from a test alert (they show once it went out), the
+     * one that only vibrated offers Android's setting, and the answer can change at any time.
+     */
+    @Test fun unlockedSoundIsAnsweredFromATestAlert() {
         val opened = mutableListOf<AlertRequirement>()
+        var tests = 0
         var answer by mutableStateOf(UnlockedSound.Unchecked)
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 val missing = if (answer == UnlockedSound.Unchecked) setOf(AlertRequirement.SoundWhenUnlocked) else emptySet()
-                ReliabilityContent(AlertReadiness(missing, unlockedSound = answer), { opened += it }, { answer = it }) {}
+                ReliabilityContent(
+                    AlertReadiness(missing, unlockedSound = answer),
+                    { opened += it },
+                    { answer = it },
+                    { tests++ > -1 },
+                ) {}
             }
         }
-        compose.onNodeWithText("Open the setting").performScrollTo().performClick()
+        compose.onNodeWithText("I heard it").assertDoesNotExist()
+        compose.onNodeWithText("Test the sound").performScrollTo().performClick()
+        assertEquals(1, tests)
+        compose.onNodeWithText("Sent. Listen, then say what it did.").assertExists()
+        compose.onNodeWithText("It only vibrated").performScrollTo().performClick()
+        assertEquals(UnlockedSound.OnlyVibrated, answer)
+        compose.onNodeWithText("Open Android's setting").performScrollTo().performClick()
         assertEquals(listOf(AlertRequirement.SoundWhenUnlocked), opened)
-        compose.onNodeWithText("Keep it on").performScrollTo().performClick()
-        assertEquals(UnlockedSound.AppPlays, answer)
-        compose.onNodeWithText("While the phone is unlocked, Sukrara plays the alert sound itself; Android only vibrates.").assertExists()
-        compose.onNodeWithText("It's off").performScrollTo().performClick()
-        assertEquals(UnlockedSound.Off, answer)
+        compose.onNodeWithText("I heard it").performScrollTo().performClick()
+        assertEquals(UnlockedSound.Heard, answer)
+        compose.onNodeWithText("Open Android's setting").assertDoesNotExist()
+    }
+
+    /** The test waits while it couldn't show Android's behaviour (a mode on): it says why, and can't be sent. */
+    @Test fun theUnlockedTestWaitsForTheModeToEnd() {
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                ReliabilityContent(AlertReadiness(setOf(AlertRequirement.SoundWhenUnlocked), soundTest = SoundTest.ModeOn), {}) {}
+            }
+        }
+        compose.onNodeWithText("Test the sound").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Do Not Disturb is on: turn it off for the test", substring = true).assertExists()
+    }
+
+    /** *Do Not Disturb* (#184): a plain statement, never Missing, and one button that flips it both ways. */
+    @Test fun doNotDisturbIsAStatementWithOneButton() {
+        var dnd by mutableStateOf(DndStatus())
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                ReliabilityContent(AlertReadiness(dnd = dnd, unlockedSound = UnlockedSound.Heard), {}, onLetThroughDnd = {
+                    dnd = dnd.copy(through = it)
+                }) {}
+            }
+        }
+        compose.onNodeWithText("Sukrara doesn't alert in Do Not Disturb").performScrollTo().assertExists()
+        compose.onNodeWithText("Missing").assertDoesNotExist()
+        compose.onNodeWithText("Let Sukrara through").performScrollTo().performClick()
+        compose.onNodeWithText("Sukrara alerts in Do Not Disturb").performScrollTo().assertExists()
+        compose.onNodeWithText("Don't let Sukrara through").performScrollTo().performClick()
+        compose.onNodeWithText("Sukrara doesn't alert in Do Not Disturb").performScrollTo().assertExists()
+        dnd = DndStatus(through = false, heldNow = DndStatus.Held.All)
+        compose.onNodeWithText("Do Not Disturb is on now: Sukrara's alerts make no sound until it ends.").performScrollTo().assertExists()
     }
 
     @Test fun lightDefault() = gallery(dark = false, fontScale = 1f)

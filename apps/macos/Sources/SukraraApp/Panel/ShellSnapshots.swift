@@ -48,7 +48,7 @@
             func scene(
                 link: LinkState = .following(wearer: "Marta", canWrite: true), readings: [Reading],
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
-                mode: LaunchMode = .normal, timeSensitive: TimeSensitive = .on, scroll: ChartScroll = ChartScroll(),
+                mode: LaunchMode = .normal, scroll: ChartScroll = ChartScroll(),
                 keychainUnreadable: Bool = false, act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
@@ -72,7 +72,6 @@
                 act(controller)
                 controller.refreshUI()
                 model.notificationPermission = permission
-                model.timeSensitive = timeSensitive
                 let setupModel = SetupModel(
                     settings: SettingsModel(
                         store: store, follow: FollowModel(status: .notFollowing, actions: nil), version: "0.12.0"))
@@ -165,8 +164,6 @@
                         setup: SetupFlow(states: [.welcome: .done, .follow: .skipped, .alerts: .done]))
                 ),
                 ("panel-notifications-off", scene(readings: ending(105, rate: 0), permission: .denied)),
-                ("panel-focus-can-hold", scene(readings: ending(105, rate: 0), timeSensitive: .unavailable)),
-                ("panel-time-sensitive-off", scene(readings: ending(105, rate: 0), timeSensitive: .turnedOff)),
                 ("panel-fixture", scene(readings: ending(112, rate: -0.4), mode: .fixture)),
                 (
                     "panel-chart-scrolled",

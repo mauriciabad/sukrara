@@ -93,7 +93,7 @@ class AlertsModule(
             .catch { log("sound settings failed: ${it.javaClass.simpleName}") }
             .stateIn(scope, SharingStarted.Eagerly, null)
 
-    /** The person's answer about Android's *Vibrate only when unlocked* (the checklist asks; #129). */
+    /** What the person heard from the unlocked test (the checklist asks; #129, #183). */
     private val unlockedAnswer: Flow<UnlockedSound> =
         alertSettings
             .flow(UNLOCKED_SOUND)
@@ -158,6 +158,8 @@ class AlertsModule(
             hub.state.map { it.alerts.failedSteps }.distinctUntilChanged(),
             unlockedAnswer,
             { alertSettings.set(UNLOCKED_SOUND, it.wire) },
+            // the unlocked test: Android's behaviour alone, without Sukrara's own unlocked sound (#183)
+            { kind, settings -> notifier.showTest(kind, settings, ownUnlockedSound = false) },
         )
 
     private val sensorEndSettings: Flow<SensorEndSettings> =

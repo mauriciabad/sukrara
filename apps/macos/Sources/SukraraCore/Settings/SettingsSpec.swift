@@ -192,6 +192,7 @@ public enum SettingsSpec {
         SettingInfo(id: "alerts.v", type: "format", number: nil, mirror: false, wire: nil, android: "alerts:alerts", mac: "defaults:alerts", path: "v", only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "alerts.thresholdsConfirmedAt", type: "state", number: nil, mirror: false, wire: nil, android: "alerts:thresholdsConfirmedAt", mac: "", path: nil, only: "android", reason: "The wearer confirms the alert thresholds during the phone's first-run setup; the Mac follower takes the wearer's alerts", mirrorExcept: []),
         SettingInfo(id: "alerts.unlockedSound", type: "enum", number: nil, mirror: false, wire: nil, android: "alerts:unlockedSound", mac: "", path: nil, only: "android", reason: "An Android 15+ system setting that drops every notification sound while the phone is unlocked; the Mac has no such setting", mirrorExcept: []),
+        SettingInfo(id: "alerts.throughFocus", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:throughFocus", path: nil, only: "mac", reason: "On Android the choice is the alarm channels' own Do Not Disturb override, which Android keeps and Sukrara reads (Do Not Disturb access); macOS has no per-app override an app can set, so the Mac remembers whether to post Time Sensitive", mirrorExcept: []),
         SettingInfo(id: "general.unit", type: "enum", number: nil, mirror: false, wire: nil, android: "settings:unit", mac: "defaults:unit", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "setup.steps", type: "setup", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:setupSteps", path: nil, only: "mac", reason: "The Mac's first-run walk (welcome, follow, alerts, notifications, open at login); Android's first run is its own role / permission flow with its own state", mirrorExcept: []),
         SettingInfo(id: "general.openAtLogin", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "system:SMAppService.mainApp", path: nil, only: "mac", reason: "A menu bar app starts as a login item; Android starts Sukrara's service on boot by itself", mirrorExcept: []),
@@ -272,6 +273,7 @@ public enum SettingsSpec {
         public static let countdownHours = "countdownHours"
         public static let settingsFrom = "settingsFrom"
         public static let alerts = "alerts"
+        public static let throughFocus = "throughFocus"
         public static let unit = "unit"
         public static let setupSteps = "setupSteps"
         public static let readAloudShortcut = "readAloudShortcut"

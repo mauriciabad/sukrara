@@ -29,8 +29,12 @@ final class FakeCenter: NotificationPosting {
             threshold: 70, n: 1, treated: treated)
     }
 
-    func notifier(_ lang: AlertText.Language = .en, settings: AlertSettings = AlertSettings()) -> Notifier {
-        Notifier(center: center, sounds: nil, text: AlertText(language: lang), clock: clock, settings: { settings })
+    func notifier(
+        _ lang: AlertText.Language = .en, settings: AlertSettings = AlertSettings(), throughFocus: Bool = false
+    ) -> Notifier {
+        Notifier(
+            center: center, sounds: nil, text: AlertText(language: lang), clock: clock,
+            throughFocus: { throughFocus }, settings: { settings })
     }
 
     @Test func categoryIDsAreTheAppOnes() {
@@ -107,14 +111,18 @@ final class FakeCenter: NotificationPosting {
         #expect(center.added[1].content.sound != nil)
     }
 
-    @Test func alarmsAreTimeSensitiveOnlyWhenAllowed() {
+    /// #184: a Focus holds Sukrara's alerts back by default; letting it through makes the alarms Time Sensitive, when
+    /// macOS allows it.
+    @Test func alarmsAreTimeSensitiveOnlyWhenThePersonLetsSukraraThrough() {
         var s = AlertSettings()
         s.rules[.veryLow]?.alarm = true
         notifier(settings: s).post(firing(.veryLow, mgdl: 50), sound: true, category: "")
+        notifier(settings: s).post(firing(.veryLow, mgdl: 50), sound: true, category: "", escalated: true)
+        notifier(settings: s).postTest(.veryLow)
+        notifier(settings: s, throughFocus: true).post(firing(.veryLow, mgdl: 50), sound: true, category: "")
         center.timeSensitiveAllowed = false
-        notifier(settings: s).post(firing(.veryLow, mgdl: 50), sound: true, category: "")
-        #expect(center.added[0].content.interruptionLevel == .timeSensitive)
-        #expect(center.added[1].content.interruptionLevel == .active)
+        notifier(settings: s, throughFocus: true).post(firing(.veryLow, mgdl: 50), sound: true, category: "")
+        #expect(center.added.map(\.content.interruptionLevel) == [.active, .active, .active, .timeSensitive, .active])
     }
 
     @Test func actionsMapToAlertActions() {
@@ -178,8 +186,8 @@ final class FakeCenter: NotificationPosting {
     }
 }
 
-/// #19: whether the alarms break through a Focus, from the build's Time Sensitive entitlement (only a provisioning
-/// profile grants it) and the system's answer; the panel warns only while a Focus can hold them back.
+/// #19 / #184: whether macOS lets Sukrara post Time Sensitive, from the build's entitlement (only a provisioning profile
+/// grants it) and the system's answer, and where Sukrara stands with a Focus (the person's choice).
 @Suite struct TimeSensitiveTests {
     @Test func aBuildWithoutTheEntitlementSaysAFocusCanHoldTheAlarms() {
         for setting in [UNNotificationSetting.notSupported, .disabled] {
@@ -199,20 +207,34 @@ final class FakeCenter: NotificationPosting {
         #expect(TimeSensitive(setting: .notSupported, entitled: true, permission: .allowed) == .unavailable)
     }
 
-    @Test func eachStateSaysWhatItMeansAndOnlyOnIsSilentInThePanel() {
-        let states: [TimeSensitive] = [.on, .turnedOff, .unavailable]
-        #expect(Set(states.map(\.text)).count == 3)
-        let scratch = FileManager.default.temporaryDirectory.appending(path: "sukrara-ts-\(UUID().uuidString)")
-        let plan = LaunchPlan(mode: .normal, services: .none, data: .isolated(root: scratch))
-        let model = AppModel(plan: plan)
-        #expect(!model.focusCanHoldAlerts)  // nil: this run posts no notifications
-        for state in states {
-            model.timeSensitive = state
-            for permission in [NotificationPermission.notAsked, .allowed, .denied, .quiet] {
-                model.notificationPermission = permission
-                // notifications off or quiet have their own warning; a Focus matters once they reach the person
-                #expect(model.focusCanHoldAlerts == (permission == .allowed && state != .on), "\(state) \(permission)")
-            }
-        }
+    /// #184: the statement follows the person's choice and what macOS allows, the same words as Android's.
+    @Test func focusStatusIsTheChoiceAndWhatMacOSAllows() {
+        #expect(FocusStatus(through: false, timeSensitive: .on) == .respected)
+        #expect(FocusStatus(through: true, timeSensitive: .on) == .through)
+        #expect(FocusStatus(through: false, timeSensitive: .turnedOff) == .respected)
+        #expect(FocusStatus(through: true, timeSensitive: .turnedOff) == .turnedOff)
+        #expect(FocusStatus(through: true, timeSensitive: .unavailable) == .unavailable)
+        let all: [FocusStatus] = [.respected, .through, .turnedOff, .unavailable]
+        #expect(all.filter(\.alertsThrough) == [.through])
+        #expect(Set(all.map(\.detail)).count == 4)
+        #expect(FocusStatus.through.statement == "Sukrara alerts during a Focus")
+        #expect(FocusStatus.respected.statement == "Sukrara doesn't alert during a Focus")
+    }
+
+    @Test func settingsKeepTheChoice() {
+        let scratch = FileManager.default.temporaryDirectory.appending(path: "sukrara-focus-\(UUID().uuidString)")
+        let defaults = UserDefaults(suiteName: scratch.lastPathComponent)!
+        let model = SettingsModel(
+            store: DefaultsSettingsStore(defaults: defaults), follow: FollowModel(status: .notFollowing, actions: nil),
+            version: "test")
+        #expect(model.focusStatus == nil)  // nil: this run posts no notifications
+        model.timeSensitive = .on
+        #expect(model.focusStatus == .respected)
+        model.throughFocus = true
+        #expect(model.focusStatus == .through)
+        #expect(DefaultsSettingsStore(defaults: defaults).value(MacSettings.throughFocus))
+        model.throughFocus = false
+        #expect(model.focusStatus == .respected)
+        defaults.removePersistentDomain(forName: scratch.lastPathComponent)
     }
 }

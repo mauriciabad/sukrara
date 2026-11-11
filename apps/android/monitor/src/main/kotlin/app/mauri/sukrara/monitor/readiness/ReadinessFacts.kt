@@ -5,6 +5,8 @@ package app.mauri.sukrara.monitor.readiness
 
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.DndStatus
+import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
 
 /**
@@ -25,14 +27,17 @@ data class ReadinessFacts(
     val backgroundRestricted: Boolean,
     /** An alert channel the settings use (or its group) is blocked or lowered below sound. */
     val alertChannelSilenced: Boolean,
-    /** Do Not Disturb is on now and would silence the alarm-level alerts. */
-    val dndSilencesAlarms: Boolean,
-    /** Every alarm-level channel in use overrides Do Not Disturb (needs Do Not Disturb access; #15). */
-    val alarmsBypassDnd: Boolean = true,
+    /**
+     * Where Sukrara stands with Do Not Disturb: the person's choice (an exception or not) and what a mode on now holds
+     * back. Shown, never a fault (#184).
+     */
+    val dnd: DndStatus = DndStatus(),
     /** Android's *Vibrate only when unlocked*, when it says ([NotificationCooldown]); null = it won't (#129). */
     val vibrateOnlyUnlocked: Boolean? = false,
-    /** The person's answer about it. */
+    /** What the person heard from the unlocked test (#183). */
     val unlockedSound: UnlockedSound = UnlockedSound.Unchecked,
+    /** Whether that test can show Android's behaviour now. */
+    val soundTest: SoundTest = SoundTest.Ready,
     /** The role's source talks to the sensor over Bluetooth (the wearer's own sensor, not Juggluco or a follower). */
     val needsBluetooth: Boolean,
     val bluetoothOn: Boolean,
@@ -46,12 +51,14 @@ data class ReadinessFacts(
                 if (anyAlarmKind && !fullScreenAllowed) add(AlertRequirement.FullScreenIntent)
                 if (!exactAlarmAllowed) add(AlertRequirement.ExactAlarm)
                 if (!batteryExempt || backgroundRestricted) add(AlertRequirement.BatteryExemption)
-                if (alertChannelSilenced || dndSilencesAlarms) add(AlertRequirement.AlertChannel)
-                if (anyAlarmKind && !alarmsBypassDnd) add(AlertRequirement.AlarmsInDnd)
+                if (alertChannelSilenced) add(AlertRequirement.AlertChannel)
+                // AlertRequirement.DoNotDisturb is never missing: it's the person's choice, shown as a status
                 if (NotificationCooldown.unanswered(vibrateOnlyUnlocked, unlockedSound)) add(AlertRequirement.SoundWhenUnlocked)
                 if (needsBluetooth && !(bluetoothOn && bluetoothPermitted)) add(AlertRequirement.Bluetooth)
             },
             failedSteps,
             unlockedSound,
+            dnd,
+            soundTest,
         )
 }

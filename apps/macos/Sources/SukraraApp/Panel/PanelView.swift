@@ -72,7 +72,6 @@ struct PanelView: View {
                     SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
                 }
                 if model.notificationPermission.needsAttention { notificationsWarning }
-                if model.focusCanHoldAlerts, let state = model.timeSensitive { TimeSensitiveNote(state: state) }
                 if let alerts = model.alerts {
                     NightRow(alerts: alerts, open: links.map { l in { l.openSettingsPane(.alerts) } })
                     AlertBlocks(alerts: alerts, now: context.date, custom: $customMute)

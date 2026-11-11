@@ -339,14 +339,33 @@ normal notification and says a Focus can hold it back.
   sounds. The value (`Settings.System.notification_cooldown_vibrate_unlocked`) is `@hide` without `@Readable`, so an
   app targeting S+ gets a SecurityException reading it, and the cooldown page has no public action (Settings declares
   `android.settings.MANAGE_ADAPTIVE_NOTIFICATIONS` for `PoliteNotificationsPreferenceFragment`). In Sukrara: the
-  checklist item *Sound while the phone is unlocked* (`NotificationCooldown` tries the read; null → the person opens the
-  page and answers *It's off* / *Keep it on*, schema `alerts.unlockedSound`, Android-only); with *Keep it on* (or Android
+  checklist item *Sound while the phone is unlocked* (`NotificationCooldown` tries the read; null → the person answers
+  from a test alert, see #183 below, schema `alerts.unlockedSound`, Android-only); with *It only vibrated* (or Android
   saying it's on) `UnlockedAlertSound` plays the channel's own sound itself while the user is present (screen on, past
   the keyguard), only for a ringing post on a channel that sounds and vibrates and only where Do Not Disturb lets the
   alert through, one per second, stopped by Clear / Mute. Left out: playing the sound when nobody answered (it would
   ring twice for everyone with the setting off, the 2026-10-18 double-sound bug); following later changes to the setting
   (Android sends nothing an app may read; the answer stays changeable in Settings › Alert reliability). Not checked on
-  a device yet (QA Q8: setting on, phone unlocked, *Send a test alert*).
+  a device yet (QA Q8: setting on, phone unlocked, *Test the sound*).
+- **Ask from a test alert, not from Android's settings (#183, 2026-11-11, the owner on the phone).** The first version
+  (*Open the setting*, then *It's off* / *Keep it on*) was misread: *Open the setting* lands on Android's *Use
+  notification cooldown*, not on the switch the text names; the two answers weren't a pair (one describes Android's
+  setting, the other an action) and didn't cover what the person sees (cooldown off, the switch greyed out or missing);
+  nothing said which to pick. A wrong answer is a safety problem: *It's off* while the switch is on mutes every alert
+  sound while the phone is unlocked; *Keep it on* while it's off rings each alert twice (the 2026-10-18 double-sound
+  bug). Now the item asks what the person hears: *Test the sound* posts the real test alert (`AlertNotifier.showTest`
+  with `ownUnlockedSound = false`: Sukrara's own unlocked sound stays off, so the test shows Android's behaviour alone)
+  on the first alert that is on whose channel sounds and vibrates, alarm level first (`NotificationCooldown.testKind`:
+  Android drops the sound only where there is a vibration, so a test on a channel without one would sound either way);
+  then *What did the test alert do?* *I heard it* / *It only vibrated*, both what the person observed. The answers show
+  only once a test went out (or an answer exists, to change it). The test waits, saying why, while it couldn't show
+  Android's behaviour (`SoundTest`): no alert on; a Do Not Disturb mode on (its silence isn't the setting's); the phone
+  on vibrate or silent, or the test alert's stream at 0 (`AudioManager`; a ringer-mode change re-reads it). *Open
+  Android's setting* shows after *It only vibrated*, as the way to turn the switch off (then test again). The stored
+  values changed to `heard` / `vibrated` (no backwards compatibility: an earlier `off` / `app` reads as not answered, so
+  a phone that answered the old question is asked again, on purpose). The button is *Test the sound*, not *Send a test
+  alert*, so it isn't confused with the reliability page's test of what gets through. Left out: a recommended answer
+  (there is none: the answer is what the phone did); reading the switch (Android forbids it).
 - **The alarm channels' Do Not Disturb override needs access (#15, 2026-11-10, from the AOSP source, main).**
   `PreferencesHelper.createNotificationChannel` keeps an app's `setBypassDnd(true)` only when the app holds Do Not
   Disturb access as the channel is created or updated (`if (existing.getUserLockedFields() == 0 && hasDndAccess)`), so
@@ -356,7 +375,49 @@ normal notification and says a Focus can hold it back.
   every checklist read creates the channels again once access is granted and an alarm channel doesn't override yet:
   the existing ids take the bypass, and a channel the person edited keeps their choice (Fix then opens its page; no
   versioned ids needed). `ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED` is registered-only, so the resume refresh
-  is what catches the grant. Not checked on an emulator yet (DND on, very low after granting).
+  is what catches the grant. Not checked on an emulator yet (DND on, very low after granting). Superseded by #184 below:
+  the override is no longer a checklist requirement and no longer the default.
+- **Do Not Disturb and Focus are respected by default (#184, 2026-11-11, the owner's decision).** #15 left a question
+  open: a mode that doesn't allow alarms mutes Android's alarm volume, so even an alarm channel that overrides Do Not
+  Disturb shows and vibrates without sound; should Sukrara find a sound path around it? The owner: *"By default respect
+  the user decision to mute notifications, including focus and do not disturb. But also allow them to get
+  notifications from Sukrara anyway. Ideally I expect the OS should handle these exceptions."* And the checklist item
+  stays, as a plain statement of where things stand with one easy button, never a fault or a nag. So:
+  - **Default:** no override and no sound path of Sukrara's own around a mode. A new alarm channel is created without
+    `setBypassDnd` (`AlertChannels.configure(…, bypassDnd)`), and creating the channels again keeps each one's override
+    as it is (`Channels.create` passes the existing value), so a choice made in Android's own settings stays. The
+    alerts that ring like an alarm still ring where the mode allows alarms (Android's default policy does; `USAGE_ALARM`
+    / `CATEGORY_ALARM` are alarms to `ZenModeFiltering`): the mode's own exception, set by the person.
+  - **The status:** `AlertRequirement.AlarmsInDnd` became `DoNotDisturb`, never missing (no banner, no *Missing*, no
+    red, a moon instead of a tick in setup): *Sukrara doesn't alert in Do Not Disturb* / *Sukrara alerts in Do Not
+    Disturb* (`DndStatus.through` = every alarm channel of the alerts that are on overrides, `DndHold.through`: what
+    Android holds, not a stored setting) with *Let Sukrara through* / *Don't let Sukrara through*
+    (`AlertReadinessSource.letThroughDnd`). On: without Do Not Disturb access, Android's access list (the grant seen on
+    the way back applies it, only when the button sent the person there); with it, `AlertChannels.setDndBypass(true)`
+    at once (#15's move for edited channels, unchanged). Off: `setDndBypass(false)`, which needs no access (an edited
+    channel moves to a new id without the override). A channel whose sound Sukrara can't read opens its own page either
+    way. Where the choice is stored: in Android's channels, not in Sukrara's settings (so no schema entry on Android);
+    the Mac stores its choice (`alerts.throughFocus`) because macOS has no per-app override an app can set.
+  - **A mode on now** is shown, never flagged: `AlertChannel` no longer counts Do Not Disturb (it is only a blocked or
+    lowered channel now, *Alert sound*). `DndHold.held` says whether the alerts in use make a sound under the current
+    policy (total silence: none; Alarms only: the alarm-level ones; Priority: alarm-level ones where alarms are allowed,
+    override or not, as the alarm volume is muted otherwise; notification-volume ones where reminders are allowed or
+    their channel overrides). Some / all held → the item adds *Do Not Disturb is on now: [some of] Sukrara's alerts make
+    no sound until it ends.*, home shows *Do Not Disturb is on: [some] alerts make no sound* under the card with
+    *Change* (Settings › Alert reliability), in the neutral colours, like the night-alerts line.
+  - **Mac (Focus), the same:** alarms (and escalated alerts) post `.timeSensitive` only when the person lets Sukrara
+    through (`alerts.throughFocus`, off by default) and macOS allows it (`TimeSensitive`); `FocusStatus` /
+    `FocusChoice` in setup's notification step and Settings › Alerts with the same words (*Sukrara doesn't alert during
+    a Focus* / *Sukrara alerts during a Focus*, *Let Sukrara Through* / *Don't Let Sukrara Through*; *Open Notification
+    Settings* while Time Sensitive is off for Sukrara, *Open Focus Settings* on a build without the entitlement). The
+    panel's Focus warning went (it was a nag on every build without a profile). Left out: saying on the Mac when a Focus
+    is on now (macOS tells an app only through the Focus Status capability, `INFocusStatusCenter`, and its own
+    permission prompt; not worth a new prompt for a status line).
+  - Left out: a sound of Sukrara's own while a mode mutes the alarm volume (the owner's decision); overriding the
+    notification-volume channels too (they follow the mode's reminders, as since 0.11.4; the person picks *Alarm* for
+    an alert that must come through); a stored "let through" on Android (Android's override is the truth, and a choice
+    made in Android's settings must show as it is). Alert rules and `contracts/alerts/scenarios` don't change: this is
+    delivery.
 - **Two sounds at once after an app update (2026-10-18, user report).** Measured on the Pixel (`dumpsys audio`,
   `notification_alert` events): every Sukrara update made SystemUI start two players within 0.5 s, the system
   default sound (`USAGE_NOTIFICATION`, LSPosed's "Module update complete" notification, channel

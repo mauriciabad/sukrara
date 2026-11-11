@@ -61,9 +61,8 @@
     <string name="req_full_screen">Sukrara no puede mostrar alarmas sobre la pantalla de bloqueo.</string>
     <string name="req_exact_alarm">Sukrara no puede programar alarmas exactas.</string>
     <string name="req_battery">La optimización de batería puede detener Sukrara en segundo plano.</string>
-    <string name="req_channel">El sonido de las alertas no puede saltarse el modo No molestar.</string>
-    <string name="req_dnd">Las alarmas no pueden saltarse un modo No molestar que las silencia. Da a Sukrara acceso a No molestar.</string>
-    <string name="req_unlocked">Puede que Android solo vibre con las alertas mientras el teléfono está desbloqueado. Compruébalo una vez.</string>
+    <string name="req_channel">Una categoría de alerta está silenciada en los ajustes de Android.</string>
+    <string name="req_unlocked">Comprueba una vez que las alertas suenan con el teléfono desbloqueado: envía una alerta de prueba.</string>
     <string name="req_bluetooth">El Bluetooth o el permiso de dispositivos cercanos está desactivado.</string>
     <string name="banner_data_title">Algunos datos guardados estaban dañados</string>
     <plurals name="banner_data_text">
@@ -163,6 +162,10 @@
     <string name="home_quiet_side">Alertas %1$s</string>
     <string name="home_mute_alerts">Silenciar alertas</string>
     <string name="home_night_change">Cambiar</string>
+    <string name="home_dnd_held_all">No molestar está activo: las alertas no suenan</string>
+    <string name="home_dnd_held_some">No molestar está activo: algunas alertas no suenan</string>
+    <string name="home_dnd_change">Cambiar</string>
+    <string name="home_dnd_change_label">Cambiar si Sukrara avisa en No molestar</string>
     <string name="home_quiet_all">Todas las alertas</string>
     <string name="home_quiet_taken">En silencio tras tu tratamiento, para que no suenen mientras hace efecto.</string>
     <string name="home_quiet_muted">Las silenciaste en este teléfono.</string>

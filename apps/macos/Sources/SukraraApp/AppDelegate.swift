@@ -296,7 +296,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             let permission = await center.refresh()
             model.notificationPermission = permission
-            model.timeSensitive = center.timeSensitive
             windows?.settings.timeSensitive = center.timeSensitive
         }
     }

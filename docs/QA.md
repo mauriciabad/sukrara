@@ -249,12 +249,30 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the
       headline and timing with Android.
-- [ ] Mac Time Sensitive (#19, a build with the provisioning profile: `bundle.sh` prints *profile "…"*): Settings ›
-      Alerts says *Alarms are Time Sensitive…*; turn on Do Not Disturb, *Send Test Alert* on an alert set *Like an
-      alarm* shows and plays, one without it is held back. System Settings › Notifications › Sukrara › *Time Sensitive
-      Notifications* off → the panel, setup and Settings › Alerts say they're off with *Open Notification Settings*
-      (it opens Sukrara's page; on again → the line goes when Sukrara is active again). A build without the profile
-      (`--no-profile`): the Focus line with *Open Focus Settings*. In Spanish too.
+- [ ] Android Do Not Disturb (#184, emulator, fresh install): setup's *Do Not Disturb* shows a moon, *Sukrara doesn't
+      alert in Do Not Disturb* and *Let Sukrara through*, no tick, no *Allow*, no red; home has no banner for it. Turn on
+      Bedtime / a mode without alarms: home says *Do Not Disturb is on: alerts make no sound* with *Change*; *Send a
+      test alert* stays in the shade without sound or vibration. *Let Sukrara through* → Android's Do Not Disturb access
+      list → Sukrara on → back: *Sukrara alerts in Do Not Disturb* (TalkBack hears it), `dumpsys notification`: every
+      `alert_alarm.*` `mBypassDnd=true` (an edited one moved to `.2` with its choices); the test alert now shows and
+      vibrates through the mode (silent while it mutes alarms). *Don't let Sukrara through* → at once *Sukrara doesn't
+      alert…*, every `alert_alarm.*` `mBypassDnd=false`. Mode off: the home line goes. Spanish too.
+- [ ] Android sound while unlocked (#183, emulator, phone unlocked, ringer normal): *Sound while the phone is unlocked*
+      → *Test the sound*: the test alert rings once (`logcat -b events -s notification_alert`: one beep) and *I heard
+      it* / *It only vibrated* appear; with Do Not Disturb on or the ringer on vibrate the button is off and says why.
+      `adb shell settings put system notification_cooldown_vibrate_unlocked 1` (emulator only), test again: it only
+      vibrates (beep=0), Sukrara plays nothing during the test; *It only vibrated* → *Open Android's setting* shows; a
+      real alert (`ALERTS --es kinds low`) then rings exactly once (Sukrara's player, beep=0 from Android). Back to 0,
+      test, *I heard it*: a real alert rings exactly once (Android's). On the phone (owner): with the switch on and off,
+      an alert sounds exactly once while unlocked.
+- [ ] Mac Focus (#184, a build with the provisioning profile: `bundle.sh` prints *profile "…"*): Settings › Alerts and
+      setup's notification step say *Sukrara doesn't alert during a Focus* with *Let Sukrara Through*; turn on Do Not
+      Disturb, *Send Test Alert* on an alert set *Like an alarm* is held back. *Let Sukrara Through* → *Sukrara alerts
+      during a Focus*; the same test alert shows and plays. System Settings › Notifications › Sukrara › *Time Sensitive
+      Notifications* off → *Time Sensitive notifications are off…* with *Open Notification Settings* (it opens
+      Sukrara's page) and *Don't Let Sukrara Through*. A build without the profile (`--no-profile`): *This build of
+      Sukrara can't send Time Sensitive alerts…* with *Open Focus Settings*. The panel says nothing about a Focus.
+      VoiceOver reads statement, meaning, button. In Spanish too.
 - [ ] Never on the user's phone with real alarms unless the user asked.
 
 ### Before the first unlock (emulator; docs/30, #160)

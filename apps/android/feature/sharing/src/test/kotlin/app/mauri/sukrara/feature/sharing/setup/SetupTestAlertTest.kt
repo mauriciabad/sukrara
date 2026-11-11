@@ -53,7 +53,11 @@ class SetupTestAlertTest {
     @Test fun sendsTheRealTestAlertAndSaysWhereToLook() {
         var sent = 0
         show { sent++ }
-        compose.onNodeWithText("The real alert, marked as a test. Try it with Do Not Disturb on.").performScrollTo().assertExists()
+        compose
+            .onNodeWithText(
+                "The real alert, marked as a test. Try it with a mode such as Bedtime on to hear what it lets through.",
+            ).performScrollTo()
+            .assertExists()
         compose.onNodeWithTag("setup-test-alert").performScrollTo().performClick()
         assertEquals(1, sent)
         compose.onNodeWithText("Sent: check your notifications. It goes away by itself in 2 min.").assertExists()

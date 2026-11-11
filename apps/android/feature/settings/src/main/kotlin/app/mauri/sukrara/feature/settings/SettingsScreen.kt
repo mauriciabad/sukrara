@@ -379,6 +379,8 @@ private fun SettingsPages(
                 readiness,
                 deps.readiness::fix,
                 deps.readiness::answerUnlockedSound,
+                deps.readiness::testUnlockedSound,
+                deps.readiness::letThroughDnd,
                 alerts = alerts,
                 playback = deps.alertPlayback,
                 onBack = onBack,

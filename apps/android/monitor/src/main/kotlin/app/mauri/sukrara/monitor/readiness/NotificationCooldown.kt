@@ -21,7 +21,8 @@ import app.mauri.sukrara.core.model.UnlockedSound
  * `notification_cooldown_vibrate_unlocked`, `@hide` without `@Readable`, so for an app targeting S+ the read throws
  * ("settings keys annotated with @hide are restricted to system_server and system apps only", Settings.java
  * `NameValueCache`): [vibrateOnlyWhenUnlocked] tries it and answers null when Android won't say, and the person tells
- * the checklist instead ([UnlockedSound]). The cooldown page has no public action; Settings declares
+ * the checklist what a test alert did instead ([UnlockedSound]: sent with the phone unlocked and Sukrara's own sound off,
+ * so it shows Android's behaviour; #183). The cooldown page has no public action; Settings declares
  * `android.settings.MANAGE_ADAPTIVE_NOTIFICATIONS` for it (packages/apps/Settings AndroidManifest,
  * PoliteNotificationsPreferenceFragment).
  */
@@ -54,11 +55,25 @@ object NotificationCooldown {
     fun appPlays(
         vibrateOnly: Boolean?,
         answer: UnlockedSound,
-    ): Boolean = vibrateOnly ?: (answer == UnlockedSound.AppPlays)
+    ): Boolean = vibrateOnly ?: (answer == UnlockedSound.OnlyVibrated)
 
     /** The checklist item is missing while nobody knows: Android won't say and the person hasn't answered. */
     fun unanswered(
         vibrateOnly: Boolean?,
         answer: UnlockedSound,
     ): Boolean = vibrateOnly == null && answer == UnlockedSound.Unchecked
+
+    /**
+     * The kind the unlocked test sends among the alerts [on]: the first whose channel [soundsAndVibrates] (Android drops
+     * the sound only where there is a vibration: a test on a channel without one would sound either way), those that ring
+     * like an alarm ([alarm]) first; else the first of those; null when none is on.
+     */
+    fun <K> testKind(
+        on: List<K>,
+        alarm: (K) -> Boolean,
+        soundsAndVibrates: (K) -> Boolean,
+    ): K? {
+        val ordered = on.filter(alarm) + on.filterNot(alarm)
+        return ordered.firstOrNull(soundsAndVibrates) ?: ordered.firstOrNull()
+    }
 }

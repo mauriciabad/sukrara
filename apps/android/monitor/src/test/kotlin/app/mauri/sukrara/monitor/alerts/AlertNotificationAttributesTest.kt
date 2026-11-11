@@ -59,11 +59,12 @@ class AlertNotificationAttributesTest {
         notifier.show(fire(AlertKind.FALLING_FAST, 62, -2.5), settings, silent = false, who = null, relaxedMin = 0)
     }
 
-    @Test fun `alarm channels ring at alarm volume and pass DND, alert channels at notification volume and don't`() {
+    // #184: no channel overrides Do Not Disturb until the person lets Sukrara through (AlarmChannelMoveTest)
+    @Test fun `alarm channels ring at alarm volume, alert channels at notification volume, none overrides DND`() {
         for (kind in AlertKind.entries) {
             val alarm = nm.getNotificationChannel(AlertChannels.id(ctx, kind, alarm = true))
             assertEquals(AudioAttributes.USAGE_ALARM, alarm.audioAttributes.usage)
-            assertTrue(alarm.canBypassDnd())
+            assertFalse(alarm.canBypassDnd())
             assertEquals(AlertChannels.soundUri(ctx, kind), alarm.sound)
             assertEquals(NotificationManager.IMPORTANCE_HIGH, alarm.importance)
 

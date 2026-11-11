@@ -124,7 +124,7 @@ struct AlertsRangesPane: View {
                     Spacer()
                     Button(L10n.t("Notification Settings…")) { Self.openNotificationSettings() }
                 }
-                if let state = model.timeSensitive { TimeSensitiveNote(state: state) }
+                if let status = model.focusStatus { FocusChoice(status: status) { model.throughFocus = $0 } }
             }
         }
         .formStyle(.grouped)

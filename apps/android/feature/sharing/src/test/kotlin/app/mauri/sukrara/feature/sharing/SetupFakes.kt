@@ -47,6 +47,10 @@ class FakeReadiness : AlertReadinessSource {
     override fun fix(requirement: AlertRequirement) = Unit
 
     override fun answerUnlockedSound(answer: UnlockedSound) = Unit
+
+    override fun testUnlockedSound(): Boolean = true
+
+    override fun letThroughDnd(through: Boolean) = Unit
 }
 
 class FakeAlerts : AlertSettingsAccess {

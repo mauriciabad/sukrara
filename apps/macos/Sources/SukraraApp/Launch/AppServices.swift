@@ -113,7 +113,8 @@ final class AppServices: ServiceStarting {
             let defaults = self.defaults
             let notifier = Notifier(
                 center: posting, sounds: sounds, clock: SystemClock(),
-                unit: { DefaultsSettingsStore(defaults: defaults).unit }
+                unit: { DefaultsSettingsStore(defaults: defaults).unit },
+                throughFocus: { DefaultsSettingsStore(defaults: defaults).value(MacSettings.throughFocus) }
             ) {
                 controller?.settings ?? settings
             }

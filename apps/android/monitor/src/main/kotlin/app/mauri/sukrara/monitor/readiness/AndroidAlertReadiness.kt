@@ -16,6 +16,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
@@ -27,7 +28,10 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.DndStatus
+import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
+import app.mauri.sukrara.monitor.alerts.AlertCategory
 import app.mauri.sukrara.monitor.alerts.AlertChannels
 import app.mauri.sukrara.monitor.notify.Channels
 import kotlinx.coroutines.CoroutineScope
@@ -52,10 +56,9 @@ import kotlinx.coroutines.launch
  *
  * Items: the alert runtime's last steps worked ([failedSteps], the hub's alert state); notifications on; the
  * full-screen intent when a kind rings like an alarm; exact alarms; the battery exemption (and not "Restricted"); the
- * alert channels in use not blocked or silenced, and Do Not Disturb not silencing the alarm-level ones (a non-alarm
- * alert in Do Not Disturb is the person's choice: "Like an alarm" is the way through); the alarm-level channels
- * overriding Do Not Disturb (access granted; [syncDndBypass] applies it, [fix] and a grant seen here move an edited
- * channel: [AlertChannels.moveToDndBypass]); Bluetooth on and allowed when [needsBluetooth].
+ * alert channels in use not blocked or silenced; the sound while unlocked answered from a test ([testUnlockedSound]);
+ * Bluetooth on and allowed when [needsBluetooth]. Besides, never a fault: where Sukrara stands with Do Not Disturb
+ * ([DndHold]: an exception or not, what a mode on now holds back), changed with [letThroughDnd] (#184).
  */
 class AndroidAlertReadiness(
     context: Context,
@@ -67,6 +70,8 @@ class AndroidAlertReadiness(
     /** The person's answer about *Vibrate only when unlocked* (schema `alerts.unlockedSound`) and how to store it. */
     private val unlockedSound: Flow<UnlockedSound>,
     private val saveUnlockedSound: suspend (UnlockedSound) -> Unit,
+    /** Posts [AlertKind]'s test alert without Sukrara's own unlocked sound ([AlertReadinessSource.testUnlockedSound]). */
+    private val sendUnlockedTest: (AlertKind, AlertSettings) -> Unit = { _, _ -> },
 ) : AlertReadinessSource {
     private val ctx = context.applicationContext
     private val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -75,8 +80,11 @@ class AndroidAlertReadiness(
     /** Do Not Disturb access as last read here: null until the first read (a grant is a change this process saw). */
     @Volatile private var dndAccess: Boolean? = null
 
+    /** The person asked to let Sukrara through and went to grant the access: the grant, when it comes, applies it. */
+    @Volatile private var throughAsked = false
+
     // until the stored answer is read (a moment), no claim either way about it
-    @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false, failedSteps = emptySet(), unlocked = UnlockedSound.Off)
+    @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false, failedSteps = emptySet(), unlocked = UnlockedSound.Heard)
 
     override val readiness: StateFlow<AlertReadiness> by lazy {
         combine(
@@ -98,6 +106,35 @@ class AndroidAlertReadiness(
 
     override fun answerUnlockedSound(answer: UnlockedSound) {
         scope.launch { saveUnlockedSound(answer) }
+    }
+
+    override fun testUnlockedSound(): Boolean {
+        val settings = last.settings
+        val kind = unlockedTestKind(settings) ?: return false
+        sendUnlockedTest(kind, settings)
+        return true
+    }
+
+    /**
+     * Let Sukrara through: without Do Not Disturb access, Android's access list (the grant, seen on the way back, gives
+     * the alarm channels the override: [syncDndBypass]); with it, the override now. Don't let it through: the override
+     * goes now (no access needed). Either way a channel whose sound Sukrara can't move opens its own page, where the
+     * person flips *Override Do Not Disturb* themselves.
+     */
+    override fun letThroughDnd(through: Boolean) {
+        if (through && !nm.isNotificationPolicyAccessGranted) {
+            throughAsked = true
+            start(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) || start(appNotificationSettings())
+            return
+        }
+        throughAsked = false
+        scope.launch(dispatchers.default) {
+            val kept = runCatching { AlertChannels.setDndBypass(ctx, through).kept }.getOrDefault(emptySet())
+            refresh()
+            relevantAlarmKinds(last.settings).firstOrNull { it in kept }?.let {
+                start(channelSettings(AlertChannels.id(ctx, it, alarm = true)))
+            }
+        }
     }
 
     override fun fix(requirement: AlertRequirement) {
@@ -130,23 +167,10 @@ class AndroidAlertReadiness(
                     }
                 }
 
-                // no access yet: Android's Do Not Disturb access list (the per-app page is a system API; the grant moves
-                // the channels on the way back, syncDndBypass); with access, a channel still not overriding is one the
-                // person edited: it moves, their choices copied, and the item goes without leaving the app. One whose
-                // sound Sukrara can't read stays: its own page
-                AlertRequirement.AlarmsInDnd -> {
-                    if (!nm.isNotificationPolicyAccessGranted) {
-                        Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
-                    } else {
-                        scope.launch(dispatchers.default) {
-                            val kept = AlertChannels.moveToDndBypass(ctx).kept
-                            refresh()
-                            alarmKinds(last.settings).firstOrNull { it in kept }?.let {
-                                start(channelSettings(AlertChannels.id(ctx, it, alarm = true)))
-                            }
-                        }
-                        return
-                    }
+                // a choice, never a fault: the one button flips it
+                AlertRequirement.DoNotDisturb -> {
+                    letThroughDnd(!readiness.value.dnd.through)
+                    return
                 }
 
                 // *Vibrate only when unlocked* is on Android's cooldown page (no public action: then the notifications page)
@@ -155,16 +179,9 @@ class AndroidAlertReadiness(
                     appNotificationSettings()
                 }
 
-                // a silenced channel: its page (importance, sound); a mode that silences alarms: Android's modes, where
-                // the person lets alarms through (nothing on Sukrara's side brings the alarm volume back)
+                // a silenced channel: its page (importance, sound)
                 AlertRequirement.AlertChannel -> {
-                    val channels = channelsInUse(last.settings)
-                    channels.firstOrNull { it.silenced() }?.let { channelSettings(it.id) }
-                        ?: if (channels.any { it.blockedByDnd() }) {
-                            Intent(Settings.ACTION_ZEN_MODE_PRIORITY_SETTINGS)
-                        } else {
-                            appNotificationSettings()
-                        }
+                    channelsInUse(last.settings).firstOrNull { it.silenced() }?.let { channelSettings(it.id) } ?: appNotificationSettings()
                 }
 
                 AlertRequirement.Bluetooth -> {
@@ -193,6 +210,7 @@ class AndroidAlertReadiness(
         val alertGroupBlocked =
             listOf(Channels.Group.ALERTS, Channels.Group.ALERTS_ALARM).any { nm.getNotificationChannelGroup(it.id)?.isBlocked == true }
         val bluetooth = ctx.getSystemService(BluetoothManager::class.java)?.adapter
+        val dnd = AlertCategory.Dnd.of(nm)
         return ReadinessFacts(
             failedSteps = inputs.failedSteps,
             notificationsEnabled = nm.areNotificationsEnabled(),
@@ -203,10 +221,14 @@ class AndroidAlertReadiness(
             batteryExempt = ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName),
             backgroundRestricted = ctx.getSystemService(ActivityManager::class.java).isBackgroundRestricted,
             alertChannelSilenced = alertGroupBlocked || channels.any { it.silenced() },
-            dndSilencesAlarms = channels.any { it.blockedByDnd() },
-            alarmsBypassDnd = alarmsBypassDnd(inputs.settings),
+            dnd =
+                DndStatus(
+                    through = DndHold.through(relevantAlarmKinds(inputs.settings).mapNotNull { alarmChannel(it)?.canBypassDnd() }),
+                    heldNow = DndHold.held(channels.map { DndHold.Channel(Channels.isAlarm(it.id), it.canBypassDnd()) }, dnd),
+                ),
             vibrateOnlyUnlocked = NotificationCooldown.vibrateOnlyWhenUnlocked(ctx),
             unlockedSound = inputs.unlocked,
+            soundTest = soundTest(inputs.settings, dnd),
             needsBluetooth = inputs.needsBluetooth,
             bluetoothOn = bluetooth?.isEnabled == true,
             bluetoothPermitted = bluetoothPermitted(),
@@ -214,42 +236,66 @@ class AndroidAlertReadiness(
     }
 
     /**
-     * `setBypassDnd(true)` only sticks when the app holds Do Not Disturb access as the channel is created or updated
-     * (AOSP PreferencesHelper.createNotificationChannel, frameworks/base main: an existing channel takes the app's
-     * bypass only `if (existing.getUserLockedFields() == 0 && hasDndAccess)`; NotificationManagerService passes
-     * `mConditionProviders.isPackageOrComponentAllowed(pkg)`). So once the person grants access (they come back to the
-     * app: a resume refresh, or the registered-only ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED) the alarm
-     * channels take the override, keeping every choice the person made: a grant this process sees moves the ones they
-     * edited ([AlertChannels.moveToDndBypass]); otherwise, with access, the channels are created again whenever one
-     * doesn't override (an untouched one takes it in place; an edited one waits for *Fix*, so an override the person
-     * turned off stays off). An alarm channel moved away from goes once its notification does. #15.
+     * Android takes an app's `setBypassDnd` only while the app holds Do Not Disturb access (AOSP
+     * PreferencesHelper.createNotificationChannel, frameworks/base main: an existing channel takes it only `if
+     * (existing.getUserLockedFields() == 0 && hasDndAccess)`). So when the person grants the access *Let Sukrara through*
+     * sent them to, and comes back to the app (a resume refresh, or the registered-only
+     * ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED), the alarm channels take the override, keeping every choice
+     * the person made ([AlertChannels.setDndBypass]). Nothing else ever changes it: re-creating the channels keeps the
+     * override each one has, so a choice made in Android's own settings stays. An alarm channel moved away from goes
+     * once its notification does. #15, #184.
      */
     private fun syncDndBypass() {
         val access = nm.isNotificationPolicyAccessGranted
         val granted = access && dndAccess == false
         dndAccess = access
         runCatching {
-            when {
-                granted -> {
-                    AlertChannels.moveToDndBypass(ctx)
-                }
-
-                needsDndSync(access, AlertChannels.alarmIds(ctx).values.mapNotNull { nm.getNotificationChannel(it)?.canBypassDnd() }) -> {
-                    AlertChannels.ensure(ctx)
-                }
-
-                else -> {
-                    Channels.dropOldAlarms(ctx)
-                }
+            if (granted && throughAsked) {
+                throughAsked = false
+                AlertChannels.setDndBypass(ctx, bypass = true)
+            } else {
+                Channels.dropOldAlarms(ctx)
             }
         }
     }
 
-    /** Every alarm-level channel in use overrides Do Not Disturb (one not created yet will, exactly when access is granted). */
-    private fun alarmsBypassDnd(s: AlertSettings): Boolean {
-        val access = nm.isNotificationPolicyAccessGranted
-        val ids = AlertChannels.alarmIds(ctx)
-        return alarmKinds(s).all { nm.getNotificationChannel(ids.getValue(it))?.canBypassDnd() ?: access }
+    /** The alarm channel [kind] posts on now, or null before the channels exist. */
+    private fun alarmChannel(kind: AlertKind): NotificationChannel? = nm.getNotificationChannel(AlertChannels.id(ctx, kind, alarm = true))
+
+    /**
+     * The kinds whose alarm channels the Do Not Disturb choice is about: those that ring like an alarm, or every kind
+     * while none does (the choice holds for when one does).
+     */
+    private fun relevantAlarmKinds(s: AlertSettings): List<AlertKind> = alarmKinds(s).ifEmpty { AlertKind.entries }
+
+    /**
+     * The kind the unlocked test sends: the first alert on whose channel sounds and vibrates (Android's *Vibrate only
+     * when unlocked* drops the sound only where there is a vibration), alarm-level first ([NotificationCooldown.testKind]).
+     */
+    private fun unlockedTestKind(s: AlertSettings): AlertKind? {
+        if (!s.on) return null
+        val on = AlertKind.entries.filter { s.rule(it).on }
+        return NotificationCooldown.testKind(on, { s.rule(it).alarm }) { kind ->
+            nm.getNotificationChannel(AlertChannels.id(ctx, kind, s.rule(kind).alarm))?.let {
+                it.sound != null && !it.silenced() && it.shouldVibrate()
+            } ?: true
+        }
+    }
+
+    /** Whether the unlocked test can show Android's behaviour now (no mode holding it back, the sound up). */
+    private fun soundTest(
+        s: AlertSettings,
+        dnd: AlertCategory.Dnd?,
+    ): SoundTest {
+        val kind = unlockedTestKind(s) ?: return SoundTest.NoAlert
+        if (dnd != null && dnd.filter != NotificationManager.INTERRUPTION_FILTER_ALL) return SoundTest.ModeOn
+        val audio = ctx.getSystemService(AudioManager::class.java)
+        val stream = if (s.rule(kind).alarm) AudioManager.STREAM_ALARM else AudioManager.STREAM_NOTIFICATION
+        return if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL || audio.getStreamVolume(stream) == 0) {
+            SoundTest.Silent
+        } else {
+            SoundTest.Ready
+        }
     }
 
     private fun alarmKinds(s: AlertSettings) = if (s.on) AlertKind.entries.filter { s.rule(it).on && s.rule(it).alarm } else emptyList()
@@ -266,27 +312,6 @@ class AndroidAlertReadiness(
         }
 
     private fun NotificationChannel.silenced() = importance < NotificationManager.IMPORTANCE_DEFAULT
-
-    private fun NotificationChannel.blockedByDnd(): Boolean {
-        if (!Channels.isAlarm(id)) return false
-        return when (nm.currentInterruptionFilter) {
-            NotificationManager.INTERRUPTION_FILTER_NONE -> {
-                true
-            }
-
-            // the policy of the modes active now (Bedtime, Driving…), not only the default Do Not Disturb. Without alarms
-            // Android mutes the alarm volume (AudioService: STREAM_ALARM in the ringer mode muted streams), so even an
-            // alarm channel that overrides Do Not Disturb only shows, vibrates and opens full screen, silently (#15,
-            // emulator API 37: `dumpsys audio` STREAM_ALARM muted, the alert's sound not played)
-            NotificationManager.INTERRUPTION_FILTER_PRIORITY -> {
-                nm.consolidatedNotificationPolicy.priorityCategories and NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS == 0
-            }
-
-            else -> {
-                false
-            }
-        }
-    }
 
     /** Nearby devices: connecting and scanning (the families found by a scan need it; the new-sensor flow asks for both). */
     private fun bluetoothPermitted() =
@@ -316,6 +341,8 @@ class AndroidAlertReadiness(
                     addAction(NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED)
                     addAction(NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED)
                     addAction(AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)
+                    // the unlocked test's state (vibrate / silent)
+                    addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
                     // sent to registered receivers only (NotificationManagerService, FLAG_RECEIVER_REGISTERED_ONLY)
                     addAction(NotificationManager.ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED)
                 }
@@ -345,11 +372,5 @@ class AndroidAlertReadiness(
 
     internal companion object {
         const val STOP_AFTER_MS = 5_000L
-
-        /** The channels are created again when access is granted and an alarm channel doesn't override yet. */
-        fun needsDndSync(
-            accessGranted: Boolean,
-            alarmChannelsBypass: List<Boolean>,
-        ) = accessGranted && alarmChannelsBypass.any { !it }
     }
 }

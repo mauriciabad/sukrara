@@ -52,7 +52,7 @@ class ReliabilityPageTest {
 
     @Test
     fun `ready - every setup item on, no Fix, no failed step`() {
-        readiness = AlertReadiness(emptySet(), unlockedSound = UnlockedSound.Off)
+        readiness = AlertReadiness(emptySet(), unlockedSound = UnlockedSound.Heard)
         show()
         compose.onNodeWithText(context.getString(R.string.st_reliability_ready)).assertIsDisplayed()
         for (r in AlertRequirement.entries.filter { it.inSetup }) compose.onNodeWithText(name(r)).performScrollTo()

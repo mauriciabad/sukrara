@@ -80,9 +80,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   of it, the graph below; the fingerprint and every lock-screen gesture work through it, and a tap adds a treatment
   without unlocking (Settings › Lock screen: on by default, five backgrounds for busy wallpapers, light or dark).
 - **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,
-  "like an alarm" ones pass Do Not Disturb (with Do Not Disturb access they also show and vibrate through a mode that
-  silences alarms, keeping your channel choices; the reliability checklist says when a mode on now mutes their sound); alerts that come close together still ring in full (Android's notification
-  cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
+  Do Not Disturb respected by default (the "like an alarm" ones ring where the mode allows alarms); *Let Sukrara
+  through* in the reliability checklist makes them an exception to every mode through Android's own grant, keeping your
+  channel choices, and *Don't let Sukrara through* undoes it; home says when a mode on now keeps alerts quiet; alerts that come close together still ring in full (Android's notification
+  cooldown doesn't quieten them; a test alert with the phone unlocked tells whether Android only vibrates then, and if so Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
   (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. A low
   or a high can wait a few minutes out of range before its first alert, and bounces just inside the threshold can count
@@ -117,8 +118,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   phone.
 - **Settings** for daily use (every row searchable, accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
-  (notifications, alarms, full-screen, battery, Do Not Disturb and Do Not Disturb access, sound while the phone is unlocked, Bluetooth; an alert Android refused shows on home with
-  *Copy report*) and the same real test alert to check it gets through Do Not Disturb (also in first-run setup), ranges and the whole graph (lines, time
+  (notifications, alarms, full-screen, battery, alert sound, sound while the phone is unlocked, Bluetooth; Do Not Disturb as a plain statement with one button; an alert Android refused shows on home with
+  *Copy report*) and the same real test alert to hear what gets through (also in first-run setup), ranges and the whole graph (lines, time
   per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
@@ -221,10 +222,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Alerts** with sound packs and the same rules and timeline scenarios as Android (also the waits and margin *Near a
   threshold* and *Night Alerts*, with their line in the panel while they apply; the wearer's very low nobody answered
   shows as *Very low glucose · no response*, through this Mac's mutes, unless you turn that off); mute, change the
-  time, a custom length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert. Alarms are **Time
-  Sensitive** (they break through a Focus) in a build with a provisioning profile; the panel, setup and Settings ›
-  Alerts say when a Focus can hold them back (no profile, or Time Sensitive turned off) and open the setting that
-  changes it. With a profile the follower key is in the data-protection keychain (moved there once from the login
+  time, a custom length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert. A Focus holds
+  the alerts back by default; setup and Settings › Alerts say so and *Let Sukrara Through* makes the alarms **Time
+  Sensitive** (through every Focus that allows them; a build with a provisioning profile), or open the system setting
+  when Time Sensitive is off or the build can't post it. With a profile the follower key is in the data-protection keychain (moved there once from the login
   keychain).
 - **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
   7 days by day with the phone's entries, edit or delete your own with undo.

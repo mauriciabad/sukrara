@@ -51,6 +51,7 @@ import Testing
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
             t("update.skippedVersion", MacSettings.updateSkippedVersion), t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
+            t("alerts.throughFocus", MacSettings.throughFocus),
         ]
 
     /// The schema's rows as JSON (the defaults and values the generated spec doesn't carry), by id.

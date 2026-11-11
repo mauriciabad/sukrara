@@ -19,7 +19,7 @@ import app.mauri.sukrara.monitor.alerts.AlertChannels
  * channel id, so a renamed channel silently resets them to our defaults — for alert channels that can mean a muted
  * alarm the person had made loud. New behaviour gets a new id; a removed channel is deleted explicitly ([DELETED]).
  * The one exception moves the person's choices with it: an alarm channel taking Do Not Disturb's override
- * ([AlertChannels.moveToDndBypass], `alert_alarm.<kind>.<generation>`).
+ * ([AlertChannels.setDndBypass], `alert_alarm.<kind>.<generation>`).
  */
 object Channels {
     enum class Group(
@@ -74,7 +74,7 @@ object Channels {
 
     /**
      * [kind]'s alarm channel: `alert_alarm.<kind>`, then `alert_alarm.<kind>.2`, `.3`… each time it moves to take Do Not
-     * Disturb's override that Android won't give it in place ([AlertChannels.moveToDndBypass], #15).
+     * Disturb's override that Android won't give it in place ([AlertChannels.setDndBypass], #15).
      */
     fun alarm(
         kind: String,
@@ -113,7 +113,7 @@ object Channels {
     fun existing(context: Context): List<String> =
         context.getSystemService(NotificationManager::class.java).notificationChannels.map { it.id }
 
-    /** [create] and [AlertChannels.moveToDndBypass] one at a time: an alarm channel is never created twice. */
+    /** [create] and [AlertChannels.setDndBypass] one at a time: an alarm channel is never created twice. */
     val lock = Any()
 
     val ALL: List<Spec> =
@@ -153,16 +153,26 @@ object Channels {
     /**
      * Creates every group and channel (idempotent: Android keeps the person's edits of an existing channel and only
      * updates its name). Alert channels always get their full setup ([AlertChannels]: the Sukrara sound, the volume's
-     * usage, the kind's vibration, Do Not Disturb for alarms): Android fixes it at creation, so it is never optional.
+     * usage, the kind's vibration): Android fixes it at creation, so it is never optional. An alarm channel keeps the Do
+     * Not Disturb override it has, unless [alarmBypass] asks for one ([AlertChannels.setDndBypass]); a new one has none.
      * Each alarm channel under its current id ([currentAlarm]: creating an id that was moved away from would bring the
      * old channel back); an older one left behind is deleted once no notification shows on it ([dropOldAlarms]).
      */
-    fun create(context: Context) {
+    fun create(
+        context: Context,
+        alarmBypass: Boolean? = null,
+    ) {
         synchronized(lock) {
             val nm = context.getSystemService(NotificationManager::class.java)
             val ids = existing(context)
             nm.createNotificationChannelGroups(Group.entries.map { NotificationChannelGroup(it.id, context.getString(it.nameRes)) })
-            nm.createNotificationChannels(current(ids).map { channel(context, it) })
+            nm.createNotificationChannels(
+                current(ids).map { spec ->
+                    val bypass =
+                        alarmBypass?.takeIf { spec.kind == Kind.ALARM } ?: (nm.getNotificationChannel(spec.id)?.canBypassDnd() == true)
+                    channel(context, spec, bypass)
+                },
+            )
             DELETED.forEach(nm::deleteNotificationChannel)
             dropOldAlarms(context)
         }
@@ -173,7 +183,7 @@ object Channels {
         ALL.map { if (it.kind == Kind.ALARM) it.copy(id = currentAlarm(ids, it.alertKind!!)) else it }
 
     /**
-     * Deletes the alarm channels an alarm moved away from ([AlertChannels.moveToDndBypass]), each once no notification
+     * Deletes the alarm channels an alarm moved away from ([AlertChannels.setDndBypass]), each once no notification
      * shows on it (deleting a channel takes its notifications away: never an alert on screen). True when none is left.
      */
     fun dropOldAlarms(context: Context): Boolean {
@@ -200,6 +210,7 @@ object Channels {
     private fun channel(
         context: Context,
         spec: Spec,
+        bypassDnd: Boolean = false,
     ) = NotificationChannel(spec.id, context.getString(spec.nameRes), spec.importance).apply {
         group = spec.group.id
         when (spec.kind) {
@@ -212,7 +223,7 @@ object Channels {
             }
 
             Kind.ALERT, Kind.ALARM -> {
-                AlertChannels.configure(this, context, AlertKind.fromWire(spec.alertKind!!)!!, spec.kind == Kind.ALARM)
+                AlertChannels.configure(this, context, AlertKind.fromWire(spec.alertKind!!)!!, spec.kind == Kind.ALARM, bypassDnd)
             }
         }
     }

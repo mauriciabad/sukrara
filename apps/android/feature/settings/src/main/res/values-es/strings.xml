@@ -139,7 +139,7 @@
     <string name="st_reliability_ready">Todo lo que necesitan las alertas está activado</string>
     <string name="st_reliability_footer">Las mismas comprobaciones que la fila de fiabilidad de inicio y la configuración. Arreglar abre la pantalla de Android correspondiente; al volver, se actualiza.</string>
     <string name="st_reliability_test_title">Compruébalo ahora</string>
-    <string name="st_reliability_test_summary">La alerta real %1$s, marcada como prueba. Pruébala con No molestar activado.</string>
+    <string name="st_reliability_test_summary">La alerta real %1$s, marcada como prueba. Pruébala con un modo como Descanso activado para oír qué deja pasar.</string>
     <string name="st_reliability_test_none">No hay ninguna alerta activada: activa una en Alertas para probarla</string>
     <string name="st_req_ok">Activado</string>
     <string name="st_req_missing">Falta</string>

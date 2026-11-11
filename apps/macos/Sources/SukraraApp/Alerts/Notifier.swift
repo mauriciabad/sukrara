@@ -51,6 +51,8 @@ final class Notifier: AlertNotifying {
     private let text: AlertText
     private let clock: any TimeSource
     private let settings: () -> AlertSettings
+    /// The person lets Sukrara through a Focus (schema `alerts.throughFocus`, #184): read at each post.
+    private let throughFocus: () -> Bool
     /// The glucose unit now (`general.unit`): the body writes the value in it.
     private let unit: () -> GlucoseUnit
     private var lastVariant: [AlertKind: Int] = [:]
@@ -59,9 +61,11 @@ final class Notifier: AlertNotifying {
 
     init(
         center: any NotificationPosting, sounds: SoundLibrary?, text: AlertText = .preferred(), clock: any TimeSource,
-        unit: @escaping () -> GlucoseUnit = { .mgdl }, settings: @escaping () -> AlertSettings
+        unit: @escaping () -> GlucoseUnit = { .mgdl }, throughFocus: @escaping () -> Bool = { false },
+        settings: @escaping () -> AlertSettings
     ) {
         self.unit = unit
+        self.throughFocus = throughFocus
         self.center = center
         self.sounds = sounds
         self.text = text
@@ -80,7 +84,7 @@ final class Notifier: AlertNotifying {
         content.threadIdentifier = AlertNotificationIDs.alertCategory
         content.userInfo = [Self.sideKey: f.kind.side.rawValue, Self.firingKey: f.id]
         content.interruptionLevel =
-            (s[f.kind].alarm || escalated) && center.timeSensitiveAllowed ? .timeSensitive : .active
+            (s[f.kind].alarm || escalated) && timeSensitive() ? .timeSensitive : .active
         content.sound = sound ? notificationSound(f.kind, s) : nil
         center.add(
             UNNotificationRequest(
@@ -94,12 +98,16 @@ final class Notifier: AlertNotifying {
         let content = UNMutableNotificationContent()
         content.title = text.testTitle(f)
         content.body = L10n.t("This is how this alert looks and sounds. Nothing was muted or logged.")
-        content.interruptionLevel = s[kind].alarm && center.timeSensitiveAllowed ? .timeSensitive : .active
+        content.interruptionLevel = s[kind].alarm && timeSensitive() ? .timeSensitive : .active
         content.sound = notificationSound(kind, s)
         center.add(
             UNNotificationRequest(identifier: "test-\(kind.rawValue)", content: content, trigger: nil))
         eventLog?.write("alert \(kind.rawValue) test posted")
     }
+
+    /// An alarm-level alert posts Time Sensitive only when the person lets Sukrara through a Focus and macOS allows it:
+    /// by default a Focus holds Sukrara's alerts back like any app's (#184).
+    private func timeSensitive() -> Bool { center.timeSensitiveAllowed && throughFocus() }
 
     /// The test notification's firing: a value just past the threshold, labelled as a test by its title.
     static func testFiring(_ kind: AlertKind, threshold: Double, at now: Date) -> AlertFiring {

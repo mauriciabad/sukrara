@@ -68,4 +68,15 @@ class FakeReadiness(missing: Set<AlertRequirement> = emptySet()) : AlertReadines
     override fun fix(requirement: AlertRequirement) {
         fixed += requirement
     }
+
+    val tests = mutableListOf<Unit>()
+
+    override fun testUnlockedSound(): Boolean {
+        tests += Unit
+        return true
+    }
+
+    override fun letThroughDnd(through: Boolean) {
+        readiness.value = readiness.value.copy(dnd = readiness.value.dnd.copy(through = through))
+    }
 }

@@ -67,6 +67,7 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.PageBackHandler
+import app.mauri.sukrara.designsystem.rows.DndChoice
 import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
@@ -156,6 +157,10 @@ data class SetupActions(
     val completePermissions: () -> Unit = {},
     val fix: (AlertRequirement) -> Unit = {},
     val answerUnlocked: (UnlockedSound) -> Unit = {},
+    /** The unlocked-sound test ([app.mauri.sukrara.core.model.AlertReadinessSource.testUnlockedSound]). */
+    val testUnlocked: () -> Boolean = { false },
+    /** Let Sukrara through Do Not Disturb, or not ([app.mauri.sukrara.core.model.AlertReadinessSource.letThroughDnd]). */
+    val letThroughDnd: (Boolean) -> Unit = {},
     /** The real test alert ([SetupScreen]'s `sendTestAlert`); null = no alert is on, nothing to test. */
     val sendTestAlert: (() -> Unit)? = null,
     val openSensorSetup: () -> Unit = {},
@@ -202,6 +207,8 @@ private fun SetupViewModel.actions(
             completePermissions = ::completePermissions,
             fix = { r -> readinessFix(r) },
             answerUnlocked = { readinessAnswerUnlocked(it) },
+            testUnlocked = ::readinessTestUnlocked,
+            letThroughDnd = ::readinessLetThroughDnd,
             openSensorSetup = onOpenSensorSetup,
             completeSensor = ::completeSensor,
             thresholdRows = thresholdRows,
@@ -469,10 +476,21 @@ private fun ColumnScope.PermissionsStep(
     for (r in items) {
         val ok = r !in u.readiness.missing
         if (r == AlertRequirement.SoundWhenUnlocked) {
-            // Android hides this setting from apps: the person checks it and answers (no Allow to tap)
+            // Android hides this setting from apps: the person sends a test alert and says what it did (no Allow to tap)
             ChecklistRow(r, ok, onFix = null) {
-                UnlockedSoundAnswer(u.readiness.unlockedSound, { actions.fix(r) }, actions.answerUnlocked)
+                UnlockedSoundAnswer(
+                    u.readiness.unlockedSound,
+                    u.readiness.soundTest,
+                    actions.testUnlocked,
+                    { actions.fix(r) },
+                    actions.answerUnlocked,
+                )
             }
+            continue
+        }
+        if (r == AlertRequirement.DoNotDisturb) {
+            // a choice, not a fault: no tick and no Allow, the statement and its one button
+            ChecklistRow(r, ok = true, onFix = null, choice = true) { DndChoice(u.readiness.dnd, actions.letThroughDnd) }
             continue
         }
         ChecklistRow(r, ok, onFix = {
@@ -499,6 +517,8 @@ private fun ChecklistRow(
     r: AlertRequirement,
     ok: Boolean,
     onFix: (() -> Unit)?,
+    /** A choice, not a requirement ([AlertRequirement.DoNotDisturb]): a neutral icon instead of the tick / to-do. */
+    choice: Boolean = false,
     below: @Composable () -> Unit = {},
 ) {
     val title = stringResource(r.nameRes())
@@ -508,11 +528,19 @@ private fun ChecklistRow(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painterResource(if (ok) R.drawable.sharing_ic_check else R.drawable.sharing_ic_todo),
-                contentDescription = stringResource(if (ok) R.string.sh_setup_check_ok else R.string.sh_setup_check_missing),
-                tint = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-            )
+            if (choice) {
+                Icon(
+                    painterResource(DsR.drawable.ds_ic_bedtime),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Icon(
+                    painterResource(if (ok) R.drawable.sharing_ic_check else R.drawable.sharing_ic_todo),
+                    contentDescription = stringResource(if (ok) R.string.sh_setup_check_ok else R.string.sh_setup_check_missing),
+                    tint = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                )
+            }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
                 Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -53,6 +53,8 @@ public enum MacSettings {
     public static let unit = SettingSpec(key: SettingsSpec.Keys.unit, defaultValue: GlucoseUnit.mgdl.rawValue)
     /// *Read Glucose Aloud* from any app with Control-Shift-Command-G (on by default; off when another app needs the keys).
     public static let readAloudShortcut = SettingSpec(key: SettingsSpec.Keys.readAloudShortcut, defaultValue: true)
+    /// Let Sukrara through a Focus: alarm-level alerts post Time Sensitive (off by default; #184).
+    public static let throughFocus = SettingSpec(key: SettingsSpec.Keys.throughFocus, defaultValue: false)
     /// Read glucose from Juggluco's web server on the home network (off by default; plain http, private addresses).
     public static let jugglucoLan = SettingSpec(key: SettingsSpec.Keys.jugglucoLan, defaultValue: false)
     /// Juggluco's address ("192.168.1.23" or with ":port"); blank = find it on this Mac's networks.

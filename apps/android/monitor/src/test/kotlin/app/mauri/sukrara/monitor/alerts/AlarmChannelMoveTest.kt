@@ -26,9 +26,10 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * #15: once Sukrara has Do Not Disturb access, an alarm channel the person edited (Android won't give it the override
- * in place) moves to its next id with every choice they made, and the old one goes once nothing shows on it.
- * Robolectric keeps an existing channel's override as it was, as Android does for an edited one.
+ * #15 / #184: when the person lets Sukrara through Do Not Disturb (with Do Not Disturb access) or stops it, an alarm
+ * channel the person edited (Android won't change its override in place) moves to its next id with every choice they
+ * made, and the old one goes once nothing shows on it. Robolectric keeps an existing channel's override as it was, as
+ * Android does for an edited one.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -55,7 +56,7 @@ class AlarmChannelMoveTest {
             },
         )
 
-    private fun move() = AlertChannels.moveToDndBypass(ctx) { it != "content://elsewhere/unreadable".toUri() }
+    private fun move(bypass: Boolean = true) = AlertChannels.setDndBypass(ctx, bypass) { it != "content://elsewhere/unreadable".toUri() }
 
     @Test fun anEditedAlarmChannelMovesWithEverythingThePersonChose() {
         shadowOf(nm).setNotificationPolicyAccessGranted(true)
@@ -77,7 +78,7 @@ class AlarmChannelMoveTest {
         assertEquals(Channels.Group.ALERTS_ALARM.id, now.group)
         assertTrue("the old channel is gone", shadowOf(nm).isChannelDeleted(veryLow))
         assertEquals("alert_alarm.very_low.2", AlertChannels.id(ctx, AlertKind.VERY_LOW, alarm = true))
-        // the alarm channels Sukrara made itself took the override at creation: they stay
+        // the alarm channels Sukrara made while letting it through took the override at creation
         assertEquals(
             AlertKind.entries.size,
             AlertChannels.alarmIds(ctx).values.count {
@@ -191,6 +192,37 @@ class AlarmChannelMoveTest {
         assertTrue(nm.getNotificationChannel("alert_alarm.very_low.3").canBypassDnd())
         assertTrue(shadowOf(nm).isChannelDeleted("alert_alarm.very_low.2"))
         assertEquals("alert_alarm.very_low.3", AlertChannels.id(ctx, AlertKind.VERY_LOW, alarm = true))
+    }
+
+    /** #184: a fresh install respects Do Not Disturb, and creating the channels again never changes an override. */
+    @Test fun newChannelsDontOverrideAndCreatingAgainKeepsEachOverride() {
+        shadowOf(nm).setNotificationPolicyAccessGranted(true)
+        Channels.create(ctx)
+        assertTrue(AlertChannels.alarmIds(ctx).values.none { nm.getNotificationChannel(it).canBypassDnd() })
+        assertTrue(Channels.ALERT_KINDS.none { nm.getNotificationChannel(Channels.alert(it)).canBypassDnd() })
+
+        move()
+        Channels.create(ctx)
+
+        assertTrue(AlertChannels.alarmIds(ctx).values.all { nm.getNotificationChannel(it).canBypassDnd() })
+    }
+
+    /** #184: *Don't let Sukrara through* takes the override away, keeping the person's choices; no access needed. */
+    @Test fun turningItOffMovesAnOverridingChannelWithoutAccess() {
+        shadowOf(nm).setNotificationPolicyAccessGranted(true)
+        edited()
+        move()
+        shadowOf(nm).setNotificationPolicyAccessGranted(false)
+
+        val off = move(bypass = false)
+
+        assertTrue(AlertKind.VERY_LOW in off.moved)
+        val now = nm.getNotificationChannel(AlertChannels.id(ctx, AlertKind.VERY_LOW, alarm = true))
+        assertEquals("alert_alarm.very_low.3", now.id)
+        assertFalse(now.canBypassDnd())
+        assertEquals(ringtone, now.sound)
+        assertEquals(NotificationManager.IMPORTANCE_DEFAULT, now.importance)
+        assertTrue(AlertChannels.alarmIds(ctx).values.none { nm.getNotificationChannel(it).canBypassDnd() })
     }
 
     @Test fun sukrarasOwnSoundsAreReadableAndAnUnknownProviderIsNot() {

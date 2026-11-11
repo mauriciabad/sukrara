@@ -92,16 +92,17 @@
                 let m = SetupModel(
                     settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
                 m.loginItem = LoginItem(service: SnapLogin(status: .notRegistered))
-                m.settings.timeSensitive = .unavailable  // a build without a provisioning profile
+                // a signed build: Sukrara may post Time Sensitive, a Focus holds its alerts back by default
+                m.settings.timeSensitive = .on
                 m.flow.open(step)
                 out.append(("setup-\(step.rawValue)", AnyView(SetupView(model: m, close: {}))))
             }
-            // the notification step of a build whose alarms break through a Focus
-            let timeSensitive = SetupModel(
+            // the notification step of a build without Time Sensitive (no provisioning profile): Focus settings
+            let unavailable = SetupModel(
                 settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
-            timeSensitive.settings.timeSensitive = .on
-            timeSensitive.flow.open(.notifications)
-            out.append(("setup-notifications-time-sensitive", AnyView(SetupView(model: timeSensitive, close: {}))))
+            unavailable.settings.timeSensitive = .unavailable
+            unavailable.flow.open(.notifications)
+            out.append(("setup-notifications-no-time-sensitive", AnyView(SetupView(model: unavailable, close: {}))))
             // the alert step: the wearer's levels (mirrored), levels out of order, this Mac's own (Custom, one off)
             let wearerAlerts = WearerSettings(
                 json: #"{"alerts":{"alerts":{"low":{"on":true,"mgdl":72},"high":{"on":true,"mgdl":200}}}}"#,
@@ -279,7 +280,7 @@
                 ))
             let alerts = SettingsModel(store: store, follow: following, version: "0.12.0")
             alerts.pane = .alerts
-            alerts.timeSensitive = .unavailable
+            alerts.timeSensitive = .on
             out.append(
                 (
                     "settings-alerts",
