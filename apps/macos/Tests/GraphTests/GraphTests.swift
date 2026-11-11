@@ -112,7 +112,6 @@ func fixtureSetHasCases(_ set: String) {
         #expect(l.strike == (e.bool("strike") ?? false))
         #expect(l.trend?.rawValue == e.string("trend"))
         #expect(l.fresh.showTime == (e.bool("time") ?? false))
-        #expect((l.state == .value && l.fresh.saysNow) == (e.bool("now") ?? false))
         #expect(l.fresh.showGraph == (e.bool("graph") ?? false))
         #expect(l.ended == (e.bool("ended") ?? false))
     }
@@ -140,10 +139,8 @@ func fixtureSetHasCases(_ set: String) {
         case "value":
             #expect(lay.all("value.number").map(\.info) == [(e.string("text") ?? "") + (strike ? " struck" : "")])
             #expect((lay.first("value.trend")?.info == "ring") == (e.string("trend") == "none"))
-            // the late time, or a fresh value's "now" (beside the arrow or in the pill's row)
-            let time = lay.first("value.time")
-            #expect((time != nil) == (e.bool("time") ?? false || e.bool("now") ?? false))
-            #expect((time?.info.hasPrefix("now") ?? false) == (e.bool("now") ?? false))
+            // the late time; a fresh value shows none (no "now" either: the PoC's look, #181)
+            #expect((lay.first("value.time") != nil) == (e.bool("time") ?? false))
             // a sensor past its end that keeps sending: the value with its pill (#3)
             if e.bool("ended") == true { #expect(lay.first("value.status")?.info.hasPrefix("sensor") == true) }
         case "no_readings": #expect(lay.first("value.none")?.info == "NO_READINGS")

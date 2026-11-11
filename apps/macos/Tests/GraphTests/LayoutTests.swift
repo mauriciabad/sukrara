@@ -274,7 +274,6 @@ enum DefaultAlertRules {
         checkGaps(renders, rulesRoot, fail)
         checkBadge(renders, rulesRoot, fail)
         checkDistribution(renders, rulesRoot, fail)
-        checkCrowded(renders, rulesRoot, fail)
         checkWarmup(renders, rulesRoot, language: words.language, fail)
         #expect(failures == 0, "\(failures) layout failure(s) over \(renders.count) renders (\(words.language))")
     }
@@ -524,29 +523,6 @@ enum DefaultAlertRules {
             }
         }
         if shown == 0 { fail("warmup: no render shows a warming-up sensor (rule untested)") }
-    }
-
-    /// Small slots beside the value are at most two (rules.json "crowdedSlots", #71).
-    private func checkCrowded(_ renders: [Render], _ root: JSON, _ fail: (String) -> Void) {
-        let crowded = root.child("crowdedSlots")
-        guard let dp = crowded.number("dp"), let most = crowded.number("max") else {
-            return fail("rules.json has no \"crowdedSlots\"")
-        }
-        if abs(Double(GlucoseCard.crowdedDp) - dp) > 1e-4 || Double(GlucoseCard.crowdedMax) != most {
-            fail(
-                "crowdedSlots: GlucoseCard \(GlucoseCard.crowdedDp)/\(GlucoseCard.crowdedMax), rules.json \(dp)/\(most)"
-            )
-        }
-        var small = 0
-        for r in renders {
-            for l in r.layouts where l.part != .slots {
-                let slots = l.all("slot")
-                guard let size = slots.first?.box?.width, Double(size / l.d) < dp else { continue }
-                small += 1
-                if Double(slots.count) > most { fail("crowdedSlots on \(r): \(slots.count) slots of \(size / l.d) dp") }
-            }
-        }
-        if small == 0 { fail("crowdedSlots: no render has small slots beside the value (rule untested)") }
     }
 
     /// The distribution's erased outline: the dots plus one constant margin, everywhere.

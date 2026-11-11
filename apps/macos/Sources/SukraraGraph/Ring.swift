@@ -425,23 +425,15 @@ enum TirRing {
             ctx.endTransparencyLayer()
             ctx.restoreGState()
         }
-        // a share, never a reading: lighter than the value's number (.bold) and with its "%" (`slotWeight`)
+        // the PoC's ring centre (#181): the share's number alone, heavy, no "%" (the owner asked for none)
         let sub = Ink.font(r * 0.34, .semibold, rounded: true)
         let v = tir.empty ? "–" : text(tir, spec)
-        let pct = tir.empty ? "" : "%"
         let base = c.y + r * 0.78 * 0.28
         // "69.7", "<0.1": the decimals fit inside the ring (TirRing.draw on Android)
         var size = v.count > 3 ? r * 0.78 * 0.7 : r * 0.78
-        func width(_ s: CGFloat) -> CGFloat {
-            Ink.width(v, Ink.font(s, slotWeight, rounded: true))
-                + Ink.width(pct, Ink.font(s * pctSize, slotWeight, rounded: true))
-        }
-        // "100%" too
-        size = min(size, size * (r - sw) * 1.5 / max(width(size), 1))
-        let num = Ink.font(size, slotWeight, rounded: true), unit = Ink.font(size * pctSize, slotWeight, rounded: true)
-        let x0 = c.x - width(size) / 2
-        Ink.draw(ctx, v, x: x0, y: base, num, pal.ink.a(emphasis))
-        Ink.draw(ctx, pct, x: x0 + Ink.width(v, num), y: base, unit, pal.ink.a(emphasis))
+        // "100" too
+        size = min(size, size * (r - sw) * 1.5 / max(Ink.width(v, Ink.font(size, numberWeight, rounded: true)), 1))
+        Ink.draw(ctx, v, x: c.x, y: base, Ink.font(size, numberWeight, rounded: true), pal.ink.a(emphasis), align: 0.5)
         Ink.draw(
             ctx, w.period(spec.window), x: c.x, y: base + r * 0.34 * 1.1, sub,
             (spec.range == .tight ? pal.tight : pal.inkSoft).a(emphasis), align: 0.5)
@@ -449,11 +441,8 @@ enum TirRing {
 }
 
 extension TirRing {
-    /// The weight of a slot's number (here and `MetricGauge`): lighter than the value's (.bold), so "59" in a ring beside
-    /// "112" never reads as a second glucose value (TirRing.SLOT_WEIGHT).
-    static let slotWeight: NSFont.Weight = .semibold
-    /// The "%" after the ring's number, as a share of its size (TirRing.PCT_SIZE).
-    static let pctSize: CGFloat = 0.45
+    /// The weight of a slot's number (here and `MetricGauge`): the PoC's heavy rounded face (TirRing.NUMBER_WEIGHT).
+    static let numberWeight: NSFont.Weight = .heavy
     /// The ring's `TirMark` (none without data).
     static func mark(_ tir: TimeInRange, _ spec: RingSpec) -> TirMark {
         tir.empty || !spec.marks ? .none : TirMark.of(tir, spec.range)
@@ -527,7 +516,7 @@ enum MetricGauge {
             CGPoint(x: c.x + r1 * CGFloat(cos(ga)), y: c.y + r1 * CGFloat(sin(ga))),
         ])
         ctx.restoreGState()
-        let num = Ink.font(radius * 0.62, TirRing.slotWeight, rounded: true)
+        let num = Ink.font(radius * 0.62, TirRing.numberWeight, rounded: true)
         let unit = Ink.font(radius * 0.3, .semibold, rounded: true)
         let (v, u) = m.empty ? ("–", "") : text(spec.kind, m, unit: glucose, locale: CardWords.current.locale)
         let w = Ink.width(v, num) + Ink.width(u, unit)

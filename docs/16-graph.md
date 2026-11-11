@@ -78,7 +78,7 @@ surface. The pictures in this report show the current design, except the options
 
 | | age of the latest reading | value | reading's time | graph |
 |---|---|---|---|---|
-| fresh | ≤ 90 s | ✓ | "now" beside the arrow (#70) | ✓ |
+| fresh | ≤ 90 s | ✓ | – (no "now": #181) | ✓ |
 | late | ≤ 5 min | ✓ | ✓ ("10:11 PM") | ✓ |
 | stale | ≤ 20 min | struck through, grey, no arrow | ✓ | ✓ |
 | old | ≤ 3 h | – ("No reading since 8:59 PM") | ✓ | ✓ |

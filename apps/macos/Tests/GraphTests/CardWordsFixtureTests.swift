@@ -114,26 +114,22 @@ import Testing
         #expect(StatusBadge.replaceSensor(es).text == "Cambiar sensor" && StatusBadge.backToNow(es).text == "Ahora")
     }
 
-    /// A fresh value says "now" in the card's language where the time goes (#83: the Spanish snapshots drew "now"):
-    /// "ahora" is wider than "now" in the same place and font.
-    @Test func aFreshValueSaysNowInTheCardsLanguage() throws {
+    /// A fresh value shows no time and no "now", in either language (#181: the owner prefers the PoC's card without it;
+    /// #83 once had "now" drawn in English on the Spanish card).
+    @Test(arguments: [CardWords.en, CardWords.es])
+    func aFreshValueShowsNoTime(_ w: CardWords) throws {
         let now = GraphFixtures.now
         let readings = [GraphReading(t: now - 30, v: 112, rate: 0.4)]
-        func nowWidth(_ w: CardWords) throws -> CGFloat {
-            let st = CardStyle(graph: nil, rings: [], sensorTime: false, bands: Bands()).speaking(w)
-            let size = CGSize(width: 340, height: 120)
-            let ctx = try #require(
-                CGContext(
-                    data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0,
-                    space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-            let lay = GlucoseCard.draw(
-                ctx, size: size, readings: readings, marks: [], now: now, st, GraphPalette.of(dark: false),
-                surface: .widgetValue, part: .all)
-            let time = try #require(lay.first("value.time"), "a fresh value says now")
-            return try #require(time.box?.width, "\(time.info)")
-        }
-        let en = try nowWidth(.en), es = try nowWidth(.es)
-        #expect(es > en * 1.3, "\"ahora\" (\(es) pt) drawn as wide as \"now\" (\(en) pt)")
+        let st = CardStyle(graph: nil, rings: [], sensorTime: false, bands: Bands()).speaking(w)
+        let size = CGSize(width: 340, height: 120)
+        let ctx = try #require(
+            CGContext(
+                data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let lay = GlucoseCard.draw(
+            ctx, size: size, readings: readings, marks: [], now: now, st, GraphPalette.of(dark: false),
+            surface: .widgetValue, part: .all)
+        #expect(lay.first("value.time") == nil)
     }
 }

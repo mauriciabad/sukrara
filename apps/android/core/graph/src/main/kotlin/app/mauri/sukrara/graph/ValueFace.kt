@@ -12,9 +12,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * The value's place on a card: the number + trend arrow and under it the late time and / or the status pill ("now"
- * beside the arrow or in the pill's row while the reading is fresh); or,
- * instead of a value, the warm-up, "Sensor ended" with its "Replace sensor" pill (once an ended sensor's readings
+ * The value's place on a card: the number + trend arrow and under it the late time and / or the status pill (a fresh
+ * reading shows no time at all: the PoC's look, #181); or, instead of a value, the warm-up, "Sensor ended" with its "Replace sensor" pill (once an ended sensor's readings
  * stop; until then the value with the "Ended · Replace sensor" pill), or "No reading since" with the "no readings"
  * icon. One per [GlucoseCard.draw] call.
  */
@@ -34,9 +33,6 @@ internal class ValueFace(
     companion object {
         /** The largest a warming-up sensor's words are drawn (dp): the size of "Sensor ended", never a value's. */
         const val WARMUP_TEXT_DP = 20f
-
-        /** Room for a fresh value's "now" beside its arrow costs the number at most this share of its size (else no "now"). */
-        const val NOW_KEEP = 0.8f
     }
 
     /** Draw into [box] with the status pill [look] (null = none) and the value in [ink] (null = its range colour). */
@@ -269,17 +265,6 @@ internal class ValueFace(
         // fit the width too: number + arrow stay left of the slots
         fun need() = num.measureText(s) + num.textSize * ValueGlyphs.MARK_BOX * 1.1f
         repeat(3) { need().let { n -> if (n > box.width()) num.textSize *= box.width() / n * 0.995f } }
-        // a fresh value says "now" where the time goes (#70): in the pill's row, else beside the arrow; never a row of its
-        // own. Beside a plain number + arrow it gets room unless that costs the number more than [NOW_KEEP] of its size.
-        val now = if (fr.saysNow) w.durationNow else null
-        if (now != null && !badgeRow && look == null && range == null) {
-            val plain = num.textSize
-
-            fun withNow() =
-                num.measureText(s) + num.textSize * (ValueGlyphs.MARK_GAP + ValueGlyphs.MARK_BOX * 1.15f) + small.measureText(now)
-            repeat(3) { withNow().let { n -> if (n > box.width()) num.textSize *= box.width() / n * 0.995f } }
-            if (num.textSize < plain * NOW_KEEP) num.textSize = plain
-        }
         val iconBadge =
             look != null && !badgeRow &&
                 box.width() - (num.measureText(s) + num.textSize * ValueGlyphs.MARK_BOX * 1.2f) >= min(numBox.height() * 0.5f, 24 * d)
@@ -353,17 +338,15 @@ internal class ValueFace(
                     rec.add("value.range", info = "${range.key} [row] (no room)")
                 }
             }
-            val inRow = time ?: now
-            if (inRow != null) {
-                // the late time (or a fresh value's "now") shares the row
+            if (time != null) {
+                // the late time shares the row
                 val t = Paint(small).apply { textSize = badgeH * 0.56f }
-                val tag = if (time == null) "now [badge row]" else "[badge row]"
-                if (rx + t.measureText(inRow) <= box.right) {
-                    cv.drawText(inRow, rx, top + badgeH / 2 + t.textSize * 0.36f, t)
-                    rec.add("value.time", RectF(rx, top, rx + t.measureText(inRow), top + badgeH), tag)
-                    if (time != null) rec.add("time.text", info = time)
+                if (rx + t.measureText(time) <= box.right) {
+                    cv.drawText(time, rx, top + badgeH / 2 + t.textSize * 0.36f, t)
+                    rec.add("value.time", RectF(rx, top, rx + t.measureText(time), top + badgeH), "[badge row]")
+                    rec.add("time.text", info = time)
                 } else {
-                    rec.add("value.time", info = "$tag (no room)")
+                    rec.add("value.time", info = "[badge row] (no room)")
                 }
             }
             return
@@ -381,20 +364,9 @@ internal class ValueFace(
         if (range != null && rangeText != null) {
             val th = min(ih, 20 * d)
             if (ix + RangeTag.width(rangeText, th) <= box.right) {
-                val b = RangeTag.draw(cv, ix, cy - th / 2, th, rangeText, color, pal, ink)
-                rec.add("value.range", b, "${range.key} [beside]")
-                ix = b.right + th * 0.35f
+                rec.add("value.range", RangeTag.draw(cv, ix, cy - th / 2, th, rangeText, color, pal, ink), "${range.key} [beside]")
             } else {
                 rec.add("value.range", info = "${range.key} (no room)")
-            }
-        }
-        if (now != null) {
-            // on the number's baseline after what is beside the arrow: "112 ↗ now"
-            if (ix + small.measureText(now) <= box.right) {
-                cv.drawText(now, ix, baseY, small)
-                rec.add("value.time", RectF(ix, baseY - small.textSize, ix + small.measureText(now), baseY), "now [beside]")
-            } else {
-                rec.add("value.time", info = "now [beside] (no room)")
             }
         }
         if (time != null) {
