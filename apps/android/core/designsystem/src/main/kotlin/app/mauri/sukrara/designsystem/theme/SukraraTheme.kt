@@ -5,8 +5,9 @@ package app.mauri.sukrara.designsystem.theme
 
 import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -21,12 +22,14 @@ import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.rememberReducedMotion
 
 /**
- * The app's theme: dark-first (the person checks glucose at night; nothing white lights up the room), the device's
- * dynamic colours when [dynamic], else Sukrara's own true-dark palette. Dynamic dark keeps its tonal surfaces but
- * the background goes near black. Also provides [LocalReducedMotion] for every animation below it, and a configuration
+ * The app's theme: the device's dynamic colours (Material You, the wallpaper's tint on the background and every
+ * surface, as the PoC and the stock Settings app: the owner in #181) when [dynamic], else Sukrara's own palettes (its
+ * dark one near black); the type scale on the device's fonts ([sukraraTypography]: the Settings app's round headline
+ * face on a Pixel). Also provides [LocalReducedMotion] for every animation below it, and a configuration
  * whose night mode is [dark], so what follows the system's theme below it (the settings pages' SettingsTheme) follows
  * this one (the same in the app, where [dark] is the system's; a screenshot test's dark is dark everywhere).
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SukraraTheme(
     dark: Boolean = isSystemInDarkTheme(),
@@ -36,7 +39,7 @@ fun SukraraTheme(
     val context = LocalContext.current
     val scheme =
         when {
-            dynamic && dark -> dynamicDarkColorScheme(context).trueDark()
+            dynamic && dark -> dynamicDarkColorScheme(context)
             dynamic -> dynamicLightColorScheme(context)
             dark -> SukraraDark
             else -> SukraraLight
@@ -52,13 +55,11 @@ fun SukraraTheme(
             }
         }
     CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion(), LocalConfiguration provides themed) {
-        MaterialTheme(colorScheme = scheme, typography = SukraraTypography, content = content)
+        val typography = remember(context) { sukraraTypography(context) }
+        // Material 3 Expressive (the PoC's settings and Android 16's own apps): its spring motion for every component
+        MaterialExpressiveTheme(colorScheme = scheme, motionScheme = MotionScheme.expressive(), typography = typography, content = content)
     }
 }
-
-/** Near-black background and lowest surface so an OLED screen stays dark; the tonal surfaces above it stay. */
-internal fun ColorScheme.trueDark(): ColorScheme =
-    copy(background = NearBlack, surface = NearBlack, surfaceContainerLowest = Color.Black)
 
 private val NearBlack = Color(0xFF0B0C0E)
 
