@@ -23,7 +23,7 @@
 #                                previews while CFBundleVersion stays the same.
 #   NOTARY_PROFILE=<profile>     notarize + staple (needs a Developer ID identity).
 # Version: <repo>/VERSION (x.y.z); CFBundleVersion = versionCode = x*1000000 + y*1000 + z (0.12.0 → 12000).
-# Never copy the result into ~/Applications by hand: tools/install.sh mac does that.
+# Never copy the result into /Applications or ~/Applications by hand: tools/install.sh mac does that.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 PKG=$(dirname "$HERE")

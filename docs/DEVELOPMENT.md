@@ -39,10 +39,10 @@ commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`)
   keeps data), read-only adb otherwise. **Never** take the sensor from the running app without the owner's OK, never
   post to LibreView (real doctor-facing account), never uninstall / clear data (identity + followers), no reboots, no
   global Wi-Fi / Bluetooth toggles. Always `adb -s <serial>`.
-- **Mac**: the owner's copy is `~/Applications/Sukrara.app` (team-signed, with the widget). Never overwrite it with a
-  test build; test builds run from another path, offline (`LaunchMode`: snapshot / test runs start no Bluetooth,
-  relays or alerts). After replacing the app, `pkill -f SukraraWidget.appex` and keep `pluginkit -mAv | grep sukrara`
-  pointing only at `~/Applications/Sukrara.app`. `Bundle/bundle.sh` signs with the provisioning profiles in
+- **Mac**: the owner's copy is `/Applications/Sukrara.app` (the notarized release since 0.12.0, with the widget; only
+  `tools/install.sh mac` replaces it). Never overwrite it with a test build; test builds run from another path, offline
+  (`LaunchMode`: snapshot / test runs start no Bluetooth, relays or alerts). After replacing the app, `pkill -f
+  SukraraWidget.appex` and keep `pluginkit -mAv | grep sukrara` pointing only at the installed copy. `Bundle/bundle.sh` signs with the provisioning profiles in
   `~/.apple-dev/profiles` when they're there (Developer ID, Time Sensitive, data-protection keychain, universal links:
   docs/20-publishing.md); such a test build also claims `https://sukrara.mauri.app/join`, so unregister it after
   testing (`lsregister -u <app>`, `pluginkit -r <appex>`).
@@ -53,7 +53,19 @@ Every install must contain all merged work, or features silently vanish from the
 `tools/install.sh phone|mac [--dry-run]`. It refuses a dirty tree, a HEAD without `origin/main`, the branches in
 `tools/check/integration.txt` or the commit installed last time, and failing checks; then it builds the release,
 verifies it (`tools/release/verify-apk.sh` / `verify-app.sh`), installs in place and records the commit in
-`<git common dir>/sukrara-installed-<target>`. On the Mac it also makes the installed app the `sukrara:` link handler.
+`<git common dir>/sukrara-installed-<target>`.
+
+On the Mac it replaces the installed copy wherever it is: `/Applications/Sukrara.app` (the notarized release from the
+dmg or the cask) when it's there, else `~/Applications/Sukrara.app`. It refuses, before anything changes, when a
+`Sukrara.app` in either folder has another bundle id than `app.mauri.sukrara` or can't be replaced: macOS App
+Management guards a notarized copy that has run, so the terminal app it runs in needs that permission (System Settings
+› Privacy & Security › App Management, then restart the terminal). It copies the verified build next to the target
+first, quits Sukrara the way its menu does (then `pkill` after 10 s), removes and unregisters the other folder's copy
+(`pluginkit -r` its widget, `lsregister -u`), swaps the new bundle in, makes it the `sukrara:` link handler,
+unregisters every other registered copy (worktree and test builds, a mounted dmg: `lsregister -u`, `pluginkit -r`) so
+Spotlight, Launchpad and the widget gallery show one Sukrara, and opens it again (also when a later step fails).
+`--dry-run` prints where it would install and what it would remove; `SUKRARA_MAC_APP_DIRS="<dir> <dir>"` points it at
+scratch folders for such a dry run.
 
 ## Signing
 

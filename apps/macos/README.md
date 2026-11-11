@@ -19,7 +19,8 @@ Bundle/bundle.sh --dev           # CFBundleVersion <code>.<yyMMddHHmm> so the wi
 Bundle/dmg.sh                    # build/Sukrara-<version>.dmg + build/Sukrara-mac-<version>.zip
 ```
 
-Install only with `tools/install.sh mac` (never copy `build/Sukrara.app` into `~/Applications` by hand).
+Install only with `tools/install.sh mac` (never copy `build/Sukrara.app` into `/Applications` or `~/Applications` by
+hand): it replaces the installed copy wherever it is and leaves one Sukrara on the Mac.
 
 ## Targets
 
