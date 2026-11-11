@@ -81,10 +81,33 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
 
 ## Q4 Lock screen widget
 
-The LSPosed lock-screen widget isn't in the app yet (#66); this section covers what the lock screen has.
+The widget around the fingerprint icon needs a phone with root, LSPosed and the Sukrara module for System UI (System UI
+restarted after the install): the emulators have no LSPosed. Synthetic data or cropped captures only.
 
-- [ ] A device whose lock screen hosts widgets (tablet hub): the home widgets are offered there; a tap opens the
-      treatment dialog over the lock screen; the value updates while locked.
+- [ ] Settings › Lock screen: *Lock screen widget* on (the default), *Frosted glass*, *Automatic*; lock the phone with
+      the screen on: the value and its arrow left of the fingerprint icon, the slots right of it, the chart below; the
+      fingerprint icon, the shortcuts, the indication text and the notifications draw over it; the rings are round
+      (nothing stretched).
+- [ ] A finger on the sensor unlocks and never opens the dialog (also resting on it, and beside it); swipe up to unlock,
+      pull down the shade, long press to customise and the shortcuts work over it.
+- [ ] Pull the shade down, open the bouncer, unlock: it fades with them and is back on the lock screen; screen off
+      (always-on display): not shown; screen on: shown with the newest reading.
+- [ ] Tap the value: *Add treatment* over the lock screen, still locked (the countdown on *Cancel*); *Cancel* is back on
+      the lock screen. Without a value (no reading for 20 min, or none yet): the tap asks to unlock, then opens the app.
+- [ ] Screen on and locked: a new reading shows within a minute; at 5 min struck, at 20 min *No reading since …*.
+- [ ] Many notifications: the shelf (the pill with the overflow icons) stays above the fingerprint icon, never over the
+      value.
+- [ ] Each *Background* (none, shadow, dim, card, frosted glass) on a busy wallpaper and each *Appearance*; switch the
+      system's dark theme while locked: the tint and the picture follow at once.
+- [ ] Turn the widget off: gone from the lock screen at once; on again: back. Disable the module in LSPosed + restart
+      System UI: gone, the switch says *On. Shows once the Sukrara LSPosed module runs in System UI*.
+- [ ] After an update that changes System UI's code: Settings › Lock screen shows *Restart System UI* (the widget keeps
+      showing meanwhile); *Restart* → the card goes.
+- [ ] TalkBack on the lock screen: the widget reads the card's sentence and *Add treatment*.
+- [ ] Settings › Lock screen in Spanish at 360 dp (the footer, the dialogs' lines); a phone or emulator without LSPosed:
+      the switch says what it waits for, no card, nothing on the lock screen.
+- [ ] A device whose lock screen hosts widgets (tablet hub): the home widgets are offered there (not the lock-screen
+      widget); a tap opens the treatment dialog over the lock screen; the value updates while locked.
 - [ ] Lock-screen countdown (emulator: `adb shell locksettings set-pin 1234`, keyevent 26 then 224, open the quick
       dialog from the glucose notification on the lock screen): the ring with the seconds on *Cancel* counts from 20;
       typing doesn't add time; one tick at 5 s with input; at 0 it closes and toasts *Treatment not saved* (only with

@@ -7,6 +7,7 @@ import android.app.Application
 import androidx.glance.appwidget.AppWidgetId
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.graph.GraphConfig
@@ -47,6 +48,7 @@ class WidgetDeleteTest {
                 flowOf(emptyList()),
                 emptyFlow(),
                 store,
+                flowOf(LockLook()),
             )
         }
         var readyAwaited = false

@@ -26,6 +26,7 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
@@ -50,6 +51,7 @@ import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.graph.Reorder
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
+import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
@@ -262,6 +264,16 @@ class SettingsGallery {
             },
             "graph-marks" to { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             "lock" to { LockScreenContent(20.0, {}, {}) },
+            // the lock-screen widget: shown (the module runs), waiting for a System UI restart, off
+            "lock-widget" to {
+                LockScreenContent(20.0, {}, {}, LockWidgetUi(true, LockLook(), SystemAccessState(module = ModuleState.Active)))
+            },
+            "lock-widget-restart" to {
+                LockScreenContent(20.0, {}, {}, LockWidgetUi(true, LockLook(), SystemAccessState(module = ModuleState.Restart)))
+            },
+            "lock-widget-off" to {
+                LockScreenContent(20.0, {}, {}, LockWidgetUi(false, LockLook(), SystemAccessState(module = ModuleState.Missing)))
+            },
             "reliability" to
                 {
                     ReliabilityContent(

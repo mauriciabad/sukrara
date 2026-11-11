@@ -21,10 +21,11 @@ import java.time.Instant
  * The widgets' own redraw alarm (#98): at the drawn picture's next freshness step, [WidgetRedrawReceiver] redraws them,
  * starting the app's process if it died meanwhile. Non-waking (`RTC`): nobody looks at a widget while the phone
  * sleeps, and it fires as soon as the phone wakes. Exact when allowed, else within a minute. Only while a widget is
- * placed; null cancels it.
+ * placed or System UI hosts the lock-screen widget ([lockHosted]); null cancels it.
  */
 internal class WidgetRedrawAlarm(
     private val context: Context,
+    private val lockHosted: () -> Boolean = { false },
 ) {
     fun set(at: Instant?) {
         val am = context.getSystemService(AlarmManager::class.java) ?: return
@@ -45,6 +46,7 @@ internal class WidgetRedrawAlarm(
     }
 
     private fun placed(): Boolean {
+        if (lockHosted()) return true
         val manager = AppWidgetManager.getInstance(context) ?: return false
         return WidgetKind.entries.any { kind ->
             manager.getAppWidgetIds(ComponentName(context, kind.receiver)).isNotEmpty()

@@ -357,9 +357,14 @@ private fun SettingsPages(
         }
 
         SettingsRoute.LockScreen -> {
-            val vm = viewModel { LockScreenViewModel(deps.settings) }
+            val vm = viewModel { LockScreenViewModel(deps.settings, deps.systemAccess) }
             val seconds by vm.seconds.collectAsStateWithLifecycle()
-            seconds?.let { LockScreenContent(it, vm::set, onBack) }
+            val widget by vm.widget.collectAsStateWithLifecycle()
+            // the person may come back from LSPosed (module enabled, System UI added): ask it again on resume
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
+            // the whole page at once: in a build with root features the widget's rows are there from the first frame
+            val time = seconds
+            if (time != null && (deps.systemAccess == null || widget != null)) LockScreenContent(time, vm::set, onBack, widget, vm.actions)
         }
 
         SettingsRoute.Reliability -> {

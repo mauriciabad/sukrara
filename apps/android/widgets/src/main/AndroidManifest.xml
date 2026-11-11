@@ -39,6 +39,19 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_combined_info" />
         </receiver>
+        <!-- The lock-screen widget (#66): bound and hosted only by Sukrara's System UI module (no picker offers it).
+             Exported for the system's widget broadcasts, like the others; they only redraw it. -->
+        <receiver
+            android:name="app.mauri.sukrara.widgets.LockWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_lock_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_lock_info" />
+        </receiver>
         <activity
             android:name="app.mauri.sukrara.widgets.WidgetConfigActivity"
             android:exported="true"

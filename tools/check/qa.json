@@ -8,6 +8,7 @@
     {"paths": ["apps/android/feature/home/*", "apps/android/app/src/main/*"], "qa": ["Q1 App home and screens"]},
     {"paths": ["apps/android/widgets/*"], "qa": ["Q3 Android widgets"]},
     {"paths": ["apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/*", "apps/android/feature/settings/*/lock/*"], "qa": ["Q4 Lock screen widget", "Q5b Root status bar in a full row"]},
+    {"paths": ["apps/android/widgets/*LockWidget*", "apps/android/widgets/*widget_lock*"], "qa": ["Q4 Lock screen widget"]},
     {"paths": ["apps/android/monitor/*"], "qa": ["Q5 Glucose notification", "Q8 Alerts on a device"]},
     {"paths": ["apps/android/core/alerts/*", "apps/macos/Sources/SukraraAlerts/*", "apps/macos/Sources/SukraraApp/Alerts/*", "contracts/alerts/*"], "qa": ["Q8 Alerts on a device"]},
     {"paths": ["apps/android/*/src/main/res/values*/strings.xml"], "qa": ["Q9 Translations"]},

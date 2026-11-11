@@ -14,6 +14,8 @@ import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.LockLook
+import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.graph.CardSurface
@@ -41,6 +43,12 @@ import java.io.Writer
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 
+/** The lock-screen widget's settings ([SurfaceSettings.LockWidget], [SurfaceSettings.lockLook]). */
+data class LockPrefs(
+    val on: Boolean,
+    val look: LockLook,
+)
+
 /** The root status bar's settings ([SurfaceSettings]). */
 data class RootPrefs(
     val on: Boolean,
@@ -55,6 +63,8 @@ data class RootPrefs(
  *    as root; System UI draws them itself (tinted). Runs only while the setting is on and root is granted.
  *  - **the System UI module** ([SystemUiHook]): the value as text beside the clock / the icons, range colour, our
  *    icons' order and colour, hiding Sukrara's notification icon. Fed by [HookState] broadcasts only this app can send.
+ * The same state carries the lock-screen widget's settings (Settings › Lock screen) to the module, which hosts it
+ * ([LockWidgetHost]); [StateGate] decides which states go out.
  * Follows the hub (wearer or follower), the settings, the ranges and the freshness steps. Every change is conflated:
  * only the newest state is ever sent, on one background thread with timeouts, so nothing queues behind a stuck `su`.
  */
@@ -75,9 +85,8 @@ class RootStatusBar(
     private val io = Dispatchers.IO.limitedParallelism(1)
     private val pokes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    /** Whether the last broadcast said "on" (one "off" goes out when it turns off, then nothing). */
-    private var sentOn = false
-    private var asked = false
+    /** Which states go to System UI ([StateGate]). */
+    private val gate = StateGate()
 
     @Volatile private var moduleOrders = false
 
@@ -96,16 +105,20 @@ class RootStatusBar(
             ::RootPrefs,
         )
 
+    /** The lock-screen widget's settings (Settings › Lock screen): on, and how it looks. */
+    private val lockPrefs: Flow<LockPrefs> =
+        combine(settings.flow(SurfaceSettings.LockWidget), SurfaceSettings.lockLook(settings), ::LockPrefs)
+
     fun start() {
         val ticks = merge(freshnessTicks, pokes, everyMinute()).onStart { emit(Unit) }
         scope.launch(io) {
             combine(
                 hub,
-                prefs,
+                combine(prefs, lockPrefs, ::Pair),
                 graphConfig.map { it.bands to it.unit },
                 access.state,
                 ticks,
-            ) { s, p, (bands, unit), a, _ -> Input(s, p, bands, a.granted, unit) }
+            ) { s, (p, lock), (bands, unit), a, _ -> Input(s, p, bands, a.granted, unit, lock, a.module) }
                 .conflate()
                 .catch { Log.w(TAG, "inputs failed: ${it.javaClass.simpleName}") }
                 .collect {
@@ -132,7 +145,7 @@ class RootStatusBar(
         iconOrder: Boolean,
     ) {
         access.onHello(code)
-        sentOn = false
+        gate.reset()
         moduleOrders = iconOrder
         retryAtMs = 0 // a new System UI: try the daemon again at once
         scope.launch(io) { daemon?.command(if (iconOrder) DaemonProtocol.ORDER_MODULE else DaemonProtocol.ORDER_DAEMON) }
@@ -149,6 +162,8 @@ class RootStatusBar(
         val bands: Bands,
         val root: Boolean,
         val unit: GlucoseUnit,
+        val lock: LockPrefs,
+        val module: ModuleState,
     )
 
     private fun apply(input: Input) {
@@ -170,12 +185,10 @@ class RootStatusBar(
                 false
             }
         val hook =
-            hookState(input.state, input.prefs, input.bands, input.unit).copy(iconsShown = iconsShown).let {
+            hookState(input.state, input.prefs, input.bands, input.unit, input.lock).copy(iconsShown = iconsShown).let {
                 if (it.text) it.copy(spoken = SystemUiWords.text(input.state, it, input.bands, now, res)) else it
             }
-        if (hook.enabled || sentOn) send(hook, ask = !asked)
-        if (hook.enabled) asked = true
-        sentOn = hook.enabled
+        gate.next(hook, StateGate.mayRun(input.module))?.let { (state, ask) -> send(state, ask) }
     }
 
     private var lastPrefs: RootPrefs? = null
@@ -318,12 +331,16 @@ class RootStatusBar(
             return GlucoseCard.face(h.latest(), nowS, HookText.sensorLook(h, nowS), CardSurface.STATUS_ICONS, GlucoseUnit.MGDL)
         }
 
-        /** The state the module gets for the hub state [s] with the settings [p], ranges [bands] and [unit]. */
+        /**
+         * The state the module gets for the hub state [s] with the settings [p], ranges [bands] and [unit], and the
+         * lock-screen widget's [lock] settings.
+         */
         fun hookState(
             s: GlucoseState,
             p: RootPrefs,
             bands: Bands,
             unit: GlucoseUnit,
+            lock: LockPrefs = LockPrefs(on = false, look = LockLook()),
         ): HookState {
             val latest = s.latest
             val sensor = s.sensor
@@ -339,7 +356,60 @@ class RootStatusBar(
                 sensorEnded = sensor == SensorState.Ended,
                 readyAtS = (sensor as? SensorState.WarmingUp)?.readyAt?.epochSecond ?: 0,
                 unit = unit,
+                lockWidget = lock.on,
+                lockLook = lock.look,
             )
         }
+    }
+}
+
+/**
+ * Which states go to System UI. The status-bar value's on every change and tick (the module draws it and ages it). The
+ * lock-screen widget alone needs only its settings: sent when they change, and only while the module may run in
+ * System UI ([mayRun]), so a phone without LSPosed gets no broadcasts for a widget that is on by default. Turning a
+ * feature off sends one last state, so the module lets go. Pure: tested.
+ */
+internal class StateGate {
+    /** Whether the last state said a feature is on. */
+    private var sentOn = false
+    private var lastSent: HookState? = null
+    private var lockWasOn = false
+
+    /** A state went out while a feature was on: the module said hello to it (the first one asks). */
+    private var asked = false
+
+    /** The state to send now for [hook] and whether it asks for a hello, or null. */
+    fun next(
+        hook: HookState,
+        moduleMayRun: Boolean,
+    ): Pair<HookState, Boolean>? {
+        // without the status-bar value the module needs only the widget's settings (and no reading every minute)
+        val payload = if (hook.enabled) hook else HookState(lockWidget = hook.lockWidget, lockLook = hook.lockLook)
+        val on = hook.enabled || (hook.lockWidget && moduleMayRun)
+        val lockOff = lockWasOn && !hook.lockWidget
+        lockWasOn = hook.lockWidget
+        val send =
+            when {
+                hook.enabled -> true
+                on -> payload != lastSent || !asked
+                else -> (sentOn || lockOff) && payload != lastSent
+            }
+        val ask = !asked
+        if (on) asked = true
+        sentOn = on
+        if (!send) return null
+        lastSent = payload
+        return payload to ask
+    }
+
+    /** System UI (re)started: its module has none of the state. */
+    fun reset() {
+        sentOn = false
+        lastSent = null
+    }
+
+    companion object {
+        /** LSPosed has the module in System UI's scope, or the module said hello: it may be running there now. */
+        fun mayRun(m: ModuleState) = m == ModuleState.Restart || m.active
     }
 }

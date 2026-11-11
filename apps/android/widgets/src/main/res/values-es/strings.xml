@@ -10,6 +10,10 @@
     <string name="widget_combined_label">Glucosa y gráfica</string>
     <string name="widget_combined_description">Tu glucosa con la gráfica. Toca para anotar un tratamiento</string>
     <string name="widget_desc_follower">%1$s: %2$s</string>
+    <string name="widget_lock_label">Widget de la pantalla de bloqueo</string>
+    <string name="widget_lock_description">Tu glucosa y la gráfica alrededor del icono de huella digital, mostradas por el módulo de System UI de Sukrara</string>
+    <!-- TalkBack on the lock-screen widget: the card's sentence, then what a tap does -->
+    <string name="widget_lock_desc_tap">%1$s. Añadir tratamiento</string>
     <string name="widget_config_title">Ajustes del widget</string>
     <string name="widget_config_preview">Vista previa del widget: %1$s</string>
     <string name="widget_config_same">Igual que en la app</string>

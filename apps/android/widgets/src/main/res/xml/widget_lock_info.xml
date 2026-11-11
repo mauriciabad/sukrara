@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The lock-screen widget (#66): System UI's module binds and hosts it around the fingerprint icon, so no launcher or
+     lock-screen hub offers it (keyguard only, hide_from_picker). No periodic update: the app redraws on change
+     (WidgetUpdater). Its first layout is empty, so nothing flashes before the card arrives. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_lock_description"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_lock_initial"
+    android:resizeMode="none"
+    android:widgetFeatures="hide_from_picker"
+    android:widgetCategory="keyguard" />

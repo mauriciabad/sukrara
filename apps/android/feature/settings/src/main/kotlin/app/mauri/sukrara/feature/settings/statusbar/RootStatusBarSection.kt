@@ -238,6 +238,23 @@ fun accessStep(
     }
 
 /**
+ * The one step the lock-screen widget is missing (Settings › Lock screen), only while it's on: the module's steps that
+ * have a fix on the page (System UI not in its scope, a System UI restart). It needs no root of its own (the restart
+ * asks for it); without LSPosed or the module the switch's summary says so, with no card: most phones never have them.
+ */
+fun lockAccessStep(
+    access: SystemAccessState,
+    on: Boolean,
+): AccessStep? =
+    when {
+        !on -> null
+        access.module == ModuleState.NoScope -> AccessStep.NoScope
+        access.module == ModuleState.Restart -> AccessStep.Restart
+        access.module == ModuleState.Update -> AccessStep.Update
+        else -> null
+    }
+
+/**
  * The one step a root feature is missing, with its fix: root for Sukrara (how to allow it, *Check again*), then the
  * LSPosed module (enable it; add System UI to its scope; restart System UI). Only while the value is on. SPA's
  * SettingsBanner, the reason the last try failed under its text.
@@ -250,10 +267,23 @@ fun AccessBanner(
     problem: AccessProblem?,
     actions: RootActions,
     modifier: Modifier = Modifier,
+) = AccessStepBanner(accessStep(access, valueOn), access, busy, problem, actions.checkRoot, actions.requestScope, actions.restart, modifier)
+
+/** The card for [step] (null: none) with its fix; [busy] = an action runs, [problem] = why the last one failed. */
+@Composable
+fun AccessStepBanner(
+    step: AccessStep?,
+    access: SystemAccessState,
+    busy: Boolean,
+    problem: AccessProblem?,
+    checkRoot: () -> Unit,
+    requestScope: () -> Unit,
+    restart: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val checkAgain = R.string.st_access_root_action to actions.checkRoot
-    val step: Triple<Int, String, Pair<Int, () -> Unit>?> =
-        when (accessStep(access, valueOn) ?: return) {
+    val checkAgain = R.string.st_access_root_action to checkRoot
+    val shown: Triple<Int, String, Pair<Int, () -> Unit>?> =
+        when (step ?: return) {
             AccessStep.Asking -> {
                 Triple(R.string.st_access_asking_title, stringResource(R.string.st_access_asking_text), null)
             }
@@ -282,7 +312,7 @@ fun AccessBanner(
                 Triple(
                     R.string.st_access_scope_title,
                     stringResource(R.string.st_access_scope_text, access.framework ?: "LSPosed"),
-                    R.string.st_access_scope_action to actions.requestScope,
+                    R.string.st_access_scope_action to requestScope,
                 )
             }
 
@@ -290,7 +320,7 @@ fun AccessBanner(
                 Triple(
                     R.string.st_access_restart_title,
                     stringResource(R.string.st_access_restart_text),
-                    R.string.st_access_restart_title to actions.restart,
+                    R.string.st_access_restart_title to restart,
                 )
             }
 
@@ -298,19 +328,19 @@ fun AccessBanner(
                 Triple(
                     R.string.st_access_restart_title,
                     stringResource(R.string.st_access_restart_text_updated),
-                    R.string.st_access_restart_title to actions.restart,
+                    R.string.st_access_restart_title to restart,
                 )
             }
         }
-    val asking = step.first == R.string.st_access_asking_title
+    val asking = shown.first == R.string.st_access_asking_title
     SettingsBannerCard(
         if (asking) DsR.drawable.ds_ic_hourglass_top else DsR.drawable.ds_ic_warning,
-        stringResource(step.first),
-        step.second,
+        stringResource(shown.first),
+        shown.second,
         // the card grows and shrinks with its text (asking → the answer) instead of jumping
         modifier.animateContentSize(),
-        action = step.third?.let { (label, _) -> stringResource(if (busy) R.string.st_access_restarting else label) },
-        onAction = { step.third?.second?.invoke() },
+        action = shown.third?.let { (label, _) -> stringResource(if (busy) R.string.st_access_restarting else label) },
+        onAction = { shown.third?.second?.invoke() },
         actionEnabled = !busy,
         // waiting on the root manager (its prompt, up to 30 s): something visibly running
         below = { if (asking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 16.dp)) },

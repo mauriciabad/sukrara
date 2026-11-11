@@ -766,7 +766,8 @@ TalkBack reads the renderer's value sentence plus, with a chart, its summary.
   only in the picker and the pin dialog), composed at two sizes per widget (`CardWidget.providePreview`,
   `previewSizeMode`) and handed to the system when the widgets start (`setWidgetPreviews`; rate-limited by the
   system, a refused call keeps the previous preview). Older launchers show the static layout (`previewLayout`).
-- Not included yet (#66): the LSPosed lock-screen widget ([Lock screen widget](#lock-screen-widget)).
+- The lock-screen widget around the fingerprint icon (root + the LSPosed module) lives here too, a card surface of its
+  own, redrawn with these ([Lock screen widget](#lock-screen-widget)).
 
 **States and exits**: *Placed* → touch & hold → *Reconfigure* (*Widget settings*: *Save*, *Cancel* / back leaves it as
 it was, *Reset* puts every row back to *Same as the app*) or *Remove* (its settings are forgotten). *Just placed* (from the
@@ -786,7 +787,7 @@ Android, wearer and follower homes (`:widgets` `WidgetPresence` feeds home's `wi
 
 ## Restart-System-UI card
 
-Android (`apps/android/monitor` `systemui/SystemAccess`, `SystemUiTest`): Settings → Status bar shows the restart as its access card; home shows the same need as its one banner (`BannerKind.RestartSystemUi`, after the taps-blocked banner) while the module needs a restart and root wasn't refused: *Restart System UI* · *Sukrara's System UI module is on but not loaded yet…* (or *…still runs the previous Sukrara module…*), shown only with root confirmed, as on the Status bar page; *Restart* runs the same root restart (once at a time; a failure: a toast *Couldn't restart System UI: <reason>*), × closes it for that state and this build (the version code; a new build or the other state shows it again). Which code System UI runs comes from the module itself: its hello (when System UI starts, and when the app first sends its state) carries `HookCode.VERSION`, a fingerprint of the `systemui` package that `HookCodeTest` keeps in step with the code; an install with the same System UI code asks for nothing. Decision (`SystemAccess.decide`): the hello's code = this build's → fine; another code → *Sukrara was updated: System UI still runs the previous module…*; no hello: LSPosed (libxposed service, advisory) says the module is missing (*LSPosed module off*), System UI isn't in scope (*System UI not in scope* + *Add System UI*, LSPosed's own prompt) or it is in scope but not loaded (*Restart System UI*). The action is always the root restart of System UI, never a reboot: `su -c 'kill $(pidof com.android.systemui)'` (not `am crash`, which counts towards rescue mode), waiting up to 30 s for the root prompt; a failure shows *Couldn't do it: <reason>* in the error colour; then it follows LSPosed for up to 20 s. Until root works the card shows root's step instead (*Asking for root*, *Allow root for Sukrara*, *Root needed*, *Root refused*, *No answer from root*: [Root for Sukrara](#root-status-bar-system-icons)). Module steps show only while the value is on. Mac: none.
+Android (`apps/android/monitor` `systemui/SystemAccess`, `SystemUiTest`): Settings → Status bar shows the restart as its access card, and so does Settings → Lock screen while the lock-screen widget is on ([Lock screen widget](#lock-screen-widget): without root asked yet, its *Restart* asks for it); home shows the same need as its one banner (`BannerKind.RestartSystemUi`, after the taps-blocked banner) while the module needs a restart and root wasn't refused: *Restart System UI* · *Sukrara's System UI module is on but not loaded yet…* (or *…still runs the previous Sukrara module…*), shown only with root confirmed, as on the Status bar page; *Restart* runs the same root restart (once at a time; a failure: a toast *Couldn't restart System UI: <reason>*), × closes it for that state and this build (the version code; a new build or the other state shows it again). Which code System UI runs comes from the module itself: its hello (when System UI starts, and when the app first sends its state) carries `HookCode.VERSION`, a fingerprint of the `systemui` package that `HookCodeTest` keeps in step with the code; an install with the same System UI code asks for nothing. Decision (`SystemAccess.decide`): the hello's code = this build's → fine; another code → *Sukrara was updated: System UI still runs the previous module…*; no hello: LSPosed (libxposed service, advisory) says the module is missing (*LSPosed module off*), System UI isn't in scope (*System UI not in scope* + *Add System UI*, LSPosed's own prompt) or it is in scope but not loaded (*Restart System UI*). The action is always the root restart of System UI, never a reboot: `su -c 'kill $(pidof com.android.systemui)'` (not `am crash`, which counts towards rescue mode), waiting up to 30 s for the root prompt; a failure shows *Couldn't do it: <reason>* in the error colour; then it follows LSPosed for up to 20 s. Until root works the card shows root's step instead (*Asking for root*, *Allow root for Sukrara*, *Root needed*, *Root refused*, *No answer from root*: [Root for Sukrara](#root-status-bar-system-icons)). Module steps show only while the value is on. Mac: none.
 
 **States and exits**: root's cards → allow Sukrara in the root manager, then come back (the page asks again while root isn't granted) or *Check again* (Root status bar's States and exits); *LSPosed module off* → enable the module in LSPosed (the card leaves on resume); *System UI not in scope* → *Add System UI*; *Restart System UI* → the button (*One moment…* while it runs) → the card leaves when System UI says hello with this code; *failed* → the reason in the error colour, the button again. Turning *Value in the status bar* off hides the module steps. All in Settings, reachable with TalkBack (the card is a polite live region). Home card → *Restart* (it leaves when System UI says hello with this code) or × (back with the next build, or Settings → Status bar keeps the card).
 
@@ -1169,16 +1170,94 @@ investigation [docs/30](30-direct-boot.md)).
 
 ## Lock screen widget
 
-- The LSPosed lock-screen widget (the card around the fingerprint icon, drawn by a System UI hook) is not in the app
-  yet (#66): no hook hosts it and it is not a registered card surface. The schema's `lock.widget`, `lock.background`
-  and `lock.appearance` are its settings; no page shows them.
-- What the lock screen has today: the home widgets declare `home_screen|keyguard`, so a device that hosts lock-screen
-  widgets offers them there ([Home screen widgets](#home-screen-widgets)); the LSPosed status-bar text also shows on
-  the lock screen's status bar ([Root status bar](#root-status-bar-system-icons)); and the treatment dialog opened
-  over the lock screen counts down ([Treatments](#treatments), lock-screen countdown).
-- Settings → Lock screen (`:feature:settings` `lock/LockScreenPage.kt`) holds one group, *Add treatment over the lock
-  screen*, with *Time to save* (`lock.treatmentTime`); the overview's *Lock screen* row reads *Time to save a
-  treatment*.
+Android, both builds (#66, investigation 17; `apps/android/monitor` `systemui/LockWidgetHost` + `SystemUiHook`,
+`apps/android/widgets` `LockWidget.kt`; tests `LockWidgetHostTest`, `LockWidgetTest`, `LockScreenPageTest`,
+`LockWidgetSettingsTest`, `CardLayoutTest`, Roborazzi `WidgetShotsTest.lockWidget`). With root and Sukrara's LSPosed
+module in System UI, the empty lower part of the Pixel lock screen (below the notifications, around the fingerprint
+icon, above the shortcuts) shows the glucose card: the value and its arrow left of the fingerprint icon, the slots
+(time in range, last treatment…) right of it, the chart below.
+
+- **Drawn by the app, hosted by System UI.** The module binds the app's keyguard-only widget
+  (`LockWidgetReceiver`; `hide_from_picker`, so no launcher or lock-screen hub offers it) with System UI's own
+  `AppWidgetHost` (System UI holds `BIND_APPWIDGET`: no prompt) and adds its view as the first child of
+  `SceneWindowRootView`, under every lock-screen layer: the fingerprint icon, the shortcuts, the indication text and
+  the notifications draw over it. The picture is a registered card surface (`lock-widget`, drawn only by the renderer
+  through `renderLockWidget`, in three boxes from `lockWidgetBoxes`), with the home widgets' *Glucose and graph*
+  style (`lockWidgetCardStyle`: the Widgets place's hours, rings, slots, sensor time), freshness steps and palette, on
+  a transparent background. It redraws with the home widgets (`WidgetUpdater`: a new reading, a freshness step, the
+  settings, the theme; one catch-up redraw when the screen comes on; nothing while it's off) and by the widgets'
+  redraw alarm while it's hosted. The system doesn't list a widget System UI bound to the app, so the app keeps its
+  ids (`WidgetPlacements.lock`) from the bind and from the options the module sends on every System UI start and
+  whenever the app's process asks (`LockWidgetLink.STAMP`); an id the system no longer knows is forgotten.
+- **Place** (`LockGeometry`): from the fingerprint sensor's top (`AuthController.mUdfpsBounds`; without an
+  under-display sensor, System UI's lock icon above `lock_icon_margin_bottom`) down to 8 dp above the shortcuts
+  (`keyguard_affordance_vertical_offset` + `keyguard_affordance_fixed_height`), 16 dp from the sides; no widget with
+  less than 80 dp. The icon's spot reaches the widget in its options (`sukrara.lockHoleLeft/Right/Bottom`, dp, 6 dp of
+  gap on each side; centred until they arrive). The reported size has the default widget padding added back, so the
+  picture is never stretched (docs/17: a 100 dp square came out 9 % taller before).
+- **When it shows** (`sceneAlpha`, read on every frame System UI draws): on the idle lock screen; it fades with the
+  shade pull-down, the bouncer and the unlock; hidden in the shade, on the bouncer, unlocked, while the screen is off
+  (the always-on display) and while it's off in Settings.
+- **Room for it**: while it shows, the notification shelf (the pill with the overflow icons) has to fit above the
+  fingerprint icon (System UI lets it hang beside the icon, where the value is): the module hooks
+  `NotificationStackSizeCalculator.computeMaxKeyguardNotifications` and takes the shelf's extra space off; at worst one
+  more notification goes into the shelf.
+- **Touches** (`LockTouches`): the lock screen keeps every gesture (swipe up to unlock, pull down, long press to
+  customise, the fingerprint). The widget only gets copies of taps that start on it, outside the fingerprint's column
+  (the icon ± 24 dp, top to bottom of the widget); a move beyond the touch slop, a press held past the long-press
+  time or a second finger cancels the copy. Its view refuses the window's own dispatch (a finger on the sensor once
+  opened the dialog in the PoC).
+- **Tap**: what a tap on a home widget does (`WidgetTap`): with a value on screen, *Add treatment* over the lock screen
+  without unlocking (Carbs first while low; the lock-screen countdown, *Unlock* in *Open Sukrara*'s place:
+  [Treatments](#treatments)); the wearer's ended sensor: the new-sensor flow, and without a value (no reading yet,
+  nothing for 20 min, warming up, setup not done): the app; both of these ask to unlock first. Anyone holding the
+  locked phone can add a treatment; the footer says so and the switch turns it off.
+- **Background** (Settings › Lock screen › *Background*, `lock.background`): *None* (on the wallpaper, like the clock),
+  *Shadow* (a soft shadow around every number and line, drawn by the widget: dark, or a white glow on the light
+  look), *Dim* (Material's gradient scrim over the bottom of the screen, from 64 dp above the widget), *Card* (a
+  rounded card like the notifications: the dark surface or the home widgets' light background at 88 %), *Frosted
+  glass* (default: System UI's own background blur of the wallpaper, tinted black 35 % / the light background 60 %;
+  the card where cross-window blur is off). Card and frosted glass keep the content 12 dp off their edge.
+- **Appearance** (`lock.appearance`): *Automatic* (default: the system's dark theme, like the lock screen's
+  notifications), *Light*, *Dark*: the home widgets' palettes. A dark-theme switch re-tints the module's background at
+  once (its view's `onConfigurationChanged`) and redraws the picture (the app's theme change).
+- **TalkBack** (glyph surface `lock-description`): the card's sentence (`A11y.card`; a follower's widget starts with
+  the wearer's name), then *Add treatment* when that is what a tap does.
+- **Settings › Lock screen** (`:feature:settings` `lock/LockScreenPage.kt`), in a build with root features (both):
+  group *With root* with *Lock screen widget* (`lock.widget`, on by default as in the PoC: it does nothing without
+  the module), *Background* and *Appearance* (SPA list dialogs with a line under each choice; *Unavailable while the
+  widget is off* while off), a footer on what it needs and who can add treatments; then *Add treatment over the lock
+  screen* › *Time to save* (`lock.treatmentTime`). The overview's *Lock screen* row reads *Widget around the
+  fingerprint, time to save a treatment*. Search finds the three rows.
+- **The module's state** (`SystemAccess`): the switch's line says *Your glucose and graph around the fingerprint icon.
+  Tap it to add a treatment without unlocking* while the module runs, *On. Shows once the Sukrara LSPosed module runs
+  in System UI* otherwise. While it's on, the page shows the module's step that it can fix as the same card as
+  Settings › Status bar: *System UI not in scope* (*Add System UI*, LSPosed's prompt) or *Restart System UI* (also
+  after an update that changed System UI's code); no card without LSPosed or the module (most phones). The widget
+  needs no root of its own; only the restart asks for it. Back on the page asks LSPosed again, never `su`.
+- **What the app sends** (`StateGate`): the widget's settings ride on the module's state broadcast, only while the
+  module may run (LSPosed has it in System UI's scope, or it said hello) and only when they change: a phone without
+  LSPosed gets no broadcasts for a widget that is on by default. Turning it off sends one last state: the module
+  removes the view and lets go of the widget (the app forgets the id and stops drawing it).
+- Safety as for the status-bar module: every hook PROTECTIVE and every entry caught; the kill switch
+  (`debug.sukrara.systemui_off` / `sukrara_systemui_off`) turns it off with the rest. Other lock screens (no
+  `SceneWindowRootView`, other OEMs' System UI): the hooks log and do nothing.
+- Without root: the home widgets declare `home_screen|keyguard`, so a device that hosts lock-screen widgets (a tablet
+  hub) offers them ([Home screen widgets](#home-screen-widgets)); the glucose notification shows on the lock screen
+  ([Live notification](#live-notification)); a tap on it opens the treatment dialog over the lock screen.
+
+**States and exits**: *Off* → Settings › Lock screen › *Lock screen widget* on (TalkBack: a switch with its line).
+*On, no module* (no root / LSPosed, the module off, the first seconds after the app starts) → nothing on the lock
+screen; the switch's line says what it waits for; turn it off the same way. *On, System UI not in scope* → *Add System
+UI* on the card (LSPosed's prompt; the card leaves on approval) or turn it off. *On, System UI needs a restart* →
+*Restart System UI* on the card (root's prompt if not granted yet; *One moment…*; the card leaves when System UI says
+hello with this code; a failure says why under it) or turn it off. *Shown* (idle lock screen) → it fades away with the
+shade, the bouncer and the unlock and comes back with the lock screen; the fingerprint and every gesture work through
+it; a tap opens *Add treatment* over the lock screen (*Cancel*, the countdown, *Unlock*) or, without a value, asks to
+unlock and opens the app. *Stale* (5 min+, struck), *no readings* (20 min+), *sensor ended*, *warming up* → the card's
+own faces, the tap goes to the app where the reason and its fix are. *Look* → *Background* / *Appearance* dialogs
+(*Cancel* or back keeps it). Turn it off: Settings › Lock screen › the switch (the module removes it at once), or
+disable the module in LSPosed (gone after the next System UI restart), or the kill switch.
 
 ## Mac widgets
 
@@ -2058,7 +2137,6 @@ home-network address* → fix or clear the address, switch off. *macOS doesn't l
   both apps (contracts/export), read by people and clinics, not by loop apps; the Nightscout upload, the phone's
   Nightscout API, Health Connect and Tidepool name untested families.
 - Sensors: the Libre 3 experiment preferences (minimal subscription set, connection priority, screen-off skip). Reason: no hardware to test them, the owner uses a Libre 3.
-- The LSPosed lock-screen widget (#66; [Lock screen widget](#lock-screen-widget)). Reason: not ported from the PoC yet; the root status bar and the LSPosed status-bar text are.
 - Health Connect: carbs and insulin (#124; [Share with apps on this phone](#share-with-apps-on-this-phone-investigation-22)).
   Only blood glucose is written. Reason: Health Connect has no insulin or dose record, and carbs without insulin are
   half the picture for any app that reads them; nutrition apps would show each 15 g hypo treatment as a snack and

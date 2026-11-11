@@ -6,8 +6,12 @@ package app.mauri.sukrara.widgets
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Paint
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.LockAppearance
+import app.mauri.sukrara.core.model.LockBackground
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -16,6 +20,7 @@ import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPalette
+import app.mauri.sukrara.graph.LockHole
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -35,7 +40,8 @@ import kotlin.math.sin
 
 /**
  * Roborazzi goldens of the three widgets through [renderWidget] (synthetic readings only) at 2×2 and 4×2 on one phone:
- * light + dark × default + largest font (a taller cell) while fresh; stale (6 min) and hidden (25 min) in light.
+ * light + dark × default + largest font (a taller cell) while fresh; stale (6 min) and hidden (25 min) in light; the
+ * lock-screen widget through [renderLockWidget] in its looks and freshness steps.
  * The Goldens workflow (CI, Linux) records src/test/snapshots.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -134,6 +140,48 @@ class WidgetShotsTest {
                 val h = size.height.value
                 shoot(kind, "preview-${w.roundToInt()}x${h.roundToInt()}", w, h, sample, "light")
             }
+        }
+    }
+
+    /**
+     * The lock-screen widget (#66) as System UI shows it: over a wallpaper, with what the module draws behind it (the
+     * frosted glass or card stand-in, a ring where the fingerprint icon is) so the review sees the whole lock screen.
+     */
+    @Test
+    fun lockWidget() {
+        val hole = LockHole(146f, 233f, 75f)
+        val cases =
+            listOf(
+                Triple("fresh-dark", Duration.ofMinutes(1), LockLook(appearance = LockAppearance.DARK)),
+                Triple("fresh-light", Duration.ofMinutes(1), LockLook(appearance = LockAppearance.LIGHT)),
+                Triple("none-dark", Duration.ofMinutes(1), LockLook(LockBackground.NONE, LockAppearance.DARK)),
+                Triple("shadow-light", Duration.ofMinutes(1), LockLook(LockBackground.SHADOW, LockAppearance.LIGHT)),
+                Triple("stale-dark", Duration.ofMinutes(6), LockLook(appearance = LockAppearance.DARK)),
+                Triple("hidden-dark", Duration.ofMinutes(25), LockLook(appearance = LockAppearance.DARK)),
+            )
+        for ((name, age, look) in cases) {
+            val dark = look.appearance == LockAppearance.DARK
+            val f = frame(age, dark).copy(lock = look)
+            val card = renderLockWidget(context, 380f, 190f, hole, f)
+            val d = card.width / 380f
+            val bmp = Bitmap.createBitmap(card.width, card.height, Bitmap.Config.ARGB_8888)
+            Canvas(bmp).apply {
+                // a wallpaper: the owner's green, darker or lighter
+                drawColor(if (dark) 0xFF1F3A2B.toInt() else 0xFFB9D8C2.toInt())
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+                if (look.background.boxed) {
+                    paint.color = if (dark) 0xB0101010.toInt() else 0xCCFFFFFF.toInt()
+                    drawRoundRect(0f, 0f, card.width.toFloat(), card.height.toFloat(), 28 * d, 28 * d, paint)
+                }
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 2 * d
+                paint.color = if (dark) 0x99FFFFFF.toInt() else 0x99000000.toInt()
+                val r = (hole.right - hole.left - 12) / 2 * d
+                drawCircle((hole.left + hole.right) / 2 * d, hole.bottom / 2 * d, r, paint)
+                drawBitmap(card, 0f, 0f, null)
+            }
+            bmp.captureRoboImage("src/test/snapshots/widget-lock-$name.png")
+            assertTrue("lock $name has a description", describeLock(context, f).isNotBlank())
         }
     }
 

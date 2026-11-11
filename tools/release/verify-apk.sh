@@ -16,6 +16,7 @@
 #   nothing) the build's R8 mapping lists no DebugReceiver / DebugFakes / DebugRelays / Synthetic* class
 # - cleartext only to loopback: the network security config is src/main's, not the debug one (+ 10.0.2.2, a test relay)
 # - no exported component without a permission except the launcher activity, the alert sound provider and widgets
+#   (the home widgets' and the lock-screen widget's receivers)
 # - every alert sound of contracts/alerts/sounds/android survived resource shrinking (verify-sounds.sh)
 # - the uses-permission list and the <queries> entries are exactly tools/check/allow.json `permissions` / `queries`
 #   (#36: a new library or module permission fails until the list says why)
@@ -123,13 +124,16 @@ else bad "network security config: base cleartext '${nsc_base:-?}', cleartext ho
 # the launcher / App Link activity, and the alert sound provider (System UI reads channel sounds from it and can hold
 # no permission; it serves only bundled sounds), and the home-screen widgets' receivers + configure activity (any home
 # app sends the widget broadcasts and opens the configure screen, so they can't require a permission; they only redraw
-# or edit that placement), and libxposed's XposedProvider (LSPosed hands the app its service there and can hold no
-# permission; what it reports is advisory, as ManifestTest says). Anything else exported needs a permission.
+# or edit that placement), the lock-screen widget's receiver (the system's widget broadcasts for the widget System UI's
+# module hosts; it only redraws it and keeps only ids the system bound to it), and libxposed's XposedProvider (LSPosed
+# hands the app its service there and can hold no permission; what it reports is advisory, as ManifestTest says).
+# Anything else exported needs a permission.
 allowed_open='app.mauri.sukrara.MainActivity
 app.mauri.sukrara.monitor.AlertSoundProvider
 app.mauri.sukrara.widgets.ValueWidgetReceiver
 app.mauri.sukrara.widgets.GraphWidgetReceiver
 app.mauri.sukrara.widgets.CombinedWidgetReceiver
+app.mauri.sukrara.widgets.LockWidgetReceiver
 app.mauri.sukrara.widgets.WidgetConfigActivity
 io.github.libxposed.service.XposedProvider'
 open_components="$(printf '%s\n' "$manifest" | awk '

@@ -10,6 +10,10 @@
     <string name="widget_combined_label">Glucose and graph</string>
     <string name="widget_combined_description">Your glucose value with the graph. Tap to log a treatment</string>
     <string name="widget_desc_follower">%1$s: %2$s</string>
+    <string name="widget_lock_label">Lock screen widget</string>
+    <string name="widget_lock_description">Your glucose and graph around the fingerprint icon, shown by Sukrara\'s System UI module</string>
+    <!-- TalkBack on the lock-screen widget: the card's sentence, then what a tap does -->
+    <string name="widget_lock_desc_tap">%1$s. Add treatment</string>
     <string name="widget_config_title">Widget settings</string>
     <string name="widget_config_preview">Preview of the widget: %1$s</string>
     <string name="widget_config_same">Same as the app</string>

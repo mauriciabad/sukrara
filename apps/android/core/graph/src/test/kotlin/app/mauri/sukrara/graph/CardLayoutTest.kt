@@ -5,8 +5,10 @@ package app.mauri.sukrara.graph
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.RectF
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -75,12 +77,16 @@ class CardLayoutTest {
         val sensor: SensorInfo?,
     )
 
-    /** One stand-in surface: the parts it draws (each with its height; 0 = the size's), and its sizes. */
+    /**
+     * One stand-in surface: the parts it draws (each with its height; 0 = the size's), and its sizes. [boxes] = a surface
+     * that lays its parts out itself (the lock-screen widget): each part's box in the size, from its real layout.
+     */
     private class Shape(
         val id: String,
         val place: GraphPlace,
         val parts: List<Pair<CardPart, Float>>,
         val sizes: List<Pair<Float, Float>>,
+        val boxes: ((Float, Float) -> List<Pair<CardPart, RectF>>)? = null,
         val style: (GraphConfig) -> CardStyle,
     )
 
@@ -245,6 +251,15 @@ class CardLayoutTest {
             Shape("sensor-ready", GraphPlace.APP, listOf(CardPart.VALUE to 0f), sizes("sensor-ready")) {
                 sensorReadyCardStyle(it)
             },
+            // the lock-screen widget's real style and boxes (WidgetStyle.kt lockWidgetCardStyle / lockWidgetBoxes, what
+            // :widgets draws with), around a centred 76 dp lock icon, with the default background (frosted glass: boxed)
+            Shape(
+                "lock-widget",
+                GraphPlace.WIDGETS,
+                listOf(CardPart.VALUE to 0f, CardPart.SLOTS to 0f, CardPart.GRAPH to 0f),
+                sizes("lock-widget"),
+                boxes = { w, h -> lockWidgetBoxes(w * d, h * d, LockHole.centred(w), d, LockBackground.DEFAULT.boxed) },
+            ) { lockWidgetCardStyle(it) },
             // Layout coverage only, not a registered surface (not in the app; surfaces.json "about"): the shape the Mac
             // shares answers with in expect.json (a wide 3-ring lock-screen card). Drop it only together with the
             // expect.json answers it alone produces.
@@ -364,14 +379,18 @@ class CardLayoutTest {
                 for (shape in shapes()) {
                     val st = shape.style(cfg)
                     for ((w, h) in shape.sizes) {
+                        val boxes = shape.boxes?.invoke(w, h)?.toMap()
                         val layouts =
-                            shape.parts.map { (part, ph) ->
-                                val bh = if (ph > 0) ph else h
-                                val bmp = Bitmap.createBitmap((w * d).toInt(), (bh * d).toInt(), Bitmap.Config.ARGB_8888)
+                            shape.parts.mapNotNull { (part, ph) ->
+                                // a laid-out part draws in its box (px); a part without one (no room) isn't drawn
+                                val box = if (boxes != null) boxes[part] ?: return@mapNotNull null else null
+                                val bw = box?.width()?.div(d) ?: w
+                                val bh = box?.height()?.div(d) ?: if (ph > 0) ph else h
+                                val bmp = Bitmap.createBitmap((bw * d).toInt(), (bh * d).toInt(), Bitmap.Config.ARGB_8888)
                                 GlucoseCard
                                     .draw(
                                         Canvas(bmp),
-                                        w * d,
+                                        bw * d,
                                         bh * d,
                                         model,
                                         st,

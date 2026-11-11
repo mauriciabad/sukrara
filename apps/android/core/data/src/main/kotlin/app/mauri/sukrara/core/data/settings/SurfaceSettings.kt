@@ -3,19 +3,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.core.data.settings
 
+import app.mauri.sukrara.core.model.LockAppearance
+import app.mauri.sukrara.core.model.LockBackground
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * The status bar's and the sensor end's settings, declared once: the monitor (glucose notification, sensor-end
- * notifier) and the settings pages read the same objects, so a page and a notification can't disagree on a default.
+ * The status bar's, the lock-screen widget's and the sensor end's settings, declared once: the monitor (glucose
+ * notification, System UI state, sensor-end notifier), the widgets and the settings pages read the same objects, so a
+ * page and a surface can't disagree on a default.
  */
 object SurfaceSettings {
     /** The glucose notification is a promoted Live Update (the status-bar chip). */
@@ -41,6 +46,26 @@ object SurfaceSettings {
 
     /** Drop Sukrara's notification icon from the status bar while the root value shows (module). */
     val HideNotificationIcon = SchemaSettings.bool("statusbar.hideNotifIcon", default = true)
+
+    /**
+     * The lock-screen widget around the fingerprint icon (#66), hosted by the System UI module. On by default as in the
+     * PoC: it shows nothing until the person has the module running in System UI.
+     */
+    val LockWidget = SchemaSettings.bool("lock.widget", default = true)
+
+    /** What is behind the lock-screen widget ([LockBackground]). */
+    val LockWidgetBackground =
+        SchemaSettings.text("lock.background", LockBackground.DEFAULT.key, LockBackground.entries.map { it.key }.toSet())
+
+    /** The lock-screen widget's light or dark palette ([LockAppearance]). */
+    val LockWidgetAppearance =
+        SchemaSettings.text("lock.appearance", LockAppearance.DEFAULT.key, LockAppearance.entries.map { it.key }.toSet())
+
+    /** The lock-screen widget's look, as the widget and the module draw it. */
+    fun lockLook(settings: SettingsRepository): Flow<LockLook> =
+        combine(settings.flow(LockWidgetBackground), settings.flow(LockWidgetAppearance)) { b, a ->
+            LockLook(LockBackground.of(b), LockAppearance.of(a))
+        }.distinctUntilChanged()
 
     /** Settings › Sensor end as JSON ([SensorEndConfig]); empty = the defaults. */
     val SensorReminders = SchemaSettings.text("sensor.reminders", default = "")

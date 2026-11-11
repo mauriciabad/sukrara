@@ -276,6 +276,15 @@ object SettingsIndex {
             addAll(page(SettingsRoute.LockScreen, R.string.st_lock_time to null, R.string.st_lock_treatment to null))
             addAll(
                 page(
+                    SettingsRoute.LockScreen,
+                    R.string.st_lock_widget to R.string.st_lock_widget_on,
+                    R.string.st_lock_background to null,
+                    R.string.st_lock_appearance to null,
+                    needs = BuildFeature.Root,
+                ),
+            )
+            addAll(
+                page(
                     SettingsRoute.Pens,
                     R.string.st_pens_reading to null,
                     R.string.st_pens_notify to R.string.st_pens_notify_summary,

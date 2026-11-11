@@ -75,7 +75,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **On a rooted phone** (KernelSU, Magisk or APatch; Sukrara asks for root when you turn it on and says how to allow
   it): the value and its arrow as **system icons** beside Wi-Fi and the battery;
   with Sukrara's **LSPosed module** in System UI also as text beside the clock, in its range colour, placed next to the
-  icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root).
+  icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root). The module
+  also puts a **lock-screen widget** around the fingerprint icon: the value and arrow left of it, time in range right
+  of it, the graph below; the fingerprint and every lock-screen gesture work through it, and a tap adds a treatment
+  without unlocking (Settings › Lock screen: on by default, five backgrounds for busy wallpapers, light or dark).
 - **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,
   "like an alarm" ones pass Do Not Disturb (with Do Not Disturb access they also show and vibrate through a mode that
   silences alarms, keeping your channel choices; the reliability checklist says when a mode on now mutes their sound); alerts that come close together still ring in full (Android's notification
@@ -243,8 +246,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 - **Read Glucose Aloud** from any app with ⌃⇧⌘G (switch it off in Settings › General), from the menu bar value's
   right-click menu or its VoiceOver action: the same sentence, in VoiceOver's voice when VoiceOver is on.
 
-**Not included**: the LSPosed lock-screen widget, carbs and insulin in Health Connect, and Nightscout upload over plain
-`http://` ([docs/FEATURES.md › Not included](docs/FEATURES.md#not-included), with the reasons).
+**Not included**: carbs and insulin in Health Connect, and Nightscout upload over plain `http://`
+([docs/FEATURES.md › Not included](docs/FEATURES.md#not-included), with the reasons).
 
 **Garmin watch:** switch on *Settings › Share with apps › xDrip+ server*; watch faces and data fields made for xDrip+
 read it through Garmin Connect. While **Juggluco** is Sukrara's source, Juggluco keeps its own server and feeds the

@@ -23,6 +23,7 @@ import android.text.format.DateFormat
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -46,7 +47,8 @@ import java.util.WeakHashMap
  *    colour, the card's arrow, struck through / "no readings" / the flag as the card decides: [HookText]);
  *  - keeps our system icons ([SlotIcons], set by the root [SlotDaemon]) together and where the person placed them, in
  *    their range colour, and first in line for the row's space ([IconFit]: glucose wins over other icons);
- *  - drops Sukrara's own notification icon from the status bar while the value shows there.
+ *  - drops Sukrara's own notification icon from the status bar while the value shows there;
+ *  - hosts the lock-screen widget around the fingerprint icon ([LockWidgetHost], #66).
  * The app feeds it [HookState] broadcasts only the app can send.
  *
  * Safety: System UI is sent into rescue mode if it crashes 5× in a minute, so the whole entry and every hook body
@@ -77,6 +79,7 @@ class SystemUiHook : XposedModule() {
             safe("hook icon fit") { hookIconFit(cl) }
             safe("hook icon tint") { hookIconTint(cl) }
             safe("hook notification icons") { hookNotificationIcons(cl) }
+            safe("hook lock screen widget") { hookLockWidget(cl) }
         } catch (t: Throwable) {
             log("module off: $t")
         }
@@ -91,6 +94,58 @@ class SystemUiHook : XposedModule() {
         }.getOrDefault(false)
 
     private fun killedBySetting(ctx: Context) = Settings.Global.getInt(ctx.contentResolver, SystemUi.KILL_SETTING, 0) == 1
+
+    // --- the lock-screen widget ---------------------------------------------------------------------------------
+
+    /** The lock-screen widget's host, once its hooks are in (null on a System UI without the scene container). */
+    @Volatile private var lockWidget: LockWidgetHost? = null
+
+    /**
+     * The lock-screen widget ([LockWidgetHost], docs/17): its view goes into the notification shade window's root
+     * (SceneWindowRootView, where the Compose lock screen is), which also passes it every touch. The scene interactor
+     * and AuthController are captured when Dagger creates them. While the widget shows, the notification shelf fits
+     * above the lock icon: System UI lets it hang below the notifications' space, beside the icon, where the value is.
+     */
+    private fun hookLockWidget(cl: ClassLoader) {
+        val rootClass = cl.loadClass("com.android.systemui.scene.ui.view.SceneWindowRootView")
+        val host = LockWidgetHost(ourPkg, ::log)
+        lockWidget = host
+        after(cl.loadClass("com.android.systemui.scene.domain.interactor.LegacySceneInteractorImpl").declaredConstructors.single()) {
+            host.onScenes(checkNotNull(it.thisObject))
+        }
+        host.resolveAuth(cl)
+        for (c in cl.loadClass("com.android.systemui.biometrics.AuthController").declaredConstructors) {
+            after(c) { host.onAuth(checkNotNull(it.thisObject)) }
+        }
+        after(cl.loadClass("com.android.systemui.scene.ui.view.WindowRootView").getDeclaredMethod("onAttachedToWindow")) {
+            val root = it.thisObject as ViewGroup
+            if (!rootClass.isInstance(root)) return@after
+            if (killedBySetting(root.context)) return@after log("off: ${SystemUi.KILL_SETTING}")
+            ensureReceiver(root.context)
+            host.onRootAttached(root)
+        }
+        hook(rootClass.getDeclaredMethod("dispatchTouchEvent", MotionEvent::class.java))
+            .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+            .intercept { chain ->
+                (chain.getArg(0) as? MotionEvent)?.let(host::onTouch)
+                chain.proceed()
+            }
+        val calc = cl.loadClass("com.android.systemui.statusbar.notification.stack.NotificationStackSizeCalculator")
+        hook(calc.declaredMethods.single { it.name == "computeMaxKeyguardNotifications" })
+            .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+            .intercept { chain ->
+                // (stack, spaceForNotifications, spaceForShelf, shelfHeight): at worst one more notification goes into
+                // the shelf
+                val space = chain.getArg(1) as? Float
+                val shelf = chain.getArg(2) as? Float
+                if (!host.reservesShelf || space == null || shelf == null || shelf <= 0f) {
+                    chain.proceed()
+                } else {
+                    chain.proceed(chain.args.toTypedArray().also { a -> a[1] = (space - shelf).coerceAtLeast(0f) })
+                }
+            }
+        log("lock screen widget hooks: ok")
+    }
 
     // --- the notification icon ---------------------------------------------------------------------------------
 
@@ -716,7 +771,11 @@ class SystemUiHook : XposedModule() {
                     // only the app itself (the permission is the app's signature permission; this is the second lock)
                     if (sentFromPackage != ourPkg) return@safe log("state from ${sentFromPackage ?: "an unknown sender"}: ignored")
                     onState(i)
-                    if (i.getBooleanExtra(SystemUi.EXTRA_ASK, false)) hello(app)
+                    if (i.getBooleanExtra(SystemUi.EXTRA_ASK, false)) {
+                        hello(app)
+                        // the app's process started: its lock-screen widget learns the id again
+                        lockWidget?.announce()
+                    }
                 }
             },
             IntentFilter(SystemUi.actionState(ourPkg)),
@@ -751,6 +810,7 @@ class SystemUiHook : XposedModule() {
     private fun onState(i: Intent) {
         val old = state
         state = HookState.from(i)
+        lockWidget?.update(state.lockWidget, state.lockLook)
         slots.removeAll { it.root.get() == null }
         if (state.position != old.position) slots.forEach { place(it) }
         renderAll()

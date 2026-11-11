@@ -35,10 +35,14 @@ data class WidgetOverrides(
         )
 }
 
-/** Every placed widget's overrides by appWidgetId (the typed state file "widgets"). */
+/**
+ * Every placed widget's overrides by appWidgetId (the typed state file "widgets"), and the ids under which System UI's
+ * module hosts the lock-screen widget ([lock]: the system doesn't list those to the app, so the app keeps them).
+ */
 @Serializable
 data class WidgetPlacements(
     val byId: Map<Int, WidgetOverrides> = emptyMap(),
+    val lock: Set<Int> = emptySet(),
 ) {
     operator fun get(appWidgetId: Int): WidgetOverrides = byId[appWidgetId] ?: WidgetOverrides()
 }
@@ -58,5 +62,10 @@ class WidgetSettingsStore(
         p.copy(byId = if (overrides == WidgetOverrides()) p.byId - appWidgetId else p.byId + (appWidgetId to overrides))
     }
 
-    suspend fun forget(appWidgetIds: IntArray) = store.update { p -> p.copy(byId = p.byId - appWidgetIds.toSet()) }
+    suspend fun forget(appWidgetIds: IntArray) =
+        store.update { p -> p.copy(byId = p.byId - appWidgetIds.toSet(), lock = p.lock - appWidgetIds.toSet()) }
+
+    /** System UI's module hosts the lock-screen widget under these ids (it bound one, or sent its options). */
+    suspend fun rememberLock(appWidgetIds: Collection<Int>) =
+        store.update { p -> if (p.lock.containsAll(appWidgetIds)) p else p.copy(lock = p.lock + appWidgetIds) }
 }

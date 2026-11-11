@@ -45,6 +45,9 @@ class ManifestTest {
             "app.mauri.sukrara.widgets.GraphWidgetReceiver",
             "app.mauri.sukrara.widgets.CombinedWidgetReceiver",
             "app.mauri.sukrara.widgets.WidgetConfigActivity",
+            // the lock-screen widget: the system's widget broadcasts (System UI's module hosts it; exported as in the PoC,
+            // where it was checked on the phone); they only redraw it
+            "app.mauri.sukrara.widgets.LockWidgetReceiver",
         )
 
     @Test

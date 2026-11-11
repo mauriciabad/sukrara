@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingHistory
 import app.mauri.sukrara.core.model.SourceStatus
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -42,6 +44,8 @@ data class WidgetFrame(
     val dark: Boolean,
     /** The stored days before the live window (the multi-day slots count them). */
     val stored: List<Reading> = emptyList(),
+    /** The lock-screen widget's look (Settings › Lock screen). */
+    val lock: LockLook = LockLook(),
 ) {
     /** The slots' numbers over the stored days and the live window: counted once per frame, for every widget and size. */
     val slots: MetricsCache by lazy {
@@ -56,6 +60,7 @@ data class WidgetInputs(
     val config: GraphConfig,
     val placements: WidgetPlacements,
     val stored: List<Reading> = emptyList(),
+    val lock: LockLook = LockLook(),
 )
 
 /**
@@ -83,6 +88,7 @@ class WidgetUpdater(
     private val dark: () -> Boolean,
     private val redraw: suspend () -> Unit,
     private val nextRedraw: (Instant?) -> Unit = {},
+    private val lockLook: Flow<LockLook> = flowOf(LockLook()),
 ) {
     private val latestInputs = MutableStateFlow<WidgetInputs?>(null)
     private val drawnFrame = MutableStateFlow<WidgetFrame?>(null)
@@ -98,7 +104,10 @@ class WidgetUpdater(
         if (job != null) return
         job =
             scope.launch {
-                val inputs = combine(glucose, treatments, config, placements, stored, ::WidgetInputs)
+                val inputs =
+                    combine(glucose, treatments, config, placements, combine(stored, lockLook, ::Pair)) { g, t, c, p, (s, l) ->
+                        WidgetInputs(g, t, c, p, s, l)
+                    }
                 combine(inputs, freshnessTicks.onStart { emit(Unit) }, screenOn) { i, _, on -> i to on }
                     .collect { (i, on) -> onChange(i, on) }
             }
@@ -123,7 +132,8 @@ class WidgetUpdater(
         val key = DrawKey.of(inputs, now, night)
         if (key == drawnKey || !screenOn) return@withLock
         drawnKey = key
-        drawnFrame.value = WidgetFrame(inputs.glucose, inputs.treatments, inputs.config, inputs.placements, now, night, inputs.stored)
+        drawnFrame.value =
+            WidgetFrame(inputs.glucose, inputs.treatments, inputs.config, inputs.placements, now, night, inputs.stored, inputs.lock)
         redraw()
         // the picture's own next step, whoever else is alive by then
         val latest =
@@ -140,7 +150,7 @@ class WidgetUpdater(
     suspend fun current(): WidgetFrame {
         drawnFrame.value?.let { return it }
         val i = latestInputs.filterNotNull().first()
-        return WidgetFrame(i.glucose, i.treatments, i.config, i.placements, clock.now(), dark(), i.stored)
+        return WidgetFrame(i.glucose, i.treatments, i.config, i.placements, clock.now(), dark(), i.stored, i.lock)
     }
 
     /**

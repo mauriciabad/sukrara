@@ -22,6 +22,7 @@ import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
@@ -61,6 +62,7 @@ import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
+import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
@@ -209,7 +211,9 @@ class SettingsIndexTest {
             Scene("graph marks, changed", SearchTarget.Page(SettingsRoute.GraphMarks)) {
                 GraphMarksContent(GraphConfig(marks = MarkShow.DEFAULT.withoutLabels()), GraphActions(), {})
             },
-            Scene("lock screen", SearchTarget.Page(SettingsRoute.LockScreen)) { LockScreenContent(20.0, {}, {}) },
+            Scene("lock screen", SearchTarget.Page(SettingsRoute.LockScreen)) {
+                LockScreenContent(20.0, {}, {}, LockWidgetUi(on = true, look = LockLook()))
+            },
             Scene("pens", SearchTarget.Page(SettingsRoute.Pens)) {
                 val ui by pensViewModel.ui.collectAsState()
                 ui?.let { PensContent(it, pensViewModel, {}) }

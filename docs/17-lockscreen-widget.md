@@ -171,6 +171,8 @@ so the last-treatment slot shows there too.
 
 ## In Sukrara
 
+*The PoC's integration (its paths are the PoC's); the app's port is [below](#in-sukrara-the-app-66-2026-11-11).*
+
 | Added | Where |
 |---|---|
 | Lock screen widget hosted by the LSPosed module, around the fingerprint icon | `hook/LockscreenWidgetHost.kt`, hooks in `hook/SystemUiHook.kt` (`hookLockscreenWidget`) |
@@ -199,6 +201,36 @@ so the last-treatment slot shows there too.
 | Starting the countdown in `onResume` | a slow first frame (18 s on a loaded emulator) ate the time; it counts from the first frame |
 | Closing on the `ACTION_SCREEN_OFF` broadcast alone | a late broadcast after the screen came back on closed a fresh dialog; `onStop` with `!isInteractive` closes it, the broadcast is ignored while the screen is on |
 
+## In Sukrara: the app (#66, 2026-11-11)
+
+The section above is the PoC's integration. The app (`apps/android`) ports the same widget, look, placement and
+behaviour into the places the app already has for them; the PoC stays the reference.
+
+| Added | Where |
+|---|---|
+| The host in System UI: the same `AppWidgetHost` (id `0x53554B`), the view under every lock-screen layer, placement from `AuthController.mUdfpsBounds` and the shortcut dimens, scene alpha on every frame, filtered tap copies (`GuardedView`), the shelf above the lock icon, frosted glass / card / dim, re-tint on a theme flip | `monitor/.../systemui/LockWidgetHost.kt`, hooks in `SystemUiHook.hookLockWidget` (the one System UI module, libxposed API 102) |
+| Its pure parts split out and tested: the geometry (`LockGeometry`), the scene alpha (`sceneAlpha`), the tap filter (`LockTouches`) | `LockWidgetHost.kt`, `LockWidgetHostTest` |
+| The widget as a registered card surface `lock-widget` (+ the glyph surface `lock-description` for TalkBack), drawn only by the renderer in three boxes (`lockWidgetBoxes`) with the home widgets' *Glucose and graph* style (`lockWidgetCardStyle`) | `widgets/.../LockWidget.kt`, `core/graph` `WidgetStyle.kt`, `contracts/graph/surfaces/surfaces.json`, `CardSurface`; drawn by `CardLayoutTest` with the real boxes |
+| The widget in the home widgets' pipeline: redrawn by `WidgetUpdater` (with the look as an input), by the redraw alarm while it's hosted; the ids the system doesn't list kept in `WidgetPlacements.lock`, learnt from the bind and from options the module sends on every System UI start and when the app's process asks (`LockWidgetLink.STAMP`, instead of the PoC's id in the hello) | `WidgetsModule`, `WidgetSettingsStore`, `LockWidgetReceiver` |
+| The tap is the home widgets' tap (`WidgetTap`): *Add treatment* over the lock screen with a value, the app (after the unlock) without one, the new-sensor flow for the wearer's ended sensor | `LockWidget.kt` |
+| The settings in THE schema: `lock.widget` (on), `lock.background` (none, shadow, dim, card, frosted; frosted), `lock.appearance` (auto, light, dark; auto), with their values and defaults | `contracts/settings/settings.json`, `SurfaceSettings`, `core/model` `LockWidget.kt`, `LockWidgetSettingsTest` |
+| Settings › Lock screen › *With root*: the switch, *Background*, *Appearance* (SPA rows and list dialogs, en + es), the module's fixable step as the Status bar page's card (*Add System UI*, *Restart System UI*) | `feature/settings/.../lock/LockScreenPage.kt`, `LockScreenPageTest`, `SettingsIndex` |
+| The settings ride on the module's state broadcast, gated (`StateGate`): only while the module may run (in scope or said hello) and only when they change; turning it off sends one last state, and the module then deletes its widget id | `RootStatusBar`, `HookState` |
+| `hide_from_picker` on the keyguard-only provider, an empty first layout | `widgets/src/main/res/xml/widget_lock_info.xml` |
+
+| Left out | Why |
+|---|---|
+| The PoC's `LockscreenWidget.updateAll` and its SharedPreferences id list | the app's widget pipeline and its typed state file do it (`WidgetsModule.redrawPlaced`, `WidgetPlacements.lock`) |
+| The lock widget id in the module's hello (`lockWidgetId`) | the hello lives in `:monitor`, the widget in `:widgets`; the widget's own options broadcast tells its receiver directly, with no link between the modules |
+| The PoC's own picture code (value, rings and chart drawn by the widget file) and `systemPalette` (Material You's `accent2_50`) | the renderer draws every card (One graph everywhere); the light look is the home widgets' light palette and background, as the PoC's light look copied its home widgets |
+| DebugReceiver `cmd locktest` (the distortion test pattern) | a measuring aid for the stretch bug; the fix (padding added back to the reported size) is ported with its reason, and the release build has no debug code |
+| A separate `:systemui` module | one System UI module only (`:monitor` `systemui/`); a second one would mean two libxposed entries in one scope |
+| Sending the module a state for the widget on every reading and every minute | the widget is drawn by the app; the module needs only its settings, and a phone without LSPosed needs nothing (the setting is on by default) |
+
+Not verified on a device in this round: the emulators have no LSPosed (as for docs/05's module work), so placement,
+touches, scene alpha, the shelf hook and the backgrounds were checked only by tests and the PoC's measurements above;
+docs/QA.md Q4 lists the checks on a rooted phone.
+
 ## Code
 
 - `poc/spikes/showcase-android/app/src/main/kotlin/app/mauri/sukrara/hook/LockscreenWidgetHost.kt` — host, placement,
@@ -213,6 +245,6 @@ too, and SystemUI was only restarted by killing it (`hook-safety.sh arm` during 
 
 ## Open
 
-- Followers: the widget shows whatever the phone's role feeds the widgets (wearer or followed person), but the switch
-  is only in the wearer's settings (followers keep the default, on).
+- Followers: the widget shows whatever the phone's role feeds the widgets (wearer or followed person). In the app the
+  switch is on Settings › Lock screen for both roles.
 - Other OEM lock screens (Samsung One UI etc.) have different SystemUI classes: the hooks log and do nothing there.

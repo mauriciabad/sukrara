@@ -25,6 +25,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -62,9 +63,11 @@ class StatusBarViewModel(
 
     val access: StateFlow<SystemAccessState> = systemAccess?.state ?: MutableStateFlow(SystemAccessState())
 
+    private val runner = AccessRunner(viewModelScope)
+
     /** A root / LSPosed action is running; [problem] = why the last one failed (shown in the banner). */
-    val busy = MutableStateFlow(false)
-    val problem = MutableStateFlow<AccessProblem?>(null)
+    val busy: StateFlow<Boolean> = runner.busy
+    val problem: StateFlow<AccessProblem?> = runner.problem
 
     val actions =
         RootActions(
@@ -79,13 +82,13 @@ class StatusBarViewModel(
             setColor = { set(SurfaceSettings.RootColor, it) },
             setHideIcon = { set(SurfaceSettings.HideNotificationIcon, it) },
             checkRoot = {
-                run {
+                runner.run {
                     systemAccess?.checkRoot()
                     null
                 }
             },
-            requestScope = { run { systemAccess?.requestScope() } },
-            restart = { run { systemAccess?.restartSystemUi() } },
+            requestScope = { runner.run { systemAccess?.requestScope() } },
+            restart = { runner.run { systemAccess?.restartSystemUi() } },
         )
 
     /**
@@ -108,20 +111,6 @@ class StatusBarViewModel(
         viewModelScope.launch { settings.set(spec, value) }
     }
 
-    private fun run(action: suspend () -> String?) {
-        if (busy.value) return
-        busy.value = true
-        problem.value = null
-        viewModelScope.launch {
-            problem.value =
-                runCatching { action()?.let(AccessProblem::Said) }.getOrElse {
-                    Log.w("Sukrara", "status bar action: ${it.javaClass.simpleName}")
-                    AccessProblem.Failed(UserErrors.of(it))
-                }
-            busy.value = false
-        }
-    }
-
     val prefs: StateFlow<StatusBarPrefs?> =
         combine(
             settings.flow(SurfaceSettings.StatusChip),
@@ -140,6 +129,32 @@ class StatusBarViewModel(
 
     fun setNumberIcon(on: Boolean) {
         viewModelScope.launch { settings.set(SurfaceSettings.NumberIcon, on) }
+    }
+}
+
+/**
+ * Runs one root / LSPosed action at a time (Check again, Add System UI, Restart System UI): [busy] while it runs,
+ * [problem] = why the last one failed (the access card shows it), cleared when the next one starts.
+ */
+class AccessRunner(
+    private val scope: CoroutineScope,
+) {
+    val busy = MutableStateFlow(false)
+    val problem = MutableStateFlow<AccessProblem?>(null)
+
+    /** [action] answers null when it worked, else what LSPosed or `su` said. */
+    fun run(action: suspend () -> String?) {
+        if (busy.value) return
+        busy.value = true
+        problem.value = null
+        scope.launch {
+            problem.value =
+                runCatching { action()?.let(AccessProblem::Said) }.getOrElse {
+                    Log.w("Sukrara", "root action: ${it.javaClass.simpleName}")
+                    AccessProblem.Failed(UserErrors.of(it))
+                }
+            busy.value = false
+        }
     }
 }
 

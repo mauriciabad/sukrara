@@ -22,8 +22,14 @@ enum class CardSurface(
 
     /** The new-sensor flow's *Sensor ready* page: the first reading, value and arrow only. */
     SENSOR_READY("sensor-ready", Kind.CARD),
+
+    /** The lock-screen widget around the fingerprint icon (#66): value, slots and chart in three boxes. */
+    LOCK_WIDGET("lock-widget", Kind.CARD),
     NOTIFICATION_TEXT("notification-text", Kind.GLYPH),
     WIDGET_DESCRIPTION("widget-description", Kind.GLYPH),
+
+    /** What the lock-screen widget says to TalkBack. */
+    LOCK_DESCRIPTION("lock-description", Kind.GLYPH),
     STATUS_ICONS("status-icons", Kind.GLYPH),
     STATUS_HOOK("status-hook", Kind.GLYPH),
     QUICK_TILE("quick-tile", Kind.GLYPH),

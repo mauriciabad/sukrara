@@ -7,12 +7,15 @@ import android.content.Intent
 import android.os.Bundle
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.LockAppearance
+import app.mauri.sukrara.core.model.LockBackground
+import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucosePoint
 
 /**
  * What the app tells the System UI module (one broadcast, [SystemUi.ACTION_STATE]): the root status-bar settings,
- * the person's ranges and the newest reading with the sensor state. The module recomputes the card's decision from it
+ * the lock-screen widget's settings, the person's ranges and the newest reading with the sensor state. The module recomputes the card's decision from it
  * every 30 s ([HookText.face]), so the value ages there without the app. [mgdl] 0 = no reading.
  */
 data class HookState(
@@ -35,6 +38,10 @@ data class HookState(
      * the app's sentences by [HookText.spokenKey], for the face now and the ones it reaches before the next state.
      */
     val spoken: Map<String, String> = emptyMap(),
+    /** The lock-screen widget is on (Settings › Lock screen): the module hosts it around the fingerprint icon. */
+    val lockWidget: Boolean = false,
+    /** How it looks: what is behind it and its light or dark palette. */
+    val lockLook: LockLook = LockLook(),
 ) {
     /** The newest reading for the card's decision, or null. */
     fun latest(): GlucosePoint? = if (mgdl > 0) GlucosePoint(atS, mgdl, rate) else null
@@ -64,6 +71,9 @@ data class HookState(
             putString(UNIT, unit.key)
             putStringArray(SPOKEN_KEYS, spoken.keys.toTypedArray())
             putStringArray(SPOKEN, spoken.values.toTypedArray())
+            putBoolean(LOCK_WIDGET, lockWidget)
+            putString(LOCK_BACKGROUND, lockLook.background.key)
+            putString(LOCK_APPEARANCE, lockLook.appearance.key)
         }
 
     companion object {
@@ -81,6 +91,9 @@ data class HookState(
         private const val UNIT = "unit"
         private const val SPOKEN_KEYS = "spokenKeys"
         private const val SPOKEN = "spoken"
+        private const val LOCK_WIDGET = "lockWidget"
+        private const val LOCK_BACKGROUND = "lockBackground"
+        private const val LOCK_APPEARANCE = "lockAppearance"
 
         /** At most this many sentences, each at most [MAX_SPOKEN_CHARS] long, on one line. */
         const val MAX_SPOKEN = 12
@@ -89,7 +102,8 @@ data class HookState(
         /**
          * Reads a state the module received. Every value is untrusted and clamped: an unknown placement is the
          * default, a value outside 20–600 mg/dL or a rate outside ±20 is dropped, the ranges are made sane, the
-         * sentences are at most [MAX_SPOKEN] of [MAX_SPOKEN_CHARS] characters on one line.
+         * sentences are at most [MAX_SPOKEN] of [MAX_SPOKEN_CHARS] characters on one line, an unknown lock-screen look
+         * is the default one.
          */
         fun from(i: Intent): HookState {
             val b = i.extras ?: return HookState()
@@ -111,6 +125,8 @@ data class HookState(
                 iconsShown = b.getBoolean(ICONS_SHOWN, false),
                 unit = GlucoseUnit.of(b.getString(UNIT)),
                 spoken = spoken(b.getStringArray(SPOKEN_KEYS), b.getStringArray(SPOKEN)),
+                lockWidget = b.getBoolean(LOCK_WIDGET, false),
+                lockLook = LockLook(LockBackground.of(b.getString(LOCK_BACKGROUND)), LockAppearance.of(b.getString(LOCK_APPEARANCE))),
             )
         }
 

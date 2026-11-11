@@ -63,9 +63,12 @@ follows the hub, `SurfaceSettings.Root*`, the ranges and the freshness ticks; co
 sender identity shared) and (2) drives `SlotDaemon` (`su` + `app_process`, line protocol `DaemonProtocol`, own slots
 `sukrara_glucose*`, drawables `sb_*` from `tools/android/gen-slot-drawables.swift`, kept by `res/raw/keep_status_icons.xml`
 and `consumer-rules.pro`). `SystemUiHook` is the LSPosed module in the same APK (`src/main/resources/META-INF/xposed`,
-libxposed API `compileOnly`); its pure parts are `HookText`, `IconFit`, `SlotIcons`. Its hello reaches
-`HookHelloReceiver` (permission `STATUS_BAR_SERVICE`: only System UI). `SystemAccess` (root via `su`, LSPosed via the
-libxposed service, the hello's `HookCode.VERSION`) implements `:core:model`'s `SystemAccessPort` for Settings › Status bar.
+libxposed API `compileOnly`); its pure parts are `HookText`, `IconFit`, `SlotIcons`, and for the lock-screen widget
+`LockGeometry`, `sceneAlpha`, `LockTouches` (`LockWidgetHost`: System UI's `AppWidgetHost` hosting `:widgets`'
+`LockWidgetReceiver`, named in `:core:model` `LockWidgetLink`). Its hello reaches `HookHelloReceiver` (permission
+`STATUS_BAR_SERVICE`: only System UI). `SystemAccess` (root via `su`, LSPosed via the libxposed service, the hello's
+`HookCode.VERSION`) implements `:core:model`'s `SystemAccessPort` for Settings › Status bar and › Lock screen. The
+same `HookState` carries `SurfaceSettings.LockWidget*`; `StateGate` sends it only while a feature needs it.
 
 ### Sharing
 
@@ -98,7 +101,9 @@ combines the hub's state, treatments, `GraphConfig`, per-placement `WidgetOverri
 `WidgetUpdater`, which publishes a `WidgetFrame` and calls `GlanceAppWidget.update` per placed id when the draw key
 changes (screen on only). Each `CardWidget` composes that frame at `LocalSize` through `renderWidget` →
 `GlucoseCard.draw` with `widgetCardStyle` (in `:core:graph`, shared with `CardLayoutTest`) and `cardModelOf`
-(`GlucoseState` → `CardModel`).
+(`GlucoseState` → `CardModel`). The lock-screen widget (`LockWidget`, hosted by System UI's module) composes the same
+frame through `renderLockWidget` (`lockWidgetCardStyle`, `lockWidgetBoxes`), updated by the ids it keeps in
+`WidgetPlacements.lock` (the system doesn't list them).
 
 **Settings pages: `:settingslib-spa` + `:core:designsystem` `rows/`.** `:settingslib-spa` is AOSP SettingsLib SPA
 (`frameworks/base/packages/SettingsLib/Spa/spa`, android17-release), the code the stock Settings app draws its Compose

@@ -545,14 +545,17 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`.
 - **The root features ship in the Play build too**: the glucose in the status bar (root slot daemon, the LSPosed
   module in System UI: `Store.rootFeatures = SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
-  lock-screen widget once it exists (#66, the same module). They are off by default and work only after the person
-  roots their phone, installs LSPosed, enables Sukrara's module for System UI and grants Sukrara root; they change
-  only Sukrara's own icons and text in System UI. The listing names the user-facing feature briefly and honestly
-  (*glucose in the status bar on supported phones, with advanced setup*), not the means; every Play declaration and
-  reviewer question is answered truthfully (root and LSPosed are named whenever Play asks how a feature works). The
-  policy risk is Device and Network Abuse ("interfere with … the user's device … including … other apps"
+  lock-screen widget (#66, the same module). They work only after the person roots their phone, installs LSPosed and
+  enables Sukrara's module for System UI: the status-bar value is off by default and also needs root granted to
+  Sukrara; the lock-screen widget's setting is on by default (as in the PoC) but shows nothing, and sends nothing to
+  System UI, until that module runs. They change only Sukrara's own icons, text and widget in System UI. The listing
+  names the user-facing feature briefly and honestly (*glucose in the status bar on supported phones, with advanced
+  setup*), not the means; every Play declaration and reviewer question is answered truthfully (root and LSPosed are
+  named whenever Play asks how a feature works). The policy risk is Device and Network Abuse ("interfere with … the
+  user's device … including … other apps"
   [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)); the answer is that it runs only
-  with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar items.
+  with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar items and its
+  lock-screen widget.
 - **No update check in the Play build**: an app from Play may not update itself, or send people to updates, other than
   through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646). `Store.releases()`
   returns null: About has no update rows; `GitHubReleases` and its URL aren't in the bundle (`verify-apk.sh --play`).
