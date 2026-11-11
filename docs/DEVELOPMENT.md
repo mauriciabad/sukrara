@@ -80,6 +80,10 @@ scratch folders for such a dry run.
   `~/.apple-dev/profiles`; `tools/release/mac-release.sh` notarizes and staples the app and the dmg with the notarytool
   keychain profile `sukrara` (since 0.12.0; docs/20-publishing.md › Mac release: Developer ID and notarization).
   App Group `QWUV9H4A3G.app.mauri.sukrara`.
+- **Mac updates (Sparkle)**: the EdDSA private key that signs every update is in the login keychain (Sparkle's
+  `generate_keys`: service `https://sparkle-project.org`, account `ed25519`), with a backup at `~/.apple-dev/sparkle-eddsa-private.key` (chmod 600) for the
+  password manager; its public key is `SUPublicEDKey` in `apps/macos/Bundle/sparkle.plist`. `mac-release.sh` signs the
+  notarized dmg with it and writes `docs/appcast.xml` (docs/20-publishing.md › Sparkle: the update feed).
 
 ## Strings (Android, English + Spain Spanish)
 

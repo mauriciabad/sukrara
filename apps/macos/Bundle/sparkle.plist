@@ -5,11 +5,12 @@
 <!-- Sparkle's keys (#91), merged into the GitHub version's Info.plist by bundle.sh (never the App Store version's).
      SUFeedURL: the website's appcast (docs/appcast.xml, written by tools/release/mac-release.sh; GitHub Pages, https).
      SUPublicEDKey: the public half of the EdDSA key that signs every update (the private key is in the release Mac's
-     login keychain, backed up in the owner's password manager: docs/20-publishing.md › Sparkle). Changing it locks
-     every installed copy out of updates until it is reinstalled by hand.
+     login keychain, backed up in the owner's password manager: docs/20-publishing.md › Sparkle). Change it only by the
+     key rotation described there: a new key in a release signed by the same Developer ID.
      SUEnableAutomaticChecks: once a day by default, without Sparkle's first-launch question (schema
      update.automaticChecks; automatic install, update.automaticInstall, stays off: Sukrara asks first).
-     SUVerifyUpdateBeforeExtraction: the EdDSA signature is checked before the archive is opened. -->
+     SUVerifyUpdateBeforeExtraction: the dmg is checked before it is opened (its EdDSA signature; for a key change, the
+     dmg's Developer ID signature of the same team: docs/20-publishing.md › Sparkle, if the key is lost). -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>

@@ -59,7 +59,7 @@ public interest") [[H4]](https://docs.brew.sh/Acceptable-Casks), which a young p
 | Piece | What |
 |---|---|
 | Repo | `github.com/mauriciabad/homebrew-tap` with `Casks/sukrara.rb` |
-| Cask | `version`, `sha256` of the dmg, `url` to the GitHub Release asset, `name`, `desc`, `homepage`, `app "Sukrara.app"`, `depends_on macos: ">= :sequoia"` (or whatever the widgets need), `auto_updates true` once Sparkle is in, `zap trash:` for `~/Library/Logs/Sukrara.log`, the App Group container and preferences |
+| Cask | `version`, `sha256` of the dmg, `url` to the GitHub Release asset, `name`, `desc`, `homepage`, `app "Sukrara.app"`, `depends_on macos: ">= :sequoia"` (or whatever the widgets need), `auto_updates true` (added by the bump workflow with the first Sparkle release), `zap trash:` for `~/Library/Logs/Sukrara.log`, the App Group container and preferences |
 | `livecheck` | `url :url` + `strategy :github_latest` (versioned asset names required) [[H5]](https://github.com/nelsonlove/homebrew-tap/pull/3) |
 | Auto-bump | a release workflow in this repo (or a scheduled one in the tap) computes the sha256 and commits the new version; a scoped token with `contents: write` is enough [[H5]](https://github.com/nelsonlove/homebrew-tap/pull/3) |
 | Trust | since Homebrew 6.0.0 (2026-06-11) non-official taps need explicit trust; `brew install --cask mauriciabad/tap/sukrara` (fully qualified) trusts that cask automatically, `brew tap` + short name needs `brew trust` [[H6]](https://brew.sh/7.0.0-migration-guide/)[[H7]](https://github.com/Homebrew/brew/pull/22472) |
@@ -150,17 +150,7 @@ its ticket and Gatekeeper's verdict. A rejected submission stops the release (`a
 Install, the site, docs/DEVELOPMENT.md, the dmg window and the cask no longer mention *Open Anyway* (the dmg window
 shows its first-launch help only for a build that isn't notarized), and the cask can aim at the official tap.
 
-**Sparkle next (prepared, not built).** The owner's part: download Sparkle 2's release archive
-(github.com/sparkle-project/Sparkle/releases), run `./bin/generate_keys` once (the EdDSA private key goes into the login
-keychain; it prints the public key for `SUPublicEDKey`) and back the key up with `./bin/generate_keys -x
-sukrara-sparkle.key` into the password manager, then delete that file (without the key no update can be signed, and
-every user would have to reinstall by hand). The build, one change after notarization works: `apps/macos/Package.swift`
-adds Sparkle; `bundle.sh` embeds `Sparkle.framework` and signs it inside-out (its XPC services and `Updater.app` first);
-`Info.plist.in` gets `SUFeedURL` (`https://sukrara.mauri.app/appcast.xml`) and `SUPublicEDKey`; `mac-release.sh` signs
-the dmg with `sign_update` and adds its appcast item (the GitHub release dmg as the enclosure) to `docs/appcast.xml`;
-Sparkle replaces `UpdateCheck.swift`; `LaunchMode` starts no updater in test, snapshot and dev runs;
-`update.skippedVersion` leaves contracts/settings (Sparkle keeps its own); `verify-app.sh` checks the framework's
-signature; README, FEATURES; the cask sets `auto_updates true`.
+**Sparkle**: built on 2026-11-11 (the owner's decision: signed feed, one-click *Install and Relaunch* for the GitHub / Homebrew version, none in the App Store version), see [Sparkle: the update feed](#sparkle-the-update-feed).
 
 ### In-app updates: Sparkle 2
 
@@ -169,7 +159,96 @@ Sparkle 2 (current 2.9 line [[S1]](https://sparkle-project.org/documentation/)):
 appcast (+ deltas); updates must be served over HTTPS [[S1]](https://sparkle-project.org/documentation/). Developer ID signing is recommended ("if possible") and
 needed for key rotation [[S1]](https://sparkle-project.org/documentation/). **Plan**: appcast at `https://sukrara.mauri.app/appcast.xml` (GitHub Pages is HTTPS),
 enclosures pointing at the GitHub Release dmg; the EdDSA private key stays on the user's Mac (export a backup to the
-password manager). The cask then sets `auto_updates true` so `brew upgrade` doesn't fight Sparkle.
+password manager). The cask then sets `auto_updates true` so `brew upgrade` doesn't fight Sparkle. Built: see
+[Sparkle: the update feed](#sparkle-the-update-feed).
+
+### Sparkle: the update feed
+
+Built 2026-11-11 ([#91](https://github.com/mauriciabad/sukrara/issues/91)), Sparkle **2.10.1** (SwiftPM, exact pin).
+
+**What the app has.** The GitHub version is the `Sukrara` executable, which links `SukraraUpdater` (Sparkle behind
+`SukraraApp`'s `UpdaterEngine`); `bundle.sh` embeds `Sparkle.framework` in `Contents/Frameworks`, signs it inside-out
+(`Installer.xpc`, `Downloader.xpc` keeping its entitlements, `Autoupdate`, `Updater.app`, the framework; Developer ID,
+hardened runtime, secure timestamp) and merges `Bundle/sparkle.plist` into its Info.plist: `SUFeedURL`
+`https://sukrara.mauri.app/appcast.xml`, `SUPublicEDKey` `VM8dSc/QTIcaHv5EgT02zW0gWCNg8rr39HqcgIMJNaM=`,
+`SUEnableAutomaticChecks` (once a day, no first-launch question) and `SUVerifyUpdateBeforeExtraction` (the dmg is
+checked before Sparkle opens it: its EdDSA signature, or only for a key change the dmg's own Developer ID signature of
+the same team; after extraction the new app must still match, below). The App Store version is the `SukraraAppStore` executable: no Sparkle
+in the binary, the bundle or the Info.plist (`bundle.sh --app-store` and `verify-app.sh --app-store` refuse any).
+Dev, fixture, snapshot and test runs never create the updater (`LaunchPlan`). What the person sees:
+docs/FEATURES.md › Updates (Mac, GitHub version). Notarization with Sparkle's XPC services inside: accepted on
+2026-11-11 (submission `1d7bb1ff-e862-4853-84a7-57e80fcd5176`, `verify-app.sh --notarized` all ok).
+
+**Where the feed lives: GitHub Pages, `docs/appcast.xml`.** A release asset can't be the feed: the stable
+`releases/latest/download/…` URL skips prereleases, and every 0.x release is one, so a 0.x install would never see an
+update; a per-release URL would have to be known before the release exists. Pages is HTTPS on the project's own
+domain, already serves the site and `.well-known`, deploys on every push to `main` (`.github/workflows/website.yml`;
+Jekyll copies the file unchanged, `.github/site_links.py` only touches `.md` / `.html`), and the file is reviewed in
+git like the rest. The enclosures stay on GitHub Releases (the same dmg as the download and the cask).
+
+**Prereleases.** Every 0.x release is a GitHub prerelease, so `appcast.py` puts it in Sparkle's `prerelease` channel;
+the app allows that channel only while its own version is 0.x (`Updates.channels`, `UpdatesTests`). From 1.0.0 a
+release goes to the default channel and 1.x installs take only those, like the cask and Android's check.
+
+**A release** (`tools/release/mac-release.sh`, everything it did before plus): once the dmg is notarized and stapled,
+Sparkle's `sign_update` (from the SwiftPM artifact, `apps/macos/.build/artifacts/sparkle/Sparkle/bin`) signs it with
+the key in the login keychain (macOS may ask once to let `sign_update` use it: *Always Allow*), checks the signature,
+checks the keychain's public key is the app's `SUPublicEDKey`, and `tools/release/appcast.py` adds the item to
+`docs/appcast.xml`: version and build, `minimumSystemVersion` 15.0, the channel, the GitHub release page as the full
+notes, the version's `CHANGELOG.md` section as the notes Sparkle shows, and the enclosure
+`https://github.com/mauriciabad/sukrara/releases/download/v<version>/Sukrara-<version>.dmg` with its length and EdDSA
+signature (re-running replaces that version's item). Only the dmg is the update; the zip stays a plain download. An
+unnotarized build never goes in. Then, in this order: publish the GitHub release with that exact dmg (any rebuild
+changes the signature: run `mac-release.sh` again), **then** commit `docs/appcast.xml` and merge it to `main`; Pages
+deploys it within minutes and every GitHub install sees the update at its next daily check. Committing it first would
+offer a download that isn't there yet. `UpdatesTests` checks every item (the GitHub URL, a 64-byte signature, the
+channel, the build number, newest first).
+
+**The key.** Made on 2026-11-11 with `generate_keys` on the release Mac: the private key is in the login keychain
+(a password item, service `https://sparkle-project.org`, account `ed25519`), and a backup is at
+`~/.apple-dev/sparkle-eddsa-private.key` (chmod 600). **The owner copies that file into the password manager** (Proton
+Pass, with the rest of `~/.apple-dev`). It's printed nowhere and never committed. On a new release Mac:
+`apps/macos/.build/artifacts/sparkle/Sparkle/bin/generate_keys -f <backup file>` imports it into that Mac's login
+keychain; `generate_keys -p` must print the public key above.
+
+**If the key is lost** (no keychain item, no backup): no update can be EdDSA-signed for the installed copies, because
+each checks the key in its own Info.plist. Sparkle's way out is key rotation through Apple code signing (checked in
+Sparkle 2.10.1's `AppInstaller.m` / `SUUpdateValidator.m`): an update whose dmg and app are signed by the same
+Developer ID team as the installed app may carry a **new** `SUPublicEDKey`, and is then accepted without the old key.
+So: `generate_keys` makes a new key (back it up), its public key goes into `Bundle/sparkle.plist`, and the next release
+is made as usual (`dmg.sh` signs the dmg with the app's Developer ID, `mac-release.sh` signs it with the new key);
+from then on the new key is the one. If the Developer ID certificate is lost too, every Mac has to download the next
+dmg by hand (README › Install; the cask still works with `brew upgrade --greedy`). A leaked key: the same rotation, as
+fast as possible.
+
+**Homebrew.** `.github/workflows/homebrew-tap.yml` adds `auto_updates true` to the cask with the first release that
+has the updater (and keeps it): `brew upgrade` then leaves Sukrara to Sparkle, `brew upgrade --greedy` still upgrades
+it. Not before: 0.13.0 has no updater, and a cask with `auto_updates` isn't upgraded by a plain `brew upgrade`, so
+0.13.0 installs would stay there. The tap's own README needs no change.
+
+**Checking it end to end without the owner's Mac's app.** A normal launch of a build outside the repo is the owner's
+app (their follower key, relays, alerts), so the local check never runs one. It runs two Developer ID builds without a
+provisioning profile (`bundle.sh --no-profile`: no invite links, no data-protection keychain) as dev runs in a scratch
+folder that has a `.git` marker (isolated data: `SUKRARA_DEV=1`, `SUKRARA_DEV_HOME`), with a local patch that is never
+committed: the dev run starts only the updater and checks at once with automatic download on, Sparkle uses its own
+defaults domain (`SUDefaultsDomain`), reads a
+`http://127.0.0.1` feed, and `updater(_:willInstallUpdateOnQuit:immediateInstallationBlock:)` installs at once. N+1's
+dmg is signed with `sign_update` and listed by `appcast.py`. Afterwards the builds are deleted and unregistered
+(`lsregister -u`, `pluginkit -r` for the widget). Result on 2026-11-11 (0.13.90 → 0.13.91, Developer ID, Sparkle
+2.10.1): the running 0.13.90 found 0.13.91 in the `prerelease` channel, downloaded the 15 MB dmg, verified it, installed
+it in place and relaunched in about 3 s; the copy in place was 0.13.91 (13091) with a valid Developer ID signature, and
+the relaunched copy (started without `SUKRARA_DEV`) was refused by the launch gate, as a dev copy should be. Then a feed
+item "0.13.92" carrying another file's signature: *The update is improperly signed and could not be validated*,
+nothing installed. The owner's app and its defaults were untouched (no `SU*` key in `app.mauri.sukrara`).
+
+**In Sukrara.** Added: the above. Discarded, with the reason: `generate_appcast` (it wants every archive in one local
+folder and rewrites the whole feed; one item per release from `appcast.py` is simpler and keeps the history in git);
+delta updates (a 10 MB dmg once a week doesn't need them, and they'd need the previous archives); a signed feed
+(`SURequireSignedFeed`: every hand edit of `docs/appcast.xml` would then lock all installs out; the archives are
+signed and verified before extraction, which is what protects the install); a notification for a found update
+(notifications are for glucose; the panel row and Sparkle's window are enough); automatic install on by default (a
+follower's alarm should not change under the person without them knowing; it's one switch away); removing Sparkle's
+XPC services (unused by a non-sandboxed app, but they're part of the signed framework and notarize fine).
 
 ### Provisioning profiles: Time Sensitive alarms, the data-protection keychain, universal links (#19, #34)
 

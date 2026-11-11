@@ -227,8 +227,8 @@ reachable with VoiceOver the same way.
 - **The feed**: `https://sukrara.mauri.app/appcast.xml` (`docs/appcast.xml` on the website, `SUFeedURL`), checked
   once a day while *Check for updates automatically* is on, and on every *Check for Updates…*. Each item is the
   notarized dmg of a GitHub release, signed with Sukrara's EdDSA key; Sparkle checks that signature against the
-  app's `SUPublicEDKey` before it opens the dmg, and that the new app carries the same Developer ID signature, so a
-  changed feed or download installs nothing. 0.x installs take prereleases (every 0.x release is one), 1.x installs
+  app's `SUPublicEDKey` and the new app's Developer ID signature before it installs, so a changed feed or download
+  installs nothing (tested: a feed item with another file's signature → *improperly signed*, nothing installed). 0.x installs take prereleases (every 0.x release is one), 1.x installs
   only releases (`Updates.channels`; the `prerelease` channel, like the cask and Android's check).
 - **Where**: the right-click menu's *Check for Updates…* (dimmed while the updater is busy); Settings › General ›
   About: the version, *Check for Updates…*, **Check for updates automatically** (on by default), **Download and

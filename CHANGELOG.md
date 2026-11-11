@@ -4,6 +4,11 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **The Mac updates itself** (GitHub and Homebrew version, #91): once a day it looks for a new version, signed by
+  Sukrara and checked before it installs, and offers it in the menu bar panel; *Install and Relaunch* is one click.
+  Settings › General › About has *Check for Updates…*, automatic checks (on) and automatic install (off). The App
+  Store version keeps updating through the store. Updating to this version is still by hand (the dmg or `brew upgrade`);
+  from then on Sukrara does it.
 - **Do Not Disturb and Focus are respected by default** (#184): the alert checklist says plainly whether Sukrara
   alerts in Do Not Disturb (Android) or during a Focus (Mac), with *Let Sukrara through* / *Don't let Sukrara through*
   (Android: Do Not Disturb access the first time, then the alarm channels' override; Mac: Time Sensitive), and home

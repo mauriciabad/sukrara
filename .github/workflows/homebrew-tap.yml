@@ -7,7 +7,8 @@
 # the cask follows them, like the apps' own update check offers prereleases to a 0.x install; from 1.0.0 on a
 # prerelease (a release candidate) is skipped, also when dispatched by hand. Pushes with the tap's deploy key (write
 # access to that repo only), stored here as the secret HOMEBREW_TAP_DEPLOY_KEY. Re-run by hand with workflow_dispatch
-# (tag) if a release was edited.
+# (tag) if a release was edited. The cask also gets `auto_updates true` (the app updates itself with Sparkle, #91);
+# don't dispatch it for a release older than the updater (0.13.0 and before), which brew would then never upgrade.
 name: Homebrew tap
 on:
   release:
@@ -62,6 +63,13 @@ jobs:
         run: |
           sed -i -E "s/^  version \".*\"/  version \"$VER\"/; s/^  sha256 \".*\"/  sha256 \"$SHA\"/" Casks/sukrara.rb
           grep -q "version \"$VER\"" Casks/sukrara.rb && grep -q "sha256 \"$SHA\"" Casks/sukrara.rb
+          # Releases from this workflow's version on update themselves with Sparkle (#91): `auto_updates true` makes
+          # `brew upgrade` leave them to it. Added with the first such release, so 0.13.0 (no updater) still upgrades.
+          if ! grep -q '^  auto_updates true$' Casks/sukrara.rb; then
+            awk '/^  depends_on arch:/ && !done { print "  auto_updates true"; done = 1 } { print }' Casks/sukrara.rb > cask.new
+            mv cask.new Casks/sukrara.rb
+            grep -q '^  auto_updates true$' Casks/sukrara.rb
+          fi
           if git diff --quiet; then echo "cask already at $VER"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

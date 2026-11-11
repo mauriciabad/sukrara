@@ -3,7 +3,8 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Builds the Mac release for a GitHub release: Bundle/bundle.sh, verify-app.sh, Bundle/dmg.sh, then verifies the dmg.
-# Leaves apps/macos/build/Sukrara-<version>.dmg and Sukrara-mac-<version>.zip.
+# Leaves apps/macos/build/Sukrara-<version>.dmg and Sukrara-mac-<version>.zip, and (notarized only) the release's item
+# in Sparkle's appcast, docs/appcast.xml (#91).
 #
 # Developer ID and notarization switch on by themselves once the credentials exist (#91, docs/20-publishing.md › Mac
 # release: Developer ID and notarization):
@@ -14,6 +15,12 @@
 #   authority, hardened runtime, secure timestamp, stapled ticket, Gatekeeper "Notarized Developer ID").
 # - none → the Apple Development identity of team QWUV9H4A3G, not notarized: Gatekeeper asks once on first open
 #   (System Settings › Privacy & Security › Open Anyway).
+# Sparkle (#91, docs/20-publishing.md › Sparkle: the update feed): a notarized dmg is signed with the EdDSA key in the
+# login keychain (Sparkle's sign_update from the SwiftPM artifact; the keychain may ask once to allow it) and added to
+# docs/appcast.xml by tools/release/appcast.py: the GitHub release's dmg URL, the signature and length, the
+# "prerelease" channel for a 0.x release, the CHANGELOG.md section as notes. Only the dmg is the update (Sparkle installs
+# from it); the zip stays a plain download. Commit docs/appcast.xml after the GitHub release with the dmg is published.
+# An unnotarized build never goes in the appcast.
 # Refuses unless tools/check/strict exists. Prints the dmg and zip paths on the last two lines.
 set -eu
 . "$(dirname "$0")/lib.sh"
@@ -22,9 +29,10 @@ if [ ! -e "$root/tools/check/strict" ]; then
   echo "refusing: tools/check/strict is missing (every registry file must exist before a release)" >&2; exit 2
 fi
 set -- $(version_info)
-version="$1"
+version="$1" code="$2" kind="$3"
 build="$root/apps/macos/build"
 checklist="docs/20-publishing.md › Mac release: Developer ID and notarization"
+sparkle_doc="docs/20-publishing.md › Sparkle: the update feed"
 
 # The identity: SIGN_ID when given, else the first valid Developer ID Application identity (bundle.sh checks its team).
 ids="$(security find-identity -v -p codesigning)"
@@ -67,8 +75,20 @@ if [ "$notarize" = 1 ]; then
   echo "$gk"
   case "$gk" in *accepted*"Notarized Developer ID"*) ;; *) echo "Gatekeeper doesn't accept $dmg as notarized" >&2; exit 1 ;; esac
   echo "notarized and stapled: Gatekeeper opens it without Open Anyway"
+  # The update: the stapled dmg, signed with the EdDSA key the app's SUPublicEDKey names, into the appcast.
+  sign_update="$root/apps/macos/.build/artifacts/sparkle/Sparkle/bin/sign_update"
+  [ -x "$sign_update" ] || { echo "no $sign_update (bundle.sh's swift build resolves Sparkle)" >&2; exit 1; }
+  sig="$("$sign_update" -p "$dmg")" || { echo "sign_update failed: is the Sparkle key in the login keychain? (see $sparkle_doc)" >&2; exit 1; }
+  "$sign_update" --verify "$dmg" "$sig" >/dev/null 2>&1 || { echo "the dmg's EdDSA signature doesn't verify" >&2; exit 1; }
+  # the key that signed it is the one every installed copy trusts
+  want_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$build/Sukrara.app/Contents/Info.plist")"
+  have_key="$("$root/apps/macos/.build/artifacts/sparkle/Sparkle/bin/generate_keys" -p 2>/dev/null || true)"
+  [ "$have_key" = "$want_key" ] || { echo "the keychain's Sparkle key ($have_key) isn't the app's SUPublicEDKey ($want_key): see $sparkle_doc" >&2; exit 1; }
+  python3 "$root/tools/release/appcast.py" --version "$version" --build "$code" --kind "$kind" --signature "$sig" \
+    --length "$(stat -f %z "$dmg")"
+  echo "docs/appcast.xml: commit it once the GitHub release v$version with $(basename "$dmg") is published"
 else
-  echo "not notarized (no Developer ID identity): Gatekeeper asks once on first open (Open Anyway)"
+  echo "not notarized (no Developer ID identity): Gatekeeper asks once on first open (Open Anyway); not in the appcast"
 fi
 echo "$dmg"
 echo "$zip"
