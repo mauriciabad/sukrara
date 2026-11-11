@@ -6,6 +6,7 @@
 plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
+    id("sukrara.screenshots.gallery")
     id("sukrara.contracts")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
@@ -26,14 +27,4 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.roborazzi)
-    testImplementation(libs.roborazzi.compose)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-tasks.withType<Test>().configureEach {
-    systemProperty("roborazzi.test.record", "true")
-    // Robolectric on SDK 36 reaches into FileDescriptor internals
-    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }

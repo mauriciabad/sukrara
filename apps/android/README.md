@@ -46,7 +46,11 @@ Packages follow the module path: `:feature:home` → `app.mauri.sukrara.feature.
 
 - **A module's build file** only applies convention plugins and lists dependencies:
   `id("sukrara.android.library")` (or `sukrara.jvm.library`), plus `sukrara.android.compose` for UI,
-  `sukrara.room` for a Room database, `sukrara.contracts` when tests read `contracts/` (use `Contracts.file("…")`).
+  `sukrara.room` for a Room database, `sukrara.contracts` when tests read `contracts/` (use `Contracts.file("…")`),
+  `sukrara.screenshots.gallery` for Roborazzi screenshots every test run records into `build/outputs/roborazzi`
+  (review galleries, never committed) or `sukrara.screenshots.goldens` for goldens committed in `src/test/snapshots`
+  (recorded by CI's goldens.yml, compared by `verifyRoborazziDebug`; add the module to both workflows). Every Android
+  module's unit tests get Robolectric's JDK 21 flags from the library / application plugin.
   Versions come only from `gradle/libs.versions.toml`.
 - **Dependencies between modules point down**: features → core/runtime modules → `:core:model`. Features never
   depend on each other or on `:app`; they declare what they need as an `XxxDeps` interface (see `HomeDeps`).

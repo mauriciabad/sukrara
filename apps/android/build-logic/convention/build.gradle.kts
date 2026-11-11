@@ -48,5 +48,13 @@ gradlePlugin {
             id = "sukrara.quality"
             implementationClass = "QualityConventionPlugin"
         }
+        register("screenshotGallery") {
+            id = "sukrara.screenshots.gallery"
+            implementationClass = "ScreenshotGalleryConventionPlugin"
+        }
+        register("screenshotGoldens") {
+            id = "sukrara.screenshots.goldens"
+            implementationClass = "ScreenshotGoldensConventionPlugin"
+        }
     }
 }

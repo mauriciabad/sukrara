@@ -40,6 +40,12 @@ val Project.repoRoot get() = rootProject.layout.projectDirectory.dir("../..")
 /** `preFullReleaseBuild`, `prePlayReleaseBuild`: the first task of every release output (assemble, bundle, install). */
 val RELEASE_ROOT = Regex("pre[A-Z][A-Za-z]*ReleaseBuild")
 
+/**
+ * What Robolectric (SDK 36: resources, SQLite, Compose) reaches into on JDK 21: FileDescriptor internals. Every
+ * Android module's unit tests run with it.
+ */
+val ROBOLECTRIC_JVM_ARGS = listOf("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+
 /** Shared Android settings for the application and library plugins. */
 fun Project.configureAndroid(android: CommonExtension) {
     android.apply {
@@ -51,6 +57,7 @@ fun Project.configureAndroid(android: CommonExtension) {
         testOptions.unitTests.isIncludeAndroidResources = true
     }
     configureKotlin()
+    tasks.withType<Test>().configureEach { jvmArgs(ROBOLECTRIC_JVM_ARGS) }
 }
 
 /** JDK 21 toolchain for compilation and for every test task (the build fails loudly when JDK 21 is missing). */

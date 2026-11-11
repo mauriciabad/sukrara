@@ -11,7 +11,6 @@ plugins {
 }
 
 android {
-    testOptions.unitTests.isIncludeAndroidResources = true
     // the exported schema, for MigrationTestHelper.createDatabase under Robolectric
     sourceSets["test"].assets.srcDir("$projectDir/schemas")
 }
@@ -22,13 +21,8 @@ dependencies {
     implementation(libs.androidx.datastore.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
-    api(libs.okhttp)
+    implementation(libs.okhttp)
     testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
-}
-
-// Robolectric (SukraraDatabaseTest) reaches into FileDescriptor internals on JDK 21
-tasks.withType<Test>().configureEach {
-    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }

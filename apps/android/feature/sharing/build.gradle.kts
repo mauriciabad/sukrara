@@ -7,15 +7,8 @@ plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.roborazzi)
-}
-
-android {
-    // Robolectric's resource loader reads FileDescriptor internals on JDK 21
-    testOptions.unitTests.all {
-        it.jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
-    }
-    testOptions.unitTests.isIncludeAndroidResources = true
+    // Share with someone's goldens (ShareScreenGoldenTest); its other screenshots are review galleries
+    id("sukrara.screenshots.goldens")
 }
 
 dependencies {
@@ -45,7 +38,6 @@ dependencies {
     implementation(libs.androidx.credentials)
     testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
-    testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

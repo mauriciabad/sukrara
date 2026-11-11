@@ -8,7 +8,7 @@ plugins {
     id("sukrara.android.compose")
     id("sukrara.contracts")
     id("org.jetbrains.kotlin.plugin.serialization")
-    alias(libs.plugins.roborazzi)
+    id("sukrara.screenshots.goldens")
 }
 
 dependencies {
@@ -30,14 +30,6 @@ dependencies {
     testImplementation(project(":feature:settings"))
     testImplementation(project(":feature:home"))
     testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-// Goldens in src/test/snapshots, recorded on CI by .github/workflows/goldens.yml; `verifyRoborazziDebug` (CI) compares,
-// `compareRoborazziDebug` shows a local diff. A plain test run neither writes nor compares.
-tasks.withType<Test>().configureEach {
-    // Robolectric on SDK 36 reaches into FileDescriptor internals
-    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }

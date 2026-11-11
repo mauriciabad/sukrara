@@ -43,6 +43,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigation3.runtime)
+    // the one HTTP client (DataModule.http) handed to every module that talks to the internet
+    implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(project(":core:testing"))
@@ -86,8 +88,6 @@ fun registerLibraryCheck(
 }
 
 tasks.withType<Test>().configureEach {
-    // Robolectric on SDK 36 reaches into FileDescriptor internals (AppGraphTest)
-    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
     // StringsParityTest reads every module's values/ and values-es/ strings (a changed translation runs it again)
     inputs
         .files(

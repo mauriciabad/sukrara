@@ -11,7 +11,7 @@ plugins {
 
 dependencies {
     // NumberDialog takes the generated NumberSpec (the one number input, CLAUDE.md "Settings never diverge")
-    api(project(":core:data"))
+    api(project(":core:model"))
     // THE mute lines (MuteText) word the alert engine's MuteCopy
     api(project(":core:alerts"))
     // the generated pictures (AvatarImage) draw the protocol's Avatar numbers
@@ -33,9 +33,4 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.activity.compose)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-// Robolectric reaches into FileDescriptor internals on JDK 21
-tasks.withType<Test>().configureEach {
-    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }

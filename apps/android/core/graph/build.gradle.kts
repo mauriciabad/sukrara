@@ -7,13 +7,11 @@ plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
     id("sukrara.contracts")
-    alias(libs.plugins.roborazzi)
+    id("sukrara.screenshots.goldens")
 }
 
 android {
-    // Robolectric's resource loader reads FileDescriptor internals on JDK 21
     testOptions.unitTests.all {
-        it.jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
         // `-Dlayout.write=true`: CardLayoutTest writes its shared answers into contracts/graph/layout/expect.json
         System.getProperty("layout.write")?.let { v -> it.systemProperty("layout.write", v) }
     }
@@ -21,13 +19,12 @@ android {
 
 dependencies {
     api(project(":core:model"))
-    // the generated SettingsSpec (band limits, graph defaults)
+    // the schema settings keys of the graph's settings (GraphSettings); the generated SettingsSpec is :core:model's
     implementation(project(":core:data"))
     // ColorUtils, PathParser for the Canvas drawing
     implementation(libs.androidx.core.ktx)
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.serialization.json)
-    // Robolectric resources (CardWords en + es) and Roborazzi card screenshots
+    // Robolectric resources (CardWords en + es) and the card's screenshots
     testImplementation(libs.robolectric)
-    testImplementation(libs.roborazzi)
 }

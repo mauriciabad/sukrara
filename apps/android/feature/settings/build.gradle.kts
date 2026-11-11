@@ -6,12 +6,15 @@
 plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
+    id("sukrara.screenshots.gallery")
 }
 
 dependencies {
     api(project(":core:model"))
     // the alert settings model (SPEC §3) the alert pages edit
     api(project(":core:alerts"))
+    // the schema settings store and keys, settings transfer, the diagnostic log
+    implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     // THE clock formatter (24-hour setting) for "muted until" times
     implementation(project(":core:graph"))
@@ -24,16 +27,4 @@ dependencies {
     testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.roborazzi)
-    testImplementation(libs.roborazzi.compose)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-// The screenshot gallery records into build/outputs/roborazzi (synthetic data, for the UX review; no goldens are
-// committed: images live only under docs/img or evidence folders).
-tasks.withType<Test>().configureEach {
-    systemProperty("roborazzi.test.record", "true")
-    // Robolectric on SDK 36 reaches into FileDescriptor internals
-    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }
