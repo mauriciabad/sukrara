@@ -438,16 +438,141 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
    `/Applications/Sukrara.app`, the GitHub version) and delete `~/Library/Containers/app.mauri.sukrara`, which only
    holds the agents' offline smoke runs. QA Q6, Q8 and Q22 on it; `tools/install.sh mac` goes back to the GitHub
    version.
-3. **Listing**, before submitting for review (#186's last step): texts from the Play listing rewritten for the Mac and
-   the rules in [review risk](#mac-app-store-review-risk-2026-11-11-186), synthetic Mac screenshots, privacy URL
-   https://sukrara.mauri.app/privacy, App Privacy *Data Not Collected*, category Medical, the age rating
-   questionnaire, review notes and the demo video; the EU trader status.
+3. **Listing**: entered 2026-11-11, except what only the owner can give
+   ([the listing](#mac-app-store-the-listing-entered-2026-11-11) has what's filled and the clicks left).
 4. **Submit** for review.
 
 **Next uploads**: `tools/release/release.py` (its `testflight` step), or by hand `tools/release/mac-appstore.sh`
 (build, pkg, `altool --validate-app`), then `--upload`; each upload
 gets a new `CFBundleVersion` and goes to the Owner group by itself once its export question is answered (or once
 `ITSAppUsesNonExemptEncryption` is in the Info.plist).
+
+### Mac App Store: the listing (entered 2026-11-11)
+
+Entered by an agent in the owner's signed-in Chrome (App Store Connect, app 6833533014). Nothing was submitted, and no
+agreement, tax, banking, trader-status or export question was touched. The wording follows the
+[review risk](#mac-app-store-review-risk-2026-11-11-186) rules and the Play listing: no brand in the name, subtitle or
+keywords, no accuracy claim, no dosing advice, the not-a-medical-device statement.
+
+**Filled and saved**
+
+| Where | en-US | es-ES |
+|---|---|---|
+| App Information › Name / Subtitle | *Sukrara* / `Glucose in your menu bar` | *Sukrara* / `Glucosa en la barra de menús` |
+| Promotional text (≤ 170) | `The glucose of someone you look after, live in your Mac's menu bar, with alerts when it goes low or high. End-to-end encrypted, no account.` | `La glucosa de alguien a quien cuidas, en directo en la barra de menús de tu Mac, con alertas cuando baja o sube. Cifrada de extremo a extremo, sin cuenta.` |
+| Keywords (≤ 100) | `diabetes,CGM,blood sugar,widget,alarm,alert,follow,caregiver,family,parent,type 1,T1D,monitor,sugar` | `diabetes,CGM,azúcar,widget,alarma,alerta,seguir,cuidador,familia,padres,tipo 1,DM1,monitor,glucemia` |
+| Description | 2618 characters, below | 2856 characters, the same in Spanish (the Mac app's own words: *barra de menús*, *móvil*, *Concentración*, *urgente*) |
+| Screenshots | 6 at 2880 × 1800 (`~/Pictures/sukrara-appstore/en/`) | 6 (`…/es/`) |
+| Support / Marketing URL | https://sukrara.mauri.app/mac/ / https://sukrara.mauri.app/ | the same |
+| App Privacy › Privacy Policy URL | https://sukrara.mauri.app/privacy | the same |
+
+Also: version **0.14.0** (was the default *1.0*; it must equal the build's version, so change it if another build is
+submitted), copyright `2026 Maurici Abad`, category **Medical** + **Health & Fitness**, content rights *No third-party
+content* (the readings are the person's own data), price **Free** in all 175 regions, *Sign-in required* off, and the
+review notes (below).
+
+**Age rating: 16+** (Korea 15+; 17+ on OS versions before 26). Answers: every in-app control, capability, mature theme,
+sexuality, violence and chance item *None / No*; **Medical or Treatment Information: Frequent** (the app is about
+managing diabetes), **Health or Wellness Topics: Yes** (the card's *Eat carbs* / *Take insulin* pills and the report's
+consensus goals are self-care guidance). Judgement calls: *Messaging and Chat: No* and *User-Generated Content: No*
+(a treatment note is a ≤ 100-byte log entry seen only by the wearer and the followers they approved, not a messaging or
+publishing feature; Play's IARC answer "users exchange text" is broader and stays as it is). *Infrequent* medical
+content would lower the rating but isn't true for this app. GlucoseBar is 16+ too.
+
+**Description (en-US)** (the Spanish text is in App Store Connect):
+
+```text
+Sukrara shows the glucose of someone you look after in your Mac's menu bar, and alerts you when it goes too low or too high, changes fast, or stops arriving.
+
+Sukrara for Mac follows a person who wears a glucose sensor and shares their readings from the Sukrara app on their phone. The Mac reads no sensor itself: it shows what their phone sends, end-to-end encrypted, over the internet or over Bluetooth nearby. It can also show the glucose from Juggluco on your home network.
+
+Glucose at a glance
+• The value in its range colour, with its trend arrow, in the menu bar; struck through when it gets old.
+• Click it for the glucose card and a chart you can scroll back 31 days.
+• Desktop widgets with the same card.
+• VoiceOver reads the value, trend and range in one sentence, and a keyboard shortcut reads the glucose aloud from any app.
+
+Alerts
+• Very low, low, high, very high and extremely high alerts, rising or falling fast, and no readings, with your own thresholds and sounds or the wearer's.
+• Mute them for a while and unmute them from the menu bar, or send a test alert any time.
+• When you allow it, alerts come through a Focus as Time Sensitive notifications.
+• A Mac that is asleep, offline or muted can't ring: keep the alarms on the wearer's phone on.
+
+Follow someone
+• Open their invite link, scan its QR code with the Mac's camera, or pair nearby over Bluetooth and compare a 6-digit code. The wearer approves every follower.
+• No account to create and no server to host.
+
+Treatments and reports
+• The wearer's insulin, carbs and notes on the chart, and your own when they allow it.
+• A glucose report for 1, 7, 14 or 30 days (time in ranges, average, GMI, variability), and CSV export.
+
+Private by design
+• Readings travel end-to-end encrypted from the wearer's phone to your Mac and stay on your Mac for 31 days. The developer receives none of it: no analytics, no ads, no tracking.
+• Free and open source (GPL-3.0): github.com/mauriciabad/sukrara
+• In English and Spanish.
+
+What you need
+• A Mac with Apple silicon and macOS 15 or newer.
+• Someone who shares their glucose with Sukrara on their Android phone and sends you an invite, or Juggluco on your home network.
+
+Important
+Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Values can be wrong, late or missing, and alerts may not ring. Don't base treatment decisions on Sukrara: check the sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. Sukrara is an early preview.
+
+Sukrara is not affiliated with Juggluco or with any sensor maker.
+```
+
+*Android* is named once, under *What you need*, because the Mac app only works with that phone app. Guideline 2.3.10
+forbids other platforms' names in metadata unless the app really works with them. If App Review objects anyway, it's
+a metadata-only fix: replace that line with `Someone who shares their glucose with the Sukrara phone app
+(sukrara.mauri.app) and sends you an invite, …`. No new build is needed.
+
+**Review notes** (App Review Information › Notes, 1971 characters). They say:
+
+- Sukrara has no account, so there's no sign-in to give.
+- Without a wearer, the panel says *Not monitoring: not following anyone yet*.
+- What the reviewer can try: setup, every Settings pane, *Settings › Alerts › an alert › Details… › Send Test Alert*,
+  and About with the medical reminder and the privacy link.
+- The not-a-medical-device wording.
+- Where the data goes: end-to-end encrypted, through relays the developer doesn't run, kept 31 days.
+- Why each entitlement is there.
+- The GPL source.
+
+They hold one placeholder, **`[VIDEO LINK TO ADD]`**. It stands for a video of the Mac following a test wearer: a
+release or TestFlight Mac following an emulator debug build with the synthetic sensor, pointed at the public relays
+for that recording only. Never the owner's data. Replace the placeholder with the link, or delete that line before
+submitting.
+
+**Screenshots**: made by `assets/brand/sukrara/appstore/` (the README there has the commands) from `sukrara-snap`
+renders with synthetic data only (Marta, the made-up day). The pictures are in `~/Pictures/sukrara-appstore/{en,es}/`,
+outside the repo:
+
+1. `01-hero`: menu bar + panel
+2. `02-alerts`: a low with its mute + Settings › Alerts
+3. `03-follow`: nearby pairing code
+4. `04-widgets`: live and aged
+5. `05-report`: Add Treatment + Glucose Report
+6. `06-dark`: the scrolled chart
+
+None shows an *Eat carbs* / *Take insulin* pill or an update row. Making them showed the Spanish report's period
+picker in English (*7 days*): the catalog key was `%@ days` where the code looks up `%lld days`. It's fixed in the
+same change. `LocalizationTests` normalises every specifier to `%@`, so it can't catch that kind of mismatch.
+
+**The owner's clicks, in order** (App Store Connect › Sukrara):
+
+1. **0.14.0 › App Review Information › Contact Information**: first and last name, phone, e-mail. Save. (An agent
+   doesn't enter personal contact details.)
+2. **The video**: record it as described under *Review notes*, upload it (YouTube *Unlisted*), and put the link in
+   place of `[VIDEO LINK TO ADD]` in *Notes*. Save.
+3. **The build**: once 0.14.0 is on TestFlight, answer its export question (the first item of the list above). Then
+   *Build › Add Build › 0.14.0*. Save.
+4. **App Privacy › Get Started**: *No, we do not collect data from this app*, then Save and **Publish**
+   ([the reasoning](#privacy-answers-for-both-stores-drafts-2026-11-11)).
+5. **Pricing and Availability › Set Up Availability**: the countries. All of them, or leave France out to skip the
+   ANSSI declaration. Save.
+6. **Business › EU trader status** (Digital Services Act). It's needed before the version can go out in the EU.
+7. **0.14.0 › App Store Version Release**: pick manual or automatic release. Then **Add for Review → Submit**.
+
+The website's Mac page (`docs/mac/index.md` › *Get it*) gets an App Store badge once the app is live.
 
 ## Android
 
@@ -856,7 +981,8 @@ to a service they chose isn't *sharing*; data that never leaves the device isn't
 *Yes*; encrypted in transit *Yes*; *My app does not allow users to create an account*; *Can users login to your app
 with accounts created outside of the app?* *No* (the owner's answer); deletion request *Yes*, URL
 https://sukrara.mauri.app/privacy. The owner disputes the premise below and will revisit it in depth; judgement call
-(1) was not applied. The two readings:
+(1) was not applied. The recommendation (2026-11-11) is *No*, with the table below as the fallback:
+[Privacy answers for both stores](#privacy-answers-for-both-stores-drafts-2026-11-11). The two readings:
 
 - **Nothing is collected** (the owner): Sukrara has no server and the developer receives nothing; the follower name is
   an alias; the LibreView e-mail is only a sign-in. The uploads go to services the person signs in to and turns on.
@@ -1089,9 +1215,10 @@ Left, in order:
 
 1. **Store presence › Main store listing**: answer the **AI asset declaration** in the Review step, then *Save* (the
    listing is a draft until then).
-2. **App content › Data safety**: settle the open premise
-   ([the two readings](#google-play-data-safety-health-apps-and-permission-declarations-drafts)), finish the data
-   types, *Submit*. Required before any review.
+2. **App content › Data safety**: settle the open premise. The definitions, flow by flow, and the recommended *No*
+   (with this draft as the fallback) are in
+   [Privacy answers for both stores](#privacy-answers-for-both-stores-drafts-2026-11-11). Then *Submit*. It's required
+   before any review.
 3. **The video** ([#185](https://github.com/mauriciabad/sukrara/issues/185), recorded on the owner's phone), uploaded
    to YouTube as *Unlisted* (check it plays signed out); then **App content › Foreground service permissions**
    (`connectedDevice`): *Continuous data transfer to an external device* or *Other* with
@@ -1139,6 +1266,93 @@ The planned own watch app (watch face / data field / app, investigation 08) goes
   page serves Play, Garmin and the Mac app; a feature that sends something new changes it in the same commit.
 
 ## Cross-cutting
+
+### Privacy answers for both stores (drafts, 2026-11-11)
+
+These are drafts for the owner's decision. Nothing here is saved in either console. The owner disputes that Sukrara
+"collects" anything, so this checks that premise against each store's own definitions, one data flow at a time.
+Paths below are under `apps/android/` (A) or `apps/macos/` (M).
+
+**The definitions**
+
+- **Google** [[G14]](https://support.google.com/googleplay/android-developer/answer/10787469):
+  - Sending data from the app off the device counts as *collecting* it, whether it goes to the developer or to a third
+    party.
+  - Not in scope: data processed only on the device, and data that is end-to-end encrypted so that nobody but the
+    sender and the recipient can read it.
+  - The Data safety FAQ adds a third case: an upload the person makes directly to their own cloud account, governed by
+    that provider's terms and privacy policy, which the developer never gets. That needn't be declared either.
+  - A transfer the person starts, and expects, isn't *sharing*.
+- **Apple** [[A14]](https://developer.apple.com/app-store/app-privacy-details/):
+  - *Collecting* is sending data off the device in a way that lets the developer, or its "third-party partners",
+    access it beyond serving the request in real time.
+  - Third-party partners are the analytics, ad and SDK vendors whose code is in the app.
+  - Data processed only on the device isn't collected.
+
+**Android (the Play build)**
+
+| Flow (default) | Where it goes, evidence | Who can read it | Google: collected? |
+|---|---|---|---|
+| Sharing over relays (on once sharing is set up) | Readings, alerts, treatments and notes, the profile, mirrored settings: NIP-44 to the read key the followers get in a gift wrap (A `core/protocol/…/event/EventFactory.kt:87-95`, `share/…/crypto/SdkNostrCrypto.kt:58-61`). The backup goes to the wearer's own key (`EventFactory.kt:78-81`). Public relays nobody on our side runs (`core/protocol/…/Wire.kt:45`) | Only the wearer and the approved followers. The relays see the envelope: random public keys, IP, time, size, kind, expiry, the app version | **No**: the end-to-end exemption. The envelope is transport metadata on servers the developer doesn't run. A strict reader could call the long-lived public key a *Device or other ID* (fallback below) |
+| Bluetooth (on once someone follows) | The same encrypted events to devices nearby. During *Pair nearby* (≤ 10 min), the name, picture, invite code and relays, readable nearby (`share/…/ShareOwnerModule.kt:132`, `share/…/ble/NearbyServerCore.kt:289-301`) | The content: only the followers. The pairing offer: anyone in range, for 10 minutes, after the person opens it | **No**: end-to-end encrypted, device to device. The pairing offer is a transfer the person starts and sees |
+| Invite link / QR | The person hands it over. Its secret is in the `#`, never sent to the website | Whoever gets it | **No**: the person's own transfer |
+| LibreView sign-in and upload (off) | E-mail and password, readings, treatments, notes, the sensor's number, an install ID, and the name and date of birth the account already has. To Abbott, over TLS, into the person's own account (A `integrations/…/libreview/LibreViewUploader.kt:49-53`, `…/LibreViewClient.kt:180-189`) | Abbott, under its own privacy policy. Never the developer | **Debatable.** The bare definition says yes (off the device, to a third party). The own-account FAQ says no: the person's own account, the provider's terms, and the developer never gets it. Not *shared* either way |
+| Tidepool (off; a follower's *Upload the person you follow*, off) | The same kinds of data to `api.tidepool.org` (A `integrations/…/tidepool/TidepoolUploader.kt:49-54`) | Tidepool, under its own privacy policy | As LibreView |
+| Nightscout (off) | Readings, treatments, sensor changes, battery, a device name, to the person's own site, https only (A `integrations/…/nightscout/NightscoutUploader.kt:45-53`, `…/NsConfig.kt:62-63`) | The person's own server | **No**: it's literally the person's own storage, the FAQ case |
+| Health Connect, calendar, broadcasts, xDrip+ server, Nightscout API (all off) | On the phone (the API binds to the Wi-Fi only with *Also on this Wi-Fi*, off: A `integrations/…/localserver/NightscoutApiServer.kt:447-448`) | Apps the person picks; their own devices | **No**: on the device or the person's own devices |
+| Android backup | Off (A `app/src/main/AndroidManifest.xml:28-29`, `data_extraction_rules.xml`). The key backup goes to the person's own password manager | — | **No** |
+| Crash reports, analytics, ads | None: no SDK that phones home (A `gradle/libs.versions.toml`). Play's own vitals are Google's, not the app's | — | **No** |
+| Updater | Not in the Play build (A `app/build.gradle.kts:36`, `app/src/play/…/Store.kt:25`) | — | — |
+
+**Mac (the App Store version)**
+
+| Flow (default) | Where it goes, evidence | Apple: collected? |
+|---|---|---|
+| Following over relays | Follow request with name and picture, profile updates, requests for new keys and missed readings: all NIP-59 gift wraps to the wearer (M `Sources/SukraraShare/Follower/FollowerSession.swift:130-160`, `…/Protocol/NostrSDKCrypto.swift:58-72`). The entries added, if allowed: NIP-44 to the read key | **No**: neither the developer nor any partner can read it. The relays aren't the developer's partners: no vendor code, an open protocol |
+| Bluetooth nearby | Mac to the wearer's phone | **No** |
+| Juggluco on this network (off) | GETs to the person's own phone on the home network, private addresses only. The API secret only as a hash (M `Sources/SukraraShare/Lan/JugglucoApi.swift:32-39`) | **No**: their own devices |
+| Updates, analytics, crash reports, iCloud, HealthKit | None. The App Store executable links no updater (M `Package.swift:67`, `Sources/SukraraAppStore/main.swift:8`). The sandbox is network client, Bluetooth and user-selected files (`Bundle/appstore.entitlements.in`). Keychain items are this-device-only | **No** |
+
+**Precedent.** Juggluco (on Play, with LibreView and Nightscout uploads) declares "No data collected" and "No data
+shared" [[P4]](https://play.google.com/store/apps/datasafety?id=tk.glucodata&hl=en). GlucoseBar (Mac App Store, Dexcom
+Share and Nightscout) shows *Data Not Collected* [[A6]](https://apps.apple.com/us/app/glucosebar/id6468110131?mt=12).
+
+**Recommendation**
+
+- **Apple: Data Not Collected.** This one is clear-cut: there's no partner code, and everything that leaves the Mac is
+  end-to-end encrypted or stays on the person's own devices.
+- **Google: "No"**, the owner's reading.
+  - The relays are covered by the end-to-end exemption.
+  - Nightscout is covered by the own-account FAQ.
+  - The integrations and the backup stay on the person's own devices or accounts.
+  - LibreView and Tidepool are the person's own accounts, under the provider's own privacy policy, and the developer
+    never gets them.
+- **The two weak points**, if a reviewer reads strictly:
+  - LibreView and Tidepool are health services, not the FAQ's "drive or cloud storage".
+  - The relays see a long-lived random public key.
+- **If Play rejects the Data safety form**, the fallback is the conservative draft in
+  [Google Play: Data safety…](#google-play-data-safety-health-apps-and-permission-declarations-drafts), minus Name and
+  Other info if preferred. That draft says *Yes*, encrypted in transit, deletion possible, and lists the opt-in uploads
+  as collected, optional, for *App functionality*, not shared. Optionally add *Device or other IDs* for the relay key.
+  Saying more than needed carries no penalty; saying less than Play thinks is true does.
+- **The privacy page must match either answer.** It lists every flow and says the developer receives nothing. It was
+  corrected on 2026-11-11 where the code said more:
+  - Bluetooth is on by default once someone follows.
+  - The GitHub version's daily update check.
+  - The backup encrypted to the wearer's own key.
+  - What the relays see.
+  - LibreView setting the active sensor.
+  - The Mac's Juggluco search.
+
+**The exact clicks**
+
+- **Play Console › App content › Data safety** (the saved draft says *Yes*):
+  1. *Data collection and security*: **Does your app collect or share any of the required user data types? → No**.
+     The data-type pages go away.
+  2. Next, Preview, **Submit**.
+- **App Store Connect › Sukrara › App Privacy**:
+  1. **Get Started → No, we do not collect data from this app**, then Save.
+  2. **Publish**. The Privacy Policy URL https://sukrara.mauri.app/privacy is already set for en-US and es-ES.
 
 **Names and trademarks.** Abbott claims "Libre", the butterfly logo, the sensor's look and the colour yellow; use is
 allowed only to identify Abbott's products [[T1]](https://play.google.com/store/apps/details?id=com.abbott.adc.freestyle.libre.us). Apple forbids third-party brands in the app name/icon without
@@ -1265,6 +1479,7 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
 - [A4] App Review Guidelines (1.4.1, 2.4.5, 2.5, 4.1, 5.1.3, 5.2) — https://developer.apple.com/app-store/review/guidelines/
 - [A5] Bluetooth sandbox entitlement — https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.bluetooth
 - [A6]–[A13] seen 2026-11-11 (3rd-party): GlucoseBar — https://apps.apple.com/us/app/glucosebar/id6468110131?mt=12; Sugar Sense: Menu Bar Glucose — https://apps.apple.com/us/app/sugar-sense-menu-bar-glucose/id6796828695?mt=12; Glucose Graph — https://apps.apple.com/us/app/glucose-graph/id1668560499?mt=12; nightguard — https://apps.apple.com/us/app/nightguard/id1116430352; Sugarmate's removal — https://twitter.com/sugarmateapp/status/1495892882749800450; Shuggah's removal — https://appshunter.io/ios/app/1586789452, https://www.diabetes.co.uk/forum/threads/shuggah-app-vanished.210952/; Spike's certificate — https://medium.com/trit1dtech/devastating-news-for-diy-t1d-community-apple-tries-to-clamp-down-on-distribution-of-spike-app-ef57138b6163
+- [A14] Apple, App privacy details on the App Store (seen 2026-11-11) — https://developer.apple.com/app-store/app-privacy-details/
 - [S1] Sparkle documentation (2.9) — https://sparkle-project.org/documentation/
 - [G1] Play Console Help, Closure of inactive developer accounts — https://support.google.com/googleplay/android-developer/answer/11605267
 - [G2] XDA, inactive-account policy (2021, 3rd-party) — https://www.xda-developers.com/google-play-policy-crack-down-on-dormant-accounts/
@@ -1292,6 +1507,7 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
 - [P1] Juggluco on Google Play — https://play.google.com/store/apps/details?id=tk.glucodata
 - [P2] FUDiabetes forum, Juggluco back on Play (3rd-party) — https://forum.fudiabetes.org/t/juggluco-back-on-play-store/15038
 - [P3] xDrip+ installed from GitHub (3rd-party) — https://forum.fudiabetes.org/t/upgrade-to-libre-3-from-libre-2-using-xdrip-on-android/14774
+- [P4] Juggluco's Data safety on Google Play (seen 2026-11-11) — https://play.google.com/store/apps/datasafety?id=tk.glucodata&hl=en
 - [F1] Obtainium releases (1.7.0) — https://github.com/ImranR98/Obtainium/releases
 - [F2] F-Droid Inclusion Policy — https://f-droid.org/docs/Inclusion_Policy/
 - [F3] F-Droid Anti-Features — https://f-droid.org/docs/Anti-Features/

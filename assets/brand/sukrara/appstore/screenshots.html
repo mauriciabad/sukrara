@@ -1,0 +1,164 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Mac App Store screenshots (2880 × 1800: 1440 × 900 at 2×). Render: see README.md in this folder.
+  Every picture inside is a real `sukrara-snap` render with synthetic data (?raw= points at them); this page only
+  adds the background, the caption, a window frame and a plain menu bar. Never a person's data.
+  ?shot=hero|alerts|follow|widgets|report|dark  &lang=en|es  &raw=file:///…/sukrara-appstore/raw
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sukrara App Store screenshot</title>
+<style>
+  @font-face { font-family: "Brand Sans"; src: local("SF Pro"), url("file:///System/Library/Fonts/SFNS.ttf"); font-weight: 100 1000; }
+  :root { --top: #1BB5C9; --bottom: #0B2E5E; --accent: #C6F432; }
+  html, body { margin: 0; padding: 0; width: 1440px; height: 900px; overflow: hidden; }
+  body { font-family: "Brand Sans", "Helvetica Neue", Arial, sans-serif; color: #fff; position: relative;
+         background: linear-gradient(160deg, var(--top) 0%, var(--bottom) 78%); }
+  body.dark { background: linear-gradient(160deg, #146f86 0%, #061a36 70%); }
+  .sheen { position: absolute; inset: 0; background: radial-gradient(circle at 18% 0%, rgba(255,255,255,.16), rgba(255,255,255,0) 60%); }
+  .caption { position: absolute; }
+  .caption h1 { margin: 0; font-size: 58px; line-height: 1.08; font-weight: 700; letter-spacing: -1.2px; }
+  .caption p { margin: 18px 0 0; font-size: 26px; line-height: 1.35; font-weight: 400; color: rgba(255,255,255,.86); }
+  .caption .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
+                  margin: 0 0 22px; box-shadow: 0 0 18px rgba(198,244,50,.7); }
+  .center { text-align: center; left: 0; right: 0; }
+  .menubar { position: absolute; left: 0; right: 0; top: 0; height: 30px; display: flex; align-items: center;
+             justify-content: flex-end; gap: 22px; padding: 0 18px; box-sizing: border-box;
+             background: rgba(255,255,255,.72); color: #1d1d1f; font-size: 14px; font-weight: 500; }
+  .dark .menubar { background: #1f1f1f; color: #f2f2f7; }
+  .menubar .title { height: 24px; overflow: hidden; mix-blend-mode: multiply; }
+  .dark .menubar .title { mix-blend-mode: normal; }
+  .shot { position: absolute; border-radius: 12px; overflow: hidden;
+          box-shadow: 0 34px 80px rgba(5,26,56,.55), 0 0 0 1px rgba(0,0,0,.12); }
+  .shot img { display: block; }
+  .win { background: #ECECEC; } .win.darkwin { background: #1E1E1E; }
+  .panel { background: #ECECEC; }
+  .crop { overflow: hidden; }
+  .win .bar { height: 28px; position: relative; display: flex; align-items: center; justify-content: center;
+              background: #E9E9E9; border-bottom: 1px solid #D2D2D2; color: #4b4b4b; font-size: 13px; font-weight: 600; }
+  .win.darkwin .bar { background: #2D2D2F; border-bottom-color: #1a1a1a; color: #d0d0d0; }
+  .win .lights { position: absolute; left: 12px; top: 8px; display: flex; gap: 8px; }
+  .win .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .win .lights i:nth-child(1) { background: #FF5F57; } .win .lights i:nth-child(2) { background: #FEBC2E; }
+  .win .lights i:nth-child(3) { background: #28C840; }
+  .widget { border-radius: 26px; }
+</style>
+</head>
+<body>
+<div class="sheen"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const shot = q.get("shot") || "hero", lang = q.get("lang") || "en";
+const raw = (q.get("raw") || "raw").replace(/\/$/, "") + "/" + lang + "/";
+document.documentElement.lang = lang;
+
+const T = {
+  en: {
+    hero: ["Their glucose, in your menu bar", "Live from the phone of someone you look after, end-to-end encrypted."],
+    alerts: ["Alerts when it goes low or high", "Your thresholds and sounds, or the wearer’s. Mute, unmute or test them any time."],
+    follow: ["Follow with a link, a QR code or Bluetooth", "The wearer approves every follower. No account to create."],
+    widgets: ["The same card on your desktop", "Widgets that age by themselves, so an old value never looks new."],
+    report: ["Treatments and a glucose report", "Time in ranges, average, GMI and variability for 1 to 30 days, with CSV export."],
+    dark: ["31 days to scroll back, light or dark", "Scroll or pinch the chart. VoiceOver reads the card in one sentence."],
+    win: { settings: "Sukrara Settings", setup: "Set Up Sukrara", report: "Glucose Report" },
+    clock: "Wed 10:22 PM",
+  },
+  es: {
+    hero: ["Su glucosa, en tu barra de menús", "En directo desde el móvil de alguien a quien cuidas, cifrada de extremo a extremo."],
+    alerts: ["Alertas cuando baja o sube", "Tus umbrales y sonidos, o los de quien lleva el sensor. Siléncialas, reactívalas o pruébalas cuando quieras."],
+    follow: ["Sigue con un enlace, un código QR o Bluetooth", "Quien lleva el sensor aprueba a cada seguidor. Sin cuenta que crear."],
+    widgets: ["La misma tarjeta en tu escritorio", "Widgets que envejecen solos: un valor antiguo nunca parece nuevo."],
+    report: ["Tratamientos e informe de glucosa", "Tiempo en rango, media, GMI y variabilidad de 1 a 30 días, con exportación a CSV."],
+    dark: ["31 días para mirar atrás, en claro u oscuro", "Desplaza o pellizca la gráfica. VoiceOver lee la tarjeta en una frase."],
+    win: { settings: "Ajustes de Sukrara", setup: "Configurar Sukrara", report: "Informe de glucosa" },
+    clock: "mié 22:22",
+  },
+}[lang];
+
+const el = (tag, cls, parent = document.body) => {
+  const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e;
+};
+// A snapshot at `scale` × its point size (the renders are 2×). `crop` = [top, bottom] in image pixels.
+function image(src, scale = 1, crop = [0, 0]) {
+  const box = el("div", "crop", null), img = el("img", "", box);
+  img.src = raw + src;
+  img.onload = () => {
+    const w = img.naturalWidth / 2 * scale, h = img.naturalHeight / 2 * scale;
+    img.style.width = w + "px";
+    img.style.marginTop = -crop[0] / 2 * scale + "px";
+    box.style.width = w + "px";
+    box.style.height = h - (crop[0] + crop[1]) / 2 * scale + "px";
+  };
+  return box;
+}
+function place(node, x, y, cls = "shot") {
+  const wrap = el("div", cls); wrap.style.left = x + "px"; wrap.style.top = y + "px"; wrap.appendChild(node); return wrap;
+}
+function windowed(title, node, dark = false) {
+  const w = el("div", "win" + (dark ? " darkwin" : ""), null), bar = el("div", "bar", w);
+  el("div", "lights", bar).innerHTML = "<i></i><i></i><i></i>";
+  bar.appendChild(document.createTextNode(title));
+  w.appendChild(node); return w;
+}
+function caption(key, x, y, width, centered = false) {
+  const c = el("div", "caption" + (centered ? " center" : ""));
+  if (!centered) { c.style.left = x + "px"; c.style.width = width + "px"; }
+  c.style.top = y + "px";
+  c.innerHTML = '<span class="dot"></span><h1></h1><p></p>';
+  c.querySelector("h1").textContent = T[key][0];
+  c.querySelector("p").textContent = T[key][1];
+  if (centered) { c.querySelector("p").style.maxWidth = "1000px"; c.querySelector("p").style.margin = "18px auto 0"; }
+}
+function menubar(strip) {
+  const bar = el("div", "menubar");
+  const title = el("div", "title", bar);
+  const img = el("img", "", title); img.src = raw + strip;
+  img.onload = () => { img.style.width = img.naturalWidth / 2 + "px"; };
+  title.style.width = "62px"; // the title of a 3-digit value with its arrow
+  el("span", "", bar).textContent = T.clock;
+  return bar;
+}
+const STRIP = 64; // the shell renders draw the menu bar title above the panel: cut it (and the gap) off
+
+const scenes = {
+  hero() {
+    menubar("shell/panel-following-light.png");
+    caption("hero", 100, 300, 800);
+    place(image("shell/panel-following-light.png", 1.25, [STRIP, 0]), 940, 40, "shot win");
+  },
+  alerts() {
+    caption("alerts", 0, 64, 0, true);
+    place(image("shell/panel-low-muted-light.png", 1.1, [STRIP, 0]), 150, 300, "shot win");
+    place(windowed(T.win.settings, image("windows/settings-alerts-light.png", 1.05, [0, 735])), 660, 290, "shot win");
+  },
+  follow() {
+    caption("follow", 0, 64, 0, true);
+    place(windowed(T.win.setup, image("windows/follow-nearby-compare-light.png", 1.4)), 356, 320, "shot win");
+  },
+  widgets() {
+    caption("widgets", 0, 64, 0, true);
+    place(image("card/widget-combined-714x350-live-mgdl-dark.png", 1.0), 150, 330, "shot widget");
+    place(image("card/widget-value-138x138-live-mgdl-light.png", 1.0), 950, 330, "shot widget");
+    place(image("card/widget-value-138x138-stale-mgdl-light.png", 1.0), 1150, 330, "shot widget");
+    place(image("card/widget-graph-332x138-live-mgdl-dark.png", 1.0), 950, 542, "shot widget");
+  },
+  report() {
+    caption("report", 0, 64, 0, true);
+    place(image("windows/treatment-add-light.png", 1.2), 130, 380, "shot win");
+    place(windowed(T.win.report, image("windows/report-light.png", 1.05)), 800, 280, "shot win");
+  },
+  dark() {
+    document.body.classList.add("dark");
+    menubar("shell/panel-chart-scrolled-dark.png");
+    caption("dark", 100, 300, 800);
+    place(image("shell/panel-chart-scrolled-dark.png", 1.25, [STRIP, 0]), 940, 40, "shot win darkwin");
+  },
+};
+scenes[shot]();
+</script>
+</body>
+</html>

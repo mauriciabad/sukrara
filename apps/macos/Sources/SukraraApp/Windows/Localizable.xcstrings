@@ -6161,18 +6161,18 @@
         }
       }
     },
-    "%@ days" : {
+    "%lld days" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ days"
+            "value" : "%lld days"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ días"
+            "value" : "%lld días"
           }
         }
       }
