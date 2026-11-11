@@ -6,6 +6,7 @@
 # native methods by reflection, so neither may be renamed or removed by R8 (tools/release/android-smoke.sh).
 -keep class org.nostrdevkit.sdk.** { *; }
 -keep class com.sun.jna.** { *; }
+-keep class * implements com.sun.jna.** { *; }
 -keepclassmembers class * extends com.sun.jna.** { public *; }
 -dontwarn java.awt.**
 -dontwarn com.sun.jna.**
