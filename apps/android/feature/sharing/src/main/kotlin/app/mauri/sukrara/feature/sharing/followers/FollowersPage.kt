@@ -114,8 +114,15 @@ fun FollowersPage(
                 title = stringResource(R.string.sh_backup_title),
                 summary = stringResource(if (state.backedUp) R.string.sh_backup_row_done else R.string.sh_backup_row_missing),
                 onClick = actions.backup,
+                icon = DsR.drawable.ds_ic_backup,
+                // not backed up: a new phone would lose the followers (the PoC's red backup icon)
+                warning = !state.backedUp,
             )
-            NavigationRow(title = stringResource(R.string.sh_followers_share), onClick = actions.share)
+            NavigationRow(
+                title = stringResource(R.string.sh_followers_share),
+                onClick = actions.share,
+                icon = DsR.drawable.ds_ic_share,
+            )
         }
         if (state.pending.isNotEmpty()) {
             SettingsGroup(title = stringResource(R.string.sh_followers_waiting)) {

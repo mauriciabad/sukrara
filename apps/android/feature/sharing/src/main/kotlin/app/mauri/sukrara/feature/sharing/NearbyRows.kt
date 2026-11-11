@@ -24,6 +24,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.share.ble.NearbyStatus
 import kotlinx.coroutines.delay
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * The way out of a blocked Bluetooth state, under the row that shows it: Bluetooth off → its settings page; Nearby
@@ -129,6 +130,7 @@ fun PairNearbyRow(
         title = stringResource(R.string.sh_pair_nearby),
         checked = until != null,
         onCheckedChange = onChange,
+        icon = DsR.drawable.ds_ic_bluetooth_searching,
         summary =
             if (until == null) {
                 stringResource(R.string.sh_pair_nearby_off)

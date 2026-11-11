@@ -92,6 +92,9 @@ import com.android.settingslib.spa.widget.ui.SettingsBody
 /** The test tag of every row (the settings search index test reads each row's title, its first text, by it). */
 const val ROW_TAG = "settings-row"
 
+/** The test tag of a row's icon (tests check rows carry one: every row has an icon). */
+const val ROW_ICON_TAG = "settings-row-icon"
+
 /**
  * A group of rows: SPA's Category, with an optional [title] (announced as a heading by TalkBack) and [titleAction]
  * beside it (a section's Reset icon). Like SPA, the title shows only while the group has rows to show.
@@ -179,7 +182,7 @@ internal fun RowIcon(
     Icon(
         painterResource(icon),
         contentDescription = null,
-        modifier = Modifier.size(SettingsDimension.itemIconSize),
+        modifier = Modifier.size(SettingsDimension.itemIconSize).testTag(ROW_ICON_TAG),
         tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

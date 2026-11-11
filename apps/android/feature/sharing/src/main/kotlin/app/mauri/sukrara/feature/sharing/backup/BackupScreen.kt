@@ -59,12 +59,14 @@ import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * What Backup shows under its rows about *Save to password manager* (until the next try): the system's sheet open,
@@ -138,11 +140,7 @@ fun BackupScreen(
     val saved = state.passwordManagerSavedAt > 0
     val asking = ui == BackupUi.Asking
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            stringResource(if (state.backedUp) R.string.sh_backup_intro_saved else R.string.sh_backup_intro_missing),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+        SettingsIntro(stringResource(if (state.backedUp) R.string.sh_backup_intro_saved else R.string.sh_backup_intro_missing))
         SettingsGroup {
             ActionRow(
                 title = stringResource(if (saved) R.string.sh_backup_save_again else R.string.sh_backup_save),
@@ -154,6 +152,7 @@ fun BackupScreen(
                     },
                 enabled = !asking,
                 onClick = onSave,
+                icon = DsR.drawable.ds_ic_key,
             )
             NavigationRow(
                 title = stringResource(R.string.sh_recovery_title),
@@ -164,6 +163,7 @@ fun BackupScreen(
                         stringResource(R.string.sh_recovery_summary)
                     },
                 onClick = { showRecovery = true },
+                icon = DsR.drawable.ds_ic_history_edu,
             )
             InfoRow(
                 title = stringResource(R.string.sh_backup_relays),
@@ -173,6 +173,7 @@ fun BackupScreen(
                     } else {
                         stringResource(R.string.sh_backup_relays_not_yet)
                     },
+                icon = DsR.drawable.ds_ic_hub,
             )
         }
         Reveal(ui != BackupUi.Idle && ui != BackupUi.Asking) {
@@ -192,6 +193,7 @@ fun BackupScreen(
                 title = stringResource(R.string.sh_replace_title),
                 summary = stringResource(R.string.sh_replace_summary),
                 onClick = onReplace,
+                icon = DsR.drawable.ds_ic_restart_alt,
             )
         }
     }
