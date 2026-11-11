@@ -37,6 +37,9 @@ class HookCodeTest {
             "../core/data/src/main/kotlin/app/mauri/sukrara/core/data/settings/SurfaceSettings.kt",
             "../core/model/src/main/kotlin/app/mauri/sukrara/core/model/GlucoseUnit.kt",
             "../core/model/src/main/kotlin/app/mauri/sukrara/core/model/SensorTiming.kt",
+            // the R8 rules that decide what of the module survives (0.12.0's hooks lost their intercept: a fixed build
+            // must ask for a System UI restart, or System UI keeps the broken module until the next reboot)
+            "consumer-rules.pro",
         )
 
     @Test fun `the fingerprint matches the System UI code`() {

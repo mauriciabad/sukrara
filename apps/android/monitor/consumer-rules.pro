@@ -17,3 +17,8 @@
 -keep class io.github.libxposed.service.** { *; }
 # The libxposed API is provided by LSPosed at run time (compileOnly).
 -dontwarn io.github.libxposed.api.**
+# The hooks are lambdas implementing XposedInterface.Hooker; LSPosed calls their intercept. R8 keeps it only when it
+# sees the API: the app gives it as a library (app/build.gradle.kts compileOnly). A keep rule can't do it (R8
+# synthesizes the lambda classes after the rules match; tried). 0.12.0 shipped them empty: AbstractMethodError in every
+# hook on the owner's phone. tools/release/verify-apk.sh fails an APK with an empty hook class.
+# HookCodeTest fingerprints this file: a change here asks for a System UI restart.
