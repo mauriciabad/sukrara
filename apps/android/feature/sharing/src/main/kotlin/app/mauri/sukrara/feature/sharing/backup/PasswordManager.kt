@@ -5,7 +5,6 @@ package app.mauri.sukrara.feature.sharing.backup
 
 import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -147,11 +146,3 @@ object PasswordManager {
     private const val ATTEMPTS = 2
     private val CODE = Regex("\\[(\\d{3,6})]")
 }
-
-/** The activity behind a composable's context (Credential Manager shows its sheet over it). */
-tailrec fun Context.findActivity(): Activity? =
-    when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }

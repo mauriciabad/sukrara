@@ -11,13 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
 import app.mauri.sukrara.feature.sharing.backup.BackupViewModel
 import app.mauri.sukrara.feature.sharing.backup.PasswordManager
-import app.mauri.sukrara.feature.sharing.backup.findActivity
 import app.mauri.sukrara.feature.sharing.profile.ProfileScreen
 import app.mauri.sukrara.share.owner.OwnerShareState
 

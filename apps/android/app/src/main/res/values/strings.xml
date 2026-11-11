@@ -5,4 +5,5 @@
 <resources>
     <string name="app_name" translatable="false">Sukrara</string>
     <string name="app_restart_systemui_failed">Couldn’t restart System UI: %1$s</string>
+    <string name="app_open_failed">This phone can’t open that screen</string>
 </resources>

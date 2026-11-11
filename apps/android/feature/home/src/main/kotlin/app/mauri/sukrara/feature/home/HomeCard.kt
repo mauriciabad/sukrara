@@ -77,7 +77,6 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
-import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -99,7 +98,7 @@ import app.mauri.sukrara.graph.SensorInfo
 import app.mauri.sukrara.graph.SensorLife
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
-import app.mauri.sukrara.graph.cardInfo
+import app.mauri.sukrara.graph.cardSensor
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.GlucosePoint
@@ -122,7 +121,7 @@ fun homeLook(
     unit: GlucoseUnit,
 ): GlucoseLook {
     // the same sensor dates and warm-up rule the drawn card uses (a reading since the sensor's start ends the warm-up)
-    val info = state.sensor.info(now)
+    val info = state.sensor.cardSensor(now)
     val warming = info != null && SensorLife.warming(info, state.latest?.t?.epochSecond, now.epochSecond)
     val sensor =
         when (val s = state.sensor) {
@@ -142,18 +141,6 @@ fun homeLook(
 }
 
 /**
- * The sensor's dates as the card needs them (the renderer's [cardInfo], the alerts' defaults); null when nothing is
- * known (the card then shows no sensor badge). An ended sensor without dates ends at [now], so the renderer draws
- * "Sensor ended" + "Replace sensor" in the value's place.
- */
-private fun SensorState.info(now: Instant): SensorInfo? =
-    if (this == SensorState.Ended) {
-        SensorInfo(startS = now.epochSecond - SensorTiming.DEFAULT_WEAR_MIN * 60L, endS = now.epochSecond)
-    } else {
-        cardInfo()
-    }
-
-/**
  * The app panel's card model: [points] = the stored history; the badge, mute lines and last-treatment ring are the
  * alert runtime's ([muteRuleOf], the same rule as every other surface); [sensor] = [glucose]'s sensor dates at [now].
  */
@@ -163,7 +150,7 @@ internal fun panelModel(
     treatments: List<Treatment>,
     now: Instant,
     words: CardWords,
-    sensor: SensorInfo? = glucose.sensor.info(now),
+    sensor: SensorInfo? = glucose.sensor.cardSensor(now),
 ): CardModel =
     CardModel(
         readings = points,
@@ -216,7 +203,7 @@ fun PanelCard(
     val points = remember(history) { history.map { it.toPoint() } }
     val status = glucose.alerts.status
     val quiet = glucose.alerts.treatmentQuiet
-    val sensor = glucose.sensor.info(now)
+    val sensor = glucose.sensor.cardSensor(now)
     val model =
         remember(points, treatments, nowS, words, status, quiet, sensor) {
             panelModel(glucose, points, treatments, now, words, sensor)

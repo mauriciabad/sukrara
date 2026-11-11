@@ -45,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -1142,43 +1143,46 @@ private fun Treatments(
         val openLabel = stringResource(R.string.home_pen_open)
         val editLabel = stringResource(R.string.home_treatment_edit)
         treatments.forEach { t ->
-            val pen = t.id in fromPen
-            val label = treatmentLabel(t, pen)
-            val time = clockTime(t.at)
-            // a pen row is one button (its sheet: the doses, Priming / Injected), any other row this phone may change
-            // opens its edit; Delete stays a button of its own
-            val open =
-                when {
-                    pen -> Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp)
-                    t.id !in readOnly -> Modifier.clickable(onClickLabel = editLabel) { onEdit(t) }.heightIn(min = 48.dp)
-                    else -> Modifier
-                }
-            Row(
-                Modifier.fillMaxWidth().then(open).padding(start = 16.dp, end = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(time, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
-                // the time since the entry in the card's short durations ("12m", "3h")
-                Text(
-                    TreatmentMarks.duration(now.epochSecond - t.at.epochSecond, words),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                marks[t.id]?.let { mark ->
-                    // every mark opens the LibreView page: what it has, why an entry waits, the way back in when stopped
-                    IconButton(onClick = openClinicUpload) { UploadMarkIcon(mark) }
-                }
-                if (t.id !in readOnly) {
-                    IconButton(onClick = { onDelete(t) }) {
-                        Icon(
-                            painterResource(R.drawable.home_ic_delete),
-                            contentDescription = stringResource(R.string.home_treatment_delete, label, time),
-                        )
+            // keyed by the entry: a row's state stays with its treatment when one is added or removed above it
+            key(t.id) {
+                val pen = t.id in fromPen
+                val label = treatmentLabel(t, pen)
+                val time = clockTime(t.at)
+                // a pen row is one button (its sheet: the doses, Priming / Injected), any other row this phone may change
+                // opens its edit; Delete stays a button of its own
+                val open =
+                    when {
+                        pen -> Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp)
+                        t.id !in readOnly -> Modifier.clickable(onClickLabel = editLabel) { onEdit(t) }.heightIn(min = 48.dp)
+                        else -> Modifier
+                    }
+                Row(
+                    Modifier.fillMaxWidth().then(open).padding(start = 16.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(time, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+                    // the time since the entry in the card's short durations ("12m", "3h")
+                    Text(
+                        TreatmentMarks.duration(now.epochSecond - t.at.epochSecond, words),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    marks[t.id]?.let { mark ->
+                        // every mark opens the LibreView page: what it has, why an entry waits, the way back in when stopped
+                        IconButton(onClick = openClinicUpload) { UploadMarkIcon(mark) }
+                    }
+                    if (t.id !in readOnly) {
+                        IconButton(onClick = { onDelete(t) }) {
+                            Icon(
+                                painterResource(R.drawable.home_ic_delete),
+                                contentDescription = stringResource(R.string.home_treatment_delete, label, time),
+                            )
+                        }
                     }
                 }
+                DeliveryLine(state.delivery[t.id], label) { onRetry(t) }
             }
-            DeliveryLine(state.delivery[t.id], label) { onRetry(t) }
         }
     }
     // carbs logged, no rapid insulin near them yet, and a pen at hand: the quiet way to log it (an hour at most)

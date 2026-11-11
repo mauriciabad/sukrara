@@ -630,7 +630,9 @@ the sensor again* (the saved pairing can't be used; the sensor keeps running) �
 scanned family refused the pairing: wrong ID or PIN) → Pair sensor again (Settings › Sensor says the same: *Used by
 another app*, *Needs a new scan of the sensor*, *Needs pairing again*, each with *Pair new sensor*); follower *No
 readings from the wearer's phone* (last heard …); wearer *No readings from the sensor* (last reading …) → Sensor
-details. The Nearby devices permission and the LibreView sign-in keep *No readings from the sensor*: the alert checklist
+details. Turn on Bluetooth and Date & time settings open the phone's Settings app on a phone without Android's page for
+them; when a home action can open nothing at all (those pages, the treatment window), a short message says *This phone
+can't open that screen* instead of the tap doing nothing (`OpenScreenTest`). The Nearby devices permission and the LibreView sign-in keep *No readings from the sensor*: the alert checklist
 and Settings › Sensor ask for them.
 
 **One banner slot**, by priority: (0) *Monitoring stopped* (Android stopped the service; shown even while the last value is on screen) → Resume monitoring; (1) *Alerts may not ring* + the alert checklist's first problem (`AlertReadiness`,

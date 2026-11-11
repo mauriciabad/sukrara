@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
-import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -43,6 +41,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.motion.ScreenHost
 import app.mauri.sukrara.designsystem.motion.ScreenMotion
 import app.mauri.sukrara.feature.home.DataProblemScreen
@@ -715,15 +714,15 @@ private fun route(
         }
 
         HomeAction.AddTreatment -> {
-            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT)) {}
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT))
         }
 
         is HomeAction.EditTreatment -> {
-            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id)) {}
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id))
         }
 
         is HomeAction.Treat -> {
-            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs)) {}
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs))
         }
 
         HomeAction.OpenNightAlerts -> {
@@ -739,11 +738,11 @@ private fun route(
         }
 
         HomeAction.EnableBluetooth -> {
-            open(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) {}
+            openSystemScreen(context, Settings.ACTION_BLUETOOTH_SETTINGS)
         }
 
         HomeAction.OpenDateSettings -> {
-            open(context, Intent(Settings.ACTION_DATE_SETTINGS)) {}
+            openSystemScreen(context, Settings.ACTION_DATE_SETTINGS)
         }
 
         HomeAction.ResumeMonitoring -> {
@@ -753,7 +752,7 @@ private fun route(
         // the launcher's own dialog places the combined widget; home re-checks on resume and the pin callback. A
         // refused request turns the banner into the hand-made way (touch & hold the home screen)
         HomeAction.AddWidget -> {
-            (context as? Activity)?.let {
+            context.findActivity()?.let {
                 context.graph.widgets.presence
                     .pin(it) { context.graph.home.refresh() }
             }
@@ -824,20 +823,6 @@ private fun route(
 
 /** A *Restart System UI* from home is running. */
 private val restartingSystemUi = AtomicBoolean(false)
-
-/** Starts [intent] (inside this app when it names an action of ours) or runs [otherwise] when nothing handles it. */
-private fun open(
-    context: Context,
-    intent: Intent,
-    otherwise: () -> Unit,
-) {
-    if (intent.action?.startsWith("app.mauri.sukrara.") == true) intent.setPackage(context.packageName)
-    try {
-        context.startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        otherwise()
-    }
-}
 
 private fun copy(
     context: Context,

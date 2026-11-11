@@ -36,10 +36,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.backup.PasswordManager
-import app.mauri.sukrara.feature.sharing.backup.findActivity
 import app.mauri.sukrara.feature.sharing.conflict.ConflictContent
 import app.mauri.sukrara.feature.sharing.profile.ProfileEditor
 import app.mauri.sukrara.feature.sharing.profile.ProfileSaver
