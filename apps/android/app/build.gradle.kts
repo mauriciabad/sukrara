@@ -32,6 +32,10 @@ dependencies {
     implementation(project(":feature:sharing"))
     implementation(project(":feature:sensor"))
     implementation(project(":feature:treatments"))
+    // R8 must see the LSPosed API the System UI module implements (LSPosed provides it at run time; :monitor compiles
+    // against it): without it R8 took the hooks' `intercept` for dead code and 0.12.0's module failed every hook with
+    // AbstractMethodError. compileOnly reaches R8 as a library, nothing is packaged (monitor consumer-rules.pro).
+    compileOnly(libs.libxposed.api)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

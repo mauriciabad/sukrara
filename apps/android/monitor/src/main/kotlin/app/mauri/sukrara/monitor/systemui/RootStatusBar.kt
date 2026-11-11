@@ -105,7 +105,7 @@ class RootStatusBar(
                 graphConfig.map { it.bands to it.unit },
                 access.state,
                 ticks,
-            ) { s, p, (bands, unit), a, _ -> Input(s, p, bands, a.root == true, unit) }
+            ) { s, p, (bands, unit), a, _ -> Input(s, p, bands, a.granted, unit) }
                 .conflate()
                 .catch { Log.w(TAG, "inputs failed: ${it.javaClass.simpleName}") }
                 .collect {
@@ -117,7 +117,7 @@ class RootStatusBar(
                     }
                 }
         }
-        // only someone who turned the value on is asked for root (su shows KernelSU's / Magisk's prompt)
+        // only someone who turned the value on is asked for root (Magisk shows its prompt; KernelSU / APatch answer at once)
         scope.launch { if (settings.flow(SurfaceSettings.RootValue).first()) runCatching { access.checkRoot() } }
     }
 

@@ -4,11 +4,12 @@
 package app.mauri.sukrara.monitor.systemui
 
 /**
- * The fingerprint of the code System UI runs (the module and the renderer / settings files it calls, HookCodeTest). The
+ * The fingerprint of the code System UI runs (the module, the renderer / settings files it calls and the R8 rules that
+ * decide what of it survives, HookCodeTest). The
  * module says it in its hello; when System UI still runs a build with another fingerprint, the home card and the
  * status-bar page ask for a System UI restart. A new install with the same System UI code asks for nothing.
  * `HookCodeTest` recomputes it and fails with the new value when the code changed: update it in the same change.
  */
 object HookCode {
-    const val VERSION = "8bc0f09ada3f348d"
+    const val VERSION = "81d759e7a48b8d0c"
 }

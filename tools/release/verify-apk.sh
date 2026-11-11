@@ -7,7 +7,7 @@
 # --play: the Google Play build (play flavor; tools/release/play-bundle.sh passes the bundle's universal APK): the
 #   permissions are allow.json's with `play_permissions` applied, and no LSPosed module, root status bar or update
 #   check is inside (no META-INF/xposed, no XposedProvider / HookHelloReceiver, no systemui or libxposed class in the
-#   R8 mapping, no api.github.com in the dex).
+#   R8 mapping, no api.github.com in the dex). The GitHub build instead: every LSPosed hook class keeps `intercept`.
 # --unsigned: CI only (no release key, no Juggluco checkout): skips the signer and the Libre 3 core, checks the rest.
 # - signature verifies and the signer certificate is THE release key (tools/release/android-cert.sha256)
 # - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh, not debuggable
@@ -85,6 +85,24 @@ if [ $play = 1 ]; then
   else ok "no root, LSPosed or update-check classes (R8 mapping)"; fi
   if unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -aq 'api.github.com'; then bad "dex contains the GitHub update check's URL"
   else ok "no GitHub update check URL (dex)"; fi
+else
+  # The System UI module's hooks are classes implementing libxposed's XposedInterface$Hooker; LSPosed calls their
+  # intercept. R8 removes it unless it sees the API (app/build.gradle.kts compileOnly): 0.12.0 shipped them empty and
+  # every hook failed with AbstractMethodError on the owner's phone.
+  dexdir="$(mktemp -d)"
+  unzip -q -o "$apk" 'classes*.dex' -d "$dexdir"
+  hookers="$(for d in "$dexdir"/classes*.dex; do "$(sdk_tool dexdump)" -l plain "$d"; done | python3 -I -c '
+import re, sys
+for c in sys.stdin.read().split("Class descriptor  : ")[1:]:
+    head = c.split("Static fields")[0]
+    if "Lio/github/libxposed/api/XposedInterface$Hooker;" in head:
+        methods = re.findall(r"name\s+: .([^\x27]+).", c.split("Virtual methods   -")[1].split("source_file_idx")[0])
+        print(c.split("\x27")[1], "ok" if "intercept" in methods else "empty")
+')"
+  rm -rf "$dexdir"
+  if [ -z "$hookers" ]; then bad "no LSPosed hook class in the dex (XposedInterface\$Hooker)"
+  elif printf '%s\n' "$hookers" | grep -q ' empty$'; then bad "LSPosed hooks without intercept (R8 removed it): $(printf '%s\n' "$hookers" | grep ' empty$' | tr '\n' ' ')"
+  else ok "every LSPosed hook keeps intercept ($(printf '%s\n' "$hookers" | grep -c ' ok$') hook classes)"; fi
 fi
 
 # Cleartext only to this phone's loopback: the debug build's config also allows 10.0.2.2 (a local test relay).
