@@ -196,7 +196,8 @@ reads its own entitlements at launch and falls back without them:
    picks, per App ID, the unexpired profile that lists the signing certificate (and this Mac, for a development one),
    and without `SIGN_ID` signs with an identity such a profile lists: with the Developer ID profiles above, every
    `bundle.sh` (and so `tools/install.sh mac` and `mac-release.sh`) signs with Developer ID and embeds them. A profile
-   missing a capability stops the build with what to enable.
+   missing a capability stops the build with what to enable. The owner keeps a backup of `~/.apple-dev` (the Developer
+   ID key, the notary `.p8`, the profiles) in their password manager (Proton Pass), like the Android release key.
 4. **Check**: `cd apps/macos && Bundle/bundle.sh` ends with `signed: "Developer ID Application: …", profile "Sukrara Mac
    Developer ID" until …`; `tools/release/verify-app.sh build/Sukrara.app` lists the three entitlements (`codesign -d
    --entitlements :- build/Sukrara.app` shows them all); `Bundle/smoke.sh` launches it offline with its own data and the
@@ -439,10 +440,11 @@ Steps 1–2 above are done; step 3's migration is dropped (the app starts clean)
   the environment variable `SUKRARA_KEYSTORE_PASSWORD` only (Gradle never reads the Keychain); `tools/install.sh` and the
   release scripts fill it from the Keychain item (`security find-generic-password -s sukrara-android-release -w`).
   `tools/release/verify-apk.sh` refuses an APK signed by anything else.
-- **Back it up now** (once, and after any change): copy the `.jks` file and the password
-  (`security find-generic-password -s sukrara-android-release -w`) into the password manager, plus one offline copy.
-  **Losing either = no more updates** for every installed copy: Android only installs an update signed by the same
-  key, so users would have to uninstall (losing their data) and install a new app.
+- **Backup:** the owner keeps a backup of the `.jks` file and its password in their password manager (Proton Pass);
+  after any change to the key, copy both there again (the password: `security find-generic-password -s
+  sukrara-android-release -w`), plus one offline copy. **Losing either = no more updates** for every installed copy:
+  Android only installs an update signed by the same key, so users would have to uninstall (losing their data) and
+  install a new app.
 - **Restore on a new Mac:** put the file back at `~/.android/sukrara-release.jks` (`chmod 600`) and recreate the
   Keychain item: `security add-generic-password -s sukrara-android-release -a sukrara -w` (it prompts for the
   password, so it stays out of the shell history).
