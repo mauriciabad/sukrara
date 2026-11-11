@@ -2,7 +2,9 @@
 
 Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
-## Unreleased — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app
+## Unreleased
+
+## 0.14.0 — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app (GitHub prerelease)
 
 - **The Android GitHub version updates itself** (#188): once a day it looks for a new version and says so in a quiet
   notification (*Update*, *Release notes*), downloads it, checks it is the release's file signed with Sukrara's key,
