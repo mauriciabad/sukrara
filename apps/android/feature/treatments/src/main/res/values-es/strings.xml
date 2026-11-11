@@ -16,11 +16,11 @@
     <string name="treatment_edit_gone">Esta entrada ya no se puede cambiar</string>
     <string name="treatment_rapid">Rápida</string>
     <string name="treatment_long">Lenta</string>
-    <string name="treatment_carbs">Carbohidratos</string>
+    <string name="treatment_carbs">Hidratos</string>
     <string name="treatment_unit_u">u</string>
     <string name="treatment_unit_g">g</string>
     <string name="treatment_note">Nota</string>
-    <string name="treatment_limits">Insulina hasta %1$du, carbohidratos hasta %2$dg, más de 0</string>
+    <string name="treatment_limits">Insulina hasta %1$du, hidratos hasta %2$dg, más de 0</string>
     <string name="treatment_now">Ahora</string>
     <string name="treatment_earlier">Antes…</string>
     <string name="treatment_at">A las %1$s</string>

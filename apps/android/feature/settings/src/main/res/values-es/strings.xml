@@ -25,9 +25,9 @@
     <string name="st_review_off">Desactivada (%1$s)</string>
     <string name="st_review_confirm">Usar estos umbrales</string>
     <string name="st_quiet_title">Silencio tras tratamientos</string>
-    <string name="st_quiet_insulin">Silenciar altos tras insulina</string>
-    <string name="st_quiet_carbs">Silenciar bajos tras carbohidratos</string>
-    <string name="st_quiet_falling">Silenciar altos mientras bajan</string>
+    <string name="st_quiet_insulin">Silenciar glucosa alta tras la insulina</string>
+    <string name="st_quiet_carbs">Silenciar glucosa baja tras los hidratos</string>
+    <string name="st_quiet_falling">Silenciar glucosa alta mientras baja</string>
     <string name="st_quiet_for">Durante %1$s</string>
     <string name="st_quiet_length">Cuánto tiempo</string>
     <string name="st_wait_title">Cerca de un umbral</string>
@@ -465,7 +465,7 @@
     <string name="st_drag">Arrastra para reordenar</string>
     <string name="st_marks_rapid">Insulina rápida</string>
     <string name="st_marks_long">Insulina lenta</string>
-    <string name="st_marks_carbs">Carbohidratos</string>
+    <string name="st_marks_carbs">Hidratos</string>
     <string name="st_marks_note">Notas</string>
     <string name="st_marks_summary_all">Todo para cada tipo</string>
     <string name="st_marks_summary_point">%1$s: solo el punto</string>
@@ -508,8 +508,8 @@
     <string name="st_lock_look_dark">Oscuro</string>
     <string name="st_lock_look_dark_summary">Como los widgets de la pantalla de inicio en modo oscuro</string>
     <string name="st_lock_widget_footer">El módulo LSPosed de Sukrara lo dibuja en System UI, debajo del icono de bloqueo, los accesos directos y las notificaciones: desbloquear, la huella y los accesos directos funcionan como siempre. Solo aparece en la propia pantalla de bloqueo, no sobre el panel de notificaciones, el teclado del PIN ni la pantalla siempre activa. Necesita root con LSPosed y el módulo de Sukrara activado con System UI en su ámbito, y reiniciar System UI. Cualquiera que tenga el teléfono bloqueado puede añadir un tratamiento desde él; desactívalo si no quieres que pase.</string>
-    <string name="st_group_lows">Bajadas</string>
-    <string name="st_group_highs">Subidas</string>
+    <string name="st_group_lows">Glucosa baja</string>
+    <string name="st_group_highs">Glucosa alta</string>
     <string name="st_group_rates">Cambios rápidos</string>
     <string name="st_group_signal">Señal</string>
     <string name="st_repeat_every">cada %1$s</string>

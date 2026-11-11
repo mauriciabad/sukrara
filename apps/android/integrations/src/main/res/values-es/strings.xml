@@ -31,7 +31,7 @@
     <string name="in_export_share_chooser">Compartir datos de glucosa</string>
     <string name="in_export_saved">Archivo guardado</string>
     <string name="in_export_failed">No se ha podido escribir el archivo</string>
-    <string name="in_export_footer">Una fila cada 5 minutos, de la más antigua a la más reciente, con insulina, carbohidratos y notas. El nombre del archivo solo lleva las fechas, nunca un nombre. La importación de LibreView de Tidepool Uploader lo lee.</string>
+    <string name="in_export_footer">Una fila cada 5 minutos, de la más antigua a la más reciente, con insulina, hidratos y notas. El nombre del archivo solo lleva las fechas, nunca un nombre. La importación de LibreView de Tidepool Uploader lo lee.</string>
 
     <!-- Share with apps -->
     <string name="in_apps_title">Compartir con apps</string>
@@ -104,7 +104,7 @@
     <string name="in_ns_unavailable">Primero activa la subida</string>
     <string name="in_ns_readings">Lecturas de glucosa</string>
     <string name="in_ns_readings_summary">Todas, incluidos los últimos 30 días</string>
-    <string name="in_ns_entries">Insulina, carbohidratos y notas</string>
+    <string name="in_ns_entries">Insulina, hidratos y notas</string>
     <string name="in_ns_entries_summary">También los cambios y borrados</string>
     <string name="in_ns_sensor">Cambios de sensor</string>
     <string name="in_ns_sensor_summary">Para la edad del sensor</string>
@@ -159,7 +159,7 @@
     <string name="in_lv_taking_over">Tomando el relevo…</string>
     <string name="in_lv_take_over_failed">No se pudo tomar el relevo. %1$s</string>
     <!-- Tidepool upload -->
-    <string name="in_tp_intro">Tidepool reúne tus datos de diabetes en un solo sitio, para ti y tu clínica. Sukrara puede subir tu glucosa y tu insulina, carbohidratos y notas a tu cuenta de Tidepool.</string>
+    <string name="in_tp_intro">Tidepool reúne tus datos de diabetes en un solo sitio, para ti y tu clínica. Sukrara puede subir tu glucosa y tu insulina, hidratos y notas a tu cuenta de Tidepool.</string>
     <string name="in_tp_intro_follower">Tidepool reúne los datos de diabetes en un solo sitio. Si lo eliges, Sukrara puede subir la glucosa y los registros de la persona a la que sigues a una cuenta de Tidepool.</string>
     <string name="in_tp_account">Cuenta</string>
     <string name="in_tp_sign_in">Iniciar sesión</string>
