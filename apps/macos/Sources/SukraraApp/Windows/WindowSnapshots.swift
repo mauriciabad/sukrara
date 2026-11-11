@@ -187,6 +187,25 @@
                 identity: String(repeating: "ab", count: 32), token: "t", expiry: Int.max, relays: [],
                 profile: Profile(name: "Marta", avatar: .v1(c: 6, s: "dots", a: 45, n: 11)))
             out.append(("follow-invite-confirm", AnyView(FollowStep(follow: invited).padding().frame(width: 520))))
+            // the QR scanner in each state, over the stand-in picture (never the Mac's camera)
+            let twoCameras = [
+                CameraChoice(id: "built-in", name: "FaceTime HD Camera"),
+                CameraChoice(id: "iphone", name: "Ana's iPhone Camera"),
+            ]
+            let scans: [(String, SyntheticCamera?, [String])] = [
+                ("ask", SyntheticCamera(access: .notAsked), []), ("denied", SyntheticCamera(access: .denied), []),
+                ("nocamera", SyntheticCamera(cameras: []), []), ("offline", nil, []),
+                ("scanning", SyntheticCamera(cameras: twoCameras), []),
+                ("wrong", SyntheticCamera(), ["https://example.com/menu"]),
+                ("found", SyntheticCamera(), [SyntheticCamera.invite]),
+            ]
+            for (name, camera, seen) in scans {
+                let m = follow(.notFollowing)
+                m.scanner = QRScanner(camera: camera) { _ in }
+                m.scanner?.wrongFor = .seconds(3600)  // the warning stays until it's drawn
+                m.scanner?.read(seen)
+                out.append(("follow-scan-\(name)", AnyView(FollowStep(follow: m).padding().frame(width: 520))))
+            }
             let following = follow(
                 .following(wearer: "Marta", lastReading: Date().addingTimeInterval(-180), canWrite: true))
             let settings = SettingsModel(store: store, follow: following, version: "0.12.0")
@@ -310,6 +329,17 @@
                             ).frame(width: 600, height: height))
                     ))
             }
+            // following nobody: Follow… and Scan QR Code…
+            let nobody = SettingsModel(store: scratch(), follow: follow(.notFollowing), version: "0.12.0")
+            nobody.pane = .following
+            out.append(
+                (
+                    "settings-following-none",
+                    AnyView(
+                        SettingsView(
+                            model: nobody, loginItem: nil, updateResult: nil, checkForUpdates: {}, openFollow: {}
+                        ).frame(width: 600, height: 560))
+                ))
             let general = SettingsModel(store: ownStore, follow: following, wearer: marta, version: "0.12.0")
             general.pane = .general
             out.append(

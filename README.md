@@ -183,7 +183,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   two-finger double tap the chart through the stored 31 days. The card's pill is
   pressable (Eat carbs / Take insulin open Add Treatment; a mute opens its ways out).
 - **Follow** a wearer with an invite link (pasted, dropped or opened, `https://sukrara.mauri.app/join#…` or
-  `sukrara:`; a build with a provisioning profile opens the web invite straight from Safari, Mail or Messages), a QR
+  `sukrara:`; a build with a provisioning profile opens the web invite straight from Safari, Mail or Messages), its
+  QR code scanned with the Mac's camera (or an iPhone as Continuity Camera; read on the Mac, nothing recorded), a QR
   code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
   confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*; readings,
   alerts and

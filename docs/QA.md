@@ -182,6 +182,17 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       in the login keychain. *Stop following* → relaunch → still not following. The web invite link clicked in Safari,
       Mail or Messages (once the site serves `/.well-known/apple-app-site-association`) opens the Follow step with
       *Follow* / *Cancel*, never following by itself; while launching, it waits for the launch.
+- [ ] QR scanner (#172; only a build installed with `tools/install.sh mac` may open the camera, a dev run shows the
+      made-up feed): the Follow step's *Scan QR Code…* and Settings › Following › *Scan QR Code…*. First time →
+      *Allow Camera* → macOS asks (in Spanish with the Mac in Spanish) → the live picture, mirrored; the phone's Share ›
+      Invite QR → green check and a tap, then who is inviting (*Cancel* sends nothing); a menu / Wi-Fi QR → the orange
+      *That QR code isn't a Sukrara invite*, scanning goes on, the warning leaves once the code does; an iPhone near the
+      Mac (Continuity Camera) is in the camera picker and takes over when placed on a mount; *Cancel*, Escape, closing
+      the window and *Skip* turn the camera light off at once, minimizing or covering the window too (on again when it
+      shows); Privacy & Security › Camera off → *Camera access is off…* → *Open System Settings…* → turn it on → back
+      in Sukrara it scans; with no camera (lid closed, no iPhone) *No camera found…*, then it starts when one connects;
+      VoiceOver reads *Camera view for the QR code* and the announcements. Synthetic: `sukrara-snap windows` →
+      `follow-scan-*.png`, `settings-following-none-*.png`.
 - [ ] Relaunch the user's copy afterwards.
 
 ## Q7 Mac widgets

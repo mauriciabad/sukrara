@@ -132,6 +132,35 @@ import Testing
         #expect(LaunchError.debugOnly.exitCode == 2)
     }
 
+    /// The QR scanner's camera: only the installed app may open it; a dev, fixture or snapshot run never does (a debug
+    /// run gets the made-up feed instead, a release dev copy none), and the app's services never make one there.
+    @Test func onlyTheInstalledAppMayOpenTheCamera() throws {
+        #expect(try plan(installed).services.allows(.camera))
+        #expect(ServicesPlan.all.camera && !ServicesPlan.none.camera)
+        #expect(!ServicesPlan.all.limited(by: .none).camera)
+        let offline = [
+            try plan(repoBundle, env: ["SUKRARA_DEV": "1"]),
+            try plan(debugBundle, env: ["SUKRARA_DEV": "1", "SUKRARA_FIXTURE": "1"]),
+            try LaunchPlan.snapshot(
+                SnapshotRequest(surface: "windows", outputDirectory: URL(fileURLWithPath: "/tmp/out")),
+                build: BuildInfo(isDebugBuild: true, bundlePath: "/x", isBundle: false),
+                scratch: URL(fileURLWithPath: "/tmp/scratch")),
+        ]
+        for p in offline {
+            #expect(!p.services.allows(.camera) && !p.services.enabled.contains(.camera))
+            let services = AppServices(plan: p)
+            p.services.start(using: services)
+            #expect(services.makeCamera == nil)
+            if case .snapshot = p.mode {
+                #expect(services.scannerCamera == nil)
+            } else {
+                #if DEBUG
+                    #expect(services.scannerCamera?() is SyntheticCamera)
+                #endif
+            }
+        }
+    }
+
     @Test func thePlanIsAnUpperLimitOnTheUsersChoices() {
         let wanted = ServicesPlan(ble: false, relays: true, alerts: true, widgetFeed: false, notifications: true)
         #expect(ServicesPlan.all.limited(by: wanted) == wanted)
