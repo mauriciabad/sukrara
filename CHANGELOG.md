@@ -8,8 +8,9 @@ The first build submitted to Google Play. Not tested on a real sensor yet. Insta
 [v0.13.0 release](https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0).
 
 - **Android, after a restart**: the wearer's own sensor is read, alerts ring and the glucose notification shows
-  before the first unlock (#160). Alert, unit, graph, sensor and status-bar settings moved to storage that works
-  before the unlock and start fresh after the update, and the sensor is paired again.
+  before the first unlock (#160). What monitoring needs moved to storage that works before the unlock, with nothing
+  carried over: after the update setup runs again, the alert, unit, graph, sensor and status-bar settings start from
+  their defaults and the sensor is paired again; the history, treatments and sharing identity stay.
 - **Settings** drawn with Android's own settings components and screens that move like the earlier app (#168, #169);
   Share with someone right in the dark theme (#170).
 - **Fixes**: the phone's 24-hour setting (#166); Allow / Deny from a sharing request never turns sharing off (#167);
