@@ -6,7 +6,7 @@
     python3 tools/settings/gen.py           write the generated files
     python3 tools/settings/gen.py --check   exit 1 when a generated file is stale (tools/check rule 'settings')
 
-Outputs: Android SettingsSpec.kt (:core:data, package app.mauri.sukrara.settings) and Mac SettingsSpec.swift
+Outputs: Android SettingsSpec.kt (:core:model, package app.mauri.sukrara.settings) and Mac SettingsSpec.swift
 (SukraraCore). Both carry the number formats ('numbers') as NumberSpec values, the option lists, the inventory
 ('settings') as SettingInfo rows (with 'mirror' / 'mirrorExcept': what a follower takes from the wearer) and the stored
 keys as constants (Stores / Keys), so the number inputs, the stores, the models' validation, the settings mirror and
@@ -20,7 +20,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 SCHEMA = os.path.join(ROOT, "contracts/settings/settings.json")
-KT = os.path.join(ROOT, "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt")
+KT = os.path.join(ROOT, "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt")
 SWIFT = os.path.join(ROOT, "apps/macos/Sources/SukraraCore/Settings/SettingsSpec.swift")
 UNITS = os.path.join(ROOT, "contracts/settings/units.json")
 with open(UNITS, encoding="utf-8") as _f:

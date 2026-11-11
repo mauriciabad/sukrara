@@ -829,7 +829,7 @@ def check_durations(ch, rep):
 
 
 SETTINGS_SCHEMA = CONTRACTS + "settings/settings.json"
-SETTINGS_KT = ANDROID + "core/data/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"
+SETTINGS_KT = ANDROID + "core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"
 SETTINGS_SWIFT = MAC_SOURCES + "SukraraCore/Settings/SettingsSpec.swift"
 ALERT_SPEC = CONTRACTS + "alerts/SPEC.md"
 KEY_NAME = re.compile(r"^[a-z][A-Za-z0-9]*$")

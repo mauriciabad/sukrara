@@ -12,7 +12,7 @@
     "each alert kind, options 'alertKind'). 'mirror' = a follower in 'Settings from: Wearer' takes the wearer's value",
     "('wire' = its key in the wearer's settings event, contracts/protocol/PROTOCOL-v2.md); 'mirrorExcept' = the alert",
     "kinds of a '{kind}' row it never takes (no data is each device's own alarm: the wearer doesn't send it and a",
-    "follower ignores it if sent). Generated code: python3 tools/settings/gen.py writes SettingsSpec.kt (:core:data)",
+    "follower ignores it if sent). Generated code: python3 tools/settings/gen.py writes SettingsSpec.kt (:core:model)",
     "and SettingsSpec.swift (SukraraCore); tools/check rule 'settings' checks it; SettingsSchemaTest (Android) and",
     "SettingsSchemaTests (Mac) test every stored key, default, format and option list against it."
   ],

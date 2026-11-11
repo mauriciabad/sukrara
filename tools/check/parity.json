@@ -141,7 +141,7 @@
       "why": "Settings never diverge: a schema change (contracts/settings/settings.json) regenerates both SettingsSpec files (python3 tools/settings/gen.py)",
       "sides": {
         "schema": ["contracts/settings/settings.json"],
-        "android": ["apps/android/core/data/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"],
+        "android": ["apps/android/core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"],
         "mac": ["apps/macos/Sources/SukraraCore/Settings/SettingsSpec.swift"]
       }
     },

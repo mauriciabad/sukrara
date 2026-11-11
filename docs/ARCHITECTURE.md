@@ -141,8 +141,8 @@ the `api` names in `contracts/graph/surfaces/surfaces.json`).
 - **Inputs, no app state.** `CardModel` = readings (`GlucosePoint`), treatments, `nowS`, `CardWords`, `CardStatus`,
   `MuteRule?`, `SensorInfo?`, countdown hours and an optional `metricsOf` cache. `CardStyle` / `GraphStyle` come from
   the surface and its place's `GraphConfig` (built by the settings repository from the schema keys; `GraphConfig`
-  is a plain data class, not a JSON blob). The renderer depends only on `:core:model` and the generated
-  `SettingsSpec` (`:core:data`): no `:core:alerts`, no `:monitor`.
+  is a plain data class, not a JSON blob). The renderer depends only on `:core:model` (with the generated
+  `SettingsSpec`) and `:core:data`'s schema settings keys (`GraphSettings`): no `:core:alerts`, no `:monitor`.
 - **Status from outside.** The alert runtime maps its `AlertStatus` to `CardStatus` (`:core:model`: None / Needed /
   Taken / Paused / Muted) and publishes it in the hub's `AlertUiState.status`, which every card surface (app panel,
   widgets) passes to the renderer; it also supplies the `MuteRule` (when a treatment's mute ends, from the alert
