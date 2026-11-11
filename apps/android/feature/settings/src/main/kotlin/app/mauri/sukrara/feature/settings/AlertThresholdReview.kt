@@ -27,6 +27,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -101,11 +102,7 @@ internal fun AlertThresholdReviewContent(
     onCancel: () -> Unit,
 ) {
     SettingsPage(stringResource(R.string.st_review_title), onCancel) {
-        Text(
-            stringResource(R.string.st_review_intro),
-            Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        SettingsIntro(stringResource(R.string.st_review_intro))
         AlertThresholdRows(draft, onThreshold)
         FlowRow(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),

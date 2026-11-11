@@ -39,11 +39,12 @@ import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -142,7 +143,7 @@ fun TidepoolContent(
         actions.reset()
         setEditing(true)
     }
-    IntroText(stringResource(if (follower) R.string.in_tp_intro_follower else R.string.in_tp_intro))
+    SettingsIntro(stringResource(if (follower) R.string.in_tp_intro_follower else R.string.in_tp_intro))
     SettingsGroup {
         ValueRow(
             stringResource(R.string.in_tp_account),
@@ -158,16 +159,17 @@ fun TidepoolContent(
             open,
         )
     }
-    SettingsGroup {
-        SwitchRow(
-            stringResource(R.string.in_tp_main),
-            s.on,
-            { v -> actions.change { it.copy(on = v) } },
-            // switching off always works (also once Tidepool ended the session); switching on needs an account
-            enabled = s.on || state.signedIn,
-            summary = if (!state.signedIn && !s.on) stringResource(R.string.in_tp_main_needs_account) else null,
-        )
-        if (s.on) {
+    // the page's main switch (SPA MainSwitchPreference); while it can't be turned on, the page says why
+    MainSwitchRow(
+        stringResource(R.string.in_tp_main),
+        s.on,
+        { v -> actions.change { it.copy(on = v) } },
+        // switching off always works (also once Tidepool ended the session); switching on needs an account
+        enabled = s.on || state.signedIn,
+        note = if (!state.signedIn && !s.on) stringResource(R.string.in_tp_main_needs_account) else null,
+    )
+    if (s.on) {
+        SettingsGroup {
             val status = state.status
             when {
                 status == UploadStatus.AuthFailed || status == UploadStatus.Setup -> {

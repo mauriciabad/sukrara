@@ -22,6 +22,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.designsystem.rows.SettingsChrome
+import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.advanced.AdvancedScreen
 import app.mauri.sukrara.feature.settings.advanced.LogScreen
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
@@ -132,6 +134,46 @@ fun SettingsScreen(
     onReviewFinish: (ThresholdReviewResult) -> Unit = { onBack() },
     /** The live card the Ranges and Graph pages show on top (the app's own panel; nothing in tests). */
     preview: @Composable () -> Unit = {},
+) {
+    // the pages are drawn in SPA's SettingsTheme; the glucose card keeps the app's theme (the one renderer, its colours)
+    val cardPreview: @Composable () -> Unit = { SukraraTheme { preview() } }
+    // every page and its dialogs in SPA's SettingsTheme (the pages' scaffold sets it too, for pages placed by the app)
+    SettingsChrome {
+        SettingsPages(
+            deps,
+            route,
+            navigate,
+            onBack,
+            openSensor,
+            openSharing,
+            openApps,
+            openClinicUpload,
+            openClinicTidepool,
+            openProfile,
+            openBackup,
+            openExport,
+            onReviewFinish,
+            cardPreview,
+        )
+    }
+}
+
+@Composable
+private fun SettingsPages(
+    deps: SettingsDeps,
+    route: SettingsRoute,
+    navigate: (SettingsRoute) -> Unit,
+    onBack: () -> Unit,
+    openSensor: () -> Unit,
+    openSharing: () -> Unit,
+    openApps: () -> Unit,
+    openClinicUpload: () -> Unit,
+    openClinicTidepool: () -> Unit,
+    openProfile: () -> Unit,
+    openBackup: () -> Unit,
+    openExport: () -> Unit,
+    onReviewFinish: (ThresholdReviewResult) -> Unit,
+    cardPreview: @Composable () -> Unit,
 ) {
     val clock = deps.clock
     when (route) {
@@ -244,7 +286,7 @@ fun SettingsScreen(
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             prefs?.let {
                 RangesContent(it, vm::set, onBack, vm::reset, readOnly = from.readOnly, onUnit = vm::setUnit) {
-                    SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = preview)
+                    SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = cardPreview)
                 }
             }
         }
@@ -254,7 +296,7 @@ fun SettingsScreen(
             val config by vm.config.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             val withNote: @Composable () -> Unit = {
-                SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = preview)
+                SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = cardPreview)
             }
             val actions =
                 GraphActions(

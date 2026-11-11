@@ -26,9 +26,12 @@ import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.rows.CheckboxRow
 import app.mauri.sukrara.designsystem.rows.FooterText
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.settings.SettingsSpec
@@ -88,17 +91,15 @@ fun AlertKindContent(
     SettingsPage(kindName(kind), onBack) {
         ui.quietOf(kind)?.let { QuietStrip(kind, it, clock, actions) }
         header()
-        SettingsGroup {
-            SwitchRow(
-                stringResource(R.string.st_kind_use, kindInSentence(kind)),
-                rule.on,
-                { on -> if (!on && kind in ConfirmOff) dialog = "off" else actions.edit(AlertEdits.kindOn(kind, on)) },
-                enabled = ui.settings.on,
-                summary = if (ui.settings.on) null else stringResource(R.string.st_alerts_main_off),
-                icon = kindIcon(kind),
-                readOnly = ui.mirrors(kind),
-            )
-        }
+        // the page's main switch (SPA MainSwitchPreference); with every alert off, the page says why it can't be used
+        MainSwitchRow(
+            stringResource(R.string.st_kind_use, kindInSentence(kind)),
+            rule.on,
+            { on -> if (!on && kind in ConfirmOff) dialog = "off" else actions.edit(AlertEdits.kindOn(kind, on)) },
+            enabled = ui.settings.on,
+            readOnly = ui.mirrors(kind),
+            note = if (ui.settings.on) null else stringResource(R.string.st_alerts_main_off),
+        )
         SettingsGroup(title = stringResource(R.string.st_alert_when)) {
             ValueRow(
                 stringResource(R.string.st_threshold),
@@ -243,7 +244,7 @@ private fun TryOutGroup(
             icon = DsR.drawable.ds_ic_play_arrow,
             enabled = pack != "none" || vibrate,
         )
-        SwitchRow(stringResource(R.string.st_play_vibrate), vibrate, { vibrate = it }, icon = DsR.drawable.ds_ic_vibration)
+        CheckboxRow(stringResource(R.string.st_play_vibrate), vibrate, { vibrate = it }, icon = DsR.drawable.ds_ic_vibration)
         TestAlertRow(
             settings,
             playback,

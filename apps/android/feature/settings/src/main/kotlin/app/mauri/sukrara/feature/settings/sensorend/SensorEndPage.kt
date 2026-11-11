@@ -46,6 +46,7 @@ import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
+import app.mauri.sukrara.designsystem.rows.SectionButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
@@ -149,10 +150,9 @@ fun SensorEndContent(
                 )
             }
         }
+        // adding is a button under the list (SettingsLib's SectionButtonPreference), not a row of it
         if (c.reminders.size < SensorEndConfig.MAX_REMINDERS) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                OutlinedButton(onClick = { editing = -1 }) { Text(stringResource(R.string.st_sensorend_add)) }
-            }
+            SectionButton(DsR.drawable.ds_ic_add, stringResource(R.string.st_sensorend_add), { editing = -1 })
         }
         SettingsGroup {
             SwitchRow(

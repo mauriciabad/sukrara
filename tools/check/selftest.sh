@@ -81,6 +81,20 @@ case_ "Kotlin without header fails" fail header apps/android/x/src/main/kotlin/A
 case_ "an XML resource without header fails" fail header apps/android/x/src/main/res/drawable/x.xml '<vector/>'
 case_ "a workflow without header fails" fail header .github/workflows/x.yml 'name: x'
 case_ "a lint baseline (lint writes it) passes" pass "" apps/android/x/lint-baseline.xml '<issues/>'
+case_ "vendored code with upstream's Apache header passes" pass "" apps/android/settingslib-spa/src/com/android/settingslib/spa/X.kt '/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ */
+package com.android.settingslib.spa'
+case_ "vendored code without upstream's header fails" fail header apps/android/settingslib-spa/src/com/android/settingslib/spa/X.kt 'package com.android.settingslib.spa'
+case_ "vendored code with only the GPL header fails" fail header apps/android/settingslib-spa/res/values/x.xml '<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources/>'
+case_ "Apache header outside a vendored path fails" fail header apps/android/x/src/main/kotlin/A.kt '/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ */
+fun a() = 1'
 case_ "hardcoded UI text fails" fail strings apps/android/x/src/main/kotlin/A.kt "$HDR
 @Composable fun A() { Text(\"hi there\") }"
 case_ "same under poc/ passes" pass "" poc/x/src/main/kotlin/A.kt '@Composable fun A() { Text("hi there") }'

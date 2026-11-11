@@ -19,7 +19,9 @@ Checks
   parity-globs  every glob in parity.json (group sides, features) matches a tracked file: a dead glob turns its group
               off without a word. Whole tree.
   java        no .java source (Android is Kotlin only)
-  header      new source files carry the GPL SPDX header (a file moved out of poc/ counts as new)
+  header      new source files carry the GPL SPDX header (a file moved out of poc/ counts as new); vendored upstream
+              code (allow.json 'vendored': path, license, its header text, NOTICE, reason) carries upstream's license
+              header instead, and its NOTICE is tracked (paths)
   secrets     nsec/private keys/tokens in added lines; secrets/, keys, APKs, build dirs as paths
   large       blobs over allow.json large_bytes
   images      new images only under docs/img, poc/spikes/*/evidence, assets/brand, res, snapshot goldens; full-phone
@@ -352,6 +354,13 @@ SECRET_TEXT = [
 ]
 HEADER_HELP = ("    // Sukrara — https://github.com/mauriciabad/sukrara\n    // Copyright (C) 2026 Maurici Abad\n"
                "    // SPDX-License-Identifier: GPL-3.0-or-later\n    (# for py / sh / yml, <!-- --> for xml)")
+# upstream license headers start after a comment opener / XML declaration and a copyright line or two
+VENDORED_HEAD_LINES = 20
+
+
+def vendored_entry(path, allow):
+    """The allow.json 'vendored' entry whose path covers [path] (upstream code with its own license), or None."""
+    return next((v for v in allow.get("vendored", []) if fnmatch.fnmatchcase(path, v["path"])), None)
 IMAGE = re.compile(r"\.(png|jpe?g|webp|gif|heic)$", re.I)
 UI_TEXT = re.compile(r'\bText\(\s*"((?:[^"\\]|\\.)*)"'
                      r'|setTextViewText\([^,]+,\s*"((?:[^"\\]|\\.)*)"'
@@ -988,10 +997,18 @@ def check_paths(ch, rep):
     present = set(files)
     named = [CLOCK_KT, CLOCK_SWIFT, DURATIONS_KT, DURATIONS_SWIFT, SETTINGS_SCHEMA, SETTINGS_KT, SETTINGS_SWIFT, ALERT_SPEC,
              SURFACES, CATALOG, NSC, "docs/FEATURES.md", "contracts/settings/durations.json"]
-    named += sorted(load("allow.json").get("durations_ok", {}))
+    allow = load("allow.json")
+    named += sorted(allow.get("durations_ok", {}))
     named += sorted(CLOCK_OK)
     for p in named:
         rep.pending(present, p, "paths", "named by tools/check/check.py")
+    for v in allow.get("vendored", []):
+        if v["notice"] not in present:
+            rep.add("FAIL", "paths", "allow.json vendored '%s': its NOTICE %s isn't tracked. Vendored code ships with\n"
+                    "upstream's notice and the list of Sukrara's changes (Apache-2.0 4(b), 4(d))." % (v["path"], v["notice"]))
+        if not any(fnmatch.fnmatchcase(p, v["path"]) for p in files):
+            rep.add("FAIL", "paths", "allow.json vendored '%s' matches no tracked file: take the entry off the list."
+                    % v["path"])
     for glob in (ANDROID_KT, KT_MODEL + "*.kt", MAC_SOURCES + "*.swift", *KT_SETTINGS_SCREENS, SWIFT_SETTINGS_SCREENS,
                  *SWIFT_FORMATTED, *(d + "*" for d in MAC_DEBUG_TARGETS)):
         if not any(fnmatch.fnmatchcase(p, glob) for p in files):
@@ -1054,7 +1071,14 @@ def check_static(ch, rep):
             rep.add("FAIL", "secrets", "%s: never commit secrets/, keys, APKs/dmgs, build dirs, local.properties." % p)
         if ch.new(p) and not p.startswith(POC) and os.path.splitext(p)[1] in allow["header_exts"] \
                 and not match(p, allow["header_exempt"]):
-            if "SPDX-License-Identifier: GPL-3.0-or-later" not in "\n".join(ch.blob(p).splitlines()[:8]):
+            vendor = vendored_entry(p, allow)
+            if vendor is not None:
+                if vendor["header"] not in "\n".join(ch.blob(p).splitlines()[:VENDORED_HEAD_LINES]):
+                    rep.add("FAIL", "header", "%s: vendored %s file without upstream's license header ('%s' in its\n"
+                            "first %d lines; allow.json vendored). Keep the header the upstream file has, and note\n"
+                            "what Sukrara changed in %s." % (p, vendor["license"], vendor["header"],
+                                                             VENDORED_HEAD_LINES, vendor["notice"]))
+            elif "SPDX-License-Identifier: GPL-3.0-or-later" not in "\n".join(ch.blob(p).splitlines()[:8]):
                 rep.add("FAIL", "header", "%s: new source file without the GPL header:\n%s" % (p, HEADER_HELP))
         size = ch.size(p)
         if size > allow["large_bytes"] and not match(p, allow["large_ok"]):

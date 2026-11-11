@@ -44,7 +44,9 @@ import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
+import app.mauri.sukrara.designsystem.rows.SettingsChrome
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.graph.stats.TirRange
@@ -73,20 +75,23 @@ class WidgetConfigActivity : ComponentActivity() {
         enableEdgeToEdge()
         val host = widgetsHost
         setContent {
+            // a settings page and its dialogs: SPA's SettingsTheme, inside the app's (reduced motion, haptics)
             SukraraTheme {
-                val initial by produceState<WidgetOverrides?>(null) {
-                    host.awaitReady()
-                    value = host.widgets.settings.get(appWidgetId)
-                }
-                initial?.let { start ->
-                    WidgetSettingsScreen(
-                        kind = kind,
-                        initial = start,
-                        preview = { o -> previewOf(kind, o) },
-                        describe = { o -> describeCard(this, kind, host.widgets.updater.current(), o) },
-                        onCancel = { finish() },
-                        onSave = { o -> save(appWidgetId, kind, o) },
-                    )
+                SettingsChrome {
+                    val initial by produceState<WidgetOverrides?>(null) {
+                        host.awaitReady()
+                        value = host.widgets.settings.get(appWidgetId)
+                    }
+                    initial?.let { start ->
+                        WidgetSettingsScreen(
+                            kind = kind,
+                            initial = start,
+                            preview = { o -> previewOf(kind, o) },
+                            describe = { o -> describeCard(this, kind, host.widgets.updater.current(), o) },
+                            onCancel = { finish() },
+                            onSave = { o -> save(appWidgetId, kind, o) },
+                        )
+                    }
                 }
             }
         }
@@ -157,41 +162,40 @@ private fun WidgetSettingsScreen(
     val off = stringResource(R.string.widget_config_off)
     val hasGraph = kind != WidgetKind.VALUE
     val hasSlots = kind != WidgetKind.GRAPH
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.widget_config_title)) }) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
-            val bitmap by produceState<android.graphics.Bitmap?>(null, o) { value = render(o) }
-            val spoken by produceState("", o) { value = words(o) }
-            bitmap?.let {
-                Image(
-                    it.asImageBitmap(),
-                    contentDescription = stringResource(R.string.widget_config_preview, spoken),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                16.dp,
-                            ).aspectRatio(WidgetConfigActivity.PREVIEW_W_DP / WidgetConfigActivity.PREVIEW_H_DP),
-                )
+    // a settings page like the app's (SPA's SettingsScaffold): back = Cancel
+    SettingsScaffoldPage(stringResource(R.string.widget_config_title), onCancel) {
+        val bitmap by produceState<android.graphics.Bitmap?>(null, o) { value = render(o) }
+        val spoken by produceState("", o) { value = words(o) }
+        bitmap?.let {
+            Image(
+                it.asImageBitmap(),
+                contentDescription = stringResource(R.string.widget_config_preview, spoken),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            16.dp,
+                        ).aspectRatio(WidgetConfigActivity.PREVIEW_W_DP / WidgetConfigActivity.PREVIEW_H_DP),
+            )
+        }
+        SettingsGroup {
+            if (hasGraph) {
+                ValueRow(stringResource(R.string.widget_config_hours), o.hours?.let { hoursLabel(it) } ?: same, { open = "hours" })
+                ValueRow(stringResource(R.string.widget_config_side), onOff(o.side, same, on, off), { open = "side" })
             }
-            SettingsGroup {
-                if (hasGraph) {
-                    ValueRow(stringResource(R.string.widget_config_hours), o.hours?.let { hoursLabel(it) } ?: same, { open = "hours" })
-                    ValueRow(stringResource(R.string.widget_config_side), onOff(o.side, same, on, off), { open = "side" })
-                }
-                if (hasSlots) {
-                    ValueRow(stringResource(R.string.widget_config_rings), o.rings?.toString() ?: same, { open = "rings" })
-                    ValueRow(stringResource(R.string.widget_config_ring_range), rangeLabel(o.ringRange, same), { open = "range" })
-                }
-                ValueRow(stringResource(R.string.widget_config_sensor), onOff(o.sensorTime, same, on, off), { open = "sensor" })
+            if (hasSlots) {
+                ValueRow(stringResource(R.string.widget_config_rings), o.rings?.toString() ?: same, { open = "rings" })
+                ValueRow(stringResource(R.string.widget_config_ring_range), rangeLabel(o.ringRange, same), { open = "range" })
             }
-            Row(
-                Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, androidx.compose.ui.Alignment.End),
-            ) {
-                TextButton(onClick = { o = WidgetOverrides() }) { Text(stringResource(R.string.widget_config_reset)) }
-                TextButton(onClick = onCancel) { Text(stringResource(android.R.string.cancel)) }
-                Button(onClick = { onSave(o) }) { Text(stringResource(R.string.widget_config_save)) }
-            }
+            ValueRow(stringResource(R.string.widget_config_sensor), onOff(o.sensorTime, same, on, off), { open = "sensor" })
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, androidx.compose.ui.Alignment.End),
+        ) {
+            TextButton(onClick = { o = WidgetOverrides() }) { Text(stringResource(R.string.widget_config_reset)) }
+            TextButton(onClick = onCancel) { Text(stringResource(android.R.string.cancel)) }
+            Button(onClick = { onSave(o) }) { Text(stringResource(R.string.widget_config_save)) }
         }
     }
     when (open) {
@@ -260,7 +264,7 @@ private fun OnOffDialog(
     off: String,
     onClose: () -> Unit,
     onChoose: (Boolean?) -> Unit,
-) = ChoiceDialog(title, listOf(Choice(same, null), Choice(on, true), Choice(off, false)), value, onClose, onChoose)
+) = ChoiceDialog(title, listOf(Choice(same, null), Choice(on, true), Choice(off, false)), value, onClose, onChoose = onChoose)
 
 @Composable
 private fun hoursLabel(h: Int) = pluralStringResource(R.plurals.widget_config_hours_n, h, h)

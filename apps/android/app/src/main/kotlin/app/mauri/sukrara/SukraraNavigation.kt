@@ -451,6 +451,7 @@ fun SukraraNavigation(
                             invite,
                             onCreate = vm::createInvite,
                             onAnother = vm::newInvite,
+                            onBack = { backStack.pop(ShareRoute) },
                             internetOff = !travel.internet,
                             onTurnOnInternet = { vm.setInternet(true) },
                             progress = progress,

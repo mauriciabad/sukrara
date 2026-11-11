@@ -43,9 +43,9 @@ import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -191,7 +191,7 @@ fun ExportContent(
 ) = Column(modifier) {
     var choosing by remember { mutableStateOf(false) }
     val label = periodLabel()
-    IntroText(stringResource(if (ui.follower) R.string.in_export_intro_follower else R.string.in_export_intro))
+    SettingsIntro(stringResource(if (ui.follower) R.string.in_export_intro_follower else R.string.in_export_intro))
     SettingsGroup {
         ValueRow(stringResource(R.string.in_export_period), label(ui.period), { choosing = true })
         InfoRow(

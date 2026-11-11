@@ -38,8 +38,10 @@ import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.FooterText
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
@@ -142,14 +144,14 @@ fun AlertsSettingsContent(
         MuteAllStrip(ui.alerts, clock, actions.unmuteAll) { dialog = "muteAll" }
         header()
         ActiveNow(ui.alerts, clock, actions)
+        // the page's main switch (SPA MainSwitchPreference); while it is off, the page says what that means
+        MainSwitchRow(
+            stringResource(R.string.st_alerts_main),
+            s.on,
+            { on -> if (on) actions.edit { it.copy(on = true) } else dialog = "alertsOff" },
+            note = if (s.on) null else stringResource(R.string.st_alerts_main_off),
+        )
         SettingsGroup {
-            SwitchRow(
-                stringResource(R.string.st_alerts_main),
-                s.on,
-                { on -> if (on) actions.edit { it.copy(on = true) } else dialog = "alertsOff" },
-                summary = stringResource(if (s.on) R.string.st_alerts_main_on else R.string.st_alerts_main_off),
-                icon = DsR.drawable.ds_ic_notifications,
-            )
             ValueRow(
                 stringResource(R.string.st_mute_all),
                 ui.alerts.mutedUntil?.let {

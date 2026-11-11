@@ -15,17 +15,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,10 +58,11 @@ import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
+import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.feature.sharing.Invite
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.setup.NoteCard
-import app.mauri.sukrara.feature.sharing.setup.StepHeader
 import app.mauri.sukrara.feature.sharing.setup.startSafely
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.FollowerRecord
@@ -79,10 +76,12 @@ import java.util.Date
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * "Share with someone": a label only the wearer sees, then a single-use invite as a QR (springs in) and a link to send
- * or copy, its expiry and what the follower will see. Every invite still needs the wearer's Allow. While
- * [internetOff] (an invite link and its request travel over the internet) it says so and offers to turn it on.
- * The screen follows the invite by itself ([progress]): someone asked (*Review request* brings back a request put off
+ * "Share with someone", a settings page (SPA's SettingsScaffold and SettingsTheme, so its background and text follow
+ * the light and dark theme like every other page; #170): a label only the wearer sees, then a single-use invite as a
+ * QR (springs in) and a link to send or copy, its expiry and what the follower will see. Every invite still needs the
+ * wearer's Allow. While [internetOff] (an invite link and its request travel over the internet) it says so and offers
+ * to turn it on. [onBack] leaves the page.
+ * The page follows the invite by itself ([progress]): someone asked (*Review request* brings back a request put off
  * with Later), they follow now (*Done* back to Settings › Sharing, where they're listed), denied, or expired unused;
  * each outcome offers *Invite someone else*.
  */
@@ -91,27 +90,21 @@ fun ShareScreen(
     invite: InviteUi,
     onCreate: (String) -> Unit,
     onAnother: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     internetOff: Boolean = false,
     onTurnOnInternet: () -> Unit = {},
     progress: InviteProgress = InviteProgress.Open,
     onReview: (follower: String) -> Unit = {},
     onDone: () -> Unit = {},
-) {
+) = SettingsScaffoldPage(stringResource(R.string.sh_share_title), onBack, modifier) {
     val outcome = invite is InviteUi.Ready && progress !is InviteProgress.Open && progress !is InviteProgress.Asked
     var label by rememberSaveable { mutableStateOf("") }
+    SettingsIntro(stringResource(R.string.sh_share_body))
     Column(
-        modifier
-            .fillMaxSize()
-            // its own page (no settings scaffold under it): without a surface the window's dark background showed
-            // through with the light theme's dark text
-            .background(MaterialTheme.colorScheme.surface)
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        StepHeader(stringResource(R.string.sh_share_title), stringResource(R.string.sh_share_body))
         when (invite) {
             InviteUi.None, InviteUi.Creating, InviteUi.Failed -> {
                 OutlinedTextField(

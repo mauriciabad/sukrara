@@ -158,6 +158,8 @@ object SettingsIndex {
             add(sensor(R.string.st_sensor_ends))
             add(sensor(R.string.st_sensor_pair_new, R.string.st_sensor_pair_new_summary))
             add(sensor(R.string.st_sensor_source))
+            add(sensor(R.string.st_sensor_source_direct, R.string.st_sensor_source_direct_why))
+            add(sensor(R.string.st_sensor_source_juggluco, R.string.st_sensor_source_juggluco_why))
             add(sensor(R.string.st_sensor_juggluco_secret))
             add(sensor(R.string.st_sensor_open_on_scan))
             add(sensor(R.string.st_sensor_forget, R.string.st_sensor_forget_summary))

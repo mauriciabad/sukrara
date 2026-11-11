@@ -781,6 +781,32 @@ end of an open and the start of a back. Present since the system page motion (0.
 recomposed from scratch mid-move; a back during an open now animates the half-open page back out. Guarded by
 `ScreenHostTest` and a QA Q1 step (record at 5× animator scale, step the frames).
 
+#### In Sukrara (apps/android, #168, 2026-11-11)
+
+The 0.12.0 app had redrawn these rows by hand (`:core:designsystem` `SettingsRows.kt`, M3 `Switch`, a chevron on
+every link); the owner saw it from the switches. Added:
+
+- **`:settingslib-spa`**, copied from the PoC (same sources, Apache-2.0 headers and `NOTICE`), built with the app's
+  version catalog (Material Components 1.13.0, stable, instead of the PoC's 1.14 alpha), JDK 21 and Sukrara's Lint
+  errors. `tools/check` registers it in allow.json `vendored`: its files need upstream's license header instead of the
+  GPL one, its NOTICE must be tracked. Three small changes, each marked `Sukrara:` and in the NOTICE:
+  `SwitchPreference(model, modifier)` / `MainSwitchPreference(model, modifier)` public and a `rowModifier` on
+  `Preference`, so a follower's mirrored rows stay read-only at full contrast with TalkBack's "disabled" (SPA's own
+  restricted rows set their semantics the same way).
+- **The row layer on SPA** (`:core:designsystem` `rows/`), keeping the app's calls: groups, switches, two-target
+  switches, links, values, facts, footers, intros, main switches (Alerts, each alert, night alerts, LibreView /
+  Tidepool / Nightscout upload), inline radios (*Reading source*, *Settings from*), *Play with vibration* as a check
+  box, *Add reminder* (CategoryButton), the *Removed* / *Earlier doses* pills (NumberButtonPreference), SPA banners
+  (*Sensor taps are blocked*, the root / LSPosed steps, the tips), SPA's list dialogs, the scaffold (also *Share with
+  someone*, which had none and so drew black text on the dark window: #170, and a widget's settings).
+- What the app has and the PoC hadn't stays the app's: group titles are TalkBack headings, toggles confirm with a
+  haptic, a main switch can carry one line saying what its state means or why it can't be used, choice dialogs keep a
+  *Cancel*, home's safety banners keep their error card.
+
+Discarded: HighlightBox (the app's search opens the page; it never named a row to highlight), the PoC's index mode
+(the app has its own index, `SettingsIndex`, checked against the pages by `SettingsIndexTest`), SPA's page framework
+(as in the PoC), ActionRow's custom TalkBack click label (SPA's rows read as stock Settings' rows do).
+
 ### In Sukrara: screen motion (#169, 2026-11-11)
 
 The owner after 0.12.0: "The animations between screens on the app are wrong. in the poc we had good animations

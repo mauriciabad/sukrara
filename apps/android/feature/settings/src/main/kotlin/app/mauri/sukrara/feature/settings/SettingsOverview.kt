@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -149,6 +150,8 @@ fun SettingsOverviewContent(
                         ),
                     ),
             ).takeIf { clinicBanner },
+            // SPA's banner colour on a settings page
+            tipContainer = MaterialTheme.colorScheme.surface,
         )
         if (sharing.wearer) {
             SettingsGroup {

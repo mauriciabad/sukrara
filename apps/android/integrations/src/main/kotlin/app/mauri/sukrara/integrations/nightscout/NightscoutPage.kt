@@ -41,11 +41,12 @@ import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.integrations.R
-import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -138,27 +139,28 @@ fun NightscoutContent(
     var choosingApi by rememberSaveable { mutableStateOf(false) }
     val s = state.settings
     val on = s.on && wearer && state.configured
-    IntroText(stringResource(R.string.in_ns_intro))
+    SettingsIntro(stringResource(R.string.in_ns_intro))
     SettingsGroup {
         ValueRow(stringResource(R.string.in_ns_site), s.url.ifEmpty { stringResource(R.string.in_ns_site_none) }, {
             actions.resetTest()
             editing = true
         })
     }
-    SettingsGroup {
-        SwitchRow(
-            stringResource(R.string.in_ns_main),
-            on,
-            { v -> actions.change { it.copy(on = v) } },
-            enabled = wearer && state.configured,
-            summary =
-                when {
-                    !wearer -> stringResource(R.string.in_status_follower)
-                    !state.configured -> stringResource(R.string.in_ns_main_needs_site)
-                    else -> null
-                },
-        )
-        if (on) {
+    // the page's main switch (SPA MainSwitchPreference); while it can't be turned on, the page says why
+    MainSwitchRow(
+        stringResource(R.string.in_ns_main),
+        on,
+        { v -> actions.change { it.copy(on = v) } },
+        enabled = wearer && state.configured,
+        note =
+            when {
+                !wearer -> stringResource(R.string.in_status_follower)
+                !state.configured -> stringResource(R.string.in_ns_main_needs_site)
+                else -> null
+            },
+    )
+    if (on) {
+        SettingsGroup {
             val status = state.status
             if (status == UploadStatus.AuthFailed || status == UploadStatus.CredentialUnreadable) {
                 ValueRow(stringResource(R.string.in_ns_status), uploadStatusText(status, now), {

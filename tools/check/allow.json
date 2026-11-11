@@ -1,5 +1,5 @@
 {
-  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. play_permissions: what the Google Play build (play flavor) removes from and adds to that list, each with the reason (ManifestTest on the play manifest, verify-apk.sh --play). prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
+  "_about": "Allowlists for tools/check/check.py. Keep them short; every entry is an exception someone has to justify. App paths only (the frozen poc/ is checked by java / secrets / large / images only). Every cleartext_ok / network_ok entry has its reason. vendored: third-party code kept as upstream wrote it: its files carry upstream's license header (the entry's 'header' text) instead of the GPL one, and its NOTICE must exist; every other check still applies. permissions / queries: the release APK's exact uses-permission list and <queries> entries (package:<name>, intent:<action>), each with the reason; ManifestTest (merged manifest) and tools/release/verify-apk.sh (the APK) fail on any difference. play_permissions: what the Google Play build (play flavor) removes from and adds to that list, each with the reason (ManifestTest on the play manifest, verify-apk.sh --play). prerelease_ok: every alpha / beta / rc library in apps/android/gradle/libs.versions.toml, its exact version and why no stable one will do; android-release.sh prints them for the release notes.",
   "header_exts": [
     ".kt",
     ".swift",
@@ -18,6 +18,15 @@
     "*/gradlew",
     "assets/brand/*",
     "*/lint-baseline.xml"
+  ],
+  "vendored": [
+    {
+      "path": "apps/android/settingslib-spa/*",
+      "license": "Apache-2.0",
+      "header": "Licensed under the Apache License, Version 2.0",
+      "notice": "apps/android/settingslib-spa/NOTICE",
+      "reason": "AOSP SettingsLib SPA (android17-release), the code the stock Settings app draws its Compose pages with: the owner's rule that settings use the stock Settings components (#168, docs/10-showcase.md). Upstream's files keep their own Apache-2.0 header (Apache 4(c)); the NOTICE names the source and every change (4(b), 4(d))."
+    }
   ],
   "images_ok": [
     "docs/img/*",

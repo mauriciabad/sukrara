@@ -9,6 +9,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -28,7 +29,7 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
-import app.mauri.sukrara.designsystem.rows.ROW_TITLE_TAG
+import app.mauri.sukrara.designsystem.rows.ROW_TAG
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.AboutContent
 import app.mauri.sukrara.feature.settings.AlertKindActions
@@ -340,11 +341,16 @@ class SettingsIndexTest {
             { e -> e.at() == at }
         }
 
+    /** Each row's title: the first text inside the row (SPA's rows draw the title before the summary). */
     private fun titles(): List<String> =
         compose
-            .onAllNodesWithTag(ROW_TITLE_TAG, useUnmergedTree = true)
+            .onAllNodesWithTag(ROW_TAG, useUnmergedTree = true)
             .fetchSemanticsNodes()
-            .mapNotNull { it.config.getOrNull(SemanticsProperties.Text)?.joinToString() }
+            .mapNotNull { firstText(it) }
+
+    private fun firstText(node: SemanticsNode): String? =
+        node.config.getOrNull(SemanticsProperties.Text)?.joinToString()
+            ?: node.children.firstNotNullOfOrNull { firstText(it) }
 
     /** Every text on the page (rows, group titles, buttons, radio choices): what an entry may point at. */
     private fun texts(): List<String> =

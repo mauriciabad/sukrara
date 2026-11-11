@@ -7,21 +7,26 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 /**
  * The hue of a settings overview row's icon (Android Settings' homepage categories): the glyph in the hue's tone 30
- * on a circle in tone 90 (tone 80 in the dark theme), from the Material reference palettes.
+ * on the device's icon shape in tone 90 (tone 80 in the dark theme), from the Material reference palettes.
  */
 enum class Category(
     internal val fg: Long,
@@ -39,7 +44,11 @@ enum class Category(
     Grey(0xFF474747, 0xFFE3E3E3, 0xFFC7C7C7),
 }
 
-/** A row's leading category icon: [icon] (24 dp) on a 40 dp circle in [category]'s hue. Decorative (the title says it). */
+/**
+ * A row's leading category icon, as AOSP Settings' ic_homepage_* (SettingsLib's AdaptiveIconShapeDrawable): [icon]
+ * (24 dp) on a 40 dp shape in [category]'s hue, the shape the launcher gives app icons (circle, squircle…).
+ * Decorative (the title says it).
+ */
 @Composable
 fun CategoryIcon(
     @DrawableRes icon: Int,
@@ -48,9 +57,33 @@ fun CategoryIcon(
 ) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Box(
-        modifier.size(40.dp).clip(CircleShape).background(Color(if (dark) category.dark else category.light)),
+        modifier.size(40.dp).clip(AdaptiveIconShape).background(Color(if (dark) category.dark else category.light)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(painterResource(icon), contentDescription = null, tint = Color(category.fg), modifier = Modifier.size(24.dp))
     }
+}
+
+/**
+ * The device's adaptive icon mask (what SettingsLib's AdaptiveIconShapeDrawable fills);
+ * [android.graphics.drawable.AdaptiveIconDrawable.getIconMask] is in a 100 × 100 box.
+ */
+private object AdaptiveIconShape : Shape {
+    private val mask by lazy {
+        android.graphics.drawable
+            .AdaptiveIconDrawable(android.graphics.drawable.ColorDrawable(), android.graphics.drawable.ColorDrawable())
+            .iconMask
+    }
+
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val p = android.graphics.Path(mask)
+        p.transform(android.graphics.Matrix().apply { setScale(size.width / MASK_SIZE, size.height / MASK_SIZE) })
+        return Outline.Generic(p.asComposePath())
+    }
+
+    private const val MASK_SIZE = 100f
 }

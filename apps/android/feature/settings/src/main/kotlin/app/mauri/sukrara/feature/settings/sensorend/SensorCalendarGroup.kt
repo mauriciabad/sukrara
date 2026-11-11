@@ -36,6 +36,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import app.mauri.sukrara.designsystem.dialog.Choice
+import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
@@ -186,7 +188,10 @@ fun SensorCalendarGroup(
     if (choosing) CalendarDialog(state, port) { choosing = false }
 }
 
-/** Sukrara's own calendar first, then every writable calendar on the phone; picking one moves the events there. */
+/**
+ * Sukrara's own calendar first, then every writable calendar on the phone (SPA's list dialog); picking one moves the
+ * events there.
+ */
 @Composable
 private fun CalendarDialog(
     state: SensorCalendarState,
@@ -194,48 +199,12 @@ private fun CalendarDialog(
     onClose: () -> Unit,
 ) {
     val choices by produceState(emptyList<CalendarChoice>()) { value = port.choices() }
-    val ownName = stringResource(R.string.st_calendar_own)
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.st_calendar_where)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()).selectableGroup()) {
-                CalendarOption(ownName, stringResource(R.string.st_calendar_own_sub), state.own) {
-                    port.choose(null)
-                    onClose()
-                }
-                for (c in choices) {
-                    val sub = if (c.synced) stringResource(R.string.st_calendar_picked_sub, c.account) else c.account
-                    CalendarOption(c.name, sub, !state.own && c.id == state.id) {
-                        port.choose(c)
-                        onClose()
-                    }
-                }
+    // null = Sukrara's own calendar
+    val options =
+        listOf(Choice<CalendarChoice?>(stringResource(R.string.st_calendar_own), null, stringResource(R.string.st_calendar_own_sub))) +
+            choices.map { c ->
+                Choice<CalendarChoice?>(c.name, c, if (c.synced) stringResource(R.string.st_calendar_picked_sub, c.account) else c.account)
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.st_cancel)) } },
-    )
-}
-
-@Composable
-private fun CalendarOption(
-    name: String,
-    sub: String,
-    selected: Boolean,
-    onPick: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .selectable(selected, role = Role.RadioButton, onClick = onPick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Column(Modifier.padding(start = 16.dp)) {
-            Text(name)
-            Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
+    val selected = if (state.own) null else choices.firstOrNull { it.id == state.id }
+    ChoiceDialog(stringResource(R.string.st_calendar_where), options, selected, onClose) { port.choose(it) }
 }

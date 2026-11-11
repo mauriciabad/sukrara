@@ -44,6 +44,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   the phone (this phone's NFC antenna) with tips after 10 s, ticked pairing steps and *Taking longer?* after 45 s, the
   warm-up countdown in a ring, haptics on the tap, the screen kept on, every failure handled on the same screen
   (ended sensor, Libre 1/2, a tag that isn't a sensor, another app holding the sensor, Bluetooth off, a wrong ID or PIN).
+- **Settings like the phone's own**: every settings page (and *Share with someone*) is drawn by the stock Settings
+  app's components (AOSP SettingsLib SPA): its collapsing title, rounded groups, switches, main switches, radios,
+  banners and dialogs, in your phone's colours, light or dark.
 - **Settings › Sensor**: the current sensor (status, serial, start, end and time left), the reading source (Libre 3
   directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account
   (email and receiver ID) and *Pair new sensor*.
