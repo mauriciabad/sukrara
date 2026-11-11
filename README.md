@@ -77,7 +77,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   with Sukrara's **LSPosed module** in System UI also as text beside the clock, in its range colour, placed next to the
   icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root).
 - **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,
-  "like an alarm" ones pass Do Not Disturb; alerts that come close together still ring in full (Android's notification
+  "like an alarm" ones pass Do Not Disturb (with Do Not Disturb access they also show and vibrate through a mode that
+  silences alarms, keeping your channel choices; the reliability checklist says when a mode on now mutes their sound); alerts that come close together still ring in full (Android's notification
   cooldown doesn't quieten them; with *Vibrate only when unlocked* on, Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
   in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
   (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. A low

@@ -95,7 +95,7 @@ class AndroidLockedBootSurface(
                 ctx.getString(R.string.monitor_locked_boot_alarm_text, since)
             }
         val n =
-            builder(AlertChannels.id(AlertKind.NO_DATA, plan.alarm), ctx.getString(R.string.monitor_locked_boot_alarm_title), text)
+            builder(AlertChannels.id(ctx, AlertKind.NO_DATA, plan.alarm), ctx.getString(R.string.monitor_locked_boot_alarm_title), text)
                 .setCategory(AlertCategory.of(plan.alarm, AlertCategory.Dnd.of(nm)))
                 .build()
         nm.notify(NotificationIds.LOCKED_BOOT, n)

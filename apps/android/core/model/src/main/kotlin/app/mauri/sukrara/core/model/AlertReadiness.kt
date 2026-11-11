@@ -25,12 +25,17 @@ enum class AlertRequirement(
     ExactAlarm,
     BatteryExemption,
 
-    /** The alert channels may break through Do Not Disturb and still have their importance. */
+    /**
+     * The alert channels still have their importance, and no Do Not Disturb mode on now silences the alarm-level ones
+     * (total silence, or a mode without alarms: Android then mutes the alarm volume, override or not).
+     */
     AlertChannel,
 
     /**
      * The alarm-level channels override Do Not Disturb (Do Not Disturb access granted, so their `setBypassDnd` holds):
-     * a mode that silences alarms (a Bedtime or custom mode) still lets them ring. Only while a kind rings like an alarm.
+     * in a mode that silences alarms (a Bedtime or custom mode) they still show, vibrate and open full screen; their
+     * sound plays only where the mode lets alarms through ([AlertChannel] says so while one is on). Only while a kind
+     * rings like an alarm.
      */
     AlarmsInDnd,
 

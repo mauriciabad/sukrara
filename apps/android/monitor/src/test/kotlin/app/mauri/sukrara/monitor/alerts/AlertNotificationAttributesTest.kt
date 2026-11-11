@@ -61,13 +61,13 @@ class AlertNotificationAttributesTest {
 
     @Test fun `alarm channels ring at alarm volume and pass DND, alert channels at notification volume and don't`() {
         for (kind in AlertKind.entries) {
-            val alarm = nm.getNotificationChannel(AlertChannels.id(kind, alarm = true))
+            val alarm = nm.getNotificationChannel(AlertChannels.id(ctx, kind, alarm = true))
             assertEquals(AudioAttributes.USAGE_ALARM, alarm.audioAttributes.usage)
             assertTrue(alarm.canBypassDnd())
             assertEquals(AlertChannels.soundUri(ctx, kind), alarm.sound)
             assertEquals(NotificationManager.IMPORTANCE_HIGH, alarm.importance)
 
-            val alert = nm.getNotificationChannel(AlertChannels.id(kind, alarm = false))
+            val alert = nm.getNotificationChannel(AlertChannels.id(ctx, kind, alarm = false))
             assertEquals(AudioAttributes.USAGE_NOTIFICATION_EVENT, alert.audioAttributes.usage)
             assertFalse(alert.canBypassDnd())
             assertEquals(AlertChannels.soundUri(ctx, kind), alert.sound)
@@ -79,13 +79,13 @@ class AlertNotificationAttributesTest {
         showLowAndFallingFast()
         val low = posted(AlertKind.LOW)
         assertEquals(Notification.CATEGORY_ALARM, low.category)
-        assertEquals(AlertChannels.id(AlertKind.LOW, alarm = true), low.channelId)
+        assertEquals(AlertChannels.id(ctx, AlertKind.LOW, alarm = true), low.channelId)
         // full screen where Android allows it (Robolectric doesn't grant it)
         assertEquals(nm.canUseFullScreenIntent(), low.fullScreenIntent != null)
 
         val falling = posted(AlertKind.FALLING_FAST)
         assertEquals(Notification.CATEGORY_ALARM, falling.category)
-        assertEquals(AlertChannels.id(AlertKind.FALLING_FAST, alarm = false), falling.channelId)
+        assertEquals(AlertChannels.id(ctx, AlertKind.FALLING_FAST, alarm = false), falling.channelId)
         assertNull(falling.fullScreenIntent)
     }
 
@@ -118,7 +118,7 @@ class AlertNotificationAttributesTest {
         AlertNotifier(ctx).showTest(AlertKind.FALLING_FAST, settings)
         val test = shadowOf(nm).getNotification(NotificationIds.ALERT_TEST)
         assertEquals(Notification.CATEGORY_ALARM, test.category)
-        assertEquals(AlertChannels.id(AlertKind.FALLING_FAST, alarm = false), test.channelId)
+        assertEquals(AlertChannels.id(ctx, AlertKind.FALLING_FAST, alarm = false), test.channelId)
         assertNull(test.fullScreenIntent)
     }
 }

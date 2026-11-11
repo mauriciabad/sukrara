@@ -74,11 +74,11 @@ class AlertNotifier(
             settings.canRelax(kind) -> b.addAction(action(kind, AlertActionReceiver.REMIND_LESS, R.string.alert_action_remind_less))
         }
         if (alarm && !silent && nm.canUseFullScreenIntent()) b.setFullScreenIntent(openApp(), true)
-        post(kind.group, b.build(), AlertChannels.id(kind, alarm))
+        post(kind.group, b.build(), AlertChannels.id(ctx, kind, alarm))
         // the app's info notifications wait until Android's one-sound-per-second limit can't mute this one
         if (!silent) {
             SoundGap.shared.alertRang()
-            unlocked?.ringing(kind.group, AlertChannels.id(kind, alarm), alarm)
+            unlocked?.ringing(kind.group, AlertChannels.id(ctx, kind, alarm), alarm)
         }
     }
 
@@ -101,7 +101,7 @@ class AlertNotifier(
                 .addAction(action(kind, AlertActionReceiver.UNMUTE, R.string.alert_action_unmute))
         b.addMuteAction(kind, ctx.getString(R.string.alert_action_change), settings.muteChoices(), words)
         unlocked?.stop(group)
-        post(group, b.build(), AlertChannels.id(kind, alarm))
+        post(group, b.build(), AlertChannels.id(ctx, kind, alarm))
     }
 
     /**
@@ -121,9 +121,9 @@ class AlertNotifier(
                 .setAutoCancel(true)
                 .setTimeoutAfter(TEST_TIMEOUT_MS)
                 .build()
-        post(NotificationIds.ALERT_TEST, n, AlertChannels.id(kind, alarm))
+        post(NotificationIds.ALERT_TEST, n, AlertChannels.id(ctx, kind, alarm))
         SoundGap.shared.alertRang()
-        unlocked?.ringing(kind.group, AlertChannels.id(kind, alarm), alarm)
+        unlocked?.ringing(kind.group, AlertChannels.id(ctx, kind, alarm), alarm)
     }
 
     override fun clear(group: AlertGroup) {
@@ -146,7 +146,7 @@ class AlertNotifier(
 
     private fun base(kind: AlertKind, alarm: Boolean, silent: Boolean): Notification.Builder =
         Notification
-            .Builder(ctx, AlertChannels.id(kind, alarm))
+            .Builder(ctx, AlertChannels.id(ctx, kind, alarm))
             .setSmallIcon(ctx.applicationInfo.icon)
             // read right before every post: exempt from Android's notification cooldown without changing DND
             .setCategory(AlertCategory.of(alarm, AlertCategory.Dnd.of(nm)))

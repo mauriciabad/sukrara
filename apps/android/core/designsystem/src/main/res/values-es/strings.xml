@@ -33,7 +33,7 @@
     <string name="ds_req_channel">Sonido de alerta y No molestar</string>
     <string name="ds_req_channel_why">Las categorías de alerta deben conservar su sonido y poder saltarse No molestar.</string>
     <string name="ds_req_dnd">Alarmas en No molestar</string>
-    <string name="ds_req_dnd_why">Permite que las alertas que suenan como una alarma se salten un modo No molestar que silencia las alarmas, como el modo descanso.</string>
+    <string name="ds_req_dnd_why">Permite que las alertas que suenan como una alarma se sigan mostrando y vibren en un modo No molestar que silencia las alarmas, como el modo descanso.</string>
     <string name="ds_req_unlocked">Sonido con el teléfono desbloqueado</string>
     <string name="ds_req_unlocked_why">La opción de Android Atenuación de notificaciones › Vibrar solo si está desbloqueado silencia todos los sonidos de alerta, también las alarmas, mientras usas el teléfono. Android no deja que las apps la lean: compruébala una vez y díselo a Sukrara.</string>
     <string name="ds_unlocked_open">Abrir el ajuste</string>

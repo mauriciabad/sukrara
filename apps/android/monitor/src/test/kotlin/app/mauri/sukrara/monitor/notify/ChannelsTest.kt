@@ -21,6 +21,28 @@ class ChannelsTest {
         assertEquals(ids.size, ids.toSet().size)
     }
 
+    /** #15: an alarm channel that moves to take Do Not Disturb's override gets the next generation's id. */
+    @Test
+    fun `alarm channel generations`() {
+        assertEquals("alert_alarm.low", Channels.alarm("low"))
+        assertEquals("alert_alarm.low.2", Channels.alarm("low", 2))
+        assertEquals(1, Channels.alarmGeneration("alert_alarm.low", "low"))
+        assertEquals(3, Channels.alarmGeneration("alert_alarm.low.3", "low"))
+        assertEquals(null, Channels.alarmGeneration("alert_alarm.very_low", "low"))
+        assertEquals(null, Channels.alarmGeneration("alert.low", "low"))
+        assertEquals(null, Channels.alarmGeneration("alert_alarm.low.x", "low"))
+        assertEquals(null, Channels.alarmGeneration("alert_alarm.low.1", "low"))
+        assertEquals("alert_alarm.low", Channels.currentAlarm(listOf("alert.low", "status"), "low"))
+        assertEquals(
+            "alert_alarm.low.3",
+            Channels.currentAlarm(listOf("alert_alarm.low.3", "alert_alarm.low", "alert_alarm.very_low.4"), "low"),
+        )
+        assertEquals("alert_alarm.low.2", Channels.nextAlarm("alert_alarm.low", "low"))
+        assertEquals("alert_alarm.low.4", Channels.nextAlarm("alert_alarm.low.3", "low"))
+        assertTrue(Channels.isAlarm("alert_alarm.no_data.7"))
+        assertTrue(!Channels.isAlarm("alert.no_data") && !Channels.isAlarm("glucose.live"))
+    }
+
     @Test
     fun `the alert kinds are the contract's`() {
         assertEquals(

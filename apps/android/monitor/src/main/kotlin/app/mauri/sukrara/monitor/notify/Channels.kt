@@ -18,6 +18,8 @@ import app.mauri.sukrara.monitor.alerts.AlertChannels
  * NEVER rename or reuse an id: Android keeps the person's choices (sound, importance, "override Do Not Disturb") per
  * channel id, so a renamed channel silently resets them to our defaults — for alert channels that can mean a muted
  * alarm the person had made loud. New behaviour gets a new id; a removed channel is deleted explicitly ([DELETED]).
+ * The one exception moves the person's choices with it: an alarm channel taking Do Not Disturb's override
+ * ([AlertChannels.moveToDndBypass], `alert_alarm.<kind>.<generation>`).
  */
 object Channels {
     enum class Group(
@@ -70,7 +72,49 @@ object Channels {
 
     fun alert(kind: String) = "alert.$kind"
 
-    fun alarm(kind: String) = "alert_alarm.$kind"
+    /**
+     * [kind]'s alarm channel: `alert_alarm.<kind>`, then `alert_alarm.<kind>.2`, `.3`… each time it moves to take Do Not
+     * Disturb's override that Android won't give it in place ([AlertChannels.moveToDndBypass], #15).
+     */
+    fun alarm(
+        kind: String,
+        generation: Int = 1,
+    ) = if (generation <= 1) "alert_alarm.$kind" else "alert_alarm.$kind.$generation"
+
+    /** [id]'s generation as [kind]'s alarm channel ([alarm]), or null when it isn't one of [kind]'s. */
+    fun alarmGeneration(
+        id: String,
+        kind: String,
+    ): Int? {
+        val first = alarm(kind)
+        return when {
+            id == first -> 1
+            id.startsWith("$first.") -> id.removePrefix("$first.").toIntOrNull()?.takeIf { it >= 2 }
+            else -> null
+        }
+    }
+
+    /** [kind]'s alarm channel among the app's channel [ids]: the newest generation there, else the first id. */
+    fun currentAlarm(
+        ids: Collection<String>,
+        kind: String,
+    ): String = ids.mapNotNull { id -> alarmGeneration(id, kind)?.let { it to id } }.maxByOrNull { it.first }?.second ?: alarm(kind)
+
+    /** The id [kind]'s alarm channel [id] moves to. */
+    fun nextAlarm(
+        id: String,
+        kind: String,
+    ) = alarm(kind, (alarmGeneration(id, kind) ?: 1) + 1)
+
+    /** An alarm channel of any kind and generation. */
+    fun isAlarm(id: String) = ALERT_KINDS.any { alarmGeneration(id, it) != null }
+
+    /** The ids of the app's channels now (Android leaves the deleted ones out). */
+    fun existing(context: Context): List<String> =
+        context.getSystemService(NotificationManager::class.java).notificationChannels.map { it.id }
+
+    /** [create] and [AlertChannels.moveToDndBypass] one at a time: an alarm channel is never created twice. */
+    val lock = Any()
 
     val ALL: List<Spec> =
         listOf(
@@ -110,12 +154,37 @@ object Channels {
      * Creates every group and channel (idempotent: Android keeps the person's edits of an existing channel and only
      * updates its name). Alert channels always get their full setup ([AlertChannels]: the Sukrara sound, the volume's
      * usage, the kind's vibration, Do Not Disturb for alarms): Android fixes it at creation, so it is never optional.
+     * Each alarm channel under its current id ([currentAlarm]: creating an id that was moved away from would bring the
+     * old channel back); an older one left behind is deleted once no notification shows on it ([dropOldAlarms]).
      */
     fun create(context: Context) {
+        synchronized(lock) {
+            val nm = context.getSystemService(NotificationManager::class.java)
+            val ids = existing(context)
+            nm.createNotificationChannelGroups(Group.entries.map { NotificationChannelGroup(it.id, context.getString(it.nameRes)) })
+            nm.createNotificationChannels(current(ids).map { channel(context, it) })
+            DELETED.forEach(nm::deleteNotificationChannel)
+            dropOldAlarms(context)
+        }
+    }
+
+    /** [ALL] with each alarm channel under its current id among [ids]. */
+    internal fun current(ids: Collection<String>): List<Spec> =
+        ALL.map { if (it.kind == Kind.ALARM) it.copy(id = currentAlarm(ids, it.alertKind!!)) else it }
+
+    /**
+     * Deletes the alarm channels an alarm moved away from ([AlertChannels.moveToDndBypass]), each once no notification
+     * shows on it (deleting a channel takes its notifications away: never an alert on screen). True when none is left.
+     */
+    fun dropOldAlarms(context: Context): Boolean {
         val nm = context.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannelGroups(Group.entries.map { NotificationChannelGroup(it.id, context.getString(it.nameRes)) })
-        nm.createNotificationChannels(ALL.map { channel(context, it) })
-        DELETED.forEach(nm::deleteNotificationChannel)
+        val ids = existing(context)
+        val now = current(ids).map { it.id }.toSet()
+        val old = ids.filter { isAlarm(it) && it !in now }
+        if (old.isEmpty()) return true
+        val showing = nm.activeNotifications.map { it.notification.channelId }.toSet()
+        old.filter { it !in showing }.forEach(nm::deleteNotificationChannel)
+        return old.all { it !in showing }
     }
 
     /**

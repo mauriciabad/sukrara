@@ -163,7 +163,7 @@ object DebugFakes {
                 val reading = AlertReading(now, if (kind.side == Side.HIGH) 260 else 62, -3.0)
                 if (reminder) {
                     // the control: a plain notification on the kind's channel posted as CATEGORY_REMINDER
-                    val channel = AlertChannels.id(kind, settings.rule(kind).alarm)
+                    val channel = AlertChannels.id(context, kind, settings.rule(kind).alarm)
                     val n =
                         android.app.Notification
                             .Builder(context, channel)

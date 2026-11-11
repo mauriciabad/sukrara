@@ -103,7 +103,7 @@ class AlertTryOut(
     fun channelId(
         kind: AlertKind,
         alarm: Boolean,
-    ): String = AlertChannels.id(kind, alarm)
+    ): String = AlertChannels.id(ctx, kind, alarm)
 
     private fun vibrator() = ctx.getSystemService(VibratorManager::class.java).defaultVibrator
 
