@@ -34,7 +34,7 @@ unused).
 |---|---|---|---|
 | Mac, non-developers | Notarized dmg from sukrara.mauri.app / GitHub Releases + **Sparkle 2** in-app updates | Paid Apple Developer Program (Developer ID) | 99 USD/year |
 | Mac, developers | **Own tap** `mauriciabad/homebrew-tap` → `brew install --cask mauriciabad/tap/sukrara`; later the official cask | Official cask needs Gatekeeper-passing (notarized) builds + notability | 0 |
-| Mac App Store | **Not now** | Sandbox + no own updater + medical/third-party-service review risk | (same 99 USD) |
+| Mac App Store | **Go** (2026-11-11): a sandboxed build without the update check, TestFlight first ([review risk](#mac-app-store-review-risk-2026-11-11-186)) | The App Store Connect app record and the distribution certificates (the owner) | (same 99 USD) |
 | Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the update check (decided 2026-11-11, [Flavors](#flavors)) | Health/medical declarations; `USE_EXACT_ALARM` and root-feature review (no 12-tester rule: the account predates it) | paid (old account) |
 | Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; the "full" flavor with the update check | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
 | Android, F-Droid main repo | Later, optional | Build from source incl. Juggluco core + rust-nostr; likely *NonFreeNet* anti-feature | 0 |
@@ -219,19 +219,65 @@ the build (expired, another certificate) instead of quietly building without it;
 purpose. A test build with the profile also claims the invite links: never launch it from Finder, and unregister it
 after testing (`lsregister -u <app>`, `pluginkit -r <appex>`).
 
-### Mac App Store: not now
+### Mac App Store: review risk (2026-11-11, #186)
 
-| Requirement | Impact on Sukrara |
-|---|---|
-| Must be sandboxed (2.4.5 i) [[A4]](https://developer.apple.com/app-store/review/guidelines/) | The menubar host is not sandboxed today. Bluetooth works with `com.apple.security.device.bluetooth` [[A5]](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.bluetooth), Keychain and the App Group work in the sandbox; the local Nightscout-style server needs `network.server`. Doable, but a full port + test round |
-| No auto-launch without consent (2.4.5 iii) [[A4]](https://developer.apple.com/app-store/review/guidelines/) | Login item must be opt-in (SMAppService toggle) |
-| Updates only via the Mac App Store (2.4.5 vii) [[A4]](https://developer.apple.com/app-store/review/guidelines/) | No Sparkle in that build: a second build variant |
-| Medical apps get "greater scrutiny"; accuracy must be validated or the app is rejected; regulatory clearance link if any (1.4.1) [[A4]](https://developer.apple.com/app-store/review/guidelines/) | High rejection risk for an unofficial CGM display with alerts |
-| Third-party service content needs permission "under the service's terms of use" (5.2.2); no third-party brand in name/icon (4.1c, 5.2.1) [[A4]](https://developer.apple.com/app-store/review/guidelines/) | LibreView upload uses an unofficial API: likely rejection if a reviewer asks for authorization |
+**Finding: go, TestFlight first, then the Mac App Store**, with the listing and in-app texts below. It replaces the
+2026-10-18 "not now", which assumed the Mac app talks to LibreView: it doesn't (LibreView, the Nightscout upload and
+the local Nightscout-style server are Android only, `only: android` in `contracts/settings/settings.json`; the Mac
+has no listening socket). What Sukrara for Mac does, against the guidelines [[A4]](https://developer.apple.com/app-store/review/guidelines/):
 
-**Verdict**: the effort buys little over a notarized dmg + Sparkle, and review risk is high. Revisit only if
-there is ever an official Abbott/LibreView agreement or a regulatory status. **Setapp** and similar paid catalogues
-don't fit a free GPL app and were not researched further.
+| Guideline | What it asks | Sukrara for Mac |
+|---|---|---|
+| 1.4.1 medical | greater scrutiny; accuracy claims must be backed or the app is rejected ("measure … blood glucose … using only the sensors on the device" is not permitted); remind users to check with a doctor; a clearance link if any | Measures nothing: it shows readings the wearer's phone already has (Sukrara for Android over Nostr or Bluetooth, or Juggluco's web server on the home network) and alerts on them. No accuracy claim, no clearance, so none is linked. **Missing: the in-app reminder** (added with the store build: setup's first step and Settings › General) |
+| 2.1 completeness | the reviewer must be able to see the app work | Nothing to see without a wearer. Review notes explain it; a demo video (Mac) and, if the owner agrees, a demo invite to a test wearer (an emulator debug build with the synthetic sensor, kept running during review). No demo mode in the app (CLAUDE.md: the release app never shows made-up values) |
+| 2.4.5 (i) sandbox | appropriately sandboxed | The store build is sandboxed (below); the widget already was |
+| 2.4.5 (iii) login | no auto-launch without consent | *Open at login* is a setup step and a switch the person turns on (`SMAppService`); nothing registers itself |
+| 2.4.5 (vii) updates | only through the Mac App Store | The store build has no update check (like Android's Play flavor) |
+| 2.4.5 (ii, iv, v, ix) | Xcode tools, one bundle, no downloaded code, no root, all localizations inside | `productbuild` package of the one bundle with the widget inside; nothing downloaded or elevated; en + es in the bundle |
+| 4.1(c), 5.2.1 | no other developer's brand in the name or icon | The name is Sukrara, the icon our own; no FreeStyle Libre, Dexcom, Juggluco or Nightscout in name, subtitle, keywords or icon |
+| 5.1.1 privacy | a privacy policy link in App Store Connect **and in the app**; consent; a way to withdraw | https://sukrara.mauri.app/privacy (its Mac part updated for this build). **Missing: the in-app link** (added: Settings › General). No account, no analytics |
+| 5.1.3 health | no health data for ads or mining; none in iCloud; disclose the health data collected | None collected by the developer; readings stay on the Mac (31 days) and travel only end-to-end encrypted between the wearer and followers. No HealthKit, no iCloud |
+| 5.2.2 third-party services | permission under the service's terms | No vendor API on the Mac. Public Nostr relays (open protocol), and Juggluco's web server, a documented feature of an app on the person's own phone, on their own network |
+
+**How comparable apps fare** (seen 2026-11-11). On the Mac App Store: *GlucoseBar* (Dexcom Share and Nightscout in the
+menu bar; Health & Fitness; "Data Not Collected"; 16+; "informational purposes only … verify any readings with their
+primary CGM solution") [[A6]](https://apps.apple.com/us/app/glucosebar/id6468110131?mt=12), *Sugar Sense: Menu Bar Glucose* (Libre, Dexcom and Nightscout through its own account;
+Medical; "Not a medical device … Base treatment decisions on your CGM's own app or a blood glucose meter"; brands only
+in the description, not the name or subtitle; no notifications) [[A7]](https://apps.apple.com/us/app/sugar-sense-menu-bar-glucose/id6796828695?mt=12), *Glucose Graph* (Nightscout)
+[[A8]](https://apps.apple.com/us/app/glucose-graph/id1668560499?mt=12). On iOS: *nightguard* (a Nightscout client with alarms, Medical, "Don't use this App for medical decisions")
+[[A9]](https://apps.apple.com/us/app/nightguard/id1116430352), the official *Dexcom Follow* and *LibreLinkUp*. Gone: *Sugarmate* took itself off the
+App Store in 2022 when Dexcom's partner API stopped serving users outside the US [[A10]](https://twitter.com/sugarmateapp/status/1495892882749800450); *Shuggah* (Dexcom data,
+reported as a paid copy of xDrip4iOS) disappeared in August 2025 without a public reason [[A11]](https://appshunter.io/ios/app/1586789452)[[A12]](https://www.diabetes.co.uk/forum/threads/shuggah-app-vanished.210952/); *Spike*
+(read sensors through Bluetooth transmitters) was never on the store: a TestFlight beta, then an enterprise
+certificate Apple revoked in 2019 in a general clamp-down on enterprise distribution [[A13]](https://medium.com/trit1dtech/devastating-news-for-diy-t1d-community-apple-tries-to-clamp-down-on-distribution-of-spike-app-ef57138b6163). The DIY apps that
+read sensors or drive pumps (xDrip4iOS, Loop, LoopFollow) stay self-built. **The pattern**: followers that show the
+person's own data with a clear disclaimer, alarms included, pass review; the trouble is reading sensors directly and
+using a vendor's API outside its terms. Sukrara for Mac does neither. The remaining risks are a reviewer who can't see
+data (2.1, answered by the notes and the video) and a reviewer who reads the alerts as a medical claim (1.4.1, answered
+by the disclaimer and the listing's wording).
+
+**The listing must say**: what Sukrara for Mac is (a menu bar and widget follower of someone who shares their glucose
+with Sukrara on their Android phone, or of Juggluco on the same network); that it needs that person (no sensor is read
+by the Mac); alerts with their limits (a sleeping, offline or muted Mac can't ring: keep the phone's own alarms on);
+**not a medical device**: values can be wrong, late or missing, don't base treatment decisions on Sukrara, check the
+sensor's own app or a meter and talk to your doctor; no account, no data collected by the developer, end-to-end
+encrypted sharing; free software (GPL, the source link); "FreeStyle Libre is a trademark of Abbott; Sukrara isn't
+affiliated with Abbott or Juggluco" when the description names them. Category **Medical** (`LSApplicationCategoryType`
+already says so). App Privacy: **Data Not Collected** (end-to-end encrypted messages through relays nobody on our side
+runs or reads; the readings stay on the Mac). Age rating: whatever the questionnaire gives with *Medical or treatment
+information: frequent*.
+
+**The listing must not say**: that it measures or reads glucose from a sensor, or any accuracy figure; that it
+replaces the CGM's app, a meter, the phone's alarms or a doctor; dosing or treatment advice ("take insulin", "eat
+now"); "FDA", "CE", "approved", "certified", "official", "safe"; a brand (FreeStyle Libre, Libre, Dexcom, Abbott,
+Juggluco, Nightscout) in the name, subtitle, keywords or icon; "best" / "#1"; screenshots with real health data (they
+are synthetic, CLAUDE.md).
+
+**Review notes** (App Store Connect › App Review Information): "Sukrara for Mac shows the glucose of a person who
+shares it from Sukrara for Android (or from Juggluco on the same network). It reads no sensor itself. Without that
+person the app opens normally and shows *Not following*; setup, every Settings page and *Send a test alert* work. A
+video of it following a test wearer: <link>." Plus the demo invite if the owner keeps a test wearer running. No sign-in
+to give: Sukrara has no accounts.
 
 ## Android
 
@@ -886,8 +932,11 @@ or endorsed by Abbott" (already in the README disclaimer). No "LibreView" in tit
 Connect IQ store all allow a link: each release must tag the exact commit **and** the Juggluco revision compiled into
 the native core (today an unpinned local checkout: pin it as a submodule or record the hash in the release notes),
 and the app's About page links to the source. GPL's "no further restrictions" conflicts with store terms only for the
-Mac App Store (the long-standing App Store/GPL debate), another reason to skip it. Juggluco's own GPLv3 code is
-compatible.
+Mac App Store (the long-standing App Store/GPL debate). That debate is about distributing *someone else's* GPL code
+under the App Store's terms; the Mac binary contains only the owner's own code (every commit under `apps/macos` is
+his) plus NostrSDK (MIT) and Apple's frameworks, and a copyright holder isn't bound by his own licence, so he can ship
+it there. An outside contribution to the Mac app needs the contributor's permission for the App Store (an additional
+permission in that change) before it ships there. Juggluco's own GPLv3 code is compatible (Android only).
 
 **Costs**
 
@@ -921,7 +970,8 @@ compatible.
 
 **Mac**: pay for the Apple Developer Program and ship **notarized** dmg/zip with **Sparkle 2** updates from the
 website; serve developers with an **own Homebrew tap** from the same release; submit to `homebrew/cask` once it's
-notable. Skip the Mac App Store.
+notable. **Mac App Store** (2026-11-11, #186): go, as a second, sandboxed build of the same app
+([review risk](#mac-app-store-review-risk-2026-11-11-186)), TestFlight first.
 
 **Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (new personal account,
 closed test as the permanent beta) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
@@ -995,6 +1045,7 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
 - [A3] Apple, Membership details (Developer ID, notarization) — https://developer.apple.com/programs/whats-included/
 - [A4] App Review Guidelines (1.4.1, 2.4.5, 2.5, 4.1, 5.1.3, 5.2) — https://developer.apple.com/app-store/review/guidelines/
 - [A5] Bluetooth sandbox entitlement — https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.bluetooth
+- [A6]–[A13] seen 2026-11-11 (3rd-party): GlucoseBar — https://apps.apple.com/us/app/glucosebar/id6468110131?mt=12; Sugar Sense: Menu Bar Glucose — https://apps.apple.com/us/app/sugar-sense-menu-bar-glucose/id6796828695?mt=12; Glucose Graph — https://apps.apple.com/us/app/glucose-graph/id1668560499?mt=12; nightguard — https://apps.apple.com/us/app/nightguard/id1116430352; Sugarmate's removal — https://twitter.com/sugarmateapp/status/1495892882749800450; Shuggah's removal — https://appshunter.io/ios/app/1586789452, https://www.diabetes.co.uk/forum/threads/shuggah-app-vanished.210952/; Spike's certificate — https://medium.com/trit1dtech/devastating-news-for-diy-t1d-community-apple-tries-to-clamp-down-on-distribution-of-spike-app-ef57138b6163
 - [S1] Sparkle documentation (2.9) — https://sparkle-project.org/documentation/
 - [G1] Play Console Help, Closure of inactive developer accounts — https://support.google.com/googleplay/android-developer/answer/11605267
 - [G2] XDA, inactive-account policy (2021, 3rd-party) — https://www.xda-developers.com/google-play-policy-crack-down-on-dormant-accounts/
