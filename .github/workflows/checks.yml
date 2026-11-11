@@ -65,6 +65,8 @@ jobs:
         run: python3 tools/settings/gen.py --check
       - name: The local test relay's tests (loopback only)
         run: python3 tools/relay/test_relay.py
+      - name: The release command's tests (CHANGELOG, notes, version, store request bodies; no network, no keys)
+        run: python3 tools/release/test_release.py
       # The independent Python reference (poc/spec/reference, frozen) with PROTOCOL-v2's rules: every sync sequence
       # gives the same verdicts and state as both apps, and the OGS vectors are its generator's bytes.
       - name: Protocol fixtures cross-checked against the reference follower
