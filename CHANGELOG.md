@@ -2,7 +2,7 @@
 
 Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
-## Unreleased
+## Unreleased — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app
 
 - **The Android GitHub version updates itself** (#188): once a day it looks for a new version and says so in a quiet
   notification (*Update*, *Release notes*), downloads it, checks it is the release's file signed with Sukrara's key,
@@ -22,6 +22,23 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   they have; the Mac's alerts stop being Time Sensitive until you let Sukrara through.
 - ***Sound while the phone is unlocked*** (Android, #183) is answered from a test alert: *Test the sound*, then
   *I heard it* / *It only vibrated*. The earlier answer is asked again.
+- **Widgets and the card look like the earlier app again** (#181): Android's widgets are drawn at the size the
+  launcher really gives them and are never stretched or squashed, on the home screen and in the widget picker, in the
+  wallpaper's colours. On Android and the Mac the rings show their number without "%", a fresh value has no "now",
+  and the value has as many slots beside it as fit (up to four).
+- **Android look** (#181): the phone's own colours across the app, the dark theme included, the phone's round font in
+  titles, and Material 3 Expressive motion.
+- **Settings** (Android, #181): a search result opens its page at the row it found and highlights it; the alert
+  reliability checklist, the status lines and the dialogs use Android's own settings components; Sharing's rows have
+  their icons; TalkBack says again what a tap on an action row does (copy, import, fix).
+- **Sharing** (#181): a follower whose invite the wearer never answers no longer waits forever: when the invite
+  expires, Sukrara says *Invite expired* with *Join with a new link* (Android and Mac). The Mac's *Find phones nearby*
+  works again after a follow ended.
+- **Fixes** (#181): *Active now* names the right reason when a Mute and carbs quiet the same alerts (Android and
+  Mac); *Add treatment* opened from home no longer offers *Open Sukrara*; in Spanish the app says "hidratos"
+  everywhere and "Glucosa baja / alta" for the alert groups.
+- **Not a medical device**: setup's Welcome and About in Settings say so, on Android and the Mac; the Mac's About also
+  links the privacy policy.
 
 ## 0.13.0 — fixes from the first days of 0.12.0, monitoring before the first unlock (GitHub prerelease)
 

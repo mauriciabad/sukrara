@@ -1,0 +1,8 @@
+• Se respeta No molestar por defecto; puedes dejar pasar a Sukrara.
+• El sonido con el teléfono desbloqueado se prueba con una alerta.
+• Widgets como en la app anterior: sin deformarse y sin % en los anillos.
+• Colores y fuente redondeada del teléfono en la app y los widgets.
+• La búsqueda de Ajustes lleva a la fila.
+• Si una invitación caduca sin respuesta, ya no se espera.
+• «Hidratos» y «glucosa baja / alta» en toda la app.
+• Correcciones y un aviso: Sukrara no es un producto sanitario.

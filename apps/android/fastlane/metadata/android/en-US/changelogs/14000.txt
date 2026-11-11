@@ -1,0 +1,7 @@
+• Do Not Disturb is respected by default; you can let Sukrara through in Alert reliability.
+• Sound while the phone is unlocked is answered from a test alert.
+• Widgets look like the earlier app again: never stretched, no % in the rings.
+• Your phone's colours and round font in the app and the widgets.
+• Settings search opens the row it found.
+• An unanswered invite ends the wait when it expires.
+• Fixes, and a reminder that Sukrara isn't a medical device.
