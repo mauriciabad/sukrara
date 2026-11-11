@@ -240,8 +240,10 @@ if [ "$APP_STORE" = 1 ]; then
   done
 fi
 # With a provisioning profile: embedded, and the entitlements only it grants (the app's are checked by `ungranted`).
+# Embedded readable by everyone (install -m 644), whatever the mode in PROFILES_DIR (~/.apple-dev is chmod 600):
+# App Store Connect refuses a package with files only root can read (90255), and so would Gatekeeper.
 if [ -n "$PROFILE" ]; then
-  cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+  install -m 644 "$PROFILE" "$APP/Contents/embedded.provisionprofile"
   fill "$HERE/app-profile.entitlements.in" "$OUT/entitlements/app.plist"
 else
   fill "$HERE/app.entitlements.in" "$OUT/entitlements/app.plist"
@@ -253,7 +255,7 @@ if [ "$APP_STORE" = 1 ]; then
   plutil -lint -s "$OUT/entitlements/app.plist"
 fi
 if [ -n "$WIDGET_PROFILE" ]; then
-  cp "$WIDGET_PROFILE" "$APPEX/Contents/embedded.provisionprofile"
+  install -m 644 "$WIDGET_PROFILE" "$APPEX/Contents/embedded.provisionprofile"
   fill "$HERE/widget-profile.entitlements.in" "$OUT/entitlements/widget.plist"
 else
   fill "$HERE/widget.entitlements.in" "$OUT/entitlements/widget.plist"

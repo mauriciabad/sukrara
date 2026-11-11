@@ -11,6 +11,7 @@
 #   camera entitlement (the hardened runtime blocks the camera without it); the entitlements only a provisioning
 #   profile grants all there with an embedded profile, none without
 # - a release build: no debug entry points in any binary (debugsend, DebugFakes, Synthetic*, the snapshot renderer)
+# - every file readable by everyone (App Store Connect refuses files only root can read: 90255)
 # - --notarized (mac-release.sh with a Developer ID, #91): the app and the appex signed by "Developer ID Application"
 #   with the hardened runtime and a secure timestamp, the notarization ticket stapled, and Gatekeeper accepting the app
 #   as "Notarized Developer ID"
@@ -126,4 +127,6 @@ for bin in "$app"/Contents/MacOS/* "$appex"/Contents/MacOS/*; do
   if strings -a "$bin" | grep -Eq 'debugsend|DebugFakes|Synthetic[A-Z]|sukrara-snap[ :-]'; then found="$found $(basename "$bin")"; fi
 done
 [ -z "$found" ] && ok "no debug entry points in the binaries" || bad "debug code compiled into:$found (build with -c release)"
+unreadable=$(find "$app" ! -perm -o+r | sed "s|^$app/||")
+[ -z "$unreadable" ] && ok "every file readable by everyone" || bad "not readable by everyone (installed as root):" $unreadable
 exit $fail
