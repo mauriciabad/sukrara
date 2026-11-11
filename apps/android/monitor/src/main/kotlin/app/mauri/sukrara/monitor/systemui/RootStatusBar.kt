@@ -117,7 +117,7 @@ class RootStatusBar(
                     }
                 }
         }
-        // only someone who turned the value on is asked for root (su shows KernelSU's / Magisk's prompt)
+        // only someone who turned the value on is asked for root (Magisk shows its prompt; KernelSU / APatch answer at once)
         scope.launch { if (settings.flow(SurfaceSettings.RootValue).first()) runCatching { access.checkRoot() } }
     }
 

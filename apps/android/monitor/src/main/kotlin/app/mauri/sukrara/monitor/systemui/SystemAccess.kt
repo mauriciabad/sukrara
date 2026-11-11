@@ -57,6 +57,8 @@ class SystemAccess(
     private val shell: SuShell = SuShell(::su),
     /** Whether a file exists (the `su` paths): tests pass a fake. */
     private val exists: (String) -> Boolean = { File(it).exists() },
+    /** One line per root answer for logcat (what the owner's phone said, without the person's data). */
+    private val log: (String) -> Unit = { Log.i(TAG, it) },
 ) : SystemAccessPort {
     private val _state = MutableStateFlow(SystemAccessState())
     override val state: StateFlow<SystemAccessState> = _state
@@ -110,7 +112,18 @@ class SystemAccess(
             // as long as the restart's: the person may be reading Magisk's prompt
             val (r, file) = withContext(io) { shell.run("id -u", SU_WAIT_S) to suSeen(exists) }
             suFile = file
-            _state.update { it.copy(root = rootOf(r), rootSeen = seen(), asking = false) }
+            val root = rootOf(r)
+            // `su` not started: its error (error=2 = not there for Sukrara); else its exit code, never its output
+            log(
+                "root: $root (su ${if (r.started) {
+                    "exit ${r.exit}"
+                } else {
+                    r.output.take(
+                        80,
+                    )
+                }}; seen file=$file lsposed=${service != null} hello=${helloCode != null})",
+            )
+            _state.update { it.copy(root = root, rootSeen = seen(), asking = false) }
         } finally {
             // cancelled while asking (the page closed): the last answer stays
             _state.update { if (it.asking) it.copy(asking = false) else it }

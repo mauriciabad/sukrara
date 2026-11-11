@@ -10,8 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
@@ -151,6 +153,8 @@ class RootAccessPageTest {
         // KernelSU hides su until Sukrara is allowed; LSPosed says root is there: how to allow it
         compose.onNodeWithText(text(R.string.st_access_not_allowed_title)).assertExists()
         compose.onNodeWithText(text(R.string.st_root_value_waiting)).assertExists()
+        // colour, placement and the notification icon say what they wait for (not "while the value is off")
+        compose.onAllNodesWithText(text(R.string.st_root_unavailable_no_root)).assertCountEquals(3)
         // allowed in the root manager, then back: the page asks again by itself
         access.answer = RootAccess.Granted
         vm.refresh()

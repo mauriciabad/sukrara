@@ -117,7 +117,8 @@ fun RootStatusBarSection(
     val placement = stringResource(placementLabel(s.position))
     val waiting = HookPosition.needsModule(s.position) && !module
     val meanwhile = HookPosition.isSystemIcons(s.position)
-    val off = stringResource(R.string.st_root_unavailable)
+    // why the rows below the switch are off: the value is off, or it is on and waits for root
+    val off = stringResource(if (s.on) R.string.st_root_unavailable_no_root else R.string.st_root_unavailable)
     val needs = stringResource(R.string.st_root_module_needed)
     val placementText =
         when {

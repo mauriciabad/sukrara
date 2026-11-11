@@ -79,10 +79,13 @@ class RootCheckTest {
         }
     }
 
+    /** What the access logged (logcat on the phone). */
+    private val logs = mutableListOf<String>()
+
     private fun TestScope.access(
         su: FakeSu,
         files: Set<String> = emptySet(),
-    ) = SystemAccess(UnconfinedTestDispatcher(testScheduler), backgroundScope, su) { it in files }
+    ) = SystemAccess(UnconfinedTestDispatcher(testScheduler), backgroundScope, su, exists = { it in files }, log = { logs += it })
 
     @Test fun `nothing asks su until checkRoot`() =
         runTest {
@@ -105,6 +108,8 @@ class RootCheckTest {
             a.checkRoot()
             assertEquals(RootAccess.Missing, a.state.value.root)
             assertFalse(a.state.value.rootSeen)
+            // logcat says why, for the next "it doesn't detect root"
+            assertEquals("root: Missing (su error=2; seen file=false lsposed=false hello=false)", logs.last())
             a.onHello("abc")
             assertTrue("the module's hello is root on the phone", a.state.value.rootSeen)
             // allowed in KernelSU, back on the page: asked again, now root
@@ -129,7 +134,7 @@ class RootCheckTest {
         runTest {
             val su = FakeSu(started(0, "0\n"))
             // a real thread: su blocks it while the root manager's prompt may be showing
-            val a = SystemAccess(Dispatchers.IO, backgroundScope, su) { false }
+            val a = SystemAccess(Dispatchers.IO, backgroundScope, su, exists = { false }, log = {})
             a.checkRoot()
             assertEquals(RootAccess.Granted, a.state.value.root)
             // root revoked since: the next request

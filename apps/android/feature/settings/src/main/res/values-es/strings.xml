@@ -315,6 +315,7 @@
     <string name="st_root_needs_module">%1$s necesita el módulo LSPosed de Sukrara</string>
     <string name="st_root_needs_module_icons">%1$s necesita el módulo LSPosed de Sukrara. Mientras tanto aparece el primero de los iconos del sistema.</string>
     <string name="st_root_unavailable">No disponible con el valor desactivado</string>
+    <string name="st_root_unavailable_no_root">No disponible hasta que Sukrara tenga root</string>
     <string name="st_root_module_needed">Necesita el módulo LSPosed de Sukrara</string>
     <string name="st_root_colour">Color según el rango</string>
     <string name="st_root_placement">Posición</string>
