@@ -52,4 +52,25 @@ class RequestNotifierTest {
         notifier.onState(sharing())
         assertEquals(0, cancels)
     }
+
+    /** #167: Allow / Deny tapped in a process the tap started: this process never showed it, it goes all the same. */
+    @Test fun answeredFromTheNotificationInANewProcessRemovesIt() {
+        notifier.onAnswered("ana")
+        assertEquals(1, cancels)
+    }
+
+    @Test fun answeredFromTheNotificationRemovesItOnce() {
+        notifier.onRequest(ana)
+        notifier.onAnswered("ana")
+        assertEquals(1, cancels)
+        notifier.onState(sharing())
+        assertEquals(1, cancels)
+    }
+
+    @Test fun anAnswerToAnOlderRequestKeepsTheNewerOnesNotification() {
+        notifier.onRequest(ana)
+        notifier.onRequest(PendingRequest("bo", "Bo", "tok2", "34", 200))
+        notifier.onAnswered("ana")
+        assertEquals(0, cancels)
+    }
 }

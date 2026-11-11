@@ -15,7 +15,6 @@ import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.crypto.SdkNostrCrypto
-import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerEngine
 import app.mauri.sukrara.share.owner.OwnerIdentityStore
 import app.mauri.sukrara.share.owner.RelayPolicy
@@ -108,24 +107,19 @@ class ShareOwnerModule(
     }
 
     /**
-     * Allow / Deny from the notification; false when it didn't happen (the request isn't waiting any more, its invite
-     * expired, another phone also tried it, sharing is paused). An engine started here because the process was asleep
-     * is stopped again: the saved key delivery goes out on the next start (the sharing service owns relays).
+     * Allow / Deny from the notification, through the sharing the role runs ([OwnerEngine.answerFromNotification]): it
+     * never starts or stops sharing (#167), and in a process the tap just started it waits up to [START_WAIT_MS] for the
+     * role's start. Done: the notification goes, also in a process that never showed it. False when it didn't happen
+     * (sharing doesn't run here, the request isn't waiting any more, its invite expired, another phone also tried it,
+     * sharing is paused).
      */
-    suspend fun answer(follower: String, allow: Boolean): Boolean {
-        val engine = ownerEngine
-        val wasRunning = engine.running
-        engine.start(scope)
-        try {
-            val request = engine.pendingRequest(follower) ?: return false
-            if (!allow) return true.also { engine.deny(follower) }
-            return request.others == 0 && engine.approve(follower) == ApproveResult.Allowed
-        } finally {
-            if (!wasRunning) engine.stop()
-        }
-    }
+    suspend fun answer(follower: String, allow: Boolean): Boolean =
+        ownerEngine.answerFromNotification(follower, allow, START_WAIT_MS).also { done -> if (done) requests.onAnswered(follower) }
 
     companion object {
+        /** How long an answer from the notification waits for the role's start (the receiver's whole budget is ~10 s). */
+        const val START_WAIT_MS = 4_000L
+
         /** Settings › Sharing › Bluetooth (the schema's `sharing.bleFollowers`). */
         val NearbySharing = SchemaSettings.bool("sharing.bleFollowers", default = true)
 

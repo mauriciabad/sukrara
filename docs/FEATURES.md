@@ -1314,8 +1314,13 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   Asked with your invite for Ana · 14:02* with **Deny** and **Allow** (Allow only on an unlocked phone); a tap opens
   the app. When another phone also tried the same invite there are no actions: open the app and check. The
   notification goes as soon as the request is answered anywhere (notification or app) or sharing pauses (another app
-  sharing as you). An Allow that didn't happen (invite expired, request no longer waiting, sharing paused) is replaced
-  by *Couldn't give access* (open Sukrara to send a new invite). Sharing runs only while the phone is the wearer.
+  sharing as you). An Allow that didn't happen (invite expired, request no longer waiting, sharing paused or not
+  running on this phone) is replaced by *Couldn't give access* (open Sukrara to send a new invite). Sharing runs only
+  while the phone is the wearer. *Allow* / *Deny* answer through the sharing that runs and never start or stop it, so
+  a tap can't turn the wearer's sharing on or off: when the tap starts the app (Android had stopped it), the answer
+  waits a few seconds for the app to load and sharing to start, then goes through it and the notification leaves
+  (#167: the answer used to start sharing itself and stop it when done, which could leave it off until the next
+  restart; `NotificationAnswerTest`).
 - **Names someone else chose** (a follower's, the wearer's) are trimmed when typed, when received and when shown
   (control and direction-changing characters dropped too; `Profile.shownName` on both apps,
   `contracts/protocol/identity/profile-v1.json` `received` / `shown`); one that is empty reads *Someone* (*Alguien*) in
@@ -1377,7 +1382,7 @@ finishes; done → *Invite someone* / *Done*). Followers of a replaced identity:
 with you* → follow again with a new invite; no No data alarm). *Not backed up* → *Backup*
 or dismiss. *Request waiting* → the approve dialog over the app (*Later* or Back hides that request until the app
 process restarts; Settings › Sharing's request row shows it again), notification *Allow* (needs unlock) / *Deny*;
-both leave once answered. *Removed* pill → expand / *See less*. *Over the internet* off → its switch (on again sends
+both leave once answered, also when the tap started the app; neither changes whether sharing runs. *Removed* pill → expand / *See less*. *Over the internet* off → its switch (on again sends
 what the relays missed), or *Share with someone*'s *Turn on sharing over the internet*; *Upload interval* → its dialog
 (*Every reading* goes back to live; Cancel / Back keeps it); every row is a switch or button TalkBack reads with its
 summary. *Another app is sharing as you* (home + Settings › Sharing; says whether followers

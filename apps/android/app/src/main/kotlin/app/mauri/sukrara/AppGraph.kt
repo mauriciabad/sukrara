@@ -597,7 +597,11 @@ class AppGraph(
         monitor.starter.start(reason)
     }
 
-    /** The wearer's sharing (relays, followers, treatments and settings to them); started by the sharing UI / service. */
+    /**
+     * The wearer's sharing (relays, followers, treatments and settings to them): runs while the phone is the wearer
+     * ([ready]'s `followRole`; creating or restoring the identity starts it too). The access-request notification
+     * answers through it and never starts or stops it.
+     */
     val shareOwner by lazy {
         val info = NotificationGroups.Group.INFO
         ShareOwnerModule(

@@ -651,6 +651,32 @@ class OwnerEngine(
         return ApproveResult.Allowed
     }
 
+    /**
+     * *Allow* / *Deny* from the access-request notification, answered through the sharing that runs: never started or
+     * stopped here, so a notification can't turn the wearer's sharing on or off, whatever the process state (#167: the
+     * answer used to start the engine itself and stop it when done, which in a process the tap had just started could
+     * stop the sharing the role had started meanwhile). In such a process it first waits, at most [waitMs], for the
+     * role's start (AppGraph's `followRole`) to load the identity. False when it didn't happen: sharing doesn't run on
+     * this phone (not the wearer's, no identity), the request isn't waiting any more, it needs the app (a code to type
+     * or compare), sharing is paused, the invite expired.
+     */
+    suspend fun answerFromNotification(follower: String, allow: Boolean, waitMs: Long): Boolean {
+        if (!awaitStarted(waitMs)) return false
+        val request = pendingRequest(follower) ?: return false
+        if (!allow) return deny(follower) != null
+        return request.allowFromNotification && approve(follower) == ApproveResult.Allowed
+    }
+
+    /**
+     * Whether sharing runs, once [start] has settled: a new process's engine stays [OwnerShareState.Loading] until the
+     * role's start has read the identity (or for good on a phone that isn't the wearer's: false after [waitMs]).
+     * Starts nothing itself.
+     */
+    private suspend fun awaitStarted(waitMs: Long): Boolean {
+        withTimeoutOrNull(waitMs) { state.first { it != OwnerShareState.Loading } }
+        return running
+    }
+
     /** The request [follower] has waiting, if any. */
     fun pendingRequest(follower: String): PendingRequest? = owner?.pending?.firstOrNull { it.follower == follower }
 

@@ -592,6 +592,10 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    home shows the wearer's value and graph; the next minute's reading arrives on both. Both uids still have only the
    10.0.2.2 socket.
 6. Optional on the same pair: Deny instead of Allow, a writer's treatment, Mute mirroring, Remove follower.
+   Allow / Deny after Android stopped the app (#167): a new request showing, end the wearer's process
+   (`adb shell run-as app.mauri.sukrara kill <pid>`; the notification stays), then the notification's *Allow*: the
+   follower is let in within seconds, the notification leaves, and the wearer keeps sharing (Settings › Sharing still
+   *Sharing*, the relay keeps logging its events, the follower's next minute's reading arrives).
 7. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
    fresh*, confirmed. *Telling your followers…* fills (*1 of 1 told*) and ends on *Started fresh*; the relay logs the
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
