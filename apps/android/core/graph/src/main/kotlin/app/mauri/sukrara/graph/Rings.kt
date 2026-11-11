@@ -164,7 +164,7 @@ internal object Laurel {
 }
 
 /**
- * The segmented time-in-range ring: the % of [RingSpec.range] in the middle, the window under it, the perimeter split
+ * The segmented time-in-range ring: the % of [RingSpec.range] in the middle (the number alone; [draw] returns it), the window under it, the perimeter split
  * by band clockwise from 12 o'clock in [RingSpec.order]. [emphasis] fades secondary rings; [countdown] = the sensor
  * ring over it. At 100 % the crown in the text colour is set into 12 o'clock, cut out of the ring.
  */
@@ -180,7 +180,7 @@ object TirRing {
         emphasis: Float,
         w: CardWords,
         countdown: Double?,
-    ) {
+    ): String {
         val mark = mark(tir, spec)
         val sw = r * 0.2f
         val ring =
@@ -245,6 +245,7 @@ object TirRing {
         num.textSize = min(num.textSize, num.textSize * (r - sw) * 1.5f / num.measureText(v).coerceAtLeast(1f)) // "100" too
         cv.drawText(v, cx, base, num)
         cv.drawText(w.period(spec.windowS), cx, base + sub.textSize * 1.1f, sub)
+        return v
     }
 
     /** The weight of a slot's number (here and [MetricGauge]): the PoC's heavy rounded face. */

@@ -749,7 +749,12 @@ shown.
 ## Home screen widgets
 
 Android (`apps/android/widgets`, Glance; tests `WidgetUpdaterTest`, `WidgetTapTest`, `WidgetSettingsStoreTest`,
-`WidgetManifestTest`, Roborazzi `WidgetShotsTest`). Three widgets, each a registered card surface drawn only by the
+`WidgetManifestTest`, Roborazzi `WidgetShotsTest`: high, low, no readings, rings off and Spanish too, light and dark).
+**They look like the PoC's, by contract** (#181): `contracts/graph/widgets/poc.json` holds what the PoC's own renderer
+drew for 728 widget cards (both platforms' widget sizes × every layout scene × default, no rings, three rings): value,
+time, trend, slots, each ring's centre text (the number alone, no "%"), chart window, % column and the boxes of the
+number, slots and plot; Android (`CardLayoutTest.widgetsLookLikeThePoc`) matches every field and box within 2 dp, the Mac
+(`LayoutTests.widgetsLookLikeThePoc`) every field. What departs on purpose is listed there with its reason. Three widgets, each a registered card surface drawn only by the
 renderer at the placement's real size: Glance composes for the size the launcher reports (`SizeMode.Exact` →
 `LocalSize`), and Pixel Launcher reports a wrong one (296×202 dp for a 4×2 it lays out at 244×149, so the card came out
 squashed: the owner in #181), so, as in the PoC, `WidgetProbe` measures the size the launcher really lays the widget

@@ -170,6 +170,74 @@ enum DefaultAlertRules {
         try checkAllSurfaces(words: .es, android: nil)
     }
 
+    /// The widgets look like the PoC's (#181, contracts/graph/widgets/poc.json, the PoC's own widget cards): each case
+    /// drawn with the Mac widget's style at the same card size, scene and settings shows the same value, time, trend,
+    /// slots (their numbers without "%"), chart window and % column. The boxes are Android's to match (SF Pro is
+    /// narrower than Google Sans Flex); `differences` name what deliberately differs from the PoC.
+    @Test func widgetsLookLikeThePoc() throws {
+        let file = GraphFixtures.object("widgets/poc.json")
+        let cases = try #require(file["cases"] as? [[String: Any]])
+        let differences: [(String, Set<String>)] = (file["differences"] as? [[String: Any]] ?? []).flatMap { o in
+            ((o["fields"] as? [String]) ?? []).map { ($0, Set((o["scenes"] as? [String]) ?? [])) }
+        }
+        let variants = (file["settings"] as? [String: [String: Any]] ?? [:]).mapValues(Self.config)
+        let scenesRoot = GraphFixtures.object("layout/scenes.json")
+        let scenes = Dictionary(
+            uniqueKeysWithValues: (scenesRoot["scenes"] as? [[String: Any]] ?? []).map(Self.scene).map { ($0.id, $0) })
+        let surfaces: [String: CardSurface] = [
+            "widget-value": .widgetValue, "widget-graph": .widgetGraph, "widget-combined": .widgetCombined,
+        ]
+        try #require(!cases.isEmpty)
+        var problems: [String] = []
+        for c in cases {
+            let surface = try #require(surfaces[c["surface"] as? String ?? ""])
+            let card = try #require(c["card"] as? [NSNumber])
+            let size = CGSize(width: card[0].doubleValue, height: card[1].doubleValue)
+            let sc = try #require(scenes[c["scene"] as? String ?? ""])
+            let cfg = try #require(variants[c["settings"] as? String ?? ""])
+            let want = try #require(c["expect"] as? [String: Any])
+            let data = CardData(
+                readings: sc.readings, marks: sc.marks, sensor: sc.sensor,
+                alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now)
+            let lay = GlucoseCard.draw(
+                cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now,
+                surface.style(cfg, sensor: sc.sensor, words: .en), GraphPalette.of(dark: false), surface: surface,
+                part: .all, alerts: data.alerts)
+            let got: [String: Any] = [
+                "value": lay.first("value.number")?.info ?? NSNull(),
+                "time": lay.all("value.time").contains { !$0.info.contains("(no room)") },
+                "trend": lay.first("value.trend")?.info ?? NSNull(),
+                "slots": lay.all("slot").map(\.info),
+                "chart": lay.first("chart")?.info ?? NSNull(),
+                "pct": lay.all("chart.pct.label").map(\.info),
+                "rings": lay.all("slot.text").map(\.info),
+            ]
+            for field in got.keys.sorted() {
+                if differences.contains(where: { $0.0 == field && $0.1.contains(sc.id) }) { continue }
+                let a = Self.canonical(want[field]), b = Self.canonical(got[field])
+                if a != b {
+                    problems.append(
+                        "\(c["surface"] ?? "") \(card) \(sc.id) \(c["settings"] ?? ""): \(field) PoC \(a), now \(b)")
+                }
+            }
+        }
+        #expect(
+            problems.isEmpty,
+            "\(problems.count) of \(cases.count) PoC widget cases differ:\n\(problems.prefix(40).joined(separator: "\n"))"
+        )
+    }
+
+    /// A fixture or layout value as one comparable string: lists joined with " | ", booleans as true / false.
+    private static func canonical(_ v: Any?) -> String {
+        switch v {
+        case nil, is NSNull: return "null"
+        case let a as [Any]: return "[" + a.map { canonical($0) }.joined(separator: " | ") + "]"
+        case let b as Bool: return b ? "true" : "false"
+        case let n as NSNumber where CFGetTypeID(n) == CFBooleanGetTypeID(): return n.boolValue ? "true" : "false"
+        default: return "\(v!)"
+        }
+    }
+
     /// Renders every registered surface × size × scene × settings variant in `words` and checks the rules; `android` =
     /// expect.json's answers for the shared rules (nil = not compared).
     private func checkAllSurfaces(words: CardWords, android expect: [String: String]?) throws {

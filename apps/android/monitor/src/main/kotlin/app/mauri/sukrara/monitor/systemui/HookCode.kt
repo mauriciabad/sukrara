@@ -11,5 +11,5 @@ package app.mauri.sukrara.monitor.systemui
  * `HookCodeTest` recomputes it and fails with the new value when the code changed: update it in the same change.
  */
 object HookCode {
-    const val VERSION = "7ff65e09c146048c"
+    const val VERSION = "f5790f6f5179e72e"
 }

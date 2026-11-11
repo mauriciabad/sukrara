@@ -158,6 +158,31 @@ reading's time says (`Freshness.timeKind`: `time` = the clock time, today's and 
 with it, from 12 h or on another day; `date` after 6 days), run by `FreshnessFixtureTest.times` and
 `FreshnessFixtureTests.timeKinds` in UTC.
 
+## The PoC's widgets (`widgets/poc.json`)
+
+The owner (#181): "the widget was already looking good in the PoC … ensure all widgets look almost the same in many
+many variations and scenarios … ensured deterministically, not with a rule for LLMs". `widgets/poc.json` is the PoC's
+own answer for 728 widget cards: the three widget kinds at every Android and Mac widget size of
+`surfaces/surfaces.json` (as card sizes, margins off), every scene of `layout/scenes.json`, with the default settings,
+no rings (`ringCount` 0) and three rings with the last treatment at the end. For each: the value (and struck), whether a
+time shows in the value's place (the PoC: never while fresh, no "now"), the trend mark, the slots, what each
+time-in-range ring writes in its centre (`rings`, the layout element `slot.text`: the number alone, no "%"), the chart's
+window, the % column and the boxes of the number, the slots' row and the plot.
+
+- Android: `CardLayoutTest.widgetsLookLikeThePoc` draws each case with the widgets' real style (`widgetCardStyle`), native
+  text measuring at 3×: every field equal and every box within `boxTolerance` (2 dp; the same Google Sans Flex).
+- Mac: `LayoutTests.widgetsLookLikeThePoc` draws each case with the Mac widgets' style: every field equal (SF Pro Rounded
+  is narrower, so the boxes are Android's to match).
+- `differences`: what deliberately departs from the PoC, by field and scene, with the reason (today: a sensor past its
+  end that keeps sending keeps its value, #3). A change to the card that breaks a case either restores the PoC's look
+  or adds a difference the owner agreed to; the file itself is never edited by hand.
+- Made from the frozen PoC, never by running anything inside `poc/`: copy `poc/spikes/showcase-android` (and link its
+  sibling spikes) to a scratch directory, set the copy's `jvmToolchain(21)` and Robolectric's `--add-opens` JVM
+  arguments, put `tools/graph/poc-widgets/PocWidgetDump.kt` in its `app/src/test/kotlin/app/mauri/sukrara/graph/`, run
+  `CONTRACTS=<repo>/contracts SIZES=<sizes.json> DUMP_OUT=<dump.json> ./gradlew :app:testDebugUnitTest --tests
+  '*PocWidgetDump*'` (`sizes.json`: surface id → the Android and Mac widget sizes of `surfaces.json`), then
+  `python3 tools/graph/poc-widgets/contract.py <dump.json> contracts/graph/widgets/poc.json`.
+
 ## Surfaces and layout across surfaces (`surfaces/surfaces.json`, `layout/*.json`)
 
 "Things like this cannot happen again" (the user, 2026-10-21, after a badge move reached one surface only).

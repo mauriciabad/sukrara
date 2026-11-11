@@ -41,7 +41,9 @@ import kotlin.math.sin
 /**
  * Roborazzi goldens of the three widgets through [renderWidget] (synthetic readings only) at 2×2 and 4×2 on one phone:
  * light + dark × default + largest font (a taller cell) while fresh; stale (6 min) and hidden (25 min) in light; the
- * lock-screen widget through [renderLockWidget] in its looks and freshness steps.
+ * situations the owner checks against the PoC (#181, [situations]: high, low, no readings, no rings, Spanish, each in
+ * light and dark on the phone's dynamic colours); the lock-screen widget through [renderLockWidget] in its looks and
+ * freshness steps. What a widget shows is pinned against the PoC by contracts/graph/widgets/poc.json; these show it.
  * The Goldens workflow (CI, Linux) records src/test/snapshots.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -69,13 +71,15 @@ class WidgetShotsTest {
     private fun frame(
         age: Duration,
         dark: Boolean,
+        centre: Int = 140,
+        rate: Double = 0.6,
     ): WidgetFrame {
         val end = now.minus(age)
         val readings =
             (288 downTo 0).map { i ->
                 val t = end.minusSeconds(i * 300L)
-                val v = 140 + 60 * sin(2 * PI * i / 96.0) + 8 * sin(2 * PI * i / 11.0)
-                Reading(t, v.roundToInt(), 0.6, SourceId("synthetic"))
+                val v = centre + 60 * sin(2 * PI * i / 96.0) + 8 * sin(2 * PI * i / 11.0)
+                Reading(t, v.roundToInt().coerceAtLeast(40), rate, SourceId("synthetic"))
             }
         val g =
             GlucoseState.Initial.copy(
@@ -94,11 +98,13 @@ class WidgetShotsTest {
         hDp: Float,
         frame: WidgetFrame,
         name: String,
+        overrides: WidgetOverrides = WidgetOverrides(),
     ) {
-        val card = renderWidget(context, kind, wDp, hDp, frame, WidgetOverrides())
+        val card = renderWidget(context, kind, wDp, hDp, frame, overrides)
         val bmp = Bitmap.createBitmap(card.width, card.height, Bitmap.Config.ARGB_8888)
         Canvas(bmp).apply {
-            drawColor(GraphPalette.of(frame.dark).bg)
+            // what the widget sits on: its dynamic background ([widgetPalette])
+            drawColor(widgetPalette(context, frame.dark).bg)
             drawBitmap(card, 0f, 0f, null)
         }
         bmp.captureRoboImage("src/test/snapshots/widget-${kind.name.lowercase()}-$cell-$name.png")
@@ -117,6 +123,54 @@ class WidgetShotsTest {
         }
         assertTrue(CardSurface.WIDGET_DESCRIPTION in seen)
     }
+
+    /**
+     * The situations the owner compares with the PoC (#181), on the combined 4×2 and the value 2×1, light and dark: a
+     * high rising, a low falling, no readings at all, the rings turned off for this placement.
+     */
+    @Test
+    fun situations() {
+        for (dark in listOf(false, true)) {
+            val look = if (dark) "dark" else "light"
+            val high = frame(Duration.ofMinutes(1), dark, centre = 215, rate = 2.2)
+            val low =
+                frame(Duration.ofMinutes(1), dark, centre = 105, rate = -1.4).let { f ->
+                    // the newest reading at 58: under the low band
+                    val recent =
+                        f.glucose.recent.dropLast(1) +
+                            f.glucose.recent
+                                .last()
+                                .copy(mgdl = 58)
+                    f.copy(glucose = f.glucose.copy(latest = recent.last(), recent = recent))
+                }
+            val none = frame(Duration.ofMinutes(1), dark).let { f -> f.copy(glucose = f.glucose.copy(latest = null, recent = emptyList())) }
+            for ((kind, cell, w, h) in listOf(Cell(WidgetKind.COMBINED, "4x2", 320f, 170f), Cell(WidgetKind.VALUE, "2x1", 170f, 80f))) {
+                shoot(kind, cell, w, h, high, "high-$look")
+                shoot(kind, cell, w, h, low, "low-$look")
+                shoot(kind, cell, w, h, none, "none-$look")
+                shoot(kind, cell, w, h, frame(Duration.ofMinutes(1), dark), "rings-off-$look", WidgetOverrides(rings = 0))
+            }
+        }
+    }
+
+    /** The same card in Spanish (the phone's language): its words, never English ones (#77, #83). */
+    @Test
+    @Config(qualifiers = "es-w411dp-h891dp-xxhdpi")
+    fun spanish() {
+        Locale.setDefault(Locale.forLanguageTag("es-ES"))
+        for (dark in listOf(false, true)) {
+            val look = if (dark) "dark" else "light"
+            shoot(WidgetKind.COMBINED, "4x2", 320f, 170f, frame(Duration.ofMinutes(6), dark), "es-stale-$look")
+            shoot(WidgetKind.GRAPH, "4x2", 320f, 170f, frame(Duration.ofMinutes(1), dark), "es-fresh-$look")
+        }
+    }
+
+    private data class Cell(
+        val kind: WidgetKind,
+        val name: String,
+        val w: Float,
+        val h: Float,
+    )
 
     /** The value widget resized to one cell: the renderer keeps the value and its arrow (rings drop for room). */
     @Test

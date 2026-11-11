@@ -32,6 +32,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
@@ -529,7 +530,7 @@ class CardLayoutTest {
         val renders = renderAll()
         val problems = ruleProblems(renders, answers)
         if (problems.isNotEmpty()) {
-            fail("${problems.size} layout rule failures (contracts/graph/layout/rules.json):\n  " + problems.take(40).joinToString("\n  "))
+            fail("${problems.size} layout rule failures (contracts/graph/layout/rules.json):\n  " + problems.joinToString("\n  "))
         }
         compareAnswers(renders, answers)
     }
@@ -554,7 +555,7 @@ class CardLayoutTest {
         if (problems.isNotEmpty()) {
             fail(
                 "${problems.size} layout rule failures at 2× font (contracts/graph/layout/rules.json):\n  " +
-                    problems.take(40).joinToString("\n  "),
+                    problems.joinToString("\n  "),
             )
         }
     }
@@ -796,4 +797,123 @@ class CardLayoutTest {
         }
         println("layout: ${renders.size} renders, $matched shared answers equal expect.json")
     }
+
+    /**
+     * The widgets look like the PoC's (#181, contracts/graph/widgets/poc.json): every case the PoC's renderer drew, drawn
+     * here with the widgets' real style at the same card size, scene and settings, must show the same value, time,
+     * trend, slots (with their numbers: no "%"), chart window and % column, and the number, the slots' row and the plot
+     * within `boxTolerance` dp of the PoC's (the same Google Sans Flex). `differences` name what deliberately differs.
+     */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun widgetsLookLikeThePoc() {
+        val file = Fixtures.read("widgets/poc.json")
+        val tol = file["boxTolerance"].double()!!.toFloat()
+        // drawn as the PoC's widgets were (native text measuring, a 3× screen)
+        val pd = 3f
+        // field → the scenes where the PoC's answer no longer holds, on purpose
+        val differences =
+            file["differences"]!!.jsonArray.map { it.jsonObject }.flatMap { o ->
+                o["fields"]!!.jsonArray.map { f -> f.str()!! to o["scenes"]!!.jsonArray.map { it.str()!! }.toSet() }
+            }
+        val variants =
+            file["settings"]!!.jsonObject.mapValues { (_, v) ->
+                val o = v.jsonObject
+                var x = GraphConfig()
+                o["ringCount"].long()?.let { x = x.copy(ringCount = it.toInt()) }
+                o["lastPlace"].str()?.let { x = x.copy(lastPlace = LastPlace.valueOf(it)) }
+                x
+            }
+        val scenes = scenes().associateBy { it.id }
+        val words = Scenes.words()
+        val surfaces =
+            mapOf(
+                "widget-value" to CardSurface.WIDGET_VALUE,
+                "widget-graph" to CardSurface.WIDGET_GRAPH,
+                "widget-combined" to CardSurface.WIDGET_COMBINED,
+            )
+        val problems = ArrayList<String>()
+        val cases = file["cases"]!!.jsonArray.map { it.jsonObject }
+        for (c in cases) {
+            val surface = surfaces.getValue(c["surface"].str()!!)
+            val (w, h) = c["card"]!!.jsonArray.map { it.double()!!.toFloat() }
+            val sc = scenes.getValue(c["scene"].str()!!)
+            val cfg = variants.getValue(c["settings"].str()!!)
+            val model =
+                CardModel(
+                    readings = sc.readings,
+                    treatments = sc.treatments,
+                    nowS = now,
+                    words = words,
+                    status = standInStatus(sc),
+                    muteRule = defaultMutes,
+                    sensor = sc.sensor,
+                )
+            val bmp = Bitmap.createBitmap((w * pd).toInt(), (h * pd).toInt(), Bitmap.Config.ARGB_8888)
+            val l =
+                GlucoseCard.draw(
+                    Canvas(bmp),
+                    w * pd,
+                    h * pd,
+                    model,
+                    widgetCardStyle(surface, cfg),
+                    GraphPalette.of(false),
+                    pd,
+                    CardSurface.TEST,
+                    CardPart.ALL,
+                )
+            bmp.recycle()
+            val want = c["expect"]!!.jsonObject
+            val got = pocAnswers(l)
+            val id = "${c["surface"].str()} ${w.toInt()}x${h.toInt()} ${sc.id} ${c["settings"].str()}"
+            for ((field, value) in got) {
+                if (differences.any { (f, scenes) -> f == field && sc.id in scenes }) continue
+                val expected = want[field]
+                val same =
+                    when (field) {
+                        "boxes" -> {
+                            val boxes = (value as Map<*, *>)
+                            if (expected == null) {
+                                boxes.isEmpty()
+                            } else {
+                                expected.jsonObject.all { (n, b) ->
+                                    val e = b.jsonArray.map { it.double()!!.toFloat() }
+                                    val g = boxes[n] as? List<*> ?: return@all false
+                                    e.indices.all { abs(e[it] - (g[it] as Float)) <= tol }
+                                }
+                            }
+                        }
+
+                        else -> {
+                            fixtureValue(expected) == value
+                        }
+                    }
+                if (!same) problems += "$id: $field PoC ${expected ?: "null"}, now $value"
+            }
+        }
+        if (problems.isNotEmpty()) fail("${problems.size} of ${cases.size} PoC widget cases differ:\n  " + problems.joinToString("\n  "))
+    }
+
+    /** What contracts/graph/widgets/poc.json compares, from one card's layout. */
+    private fun pocAnswers(l: CardLayout): Map<String, Any?> {
+        fun dp(b: RectF) = listOf(b.left, b.top, b.right, b.bottom).map { Math.round(it / l.d * 2) / 2f }
+        return mapOf(
+            "value" to l.first("value.number")?.info,
+            "time" to l.all("value.time").any { !it.info.contains("(no room)") },
+            "trend" to l.first("value.trend")?.info,
+            "slots" to l.all("slot").map { it.info },
+            "chart" to l.first("chart")?.info,
+            "pct" to l.all("chart.pct.label").map { it.info },
+            "rings" to l.all("slot.text").map { it.info },
+            "boxes" to listOf("value.number", "slots", "chart.plot").mapNotNull { n -> l.first(n)?.box?.let { n to dp(it) } }.toMap(),
+        )
+    }
+
+    private fun fixtureValue(e: kotlinx.serialization.json.JsonElement?): Any? =
+        when (e) {
+            null, kotlinx.serialization.json.JsonNull -> null
+            is kotlinx.serialization.json.JsonArray -> e.map { fixtureValue(it) }
+            is JsonPrimitive -> if (e.isString) e.content else e.content.toBooleanStrictOrNull() ?: e.content
+            else -> e.toString()
+        }
 }

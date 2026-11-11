@@ -371,13 +371,15 @@ object GlucoseCard {
                 cv.drawCircle(cx[i], cy, if (marked) ringR + 3 * d else size / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = disc })
             }
             val ring = countdown.takeIf { i == main }
-            Slots.draw(cv, item, cx[i], cy, ringR, model.nowS, pal, d, model.words, ring)
+            val centre = Slots.draw(cv, item, cx[i], cy, ringR, model.nowS, pal, d, model.words, ring)
             rec.add(
                 "slot",
                 RectF(cx[i] - ringR, cy - ringR, cx[i] + ringR, cy + ringR),
                 Slots.describe(item, i == main, ring),
                 exact = true,
             )
+            // exactly what a ring writes in its centre (contracts/graph/widgets/poc.json `rings`: the number, no "%")
+            centre?.let { rec.add("slot.text", info = it) }
         }
         rec.add("slots", RectF(cx.last() - size / 2, box.top, box.right, box.bottom), "${items.size}", exact = true)
         rec.add("slots.box", box, exact = true)

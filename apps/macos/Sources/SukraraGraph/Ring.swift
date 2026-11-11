@@ -370,10 +370,11 @@ enum Laurel {
 /// 100 %; `Slots.drawUnder`, drawn for every slot before the rings, so what is next to it covers it), and at 100 % the crown
 /// in the text colour set into 12 o'clock like a cap, cut out of the ring and the countdown.
 enum TirRing {
+    @discardableResult
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius r: CGFloat, tir: TimeInRange, spec: RingSpec,
         _ pal: GraphPalette, emphasis: CGFloat, countdown: Double? = nil, words w: CardWords
-    ) {
+    ) -> String {
         let mark = mark(tir, spec)
         let sw = r * 0.2
         let rr = r - sw / 2
@@ -437,6 +438,7 @@ enum TirRing {
         Ink.draw(
             ctx, w.period(spec.window), x: c.x, y: base + r * 0.34 * 1.1, sub,
             (spec.range == .tight ? pal.tight : pal.inkSoft).a(emphasis), align: 0.5)
+        return v
     }
 }
 

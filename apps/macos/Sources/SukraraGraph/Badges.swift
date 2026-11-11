@@ -315,24 +315,26 @@ enum Slots {
     }
 
     /// Draw `item` as a circle of `radius` around `c`, with the sensor `countdown` ring over it (the main slot's; a
-    /// time-in-range ring draws it under its crown).
+    /// time-in-range ring draws it under its crown); returns what a time-in-range ring wrote in its centre (nil for the
+    /// other slots), for the layout report (`slot.text`).
+    @discardableResult
     static func draw(
         _ ctx: CGContext, _ item: SlotItem, center c: CGPoint, radius: CGFloat, now: TimeInterval, _ pal: GraphPalette,
         d: CGFloat, unit: GlucoseUnit, words w: CardWords,
         countdown: Double? = nil
-    ) {
+    ) -> String? {
         switch item {
         case let .metric(spec, m, e) where spec.kind == .tir:
-            TirRing.draw(
+            return TirRing.draw(
                 ctx, center: c, radius: radius, tir: m.tir, spec: spec, pal, emphasis: e, countdown: countdown, words: w
             )
-            return
         case let .metric(spec, m, e):
             MetricGauge.draw(
                 ctx, center: c, radius: radius, m: m, spec: spec, pal, emphasis: e, d: d, glucose: unit, words: w)
         case let .last(info): LastSlot.draw(ctx, center: c, radius: radius, info: info, now: now, pal, d: d, words: w)
         }
         SensorBadge.drawCountdown(ctx, center: c, radius: radius, countdown, pal)
+        return nil
     }
 }
 

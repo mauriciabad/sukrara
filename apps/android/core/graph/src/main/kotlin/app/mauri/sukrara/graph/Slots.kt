@@ -236,7 +236,10 @@ object Slots {
         return checkNotNull(blooms[first])
     }
 
-    /** Draw [item] as a circle of [radius] around ([cx], [cy]) with the sensor [countdown] ring over it. */
+    /**
+     * Draw [item] as a circle of [radius] around ([cx], [cy]) with the sensor [countdown] ring over it; returns what a
+     * time-in-range ring wrote in its centre (null for the other slots), for the layout report (`slot.text`).
+     */
     internal fun draw(
         cv: Canvas,
         item: SlotItem,
@@ -248,7 +251,7 @@ object Slots {
         d: Float,
         w: CardWords,
         countdown: Double?,
-    ) {
+    ): String? {
         when {
             item is SlotItem.Metric && item.spec.kind == SlotKind.TIR -> {
                 return TirRing.draw(cv, cx, cy, radius, item.m.tir, item.spec, pal, item.emphasis, w, countdown)
@@ -263,6 +266,7 @@ object Slots {
             }
         }
         SensorBadge.drawCountdown(cv, cx, cy, radius, countdown, pal)
+        return null
     }
 }
 
