@@ -460,7 +460,10 @@ class AppGraph(
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
             roles = AppRoles(role, data.readings, data.treatments),
             hub = monitor.hub,
-            sharing = EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings) { clock.now().epochSecond },
+            sharing =
+                EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings, diag = { data.diagLog.log("sharing", it) }) {
+                    clock.now().epochSecond
+                },
             alertSettings = AppAlertSettings(alerts.store),
             settings = data.settings,
             resetAlerts = alerts::reset,

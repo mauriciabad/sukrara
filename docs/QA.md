@@ -644,6 +644,34 @@ Synthetic data only: a throwaway Tidepool account and files written from the emu
 - [ ] TalkBack: the progress card reads the added counts as they change; *Stop* and *OK* are buttons. Largest font,
       dark theme, Spanish.
 
+## Q24 Backup to a password manager
+
+Emulator wearer with a throwaway identity (setup's *Start fresh*); KeePassDX (F-Droid / its GitHub release) as the
+test password manager: create a vault, turn its *Educational hints* off, lock it once so the save flow unlocks it
+(a vault just created refuses user verification), and set a screen-lock PIN. Never the owner's identity.
+
+- [ ] No password manager (a Google APIs image without an account answers *no create options*): Settings › Sharing ›
+      Backup › *Save to password manager* → the red card *No password manager can save it* with *Open settings* and
+      *Make a recovery code instead*; `run-as app.mauri.sukrara cat files/diag/diag.log` has `password manager: none
+      takes passwords (TYPE_NO_CREATE_OPTIONS)`.
+- [ ] *Open settings* opens *Passwords & passkeys*; Back without changes asks again (same card); turn KeePassDX on,
+      Back → the system's sheet *Save password to sign in to Sukrara?* opens by itself.
+- [ ] Close the sheet → *Not saved: you closed the password manager.*; tap the row again → *Continue* → unlock the
+      vault → add the entry → *Saved to your password manager…*, the row reads *Save to password manager again* ·
+      *Saved <date>*, the intro says it's saved, home's *Not backed up* is gone.
+- [ ] *Save to password manager again* (pick the existing entry or a new one) → saved again, no error. Turn the phone
+      while the sheet is open and close it → the card still says *Not saved…*.
+- [ ] *Make a recovery code instead* from a card → the recovery dialog → *Copy and close* → *Recovery code copied.
+      Paste it now…*.
+- [ ] The restore side finds it: Backup › *Replace this identity* › *Restore another identity* (needs a live reading
+      from this phone's own sensor) › *Restore from password manager* → the sheet lists *Sukrara · npub1…* → *That code
+      is for the identity this phone already shares as. Nothing changed.* On a second emulator with the same password
+      manager vault, setup's *Restore from password manager* takes it.
+- [ ] Owner's phone (TEST identity, after `tools/install.sh phone`): the same with the real password manager; if it
+      fails, Settings › Advanced › *Log* shows the `password manager:` line with the error's type and number.
+- [ ] TalkBack reads the row as a button (*double-tap to save*), each card when it appears, its title as a heading;
+      largest font and Spanish wrap the full-width buttons.
+
 ## Q20 The person and the feel
 
 Every app change (CLAUDE.md *Design from the person's life first*, *Make it juicy*; user, 2026-10-23).

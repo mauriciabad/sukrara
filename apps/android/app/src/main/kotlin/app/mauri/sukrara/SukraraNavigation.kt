@@ -56,6 +56,7 @@ import app.mauri.sukrara.feature.settings.SettingsScreen
 import app.mauri.sukrara.feature.settings.TestAlert
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
+import app.mauri.sukrara.feature.sharing.backup.BackupViewModel
 import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityPage
 import app.mauri.sukrara.feature.sharing.backup.ReplaceIdentityViewModel
 import app.mauri.sukrara.feature.sharing.follower.FollowingPage
@@ -412,7 +413,7 @@ fun SukraraNavigation(
                     entry<BackupRoute> {
                         SettingsPage(stringResource(SharingR.string.sh_backup_title), { backStack.pop(BackupRoute) }) {
                             BackupPage(
-                                viewModel = viewModel(factory = SharingViewModel.factory(graph.setup.sharing)),
+                                viewModel = viewModel(factory = BackupViewModel.factory(graph.setup.sharing)),
                                 onSetUpSharing = { backStack.push(SetupStepRoute(SetupStep.Identity)) },
                                 onReplace = { backStack.push(ReplaceIdentityRoute) },
                             )

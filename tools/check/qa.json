@@ -25,6 +25,8 @@
     {"paths": ["apps/android/share/*", "apps/android/feature/sharing/*", "apps/android/app/src/debug/*", "apps/android/app/src/main/kotlin/app/mauri/sukrara/LaunchPlan.kt", "tools/relay/*"], "qa": ["Q22 Follower over a local relay"]},
     {"paths": ["apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/history/*", "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/storage/HistoryImport.kt", "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/db/*", "apps/android/core/data/schemas/*"],
      "qa": ["Q23 Import history"]},
+    {"paths": ["apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/backup/*", "apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/restore/*"],
+     "qa": ["Q24 Backup to a password manager"]},
     {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]}
   ]
 }

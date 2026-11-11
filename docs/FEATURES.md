@@ -1262,12 +1262,28 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   PROTOCOL-v2 §Profiles; a newer version or none draws the grey initial). *Save* sends the roster at once (and the
   backup); followers see it the next time their app connects. During *Another app is sharing as you* Save is refused
   with a note and the edit stays.
-- **Backup** (home's *Not backed up* card, Settings › Sharing › Backup): *Save to password manager* (Credential Manager
-  password `Sukrara · npub1…`, the system's sheet asks; saved / cancelled / failed shown under it), *Recovery code*
-  (a password of ≥ 12 characters → the code in a secure dialog — no screenshots, hidden in Recents — *Copy and close*
-  copies it marked sensitive), *Follower list on relays* (when the encrypted owner backup last went out). The phone
-  counts as backed up once the password manager took it or a code was copied (a restore counts too); until then home
-  shows *Not backed up* (dismissable, back after a while). Last, *Replace this identity* (see below).
+- **Backup** (home's *Not backed up* card, Settings › Sharing › Backup): *Save to password manager* works in one tap
+  (Credential Manager password `Sukrara · npub1…`, the plain identity: no recovery code is needed for it; the system's
+  sheet asks; the row says *Waiting for your password manager…* meanwhile and ignores more taps; after a save it reads
+  *Save to password manager again* · *Saved <date>*), *Recovery code* (a password of ≥ 12 characters → the code in a
+  secure dialog — no screenshots, hidden in Recents — *Copy and close* copies it marked sensitive), *Follower list on
+  relays* (when the encrypted owner backup last went out). How the save ended shows in a card under the rows, with its
+  way on as buttons right there (`backup/BackupViewModel`, `PasswordManager`): *Saved to your password manager. On a
+  new phone, choose Restore from password manager when Sukrara sets up.* (confirm haptic); *Not saved: you closed the
+  password manager.*; *No password manager can save it* (none on this phone takes passwords from apps: Android's
+  *no create options*, no provider, unsupported) → *Open settings* (Android's *Passwords & passkeys* page, where one
+  is turned on; coming back asks the password manager again by itself) or *Make a recovery code instead* (the dialog,
+  right there); *Your password manager didn't save it* (any other error) → *Try again*, *Open settings* or *Make a
+  recovery code instead*, and when an earlier save exists, *Nothing changed: the copy it saved on <date> stays there
+  unless you deleted it.* These two vibrate `REJECT` and are red only while the identity exists nowhere else. An
+  interrupted call is asked once more by itself; a save again with a password manager that already has the entry
+  updates or adds it (the password manager decides). A code copied from the card's way says *Recovery code copied.
+  Paste it now somewhere you keep important things, away from its password.* Each save writes one line to the
+  diagnostic log: how it ended and the system's error type and number (`password manager: none takes passwords
+  (TYPE_NO_CREATE_OPTIONS)`), never the secret or the error's message. The phone counts as backed up once the password
+  manager took it or a code was copied (a restore counts too); until then home shows *Not backed up* (dismissable,
+  back after a while). Last, *Replace this identity* (see below). Tests: `PasswordManagerTest`, `BackupViewModelTest`,
+  `BackupScreenTest`, the `backup-*` gallery scenes.
 - **Replace this identity** (Backup's last row; `backup/ReplaceIdentity.kt`): a working identity replaced without
   reinstalling. The page first says what followers lose, by name (*Your glucose stops reaching Dad and Marta right
   away.*, *Their Sukrara says you stopped sharing, not that no data arrives. Each one needs a new invite from you to
@@ -1391,7 +1407,11 @@ errors → *Needs password* (type it), *Wrong password* / *Not a recovery code* 
 (retry when online), *No backup found* (check the code; nothing changed), *Backup unreadable*; none of them changes
 anything. *Identity unreadable* (blocking; the file is never replaced silently) → *Retry* (when the Keystore was busy)
 or *Restore from recovery code*. *Sharing* → invite, approve / deny, remove, allow / stop a follower adding entries,
-How you appear (*Save* / *Cancel* / Back; leaving drops an unsaved edit), Backup (each row can be repeated; closing the
+How you appear (*Save* / *Cancel* / Back; leaving drops an unsaved edit), Backup (each row can be repeated; *Save to
+password manager*: the system's sheet → save, or close it (*Not saved…*, the row tries again); no password manager →
+*Open settings* (Back from Android's page asks again) or *Make a recovery code instead*; failed → *Try again* / *Open
+settings* / *Make a recovery code instead*; saved → *Save to password manager again*; turning the phone while the sheet
+is open keeps the answer; Back leaves at any point and the card goes with the page; closing the
 recovery dialog while the code is being made drops it; a code not copied isn't a backup), Replace this identity (the
 choice → *Cancel* / Back, *Back up first*; the restore form → *Back* (to the choice), its errors inline with the code
 kept; each confirmation → *Cancel* / Back / a tap outside, its button armed only by the checkbox; *Telling your

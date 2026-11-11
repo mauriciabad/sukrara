@@ -265,14 +265,32 @@
     <string name="sh_backup_relays_updated">Actualizada el %1$s (cifrada)</string>
     <!-- Not yet on relays -->
     <string name="sh_backup_relays_not_yet">Aún no se ha subido: se sube cuando el teléfono tiene conexión</string>
-    <!-- Save result -->
-    <string name="sh_backup_saved">Guardada en tu gestor de contraseñas.</string>
-    <!-- Save result -->
+    <!-- Save row summary while the system's password manager sheet is open -->
+    <string name="sh_backup_asking">Esperando a tu gestor de contraseñas…</string>
+    <!-- What tapping the save row does (TalkBack) -->
+    <string name="sh_backup_save_action">guardar</string>
+    <!-- Save result: saved, and where a new phone finds it -->
+    <string name="sh_backup_saved">Guardada en tu gestor de contraseñas. En un teléfono nuevo, elige Restaurar desde el gestor de contraseñas al configurar Sukrara.</string>
+    <!-- Save result: the person closed the system's sheet -->
     <string name="sh_backup_cancelled">No se guardó: cerraste el gestor de contraseñas.</string>
-    <!-- Save result -->
-    <string name="sh_backup_failed">Tu gestor de contraseñas no pudo guardarla. Inténtalo de nuevo o crea un código de recuperación.</string>
-    <!-- Save result -->
-    <string name="sh_backup_no_identity">Aún no hay identidad para compartir que guardar.</string>
+    <!-- Save result title: no password manager takes passwords from apps -->
+    <string name="sh_backup_none_title">Ningún gestor de contraseñas puede guardarla</string>
+    <!-- Save result: what to do when no password manager takes it -->
+    <string name="sh_backup_none_text">Activa un gestor de contraseñas para apps en los ajustes de Android, como el Gestor de contraseñas de Google, Proton Pass o Bitwarden. Cuando vuelvas, Sukrara le pedirá que la guarde.</string>
+    <!-- Save result title: the password manager answered with an error -->
+    <string name="sh_backup_failed_title">Tu gestor de contraseñas no la guardó</string>
+    <!-- Save result: first save failed -->
+    <string name="sh_backup_failed_text">No se guardó nada. Inténtalo de nuevo o elige otro gestor de contraseñas en los ajustes de Android.</string>
+    <!-- Save result: a later save failed; %1$s = date of the earlier save -->
+    <string name="sh_backup_failed_again_text">No ha cambiado nada: la copia que guardó el %1$s sigue ahí, salvo que la hayas borrado. Inténtalo de nuevo o elige otro gestor de contraseñas en los ajustes de Android.</string>
+    <!-- Button: Android's password manager settings -->
+    <string name="sh_backup_open_settings">Abrir ajustes</string>
+    <!-- Button: ask the password manager again -->
+    <string name="sh_backup_try_again">Reintentar</string>
+    <!-- Button: make a recovery code instead -->
+    <string name="sh_backup_use_code">Crear un código de recuperación en su lugar</string>
+    <!-- After the recovery code was copied -->
+    <string name="sh_backup_code_copied">Código de recuperación copiado. Pégalo ahora donde guardes las cosas importantes, lejos de su contraseña.</string>
     <!-- Backup footer -->
     <string name="sh_backup_footer">Los relays solo guardan tu lista de seguidores, cifrada. Sin la entrada del gestor de contraseñas o el código de recuperación nadie puede restaurarla, ni siquiera tú.</string>
     <!-- Backup › Replace this identity (restore another or start fresh over a working one) -->

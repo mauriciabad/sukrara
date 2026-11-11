@@ -3,28 +3,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sharing.backup
 
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipDescription
 import android.os.PersistableBundle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -42,42 +52,91 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.motion.Reveal
+import app.mauri.sukrara.designsystem.motion.Swap
+import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.sharing.R
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
 
-/** How a Save to password manager went (shown under the row until the next try). */
-enum class SaveOutcome { Saved, Cancelled, Failed, NoIdentity }
+/**
+ * What Backup shows under its rows about *Save to password manager* (until the next try): the system's sheet open,
+ * how it ended (each failure with its way on, right there), or a recovery code made instead.
+ */
+enum class BackupUi {
+    Idle,
+
+    /** The system's sheet is open: the row waits. */
+    Asking,
+    Saved,
+
+    /** The person closed the sheet: nothing more to say than that. */
+    Cancelled,
+
+    /** No password manager takes passwords from apps → *Open settings* (asks again on return) or a recovery code. */
+    NoPasswordManager,
+
+    /** The password manager answered with an error → *Try again*, *Open settings* or a recovery code. */
+    Failed,
+
+    /** A recovery code was copied: paste it somewhere now. */
+    CodeCopied,
+}
 
 /**
  * Backup: the sharing identity somewhere besides this phone, so a new phone keeps the followers. Save to the password
- * manager (recommended; the system's sheet asks first), a recovery code for people who keep their own copy, and
- * whether the relays hold the encrypted follower list. Leaving needs nothing: an unsaved code is simply not a backup.
- * Last, *Replace this identity* ([onReplace]): restore another one or start fresh without reinstalling.
+ * manager (recommended; the system's sheet asks first; [onSave]), a recovery code for people who keep their own copy,
+ * and whether the relays hold the encrypted follower list. When the password manager can't take it, the card under
+ * the rows says why and offers the way on in place: Android's password manager settings (coming back asks the
+ * password manager again by itself), *Try again*, or a recovery code instead. Leaving needs nothing: an unsaved code
+ * is simply not a backup. Last, *Replace this identity* ([onReplace]): restore another one or start fresh.
  */
 @Composable
 fun BackupScreen(
     state: OwnerShareState.Sharing,
-    saveToPasswordManager: suspend () -> SaveOutcome,
+    ui: BackupUi,
+    onSave: () -> Unit,
     recoveryCode: suspend (password: String) -> String?,
     onRecoveryKeep: () -> Unit,
     modifier: Modifier = Modifier,
     onReplace: () -> Unit = {},
 ) {
-    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val haptics = rememberHaptics()
-    var outcome by remember { mutableStateOf<SaveOutcome?>(null) }
-    var saving by remember { mutableStateOf(false) }
     var showRecovery by remember { mutableStateOf(false) }
+    // Android's password manager settings; coming back from them asks the password manager again (the card says so)
+    val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { onSave() }
+    val openSettings = {
+        PasswordManager.settingsIntents(context).any { intent ->
+            try {
+                settings.launch(intent)
+                true
+            } catch (_: ActivityNotFoundException) {
+                false
+            }
+        }
+        Unit
+    }
+    // a haptic for how the save ended, once (not again when the screen is recreated)
+    var felt by rememberSaveable { mutableStateOf(ui) }
+    LaunchedEffect(ui) {
+        if (ui == felt) return@LaunchedEffect
+        felt = ui
+        when (ui) {
+            BackupUi.Saved -> haptics.confirm()
+            BackupUi.NoPasswordManager, BackupUi.Failed -> haptics.reject()
+            else -> Unit
+        }
+    }
     val saved = state.passwordManagerSavedAt > 0
+    val asking = ui == BackupUi.Asking
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             stringResource(if (state.backedUp) R.string.sh_backup_intro_saved else R.string.sh_backup_intro_missing),
@@ -85,24 +144,17 @@ fun BackupScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         SettingsGroup {
-            NavigationRow(
+            ActionRow(
                 title = stringResource(if (saved) R.string.sh_backup_save_again else R.string.sh_backup_save),
                 summary =
-                    if (saved) {
-                        stringResource(R.string.sh_backup_saved_at, date(state.passwordManagerSavedAt))
-                    } else {
-                        stringResource(R.string.sh_backup_recommended)
+                    when {
+                        asking -> stringResource(R.string.sh_backup_asking)
+                        saved -> stringResource(R.string.sh_backup_saved_at, date(state.passwordManagerSavedAt))
+                        else -> stringResource(R.string.sh_backup_recommended)
                     },
-                enabled = !saving,
-                onClick = {
-                    saving = true
-                    outcome = null
-                    scope.launch {
-                        outcome = saveToPasswordManager()
-                        saving = false
-                        if (outcome == SaveOutcome.Saved) haptics.confirm() else haptics.reject()
-                    }
-                },
+                enabled = !asking,
+                onClickLabel = stringResource(R.string.sh_backup_save_action),
+                onClick = onSave,
             )
             NavigationRow(
                 title = stringResource(R.string.sh_recovery_title),
@@ -124,18 +176,14 @@ fun BackupScreen(
                     },
             )
         }
-        outcome?.let { o ->
-            Column(Modifier.padding(horizontal = 16.dp).semantics { liveRegion = LiveRegionMode.Polite }) {
-                NoteCard(
-                    stringResource(
-                        when (o) {
-                            SaveOutcome.Saved -> R.string.sh_backup_saved
-                            SaveOutcome.Cancelled -> R.string.sh_backup_cancelled
-                            SaveOutcome.Failed -> R.string.sh_backup_failed
-                            SaveOutcome.NoIdentity -> R.string.sh_backup_no_identity
-                        },
-                    ),
-                    error = o == SaveOutcome.Failed || o == SaveOutcome.NoIdentity,
+        Reveal(ui != BackupUi.Idle && ui != BackupUi.Asking) {
+            Swap(ui, Modifier.padding(horizontal = 16.dp)) { shown ->
+                SaveCard(
+                    shown,
+                    state,
+                    onTryAgain = onSave,
+                    onOpenSettings = openSettings,
+                    onRecoveryCode = { showRecovery = true },
                 )
             }
         }
@@ -150,6 +198,95 @@ fun BackupScreen(
     }
     if (showRecovery) {
         RecoveryDialog(recoveryCode, onKeep = onRecoveryKeep, onClose = { showRecovery = false })
+    }
+}
+
+/**
+ * How the save ended, with its way on as buttons right here. Red only while the identity exists nowhere else; a
+ * failed *Save again* says the earlier copy stays. TalkBack hears it when it appears (polite live region).
+ */
+@Composable
+private fun SaveCard(
+    ui: BackupUi,
+    state: OwnerShareState.Sharing,
+    onTryAgain: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onRecoveryCode: () -> Unit,
+) {
+    val problem = ui == BackupUi.NoPasswordManager || ui == BackupUi.Failed
+    val red = problem && !state.backedUp
+    Card(
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (red) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = if (red) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
+            ),
+        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            when (ui) {
+                BackupUi.NoPasswordManager -> {
+                    CardTitle(stringResource(R.string.sh_backup_none_title))
+                    Text(stringResource(R.string.sh_backup_none_text), style = MaterialTheme.typography.bodyMedium)
+                    CardButtons(
+                        primary = stringResource(R.string.sh_backup_open_settings) to onOpenSettings,
+                        secondary = listOf(stringResource(R.string.sh_backup_use_code) to onRecoveryCode),
+                    )
+                }
+
+                BackupUi.Failed -> {
+                    CardTitle(stringResource(R.string.sh_backup_failed_title))
+                    Text(
+                        if (state.passwordManagerSavedAt > 0) {
+                            stringResource(R.string.sh_backup_failed_again_text, date(state.passwordManagerSavedAt))
+                        } else {
+                            stringResource(R.string.sh_backup_failed_text)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    CardButtons(
+                        primary = stringResource(R.string.sh_backup_try_again) to onTryAgain,
+                        secondary =
+                            listOf(
+                                stringResource(R.string.sh_backup_open_settings) to onOpenSettings,
+                                stringResource(R.string.sh_backup_use_code) to onRecoveryCode,
+                            ),
+                    )
+                }
+
+                else -> {
+                    Text(
+                        stringResource(
+                            when (ui) {
+                                BackupUi.Cancelled -> R.string.sh_backup_cancelled
+                                BackupUi.CodeCopied -> R.string.sh_backup_code_copied
+                                else -> R.string.sh_backup_saved
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+}
+
+/** Full width so the largest font wraps; at least 48 dp tall. */
+@Composable
+private fun CardButtons(
+    primary: Pair<String, () -> Unit>,
+    secondary: List<Pair<String, () -> Unit>>,
+) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Button(onClick = primary.second, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(primary.first) }
+        for ((label, action) in secondary) {
+            OutlinedButton(onClick = action, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label) }
+        }
     }
 }
 

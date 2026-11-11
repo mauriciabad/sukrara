@@ -38,8 +38,8 @@ sealed interface InviteUi {
 data class ApproveUi(val request: PendingRequest, val working: Boolean, val refused: ApproveResult? = null)
 
 /**
- * Share screen, approve dialog, followers page, How you appear and Backup: every action goes through [OwnerSharing]
- * (the engine). Secrets never sit in this view model: the recovery code is returned to the dialog that shows it.
+ * Share screen, approve dialog, followers page and How you appear: every action goes through [OwnerSharing] (the
+ * engine). Backup has its own ([app.mauri.sukrara.feature.sharing.backup.BackupViewModel]).
  */
 class SharingViewModel(private val sharing: OwnerSharing) : ViewModel() {
     val state: StateFlow<OwnerShareState> = sharing.state
@@ -135,16 +135,6 @@ class SharingViewModel(private val sharing: OwnerSharing) : ViewModel() {
     fun retryConflict() {
         viewModelScope.launch { sharing.retryConflict() }
     }
-
-    /** The recovery code for [password] (slow: scrypt), or null. The caller keeps it only while it is shown. */
-    suspend fun recoveryCode(password: String): String? = sharing.exportRecovery(password)
-
-    fun recoverySaved() {
-        viewModelScope.launch { sharing.recoverySaved() }
-    }
-
-    /** Hands the identity to the password manager through [save] (the screen's Credential Manager call). */
-    suspend fun saveToPasswordManager(save: suspend (id: String, secret: String) -> Boolean): Boolean = sharing.saveToPasswordManager(save)
 
     companion object {
         private const val STOP_AFTER_MS = 5_000L

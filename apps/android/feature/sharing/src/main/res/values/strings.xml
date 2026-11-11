@@ -382,14 +382,32 @@
     <string name="sh_backup_relays_updated">Updated %1$s (encrypted)</string>
     <!-- Not yet on relays -->
     <string name="sh_backup_relays_not_yet">Not uploaded yet: it goes out when the phone is online</string>
-    <!-- Save result -->
-    <string name="sh_backup_saved">Saved to your password manager.</string>
-    <!-- Save result -->
+    <!-- Save row summary while the system's password manager sheet is open -->
+    <string name="sh_backup_asking">Waiting for your password manager…</string>
+    <!-- What tapping the save row does (TalkBack: "Double-tap to save") -->
+    <string name="sh_backup_save_action">save</string>
+    <!-- Save result: saved, and where a new phone finds it -->
+    <string name="sh_backup_saved">Saved to your password manager. On a new phone, choose Restore from password manager when Sukrara sets up.</string>
+    <!-- Save result: the person closed the system's sheet -->
     <string name="sh_backup_cancelled">Not saved: you closed the password manager.</string>
-    <!-- Save result -->
-    <string name="sh_backup_failed">Your password manager couldn\'t save it. Try again, or make a recovery code.</string>
-    <!-- Save result -->
-    <string name="sh_backup_no_identity">There\'s no sharing identity to save yet.</string>
+    <!-- Save result title: no password manager on the phone takes passwords from apps -->
+    <string name="sh_backup_none_title">No password manager can save it</string>
+    <!-- Save result: what to do when no password manager takes it -->
+    <string name="sh_backup_none_text">Turn on a password manager for apps in Android\'s settings, such as Google Password Manager, Proton Pass or Bitwarden. When you come back, Sukrara asks it to save.</string>
+    <!-- Save result title: the password manager answered with an error -->
+    <string name="sh_backup_failed_title">Your password manager didn\'t save it</string>
+    <!-- Save result: first save failed -->
+    <string name="sh_backup_failed_text">Nothing was saved. Try again, or choose another password manager in Android\'s settings.</string>
+    <!-- Save result: a later save failed; %1$s = date of the earlier save -->
+    <string name="sh_backup_failed_again_text">Nothing changed: the copy it saved on %1$s stays there unless you deleted it. Try again, or choose another password manager in Android\'s settings.</string>
+    <!-- Button: Android's password manager settings (Passwords and passkeys) -->
+    <string name="sh_backup_open_settings">Open settings</string>
+    <!-- Button: ask the password manager again -->
+    <string name="sh_backup_try_again">Try again</string>
+    <!-- Button: make a recovery code when the password manager can't take it -->
+    <string name="sh_backup_use_code">Make a recovery code instead</string>
+    <!-- After the recovery code was copied -->
+    <string name="sh_backup_code_copied">Recovery code copied. Paste it now somewhere you keep important things, away from its password.</string>
     <!-- Backup footer -->
     <string name="sh_backup_footer">The relays only hold your follower list, encrypted. Without the password manager entry or the recovery code nobody can restore it, not even you.</string>
     <!-- Backup › Replace this identity (restore another or start fresh over a working one) -->
