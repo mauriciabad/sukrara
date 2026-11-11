@@ -7,6 +7,9 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 - **Sharing (Android, wearer)**: each message from a follower is handled once, also across restarts (#78). Before, every
   start handled again every message the relays still kept: an allowed follower got its key again, an ended follow
   got its notice again, and an older name change could replace a newer one.
+- **Mac**: the Mac could quit overnight when a relay connection dropped, and its glucose and alerts stopped until
+  Sukrara was opened again. A relay that answers a ping twice (the answer, then the dropped connection) or never no
+  longer stops it.
 
 ## 0.14.0 — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app (GitHub prerelease)
 

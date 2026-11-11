@@ -8,6 +8,7 @@ public protocol WebSocket: Sendable {
     func send(_ text: String) async throws
     /// The next text frame; throws when the connection ends.
     func receive() async throws -> String
+    /// Returns when the relay answers; throws when it can't, or when the caller's task is cancelled.
     func ping() async throws
     func cancel()
 }
@@ -43,11 +44,20 @@ struct URLSessionWebSocket: WebSocket {
         }
     }
 
-    func ping() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-            task.sendPing { error in
-                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+    func ping() async throws { try await Self.pong { task.sendPing(pongReceiveHandler: $0) } }
+
+    /// Waits for the answer to the ping `send` sends with the handler it's given. URLSession can call that handler
+    /// twice (the pong, then an error when the connection closes or the task is cancelled) or never (a half-open
+    /// connection): the first call answers, later ones are dropped, and cancelling the caller ends the wait.
+    static func pong(sending send: (@escaping @Sendable ((any Error)?) -> Void) -> Void) async throws {
+        let once = ResumeOnce<Void, any Error>()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                once.start(continuation)
+                send { error in once.resume(with: error.map { .failure($0) } ?? .success(())) }
             }
+        } onCancel: {
+            once.resume(with: .failure(CancellationError()))
         }
     }
 

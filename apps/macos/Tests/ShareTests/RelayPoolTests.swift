@@ -185,7 +185,7 @@ struct RelayPoolTests {
     }
 
     /// r-code-mac H3: a relay whose ping is never answered (half-open after sleep / a Wi-Fi roam) is dropped at the
-    /// ping deadline and doesn't hold up the other relay's ping.
+    /// ping deadline and doesn't hold up the other relay's ping; the unanswered ping is cancelled then too.
     @Test func aHungPingIsDroppedAndDoesNotHoldUpTheOtherRelays() async throws {
         let factory = FakeWebSocketFactory()
         let clock = TestClock(1_792_087_200)
@@ -213,6 +213,7 @@ struct RelayPoolTests {
         tick.yield()
         #expect(await eventually { hung.isCancelled && healthy.pingCount == 1 })
         #expect(!healthy.isCancelled)
+        #expect(await eventually { hung.openPings == 0 })  // the unanswered ping stopped waiting at the deadline
         await pool.stop()
     }
 

@@ -287,23 +287,25 @@ public actor RelayPool: RelayTransport {
 
     public static let pingTimeout = 10.0
 
-    /// True when `socket` answers a ping within `seconds`. Returns at the deadline even if the ping never does (the
-    /// unanswered ping ends when its socket is cancelled).
+    /// True when `socket` answers a ping within `seconds`. Returns at the deadline even if the ping never does, and
+    /// then cancels the ping (it never waits past its deadline).
     private static func answers(
         _ socket: any WebSocket, within seconds: Double, sleep: @escaping @Sendable (Double) async throws -> Void
     ) async -> Bool {
-        let first = FirstAnswer()
+        let first = ResumeOnce<Bool, Never>()
+        let ping = Task { first.resume(with: .success((try? await socket.ping()) != nil)) }
+        let deadline = Task {
+            try? await sleep(seconds)
+            first.resume(with: .success(false))
+        }
+        defer {
+            ping.cancel()
+            deadline.cancel()
+        }
         return await withTaskCancellationHandler {
-            await withCheckedContinuation { continuation in
-                first.start(continuation)
-                Task { first.resume((try? await socket.ping()) != nil) }
-                Task {
-                    try? await sleep(seconds)
-                    first.resume(false)
-                }
-            }
+            await withCheckedContinuation { first.start($0) }
         } onCancel: {
-            first.resume(false)  // stop(): don't wait for the deadline
+            first.resume(with: .success(false))  // stop(): don't wait for the deadline
         }
     }
 
@@ -318,33 +320,6 @@ public actor RelayPool: RelayTransport {
     }
 
     private static func host(_ url: URL) -> String { url.host() ?? url.absoluteString }
-}
-
-/// Resumes a continuation with the first answer only (a ping racing its timeout).
-private final class FirstAnswer: @unchecked Sendable {
-    // Guarded by `lock`.
-    private let lock = NSLock()
-    private var continuation: CheckedContinuation<Bool, Never>?
-    /// The first answer, kept when it came before `start` (cancelled before the wait began).
-    private var answer: Bool?
-
-    func start(_ continuation: CheckedContinuation<Bool, Never>) {
-        let early = lock.withLock { () -> Bool? in
-            if answer == nil { self.continuation = continuation }
-            return answer
-        }
-        if let early { continuation.resume(returning: early) }
-    }
-
-    func resume(_ answer: Bool) {
-        let waiting = lock.withLock { () -> CheckedContinuation<Bool, Never>? in
-            guard self.answer == nil else { return nil }
-            self.answer = answer
-            defer { continuation = nil }
-            return continuation
-        }
-        waiting?.resume(returning: answer)
-    }
 }
 
 /// One relay → client frame (NIP-01 `["EVENT", sub, event]`, `["OK", id, accepted, message]`, `["EOSE", sub]`, …),
