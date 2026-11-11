@@ -264,95 +264,60 @@ open testing at once, with no *Apply for production* step) and no new fee.
 - **App content done**: Ads (none), Advertising ID (not used), Government apps (no), Financial features (none),
   Content rating (IARC, *All Other App Types*: users exchange text — treatment notes reach the wearer's followers —,
   blockable, invited friends only, no location; result all ages / PEGI 3 / ESRB E / USK 0).
-- **App content still open** (the remaining Play work is
-  [#142](https://github.com/mauriciabad/sukrara/issues/142), the reviewer-access decision
-  [#141](https://github.com/mauriciabad/sukrara/issues/141)): Privacy policy (the page exists:
-  https://sukrara.mauri.app/privacy, from `docs/privacy.md`, linked in Settings › About), **Sign in details** (open
-  decided: *Restricted* with instructions and a demo video, see [Reviewer access](#google-play-reviewer-access-app-access)),
-  Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
-  drafted in [Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts));
-  the sensitive-permission declarations (foreground service, full-screen intent, exact alarm, Health Connect) appear
-  after the first upload. Everything is drafted (2026-11-11): the store listing, the demo video and screenshots, the
-  bundle from `tools/release/play-bundle.sh` ([Flavors](#flavors)); the order to enter it:
+- **Entered 2026-11-11** (the owner deciding on screen): Sign in details *No, no part of the app is restricted*
+  ([Reviewer access](#google-play-reviewer-access-app-access)); Target audience 13–15, 16–17, 18 and over; Privacy
+  policy https://sukrara.mauri.app/privacy; Health apps *Diseases and conditions management* (Play: no regional
+  requirements apply); Full-screen intent and Exact alarms (both *Alarm clock*); internal testing release 0.13.0
+  (versionCode 13000, tester list *Testers*: the Console account; opt-in link
+  https://play.google.com/apps/internaltest/4700763397995090600; the owner uploaded the `.aab` by hand; signing
+  certificate `27:EC:21:…:8D:96`). The store listing en-US + es-ES is filled in but saved as a **draft** only.
+- **Still open** ([#142](https://github.com/mauriciabad/sukrara/issues/142)): Data safety (a draft, the premise
+  disputed: [Data safety](#google-play-data-safety-health-apps-and-permission-declarations-drafts)), the foreground
+  service declaration (needs the video, [#185](https://github.com/mauriciabad/sukrara/issues/185)), the Health Connect
+  declaration (hasn't appeared), the listing's AI asset answer, then *Send changes for review*:
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
 
 ### Google Play: reviewer access (App access)
 
-Decided 2026-11-10 ([#141](https://github.com/mauriciabad/sukrara/issues/141)): **"All or some functionality in my
-app is restricted"**, with written instructions and a short demo video. The release build has no demo data (the
-synthetic sensor is in `src/debug/` only), and a labelled demo mode in the release build is out: someone could take a
-made-up 110 for their own glucose during a real low. A standing reviewer follow invite isn't possible either (invites
-are single-use, expire, and the wearer approves each request: PROTOCOL-v2), so it stays the fallback if Play rejects
-this (it would need a reusable, auto-approved invite and an always-on synthetic wearer). For hardware-dependent apps,
-instructions plus a video of the app working are the usual route; Juggluco (sensor-only, no account) was on Play for
-years this way.
+Decided 2026-11-11 by the owner, replacing the 2026-11-10 *Restricted* plan of
+[#141](https://github.com/mauriciabad/sukrara/issues/141): **"No, no part of the app is restricted"**. Sukrara has no
+account or sign-in and every screen opens without a sensor (CGM); without one it just has no data yet (home shows
+"Not monitoring: no sensor yet"; setup, every Settings page and each alert's *Send a test alert* work). So no
+instructions are entered in App access. The release build still has no demo data (the synthetic sensor is in
+`src/debug/` only) and won't get a demo mode: someone could take a made-up 110 for their own glucose during a real low.
 
-**Where**: Play Console › Sukrara › Policy and programs › App content › *App access* › *All or some functionality in my
-app is restricted* › *Add instructions*. Then *Target audience* (plan: 13+) unblocks.
+**The demo video** is still needed, for the foreground service declaration (both of its tasks ask for a video link;
+[declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts)): at most 2 min, uploaded to
+YouTube as *Unlisted* (it must play signed out). The owner records it on their own phone:
+[#185](https://github.com/mauriciabad/sukrara/issues/185) has the shot list and how to stage each event. The emulator
+video of 2026-11-11 (`~/Movies/sukrara-play/sukrara-review-demo.mp4`, a debug build with the synthetic sensor) was
+**rejected by the owner** and isn't used.
 
-**The instructions** (English, as entered; under 500 characters):
+How the emulator was staged (still how the store screenshots are made again):
 
-- *Instruction name*: `Sensor-dependent features`
-- *Username / email / phone* and *Password*: empty (Sukrara has no account or sign-in)
-- *Any other information required to access your app*:
-
-> Sukrara has no account or login. It shows glucose from a continuous glucose monitor (CGM) worn by the user, such as
-> a FreeStyle Libre 3, read over Bluetooth, or follows a person who wears one through an invite from their phone.
-> Without a sensor, home shows "Not monitoring: no sensor yet". You can still review the setup, every Settings page and
-> each alert's "Send a test alert" (Settings › Alerts › an alert). This video shows the app with a sensor (test build,
-> simulated data): <video link>
-
-**The demo video** (at most 2 min, English UI, with the alert sounds): recorded on the emulator from a **debug** build
-with the debug synthetic sensor (never the owner's phone, data or account), uploaded to YouTube as *Unlisted* (Play's
-reviewers must open it without signing in), the link pasted into the text above. **Recorded 2026-11-11** (#142):
-`~/Movies/sukrara-play/sukrara-review-demo.mp4` (1:57, 1080 × 1920, H.264 + AAC; the raw recordings in
-`~/Movies/sukrara-play/raw/`), from the play flavor's debug build of `da4cd537` on an AVD of its own (`play_media`:
-android-37.0 google_apis, 1080 × 1920, 420 dpi), outside the repo. Every frame has the band **"Test build · simulated
-sensor data"** in a strip of its own above the app (the app is scaled under it, so it never covers the value).
-
-How to record it again:
-
-- A fresh install on the emulator, wearer role, every permission through the app's own checklist, default thresholds;
-  in setup, the sensor step never completes with the synthetic source (it isn't one of the wearer's sensors): tap
-  *Later*, then close home's *Finish setup* banner. Turn **Settings › Alerts › Low › *Like an alarm*** on (off by
-  default; without it the low alert has no full-screen intent) and the emulator's lock screen on (`adb shell
-  locksettings set-disabled false`).
-- The local relay for the invite shot (`python3 tools/relay/relay.py --port 7447` and `… -a
+- A fresh install of the play flavor's debug build on an AVD of its own (`play_media`: android-37.0 google_apis,
+  1080 × 1920, 420 dpi), wearer role, every permission through the app's own checklist, default thresholds; in setup
+  tap *Later* at the sensor step (the synthetic source isn't one of the wearer's sensors), then close home's *Finish
+  setup* banner. **Settings › Alerts › Low › *Like an alarm*** on for the lock-screen alert, and the lock screen on
+  (`adb shell locksettings set-disabled false`).
+- The local relay for the invite (`python3 tools/relay/relay.py --port 7447` and `… -a
   app.mauri.sukrara.debug.RELAYS --es urls ws://10.0.2.2:7447`, docs/DEVELOPMENT.md; never the public relays from a
   debug build).
 - The synthetic source: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
   app.mauri.sukrara.debug.SYNTHETIC --ez on true --ei cycle 110`. The curve crosses the low threshold (70) at cycle
-  minute 113, one reading a minute: `cycle 110` brings the low alert after about 2–2.5 min, `cycle 112` within a
-  minute (`cycle 135` is the lowest point, 45 mg/dL).
-- Record with the emulator's recorder, which also records the sound (`adb -s emulator-NNNN emu screenrecord start
-  --time-limit 1200 raw.webm`, then `… stop`); `adb shell screenrecord` has no audio. Cut, speed up the waits and add
-  the band with ffmpeg; never change what the app shows.
+  minute 113, one reading a minute (`cycle 135` is the lowest point, 45 mg/dL).
 
-| # | Time | Shot | What it shows the reviewer |
-|---|---|---|---|
-| 1 | 0:00–0:06 | Title card: "Sukrara · test build · simulated sensor data. No real person's glucose." | that the data is made up |
-| 2 | 0:06–0:20 | Home: the value with its trend arrow and the graph as a new reading arrives; a double tap for the 3-hour close look and back | the core function: live glucose from the sensor |
-| 3 | 0:20–0:46 | Screen off; the curve crosses the low threshold: the alert wakes the screen with its alarm sound and *Low glucose* shows on the lock screen; the expanded alert's *30 min* Mute chip, which opens the app on *Low alerts muted*; home with the mute pill | why it needs full-screen intents, exact alarms and a foreground service |
-| 4 | 0:46–1:05 | *Add treatment* (Carbs focused while low) → 15 g → *Lows quiet for 15 min* → Save: the carbs on the graph and the quiet ring | treatments and how they quiet alerts |
-| 5 | 1:05–1:16 | The home-screen widgets, then the shade's glucose notification with the same value | the ongoing notification (foreground service) |
-| 6 | 1:16–1:32 | Settings › Sharing › *Share with someone* › name › *Create invite*: the invite QR code and its note ("you still allow them") | following, and that the wearer approves each follower |
-| 7 | 1:32–1:48 | Settings › Alerts › *Low* › *Send a test alert*: the test alert and its sound | what a reviewer can do without a sensor |
-| 8 | 1:48–1:57 | A fresh install without a sensor: "Not monitoring: no sensor yet" (captioned) | what a reviewer will see on their own device |
+**Store screenshots** (the same emulator session, made 2026-11-11, entered in the listing draft):
+`~/Pictures/sukrara-play/en/` and `…/es/`, eight each, 1080 × 1920 PNG without alpha (Play's phone size for
+promotion), System UI demo mode for the status bar: `01-home`, `02-low-alert` (the lock screen with the low alert and
+the glucose notification), `03-widgets` (the widgets and the Live Update chip), `04-treatment` (15 g of carbs typed,
+never saved), `05-invite`, `06-alerts`, `07-home-dark`, `08-alert-reliability`; a labelled copy of each (a "Test build
+· simulated sensor data" band) in `~/Pictures/sukrara-play/labelled/`. The data is the synthetic curve (about 47 % in
+range). Spanish through the emulator's language (`cmd locale set-device-locale es-ES`).
 
-Shot 8 is a separate fresh-install clip: turning the synthetic source off keeps the last reading on home, struck
-through (the freshness steps), and the "no sensor yet" page shows only with no readings at all.
-
-**Store screenshots** (the same session's emulator, made 2026-11-11): `~/Pictures/sukrara-play/en/` and `…/es/`, eight
-each, 1080 × 1920 PNG without alpha (Play's phone size for promotion), System UI demo mode for the status bar: `01-home`,
-`02-low-alert` (the lock screen with the low alert and the glucose notification), `03-widgets` (the widgets and the
-Live Update chip), `04-treatment` (15 g of carbs typed, never saved), `05-invite`, `06-alerts`, `07-home-dark`,
-`08-alert-reliability`; a labelled copy of each (the same "Test build · simulated sensor data" band) in
-`~/Pictures/sukrara-play/labelled/`. The data is the synthetic curve (about 47 % in range). Spanish through the
-emulator's language (`cmd locale set-device-locale es-ES`).
-
-**Who keeps it current**: the owner re-records the video (same shot list) when home, the alert screen, setup or
-Settings › Sharing change visibly, and before a release whose store listing screenshots change; the instructions text
-changes with them. Health data in it is synthetic only; never the owner's screenshots (CLAUDE.md).
+**Who keeps it current**: the owner re-records the video (#185's shot list) when home, the alert screen or the
+foreground service's notification change visibly, and the screenshots before a release whose listing changes. Health
+data in the screenshots is synthetic only; never the owner's screenshots (CLAUDE.md).
 
 ### Google Play: a brand-new personal account (research, 2026-10-18)
 
@@ -623,6 +588,19 @@ device is *collected* (Sukrara has no server, so everything below goes to servic
 is end-to-end encrypted, so no one in between can read it, doesn't need to be disclosed; a transfer the person starts
 to a service they chose isn't *sharing*; data that never leaves the device isn't collected.
 
+**State (2026-11-11): Data safety is a draft, not submitted, and open.** Saved on page 2: collects or shares data
+*Yes*; encrypted in transit *Yes*; *My app does not allow users to create an account*; *Can users login to your app
+with accounts created outside of the app?* *No* (the owner's answer); deletion request *Yes*, URL
+https://sukrara.mauri.app/privacy. The owner disputes the premise below and will revisit it in depth; judgement call
+(1) was not applied. The two readings:
+
+- **Nothing is collected** (the owner): Sukrara has no server and the developer receives nothing; the follower name is
+  an alias; the LibreView e-mail is only a sign-in. The uploads go to services the person signs in to and turns on.
+- **The opt-in uploads are collected** (the draft below): Play counts data sent off the device as collected even when
+  it goes to a third-party service the person chose, so Health info, e-mail, name and IDs are listed as optional.
+
+Data safety must be submitted before any review (*Send changes for review*).
+
 **Data safety › Data collection and security**
 
 | Question | Answer | Why |
@@ -662,8 +640,8 @@ row.
 **Security practices**: data encrypted in transit: yes. Independent security review: no. Play Families Policy: no
 (not a children's app).
 
-**Health apps declaration** (App content › Health apps): **Diseases and conditions management** (diabetes: glucose
-display, alerts, insulin and carbs log). Not *Medical device apps*: Sukrara isn't cleared or certified as a medical
+**Health apps declaration** (App content › Health apps; saved 2026-11-11, Play: no regional requirements apply):
+**Diseases and conditions management** (diabetes: glucose display, alerts, insulin and carbs log). Not *Medical device apps*: Sukrara isn't cleared or certified as a medical
 device and the listing says so. The description carries the statement Play asks for ("Sukrara is not a medical device
 and does not diagnose, treat, cure, or prevent any medical condition"), the reminder to ask a healthcare professional,
 the hardware it needs (a FreeStyle Libre 3 / 3 Plus, NFC and Bluetooth, or an invite to follow someone) and the
@@ -677,20 +655,22 @@ readings of the person's own sensor to Health Connect, once a minute, so other h
 Off until the person turns it on in Share with apps. Sukrara reads nothing from Health Connect." The rationale screen
 is the app's `HealthPermissionsRationale` alias of MainActivity.
 
-**Permission declarations that appear after the first upload** (each in English; the demo video is the reviewer video
-of [Reviewer access](#google-play-reviewer-access-app-access), uploaded once as *Unlisted* and linked in every form)
+**Permission declarations that appear after the first upload** (each in English). State on 2026-11-11: full-screen
+intent and exact alarms saved; the foreground service not saved (needs the video,
+[#185](https://github.com/mauriciabad/sukrara/issues/185)); Health Connect hasn't appeared (neither *Need attention*
+nor *Actioned*): watch for it.
 
 | Declaration | Answer |
 |---|---|
-| Foreground service, type `connectedDevice` | Task: *Connected device* (Bluetooth). Description: "Sukrara monitors the person's glucose sensor (CGM), or the phone of the person they follow. The foreground service keeps the Bluetooth connection to the sensor (or the connection to the wearer's phone) so each reading and every low or high glucose alarm arrives within a minute while the app is closed. It starts when a sensor is paired or someone is followed, shows the current glucose in its notification the whole time, and stops when the sensor is forgotten or following stops." User impact if deferred or stopped: "Readings stop and low glucose alarms, including the very low alarm, don't ring: the person can miss a dangerous low." Video: the reviewer video (shots 2, 5 and 8: running, its notification, stopped) |
-| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | Core use: **alarms**. "Sukrara is a glucose alarm app. The very low glucose alarm, and any alert the person sets to ring like an alarm, is posted with a full-screen intent so that, like an alarm clock, it wakes the screen and shows on the lock screen at once with its alarm sound, because a very low glucose needs immediate action. The person answers it from the lock screen (mute, remind less) or opens the app." Video: shot 3. (Today the full-screen intent opens the app's main screen, which doesn't show over the lock screen: the phone wakes and the alert shows on the lock screen, but there is no full-screen alarm page; the text above says only what happens. A real alarm page over the lock screen would be a feature of its own.) |
-| Exact alarms (`USE_EXACT_ALARM`) | [The exact-alarm declaration](#exact-alarm-declaration) below |
+| Foreground service, type `connectedDevice` | **Not saved.** The form offers *Continuous data transfer to an external device* (video only) or *Other* (video + description); the drafted task *Connected device (Bluetooth)* doesn't exist. Both need the video link (#185). For *Other*, the description: "Sukrara monitors the person's glucose sensor (CGM), or the phone of the person they follow. The foreground service keeps the Bluetooth connection to the sensor (or the connection to the wearer's phone) so each reading and every low or high glucose alarm arrives within a minute while the app is closed. It starts when a sensor is paired or someone is followed, shows the current glucose in its notification the whole time, and stops when the sensor is forgotten or following stops." User impact if deferred or stopped: "Readings stop and low glucose alarms, including the very low alarm, don't ring: the person can miss a dangerous low." |
+| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | **Saved 2026-11-11**: core functionality *Alarm clock*, pre-grant at install *Yes*; the form has no text or video field. If Play asks: "Sukrara is a glucose alarm app. The very low glucose alarm, and any alert the person sets to ring like an alarm, is posted with a full-screen intent so that, like an alarm clock, it wakes the screen and shows on the lock screen at once with its alarm sound, because a very low glucose needs immediate action. The person answers it from the lock screen (mute, remind less) or opens the app." (Today the full-screen intent opens the app's main screen, which doesn't show over the lock screen: the phone wakes and the alert shows on the lock screen, but there is no full-screen alarm page; the text says only what happens.) |
+| Exact alarms (`USE_EXACT_ALARM`) | **Saved 2026-11-11**: core functionality *Alarm clock*; no text field. [The exact-alarm text](#exact-alarm-declaration) below is what to answer if Play asks |
 
 #### Exact alarm declaration
 
 Where: Play Console › App content › the exact alarm permission declaration (it appears once a bundle with
-`USE_EXACT_ALARM` is uploaded). Core functionality: **Alarm** (if the form offers *Alarm clock / timer*, *Calendar* or
-*Other*, choose the alarm one and give this text). Text (English, as entered):
+`USE_EXACT_ALARM` is uploaded). Saved 2026-11-11 as core functionality **Alarm clock**; the form has no text field,
+so this text (English) wasn't entered and is only what to answer if Play asks:
 
 > Sukrara is a glucose alarm app for people with diabetes who wear a continuous glucose monitor. Its core, user-facing
 > function is alarms: it rings when glucose goes too low or too high, changes fast, or stops arriving from the sensor
@@ -702,8 +682,7 @@ Where: Play Console › App content › the exact alarm permission declaration (
 > the first thing the store listing describes, and every alert can be tried in Settings › Alerts › an alert › Send a
 > test alert.
 
-Video: the reviewer video (shot 3: the low alarm waking the phone on the lock screen; shot 7: *Send a test alert*). Precedent
-if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. If Play rejects it: the
+Precedent if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. If Play rejects it: the
 fallback in [Flavors](#flavors) › *If Play rejects …*.
 
 **If Play asks about root, LSPosed or the status bar** (a reviewer question, or *App access* / Device and Network
@@ -731,11 +710,15 @@ function behind `USE_EXACT_ALARM` to be documented and promoted in the descripti
 briefly as a user-facing feature and never the means (no "root" / "LSPosed"); the declarations above say how it works.
 No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
 
+**State (2026-11-11)**: everything below is filled in for en-US and es-ES (name, short and full description, icon,
+feature graphic, the 8 phone screenshots per language in order) and saved as a **draft** only. The Review step asks an
+**AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*), still unanswered.
+
 | Field | en-US | es-ES |
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
 | Short description (≤ 80) | `Live glucose and alarms from your CGM sensor, shared with family. No account.` (77) | `Glucosa en directo y alarmas de tu sensor, compartidas en familia. Sin cuenta.` (78) |
-| App icon | 512 × 512 PNG from `assets/brand/` (the Android launcher icon's art) | the same |
+| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art) | the same |
 | Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
@@ -827,34 +810,33 @@ Every claim above is in the app today (docs/FEATURES.md); change the listing in 
 
 ### Google Play: what the owner does in Play Console, in order
 
-Prepared on 2026-11-11 (#142, #141); nothing below has been entered or uploaded by an agent. The bundle:
-`apps/android/app/build/dist/Sukrara-<version>-play.aab` from `tools/release/play-bundle.sh` (signed with the release
-key = Play's upload key; mapping inside), built from a commit on `main`.
+Prepared on 2026-11-11 (#142); entered the same day by an agent with the owner deciding on screen, except the bundle,
+which the owner uploaded by hand. The bundle: `apps/android/app/build/dist/Sukrara-<version>-play.aab` from
+`tools/release/play-bundle.sh` (signed with the release key = Play's upload key; mapping inside), built from a commit
+on `main`.
 
-1. **Demo video**: upload `~/Movies/sukrara-play/sukrara-review-demo.mp4` to YouTube as *Unlisted* (check the link
-   plays signed out); keep the link.
-2. **App content › App access** (#141): *All or some functionality in my app is restricted* › *Add instructions*:
-   the name, empty credentials and the text in [Reviewer access](#google-play-reviewer-access-app-access) with the
-   video link. Save.
-3. **App content › Target audience and content**: 13+ (13–15, 16–17, 18 and over); not designed for children. Save.
-4. **App content › Data safety**: the [answers above](#google-play-data-safety-health-apps-and-permission-declarations-drafts)
-   (decide the two judgement calls first). Save, then *Submit*.
-5. **App content › Health apps**: *Diseases and conditions management*; not a medical device app. The privacy policy
-   (https://sukrara.mauri.app/privacy) in *App content › Privacy policy* if it isn't saved yet.
-6. **Store presence › Main store listing** (en-US) and the es-ES translation: the
-   [store listing](#google-play-store-listing-drafts-en--es): name, short and full description, icon, feature graphic,
-   phone screenshots (2–8 per language). Save.
-7. **Test and release › Testing › Internal testing**: create the tester list (the owner's account, at least) and
-   *Create new release* with the `.aab` (release name = the version; notes: "First internal test"). Play App Signing
-   already uses our key; the release page shows its fingerprint `27:EC:21:…:8D:96`.
-8. **App content** again: the declarations the upload brings up: *Foreground service permissions* (`connectedDevice`),
-   *Full-screen intent*, the **exact alarm** declaration and *Health Connect*, each with the text and the video link
-   above. Save each.
-9. **Publishing overview**: *Send changes for review*. Answer any question from Play truthfully (root and LSPosed: the
+Done 2026-11-11: App access (*No, no part of the app is restricted*), Target audience (13–15, 16–17, 18 and over),
+Privacy policy, Health apps, the store listing en-US + es-ES (draft), internal testing (release 0.13.0, versionCode
+13000, *Available to internal testers*, not reviewed; opt-in link
+https://play.google.com/apps/internaltest/4700763397995090600), the full-screen intent and exact alarm declarations.
+
+Left, in order:
+
+1. **Store presence › Main store listing**: answer the **AI asset declaration** in the Review step, then *Save* (the
+   listing is a draft until then).
+2. **App content › Data safety**: settle the open premise
+   ([the two readings](#google-play-data-safety-health-apps-and-permission-declarations-drafts)), finish the data
+   types, *Submit*. Required before any review.
+3. **The video** ([#185](https://github.com/mauriciabad/sukrara/issues/185), recorded on the owner's phone), uploaded
+   to YouTube as *Unlisted* (check it plays signed out); then **App content › Foreground service permissions**
+   (`connectedDevice`): *Continuous data transfer to an external device* or *Other* with
+   [the description](#google-play-data-safety-health-apps-and-permission-declarations-drafts), and the link. Save.
+4. **Health Connect** declaration, if it appears: [the text above](#google-play-data-safety-health-apps-and-permission-declarations-drafts).
+5. **Publishing overview**: *Send changes for review*. Answer any question from Play truthfully (root and LSPosed: the
    text above).
-10. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
-    replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
-    version*, then open testing as the permanent beta.
+6. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
+   replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
+   version*, then open testing as the permanent beta.
 
 If Play rejects `USE_EXACT_ALARM` or the root features: [Flavors](#flavors) › *If Play rejects …*, a new bundle, and
 the next upload.
@@ -967,10 +949,10 @@ its own update check; the root features are in both since 2026-11-11); register 
    screenshots, Fastlane metadata, FGS demo video script; drafts of the Health apps, data safety, FGS and exact-alarm
    answers. *(user)* submits the forms (only the account owner can). Done: the privacy page and the drafts
    ([Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts)).
-   Done 2026-11-11: the store listing (en + es), the exact-alarm, FGS and full-screen-intent texts, the demo video
-   and phone screenshots (outside the repo), the order to enter it all
-   ([Play Console, in order](#google-play-what-the-owner-does-in-play-console-in-order)). Open: the feature graphic,
-   an upload script.
+   Done 2026-11-11: the store listing (en + es), the exact-alarm, FGS and full-screen-intent texts, the phone
+   screenshots and the feature graphic (outside the repo), entered in Play Console the same day except Data safety
+   and the FGS declaration ([Play Console, in order](#google-play-what-the-owner-does-in-play-console-in-order)). Open:
+   the demo video (the emulator one was rejected; the owner records it, #185), an upload script.
 9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; use internal testing for
    the first builds, then open testing as the permanent beta.
 10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows
