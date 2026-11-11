@@ -66,7 +66,8 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   Sensitive, through its own Mute, Remind less and Mute all, once (its own quiet states apply to the escalated repeats
   after it). An answer on the wearer's phone: tapping or swiping the alert, opening the app, any of its buttons
   (*Mute…*, *Remind less*, *Unmute*), *Mute all* or carbs logged after it fired; a Mute or Mute all set before it is no
-  answer (nobody heard it). Answered after the escalation: the followers' alert turns plain again without sound. It
+  answer (nobody heard it). A swipe or the app's start that brings back a process Android had stopped is an answer too
+  (Android: the runtime reads its saved alerts first, `AlertAnswerAfterRestartTest`). Answered after the escalation: the followers' alert turns plain again without sound. It
   ends with the very low. Settings: the wearer's Settings › Alerts › *If a very low gets no answer* › **Tell my
   followers** (on) and **After** (5–30 min, the one number input); a follower's (Android and Mac) **When they don't
   answer a very low** (on). Followers with their own rules (*Settings from* Default / Custom) don't get escalations
