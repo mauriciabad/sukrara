@@ -39,11 +39,12 @@ Juggluco on the same network.
 
 ## Get it
 
-- **Homebrew:** `brew install --cask mauriciabad/tap/sukrara`; `brew upgrade --cask sukrara` brings each release.
+- **Homebrew:** `brew install --cask mauriciabad/tap/sukrara`.
 - **From GitHub:** download `Sukrara-<version>.dmg` from the
   [latest release](https://github.com/mauriciabad/sukrara/releases), open it and drag **Sukrara** onto
   **Applications**. It's signed and notarized by Apple, so it opens like any other app. Sukrara lives in the menu bar
-  (no Dock icon) and checks for updates once a day.
+  (no Dock icon) and updates itself: once a day it looks for a new version, signed by Sukrara and checked before it
+  installs, and offers it in its panel; *Install and Relaunch* is one click.
 
 > **A preview, not a medical device.** Don't make treatment decisions from it.
 

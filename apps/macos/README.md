@@ -10,13 +10,14 @@ cd apps/macos
 swift build                      # debug build of every target (Swift 6 language mode)
 swift test                       # Swift Testing; fixtures from contracts/ (SUKRARA_CONTRACTS overrides the path)
 swift format lint --strict -r Package.swift Sources Tests
-Bundle/bundle.sh                 # build/Sukrara.app + PlugIns/SukraraWidget.appex, signed by team QWUV9H4A3G: with the
+Bundle/bundle.sh                 # build/Sukrara.app + PlugIns/SukraraWidget.appex + Frameworks/Sparkle.framework (the
+                                 # updater, GitHub version only), signed by team QWUV9H4A3G: with the
                                  # provisioning profiles in ~/.apple-dev/profiles (Developer ID, Time Sensitive,
                                  # data-protection keychain, universal links), else Apple Development without them
 Bundle/bundle.sh --no-profile    # signed, without the profiles
 Bundle/bundle.sh --unsigned      # ad hoc signed, for CI / machines without the identity
 Bundle/bundle.sh --dev           # CFBundleVersion <code>.<yyMMddHHmm> so the widget host refreshes previews
-Bundle/bundle.sh --app-store     # the App Store version: sandboxed, no update check (SukraraDistribution appStore);
+Bundle/bundle.sh --app-store     # the App Store version: sandboxed, no updater (SukraraAppStore, appStore);
                                  # signed to run here (Bundle/smoke.sh), or for upload with SIGN_ID = Apple Distribution
                                  # (tools/release/mac-appstore.sh: + the pkg, validation, --upload)
 Bundle/dmg.sh                    # build/Sukrara-<version>.dmg + build/Sukrara-mac-<version>.zip
@@ -50,5 +51,5 @@ hand): it replaces the installed copy wherever it is and leaves one Sukrara on t
 - The widget reads only the App Group snapshot (`SukraraPaths.appGroupSnapshot()`), never a home-based path.
 - **Every feature also works sandboxed** (the App Store version): files only through `SukraraPaths` (the home folder
   is the container there), the App Group or a panel the person answers; network only as a client; a new entitlement
-  goes into `Bundle/appstore.entitlements.in` and `verify-app.sh --app-store`. The update check is the GitHub
+  goes into `Bundle/appstore.entitlements.in` and `verify-app.sh --app-store`. The updater (Sparkle) is the GitHub
   version's only (`Distribution`).
