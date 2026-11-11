@@ -136,7 +136,9 @@ broadcast): `:sensor` / `:share` register it at runtime while monitoring runs.
   `SUKRARA_KEYSTORE_PASSWORD="$(security find-generic-password -s sukrara-android-release -a sukrara -w)" ./gradlew :app:assembleFullRelease`.
 - Two flavors, one package and key (docs/20-publishing.md › Flavors): `full` (GitHub: `assembleFullRelease`, an APK,
   `tools/release/android-release.sh`) and `play` (Google Play: `bundlePlayRelease`, an app bundle,
-  `tools/release/play-bundle.sh`). The play flavor's differences are all in `app/src/play` (`Store`, the manifest).
+  `tools/release/play-bundle.sh`). The play flavor's differences are all in `app/src/play`: `Store` (no update
+  check; the root features are in both since 2026-11-11, #142) and the manifest (no changes now; it documents the
+  fallback if Play rejects `USE_EXACT_ALARM` or the root features).
 - The Libre 3 core comes from Juggluco (`-Psukrara.juggluco=…`, env `SUKRARA_JUGGLUCO`, else
   `<main checkout>/third_party/Juggluco`) at the commit in `sensor/juggluco.lock`, clean tree. Debug builds without
   it only warn (the app reports the missing core). Any release output (`pre<Flavor>ReleaseBuild`) fails without the key

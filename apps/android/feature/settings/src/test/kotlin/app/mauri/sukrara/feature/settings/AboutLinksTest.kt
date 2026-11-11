@@ -24,7 +24,8 @@ import org.robolectric.annotation.Config
 
 /**
  * About's links (#179): *Sukrara on other devices* opens each app's page on the website (never a download), whatever
- * the update check says and on the Google Play build (no check) too; the other rows open their pages.
+ * the update check says and on the Google Play build (no check) too; the other rows open their pages. #142: the
+ * version row says which version this is and *About the versions* opens the website's explanation, on both.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "w411dp-h2400dp")
@@ -34,8 +35,10 @@ class AboutLinksTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
     private var update by mutableStateOf<UpdateState?>(UpdateState.UpToDate)
+    private var distribution by mutableStateOf(Distribution.GitHub)
 
-    private fun show() = compose.setContent { SukraraTheme(dark = false, dynamic = false) { AboutContent("0.12.0", update, {}) {} } }
+    private fun show() =
+        compose.setContent { SukraraTheme(dark = false, dynamic = false) { AboutContent("0.12.0", distribution, update, {}) {} } }
 
     /** Taps the row titled [title] and returns the URL it opened in the browser. */
     private fun open(title: Int): String {
@@ -53,6 +56,20 @@ class AboutLinksTest {
             update = state
             assertEquals("$state", "https://sukrara.mauri.app/mac/", open(R.string.st_device_mac))
         }
+    }
+
+    @Test
+    fun `the version says which one it is and About the versions opens the website's section`() {
+        assertEquals("https://sukrara.mauri.app/android/#versions", VERSIONS_URL)
+        show()
+        compose.onNodeWithText("0.12.0 · GitHub version").assertExists()
+        assertEquals(VERSIONS_URL, open(R.string.st_about_versions))
+        // the Google Play build: no update check, the same link, nothing disabled or "get it elsewhere"
+        distribution = Distribution.GooglePlay
+        update = null
+        compose.onNodeWithText("0.12.0 · Google Play version").assertExists()
+        compose.onNodeWithText(app.getString(R.string.st_update_check_again)).assertDoesNotExist()
+        assertEquals(VERSIONS_URL, open(R.string.st_about_versions))
     }
 
     @Test

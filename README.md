@@ -254,9 +254,11 @@ watch. Upload uses a new device name per install (`Sukrara-…`), so a Nightscou
 Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases). What Sukrara keeps and what it
 sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
 
-The Google Play build is the same app and key without the root and LSPosed features (the status bar with root, the
-System UI module) and without the update check, and it asks for Android's *Alarms and reminders* permission instead
-of having it from install; the GitHub build has everything ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
+Android comes in two versions, the same app with the same key (installs over each other, keeping the data): the
+**GitHub version** (GitHub releases, Obtainium), which checks GitHub for updates in Settings › About, and the **Google
+Play version** (in preparation), which Play updates and which therefore has no update check of its own; that is the
+only difference. Settings › About says which one is installed and links to the website's
+[Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With

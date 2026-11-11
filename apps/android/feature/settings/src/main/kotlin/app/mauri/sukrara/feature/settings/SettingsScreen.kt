@@ -420,7 +420,7 @@ private fun SettingsPages(
             // the Google Play build has no update check (deps.releases null): Play brings the updates
             val vm = viewModel { AboutViewModel(deps.releases, deps.appVersion, deps.prerelease) }
             val state by vm.state.collectAsStateWithLifecycle()
-            AboutContent(vm.installed, state, vm::check, onBack)
+            AboutContent(vm.installed, deps.distribution, state, vm::check, onBack)
         }
 
         SettingsRoute.Advanced -> {

@@ -5,9 +5,9 @@
 # Checks a release APK before it reaches a phone or a GitHub release:
 #   tools/release/verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt>
 # --play: the Google Play build (play flavor; tools/release/play-bundle.sh passes the bundle's universal APK): the
-#   permissions are allow.json's with `play_permissions` applied, and no LSPosed module, root status bar or update
-#   check is inside (no META-INF/xposed, no XposedProvider / HookHelloReceiver, no systemui or libxposed class in the
-#   R8 mapping, no api.github.com in the dex). The GitHub build instead: every LSPosed hook class keeps `intercept`.
+#   permissions are allow.json's with `play_permissions` applied, and no update check is inside (no GitHubReleases in
+#   the R8 mapping, no api.github.com in the dex). Both builds: the System UI module (META-INF/xposed, its manifest
+#   entries, every LSPosed hook class keeps `intercept`).
 # --unsigned: CI only (no release key, no Juggluco checkout): skips the signer and the Libre 3 core, checks the rest.
 # - signature verifies and the signer certificate is THE release key (tools/release/android-cert.sha256)
 # - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh, not debuggable
@@ -73,25 +73,22 @@ manifest="$("$aapt2" dump xmltree --file AndroidManifest.xml "$apk")"
 if printf '%s\n' "$manifest" | grep -Eq 'DebugReceiver|DebugFakes|DebugRelays|Synthetic'; then bad "the manifest registers debug components"
 else ok "manifest has no debug components"; fi
 
-# The Google Play build: no LSPosed module, no root status bar, no GitHub update check (docs/20-publishing.md › Flavors).
-if [ $play = 1 ]; then
-  if unzip -l "$apk" | grep -q 'META-INF/xposed/'; then bad "META-INF/xposed is inside: LSPosed would offer it as a module"
-  else ok "no META-INF/xposed (not an LSPosed module)"; fi
-  if printf '%s\n' "$manifest" | grep -Eq 'XposedProvider|HookHelloReceiver|SYSTEMUI_STATE'; then bad "the manifest still has the System UI module's components"
-  else ok "manifest has no System UI module components"; fi
-  gone='^(app\.mauri\.sukrara\.monitor\.systemui\.|io\.github\.libxposed\.|app\.mauri\.sukrara\.feature\.settings\.GitHubReleases)[^ ]*'
-  if [ -f "$mapping" ] && grep -Eq "$gone ->" "$mapping"; then
-    bad "R8 mapping lists root / LSPosed / update-check classes: $(grep -Eo "$gone" "$mapping" | head -3 | tr '\n' ' ')"
-  else ok "no root, LSPosed or update-check classes (R8 mapping)"; fi
-  if unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -aq 'api.github.com'; then bad "dex contains the GitHub update check's URL"
-  else ok "no GitHub update check URL (dex)"; fi
-else
-  # The System UI module's hooks are classes implementing libxposed's XposedInterface$Hooker; LSPosed calls their
-  # intercept. R8 removes it unless it sees the API (app/build.gradle.kts compileOnly): 0.12.0 shipped them empty and
-  # every hook failed with AbstractMethodError on the owner's phone.
-  dexdir="$(mktemp -d)"
-  unzip -q -o "$apk" 'classes*.dex' -d "$dexdir"
-  hookers="$(for d in "$dexdir"/classes*.dex; do "$(sdk_tool dexdump)" -l plain "$d"; done | python3 -I -c '
+# The System UI module is in both builds (the Play build too: the owner's decision of 2026-11-11, #142). LSPosed finds
+# it by META-INF/xposed; the manifest has its provider, the hello receiver and the permission that feeds it.
+if unzip -l "$apk" | grep -q 'META-INF/xposed/java_init.list$'; then ok "META-INF/xposed inside (the LSPosed module)"
+else bad "no META-INF/xposed/java_init.list: LSPosed wouldn't find the System UI module"; fi
+lacks=""
+for c in io.github.libxposed.service.XposedProvider app.mauri.sukrara.monitor.systemui.HookHelloReceiver app.mauri.sukrara.permission.SYSTEMUI_STATE; do
+  printf '%s\n' "$manifest" | grep -q "\"$c\"" || lacks="$lacks $c"
+done
+if [ -z "$lacks" ]; then ok "manifest has the System UI module's provider, hello receiver and permission"
+else bad "the manifest lacks the System UI module's$lacks"; fi
+# The module's hooks are classes implementing libxposed's XposedInterface$Hooker; LSPosed calls their intercept. R8
+# removes it unless it sees the API (app/build.gradle.kts compileOnly): 0.12.0 shipped them empty and every hook
+# failed with AbstractMethodError on the owner's phone.
+dexdir="$(mktemp -d)"
+unzip -q -o "$apk" 'classes*.dex' -d "$dexdir"
+hookers="$(for d in "$dexdir"/classes*.dex; do "$(sdk_tool dexdump)" -l plain "$d"; done | python3 -I -c '
 import re, sys
 for c in sys.stdin.read().split("Class descriptor  : ")[1:]:
     head = c.split("Static fields")[0]
@@ -99,10 +96,19 @@ for c in sys.stdin.read().split("Class descriptor  : ")[1:]:
         methods = re.findall(r"name\s+: .([^\x27]+).", c.split("Virtual methods   -")[1].split("source_file_idx")[0])
         print(c.split("\x27")[1], "ok" if "intercept" in methods else "empty")
 ')"
-  rm -rf "$dexdir"
-  if [ -z "$hookers" ]; then bad "no LSPosed hook class in the dex (XposedInterface\$Hooker)"
-  elif printf '%s\n' "$hookers" | grep -q ' empty$'; then bad "LSPosed hooks without intercept (R8 removed it): $(printf '%s\n' "$hookers" | grep ' empty$' | tr '\n' ' ')"
-  else ok "every LSPosed hook keeps intercept ($(printf '%s\n' "$hookers" | grep -c ' ok$') hook classes)"; fi
+rm -rf "$dexdir"
+if [ -z "$hookers" ]; then bad "no LSPosed hook class in the dex (XposedInterface\$Hooker)"
+elif printf '%s\n' "$hookers" | grep -q ' empty$'; then bad "LSPosed hooks without intercept (R8 removed it): $(printf '%s\n' "$hookers" | grep ' empty$' | tr '\n' ' ')"
+else ok "every LSPosed hook keeps intercept ($(printf '%s\n' "$hookers" | grep -c ' ok$') hook classes)"; fi
+
+# The Google Play build: no GitHub update check, Play brings the updates (docs/20-publishing.md › Flavors).
+if [ $play = 1 ]; then
+  gone='^app\.mauri\.sukrara\.feature\.settings\.GitHubReleases[^ ]*'
+  if [ -f "$mapping" ] && grep -Eq "$gone ->" "$mapping"; then
+    bad "R8 mapping lists the update check: $(grep -Eo "$gone" "$mapping" | head -3 | tr '\n' ' ')"
+  else ok "no update-check class (R8 mapping)"; fi
+  if unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -aq 'api.github.com'; then bad "dex contains the GitHub update check's URL"
+  else ok "no GitHub update check URL (dex)"; fi
 fi
 
 # Cleartext only to this phone's loopback: the debug build's config also allows 10.0.2.2 (a local test relay).
@@ -117,17 +123,15 @@ else bad "network security config: base cleartext '${nsc_base:-?}', cleartext ho
 # the launcher / App Link activity, and the alert sound provider (System UI reads channel sounds from it and can hold
 # no permission; it serves only bundled sounds), and the home-screen widgets' receivers + configure activity (any home
 # app sends the widget broadcasts and opens the configure screen, so they can't require a permission; they only redraw
-# or edit that placement). The full build also has libxposed's XposedProvider (LSPosed hands the app its service there
-# and can hold no permission; what it reports is advisory, as ManifestTest says); the Play build must not (--play).
-# Anything else exported needs a permission.
+# or edit that placement), and libxposed's XposedProvider (LSPosed hands the app its service there and can hold no
+# permission; what it reports is advisory, as ManifestTest says). Anything else exported needs a permission.
 allowed_open='app.mauri.sukrara.MainActivity
 app.mauri.sukrara.monitor.AlertSoundProvider
 app.mauri.sukrara.widgets.ValueWidgetReceiver
 app.mauri.sukrara.widgets.GraphWidgetReceiver
 app.mauri.sukrara.widgets.CombinedWidgetReceiver
-app.mauri.sukrara.widgets.WidgetConfigActivity'
-[ $play = 1 ] || allowed_open="$allowed_open
-io.github.libxposed.service.XposedProvider"
+app.mauri.sukrara.widgets.WidgetConfigActivity
+io.github.libxposed.service.XposedProvider'
 open_components="$(printf '%s\n' "$manifest" | awk '
   function flush() { if (comp != "" && exported && !perm) print comp; comp = "" }
   /E: (activity|activity-alias|service|receiver|provider) / { flush(); depth = index($0, "E:"); exported = perm = 0; comp = "?"; next }

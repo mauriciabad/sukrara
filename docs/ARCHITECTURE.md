@@ -530,7 +530,7 @@ every app). Alert scenario expectations change only with the owner's OK.
 
 `VERSION` → every app. Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
 `verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
-`verify-apk.sh --play`; the play flavor has no root / LSPosed code and no update check: `app/src/play`, `Store`, and
-`:monitor`'s `RootFeatures` that only the full flavor passes); Mac: `tools/release/mac-release.sh` (bundle + dmg +
-`verify-app.sh`). 0.x versions are GitHub prereleases; every app's update check includes prereleases only on a
-prerelease build.
+`verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no update
+check: `app/src/play`, `Store`; `:monitor`'s `RootFeatures` stays optional for the fallback if Play rejects root);
+Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`). 0.x versions are GitHub prereleases; every
+app's update check includes prereleases only on a prerelease build.

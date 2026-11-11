@@ -173,6 +173,10 @@
     <string name="st_undo">Deshacer</string>
     <string name="st_about_title">Acerca de</string>
     <string name="st_about_version">Versión</string>
+    <string name="st_version_github">%1$s · versión de GitHub</string>
+    <string name="st_version_play">%1$s · versión de Google Play</string>
+    <string name="st_about_versions">Sobre las versiones</string>
+    <string name="st_about_versions_summary">Google Play y GitHub: la misma app, actualizada de otra forma · abre la web</string>
     <string name="st_update_checking">Buscando actualizaciones…</string>
     <string name="st_update_none">Actualizada</string>
     <string name="st_update_check_again">Volver a comprobar</string>

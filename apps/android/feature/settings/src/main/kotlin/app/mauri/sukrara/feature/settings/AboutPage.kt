@@ -25,6 +25,24 @@ const val SITE_URL = "https://sukrara.mauri.app"
 /** The privacy policy on the site (docs/privacy.md): what Sukrara stores and sends, and where. */
 const val PRIVACY_URL = "$SITE_URL/privacy"
 
+/** The Android page's *Versions* section (docs/android/index.md): Google Play and GitHub, what differs, where to get each. */
+const val VERSIONS_URL = "$SITE_URL/android/#versions"
+
+/**
+ * Which version of the app this is (the app module's flavor, docs/20-publishing.md › Flavors): the same app and key,
+ * updated differently. About names it next to the version number and links to [VERSIONS_URL].
+ */
+enum class Distribution(
+    /** About's version summary, with the version number as its argument. */
+    @StringRes val version: Int,
+) {
+    /** The `full` flavor: GitHub releases or Obtainium; About checks GitHub for a newer release. */
+    GitHub(R.string.st_version_github),
+
+    /** The `play` flavor: Google Play updates it; no update check of its own. */
+    GooglePlay(R.string.st_version_play),
+}
+
 /** One app of Sukrara on another device: its row under *Sukrara on other devices* and its page on the website. */
 data class OtherDevice(
     @StringRes val name: Int,
@@ -66,12 +84,14 @@ class AboutViewModel(
 }
 
 /**
- * About: version, update check (none when [update] is null: the Google Play build), Sukrara on other devices (the
- * website's page per app), report a problem, source code, privacy policy.
+ * About: the version and which one it is ([distribution]: Google Play or GitHub), the update check (none when
+ * [update] is null: the Google Play build), *About the versions* (the website's explanation), Sukrara on other devices
+ * (the website's page per app), report a problem, source code, privacy policy.
  */
 @Composable
 fun AboutContent(
     installed: String,
+    distribution: Distribution,
     update: UpdateState?,
     onCheckAgain: () -> Unit,
     onBack: () -> Unit,
@@ -79,7 +99,11 @@ fun AboutContent(
     val context = LocalContext.current
     SettingsPage(stringResource(R.string.st_about_title), onBack) {
         SettingsGroup {
-            InfoRow(stringResource(R.string.st_about_version), summary = installed, icon = DsR.drawable.ds_ic_info)
+            InfoRow(
+                stringResource(R.string.st_about_version),
+                summary = stringResource(distribution.version, installed),
+                icon = DsR.drawable.ds_ic_info,
+            )
             when (update) {
                 null -> {}
 
@@ -114,6 +138,12 @@ fun AboutContent(
                     )
                 }
             }
+            NavigationRow(
+                stringResource(R.string.st_about_versions),
+                { context.openUrl(VERSIONS_URL) },
+                summary = stringResource(R.string.st_about_versions_summary),
+                icon = DsR.drawable.ds_ic_open_in_new,
+            )
         }
         SettingsGroup(title = stringResource(R.string.st_other_devices)) {
             for (device in OTHER_DEVICES) {

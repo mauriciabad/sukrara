@@ -35,8 +35,8 @@ unused).
 | Mac, non-developers | Notarized dmg from sukrara.mauri.app / GitHub Releases + **Sparkle 2** in-app updates | Paid Apple Developer Program (Developer ID) | 99 USD/year |
 | Mac, developers | **Own tap** `mauriciabad/homebrew-tap` → `brew install --cask mauriciabad/tap/sukrara`; later the official cask | Official cask needs Gatekeeper-passing (notarized) builds + notability | 0 |
 | Mac App Store | **Not now** | Sandbox + no own updater + medical/third-party-service review risk | (same 99 USD) |
-| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), without the root/LSPosed features | Health/medical declarations; `USE_EXACT_ALARM` justification (no 12-tester rule: the account predates it) | paid (old account) |
-| Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; a "full" flavor with root/LSPosed features | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
+| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the update check (decided 2026-11-11, [Flavors](#flavors)) | Health/medical declarations; `USE_EXACT_ALARM` and root-feature review (no 12-tester rule: the account predates it) | paid (old account) |
+| Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; the "full" flavor with the update check | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
 | Android, F-Droid main repo | Later, optional | Build from source incl. Juggluco core + rust-nostr; likely *NonFreeNet* anti-feature | 0 |
 | Garmin | Connect IQ Store, free app | Developer account; privacy policy; no medical claims | 0 |
 
@@ -271,8 +271,10 @@ open testing at once, with no *Apply for production* step) and no new fee.
   decided: *Restricted* with instructions and a demo video, see [Reviewer access](#google-play-reviewer-access-app-access)),
   Target audience (blocked until Sign in details is done; plan: 13+), Data safety and Health apps (answers
   drafted in [Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts));
-  the sensitive-permission declarations (foreground service, full-screen intent, Health Connect) appear after the
-  first upload. The bundle to upload comes from `tools/release/play-bundle.sh` ([Flavors](#flavors)).
+  the sensitive-permission declarations (foreground service, full-screen intent, exact alarm, Health Connect) appear
+  after the first upload. Everything is drafted (2026-11-11): the store listing, the demo video and screenshots, the
+  bundle from `tools/release/play-bundle.sh` ([Flavors](#flavors)); the order to enter it:
+  [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
 
 ### Google Play: reviewer access (App access)
 
@@ -365,9 +367,9 @@ tester list so nobody drops out by accident).
 | Target API | New apps/updates must target **API 36+** since 2026-08-31 [[G8]](https://support.google.com/googleplay/android-developer/answer/11926878) | Already `targetSdk 37` |
 | Health apps declaration | Every health/medical app fills the form; categories include *Diseases and Conditions Management* and **Medical Device Apps**, the latter including "any software interfacing with medical device hardware"; EEA apps regulated under MDR/IVDR must show device name, manufacturer, IFU, UDI-DI [[G9]](https://support.google.com/googleplay/android-developer/answer/14738291) | Declare *Diseases and Conditions Management*. Whether it must also be *Medical Device Apps* is the key risk (below) |
 | Health content | Non-regulated health apps must state in the description that the app is "not a medical device and does not diagnose, treat, cure, or prevent any medical condition"; external hardware must be disclosed; a privacy policy linked in Console **and in the app**, public, not a PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511) | Disclaimer + "requires a FreeStyle Libre 3 sensor" in the listing; privacy page on the site; link in Settings → About |
-| `USE_EXACT_ALARM` | Only for apps whose **core** function is an alarm/timer or calendar; everyone else should use `SCHEDULE_EXACT_ALARM` [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | Glucose alarms are arguably alarm-clock-like and Juggluco ships alarms on Play, but expect a declaration and possible rejection. Safer: switch the Play build to `SCHEDULE_EXACT_ALARM` + `canScheduleExactAlarms()` prompt (the alert timing doesn't need more) |
+| `USE_EXACT_ALARM` | Only for apps whose **core** function is an alarm/timer or calendar; everyone else should use `SCHEDULE_EXACT_ALARM` [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | Glucose alarms are arguably alarm-clock-like and Juggluco ships alarms on Play, but expect a declaration and possible rejection. Safer: switch the Play build to `SCHEDULE_EXACT_ALARM` + `canScheduleExactAlarms()` prompt (the alert timing doesn't need more). **Decided 2026-11-11: keep `USE_EXACT_ALARM` and declare it** ([Flavors](#flavors)) |
 | Foreground service | Each FGS type declared in App content with description, user impact and a **demo video** [[G12]](https://support.google.com/googleplay/android-developer/answer/13392821) | `connectedDevice` (BLE to sensor/followers): record the video (start, notification, stop) |
-| Device and Network Abuse | No interfering with other apps / the system; **no self-updating outside Play**, no downloading executable code [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | Play flavor without the LSPosed/SystemUI hook, lock-screen widget hook, root status bar, `DUMP`; and without the in-app GitHub update check (`SettingsScreens.kt` calls `api.github.com/…/releases/latest`) |
+| Device and Network Abuse | No interfering with other apps / the system; **no self-updating outside Play**, no downloading executable code [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | Play flavor without the LSPosed/SystemUI hook, lock-screen widget hook, root status bar, `DUMP`; and without the in-app GitHub update check (`SettingsScreens.kt` calls `api.github.com/…/releases/latest`). **Decided 2026-11-11: the root features stay in the Play build (opt-in, the person's own root), only the update check goes** ([Flavors](#flavors)) |
 | Data safety | Required, with a privacy policy, even if nothing is collected; E2E-encrypted data unreadable by the developer is not "collected"; a user-initiated transfer to a third party is not "sharing" [[G14]](https://support.google.com/googleplay/android-developer/answer/10787469) | Nostr readings: E2E encrypted → not collected (relays see public keys, timestamps, IP). LibreView: user-initiated upload of glucose + treatments + account credentials to Abbott → disclose as health data sent at the user's request. BLE/NFC: on-device. No analytics, no ads |
 | Signing | New apps are enrolled in **Play App Signing**; the developer may "Provide a copy of your app signing key" instead of a Google-generated one, before the first open/production release [[G15]](https://support.google.com/googleplay/android-developer/answer/9842756) | Upload **our own** release key so GitHub/IzzyOnDroid/F-Droid (reproducible) builds share one signature with Play |
 
@@ -494,50 +496,96 @@ since 0.12.0, and a Developer ID build is never released unnotarized.
 
 ### Flavors
 
-Built (2026-11-10, #142): the app module has two product flavors in the `store` dimension, with the same package
-`app.mauri.sukrara`, version and release key (`AndroidApplicationConventionPlugin`):
+Built 2026-11-10 (#142): the app module has two product flavors in the `store` dimension, with the same package
+`app.mauri.sukrara`, version and release key (`AndroidApplicationConventionPlugin`). What the play flavor contains is
+the owner's decision of 2026-11-11 ([#142](https://github.com/mauriciabad/sukrara/issues/142#issuecomment-6784400336),
+below). The website and About call them the *GitHub version* and the *Google Play version*.
 
 | Flavor | Channel | Build | Contents |
 |---|---|---|---|
-| `full` (default) | GitHub releases, Obtainium, IzzyOnDroid, later F-Droid | `tools/release/android-release.sh` (`:app:assembleFullRelease`, APK) | everything |
-| `play` | Google Play | `tools/release/play-bundle.sh` (`:app:bundlePlayRelease`, app bundle) | everything except the rows below |
+| `full` (default) | GitHub releases, Obtainium (later IzzyOnDroid, F-Droid) | `tools/release/android-release.sh` (`:app:assembleFullRelease`, APK) | everything, and About's update check |
+| `play` | Google Play | `tools/release/play-bundle.sh` (`:app:bundlePlayRelease`, app bundle) | everything except the update check |
 
-Left out of `play`, each because of a Play policy (`app/src/play`: `Store.kt` and `AndroidManifest.xml`):
+**The owner's decision (2026-11-11) and why**
 
-| Left out | Why | How |
-|---|---|---|
-| The root status bar (slot daemon through `su`), the LSPosed module in System UI (`SystemUiHook`, `META-INF/xposed`, `XposedProvider`, `HookHelloReceiver`, the `SYSTEMUI_STATE` permission), the *Restart System UI* card | Device and Network Abuse: no interfering with the system or other apps [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | `Store.rootFeatures` is null, so nothing reaches `:monitor` `systemui/` and R8 drops it (the keep rules in `monitor/consumer-rules.pro` apply only `-if` `SystemAccess` is in the app); the manifest removes the components and the permission; `META-INF/xposed/**` isn't packaged. Settings › Status bar has no *With root* section, search none of its rows |
-| The update check in About (the GitHub releases API, *Update available* → the release page, the other-device files) | An app on Play may not update itself, or send people to updates, other than through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | `Store.releases()` returns null: About has no update rows; `GitHubReleases` and its URL aren't in the bundle |
-| `USE_EXACT_ALARM`, replaced by `SCHEDULE_EXACT_ALARM` | Play allows `USE_EXACT_ALARM` only for alarm-clock and calendar apps [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | The manifest swaps them (`tools/check/allow.json` `play_permissions`). Android doesn't grant it at install: the alert checklist already asks for *Alarms and reminders*, and the checks use inexact while-idle alarms until it is allowed (FEATURES.md › Google Play build) |
+- **Exact alarms: the Play build keeps `USE_EXACT_ALARM`** (no `SCHEDULE_EXACT_ALARM` swap). The missed-reading (no
+  data) alarm, the alert repeats and the escalation of an unanswered very low to the followers are user-facing alarms
+  scheduled with `setExactAndAllowWhileIdle` (`AlarmPolicy`); they must ring on time while the phone dozes and the
+  app is in the background. `SCHEDULE_EXACT_ALARM` isn't enough: on Android 14+ it is denied by default for new
+  installs and the person (or a cleaner app) can revoke it, and then the checks fall back to inexact while-idle alarms
+  that run minutes late without the person noticing. Play allows `USE_EXACT_ALARM` only where precisely timed alarms
+  are the app's core, user-facing function, documented and promoted in the description
+  [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241): glucose alarms are Sukrara's core
+  function, the listing leads with them, and Play's exact-alarm declaration says so
+  ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`.
+- **The root features ship in the Play build too**: the glucose in the status bar (root slot daemon, the LSPosed
+  module in System UI: `Store.rootFeatures = SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
+  lock-screen widget once it exists (#66, the same module). They are off by default and work only after the person
+  roots their phone, installs LSPosed, enables Sukrara's module for System UI and grants Sukrara root; they change
+  only Sukrara's own icons and text in System UI. The listing names the user-facing feature briefly and honestly
+  (*glucose in the status bar on supported phones, with advanced setup*), not the means; every Play declaration and
+  reviewer question is answered truthfully (root and LSPosed are named whenever Play asks how a feature works). The
+  policy risk is Device and Network Abuse ("interfere with … the user's device … including … other apps"
+  [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)); the answer is that it runs only
+  with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar items.
+- **No update check in the Play build**: an app from Play may not update itself, or send people to updates, other than
+  through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646). `Store.releases()`
+  returns null: About has no update rows; `GitHubReleases` and its URL aren't in the bundle (`verify-apk.sh --play`).
+- **About says which version it is** (*0.12.0 · Google Play version* / *GitHub version*) and links to the website's
+  [Versions](https://sukrara.mauri.app/android/#versions) (`docs/android/index.md`: same app and key; who updates
+  each; where to get each; anything a store version leaves out, today only the update check). No disabled rows and no
+  "install elsewhere to unlock" prompts in the Play build (Device and Network Abuse: no means to reach a non-compliant
+  APK).
+- **The split stays for now**: the flavors and their code remain until Play approves a release with the root features;
+  then the split can go (the update check would then be the only thing `Store` decides).
+
+**If Play rejects …** (resubmit after each; the code is all still there):
+
+- *`USE_EXACT_ALARM`*: put the two lines of the exact-alarm fallback (in the comment of
+  `app/src/play/AndroidManifest.xml`) into the manifest and set `play_permissions` in `tools/check/allow.json` to
+  remove `USE_EXACT_ALARM` and add `SCHEDULE_EXACT_ALARM`, each with its reason; flip `ManifestTest`'s assertion that
+  the Play build declares `USE_EXACT_ALARM`. Nothing else: the alert checklist already names *Alarms and reminders*
+  with *Fix* when exact alarms aren't allowed, the checks already fall back to inexact while-idle alarms
+  (`AlarmPolicy`) and re-arm on `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`. Then FEATURES.md › Google Play build
+  and the website's Versions list it, and the exact-alarm declaration is withdrawn.
+- *The root features*: `Store.rootFeatures = null` in `app/src/play`, the root fallback in the comment of
+  `app/src/play/AndroidManifest.xml` into the manifest, the `META-INF/xposed/**` exclusion back in
+  `app/build.gradle.kts` (the commented line), `play_permissions` removes `app.mauri.sukrara.permission.SYSTEMUI_STATE`,
+  and the checks go back to "absent": `ManifestTest`'s Play tests, `verify-apk.sh --play` (no `META-INF/xposed`, no
+  module components, no `systemui` / libxposed class in the mapping; the hook check only for the GitHub build) and
+  `play-bundle.sh` (no `base/root/META-INF/xposed`). The last version with all of that is `ae4810b9` (`git show
+  ae4810b9:<path>`). Settings › Status bar then has no *With root* section and search no root rows (`BuildFeature`,
+  `SettingsSearchTest`); FEATURES.md and the website's Versions say the Play version leaves the status bar out.
 
 Not in either release build, so there is nothing to leave out: `DUMP` (only the debug build's `DebugReceiver` declares
 it), `REQUEST_INSTALL_PACKAGES` (the update check opens the release page in the browser; Sukrara never installs
-APKs), the lock-screen widget hook (not in the app yet, #66), `QUERY_ALL_PACKAGES` (the queries are listed one by one
-in `allow.json`).
+APKs), `QUERY_ALL_PACKAGES` (the queries are listed one by one in `allow.json`).
 
 The bundle has no language splits (`bundle.language.enableSplit = false`): Sukrara has its own language setting, and a
 split that Play didn't install would leave that choice without strings. arm64 only, like the APK.
 
-**Checks.** `ManifestTest` also reads the play flavor's merged manifest (the permissions are `allow.json`'s with
-`play_permissions` applied; no module components). `tools/release/play-bundle.sh` builds the bundle signed with the
-release key (password from the Keychain, `--no-daemon`) and checks it: signer = `android-cert.sha256`, base module
-only, arm64 only, the Libre 3 core, the R8 mapping in `BUNDLE-METADATA` (Play deobfuscates crash reports with it), no
-`META-INF/xposed`. Then `bundletool validate` and `verify-apk.sh --play` on bundletool's universal APK when bundletool
-is there (`$BUNDLETOOL` = the `bundletool-all` jar from its GitHub releases, or `bundletool` on PATH); without it,
-`verify-apk.sh --play` on the play APK that Gradle builds from the same R8 output. It copies `Sukrara-<version>-play.aab`
-to `apps/android/app/build/dist/` and archives the mapping in `~/.android/sukrara-mappings/<version>-play-mapping.txt`.
-CI's `android-play` job runs it with `--unsigned` (no key, no Juggluco checkout: every check except the signer and the
-Libre 3 core).
+**Checks.** `ManifestTest` also reads the play flavor's merged manifest: its permissions are `allow.json`'s with
+`play_permissions` applied (empty now), `USE_EXACT_ALARM` and no `SCHEDULE_EXACT_ALARM`, the System UI module's
+provider, hello receiver and permission, and the same components as the GitHub build. `tools/release/play-bundle.sh`
+builds the bundle signed with the release key (password from the Keychain, `--no-daemon`) and checks it: signer =
+`android-cert.sha256`, base module only, arm64 only, the Libre 3 core, the R8 mapping in `BUNDLE-METADATA` (Play
+deobfuscates crash reports with it), `META-INF/xposed` inside. Then `bundletool validate` and `verify-apk.sh --play` on
+bundletool's universal APK when bundletool is there (`$BUNDLETOOL` = the `bundletool-all` jar from its GitHub releases,
+or `bundletool` on PATH); without it, `verify-apk.sh --play` on the play APK that Gradle builds from the same R8
+output. `verify-apk.sh` checks the System UI module in both builds (`META-INF/xposed`, its manifest entries, every
+LSPosed hook class keeps `intercept`) and, with `--play`, no update check (no `GitHubReleases` in the mapping, no
+`api.github.com` in the dex). It copies `Sukrara-<version>-play.aab` to `apps/android/app/build/dist/` and archives
+the mapping in `~/.android/sukrara-mappings/<version>-play-mapping.txt`. CI's `android-play` job runs it with
+`--unsigned` (no key, no Juggluco checkout: every check except the signer and the Libre 3 core).
 
-**Uploading** isn't scripted yet: the first upload to internal testing is the owner's (Play Console › Test and release
-› Internal testing › Create new release, the `.aab`). A script for later releases can use the service account
-(`~/.android/sukrara-play.json`, testing tracks only) with the Android Publisher API (`edits.insert` →
+**Uploading** isn't scripted yet: the first upload to internal testing is the owner's ([the order in Play
+Console](#google-play-what-the-owner-does-in-play-console-in-order)). A script for later releases can use the service
+account (`~/.android/sukrara-play.json`, testing tracks only) with the Android Publisher API (`edits.insert` →
 `edits.bundles.upload` → `edits.tracks.update` → `edits.commit`).
 
-Same package and key means a user can switch channels without reinstalling, but Play will "update" a full install
-to the play build (losing root features) if Play auto-update owns it. Alternative: `app.mauri.sukrara.full` as its
-own package (both installable, but two registrations and a confusing choice). **Decision: same package; root users
-install from GitHub / Obtainium and turn off Play updates for Sukrara.**
+Same package and key means a user can switch versions without reinstalling and keeps their data; whichever store has
+the newer version code offers it. **Decision: same package** (not `app.mauri.sukrara.full`: two registrations and a
+confusing choice).
 
 ### Google Play: Data safety, Health apps and permission declarations (drafts)
 
@@ -588,28 +636,200 @@ row.
 
 **Health apps declaration** (App content › Health apps): **Diseases and conditions management** (diabetes: glucose
 display, alerts, insulin and carbs log). Not *Medical device apps*: Sukrara isn't cleared or certified as a medical
-device and the listing says so. The description must carry "Sukrara is not a medical device and does not diagnose,
-treat, cure, or prevent any medical condition. Don't make treatment decisions from it.", the hardware it needs
-("Reads FreeStyle Libre 3 sensors, or follows someone who uses Sukrara.") and the Abbott disclaimer ("FreeStyle Libre
-and LibreView are trademarks of Abbott. Sukrara is not affiliated with or endorsed by Abbott.") [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511). Privacy
-policy URL: https://sukrara.mauri.app/privacy (in the app: Settings › About › *Privacy policy*).
+device and the listing says so. The description carries the statement Play asks for ("Sukrara is not a medical device
+and does not diagnose, treat, cure, or prevent any medical condition"), the reminder to ask a healthcare professional,
+the hardware it needs (a FreeStyle Libre 3 / 3 Plus, NFC and Bluetooth, or an invite to follow someone) and the
+Abbott disclaimer ("FreeStyle Libre and LibreView are trademarks of Abbott. Sukrara is not affiliated with or endorsed
+by Abbott.") [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511): see the
+[store listing](#google-play-store-listing-drafts-en--es). Privacy policy URL: https://sukrara.mauri.app/privacy (in the
+app: Settings › About › *Privacy policy*).
 
 **Health Connect** (App content, after the upload): `WRITE_BLOOD_GLUCOSE` only. Purpose: "Writes the glucose
 readings of the person's own sensor to Health Connect, once a minute, so other health apps they choose can use them.
 Off until the person turns it on in Share with apps. Sukrara reads nothing from Health Connect." The rationale screen
 is the app's `HealthPermissionsRationale` alias of MainActivity.
 
-**Permission declarations that appear after the first upload**
+**Permission declarations that appear after the first upload** (each in English; the demo video is the reviewer video
+of [Reviewer access](#google-play-reviewer-access-app-access), uploaded once as *Unlisted* and linked in every form)
 
 | Declaration | Answer |
 |---|---|
-| Foreground service, type `connectedDevice` | Monitoring the person's glucose sensor, or the phone they follow: the service keeps the Bluetooth link to the CGM sensor (wearer) or the connection to the wearer's phone (follower) so readings and low / high alerts arrive within a minute while the app is closed. If deferred or stopped, urgent-low alerts are missed. It starts when a sensor is paired or someone is followed, its notification shows the current glucose, and it stops when the sensor is forgotten or following stops. Demo video: the emulator with synthetic data, showing the start (pairing or following), the notification and the stop |
-| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | Core use: **alarms**. The very-low alarm (and any alert the person sets to ring like an alarm) shows over the lock screen like an alarm clock until it is dismissed |
-| Exact alarms | Nothing to declare: the play build uses `SCHEDULE_EXACT_ALARM`, which the person grants |
+| Foreground service, type `connectedDevice` | Task: *Connected device* (Bluetooth). Description: "Sukrara monitors the person's glucose sensor (CGM), or the phone of the person they follow. The foreground service keeps the Bluetooth connection to the sensor (or the connection to the wearer's phone) so each reading and every low or high glucose alarm arrives within a minute while the app is closed. It starts when a sensor is paired or someone is followed, shows the current glucose in its notification the whole time, and stops when the sensor is forgotten or following stops." User impact if deferred or stopped: "Readings stop and low glucose alarms, including the very low alarm, don't ring: the person can miss a dangerous low." Video: the reviewer video (shots 2, 5 and 8: running, its notification, stopped) |
+| Full-screen intent (`USE_FULL_SCREEN_INTENT`) | Core use: **alarms**. "Sukrara is a glucose alarm app. The very low glucose alarm (and any alert the person sets to ring like an alarm) shows over the lock screen like an alarm clock, with sound, until the person answers it, because a very low glucose needs immediate action." Video: shot 3 |
+| Exact alarms (`USE_EXACT_ALARM`) | [The exact-alarm declaration](#exact-alarm-declaration) below |
+
+#### Exact alarm declaration
+
+Where: Play Console › App content › the exact alarm permission declaration (it appears once a bundle with
+`USE_EXACT_ALARM` is uploaded). Core functionality: **Alarm** (if the form offers *Alarm clock / timer*, *Calendar* or
+*Other*, choose the alarm one and give this text). Text (English, as entered):
+
+> Sukrara is a glucose alarm app for people with diabetes who wear a continuous glucose monitor. Its core, user-facing
+> function is alarms: it rings when glucose goes too low or too high, changes fast, or stops arriving from the sensor
+> (the missed-reading alarm), repeats the alarm while glucose stays out of range, and alerts the people the user chose
+> when a very low alarm goes unanswered. These alarms are scheduled with setExactAndAllowWhileIdle because they must
+> ring on time while the phone is idle and the app is in the background: a late low glucose alarm can be dangerous.
+> SCHEDULE_EXACT_ALARM is not enough: on Android 14 and later it is denied by default for new installs and can be
+> revoked by the user or another app, and the alarms would then fire late without the user noticing. The alarms are
+> the first thing the store listing describes, and every alert can be tried in Settings › Alerts › an alert › Send a
+> test alert.
+
+Video: the reviewer video (shot 3: the low alarm ringing on the lock screen; shot 7: *Send a test alert*). Precedent
+if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. If Play rejects it: the
+fallback in [Flavors](#flavors) › *If Play rejects …*.
+
+**If Play asks about root, LSPosed or the status bar** (a reviewer question, or *App access* / Device and Network
+Abuse): answer truthfully, in English:
+
+> Glucose in the status bar is an optional, advanced feature, off by default. It works only on a phone the user has
+> rooted themselves, with the LSPosed framework installed and Sukrara's module enabled for System UI by the user, and
+> after the user grants Sukrara root when they turn the feature on. It shows the user's own glucose value as status-bar
+> icons or text; it doesn't change, read or interfere with any other app, and it sends nothing anywhere. Without root
+> the rest of the app works the same, and Settings › Status bar explains what the feature needs.
 
 Not a form, but a policy to keep in mind: `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (the alert checklist's *No battery
 restrictions*, which opens Android's own dialog). Play allows it where the core function breaks under Doze; an alerting
-glucose monitor is that case, and the listing should say why.
+glucose monitor is that case, and the listing says why ("So that alarms arrive while the phone sleeps, Sukrara asks
+to run without battery restrictions").
+
+### Google Play: store listing (drafts, en + es)
+
+For Play Console › Grow users › Store presence › Main store listing (default language **English (United States) –
+en-US**) and a translation **Spanish (Spain) – es-ES** (*Manage translations › Add your own translations*). Play's
+limits: app name 30 characters, short description 80, full description 4000; no emoji, no "best" / "#1", no
+testimonials or calls to action about ratings. The listing leads with the alarms because Play requires the core
+function behind `USE_EXACT_ALARM` to be documented and promoted in the description
+[[G11]](https://support.google.com/googleplay/android-developer/answer/16558241). It names the status bar feature
+briefly as a user-facing feature and never the means (no "root" / "LSPosed"); the declarations above say how it works.
+No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
+
+| Field | en-US | es-ES |
+|---|---|---|
+| App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
+| Short description (≤ 80) | `Live glucose and alarms from your CGM sensor, shared with family. No account.` (77) | `Glucosa en directo y alarmas de tu sensor, compartidas en familia. Sin cuenta.` (78) |
+| App icon | 512 × 512 PNG from `assets/brand/` (the Android launcher icon's art) | the same |
+| Feature graphic | 1024 × 500, still to make (the brand's wordmark over the card; no device frame needed) | the same, or a Spanish one |
+| Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
+| Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
+| Contact | `support-googleplay@a.mauri.app`, https://sukrara.mauri.app (set) | the same |
+
+**Full description, en-US** (2785 characters):
+
+```text
+Sukrara shows your glucose live on your phone and rings an alarm when it goes too low or too high, changes fast, or stops arriving. It reads a FreeStyle Libre 3 or Libre 3 Plus sensor directly over Bluetooth, or follows someone who wears one and uses Sukrara.
+
+Glucose alarms that ring on time
+• Very low, low, high, very high and extremely high alarms, rising or falling fast, and a missed-readings alarm when no glucose arrives, each with your own threshold and sound.
+• The very low alarm rings like an alarm clock over the lock screen until you answer it. Alarms repeat while your glucose stays out of range, and a very low you don't answer can alert the people who follow you.
+• Mute them when you choose. After you log carbs, low alarms give them time to work; after insulin, high alarms do.
+• A checklist makes sure alarms can ring (notifications, Do Not Disturb, battery, Bluetooth), with a test alarm you can send any time.
+
+Your glucose wherever you look
+• The value, its trend arrow and a chart you can scroll back 31 days, with time in range.
+• Home-screen widgets, an ongoing notification and a Live Update next to the clock, also on the lock screen.
+• Glucose in the status bar on supported phones, with advanced setup.
+
+Treatments in seconds
+• Log insulin, carbs and notes from the app, the notification, a Quick Settings tile or the lock screen.
+• Read the doses from a compatible insulin pen by holding it to the phone.
+
+Share with the people who look after you
+• Family and friends see your glucose live on their phones or on a Mac, end-to-end encrypted, over the internet or Bluetooth nearby. You approve every follower.
+• Follow someone else and get your own alarms for their glucose.
+• No account to create and no server to host.
+
+Your data stays yours
+• Everything stays on your phone until you turn on a connection: LibreView, Tidepool, Nightscout, Health Connect, apps such as xDrip+ and AAPS, Garmin watches.
+• No ads, no analytics, no tracking. Free and open source (GPL-3.0).
+
+What you need
+• Android 16 or newer on a 64-bit phone.
+• To read a sensor: a FreeStyle Libre 3 or Libre 3 Plus sensor, NFC and Bluetooth. Support for some Dexcom, Accu-Chek SmartGuide and Aidex sensors is experimental and untested.
+• To follow someone: an invite from their phone.
+• So that alarms arrive while the phone sleeps, Sukrara asks to run without battery restrictions.
+
+Important
+Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Don't make treatment decisions from it: ask your doctor or diabetes care team for medical advice. Sukrara is an early preview.
+
+FreeStyle Libre and LibreView are trademarks of Abbott. Sukrara is not affiliated with or endorsed by Abbott. Other product names are trademarks of their owners.
+```
+
+**Full description, es-ES** (3046 characters):
+
+```text
+Sukrara muestra tu glucosa en directo en el teléfono y hace sonar una alarma cuando baja o sube demasiado, cambia rápido o deja de llegar. Lee un sensor FreeStyle Libre 3 o Libre 3 Plus directamente por Bluetooth, o sigue a alguien que lo lleva y usa Sukrara.
+
+Alarmas de glucosa que suenan a tiempo
+• Alarmas de muy baja, baja, alta, muy alta y extremadamente alta, de subida o bajada rápida, y de lecturas perdidas cuando no llega la glucosa, cada una con tu umbral y tu sonido.
+• La alarma de muy baja suena como un despertador sobre la pantalla de bloqueo hasta que respondes. Las alarmas se repiten mientras la glucosa siga fuera de rango, y una muy baja sin respuesta puede avisar a quienes te siguen.
+• Siléncialas cuando quieras. Tras registrar hidratos, las alarmas de baja les dan tiempo para actuar; tras la insulina, las de alta.
+• Una lista comprueba que las alarmas pueden sonar (notificaciones, No molestar, batería, Bluetooth), con una alarma de prueba que puedes enviar cuando quieras.
+
+Tu glucosa allí donde mires
+• El valor, su flecha de tendencia y una gráfica que puedes recorrer hasta 31 días atrás, con el tiempo en rango.
+• Widgets en la pantalla de inicio, una notificación permanente y una actualización en directo junto al reloj, también en la pantalla de bloqueo.
+• La glucosa en la barra de estado en teléfonos compatibles, con configuración avanzada.
+
+Tratamientos en segundos
+• Registra insulina, hidratos y notas desde la app, la notificación, un ajuste rápido o la pantalla de bloqueo.
+• Lee las dosis de una pluma de insulina compatible acercándola al teléfono.
+
+Comparte con quienes te cuidan
+• Familia y amigos ven tu glucosa en directo en su teléfono o en un Mac, cifrada de extremo a extremo, por internet o por Bluetooth cerca. Tú apruebas a cada seguidor.
+• Sigue a otra persona y recibe tus propias alarmas de su glucosa.
+• Sin cuenta que crear ni servidor que mantener.
+
+Tus datos siguen siendo tuyos
+• Todo se queda en tu teléfono hasta que activas una conexión: LibreView, Tidepool, Nightscout, Health Connect, apps como xDrip+ y AAPS, relojes Garmin.
+• Sin anuncios, sin analíticas, sin rastreo. Libre y de código abierto (GPL-3.0).
+
+Qué necesitas
+• Android 16 o posterior en un teléfono de 64 bits.
+• Para leer un sensor: un sensor FreeStyle Libre 3 o Libre 3 Plus, NFC y Bluetooth. La compatibilidad con algunos sensores Dexcom, Accu-Chek SmartGuide y Aidex es experimental y no está probada.
+• Para seguir a alguien: una invitación desde su teléfono.
+• Para que las alarmas lleguen mientras el teléfono duerme, Sukrara pide funcionar sin restricciones de batería.
+
+Importante
+Sukrara no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad. No tomes decisiones de tratamiento con él: consulta a tu médico o a tu equipo de diabetes. Sukrara es una versión preliminar.
+
+FreeStyle Libre y LibreView son marcas comerciales de Abbott. Sukrara no está afiliada a Abbott ni cuenta con su respaldo. Los demás nombres de productos son marcas comerciales de sus propietarios.
+```
+
+Every claim above is in the app today (docs/FEATURES.md); change the listing in the same change as a feature it names.
+
+### Google Play: what the owner does in Play Console, in order
+
+Prepared on 2026-11-11 (#142, #141); nothing below has been entered or uploaded by an agent. The bundle:
+`apps/android/app/build/dist/Sukrara-<version>-play.aab` from `tools/release/play-bundle.sh` (signed with the release
+key = Play's upload key; mapping inside), built from a commit on `main`.
+
+1. **Demo video**: upload `~/Movies/sukrara-play/sukrara-review-demo.mp4` to YouTube as *Unlisted* (check the link
+   plays signed out); keep the link.
+2. **App content › App access** (#141): *All or some functionality in my app is restricted* › *Add instructions*:
+   the name, empty credentials and the text in [Reviewer access](#google-play-reviewer-access-app-access) with the
+   video link. Save.
+3. **App content › Target audience and content**: 13+ (13–15, 16–17, 18 and over); not designed for children. Save.
+4. **App content › Data safety**: the [answers above](#google-play-data-safety-health-apps-and-permission-declarations-drafts)
+   (decide the two judgement calls first). Save, then *Submit*.
+5. **App content › Health apps**: *Diseases and conditions management*; not a medical device app. The privacy policy
+   (https://sukrara.mauri.app/privacy) in *App content › Privacy policy* if it isn't saved yet.
+6. **Store presence › Main store listing** (en-US) and the es-ES translation: the
+   [store listing](#google-play-store-listing-drafts-en--es): name, short and full description, icon, feature graphic,
+   phone screenshots (2–8 per language). Save.
+7. **Test and release › Testing › Internal testing**: create the tester list (the owner's account, at least) and
+   *Create new release* with the `.aab` (release name = the version; notes: "First internal test"). Play App Signing
+   already uses our key; the release page shows its fingerprint `27:EC:21:…:8D:96`.
+8. **App content** again: the declarations the upload brings up: *Foreground service permissions* (`connectedDevice`),
+   *Full-screen intent*, the **exact alarm** declaration and *Health Connect*, each with the text and the video link
+   above. Save each.
+9. **Publishing overview**: *Send changes for review*. Answer any question from Play truthfully (root and LSPosed: the
+   text above).
+10. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
+    replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
+    version*, then open testing as the permanent beta.
+
+If Play rejects `USE_EXACT_ALARM` or the root features: [Flavors](#flavors) › *If Play rejects …*, a new bundle, and
+the next upload.
 
 ## Garmin
 
@@ -694,8 +914,8 @@ website; serve developers with an **own Homebrew tap** from the same release; su
 notable. Skip the Mac App Store.
 
 **Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (new personal account,
-closed test as the permanent beta) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor with
-root features; register the package and key for developer verification in the same Play Console account before the
+closed test as the permanent beta) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
+its own update check; the root features are in both since 2026-11-11); register the package and key for developer verification in the same Play Console account before the
 2027 global rollout. F-Droid main repo later, with reproducible builds.
 
 **Garmin**: Connect IQ Store, free, display-only claims.
@@ -713,12 +933,16 @@ root features; register the package and key for developer verification in the sa
 7. *(agent)* Rename to `app.mauri.sukrara`, `play`/`full` flavors, `SCHEDULE_EXACT_ALARM` in `play`, migration screen
    in the last `.poc` build, settings export/import, Juggluco core pinned. Done: the rename, settings export / import,
    the pinned core, the flavors and `tools/release/play-bundle.sh` (2026-11-10, [Flavors](#flavors)); the migration
-   screen was dropped (the app starts clean).
+   screen was dropped (the app starts clean). The owner then kept `USE_EXACT_ALARM` and the root features in `play`
+   (2026-11-11); `play` only leaves out the update check.
 8. *(agent)* Privacy page, store listing (with the not-a-medical-device statement and Abbott disclaimer), synthetic
    screenshots, Fastlane metadata, FGS demo video script; drafts of the Health apps, data safety, FGS and exact-alarm
    answers. *(user)* submits the forms (only the account owner can). Done: the privacy page and the drafts
    ([Data safety, Health apps and permission declarations](#google-play-data-safety-health-apps-and-permission-declarations-drafts)).
-   Open: the store listing, screenshots, the FGS demo video, an upload script.
+   Done 2026-11-11: the store listing (en + es), the exact-alarm, FGS and full-screen-intent texts, the demo video
+   and phone screenshots (outside the repo), the order to enter it all
+   ([Play Console, in order](#google-play-what-the-owner-does-in-play-console-in-order)). Open: the feature graphic,
+   an upload script.
 9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; use internal testing for
    the first builds, then open testing as the permanent beta.
 10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows

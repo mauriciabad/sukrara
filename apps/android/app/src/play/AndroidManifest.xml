@@ -3,35 +3,28 @@
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <!--
-  The Google Play build's differences from the merged manifest (docs/20-publishing.md › Flavors). The list it must end
-  up with is tools/check/allow.json `permissions` changed by `play_permissions` (ManifestTest; verify-apk.sh on the
-  bundle's universal APK, from tools/release/play-bundle.sh).
--->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+  The Google Play build's differences from the merged manifest (docs/20-publishing.md › Flavors): none since the owner's
+  decision of 2026-11-11 (#142). The Play build keeps USE_EXACT_ALARM (the missed-reading alarm, re-alerts and
+  escalations must fire on time; Play's exact-alarm declaration says why) and the root features (the System UI
+  module's provider, hello receiver and SYSTEMUI_STATE permission). The list it must end up with is
+  tools/check/allow.json `permissions` changed by `play_permissions` (both empty now: ManifestTest; verify-apk.sh
+  on the bundle's universal APK, from tools/release/play-bundle.sh).
 
-    <!-- Play allows USE_EXACT_ALARM only for alarm-clock and calendar apps. SCHEDULE_EXACT_ALARM can be refused by
-         the person: the alert checklist then names *Alarms and reminders* and opens Android's page, and the checks
-         fall back to inexact while-idle alarms (monitor service/AlarmPolicy). -->
-    <uses-permission
-        android:name="android.permission.USE_EXACT_ALARM"
-        tools:node="remove" />
+  Fallbacks if Play rejects one of them (docs/20-publishing.md › Flavors › If Play rejects …), each with the matching
+  `play_permissions` entry in allow.json:
+
+  Exact alarms: SCHEDULE_EXACT_ALARM instead (the person grants it; the alert checklist asks for *Alarms and
+  reminders* and the checks use inexact while-idle alarms until then: monitor AlarmPolicy):
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
-    <!-- No System UI module, no root status bar: nothing to feed, nothing to say hello. -->
-    <permission
-        android:name="${applicationId}.permission.SYSTEMUI_STATE"
-        tools:node="remove" />
-    <uses-permission
-        android:name="${applicationId}.permission.SYSTEMUI_STATE"
-        tools:node="remove" />
-
+  Root features: no System UI module (with `Store.rootFeatures = null` and the META-INF/xposed exclusion in
+  app/build.gradle.kts):
+    <permission android:name="${applicationId}.permission.SYSTEMUI_STATE" tools:node="remove" />
+    <uses-permission android:name="${applicationId}.permission.SYSTEMUI_STATE" tools:node="remove" />
     <application>
-        <provider
-            android:name="io.github.libxposed.service.XposedProvider"
-            tools:node="remove" />
-        <receiver
-            android:name="app.mauri.sukrara.monitor.systemui.HookHelloReceiver"
-            tools:node="remove" />
+        <provider android:name="io.github.libxposed.service.XposedProvider" tools:node="remove" />
+        <receiver android:name="app.mauri.sukrara.monitor.systemui.HookHelloReceiver" tools:node="remove" />
     </application>
-</manifest>
+-->
+<manifest />

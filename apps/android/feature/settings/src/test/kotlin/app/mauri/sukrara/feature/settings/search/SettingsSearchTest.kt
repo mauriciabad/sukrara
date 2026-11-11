@@ -116,19 +116,24 @@ class SettingsSearchTest {
         assertTrue(SearchTarget.Page(SettingsRoute.Pens) in targets(pens = true, wearer = true))
     }
 
-    /** The Google Play build (no root features, no update check) finds none of their rows; both find the privacy policy. */
+    /**
+     * The Google Play build (root features, no update check: #142) finds no *Check again*; a build without root (Play's
+     * fallback) no root rows either; every build finds the privacy policy and *About the versions*.
+     */
     @Test
     fun rowsOfTheOtherBuildAreNotFound() {
         fun titles(
             build: Set<BuildFeature>,
         ) = SettingsIndex.entries.filter { it.shownOn(pens = true, wearer = true, build) }.map { it.title }
-        val play = titles(emptySet())
+        val noRoot = titles(emptySet())
+        val play = titles(setOf(BuildFeature.Root))
         val full = titles(BuildFeature.entries.toSet())
-        val onlyFull =
-            listOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon) +
-                R.string.st_update_check_again
-        for (t in onlyFull) assertTrue(t !in play && t in full)
-        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_chip, R.string.st_about_version)) assertTrue(t in play && t in full)
+        val root = listOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon)
+        for (t in root) assertTrue(t !in noRoot && t in play && t in full)
+        assertTrue(R.string.st_update_check_again !in play && R.string.st_update_check_again in full)
+        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_chip, R.string.st_about_version, R.string.st_about_versions)) {
+            assertTrue(t in noRoot && t in play && t in full)
+        }
     }
 
     /** #134: a hit on an alert's own row opens that alert's page ("Remind every · In Alerts › Low"), not the list. */

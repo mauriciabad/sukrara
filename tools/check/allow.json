@@ -191,13 +191,9 @@
     "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
   },
   "play_permissions": {
-    "remove": {
-      "android.permission.USE_EXACT_ALARM": "Play allows it only for alarm-clock and calendar apps (app/src/play/AndroidManifest.xml)",
-      "app.mauri.sukrara.permission.SYSTEMUI_STATE": "no System UI module in the Play build (Device and Network Abuse)"
-    },
-    "add": {
-      "android.permission.SCHEDULE_EXACT_ALARM": "the alert check's exact alarms; the person can refuse it and the alert checklist then asks for Alarms and reminders (:monitor readiness)"
-    }
+    "_why": "Empty since the owner's decision of 2026-11-11 (#142): the Play build declares exactly `permissions`, USE_EXACT_ALARM (with Play's exact-alarm declaration) and the System UI module's SYSTEMUI_STATE included. If Play rejects one, its fallback (app/src/play/AndroidManifest.xml, docs/20-publishing.md › Flavors) adds the entries here: remove USE_EXACT_ALARM + add SCHEDULE_EXACT_ALARM, or remove SYSTEMUI_STATE.",
+    "remove": {},
+    "add": {}
   },
   "queries": {
     "package:com.google.android.calendar": "open the sensor-end event in Google Calendar (:monitor, :app, :feature:settings)",

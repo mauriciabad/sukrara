@@ -3,7 +3,8 @@ title: Sukrara for Android
 ---
 
 <!-- Sukrara — https://github.com/mauriciabad/sukrara · Copyright (C) 2026 Maurici Abad · SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- https://sukrara.mauri.app/android/ — opened from Sukrara for Mac (Settings › General › Sukrara on Other Devices) -->
+<!-- https://sukrara.mauri.app/android/ — opened from Sukrara for Mac (Settings › General › Sukrara on Other Devices);
+     #versions from Sukrara for Android (Settings › About › About the versions) -->
 
 [← Sukrara](../)
 
@@ -44,10 +45,26 @@ Android 16 or newer on an arm64 phone, with NFC and Bluetooth to read the sensor
 - **APK from GitHub:** download `Sukrara-<version>.apk` from the
   [latest release](https://github.com/mauriciabad/sukrara/releases) on the phone and open it; allow installs from your
   browser when asked. Updates install over the old version and keep your data; the app tells you in Settings › About
-  when there is a new one. [Obtainium](https://obtainium.imranr.dev/) can keep it updated (turn on *Include
-  prereleases*).
-- **Google Play:** in preparation. The Play build is the same app without the root features
-  ([what differs](../FEATURES#google-play-build-android)).
+  when there is a new one.
+- **[Obtainium](https://obtainium.imranr.dev/):** add `https://github.com/mauriciabad/sukrara` and turn on *Include
+  prereleases*; it installs the GitHub releases and their updates for you, and checks they're signed with Sukrara's key.
+- **Google Play:** in preparation.
+
+## Versions
+
+Sukrara for Android comes in two versions: the **GitHub version** and the **Google Play version**. They are the same
+app, built from the same source code and signed with the same key, so either one installs over the other and keeps
+your data. Settings › About shows which one you have, next to the version number.
+
+| | GitHub version | Google Play version |
+|---|---|---|
+| Updates | Sukrara checks GitHub for a newer release when you open Settings › About and takes you to it; Obtainium can install it for you | Google Play updates it, like any app from Play |
+| Where to get it | [GitHub releases](https://github.com/mauriciabad/sukrara/releases), [Obtainium](https://obtainium.imranr.dev/) | Google Play (in preparation) |
+| Features | all of them | all of them |
+
+**What the Google Play version leaves out:** only the update check, because Google Play brings the updates. Everything
+else, alerts, sharing, widgets and the glucose in the status bar included, is in both. If a store version ever has to
+leave something else out, it is listed here.
 
 > **A preview, not a medical device.** Releases are prereleases until they've been tested on a real sensor. Don't
 > make treatment decisions from it.

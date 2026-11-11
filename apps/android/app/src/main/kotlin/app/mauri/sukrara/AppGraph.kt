@@ -289,6 +289,7 @@ class AppGraph(
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
             systemAccess = monitor.root?.access,
+            distribution = Store.distribution,
             releases = { Store.releases(this) },
             pensAvailable = { pens.available() },
             pens = { pens.port.takeIf { pens.available() } },

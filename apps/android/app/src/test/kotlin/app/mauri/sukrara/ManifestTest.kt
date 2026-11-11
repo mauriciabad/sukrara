@@ -136,7 +136,11 @@ class ManifestTest {
         assertEquals("neverForLocation", scan.attr("usesPermissionFlags"))
     }
 
-    /** The Google Play build's merged manifest (play flavor, app/src/play): what Play's policies don't allow is gone. */
+    /**
+     * The Google Play build's merged manifest (play flavor, app/src/play). The owner's decision of 2026-11-11 (#142): it
+     * keeps `USE_EXACT_ALARM` (Play's exact-alarm declaration) and the root features; only the update check is left
+     * out, which is code, not manifest (verify-apk.sh --play).
+     */
     private val play: Element by lazy {
         DocumentBuilderFactory
             .newInstance()
@@ -158,20 +162,33 @@ class ManifestTest {
         val change = allowJson.getValue("play_permissions").jsonObject
         val remove = change.getValue("remove").jsonObject.keys
         val add = change.getValue("add").jsonObject.keys
-        assertEquals((allowed("permissions") - remove + add).toSortedSet(), play.names("uses-permission").toSortedSet())
-        assertTrue("android.permission.USE_EXACT_ALARM" in remove && "android.permission.SCHEDULE_EXACT_ALARM" in add)
+        val permissions = play.names("uses-permission").toSortedSet()
+        assertEquals((allowed("permissions") - remove + add).toSortedSet(), permissions)
+        // the alert check's alarms ring on time from install: no SCHEDULE_EXACT_ALARM the person must grant first
+        assertTrue("android.permission.USE_EXACT_ALARM" in permissions)
+        assertFalse("android.permission.SCHEDULE_EXACT_ALARM" in permissions)
     }
 
     @Test
-    fun `the Play build has no LSPosed module and no System UI hello`() {
-        val components = listOf("provider", "receiver").flatMap { play.names(it) }
-        assertFalse("io.github.libxposed.service.XposedProvider" in components)
-        assertFalse("app.mauri.sukrara.monitor.systemui.HookHelloReceiver" in components)
-        assertTrue(play.names("permission").none { it.endsWith(".permission.SYSTEMUI_STATE") })
-        // the rest is the same app: the launcher, the monitor, the alert sounds
-        for (c in listOf("app.mauri.sukrara.monitor.MonitoringService", "app.mauri.sukrara.monitor.AlertSoundProvider")) {
-            assertTrue("$c missing from the Play build", c in play.names("service") + components)
-        }
+    fun `the Play build has the root features, the LSPosed module and the System UI hello`() {
+        val components = listOf("service", "provider", "receiver").flatMap { play.names(it) }
+        val wanted =
+            listOf(
+                "io.github.libxposed.service.XposedProvider",
+                "app.mauri.sukrara.monitor.systemui.HookHelloReceiver",
+                // the rest of the app: the monitor, the alert sounds
+                "app.mauri.sukrara.monitor.MonitoringService",
+                "app.mauri.sukrara.monitor.AlertSoundProvider",
+            )
+        for (c in wanted) assertTrue("$c missing from the Play build", c in components)
+        assertTrue(play.names("permission").any { it.endsWith(".permission.SYSTEMUI_STATE") })
+    }
+
+    @Test
+    fun `the Play build has the same components as the GitHub build`() {
+        val tags = listOf("activity", "activity-alias", "service", "receiver", "provider")
+        // the debug-only components are in both debug manifests alike, so the sets compare whole
+        assertEquals(tags.flatMap { root.names(it) }.toSortedSet(), tags.flatMap { play.names(it) }.toSortedSet())
     }
 
     @Test

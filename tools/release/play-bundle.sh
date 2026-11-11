@@ -6,11 +6,12 @@
 #   tools/release/play-bundle.sh              signed with THE release key (Play's upload key and app-signing key)
 #   tools/release/play-bundle.sh --unsigned   CI: no key and no Juggluco checkout; every other check
 # The bundle: signer = tools/release/android-cert.sha256 (keytool on the .aab), base module only, arm64 only, the
-# Libre 3 core, the R8 mapping inside for Play's crash reports, no META-INF/xposed. With bundletool ($BUNDLETOOL = the
-# bundletool-all jar, or `bundletool` on PATH): `validate`, then its universal APK, signed with the
-# release key, goes through verify-apk.sh --play (permissions = allow.json with play_permissions; no root, LSPosed or
-# update-check code; not debuggable; sounds; R8 mapping). Without bundletool the same checks run on the play APK
-# Gradle builds alongside, from the same R8 output.
+# Libre 3 core, the R8 mapping inside for Play's crash reports, the System UI module's META-INF/xposed (the Play build
+# has the root features: the owner's decision of 2026-11-11, #142). With bundletool ($BUNDLETOOL = the bundletool-all
+# jar, or `bundletool` on PATH): `validate`, then its universal APK, signed with the release key, goes through
+# verify-apk.sh --play (permissions = allow.json with play_permissions, USE_EXACT_ALARM included; no update-check code;
+# the LSPosed hooks keep intercept; not debuggable; sounds; R8 mapping). Without bundletool the same checks run on the
+# play APK Gradle builds alongside, from the same R8 output.
 # Signed: copies the bundle to apps/android/app/build/dist/Sukrara-<version>-play.aab and archives its mapping in
 # ~/.android/sukrara-mappings/<version>-play-mapping.txt. Uploading is a separate step (the owner, or the service
 # account: docs/20-publishing.md). Refuses unless tools/check/strict exists. Prints the bundle's path on the last line.
@@ -83,7 +84,8 @@ else
   if [ "$signer" = "$(cat "$here/android-cert.sha256")" ]; then ok "bundle signed by the release key (= Play's upload key)"
   else bad "bundle signer '${signer:-none}' is not the release key"; fi
 fi
-if has '^base/root/META-INF/xposed/'; then bad "META-INF/xposed is inside"; else ok "no META-INF/xposed"; fi
+if has '^base/root/META-INF/xposed/java_init\.list$'; then ok "META-INF/xposed inside (the System UI module)"
+else bad "no base/root/META-INF/xposed/java_init.list: LSPosed wouldn't find the System UI module"; fi
 
 # What a phone gets: bundletool's universal APK, or Gradle's play APK.
 tmp="$(mktemp -d)"

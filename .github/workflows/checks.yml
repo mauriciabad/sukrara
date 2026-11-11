@@ -131,8 +131,8 @@ jobs:
 
   # The Google Play build (play flavor): the bundle builds and passes every check play-bundle.sh makes before an
   # upload except the signer and the Libre 3 core (no release key, no Juggluco checkout on CI): bundletool validate,
-  # its universal APK through verify-apk.sh --play (permissions with play_permissions; no root, LSPosed or update-check
-  # code).
+  # its universal APK through verify-apk.sh --play (permissions with play_permissions; the System UI module; no
+  # update-check code).
   android-play:
     needs: changes
     if: needs.changes.outputs.android == 'true'

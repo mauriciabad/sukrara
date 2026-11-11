@@ -68,7 +68,7 @@ class MonitorModule(
     sharing: Flow<SharingLine?> = flowOf(null),
     /** The role's reading source may have changed (Settings › Sensor): the service picks it again. */
     val sourceChanges: Flow<Unit> = emptyFlow(),
-    /** Root and the System UI module: the full build's `SystemUiRoot`; null in the Google Play build ([RootFeatures]). */
+    /** Root and the System UI module: `SystemUiRoot`; null in a build without them ([RootFeatures]). */
     rootFeatures: RootFeatures.Factory? = null,
 ) {
     val hubImpl = GlucoseHubImpl(scope, dispatchers, clock, readings, record, role)
@@ -149,7 +149,7 @@ class MonitorModule(
 
     /**
      * Root for Sukrara, the System UI module and the value in the status bar with root (Settings › Status bar, the home
-     * restart card); null in the Google Play build, which has none of them.
+     * restart card); null in a build without them ([RootFeatures]).
      */
     val root: RootFeatures? =
         rootFeatures?.create(

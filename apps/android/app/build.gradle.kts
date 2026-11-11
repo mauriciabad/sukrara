@@ -106,7 +106,7 @@ tasks.withType<Test>().configureEach {
 
 androidComponents {
     // ManifestTest reads the merged debug manifests (every module's components) through the public artifact API: the
-    // full flavor's, and the play flavor's to check what the Play build leaves out.
+    // full flavor's, and the play flavor's to check the Play build keeps what the owner decided it keeps.
     onVariants(selector().withBuildType("debug")) { variant ->
         val manifest = variant.artifacts.get(SingleArtifact.MERGED_MANIFEST)
         val property = if (variant.flavorName == "play") "sukrara.playManifest" else "sukrara.mergedManifest"
@@ -115,11 +115,9 @@ androidComponents {
             jvmArgumentProviders += CommandLineArgumentProvider { listOf("-D$property=${manifest.get().asFile}") }
         }
     }
-    // The Play build isn't an LSPosed module: LSPosed finds modules by these files (docs/20-publishing.md › Flavors).
-    onVariants(selector().withFlavor("store" to "play")) { variant ->
-        variant.packaging.resources.excludes
-            .add("META-INF/xposed/**")
-    }
+    // The Play build is an LSPosed module too (META-INF/xposed, from :monitor's resources; owner's decision 2026-11-11,
+    // #142). If Play rejects the root features, the fallback (docs/20-publishing.md › Flavors) excludes those files here:
+    // onVariants(selector().withFlavor("store" to "play")) { it.packaging.resources.excludes.add("META-INF/xposed/**") }
     onVariants(selector().withBuildType("release")) { variant ->
         val name = variant.name.replaceFirstChar { it.uppercase() }
         val apk = registerLibraryCheck("verify${name}ApkNativeCore", variant.artifacts.get(SingleArtifact.APK), "apk", NativeCore.LIBRARY)

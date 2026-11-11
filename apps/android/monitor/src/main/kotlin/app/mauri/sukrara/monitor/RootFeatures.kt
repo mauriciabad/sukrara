@@ -14,10 +14,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Root and the Sukrara LSPosed module in System UI (Settings › Status bar's *With root*, home's restart card). Only
- * the full build has them (docs/20-publishing.md › Flavors): its app passes `systemui.SystemUiRoot` to
- * [MonitorModule]; the Google Play build passes nothing, so nothing reaches the `systemui` package and R8 leaves it
- * out (consumer-rules.pro keeps the daemon and the hook only while it is in).
+ * Root and the Sukrara LSPosed module in System UI (Settings › Status bar's *With root*, home's restart card). Both
+ * builds pass `systemui.SystemUiRoot` to [MonitorModule] (the Google Play build too since 2026-11-11, #142). A build
+ * that passes nothing (Play's fallback, docs/20-publishing.md › Flavors) has none of it: nothing reaches the `systemui`
+ * package and R8 leaves it out (consumer-rules.pro keeps the daemon and the hook only while it is in).
  */
 interface RootFeatures {
     /** Root for Sukrara and the module's state, for Settings and home. */

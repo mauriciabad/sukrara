@@ -44,6 +44,9 @@ interface SettingsDeps {
     val appVersion: String
     val prerelease: Boolean
 
+    /** Which version this is (About: *Google Play version* / *GitHub version*). */
+    val distribution: Distribution
+
     /** About's update check against the GitHub releases; null in the Google Play build (updates come from Play). */
     val releases: ReleasesSource?
 
@@ -55,7 +58,7 @@ interface SettingsDeps {
     /** The pens, their pages and Android's tap state (null on a phone that doesn't read pens). */
     val pens: PensPort? get() = null
 
-    /** Root for Sukrara and the System UI module (Settings › Status bar, "With root"); null in the Google Play build. */
+    /** Root for Sukrara and the System UI module (Settings › Status bar, "With root"); null in a build without them. */
     val systemAccess: SystemAccessPort?
 
     /** The wearer's sensor as the hub knows it (Settings › Sensor end shows its end). */

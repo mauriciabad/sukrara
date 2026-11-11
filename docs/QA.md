@@ -290,14 +290,17 @@ survive it; the app's data is cleared before each path, so every path starts fro
 over nothing:
 
 - [ ] `play-bundle.sh` exits 0 with bundletool (`$BUNDLETOOL`), and `verify-apk.sh --play` FAILs on the full flavor's
-  APK (USE_EXACT_ALARM, XposedProvider, the systemui classes): the Play checks bite.
-- [ ] Settings › Status bar has no *With root* section; searching "root" or "placement" finds nothing; home never shows
-  *Restart System UI*.
-- [ ] Settings › About: version, *Report a problem*, *Source code*, *Privacy policy* (opens sukrara.mauri.app/privacy);
-  no update rows, nothing about other devices.
-- [ ] A fresh install: the alert checklist (setup and Settings › Alert reliability) lists *Alarms and reminders*;
-  *Fix* opens Android's page; allowing it and coming back clears the item; turning it off again brings it back.
-- [ ] TalkBack reads the About rows and the checklist item with their summaries.
+  APK (the GitHub update check's classes and URL): the Play check bites.
+- [ ] Settings › About: *0.12.0 · Google Play version* (the version from `VERSION`), *About the versions* (opens
+  sukrara.mauri.app/android/#versions, the *Versions* section), *Sukrara for Mac*, *Report a problem*, *Source code*,
+  *Privacy policy* (opens sukrara.mauri.app/privacy); no update rows, no disabled row, nothing that says to install
+  another version. Searching "check again" finds nothing; "versions" finds *About the versions*.
+- [ ] The same app as the GitHub build otherwise: Settings › Status bar has *With root* (searching "root" finds its
+  rows); a fresh install's alert checklist has no *Alarms and reminders* item (`USE_EXACT_ALARM` is granted at
+  install).
+- [ ] The GitHub build's About says *0.12.0 · GitHub version* with the same *About the versions* link and its update
+  rows.
+- [ ] TalkBack reads the About rows with their summaries.
 
 ## Q11 Sensor reminders and countdowns
 

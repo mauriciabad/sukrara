@@ -21,7 +21,10 @@ sealed interface SearchTarget {
 /** Whose phone shows a row: every phone, only the wearer's or only a follower's. */
 enum class Seen { Everyone, Wearer, Follower }
 
-/** What only the GitHub build has (the Google Play build has neither: docs/20-publishing.md › Flavors). */
+/**
+ * What a build may leave out (docs/20-publishing.md › Flavors): the Google Play build has no update check; root is in
+ * both builds since 2026-11-11 (#142) and stays here for the fallback if Play rejects it.
+ */
 enum class BuildFeature { Root, UpdateCheck }
 
 /**
@@ -334,6 +337,7 @@ object SettingsIndex {
             addAll(
                 page(
                     SettingsRoute.About,
+                    R.string.st_about_versions to R.string.st_about_versions_summary,
                     R.string.st_device_mac to R.string.st_device_mac_summary,
                     R.string.st_report_problem to R.string.st_report_problem_summary,
                     R.string.st_source_code to R.string.st_license,

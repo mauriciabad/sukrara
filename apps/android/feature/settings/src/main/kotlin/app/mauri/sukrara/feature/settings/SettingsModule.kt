@@ -32,8 +32,10 @@ class SettingsModule(
     clock: Clock,
     sensor: Flow<SensorState>,
     appsShared: Flow<Set<AppOutput>>,
-    /** Root and the System UI module; null in the Google Play build. */
+    /** Root and the System UI module; null in a build without them. */
     systemAccess: SystemAccessPort?,
+    /** Which version this is: Google Play or GitHub (About). */
+    distribution: Distribution,
     /** About's update check (built when About first opens); returns null in the Google Play build. */
     releases: () -> ReleasesSource?,
     alertPlayback: AlertPlayback,
@@ -58,6 +60,7 @@ class SettingsModule(
             override val readiness = readiness
             override val appVersion = appVersion
             override val prerelease = prerelease
+            override val distribution = distribution
             override val releases: ReleasesSource? by lazy { releases() }
             override val clock = clock
             override val sensor = sensor

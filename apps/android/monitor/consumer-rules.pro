@@ -2,8 +2,8 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Every rule below holds only while SystemAccess is in the app: the full build passes systemui.SystemUiRoot to
-# MonitorModule; the Google Play build doesn't, so R8 leaves the root and LSPosed code out of it (RootFeatures).
+# Every rule below holds only while SystemAccess is in the app: both builds pass systemui.SystemUiRoot to
+# MonitorModule; a build that doesn't (Play's fallback) gets no root or LSPosed code from R8 (RootFeatures).
 #
 # The root slot daemon is started by name through app_process (systemui/RootStatusBar): keep its main.
 -if class app.mauri.sukrara.monitor.systemui.SystemAccess

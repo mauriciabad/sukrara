@@ -234,6 +234,7 @@ class SettingsPagesTest {
                 override val readiness = FakeReadiness()
                 override val appVersion = "0.12.0"
                 override val prerelease = true
+                override val distribution = Distribution.GitHub
                 override val releases = ReleasesSource { Result.success(emptyList()) }
                 override val clock = FakeClock()
                 override val sensor = flowOf(app.mauri.sukrara.core.model.SensorState.None)

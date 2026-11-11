@@ -40,6 +40,7 @@ import app.mauri.sukrara.feature.settings.AlertsActions
 import app.mauri.sukrara.feature.settings.AlertsSettingsContent
 import app.mauri.sukrara.feature.settings.AlertsUi
 import app.mauri.sukrara.feature.settings.BackupState
+import app.mauri.sukrara.feature.settings.Distribution
 import app.mauri.sukrara.feature.settings.GraphPrefs
 import app.mauri.sukrara.feature.settings.OverviewActions
 import app.mauri.sukrara.feature.settings.OverviewSharing
@@ -234,7 +235,10 @@ class SettingsIndexTest {
                     onBack = {},
                 )
             },
-            Scene("about", SearchTarget.Page(SettingsRoute.About)) { AboutContent("0.12.0", UpdateState.UpToDate, {}) {} },
+            Scene(
+                "about",
+                SearchTarget.Page(SettingsRoute.About),
+            ) { AboutContent("0.12.0", Distribution.GitHub, UpdateState.UpToDate, {}) {} },
             Scene("threshold review", SearchTarget.Page(SettingsRoute.ThresholdReview)) {
                 AlertThresholdReviewContent(AlertSettings(), { _, _ -> }, {}, {})
             },

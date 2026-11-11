@@ -56,7 +56,7 @@ class OverviewActions(
     val restoreClosedTips: () -> Unit = {},
     /** Settings › Insulin pens is offered (the wearer's phone with NFC). */
     val pens: Boolean = false,
-    /** What this build has: both in the GitHub build, neither in the Google Play build (search shows only those rows). */
+    /** What this build has: both in the GitHub build, root only in the Google Play build (search shows only those rows). */
     val build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     /** The sharing profile (name and picture followers see). */
     val openProfile: () -> Unit = {},
