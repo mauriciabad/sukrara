@@ -89,15 +89,17 @@ scratch folders for such a dry run.
 ## Release
 
 One command on the release Mac publishes a version to every channel (#187); the keys never leave the Mac:
-`tools/release/release.py <version>` on a clean checkout of `next` (= `origin/next`, its Checks run green). Before it:
-write CHANGELOG.md's `## Unreleased` section (optionally `## Unreleased — <summary>`, which becomes the entry's title)
-and the Google Play notes, `apps/android/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and
-`es-ES/…` (what's new on Android, at most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read
-too). Then the steps, in order; each checks its result and stops with what's done, what's left and the
-`--from <step>` that resumes (every step can run again: it skips what's already there):
+`tools/release/release.py <version>` in a clean checkout whose HEAD is `origin/next` (its Checks run green): the main
+checkout or a worktree, on any branch or a detached HEAD (every push names its refspec, `HEAD:next` / `HEAD:main`; no
+local `next` or `main` is needed). Before it: write CHANGELOG.md's `## Unreleased` section (optionally
+`## Unreleased — <summary>`, which becomes the entry's title) and the Google Play notes,
+`apps/android/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `es-ES/…` (what's new on Android, at
+most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read too). Then the steps, in order; each
+checks its result and stops with what's done, what's left and the `--from <step>` that resumes (every step can run
+again: it skips what's already there):
 
-1. `preconditions`: the clean `next`, its green Checks run, the version above `VERSION`, a non-empty Unreleased
-   section, the Play notes, no tag yet, `tools/check/strict`, the keys, `gh`.
+1. `preconditions`: a clean tree at `origin/next`, its green Checks run, the version above `VERSION`, a non-empty
+   Unreleased section, the Play notes, no tag yet, `tools/check/strict`, the keys, `gh`.
 2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …
    (GitHub prerelease)` with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run goes on while
    the gate runs, and is awaited before anything is published.
@@ -109,8 +111,9 @@ too). Then the steps, in order; each checks its result and stops with what's don
    --latest=false` (`--latest` from 1.0.0) with the APK, the Android mapping, the dmg and the zip (their sha256 checked
    against the release's), notes from the CHANGELOG entry with the disclaimer and the files; Checks on `main` green.
 5. `sparkle`: the dmg on the release is the one `docs/appcast.xml` signs → the appcast committed and pushed to `main`
-   and `next` (if `next` moved meanwhile, the commit is merged into it), Pages deployed, and
-   https://sukrara.mauri.app/appcast.xml serves the item.
+   and `next` (if `next` moved meanwhile, the commit is merged into it; HEAD stays on the appcast commit, so a re-run
+   never brings `next`'s other work to `main`), Pages deployed, and https://sukrara.mauri.app/appcast.xml serves the
+   item.
 6. `homebrew`: the tap's cask (bumped by `homebrew-tap.yml`) at the version, with the dmg's sha256 and
    `auto_updates true`.
 7. `play`: the play bundle on the **internal** track with the en-US / es-ES notes, through the Android Publisher API
@@ -122,11 +125,11 @@ too). Then the steps, in order; each checks its result and stops with what's don
 9. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
-nothing. Read-only store checks: `python3 tools/release/stores.py play-tracks` (opens an edit, lists the tracks,
-deletes the edit) and `asc-builds`. `--production` (from 1.0.0; not used yet) also promotes the Play release to
-production and submits the App Store build for review; it needs Play production rights for the service account and an
-App Store Connect key with App Manager access (today's key is *Developer*). Tests: `python3 tools/release/test_release.py`
-(CI).
+nothing, and exits 1 with the list when a check would stop the release. Read-only store checks: `python3
+tools/release/stores.py play-tracks` (opens an edit, lists the tracks, deletes the edit) and `asc-builds`.
+`--production` (from 1.0.0; not used yet) also promotes the Play release to production and submits the App Store build
+for review; it needs Play production rights for the service account and an App Store Connect key with App Manager
+access (today's key is *Developer*). Tests: `python3 tools/release/test_release.py` (CI).
 
 ## Strings (Android, English + Spain Spanish)
 

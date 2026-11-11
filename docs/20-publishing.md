@@ -671,9 +671,9 @@ module's `consumer-rules.pro` (the module that uses the reflective / JNI library
 
 ### Cutting a release
 
-**One command does it** (#187): `tools/release/release.py <version>` on the release Mac, from a clean `next`
-([docs/DEVELOPMENT.md › Release](DEVELOPMENT.md#release) has the steps; [One-command release](#one-command-release-187)
-below has the store parts). What it runs, and what a release by hand would be: with `tools/check/strict` committed,
+**One command does it** (#187): `tools/release/release.py <version>` on the release Mac, from a clean checkout at
+`origin/next`, a worktree included ([docs/DEVELOPMENT.md › Release](DEVELOPMENT.md#release) has the steps;
+[One-command release](#one-command-release-187) below has the store parts). What it runs, and what a release by hand would be: with `tools/check/strict` committed,
 `tools/release/android-release.sh` (signed APK →
 `apps/android/app/build/dist/Sukrara-<version>.apk`, verified, and its R8 mapping gzipped next to it as
 `Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`) and

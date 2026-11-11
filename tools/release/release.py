@@ -6,10 +6,12 @@
 
     tools/release/release.py <version> [--dry-run] [--from <step>] [--production]
 
-Runs on the release Mac (the keys stay there), on a clean checkout of `next`. The steps, in order; each checks its
-result and stops on failure with what's done and what's left (resume with --from <step>; every step can run again):
+Runs on the release Mac (the keys stay there), in any clean checkout whose HEAD is origin/next: the main checkout or a
+worktree, on any branch or a detached HEAD. Every push names its refspec (HEAD:next, HEAD:main); nothing needs a local
+`next` or `main` branch. The steps, in order; each checks its result and stops on failure with what's done and what's
+left (resume with --from <step>; every step can run again):
 
-  preconditions  clean tree on next = origin/next, a green Checks run on that commit, the new version above VERSION,
+  preconditions  a clean tree, HEAD = origin/next, a green Checks run on that commit, the new version above VERSION,
                  CHANGELOG.md's Unreleased section, the Play notes (apps/android/fastlane/metadata/android/<en-US|es-ES>/
                  changelogs/<versionCode>.txt, at most 500 characters), no tag yet, the keys and gh
   version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md), CHANGELOG's Unreleased → the
@@ -28,7 +30,8 @@ result and stops on failure with what's done and what's left (resume with --from
   testflight     mac-appstore.sh --upload, then App Store Connect processes the build (export compliance: see below)
   summary        every channel's state
 
---dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing
+--dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
+               exits 1 when a check would stop the release
 --from STEP    starts at STEP (the release commit must be checked out: VERSION = <version>)
 --production   from 1.0.0 only, and never yet: also promotes the Play release to production and submits the App Store
                build for review (needs Play production rights and an App Store Connect key with App Manager access)
@@ -207,6 +210,24 @@ def artifacts(version):
     }
 
 
+def start_problems(head, origin_next, dirty):
+    """Why this checkout can't start a release ([] when it can): the tree must be clean and HEAD must be origin/next.
+    The branch doesn't matter (a worktree's own branch, a detached HEAD): every push names its refspec."""
+    out = []
+    if dirty:
+        out.append("the tree isn't clean: %s" % ", ".join(dirty))
+    if head != origin_next:
+        out.append("HEAD (%s) isn't origin/next (%s)" % (head[:8], origin_next[:8]))
+    return out
+
+
+def resume_problems(dirty):
+    """Why --from a later step can't go on ([] when it can): changes besides docs/appcast.xml, which the gate writes
+    and the sparkle step commits. The branch doesn't matter; main() checks VERSION is the release's."""
+    extra = [f for f in dirty if f != "docs/appcast.xml"]
+    return ["the tree has changes besides docs/appcast.xml: %s" % ", ".join(extra)] if extra else []
+
+
 def pick_run(runs):
     """The state of a commit's workflow runs (gh run list --json status,conclusion): 'success' when one succeeded,
     'pending' while one runs (or none started yet), else 'failure'."""
@@ -240,16 +261,17 @@ class Release:
         self.production = production
         self.changelog = None  # dry run: the CHANGELOG the version step would write
         self.notes_state = []  # what the summary reports as still manual
+        self.would_stop = []  # dry run: every check that would have stopped the release
 
     # shell
-    def sh(self, cmd, mutate=True, capture=True, cwd=ROOT, check=True, env=None):
+    def sh(self, cmd, mutate=True, capture=True, cwd=None, check=True, env=None):
         shown = " ".join(cmd)
         if self.dry and mutate:
             print("  would run: %s" % shown)
             return ""
         if not capture:
             print("  $ %s" % shown, flush=True)
-        r = subprocess.run(cmd, cwd=cwd, capture_output=capture, text=True, env=env)
+        r = subprocess.run(cmd, cwd=cwd or ROOT, capture_output=capture, text=True, env=env)
         if check and r.returncode != 0:
             raise Stop("%s failed (exit %d)%s" % (shown, r.returncode,
                                                   (": " + (r.stderr or r.stdout).strip()[-800:]) if capture else ""))
@@ -260,6 +282,7 @@ class Release:
             return True
         if self.dry:
             print("  WOULD STOP: %s" % msg)
+            self.would_stop.append(msg)
             return False
         raise Stop(msg)
 
@@ -304,15 +327,14 @@ class Release:
         return refs.get(tag + "^{}") or refs.get(tag, "")  # an annotated tag's commit is the peeled ^{} line
 
     def resume_check(self):
-        """--from a later step: the release commit (or the appcast commit on it) on next, nothing else changed."""
-        branch = self.sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], mutate=False)
-        self.ok(branch == "next", "on branch %s, not next" % branch)
-        extra = [f for f in self.dirty() if f != "docs/appcast.xml"]
-        self.ok(not extra, "the tree has changes besides docs/appcast.xml: %s" % ", ".join(extra))
+        """--from a later step: the release commit (or the appcast commit on it) checked out, nothing else changed."""
+        for problem in resume_problems(self.dirty()):
+            self.ok(False, problem)
 
     def push_next(self):
         """Pushes HEAD to next. If next moved meanwhile (other work landed), merges HEAD into it instead, so main stays
-        an ancestor of next (the merge brings only the release's own commits in)."""
+        an ancestor of next (the merge brings only the release's own commits in). HEAD ends on the release's own commit
+        either way, never on the merge: a re-run's HEAD:main must not carry next's unreleased work to main."""
         if self.dry:
             print("  would run: git push origin HEAD:next (if next moved: merge HEAD into origin/next, then push)")
             return
@@ -320,9 +342,17 @@ class Release:
             return
         mine = self.head()
         self.sh(["git", "fetch", "--quiet", "origin"])
+        if self.git_ok(["merge-base", "--is-ancestor", mine, "origin/next"]):
+            return  # next has it already (a re-run)
         self.sh(["git", "reset", "--keep", "origin/next"])
-        self.sh(["git", "merge", "--no-ff", "--no-edit", mine])
-        self.sh(["git", "push", "origin", "HEAD:next"])
+        merged = self.git_ok(["merge", "--no-ff", "--no-edit", mine])
+        if not merged:
+            self.git_ok(["merge", "--abort"])
+        pushed = merged and self.git_ok(["push", "origin", "HEAD:next"])
+        self.sh(["git", "reset", "--keep", mine])
+        self.ok(merged, "merging %s into next failed (a conflict or a hook): merge it by hand, then --from sparkle"
+                % mine[:8])
+        self.ok(pushed, "pushing the merge of %s into next failed: --from sparkle again" % mine[:8])
 
     def head(self):
         return self.sh(["git", "rev-parse", "HEAD"], mutate=False)
@@ -347,11 +377,9 @@ class Release:
         current = self.read("VERSION").strip()
         self.ok(parse_version(self.v) > parse_version(current), "%s is not above VERSION (%s)" % (self.v, current))
         self.sh(["git", "fetch", "--quiet", "--tags", "origin"], mutate=False)
-        branch = self.sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], mutate=False)
-        self.ok(branch == "next", "on branch %s, not next" % branch)
-        self.ok(not self.dirty(), "the tree isn't clean: %s" % ", ".join(self.dirty()))
         sha = self.head()
-        self.ok(sha == self.sh(["git", "rev-parse", "origin/next"], mutate=False), "HEAD isn't origin/next")
+        for problem in start_problems(sha, self.sh(["git", "rev-parse", "origin/next"], mutate=False), self.dirty()):
+            self.ok(False, problem)
         self.ok(self.git_ok(["merge-base", "--is-ancestor", "origin/main", "HEAD"]),
                 "origin/main has commits next doesn't: main can't be fast-forwarded")
         self.ok(not self.sh(["git", "ls-remote", "--tags", "origin", "v" + self.v], mutate=False),
@@ -713,6 +741,12 @@ def main(argv):
             print("Resume: tools/release/release.py %s --from %s" % (a.version, step), file=sys.stderr)
             return 1
         done.append(step)
+    if rel.would_stop:
+        sys.stdout.flush()
+        print("\nThe dry run found %d thing(s) that would stop the release:" % len(rel.would_stop), file=sys.stderr)
+        for msg in rel.would_stop:
+            print("  - " + msg, file=sys.stderr)
+        return 1
     return 0
 
 

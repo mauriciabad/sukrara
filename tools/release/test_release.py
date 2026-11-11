@@ -225,5 +225,88 @@ class AppcastAndRunsTest(unittest.TestCase):
         self.assertEqual(submit("s1")["data"]["attributes"], {"submitted": True})
 
 
+class CheckoutTest(unittest.TestCase):
+    """Any clean checkout whose HEAD is origin/next releases: agents run release.py from their worktrees."""
+
+    def test_start_needs_a_clean_tree_at_origin_next_and_no_branch(self):
+        a, b = "a" * 40, "b" * 40
+        self.assertEqual(release.start_problems(a, a, []), [])
+        self.assertEqual(release.start_problems(a, b, []), ["HEAD (aaaaaaaa) isn't origin/next (bbbbbbbb)"])
+        self.assertEqual(release.start_problems(a, a, ["CHANGELOG.md"]), ["the tree isn't clean: CHANGELOG.md"])
+        self.assertEqual(len(release.start_problems(a, b, ["VERSION"])), 2)
+
+    def test_resume_allows_only_the_appcast(self):
+        self.assertEqual(release.resume_problems([]), [])
+        self.assertEqual(release.resume_problems(["docs/appcast.xml"]), [])
+        self.assertEqual(release.resume_problems(["docs/appcast.xml", "VERSION"]),
+                         ["the tree has changes besides docs/appcast.xml: VERSION"])
+
+    def test_dry_run_counts_what_would_stop(self):
+        r = release.Release("0.14.0", True, False)
+        self.assertTrue(r.ok(True, "fine"))
+        self.assertFalse(r.ok(False, "no Play notes"))
+        self.assertEqual(r.would_stop, ["no Play notes"])
+        with self.assertRaises(release.Stop):
+            release.Release("0.14.0", False, False).ok(False, "no Play notes")
+
+
+@unittest.skipUnless(shutil.which("git"), "needs git")
+class WorktreeGitTest(unittest.TestCase):
+    """A real origin, a clone whose main checkout holds `next`, and a worktree on its own branch (as an agent's)."""
+
+    def git(self, cwd, *args):
+        return subprocess.run(["git"] + list(args), cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+    def commit(self, cwd, name, text):
+        with open(os.path.join(cwd, name), "w") as f:
+            f.write(text)
+        self.git(cwd, "add", name)
+        self.git(cwd, "commit", "-q", "-m", name)
+        return self.git(cwd, "rev-parse", "HEAD")
+
+    def setUp(self):
+        self.env, self.root = dict(os.environ), release.ROOT
+        os.environ.update({"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "GIT_AUTHOR_NAME": "t",
+                           "GIT_AUTHOR_EMAIL": "t@example.com", "GIT_COMMITTER_NAME": "t",
+                           "GIT_COMMITTER_EMAIL": "t@example.com"})
+        self.tmp = tempfile.mkdtemp()
+        self.origin, self.main, self.wt = (os.path.join(self.tmp, d) for d in ("origin.git", "main", "wt"))
+        self.git(self.tmp, "init", "-q", "--bare", self.origin)
+        self.git(self.tmp, "clone", "-q", self.origin, self.main)
+        self.git(self.main, "checkout", "-q", "-b", "next")
+        self.commit(self.main, "VERSION", "0.14.0\n")
+        self.git(self.main, "push", "-q", "origin", "next", "next:main")
+        self.git(self.main, "worktree", "add", "-q", "-b", "agent", self.wt, "origin/next")
+        release.ROOT = self.wt
+
+    def tearDown(self):
+        release.ROOT = self.root
+        os.environ.clear()
+        os.environ.update(self.env)
+        shutil.rmtree(self.tmp)
+
+    def test_a_worktree_on_its_own_branch_can_start(self):
+        r = release.Release("0.14.0", False, False)
+        self.assertEqual(r.sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], mutate=False), "agent")
+        self.assertEqual(release.start_problems(r.head(), self.git(self.wt, "rev-parse", "origin/next"), r.dirty()), [])
+        r.resume_check()  # no Stop: the branch isn't next
+
+    def test_push_next_merges_when_next_moved_and_keeps_head_on_the_release(self):
+        appcast = self.commit(self.wt, "appcast.xml", "0.14.0\n")
+        other = self.commit(self.main, "other.txt", "unreleased\n")  # next moved meanwhile
+        self.git(self.main, "push", "-q", "origin", "next")
+        r = release.Release("0.14.0", False, False)
+        r.sh(["git", "push", "origin", "HEAD:main"])
+        r.push_next()
+        self.assertEqual(r.head(), appcast)  # never the merge
+        nxt = self.git(self.origin, "rev-parse", "next")
+        for c in (appcast, other):
+            self.git(self.origin, "merge-base", "--is-ancestor", c, nxt)
+        r.push_next()  # a re-run changes nothing
+        self.assertEqual(self.git(self.origin, "rev-parse", "next"), nxt)
+        r.sh(["git", "push", "origin", "HEAD:main"])  # the re-run's push to main: still only the release's commits
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), appcast)
+
+
 if __name__ == "__main__":
     unittest.main()
