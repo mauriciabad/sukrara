@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.designsystem.theme
 
+import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -12,7 +13,9 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.rememberReducedMotion
@@ -20,7 +23,9 @@ import app.mauri.sukrara.designsystem.motion.rememberReducedMotion
 /**
  * The app's theme: dark-first (the person checks glucose at night; nothing white lights up the room), the device's
  * dynamic colours when [dynamic], else Sukrara's own true-dark palette. Dynamic dark keeps its tonal surfaces but
- * the background goes near black. Also provides [LocalReducedMotion] for every animation below it.
+ * the background goes near black. Also provides [LocalReducedMotion] for every animation below it, and a configuration
+ * whose night mode is [dark], so what follows the system's theme below it (the settings pages' SettingsTheme) follows
+ * this one (the same in the app, where [dark] is the system's; a screenshot test's dark is dark everywhere).
  */
 @Composable
 fun SukraraTheme(
@@ -36,7 +41,17 @@ fun SukraraTheme(
             dark -> SukraraDark
             else -> SukraraLight
         }
-    CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion()) {
+    val config = LocalConfiguration.current
+    val night = if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+    val themed =
+        remember(config, night) {
+            if (config.uiMode and Configuration.UI_MODE_NIGHT_MASK == night) {
+                config
+            } else {
+                Configuration(config).apply { uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or night }
+            }
+        }
+    CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion(), LocalConfiguration provides themed) {
         MaterialTheme(colorScheme = scheme, typography = SukraraTypography, content = content)
     }
 }
