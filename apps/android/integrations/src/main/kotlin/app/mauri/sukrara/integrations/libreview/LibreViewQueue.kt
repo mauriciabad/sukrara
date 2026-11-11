@@ -41,7 +41,7 @@ data class LvSensorState(
 data class LvState(
     /** This install's LibreView device id (a random UUID, made once). */
     val deviceId: String = "",
-    /** Signed in as (shown on the page; the token itself is only in the SecureStore). */
+    /** The account the token and the ledger belong to (its email; the token itself is only in the SecureStore). */
     val email: String = "",
     /** The signed-in account's LibreView AccountId: decides "the same account" at the next sign-in. */
     val accountId: String = "",
@@ -53,7 +53,8 @@ data class LvState(
     val refused: Boolean = false,
     val ledger: Map<String, LvSent> = emptyMap(),
     val sensors: List<LvSensorState> = emptyList(),
-    val authFailed: Boolean = false,
+    /** Another device uploads for the account: nothing goes up until the person chooses *Take over*. */
+    val otherDevice: Boolean = false,
     val failures: Int = 0,
     val nextAttemptMs: Long = 0,
     val lastOkMs: Long = 0,

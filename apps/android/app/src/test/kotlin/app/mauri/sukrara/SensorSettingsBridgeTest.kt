@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
@@ -34,7 +35,7 @@ class SensorSettingsBridgeTest {
         override val sensor = MutableStateFlow<SensorState>(SensorState.None)
         override val detail = MutableStateFlow<SensorStatus>(SensorStatus.NotRunning)
         override val sensorInfo: Flow<SensorInfo?> = flowOf(null)
-        override val email: Flow<String?> = flowOf(null)
+        override val account: Flow<LibreViewAccountState> = flowOf(LibreViewAccountState.SignedOut)
         override val receiverId: Flow<Long?> = flowOf(null)
         override val tapAvailable = false
         override val tapOn = MutableStateFlow(false)
@@ -55,8 +56,6 @@ class SensorSettingsBridgeTest {
             paired = false
             forgotten = true
         }
-
-        override suspend fun signOut() = Unit
 
         override val jugglucoSecretSet = MutableStateFlow<Boolean?>(null)
         var secret: String? = null

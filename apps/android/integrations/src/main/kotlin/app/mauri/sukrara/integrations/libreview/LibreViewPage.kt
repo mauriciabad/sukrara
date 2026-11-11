@@ -6,32 +6,23 @@ package app.mauri.sukrara.integrations.libreview
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,7 +31,7 @@ import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.errors.UserErrors
-import app.mauri.sukrara.designsystem.rows.DangerRow
+import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
@@ -52,65 +43,46 @@ import app.mauri.sukrara.integrations.ui.IntroText
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import app.mauri.sukrara.settings.SettingsSpec
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** The sign-in dialog's state. */
-sealed interface LvSignInUi {
-    data object Idle : LvSignInUi
+/** The *Take over* dialog's state. */
+sealed interface LvTakeOverUi {
+    data object Idle : LvTakeOverUi
 
-    data object Busy : LvSignInUi
+    data object Busy : LvTakeOverUi
 
-    data class Done(val result: LvSignIn) : LvSignInUi
+    data class Done(val result: LvTakeOver) : LvTakeOverUi
 }
 
 class LibreViewViewModel(
     private val uploader: LibreViewUploader,
-    /** The email of the LibreView account the sensor screens signed in with, to start from. */
-    private val accountEmail: Flow<String?>,
     private val wearer: Boolean,
     private val now: () -> Instant,
 ) : ViewModel() {
     val page: StateFlow<LvPageState?> = uploader.page.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-    private val _signIn = MutableStateFlow<LvSignInUi>(LvSignInUi.Idle)
-    val signIn: StateFlow<LvSignInUi> = _signIn.asStateFlow()
-    private val suggested = MutableStateFlow("")
-    val suggestedEmail: StateFlow<String> = suggested.asStateFlow()
+    private val _takeOver = MutableStateFlow<LvTakeOverUi>(LvTakeOverUi.Idle)
+    val takeOver: StateFlow<LvTakeOverUi> = _takeOver.asStateFlow()
 
-    init {
-        viewModelScope.launch { suggested.value = runCatching { accountEmail.first() }.getOrNull().orEmpty() }
-    }
-
-    fun actions() =
+    /** The page's actions; [openAccount] opens THE LibreView account screen (the app's navigation). */
+    fun actions(openAccount: () -> Unit) =
         LibreViewActions(
             change = { t -> viewModelScope.launch { runCatching { uploader.change(t) } } },
-            signIn = { email, password, takeOver ->
-                _signIn.value = LvSignInUi.Busy
+            openAccount = openAccount,
+            takeOver = {
+                _takeOver.value = LvTakeOverUi.Busy
                 viewModelScope.launch {
-                    val r = runCatching { uploader.signIn(email, password, takeOver) }.getOrElse { LvSignIn.Failed(UserErrors.of(it)) }
-                    _signIn.value = LvSignInUi.Done(r)
+                    val r = runCatching { uploader.takeOver() }.getOrElse { LvTakeOver.Failed(UserErrors.of(it)) }
+                    _takeOver.value = LvTakeOverUi.Done(r)
                 }
             },
-            signOut = { viewModelScope.launch { runCatching { uploader.signOut() } } },
-            reset = {
-                _signIn.value = LvSignInUi.Idle
-                viewModelScope.launch { uploader.dropOtherAccount() }
-            },
-            useOtherAccount = {
-                _signIn.value = LvSignInUi.Busy
-                viewModelScope.launch {
-                    val r = runCatching { uploader.useOtherAccount() }.getOrElse { LvSignIn.Failed(UserErrors.of(it)) }
-                    _signIn.value = LvSignInUi.Done(r)
-                }
-            },
+            resetTakeOver = { _takeOver.value = LvTakeOverUi.Idle },
             setInterval = { min -> viewModelScope.launch { uploader.setInterval(min) } },
         )
 
@@ -121,34 +93,32 @@ class LibreViewViewModel(
 
 class LibreViewActions(
     val change: ((LvSettings) -> LvSettings) -> Unit = {},
-    val signIn: (String, String, Boolean) -> Unit = { _, _, _ -> },
-    val signOut: () -> Unit = {},
-    /** Resets the dialog; an other-account sign-in waiting for a choice is forgotten. */
-    val reset: () -> Unit = {},
-    /** *Upload to this account* after [LvSignIn.OtherAccount]. */
-    val useOtherAccount: () -> Unit = {},
+    /** THE LibreView account screen: sign in (once, for the whole app), or who is signed in with *Sign out*. */
+    val openAccount: () -> Unit = {},
+    /** *Take over* from the device that uploads for the account now. */
+    val takeOver: () -> Unit = {},
+    val resetTakeOver: () -> Unit = {},
     val setInterval: (Double) -> Unit = {},
 )
 
 @Composable
 fun LibreViewPage(
     viewModel: LibreViewViewModel,
+    openAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val page by viewModel.page.collectAsStateWithLifecycle()
-    val signIn by viewModel.signIn.collectAsStateWithLifecycle()
-    val suggested by viewModel.suggestedEmail.collectAsStateWithLifecycle()
-    var editing by rememberSaveable { mutableStateOf(false) }
+    val takeOver by viewModel.takeOver.collectAsStateWithLifecycle()
+    var taking by rememberSaveable { mutableStateOf(false) }
     page?.let {
         LibreViewContent(
             it,
             viewModel.isWearer,
-            signIn,
-            suggested,
+            takeOver,
             viewModel.nowInstant(),
-            viewModel.actions(),
-            editing,
-            { v -> editing = v },
+            viewModel.actions(openAccount),
+            taking,
+            { v -> taking = v },
             modifier,
         )
     }
@@ -167,19 +137,19 @@ fun libreViewStatusText(
     }
 
 /**
- * Settings › Share with apps › LibreView: the account (sign in / signed in as), the main switch (turning it off always
- * works), the status (*Sign in again* when the token stopped working), glucose and entries, *Sign out*.
+ * Settings › Share with apps › LibreView: the app's LibreView account (signed in once, on the account screen: this page
+ * only shows it and opens it), the main switch (turning it off always works), the status (*Take over* when another
+ * device uploads, *Sign in again* when LibreView refused the saved password), glucose and entries.
  */
 @Composable
 fun LibreViewContent(
     state: LvPageState,
     wearer: Boolean,
-    signIn: LvSignInUi,
-    suggestedEmail: String,
+    takeOver: LvTakeOverUi,
     now: Instant,
     actions: LibreViewActions,
-    editing: Boolean,
-    setEditing: (Boolean) -> Unit,
+    taking: Boolean,
+    setTaking: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
     val s = state.settings
@@ -189,56 +159,51 @@ fun LibreViewContent(
     SettingsGroup {
         ValueRow(
             stringResource(R.string.in_lv_account),
-            if (state.signedIn) {
-                state.email.ifEmpty {
-                    stringResource(
-                        R.string.in_lv_signed_in,
-                    )
-                }
-            } else {
-                stringResource(R.string.in_lv_sign_in)
+            when {
+                state.signInAgain -> stringResource(R.string.in_lv_sign_in_again)
+                state.signedIn -> state.email.ifEmpty { stringResource(R.string.in_lv_signed_in) }
+                else -> stringResource(R.string.in_lv_sign_in)
             },
-            {
-                actions.reset()
-                setEditing(true)
-            },
+            actions.openAccount,
             enabled = wearer,
+            icon = DsR.drawable.ds_ic_account_circle,
         )
-        if (state.otherAccount) {
-            InfoRow(
-                stringResource(R.string.in_lv_other_row),
-                summary = stringResource(R.string.in_lv_other_row_summary),
-                icon = DsR.drawable.ds_ic_warning,
-            )
-        }
     }
     SettingsGroup {
         SwitchRow(
             stringResource(R.string.in_lv_main),
             s.on,
             { v -> actions.change { it.copy(on = v) } },
-            // switching off always works (signed out, or no longer the wearer); switching on needs an account
+            // switching off always works (signed out, or no longer the wearer); switching on needs the account
             enabled = s.on || (wearer && state.signedIn),
             summary =
                 when {
                     !wearer -> stringResource(R.string.in_status_follower)
+                    state.signInAgain -> stringResource(R.string.in_lv_status_again)
                     !state.signedIn -> stringResource(R.string.in_lv_main_needs_account)
                     else -> null
                 },
         )
-        if (on) {
+        if (s.on && wearer) {
             val status = state.status
-            if (status == UploadStatus.AuthFailed) {
-                ValueRow(stringResource(R.string.in_ns_status), libreViewStatusText(status, now), {
-                    actions.reset()
-                    setEditing(true)
-                })
-            } else {
-                InfoRow(
-                    stringResource(R.string.in_ns_status),
-                    Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    libreViewStatusText(status, now),
-                )
+            val text = if (state.signInAgain) stringResource(R.string.in_lv_status_again) else libreViewStatusText(status, now)
+            when (status) {
+                // another device uploads: only the person's *Take over* gets past it
+                UploadStatus.AuthFailed -> {
+                    ValueRow(stringResource(R.string.in_ns_status), text, {
+                        actions.resetTakeOver()
+                        setTaking(true)
+                    })
+                }
+
+                // no usable account: the account screen
+                UploadStatus.Setup -> {
+                    ValueRow(stringResource(R.string.in_ns_status), text, actions.openAccount)
+                }
+
+                else -> {
+                    InfoRow(stringResource(R.string.in_ns_status), Modifier.semantics { liveRegion = LiveRegionMode.Polite }, text)
+                }
             }
         }
     }
@@ -258,20 +223,9 @@ fun LibreViewContent(
             icon = DsR.drawable.ds_ic_schedule,
         )
     }
-    if (state.signedIn) {
-        SettingsGroup {
-            DangerRow(
-                stringResource(R.string.in_lv_sign_out),
-                stringResource(R.string.in_lv_sign_out_title),
-                stringResource(R.string.in_lv_sign_out_text),
-                stringResource(R.string.in_lv_sign_out_action),
-                actions.signOut,
-            )
-        }
-    }
     FooterText(stringResource(R.string.in_lv_footer))
-    if (editing) {
-        SignInDialog(state.email.ifEmpty { suggestedEmail }, signIn, actions) { setEditing(false) }
+    if (taking) {
+        TakeOverDialog(takeOver, actions) { setTaking(false) }
     }
     if (choosingInterval) {
         val words = CardWords.of(LocalContext.current.resources).durations
@@ -304,95 +258,58 @@ private fun glucoseSummary(state: LvPageState): String {
 }
 
 /**
- * Email + password (the password stays in this dialog only), then *Take over* if another device uploads, and *Upload to
- * this account* if it isn't the sensor's account.
+ * Another device uploads for the account: what *Take over* does, *Take over* or *Cancel*. No password: the account is
+ * the app's; if LibreView no longer accepts it, the dialog closes onto the account screen.
  */
 @Composable
-private fun SignInDialog(
-    initialEmail: String,
-    ui: LvSignInUi,
+private fun TakeOverDialog(
+    ui: LvTakeOverUi,
     actions: LibreViewActions,
     onClose: () -> Unit,
 ) {
-    var email by rememberSaveable { mutableStateOf(initialEmail) }
-    // never in saved state: a rotation asks for it again
-    var password by remember { mutableStateOf("") }
-    // a (re)created dialog starts from the fields (after a rotation the password is gone, so no lone Take over)
-    val reset by rememberUpdatedState(actions.reset)
-    LaunchedEffect(Unit) { if (ui !is LvSignInUi.Busy) reset() }
-    // signed in: close (also after the activity was recreated mid sign-in)
+    val haptics = rememberHaptics()
     val close by rememberUpdatedState(onClose)
-    LaunchedEffect(ui) { if (ui is LvSignInUi.Done && ui.result == LvSignIn.Done) close() }
-    val busy = ui == LvSignInUi.Busy
-    val otherDevice = ui is LvSignInUi.Done && ui.result == LvSignIn.OtherDevice
-    val otherAccount = ui is LvSignInUi.Done && ui.result == LvSignIn.OtherAccount
-    val ready = email.isNotBlank() && password.isNotEmpty() && !busy
-    // closing the other-account question forgets that sign-in (nothing was saved)
-    val dismiss = {
-        if (otherAccount) actions.reset()
-        onClose()
+    val openAccount by rememberUpdatedState(actions.openAccount)
+    LaunchedEffect(ui) {
+        val r = (ui as? LvTakeOverUi.Done)?.result ?: return@LaunchedEffect
+        when (r) {
+            LvTakeOver.Done -> {
+                haptics.confirm()
+                close()
+            }
+
+            LvTakeOver.SignIn -> {
+                close()
+                openAccount()
+            }
+
+            is LvTakeOver.Failed -> {
+                haptics.reject()
+            }
+        }
     }
+    val busy = ui == LvTakeOverUi.Busy
     AlertDialog(
-        onDismissRequest = dismiss,
-        title = {
-            Text(
-                stringResource(
-                    when {
-                        otherDevice -> R.string.in_lv_take_over_title
-                        otherAccount -> R.string.in_lv_other_title
-                        else -> R.string.in_lv_dialog_title
-                    },
-                ),
-            )
-        },
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.in_lv_take_over_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (otherDevice) {
-                    Text(stringResource(R.string.in_lv_take_over_text), style = MaterialTheme.typography.bodyMedium)
-                } else if (otherAccount) {
-                    Text(stringResource(R.string.in_lv_other_text), style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    OutlinedTextField(
-                        email,
-                        {
-                            email = it
-                            actions.reset()
-                        },
-                        label = { Text(stringResource(R.string.in_lv_email)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
-                        modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.EmailAddress },
-                    )
-                    OutlinedTextField(
-                        password,
-                        {
-                            password = it
-                            actions.reset()
-                        },
-                        label = { Text(stringResource(R.string.in_lv_password)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
-                        supportingText = { Text(stringResource(R.string.in_lv_password_note)) },
-                        modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
-                    )
-                }
+                Text(stringResource(R.string.in_lv_take_over_text), style = MaterialTheme.typography.bodyMedium)
                 val result =
-                    when (ui) {
-                        LvSignInUi.Idle -> {
+                    when {
+                        busy -> {
+                            stringResource(R.string.in_lv_taking_over)
+                        }
+
+                        ui is LvTakeOverUi.Done && ui.result is LvTakeOver.Failed -> {
+                            stringResource(
+                                R.string.in_lv_take_over_failed,
+                                stringResource(ui.result.why.text),
+                            )
+                        }
+
+                        else -> {
                             null
-                        }
-
-                        LvSignInUi.Busy -> {
-                            stringResource(R.string.in_lv_signing_in)
-                        }
-
-                        is LvSignInUi.Done -> {
-                            when (val r = ui.result) {
-                                LvSignIn.Done, LvSignIn.OtherDevice, LvSignIn.OtherAccount -> null
-                                LvSignIn.BadCredentials -> stringResource(R.string.in_lv_bad_credentials)
-                                is LvSignIn.Failed -> stringResource(R.string.in_lv_failed, stringResource(r.why.text))
-                            }
                         }
                     }
                 if (result != null) {
@@ -406,22 +323,8 @@ private fun SignInDialog(
             }
         },
         confirmButton = {
-            Row {
-                if (otherDevice) {
-                    TextButton(onClick = { actions.signIn(email, password, true) }, enabled = ready) {
-                        Text(stringResource(R.string.in_lv_take_over))
-                    }
-                } else if (otherAccount) {
-                    TextButton(onClick = actions.useOtherAccount) {
-                        Text(stringResource(R.string.in_lv_other_action))
-                    }
-                } else {
-                    TextButton(onClick = { actions.signIn(email, password, false) }, enabled = ready) {
-                        Text(stringResource(R.string.in_lv_sign_in_action))
-                    }
-                }
-            }
+            TextButton(onClick = actions.takeOver, enabled = !busy) { Text(stringResource(R.string.in_lv_take_over)) }
         },
-        dismissButton = { TextButton(onClick = dismiss) { Text(stringResource(R.string.in_cancel)) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.in_cancel)) } },
     )
 }

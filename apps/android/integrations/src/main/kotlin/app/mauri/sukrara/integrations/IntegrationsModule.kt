@@ -10,6 +10,8 @@ import android.os.BatteryManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
+import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseUnit
@@ -103,12 +105,8 @@ class IntegrationsModule(
     libreReadings: Flow<LvReadings>,
     /** The Libre 3 driver's live readings (only a real Libre 3 pairing emits), for the broadcasts. */
     libreLive: Flow<LiveReading>,
-    /** The email of the LibreView account the sensor screens signed in with (a starting point for the upload's). */
-    private val libreViewEmail: Flow<String?>,
-    /** The receiver ID the sensor screens' LibreView account gives (sensors are started and taken over with it). */
-    sensorReceiverId: Flow<Long?>,
-    /** LibreView AccountId → receiver ID (`:sensor` `ReceiverIds.fromAccountId`). */
-    receiverIdOf: (String) -> Long,
+    /** THE LibreView account (one per app, signed in once; the sensor uses it too): the upload's and the import's. */
+    private val libreViewLogin: LibreViewLogin,
     role: Flow<Role?>,
     jugglucoIsSource: Flow<Boolean>,
     http: OkHttpClient,
@@ -149,8 +147,7 @@ class IntegrationsModule(
             treatments,
             libreReadings,
             sensor,
-            sensorReceiverId,
-            receiverIdOf,
+            libreViewLogin,
             role,
             LibreViewClient(http),
             clock,
@@ -279,14 +276,22 @@ class IntegrationsModule(
     val importViewModels: ViewModelProvider.Factory
         get() =
             viewModelFactory {
-                initializer { ImportViewModel(history, wearer, tidepool.page.map { it.signedIn to it.email }, dispatchers.io) }
+                initializer {
+                    ImportViewModel(
+                        history,
+                        wearer,
+                        tidepool.page.map { it.signedIn to it.email },
+                        libreViewLogin.account.map { it.email },
+                        dispatchers.io,
+                    )
+                }
             }
 
     fun nightscoutViewModels(wearer: Boolean): ViewModelProvider.Factory =
         viewModelFactory { initializer { NightscoutViewModel(nightscout, wearer) { clock.now() } } }
 
     fun libreViewViewModels(wearer: Boolean): ViewModelProvider.Factory =
-        viewModelFactory { initializer { LibreViewViewModel(libreView, libreViewEmail, wearer) { clock.now() } } }
+        viewModelFactory { initializer { LibreViewViewModel(libreView, wearer) { clock.now() } } }
 
     /** The phone's battery (percent, charging) from the sticky broadcast, null when unknown. */
     private fun battery(): Pair<Int, Boolean>? {

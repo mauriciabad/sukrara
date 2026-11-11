@@ -164,7 +164,6 @@ object SettingsIndex {
             add(sensor(R.string.st_sensor_libreview))
             add(sensor(R.string.st_sensor_signed_in_as))
             add(sensor(R.string.st_sensor_receiver_id))
-            add(sensor(R.string.st_sensor_sign_out))
 
             addAll(
                 page(

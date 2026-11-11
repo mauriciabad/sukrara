@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.sensor.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
 import app.mauri.sukrara.sensor.pairing.ReceiverIds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -53,23 +56,25 @@ sealed interface SignInResult {
 }
 
 /**
- * The LibreView account's receiver ID: what lets Sukrara start sensors that Juggluco or Abbott's
- * apps on the same account can take over, and take over sensors they started.
+ * The sign-in to THE LibreView account ([LibreViewLogin], one per app) and its receiver ID: what lets Sukrara start
+ * sensors that Juggluco or Abbott's apps on the same account can take over, and take over sensors they started.
  *
- * Read-only sign-in through LibreLinkUp's login: it answers with the same account ID as LibreView's app
- * login without making this phone the account's upload device (which would cut off another app's LibreView uploads).
- * Stores ONLY the receiver ID and the email (for "signed in as"); the password and the token are never stored — the
- * receiver ID never changes for an account, and uploads need a different login anyway.
+ * Signs in through LibreLinkUp's login: it answers with the same account ID as LibreView's app login without making
+ * this phone the account's upload device (which would cut off another app's LibreView uploads). A sign-in LibreView
+ * accepts keeps the email and password in [login] (the Keystore), so the LibreView upload and Import history use the
+ * same account without asking again, and the receiver ID here (it never changes for an account). Signing out forgets
+ * both: everything that uses the account stops.
  */
 class LibreViewAccount internal constructor(
     private val state: StateStore<ReceiverIdState>,
+    private val login: LibreViewLogin,
     private val http: OkHttpClient,
     private val io: CoroutineDispatcher,
     private val baseHost: String = HOST,
     private val scheme: String = "https",
 ) {
-    constructor(state: StateStore<ReceiverIdState>, http: OkHttpClient, io: CoroutineDispatcher) :
-        this(state, http, io, HOST, "https")
+    constructor(state: StateStore<ReceiverIdState>, login: LibreViewLogin, http: OkHttpClient, io: CoroutineDispatcher) :
+        this(state, login, http, io, HOST, "https")
 
     companion object {
         const val HOST = "api.libreview.io"
@@ -96,11 +101,17 @@ class LibreViewAccount internal constructor(
         }
     }
 
-    /** The signed-in email, or null. */
-    val email: Flow<String?> = state.data.map { it.accountEmail }
+    /** The app's LibreView account. */
+    val account: Flow<LibreViewAccountState> = login.account
 
-    /** The signed-in account's receiver ID (shown in Settings › Sensor to compare with other apps), or null. */
-    val receiverId: Flow<Long?> = state.data.map { it.account }
+    /**
+     * The account's receiver ID (shown in Settings › Sensor to compare with other apps), or null: none without an
+     * account (signed out, or never signed in on this install).
+     */
+    val receiverId: Flow<Long?> = combine(login.account, state.data) { a, s -> s.account.takeIf { a != LibreViewAccountState.SignedOut } }
+
+    /** Whether sensors can be started and taken over with the account's receiver ID now. */
+    suspend fun hasReceiverId(): Boolean = receiverId.first() != null
 
     suspend fun signIn(email: String, password: String): SignInResult =
         withContext(io) {
@@ -124,7 +135,8 @@ class LibreViewAccount internal constructor(
 
                     is LoginAnswer.Account -> {
                         val rid = ReceiverIds.fromAccountId(answer.accountId)
-                        state.update { it.copy(account = rid, accountEmail = email.trim()) }
+                        state.update { it.copy(account = rid) }
+                        login.save(email, password)
                         return@withContext SignInResult.SignedIn(rid)
                     }
 
@@ -144,8 +156,14 @@ class LibreViewAccount internal constructor(
             SignInResult.Failed("LibreView kept redirecting")
         }
 
-    /** Forgets the account's receiver ID and email. Sukrara's own ID and a running sensor's pairing stay. */
-    suspend fun signOut() = state.update { it.copy(account = null, accountEmail = null) }
+    /**
+     * Signs out everywhere: forgets the account (email, password; the LibreView upload drops its token) and its receiver
+     * ID. Sukrara's own ID and a running sensor's pairing stay.
+     */
+    suspend fun signOut() {
+        login.signOut()
+        state.update { it.copy(account = null) }
+    }
 
     private fun post(url: String, body: String): LoginAnswer {
         val request =

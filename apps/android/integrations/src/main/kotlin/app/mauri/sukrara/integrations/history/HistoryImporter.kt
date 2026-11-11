@@ -47,8 +47,10 @@ sealed interface ImportFailure {
     /** The chosen file isn't a glucose file (LibreView's "Glucose Data" layout). */
     data object NotGlucoseData : ImportFailure
 
-    /** Its times are in a layout Sukrara doesn't know. */
-    data object UnknownDates : ImportFailure
+    /** Its times are in a layout Sukrara doesn't know: [example] is the first one it couldn't read, as written. */
+    data class UnknownDates(
+        val example: String,
+    ) : ImportFailure
 
     /** The file couldn't be opened or read. */
     data object Unreadable : ImportFailure
@@ -163,15 +165,24 @@ class HistoryImporter(
         var source = ImportSource.File
         mutableState.value = ImportState.Running(source, 0, 1, ImportTally())
         if (text == null) return fail(source, ImportFailure.Unreadable, ImportTally())
-        val parsed = withContext(io) { HistoryCsv.parse(text, clock.zone) }
+        val parsed = withContext(io) { HistoryCsv.parse(text, clock.zone, clock.now()) }
         val history =
             when (parsed) {
                 is HistoryCsv.Result.Refused -> {
-                    return fail(
-                        source,
-                        if (parsed.why == FileProblem.UnknownDates) ImportFailure.UnknownDates else ImportFailure.NotGlucoseData,
-                        ImportTally(),
-                    )
+                    val why =
+                        when (val problem = parsed.why) {
+                            // the layout only (digits as 0): never a reading's time in the log
+                            is FileProblem.UnknownDates -> {
+                                log("import file: dates not read, like \"${FileDates.shape(problem.example)}\"")
+                                ImportFailure.UnknownDates(problem.example)
+                            }
+
+                            FileProblem.NotGlucoseData -> {
+                                log("import file: not a glucose file")
+                                ImportFailure.NotGlucoseData
+                            }
+                        }
+                    return fail(source, why, ImportTally())
                 }
 
                 is HistoryCsv.Result.Ok -> {

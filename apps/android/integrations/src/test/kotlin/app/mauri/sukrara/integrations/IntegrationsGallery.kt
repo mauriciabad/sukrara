@@ -51,7 +51,7 @@ import app.mauri.sukrara.integrations.libreview.LibreViewActions
 import app.mauri.sukrara.integrations.libreview.LibreViewContent
 import app.mauri.sukrara.integrations.libreview.LvPageState
 import app.mauri.sukrara.integrations.libreview.LvSettings
-import app.mauri.sukrara.integrations.libreview.LvSignInUi
+import app.mauri.sukrara.integrations.libreview.LvTakeOverUi
 import app.mauri.sukrara.integrations.localserver.LanState
 import app.mauri.sukrara.integrations.localserver.NightscoutApiContent
 import app.mauri.sukrara.integrations.localserver.NsApiActions
@@ -147,6 +147,17 @@ class IntegrationsGallery {
                     ImportActions(),
                 )
             },
+            "import-dates" to {
+                ImportContent(
+                    ImportUi(
+                        true,
+                        ImportState.Failed(ImportSource.File, ImportFailure.UnknownDates("11-10-2026 9:15 PM UTC"), ImportTally()),
+                        false,
+                        libreViewEmail = "me@example.com",
+                    ),
+                    ImportActions(),
+                )
+            },
             "import-follower" to { ImportContent(ImportUi(false, ImportState.Idle, false), ImportActions()) },
             "apps-busy-follower" to
                 { AppsContent(AppsUi(false, true, XdripState.PortBusy, emptyList(), UploadStatus.Off), now, AppsActions()) },
@@ -208,8 +219,7 @@ class IntegrationsGallery {
                 LibreViewContent(
                     LvPageState(LvSettings(), false, "", UploadStatus.Off, null),
                     true,
-                    LvSignInUi.Idle,
-                    "",
+                    LvTakeOverUi.Idle,
                     now,
                     LibreViewActions(),
                     false,
@@ -220,20 +230,31 @@ class IntegrationsGallery {
                 LibreViewContent(
                     LvPageState(LvSettings(on = true), true, "person@example.com", UploadStatus.Ok(now - Duration.ofMinutes(4), 3), lvFrom),
                     true,
-                    LvSignInUi.Idle,
-                    "",
+                    LvTakeOverUi.Idle,
                     now,
                     LibreViewActions(),
                     false,
                     {},
                 )
             },
+            // another device uploads for the account: the status row opens Take over
             "libreview-auth-failed" to {
                 LibreViewContent(
                     LvPageState(LvSettings(on = true), true, "person@example.com", UploadStatus.AuthFailed, lvFrom),
                     true,
-                    LvSignInUi.Idle,
-                    "",
+                    LvTakeOverUi.Idle,
+                    now,
+                    LibreViewActions(),
+                    false,
+                    {},
+                )
+            },
+            // LibreView no longer accepts the saved password: the account screen asks again
+            "libreview-sign-in-again" to {
+                LibreViewContent(
+                    LvPageState(LvSettings(on = true), false, "person@example.com", UploadStatus.Setup, lvFrom, signInAgain = true),
+                    true,
+                    LvTakeOverUi.Idle,
                     now,
                     LibreViewActions(),
                     false,

@@ -141,37 +141,24 @@
     <!-- LibreView upload -->
     <string name="in_lv_intro">Envía la glucosa de tu Libre 3 y tus entradas a tu cuenta de LibreView, como la app FreeStyle Libre 3, para que tu clínica las vea en sus informes.</string>
     <string name="in_lv_account">Cuenta</string>
-    <string name="in_lv_sign_in">Iniciar sesión</string>
+    <string name="in_lv_sign_in">Iniciar sesión en LibreView</string>
     <string name="in_lv_signed_in">Sesión iniciada</string>
+    <string name="in_lv_sign_in_again">Vuelve a iniciar sesión</string>
     <string name="in_lv_main">Subir a LibreView</string>
-    <string name="in_lv_main_needs_account">Inicia sesión primero</string>
-    <string name="in_lv_status_setup">Inicia sesión primero</string>
-    <string name="in_lv_status_auth">LibreView pide que vuelvas a iniciar sesión (puede que otra app haya tomado la cuenta)</string>
+    <string name="in_lv_main_needs_account">Inicia sesión en LibreView primero</string>
+    <string name="in_lv_status_setup">Inicia sesión en LibreView primero</string>
+    <string name="in_lv_status_auth">Otro dispositivo sube datos a esta cuenta de LibreView. Toca para tomar el relevo.</string>
+    <string name="in_lv_status_again">LibreView ya no acepta la contraseña guardada. Vuelve a iniciar sesión.</string>
     <string name="in_lv_glucose">Glucosa</string>
     <string name="in_lv_glucose_summary">De un Libre 3 conectado a este teléfono, desde que lo activas</string>
     <string name="in_lv_glucose_from">De un Libre 3 conectado a este teléfono, desde %1$s</string>
     <string name="in_lv_entries_summary">Las entradas que crees o cambies a partir de ahora; editar o borrar corrige lo que tiene LibreView</string>
-    <string name="in_lv_sign_out">Cerrar sesión</string>
-    <string name="in_lv_sign_out_title">¿Cerrar sesión en LibreView?</string>
-    <string name="in_lv_sign_out_text">No se sube nada más hasta que vuelvas a iniciar sesión. Lo que LibreView ya tiene se queda allí.</string>
-    <string name="in_lv_sign_out_action">Cerrar sesión</string>
-    <string name="in_lv_footer">Usa el email y la contraseña de tu cuenta de LibreView (la de LibreLink o la app Libre 3). Sukrara envía la contraseña una vez para iniciar sesión y solo guarda el token de sesión de LibreView, cifrado en este teléfono. LibreView acepta datos de un solo dispositivo por cuenta: si ya sube LibreLink, la app Libre 3 o Juggluco, Sukrara pregunta antes de tomar el relevo. La glucosa solo se sube de un Libre 3 al que Sukrara se conecta directamente.</string>
-    <string name="in_lv_dialog_title">Iniciar sesión en LibreView</string>
-    <string name="in_lv_email">Email</string>
-    <string name="in_lv_password">Contraseña</string>
-    <string name="in_lv_password_note">Se usa una vez para iniciar sesión, nunca se guarda</string>
-    <string name="in_lv_sign_in_action">Iniciar sesión</string>
-    <string name="in_lv_signing_in">Iniciando sesión…</string>
-    <string name="in_lv_bad_credentials">LibreView no aceptó este email y contraseña</string>
-    <string name="in_lv_failed">No se pudo iniciar sesión. %1$s</string>
+    <string name="in_lv_footer">Sukrara usa la cuenta de LibreView con la que iniciaste sesión una vez (la de LibreLink o la app Libre 3): su email y contraseña se guardan cifrados en este teléfono, y la subida inicia sesión con ellos por sí sola. LibreView acepta datos de un solo dispositivo por cuenta: si ya sube LibreLink, la app Libre 3 o Juggluco, Sukrara pregunta antes de tomar el relevo. La glucosa solo se sube de un Libre 3 al que Sukrara se conecta directamente.</string>
     <string name="in_lv_take_over_title">Otro dispositivo sube datos a esta cuenta</string>
     <string name="in_lv_take_over_text">LibreView acepta datos de un dispositivo por cuenta, ahora otro (LibreLink, la app Libre 3 o Juggluco). Si Sukrara toma el relevo, ese dispositivo deja de subir a LibreView. Hazlo solo si Sukrara debe ser quien sube.</string>
     <string name="in_lv_take_over">Tomar el relevo</string>
-    <string name="in_lv_other_title">No es la cuenta de LibreView de tu sensor</string>
-    <string name="in_lv_other_text">Tu sensor se inició con la cuenta de LibreView de Ajustes › Sensor, no con esta. Tu glucosa y tus entradas irán a esta cuenta, y tu clínica no las verá en la otra.</string>
-    <string name="in_lv_other_action">Subir a esta cuenta</string>
-    <string name="in_lv_other_row">No es la cuenta de Ajustes › Sensor</string>
-    <string name="in_lv_other_row_summary">Tu clínica ve estas subidas solo en esta cuenta. Inicia sesión con la cuenta del sensor para cambiarlo.</string>
+    <string name="in_lv_taking_over">Tomando el relevo…</string>
+    <string name="in_lv_take_over_failed">No se pudo tomar el relevo. %1$s</string>
     <!-- Tidepool upload -->
     <string name="in_tp_intro">Tidepool reúne tus datos de diabetes en un solo sitio, para ti y tu clínica. Sukrara puede subir tu glucosa y tu insulina, carbohidratos y notas a tu cuenta de Tidepool.</string>
     <string name="in_tp_intro_follower">Tidepool reúne los datos de diabetes en un solo sitio. Si lo eliges, Sukrara puede subir la glucosa y los registros de la persona a la que sigues a una cuenta de Tidepool.</string>
@@ -291,6 +278,7 @@
     <string name="in_import_libreview_summary">LibreView da tu historial como archivo: descárgalo allí y elígelo aquí</string>
     <string name="in_import_libreview_title">Historial desde LibreView</string>
     <string name="in_import_libreview_steps">1. Abre LibreView e inicia sesión.\n2. Historial de glucosa › Descargar datos de glucosa.\n3. Elige ese archivo aquí.\n\nLibreView no deja que las apps descarguen tu historial, así que este paso es tuyo.</string>
+    <string name="in_import_libreview_steps_as">1. Abre LibreView e inicia sesión como %1$s.\n2. Historial de glucosa › Descargar datos de glucosa.\n3. Elige ese archivo aquí.\n\nLibreView no deja que las apps descarguen tu historial, así que este paso es tuyo.</string>
     <string name="in_import_libreview_open">Abrir LibreView</string>
     <string name="in_import_libreview_choose">Elegir el archivo</string>
     <string name="in_import_cancel">Cancelar</string>
@@ -330,7 +318,9 @@
         <item quantity="other">%d filas que Sukrara no guarda se quedan fuera (glucemias capilares, cetonas)</item>
     </plurals>
     <string name="in_import_err_not_glucose">Esto no es un archivo de glucosa. Elige una exportación de Sukrara o el archivo de Descargar datos de glucosa de LibreView.</string>
-    <string name="in_import_err_dates">Las fechas de este archivo tienen un formato que Sukrara no sabe leer. No se ha añadido nada.</string>
+    <string name="in_import_err_dates">Sukrara no puede leer las fechas de este archivo (la primera que no pudo leer: «%1$s»), así que no se ha añadido nada. Descarga el archivo otra vez de LibreView y elígelo aquí tal cual: abrirlo y guardarlo en una hoja de cálculo puede cambiar sus fechas. O elige una exportación de Sukrara de la app anterior. Si sigue fallando, toca Informar del problema para que Sukrara aprenda este formato de fecha.</string>
+    <string name="in_import_file_again">Elegir otro archivo</string>
+    <string name="in_import_report">Informar del problema</string>
     <string name="in_import_err_unreadable">No se pudo abrir el archivo. Elígelo otra vez.</string>
     <string name="in_import_err_signed_out">No has iniciado sesión en Tidepool. Inicia sesión e importa otra vez.</string>
 </resources>

@@ -24,9 +24,11 @@ Sukrara is made by Maurici Abad (Spain) as free software
   pen (with the pen's serial number): kept until you delete them or uninstall.
 - **Your settings**, your profile name and generated picture (shown only to the people you share with), and the
   sensor's pairing.
-- **Keys and sign-ins**: the sharing keys, and the tokens for LibreView, Tidepool and Nightscout when you use them.
-  These are encrypted with a key in the phone's Android Keystore. The e-mail of a LibreView or Tidepool account is kept
-  in Sukrara's own storage so the settings can show which account is signed in.
+- **Keys and sign-ins**: the sharing keys, the tokens for LibreView, Tidepool and Nightscout when you use them, and
+  your LibreView e-mail and password once you sign in to LibreView (so you sign in once for starting sensors and the
+  LibreView upload; *Sign out* deletes them). These are encrypted with a key in the phone's Android Keystore. The e-mail
+  of a LibreView or Tidepool account is kept in Sukrara's own storage so the settings can show which account is signed
+  in.
 - **A diagnostic log** that never leaves the phone unless you copy it yourself (*Copy report*).
 
 Only Sukrara can read its storage. Android backup and device-to-device transfer are turned off for Sukrara, so none of
@@ -40,8 +42,8 @@ it.
 | **Sharing with people over the internet** (setup's *Your followers* step or Settings › Sharing; *Over the internet* can be turned off there) | Readings, alerts, treatments and notes, the settings followers mirror, your name and picture, the list of followers: all end-to-end encrypted (NIP-44) to the people you allowed. Your phone publishes them from the moment sharing is set up, so a follower can catch up. | Public Nostr relays (by default nos.lol, relay.primal.net, nostr.mom, relay.snort.social), over encrypted connections. Relays can't read the content. They do see your IP address, random public keys, the time and size of each message, and when someone follows the same stream. |
 | **Sharing over Bluetooth** (Settings › Sharing; *Pair nearby*) | The same encrypted messages, phone to phone. While *Pair nearby* is open (up to 10 minutes), phones in Bluetooth range can read your name, your picture, a one-time invite code and your relays; you both confirm a 6-digit code before anything is shared. | The follower's phone or Mac, nearby |
 | **Invite link or QR code** (Settings › Sharing) | A one-time link, valid 24 hours. Its secret is after the `#`, which browsers never send to this website. Whoever has the link can see your name, picture and relays and ask to follow; you decide with *Allow*. | Whoever you give it to |
-| **LibreView sign-in for a new Libre 3 sensor** (Settings › Sensor, new sensor) | Your LibreView e-mail and password, once, to get your account's receiver ID. The password isn't kept. | Abbott (api.libreview.io) |
-| **LibreView upload** (Share with apps › LibreView) | Your LibreView e-mail and password at sign-in; then glucose readings with their times and trend, insulin, carbs and notes, sensor starts, a random device ID for this install, and the name, date of birth and sensor number your LibreView account already has. | Abbott (LibreView) |
+| **LibreView sign-in** (setup, a new sensor, Settings › Sensor or Share with apps › LibreView: one account for the app) | Your LibreView e-mail and password, to get your account's receiver ID (for starting Libre 3 sensors). They are kept encrypted on the phone until you sign out, so you sign in once. | Abbott (api.libreview.io) |
+| **LibreView upload** (Share with apps › LibreView) | Your LibreView e-mail and password when it signs in (with the account above); then glucose readings with their times and trend, insulin, carbs and notes, sensor starts, a random device ID for this install, and the name, date of birth and sensor number your LibreView account already has. | Abbott (LibreView) |
 | **Tidepool upload** (Share with apps › Tidepool) | Your Tidepool e-mail and password at sign-in; then glucose readings with their times and trend, insulin, carbs, notes, your time zone and a random device name. A follower can turn this on for the person they follow: then that person's readings go to the Tidepool account the follower signs in to. | Tidepool (api.tidepool.org) |
 | **Nightscout upload** (Share with apps › Nightscout) | Glucose readings, insulin, carbs, notes, sensor changes (with the sensor's number), the phone's battery level and whether it is charging, and a random device name. Only to an `https://` address. | Your own Nightscout site |
 | **Health Connect** (Share with apps › Health Connect) | Your glucose readings (write only; Sukrara reads nothing from Health Connect). They stay in Health Connect if you turn this off; delete them there. | Health Connect, on your phone |

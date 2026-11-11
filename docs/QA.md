@@ -326,6 +326,12 @@ over nothing:
       `Libre 1/2 chip: not supported, nothing sent` with no command lines.
 - [ ] A new Libre 3 without a known LibreView receiver ID: *Sign in to LibreView*, nothing sent; after the
       sign-in the next tap starts it (logcat `patch info … state=1`, then the pairing).
+- [ ] Issue #177, one LibreView account (emulator, a throwaway LibreView account, never the owner's): sign in once
+      in setup's sensor step; Settings › Sensor shows *Signed in as* with the email and opens the same screen; Share
+      with apps › LibreView shows the email under *Account*, turning the upload on asks nothing and the status moves
+      on by itself (or says another device uploads: *Take over* / *Cancel*). *Sign out* on the account screen asks
+      first, then Settings › Sensor says *Sign in to LibreView*, the upload says *Sign in to LibreView first*, and the
+      next new sensor asks to sign in. `adb logcat | grep -i <the password>` finds nothing.
 - [ ] **Libre 3 unchanged by the brand step** (investigation 23): the screen opens on *Which sensor are you
       starting?* with *FreeStyle Libre 3 / 3 Plus* selected; tapping the sensor right there starts the scan (no
       *Continue* needed); *Continue* → the same NFC flow as before; no *Untested* tag, no confirmation, no banner on
@@ -647,6 +653,11 @@ Synthetic data only: a throwaway Tidepool account and files written from the emu
       choosing the same file again adds 0 ("… were already here").
 - [ ] A LibreView-layout file in mmol/L with day-first dates (`integrations/src/test/resources/history/`): the values
       read in mg/dL as expected; a random CSV says "This isn't a glucose file…".
+- [ ] Issue #176: `libreview-us-12h.csv` and `libreview-es-12h.csv` (one-digit 12-hour times, `p. m.`) import with the
+      right times; the same file with one date changed to `noon` says "Sukrara can't read the dates in this file (the
+      first one it couldn't read: …)" with *Choose another file*, *Report the problem* (the issue form shows only
+      `00-00-0000 noon`-style layouts, no values) and *OK*; the owner's own LibreView download imports on their phone.
+- [ ] With a LibreView account signed in, the LibreView steps dialog says "sign in as <email>".
 - [ ] Tidepool (a test account with data): *Sign in to Tidepool first* opens the Tidepool page; signed in, the row
       imports the last 90 days with the progress bar moving week by week; *Stop* half way keeps what was added and a
       second run completes it with no duplicates; the Tidepool upload (if on) never sends the imported data back.

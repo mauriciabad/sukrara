@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
+import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.storage.SettingSpec
@@ -44,7 +46,7 @@ interface SensorSettingsSensors {
     val sensor: Flow<SensorState>
     val detail: Flow<SensorStatus>
     val sensorInfo: Flow<SensorInfo?>
-    val email: Flow<String?>
+    val account: Flow<LibreViewAccountState>
     val receiverId: Flow<Long?>
 
     /** *Open Sukrara when you scan a sensor*: whether the phone has NFC, the switch, and Android blocking the taps. */
@@ -65,8 +67,6 @@ interface SensorSettingsSensors {
     /** The source starts over (a new driver and connection). */
     fun retry()
 
-    suspend fun signOut()
-
     /** Juggluco's API secret is saved (null until read: [refreshJugglucoSecret]). */
     val jugglucoSecretSet: Flow<Boolean?>
 
@@ -81,7 +81,7 @@ class SensorModulePort(private val m: SensorModule) : SensorSettingsSensors {
     override val sensor: Flow<SensorState> = m.source.sensor
     override val detail: Flow<SensorStatus> = m.source.detail
     override val sensorInfo: Flow<SensorInfo?> = m.source.sensorInfo
-    override val email: Flow<String?> = m.libreView.email
+    override val account: Flow<LibreViewAccountState> = m.libreView.account
     override val receiverId: Flow<Long?> = m.libreView.receiverId
     override val tapAvailable: Boolean get() = m.tapLaunch.available
     override val tapOn: Flow<Boolean> = m.tapLaunch.on
@@ -99,8 +99,6 @@ class SensorModulePort(private val m: SensorModule) : SensorSettingsSensors {
     override suspend fun forgetPairing() = m.pairings.forget()
 
     override fun retry() = m.source.retry()
-
-    override suspend fun signOut() = m.libreView.signOut()
 
     override val jugglucoSecretSet: Flow<Boolean?> = m.jugglucoSecret.isSet
 
@@ -149,15 +147,15 @@ class SensorSettingsBridge(
             combine(sensors.sensorInfo, sensors.tapOn, recheck, paired) { info, tapOn, _, paired ->
                 Triple(info, OpenOnScan(tapOn, tapOn && sensors.tapBlocked()).takeIf { sensors.tapAvailable }, paired)
             },
-            combine(sensors.email, sensors.receiverId, sensors.jugglucoSecretSet.onStart { sensors.refreshJugglucoSecret() }, ::Triple),
+            combine(sensors.account, sensors.receiverId, sensors.jugglucoSecretSet.onStart { sensors.refreshJugglucoSecret() }, ::Triple),
             service,
-        ) { (source, sensor, detail), (info, openOnScan, paired), (email, receiverId, secretSet), service ->
+        ) { (source, sensor, detail), (info, openOnScan, paired), (account, receiverId, secretSet), service ->
             val kind = SensorSourceKind.fromId(source)
             SensorSettingsState(
                 source = if (kind == SensorSourceKind.Juggluco) SourceChoice.Juggluco else SourceChoice.Libre3Direct,
                 state = sensor,
                 sensor = info?.let { SensorSummary(it.serial, Instant.ofEpochSecond(it.startEpoch), Instant.ofEpochSecond(it.endEpoch)) },
-                account = email?.let { LibreViewSummary(it, receiverId) },
+                account = account.email?.let { LibreViewSummary(it, receiverId, account is LibreViewAccountState.SignInAgain) },
                 link = linkOf(detail),
                 family = (detail as? SensorStatus.Direct)?.let { SensorFamily(it.profile.label, !it.profile.verified, it.skipped) },
                 paired = paired,
@@ -227,8 +225,6 @@ class SensorSettingsBridge(
             }
         }
     }
-
-    override suspend fun signOut() = sensors.signOut()
 
     companion object {
         private const val STOP_WAIT_MS = 5_000L

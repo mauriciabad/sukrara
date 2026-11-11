@@ -6,11 +6,13 @@ package app.mauri.sukrara.integrations.history
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
@@ -58,6 +60,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import java.net.URLEncoder
 
 /** What Import history shows. */
 data class ImportUi(
@@ -66,6 +69,8 @@ data class ImportUi(
     val state: ImportState,
     val tidepoolSignedIn: Boolean,
     val tidepoolEmail: String = "",
+    /** The app's LibreView account (the one to download the file with); "" when signed out. */
+    val libreViewEmail: String = "",
 ) {
     val running: Boolean get() = state is ImportState.Running
 }
@@ -77,6 +82,8 @@ class ImportActions(
     val chooseFile: () -> Unit = {},
     val stop: () -> Unit = {},
     val dismiss: () -> Unit = {},
+    /** *Report the problem*: a file's dates weren't read; gets the first one's layout ([FileDates.shape]). */
+    val report: (String) -> Unit = {},
 )
 
 class ImportViewModel(
@@ -84,11 +91,14 @@ class ImportViewModel(
     wearer: Flow<Boolean>,
     /** Tidepool signed in, and the account's email ("" unknown). */
     tidepool: Flow<Pair<Boolean, String>>,
+    /** The app's LibreView account's email, null when signed out. */
+    libreView: Flow<String?>,
     private val io: CoroutineDispatcher,
 ) : ViewModel() {
     val ui: StateFlow<ImportUi?> =
-        combine(wearer, importer.state, tidepool) { w, s, (signed, email) -> ImportUi(w, s, signed, email) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        combine(wearer, importer.state, tidepool, libreView) { w, s, (signed, email), lv ->
+            ImportUi(w, s, signed, email, lv.orEmpty())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Reads the chosen file (the system picker's grant) off the main thread and imports it. */
     fun importFile(
@@ -101,7 +111,7 @@ class ImportViewModel(
                 runCatching {
                     app.contentResolver.openInputStream(uri)?.use { input ->
                         val bytes = input.readNBytes(MAX_FILE_BYTES + 1)
-                        if (bytes.size > MAX_FILE_BYTES) null else bytes.decodeToString()
+                        if (bytes.size > MAX_FILE_BYTES) null else HistoryCsv.decode(bytes)
                     }
                 }.getOrNull()
             }
@@ -139,16 +149,13 @@ fun ImportPage(
             ImportActions(
                 importTidepool = viewModel::importTidepool,
                 openTidepool = openTidepool,
-                openLibreView = {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse(LIBREVIEW)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    }
-                },
+                openLibreView = { open(context, LIBREVIEW) },
                 chooseFile = { picker.launch(FILE_TYPES) },
                 stop = viewModel::stop,
                 dismiss = viewModel::dismiss,
+                report = { shape ->
+                    open(context, ImportProblem.issueUrl(shape, ImportProblem.appVersion(context), Build.VERSION.RELEASE))
+                },
             ),
             modifier,
         )
@@ -157,6 +164,43 @@ fun ImportPage(
 
 /** LibreView's site: *Glucose History › Download glucose data* is there (behind its own sign-in and captcha). */
 const val LIBREVIEW = "https://www.libreview.com"
+
+private fun open(
+    context: Context,
+    url: String,
+) {
+    runCatching {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
+
+/**
+ * *Report the problem* on a file whose dates weren't read: a new GitHub issue on the project with the dates' layout
+ * only (digits as 0), the app and Android versions. Never a time, a value or an account.
+ */
+object ImportProblem {
+    const val REPO = "https://github.com/mauriciabad/sukrara"
+
+    fun issueUrl(
+        shape: String,
+        appVersion: String,
+        android: String,
+    ): String {
+        val q =
+            linkedMapOf(
+                "title" to "Import history: dates not read",
+                "body" to
+                    "A glucose file's dates weren't read.\n\nThe first one looks like: `$shape` (digits shown as 0)\n" +
+                    "Where the file came from: \n\nSukrara $appVersion, Android $android",
+            )
+        return "$REPO/issues/new?" + q.entries.joinToString("&") { "${enc(it.key)}=${enc(it.value)}" }
+    }
+
+    fun appVersion(context: Context): String =
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
+
+    private fun enc(s: String) = URLEncoder.encode(s, Charsets.UTF_8).replace("+", "%20")
+}
 
 /** What the picker offers: CSV under its many names (some file managers label it as plain text or Excel). */
 private val FILE_TYPES =
@@ -231,7 +275,15 @@ fun ImportContent(
         AlertDialog(
             onDismissRequest = { libreView = false },
             title = { Text(stringResource(R.string.in_import_libreview_title)) },
-            text = { Text(stringResource(R.string.in_import_libreview_steps)) },
+            text = {
+                Text(
+                    if (ui.libreViewEmail.isEmpty()) {
+                        stringResource(R.string.in_import_libreview_steps)
+                    } else {
+                        stringResource(R.string.in_import_libreview_steps_as, ui.libreViewEmail)
+                    },
+                )
+            },
             confirmButton = {
                 Row {
                     TextButton(onClick = actions.openLibreView) { Text(stringResource(R.string.in_import_libreview_open)) }
@@ -296,12 +348,23 @@ private fun ImportStatus(
                     Title(stringResource(R.string.in_import_failed))
                     Text(failureText(state.why), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     if (state.tally.added > 0) Text(addedText(state.tally), style = MaterialTheme.typography.bodyMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (state.why == ImportFailure.SignedOut) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val why = state.why
+                        if (why == ImportFailure.SignedOut) {
                             Button(onClick = {
                                 actions.dismiss()
                                 actions.openTidepool()
                             }) { Text(stringResource(R.string.in_import_tidepool_sign_in_action)) }
+                        }
+                        if (why is ImportFailure.UnknownDates) {
+                            // another file is the likelier way out; telling us adds the layout for everyone
+                            Button(onClick = {
+                                actions.dismiss()
+                                actions.chooseFile()
+                            }) { Text(stringResource(R.string.in_import_file_again)) }
+                            OutlinedButton(onClick = { actions.report(FileDates.shape(why.example)) }) {
+                                Text(stringResource(R.string.in_import_report))
+                            }
                         }
                         OutlinedButton(onClick = actions.dismiss) { Text(stringResource(R.string.in_import_ok)) }
                     }
@@ -340,7 +403,7 @@ private fun addedText(t: ImportTally): String =
 private fun failureText(why: ImportFailure): String =
     when (why) {
         ImportFailure.NotGlucoseData -> stringResource(R.string.in_import_err_not_glucose)
-        ImportFailure.UnknownDates -> stringResource(R.string.in_import_err_dates)
+        is ImportFailure.UnknownDates -> stringResource(R.string.in_import_err_dates, why.example)
         ImportFailure.Unreadable -> stringResource(R.string.in_import_err_unreadable)
         ImportFailure.SignedOut -> stringResource(R.string.in_import_err_signed_out)
         is ImportFailure.Network -> stringResource(why.why.text)

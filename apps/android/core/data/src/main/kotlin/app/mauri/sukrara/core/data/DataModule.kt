@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.data.diag.DiagLog
 import app.mauri.sukrara.core.data.files.FileCodec
 import app.mauri.sukrara.core.data.files.FileStore
 import app.mauri.sukrara.core.data.json.SukraraJson
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.net.Http
 import app.mauri.sukrara.core.data.secure.KeystoreSecretBox
 import app.mauri.sukrara.core.data.secure.KeystoreSecureStore
@@ -102,6 +103,9 @@ class DataModule(
     val secureStore: SecureStore by lazy {
         KeystoreSecureStore(secureDir, secretBox, corruption, clock, dispatchers.io)
     }
+
+    /** THE LibreView account (one per app): the sensor, the LibreView upload and Import history use it. */
+    val libreViewLogin: LibreViewLogin by lazy { LibreViewLogin(secureStore) }
 
     /**
      * True once this process opened a database of another version and replaced it with an empty one (no migrations,

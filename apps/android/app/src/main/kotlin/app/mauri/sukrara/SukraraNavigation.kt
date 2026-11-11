@@ -243,6 +243,7 @@ data class PenTarget(
 @Serializable
 data object NewSensorKey : NavKey
 
+/** THE LibreView account screen (one account for the app): the new-sensor flow, Settings › Sensor, Share with apps › LibreView. */
 @Serializable
 data object LibreViewSignInKey : NavKey
 
@@ -572,7 +573,10 @@ fun SukraraNavigation(
                         val role by graph.role.data.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_lv_title), { backStack.pop(LibreViewRoute) }) {
                             role?.let { r ->
-                                LibreViewPage(viewModel(factory = graph.integrations.libreViewViewModels(r.role == Role.Wearer)))
+                                LibreViewPage(
+                                    viewModel(factory = graph.integrations.libreViewViewModels(r.role == Role.Wearer)),
+                                    openAccount = { backStack.push(LibreViewSignInKey) },
+                                )
                             }
                         }
                     }

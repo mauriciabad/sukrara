@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.secure.SecretName
 import app.mauri.sukrara.integrations.libreview.LibreViewUploader
 import app.mauri.sukrara.integrations.localserver.NightscoutApiServer
@@ -30,6 +31,7 @@ class SecretNamesTest {
                 TidepoolUploader.NAME,
                 TidepoolUploader.EMAIL,
                 LibreViewUploader.NAME,
+                LibreViewLogin.NAME,
                 PairingStore.NAME,
                 SecretName.JUGGLUCO, // JugglucoSecret writes it by this name
             )

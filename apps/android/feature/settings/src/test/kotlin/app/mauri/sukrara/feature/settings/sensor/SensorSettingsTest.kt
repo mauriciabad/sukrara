@@ -37,7 +37,7 @@ import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.ZoneOffset
 
-/** Settings › Sensor: the source switch asks first, every problem state shows its way out, sign-out confirms. */
+/** Settings › Sensor: the source switch asks first, every problem state shows its way out, the account opens its screen. */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -57,16 +57,10 @@ class SensorSettingsTest {
     private class FakePort(initial: SensorSettingsState) : SensorSettingsPort {
         override val state = MutableStateFlow(initial)
         val sources = mutableListOf<SourceChoice>()
-        var signedOut = false
 
         override fun setSource(source: SourceChoice) {
             sources += source
             state.value = state.value.copy(source = source)
-        }
-
-        override suspend fun signOut() {
-            signedOut = true
-            state.value = state.value.copy(account = null)
         }
     }
 
@@ -107,7 +101,7 @@ class SensorSettingsTest {
         compose.onNodeWithText("3MH00ABCDEF").assertExists()
         compose.onNodeWithText("10d", substring = true).assertExists()
         compose.onNodeWithText("me@example.invalid").performScrollTo().assertExists()
-        compose.onNodeWithText("123456789").assertExists()
+        compose.onAllNodesWithTextFirst("123456789").assertExists()
     }
 
     @Test
@@ -193,16 +187,28 @@ class SensorSettingsTest {
     }
 
     @Test
-    fun `sign out asks first, Cancel keeps the account`() {
-        var signedOut = 0
-        show(working, SensorSettingsActions(signOut = { signedOut++ }))
-        compose.onAllNodesWithTextFirst("Sign out").performClick()
-        compose.onNodeWithText("Sign out of LibreView?").assertExists()
-        compose.onNodeWithText("Cancel").performClick()
-        assertEquals(0, signedOut)
-        compose.onAllNodesWithTextFirst("Sign out").performClick()
-        compose.onAllNodes(hasText("Sign out"))[1].performClick()
-        assertEquals(1, signedOut)
+    fun `the account opens the one LibreView account screen, which signs out (issue 177)`() {
+        var opened = 0
+        show(working, SensorSettingsActions(signIn = { opened++ }))
+        compose.onNodeWithText("Sign out").assertDoesNotExist()
+        compose.onAllNodesWithTextFirst("me@example.invalid").assertExists()
+        compose.onAllNodesWithTextFirst("Signed in as").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `a password LibreView no longer accepts asks to sign in again`() {
+        var opened = 0
+        show(
+            working.copy(account = LibreViewSummary("me@example.invalid", 123456789, signInAgain = true)),
+            SensorSettingsActions(signIn = {
+                opened++
+            }),
+        )
+        compose.onAllNodesWithTextFirst("Sign in to LibreView again").performClick()
+        assertEquals(1, opened)
+        // the receiver ID still starts sensors meanwhile
+        compose.onAllNodesWithTextFirst("123456789").assertExists()
     }
 
     @Test
@@ -219,17 +225,15 @@ class SensorSettingsTest {
     }
 
     @Test
-    fun `the view model switches through the port, signs out, and ignores the current source`() {
+    fun `the view model switches through the port and ignores the current source`() {
         val port = FakePort(working)
         val vm = SensorSettingsViewModel(port)
         compose.setContent { SensorSettingsScreen(vm, FakeClock(now), {}, {}, {}) }
         compose.waitForIdle()
         vm.setSource(SourceChoice.Libre3Direct)
         vm.setSource(SourceChoice.Juggluco)
-        vm.signOut()
         compose.waitForIdle()
         assertEquals(listOf(SourceChoice.Juggluco), port.sources)
-        assertTrue(port.signedOut)
         compose.onNodeWithText("Juggluco").assertIsSelected()
     }
 

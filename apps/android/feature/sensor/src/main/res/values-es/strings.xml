@@ -14,7 +14,7 @@
     <string name="newsensor_nfc_off_title">Activa el NFC</string>
     <string name="newsensor_nfc_off_text">El sensor se inicia acercándole el móvil. Para eso el NFC tiene que estar activado.</string>
     <string name="newsensor_signin_title">Inicia sesión en LibreView</string>
-    <string name="newsensor_signin_text">Sukrara inicia el sensor con tu cuenta de LibreView, como la app Libre. Así la app Libre puede recuperarlo más tarde. Sukrara no sube nada.</string>
+    <string name="newsensor_signin_text">Sukrara inicia el sensor con tu cuenta de LibreView, como la app Libre. Así la app Libre puede recuperarlo más tarde. Inicias sesión una vez, y no se envía nada a LibreView salvo que actives su subida.</string>
     <string name="newsensor_official_title">Primero detén la app Libre</string>
     <string name="newsensor_official_text">Si la app Libre y Sukrara leen el sensor a la vez, puede dejar de funcionar. Deslizarla para cerrarla no basta: fuerza su detención (Información de la app › Forzar detención) o desinstálala antes de seguir.</string>
     <string name="newsensor_bt_permission_title">Permite dispositivos cercanos</string>
@@ -69,7 +69,8 @@
     <string name="newsensor_action_app_settings">Abrir ajustes de la app</string>
 
     <string name="libreview_title">Cuenta de LibreView</string>
-    <string name="libreview_intro">Sukrara usa tu cuenta de LibreView solo para iniciar sensores con su ID. La contraseña se envía una vez a LibreView y nunca se guarda.</string>
+    <string name="libreview_intro">Inicia sesión una vez. Sukrara guarda tu correo y contraseña de LibreView cifrados en este teléfono y los usa para iniciar sensores y tomar el relevo de otros y, si lo activas, para enviar tus datos a LibreView.</string>
+    <string name="libreview_again">LibreView ya no acepta la contraseña guardada. Vuelve a iniciar sesión.</string>
     <string name="libreview_email">Correo</string>
     <string name="libreview_password">Contraseña</string>
     <string name="libreview_show_password">Mostrar contraseña</string>
@@ -77,8 +78,11 @@
     <string name="libreview_sign_in">Iniciar sesión</string>
     <string name="libreview_signing_in">Iniciando sesión…</string>
     <string name="libreview_signed_in_as">Sesión iniciada como %1$s</string>
+    <string name="libreview_uses">Sukrara usa esta cuenta para iniciar sensores y tomar el relevo de otros y, si está activado, para enviar tus datos a LibreView (Ajustes › Compartir con apps › LibreView).</string>
     <string name="libreview_sign_out">Cerrar sesión</string>
-    <string name="libreview_sign_out_note">Cerrar sesión no detiene el sensor actual. Para iniciar el siguiente tendrás que volver a iniciar sesión.</string>
+    <string name="libreview_sign_out_title">¿Cerrar sesión en LibreView?</string>
+    <string name="libreview_cancel">Cancelar</string>
+    <string name="libreview_sign_out_note">Sukrara olvida tu correo y contraseña de LibreView. Deja de enviar a LibreView, y para iniciar o tomar el relevo del próximo sensor tendrás que volver a iniciar sesión. El sensor que funciona ahora sigue igual.</string>
     <string name="libreview_back">Atrás</string>
     <string name="libreview_error_wrong_password">Correo o contraseña incorrectos.</string>
     <string name="libreview_error_accept_terms">LibreView tiene condiciones nuevas. Acéptalas en la app LibreView o Libre y vuelve a iniciar sesión.</string>

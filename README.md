@@ -28,8 +28,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
 **Android (you wear the sensor)**
 - **Reads the Libre 3 / 3 Plus directly**: hold the phone to the sensor to start a new one or take over a running one
   (NFC), then Sukrara keeps it connected over Bluetooth by itself, with 24 h backfill and automatic reconnects. It
-  uses your **LibreView account's receiver ID** (sign in once, only to get the ID), so a sensor can move between
-  Sukrara and Abbott's app. Or read from **Juggluco's local web server** if Juggluco keeps the sensor.
+  uses your **LibreView account's receiver ID**, so a sensor can move between Sukrara and Abbott's app. Or read from **Juggluco's local web server** if Juggluco keeps the sensor.
 - **Other sensors, untested**: Dexcom G7 / ONE+ / Stelo (read along with the Dexcom app), Dexcom G6 / ONE, Accu-Chek
   SmartGuide and Aidex X / LinX / GlucoRx. They were never tested with a real sensor: the new sensor screen tags them
   *Untested* and asks you to confirm before pairing; while you wear one, home asks for feedback (*Send feedback*
@@ -46,8 +45,12 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   warm-up countdown in a ring, haptics on the tap, the screen kept on, every failure handled on the same screen
   (ended sensor, Libre 1/2, a tag that isn't a sensor, another app holding the sensor, Bluetooth off, a wrong ID or PIN).
 - **Settings › Sensor**: the current sensor (status, serial, start, end and time left), the reading source (Libre 3
-  directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account (email and receiver ID, sign in / out; the
-  password is never stored) and *Pair new sensor*.
+  directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account
+  (email and receiver ID) and *Pair new sensor*.
+- **One LibreView account**: sign in once (setup, a new sensor, Settings › Sensor or Share with apps › LibreView all
+  open the same screen); the email and password stay encrypted on the phone and starting sensors, the LibreView upload
+  and Import history all use them without asking again. *Sign out* there (asks first) signs out everywhere; if
+  LibreView stops accepting the password (you changed it), every place says so and the screen asks again.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
   every card: never by colour alone; a live reading says *now*) and a chart of your *Time shown* (12 h by default; its
   words follow a larger system font; a double tap shows 3 h and back) you can scroll and pinch-zoom through the
@@ -159,8 +162,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   notifications say when an invite was used, declined or your access removed; *Stop following* in Settings › Sharing.
   **Settings from** (Settings): use the wearer's ranges, graph and alert rules (kept up to date), Sukrara's defaults,
   or your own (start them by copying the wearer's or from the defaults); sounds and no-data alerts are always yours.
-- **Share with apps**: upload your Libre 3 glucose and entries to **LibreView** for your clinic (password used once,
-  never saved; asks before taking over another uploading device or uploading to another account than your sensor's; readings not sent yet survive a restart; only from the moment you switch it on; a cloud on each
+- **Share with apps**: upload your Libre 3 glucose and entries to **LibreView** for your clinic (with your one LibreView
+  account, signing in again by itself when its session ends; asks before taking over another uploading device; readings not sent yet survive a restart; only from the moment you switch it on; a cloud on each
   entry on home says whether LibreView has it, every 5 / 15 / 60 min or your own interval; a home banner suggests LibreView or Tidepool until one is set up), to your own **Nightscout** site (https, access token kept encrypted; 30-day catch-up,
   pauses when another app uploads to the same site; an entry another app already put there, like an AndroidAPS bolus, is
   never doubled), to **Tidepool** (both roles; a follower only after its own
@@ -172,8 +175,10 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
   readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.
 - **Import history** (wearer; also setup's last step, *Bring your history back*): the new app starts empty and brings
-  back the last 90 days from **Tidepool** (signed in), **LibreView**'s *Download glucose data* file or a **Sukrara
-  export** (this app's or the earlier app's), with progress and *Stop*. Nothing is ever counted twice (the sensor's own
+  back the last 90 days from **Tidepool** (signed in), **LibreView**'s *Download glucose data* file (in whatever date
+  layout your LibreView account's language and country write: day or month first, 12 or 24 hours; a file it still
+  can't read says which date and what to do) or a **Sukrara export** (this app's or the earlier app's), with progress
+  and *Stop*. Nothing is ever counted twice (the sensor's own
   readings win; importing again adds only what is missing), and imported history is never uploaded again.
 - English and Spanish (Spain) everywhere.
 - **TalkBack hears one sentence** for the glucose card everywhere (home, widgets, the notification card, the Quick
