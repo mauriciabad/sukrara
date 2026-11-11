@@ -126,7 +126,9 @@ else bad "network security config: base cleartext '${nsc_base:-?}', cleartext ho
 # app sends the widget broadcasts and opens the configure screen, so they can't require a permission; they only redraw
 # or edit that placement), the lock-screen widget's receiver (the system's widget broadcasts for the widget System UI's
 # module hosts; it only redraws it and keeps only ids the system bound to it), and libxposed's XposedProvider (LSPosed
-# hands the app its service there and can hold no permission; what it reports is advisory, as ManifestTest says).
+# hands the app its service there and can hold no permission; what it reports is advisory, as ManifestTest says), and
+# the widgets' size probe (WidgetProbe's ProbeProvider: the launcher loads its images and can hold no permission; it
+# answers only a probe in progress with a 1×1 transparent PNG and takes no writes).
 # Anything else exported needs a permission.
 allowed_open='app.mauri.sukrara.MainActivity
 app.mauri.sukrara.monitor.AlertSoundProvider
@@ -135,6 +137,7 @@ app.mauri.sukrara.widgets.GraphWidgetReceiver
 app.mauri.sukrara.widgets.CombinedWidgetReceiver
 app.mauri.sukrara.widgets.LockWidgetReceiver
 app.mauri.sukrara.widgets.WidgetConfigActivity
+app.mauri.sukrara.widgets.ProbeProvider
 io.github.libxposed.service.XposedProvider'
 open_components="$(printf '%s\n' "$manifest" | awk '
   function flush() { if (comp != "" && exported && !perm) print comp; comp = "" }

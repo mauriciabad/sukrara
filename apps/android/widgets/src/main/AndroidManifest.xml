@@ -2,7 +2,8 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application>
         <!-- Exported without a permission on purpose: the launcher (any home app) sends the widget broadcasts and
              opens the settings screen; they only redraw / edit this placement and show nothing beyond the widget. -->
@@ -71,7 +72,8 @@
         <provider
             android:name="app.mauri.sukrara.widgets.ProbeProvider"
             android:authorities="${applicationId}.widgetprobe"
-            android:exported="true" />
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
         <!-- requestPinAppWidget's success callback (explicit PendingIntent from this app) -->
         <receiver
             android:name="app.mauri.sukrara.widgets.WidgetPresence$PinnedReceiver"
