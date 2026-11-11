@@ -67,6 +67,8 @@
     <string name="in_nsapi_secret_label">Nightscout API secret</string>
     <string name="in_nsapi_copy">For apps on this phone · Tap to copy</string>
     <string name="in_nsapi_copied">Copied · it leaves the clipboard in a minute</string>
+    <!-- TalkBack: what a tap on a secret row does ("double tap to copy") -->
+    <string name="in_nsapi_copy_action">copy</string>
     <string name="in_nsapi_xdrip_url">Address for xDrip+</string>
     <string name="in_nsapi_token_url">Address with token (watch faces, other apps)</string>
     <string name="in_nsapi_hide_secret">Hide API secret</string>
@@ -206,6 +208,8 @@
     <string name="in_bc_changed">%1$s · this app changed since you allowed it (another signature), so nothing is sent · Tap to allow it again</string>
     <string name="in_bc_remove">Remove %1$s</string>
     <string name="in_bc_gone">Not installed · Tap to remove</string>
+    <!-- TalkBack: what a tap on an uninstalled app's row does -->
+    <string name="in_bc_remove_action">remove</string>
     <string name="in_bc_footer">Only the Libre 3 this phone reads itself is sent, at most once a minute, and never LO / HI, old readings or a followed person\'s data. Each app gets one format (xDrip+ first, then LibreLink, then Juggluco), so it never gets a reading twice. A closed loop may dose insulin from these readings: allow only the apps you use.</string>
     <string name="in_hc_title" translatable="false">Health Connect</string>
     <string name="in_hc_intro">Your glucose in Health Connect, where health and fitness apps you allow can read it. Only readings from this phone\'s own sensor go in, once a minute.</string>
@@ -286,6 +290,8 @@
     <string name="in_import_cancel">Cancel</string>
     <string name="in_import_file">Choose a file</string>
     <string name="in_import_file_summary">A Sukrara export (Export data with All time in the earlier app, or Everything on this phone) or LibreView\'s file</string>
+    <!-- TalkBack: what a tap on an import row does ("double tap to import") -->
+    <string name="in_import_action">import</string>
     <string name="in_import_footer">Imported history shows on the graph and in reports, is kept 90 days and reaches your followers like the rest. It never goes to LibreView, Tidepool, Nightscout or Health Connect: they have it already or got it from the same place, and a second copy would count twice. Readings of the last 15 minutes are left to your sensor.</string>
     <string name="in_import_running_tidepool">Importing from Tidepool…</string>
     <string name="in_import_running_libreview">Importing LibreView\'s file…</string>

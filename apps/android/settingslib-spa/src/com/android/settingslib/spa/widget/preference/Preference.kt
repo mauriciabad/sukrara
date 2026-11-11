@@ -116,11 +116,13 @@ fun Preference(
     singleLineSummary: Boolean = false,
     // Sukrara: the row's own modifier (a read-only row's semantics), applied before the click
     rowModifier: Modifier = Modifier,
+    // Sukrara: what a tap does, for TalkBack ("Double tap to copy"), as a View preference's click action label
+    onClickLabel: String? = null,
 ) {
     val onClickWithLog = wrapOnClickWithLog(model.onClick)
     val enabled = model.enabled()
     val modifier = if (onClickWithLog != null) {
-        rowModifier.clickable(enabled = enabled, onClick = onClickWithLog)
+        rowModifier.clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClickWithLog)
     } else rowModifier
     BasePreference(
         title = model.title,

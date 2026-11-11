@@ -25,15 +25,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,9 +48,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import com.android.settingslib.spa.framework.compose.HighlightBox
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import com.android.settingslib.spa.framework.theme.SettingsShape
 import com.android.settingslib.spa.framework.theme.SettingsSpace
@@ -102,15 +104,33 @@ fun SettingsGroup(
     titleAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    var hasRows by remember { mutableStateOf(false) }
-    Column(modifier.fillMaxWidth()) {
-        if (title != null && hasRows) GroupTitle(title, titleAction)
-        // SPA's Category draws the card and gives its rows their surface; its own title has no heading semantics, so
-        // the title is drawn above it in the same place (SPA: 4 dp above the title inside the category's padding,
-        // which then pads the rows only: the title's bottom gives that 4 dp back)
-        Category(modifier = Modifier.onGloballyPositioned { hasRows = it.size.height > 0 }) { content() }
+    // SPA's Category draws the card and gives its rows their surface; its own title has no heading semantics, so the
+    // title is drawn above it in the same place (SPA: 4 dp above the title inside the category's padding, which then
+    // pads the rows only: the title's bottom gives that 4 dp back). The rows are measured first and the title composed
+    // only when they take space, in the same frame (no first frame without it).
+    SubcomposeLayout(modifier.fillMaxWidth()) { constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val rows = subcompose(GroupSlot.Rows) { Category { content() } }.map { it.measure(loose) }
+        val rowsHeight = rows.sumOf { it.height }
+        val head =
+            if (title != null && rowsHeight > 0) {
+                subcompose(GroupSlot.Title) { GroupTitle(title, titleAction) }.map { it.measure(loose) }
+            } else {
+                emptyList()
+            }
+        val headHeight = head.sumOf { it.height }
+        val width = constraints.constrainWidth((rows + head).maxOfOrNull { it.width } ?: 0)
+        layout(width, constraints.constrainHeight(headHeight + rowsHeight)) {
+            var y = 0
+            for (p in head + rows) {
+                p.place(0, y)
+                y += p.height
+            }
+        }
     }
 }
+
+private enum class GroupSlot { Title, Rows }
 
 /** SPA's CategoryTitle where Category puts it, as a heading, with an optional end-aligned [action]. */
 @Composable
@@ -170,13 +190,18 @@ private fun iconOf(
     warning: Boolean = false,
 ): (@Composable () -> Unit)? = leading ?: icon?.let { { RowIcon(it, warning) } }
 
-/** Every row sits in a tagged box (the index test finds rows by it; it adds no layout and no TalkBack stop). */
+/**
+ * Every row sits in a tagged box (the index test finds rows by it; it adds no layout and no TalkBack stop), inside
+ * SPA's HighlightBox keyed by its [title]: the row a settings search result opened ([SettingsHighlight]) scrolls into
+ * view and flashes, as stock Settings' search does.
+ */
 @Composable
 private fun RowBox(
+    title: String,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Box(modifier.testTag(ROW_TAG)) { content() }
+    Box(modifier.testTag(ROW_TAG)) { HighlightBox(title, content) }
 }
 
 private fun model(
@@ -235,7 +260,7 @@ fun SwitchRow(
 ) {
     val haptics = rememberHaptics()
     val i = iconOf(icon, null)
-    RowBox(modifier) {
+    RowBox(title, modifier) {
         if (readOnly) {
             SwitchPreference(switchModel(title, summary, i, checked, changeable = true, onCheckedChange = null), readOnlySwitch(checked))
         } else {
@@ -270,7 +295,7 @@ fun SplitSwitchRow(
 ) {
     val haptics = rememberHaptics()
     val shown = if (warning) warningText(summary) else summary
-    RowBox(modifier) {
+    RowBox(title, modifier) {
         TwoTargetSwitchPreference(
             switchModel(title, shown, iconOf(icon, null, warning), checked, switchEnabled) {
                 haptics.toggle(it)
@@ -299,12 +324,13 @@ fun NavigationRow(
     warning: Boolean = false,
 ) {
     val shown = if (warning) warningText(summary) else summary
-    RowBox(modifier) { Preference(model(title, shown, iconOf(icon, leading, warning), enabled, onClick)) }
+    RowBox(title, modifier) { Preference(model(title, shown, iconOf(icon, leading, warning), enabled, onClick)) }
 }
 
 /**
- * Does something right here (copy, show, bring back) instead of opening a screen: SPA's Preference (TalkBack reads it
- * as stock Settings' rows: "double tap to activate"). The caller confirms the result (a haptic, a changed summary).
+ * Does something right here (copy, show, bring back) instead of opening a screen: SPA's Preference. [onClickLabel] says
+ * what a tap does when the title doesn't ("Copy", "Import": TalkBack "double tap to copy" instead of "to activate").
+ * The caller confirms the result (a haptic, a changed summary).
  */
 @Composable
 fun ActionRow(
@@ -315,8 +341,9 @@ fun ActionRow(
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
     leading: (@Composable () -> Unit)? = null,
+    onClickLabel: String? = null,
 ) {
-    RowBox(modifier) { Preference(model(title, summary, iconOf(icon, leading), enabled, onClick)) }
+    RowBox(title, modifier) { Preference(model(title, summary, iconOf(icon, leading), enabled, onClick), onClickLabel = onClickLabel) }
 }
 
 /**
@@ -333,7 +360,7 @@ fun ValueRow(
     enabled: Boolean = true,
     readOnly: Boolean = false,
 ) {
-    RowBox(modifier) {
+    RowBox(title, modifier) {
         if (readOnly) {
             // full contrast, no click; TalkBack: "disabled" (as RestrictedSwitchPreference marks what can't change here)
             Preference(model(title, value, iconOf(icon, null), true, null), rowModifier = Modifier.semantics { disabled() })
@@ -352,7 +379,7 @@ fun InfoRow(
     @DrawableRes icon: Int? = null,
     leading: (@Composable () -> Unit)? = null,
 ) {
-    RowBox(modifier) { Preference(model(title, summary, iconOf(icon, leading), true, null)) }
+    RowBox(title, modifier) { Preference(model(title, summary, iconOf(icon, leading), true, null)) }
 }
 
 /**
@@ -394,7 +421,7 @@ fun DangerRow(
 ) {
     var asking by rememberSaveable { mutableStateOf(false) }
     val haptics = rememberHaptics()
-    RowBox(modifier) { Preference(model(title, summary, iconOf(icon, null), enabled) { asking = true }) }
+    RowBox(title, modifier) { Preference(model(title, summary, iconOf(icon, null), enabled) { asking = true }) }
     if (asking) {
         AlertDialog(
             onDismissRequest = { asking = false },
@@ -428,7 +455,7 @@ fun RadioRow(
     leading: (@Composable () -> Unit)? = null,
 ) {
     val haptics = rememberHaptics()
-    RowBox(modifier) {
+    RowBox(title, modifier) {
         Radio2(ListPreferenceOption(id = 1, text = title, summary = summary.orEmpty(), icon = leading), if (selected) 1 else 0, enabled) {
             if (!selected) haptics.tick()
             onSelect()
@@ -449,7 +476,7 @@ fun CheckboxRow(
 ) {
     val haptics = rememberHaptics()
     val i = iconOf(icon, null)
-    RowBox(modifier) {
+    RowBox(title, modifier) {
         CheckboxPreference(
             object : CheckboxPreferenceModel {
                 override val title = title
@@ -483,7 +510,7 @@ fun MainSwitchRow(
     note: String? = null,
 ) {
     val haptics = rememberHaptics()
-    RowBox(modifier) {
+    RowBox(title, modifier) {
         Column {
             if (readOnly) {
                 MainSwitchPreference(

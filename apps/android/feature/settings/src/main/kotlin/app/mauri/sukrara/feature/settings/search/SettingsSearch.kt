@@ -47,17 +47,19 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsHeader
+import app.mauri.sukrara.designsystem.rows.SettingsHighlight
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import java.text.Normalizer
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** A [SearchEntry] with its words in the current language. */
+/** A [SearchEntry] with its words in the current language; [row]: [title] names a row on the page it opens. */
 data class SearchItem(
     val title: String,
     val summary: String?,
     val page: String,
     val target: SearchTarget,
+    val row: Boolean = false,
 )
 
 /**
@@ -143,7 +145,8 @@ class RecentSearch(
 /**
  * The search field at the top of the settings overview, with its results below it: "Page › row" rows that open the
  * page ([onOpen]) or another feature's page ([onOpenOther]); only rows this phone and build show ([pens], [wearer],
- * [build]). [onActiveChange] tells the overview to hide its rows while a query is typed. While the field is focused and
+ * [build]); the page a result opens scrolls to its row and flashes it ([SettingsHighlight]). [onActiveChange] tells the
+ * overview to hide its rows while a query is typed. While the field is focused and
  * empty, the [recent] searches show as chips (tap = search it again) with *Clear*. Exits: the clear button, Back
  * (clears the query first), opening a result.
  */
@@ -168,7 +171,7 @@ fun SettingsSearchBar(
         remember(res, pens, wearer, build) {
             SettingsIndex.entries.filter { it.shownOn(pens, wearer, build) }.map { e ->
                 val page = listOfNotNull(e.parent, e.page).joinToString(" › ") { res.getString(it) }
-                SearchItem(res.getString(e.title), e.summary?.let(res::getString), page, e.target)
+                SearchItem(res.getString(e.title), e.summary?.let(res::getString), page, e.target, e.row)
             }
         }
     val results = remember(query, items) { SettingsSearch.match(query, items) }
@@ -232,6 +235,8 @@ fun SettingsSearchBar(
                             haptics.confirm()
                             recent.remember(query)
                             focus.clearFocus()
+                            // the page it opens scrolls to the row and flashes it (a page itself: nothing to point at)
+                            SettingsHighlight.request(r.title.takeIf { r.row })
                             when (val t = r.target) {
                                 is SearchTarget.Page -> onOpen(t.route)
                                 is SearchTarget.Other -> onOpenOther(t.page)

@@ -390,6 +390,7 @@ private fun CopyRow(
             copied = true
         },
         summary = if (copied) stringResource(R.string.in_nsapi_copied) else hint,
+        onClickLabel = stringResource(R.string.in_nsapi_copy_action),
     )
 }
 

@@ -66,6 +66,8 @@
     <string name="in_nsapi_secret_label">Secreto de la API de Nightscout</string>
     <string name="in_nsapi_copy">Para apps de este móvil · Toca para copiar</string>
     <string name="in_nsapi_copied">Copiado · sale del portapapeles en un minuto</string>
+    <!-- TalkBack: what a tap on a secret row does ("double tap to copy") -->
+    <string name="in_nsapi_copy_action">copiar</string>
     <string name="in_nsapi_xdrip_url">Dirección para xDrip+</string>
     <string name="in_nsapi_token_url">Dirección con token (esferas de reloj, otras apps)</string>
     <string name="in_nsapi_hide_secret">Ocultar el secreto de la API</string>
@@ -203,6 +205,8 @@
     <string name="in_bc_changed">%1$s · esta app ha cambiado desde que la permitiste (otra firma), así que no se envía nada · Toca para volver a permitirla</string>
     <string name="in_bc_remove">Quitar %1$s</string>
     <string name="in_bc_gone">No instalada · Toca para quitarla</string>
+    <!-- TalkBack: what a tap on an uninstalled app's row does -->
+    <string name="in_bc_remove_action">quitar</string>
     <string name="in_bc_footer">Solo se envía el Libre 3 que lee este móvil, como mucho una vez por minuto, y nunca lecturas LO / HI, antiguas o de la persona que sigues. Cada app recibe un solo formato (primero xDrip+, luego LibreLink, luego Juggluco), así nunca recibe una lectura dos veces. Un lazo cerrado puede dosificar insulina con estas lecturas: permite solo las apps que usas.</string>
     <string name="in_hc_intro">Tu glucosa en Health Connect, donde la pueden leer las apps de salud y deporte que permitas. Solo entran las lecturas del sensor de este móvil, una por minuto.</string>
     <string name="in_hc_switch">Escribir la glucosa en Health Connect</string>
@@ -282,6 +286,8 @@
     <string name="in_import_cancel">Cancelar</string>
     <string name="in_import_file">Elegir un archivo</string>
     <string name="in_import_file_summary">Una exportación de Sukrara (Exportar datos con Todo el historial en la app anterior, o Todo lo que hay en este móvil) o el archivo de LibreView</string>
+    <!-- TalkBack: what a tap on an import row does ("double tap to import") -->
+    <string name="in_import_action">importar</string>
     <string name="in_import_footer">El historial importado se ve en la gráfica y en los informes, se guarda 90 días y llega a quienes te siguen como el resto. Nunca va a LibreView, Tidepool, Nightscout ni Health Connect: ya lo tienen o les llegó del mismo sitio, y una segunda copia contaría doble. Las lecturas de los últimos 15 minutos son cosa de tu sensor.</string>
     <string name="in_import_running_tidepool">Importando desde Tidepool…</string>
     <string name="in_import_running_libreview">Importando el archivo de LibreView…</string>

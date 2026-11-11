@@ -44,6 +44,12 @@ data class SearchEntry(
     val needs: BuildFeature? = null,
 ) {
     /**
+     * Whether [title] is a row on the page [target] opens (that page highlights it); not the overview's rows, which are
+     * the pages themselves.
+     */
+    val row: Boolean get() = page != R.string.st_settings_title
+
+    /**
      * Whether this phone shows the row: [pens] = it reads insulin pens, [wearer] = the wearer's phone (else a
      * follower's), [build] = what this build has.
      */

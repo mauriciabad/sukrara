@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
@@ -76,7 +77,14 @@ internal fun Modifier.highlightBackground(
     }
 
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    LaunchedEffect(Unit) { if (isHighLight) bringIntoViewRequester.bringIntoView() }
+    // Sukrara: after the first frame, once the page is laid out (the first composition's effect came before the
+    // scrolling page knew its size, and the row stayed below the screen)
+    LaunchedEffect(Unit) {
+        if (isHighLight) {
+            withFrameNanos {}
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
 
     val animateColor by animateBackgroundColor(isHighLight, originalColor)
 

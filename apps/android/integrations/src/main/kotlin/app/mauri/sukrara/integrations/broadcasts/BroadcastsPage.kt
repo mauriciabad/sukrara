@@ -219,6 +219,7 @@ fun BroadcastsContent(
                             a.label,
                             { reallow = a.pkg },
                             summary = stringResource(R.string.in_bc_changed, a.pkg),
+                            onClickLabel = stringResource(R.string.in_bc_reallow_action),
                         )
                         ActionRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
                     }
@@ -228,6 +229,7 @@ fun BroadcastsContent(
                             a.label,
                             { actions.remove(a.pkg) },
                             summary = stringResource(R.string.in_bc_gone),
+                            onClickLabel = stringResource(R.string.in_bc_remove_action),
                         )
                     }
                 }

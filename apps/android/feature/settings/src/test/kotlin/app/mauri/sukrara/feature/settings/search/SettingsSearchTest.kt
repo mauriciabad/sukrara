@@ -4,6 +4,9 @@
 package app.mauri.sukrara.feature.settings.search
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,6 +14,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
+import app.mauri.sukrara.designsystem.rows.NavigationRow
+import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
@@ -25,7 +31,7 @@ import org.robolectric.annotation.Config
 
 /** Settings search: matching (accents, case, word starts, ranking) and the index against the pages. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [36], qualifiers = "w411dp-h891dp")
 class SettingsSearchTest {
     @get:Rule val compose = createComposeRule()
 
@@ -199,6 +205,34 @@ class SettingsSearchTest {
         compose.onNodeWithText("Search settings").performClick()
         compose.onNodeWithText("Clear").performClick()
         assertEquals(1, cleared)
+    }
+
+    /**
+     * #181: a result opens its page at its row (SPA's highlight: scrolled into view, flashed), as stock Settings' search
+     * does; a result that is a page itself opens that page at its top.
+     */
+    @Test
+    fun aResultOpensItsPageAtItsRow() {
+        var opened by mutableStateOf<SettingsRoute?>(null)
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                if (opened == null) {
+                    SettingsSearchBar(onOpen = { opened = it }, onOpenOther = {}, initialQuery = "sound pack")
+                } else {
+                    SettingsScaffoldPage("Alerts", onBack = {}) {
+                        SettingsGroup {
+                            for (i in 1..30) NavigationRow("Row $i", onClick = {})
+                            NavigationRow("Sound pack", onClick = {})
+                        }
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("Sound pack").performClick()
+        assertEquals(SettingsRoute.Alerts, opened)
+        compose.onNodeWithText("Sound pack").assertIsDisplayed()
+        assertTrue(SettingsIndex.entries.filter { it.page == R.string.st_settings_title }.none { it.row })
+        assertTrue(SettingsIndex.entries.filter { it.page != R.string.st_settings_title }.all { it.row })
     }
 
     /** The index's texts read as the pages show them: no format arguments left in (en and es). */

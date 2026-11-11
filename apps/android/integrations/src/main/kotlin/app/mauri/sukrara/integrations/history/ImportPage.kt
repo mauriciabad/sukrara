@@ -245,6 +245,7 @@ fun ImportContent(
                         stringResource(R.string.in_import_tidepool_summary, ui.tidepoolEmail)
                     },
                 enabled = !ui.running,
+                onClickLabel = stringResource(R.string.in_import_action),
             )
         } else {
             NavigationRow(
@@ -267,6 +268,7 @@ fun ImportContent(
             actions.chooseFile,
             summary = stringResource(R.string.in_import_file_summary),
             enabled = !ui.running,
+            onClickLabel = stringResource(R.string.in_import_action),
         )
     }
     FooterText(stringResource(R.string.in_import_footer))

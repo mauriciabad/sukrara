@@ -16,7 +16,6 @@
 
 package com.android.settingslib.spa.widget.preference
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import com.android.settingslib.spa.framework.compose.highlightBackground
 import com.android.settingslib.spa.framework.compose.thenIf
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import com.android.settingslib.spa.framework.theme.SettingsSpace
@@ -71,8 +71,9 @@ fun Radio2(
         modifier =
             Modifier.fillMaxWidth()
                 .thenIf(isSpaExpressiveEnabled) {
+                    // Sukrara: highlighted as BaseLayout's rows are, a search result's row (was background)
                     Modifier.heightIn(min = SettingsDimension.preferenceMinHeight)
-                        .background(surfaceBright)
+                        .highlightBackground(originalColor = surfaceBright)
                 }
                 .semantics(mergeDescendants = true) {}
                 .selectable(

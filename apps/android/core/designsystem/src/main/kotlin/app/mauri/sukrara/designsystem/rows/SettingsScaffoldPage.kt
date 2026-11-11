@@ -56,16 +56,22 @@ fun SettingsScaffoldPage(
 ) {
     SettingsChrome {
         val back by rememberUpdatedState(onBack)
-        // SPA's back button asks its navigation for "back": ours is the caller's
+        // SPA's back button asks its navigation for "back": ours is the caller's. Its rows' HighlightBox asks it once
+        // per row whether that row is the one a search result opened: the request this page took when it opened.
         val nav =
             remember {
                 object : NavControllerWrapper {
+                    private var highlight = SettingsHighlight.take()
+
                     override fun navigate(
                         route: String,
                         popUpCurrent: Boolean,
                     ) = Unit
 
                     override fun navigateBack() = back()
+
+                    override fun isHighLightItem(highlightItemKey: String): Boolean =
+                        (highlight == highlightItemKey).also { if (it) highlight = null }
                 }
             }
         CompositionLocalProvider(LocalNavController provides nav) {
@@ -88,4 +94,22 @@ fun SettingsScaffoldPage(
             }
         }
     }
+}
+
+/**
+ * The row a settings search result opens, the way stock Settings' search does (SPA's highlight): the result asks for
+ * its row by title ([request]) just before its page opens, and the next settings page that opens takes the request;
+ * on it SPA's HighlightBox scrolls that row into view and flashes it. A result that is a page itself asks for none.
+ * Main thread only.
+ */
+object SettingsHighlight {
+    private var pending: String? = null
+
+    /** The row titled [rowTitle] on the page about to open (null: none). */
+    fun request(rowTitle: String?) {
+        pending = rowTitle
+    }
+
+    /** The request, once: a page takes it when it opens. */
+    internal fun take(): String? = pending.also { pending = null }
 }

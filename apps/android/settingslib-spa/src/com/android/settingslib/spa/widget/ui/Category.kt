@@ -35,7 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.settingslib.spa.framework.compose.thenIf
 import com.android.settingslib.spa.framework.theme.SettingsDimension
@@ -83,15 +87,9 @@ fun Category(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var displayTitle by remember { mutableStateOf(false) }
-    Column(
-        modifier =
-            Modifier.thenIf(isSpaExpressiveEnabled && displayTitle) {
-                Modifier.padding(
-                    horizontal = SettingsSpace.small1,
-                    vertical = SettingsSpace.extraSmall4,
-                )
-            }
-    ) {
+    // Sukrara: the margins decided in the same layout pass (AOSP adds them once a drawn frame had rows, so a page's
+    // first frame showed its groups full width); an empty category still takes no space
+    Column(modifier = Modifier.thenIf(isSpaExpressiveEnabled) { Modifier.marginsWhenNotEmpty() }) {
         if (title != null && displayTitle) CategoryTitle(title = title)
         Column(
             modifier =
@@ -109,6 +107,20 @@ fun Category(
         )
     }
 }
+
+/** Sukrara: the category's margins (16 dp beside it, 4 dp above and below) while it has content; none while empty. */
+private fun Modifier.marginsWhenNotEmpty(): Modifier =
+    layout { measurable, constraints ->
+        val h = SettingsSpace.small1.roundToPx()
+        val v = SettingsSpace.extraSmall4.roundToPx()
+        val p = measurable.measure(constraints.offset(-2 * h, -2 * v))
+        val width = constraints.constrainWidth(p.width + 2 * h)
+        if (p.height == 0) {
+            layout(width, constraints.constrainHeight(0)) { p.place(h, 0) }
+        } else {
+            layout(width, constraints.constrainHeight(p.height + 2 * v)) { p.place(h, v) }
+        }
+    }
 
 /** LocalIsInCategory containing the if the current composable is in a category. */
 internal val LocalIsInCategory = staticCompositionLocalOf { false }
