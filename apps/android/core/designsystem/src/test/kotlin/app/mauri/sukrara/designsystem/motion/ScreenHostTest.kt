@@ -224,4 +224,41 @@ class ScreenHostTest {
         // the home page shown during the gesture is the one that stays: not composed again on release
         assertEquals(homeVisits, created.count { it == "home" })
     }
+
+    /** A gesture started while a page is still opening takes that page (it doesn't draw a page twice or lose one). */
+    @Test fun backGestureDuringAnOpen() {
+        host()
+        settle()
+        compose.runOnIdle { stack += "settings" }
+        frames(6)
+        val back = compose.activity.onBackPressedDispatcher
+        compose.runOnIdle {
+            back.dispatchOnBackStarted(BackEventCompat(10f, 1200f, 0f, BackEventCompat.EDGE_LEFT))
+            back.dispatchOnBackProgressed(BackEventCompat(200f, 1200f, 0.3f, BackEventCompat.EDGE_LEFT))
+        }
+        frames(4)
+        assertEquals(setOf("home", "settings"), alive.toSet())
+        compose.runOnIdle { back.dispatchOnBackCancelled() }
+        settle()
+        assertEquals(listOf("settings"), alive)
+    }
+
+    /** *Remove animations*: the gesture shows nothing under the page; releasing it just goes back. */
+    @Test fun reducedMotionGestureShowsNoPreview() {
+        host(reduced = true)
+        settle()
+        compose.runOnIdle { stack += "settings" }
+        settle()
+        val back = compose.activity.onBackPressedDispatcher
+        compose.runOnIdle {
+            back.dispatchOnBackStarted(BackEventCompat(10f, 1200f, 0f, BackEventCompat.EDGE_LEFT))
+            back.dispatchOnBackProgressed(BackEventCompat(300f, 1200f, 0.6f, BackEventCompat.EDGE_LEFT))
+        }
+        frames(4)
+        assertEquals(listOf("settings"), alive)
+        compose.runOnIdle { back.onBackPressed() }
+        frames(3)
+        assertEquals(listOf("home"), stack.toList())
+        assertEquals(listOf("home"), alive)
+    }
 }
