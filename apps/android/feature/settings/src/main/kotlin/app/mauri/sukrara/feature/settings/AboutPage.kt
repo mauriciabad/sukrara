@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -17,8 +19,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
+/** The website (docs/, published by .github/workflows/website.yml). */
+const val SITE_URL = "https://sukrara.mauri.app"
+
 /** The privacy policy on the site (docs/privacy.md): what Sukrara stores and sends, and where. */
-const val PRIVACY_URL = "https://sukrara.mauri.app/privacy"
+const val PRIVACY_URL = "$SITE_URL/privacy"
+
+/** One app of Sukrara on another device: its row under *Sukrara on other devices* and its page on the website. */
+data class OtherDevice(
+    @StringRes val name: Int,
+    @StringRes val summary: Int,
+    @DrawableRes val icon: Int,
+    val url: String,
+)
+
+/**
+ * *Sukrara on other devices* (#179): each opens that app's page on the website (what it does, how to get it), never a
+ * download. The Mac page is docs/mac/index.md.
+ */
+val OTHER_DEVICES =
+    listOf(
+        OtherDevice(R.string.st_device_mac, R.string.st_device_mac_summary, DsR.drawable.ds_ic_open_in_new, "$SITE_URL/mac/"),
+    )
 
 /**
  * Checks for an update once when the About page opens (and on *Check again*); never polls. Without [releases] (the
@@ -44,8 +66,8 @@ class AboutViewModel(
 }
 
 /**
- * About: version, update check (none when [update] is null: the Google Play build), Sukrara on other devices, report a
- * problem, source code, privacy policy.
+ * About: version, update check (none when [update] is null: the Google Play build), Sukrara on other devices (the
+ * website's page per app), report a problem, source code, privacy policy.
  */
 @Composable
 fun AboutContent(
@@ -65,7 +87,7 @@ fun AboutContent(
                     InfoRow(stringResource(R.string.st_update_checking), icon = DsR.drawable.ds_ic_update)
                 }
 
-                is UpdateState.UpToDate -> {
+                UpdateState.UpToDate -> {
                     NavigationRow(
                         stringResource(R.string.st_update_none),
                         onCheckAgain,
@@ -93,20 +115,11 @@ fun AboutContent(
                 }
             }
         }
-        val latest =
-            when (update) {
-                is UpdateState.Available -> update.release
-                is UpdateState.UpToDate -> update.latest
-                else -> null
-            }
-        val others = latest?.let(UpdateCheck::otherDevices).orEmpty()
-        if (others.isNotEmpty()) {
-            SettingsGroup(title = stringResource(R.string.st_other_devices)) {
-                for (asset in others) {
-                    NavigationRow(stringResource(R.string.st_asset_mac), {
-                        context.openUrl(asset.url)
-                    }, summary = asset.name, icon = DsR.drawable.ds_ic_download)
-                }
+        SettingsGroup(title = stringResource(R.string.st_other_devices)) {
+            for (device in OTHER_DEVICES) {
+                NavigationRow(stringResource(device.name), {
+                    context.openUrl(device.url)
+                }, summary = stringResource(device.summary), icon = device.icon)
             }
         }
         SettingsGroup {

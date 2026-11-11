@@ -184,7 +184,8 @@
     <string name="st_update_offline">No se pudo buscar actualizaciones</string>
     <string name="st_update_offline_summary">Abrir la página de versiones</string>
     <string name="st_other_devices">Sukrara en otros dispositivos</string>
-    <string name="st_asset_mac">Mac</string>
+    <string name="st_device_mac">Sukrara para Mac</string>
+    <string name="st_device_mac_summary">Glucosa y alertas en la barra de menús del Mac · abre su página en la web</string>
     <string name="st_report_problem">Informar de un problema</string>
     <string name="st_report_problem_summary">Abre las incidencias del proyecto en GitHub</string>
     <string name="st_source_code">Código fuente</string>

@@ -1761,6 +1761,38 @@
         }
       }
     },
+    "Open Website" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Website"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir la web"
+          }
+        }
+      }
+    },
+    "Opens %@'s page on the website" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens %@'s page on the website"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la página de %@ en la web"
+          }
+        }
+      }
+    },
     "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night." : {
       "localizations" : {
         "en" : {
@@ -1777,6 +1809,22 @@
         }
       }
     },
+    "Reads the sensor, alerts and shares with this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reads the sensor, alerts and shares with this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lee el sensor, avisa y comparte con este Mac"
+          }
+        }
+      }
+    },
     "Starts" : {
       "localizations" : {
         "en" : {
@@ -1789,6 +1837,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empiezan"
+          }
+        }
+      }
+    },
+    "Sukrara for Android" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara for Android"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara para Android"
+          }
+        }
+      }
+    },
+    "Sukrara on Other Devices" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara on Other Devices"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara en otros dispositivos"
           }
         }
       }

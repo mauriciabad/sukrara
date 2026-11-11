@@ -110,7 +110,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
   export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
   now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with an update check
-  against this repo's releases and the [privacy policy](https://sukrara.mauri.app/privacy).
+  against this repo's releases, a link to the website's [Mac page](https://sukrara.mauri.app/mac/) and the
+  [privacy policy](https://sukrara.mauri.app/privacy).
 - **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
   insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
   by your pen?*), with *Undo*; it asks when unsure, on a card under the glucose card (*Priming or injected?*, *Same
@@ -206,7 +207,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   7 days by day with the phone's entries, edit or delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
 - **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, update check,
-  Quit), Graph (time shown per place, treatments on the graph, lines, ranges, sensor countdown and time left), Rings
+  Quit, a link to the website's [Android page](https://sukrara.mauri.app/android/)), Graph (time shown per place, treatments on the graph, lines, ranges, sensor countdown and time left), Rings
   (rings and numbers, ring order you drag, last treatment), Alerts (per alert with its summary and details, quiet times, the notification's buttons, sounds with preview, what's
   quiet now) and Following.
 - The card shows the wearer's treatments on the chart with their mute lines, the last treatment beside the value and

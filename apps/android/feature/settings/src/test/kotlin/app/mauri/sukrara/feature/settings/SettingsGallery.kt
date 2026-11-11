@@ -115,11 +115,6 @@ class SettingsGallery {
             "https://example.invalid/r",
             prerelease = true,
             draft = false,
-            assets =
-                listOf(
-                    ReleaseAsset("Sukrara-0.12.1.dmg", "https://example.invalid/d"),
-                    ReleaseAsset("Sukrara-0.12.1.apk", "https://example.invalid/a"),
-                ),
         )
 
     private val sensorWorking =

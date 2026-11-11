@@ -16,7 +16,6 @@ class UpdateCheckTest {
     @Test
     fun `parses releases and skips one without a tag`() {
         assertEquals(listOf("v0.12.2-rc1", "v0.12.1", "v0.11.53"), releases.map { it.tag })
-        assertEquals(2, releases[1].assets.size)
         assertTrue(releases[0].draft)
     }
 
@@ -32,25 +31,8 @@ class UpdateCheckTest {
     }
 
     @Test
-    fun `up to date keeps the latest offered release for its other-device files`() {
-        val state = UpdateCheck.state(Result.success(releases), "0.12.1", prerelease = true)
-        assertEquals(UpdateState.UpToDate(releases[1]), state)
-    }
-
-    @Test
-    fun `other devices get only the Mac files, never the APK or the R8 mapping`() {
-        val dl = "https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/"
-        val release =
-            Release(
-                "v0.12.1",
-                UpdateCheck.RELEASES_URL,
-                prerelease = true,
-                draft = false,
-                assets =
-                    listOf("Sukrara-0.12.1.apk", "Sukrara-0.12.1.dmg", "Sukrara-mac-0.12.1.zip", "Sukrara-0.12.1-android-mapping.txt.gz")
-                        .map { ReleaseAsset(it, dl + it) },
-            )
-        assertEquals(listOf("Sukrara-0.12.1.dmg", "Sukrara-mac-0.12.1.zip"), UpdateCheck.otherDevices(release).map { it.name })
+    fun `nothing newer is up to date`() {
+        assertEquals(UpdateState.UpToDate, UpdateCheck.state(Result.success(releases), "0.12.1", prerelease = true))
     }
 
     @Test
@@ -59,7 +41,7 @@ class UpdateCheckTest {
     }
 
     @Test
-    fun `only the project's release pages and files are opened`() {
+    fun `only the project's release pages are opened`() {
         assertTrue(UpdateCheck.isReleaseUrl("https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1"))
         assertTrue(UpdateCheck.isReleaseUrl("https://github.com/mauriciabad/sukrara/releases/download/v0.12.1/Sukrara-0.12.1.dmg"))
         listOf(
@@ -77,21 +59,16 @@ class UpdateCheckTest {
     }
 
     @Test
-    fun `a release link outside the project falls back to the releases page and its file is dropped`() {
+    fun `a release link outside the project falls back to the releases page`() {
         val parsed =
             UpdateCheck
                 .parse(
                     """
                     [{"tag_name": "v9.0.0", "html_url": "https://evil.example/releases/tag/v9.0.0", "draft": false,
-                      "prerelease": false, "assets": [
-                        {"name": "Sukrara-9.0.0.dmg", "browser_download_url": "https://evil.example/Sukrara-9.0.0.dmg"},
-                        {"name": "Sukrara-9.0.0.zip",
-                         "browser_download_url": "https://github.com/mauriciabad/sukrara/releases/download/v9.0.0/Sukrara-9.0.0.zip"}
-                      ]}]
+                      "prerelease": false}]
                     """.trimIndent(),
                 ).single()
         assertEquals(UpdateCheck.RELEASES_URL, parsed.url)
-        assertEquals(listOf("Sukrara-9.0.0.zip"), parsed.assets.map { it.name })
         assertTrue(releases.all { UpdateCheck.isReleaseUrl(it.url) })
     }
 

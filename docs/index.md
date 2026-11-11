@@ -10,8 +10,7 @@ Live glucose from a **FreeStyle Libre 3** on your **Mac menubar**, **Android sta
 watch** and your **family's devices**. End-to-end encrypted, over Bluetooth nearby or public Nostr relays from
 anywhere. **No cloud account, nothing to host.** The name: *sucre* (sugar) + *ara* (Catalan: now).
 
-**[Download for Android](https://github.com/mauriciabad/sukrara/releases/download/v0.12.0/Sukrara-0.12.0.apk)**
-· **[Download for Mac](https://github.com/mauriciabad/sukrara/releases/download/v0.12.0/Sukrara-0.12.0.dmg)**
+**[Sukrara for Android](android/)** · **[Sukrara for Mac](mac/)**
 · [All releases](https://github.com/mauriciabad/sukrara/releases)
 · [Source and install steps](https://github.com/mauriciabad/sukrara#install)
 · [Privacy policy](privacy)

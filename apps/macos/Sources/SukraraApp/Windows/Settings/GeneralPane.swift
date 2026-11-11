@@ -6,7 +6,7 @@ import SukraraShare
 import SwiftUI
 
 /// General: Settings from (with what's in use and Copy the wearer's settings…), units, open at login, updates,
-/// version, Quit.
+/// version, Quit, Sukrara on other devices (the website's page per app).
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
@@ -75,6 +75,18 @@ struct GeneralPane: View {
                 HStack {
                     Spacer()
                     Button(L10n.t("Quit Sukrara")) { NSApp.terminate(nil) }
+                }
+            }
+            Section(L10n.t("Sukrara on Other Devices")) {
+                ForEach(OtherDevice.all) { device in
+                    LabeledContent {
+                        Link(L10n.t("Open Website"), destination: device.url)
+                            .help(device.url.absoluteString)
+                            .accessibilityHint(L10n.t("Opens \(device.name)'s page on the website"))
+                    } label: {
+                        Text(device.name)
+                        Text(device.summary)
+                    }
                 }
             }
         }
