@@ -37,6 +37,9 @@ object QuickTreatmentIntents {
     /** Long-acting focused: *Add treatment* after a rapid pen's read (the other insulin). */
     internal fun focusLong(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FOCUS_LONG, false) == true
 
+    /** Opened from inside the app (home's button, its *Eat carbs* badge): the app is already there behind it. */
+    internal fun fromApp(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FROM_APP, false) == true
+
     /** *When* to start with: a pen read's injection (*Add treatment* on its card), else null (now). */
     internal fun at(intent: Intent?): java.time.Instant? =
         intent?.takeIf { it.hasExtra(NavTargets.EXTRA_AT) }?.let { java.time.Instant.ofEpochMilli(it.getLongExtra(NavTargets.EXTRA_AT, 0)) }

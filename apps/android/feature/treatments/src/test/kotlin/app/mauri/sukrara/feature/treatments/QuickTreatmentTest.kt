@@ -103,6 +103,22 @@ class QuickTreatmentTest {
         kotlinx.coroutines.runBlocking { assertNull(app.treatments.draft()) }
     }
 
+    /** #181: *Open Sukrara* only where the app isn't already behind the dialog (a notification, a widget, the tile). */
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-xxhdpi")
+    fun openSukraraOnlyFromOutsideTheApp() {
+        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Notification)).use {
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-save").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("Open Sukrara").assertExists()
+        }
+        val fromHome = QuickTreatmentIntents.open(app, QuickSource.Home).putExtra(NavTargets.EXTRA_FROM_APP, true)
+        ActivityScenario.launch<QuickTreatmentActivity>(fromHome).use {
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-save").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("Open Sukrara").assertDoesNotExist()
+        }
+    }
+
     @Test fun widgetAndNotificationIntentsResolveToTheQuickDialog() {
         for (source in QuickSource.entries) {
             val intent = QuickTreatmentIntents.open(app, source, focusCarbs = true)

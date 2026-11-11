@@ -714,15 +714,25 @@ private fun route(
         }
 
         HomeAction.AddTreatment -> {
-            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT))
+            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FROM_APP, true))
         }
 
         is HomeAction.EditTreatment -> {
-            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id))
+            open(
+                context,
+                Intent(NavTargets.ACTION_QUICK_TREATMENT)
+                    .putExtra(NavTargets.EXTRA_TREATMENT_ID, action.id)
+                    .putExtra(NavTargets.EXTRA_FROM_APP, true),
+            )
         }
 
         is HomeAction.Treat -> {
-            open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs))
+            open(
+                context,
+                Intent(NavTargets.ACTION_QUICK_TREATMENT)
+                    .putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs)
+                    .putExtra(NavTargets.EXTRA_FROM_APP, true),
+            )
         }
 
         HomeAction.OpenNightAlerts -> {

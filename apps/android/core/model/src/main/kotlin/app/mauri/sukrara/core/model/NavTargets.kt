@@ -23,6 +23,9 @@ object NavTargets {
     /** Long extra of [ACTION_QUICK_TREATMENT]: *When* starts at this time (epoch ms; a pen read's injection), not now. */
     const val EXTRA_AT = "app.mauri.sukrara.extra.AT"
 
+    /** Boolean extra of [ACTION_QUICK_TREATMENT]: opened from inside the app (home), so no *Open Sukrara*. */
+    const val EXTRA_FROM_APP = "app.mauri.sukrara.extra.FROM_APP"
+
     /**
      * The new-sensor / sensor setup flow. Intents for it target [SENSOR_SETUP_ACTIVITY] explicitly (not exported:
      * only Sukrara's own PendingIntents reach it); the main activity ignores the action from any other app.

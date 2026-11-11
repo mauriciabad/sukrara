@@ -252,8 +252,9 @@ class QuickTreatmentActivity : ComponentActivity() {
                     now = module.clock::now,
                     onSave = ::save,
                     onCancel = ::finish,
-                    // over the lock screen Unlock takes Open Sukrara's place; an edit was opened from the app
-                    onOpenApp = if (cd == null && editId == null) ::openApp else null,
+                    // over the lock screen Unlock takes Open Sukrara's place; opened from the app (an edit too), the
+                    // app is already behind it
+                    onOpenApp = if (cd == null && editId == null && !QuickTreatmentIntents.fromApp(intent)) ::openApp else null,
                     lock = cd?.let { lockInfo(it) },
                     quiet = quiet,
                     draft = draftAt?.let { DraftLine(it, ::discardDraft) },
