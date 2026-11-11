@@ -148,6 +148,9 @@ class SyntheticSource(
             .putLong(KEY_READY_AT, readyAt?.toEpochMilli() ?: 0)
             .commit()
 
-        private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        /** Device-protected: the made-up sensor replaces the real one before the first unlock after a restart too (#160). */
+        private fun prefs(
+            context: Context,
+        ) = context.createDeviceProtectedStorageContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     }
 }

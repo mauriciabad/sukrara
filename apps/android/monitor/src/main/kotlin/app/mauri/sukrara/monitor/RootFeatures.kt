@@ -23,7 +23,7 @@ interface RootFeatures {
     /** Root for Sukrara and the module's state, for Settings and home. */
     val access: SystemAccessPort
 
-    /** Starts listening for LSPosed and following the hub (from [MonitorModule.ready]). */
+    /** Starts listening for LSPosed and following the hub (from [MonitorModule.readyUnlocked]). */
     fun start()
 
     /** System UI's module said hello with the code it runs and whether it orders the icons. */

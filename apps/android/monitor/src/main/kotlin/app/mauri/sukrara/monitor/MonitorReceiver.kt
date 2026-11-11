@@ -24,6 +24,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  *  - the health check alarm → start the service if it should run, schedule the next check;
  *  - the freshness step → redraw the glucose surfaces;
  *  - the glucose notification was swiped away → post it again.
+ * The last three (`HealthCheckReceiver`) are direct-boot aware: they run before the first unlock while the wearer's
+ * phone monitors then (docs/30-direct-boot.md, #160).
  */
 abstract class MonitorReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -58,7 +60,7 @@ abstract class MonitorReceiver : BroadcastReceiver() {
         action: String,
     ) {
         val host = context.monitorHost
-        host.awaitReady()
+        host.awaitMonitor()
         val monitor = host.monitor
         when (action) {
             Intent.ACTION_BOOT_COMPLETED -> {
@@ -99,7 +101,7 @@ abstract class MonitorReceiver : BroadcastReceiver() {
 
     /** Alerts first (they don't wait for the graph): no data, a mute ending or a sensor end while the phone was off. */
     private suspend fun checkAlerts(context: Context) {
-        val alerts = context.alertsModule ?: return
+        val alerts = context.awaitAlertsModule() ?: return
         withTimeoutOrNull(ALERT_CHECK_BUDGET_MS) { alerts.check() } ?: Log.w(TAG, "alert check timed out")
     }
 

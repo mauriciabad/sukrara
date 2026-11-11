@@ -17,6 +17,10 @@ class LockedBootTest {
             log += "waiting"
         }
 
+        override fun showMonitoring() {
+            log += "monitoring"
+        }
+
         override fun ring(plan: LockedBootPlan) {
             log += "ring"
         }
@@ -37,14 +41,14 @@ class LockedBootTest {
 
     @Test
     fun `a locked boot says monitoring waits and arms no data`() {
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         assertEquals(listOf("waiting"), surface.log)
         assertEquals(last + 20 * 60, alarm.at)
     }
 
     @Test
     fun `the alarm rings and comes back every re-alert interval until the unlock`() {
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         now = requireNotNull(alarm.at)
         boot.onAlarm()
         assertEquals(listOf("waiting", "ring"), surface.log)
@@ -59,14 +63,14 @@ class LockedBootTest {
     @Test
     fun `a restart long after the last reading rings at once`() {
         now = last + 2 * 3600
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         assertEquals(listOf("waiting", "ring"), surface.log)
         assertEquals(now + 3600, alarm.at)
     }
 
     @Test
     fun `the unlock clears the notice and the alarm`() {
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         unlocked = true
         boot.onUnlocked()
         assertEquals(listOf("waiting", "clear"), surface.log)
@@ -76,23 +80,44 @@ class LockedBootTest {
     @Test
     fun `nothing without a screen lock, when already unlocked, or with nothing to monitor`() {
         secure = false
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         secure = true
         unlocked = true
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         unlocked = false
         plan = LockedBootPlan()
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         plan = null
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         assertEquals(emptyList<String>(), surface.log)
         assertNull(alarm.at)
     }
 
     @Test
+    fun `a phone that monitors before the unlock says so, with no alarm of its own (the alerts run), and the unlock clears it`() {
+        alarm.set(last)
+        boot.onLockedBoot(monitoring = true)
+        assertEquals(listOf("monitoring"), surface.log)
+        assertNull("the alert runtime's own no data rings, not this", alarm.at)
+        unlocked = true
+        boot.onUnlocked()
+        assertEquals(listOf("monitoring", "clear"), surface.log)
+    }
+
+    @Test
+    fun `monitoring before the unlock shows nothing on a phone without a screen lock or already unlocked`() {
+        secure = false
+        boot.onLockedBoot(monitoring = true)
+        secure = true
+        unlocked = true
+        boot.onLockedBoot(monitoring = true)
+        assertEquals(emptyList<String>(), surface.log)
+    }
+
+    @Test
     fun `no data off still says monitoring waits, without an alarm`() {
         plan = plan?.copy(noDataMin = null)
-        boot.onLockedBoot()
+        boot.onLockedBoot(monitoring = false)
         assertEquals(listOf("waiting"), surface.log)
         assertNull(alarm.at)
     }

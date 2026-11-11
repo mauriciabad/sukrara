@@ -42,6 +42,9 @@ import kotlinx.coroutines.launch
  *
  * `onCreate` does no I/O: it goes to the foreground at once with what the hub has in memory, then waits for the app's
  * storage in its own scope.
+ *
+ * Direct-boot aware: before the first unlock after a restart it runs on the wearer's phone reading its own sensor,
+ * from device-protected storage only (docs/30-direct-boot.md, #160), and goes on running through the unlock.
  */
 class MonitoringService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -109,12 +112,12 @@ class MonitoringService : Service() {
     }
 
     private suspend fun run() {
-        monitorHost.awaitReady()
+        monitorHost.awaitMonitor()
         val m = monitor
         m.hubImpl.setService(ServiceState.Running)
         m.healthCheck.schedule()
         // the alert runtime follows the hub while the service runs (its exact alarm covers the time it doesn't)
-        alertsModule?.attach(scope)
+        awaitAlertsModule()?.attach(scope)
         watchBluetooth(m)
         watchScreen(m)
         scope.launch {
@@ -186,7 +189,7 @@ class MonitoringService : Service() {
                     intent: Intent,
                 ) {
                     when (intent.action) {
-                        Intent.ACTION_USER_PRESENT -> alertsModule?.let { a -> scope.launch { a.sensorEnd.unlocked() } }
+                        Intent.ACTION_USER_PRESENT -> scope.launch { awaitAlertsModule()?.sensorEnd?.unlocked() }
                         Intent.ACTION_SCREEN_ON -> m.repost()
                     }
                 }

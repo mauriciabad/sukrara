@@ -11,10 +11,11 @@ import app.mauri.sukrara.monitor.alerts.SavedSensor
 import kotlinx.serialization.Serializable
 
 /**
- * What the phone needs to know before the first unlock after a restart (docs/30-direct-boot.md), the only state kept in
- * device-protected storage. Everything else (readings, treatments, the sensor pairing, the identity, the alert record)
- * stays in credential-encrypted storage, so before the first unlock Sukrara can only say that it isn't monitoring and
- * ring when the person's *No data* alert would have. Never a glucose value: only times and the *No data* rule.
+ * What the phone needs to know before the first unlock after a restart when it can't monitor then (docs/30-direct-boot.md:
+ * a follower, whose sharing identity stays credential-encrypted; Juggluco as the source, which doesn't run before the
+ * unlock either; no sensor paired): Sukrara can only say that it isn't monitoring and ring when the person's *No data*
+ * alert would have. Never a glucose value: only times and the *No data* rule. A wearer reading their own sensor monitors
+ * fully before the unlock instead (#160).
  *
  * Written by the alert runtime after every change ([of]); read by [LockedBootReceiver].
  */

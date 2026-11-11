@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.monitor.AlertCheckReceiver
 import app.mauri.sukrara.monitor.R
+import app.mauri.sukrara.monitor.notify.AppActivities
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
@@ -263,10 +264,13 @@ class AndroidSensorEndPresenter(
         Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1 &&
             runCatching { nm.canPostPromotedNotifications() }.getOrDefault(false)
 
-    private fun openApp(): PendingIntent {
-        val launch = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: Intent().setPackage(ctx.packageName)
-        return PendingIntent.getActivity(ctx, REQUEST_OPEN, launch, PendingIntent.FLAG_IMMUTABLE)
-    }
+    private fun openApp(): PendingIntent =
+        PendingIntent.getActivity(
+            ctx,
+            REQUEST_OPEN,
+            AppActivities.launch(ctx),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
 
     private fun sensorSetup(): PendingIntent {
         // the app's non-exported trampoline: no other app can open the flow

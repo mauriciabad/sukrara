@@ -132,6 +132,8 @@
     <string name="monitor_locked_boot_text">El teléfono se ha reiniciado. Sukrara no puede leer el sensor ni avisarte hasta que lo desbloquees.</string>
     <string name="monitor_locked_boot_alarm_title">Sin datos de glucosa · desbloquea el teléfono</string>
     <string name="monitor_locked_boot_alarm_text">Sin lecturas desde %1$s. Sukrara no puede leer el sensor ni avisarte hasta que desbloquees el teléfono.</string>
+    <string name="monitor_locked_boot_monitoring_title">Monitorizando antes de desbloquear</string>
+    <string name="monitor_locked_boot_monitoring_text">El teléfono se ha reiniciado. Sukrara lee el sensor y te avisa como siempre. Los seguidores, las subidas y la app esperan a que lo desbloquees.</string>
     <string name="alert_test_title">Prueba · %1$s</string>
     <string name="alert_test_text">Una prueba, no una lectura. Tu alerta real suena así.</string>
     <string name="calendar_event_title">Fin del sensor</string>

@@ -13,6 +13,7 @@ import app.mauri.sukrara.alerts.AlertSettingsCodec
 import app.mauri.sukrara.core.data.DataModule
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
+import app.mauri.sukrara.core.data.userUnlocked
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
@@ -107,6 +108,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
@@ -114,6 +116,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.shareIn
@@ -130,13 +133,22 @@ import app.mauri.sukrara.graph.Clock as ClockText
  *   `:monitor`) that builds its objects from constructor parameters. `AppGraph` only composes them, in dependency
  *   order (data → role → sensor → monitor → alerts → home → …): one `val x by lazy { XModule(…) }` block per module.
  * - Built in [App.onCreate] on the main thread, so the constructor does no I/O: everything is `lazy`, and work
- *   that reads disk happens in [ready] on the IO dispatcher.
+ *   that reads disk happens in [monitorReady] and [ready] on the IO dispatcher.
  * - [scope] lives as long as the process; a failing child doesn't cancel the others.
+ * - **Before the first unlock after a restart** ([unlocked] false, docs/30-direct-boot.md, #160) only the part that
+ *   needs nothing but device-protected storage runs: the role, the hub (its readings from `HubReadings`), the sensor
+ *   source, the monitor (service, glucose notification) and the alert runtime, on the wearer's phone reading its own
+ *   sensor ([monitorsLocked]). Their credential-encrypted inputs (treatments, sharing, the follower engine) wait
+ *   ([whenUnlocked]); nothing else is built. At the unlock ([onUnlocked]) the readings taken before it go into the
+ *   history and the same graph becomes the full one: the service, the hub, the source and the alerts go on.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AppGraph(
     val app: Application,
     val dispatchers: DispatcherProvider = DefaultDispatchers,
     val clock: Clock = SystemClock,
+    /** The phone was unlocked since it started (credential-encrypted storage is readable). */
+    private val userUnlocked: () -> Boolean = { app.userUnlocked },
 ) : SharingDeps {
     val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
 
@@ -150,7 +162,22 @@ class AppGraph(
 
     // ---- modules (one line each; construction does no I/O) ----
 
-    val data by lazy { DataModule(app, appVersion, dispatchers, clock) }
+    val data by lazy { DataModule(app, appVersion, dispatchers, clock, userUnlocked = userUnlocked) }
+
+    /**
+     * The credential-encrypted storage is open to the graph: from the start on an unlocked phone; after a start before
+     * the first unlock, from [onUnlocked] (the readings taken before it are in the history by then).
+     */
+    val unlocked: StateFlow<Boolean> get() = data.unlocked
+
+    /** [after]'s values once [unlocked], [before] until then (an input kept in credential-encrypted storage). */
+    private fun <T> whenUnlocked(
+        before: T,
+        after: () -> Flow<T>,
+    ): Flow<T> = unlocked.flatMapLatest { if (it) after() else flowOf(before) }
+
+    /** [after]'s values once [unlocked], nothing until then. */
+    private fun <T> onceUnlocked(after: () -> Flow<T>): Flow<T> = unlocked.flatMapLatest { if (it) after() else emptyFlow() }
 
     /** Another glucose source was chosen or the sensor forgotten: the monitoring service picks its source again. */
     private val sourceChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -160,6 +187,13 @@ class AppGraph(
      * the history, the report, the export or an upload, even right after a role change.
      */
     val readings by lazy { data.readingsFor(role.data.map { it.role }) }
+
+    /**
+     * THE hub's readings ([app.mauri.sukrara.core.data.readings.HubReadings]): [readings] once [unlocked], before that
+     * this phone's own recent readings in device-protected storage; every own reading also stays there for the next
+     * restart. A role change's clean-up goes through it too.
+     */
+    val hubReadings by lazy { data.hubReadings(role.data.map { it.role }) }
 
     /**
      * The phone's role, chosen in first-run setup (written with `role.update`); null = setup not done. Two
@@ -192,7 +226,7 @@ class AppGraph(
             scope = scope,
             dispatchers = dispatchers,
             clock = clock,
-            readings = readings,
+            readings = hubReadings,
             // a damaged record keeps the no-data alarm armed (from now) instead of silently disarming it
             record =
                 data.typedStore(
@@ -204,23 +238,27 @@ class AppGraph(
             role = role.data.map { it.role },
             source = ::readingSource,
             settings = followerSettings.settings,
-            treatments = recentTreatments(),
+            // before the unlock the treatments are locked away: the card shows none (they come at the unlock)
+            treatments = whenUnlocked(emptyList()) { recentTreatments() },
             graphConfig = graphConfig,
-            // cold: the owner engine is built when the service first draws the notification
+            // cold: the owner engine is built when the service first draws the notification (not before the unlock: the
+            // sharing identity is credential-encrypted)
             sharing =
-                combine(
-                    flow {
-                        val owner = shareOwner.ownerEngine
-                        emitAll(
-                            combine(owner.state, owner.nearbyLinks) { s, links ->
-                                (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
-                            },
-                        )
-                    },
-                    // the Nightscout API open to the home Wi-Fi: said on the notification while it listens there
-                    flow { emitAll(integrations.nightscoutApi.lan) }.map { it is LanState.Listening },
-                ) { line, wifi -> if (line == null && !wifi) null else (line ?: SharingLine(0, 0)).copy(wifi = wifi) }
-                    .distinctUntilChanged(),
+                whenUnlocked(null) {
+                    combine(
+                        flow {
+                            val owner = shareOwner.ownerEngine
+                            emitAll(
+                                combine(owner.state, owner.nearbyLinks) { s, links ->
+                                    (s as? OwnerShareState.Sharing)?.let { SharingLine(it.followers.count { f -> f.active }, links.size) }
+                                },
+                            )
+                        },
+                        // the Nightscout API open to the home Wi-Fi: said on the notification while it listens there
+                        flow { emitAll(integrations.nightscoutApi.lan) }.map { it is LanState.Listening },
+                    ) { line, wifi -> if (line == null && !wifi) null else (line ?: SharingLine(0, 0)).copy(wifi = wifi) }
+                        .distinctUntilChanged()
+                },
             sourceChanges = sourceChanges,
             rootFeatures = Store.rootFeatures,
         )
@@ -235,7 +273,9 @@ class AppGraph(
             alertRecord = data.typedStore("alert_state", AlertRecord.serializer(), AlertRecord(), whenCorrupt = AlertRecord()),
             // a damaged memory can only repeat a sensor-end warning
             sensorEndRecord = data.typedStore("sensor_end", SensorEndMemory.serializer(), SensorEndMemory(), SensorEndMemory()),
-            treatments = recentTreatments(),
+            // before the unlock no dose or carbs mute an alert (they are locked away): an alert may ring that a treatment
+            // would have muted, never the other way round
+            treatments = whenUnlocked(emptyList()) { recentTreatments() },
             // the alert alarm found the service dead: bring it back (a refusal shows "Monitoring stopped")
             restarter = { startMonitoring(StartReason.AlertCheck) },
             clock = clock,
@@ -246,10 +286,22 @@ class AppGraph(
             // a follower's runtime: the mirrored values *Settings from* chooses and the wearer's `alert` events (its own
             // mute stays here)
             wearerSettings = followerSettings.alertMirror,
-            remoteEvents = flow { emitAll(follower.engine.alerts) }.mapNotNull { AlertEvent.decode(AlertCodec.encode(it)) },
+            remoteEvents =
+                onceUnlocked {
+                    flow {
+                        emitAll(
+                            follower.engine.alerts,
+                        )
+                    }
+                }.mapNotNull { AlertEvent.decode(AlertCodec.encode(it)) },
             // the wearer's `alert` events (what its rules decide without this phone's actions, escalations included) to
-            // every follower at once, over the relays and Bluetooth (PROTOCOL-v2 "Alerts")
-            events = { e -> scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } } },
+            // every follower at once, over the relays and Bluetooth (PROTOCOL-v2 "Alerts"); none before the unlock (the
+            // sharing identity is credential-encrypted): followers then get the readings at the unlock
+            events = { e ->
+                if (unlocked.value) {
+                    scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } }
+                }
+            },
         )
     }
 
@@ -458,7 +510,8 @@ class AppGraph(
         SetupModule(
             context = app,
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
-            roles = AppRoles(role, data.readings, data.treatments),
+            // the hub's readings: a role change also clears this phone's recent readings kept for the next restart
+            roles = AppRoles(role, hubReadings, data.treatments),
             hub = monitor.hub,
             sharing =
                 EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings, diag = { data.diagLog.log("sharing", it) }) {
@@ -590,16 +643,20 @@ class AppGraph(
     }
 
     /**
-     * Starts the monitoring service once the graph is loaded (app open, the home's Resume, the alert alarm). A graph
-     * that failed to load is logged and the start is skipped; the next trigger tries again in a new process.
+     * Starts the monitoring service once the graph is loaded (app open, the home's Resume, the alert alarm; before the
+     * first unlock once its device-protected part is). A graph that failed to load is logged and the start is skipped;
+     * the next trigger tries again in a new process.
      */
     suspend fun startMonitoring(reason: StartReason) {
-        runCatching { ready.await() }.onFailure {
+        runCatching { awaitMonitor() }.onFailure {
             android.util.Log.e("Sukrara.app", "graph not ready: ${it.javaClass.simpleName}")
             return
         }
         monitor.starter.start(reason)
     }
+
+    /** [ready] on an unlocked phone; before the first unlock, [monitorReady] (all that runs then). */
+    suspend fun awaitMonitor() = if (unlocked.value) ready.await() else monitorReady.await()
 
     /**
      * The wearer's sharing (relays, followers, treatments and settings to them): runs while the phone is the wearer
@@ -743,22 +800,65 @@ class AppGraph(
     }
 
     /**
+     * The part that needs only device-protected storage, so it also runs before the first unlock after a restart: the
+     * role and the hub. [App] starts it; the service and the receivers that run then wait for it ([awaitMonitor]).
+     */
+    val monitorReady: Deferred<Unit> =
+        scope.async(dispatchers.io, CoroutineStart.LAZY) {
+            step("role") { role.heal() }
+            step("monitor") { monitor.ready() }
+        }
+
+    /**
+     * Before the first unlock after a restart: whether this phone monitors now, decided once per process (nothing can
+     * change the role or the pairing while it's locked). The wearer reading their own sensor does: the pairing, the
+     * alert settings and state are device-protected (#160). A follower doesn't (its sharing identity stays
+     * credential-encrypted), nor Juggluco as the source (it doesn't run before the unlock either): the locked-boot
+     * notice and its *No data* alarm stand in for them.
+     */
+    val monitorsLocked: Deferred<Boolean> =
+        scope.async(dispatchers.io, CoroutineStart.LAZY) {
+            monitorReady.await()
+            !unlocked.value && role.data.first().role == Role.Wearer && readingSource(Role.Wearer) != null
+        }
+
+    /**
+     * THE alerts module when alerts run in this process now: always once [unlocked]; before, on a phone that monitors
+     * then ([monitorsLocked]). Null otherwise: the locked-boot notice and its *No data* alarm stand in.
+     */
+    suspend fun runningAlerts(): AlertsModule? = if (unlocked.value || monitorsLocked.await()) alerts else null
+
+    /** [runningAlerts] without waiting (System UI's binder thread): null while that isn't decided yet, too. */
+    val runningAlertsNow: AlertsModule?
+        get() = if (unlocked.value || (monitorsLocked.isCompleted && monitorsLocked.getCompleted())) alerts else null
+
+    /**
+     * The phone was unlocked after a start before it: the readings taken before the unlock go into the history, the
+     * waiting inputs open ([unlocked]) and [ready] loads the rest. Idempotent; off the main thread.
+     */
+    suspend fun onUnlocked() {
+        if (!userUnlocked()) return
+        data.unlock()
+    }
+
+    /**
      * Loads what the modules need from disk, once, off the main thread. [App] starts it; anything that reads state
-     * first does `graph.ready.await()` (cheap once done).
+     * first does `graph.ready.await()` (cheap once done). After a start before the first unlock it waits for the unlock.
      */
     val ready: Deferred<Unit> =
         scope.async(dispatchers.io, CoroutineStart.LAZY) {
+            unlocked.first { it }
             // a step that fails is logged and the next one still runs: a damaged database must not keep the hub
             // (and so the service, the notification and the alerts) from starting
             step("data") { data.ready() }
+            // readings a process that died before the unlock left in device-protected storage go into the history
+            step("unlock") { data.unlock() }
             // a version change replaced the database with an empty one: Import history is offered again
             step("history") { if (data.databaseReplaced.value) setup.offerHistoryAgain() }
-            step("role") {
-                role.heal()
-                // a reading of the previous role that landed after the role change's clean-up
-                data.readings.deleteFrom(SourceId.notOf(role.data.first().role))
-            }
-            step("monitor") { monitor.ready() }
+            monitorReady.await()
+            // a reading of the previous role that landed after the role change's clean-up
+            step("role") { hubReadings.deleteFrom(SourceId.notOf(role.data.first().role)) }
+            step("monitor") { monitor.readyUnlocked() }
             step("widgets") { widgets.start() }
             step("integrations") {
                 integrations.load()
@@ -800,7 +900,9 @@ class AppGraph(
     private suspend fun readingSource(role: Role): ReadingSource? =
         when (role) {
             Role.Wearer -> BuildVariant.wearerSource(this) ?: sensorSource()
-            Role.Follower -> follower.engine.takeIf { it.isFollowing() }
+
+            // the follower engine's identity and state are credential-encrypted: nothing to follow before the unlock
+            Role.Follower -> if (unlocked.value) follower.engine.takeIf { it.isFollowing() } else null
         }
 
     /** Whether the role's source talks to the sensor over Bluetooth: the wearer's own sensor (not Juggluco). */
@@ -834,6 +936,8 @@ class AppGraph(
 
     private suspend fun sensorSource(): ReadingSource? {
         val juggluco = SensorSourceKind.fromId(data.settings.flow(SensorSource).first()) == SensorSourceKind.Juggluco
+        // Juggluco doesn't run before the first unlock either (nor does its secret open: credential-encrypted)
+        if (juggluco && !unlocked.value) return null
         // a damaged pairing still runs the source: it shows "scan the sensor again"
         val paired = sensor.pairings.load() != PairingLoad.None
         return if (juggluco || paired) RunWhileAttached(sensor.source, sensor.source::start, sensor.source::stop) else null

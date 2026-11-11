@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.UserManager
 import androidx.test.core.app.ApplicationProvider
+import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import org.junit.Assert.assertEquals
@@ -98,6 +99,22 @@ class LockedBootReceiverTest {
         send(Intent.ACTION_BOOT_COMPLETED)
         assertNull(shown())
         assertNull(shadowOf(am).nextScheduledAlarm)
+    }
+
+    @Test
+    fun `monitoring before the unlock is a silent public notice that names what waits, and the unlock clears it`() {
+        LockedBootReceiver.lockedBoot(ctx).onLockedBoot(monitoring = true)
+        val n = requireNotNull(shown())
+        assertEquals(Channels.STATUS, n.channelId)
+        assertEquals(Notification.VISIBILITY_PUBLIC, n.visibility)
+        assertEquals(Notification.GROUP_ALERT_SUMMARY, n.groupAlertBehavior)
+        assertEquals(ctx.getString(R.string.monitor_locked_boot_monitoring_title), n.extras.getString(Notification.EXTRA_TITLE))
+        assertNotNull("the tap opens the app (Android asks for the unlock first)", n.contentIntent)
+        assertNull(shadowOf(am).nextScheduledAlarm)
+
+        shadowOf(ctx.getSystemService(UserManager::class.java)).setUserUnlocked(true)
+        send(Intent.ACTION_BOOT_COMPLETED)
+        assertNull(shown())
     }
 
     @Test

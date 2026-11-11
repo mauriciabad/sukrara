@@ -4,7 +4,6 @@
 package app.mauri.sukrara.monitor.lockedboot
 
 import android.content.Context
-import android.os.UserManager
 import app.mauri.sukrara.core.data.json.SukraraJson
 import kotlinx.serialization.SerializationException
 import java.io.File
@@ -12,9 +11,10 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 /**
- * The [LockedBootPlan] file in **device-protected** storage (`/data/user_de/…/files/locked-boot.json`), the one file
- * Sukrara can read before the first unlock after a restart. Written atomically (temp file, fsync, rename), and only
- * when the plan changed. Not in backups (the app has none) and never anything but [LockedBootPlan].
+ * The [LockedBootPlan] file in **device-protected** storage (`/data/user_de/…/files/locked-boot.json`), read before
+ * the first unlock after a restart when this phone can't monitor then (`DeviceProtected` lists what else is there).
+ * Written atomically (temp file, fsync, rename), and only when the plan changed. Not in backups (the app has none) and
+ * never anything but [LockedBootPlan].
  */
 class LockedBootStore(
     private val file: File,
@@ -58,10 +58,3 @@ class LockedBootStore(
             LockedBootStore(File(context.applicationContext.createDeviceProtectedStorageContext().filesDir, FILE))
     }
 }
-
-/**
- * Whether the person has unlocked the phone since it started (credential-encrypted storage is readable). False only
- * before the first unlock after a restart; anything but [LockedBootReceiver] and the sound provider then stays off.
- */
-val Context.userUnlocked: Boolean
-    get() = getSystemService(UserManager::class.java)?.isUserUnlocked ?: true

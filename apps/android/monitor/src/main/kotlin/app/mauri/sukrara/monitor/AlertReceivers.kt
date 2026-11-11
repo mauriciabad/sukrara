@@ -11,18 +11,28 @@ import android.util.Log
 import app.mauri.sukrara.alerts.AlertLimits
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.monitor.alerts.AlertsModule
-import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** The Application implements this, so receivers and the provider reach the one [AlertsModule]. */
+/**
+ * The Application implements this, so receivers, the service and the sound provider reach the one [AlertsModule].
+ * Before the first unlock after a restart the alerts run only when this phone monitors then: the wearer reading their
+ * own sensor (docs/30-direct-boot.md, #160); otherwise only the locked-boot notice and its *No data* alarm do.
+ */
 interface AlertsHost {
-    val alerts: AlertsModule
+    /** The one alerts module, or null when alerts don't run in this process now; decides that first (reads the role). */
+    suspend fun awaitAlerts(): AlertsModule?
+
+    /** [awaitAlerts] without waiting: null while it isn't decided yet, too. */
+    val alertsNow: AlertsModule?
 }
 
-/** The one [AlertsModule]; null before the first unlock after a restart (the app graph needs the unlocked storage). */
-internal val Context.alertsModule: AlertsModule?
-    get() = if (!userUnlocked) null else (applicationContext as? AlertsHost)?.alerts
+/** The one [AlertsModule], or null before the first unlock when this phone doesn't monitor then. */
+internal suspend fun Context.awaitAlertsModule(): AlertsModule? = (applicationContext as? AlertsHost)?.awaitAlerts()
+
+/** [awaitAlertsModule] without waiting (System UI's binder thread). */
+internal val Context.alertsModuleNow: AlertsModule?
+    get() = (applicationContext as? AlertsHost)?.alertsNow
 
 private const val TAG = "Sukrara.alerts"
 
@@ -34,9 +44,9 @@ private const val TAG = "Sukrara.alerts"
  */
 class AlertActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val module = context.alertsModule ?: return
         val kind = intent.getStringExtra(KIND) ?: return
         runAsync("alert action") {
+            val module = context.awaitAlertsModule() ?: return@runAsync
             val runtime = module.runtime
             when (intent.action) {
                 MUTE -> {
@@ -87,10 +97,10 @@ class AlertActionReceiver : BroadcastReceiver() {
  */
 class AlertCheckReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val module = context.alertsModule ?: return
         when (val action = intent.action) {
             ACTION_CHECK -> {
                 runAsync(action) {
+                    val module = context.awaitAlertsModule() ?: return@runAsync
                     withTimeoutOrNull(ALERT_CHECK_BUDGET_MS) { module.check() } ?: Log.w(TAG, "alert check timed out")
                     module.restarter.restart()
                 }
@@ -98,7 +108,7 @@ class AlertCheckReceiver : BroadcastReceiver() {
 
             // a sensor countdown swiped away: kept away for this sensor
             ACTION_COUNTDOWN_DISMISSED, ACTION_WARMUP_DISMISSED -> {
-                runAsync(action) { module.sensorEnd.dismissed(warmup = action == ACTION_WARMUP_DISMISSED) }
+                runAsync(action) { context.awaitAlertsModule()?.sensorEnd?.dismissed(warmup = action == ACTION_WARMUP_DISMISSED) }
             }
         }
     }

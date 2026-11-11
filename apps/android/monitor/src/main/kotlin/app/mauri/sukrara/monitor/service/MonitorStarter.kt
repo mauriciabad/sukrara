@@ -8,7 +8,7 @@ import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.monitor.hub.GlucoseHubImpl
 
 /** Why the service is being started (logs, and which paths may start it). */
-enum class StartReason { App, Boot, PackageReplaced, TimeChanged, HealthCheck, AlertCheck, Resume }
+enum class StartReason { App, Boot, LockedBoot, PackageReplaced, TimeChanged, HealthCheck, AlertCheck, Resume }
 
 enum class StartResult {
     Started,

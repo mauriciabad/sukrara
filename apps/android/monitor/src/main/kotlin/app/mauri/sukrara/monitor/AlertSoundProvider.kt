@@ -14,11 +14,11 @@ import android.provider.OpenableColumns
 import android.provider.Settings
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.SoundSettings
+import app.mauri.sukrara.core.data.userUnlocked
 import app.mauri.sukrara.monitor.alerts.AlertNotifier
 import app.mauri.sukrara.monitor.alerts.AlertSoundFiles
 import app.mauri.sukrara.monitor.alerts.AlertSoundPicker
 import app.mauri.sukrara.monitor.lockedboot.LockedBootStore
-import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 
 /**
  * Serves `content://<applicationId>.alertsound/<kind>`, every alert channel's sound. SystemUI's notification player
@@ -26,7 +26,8 @@ import app.mauri.sukrara.monitor.lockedboot.userUnlocked
  * a random variant). **Exported, read-only, nothing secret**: the system's player runs in another process and must
  * open it (a per-URI grant can't be attached to a channel). canonicalize = identity, or a backup / restore resets the
  * channels to the default sound. A sound the person picks in the channel's system settings overrides all of this.
- * Direct-boot aware: before the first unlock after a restart it reads only the device-protected [LockedBootStore].
+ * Direct-boot aware: before the first unlock after a restart it serves the alerts' sounds when the phone monitors then
+ * (#160; the alert settings are device-protected), and otherwise the locked-boot alarm's from [LockedBootStore].
  *
  * It never blocks System UI's binder thread (#44): the sound settings are the module's cached [AlertsModule.sounds]
  * (the defaults until the store first answered), the file is a direct `R.raw` reference ([AlertSoundFiles]), and any
@@ -39,14 +40,16 @@ class AlertSoundProvider : ContentProvider() {
         if (mode != "r") throw SecurityException("read-only")
         val ctx = context ?: return null
         val kind = uri.lastPathSegment?.let(AlertKind::fromWire) ?: return null
-        val module = ctx.alertsModule
+        val module = ctx.alertsModuleNow
         val sounds =
-            if (!ctx.userUnlocked) {
-                // before the first unlock: the sound the plan saved (only the locked boot's alarm rings then)
-                LockedBootStore.of(ctx).read()?.let { SoundSettings(pack = it.sound, shuffle = it.shuffle) } ?: SoundSettings()
-            } else {
-                module?.sounds?.value ?: SoundSettings()
-            }
+            module?.sounds?.value
+                ?: if (!ctx.userUnlocked) {
+                    // before the first unlock on a phone that doesn't monitor then: the sound the plan saved (only the
+                    // locked boot's alarm rings)
+                    LockedBootStore.of(ctx).read()?.let { SoundSettings(pack = it.sound, shuffle = it.shuffle) } ?: SoundSettings()
+                } else {
+                    SoundSettings()
+                }
         val picker = module?.soundPicker ?: AlertSoundPicker()
         // a file that can't be opened falls back to the system sound, never to silence
         return open(ctx, picker.pick(kind, sounds, System.currentTimeMillis())) ?: open(ctx, AlertSoundPicker.SYSTEM)

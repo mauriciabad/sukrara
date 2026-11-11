@@ -87,16 +87,22 @@ class ManifestTest {
     }
 
     /**
-     * Before the first unlock after a restart only these run (docs/30-direct-boot.md): they read the device-protected
-     * plan and never the app graph. Any other component there would start code that expects the unlocked storage.
+     * Before the first unlock after a restart only these run (docs/30-direct-boot.md, #160): the locked boot, the sound
+     * provider and the wearer's monitoring (service, its alarms and the alert buttons), all on device-protected storage
+     * only. Any other component there (an activity, a widget, sharing) would start code that expects the unlocked
+     * storage.
      */
     @Test
-    fun `only the locked boot receiver and the sound provider run before the first unlock`() {
+    fun `only the locked boot, the sounds and the monitoring run before the first unlock`() {
         val aware = components.filter { it.attr("directBootAware") == "true" }.map { it.attr("name") }.toSet()
         assertEquals(
             setOf(
                 "app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver",
                 "app.mauri.sukrara.monitor.AlertSoundProvider",
+                "app.mauri.sukrara.monitor.MonitoringService",
+                "app.mauri.sukrara.monitor.HealthCheckReceiver",
+                "app.mauri.sukrara.monitor.AlertCheckReceiver",
+                "app.mauri.sukrara.monitor.AlertActionReceiver",
                 // Room's own, bound only with multi-instance invalidation (Sukrara doesn't enable it): never runs
                 "androidx.room.MultiInstanceInvalidationService",
             ),

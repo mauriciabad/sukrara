@@ -34,6 +34,7 @@ import app.mauri.sukrara.graph.face
 import app.mauri.sukrara.graph.notificationCardStyle
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.toPoint
+import app.mauri.sukrara.monitor.notify.AppActivities
 import app.mauri.sukrara.monitor.notify.CardFrame
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
@@ -414,13 +415,10 @@ class LiveNotification(
         }
 
     // the app's activities are fixed at build time: resolved once, not on every post
-    private val hasQuickTreatment by lazy { resolves(NavTargets.ACTION_QUICK_TREATMENT) }
+    // (also found before the first unlock, when a plain lookup sees only direct-boot-aware activities)
+    private val hasQuickTreatment by lazy { AppActivities.handles(context, NavTargets.ACTION_QUICK_TREATMENT) }
 
-    private fun resolves(action: String) = Intent(action).setPackage(context.packageName).resolveActivity(context.packageManager) != null
-
-    private fun launchIntent(): Intent =
-        context.packageManager.getLaunchIntentForPackage(context.packageName)
-            ?: Intent(Intent.ACTION_MAIN).setPackage(context.packageName)
+    private fun launchIntent(): Intent = AppActivities.launch(context)
 
     private fun dismissedIntent(): PendingIntent =
         PendingIntent.getBroadcast(

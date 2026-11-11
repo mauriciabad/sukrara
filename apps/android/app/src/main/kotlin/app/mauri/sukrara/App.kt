@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.LocaleList
+import app.mauri.sukrara.core.data.userUnlocked
 import app.mauri.sukrara.feature.treatments.TreatmentsHost
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.RoundedFont
@@ -18,7 +19,6 @@ import app.mauri.sukrara.monitor.MonitorHost
 import app.mauri.sukrara.monitor.MonitorModule
 import app.mauri.sukrara.monitor.alerts.AlertsModule
 import app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver
-import app.mauri.sukrara.monitor.lockedboot.userUnlocked
 import app.mauri.sukrara.pen.PensHost
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.share.ShareOwnerModule
@@ -26,6 +26,7 @@ import app.mauri.sukrara.share.owner.requests.ShareOwnerHost
 import app.mauri.sukrara.widgets.WidgetsHost
 import app.mauri.sukrara.widgets.WidgetsModule
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Builds the [AppGraph] and hands the runtime modules to their Android components (service, receivers): one `XxxHost`
@@ -41,19 +42,25 @@ class App :
     PensHost {
     private val graphOnce =
         lazy {
-            // before the first unlock after a restart the app's storage is unreadable: nothing may build the graph then
-            check(userUnlocked) { "the app graph needs the unlocked storage" }
-            AppGraph(this).also { it.ready.start() }
+            // before the first unlock after a restart only its device-protected part loads; the rest waits for the unlock
+            AppGraph(this).also {
+                it.monitorReady.start()
+                it.ready.start()
+            }
         }
 
-    /** Built at the first use once the phone is unlocked (at once in [onCreate] when it already is). */
+    /** Built in [onCreate]; before the first unlock after a restart only its device-protected part runs (docs/30). */
     val graph: AppGraph get() = graphOnce.value
 
     override val monitor: MonitorModule get() = graph.monitor
 
-    override val alerts: AlertsModule get() = graph.alerts
+    override suspend fun awaitAlerts(): AlertsModule? = graph.runningAlerts()
+
+    override val alertsNow: AlertsModule? get() = graph.runningAlertsNow
 
     override suspend fun awaitReady() = graph.ready.await()
+
+    override suspend fun awaitMonitor() = graph.awaitMonitor()
 
     override fun onCreate() {
         super.onCreate()
@@ -63,13 +70,16 @@ class App :
         RoundedFont.init(this)
         locales = resources.configuration.locales
         night = resources.configuration.isNight
-        if (userUnlocked) graph else afterUnlock()
+        graph
+        if (!userUnlocked) afterUnlock()
     }
 
     /**
-     * The process started before the first unlock after a restart (only the direct-boot-aware `LockedBootReceiver` and
-     * sound provider run then: docs/30-direct-boot.md). At the unlock: what it showed goes and the graph is built; the
-     * boot broadcast that follows runs the alert check and starts monitoring as after any restart.
+     * The process started before the first unlock after a restart (only the direct-boot-aware components run then:
+     * docs/30-direct-boot.md). On the wearer's phone reading its own sensor, monitoring runs already (#160). At the
+     * unlock: the locked-boot notice and its alarm go, and the graph opens its credential-encrypted part (the readings
+     * taken before the unlock go into the history first); the boot broadcast that follows runs the alert check and
+     * starts monitoring as after any restart (a running service just goes on).
      */
     private fun afterUnlock() {
         val unlock =
@@ -78,12 +88,24 @@ class App :
                     context: Context,
                     intent: Intent,
                 ) {
-                    unregisterReceiver(this)
-                    LockedBootReceiver.lockedBoot(this@App).onUnlocked()
-                    graph
+                    runCatching { unregisterReceiver(this) }
+                    unlocked()
                 }
             }
         registerReceiver(unlock, IntentFilter(Intent.ACTION_USER_UNLOCKED), RECEIVER_NOT_EXPORTED)
+        // unlocked between the check in onCreate and the registration: the broadcast is gone already
+        if (userUnlocked) {
+            runCatching { unregisterReceiver(unlock) }
+            unlocked()
+        }
+    }
+
+    private val unlockOnce = AtomicBoolean(false)
+
+    private fun unlocked() {
+        if (!unlockOnce.compareAndSet(false, true)) return
+        LockedBootReceiver.lockedBoot(this).onUnlocked()
+        graph.scope.launch { graph.onUnlocked() }
     }
 
     private var locales: LocaleList? = null
@@ -101,7 +123,6 @@ class App :
         val theme = newConfig.isNight != night
         locales = newConfig.locales
         night = newConfig.isNight
-        // before the first unlock there is no graph: it starts with the language and theme of its time
         if (!(language || theme) || !graphOnce.isInitialized()) return
         if (language) graph.locales.value = newConfig.locales
         graph.scope.launch {

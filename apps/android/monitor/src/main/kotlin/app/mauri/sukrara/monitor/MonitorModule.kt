@@ -169,12 +169,22 @@ class MonitorModule(
     /** *Read glucose aloud*: the sentence by text-to-speech from the app shortcut. */
     val readAloud = ReadAloud(context)
 
-    /** Channels and the hub's inputs; call from `AppGraph.ready()` (after storage is ready, off the main thread). */
+    /**
+     * Channels and the hub's inputs; call from `AppGraph` off the main thread. Needs only device-protected storage, so
+     * it also runs before the first unlock after a restart (the wearer's phone monitors then, #160).
+     */
     suspend fun ready() {
         Channels.create(context)
         hubImpl.start()
         // starters must see the real role from disk, not the initial "setup not done"
         hubImpl.awaitInputs()
+    }
+
+    /**
+     * What waits for the unlock: the root status bar (its settings and System UI's module) and the *Read glucose aloud*
+     * shortcut (Android's shortcuts refuse a locked user). Call once the phone is unlocked, after [ready].
+     */
+    fun readyUnlocked() {
         root?.start()
         readAloud.publish()
     }
@@ -229,6 +239,12 @@ interface MonitorHost {
 
     /** Completes when the app's storage and modules are ready ([MonitorModule.ready] has run). */
     suspend fun awaitReady()
+
+    /**
+     * Completes when monitoring can run: as [awaitReady] on an unlocked phone; before the first unlock after a restart,
+     * once the device-protected part is ([MonitorModule.ready]: the role and the hub).
+     */
+    suspend fun awaitMonitor()
 }
 
 /** Home left for this long (rotation, a quick switch) keeps the month in memory. */

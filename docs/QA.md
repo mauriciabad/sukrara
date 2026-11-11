@@ -257,23 +257,33 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       (`--no-profile`): the Focus line with *Open Focus Settings*. In Spanish too.
 - [ ] Never on the user's phone with real alarms unless the user asked.
 
-### Before the first unlock (emulator; docs/30)
+### Before the first unlock (emulator; docs/30, #160)
 
 An emulator of your own with file-based encryption (`adb shell getprop ro.crypto.type` = `file`), never the phone.
-- [ ] Debug build, `SYNTHETIC` (wearer monitoring). `adb shell run-as app.mauri.sukrara cat
-      /data/user_de/0/app.mauri.sukrara/files/locked-boot.json`: `monitoring`, `lastReadingAt`, `noDataMin`, no value.
-- [ ] `adb shell locksettings set-pin 1234`, `adb reboot`, wait for `sys.boot_completed` and up to a minute more
-      (the locked boot broadcast reached Sukrara ~20 s later on the emulator); `dumpsys user` says `RUNNING_LOCKED`. Lock screen: *Unlock to resume monitoring* (public, silent; `dumpsys notification
-      --noredact`: id 3 on `status`); `dumpsys alarm`: `lockedboot.RING` at the last reading + *No data*'s minutes; no
-      crash in `logcat` (`FATAL`).
-- [ ] Ring it now: `adb root`, `adb shell am broadcast -n app.mauri.sukrara/.monitor.lockedboot.LockedBootReceiver -a
-      app.mauri.sukrara.lockedboot.RING`: id 3 moves to `alert_alarm.no_data`, `RingtonePlayer` plays
-      `content://app.mauri.sukrara.alertsound/no_data` (the provider answers before the unlock), the next
-      `lockedboot.RING` is *No data*'s re-alert later.
-- [ ] Unlock (`input keyevent 82`, swipe up, `input text 1234`, Enter): id 3 and its alarm go at once; after the boot
-      broadcast `Sukrara.monitor: start (Boot): Started` in the same process and the glucose notification is back.
-- [ ] Phone (the owner, read-only): after an OS update at night the notice is on the lock screen in the morning, the
-      *No data* alarm rang about 20 min after the last reading, and unlocking brings the readings back (backfilled).
+Before the unlock `run-as` can't reach the app (its data dir is locked): `adb root` reads `/data/user_de/0/…`.
+- [ ] Debug build, `SYNTHETIC --ei cycle 108` (wearer monitoring; a low about 5 min later). `adb shell run-as
+      app.mauri.sukrara ls -R /data/user_de/0/app.mauri.sukrara`: `datastore/alerts.preferences_pb`,
+      `files/recent-readings.json`, `files/state/{role,role-backup,monitor-record,alert_state,sensor_end}.json`,
+      `files/locked-boot.json`, `shared_prefs/debug-fakes.xml`; nothing else of the app's.
+- [ ] `adb shell locksettings set-pin 1234`, `adb reboot`, wait for `sys.boot_completed`; `dumpsys user` says
+      `RUNNING_LOCKED`. Within a minute `logcat`: `Sukrara.monitor: start (LockedBoot): Started`; lock screen: the
+      glucose notification with the value and *Monitoring before unlock* (public, silent; `dumpsys notification
+      --noredact`: id 3 on `status`); a new reading every minute; no `FATAL`.
+- [ ] Still locked, when the curve goes below 70: *Low glucose* rings (`alert.low`, `RingtonePlayer` plays
+      `content://app.mauri.sukrara.alertsound/low`); its buttons and the swipe work on the lock screen.
+- [ ] `adb root`: `/data/user_de/0/app.mauri.sukrara/files/locked-readings.csv` grows a line a minute.
+- [ ] Unlock (`input keyevent 82`, swipe up, `input text 1234`, Enter): id 3 goes at once, the same process and service
+      go on (`dumpsys activity services`: the service's `createTime` from before the unlock), `locked-readings.csv` is
+      gone, `start (Boot): Started` after the boot broadcast. Pull `databases/sukrara.db` (`adb root`): one reading a
+      minute across the restart and the locked minutes, no gap, nothing twice.
+- [ ] A follower's phone (or `source.source` Juggluco): the old path. Lock screen: *Unlock to resume monitoring*;
+      `dumpsys alarm`: `lockedboot.RING` at the last reading + *No data*'s minutes. Ring it now: `adb root`, `adb shell
+      am broadcast -n app.mauri.sukrara/.monitor.lockedboot.LockedBootReceiver -a app.mauri.sukrara.lockedboot.RING`:
+      id 3 moves to `alert_alarm.no_data` and plays; unlocking clears it and monitoring starts.
+- [ ] Phone (the owner): after a restart without unlocking (an OS update at night, or restart by hand and leave it
+      locked), the lock screen shows the value and *Monitoring before unlock*, a Libre 3 reading arrives each minute,
+      alerts ring; after unlocking the history has those minutes and followers catch up. The Bluetooth link to a Libre 3
+      before the first unlock is verified only on a real phone.
 
 ## Q9 Translations
 

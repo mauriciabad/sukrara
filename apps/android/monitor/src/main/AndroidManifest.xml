@@ -59,9 +59,12 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.NoDisplay" />
-        <!-- the one monitoring service of both roles; connectedDevice (not dataSync: capped at 6 h a day) -->
+        <!-- the one monitoring service of both roles; connectedDevice (not dataSync: capped at 6 h a day).
+             directBootAware: on the wearer's phone reading its own sensor it runs before the first unlock after a
+             restart too, from device-protected storage only (docs/30-direct-boot.md, #160) -->
         <service
             android:name=".MonitoringService"
+            android:directBootAware="true"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
         <!-- boot, update, time changes, exact-alarm permission → check alerts, reschedule the health check, start the
@@ -79,9 +82,10 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
-        <!-- Before the first unlock after a restart (docs/30-direct-boot.md): the only component that runs then
-             (directBootAware). Says monitoring waits for the unlock and rings as "No data" from the device-protected
-             plan; the boot after the unlock clears it. Never reads the app's credential-encrypted storage. -->
+        <!-- Before the first unlock after a restart (docs/30-direct-boot.md), directBootAware: starts monitoring on the
+             wearer's phone reading its own sensor and says so (#160); otherwise says monitoring waits for the unlock and
+             rings as "No data" from the device-protected plan. The boot after the unlock clears it. Never reads the
+             app's credential-encrypted storage. -->
         <receiver
             android:name=".lockedboot.LockedBootReceiver"
             android:directBootAware="true"
@@ -91,20 +95,24 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-        <!-- the monitor's own alarms and intents: health check, freshness step, glucose notification swiped away -->
+        <!-- the monitor's own alarms and intents: health check, freshness step, glucose notification swiped away;
+             the alert check's exact alarms (alerts, sensor end); the alert notification's buttons. directBootAware: they
+             serve the monitoring that runs before the first unlock (#160), reading device-protected storage only then -->
         <receiver
             android:name=".HealthCheckReceiver"
+            android:directBootAware="true"
             android:exported="false" />
-        <!-- the alert check's exact alarms (alerts, sensor end) -->
         <receiver
             android:name=".AlertCheckReceiver"
+            android:directBootAware="true"
             android:exported="false" />
         <receiver
             android:name=".AlertActionReceiver"
+            android:directBootAware="true"
             android:exported="false" />
         <!-- System UI opens the channel sounds from here (no permission possible); it serves only bundled sounds.
-             directBootAware: the "No data" alarm before the first unlock plays its sound too (it reads only the
-             device-protected plan then). -->
+             directBootAware: the alerts before the first unlock play their sounds too (it reads only device-protected
+             storage then). -->
         <provider
             android:name=".AlertSoundProvider"
             android:authorities="${applicationId}.alertsound"

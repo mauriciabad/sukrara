@@ -54,8 +54,23 @@ applies them.
   `alerts` and `info` notification groups with summaries; every alerting notification of the app belongs to one) +
   `AlertSoundProvider` (`${applicationId}.alertsound`, exported read-only for System UI) + `AlertHaptics`.
 - `SensorEndNotifier` (`monitor/sensorend/`): `SensorEndPlan` (pure) + its own exact alarm.
-- `AlertsModule` (A4) wires it; the Application implements `AlertsHost` so receivers and the provider reach it; the
-  monitoring service calls `attach(scope)`.
+- `AlertsModule` (A4) wires it; the Application implements `AlertsHost` so receivers and the provider reach it
+  (`awaitAlerts()`: null before the first unlock on a phone that doesn't monitor then); the monitoring service calls
+  `attach(scope)`.
+
+**Before the first unlock after a restart** (docs/30, #160). `MonitoringService`, `HealthCheckReceiver`,
+`AlertCheckReceiver`, `AlertActionReceiver`, `LockedBootReceiver` and `AlertSoundProvider` are direct-boot aware
+(`ManifestTest` pins the list). `App` builds `AppGraph` at once; before the unlock only its device-protected part runs
+(`monitorReady`: the role, the hub; then the sensor source, the monitor and the alert runtime), and only on the wearer's
+phone reading its own sensor (`monitorsLocked`): `LockedBootReceiver` asks the graph at `LOCKED_BOOT_COMPLETED` and
+starts monitoring as `BootReceiver` does after an unlock, or falls back to the `LockedBootPlan` notice and *No data*
+alarm (a follower, Juggluco, nothing paired). The graph's credential-encrypted inputs to those modules (treatments,
+the owner engine's sharing line and alert events, the follower engine) wait behind `AppGraph.whenUnlocked`;
+`FollowerSettingsBridge` reads the follower-only `follower.settingsFrom` (store `sharing`) only on a follower. At
+`ACTION_USER_UNLOCKED` (`App`) `DataModule.unlock()` merges the readings taken before it into the history and opens
+the rest (`AppGraph.unlocked`), `ready` loads it (root status bar, widgets, integrations, sharing…); the service, the
+hub, the source and the alert runtime are the same objects before and after. Notifications resolve the app's
+activities with `AppActivities` (direct-boot-unaware matches included: a plain lookup before the unlock finds none).
 
 **Root status bar (`:monitor` `monitor/systemui/`).** `RootStatusBar` (built by `MonitorModule`, started in `ready()`)
 follows the hub, `SurfaceSettings.Root*`, the ranges and the freshness ticks; conflated on one background thread it
@@ -380,16 +395,16 @@ read (new app id, no migration). Nothing is in cloud backup or device transfer (
 
 | What | Where | API |
 |---|---|---|
-| Settings | `datastore/<store>.preferences_pb`, one per schema store, keys from `contracts/settings/settings.json` | `SettingsRepository` + `SchemaSettings.number/bool/text(id)` |
-| Typed state (alert episodes, sensor pairing, the wearer's last mirrored settings `wearer_settings`, …) | `files/state/<name>.json` (DataStore + kotlinx JSON) | `DataModule.typedStore(name, serializer, initial, whenCorrupt)` |
+| Settings | `datastore/<store>.preferences_pb`, one per schema store, keys from `contracts/settings/settings.json`; `alerts`, `settings` (unit, source), `graph`, `sensor`, `statusbar` device-protected (`DeviceProtected.SETTINGS`) | `SettingsRepository` + `SchemaSettings.number/bool/text(id)` |
+| Typed state (alert episodes, the wearer's last mirrored settings `wearer_settings`, …) | `files/state/<name>.json` (DataStore + kotlinx JSON); `role`, `role-backup`, `monitor-record`, `alert_state`, `sensor_end` device-protected (`DeviceProtected.STATES`) | `DataModule.typedStore(name, serializer, initial, whenCorrupt)` |
 | A follower's settings in use | the stored settings, the mirrored graph rows resolved per `follower.settingsFrom` (Wearer / Default / Custom) | `FollowerSettingsRepository` (`:core:data`), built by `FollowerSettingsBridge` (`:app`, also the alert runtime's mirrored values, the alert pages' values in use and `alerts.source`) |
 | The wearer's settings for its followers | this phone's mirrored graph rows under their wire keys + the whole alert settings (SPEC §3); the owner engine keeps the `"mirror": true` rows and publishes the settings event when they change | `WearerSettingsSource` (`:app`) → `MirroredSettingsSource` of `ShareOwnerModule` |
-| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose: `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview` (the upload's token), `libreview-account` (THE LibreView account: email + password), `sensor`, `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
+| Secrets | `files/secure/<name>.bin` = `0x01` ‖ IV ‖ AES-256-GCM (AAD = name); Keystore alias `sukrara.<name>`, one key per purpose (none bound to user authentication or `setUnlockedDeviceRequired`): `identity.owner`, `identity.follower`, `nightscout`, `nightscout-api`, `nightscout-api-lan`, `tidepool`, `tidepool-email`, `libreview` (the upload's token), `libreview-account` (THE LibreView account: email + password), `sensor` (device-protected: `DeviceProtected.SECRETS`), `juggluco` | `SecureStore` (`KeystoreSecureStore` on `SecretBox`) |
 | History | `databases/sukrara.db` (Room; only the current version's schema in `core/data/schemas/`; **no migrations**: a database of any other version, older or newer, is dropped, every table, and created empty: `fallbackToDestructiveMigration(dropAllTables = true)`, which covers downgrades too, `DataModule.databaseReplaced`, `DatabaseSchemaTest`, check `room-schema`): `readings` (PK t+source), `treatments` (LWW on `modified_at`, tombstones), `seen_wraps`, `rejects`, `outbox`, `pen_ledger` (the pen ledger, one JSON row, written with its entries in one transaction) | `ReadingsRepository`, `TreatmentsRepository`, `PenLedgerRepository`, DAOs for the sharing ledger |
 | Imported history | the same tables: readings under `SourceId.Imported` (`import-libreview`, `import-tidepool`, `import-file`), entries with `imported_from`; stored only through THE import path (`HistoryImport` rules in `:core:model`, pure and property-tested; `RoomHistoryImport`, one transaction per batch); `ReadingDao.upsertOwnFirst` lets the sensor's own reading replace an imported copy | `DataModule.historyImport` (`HistoryImportStore`) |
 | Other files | `files/<path>` atomic tmp + fsync + rename | `DataModule.fileStore(path, codec)` → `Loaded / Missing / Corrupt` |
 | Diagnostics | `files/diag/diag.log` + `.1`, 512 KB each, `Redact` scrubs keys / tokens | `DiagLog` |
-| Before the first unlock | the only file in **device-protected** storage: `/data/user_de/…/files/locked-boot.json` (times and the *No data* rule, never a value; docs/30). Everything above is credential-encrypted: unreadable after a restart until the first unlock, so `App` builds no graph then and only `LockedBootReceiver` and `AlertSoundProvider` run | `LockedBootStore` (`:monitor`), written by `AlertRuntime` |
+| Before the first unlock | **device-protected** storage (`/data/user_de/…`, the same paths): what the wearer's monitoring needs then (`DeviceProtected`: the settings stores, typed state and the `sensor` secret above), `files/recent-readings.json` (this phone's own readings of the last 3 h, rewritten with every reading) and `files/locked-readings.csv` (every reading taken before the unlock, merged into `readings` at the unlock and deleted), `files/locked-boot.json` (the fallback plan: times and the *No data* rule, never a value). Everything else is credential-encrypted: `DataModule` throws `LockedStorageException` for it until the unlock (never "missing"); `DiagLog` holds its lines in memory until then | `DataModule.hubReadings` (`HubReadings` over `RecentReadings`), `DataModule.unlock()`; `LockedBootStore` (`:monitor`), written by `AlertRuntime` |
 | Network | one OkHttp client (15 s connect, 30 s read, 60 s call, UA `Sukrara/<version>`, no body logging); one `SukraraJson` (`ignoreUnknownKeys`, `explicitNulls = false`) | `DataModule.http`, `DataModule.json` |
 
 Retention (`Retention`, applied in `ready()`): readings 90 days, seen wraps / rejects / sent outbox 14 days.
@@ -404,6 +419,16 @@ every load (never `Missing`) until a deliberate save or delete; settings read as
 transient Keystore error (busy after an OS update) throws `transient = true`, is not reported and deletes nothing; keys
 are never deleted by an error path. A damaged database is copied aside (with its WAL) and reported by
 `QuarantiningOpenHelperFactory` before SQLite recreates it.
+
+**What device-protected storage costs (#160).** Android encrypts device-protected storage with a key it holds from the
+boot on, without the screen-lock secret. So the sensor pairing (its Keystore key has no user authentication either),
+the alert settings and record, the role, the unit / graph / status-bar settings and **the last 3 hours of glucose
+values** (and those read before an unlock) are protected only by the app sandbox and file-based encryption at rest, not
+by the person's PIN: on a phone that is on but was never unlocked since its restart, someone who breaks the sandbox
+(root, an exploit) can read them, and with the pairing reach the sensor's readings; with the credential-encrypted
+files they would wait for the unlock. Off, the phone protects both alike. The sharing identity and its state, the
+history, treatments, uploads and their accounts stay credential-encrypted. The trade is made for the person: alerts
+(very low!) and readings after an overnight update instead of silence until the morning.
 
 **No app-level encryption of the database** (investigation [31](31-db-encryption.md)): file-based encryption protects
 `sukrara.db` at rest. A SQLCipher key the app can use while the phone is locked (every reading arrives then) is a key

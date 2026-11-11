@@ -25,6 +25,7 @@ import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.Clock
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
+import app.mauri.sukrara.monitor.notify.AppActivities
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.SoundGap
@@ -209,12 +210,14 @@ class AlertNotifier(
             PendingIntent.FLAG_UPDATE_CURRENT or if (mutable) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_IMMUTABLE,
         )
 
-    private fun openApp(): PendingIntent {
-        val launch =
-            ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
-                ?: Intent().setPackage(ctx.packageName)
-        return PendingIntent.getActivity(ctx, 1, launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE)
-    }
+    /** The app (found before the first unlock too: from the lock screen Android asks for the unlock first). */
+    private fun openApp(): PendingIntent =
+        PendingIntent.getActivity(
+            ctx,
+            1,
+            AppActivities.launch(ctx).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
 
     companion object {
         /** One notification id per alert group ([NotificationIds]). */

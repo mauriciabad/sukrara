@@ -54,9 +54,15 @@ class FollowerSettingsBridge(
 
     private val stored: Flow<SettingsFrom> = own.flow(SettingsFrom.Stored).map(SettingsFrom::fromWire).distinctUntilChanged()
 
-    /** The choice in effect: the stored one on a follower, Custom (its own) on the wearer's phone. */
+    /**
+     * The choice in effect: the stored one on a follower, Custom (its own) on the wearer's phone, which never reads it
+     * (it is credential-encrypted, and the wearer's phone monitors before the first unlock: #160).
+     */
     private val from: Flow<SettingsFrom> =
-        combine(role, stored) { r, f -> if (r == Role.Follower) f else SettingsFrom.Custom }.distinctUntilChanged()
+        role
+            .distinctUntilChanged()
+            .flatMapLatest { r -> if (r == Role.Follower) stored else flowOf(SettingsFrom.Custom) }
+            .distinctUntilChanged()
 
     /** The wearer's payload while *Wearer* is in effect, null otherwise. */
     private val wearerInUse: Flow<SettingsPayload?> =

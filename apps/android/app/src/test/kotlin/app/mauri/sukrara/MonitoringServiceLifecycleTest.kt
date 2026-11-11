@@ -50,6 +50,8 @@ class MonitoringServiceLifecycleTest {
         override val monitor: MonitorModule get() = graph.monitor
 
         override suspend fun awaitReady() = awaitCancellation()
+
+        override suspend fun awaitMonitor() = awaitCancellation()
     }
 
     private val host: Host = ApplicationProvider.getApplicationContext()

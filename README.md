@@ -92,9 +92,11 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   followers get it as *Very low glucose · no response*, through their own mutes (each follower can turn that off; you
   can too, or wait longer). Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
   independent of the monitoring service; it also rings for a sensor (or follow) that never sends a first reading, and
-  keeps real time when the phone's clock is set back. After a restart, before you first unlock the phone, Sukrara can't read your
-  sensor (Android keeps its storage locked): it says *Unlock to resume monitoring* on the lock screen and rings as *No
-  data* when that alert would have.
+  keeps real time when the phone's clock is set back. After a restart (an overnight update), before you first unlock the
+  phone, Sukrara already reads your sensor and alerts you as usual (*Monitoring before unlock* on the lock screen);
+  followers, uploads and the app wait for the unlock, which adds those readings to your history. A follower's phone, or
+  Juggluco as the source, can't run before the unlock: it says *Unlock to resume monitoring* and rings as *No data* when
+  that alert would have.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
   ready*, a note on home in a new sensor's first 12 hours (readings can be less accurate: check a surprising one with a
