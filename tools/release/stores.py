@@ -5,7 +5,7 @@
 plus `openssl` for the JWT signatures. The keys stay where they are (never printed, never copied into the repo):
 
 - Play: the service account `~/.android/sukrara-play.json` (SUKRARA_PLAY_KEY), testing-track rights only.
-- App Store Connect: `~/.apple-dev/AuthKey_<id>.p8` (ASC_KEY) and `~/.apple-dev/asc-issuer-id` (ASC_ISSUER_ID).
+- App Store Connect: `~/.apple-dev/release-AuthKey_<id>.p8`, the App Manager key (ASC_KEY) and `~/.apple-dev/asc-issuer-id` (ASC_ISSUER_ID).
 
 Read-only checks (nothing is changed; the Play edit is deleted, never committed):
 
@@ -16,6 +16,7 @@ import base64
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -207,7 +208,7 @@ class Play:
 # --- App Store Connect -----------------------------------------------------------------------------------------------
 
 def asc_key_paths():
-    key = os.environ.get("ASC_KEY") or next(iter(sorted(glob.glob(os.path.expanduser("~/.apple-dev/AuthKey_*.p8")))), "")
+    key = os.environ.get("ASC_KEY") or next(iter(sorted(glob.glob(os.path.expanduser("~/.apple-dev/release-AuthKey_*.p8")))), "")
     issuer = os.environ.get("ASC_ISSUER_ID", "")
     if not issuer:
         try:
@@ -216,6 +217,14 @@ def asc_key_paths():
         except OSError:
             pass
     return key, issuer
+
+
+def asc_key_id(path):
+    """The Key ID in a key file's name (`[<prefix>-]AuthKey_<id>.p8`, Apple's name with an optional prefix)."""
+    m = re.search(r"AuthKey_([A-Z0-9]+)\.p8$", os.path.basename(path))
+    if not m:
+        raise RuntimeError("%s isn't named [<prefix>-]AuthKey_<KEY ID>.p8" % path)
+    return m.group(1)
 
 
 def asc_submission_bodies(app_id, version_id, platform="MAC_OS"):
@@ -269,7 +278,7 @@ class AppStoreConnect:
         self.issuer = issuer or i
         if not self.key_path or not self.issuer:
             raise RuntimeError("no App Store Connect API key or issuer (ASC_KEY, ASC_ISSUER_ID or ~/.apple-dev)")
-        self.key_id = os.path.basename(self.key_path)[len("AuthKey_"):-len(".p8")]
+        self.key_id = asc_key_id(self.key_path)
 
     def token(self):
         signing = jwt_signing_input({"alg": "ES256", "kid": self.key_id, "typ": "JWT"},

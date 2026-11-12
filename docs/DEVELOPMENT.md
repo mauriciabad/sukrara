@@ -151,8 +151,8 @@ again: it skips what's already there):
    or removed from review), its VALID build attached, *What's New* from the App Store notes (once a version is live),
    released automatically after approval, submitted for App Review. Apple reviews one version at a time: while
    another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
-   newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/AuthKey_<id>.p8`; the
-   *Developer* notary key is kept as `notary-AuthKey_….p8`, notarization reads it from the keychain profile).
+   newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/release-AuthKey_<id>.p8`; the
+   *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
 10. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes

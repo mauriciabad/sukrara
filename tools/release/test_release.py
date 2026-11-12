@@ -166,6 +166,12 @@ class AppStoreVersionTest(unittest.TestCase):
     def v(self, version, state, vid=None):
         return {"id": vid or "v" + version, "version": version, "state": state, "release": "AFTER_APPROVAL"}
 
+    def test_key_id_from_the_file_name(self):
+        self.assertEqual(stores.asc_key_id("/x/.apple-dev/release-AuthKey_DVJY683AS9.p8"), "DVJY683AS9")
+        self.assertEqual(stores.asc_key_id("AuthKey_VCB5XBQ3QZ.p8"), "VCB5XBQ3QZ")
+        with self.assertRaisesRegex(RuntimeError, "isn't named"):
+            stores.asc_key_id("/x/release.p8")
+
     def test_plan(self):
         plan = stores.asc_version_plan
         self.assertEqual(plan([], "0.14.6")[:2], ("create", None))

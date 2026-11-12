@@ -893,8 +893,9 @@ Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub,
   from `apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt` (only once a version is live: the first has
   none), and a review submission (an existing draft one reused) submitted. App Store Connect copies the listing and
   screenshots to each new version (to be confirmed on the first automatic submission). Needs the key with *App Manager* access (*Sukrara release*,
-  `~/.apple-dev/AuthKey_<id>.p8`); the *Developer* key `VCB5XBQ3QZ` (*Sukrara notary*) stays for notarization, its
-  file renamed `notary-AuthKey_VCB5XBQ3QZ.p8` so the scripts pick the release key. Replaces the never-run
+  `~/.apple-dev/release-AuthKey_DVJY683AS9.p8`, the file the scripts pick); the *Developer* key `VCB5XBQ3QZ`
+  (*Sukrara notary*) stays for notarization, as `~/.apple-dev/notary-AuthKey_VCB5XBQ3QZ.p8` (notarytool reads it from
+  the keychain profile). Replaces the never-run
   `--app-review` flag.
 
 **In Sukrara.** Added: the above. Discarded, with the reason: fastlane / `gcloud` / `google-auth` (none is on the

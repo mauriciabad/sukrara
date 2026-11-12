@@ -11,7 +11,7 @@
 #                                            where it becomes a TestFlight build: release.py's testflight step uploads
 #                                            the gate's pkg. Only with the owner's OK: every upload is a new build there.
 #   SIGN_ID / INSTALLER_ID   pick the identities by name or SHA-1 (default: the first valid one of each kind)
-#   ASC_KEY                  the App Store Connect API key (default: the AuthKey_<id>.p8 in ~/.apple-dev)
+#   ASC_KEY                  the App Store Connect API key (default: ~/.apple-dev/release-AuthKey_<id>.p8, the App Manager key)
 #   ASC_ISSUER_ID            its issuer (default: ~/.apple-dev/asc-issuer-id); without one, validation is skipped
 # The key and the profiles stay in ~/.apple-dev (never the repo). The GitHub version is untouched: mac-release.sh.
 set -eu
@@ -36,9 +36,9 @@ checklist="docs/20-publishing.md › Mac App Store: signing"
 die() { echo "mac-appstore.sh: $*" >&2; exit 2; }
 
 # App Store Connect: the API key validates and uploads
-key="${ASC_KEY:-$(ls "$HOME"/.apple-dev/AuthKey_*.p8 2>/dev/null | head -1)}"
+key="${ASC_KEY:-$(ls "$HOME"/.apple-dev/release-AuthKey_*.p8 2>/dev/null | head -1)}"
 issuer="${ASC_ISSUER_ID:-$(cat "$HOME/.apple-dev/asc-issuer-id" 2>/dev/null || true)}"
-auth="--api-key $(basename "${key:-none}" .p8 | sed 's/^AuthKey_//') --api-issuer $issuer --p8-file-path $key"
+auth="--api-key $(basename "${key:-none}" .p8 | sed 's/^.*AuthKey_//') --api-issuer $issuer --p8-file-path $key"
 
 if [ "$upload" = 1 ]; then
   [ -f "$pkg" ] || die "no $pkg: build and validate it first (tools/release/mac-appstore.sh)"
