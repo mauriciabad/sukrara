@@ -743,11 +743,10 @@ Play Console account; the limited-distribution tier (20 devices) is too small fo
 needed once the Play account exists. F-Droid calls the programme an existential threat and won't register apps on
 its developers' behalf [[V4]](https://techaiwire.com/articles/android-developer-verification-enforcement-four-countries/)[[F3]](https://f-droid.org/docs/Anti-Features/); that's F-Droid's problem, not ours, as long as we register our own key.
 
-**Play Protect's "App scan recommended" is a different thing** (seen 2026-11-12 installing the GitHub APK): Play
-Protect asks to scan an APK *file* it hasn't seen before, whatever its package, key or developer verification. The
-GitHub APK is the full flavor, a different binary from the play bundle's, and every release is a new file, so the
-dialog can come back on each release until the app is widely installed. Nothing in the app or the Console turns it
-off. *Scan app* is harmless (the code is public); installs from Play and ADB (`tools/install.sh phone`) don't show it.
+**Seen 2026-11-12**: installing the GitHub APK on the owner's phone showed Google Play
+Protect's *App scan recommended* dialog ("Play Protect hasn't seen this app before"), with *Scan app*, *Don't
+install app* and *Install without scanning*. At that point Play App Signing used our key and release 0.13.0 was on
+internal testing.
 
 ### Moving off the debug key
 
