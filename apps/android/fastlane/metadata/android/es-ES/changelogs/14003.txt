@@ -1,0 +1,4 @@
+• Bajo es por debajo de 70: muy bajo hasta 55, bajo 56–69, en rango 70–179, alto desde 180, en la tarjeta y en las alertas. Las alertas de bajo suenan en su umbral.
+• Cada límite y umbral muestra los valores que cubre.
+• Añadir tratamiento vuelve a ser como antes: marcadores en las etiquetas, sin saltos de altura, guarda tras 10 s en la pantalla de bloqueo.
+• Ajustes: vuelven los iconos de las apps, la búsqueda encuentra cada fila y la abre, y Alertas nocturnas ya no se cierra.

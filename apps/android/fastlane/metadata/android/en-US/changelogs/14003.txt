@@ -1,0 +1,4 @@
+• Low is below 70: very low up to 55, low 56–69, in range 70–179, high from 180, on the card and in the alerts alike. Low alerts ring at their threshold.
+• Each range limit and alert threshold shows the values it covers.
+• Add treatment looks like before again: markers on the labels, no height jumps, saves after 10 s over the lock screen.
+• Settings: app icons are back, search finds every row and opens it, and Night alerts no longer crashes.
