@@ -14,6 +14,18 @@
     <description>Updates of Sukrara for Mac (the GitHub and Homebrew version).</description>
     <language>en</language>
     <item>
+      <title>Sukrara 0.14.5</title>
+      <pubDate>Thu, 12 Nov 2026 15:53:55 GMT</pubDate>
+      <sparkle:version>14005</sparkle:version>
+      <sparkle:shortVersionString>0.14.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <sparkle:channel>prerelease</sparkle:channel>
+      <sparkle:fullReleaseNotesLink>https://github.com/mauriciabad/sukrara/releases/tag/v0.14.5</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[<ul><li><b>Long-acting insulin typed after a pen read no longer asks <i>Already logged by your pen?</i> (Android)</b> (the owner: 5.5u rapid from the smart pen, then 15u long-acting from a plain pen): the question compared the typed dose with pen entries of either insulin, so any long-acting dose near a rapid pen injection asked. Now only a pen entry of the same insulin within <i>Doses you type: time apart</i> asks, as in the PoC and on the Mac. When it does ask, the question dims the Add treatment dialog behind it instead of sitting flat on it, with <i>Log anyway</i> and <i>Cancel</i>; the <i>When?</i> picker gets the same dim.</li></ul>]]></description>
+      <enclosure url="https://github.com/mauriciabad/sukrara/releases/download/v0.14.5/Sukrara-0.14.5.dmg" length="15046719" type="application/octet-stream"
+        sparkle:edSignature="73CyGWvoqRk1BfCkfS9i0vSjtvAo233NjPYy/b0DD8kUdq3ItNxAxPuFvwLe/PiQj2ftkBO/tnetMO2NcuSpBg=="/>
+    </item>
+    <item>
       <title>Sukrara 0.14.4</title>
       <pubDate>Thu, 12 Nov 2026 14:17:39 GMT</pubDate>
       <sparkle:version>14004</sparkle:version>
