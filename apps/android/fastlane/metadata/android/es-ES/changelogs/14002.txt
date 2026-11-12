@@ -1,2 +1,3 @@
-• Las alertas vuelven a mostrarse: una alerta real podía saltar sin que apareciera su notificación, porque faltaban en la app textos que necesita. Ya están todos, y cada versión se comprueba para que no falten.
-• Si aun así no se puede mostrar la notificación de una alerta, Sukrara muestra una sencilla en el canal de la alerta, y Fiabilidad de las alertas dice «No se pudo mostrar una alerta» con Copiar informe.
+• Las alertas vuelven a mostrarse: faltaban en la app textos que necesita una alerta real, y su notificación podía no aparecer. Ahora se comprueba en cada versión.
+• Si aun así no se puede mostrar una alerta, suena una sencilla en su canal y Fiabilidad de las alertas dice «No se pudo mostrar una alerta».
+• Un valor en un límite cuenta como fuera: a 180 mg/dL la glucosa es alta y a 70, baja (colores, tiempo en rango). Las alertas no cambian.

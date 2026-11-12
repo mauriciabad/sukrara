@@ -1,2 +1,3 @@
-• Alerts show again: a real alert could fire without its notification ever appearing, because texts it needs were missing from the app. They're all in now, and every release is checked for them.
-• If an alert's notification still can't be shown, Sukrara shows a plain one on the alert's channel, and Alert reliability says "An alert couldn't be shown" with Copy report.
+• Alerts show again: texts a real alert needs were missing from the app, so its notification could fail to appear. Every release is now checked for them.
+• If an alert still can't be shown, a plain one rings on its channel and Alert reliability says "An alert couldn't be shown".
+• A value at a limit counts as beyond it: 180 mg/dL is high, 70 low (colours, time in range). Alerts are unchanged.
