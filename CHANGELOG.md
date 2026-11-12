@@ -4,6 +4,8 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+## 0.14.4 (GitHub prerelease)
+
 - **The low limit reads 70 again, and 70 is in range** (both apps; the owner: "the 70 is the threshold, but 70 itself
   is excluded from the interval -> (70, 55) is low [55,-Infinity) is very low"): 0.14.3 showed the low limit as 69;
   now the ranges' and the low alert's default is 70 again and low means **below** it, so 69 is low and 70 in range,

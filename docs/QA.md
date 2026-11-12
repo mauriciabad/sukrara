@@ -361,7 +361,7 @@ over nothing:
 
 - [ ] `play-bundle.sh` exits 0 with bundletool (`$BUNDLETOOL`), and `verify-apk.sh --play` FAILs on the full flavor's
   APK (the updater's classes, receiver and `REQUEST_INSTALL_PACKAGES`): the Play check bites.
-- [ ] Settings › About: *0.14.3 · Google Play version* (the version from `VERSION`), *About the versions* (opens
+- [ ] Settings › About: *0.14.4 · Google Play version* (the version from `VERSION`), *About the versions* (opens
   sukrara.mauri.app/android/#versions, the *Versions* section), *Sukrara for Mac*, *Report a problem*, *Source code*,
   *Privacy policy* (opens sukrara.mauri.app/privacy); no update rows, no *Updates* switches, no disabled row,
   nothing that says to install another version. Searching "check again" or "install updates" finds nothing;
@@ -370,7 +370,7 @@ over nothing:
 - [ ] The same app as the GitHub build otherwise: Settings › Status bar has *With root* (searching "root" finds its
   rows); a fresh install's alert checklist has no *Alarms and reminders* item (`USE_EXACT_ALARM` is granted at
   install).
-- [ ] The GitHub build's About says *0.14.3 · GitHub version* with the same *About the versions* link and its update
+- [ ] The GitHub build's About says *0.14.4 · GitHub version* with the same *About the versions* link and its update
   rows.
 - [ ] TalkBack reads the About rows with their summaries.
 
