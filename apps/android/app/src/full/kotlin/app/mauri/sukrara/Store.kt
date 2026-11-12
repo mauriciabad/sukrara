@@ -44,7 +44,6 @@ internal object Store {
         return UpdatePorts(
             installed = graph.appVersion,
             installedCode = BuildConfig.VERSION_CODE.toLong(),
-            prerelease = BuildConfig.PRERELEASE,
             endpoint = testServer?.let { (base, cert) -> UpdateEndpoint.testServer(base, cert) } ?: UpdateEndpoint.GitHub,
             http = graph.data.http,
             io = graph.dispatchers.io,

@@ -87,10 +87,10 @@ class UpdateModuleTest {
                             val base = server.url("/")
                             MockResponse().setBody(
                                 """
-                                [{"tag_name": "v9.0.0", "html_url": "${base}releases/tag/v9.0.0", "prerelease": true,
+                                [{"tag_name": "v9.0.0", "html_url": "${base}releases/tag/v9.0.0", "prerelease": false,
                                   "assets": [{"name": "Sukrara-9.0.0.apk", "browser_download_url": "${base}download/Sukrara-9.0.0.apk",
                                               "digest": "sha256:$listedSha", "size": ${apk.size}}]},
-                                 {"tag_name": "v0.13.0", "html_url": "${base}releases/tag/v0.13.0", "prerelease": true, "assets": []}]
+                                 {"tag_name": "v0.13.0", "html_url": "${base}releases/tag/v0.13.0", "prerelease": false, "assets": []}]
                                 """.trimIndent(),
                             )
                         }
@@ -114,7 +114,6 @@ class UpdateModuleTest {
             UpdatePorts(
                 installed = installed,
                 installedCode = 1300,
-                prerelease = true,
                 endpoint = UpdateEndpoint.testServer(server.url("/").toString(), UpdateEndpoint.RELEASE_CERT),
                 http = OkHttpClient(),
                 io = Dispatchers.IO,
@@ -261,7 +260,7 @@ class UpdateModuleTest {
                     .single()
             assertEquals(app.packageName, session.appPackageName)
             assertEquals(
-                PendingInstall("9.0.0", server.url("/").toString() + "releases/tag/v9.0.0", true, automatic = true),
+                PendingInstall("9.0.0", server.url("/").toString() + "releases/tag/v9.0.0", automatic = true),
                 record.data.first().pending,
             )
         }

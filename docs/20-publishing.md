@@ -74,8 +74,8 @@ unverified binary. **Recommendation: publish the tap only together with the firs
 mauriciabad/tap/sukrara`. No quarantine stripping: the cask's caveats explain the one-time **Open Anyway** step, the
 same as the dmg (tested 2026-10-18 on macOS 27: brew-installed app blocked with *"Sukrara" Not Opened*, runs after the
 approval). `brew audit --cask --strict` and `brew style` pass. `.github/workflows/homebrew-tap.yml` bumps `version` +
-`sha256` in the tap on every published release (0.x prereleases included: while the version is 0.x every release is a
-prerelease, and the cask follows them like a 0.x install's update check; from 1.0.0 a prerelease is skipped); it
+`sha256` in the tap on every published release (every release is a normal one since 2026-11-12; a GitHub
+prerelease, a release candidate, is skipped, like the apps' update checks skip it); it
 pushes with a write **deploy key** of the tap, stored here as the secret `HOMEBREW_TAP_DEPLOY_KEY`. **Since 0.12.0**
 (#112) the cask installs the notarized `app.mauri.sukrara` dmg from this repo, without the *Open Anyway* caveat, and
 its `uninstall` / `zap` name `app.mauri.sukrara`. One-time setup (the repo owner):
@@ -179,16 +179,17 @@ Dev, fixture, snapshot and test runs never create the updater (`LaunchPlan`). Wh
 docs/FEATURES.md › Updates (Mac, GitHub version). Notarization with Sparkle's XPC services inside: accepted on
 2026-11-11 (submission `1d7bb1ff-e862-4853-84a7-57e80fcd5176`, `verify-app.sh --notarized` all ok).
 
-**Where the feed lives: GitHub Pages, `docs/appcast.xml`.** A release asset can't be the feed: the stable
-`releases/latest/download/…` URL skips prereleases, and every 0.x release is one, so a 0.x install would never see an
-update; a per-release URL would have to be known before the release exists. Pages is HTTPS on the project's own
+**Where the feed lives: GitHub Pages, `docs/appcast.xml`.** A release asset can't be the feed: a per-release URL would have to be
+known before the release exists, and the stable `releases/latest/download/…` URL skipped every 0.x release while they
+were prereleases (until 2026-11-12). Pages is HTTPS on the project's own
 domain, already serves the site and `.well-known`, deploys on every push to `main` (`.github/workflows/website.yml`;
 Jekyll copies the file unchanged, `.github/site_links.py` only touches `.md` / `.html`), and the file is reviewed in
 git like the rest. The enclosures stay on GitHub Releases (the same dmg as the download and the cask).
 
-**Prereleases.** Every 0.x release is a GitHub prerelease, so `appcast.py` puts it in Sparkle's `prerelease` channel;
-the app allows that channel only while its own version is 0.x (`Updates.channels`, `UpdatesTests`). From 1.0.0 a
-release goes to the default channel and 1.x installs take only those, like the cask and Android's check.
+**No channels.** Until 0.14.5 every 0.x release was a GitHub prerelease in Sparkle's `prerelease` channel, which 0.x
+installs allowed. Since 2026-11-12 every release is a normal GitHub release (marked *Latest*), so `appcast.py` writes
+items without a channel and the app takes the default channel only (`UpdatesTests`: no item has one). Installs from
+before still allow the old channel too, so they take the new items as well.
 
 **A release** (`tools/release/mac-release.sh`, everything it did before plus): once the dmg is notarized and stapled,
 Sparkle's `sign_update` (from the SwiftPM artifact, `apps/macos/.build/artifacts/sparkle/Sparkle/bin`) signs it with
@@ -817,8 +818,7 @@ module's `consumer-rules.pro` (the module that uses the reflective / JNI library
 `apps/android/app/build/dist/Sukrara-<version>.apk`, verified, and its R8 mapping gzipped next to it as
 `Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`) and
 `tools/release/mac-release.sh` (bundle → `verify-app.sh` → dmg + zip in `apps/macos/build/`). Then tag `v<version>`
-on `main` and `gh release create v<version> --verify-tag --prerelease --latest=false` with the four files while the
-version is 0.x (`Sukrara-<version>.apk`, `Sukrara-<version>-android-mapping.txt.gz`, `Sukrara-<version>.dmg`,
+on `main` and `gh release create v<version> --verify-tag --latest` with the four files (`Sukrara-<version>.apk`, `Sukrara-<version>-android-mapping.txt.gz`, `Sukrara-<version>.dmg`,
 `Sukrara-mac-<version>.zip`). The mapping is a release asset (#96) so it lives as long as the APK it decodes and anyone
 reading a crash trace in an issue can use it (`retrace` from the Android SDK's cmdline-tools: `gunzip` it, then `retrace
 mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists no download (*Sukrara on
@@ -827,9 +827,9 @@ other devices* opens the website, #179). The Android GitHub version's updater (#
 computes on upload): keep that name, and never replace an asset by hand after publishing without expecting installs
 to refuse it until the digest matches. Play builds need no
 separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
-crash reports (the API's `deobfuscationfiles` upload is only for APKs). A prerelease never becomes *Latest*; a 0.x one
-bumps the Homebrew cask (`homebrew-tap.yml` on *published*), a 1.x+ prerelease never does (also when dispatched by
-hand). **Mac notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on
+crash reports (the API's `deobfuscationfiles` upload is only for APKs). Every release is a normal one and becomes *Latest* (since
+2026-11-12; v0.12.0 … v0.14.5 were switched from prereleases then); it bumps the Homebrew cask (`homebrew-tap.yml` on
+*published*), a GitHub prerelease (a release candidate) never does (also when dispatched by hand). **Mac notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on
 the release Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); they do
 since 0.12.0, and a Developer ID build is never released unnotarized.
 

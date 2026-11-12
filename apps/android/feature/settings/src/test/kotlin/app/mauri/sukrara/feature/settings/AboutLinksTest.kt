@@ -101,7 +101,7 @@ class AboutLinksTest {
     @Test
     fun `every update state has its way on and its way out`() {
         val release =
-            UpdateRelease("0.13.0", "https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0", prerelease = true, installable = true)
+            UpdateRelease("0.13.0", "https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0", installable = true)
         show()
 
         fun tap(text: String) = compose.onNodeWithText(text).performScrollTo().performClick()
@@ -140,7 +140,7 @@ class AboutLinksTest {
     fun `a release without an APK says to open its page`() {
         update =
             UpdateState.Available(
-                UpdateRelease("0.13.0", "https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0", false, installable = false),
+                UpdateRelease("0.13.0", "https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0", installable = false),
             )
         show()
         compose.onNodeWithText(app.getString(R.string.st_update_open)).assertExists()

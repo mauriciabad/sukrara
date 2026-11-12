@@ -20,11 +20,10 @@ anywhere. **No cloud account, nothing to host.** The name: *sucre* (sugar) + *ar
 in the menu bar.
 
 **Android** (16+, arm64): open the APK and allow installs from your browser when asked (**Settings → Allow from this
-source**), then **Install**. [Obtainium](https://obtainium.imranr.dev/) can keep it updated (turn on *Include
-prereleases*).
+source**), then **Install**. [Obtainium](https://obtainium.imranr.dev/) can keep it updated.
 
 > **A preview.** Each feature started as a proof of concept with a written report (below); the Android and Mac apps
-> are built anew from what they found, tested against the same shared specs. Releases are prereleases until they've
+> are built anew from what they found, tested against the same shared specs. Sukrara is a preview (0.x) until it's
 > been tested on a real sensor. **Not a medical device:** don't make treatment decisions from it.
 
 <p>

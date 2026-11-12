@@ -205,11 +205,7 @@ private fun UpdateRows(
         is UpdateState.Available -> {
             val r = update.release
             val summary =
-                when {
-                    !r.installable -> if (r.prerelease) R.string.st_update_prerelease else R.string.st_update_open
-                    r.prerelease -> R.string.st_update_install_prerelease
-                    else -> R.string.st_update_install
-                }
+                if (r.installable) R.string.st_update_install else R.string.st_update_open
             ActionRow(
                 stringResource(R.string.st_update_available, r.version),
                 actions.update,

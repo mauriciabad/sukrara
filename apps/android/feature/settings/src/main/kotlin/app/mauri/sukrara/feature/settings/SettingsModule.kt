@@ -30,7 +30,6 @@ class SettingsModule(
     alertState: Flow<AlertUiState>,
     readiness: AlertReadinessSource,
     appVersion: String,
-    prerelease: Boolean,
     clock: Clock,
     sensor: Flow<SensorState>,
     appsShared: Flow<Set<AppOutput>>,
@@ -63,7 +62,6 @@ class SettingsModule(
             override val alertState = alertState
             override val readiness = readiness
             override val appVersion = appVersion
-            override val prerelease = prerelease
             override val distribution = distribution
             override val updates: AppUpdates? by lazy { updates() }
             override val clock = clock

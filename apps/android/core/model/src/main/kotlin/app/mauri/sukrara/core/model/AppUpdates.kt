@@ -7,13 +7,12 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * A newer release of the GitHub version (#188): its [version] ("0.14.0"), its release page [notesUrl] (always one of
- * the project's own release pages), whether it is a release candidate, and whether it has an APK Sukrara can check
- * and install itself ([installable]; otherwise *Update* opens the release page).
+ * the project's own release pages) and whether it has an APK Sukrara can check and install
+ * itself ([installable]; otherwise *Update* opens the release page).
  */
 data class UpdateRelease(
     val version: String,
     val notesUrl: String,
-    val prerelease: Boolean,
     val installable: Boolean,
 )
 

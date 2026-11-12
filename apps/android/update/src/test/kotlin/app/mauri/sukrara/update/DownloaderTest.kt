@@ -43,7 +43,7 @@ class DownloaderTest {
             server.enqueue(
                 MockResponse().setBody(
                     """
-                    [{"tag_name": "v9.0.0", "html_url": "${base}releases/tag/v9.0.0", "prerelease": true,
+                    [{"tag_name": "v9.0.0", "html_url": "${base}releases/tag/v9.0.0", "prerelease": false,
                       "assets": [{"name": "Sukrara-9.0.0.apk", "browser_download_url": "${base}download/Sukrara-9.0.0.apk",
                                   "digest": "sha256:$sha", "size": ${bytes.size}}]}]
                     """.trimIndent(),

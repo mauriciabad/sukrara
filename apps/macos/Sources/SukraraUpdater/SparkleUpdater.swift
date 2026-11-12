@@ -69,12 +69,6 @@ public final class SparkleUpdater: NSObject, UpdaterEngine, SPUUpdaterDelegate, 
 
     // MARK: - SPUUpdaterDelegate
 
-    /// Prereleases while this version is 0.x (every 0.x release is a GitHub prerelease), none from 1.0.0 on.
-    public func allowedChannels(for updater: SPUUpdater) -> Set<String> {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
-        return Updates.channels(installed: version)
-    }
-
     public func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
         Self.log.error("update aborted: \(error.localizedDescription, privacy: .public)")
     }

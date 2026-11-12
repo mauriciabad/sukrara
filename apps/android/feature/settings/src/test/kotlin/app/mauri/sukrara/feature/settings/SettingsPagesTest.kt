@@ -236,7 +236,6 @@ class SettingsPagesTest {
                 override val alertState = flowOf(AlertUiState())
                 override val readiness = FakeReadiness()
                 override val appVersion = "0.12.0"
-                override val prerelease = true
                 override val distribution = Distribution.GitHub
                 override val updates = null
                 override val clock = FakeClock()

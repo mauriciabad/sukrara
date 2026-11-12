@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Keeps the Homebrew cask (github.com/mauriciabad/homebrew-tap, Casks/sukrara.rb) on the current release: when a
 # release is published, read the version from its tag (v0.12.0 → 0.12.0), hash its Sukrara-<version>.dmg and commit
-# the new version + sha256 to the tap. While the version is 0.x every release is a GitHub prerelease (CLAUDE.md), and
-# the cask follows them, like the apps' own update check offers prereleases to a 0.x install; from 1.0.0 on a
-# prerelease (a release candidate) is skipped, also when dispatched by hand. Pushes with the tap's deploy key (write
+# the new version + sha256 to the tap. Every release is a normal GitHub release (CLAUDE.md) and the cask follows them;
+# a GitHub prerelease (a release candidate, if one is ever published) is skipped, also when dispatched by hand, like
+# the apps' own update checks skip it. Only *published* triggers it: switching an existing prerelease to a release
+# (`released` / `edited`) doesn't; dispatch it by hand if the cask should take that one. Pushes with the tap's deploy key (write
 # access to that repo only), stored here as the secret HOMEBREW_TAP_DEPLOY_KEY. Re-run by hand with workflow_dispatch
 # (tag) if a release was edited. The cask also gets `auto_updates true` (the app updates itself with Sparkle, #91);
 # don't dispatch it for a release older than the updater (0.13.0 and before), which brew would then never upgrade.
@@ -26,8 +27,7 @@ concurrency:
 jobs:
   bump:
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease ||
-      startsWith(github.event.release.tag_name, 'v0.') }}
+      ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
@@ -36,16 +36,11 @@ jobs:
       - name: Hash the release dmg
         id: dmg
         run: |
-          # A 1.x+ prerelease (a release candidate) never reaches the cask; the job condition skips a published
-          # one, this also refuses one dispatched by hand. 0.x releases are all prereleases and the cask follows them.
-          case "$TAG" in
-            v0.*) ;;
-            *)
-              if [ "$(gh release view "$TAG" -R "${{ github.repository }}" --json isPrerelease --jq .isPrerelease)" = true ]; then
-                echo "::error::$TAG is a release candidate (a prerelease after 0.x): the cask only follows releases"; exit 1
-              fi
-              ;;
-          esac
+          # A prerelease (a release candidate) never reaches the cask; the job condition skips a published one,
+          # this also refuses one dispatched by hand.
+          if [ "$(gh release view "$TAG" -R "${{ github.repository }}" --json isPrerelease --jq .isPrerelease)" = true ]; then
+            echo "::error::$TAG is a release candidate (a GitHub prerelease): the cask only follows releases"; exit 1
+          fi
           VER="${TAG#v}"
           gh release download "$TAG" -R "${{ github.repository }}" -p "Sukrara-$VER.dmg" -D dl
           echo "version=$VER" >> "$GITHUB_OUTPUT"

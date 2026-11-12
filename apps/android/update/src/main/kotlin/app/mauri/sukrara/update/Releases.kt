@@ -20,7 +20,10 @@ data class ApkAsset(
     val size: Long,
 )
 
-/** One GitHub release of mauriciabad/sukrara; [apk] null = none Sukrara can check (no APK, or no digest). */
+/**
+ * One GitHub release of mauriciabad/sukrara; [prerelease] = GitHub's flag, a release candidate (every real release is a
+ * normal one); [apk] null = none Sukrara can check (no APK, or no digest).
+ */
 data class Release(
     val tag: String,
     val url: String,
@@ -30,22 +33,21 @@ data class Release(
 ) {
     val version: String get() = tag.removePrefix("v")
 
-    fun model() = UpdateRelease(version, url, prerelease, installable = apk != null)
+    fun model() = UpdateRelease(version, url, installable = apk != null)
 }
 
 /** The pure part of the update check: which release is newer, and what the List-releases JSON says. */
 object Releases {
     /**
-     * The release to offer: the newest non-draft one newer than [installed]; prereleases only when the installed
-     * version is a prerelease itself (major 0). Null = up to date.
+     * The release to offer: the newest one newer than [installed] that is neither a draft nor a prerelease (a release
+     * candidate is never offered; every release is a normal one). Null = up to date.
      */
     fun newer(
         releases: List<Release>,
         installed: String,
-        prerelease: Boolean,
     ): Release? =
         releases
-            .filter { !it.draft && (prerelease || !it.prerelease) }
+            .filter { !it.draft && !it.prerelease }
             .filter { compare(it.tag, installed) > 0 }
             .maxWithOrNull { a, b -> compare(a.tag, b.tag) }
 

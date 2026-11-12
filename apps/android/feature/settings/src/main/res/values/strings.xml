@@ -190,11 +190,9 @@
     <string name="st_update_check_again">Check again</string>
     <string name="st_update_available">Update available: %1$s</string>
     <string name="st_update_open">Open the release to download it</string>
-    <string name="st_update_prerelease">Release candidate · open the release to download it</string>
     <string name="st_update_offline">Couldn\'t check for updates</string>
     <string name="st_update_offline_summary">Open the releases page</string>
     <string name="st_update_install">Tap to update. Monitoring comes back by itself right after.</string>
-    <string name="st_update_install_prerelease">Release candidate · tap to update. Monitoring comes back by itself right after.</string>
     <string name="st_update_notes">Release notes</string>
     <string name="st_update_notes_summary">What\'s new, on GitHub</string>
     <string name="st_update_downloading">Downloading %1$s…</string>

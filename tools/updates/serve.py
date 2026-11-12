@@ -7,7 +7,7 @@
     python3 tools/updates/serve.py <apk> [--version 0.13.1] [--port 8765] [--base http://10.0.2.2:8765/]
 
 Serves, on this computer's loopback only, what the updater reads from GitHub: `<base>releases` in the form of GitHub's
-List-releases API (one prerelease `v<version>` whose asset `Sukrara-<version>.apk` carries the file's `sha256:` digest
+List-releases API (one release `v<version>` whose asset `Sukrara-<version>.apk` carries the file's `sha256:` digest
 and size), the APK under `<base>download/`, and a plain release page under `<base>releases/tag/`. The version defaults
 to the APK's own (aapt2 badging). Then point a debug build at it (an emulator reaches 127.0.0.1 as 10.0.2.2); the
 updater trusts the debug key there:
@@ -48,7 +48,7 @@ def releases(base: str, version: str, digest: str, size: int) -> bytes:
         "tag_name": "v" + version,
         "html_url": "%sreleases/tag/v%s" % (base, version),
         "draft": False,
-        "prerelease": True,
+        "prerelease": False,
         "assets": [{"name": name, "browser_download_url": base + "download/" + name, "digest": "sha256:" + digest, "size": size}],
     }]).encode()
 

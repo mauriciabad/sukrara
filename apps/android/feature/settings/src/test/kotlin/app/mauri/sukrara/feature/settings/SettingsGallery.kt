@@ -120,7 +120,7 @@ class SettingsGallery {
                 ),
         )
     private val release =
-        UpdateRelease("0.12.1", "https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1", prerelease = true, installable = true)
+        UpdateRelease("0.12.1", "https://github.com/mauriciabad/sukrara/releases/tag/v0.12.1", installable = true)
 
     /** About's updater with the daily check on and automatic installs off (the defaults). */
     private val updates = AboutUpdates({}, {}, {}, {}, automaticChecks = true, automaticInstall = false, {}, {})

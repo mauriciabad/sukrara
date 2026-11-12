@@ -23,7 +23,7 @@ left (resume with --from <step>; every step can run again):
                  aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
                  commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
   github         the release commit's Checks run green (its push or one started by hand, any branch; the one wait for
-                 CI); main fast-forwarded, tag v<version>, the GitHub release (prerelease while 0.x) with the APK, the
+                 CI); main fast-forwarded, tag v<version>, the GitHub release (a normal one, Latest) with the APK, the
                  Android mapping, the dmg and the zip, notes from the CHANGELOG entry. main's own run isn't awaited:
                  the commit's green run is what it finds (tools/ci/changes.py)
   sparkle        docs/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
@@ -84,10 +84,6 @@ def version_code(v):
     return major * 1000000 + minor * 1000 + patch  # = lib.sh version_info
 
 
-def version_kind(v):
-    return "prerelease" if parse_version(v)[0] == 0 else "release"
-
-
 def sections(changelog):
     """[(heading line, start, end)] of every `## ` section (end = the next one's start)."""
     starts = [m.start() for m in re.finditer(r"^## ", changelog, re.M)]
@@ -99,7 +95,7 @@ def sections(changelog):
 
 
 def changelog_release(changelog, version):
-    """CHANGELOG.md with the Unreleased section turned into `## <version>[ — <summary>][ (GitHub prerelease)]` and a new,
+    """CHANGELOG.md with the Unreleased section turned into `## <version>[ — <summary>]` and a new,
     empty Unreleased section above it. `## Unreleased — <summary>` gives the summary. Refuses an empty Unreleased
     section and a version that already has an entry."""
     secs = sections(changelog)
@@ -114,8 +110,6 @@ def changelog_release(changelog, version):
         raise ValueError("CHANGELOG.md's Unreleased section is empty: nothing to release")
     summary = re.sub(r"^## Unreleased\s*(—|-)?\s*", "", heading).strip()
     title = "## " + version + (" — " + summary if summary else "")
-    if version_kind(version) == "prerelease":
-        title += " (GitHub prerelease)"
     return changelog[:start] + "## Unreleased\n\n" + title + "\n\n" + body + "\n\n" + changelog[end:].lstrip("\n")
 
 
@@ -158,10 +152,9 @@ def github_notes(changelog, version, cert_sha256):
     entry = changelog_entry(changelog, version)
     if not entry:
         raise ValueError("CHANGELOG.md has no %s entry" % version)
-    pre = version_kind(version) == "prerelease"
     v = version
-    head = ("**Not a medical device.** %sEvery behaviour, with its rules and numbers: [docs/FEATURES.md](%s/blob/v%s/"
-            "docs/FEATURES.md)." % ("0.x versions are GitHub prereleases. " if pre else "", REPO_URL, v))
+    head = ("**Not a medical device.** Every behaviour, with its rules and numbers: [docs/FEATURES.md](%s/blob/v%s/"
+            "docs/FEATURES.md)." % (REPO_URL, v))
     files = "\n".join([
         "## Files",
         "",
@@ -180,7 +173,7 @@ def bump_docs(path, text, old, new):
     (*<version> · … version*)."""
     if path.endswith("DEVELOPMENT.md"):
         text = re.sub(r"(`tools/release/version\.sh` → `)[^`]*(`)",
-                      lambda m: "%s%s %d %s%s" % (m.group(1), new, version_code(new), version_kind(new), m.group(2)),
+                      lambda m: "%s%s %d%s" % (m.group(1), new, version_code(new), m.group(2)),
                       text)
     return text.replace("*%s · " % old, "*%s · " % new)
 
@@ -289,7 +282,6 @@ class Release:
     def __init__(self, version, dry, production):
         self.v = version
         self.code = version_code(version)
-        self.kind = version_kind(version)
         self.dry = dry
         self.production = production
         self.changelog = None  # dry run: the CHANGELOG the version step would write
@@ -532,9 +524,8 @@ class Release:
                 print("  the notes:\n" + "\n".join("    " + l for l in notes.splitlines()))
             with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
                 f.write(notes)
-            flags = ["--prerelease", "--latest=false"] if self.kind == "prerelease" else ["--latest"]
             self.sh(["gh", "release", "create", "v" + self.v, "-R", REPO, "--verify-tag", "--title",
-                     "Sukrara " + self.v, "--notes-file", f.name] + flags + [self.path(p) for p in files.values()])
+                     "Sukrara " + self.v, "--notes-file", f.name, "--latest"] + [self.path(p) for p in files.values()])
             os.unlink(f.name)
         if not self.dry:
             assets = {a["name"]: a for a in self.gh_json(["release", "view", "v" + self.v, "-R", REPO, "--json",
@@ -729,7 +720,7 @@ class Release:
             print("  submitted %s (%s) for App Review" % (self.v, build))
 
     def summary(self):
-        print("Sukrara %s (%d, %s):" % (self.v, self.code, self.kind))
+        print("Sukrara %s (%d):" % (self.v, self.code))
         if self.dry:
             print("  would report GitHub, Sparkle, Homebrew, Play and TestFlight")
             return
@@ -742,7 +733,8 @@ class Release:
 
         def github():
             r = self.gh_json(["release", "view", "v" + self.v, "-R", REPO, "--json", "url,isPrerelease,assets"])
-            return "%s (%s, %d files)" % (r["url"], "prerelease" if r["isPrerelease"] else "release", len(r["assets"]))
+            pre = ", marked prerelease: gh release edit v%s --prerelease=false --latest" % self.v if r["isPrerelease"] else ""
+            return "%s (%d files%s)" % (r["url"], len(r["assets"]), pre)
 
         def sparkle():
             with urllib.request.urlopen("%s?r=%d" % (FEED_URL, time.time()), timeout=30) as r:

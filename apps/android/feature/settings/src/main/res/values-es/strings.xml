@@ -189,11 +189,9 @@
     <string name="st_update_check_again">Volver a comprobar</string>
     <string name="st_update_available">Actualización disponible: %1$s</string>
     <string name="st_update_open">Abre la versión para descargarla</string>
-    <string name="st_update_prerelease">Versión candidata · abre la versión para descargarla</string>
     <string name="st_update_offline">No se pudo buscar actualizaciones</string>
     <string name="st_update_offline_summary">Abrir la página de versiones</string>
     <string name="st_update_install">Toca para actualizar. La monitorización vuelve sola justo después.</string>
-    <string name="st_update_install_prerelease">Versión candidata · toca para actualizar. La monitorización vuelve sola justo después.</string>
     <string name="st_update_notes">Notas de la versión</string>
     <string name="st_update_notes_summary">Las novedades, en GitHub</string>
     <string name="st_update_downloading">Descargando %1$s…</string>

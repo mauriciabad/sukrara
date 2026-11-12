@@ -18,8 +18,8 @@ stops arriving, lets you log insulin and carbs in seconds, and shares readings *
 Nostr relays or Bluetooth nearby. There's no cloud account to create and no server to host. The name is
 Catalan-ish: *sucre* (sugar) + *ara* (now).
 
-> **Not a medical device** (see the [disclaimer](#disclaimer)). Releases are GitHub **prereleases** until they've been
-> tested on a real sensor.
+> **Not a medical device** (see the [disclaimer](#disclaimer)). Sukrara is a **preview** (0.x) until it's been tested
+> on a real sensor.
 
 ## What it does today
 
@@ -289,7 +289,7 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
 
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With
-  [Obtainium](https://obtainium.imranr.dev/), turn on *Include prereleases*.
+  [Obtainium](https://obtainium.imranr.dev/), add `https://github.com/mauriciabad/sukrara`.
 - **Mac** (Apple Silicon, macOS 15+): download `Sukrara-<version>.dmg` and drag **Sukrara** onto **Applications**.
   It's signed with a Developer ID and notarized by Apple, so it opens like any other app. Sukrara lives in the menu
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then

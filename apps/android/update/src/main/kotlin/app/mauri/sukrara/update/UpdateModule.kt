@@ -43,10 +43,9 @@ data class UpdateRecord(
 data class PendingInstall(
     val version: String,
     val notesUrl: String,
-    val prerelease: Boolean,
     val automatic: Boolean,
 ) {
-    fun model() = UpdateRelease(version, notesUrl, prerelease, installable = true)
+    fun model() = UpdateRelease(version, notesUrl, installable = true)
 }
 
 /** The updater's inputs (`Store` of the full flavor builds them from the app graph). */
@@ -54,8 +53,6 @@ class UpdatePorts(
     /** The running version's name ("0.13.0") and code. */
     val installed: String,
     val installedCode: Long,
-    /** A 0.x version: release candidates are offered (every 0.x release is one). */
-    val prerelease: Boolean,
     val endpoint: UpdateEndpoint,
     val http: OkHttpClient,
     val io: CoroutineDispatcher,
@@ -236,7 +233,7 @@ class UpdateModule(
             show(UpdateState.Waiting(model, hold))
             return Outcome.Retry
         }
-        ports.record.update { it.copy(pending = PendingInstall(release.version, release.url, release.prerelease, automatic)) }
+        ports.record.update { it.copy(pending = PendingInstall(release.version, release.url, automatic)) }
         show(UpdateState.Installing(model))
         return try {
             installer.install(file, release.version, InstallGate.silent(automatic, installer.mayInstallPackages()))
@@ -299,7 +296,7 @@ class UpdateModule(
     }
 
     private suspend fun fetch(): Result<Release?> =
-        downloader.releases().map { Releases.newer(it, ports.installed, ports.prerelease).also { r -> latest = r } }
+        downloader.releases().map { Releases.newer(it, ports.installed).also { r -> latest = r } }
 
     private fun stateOf(result: Result<Release?>): UpdateState =
         result.fold({ it?.let { r -> UpdateState.Available(r.model()) } ?: UpdateState.UpToDate }, { UpdateState.Offline })

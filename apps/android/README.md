@@ -134,7 +134,7 @@ broadcast): `:sensor` / `:share` register it at runtime while monitoring runs.
 
 ## Release builds
 
-- Version from `<repo>/VERSION` (`0.12.0` → versionCode 12000; `BuildConfig.PRERELEASE` while major is 0).
+- Version from `<repo>/VERSION` (`0.12.0` → versionCode 12000).
 - Signed with `SUKRARA_KEYSTORE` (default `~/.android/sukrara-release.jks`, alias `sukrara`); the password comes only
   from env `SUKRARA_KEYSTORE_PASSWORD` (Gradle never reads the Keychain):
   `SUKRARA_KEYSTORE_PASSWORD="$(security find-generic-password -s sukrara-android-release -a sukrara -w)" ./gradlew :app:assembleFullRelease`.

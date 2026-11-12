@@ -43,7 +43,6 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 targetSdk = Sdk.TARGET
                 versionCode = version.code
                 versionName = version.name
-                buildConfigField("boolean", "PRERELEASE", version.prerelease.toString())
                 ndk { abiFilters += "arm64-v8a" }
             }
             buildFeatures.buildConfig = true

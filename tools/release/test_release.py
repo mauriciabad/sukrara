@@ -35,15 +35,13 @@ The first build submitted to Google Play.
 
 
 class VersionTest(unittest.TestCase):
-    def test_code_and_kind_match_lib_sh(self):
+    def test_code_matches_lib_sh(self):
         self.assertEqual(release.version_code("0.14.0"), 14000)
         self.assertEqual(release.version_code("1.2.3"), 1002003)
-        self.assertEqual(release.version_kind("0.14.0"), "prerelease")
-        self.assertEqual(release.version_kind("1.0.0"), "release")
         out = subprocess.run(["sh", os.path.join(release.ROOT, "tools/release/version.sh")], capture_output=True,
                              text=True, check=True).stdout.split()
+        self.assertEqual(len(out), 2)
         self.assertEqual(int(out[1]), release.version_code(out[0]))
-        self.assertEqual(out[2], release.version_kind(out[0]))
 
     def test_rejects_bad_versions(self):
         for v in ["1.2", "v1.2.3", "1.1000.0", "1.2.3-rc1", ""]:
@@ -51,9 +49,9 @@ class VersionTest(unittest.TestCase):
                 release.parse_version(v)
 
     def test_bump_docs(self):
-        dev = "| Version | `tools/release/version.sh` → `0.13.0 13000 prerelease` (from `VERSION`) |"
+        dev = "| Version | `tools/release/version.sh` → `0.13.0 13000` (from `VERSION`) |"
         self.assertEqual(release.bump_docs("docs/DEVELOPMENT.md", dev, "0.13.0", "0.14.0"),
-                         "| Version | `tools/release/version.sh` → `0.14.0 14000 prerelease` (from `VERSION`) |")
+                         "| Version | `tools/release/version.sh` → `0.14.0 14000` (from `VERSION`) |")
         qa = "- [ ] Settings › About: *0.13.0 · Google Play version* (and 0.13.0 elsewhere stays)"
         self.assertEqual(release.bump_docs("docs/QA.md", qa, "0.13.0", "1.0.0"),
                          "- [ ] Settings › About: *1.0.0 · Google Play version* (and 0.13.0 elsewhere stays)")
@@ -62,15 +60,15 @@ class VersionTest(unittest.TestCase):
 class ChangelogTest(unittest.TestCase):
     def test_unreleased_becomes_the_entry(self):
         out = release.changelog_release(CHANGELOG, "0.14.0")
-        self.assertIn("## Unreleased\n\n## 0.14.0 — the Mac updates itself (GitHub prerelease)\n\n- **The Mac", out)
+        self.assertIn("## Unreleased\n\n## 0.14.0 — the Mac updates itself\n\n- **The Mac", out)
         self.assertIn("- ***Sound while unlocked*** (Android, #183).\n\n## 0.13.0", out)
         heading, body = release.changelog_entry(out, "0.14.0")
-        self.assertEqual(heading, "## 0.14.0 — the Mac updates itself (GitHub prerelease)")
+        self.assertEqual(heading, "## 0.14.0 — the Mac updates itself")
         self.assertTrue(body.startswith("- **The Mac updates itself**"))
         self.assertTrue(body.endswith("(Android, #183)."))
         self.assertEqual(release.changelog_entry(out, "0.13.0")[1], release.changelog_entry(CHANGELOG, "0.13.0")[1])
 
-    def test_without_summary_and_for_a_release(self):
+    def test_without_summary(self):
         out = release.changelog_release(CHANGELOG.replace("## Unreleased — the Mac updates itself", "## Unreleased"),
                                         "1.0.0")
         self.assertIn("## Unreleased\n\n## 1.0.0\n\n- **The Mac", out)
@@ -99,7 +97,8 @@ class NotesTest(unittest.TestCase):
     def test_github_notes(self):
         out = release.changelog_release(CHANGELOG, "0.14.0")
         notes = release.github_notes(out, "0.14.0", "AB" * 32)
-        self.assertTrue(notes.startswith("**Not a medical device.** 0.x versions are GitHub prereleases."))
+        self.assertTrue(notes.startswith("**Not a medical device.** Every behaviour, with its rules and numbers:"))
+        self.assertNotIn("prerelease", notes)
         # hard wraps joined, relative links at the tag
         self.assertIn("- **The Mac updates itself** (#91): once a day it looks for a new version, signed by Sukrara. "
                       "Every behaviour: [docs/FEATURES.md](https://github.com/mauriciabad/sukrara/blob/v0.14.0/docs/"

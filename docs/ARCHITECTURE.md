@@ -95,7 +95,7 @@ alert hold, the notification ports of `:monitor`'s `Channels.UPDATES` / `Notific
 `App.onCreate` starts it, so its workers and receiver find it (`UpdateModule.current`). Settings › About sees it as the
 `AppUpdates` port of `:core:model` (null in the Play build).
 - Pure: `Releases` (List-releases JSON → `Release` + its `ApkAsset`: `Sukrara-<version>.apk`, GitHub's `sha256:`
-  digest, size, only under the endpoint's download prefix; version compare; prereleases while 0.x), `ApkCheck.verify`
+  digest, size, only under the endpoint's download prefix; version compare; drafts and prereleases, release candidates, skipped), `ApkCheck.verify`
   (hash, the one signer = `UpdateEndpoint.RELEASE_CERT` = `tools/release/android-cert.sha256`, package, newer),
   `InstallGate` (no install while `AlertHold` isn't quiet; silent only when automatic and installs are allowed),
   `UpdateEndpoint` (GitHub, or a debug build's local test server from `BuildVariant.updateServer`).
@@ -212,8 +212,7 @@ Tests: CoreTests GraphTests AlertsTests ShareTests AppTests ─► SukraraTestin
   `NonisolatedNonsendingByDefault` + `InferIsolatedConformances`. Background work goes into actors / `@concurrent`.
 - `SukraraAlerts` is pure (no UI, no I/O); `SukraraShare` keeps every transport behind a protocol.
 - The updater (#91): `SukraraApp` knows only `UpdaterEngine` and the `Updates` model (the panel's reminder, About's
-  button and switches); `SukraraUpdater` implements it with Sparkle (`SparkleUpdater`, gentle reminders, the
-  prerelease channel). Only the `Sukrara` executable links it (`AppMain.run(updater:)`); the App Store executable
+  button and switches); `SukraraUpdater` implements it with Sparkle (`SparkleUpdater`, gentle reminders). Only the `Sukrara` executable links it (`AppMain.run(updater:)`); the App Store executable
   passes nil, so its binary has no Sparkle at all. `AppServices` creates the updater only when the launch plan allows
   `.updater` (the installed GitHub version).
 
@@ -603,5 +602,5 @@ every app). Alert scenario expectations change only with the owner's OK.
 `verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no updater:
 `app/src/play`, `Store`, no `:update`; `:monitor`'s `RootFeatures` stays optional for the fallback if Play rejects root);
 Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`; a notarized dmg is signed with the Sparkle
-EdDSA key and added to `docs/appcast.xml` by `tools/release/appcast.py`). 0.x versions are GitHub prereleases; every
-app's updater includes prereleases only on a prerelease build (the Mac's Sparkle: the `prerelease` channel).
+EdDSA key and added to `docs/appcast.xml` by `tools/release/appcast.py`). Every release is a normal GitHub release
+(marked *Latest*); every app's updater, and the Homebrew cask, skips a GitHub prerelease (a release candidate).

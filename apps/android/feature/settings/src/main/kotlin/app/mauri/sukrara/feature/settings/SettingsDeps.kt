@@ -43,9 +43,8 @@ interface SettingsDeps {
     /** The alert-readiness checklist (notifications, full-screen, exact alarm, battery, channel, Bluetooth). */
     val readiness: AlertReadinessSource
 
-    /** The installed version (`BuildConfig.VERSION_NAME`) and whether it is a 0.x prerelease. */
+    /** The installed version (`BuildConfig.VERSION_NAME`). */
     val appVersion: String
-    val prerelease: Boolean
 
     /** Which version this is (About: *Google Play version* / *GitHub version*). */
     val distribution: Distribution

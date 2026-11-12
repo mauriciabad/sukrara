@@ -79,7 +79,6 @@ class SearchOpensNightAlertsTest {
                 )
             override val readiness = FakeReadiness()
             override val appVersion = "0.14.2"
-            override val prerelease = true
             override val distribution = Distribution.GitHub
             override val updates = null
             override val clock = FakeClock(now, ZoneOffset.UTC)

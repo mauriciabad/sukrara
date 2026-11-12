@@ -12,9 +12,6 @@ data class AppVersion(val major: Int, val minor: Int, val patch: Int) {
     val name get() = "$major.$minor.$patch"
     val code get() = major * 1_000_000 + minor * 1_000 + patch
 
-    /** Every 0.x build is a release candidate (never 1.0.0 without the owner). */
-    val prerelease get() = major == 0
-
     companion object {
         private val FORMAT = Regex("""(\d{1,3})\.(\d{1,3})\.(\d{1,3})""")
 

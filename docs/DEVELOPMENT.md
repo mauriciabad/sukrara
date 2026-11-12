@@ -26,7 +26,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
-| Version | `tools/release/version.sh` → `0.14.5 14005 prerelease` (from `VERSION`) |
+| Version | `tools/release/version.sh` → `0.14.5 14005` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs on every push, each push its own run at once (pushes never queue behind or
 cancel each other; a pull request's newer push cancels its older run). Its `changes` job (`tools/ci/changes.py`)
@@ -116,8 +116,8 @@ again: it skips what's already there):
    `tools/check/strict`, the keys, `gh`. A Checks run counts on any branch (the same commit is the same tree): the
    commit's push run or one started by hand (`gh workflow run checks.yml --ref next` when the push run is stuck, e.g.
    in a GitHub Actions incident); one green run is enough, a pull_request run doesn't count.
-2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …
-   (GitHub prerelease)` with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run starts at once
+2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …`
+   with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run starts at once
    (it never queues behind the run before it), goes on while the gate runs, and covers every change since the newest
    green commit, the previous HEAD's included; it is the release's one wait for CI, in `github`.
 3. `gate`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final --no-build` on
@@ -127,7 +127,7 @@ again: it skips what's already there):
    Mac job ran on the newest green commit with the same Mac sources: `VERSION` reaches only the bundle, which this
    gate builds, notarizes and smokes).
 4. `github`: the release commit's Checks run green, `main` fast-forwarded, tag `v<version>`, `gh release create
-   --prerelease --latest=false` (`--latest` from 1.0.0) with the APK, the Android mapping, the dmg and the zip (their
+   --latest` (a normal release, *Latest*) with the APK, the Android mapping, the dmg and the zip (their
    sha256 checked against the release's), notes from the CHANGELOG entry with the disclaimer and the files. `main`'s
    own run isn't awaited: it finds the commit's green run and runs nothing again.
 5. `sparkle`: the dmg on the release is the one `docs/appcast.xml` signs → the appcast committed and pushed to `main`

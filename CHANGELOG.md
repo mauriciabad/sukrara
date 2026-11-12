@@ -1,10 +1,16 @@
 # Changelog
 
-Sukrara's releases. 0.x versions are previews (GitHub prereleases).
+Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
-## 0.14.5 (GitHub prerelease)
+- **Releases are normal GitHub releases now**, marked *Latest*, also 0.12.0 … 0.14.5 (they were prereleases, so
+  GitHub's *Latest* was still the old proof of concept). [Obtainium](https://obtainium.imranr.dev/) no longer needs
+  *Include prereleases*, and links to the latest release get Sukrara. The apps' own update checks (Android's, the
+  Mac's Sparkle feed) and the Homebrew cask take every release as before; a GitHub prerelease (a release candidate)
+  is never offered.
+
+## 0.14.5
 
 - **Long-acting insulin typed after a pen read no longer asks *Already logged by your pen?* (Android)** (the owner:
   5.5u rapid from the smart pen, then 15u long-acting from a plain pen): the question compared the typed dose with
@@ -13,7 +19,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   dims the Add treatment dialog behind it instead of sitting flat on it, with *Log anyway* and *Cancel*; the *When?*
   picker gets the same dim.
 
-## 0.14.4 (GitHub prerelease)
+## 0.14.4
 
 - **The low limit reads 70 again, and 70 is in range** (both apps; the owner: "the 70 is the threshold, but 70 itself
   is excluded from the interval -> (70, 55) is low [55,-Infinity) is very low"): 0.14.3 showed the low limit as 69;
@@ -26,7 +32,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   alert thresholds, reminders, quiet times …) did nothing; it saves and closes again, and so does the keyboard's
   *Done*.
 
-## 0.14.3 (GitHub prerelease)
+## 0.14.3
 
 - **Low is below 70, and the low alerts ring where the card says Low** (both apps; the owner: "Low is below 70 (70 is
   in the okay range), so from 69 downwards. And very low from 55 or lower"): every limit is the first value of the
@@ -52,7 +58,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   monitoring) on 0.13–0.14.1 release builds while the night alerts or a quiet side applied: their lines' strings were
   found by name and had been shrunk away. They are found by the ids written in code now, so no build can lose them.
 
-## 0.14.2 — Android alerts show again (GitHub prerelease)
+## 0.14.2 — Android alerts show again
 
 - **Android alerts are posted again** (release builds): resource shrinking removed the alert and mute texts the app
   looks up by name, so a real alert's notification couldn't be built and no alert showed (the alert logic itself
@@ -69,7 +75,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 - **The Mac disk image has its own icons** (#181): the opened volume is a Sukrara drive and the `.dmg` file a disk
   image page with that drive, no longer the app's icon.
 
-## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
+## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops
 
 - **Sharing (Android, wearer)**: each message from a follower is handled once, also across restarts (#78). Before, every
   start handled again every message the relays still kept: an allowed follower got its key again, an ended follow
@@ -78,7 +84,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   Sukrara was opened again. A relay that answers a ping twice (the answer, then the dropped connection) or never no
   longer stops it.
 
-## 0.14.0 — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app (GitHub prerelease)
+## 0.14.0 — the apps update themselves, Do Not Disturb respected by default, widgets like the earlier app
 
 - **The Android GitHub version updates itself** (#188): once a day it looks for a new version and says so in a quiet
   notification (*Update*, *Release notes*), downloads it, checks it is the release's file signed with Sukrara's key,
@@ -116,7 +122,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 - **Not a medical device**: setup's Welcome and About in Settings say so, on Android and the Mac; the Mac's About also
   links the privacy policy.
 
-## 0.13.0 — fixes from the first days of 0.12.0, monitoring before the first unlock (GitHub prerelease)
+## 0.13.0 — fixes from the first days of 0.12.0, monitoring before the first unlock
 
 The first build submitted to Google Play. Not tested on a real sensor yet. Install and notes: the
 [v0.13.0 release](https://github.com/mauriciabad/sukrara/releases/tag/v0.13.0).
@@ -137,7 +143,7 @@ The first build submitted to Google Play. Not tested on a real sensor yet. Insta
   page for the other devices (#179) and says which version it is (GitHub or Google Play).
 - **Google Play build**: the same app as the GitHub one, without its own update check.
 
-## 0.12.0 — first release of the Android and Mac apps (GitHub prerelease)
+## 0.12.0 — first release of the Android and Mac apps
 
 Not tested on a real sensor yet. Install, what's in it and how to bring your history over: the
 [v0.12.0 release](https://github.com/mauriciabad/sukrara/releases/tag/v0.12.0). Every behaviour:

@@ -36,7 +36,7 @@ cert_sha256() {
   "$1" -exportcert -keystore "$2" -alias "$3" -storepass:env SUKRARA_KS_PW | openssl dgst -sha256 | awk '{print toupper($NF)}'
 }
 
-# "0.12.0 12000 prerelease|release" from VERSION: versionCode = major·1 000 000 + minor·1 000 + patch.
+# "0.12.0 12000" from VERSION: versionCode = major·1 000 000 + minor·1 000 + patch.
 version_info() {
   v="$(tr -d ' \n' < "$(repo_root)/VERSION")"
   case "$v" in
@@ -46,6 +46,5 @@ version_info() {
 $v
 EOF
   if [ -z "$patch" ] || [ "$minor" -ge 1000 ] || [ "$patch" -ge 1000 ]; then echo "VERSION '$v': minor and patch must be < 1000" >&2; return 1; fi
-  kind=release; [ "$major" -eq 0 ] && kind=prerelease
-  echo "$v $((major * 1000000 + minor * 1000 + patch)) $kind"
+  echo "$v $((major * 1000000 + minor * 1000 + patch))"
 }

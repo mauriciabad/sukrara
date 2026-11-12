@@ -46,8 +46,7 @@ Android 16 or newer on an arm64 phone, with NFC and Bluetooth to read the sensor
   [latest release](https://github.com/mauriciabad/sukrara/releases) on the phone and open it; allow installs from your
   browser when asked. Updates install over the old version and keep your data; the app tells you in Settings › About
   when there is a new one.
-- **[Obtainium](https://obtainium.imranr.dev/):** add `https://github.com/mauriciabad/sukrara` and turn on *Include
-  prereleases*; it installs the GitHub releases and their updates for you, and checks they're signed with Sukrara's key.
+- **[Obtainium](https://obtainium.imranr.dev/):** add `https://github.com/mauriciabad/sukrara`; it installs the GitHub releases and their updates for you, and checks they're signed with Sukrara's key.
 - **Google Play:** in preparation.
 
 ## Versions
@@ -66,7 +65,7 @@ your data. Settings › About shows which one you have, next to the version numb
 else, alerts, sharing, widgets and the glucose in the status bar included, is in both. If a store version ever has to
 leave something else out, it is listed here.
 
-> **A preview, not a medical device.** Releases are prereleases until they've been tested on a real sensor. Don't
+> **A preview, not a medical device.** Sukrara is a preview (0.x) until it's been tested on a real sensor. Don't
 > make treatment decisions from it.
 
 [Privacy policy](../privacy) · [Source code](https://github.com/mauriciabad/sukrara) (GPL-3.0-or-later) ·

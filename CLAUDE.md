@@ -64,8 +64,8 @@ sections your change touches.
   live only in Android `src/debug/` (DebugReceiver, DebugFakes, synthetic sources) and in Mac `#if DEBUG` code or the
   `sukrara-snap` / test targets; test them on the emulator. *(check `debug`; `verify-apk.sh` / `verify-app.sh` at
   install and release)*
-- **Releases:** 0.x versions are GitHub prereleases; a bug fix gets a release only after the owner has confirmed the
-  fix on their device. *(not checked)*
+- **Releases:** every release is a normal GitHub release (marked Latest); a bug fix gets a release only after the
+  owner has confirmed the fix on their device. *(not checked)*
 - **Alert rules are guarded by timeline scenarios** (`contracts/alerts/scenarios`: sequences of events → expected
   alerts, run by every app). Every alert-rule change adds or updates a scenario; never change a scenario's
   expectations without the owner's OK. *(parity groups `alerts`, `alert-scenarios`, `alert-spec`;

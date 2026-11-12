@@ -49,7 +49,7 @@ data class UpdateEndpoint(
             cert: String,
         ) = UpdateEndpoint("${base}releases", "${base}releases", "${base}download/", cert.uppercase(), httpsOnly = false)
 
-        /** The GitHub releases (all of them: `/latest` never returns a prerelease). */
+        /** The GitHub releases (all of them: the check picks the newest itself, not GitHub's *Latest* mark). */
         val GitHub =
             UpdateEndpoint(
                 api = "https://api.github.com/repos/mauriciabad/sukrara/releases",

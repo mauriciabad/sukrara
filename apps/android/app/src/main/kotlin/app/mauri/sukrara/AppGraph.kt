@@ -348,7 +348,6 @@ class AppGraph(
             alertState = monitor.hub.state.map { it.alerts },
             readiness = alerts.readiness,
             appVersion = appVersion,
-            prerelease = BuildConfig.PRERELEASE,
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
             systemAccess = monitor.root?.access,

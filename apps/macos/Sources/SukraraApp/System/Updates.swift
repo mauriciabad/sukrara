@@ -35,16 +35,6 @@ public final class Updates {
     /// The feed every GitHub version reads (Info.plist `SUFeedURL`, `Bundle/sparkle.plist`): docs/appcast.xml on the
     /// website, which `tools/release/mac-release.sh` writes.
     public static let feedURL = URL(string: "https://sukrara.mauri.app/appcast.xml")!
-    /// The appcast channel of prereleases (`mac-release.sh` puts every 0.x release in it).
-    public static let prereleaseChannel = "prerelease"
-
-    /// The channels this version takes besides the default one: prereleases while it is 0.x (every 0.x release is a
-    /// GitHub prerelease), none from 1.0.0 on (like the Homebrew cask and Android's update check).
-    public static func channels(installed version: String) -> Set<String> {
-        let major = version.split(separator: ".").first.flatMap { Int($0) }
-        return major == 0 ? [prereleaseChannel] : []
-    }
-
     public private(set) var reminder: Reminder = .none
     /// False while the updater is busy (a check or an install already running): *Check for Updates…* is dimmed.
     public private(set) var canCheck = false

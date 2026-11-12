@@ -15,25 +15,21 @@ class ReleasesTest {
 
     @Test
     fun `parses releases and skips one without a tag`() {
-        assertEquals(listOf("v0.12.2-rc1", "v0.12.1", "v0.11.53"), releases.map { it.tag })
+        assertEquals(listOf("v0.12.2-rc1", "v0.12.1", "v0.11.53", "v0.12.3-rc1"), releases.map { it.tag })
         assertTrue(releases[0].draft)
+        assertTrue(releases[3].prerelease)
     }
 
     @Test
-    fun `a 0_x install is offered the newest prerelease but never a draft`() {
-        assertEquals("v0.12.1", Releases.newer(releases, "0.12.0", prerelease = true)?.tag)
-    }
-
-    @Test
-    fun `a stable install is never offered a prerelease`() {
-        assertNull(Releases.newer(releases, "0.11.53", prerelease = false))
-        assertEquals("v0.11.53", Releases.newer(releases, "0.11.52", prerelease = false)?.tag)
+    fun `the newest release is offered, never a draft or a release candidate`() {
+        assertEquals("v0.12.1", Releases.newer(releases, "0.12.0")?.tag)
+        assertEquals("v0.12.1", Releases.newer(releases, "0.11.52")?.tag)
     }
 
     @Test
     fun `nothing newer is up to date`() {
-        assertNull(Releases.newer(releases, "0.12.1", prerelease = true))
-        assertNull(Releases.newer(releases, "0.13.0", prerelease = true))
+        assertNull(Releases.newer(releases, "0.12.1"))
+        assertNull(Releases.newer(releases, "0.13.0"))
     }
 
     @Test

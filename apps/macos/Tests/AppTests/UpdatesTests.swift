@@ -113,14 +113,6 @@ import Testing
         #expect(UpdateRows.lastCheck(nil) == L10n.t("Not checked yet"))
     }
 
-    @Test func prereleasesOnlyWhileTheVersionIs0x() {
-        #expect(Updates.channels(installed: "0.13.0") == ["prerelease"])
-        #expect(Updates.channels(installed: "0.14.2") == [Updates.prereleaseChannel])
-        #expect(Updates.channels(installed: "1.0.0").isEmpty)
-        #expect(Updates.channels(installed: "2.3.1").isEmpty)
-        #expect(Updates.channels(installed: "").isEmpty)
-    }
-
     // MARK: - The feed
 
     /// Sparkle's keys are only in Bundle/sparkle.plist, which bundle.sh merges into the GitHub version alone: the feed
@@ -153,7 +145,8 @@ import Testing
     }
 
     /// Every item of docs/appcast.xml: a GitHub release's dmg over https with an EdDSA signature and its length, a
-    /// numeric build, the minimum macOS of Info.plist.in, the prerelease channel exactly for 0.x versions.
+    /// numeric build, the minimum macOS of Info.plist.in, no Sparkle channel (every release is a normal one that every
+    /// install takes).
     @Test func theAppcastsItemsAreSignedGitHubReleases() throws {
         let data = try Data(contentsOf: Self.repoRoot.appending(path: "docs/appcast.xml"))
         let parsed = AppcastItems()
@@ -173,9 +166,7 @@ import Testing
             #expect(build == parts[0] * 1_000_000 + parts[1] * 1000 + parts[2], "\(version)")
             builds.append(build)
             #expect(item["sparkle:minimumSystemVersion"] == minimumOS, "\(version)")
-            #expect(
-                item["sparkle:channel"] == (parts[0] == 0 ? Updates.prereleaseChannel : nil),
-                "\(version): prereleases are in the prerelease channel")
+            #expect(item["sparkle:channel"] == nil, "\(version): every release is a normal one, in no channel")
             #expect(
                 item["enclosure.url"]
                     == "https://github.com/mauriciabad/sukrara/releases/download/v\(version)/Sukrara-\(version).dmg")
