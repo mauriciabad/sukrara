@@ -55,7 +55,7 @@ class AlertNotifier(
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
     /** The app's words now, read once per post: a language change renames the next alert at once. */
-    private fun words(): AlertWords = AlertWords.of(ctx)
+    private fun words(): AlertWords = AlertWords.of(ctx, AlertWords.Ids + AlertCopy.Ids, strict = true)
 
     override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
         val kind = firing.kind

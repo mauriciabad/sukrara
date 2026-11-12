@@ -29,6 +29,7 @@ import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import com.android.settingslib.spa.framework.compose.HighlightBox
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -129,7 +130,9 @@ internal fun AlertThresholdReviewContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp, androidx.compose.ui.Alignment.End),
         ) {
             TextButton(onClick = onCancel) { Text(stringResource(R.string.st_cancel)) }
-            Button(onClick = onConfirm) { Text(stringResource(R.string.st_review_confirm)) }
+            // the search's result for it flashes it, as a row
+            val confirm = stringResource(R.string.st_review_confirm)
+            HighlightBox(confirm) { Button(onClick = onConfirm) { Text(confirm) } }
         }
     }
 }

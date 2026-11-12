@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.TrendAngle
+import app.mauri.sukrara.monitor.R
 import java.util.Locale
 
 /**
@@ -20,6 +21,46 @@ import java.util.Locale
  * contracts/alerts/copy.json, the same words the Mac writes (AlertCopyTest).
  */
 object AlertCopy {
+    /**
+     * The words this module asks [AlertWords] for by name, with their ids written here so resource shrinking keeps them
+     * (a release build without them posted no alert: AlertWords.of, #181); `AlertCopyTest` checks every name asked is
+     * here.
+     */
+    val Ids: Map<String, Int> =
+        mapOf(
+            "alert_headline_very_low" to R.string.alert_headline_very_low,
+            "alert_headline_low" to R.string.alert_headline_low,
+            "alert_headline_high" to R.string.alert_headline_high,
+            "alert_headline_very_high" to R.string.alert_headline_very_high,
+            "alert_headline_extremely_high" to R.string.alert_headline_extremely_high,
+            "alert_headline_falling_fast" to R.string.alert_headline_falling_fast,
+            "alert_headline_rising_fast" to R.string.alert_headline_rising_fast,
+            "alert_headline_no_data" to R.string.alert_headline_no_data,
+            "alert_headline_with_context" to R.string.alert_headline_with_context,
+            "alert_context_eat_more" to R.string.alert_context_eat_more,
+            "alert_context_eat_more_again" to R.string.alert_context_eat_more_again,
+            "alert_context_after_insulin" to R.string.alert_context_after_insulin,
+            "alert_context_after_more_insulin" to R.string.alert_context_after_more_insulin,
+            "alert_context_no_response" to R.string.alert_context_no_response,
+            "alert_text_value" to R.string.alert_text_value,
+            "alert_text_glucose" to R.string.alert_text_glucose,
+            "alert_text_lo" to R.string.alert_text_lo,
+            "alert_text_hi" to R.string.alert_text_hi,
+            "alert_text_falling" to R.string.alert_text_falling,
+            "alert_text_rising" to R.string.alert_text_rising,
+            "alert_text_no_reading" to R.string.alert_text_no_reading,
+            "alert_text_no_data" to R.string.alert_text_no_data,
+            "alert_text_no_data_last" to R.string.alert_text_no_data_last,
+            "alert_kind_very_low" to R.string.alert_kind_very_low,
+            "alert_kind_low" to R.string.alert_kind_low,
+            "alert_kind_high" to R.string.alert_kind_high,
+            "alert_kind_very_high" to R.string.alert_kind_very_high,
+            "alert_kind_extremely_high" to R.string.alert_kind_extremely_high,
+            "alert_kind_falling_fast" to R.string.alert_kind_falling_fast,
+            "alert_kind_rising_fast" to R.string.alert_kind_rising_fast,
+            "alert_kind_no_data" to R.string.alert_kind_no_data,
+        )
+
     /**
      * The title (SPEC §1 "Headline"): the kind, and for a level alert the answering treatments logged in the episode
      * (`· eat more`, `· still high after insulin`; highs never suggest more insulin).

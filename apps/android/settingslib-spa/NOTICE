@@ -29,7 +29,7 @@ Changes against the AOSP sources (each is also marked "Sukrara:" in the code whe
   View-based Settings pages (BasePreferencesFragment.onResume → setExpanded(true)); SPA's expressive
   bar starts collapsed.
 - framework/compose/HighlightBox.kt: the highlighted row is brought into view a frame later (once the
-  scrolling page knows its size).
+  scrolling page knows its size); HighlightSurface highlights free content drawn as a category's row.
 - widget/preference/Preference.kt: Preference takes an optional onClickLabel (TalkBack's "double tap
   to …"), passed to the click like a View preference's.
 - widget/preference/RadioPreferences.kt: Radio2 rows are highlighted like BaseLayout's rows.

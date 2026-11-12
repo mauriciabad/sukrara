@@ -8,12 +8,8 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,6 +32,8 @@ import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
 import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.OtherPage
 import app.mauri.sukrara.feature.settings.search.RecentSearch
+import app.mauri.sukrara.feature.settings.search.Section
+import app.mauri.sukrara.feature.settings.search.SectionIcon
 import app.mauri.sukrara.feature.settings.search.SettingsSearchBar
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -81,13 +79,12 @@ fun SettingsOverviewContent(
     sharing: OverviewSharing = OverviewSharing(),
     /** A follower's *Settings from* (null on the wearer's phone: no row). */
     settingsFrom: SettingsFromState? = null,
-    /** The search's recent queries; [searchQuery] = what the field starts with (the gallery's search states). */
+    /** The search's recent queries; [searchQuery]: open with the search open on it (the gallery's search states). */
     recent: RecentSearch = RecentSearch(),
-    searchQuery: String = "",
+    searchQuery: String? = null,
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
-    var searching by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
     val closedText = stringResource(R.string.st_tip_closed)
@@ -95,7 +92,8 @@ fun SettingsOverviewContent(
     val undoText = stringResource(R.string.st_undo)
     SettingsPage(stringResource(R.string.st_settings_title), onBack, snackbar = snackbar) {
         SettingsSearchBar(
-            onOpen = actions.open,
+            // the menu's path: each page above the result first, so Back walks up as from the menus
+            onOpen = { path -> path.forEach(actions.open) },
             onOpenOther = {
                 when (it) {
                     OtherPage.Sensor -> actions.openSensor()
@@ -111,10 +109,7 @@ fun SettingsOverviewContent(
             build = actions.build,
             recent = recent,
             initialQuery = searchQuery,
-            onActiveChange = { searching = it },
         )
-        // while searching, the results replace the rows
-        if (searching) return@SettingsPage
         BannerSlot(
             Banner(
                 "clinic",
@@ -172,7 +167,7 @@ fun SettingsOverviewContent(
                 stringResource(R.string.st_alerts_title),
                 { actions.open(SettingsRoute.Alerts) },
                 summary = stringResource(if (alertsOn) R.string.st_overview_alerts_on else R.string.st_overview_alerts_off),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_notifications, Category.Red) },
+                leading = { SectionIcon(Section.Alerts) },
             )
             NavigationRow(
                 stringResource(R.string.st_reliability_title),
@@ -180,7 +175,7 @@ fun SettingsOverviewContent(
                 summary =
                     readiness.firstProblem?.let { stringResource(R.string.st_overview_reliability_problem, readiness.missing.size) }
                         ?: stringResource(R.string.st_reliability_ready),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_check_circle, Category.Red) },
+                leading = { SectionIcon(Section.Reliability) },
             )
         }
         SettingsGroup {
@@ -189,7 +184,7 @@ fun SettingsOverviewContent(
                     stringResource(R.string.st_from_title),
                     { actions.open(SettingsRoute.SettingsFrom) },
                     summary = settingsFromLabel(settingsFrom),
-                    leading = { CategoryIcon(DsR.drawable.ds_ic_tune, Category.Blue) },
+                    leading = { SectionIcon(Section.SettingsFrom) },
                 )
             }
             NavigationRow(
@@ -201,7 +196,7 @@ fun SettingsOverviewContent(
                     stringResource(
                         R.string.st_overview_ranges,
                     ),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_dia_range, Category.Purple) },
+                leading = { SectionIcon(Section.Ranges) },
             )
             NavigationRow(
                 stringResource(R.string.st_graph_title),
@@ -212,7 +207,7 @@ fun SettingsOverviewContent(
                     stringResource(
                         R.string.st_overview_graph,
                     ),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_monitoring, Category.Purple) },
+                leading = { SectionIcon(Section.Graph) },
             )
         }
         SettingsGroup {
@@ -225,7 +220,7 @@ fun SettingsOverviewContent(
                     stringResource(
                         R.string.st_overview_statusbar,
                     ),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_smartphone, Category.Indigo) },
+                leading = { SectionIcon(Section.StatusBar) },
             )
             NavigationRow(
                 stringResource(R.string.st_lock_title),
@@ -236,7 +231,7 @@ fun SettingsOverviewContent(
                     stringResource(
                         R.string.st_overview_lock,
                     ),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_screen_lock_portrait, Category.Teal) },
+                leading = { SectionIcon(Section.LockScreen) },
             )
         }
         SettingsGroup {
@@ -247,7 +242,7 @@ fun SettingsOverviewContent(
                 actions.openSensor,
                 summary = stringResource(R.string.st_sensor_summary),
                 leading = {
-                    CategoryIcon(DsR.drawable.ds_ic_dia_sensor, Category.Green)
+                    SectionIcon(Section.Sensor)
                 },
             )
             NavigationRow(
@@ -259,7 +254,7 @@ fun SettingsOverviewContent(
                     stringResource(
                         R.string.st_overview_sensorend,
                     ),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_hourglass_top, Category.Orange) },
+                leading = { SectionIcon(Section.SensorEnd) },
             )
             NavigationRow(
                 stringResource(
@@ -268,11 +263,11 @@ fun SettingsOverviewContent(
                 actions.openSharing,
                 summary = stringResource(R.string.st_sharing_summary),
                 leading = {
-                    CategoryIcon(DsR.drawable.ds_ic_group, Category.Blue)
+                    SectionIcon(Section.Sharing)
                 },
             )
             NavigationRow(stringResource(R.string.st_apps), actions.openApps, summary = appsSummary(appsShared), leading = {
-                CategoryIcon(DsR.drawable.ds_ic_apps, Category.Orange)
+                SectionIcon(Section.Apps)
             })
             if (actions.pens) {
                 NavigationRow(
@@ -284,7 +279,7 @@ fun SettingsOverviewContent(
                         stringResource(
                             R.string.st_overview_pens,
                         ),
-                    leading = { CategoryIcon(DsR.drawable.ds_ic_dia_pen, Category.Blue) },
+                    leading = { SectionIcon(Section.Pens) },
                 )
             }
         }
@@ -306,7 +301,7 @@ fun SettingsOverviewContent(
                     leading = {
                         val needsYou = sharing.backup == BackupState.NotSaved || sharing.backup == BackupState.Unreadable
                         CategoryIcon(
-                            DsR.drawable.ds_ic_backup,
+                            Section.Backup.icon,
                             when {
                                 needsYou -> Category.Red
                                 sharing.backup == BackupState.Paused -> Category.Orange
@@ -320,7 +315,7 @@ fun SettingsOverviewContent(
                 stringResource(R.string.st_export_title),
                 actions.openExport,
                 summary = stringResource(R.string.st_export_summary),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_file_export, Category.Yellow) },
+                leading = { SectionIcon(Section.Export) },
             )
         }
         SettingsGroup {
@@ -346,11 +341,11 @@ fun SettingsOverviewContent(
                     stringResource(
                         R.string.st_adv_overview_summary,
                     ),
-                leading = { CategoryIcon(DsR.drawable.ds_ic_code, Category.Grey) },
+                leading = { SectionIcon(Section.Advanced) },
             )
             NavigationRow(stringResource(R.string.st_about_title), {
                 actions.open(SettingsRoute.About)
-            }, leading = { CategoryIcon(DsR.drawable.ds_ic_info, Category.Grey) })
+            }, leading = { SectionIcon(Section.About) })
         }
     }
 }

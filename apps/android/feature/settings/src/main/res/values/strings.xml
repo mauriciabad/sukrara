@@ -792,9 +792,16 @@
     <string name="st_search_hint">Search settings</string>
     <string name="st_search_clear">Clear search</string>
     <string name="st_search_none">No settings match “%1$s”</string>
-    <string name="st_search_in">In %1$s</string>
     <string name="st_search_recent">Recent searches</string>
     <string name="st_search_recent_clear">Clear</string>
+    <!-- Settings search: the back arrow that closes the full-screen search [CHAR LIMIT=30] -->
+    <string name="st_search_back">Close search</string>
+    <!-- Settings search: other words that find the Insulin pens row, never shown (pen models) [CHAR LIMIT=NONE] -->
+    <string name="st_pens_keywords">NovoPen 6, NovoPen Echo Plus, NFC, insulin, dose</string>
+    <!-- Settings search: other words that find the lock screen's Time to save row, never shown [CHAR LIMIT=NONE] -->
+    <string name="st_lock_time_keywords">countdown, timer, discard, pocket, close</string>
+    <!-- Settings search: other words that find the pens' notification row, never shown [CHAR LIMIT=NONE] -->
+    <string name="st_pens_notify_keywords">notification, pen read</string>
     <string name="st_profile_title">Your profile</string>
     <string name="st_active_now">Active now</string>
     <string name="st_from_title">Settings from</string>

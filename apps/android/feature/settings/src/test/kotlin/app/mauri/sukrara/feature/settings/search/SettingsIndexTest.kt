@@ -7,6 +7,8 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsNode
@@ -21,6 +23,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.model.AlertReadiness
+import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
@@ -28,10 +31,13 @@ import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.UpdateState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.designsystem.rows.ROW_TAG
+import app.mauri.sukrara.designsystem.rows.SettingsGroupTitle
+import app.mauri.sukrara.designsystem.rows.SettingsHighlight
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.AboutContent
 import app.mauri.sukrara.feature.settings.AboutUpdates
@@ -45,16 +51,20 @@ import app.mauri.sukrara.feature.settings.AlertsUi
 import app.mauri.sukrara.feature.settings.BackupState
 import app.mauri.sukrara.feature.settings.Distribution
 import app.mauri.sukrara.feature.settings.GraphPrefs
+import app.mauri.sukrara.feature.settings.NightAlertsContent
+import app.mauri.sukrara.feature.settings.NightKindContent
 import app.mauri.sukrara.feature.settings.OverviewActions
 import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.RangesContent
+import app.mauri.sukrara.feature.settings.ReliabilityContent
 import app.mauri.sukrara.feature.settings.SettingsOverviewContent
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
 import app.mauri.sukrara.feature.settings.advanced.AdvancedStats
+import app.mauri.sukrara.feature.settings.advanced.LogContent
 import app.mauri.sukrara.feature.settings.advanced.RelayRow
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromContent
@@ -148,6 +158,13 @@ class SettingsIndexTest {
 
     private val wearerFrom = SettingsFromState(SettingsFrom.Custom, "Ana", now.minusSeconds(86_400))
 
+    /** The night alerts on and applying now (until 7:00). */
+    private val nightUi =
+        AlertsUi(
+            AlertSettings().let { it.copy(night = it.night.copy(on = true)) },
+            AlertUiState(nightUntil = now.plusSeconds(5 * 3600)),
+        )
+
     private val sensor =
         SensorSettingsState(
             SourceChoice.Libre3Direct,
@@ -198,6 +215,21 @@ class SettingsIndexTest {
                         AlertKindContent(kind, AlertsUi(AlertSettings(), AlertUiState()), clock, AlertKindActions(playback = channels)) {}
                     }
                 }.toTypedArray(),
+            // Alerts › Night alerts while they apply (its state on top), and each alert's night rule
+            Scene("night alerts", SearchTarget.Page(SettingsRoute.NightAlerts)) {
+                NightAlertsContent(nightUi, {}, {}) {}
+            },
+            *AlertKind.entries
+                .map { kind ->
+                    Scene("night $kind", SearchTarget.Page(SettingsRoute.NightKindPage(kind))) { NightKindContent(kind, nightUi, {}) {} }
+                }.toTypedArray(),
+            // Alert reliability with everything on (its banner, the test), and with items missing
+            Scene("reliability", SearchTarget.Page(SettingsRoute.Reliability)) {
+                ReliabilityContent(AlertReadiness(emptySet(), unlockedSound = UnlockedSound.Heard), {}, alerts = AlertSettings()) {}
+            },
+            Scene("reliability, missing", SearchTarget.Page(SettingsRoute.Reliability)) {
+                ReliabilityContent(AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), {}) {}
+            },
             Scene("ranges", SearchTarget.Page(SettingsRoute.Ranges)) { RangesContent(GraphPrefs(), { _, _ -> }, {}) },
             // changed: Reset shows
             Scene("ranges, changed", SearchTarget.Page(SettingsRoute.Ranges)) {
@@ -271,6 +303,8 @@ class SettingsIndexTest {
                     AdvancedActions(),
                 ) {}
             },
+            // Advanced › Log: the log's lines, no rows to find (its row on Advanced is)
+            Scene("log", SearchTarget.Page(SettingsRoute.Log)) { LogContent(listOf("12:00 synthetic line"), {}) },
             Scene("settings from", SearchTarget.Page(SettingsRoute.SettingsFrom)) {
                 SettingsFromContent(wearerFrom.copy(wearerName = null), clock, SettingsFromActions(), onBack = {})
             },
@@ -326,7 +360,15 @@ class SettingsIndexTest {
 
             // each threshold is its alert's (found by the alert's name, which opens its page)
             scene == "threshold review" -> {
-                SettingsIndex.entries.any { it.title == it.page && string(it.title) == row }
+                SettingsIndex.entries.any {
+                    (it.target as? SearchTarget.Page)?.route is SettingsRoute.AlertKindPage &&
+                        string(it.title) == row
+                }
+            }
+
+            // "Use the low alert" at night: the night rule's main switch, like an alert's own page
+            scene.startsWith("night ") && scene != "night alerts" -> {
+                pattern(R.string.st_kind_use).matches(row)
             }
 
             else -> {
@@ -345,17 +387,6 @@ class SettingsIndexTest {
         )
 
     private fun string(id: Int) = context.getString(id)
-
-    /** Where an entry's row is: an overview row is on the overview (its target is the page it opens). */
-    private fun SearchEntry.at(): SearchTarget = if (page == R.string.st_settings_title) overview else target
-
-    /** Pages under [at] whose own title is a row of it (each alert is a row of Alerts). */
-    private fun rowsOf(at: SearchTarget): (SearchEntry) -> Boolean =
-        if (at == SearchTarget.Page(SettingsRoute.Alerts)) {
-            { e -> e.at() == at || ((e.target as? SearchTarget.Page)?.route is SettingsRoute.AlertKindPage && e.title == e.page) }
-        } else {
-            { e -> e.at() == at }
-        }
 
     /** Each row's title: the first text inside the row (SPA's rows draw the title before the summary). */
     private fun titles(): List<String> =
@@ -385,11 +416,11 @@ class SettingsIndexTest {
             current = scene.content
             compose.waitForIdle()
             val rows = titles()
-            assertTrue("${scene.name} shows no rows", rows.isNotEmpty() || scene.name == "threshold review")
+            assertTrue("${scene.name} shows no rows", rows.isNotEmpty() || scene.name in setOf("threshold review", "log"))
             shown.getOrPut(scene.at) { mutableSetOf() } += texts()
             val indexed =
                 SettingsIndex.entries
-                    .filter(rowsOf(scene.at))
+                    .filter { it.on == scene.at }
                     .map { string(it.title) }
                     .toSet()
             for (row in rows) {
@@ -400,9 +431,88 @@ class SettingsIndexTest {
 
         val stale =
             SettingsIndex.entries
-                .filter { it.at() in shown && it.title !in notTitles && it.title != it.page }
-                .filter { string(it.title) !in shown.getValue(it.at()) }
-                .map { "${it.at()}: \"${string(it.title)}\"" }
+                .filter { it.on in shown && it.title !in notTitles }
+                .filter { string(it.title) !in shown.getValue(it.on) }
+                .map { "${it.on}: \"${string(it.title)}\"" }
         assertTrue("index entries their page doesn't show:\n" + stale.joinToString("\n"), stale.isEmpty())
+    }
+
+    /** The title of the group around [node] (null: a group without one). */
+    private fun groupOf(node: SemanticsNode): String? =
+        generateSequence(node.parent) { it.parent }.firstNotNullOfOrNull { it.config.getOrNull(SettingsGroupTitle) }
+
+    /** Each row's group on a page: title -> the groups it is in (null: a group without a title). */
+    private fun groups(): Map<String, Set<String?>> =
+        compose
+            .onAllNodesWithTag(ROW_TAG, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .mapNotNull { n -> firstText(n)?.let { it to groupOf(n) } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { it.value.toSet() }
+
+    /**
+     * #181: a result names where its row is ("Alerts › Quiet after treatments"): every entry's group is the group its
+     * row is in on the page (a group's title as a result: that group).
+     */
+    @Test
+    fun everyEntrySaysItsGroup() {
+        var current by mutableStateOf(scenes.first().content)
+        val seen = mutableMapOf<SearchTarget, MutableMap<String, MutableSet<String?>>>()
+        compose.setContent { SukraraTheme(dark = false, dynamic = false) { current() } }
+        for (scene in scenes) {
+            current = scene.content
+            compose.waitForIdle()
+            val page = seen.getOrPut(scene.at) { mutableMapOf() }
+            for ((title, groups) in groups()) page.getOrPut(title) { mutableSetOf() } += groups
+        }
+        val wrong =
+            SettingsIndex.entries
+                .filter { it.on in seen }
+                .mapNotNull { e ->
+                    val title = string(e.title)
+                    val group = e.group?.let(::string)
+                    val groups = seen.getValue(e.on)[title] ?: return@mapNotNull null // a group's title or a button
+                    "${e.on}: \"$title\" is in ${groups.joinToString()}, the index says $group".takeIf { group !in groups }
+                }
+        assertTrue("entries in the wrong group:\n" + wrong.joinToString("\n"), wrong.isEmpty())
+    }
+
+    /**
+     * #181: every result opens its page at its row, flashed (SPA's HighlightBox): for each entry, its page drawn after
+     * the result's request has a row (or group title, or section button) with that title, and flashes it
+     * ([SettingsHighlight.shown]). A result that is a page itself asks for nothing, and its page exists here.
+     */
+    @Test
+    fun everyResultFlashesItsRow() {
+        var current by mutableStateOf(scenes.first().content)
+        var draw by mutableIntStateOf(0)
+        compose.setContent { SukraraTheme(dark = false, dynamic = false) { key(draw) { current() } } }
+        val texts = mutableMapOf<String, Set<String>>()
+        for (scene in scenes) {
+            current = scene.content
+            draw++
+            compose.waitForIdle()
+            texts[scene.name] = texts().toSet()
+        }
+        val missed = mutableListOf<String>()
+        for (e in SettingsIndex.entries.filter { e -> scenes.any { it.at == e.on } }) {
+            val row = e.highlight?.let(::string)
+            if (row == null) {
+                if (e.target is SearchTarget.Page && scenes.none { it.at == e.target }) missed += "${e.target} has no page here"
+                continue
+            }
+            val scene = scenes.firstOrNull { it.at == e.on && row in texts.getValue(it.name) }
+            if (scene == null) {
+                missed += "${e.on}: \"$row\" is on none of its pages"
+                continue
+            }
+            SettingsHighlight.request(row)
+            current = scene.content
+            draw++
+            compose.waitForIdle()
+            if (SettingsHighlight.shown != row) missed += "${scene.name}: \"$row\" isn't flashed"
+        }
+        SettingsHighlight.request(null)
+        assertTrue("results that don't flash their row:\n" + missed.joinToString("\n"), missed.isEmpty())
     }
 }

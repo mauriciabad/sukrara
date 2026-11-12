@@ -8,20 +8,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsHighlight
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -29,21 +35,32 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** Settings search: matching (accents, case, word starts, ranking) and the index against the pages. */
+/** Settings search: matching (accents, case, word starts, stock Settings' ranking), the index and opening a result. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "w411dp-h891dp")
 class SettingsSearchTest {
     @get:Rule val compose = createComposeRule()
 
+    private val context = ApplicationProvider.getApplicationContext<Context>()
     private val alerts = SearchTarget.Page(SettingsRoute.Alerts)
     private val graph = SearchTarget.Page(SettingsRoute.Graph)
+
+    @After fun clear() = SettingsHighlight.request(null)
 
     private fun item(
         title: String,
         summary: String? = null,
-        page: String = "Alerts",
+        where: String = "Alerts",
         target: SearchTarget = alerts,
-    ) = SearchItem(title, summary, page, target)
+        keywords: String? = null,
+        depth: Int = 1,
+    ) = SearchItem(title, summary, where, target, highlight = title, keywords = keywords, depth = depth)
+
+    /** The whole index in this language, as the search lists it. */
+    private fun index(
+        pens: Boolean = true,
+        wearer: Boolean = true,
+    ) = SettingsIndex.entries.filter { it.shownOn(pens, wearer) }.map { it.item(context.resources) }
 
     @Test
     fun foldDropsAccentsAndCase() {
@@ -56,25 +73,70 @@ class SettingsSearchTest {
         val items = listOf(item("Último tratamiento"), item("Vibración"), item("Mute all"))
         assertEquals(listOf("Último tratamiento"), SettingsSearch.match("ultimo", items).map { it.title })
         assertEquals(listOf("Vibración"), SettingsSearch.match("VIBRA", items).map { it.title })
-        // inside a word doesn't count: "ute" is not a word start
+        // inside a title word doesn't count: "ute" is not a word start
         assertTrue(SettingsSearch.match("ute", items).isEmpty())
         // every query word must match
         assertTrue(SettingsSearch.match("mute vibr", items).isEmpty())
         assertTrue(SettingsSearch.match("   ", items).isEmpty())
     }
 
+    /**
+     * Stock Settings' ranks (the PoC's): the title's first word 1, another title word 3, a part of the summary or a
+     * keyword 7, the breadcrumb (page, group) 9; a result ranks as its worst word; ties: the shallower row first.
+     */
     @Test
-    fun titleMatchesComeBeforeSummaryAndPageMatches() {
+    fun ranksLikeStockSettings() {
         val items =
             listOf(
-                item("Time shown", page = "Graph", target = graph),
-                item("Volume", summary = "Each alert's sound"),
-                item("Sound pack"),
+                item("Time shown", where = "Graph › Time shown", target = graph),
+                item("Each alert's sound", summary = "Plays the sound"),
+                item("Volume", summary = "Each alert's sound", depth = 2),
+                item("Pack of sounds"),
+                item("Sound pack", depth = 2),
+                item("Pens", keywords = "NovoPen soundless"),
             )
-        assertEquals(listOf("Sound pack", "Volume"), SettingsSearch.match("sound", items).map { it.title })
-        // "graph" is only the page of "Time shown": still found, after title matches
-        val withTitle = items + item("Graph", page = "Settings", target = graph)
-        assertEquals(listOf("Graph", "Time shown"), SettingsSearch.match("graph", withTitle).map { it.title })
+        assertEquals(
+            listOf("Sound pack", "Each alert's sound", "Pack of sounds", "Pens", "Volume"),
+            SettingsSearch.match("sound", items).map { it.title },
+        )
+        // a part of a summary counts ("ound" in "sound"), never inside a title word
+        assertEquals(listOf("Each alert's sound", "Volume"), SettingsSearch.match("ound", items).map { it.title })
+        // "graph" is only in where "Time shown" is: still found
+        assertEquals(listOf("Time shown"), SettingsSearch.match("graph", items).map { it.title })
+        // same rank: the shallower row first
+        val tied = listOf(item("Low", depth = 2), item("Low", where = "Settings", depth = 0))
+        assertEquals(listOf(0, 2), SettingsSearch.match("low", tied).map { it.depth })
+    }
+
+    /**
+     * #181 (the owner: "search night, click Night alerts"): a page is one result, the row that opens it; it opens the
+     * page through the menus' path (Alerts, then Night alerts), at its top. Its rows say where they are.
+     */
+    @Test
+    fun aPageIsOneResult() {
+        val night = SettingsSearch.match("night", index()).filter { it.title == context.getString(R.string.st_night_title) }
+        assertEquals(1, night.size)
+        val result = night.single()
+        assertEquals(SearchTarget.Page(SettingsRoute.NightAlerts), result.target)
+        assertNull(result.highlight)
+        assertEquals("Alerts", result.where)
+        assertEquals(Section.Alerts, result.section)
+        assertEquals(listOf(SettingsRoute.Alerts, SettingsRoute.NightAlerts), SettingsIndex.path(SettingsRoute.NightAlerts))
+        val starts = SettingsSearch.match("night starts", index()).first()
+        assertEquals("Starts", starts.title)
+        assertEquals("Starts", starts.highlight)
+        assertEquals("Alerts › Night alerts", starts.where)
+    }
+
+    /** The group's name finds its rows and shows in the breadcrumb; keywords find rows they never show on. */
+    @Test
+    fun groupsAndKeywordsFindRows() {
+        val quiet = SettingsSearch.match("quiet treatments", index())
+        assertTrue(quiet.map { it.title }.containsAll(listOf("Quiet highs after insulin", "Quiet lows after carbs")))
+        assertEquals("Alerts › Quiet after treatments", quiet.first { it.title == "Quiet lows after carbs" }.where)
+        assertEquals(context.getString(R.string.st_pens_title), SettingsSearch.match("novopen", index()).first().title)
+        assertTrue(SettingsSearch.match("novopen", index(pens = false)).isEmpty())
+        assertEquals(context.getString(R.string.st_lock_time), SettingsSearch.match("timer", index()).first().title)
     }
 
     /** Every settings page with rows of its own is searchable. */
@@ -83,6 +145,7 @@ class SettingsSearchTest {
         val pages =
             listOf(
                 SettingsRoute.Alerts,
+                SettingsRoute.NightAlerts,
                 SettingsRoute.Ranges,
                 SettingsRoute.Graph,
                 SettingsRoute.GraphMarks,
@@ -95,7 +158,7 @@ class SettingsSearchTest {
                 SettingsRoute.ThresholdReview,
                 SettingsRoute.Advanced,
                 SettingsRoute.SettingsFrom,
-            ) + AlertKind.entries.map(SettingsRoute::AlertKindPage)
+            ) + AlertKind.entries.map(SettingsRoute::AlertKindPage) + AlertKind.entries.map(SettingsRoute::NightKindPage)
         val targets = SettingsIndex.entries.map { it.target }.toSet()
         for (p in pages) assertTrue("$p has no search entries", SearchTarget.Page(p) in targets)
         for (o in OtherPage.entries) assertTrue("$o has no search entry", SearchTarget.Other(o) in targets)
@@ -142,21 +205,19 @@ class SettingsSearchTest {
         }
     }
 
-    /** #134: a hit on an alert's own row opens that alert's page ("Remind every · In Alerts › Low"), not the list. */
+    /** #134: a hit on an alert's own row opens that alert's page ("Remind every · Alerts › Low › Alert when"). */
     @Test
     fun alertRowsOpenTheirAlert() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val items =
-            SettingsIndex.entries.map { e ->
-                val page = listOfNotNull(e.parent, e.page).joinToString(" › ") { context.getString(it) }
-                SearchItem(context.getString(e.title), e.summary?.let(context::getString), page, e.target)
-            }
-        val hits = SettingsSearch.match("low remind", items)
-        val low = hits.single { it.target == SearchTarget.Page(SettingsRoute.AlertKindPage(AlertKind.LOW)) }
+        val hits = SettingsSearch.match("low remind", index())
+        val low = hits.first { it.target == SearchTarget.Page(SettingsRoute.AlertKindPage(AlertKind.LOW)) }
         assertEquals("Remind every", low.title)
-        assertEquals("Alerts › Low", low.page)
+        assertEquals("Alerts › Low › Alert when", low.where)
+        assertEquals(
+            listOf(SettingsRoute.Alerts, SettingsRoute.AlertKindPage(AlertKind.LOW)),
+            SettingsIndex.path(SettingsRoute.AlertKindPage(AlertKind.LOW)),
+        )
         // the list's own rows still lead to the list
-        assertEquals(alerts, SettingsSearch.match("sound pack", items).first().target)
+        assertEquals(alerts, SettingsSearch.match("sound pack", index()).first().target)
     }
 
     @Test
@@ -176,12 +237,12 @@ class SettingsSearchTest {
         assertEquals(recent, RecentSearches.add(recent, "   "))
     }
 
-    /** The field: focused and empty it offers the recent searches; a chip searches again, Clear empties them. */
+    /** The pill opens the full-screen search: empty, the recent searches; one searches again, Clear empties them. */
     @Test
-    fun recentSearchesShowOnTheEmptyField() {
+    fun recentSearchesShowWhenTheSearchOpens() {
         val remembered = mutableListOf<String>()
         var cleared = 0
-        val opened = mutableListOf<SettingsRoute>()
+        val opened = mutableListOf<List<SettingsRoute>>()
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 SettingsSearchBar(
@@ -192,47 +253,47 @@ class SettingsSearchTest {
             }
         }
         compose.onNodeWithText("Recent searches").assertDoesNotExist()
-        compose.onNodeWithText("Search settings").performClick()
+        compose.onAllNodesWithText("Search settings").onLast().performClick()
         compose.onNodeWithText("Recent searches").assertIsDisplayed()
-        compose.onNodeWithText("sound pack").performClick()
-        // the chip's query is typed: its results show, the chips go
-        compose.onNodeWithText("Recent searches").assertDoesNotExist()
-        compose.onNodeWithText("Sound pack").performClick()
-        assertEquals(listOf(SettingsRoute.Alerts), opened)
-        assertEquals(listOf("sound pack"), remembered)
-        // Clear empties them
-        compose.onNodeWithContentDescription("Clear search").performClick()
-        compose.onNodeWithText("Search settings").performClick()
         compose.onNodeWithText("Clear").performClick()
         assertEquals(1, cleared)
+        compose.onNodeWithText("sound pack").performClick()
+        // the recent query is typed: its results show, the recent list goes
+        compose.onNodeWithText("Recent searches").assertDoesNotExist()
+        compose.onNodeWithText("Sound pack").performClick()
+        assertEquals(listOf(listOf(SettingsRoute.Alerts)), opened)
+        assertEquals(listOf("sound pack"), remembered)
     }
 
     /**
-     * #181: a result opens its page at its row (SPA's highlight: scrolled into view, flashed), as stock Settings' search
-     * does; a result that is a page itself opens that page at its top.
+     * #181: a result opens its page through the menus' path at its row (SPA's highlight: scrolled into view, flashed),
+     * as stock Settings' search does; a result that is a page opens that page at its top.
      */
     @Test
     fun aResultOpensItsPageAtItsRow() {
-        var opened by mutableStateOf<SettingsRoute?>(null)
+        var opened by mutableStateOf<List<SettingsRoute>?>(null)
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 if (opened == null) {
-                    SettingsSearchBar(onOpen = { opened = it }, onOpenOther = {}, initialQuery = "sound pack")
+                    SettingsSearchBar(onOpen = { opened = it }, onOpenOther = {}, initialQuery = "")
                 } else {
-                    SettingsScaffoldPage("Alerts", onBack = {}) {
+                    SettingsScaffoldPage("Night alerts", onBack = {}) {
                         SettingsGroup {
                             for (i in 1..30) NavigationRow("Row $i", onClick = {})
-                            NavigationRow("Sound pack", onClick = {})
+                            NavigationRow("Starts", onClick = {})
                         }
                     }
                 }
             }
         }
-        compose.onNodeWithText("Sound pack").performClick()
-        assertEquals(SettingsRoute.Alerts, opened)
-        compose.onNodeWithText("Sound pack").assertIsDisplayed()
-        assertTrue(SettingsIndex.entries.filter { it.page == R.string.st_settings_title }.none { it.row })
-        assertTrue(SettingsIndex.entries.filter { it.page != R.string.st_settings_title }.all { it.row })
+        compose.onAllNodes(hasSetTextAction()).onLast().performTextInput("night starts")
+        compose.onNodeWithText("Starts").performClick()
+        assertEquals(listOf(SettingsRoute.Alerts, SettingsRoute.NightAlerts), opened)
+        compose.onNodeWithText("Starts").assertIsDisplayed()
+        assertEquals("Starts", SettingsHighlight.shown)
+        // the overview's rows and the rows that open a page are pages: no row to flash
+        assertTrue(SettingsIndex.entries.filter { it.on == SearchTarget.Page(SettingsRoute.Overview) }.all { it.highlight == null })
+        assertTrue(SettingsIndex.entries.filter { it.target != it.on }.all { it.highlight == null })
     }
 
     /** The index's texts read as the pages show them: no format arguments left in (en and es). */
@@ -243,19 +304,13 @@ class SettingsSearchTest {
     @Config(qualifiers = "es")
     fun entriesHaveNoFormatArgumentsInSpanish() {
         checkTexts()
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val items =
-            SettingsIndex.entries.map {
-                SearchItem(context.getString(it.title), it.summary?.let(context::getString), context.getString(it.page), it.target)
-            }
         // an accented title found without accents
-        assertFalse(SettingsSearch.match("vibracion", items).isEmpty())
+        assertFalse(SettingsSearch.match("vibracion", index()).isEmpty())
     }
 
     private fun checkTexts() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
         for (e in SettingsIndex.entries) {
-            for (id in listOfNotNull(e.title, e.summary, e.page)) {
+            for (id in listOfNotNull(e.title, e.summary, e.group, e.keywords, e.highlight) + e.trail) {
                 val text = context.getString(id)
                 assertTrue("${context.resources.getResourceEntryName(id)} is empty", text.isNotBlank())
                 assertFalse("${context.resources.getResourceEntryName(id)} has a format argument: $text", "%1$" in text || "%d" in text)

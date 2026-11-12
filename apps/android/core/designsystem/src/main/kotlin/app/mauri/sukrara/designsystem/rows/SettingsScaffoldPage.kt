@@ -57,12 +57,10 @@ fun SettingsScaffoldPage(
     SettingsChrome {
         val back by rememberUpdatedState(onBack)
         // SPA's back button asks its navigation for "back": ours is the caller's. Its rows' HighlightBox asks it once
-        // per row whether that row is the one a search result opened: the request this page took when it opened.
+        // per row whether that row is the one a search result opened ([SettingsHighlight]).
         val nav =
             remember {
                 object : NavControllerWrapper {
-                    private var highlight = SettingsHighlight.take()
-
                     override fun navigate(
                         route: String,
                         popUpCurrent: Boolean,
@@ -70,8 +68,7 @@ fun SettingsScaffoldPage(
 
                     override fun navigateBack() = back()
 
-                    override fun isHighLightItem(highlightItemKey: String): Boolean =
-                        (highlight == highlightItemKey).also { if (it) highlight = null }
+                    override fun isHighLightItem(highlightItemKey: String): Boolean = SettingsHighlight.take(highlightItemKey)
                 }
             }
         CompositionLocalProvider(LocalNavController provides nav) {
@@ -98,18 +95,39 @@ fun SettingsScaffoldPage(
 
 /**
  * The row a settings search result opens, the way stock Settings' search does (SPA's highlight): the result asks for
- * its row by title ([request]) just before its page opens, and the next settings page that opens takes the request;
- * on it SPA's HighlightBox scrolls that row into view and flashes it. A result that is a page itself asks for none.
- * Main thread only.
+ * its row by title ([request]) just before its page opens (with the pages above it, the menu's path); the first row with
+ * that title on a page composed within [WINDOW_NS] takes the request, and SPA's HighlightBox scrolls it into view and
+ * flashes it. A page on the way that hasn't the row leaves the request to the next one; a request nobody took is
+ * forgotten after the window. A result that is a page itself asks for none. Main thread only.
  */
 object SettingsHighlight {
     private var pending: String? = null
+    private var at = 0L
+
+    /** The row the last request found and flashed (null until one did): what tests check every result reaches. */
+    var shown: String? = null
+        private set
 
     /** The row titled [rowTitle] on the page about to open (null: none). */
     fun request(rowTitle: String?) {
         pending = rowTitle
+        at = System.nanoTime()
+        shown = null
     }
 
-    /** The request, once: a page takes it when it opens. */
-    internal fun take(): String? = pending.also { pending = null }
+    /** Whether [row] (a row's title, asked once as it's composed) is the one asked for: true once. */
+    internal fun take(row: String): Boolean {
+        val asked = pending ?: return false
+        if (System.nanoTime() - at > WINDOW_NS) {
+            pending = null
+            return false
+        }
+        if (asked != row) return false
+        pending = null
+        shown = row
+        return true
+    }
+
+    /** How long a request waits for its page (the page opens in the next frames; 10 s covers a slow first load). */
+    private const val WINDOW_NS = 10_000_000_000L
 }

@@ -807,6 +807,21 @@ Discarded: HighlightBox (the app's search opens the page; it never named a row t
 (the app has its own index, `SettingsIndex`, checked against the pages by `SettingsIndexTest`), SPA's page framework
 (as in the PoC), ActionRow's custom TalkBack click label (SPA's rows read as stock Settings' rows do).
 
+**Search again like the PoC (#181, 2026-11-12).** The owner: the search "lost a lot of functionality" and opening *Night
+alerts* from it crashed the app. Added back: the contained search pill and the full-screen
+`ExpandedFullScreenContainedSearchBar` with its back arrow; results as SPA rows with the section's category icon, the
+summary and where the row is (page › group) in the accent colour; the PoC's ranks 1 / 3 / 7 / 9 (summary parts, keywords
+and the group's name find rows) with shallower rows first; one result per page; a result opens its page through the
+menus' path and flashes its row (HighlightBox on rows, group titles, section buttons, footers and free rows); every search
+starts empty; recent searches as a list with the history icon. The index now has each row's group and keywords, Alert
+reliability's checklist and the night alerts' pages; `SettingsIndexTest` checks every row's group and that every result
+flashes its row. The crash was resource shrinking (the mute and night lines' strings were found by name and removed from
+release builds); those strings are found by ids written in code now. Still discarded: the PoC's index mode (composing
+the pages invisibly to build the index): the declarative `SettingsIndex` with its test against the rendered pages keeps
+the same guarantee without composing every page on each search; rows of other features' inner pages (Share with apps'
+services, Sharing, Backup) are found by their overview rows only, as their pages live in modules the settings feature
+can't depend on.
+
 ### In Sukrara: screen motion (#169, 2026-11-11)
 
 The owner after 0.12.0: "The animations between screens on the app are wrong. in the poc we had good animations

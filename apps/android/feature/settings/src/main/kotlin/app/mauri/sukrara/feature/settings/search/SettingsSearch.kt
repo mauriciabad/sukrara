@@ -3,69 +3,93 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings.search
 
-import androidx.compose.animation.AnimatedVisibility
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AssistChip
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExpandedFullScreenContainedSearchBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarState
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
-import app.mauri.sukrara.designsystem.motion.PageBackHandler
-import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
-import app.mauri.sukrara.designsystem.rows.SettingsHeader
 import app.mauri.sukrara.designsystem.rows.SettingsHighlight
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import com.android.settingslib.spa.widget.preference.Preference
+import com.android.settingslib.spa.widget.preference.PreferenceModel
+import kotlinx.coroutines.launch
 import java.text.Normalizer
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** A [SearchEntry] with its words in the current language; [row]: [title] names a row on the page it opens. */
+/**
+ * A [SearchEntry] with its words in the current language: [where] is its breadcrumb (the pages down to the row, then
+ * its group: "Alerts › Quiet after treatments"; "Settings" for the overview's rows), [highlight] the row the opened page
+ * flashes (null: the result is a page, opened at its top), [depth] how deep the row is (shallower first), [path] the
+ * pages a page result opens through, [section] whose icon the result shows.
+ */
 data class SearchItem(
     val title: String,
     val summary: String?,
-    val page: String,
+    val where: String,
     val target: SearchTarget,
-    val row: Boolean = false,
+    val highlight: String? = null,
+    val keywords: String? = null,
+    val depth: Int = 1,
+    val section: Section = Section.of(target),
 )
 
+/** This entry in [res]'s language. */
+fun SearchEntry.item(res: Resources): SearchItem =
+    SearchItem(
+        res.getString(title),
+        summary?.let(res::getString),
+        (trail + listOfNotNull(group)).distinct().joinToString(" › ") { res.getString(it) },
+        target,
+        highlight?.let(res::getString),
+        keywords?.let(res::getString),
+        depth,
+    )
+
 /**
- * Settings search, pure: case and accents don't matter ("alarma" finds "Alarma", "ultimo" finds "Último"), every
- * word of the query must start a word of the row (title, summary or page). Rows whose title matches come first, then
- * those matched by their summary, then by their page; in index order within each.
+ * Settings search, pure, ranked as stock Settings' search ranks (SettingsIntelligence `DatabaseResultTask`, base ranks
+ * 1 / 3 / 7 / 9): a query word that starts the title's first word ranks 1, another word of the title 3, a part of the
+ * summary or the start of a keyword 7, a word of the breadcrumb (page or group) 9. Every query word must match, and a
+ * result ranks as its worst word; ties: shallower rows first, then by title. Case and accents don't matter ("alarma"
+ * finds "Alarma", "ultimo" finds "Último"). A page is one result (the row that opens it).
  */
 object SettingsSearch {
     /** Lower case without accents: "Último Azúcar" → "ultimo azucar". */
@@ -76,7 +100,7 @@ object SettingsSearch {
             .lowercase()
 
     private val Marks = Regex("\\p{Mn}+")
-    private val Separators = Regex("[^\\p{L}\\p{N}]+")
+    private val Separators = Regex("[^\\p{L}\\p{N}+]+")
 
     private fun words(text: String?): List<String> = text?.let { fold(it).split(Separators).filter(String::isNotEmpty) }.orEmpty()
 
@@ -86,22 +110,27 @@ object SettingsSearch {
     ): List<SearchItem> {
         val q = words(query)
         if (q.isEmpty()) return emptyList()
-
-        fun covers(ws: List<String>) = q.all { part -> ws.any { it.startsWith(part) } }
         return items
             .mapNotNull { item ->
                 val title = words(item.title)
-                val summary = title + words(item.summary)
-                val all = summary + words(item.page)
-                when {
-                    covers(title) -> 0 to item
-                    covers(summary) -> 1 to item
-                    covers(all) -> 2 to item
-                    else -> null
-                }
-            }.sortedBy { it.first } // stable: index order within a rank
-            .map { it.second }
-            .distinctBy { Triple(it.title, it.page, it.target) }
+                val summary = fold(item.summary.orEmpty())
+                val keywords = words(item.keywords)
+                val where = words(item.where)
+                val rank =
+                    q.maxOf { w ->
+                        when {
+                            title.firstOrNull()?.startsWith(w) == true -> 1
+                            title.any { it.startsWith(w) } -> 3
+                            w in summary || keywords.any { it.startsWith(w) } -> 7
+                            where.any { it.startsWith(w) } -> 9
+                            else -> return@mapNotNull null
+                        }
+                    }
+                item to rank
+            }.sortedWith(compareBy<Pair<SearchItem, Int>> { it.second }.thenBy { it.first.depth }.thenBy { it.first.title })
+            .map { it.first }
+            // a page is one result: the row that opens it (the overview's, or the page above's), never twice
+            .distinctBy { if (it.highlight == null) it.target else Triple(it.title, it.where, it.target) }
     }
 }
 
@@ -142,144 +171,181 @@ class RecentSearch(
     val clear: () -> Unit = {},
 )
 
+/** The test tag of the search's results list. */
+const val SEARCH_RESULTS_TAG = "settings-search-results"
+
 /**
- * The search field at the top of the settings overview, with its results below it: "Page › row" rows that open the
- * page ([onOpen]) or another feature's page ([onOpenOther]); only rows this phone and build show ([pens], [wearer],
- * [build]); the page a result opens scrolls to its row and flashes it ([SettingsHighlight]). [onActiveChange] tells the
- * overview to hide its rows while a query is typed. While the field is focused and
- * empty, the [recent] searches show as chips (tap = search it again) with *Clear*. Exits: the clear button, Back
- * (clears the query first), opening a result.
+ * Settings search, as stock Settings and the PoC have it: the search pill under the overview's title (Material 3
+ * Expressive's contained SearchBar) opens the full-screen search (ExpandedFullScreenContainedSearchBar) with its back
+ * arrow. Empty, it lists the [recent] searches (tap = search it again; *Clear* forgets them). Typing lists every row
+ * this phone and build show ([pens], [wearer], [build]) that matches, as SPA rows: the icon of its section, the title,
+ * the summary and where it is ("Alerts › Quiet after treatments", in the accent colour). A result closes the search and
+ * opens its page through the pages above it, as the menus do ([onOpen] gets that path, Back walks up it; another
+ * feature's page: [onOpenOther]), scrolled to its row, which flashes ([SettingsHighlight]); a result that is a page
+ * opens it at its top. Every search starts empty. Exits: the back arrow, Back, the ×, opening a result. [initialQuery]:
+ * open already searching it (the gallery's pictures).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSearchBar(
-    onOpen: (SettingsRoute) -> Unit,
+    onOpen: (List<SettingsRoute>) -> Unit,
     onOpenOther: (OtherPage) -> Unit,
     modifier: Modifier = Modifier,
     pens: Boolean = false,
     wearer: Boolean = true,
     build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     recent: RecentSearch = RecentSearch(),
-    initialQuery: String = "",
-    onActiveChange: (Boolean) -> Unit = {},
+    initialQuery: String? = null,
 ) {
     val res = LocalResources.current
-    val focus = LocalFocusManager.current
     val haptics = rememberHaptics()
-    var query by rememberSaveable { mutableStateOf(initialQuery) }
-    var focused by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val state = rememberContainedSearchBarState(if (initialQuery != null) SearchBarValue.Expanded else SearchBarValue.Collapsed)
+    val text = rememberTextFieldState(initialQuery.orEmpty())
     val items =
         remember(res, pens, wearer, build) {
-            SettingsIndex.entries.filter { it.shownOn(pens, wearer, build) }.map { e ->
-                val page = listOfNotNull(e.parent, e.page).joinToString(" › ") { res.getString(it) }
-                SearchItem(res.getString(e.title), e.summary?.let(res::getString), page, e.target, e.row)
-            }
+            SettingsIndex.entries.filter { it.shownOn(pens, wearer, build) }.map { it.item(res) }
         }
-    val results = remember(query, items) { SettingsSearch.match(query, items) }
-    val active = query.isNotBlank()
-    val activeChanged by rememberUpdatedState(onActiveChange)
-    LaunchedEffect(active) { activeChanged(active) }
-    PageBackHandler(enabled = active || focused) {
-        query = ""
-        focus.clearFocus()
+    val expanded = state.currentValue == SearchBarValue.Expanded || state.targetValue == SearchBarValue.Expanded
+
+    fun open(item: SearchItem) {
+        haptics.confirm()
+        recent.remember(text.text.toString())
+        scope.launch { state.animateToCollapsed() }
+        // the page it opens scrolls to the row and flashes it (a page itself: nothing to point at)
+        SettingsHighlight.request(item.highlight)
+        when (val t = item.target) {
+            is SearchTarget.Page -> onOpen(SettingsIndex.path(t.route))
+            is SearchTarget.Other -> onOpenOther(t.page)
+        }
     }
-    val clear = stringResource(R.string.st_search_clear)
-    Column(modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .onFocusChanged { focused = it.isFocused },
-            placeholder = { Text(stringResource(R.string.st_search_hint)) },
-            leadingIcon = { Icon(painterResource(DsR.drawable.ds_ic_search), contentDescription = null) },
-            trailingIcon = {
-                if (active) {
-                    IconButton(onClick = {
-                        haptics.confirm()
-                        query = ""
-                    }) { Icon(painterResource(DsR.drawable.ds_ic_close), contentDescription = clear) }
+
+    val input: @Composable () -> Unit = { SearchInput(text, state, expanded, onSearch = { q -> if (q.isNotBlank()) recent.remember(q) }) }
+    SearchBar(state, input, modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
+    // like stock Settings' search, every search starts empty
+    LaunchedEffect(expanded) { if (!expanded) text.clearText() }
+    ExpandedFullScreenContainedSearchBar(state, input) {
+        val query = text.text.toString()
+        val results = remember(query, items) { SettingsSearch.match(query, items) }
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            when {
+                query.isBlank() -> {
+                    if (recent.queries.isNotEmpty()) RecentList(recent) { text.setTextAndPlaceCursorAtEnd(it) }
                 }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(28.dp),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceBright,
-                ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions =
-                KeyboardActions(onSearch = {
-                    if (results.isNotEmpty()) recent.remember(query)
-                    focus.clearFocus()
-                }),
-        )
-        AnimatedVisibility(focused && !active && recent.queries.isNotEmpty()) {
-            RecentChips(recent) { q ->
-                haptics.confirm()
-                query = q
-            }
-        }
-        AnimatedVisibility(active) {
-            SettingsGroup(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-                if (results.isEmpty()) {
-                    InfoRow(stringResource(R.string.st_search_none, query.trim()))
-                }
-                for (r in results) {
-                    NavigationRow(
-                        r.title,
-                        {
-                            haptics.confirm()
-                            recent.remember(query)
-                            focus.clearFocus()
-                            // the page it opens scrolls to the row and flashes it (a page itself: nothing to point at)
-                            SettingsHighlight.request(r.title.takeIf { r.row })
-                            when (val t = r.target) {
-                                is SearchTarget.Page -> onOpen(t.route)
-                                is SearchTarget.Other -> onOpenOther(t.page)
-                            }
-                        },
-                        // the breadcrumb first ("Alerts › Mute all" reads as page, then row), then what the row does
-                        summary = listOfNotNull(stringResource(R.string.st_search_in, r.page), r.summary).joinToString(" · "),
+
+                results.isEmpty() -> {
+                    Text(
+                        stringResource(R.string.st_search_none, query.trim()),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite },
                     )
+                }
+
+                else -> {
+                    SettingsGroup(Modifier.testTag(SEARCH_RESULTS_TAG)) {
+                        for (r in results.take(MAX_RESULTS)) ResultRow(r) { open(r) }
+                    }
                 }
             }
         }
     }
 }
 
-/** *Recent searches* with *Clear*, then one chip per query (tap = search it again). */
+/** At most this many results are listed (stock Settings' search shows a page of them; more words narrow it). */
+private const val MAX_RESULTS = 60
+
+/** The search field: the search icon (the back arrow while expanded), the hint, the × while there is a query. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecentChips(
+private fun SearchInput(
+    text: TextFieldState,
+    state: SearchBarState,
+    expanded: Boolean,
+    onSearch: (String) -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val haptics = rememberHaptics()
+    SearchBarDefaults.InputField(
+        textFieldState = text,
+        searchBarState = state,
+        onSearch = onSearch,
+        placeholder = { Text(stringResource(R.string.st_search_hint)) },
+        leadingIcon = {
+            if (expanded) {
+                IconButton(onClick = { scope.launch { state.animateToCollapsed() } }) {
+                    Icon(painterResource(DsR.drawable.ds_ic_arrow_back), stringResource(R.string.st_search_back))
+                }
+            } else {
+                Icon(painterResource(DsR.drawable.ds_ic_search), contentDescription = null)
+            }
+        },
+        trailingIcon =
+            if (expanded && text.text.isNotEmpty()) {
+                {
+                    IconButton(onClick = {
+                        haptics.confirm()
+                        text.clearText()
+                    }) { Icon(painterResource(DsR.drawable.ds_ic_close), stringResource(R.string.st_search_clear)) }
+                }
+            } else {
+                null
+            },
+    )
+}
+
+/**
+ * One result, an SPA row (Settings' search result): the section's icon, the title, then the summary and where the row
+ * is in the accent colour; a tap opens it.
+ */
+@Composable
+private fun ResultRow(
+    item: SearchItem,
+    onClick: () -> Unit,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val summary =
+        buildAnnotatedString {
+            item.summary?.takeIf { it.isNotBlank() }?.let {
+                append(it)
+                append("\n")
+            }
+            withStyle(SpanStyle(color = accent)) { append(item.where) }
+        }
+    Preference(
+        object : PreferenceModel {
+            override val title = item.title
+            override val summary = { summary }
+            override val icon: @Composable () -> Unit = { SectionIcon(item.section) }
+            override val onClick = onClick
+        },
+    )
+}
+
+/** *Recent searches* with *Clear*, then one row per query with the history icon (tap = search it again). */
+@Composable
+private fun RecentList(
     recent: RecentSearch,
     onPick: (String) -> Unit,
 ) {
     val haptics = rememberHaptics()
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsHeader(stringResource(R.string.st_search_recent), Modifier.weight(1f))
+    SettingsGroup(
+        title = stringResource(R.string.st_search_recent),
+        titleAction = {
             TextButton(onClick = {
                 haptics.confirm()
                 recent.clear()
             }) { Text(stringResource(R.string.st_search_recent_clear)) }
-        }
-        FlowRow(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            for (q in recent.queries) {
-                AssistChip(
-                    onClick = { onPick(q) },
-                    label = { Text(q) },
-                    leadingIcon = { Icon(painterResource(DsR.drawable.ds_ic_history), contentDescription = null) },
-                )
-            }
+        },
+    ) {
+        for (q in recent.queries) {
+            NavigationRow(q, {
+                haptics.confirm()
+                onPick(q)
+            }, icon = DsR.drawable.ds_ic_history)
         }
     }
 }

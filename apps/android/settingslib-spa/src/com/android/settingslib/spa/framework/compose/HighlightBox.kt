@@ -66,6 +66,23 @@ fun HighlightBox(highlightItemKey: String, content: @Composable () -> Unit) {
 
 internal val LocalHighlightItemKey = compositionLocalOf<String?> { null }
 
+/**
+ * Sukrara: free content drawn as a row of a category (its [color] and [shape]), highlighted as BaseLayout's rows are
+ * when it is the item [highlightItemKey] a search result opened.
+ */
+@Composable
+fun HighlightSurface(
+    highlightItemKey: String,
+    color: Color,
+    shape: Shape,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalHighlightItemKey provides highlightItemKey) {
+        Box(modifier = modifier.highlightBackground(originalColor = color, shape = shape)) { content() }
+    }
+}
+
 internal fun Modifier.highlightBackground(
     originalColor: Color = Color.Transparent,
     shape: Shape = RectangleShape,

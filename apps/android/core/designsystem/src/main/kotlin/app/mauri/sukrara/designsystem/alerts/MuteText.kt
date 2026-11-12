@@ -5,6 +5,8 @@ package app.mauri.sukrara.designsystem.alerts
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Resources
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -20,6 +22,7 @@ import app.mauri.sukrara.alerts.QuietSide
 import app.mauri.sukrara.alerts.Rules
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.alerts.TreatmentKind
+import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.core.model.AlertQuietReason
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertUiState
@@ -39,11 +42,23 @@ interface AlertWords {
     val durations: DurationWords
 
     companion object {
-        /** [ctx]'s strings, read on each call: the app's language may change while the caller lives. */
-        fun of(ctx: Context): AlertWords =
+        /**
+         * [ctx]'s strings, read on each call: the app's language may change while the caller lives. A name is looked up
+         * in [ids] (the strings' ids written in code, [Ids] and a module's own), so resource shrinking keeps every one:
+         * a string found only by its name was removed from 0.13–0.14.1's release builds, and the lookup's exception
+         * crashed the screen asking for it, with monitoring in the same process (#181). A name in no table is looked up
+         * by name; one that isn't there either reads as the name itself on a screen (never a crash), and throws
+         * [Resources.NotFoundException] when [strict] (an alert: its caller then posts the plain alert instead).
+         */
+        fun of(
+            ctx: Context,
+            ids: Map<String, Int> = Ids,
+            strict: Boolean = false,
+        ): AlertWords =
             object : AlertWords {
-                @SuppressLint("DiscouragedApi") // the lines are picked by name, the same way the JVM test reads the XML
-                override fun get(name: String) = ctx.getString(ctx.resources.getIdentifier(name, "string", ctx.packageName))
+                override fun get(name: String): String =
+                    (ids[name] ?: byName(ctx, name))?.let(ctx::getString)
+                        ?: if (strict) throw Resources.NotFoundException("no string $name") else missing(name)
 
                 override val durations: DurationWords
                     get() =
@@ -57,6 +72,46 @@ interface AlertWords {
                             textHoursMinutes = get("duration_text_hours_minutes"),
                         )
             }
+
+        @SuppressLint("DiscouragedApi") // only for a name in no table (the duration words, kept by `:core:graph`'s code)
+        private fun byName(
+            ctx: Context,
+            name: String,
+        ): Int? = ctx.resources.getIdentifier(name, "string", ctx.packageName).takeIf { it != 0 }
+
+        private fun missing(name: String): String {
+            Log.e("AlertWords", "no string $name")
+            return name
+        }
+
+        /** This module's words by name: every `mute_*`, `side_*` and `night_until` string (`AlertWordsTest`). */
+        val Ids: Map<String, Int> =
+            mapOf(
+                "side_low" to R.string.side_low,
+                "side_high" to R.string.side_high,
+                "side_falling_fast" to R.string.side_falling_fast,
+                "side_rising_fast" to R.string.side_rising_fast,
+                "side_no_data" to R.string.side_no_data,
+                "mute_side" to R.string.mute_side,
+                "mute_side_left_one" to R.string.mute_side_left_one,
+                "mute_side_left_other" to R.string.mute_side_left_other,
+                "mute_after_carbs_one" to R.string.mute_after_carbs_one,
+                "mute_after_carbs_other" to R.string.mute_after_carbs_other,
+                "mute_after_insulin_one" to R.string.mute_after_insulin_one,
+                "mute_after_insulin_other" to R.string.mute_after_insulin_other,
+                "mute_falling" to R.string.mute_falling,
+                "mute_less" to R.string.mute_less,
+                "mute_all_left_one" to R.string.mute_all_left_one,
+                "mute_all_left_other" to R.string.mute_all_left_other,
+                "mute_all_forever" to R.string.mute_all_forever,
+                "mute_all_scope" to R.string.mute_all_scope,
+                "mute_notif_until" to R.string.mute_notif_until,
+                "night_until" to R.string.night_until,
+                "mute_pill" to R.string.mute_pill,
+                "mute_pill_forever" to R.string.mute_pill_forever,
+                "mute_choice" to R.string.mute_choice,
+                "mute_choice_forever" to R.string.mute_choice_forever,
+            )
     }
 }
 

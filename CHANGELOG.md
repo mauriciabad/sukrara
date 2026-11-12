@@ -30,6 +30,12 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   Garmin Connect is listed under the xDrip+ server again.
 - **Android › Alert reliability** (dark theme): with every check on, the top banner is one card again; it showed a
   grey rectangle inside a darker card (#181).
+- **Android › Settings search** is the PoC's again (#181): a full-screen search with each result's section icon and
+  where it is (page and group), ranked like Android's own search (groups and other words find rows too), one result per
+  page, and a result opens its page through the menus (Back walks up) at its row, which flashes; Alert reliability's
+  checklist and the night alerts' pages are searchable. Opening *Night alerts* from it crashed the app (and stopped
+  monitoring) on 0.13–0.14.1 release builds while the night alerts or a quiet side applied: their lines' strings were
+  found by name and had been shrunk away. They are found by the ids written in code now, so no build can lose them.
 
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 

@@ -50,25 +50,42 @@ class AlertCopyTest {
         }
     }
 
-    /** The mute lines' and this module's strings, and THE duration formats from `:core:graph`, in one language folder. */
-    private fun words(dir: String): AlertWords {
-        val own = strings("src/main/res/$dir/strings.xml") + strings("../core/designsystem/src/main/res/$dir/strings.xml")
-        val graph = strings("../core/graph/src/main/res/$dir/strings.xml")
-        return object : AlertWords {
-            override fun get(name: String) = own[name] ?: error("missing string $name in $dir")
-
-            override val durations =
-                DurationWords(
-                    graph.getValue("duration_minutes"),
-                    graph.getValue("duration_hours"),
-                    graph.getValue("duration_hours_minutes"),
-                    graph.getValue("duration_days"),
-                    graph.getValue("duration_text_minutes"),
-                    graph.getValue("duration_text_hours"),
-                    graph.getValue("duration_text_hours_minutes"),
-                )
+    /**
+     * The mute lines' and this module's strings, and THE duration formats from `:core:graph`, in one language folder.
+     * What the app's code asks by name ([get]) must be in an AlertWords table: the app finds each by the id written in
+     * code (AlertWords.of), as a name alone is invisible to resource shrinking (#181). [raw]: a string this test reads
+     * itself (the app refers to those by id).
+     */
+    private class XmlWords(
+        private val own: Map<String, String>,
+        graph: Map<String, String>,
+        private val dir: String,
+    ) : AlertWords {
+        override fun get(name: String): String {
+            check(name in AlertWords.Ids || name in AlertCopy.Ids) { "$name is in no AlertWords table" }
+            return raw(name)
         }
+
+        fun raw(name: String): String = own[name] ?: error("missing string $name in $dir")
+
+        override val durations =
+            DurationWords(
+                graph.getValue("duration_minutes"),
+                graph.getValue("duration_hours"),
+                graph.getValue("duration_hours_minutes"),
+                graph.getValue("duration_days"),
+                graph.getValue("duration_text_minutes"),
+                graph.getValue("duration_text_hours"),
+                graph.getValue("duration_text_hours_minutes"),
+            )
     }
+
+    private fun words(dir: String) =
+        XmlWords(
+            strings("src/main/res/$dir/strings.xml") + strings("../core/designsystem/src/main/res/$dir/strings.xml"),
+            strings("../core/graph/src/main/res/$dir/strings.xml"),
+            dir,
+        )
 
     private val en = words("values")
     private val es = words("values-es")
@@ -184,7 +201,7 @@ class AlertCopyTest {
     /** [c] worded on Android in [w] (numbers in [locale]), or null: a case of the Mac's alone. */
     private fun word(
         c: JsonObject,
-        w: AlertWords,
+        w: XmlWords,
         locale: Locale,
     ): String? {
         if (c["platform"]?.jsonPrimitive?.content == "mac" || c["device"]?.jsonPrimitive?.content == "mac") return null
@@ -214,19 +231,19 @@ class AlertCopyTest {
             }
 
             "action" -> {
-                w.get(ACTIONS.getValue(c.str("action")))
+                w.raw(ACTIONS.getValue(c.str("action")))
             }
 
             "mute_choice_spoken" -> {
-                w.get("alert_mute_choice_a11y").format(MuteText.sideName(side(c), w), Durations.text(c.long("min"), w.durations))
+                w.raw("alert_mute_choice_a11y").format(MuteText.sideName(side(c), w), Durations.text(c.long("min"), w.durations))
             }
 
             "relaxed" -> {
-                w.get("alert_relaxed_subtext").format(Durations.text(c.long("intervalMin"), w.durations))
+                w.raw("alert_relaxed_subtext").format(Durations.text(c.long("intervalMin"), w.durations))
             }
 
             "test_title" -> {
-                w.get("alert_test_title").format(w.get("alert_headline_${c.str("kind")}"))
+                w.raw("alert_test_title").format(w.get("alert_headline_${c.str("kind")}"))
             }
 
             "all_scope" -> {

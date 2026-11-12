@@ -121,7 +121,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   widget* until a graph widget is placed (or says how to add it by hand when the launcher can't) and then opens its
   settings; a tap opens *Add treatment* (a new sensor once yours has ended); they switch to the dark theme with the
   phone.
-- **Settings** for daily use (every row searchable, a result opening its page at that row, accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
+- **Settings** for daily use (a full-screen search that finds every row by its title, summary, group or other words, ranked like Android's own, each result with its section's icon and where it is, opening its page through the menus at that row, flashed; accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
   quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
   (notifications, alarms, full-screen, battery, alert sound, sound while the phone is unlocked, Bluetooth; Do Not Disturb as a plain statement with one button; an alert Android refused shows on home with
   *Copy report*) and the same real test alert to hear what gets through (also in first-run setup), ranges and the whole graph (lines, time

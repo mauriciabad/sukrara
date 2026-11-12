@@ -150,7 +150,7 @@ private fun ControlRow(
     warning: Boolean = false,
     controls: @Composable () -> Unit,
 ) {
-    CardRow {
+    CardRow(title = title) {
         Column(Modifier.semantics(mergeDescendants = true) {}) {
             SettingsTitle(title)
             if (warning) {

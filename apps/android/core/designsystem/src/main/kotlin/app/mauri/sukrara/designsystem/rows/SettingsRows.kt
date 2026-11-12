@@ -38,6 +38,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import com.android.settingslib.spa.framework.compose.HighlightBox
+import com.android.settingslib.spa.framework.compose.HighlightSurface
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import com.android.settingslib.spa.framework.theme.SettingsShape
 import com.android.settingslib.spa.framework.theme.SettingsSpace
@@ -96,6 +98,12 @@ const val ROW_TAG = "settings-row"
 const val ROW_ICON_TAG = "settings-row-icon"
 
 /**
+ * The title of a [SettingsGroup], on the semantics around its rows (no TalkBack effect): the settings search index test
+ * checks each row's group against the index, which shows it in a result's breadcrumb ("Alerts › Quiet after treatments").
+ */
+val SettingsGroupTitle = SemanticsPropertyKey<String>("SettingsGroupTitle")
+
+/**
  * A group of rows: SPA's Category, with an optional [title] (announced as a heading by TalkBack) and [titleAction]
  * beside it (a section's Reset icon). Like SPA, the title shows only while the group has rows to show.
  */
@@ -113,7 +121,11 @@ fun SettingsGroup(
     // only when they take space, in the same frame (no first frame without it).
     SubcomposeLayout(modifier.fillMaxWidth()) { constraints ->
         val loose = constraints.copy(minHeight = 0)
-        val rows = subcompose(GroupSlot.Rows) { Category { content() } }.map { it.measure(loose) }
+        // the group's title on the rows' semantics (no TalkBack effect): the search index test reads each row's group
+        val rows =
+            subcompose(GroupSlot.Rows) {
+                Category(modifier = Modifier.semantics { if (title != null) this[SettingsGroupTitle] = title }) { content() }
+            }.map { it.measure(loose) }
         val rowsHeight = rows.sumOf { it.height }
         val head =
             if (title != null && rowsHeight > 0) {
@@ -149,7 +161,8 @@ private fun GroupTitle(
             .trimBottom(SettingsSpace.extraSmall4),
         verticalAlignment = Alignment.Bottom,
     ) {
-        Box(Modifier.weight(1f).semantics(mergeDescendants = true) { heading() }) { CategoryTitle(title) }
+        // a search result that names the group flashes its title (SPA's HighlightBox, as for a row)
+        Box(Modifier.weight(1f).semantics(mergeDescendants = true) { heading() }) { HighlightBox(title) { CategoryTitle(title) } }
         action?.invoke()
     }
 }
@@ -398,22 +411,29 @@ fun InfoRow(
 
 /**
  * Free content (a slider, chips, a field) as one row of a group: the surface and corners SPA gives its own rows in a
- * category, with SPA's item padding.
+ * category, with SPA's item padding. [title]: the row's name for the settings search, which flashes it like a row
+ * ([SettingsHighlight]).
  */
 @Composable
 fun CardRow(
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(SettingsShape.CornerExtraSmall2)
-            .background(MaterialTheme.colorScheme.surfaceBright)
-            .padding(SettingsDimension.itemPadding),
-        verticalArrangement = Arrangement.spacedBy(SettingsSpace.extraSmall2),
-        content = content,
-    )
+    val shape = SettingsShape.CornerExtraSmall2
+    val color = MaterialTheme.colorScheme.surfaceBright
+    val column: @Composable (Modifier) -> Unit = { m ->
+        Column(
+            m.padding(SettingsDimension.itemPadding),
+            verticalArrangement = Arrangement.spacedBy(SettingsSpace.extraSmall2),
+            content = content,
+        )
+    }
+    if (title == null) {
+        column(modifier.fillMaxWidth().clip(shape).background(color))
+    } else {
+        HighlightSurface(title, color, shape, modifier.fillMaxWidth().clip(shape)) { column(Modifier) }
+    }
 }
 
 /**
@@ -580,12 +600,15 @@ fun SectionButton(
     enabled: Boolean = true,
 ) {
     Box(modifier.padding(vertical = SettingsSpace.extraSmall4).semantics { if (!enabled) disabled() }) {
-        CategoryButton(
-            ImageVector.vectorResource(icon),
-            text,
-            contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else DISABLED_ALPHA),
-            onClick = { if (enabled) onClick() },
-        )
+        // a search result that names the button flashes it, as a row
+        HighlightBox(text) {
+            CategoryButton(
+                ImageVector.vectorResource(icon),
+                text,
+                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else DISABLED_ALPHA),
+                onClick = { if (enabled) onClick() },
+            )
+        }
     }
 }
 
@@ -652,11 +675,11 @@ fun SettingsIntro(
     }
 }
 
-/** Explanations at the end of a page: SPA's Footer (an info icon, then the text below it). */
+/** Explanations at the end of a page: SPA's Footer (an info icon, then the text below it); a search result flashes it. */
 @Composable
 fun FooterText(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier) { Footer(text) }
+    Box(modifier) { HighlightBox(text) { Footer(text) } }
 }

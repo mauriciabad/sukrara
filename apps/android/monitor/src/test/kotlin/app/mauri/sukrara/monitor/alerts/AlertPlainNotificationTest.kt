@@ -33,10 +33,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The fallback as Android gets it, from the real [AlertNotifier]: with the strings looked up by name gone (what
- * resource shrinking did to 0.14.1's release build, here a context whose name lookups find nothing) the alert is still
- * posted, plain, on its own channel with its kind, value, unit and arrow and *Open Sukrara*; when even that fails, a
- * notice on *Monitoring problems*. Reliability lists it as "An alert couldn't be shown".
+ * The fallback as Android gets it, from the real [AlertNotifier]: when the real alert can't be built (0.14.1's release
+ * build had lost the strings it looked up by name; they are found by id now, #181, so here a string only the real
+ * alert reads, its *Mute…* action's, can't be read) the alert is still posted, plain, on its own channel with its kind,
+ * value, unit and arrow and *Open Sukrara*; when even that fails, a notice on *Monitoring problems*. Reliability lists
+ * it as "An alert couldn't be shown".
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -44,13 +45,16 @@ class AlertPlainNotificationTest {
     private val app: Context = ApplicationProvider.getApplicationContext()
     private val nm = app.getSystemService(NotificationManager::class.java)
 
-    /** The app as 0.14.1's release build: every string a lookup by name asks for is missing. */
+    /** The app with a string only the real alert reads missing (its *Mute…* action), and nothing found by name. */
     @Suppress("DEPRECATION")
     private val shrunk: Context =
         object : ContextWrapper(app) {
             private val res =
                 object : Resources(app.assets, app.resources.displayMetrics, app.resources.configuration) {
                     override fun getIdentifier(name: String?, defType: String?, defPackage: String?) = 0
+
+                    override fun getText(id: Int): CharSequence =
+                        if (id == R.string.alert_action_mute) throw NotFoundException("alert_action_mute") else super.getText(id)
                 }
 
             override fun getResources(): Resources = res
