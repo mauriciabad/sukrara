@@ -196,3 +196,11 @@ the local network, hence the grant.
 One worktree per agent from the integration branch (`next`), a shared interface committed before dispatch,
 protocol notes committed early, scaffolds (`NNa`) merged before the wave that builds on them, phone ownership handed
 over explicitly between sessions.
+
+### Cleanup
+
+`tools/cleanup.sh [--dry-run] [--fetch] [--idle MINUTES]` removes every worktree and local branch whose commits are
+all on origin/next or origin/main (the same commit or a rebased copy). It keeps main, next, the current worktree,
+locked worktrees, any with changes or untracked files, and any used in the last 4 hours (an agent waiting on CI).
+A squash-merged branch stays and is listed: delete it by hand once checked. Agents and sessions run it when their
+work is pushed.

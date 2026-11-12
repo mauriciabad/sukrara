@@ -42,6 +42,10 @@ sections your change touches.
   (`~/.android/sukrara-release.jks`, password in the Keychain). *(checks `secrets`, `large`, `images`: images only
   under `docs/img/`, `assets/brand/`, `res/`, the snapshot goldens or `poc/spikes/*/evidence/`; full-phone captures
   flagged)*
+- **Clean up after yourself.** When your work is on `next` (or `main`), remove your worktree and branch: run
+  `tools/cleanup.sh` from the main checkout (it only removes what is already pushed, nothing with changes). A
+  session that started agents removes their worktrees once their work is merged, and stops their emulators and
+  background processes. *(not checked: `tools/cleanup.sh --dry-run` lists what's left)*
 - **Phone / Mac installs contain all merged work:** install only with `tools/install.sh phone|mac` (refuses a dirty
   tree, a HEAD without origin/main / the integration branches / the last installed commit, or failing checks; verifies
   the signed build first).
