@@ -773,6 +773,15 @@ Play Console account; the limited-distribution tier (20 devices) is too small fo
 needed once the Play account exists. F-Droid calls the programme an existential threat and won't register apps on
 its developers' behalf [[V4]](https://techaiwire.com/articles/android-developer-verification-enforcement-four-countries/)[[F3]](https://f-droid.org/docs/Anti-Features/); that's F-Droid's problem, not ours, as long as we register our own key.
 
+**Checked 2026-11-13** (Play Console › Manage account › Android developer verification): `app.mauri.sukrara` is
+**Registered** (since 2026-11-10) with four verified signing keys, our release key `27:EC:21:…:8D:96` among them,
+so GitHub / Obtainium / IzzyOnDroid APKs signed with it pass verification wherever it's enforced. The other three
+(`3E:C6:16:…:90:7D`, `4B:C4:64:…:1C:0C`, `0D:E9:98:…:77:E1`) aren't the debug key on the release Mac and aren't shown
+on the app's App signing page; they were registered on the day the app was created, most likely Play's own keys from
+before our key replaced its generated one. They're left as they are (removing a key Play uses could break Play
+installs); an F-Droid-signed build would need F-Droid's key added here too. Identity: the account's legal name and
+address; trader status *Non-trader* (as on the App Store).
+
 **Seen 2026-11-12**: installing the GitHub APK on the owner's phone showed Google Play
 Protect's *App scan recommended* dialog ("Play Protect hasn't seen this app before"), with *Scan app*, *Don't
 install app* and *Install without scanning*. At that point Play App Signing used our key and release 0.13.0 was on
@@ -911,8 +920,8 @@ CHANGELOG (it's English and covers the Mac too).
 | Channel | Fit | Requirements / notes |
 |---|---|---|
 | **GitHub Releases + Obtainium** | Now | Obtainium tracks GitHub releases and (since 1.7.0, 2026-10-17) verifies the APK signing certificate before installing [[F1]](https://github.com/ImranR98/Obtainium/releases). Needs only versioned, release-signed APKs. Add an "Add to Obtainium" link on the site |
-| **IzzyOnDroid** | Next, cheap | FOSS licence, aimed at end users, APK **< 30 MB** attached to a tagged release (Sukrara: 19 MB), tag = versionName/versionCode, Fastlane metadata (descriptions, icon, screenshots), **release-signed, not debuggable** [[F4]](https://izzyondroid.org/docs/general/AppInclusionPolicy/). Reproducible builds optional but verified when possible [[F4]](https://izzyondroid.org/docs/general/AppInclusionPolicy/). Must not download executables without consent |
-| **F-Droid main repo** | Later | FLOSS only, built by F-Droid from source with a free toolchain; no Play Services/trackers [[F2]](https://f-droid.org/docs/Inclusion_Policy/) (Sukrara has none: no `gms`/Firebase in the build). Hard parts: the Juggluco security core comes from a separate checkout (make it a pinned submodule), rust-nostr (`nostr-sdk`) and zxing-cpp native libs must build from source. Likely anti-feature **NonFreeNet** (LibreView upload) [[F3]](https://f-droid.org/docs/Anti-Features/); root features have no anti-feature. Use reproducible builds so F-Droid ships **our** signature (no key split) |
+| **IzzyOnDroid** | **No** (checked 2026-11-13) | Its policy: "Vibe-coded apps will be rejected" and the code "should be free of" LLM output [[F4]](https://izzyondroid.org/docs/general/AppInclusionPolicy/); most of Sukrara's commits are co-authored by Claude, so a request would very likely be rejected. Otherwise it would fit: FOSS licence, aimed at end users, APK **< 30 MB** attached to a tagged release (Sukrara: 19 MB), tag = versionName/versionCode, Fastlane metadata (descriptions, icon, screenshots), **release-signed, not debuggable** [[F4]](https://izzyondroid.org/docs/general/AppInclusionPolicy/). Reproducible builds optional but verified when possible [[F4]](https://izzyondroid.org/docs/general/AppInclusionPolicy/). Must not download executables without consent |
+| **F-Droid main repo** | Later | FLOSS only, built by F-Droid from source with a free toolchain; no Play Services/trackers [[F2]](https://f-droid.org/docs/Inclusion_Policy/) (Sukrara has none: no `gms`/Firebase in the build). Hard parts: the Juggluco security core comes from a separate checkout (make it a pinned submodule), rust-nostr (`nostr-sdk`) and zxing-cpp native libs must build from source. Likely anti-feature **NonFreeNet** (LibreView upload) [[F3]](https://f-droid.org/docs/Anti-Features/); root features have no anti-feature. Use reproducible builds so F-Droid ships **our** signature (no key split). **Age** (checked 2026-11-13): "actively developed for at least 3 months, unless … proven to have some users" [[F2]](https://f-droid.org/docs/Inclusion_Policy/): first commit 2026-10-15, so from **2027-01-15**. The full flavor's updater must go (an `fdroid` flavor like `play`): F-Droid forbids auto-updates unless opt-in. No AI-code rule today. Plan and checklist: [#191](https://github.com/mauriciabad/sukrara/issues/191) |
 | **Own F-Droid repo** | Optional | `fdroidserver` repo on GitHub Pages (`sukrara.mauri.app/fdroid/repo`); easy but adds little over Obtainium + IzzyOnDroid |
 | **Accrescent** | No | Sign-up allowlisted only; the project says new submissions are unlikely to be accepted for now (funding) [[F5]](https://accrescent.app/blog/posts/the-future-of-accrescent/)[[F6]](https://accrescent.app/docs/guide/appendix/requirements/) |
 
@@ -1561,8 +1570,8 @@ its own update check; the root features are in both since 2026-11-11); register 
    the first builds, then open testing as the permanent beta.
 10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows
     from the Play registration of `app.mauri.sukrara` with that key.
-11. *(agent)* IzzyOnDroid inclusion request; Obtainium link on the site.
-12. Later: F-Droid main repo; Connect IQ store when the watch app exists *(user creates the Garmin account)*.
+11. ~~*(agent)* IzzyOnDroid inclusion request~~ Dropped 2026-11-13: IzzyOnDroid rejects AI-written apps (above). Obtainium link on the site.
+12. F-Droid main repo from 2027-01-15 (its 3-month rule; [#191](https://github.com/mauriciabad/sukrara/issues/191)); Connect IQ store when the watch app exists *(user creates the Garmin account)*.
 
 **Only the user can**: pay (Apple, Google), verify identity (Apple, Google Payments profile), own the accounts
 (Apple ID with 2FA, Play Console, Garmin), create the Developer ID certificate on their Mac, hold the release
