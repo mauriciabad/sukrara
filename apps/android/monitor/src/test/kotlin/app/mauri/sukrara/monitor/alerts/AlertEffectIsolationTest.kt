@@ -29,13 +29,23 @@ class AlertEffectIsolationTest {
     private val rig = AlertRig()
     private val logged = mutableListOf<String>()
 
-    /** A shade where every call can be made to fail. */
+    /** A shade where every call can be made to fail (Android refusing every post: the stand-ins too). */
     private class FlakyPresenter(private val inner: FakePresenter) : AlertPresenter by inner {
         var failing = false
 
         override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
             if (failing) throw SecurityException("refused")
             inner.show(firing, settings, silent, who, relaxedMin)
+        }
+
+        override fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?) {
+            if (failing) throw SecurityException("refused")
+            inner.showPlain(firing, settings, silent, who)
+        }
+
+        override fun showProblem(group: AlertGroup, silent: Boolean) {
+            if (failing) throw SecurityException("refused")
+            inner.showProblem(group, silent)
         }
 
         override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
@@ -101,8 +111,8 @@ class AlertEffectIsolationTest {
                     .first()
                     .machine,
             )
-            assertTrue("Notify:level" in published.failedSteps)
-            assertTrue(logged.contains("notify failed: SecurityException"))
+            assertTrue("Show:level SecurityException" in published.failedSteps)
+            assertTrue(logged.contains("show failed: SecurityException"))
         }
 
     @Test fun aRefusedAlarmStillPostsTheAlertAndSaves() =
@@ -115,7 +125,7 @@ class AlertEffectIsolationTest {
                     .first()
                     .machine,
             )
-            assertTrue("Alarm" in published.failedSteps)
+            assertTrue("Alarm SecurityException" in published.failedSteps)
             assertTrue(logged.contains("alarm failed: SecurityException"))
         }
 
@@ -156,7 +166,7 @@ class AlertEffectIsolationTest {
             val runtime = runtime()
             presenter.failing = true
             runtime.onState(low)
-            assertTrue("Notify:level" in published.failedSteps)
+            assertTrue("Show:level SecurityException" in published.failedSteps)
             presenter.failing = false
             rig.clock.instant = rig.clock.now().plusSeconds(60)
             runtime.onState(rig.wearerState(latest = rig.reading(58)))

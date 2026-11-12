@@ -259,6 +259,35 @@ class HomeGallery {
         check("Alert steps failed: Notify:level" in copied && "AlertDelivery" in copied) { copied }
     }
 
+    /** An alert whose own notification couldn't be shown (it went out plain) is the banner's first line, with Copy report. */
+    @Test fun anAlertThatCouldntBeShownShowsTheBannerWithCopyReport() {
+        val readiness = AlertReadiness(setOf(AlertRequirement.AlertShown), failedSteps = setOf("Show:level NotFoundException"))
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                HomeContent(
+                    ui(
+                        Samples.wearer(),
+                        banner = BannerKind.AlertsUnreliable,
+                    ).copy(firstProblem = readiness.firstProblem, readiness = readiness),
+                    HomeCallbacks(onFix = { error("an alert that wasn't shown has no Android screen: $it") }),
+                )
+            }
+        }
+        compose.onNodeWithText("An alert couldn't be shown, so Sukrara showed it plain. It tries the full alert again.").assertExists()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-alert-not-shown-light-font1x.png")
+        compose.onNodeWithText("Copy report").performClick()
+        compose.waitForIdle()
+        val copied =
+            ApplicationProvider
+                .getApplicationContext<Context>()
+                .getSystemService(ClipboardManager::class.java)
+                .primaryClip
+                ?.getItemAt(0)
+                ?.text
+                .toString()
+        check("Alert steps failed: Show:level NotFoundException" in copied && "AlertShown" in copied) { copied }
+    }
+
     @Test fun dataProblemScreen() {
         compose.setContent {
             SukraraTheme(dark = true, dynamic = false) {

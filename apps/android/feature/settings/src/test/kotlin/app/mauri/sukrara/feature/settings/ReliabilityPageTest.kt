@@ -107,6 +107,21 @@ class ReliabilityPageTest {
         )
         assertTrue(fixed.isEmpty())
     }
+
+    @Test
+    fun `an alert that couldn't be shown says so first, and its row copies the report`() {
+        readiness = AlertReadiness(setOf(AlertRequirement.AlertShown), failedSteps = setOf("Show:level NotFoundException"))
+        show()
+        compose.onNodeWithText(context.getString(R.string.st_reliability_ready)).assertDoesNotExist()
+        compose.onNodeWithText("An alert couldn't be shown").performScrollTo().assertIsDisplayed()
+        assertEquals(1, count(R.string.st_req_failed))
+        assertEquals(
+            context.getString(app.mauri.sukrara.core.designsystem.R.string.ds_copy_report),
+            clickLabel(AlertRequirement.AlertShown),
+        )
+        compose.onNode(hasText(name(AlertRequirement.AlertShown)) and hasClickAction()).performClick()
+        assertTrue("copies the report, nothing to fix", fixed.isEmpty())
+    }
 }
 
 private fun hasClickLabel(label: String) =

@@ -23,6 +23,20 @@ interface AlertPresenter {
      */
     fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int)
 
+    /**
+     * The alert as a plain notification, when [show] failed (0.14.1: strings [show] looks up by name were missing from
+     * the release build, and no alert was posted): [firing]'s kind, its value with the unit and the arrow, [who], and
+     * *Open Sukrara*, built only from resources the code names directly and plain values. On the alert's own channel
+     * (its sound, vibration and Do Not Disturb behaviour), in the group's slot; no actions that need the alert's words.
+     */
+    fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?)
+
+    /**
+     * The last resort when [showPlain] failed too: "Sukrara couldn't show an alert · Open Sukrara" on the `status`
+     * channel (*Monitoring problems*), in [group]'s slot (a later alert replaces it, [clear] removes it).
+     */
+    fun showProblem(group: AlertGroup, silent: Boolean)
+
     /** Right before an alert rings: waits (a second at most) until nothing of the app's can mute its sound. */
     suspend fun beforeRing() = Unit
 

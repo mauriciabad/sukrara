@@ -282,7 +282,8 @@ class AppGraph(
             // the alert alarm found the service dead: bring it back (a refusal shows "Monitoring stopped")
             restarter = { startMonitoring(StartReason.AlertCheck) },
             clock = clock,
-            log = { data.diagLog.log("alerts", it) },
+            // the diagnostic log behind Copy report; every line reaches logcat too (AlertsModule)
+            diagLog = { data.diagLog.log("alerts", it) },
             scope = scope,
             dispatchers = dispatchers,
             needsBluetooth = needsBluetooth(),

@@ -142,7 +142,7 @@ class AndroidAlertReadiness(
         val intent =
             when (requirement) {
                 // its way out is Copy report (on the screens); here, the app's page (storage, battery, notifications)
-                AlertRequirement.AlertDelivery -> {
+                AlertRequirement.AlertShown, AlertRequirement.AlertDelivery -> {
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
                 }
 

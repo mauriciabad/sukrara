@@ -16,8 +16,16 @@ enum class AlertRequirement(
     val inSetup: Boolean = true,
 ) {
     /**
-     * The alert runtime's last attempt to post an alert, arm the alert check, tell the followers or save the alert state
-     * failed ([AlertReadiness.failedSteps]); goes when that step next works. Its way out is *Copy report*.
+     * An alert's own notification couldn't be built or posted (a `Show` step in [AlertReadiness.failedSteps]): the
+     * alert runtime showed it plain on its channel instead, or as a *Monitoring problems* notice. Goes when an alert of
+     * that group shows normally again (the runtime tries with every reading). Its way out is *Copy report*.
+     */
+    AlertShown(inSetup = false),
+
+    /**
+     * The alert runtime's last attempt to update or remove an alert notification, arm the alert check, tell the
+     * followers or save the alert state failed ([AlertReadiness.failedSteps]); goes when that step next works. Its way
+     * out is *Copy report*.
      */
     AlertDelivery(inSetup = false),
     Notifications,
@@ -87,7 +95,8 @@ data class DndStatus(
 
 /**
  * The checklist's current answers: every requirement in [AlertRequirement] order with whether it is met, the alert
- * runtime's steps that failed on their last attempt (step names like `Notify:level`, never values: *Copy report*) and
+ * runtime's steps that failed on their last attempt (the step and the exception's class, like `Show:level
+ * NotFoundException`, never values: *Copy report*) and
  * the person's answer about the sound while unlocked ([unlockedSound], and whether its test can run now: [soundTest]) and
  * where Sukrara stands with Do Not Disturb ([dnd]).
  */

@@ -15,8 +15,9 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import kotlinx.coroutines.launch
 
 /**
- * *Copy report* of the alert checklist ([AlertReadiness.report]: the failed alert steps and the missing items, the
- * app's version and Android's; nothing personal), the one way out of [app.mauri.sukrara.core.model.AlertRequirement.AlertDelivery]
+ * *Copy report* of the alert checklist ([AlertReadiness.report]: the failed alert steps with their exception class and
+ * the missing items, the app's version and Android's; nothing personal), the one way out of
+ * [app.mauri.sukrara.core.model.AlertRequirement.AlertShown] and [app.mauri.sukrara.core.model.AlertRequirement.AlertDelivery]
  * on home and in Settings › Alert reliability. Android confirms the copy itself; a haptic confirms the tap.
  */
 @Composable

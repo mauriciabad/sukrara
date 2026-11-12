@@ -86,7 +86,8 @@ internal fun ReliabilityContent(
                         InfoRow(title, summary = stringResource(R.string.st_req_ok) + " · " + why, icon = DsR.drawable.ds_ic_check_circle)
                     }
 
-                    requirement == AlertRequirement.AlertDelivery -> {
+                    // a failed alert step (an alert that couldn't be shown, or another step): its way out is the report
+                    requirement == AlertRequirement.AlertShown || requirement == AlertRequirement.AlertDelivery -> {
                         ActionRow(
                             title,
                             copyReport,

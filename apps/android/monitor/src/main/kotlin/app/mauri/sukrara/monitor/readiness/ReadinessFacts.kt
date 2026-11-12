@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
+import app.mauri.sukrara.monitor.alerts.AlertRuntime
 
 /**
  * What the phone (and the alert runtime) answered for each item of the alert checklist, read by
@@ -15,7 +16,7 @@ import app.mauri.sukrara.core.model.UnlockedSound
  * plain function with JVM tests.
  */
 data class ReadinessFacts(
-    /** The alert runtime's steps that failed on their last attempt (`AlertUiState.failedSteps`). */
+    /** The alert runtime's steps that failed on their last attempt, with the exception class (`AlertUiState.failedSteps`). */
     val failedSteps: Set<String> = emptySet(),
     val notificationsEnabled: Boolean,
     /** At least one alert kind rings "like an alarm" (only then the full-screen intent matters). */
@@ -46,7 +47,10 @@ data class ReadinessFacts(
     fun readiness(): AlertReadiness =
         AlertReadiness(
             buildSet {
-                if (failedSteps.isNotEmpty()) add(AlertRequirement.AlertDelivery)
+                // an alert's own notification (and its stand-ins) apart from the other steps: "An alert couldn't be shown"
+                val (shown, other) = failedSteps.partition(::isShowStep)
+                if (shown.isNotEmpty()) add(AlertRequirement.AlertShown)
+                if (other.isNotEmpty()) add(AlertRequirement.AlertDelivery)
                 if (!notificationsEnabled) add(AlertRequirement.Notifications)
                 if (anyAlarmKind && !fullScreenAllowed) add(AlertRequirement.FullScreenIntent)
                 if (!exactAlarmAllowed) add(AlertRequirement.ExactAlarm)
@@ -61,4 +65,11 @@ data class ReadinessFacts(
             dnd,
             soundTest,
         )
+
+    private companion object {
+        private val SHOWN = listOf(AlertRuntime.Step.Show, AlertRuntime.Step.Plain, AlertRuntime.Step.Problem).map { "${it.name}:" }
+
+        /** A step of an alert's own notification or its stand-ins (`Show:level …`, `Plain:…`, `Problem:…`). */
+        fun isShowStep(step: String) = SHOWN.any(step::startsWith)
+    }
 }

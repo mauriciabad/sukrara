@@ -163,9 +163,10 @@ data class AlertUiState(
     /** The night alerts apply until then (contracts/alerts/SPEC.md §1 "Night alerts", #38); null = the day rules. */
     val nightUntil: Instant? = null,
     /**
-     * The runtime's steps that failed on their last attempt (`Notify:level`, `Alarm`, `Save`…; the diagnostic log has
-     * the exception class), each until it works again. The alert checklist ([AlertReadiness]) reads it: home shows it
-     * as [AlertRequirement.AlertDelivery].
+     * The runtime's steps that failed on their last attempt, each with the exception's class (`Show:level
+     * NotFoundException`, `Alarm SecurityException`, `Save IOException`…; never a value), each until it works again.
+     * The alert checklist ([AlertReadiness]) reads it: a `Show` step is [AlertRequirement.AlertShown], the others
+     * [AlertRequirement.AlertDelivery].
      */
     val failedSteps: Set<String> = emptySet(),
     /** What alerted and what the person did lately on this phone, newest first (Settings › Alerts › Lately). */

@@ -830,7 +830,7 @@ private fun banner(
         BannerKind.AlertsUnreliable -> {
             val problem = state.firstProblem ?: return null
             // a failed alert step has no Android screen to open: its way out is the report (it goes when the step works)
-            val delivery = problem == AlertRequirement.AlertDelivery
+            val delivery = problem == AlertRequirement.AlertShown || problem == AlertRequirement.AlertDelivery
             val copyReport = rememberCopyAlertReport(state.readiness ?: AlertReadiness(setOf(problem)))
             Banner(
                 kind.name,
@@ -839,7 +839,7 @@ private fun banner(
                 requirementText(problem),
                 stringResource(if (delivery) DsR.string.ds_copy_report else R.string.banner_alerts_action),
                 when (problem) {
-                    AlertRequirement.AlertDelivery -> copyReport
+                    AlertRequirement.AlertShown, AlertRequirement.AlertDelivery -> copyReport
 
                     // the person answers it on the reliability page (Android hides the setting from apps)
                     AlertRequirement.SoundWhenUnlocked -> open(HomeAction.OpenAlertReliability)
@@ -977,6 +977,8 @@ private fun banner(
 private fun requirementText(requirement: AlertRequirement): String =
     stringResource(
         when (requirement) {
+            AlertRequirement.AlertShown -> R.string.req_shown
+
             AlertRequirement.AlertDelivery -> R.string.req_delivery
 
             AlertRequirement.Notifications -> R.string.req_notifications

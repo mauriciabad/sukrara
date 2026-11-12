@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 @StringRes
 fun AlertRequirement.nameRes(): Int =
     when (this) {
+        AlertRequirement.AlertShown -> R.string.ds_req_shown
         AlertRequirement.AlertDelivery -> R.string.ds_req_delivery
         AlertRequirement.Notifications -> R.string.ds_req_notifications
         AlertRequirement.FullScreenIntent -> R.string.ds_req_full_screen
@@ -29,6 +30,7 @@ fun AlertRequirement.nameRes(): Int =
 @StringRes
 fun AlertRequirement.whyRes(): Int =
     when (this) {
+        AlertRequirement.AlertShown -> R.string.ds_req_shown_why
         AlertRequirement.AlertDelivery -> R.string.ds_req_delivery_why
         AlertRequirement.Notifications -> R.string.ds_req_notifications_why
         AlertRequirement.FullScreenIntent -> R.string.ds_req_full_screen_why

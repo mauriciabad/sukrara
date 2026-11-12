@@ -56,6 +56,25 @@ class ReadinessFactsTest {
         assertTrue(report, report.contains("Sukrara 1.2.3 · Android API 37"))
     }
 
+    /** An alert that couldn't be shown (shown plain or as a problem notice instead) is its own item, before every other. */
+    @Test fun anAlertThatCouldntBeShownIsTheFirstProblemWithItsStepAndException() {
+        val r =
+            allGood
+                .copy(failedSteps = setOf("Show:level NotFoundException", "Plain:level SecurityException", "Alarm SecurityException"))
+                .readiness()
+        assertEquals(AlertRequirement.AlertShown, r.firstProblem)
+        assertEquals(setOf(AlertRequirement.AlertShown, AlertRequirement.AlertDelivery), r.missing)
+        val report = r.report("1.2.3", 37)
+        assertTrue(report, report.contains("Alarm SecurityException, Plain:level SecurityException, Show:level NotFoundException"))
+        assertTrue(report, report.contains("AlertShown, AlertDelivery"))
+    }
+
+    @Test fun aShownAlertThatCouldntBeUpdatedIsADeliveryProblemOnly() =
+        assertEquals(
+            setOf(AlertRequirement.AlertDelivery),
+            allGood.copy(failedSteps = setOf("Notify:level SecurityException")).readiness().missing,
+        )
+
     @Test fun theStepThatWorksAgainLeavesTheChecklist() = assertTrue(allGood.copy(failedSteps = emptySet()).readiness().ready)
 
     /** #184: Do Not Disturb is the person's choice: never missing, whatever it is and whatever a mode holds back. */

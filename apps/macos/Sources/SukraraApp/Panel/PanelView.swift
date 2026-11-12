@@ -72,6 +72,7 @@ struct PanelView: View {
                     SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
                 }
                 if model.notificationPermission.needsAttention { notificationsWarning }
+                if let failed = model.alerts?.failedSteps, !failed.isEmpty { alertNotShownWarning(failed) }
                 if let alerts = model.alerts {
                     NightRow(alerts: alerts, open: links.map { l in { l.openSettingsPane(.alerts) } })
                     AlertBlocks(alerts: alerts, now: context.date, custom: $customMute)
@@ -280,6 +281,22 @@ struct PanelView: View {
             }
             .help(L10n.t("Show what you can do"))
             .offset(x: rect.minX, y: rect.minY)
+        }
+    }
+
+    /// An alert macOS refused (posted again plain, or not at all): said here with *Copy Report* (the steps and macOS's
+    /// errors, no value) until an alert of that group is posted.
+    private func alertNotShownWarning(_ failed: Set<String>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(L10n.t("An alert couldn't be shown"), systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(
+                L10n.t("macOS refused its notification, so Sukrara posted it again plain. The next alert tries again.")
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            Button(L10n.t("Copy Report")) { AlertReport.copy(failed) }
         }
     }
 

@@ -36,6 +36,9 @@ final class AlertController {
     /// When the engine wants its next check (nil = no timer).
     private(set) var nextWake: Date?
     private(set) var mirroring = false
+    /// The alert posts macOS refused on their last try (`Show:level UNErrorDomain 1`; the notifier's): the panel's
+    /// "An alert couldn't be shown" with *Copy Report*, until an alert of that group is posted.
+    var failedSteps: Set<String> = []
     /// `ui` changed (an alert came up or ended, a mute started or ran out): the widgets redraw the card's badge.
     @ObservationIgnored var onUIChange: (() -> Void)?
 

@@ -75,9 +75,12 @@ class AlertsModule(
     events: AlertEventSink = AlertEventSink { },
     private val wearerSettings: Flow<AlertSettings?> = flowOf(null),
     private val remoteEvents: Flow<AlertEvent> = emptyFlow(),
-    /** The diagnostic log (`DiagLog`): what failed and its exception class, never values. */
-    private val log: (String) -> Unit = { Log.w(TAG, it) },
+    /** The diagnostic log (`DiagLog`, behind *Copy report*): what failed and its exception class, never values. */
+    diagLog: (String) -> Unit = {},
 ) {
+    /** Every line to logcat too ([alertsLog]). */
+    private val log: (String) -> Unit = alertsLog(diagLog)
+
     private val ctx = context.applicationContext
     private val alarms = AndroidAlarms(ctx)
     val store = AlertStateStore(alertSettings, alertRecord)
@@ -213,6 +216,11 @@ class AlertsModule(
         sensorEnd.update(wearer = false, SensorState.None, null, sensorEndSettings.first())
     }
 
+    companion object {
+        /** The alerts' logcat tag (`adb logcat -s Sukrara.alerts`). */
+        const val TAG = "Sukrara.alerts"
+    }
+
     /** Called by the monitoring service once it runs (cancelled with its [scope]). */
     fun attach(scope: CoroutineScope) {
         AlertChannels.ensure(ctx)
@@ -234,7 +242,15 @@ class AlertsModule(
 
 private data class SensorEndInputs(val wearer: Boolean, val sensor: SensorState, val latestS: Long?, val settings: SensorEndSettings)
 
-private const val TAG = "Sukrara.alerts"
+/**
+ * The alerts' log: each line (what failed and its exception class, never a value) to logcat under [AlertsModule.TAG]
+ * as a warning (release builds strip only verbose and debug lines) and to [diag], the diagnostic log.
+ */
+internal fun alertsLog(diag: (String) -> Unit): (String) -> Unit =
+    { line ->
+        Log.w(AlertsModule.TAG, line)
+        diag(line)
+    }
 
 /** Schema `alerts.unlockedSound`. */
 private val UNLOCKED_SOUND =

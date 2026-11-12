@@ -7,6 +7,11 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 - **Android alerts are posted again** (release builds): resource shrinking removed the alert and mute texts the app
   looks up by name, so a real alert's notification couldn't be built and no alert showed (the alert logic itself
   fired). Every string is kept now, and the release check fails if one is missing from the APK.
+- **An alert that can't be shown still rings** (Android and Mac): if an alert's notification can't be built or posted,
+  Sukrara shows it plain on the same channel (its sound, vibration and Do Not Disturb behaviour: the kind, the value
+  with its unit and arrow, *Open Sukrara*), or else a *Monitoring problems* notice, and tries the full alert again.
+  Settings › Alert reliability (Android) and the menu bar panel (Mac) say *An alert couldn't be shown*, with *Copy
+  report*. The failure also reaches logcat now, not only the diagnostic log.
 
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 

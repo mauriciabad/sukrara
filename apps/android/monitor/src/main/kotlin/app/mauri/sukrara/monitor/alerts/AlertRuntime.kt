@@ -115,12 +115,16 @@ class AlertRuntime(
     private val shownRelax = HashMap<AlertGroup, Int>()
 
     /**
-     * What failed on its last attempt (a step, or a step for one group's notification): listed in the hub's alert state
-     * until that same thing works again.
+     * What failed on its last attempt (a step, or a step for one group's notification) and the exception's class:
+     * listed in the hub's alert state until that same thing works again.
      */
-    private val failed = HashSet<String>()
+    private val failed = HashMap<String, String>()
 
-    /** Alerts whose post Android refused, with the sound they should have had: posted again, as loud, next time. */
+    /**
+     * Alerts whose own notification wasn't shown, and whether the next try is silent: true when a stand-in (the plain
+     * alert or the problem notice) already rang as the alert was meant to, else the sound the alert should have had.
+     * Posted again on the next input.
+     */
     private val unposted = HashMap<AlertGroup, Boolean>()
 
     private fun now(): Long = clock.now().epochSecond
@@ -236,11 +240,12 @@ class AlertRuntime(
             val m = machine ?: return
             val f = firing[group]
             if (f != null) {
-                presenter.show(f, m.settingsAt(now()), silent = true, who = whoFor(m), relaxedMin = relaxedMin(m, group, now()))
+                post(m, group, f, silent = true, relaxedMin(m, group, now()))
             } else {
                 mutedCards.remove(group)
                 reconcileMutedCards(now())
             }
+            attempt(Step.Publish) { publishUi(now()) }
         }
     }
 
@@ -386,8 +391,9 @@ class AlertRuntime(
      * Applies [effects], then saves and publishes. Every step is attempted on its own: a notification Android refused
      * never costs the exact alarm (the only thing that re-checks with the service dead), the saved state or the other
      * notifications. The alarm goes first for the same reason. A failed step is logged and listed in the hub's alert
-     * state ([AlertUiState.failedSteps]: the checklist's AlertDelivery) until it works again; a refused alert is posted again, with its
-     * sound, on the next input.
+     * state ([AlertUiState.failedSteps]: the checklist's AlertShown / AlertDelivery) until it works again. An alert
+     * whose own notification can't be shown is never silent ([post]): it is shown plain, else as a problem notice, and
+     * its own notification is tried again on the next input.
      */
     private suspend fun applyAndSave(
         m: AlertMachine,
@@ -456,14 +462,31 @@ class AlertRuntime(
         return effects
     }
 
-    /** Posts [f] in [group]'s slot; a refusal is remembered with its sound, for [retryUnposted]. */
+    /**
+     * Posts [f] in [group]'s slot. When its notification can't be built or posted (0.14.1: strings missing from the
+     * release build, and every alert went unseen), it is shown plain on the same channel (its sound, vibration and Do
+     * Not Disturb behaviour), else as a problem notice on *Monitoring problems*; each failure is listed (step +
+     * exception class) and logged, and none stops what follows. The alert itself is tried again by [retryUnposted]:
+     * silently when a stand-in already rang, else as loud as it was meant to be.
+     */
     private suspend fun post(m: AlertMachine, group: AlertGroup, f: Firing, silent: Boolean, relax: Int) {
         if (!silent) presenter.beforeRing()
-        if (attempt(Step.Notify, group) { presenter.show(f, m.settingsAt(now()), silent, whoFor(m), relax) }) {
+        val settings = m.settingsAt(now())
+        val who = whoFor(m)
+        if (attempt(Step.Show, group) { presenter.show(f, settings, silent, who, relax) }) {
             unposted.remove(group)
-        } else {
-            unposted[group] = silent && unposted[group] != false // a loud post that failed stays loud
+            forget(Step.Plain, group)
+            forget(Step.Problem, group)
+            return
         }
+        val standIn =
+            if (attempt(Step.Plain, group) { presenter.showPlain(f, settings, silent, who) }) {
+                forget(Step.Problem, group)
+                true
+            } else {
+                attempt(Step.Problem, group) { presenter.showProblem(group, silent) }
+            }
+        unposted[group] = standIn || (silent && unposted[group] != false) // nothing rang: a loud post stays loud
     }
 
     /** Posts the alerts Android refused earlier again, as loud as they were meant to be (unless [skip]: posted now). */
@@ -484,7 +507,7 @@ class AlertRuntime(
      * class, no health data) and remembered until the same step (for the same group) works again.
      */
     private suspend fun attempt(step: Step, group: AlertGroup? = null, block: suspend () -> Unit): Boolean {
-        val key = if (group == null) step.name else "${step.name}:${group.wire}"
+        val key = key(step, group)
         return try {
             block()
             failed.remove(key)
@@ -492,14 +515,25 @@ class AlertRuntime(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            failed.add(key)
+            failed[key] = e.javaClass.simpleName
             log("${step.name.lowercase()} failed: ${e.javaClass.simpleName}")
             false
         }
     }
 
-    /** The kinds of effect step [attempt] tracks. */
-    internal enum class Step { Alarm, Notify, Mirror, Save, Publish }
+    private fun key(step: Step, group: AlertGroup?) = if (group == null) step.name else "${step.name}:${group.wire}"
+
+    /** [step] of [group] is no longer listed (the alert it stood in for showed). */
+    private fun forget(step: Step, group: AlertGroup) {
+        failed.remove(key(step, group))
+    }
+
+    /**
+     * The kinds of effect step [attempt] tracks: [Show] = an alert's own notification (listed as AlertShown until an
+     * alert of its group shows again); [Plain] / [Problem] = its stand-ins; [Notify] = updating or removing a shown
+     * one, and the muted cards.
+     */
+    internal enum class Step { Alarm, Show, Plain, Problem, Notify, Mirror, Save, Publish }
 
     /**
      * A side muted by this device (from the notification or the app) shows "… alerts muted" with its count-down and
@@ -594,7 +628,7 @@ class AlertRuntime(
                             canRemindLess = q.canRelax,
                         )
                     },
-                failedSteps = if (m == null) emptySet() else failed.toSet(),
+                failedSteps = if (m == null) emptySet() else failed.map { (step, error) -> "$step $error" }.toSet(),
                 lately = notes.asReversed().mapNotNull { it.note() },
             ),
         )

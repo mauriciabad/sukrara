@@ -32,7 +32,8 @@ extension AlertNotifying {
 
 /// The part of `UNUserNotificationCenter` the notifier uses (tests record requests instead of posting).
 protocol NotificationPosting {
-    func add(_ request: UNNotificationRequest)
+    /// Posts `request`; `done` gets macOS's answer on the main actor: nil = posted, else why it refused.
+    func add(_ request: UNNotificationRequest, done: @escaping @MainActor ((any Error)?) -> Void)
     func removeDelivered(ids: [String])
     /// Whether Time Sensitive delivery is on for the app (System Settings > Notifications).
     var timeSensitiveAllowed: Bool { get }
@@ -58,6 +59,13 @@ final class Notifier: AlertNotifying {
     private var lastVariant: [AlertKind: Int] = [:]
     /// The bug-report log: which alert was posted or cleared, never a value.
     var eventLog: RotatingFileLog?
+    /// The alert posts macOS refused on their last try, each with its error (`Show:level UNErrorDomain 1`, the plain
+    /// re-post `Plain:level …`; never a value), until an alert of that group is posted.
+    private var failed: [String: String] = [:]
+    /// `failed` changed: the panel's "An alert couldn't be shown" (`AlertController.failedSteps`).
+    var onFailedSteps: ((Set<String>) -> Void)?
+    /// Counts each group's posts and clears: macOS's answer to an older one never re-posts over what came since.
+    private var turn: [AlertGroup: Int] = [:]
 
     init(
         center: any NotificationPosting, sounds: SoundLibrary?, text: AlertText = .preferred(), clock: any TimeSource,
@@ -86,10 +94,78 @@ final class Notifier: AlertNotifying {
         content.interruptionLevel =
             (s[f.kind].alarm || escalated) && timeSensitive() ? .timeSensitive : .active
         content.sound = sound ? notificationSound(f.kind, s) : nil
+        let group = f.kind.group
+        let mine = next(group)
         center.add(
             UNNotificationRequest(
-                identifier: AlertNotificationIDs.notificationID(f.kind.group), content: content, trigger: nil))
+                identifier: AlertNotificationIDs.notificationID(group), content: content, trigger: nil)
+        ) { [weak self] error in
+            guard let self else { return }
+            guard let error else { return posted(group) }
+            notPosted("Show", group, error)
+            if turn[group] == mine {
+                postPlain(f, sound: sound, escalated: escalated, interruption: content.interruptionLevel)
+            }
+        }
         eventLog?.write("alert \(f.kind.rawValue) n=\(f.n) \(sound ? "posted" : "resumed silently")")
+    }
+
+    /// macOS refused the alert (0.14.1 on Android: an alert that failed was dropped silently): the same words again,
+    /// plain, in the same place and with the same urgency, without what could have been refused (actions, the pack
+    /// sound: the default one instead). Refused too: listed, and the next alert of the group tries again.
+    private func postPlain(
+        _ f: AlertFiring, sound: Bool, escalated: Bool, interruption: UNNotificationInterruptionLevel
+    ) {
+        let content = UNMutableNotificationContent()
+        content.title = text.title(f, escalated: escalated)
+        var words = text
+        words.unit = unit()
+        content.body = words.body(f, now: clock.now)
+        content.interruptionLevel = interruption
+        content.sound = sound ? .default : nil
+        let group = f.kind.group
+        center.add(
+            UNNotificationRequest(
+                identifier: AlertNotificationIDs.notificationID(group), content: content, trigger: nil)
+        ) { [weak self] error in
+            guard let self else { return }
+            if let error { return notPosted("Plain", group, error) }
+            eventLog?.write("alert \(f.kind.rawValue) posted plain")
+        }
+    }
+
+    /// A new post or clear of `group`: its number.
+    private func next(_ group: AlertGroup) -> Int {
+        turn[group, default: 0] += 1
+        return turn[group, default: 0]
+    }
+
+    /// An alert of `group` was posted: what failed for the group before goes.
+    private func posted(_ group: AlertGroup) {
+        let keys = ["Show", "Plain"].map { "\($0):\(group.rawValue)" }
+        guard keys.contains(where: { failed[$0] != nil }) else { return }
+        keys.forEach { failed[$0] = nil }
+        onFailedSteps?(failedSteps)
+    }
+
+    /// `step` of `group` refused: written to the event log and listed (the step and macOS's error, never a value).
+    private func notPosted(_ step: String, _ group: AlertGroup, _ error: any Error) {
+        let e = error as NSError
+        failed["\(step):\(group.rawValue)"] = "\(e.domain) \(e.code)"
+        eventLog?.write(
+            "alert \(group.rawValue) \(step == "Show" ? "not posted" : "plain not posted"): \(e.domain) \(e.code)")
+        onFailedSteps?(failedSteps)
+    }
+
+    var failedSteps: Set<String> { Set(failed.map { "\($0.key) \($0.value)" }) }
+
+    /// A post whose refusal only goes to the event log (the test alert, the muted and stopped notes).
+    private func add(_ request: UNNotificationRequest, _ what: String) {
+        center.add(request) { [weak self] error in
+            guard let error else { return }
+            let e = error as NSError
+            self?.eventLog?.write("\(what) not posted: \(e.domain) \(e.code)")
+        }
     }
 
     func postTest(_ kind: AlertKind) {
@@ -100,8 +176,7 @@ final class Notifier: AlertNotifying {
         content.body = L10n.t("This is how this alert looks and sounds. Nothing was muted or logged.")
         content.interruptionLevel = s[kind].alarm && timeSensitive() ? .timeSensitive : .active
         content.sound = notificationSound(kind, s)
-        center.add(
-            UNNotificationRequest(identifier: "test-\(kind.rawValue)", content: content, trigger: nil))
+        add(UNNotificationRequest(identifier: "test-\(kind.rawValue)", content: content, trigger: nil), "test alert")
         eventLog?.write("alert \(kind.rawValue) test posted")
     }
 
@@ -140,11 +215,12 @@ final class Notifier: AlertNotifying {
         content.body = reason + "\n" + L10n.t("No glucose readings or alerts until it's back.")
         content.interruptionLevel = .passive
         content.sound = nil
-        center.add(UNNotificationRequest(identifier: Self.monitoringStoppedID, content: content, trigger: nil))
+        add(UNNotificationRequest(identifier: Self.monitoringStoppedID, content: content, trigger: nil), "stopped note")
         eventLog?.write("monitoring stopped: notice posted")
     }
 
     func clear(_ group: AlertGroup) {
+        _ = next(group)
         eventLog?.write("alert \(group.rawValue) cleared")
         center.removeDelivered(ids: [AlertNotificationIDs.notificationID(group)])
     }
@@ -157,9 +233,10 @@ final class Notifier: AlertNotifying {
         content.userInfo = [Self.sideKey: side.rawValue]
         content.interruptionLevel = .passive
         content.sound = nil
-        center.add(
+        add(
             UNNotificationRequest(
-                identifier: AlertNotificationIDs.mutedNotificationID(side), content: content, trigger: nil))
+                identifier: AlertNotificationIDs.mutedNotificationID(side), content: content, trigger: nil),
+            "muted note")
     }
 
     func removeMuted(_ side: AlertSide) {
@@ -240,11 +317,12 @@ final class SystemNotificationCenter: NotificationPosting {
         timeSensitive = entitled ? .on : .unavailable
     }
 
-    func add(_ request: UNNotificationRequest) {
+    func add(_ request: UNNotificationRequest, done: @escaping @MainActor ((any Error)?) -> Void) {
         center.add(request) { error in
             if let error {
                 AppLog.alerts.error("notification not posted: \(error.localizedDescription, privacy: .public)")
             }
+            Task { @MainActor in done(error) }
         }
     }
 

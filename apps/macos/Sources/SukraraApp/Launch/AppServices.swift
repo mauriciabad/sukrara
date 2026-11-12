@@ -125,6 +125,8 @@ final class AppServices: ServiceStarting {
                 controller?.settings ?? settings
             }
             notifier.eventLog = RotatingFileLog(directory: plan.data.paths.logs)
+            // an alert macOS refused: the panel says so until one of its group is posted
+            notifier.onFailedSteps = { controller?.failedSteps = $0 }
             controller = AlertController(
                 settings: settings, clock: SystemClock(), store: AlertStateFile(paths: plan.data.paths),
                 notifier: notifier, wake: TaskWake())
@@ -200,7 +202,7 @@ final class AppServices: ServiceStarting {
 /// Posts nothing: alerts allowed but notifications not (never in a real plan; keeps the engine's state right).
 private struct SilentCenter: NotificationPosting {
     var timeSensitiveAllowed: Bool { false }
-    func add(_ request: UNNotificationRequest) {}
+    func add(_ request: UNNotificationRequest, done: @escaping @MainActor ((any Error)?) -> Void) { done(nil) }
     func removeDelivered(ids: [String]) {}
 }
 

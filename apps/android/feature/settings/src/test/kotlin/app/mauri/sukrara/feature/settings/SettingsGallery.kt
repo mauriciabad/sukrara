@@ -292,7 +292,17 @@ class SettingsGallery {
             // a failed alert step (Copy report) and the unanswered Vibrate only when unlocked
             "reliability-delivery-unlocked" to {
                 ReliabilityContent(
-                    AlertReadiness(setOf(AlertRequirement.AlertDelivery, AlertRequirement.SoundWhenUnlocked), failedSteps = setOf("Alarm")),
+                    AlertReadiness(
+                        setOf(AlertRequirement.AlertDelivery, AlertRequirement.SoundWhenUnlocked),
+                        failedSteps = setOf("Alarm SecurityException"),
+                    ),
+                    {},
+                ) {}
+            },
+            // an alert that couldn't be shown (it went out plain; Copy report), first in the list
+            "reliability-alert-not-shown" to {
+                ReliabilityContent(
+                    AlertReadiness(setOf(AlertRequirement.AlertShown), failedSteps = setOf("Show:level NotFoundException")),
                     {},
                 ) {}
             },

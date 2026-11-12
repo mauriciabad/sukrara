@@ -47,6 +47,16 @@ class FakePresenter : AlertPresenter {
         this.who += who
     }
 
+    override fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?) {
+        slots[firing.kind.group] = "plain ${firing.kind.wire}"
+        log += (if (silent) "plain resume " else "plain ") + firing.kind.wire
+    }
+
+    override fun showProblem(group: AlertGroup, silent: Boolean) {
+        slots[group] = "problem"
+        log += (if (silent) "problem resume " else "problem ") + group.wire
+    }
+
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
         slots[group] = "muted ${side.wire} until $until"
         log += "muted ${side.wire}"

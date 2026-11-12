@@ -481,6 +481,22 @@
         }
       }
     },
+    "An alert couldn't be shown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An alert couldn't be shown"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo mostrar una alerta"
+          }
+        }
+      }
+    },
     "Another device used this invite from %@ first. Ask them for a new link and paste it here." : {
       "localizations" : {
         "en" : {
@@ -877,6 +893,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuar"
+          }
+        }
+      }
+    },
+    "Copy Report" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Report"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar informe"
           }
         }
       }
@@ -1949,6 +1981,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Baja por debajo de"
+          }
+        }
+      }
+    },
+    "macOS refused its notification, so Sukrara posted it again plain. The next alert tries again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS refused its notification, so Sukrara posted it again plain. The next alert tries again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS rechazó su notificación, así que Sukrara la volvió a publicar sencilla. La siguiente alerta lo vuelve a intentar."
           }
         }
       }

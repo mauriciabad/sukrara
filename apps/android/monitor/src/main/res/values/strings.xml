@@ -155,6 +155,9 @@
     <string name="monitor_locked_boot_monitoring_text">Your phone restarted. Sukrara reads your sensor and alerts you as usual. Followers, uploads and the app wait until you unlock it.</string>
     <string name="alert_test_title">Test · %1$s</string>
     <string name="alert_test_text">A test, not a reading. Your real alert sounds like this.</string>
+    <!-- The last resort when an alert's notification and its plain version both failed (on Monitoring problems) -->
+    <string name="alert_problem_title">Sukrara couldn\'t show an alert</string>
+    <string name="alert_problem_text">Open Sukrara to see your glucose.</string>
     <string name="calendar_event_title">Sensor ends</string>
     <string name="calendar_event_description">Sensor %1$s, started %2$s. Sukrara keeps this event up to date.</string>
     <!-- Read glucose aloud: the app shortcut (launcher long-press, TalkBack's actions on the app icon) -->

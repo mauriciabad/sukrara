@@ -15,7 +15,14 @@ final class FakeCenter: NotificationPosting {
     var added: [UNNotificationRequest] = []
     var removed: [String] = []
     var timeSensitiveAllowed = true
-    func add(_ request: UNNotificationRequest) { added.append(request) }
+    /// How many of the next requests macOS refuses (as with notifications turned off for Sukrara).
+    var refuse = 0
+    func add(_ request: UNNotificationRequest, done: @escaping @MainActor ((any Error)?) -> Void) {
+        added.append(request)
+        guard refuse > 0 else { return done(nil) }
+        refuse -= 1
+        done(UNError(.notificationsNotAllowed))
+    }
     func removeDelivered(ids: [String]) { removed += ids }
 }
 
@@ -155,6 +162,77 @@ final class FakeCenter: NotificationPosting {
             Notifier.action(actionID: UNNotificationDefaultActionIdentifier, side: "low", typed: nil, settings: s)
                 == nil)
         #expect(Notifier.action(actionID: IDs.unmuteAction, side: "sideways", typed: nil, settings: s) == nil)
+    }
+
+    /// 0.14.1 (Android) lesson: an alert whose notification can't be posted is never dropped silently. macOS refused
+    /// it: Sukrara posts it again plain (the same words in the same place, no actions, the default sound), writes it to
+    /// the event log and lists it for the panel's "An alert couldn't be shown" (the step and macOS's error, never a
+    /// value) until an alert of that group is posted.
+    @Test func aRefusedAlertIsPostedAgainPlainAndListedUntilAnAlertOfItsGroupIsPosted() throws {
+        var failed: Set<String> = []
+        let n = notifier()
+        n.onFailedSteps = { failed = $0 }
+        center.refuse = 1
+        n.post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
+        try #require(center.added.count == 2)
+        let plain = center.added[1]
+        #expect(plain.identifier == AlertNotificationIDs.notificationID(.level))
+        #expect(plain.content.title == "Low glucose")
+        #expect(plain.content.body == "62 mg/dL ↘")
+        #expect(plain.content.categoryIdentifier.isEmpty && plain.content.userInfo.isEmpty)
+        #expect(plain.content.sound == .default)
+        #expect(failed == ["Show:level UNErrorDomain 1"])
+        #expect(!failed.contains { $0.contains("62") })
+
+        n.post(firing(.low, mgdl: 60), sound: true, category: AlertNotificationIDs.alertCategory)
+        #expect(failed.isEmpty)
+    }
+
+    @Test func aPlainAlertRefusedTooStaysListedAndAResumeStaysSilent() throws {
+        var failed: Set<String> = []
+        let n = notifier()
+        n.onFailedSteps = { failed = $0 }
+        center.refuse = 2
+        n.post(firing(.high, mgdl: 220, rate: 1), sound: false, category: AlertNotificationIDs.alertCategory)
+        try #require(center.added.count == 2)
+        #expect(center.added[1].content.sound == nil)
+        #expect(failed == ["Show:level UNErrorDomain 1", "Plain:level UNErrorDomain 1"])
+        // another group posted fine: the level group's failure stays
+        n.post(firing(.noData), sound: true, category: AlertNotificationIDs.alertCategory)
+        #expect(failed == ["Show:level UNErrorDomain 1", "Plain:level UNErrorDomain 1"])
+    }
+
+    /// macOS answers later: a refusal that comes back after the alert was cleared never brings it back.
+    @Test func aRefusalAfterTheAlertEndedPostsNothing() {
+        final class LateCenter: NotificationPosting {
+            var added: [UNNotificationRequest] = []
+            var answers: [@MainActor ((any Error)?) -> Void] = []
+            var timeSensitiveAllowed = false
+            func add(_ request: UNNotificationRequest, done: @escaping @MainActor ((any Error)?) -> Void) {
+                added.append(request)
+                answers.append(done)
+            }
+            func removeDelivered(ids: [String]) {}
+        }
+        let late = LateCenter()
+        var failed: Set<String> = []
+        let n = Notifier(center: late, sounds: nil, text: AlertText(language: .en), clock: clock) { AlertSettings() }
+        n.onFailedSteps = { failed = $0 }
+        n.post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
+        n.clear(.level)
+        late.answers[0](UNError(.notificationsNotAllowed))
+        #expect(late.added.count == 1)
+        #expect(failed == ["Show:level UNErrorDomain 1"])
+    }
+
+    /// *Copy Report*: the failed steps, the app's and macOS's versions; nothing personal.
+    @Test func theAlertReportHasTheStepsAndTheVersionsOnly() {
+        let report = AlertReport.text(
+            failedSteps: ["Show:level UNErrorDomain 1", "Plain:level UNErrorDomain 1"], version: "1.2.3", os: "26.1")
+        #expect(
+            report
+                == "Sukrara 1.2.3 · macOS 26.1\nAlert steps failed: Plain:level UNErrorDomain 1, Show:level UNErrorDomain 1"
+        )
     }
 
     @Test func mutedNoteIsSilentWithItsCategory() {

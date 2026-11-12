@@ -12,6 +12,7 @@ import android.content.Intent
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.TtsSpan
+import androidx.annotation.StringRes
 import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
@@ -19,17 +20,21 @@ import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.ClockText
+import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.AppActivities
+import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.SoundGap
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 /**
  * The alert notifications ([AlertPresenter]): one slot per [AlertGroup] (level, rate, no data), all in the `alerts`
@@ -37,7 +42,8 @@ import kotlinx.coroutines.delay
  * value, the arrow and what it means; the actions work from the lock screen without opening the app
  * ([AlertActionReceiver]). Alarm-level kinds (the kind's *alarm* setting) also get a full-screen intent, only when
  * Android allows it ([NotificationManager.canUseFullScreenIntent]; otherwise it is a heads-up and the reliability row
- * says so). The tap opens the app.
+ * says so). The tap opens the app. When the alert can't be built or posted, the runtime falls back to [showPlain]
+ * (same channel, fixed resources and plain values), then to [showProblem] (*Monitoring problems*).
  */
 class AlertNotifier(
     private val ctx: Context,
@@ -83,6 +89,61 @@ class AlertNotifier(
         }
     }
 
+    /**
+     * [show]'s stand-in when it failed: "High glucose" / "220 mg/dL ↗" / *Open Sukrara*, from [headlineRes] and
+     * [plainValue] only (no lookup by name, no format string), on the same channel, category, group and slot as the
+     * alert, full screen where the alert would be. No Mute or Remind actions (they need the alert's words): the app
+     * has them, one tap away. Once posted it counts as shown: what follows can't turn it into a failure.
+     */
+    override fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?) {
+        val kind = firing.kind
+        val alarm = settings.rule(kind).alarm || firing.escalated
+        val channel = AlertChannels.id(ctx, kind, alarm)
+        val open = openApp()
+        val b =
+            base(kind, alarm, silent)
+                .setContentTitle(ctx.getString(headlineRes(kind)))
+                .setWhen(firing.at * 1000)
+                .setShowWhen(true)
+                .setAutoCancel(true)
+                .addAction(Notification.Action.Builder(null, ctx.getString(R.string.monitor_action_open_app), open).build())
+        plainValue(firing, unit())?.let(b::setContentText)
+        who?.let(b::setSubText)
+        if (alarm && !silent && nm.canUseFullScreenIntent()) b.setFullScreenIntent(open, true)
+        post(kind.group, b.build(), channel)
+        if (!silent) {
+            runCatching {
+                SoundGap.shared.alertRang()
+                unlocked?.ringing(kind.group, channel, alarm)
+            }
+        }
+    }
+
+    /**
+     * The last resort: "Sukrara couldn't show an alert" / "Open Sukrara to see your glucose." on `status` (*Monitoring
+     * problems*: its own sound and importance, the person's Do Not Disturb choice for it), fixed words only, in
+     * [group]'s slot but outside the alerts group, so a later alert replaces it and [clear] removes it. A silent
+     * re-post doesn't sound again.
+     */
+    override fun showProblem(group: AlertGroup, silent: Boolean) {
+        Channels.createCore(ctx)
+        val open = openApp()
+        val n =
+            Notification
+                .Builder(ctx, Channels.STATUS)
+                .setSmallIcon(ctx.applicationInfo.icon)
+                .setContentTitle(ctx.getString(R.string.alert_problem_title))
+                .setContentText(ctx.getString(R.string.alert_problem_text))
+                .setCategory(AlertCategory.of(alarm = false, AlertCategory.Dnd.of(nm)))
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setContentIntent(open)
+                .addAction(Notification.Action.Builder(null, ctx.getString(R.string.monitor_action_open_app), open).build())
+                .setOnlyAlertOnce(silent)
+                .setAutoCancel(true)
+                .build()
+        nm.notify(idOf(group), n)
+    }
+
     /** An info notification sounded less than a second ago: its sound would mute this alert's, so it waits the rest. */
     override suspend fun beforeRing() = delay(SoundGap.shared.alertWaitMs())
 
@@ -118,7 +179,7 @@ class AlertNotifier(
         val alarm = settings.rule(kind).alarm
         val n =
             base(kind, alarm, silent = false)
-                .setContentTitle(ctx.getString(R.string.alert_test_title, words().get("alert_headline_${kind.wire}")))
+                .setContentTitle(ctx.getString(R.string.alert_test_title, ctx.getString(headlineRes(kind))))
                 .setContentText(ctx.getString(R.string.alert_test_text))
                 .setShowWhen(true)
                 .setAutoCancel(true)
@@ -229,7 +290,55 @@ class AlertNotifier(
 
         private fun requestCode(kind: AlertKind, what: String) = 2000 + kind.ordinal * 16 + AlertActionReceiver.ACTIONS.indexOf(what)
 
+        /** "Low", "Very high"…: the kind's name (the sound's title in Android's channel settings). */
         fun kindLabel(ctx: Context, kind: AlertKind): String =
-            ctx.getString(ctx.resources.getIdentifier("alert_kind_${kind.wire}", "string", ctx.packageName))
+            ctx.getString(
+                when (kind) {
+                    AlertKind.VERY_LOW -> R.string.alert_kind_very_low
+                    AlertKind.LOW -> R.string.alert_kind_low
+                    AlertKind.HIGH -> R.string.alert_kind_high
+                    AlertKind.VERY_HIGH -> R.string.alert_kind_very_high
+                    AlertKind.EXTREMELY_HIGH -> R.string.alert_kind_extremely_high
+                    AlertKind.FALLING_FAST -> R.string.alert_kind_falling_fast
+                    AlertKind.RISING_FAST -> R.string.alert_kind_rising_fast
+                    AlertKind.NO_DATA -> R.string.alert_kind_no_data
+                },
+            )
+
+        /**
+         * "High glucose": the kind's headline as a resource the code names (the plain alert and the test alert), so
+         * neither depends on a lookup by name the resource shrinker can't see.
+         */
+        @StringRes
+        fun headlineRes(kind: AlertKind): Int =
+            when (kind) {
+                AlertKind.VERY_LOW -> R.string.alert_headline_very_low
+                AlertKind.LOW -> R.string.alert_headline_low
+                AlertKind.HIGH -> R.string.alert_headline_high
+                AlertKind.VERY_HIGH -> R.string.alert_headline_very_high
+                AlertKind.EXTREMELY_HIGH -> R.string.alert_headline_extremely_high
+                AlertKind.FALLING_FAST -> R.string.alert_headline_falling_fast
+                AlertKind.RISING_FAST -> R.string.alert_headline_rising_fast
+                AlertKind.NO_DATA -> R.string.alert_headline_no_data
+            }
+
+        /**
+         * The plain alert's text: "220 mg/dL ↗" (the value in [unit] with its symbol, then the arrow; a LO / HI as "< 40
+         * mg/dL" / "> 400 mg/dL"), plain values only. Null without a reading and for no data (its last value isn't now).
+         */
+        fun plainValue(
+            f: Firing,
+            unit: GlucoseUnit,
+            locale: Locale = Locale.getDefault(),
+        ): String? {
+            val r = f.reading?.takeIf { f.kind != AlertKind.NO_DATA } ?: return null
+            val value =
+                when {
+                    r.isLo -> "< " + unit.text(GlucoseRange.FLOOR, locale)
+                    r.isHi -> "> " + unit.text(GlucoseRange.CEILING, locale)
+                    else -> unit.text(r.mgdl, locale)
+                }
+            return "$value ${unit.symbol} ${TrendAngle.text(r.rate)}"
+        }
     }
 }

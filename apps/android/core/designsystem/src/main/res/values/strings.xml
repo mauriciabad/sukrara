@@ -21,7 +21,9 @@
     </plurals>
     <!-- The alert checklist (AlertRequirement): one name per item for setup, home and Settings › Alert reliability -->
     <string name="ds_req_delivery">Alert delivery</string>
-    <string name="ds_req_delivery_why">Android refused the last try to show an alert, set the next alert check or save the alerts. Sukrara tries again with every reading; the report says which step failed.</string>
+    <string name="ds_req_delivery_why">Android refused the last try to update or remove an alert, set the next alert check, tell your followers or save the alerts. Sukrara tries again with every reading; the report says which step failed.</string>
+    <string name="ds_req_shown">An alert couldn\'t be shown</string>
+    <string name="ds_req_shown_why">Its notification couldn\'t be built or posted, so Sukrara showed a plain one on the alert\'s channel instead (or a Monitoring problems notice) and tries the full alert again. The report says which step failed.</string>
     <string name="ds_copy_report">Copy report</string>
     <string name="ds_req_notifications">Notifications</string>
     <string name="ds_req_notifications_why">Without them no alert can show or sound.</string>

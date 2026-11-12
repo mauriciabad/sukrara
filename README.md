@@ -97,7 +97,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   phone, Sukrara already reads your sensor and alerts you as usual (*Monitoring before unlock* on the lock screen);
   followers, uploads and the app wait for the unlock, which adds those readings to your history. A follower's phone, or
   Juggluco as the source, can't run before the unlock: it says *Unlock to resume monitoring* and rings as *No data* when
-  that alert would have.
+  that alert would have. An alert whose notification can't be shown still rings: plain on its own channel (the kind,
+  the value and arrow, *Open Sukrara*), or else as a *Monitoring problems* notice, and Settings › Alert reliability
+  (Mac: the menu bar panel) says *An alert couldn't be shown* with *Copy report*.
 - **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
   evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
   ready*, a note on home in a new sensor's first 12 hours (readings can be less accurate: check a surprising one with a
