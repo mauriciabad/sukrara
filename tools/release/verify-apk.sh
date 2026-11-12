@@ -118,6 +118,20 @@ if [ $play = 1 ]; then
 elif printf '%s\n' "$manifest" | grep -q '"app.mauri.sukrara.update.UpdateReceiver"'; then ok "the updater's receiver is in (GitHub build)"
 else bad "no app.mauri.sukrara.update.UpdateReceiver: the GitHub build couldn't finish its own update"; fi
 
+# Strings looked up by name (alert and mute texts: MuteText.get, getIdentifier) are invisible to resource shrinking:
+# every string a module defines must be in the APK (app/src/main/res/raw/keep_strings.xml), or real alerts can't post.
+apk_strings="$("$aapt2" dump resources "$apk" | sed -n 's/^ *resource 0x[0-9a-f]* string\/\([A-Za-z0-9_.]*\)$/\1/p' | sort -u)"
+src_strings="$(find "$here/../../apps/android" -path '*/build' -prune -o -path '*/src/main/res/values/strings.xml' -print |
+  xargs sed -n 's/.*<string name="\([A-Za-z0-9_.]*\)".*/\1/p' | sort -u)"
+strings_tmp="$(mktemp -d)"
+printf '%s\n' "$apk_strings" > "$strings_tmp/apk"
+printf '%s\n' "$src_strings" > "$strings_tmp/src"
+missing_strings="$(comm -13 "$strings_tmp/apk" "$strings_tmp/src")"
+rm -rf "$strings_tmp"
+if [ -z "$src_strings" ]; then bad "no module strings found under apps/android"
+elif [ -z "$missing_strings" ]; then ok "every module string is in the APK ($(printf '%s\n' "$src_strings" | wc -l | tr -d ' ') strings)"
+else bad "strings missing from the APK (resource shrinking): $(printf '%s\n' "$missing_strings" | head -8 | tr '\n' ' ')…"; fi
+
 # Cleartext only to this phone's loopback: the debug build's config also allows 10.0.2.2 (a local test relay).
 nsc_file="$("$aapt2" dump resources "$apk" | grep -A1 ' xml/network_security_config$' | sed -n 's/.*(file) \([^ ]*\) type=XML.*/\1/p' | head -1)"
 nsc="$([ -n "$nsc_file" ] && "$aapt2" dump xmltree --file "$nsc_file" "$apk")"

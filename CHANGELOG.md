@@ -4,6 +4,10 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **Android alerts are posted again** (release builds): resource shrinking removed the alert and mute texts the app
+  looks up by name, so a real alert's notification couldn't be built and no alert showed (the alert logic itself
+  fired). Every string is kept now, and the release check fails if one is missing from the APK.
+
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 
 - **Sharing (Android, wearer)**: each message from a follower is handled once, also across restarts (#78). Before, every
