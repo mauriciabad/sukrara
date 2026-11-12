@@ -14,6 +14,18 @@
     <description>Updates of Sukrara for Mac (the GitHub and Homebrew version).</description>
     <language>en</language>
     <item>
+      <title>Sukrara 0.14.4</title>
+      <pubDate>Thu, 12 Nov 2026 14:17:39 GMT</pubDate>
+      <sparkle:version>14004</sparkle:version>
+      <sparkle:shortVersionString>0.14.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <sparkle:channel>prerelease</sparkle:channel>
+      <sparkle:fullReleaseNotesLink>https://github.com/mauriciabad/sukrara/releases/tag/v0.14.4</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[<ul><li><b>The low limit reads 70 again, and 70 is in range</b> (both apps; the owner: "the 70 is the threshold, but 70 itself is excluded from the interval -&gt; (70, 55) is low [55,-Infinity) is very low"): 0.14.3 showed the low limit as 69; now the ranges' and the low alert's default is 70 again and low means <b>below</b> it, so 69 is low and 70 in range, as before 0.14.3. Very low still includes its limit: 55 is very low, on the card and in the alerts. The chart's line reads 70, Settings › Ranges says <i>Low below</i> and the low alert <i>Below 70 mg/dL</i>; the line under each says <i>Low: 56–69 mg/dL</i>, <i>In range: 70–179 mg/dL</i> as before. A low you set yourself (69, say) stays as you set it; 70 is a preset again to go back.</li><li><b>A typed number saves again (Android)</b>: since 0.14.0 <i>OK</i> under <i>Custom…</i> in every number setting (range limits, alert thresholds, reminders, quiet times …) did nothing; it saves and closes again, and so does the keyboard's <i>Done</i>.</li></ul>]]></description>
+      <enclosure url="https://github.com/mauriciabad/sukrara/releases/download/v0.14.4/Sukrara-0.14.4.dmg" length="15046751" type="application/octet-stream"
+        sparkle:edSignature="Ezq33R06UdO1JSAEDU+e699g6zwZuQtTwi86NbGvV0Z/2KxuQF5kBqB9rGGOfnowzPt1n0L5lkCR/ftw4nGfDw=="/>
+    </item>
+    <item>
       <title>Sukrara 0.14.3</title>
       <pubDate>Thu, 12 Nov 2026 11:51:20 GMT</pubDate>
       <sparkle:version>14003</sparkle:version>
