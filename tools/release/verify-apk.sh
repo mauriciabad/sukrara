@@ -120,8 +120,10 @@ else bad "no app.mauri.sukrara.update.UpdateReceiver: the GitHub build couldn't 
 
 # Strings looked up by name (alert and mute texts: MuteText.get, getIdentifier) are invisible to resource shrinking:
 # every string a module defines must be in the APK (app/src/main/res/raw/keep_strings.xml), or real alerts can't post.
+# The Play build has no :update module (fullImplementation only, #188), so its strings aren't expected there.
 apk_strings="$("$aapt2" dump resources "$apk" | sed -n 's/^ *resource 0x[0-9a-f]* string\/\([A-Za-z0-9_.]*\)$/\1/p' | sort -u)"
 src_strings="$(find "$here/../../apps/android" -path '*/build' -prune -o -path '*/src/main/res/values/strings.xml' -print |
+  { if [ $play = 1 ]; then grep -v '/apps/android/update/'; else cat; fi; } |
   xargs sed -n 's/.*<string name="\([A-Za-z0-9_.]*\)".*/\1/p' | sort -u)"
 strings_tmp="$(mktemp -d)"
 printf '%s\n' "$apk_strings" > "$strings_tmp/apk"
