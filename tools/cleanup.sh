@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Removes the worktrees and local branches whose work is already on origin/next or origin/main (docs/DEVELOPMENT.md
-# "Cleanup"). Every agent and session runs it when its work is pushed.
+# "Cleanup"). The session that started agents runs it once their work is on next (CLAUDE.md "Whoever creates…").
 #   tools/cleanup.sh [--dry-run] [--quiet] [--fetch] [--idle MINUTES]
 # Lossless: it never touches main, next, the current directory's worktree, a branch checked out in a kept worktree, a
 # locked worktree, or one with changes or untracked files. A worktree goes only when its HEAD's commits are all on

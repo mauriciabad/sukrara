@@ -42,10 +42,12 @@ sections your change touches.
   (`~/.android/sukrara-release.jks`, password in the Keychain). *(checks `secrets`, `large`, `images`: images only
   under `docs/img/`, `assets/brand/`, `res/`, the snapshot goldens or `poc/spikes/*/evidence/`; full-phone captures
   flagged)*
-- **Clean up after yourself.** When your work is on `next` (or `main`), remove your worktree and branch: run
-  `tools/cleanup.sh` from the main checkout (it only removes what is already pushed, nothing with changes). A
-  session that started agents removes their worktrees once their work is merged, and stops their emulators and
-  background processes. *(not checked: `tools/cleanup.sh --dry-run` lists what's left)*
+- **Whoever creates a leftover removes it.** Every worktree, branch, emulator, background process and temp file is
+  removed by the session or agent that made it, as soon as it's no longer needed: it alone knows whether it still is.
+  An agent stops its emulators and background processes and deletes its temp files before reporting; it can't remove
+  the worktree it runs in, so the session that started it removes that worktree and branch once the agent's work is
+  on `next` (or the agent is dropped). Never leave cleanup to a later session. *(not checked: `tools/cleanup.sh
+  --dry-run` lists worktrees and branches whose work is already pushed; `tools/cleanup.sh` removes them)*
 - **Phone / Mac installs contain all merged work:** install only with `tools/install.sh phone|mac` (refuses a dirty
   tree, a HEAD without origin/main / the integration branches / the last installed commit, or failing checks; verifies
   the signed build first).

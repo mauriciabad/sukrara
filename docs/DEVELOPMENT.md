@@ -202,5 +202,6 @@ over explicitly between sessions.
 `tools/cleanup.sh [--dry-run] [--fetch] [--idle MINUTES]` removes every worktree and local branch whose commits are
 all on origin/next or origin/main (the same commit or a rebased copy). It keeps main, next, the current worktree,
 locked worktrees, any with changes or untracked files, and any used in the last 4 hours (an agent waiting on CI).
-A squash-merged branch stays and is listed: delete it by hand once checked. Agents and sessions run it when their
-work is pushed.
+A squash-merged branch stays and is listed: delete it by hand once checked. Whoever creates a leftover removes it
+(CLAUDE.md): an agent cleans up its own emulators, processes and temp files; the session that started it removes
+its worktree and branch once the work is on `next`, with this script or `git worktree remove`.
