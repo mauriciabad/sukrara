@@ -4,6 +4,8 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+## 0.14.3 (GitHub prerelease)
+
 - **Low is below 70, and the low alerts ring where the card says Low** (both apps; the owner: "Low is below 70 (70 is
   in the okay range), so from 69 downwards. And very low from 55 or lower"): every limit is the first value of the
   range it names, so at the defaults very low is up to 55, low 56–69, in range 70–179, high 180–249 and very high from
