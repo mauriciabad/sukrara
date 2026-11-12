@@ -218,7 +218,10 @@ fun numberLabel(
     value: Double,
 ): String = numberLabeler()(spec, value)
 
-/** "At or below 70 mg/dL", "At or above 180 mg/dL", "Falling faster than 2.0 mg/dL/min", "No reading for 20 min". */
+/**
+ * "Below 70 mg/dL" (low), "At or below 55 mg/dL" (very low), "At or above 180 mg/dL", "Falling faster than 2.0 mg/dL/min",
+ * "No reading for 20 min".
+ */
 @Composable
 fun thresholdSentence(
     kind: AlertKind,
@@ -229,7 +232,8 @@ fun thresholdSentence(
         kind == AlertKind.NO_DATA -> stringResource(R.string.st_threshold_no_data, v)
         kind == AlertKind.FALLING_FAST -> stringResource(R.string.st_threshold_falling, v)
         kind == AlertKind.RISING_FAST -> stringResource(R.string.st_threshold_rising, v)
-        kind.isLowSide -> stringResource(R.string.st_threshold_at_or_below, v)
+        kind == AlertKind.LOW -> stringResource(R.string.st_threshold_below, v)
+        kind == AlertKind.VERY_LOW -> stringResource(R.string.st_threshold_at_or_below, v)
         else -> stringResource(R.string.st_threshold_above, v)
     }
 }

@@ -22,7 +22,7 @@ class GlucoseStatsTest {
     ) = GlucosePoint(min * 60L, v, null)
 
     @Test fun bands() {
-        // a limit belongs to the range beyond it (#181; every limit in contracts/graph/range/bands.json)
+        // low is below its limit, very low at or below its own, highs from theirs (every limit in contracts/graph/range/bands.json)
         assertEquals(Band.VERY_LOW, b.of(55))
         assertEquals(Band.LOW, b.of(56))
         assertEquals(Band.LOW, b.of(69))

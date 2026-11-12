@@ -263,7 +263,7 @@ private fun Ranges(
             HorizontalDivider()
             RangeRow(
                 stringResource(R.string.report_in_range),
-                "${n(b.low + 1)}–${n(b.high - 1)} $sym",
+                "${n(b.low)}–${n(b.high - 1)} $sym",
                 m.tir.inRange,
                 Goal.IN_RANGE,
                 tone,

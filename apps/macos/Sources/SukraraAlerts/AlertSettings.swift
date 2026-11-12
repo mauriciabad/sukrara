@@ -24,7 +24,7 @@ public struct AlertRule: Equatable, Sendable {
     public static func defaults(_ kind: AlertKind) -> AlertRule {
         switch kind {
         case .veryLow: AlertRule(on: true, threshold: 55, repeatMin: 5, alarm: true)
-        case .low: AlertRule(on: true, threshold: 69, repeatMin: 5)
+        case .low: AlertRule(on: true, threshold: 70, repeatMin: 5)
         case .high: AlertRule(on: true, threshold: 180, repeatMin: 15)
         case .veryHigh: AlertRule(on: true, threshold: 250, repeatMin: 10)
         case .extremelyHigh: AlertRule(on: true, threshold: 300, repeatMin: 5, alarm: true)

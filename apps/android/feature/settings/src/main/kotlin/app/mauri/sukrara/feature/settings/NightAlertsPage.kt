@@ -132,7 +132,7 @@ fun NightAlertsContent(
     }
 }
 
-/** "At or below 70 mg/dL · every 5 min · like an alarm": one alert's night rule in words. */
+/** "Below 70 mg/dL · every 5 min · like an alarm": one alert's night rule in words. */
 @Composable
 private fun nightKindSummary(
     kind: AlertKind,

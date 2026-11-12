@@ -410,14 +410,14 @@ private fun rangeName(
         TirRange.IN_RANGE -> {
             stringResource(
                 R.string.st_ring_counts_in_range,
-                number(c.bands.low + 1),
+                number(c.bands.low),
                 number(c.bands.high - 1),
                 unit.symbol,
             )
         }
 
         TirRange.TIGHT -> {
-            stringResource(R.string.st_ring_counts_tight, number(c.bands.low + 1), number(c.bands.tight), unit.symbol)
+            stringResource(R.string.st_ring_counts_tight, number(c.bands.low), number(c.bands.tight), unit.symbol)
         }
     }
 }

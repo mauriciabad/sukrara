@@ -2033,18 +2033,18 @@
         }
       }
     },
-    "Low up to" : {
+    "Low below" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Low up to"
+            "value" : "Low below"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Baja hasta"
+            "value" : "Baja por debajo de"
           }
         }
       }
@@ -6333,6 +6333,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Todo"
+          }
+        }
+      }
+    },
+    "Below %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por debajo de %@ %@"
           }
         }
       }

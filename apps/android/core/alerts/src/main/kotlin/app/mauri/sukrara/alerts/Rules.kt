@@ -84,8 +84,7 @@ object Rules {
         if (r == null || !s.on || !fresh(r, now)) return null
         return AlertKind.LEVELS_BY_SEVERITY.firstOrNull { k ->
             val rule = s.rule(k)
-            rule.on &&
-                if (k.isLowSide) r.isLo || r.mgdl <= rule.threshold else r.isHi || r.mgdl >= rule.threshold
+            rule.on && ((if (k.isLowSide) r.isLo else r.isHi) || k.reaches(r.mgdl.toDouble(), rule.threshold))
         }
     }
 
@@ -114,11 +113,13 @@ object Rules {
     }
 
     /**
-     * [r] is back in range by the margin for [side] (SPEC §2 "Scope and end"): lows more than `backMgdl` above the highest
-     * enabled low threshold, highs below the lowest enabled high threshold minus it, a rate side when [r]'s rate
-     * doesn't match it. No data is judged by the caller (readings coming). Null = [r] can't tell: a rate side and a
-     * reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1). [margin]: the
-     * notification actions' by default; a level episode's own end uses `persistence.marginMgdl` ([outOfRange]).
+     * [r] is back in range by the margin for [side] (SPEC §2 "Scope and end"): [r] moved `backMgdl` further out still
+     * matches no enabled kind of the side, so lows at least the margin above the low threshold (70 + 10: back from 80)
+     * and more than it above very low's when low is off (55 + 10: back from 66), highs below the high threshold minus
+     * it (180 − 10: back from 169); a rate side when [r]'s rate doesn't match it. No data is judged by the caller
+     * (readings coming). Null = [r] can't tell: a rate side and a reading without a rate (a LO / HI is sent without
+     * one) is no sign the fast change stopped (SPEC §1). [margin]: the notification actions' by default; a level
+     * episode's own end uses `persistence.marginMgdl` ([outOfRange]).
      */
     fun backBy(side: Side, r: AlertReading, s: AlertSettings, margin: Int = s.actions.backMgdl): Boolean? =
         when (side) {
@@ -127,16 +128,14 @@ object Rules {
                 !r.isLo &&
                     AlertKind.entries
                         .filter { it.side == Side.LOW && s.rule(it).on }
-                        .maxOfOrNull { s.rule(it).threshold }
-                        .let { edge -> edge == null || r.mgdl > edge + margin }
+                        .none { it.reaches((r.mgdl - margin).toDouble(), s.rule(it).threshold) }
             }
 
             Side.HIGH -> {
                 !r.isHi &&
                     AlertKind.entries
                         .filter { it.side == Side.HIGH && s.rule(it).on }
-                        .minOfOrNull { s.rule(it).threshold }
-                        .let { edge -> edge == null || r.mgdl < edge - margin }
+                        .none { it.reaches((r.mgdl + margin).toDouble(), s.rule(it).threshold) }
             }
 
             Side.FALLING_FAST -> {

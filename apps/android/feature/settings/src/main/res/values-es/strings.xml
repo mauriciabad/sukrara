@@ -95,6 +95,7 @@
     <string name="st_kind_off_text_no_data">Nada te avisará cuando dejen de llegar lecturas (problemas del sensor, Bluetooth o el teléfono).</string>
     <string name="st_alert_when">Avisar cuando</string>
     <string name="st_threshold">Glucosa</string>
+    <string name="st_threshold_below">Por debajo de %1$s</string>
     <string name="st_threshold_at_or_below">Hasta %1$s</string>
     <string name="st_threshold_above">A partir de %1$s</string>
     <string name="st_threshold_falling">Bajando más rápido que %1$s</string>
@@ -124,7 +125,7 @@
     <string name="st_special_default">Predeterminado</string>
     <string name="st_ranges_title">Rangos</string>
     <string name="st_band_very_low">Muy bajo hasta</string>
-    <string name="st_band_low">Bajo hasta</string>
+    <string name="st_band_low">Bajo por debajo de</string>
     <string name="st_band_tight">Muy bien hasta</string>
     <string name="st_band_high">Alto desde</string>
     <string name="st_band_very_high">Muy alto desde</string>

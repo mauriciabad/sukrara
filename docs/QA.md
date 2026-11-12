@@ -555,7 +555,8 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
 - [ ] Every number row (Graph: the six ranges, time shown and per place, rings, periods, lines, vertical lines; Alerts:
       thresholds, remind, quiet times, Mute…, Relax, the margin, Mute all custom; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
-      above the range and (rates) `1.55` are refused with that text in red; a custom value shows as *Custom* + value.
+      above the range and (rates) `1.55` are refused with that text in red; a valid typed value saves with OK and with
+      the keyboard's Done (the dialog closes, the row shows it); a custom value shows as *Custom* + value.
 - [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step; Mac
       Settings › Graph › Ranges, an alert's Details…, its night rule, setup's Alerts step), mg/dL and mmol/L, English and
       Spanish: under the number a line says the values it covers (*Low: 56–69 mg/dL*, *In range: 70–179 mg/dL* under

@@ -163,11 +163,13 @@ public struct SideSnoozes: Codable, Equatable, Sendable {
     }
 }
 
-/// The margin rule (SPEC §2): `reading` is back in range by the margin for `side`. Lows more than `backMgdl` above the
-/// highest enabled low-side threshold, highs below the lowest enabled high-side threshold minus `backMgdl`, a rate
-/// side while its rate doesn't match; no data always (a reading came). Nil = `reading` can't tell: a rate side and a
-/// reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1). `margin`: the
-/// notification actions' by default; a level episode's own end uses `persistence.marginMgdl` (`isOutOfRange`).
+/// The margin rule (SPEC §2): `reading` is back in range by the margin for `side`: moved `backMgdl` further out it
+/// still matches no enabled kind of the side, so lows at least the margin above the low threshold (70 + 10: back from
+/// 80) and more than it above very low's when low is off (55 + 10: back from 66), highs below the high threshold minus
+/// it (180 − 10: back from 169); a rate side while its rate doesn't match; no data always (a reading came). Nil =
+/// `reading` can't tell: a rate side and a reading without a rate (a LO / HI is sent without one) is no sign the fast
+/// change stopped (SPEC §1). `margin`: the notification actions' by default; a level episode's own end uses
+/// `persistence.marginMgdl` (`isOutOfRange`).
 public func isBackByMargin(_ side: AlertSide, _ reading: GlucoseSample, _ s: AlertSettings, margin: Int? = nil)
     -> Bool?
 {
@@ -176,18 +178,12 @@ public func isBackByMargin(_ side: AlertSide, _ reading: GlucoseSample, _ s: Ale
     // a LO / HI is beyond every threshold: never back in range, whatever the margin's edge
     case .low:
         if reading.isLo { return false }
-        guard let edge = [AlertKind.veryLow, .low].filter({ s[$0].on }).map({ s[$0].threshold }).max() else {
-            return true
-        }
-        return reading.mgdl > edge + m
+        return ![AlertKind.veryLow, .low].contains { s[$0].on && $0.reaches(reading.mgdl - m, s[$0].threshold) }
     case .high:
         if reading.isHi { return false }
-        guard
-            let edge = [AlertKind.high, .veryHigh, .extremelyHigh].filter({ s[$0].on }).map({ s[$0].threshold }).min()
-        else {
-            return true
+        return ![AlertKind.high, .veryHigh, .extremelyHigh].contains {
+            s[$0].on && $0.reaches(reading.mgdl + m, s[$0].threshold)
         }
-        return reading.mgdl < edge - m
     case .fallingFast: return !s[.fallingFast].on ? true : reading.rate.map { $0 > -s[.fallingFast].threshold }
     case .risingFast: return !s[.risingFast].on ? true : reading.rate.map { $0 < s[.risingFast].threshold }
     case .noData: return true

@@ -191,7 +191,7 @@ class SettingsPagesTest {
 
     @Test
     fun `a band must stay between its neighbours`() {
-        val bands = listOf(55.0, 69.0, 140.0, 180.0, 250.0, 300.0)
+        val bands = listOf(55.0, 70.0, 140.0, 180.0, 250.0, 300.0)
         assertNull(BandOrder.conflict(bands, 1, 65.0))
         assertEquals(55.0 to 140.0, BandOrder.conflict(bands, 1, 55.0))
         assertEquals(250.0 to null, BandOrder.conflict(bands, 5, 240.0))
@@ -204,7 +204,7 @@ class SettingsPagesTest {
             app.mauri.sukrara.alerts
                 .AlertSettings()
         assertNull(AlertEdits.thresholdConflict(s, AlertKind.LOW, 65.0))
-        assertEquals(null to 69.0, AlertEdits.thresholdConflict(s, AlertKind.VERY_LOW, 80.0))
+        assertEquals(null to 70.0, AlertEdits.thresholdConflict(s, AlertKind.VERY_LOW, 80.0))
         assertEquals(180.0 to 300.0, AlertEdits.thresholdConflict(s, AlertKind.VERY_HIGH, 160.0))
         assertNull(AlertEdits.thresholdConflict(s, AlertKind.NO_DATA, 5.0))
     }

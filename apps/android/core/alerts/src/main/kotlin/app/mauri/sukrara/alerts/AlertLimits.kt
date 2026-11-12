@@ -39,7 +39,7 @@ data class NumberLimit(
 /** The alert settings' number formats (contracts/settings/settings.json `numbers`). */
 object AlertLimits {
     val THRESHOLD_VERY_LOW = NumberLimit(40.0, 80.0, 1.0, 55.0, listOf(50.0, 54.0, 55.0, 60.0, 65.0))
-    val THRESHOLD_LOW = NumberLimit(50.0, 120.0, 1.0, 69.0, listOf(60.0, 65.0, 69.0, 75.0, 80.0))
+    val THRESHOLD_LOW = NumberLimit(50.0, 120.0, 1.0, 70.0, listOf(60.0, 65.0, 70.0, 75.0, 80.0))
     val THRESHOLD_HIGH = NumberLimit(120.0, 300.0, 1.0, 180.0, listOf(160.0, 170.0, 180.0, 185.0, 200.0))
     val THRESHOLD_VERY_HIGH = NumberLimit(150.0, 400.0, 1.0, 250.0, listOf(200.0, 220.0, 250.0, 270.0, 300.0))
     val THRESHOLD_EXTREMELY_HIGH = NumberLimit(200.0, 450.0, 1.0, 300.0, listOf(220.0, 250.0, 270.0, 300.0, 350.0))

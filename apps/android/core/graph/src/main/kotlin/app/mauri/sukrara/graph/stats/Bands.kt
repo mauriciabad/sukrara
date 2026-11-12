@@ -19,9 +19,10 @@ data class GlucosePoint(
 fun Reading.toPoint(): GlucosePoint = GlucosePoint(t.epochSecond, mgdl, rateMgdlPerMin?.toDouble())
 
 /**
- * The person's ranges, mg/dL. A value at a limit belongs to the range beyond it (the owner, #181: "≥ for high ranges,
- * ≤ for low ranges"): very low ≤ [veryLow] < low ≤ [low] < in range < [high] ≤ high < [veryHigh] ≤ very high. Inside
- * in range, the "very good" (tight) band from above [low] up to and including [tight]. [extremelyHigh] (≥) only
+ * The person's ranges, mg/dL (the owner, 2026-11-12: "the 70 is the threshold, but 70 itself is excluded from the
+ * interval -> (70, 55) is low [55,-Infinity) is very low"): very low ≤ [veryLow] < low < [low] ≤ in range < [high] ≤
+ * high < [veryHigh] ≤ very high. The low limit is the first value in range, every other limit the first value of the
+ * range beyond it. Inside in range, the "very good" (tight) band from [low] up to and including [tight]. [extremelyHigh] (≥) only
  * colours the line and the number: time in range keeps LibreView's five ranges. Defaults from the settings schema;
  * every surface, statistic and word goes through [of] (contracts/graph/range/bands.json; Bands in Model.swift on the
  * Mac is the same).
@@ -37,7 +38,7 @@ data class Bands(
     fun of(mgdl: Double): Band =
         when {
             mgdl <= veryLow -> Band.VERY_LOW
-            mgdl <= low -> Band.LOW
+            mgdl < low -> Band.LOW
             mgdl >= veryHigh -> Band.VERY_HIGH
             mgdl >= high -> Band.HIGH
             mgdl <= tight -> Band.TIGHT
@@ -53,9 +54,9 @@ data class Bands(
     fun span(band: Band): Pair<Int?, Int?> =
         when (band) {
             Band.VERY_LOW -> null to veryLow
-            Band.LOW -> veryLow + 1 to low
-            Band.TIGHT -> low + 1 to minOf(tight, high - 1)
-            Band.TARGET -> maxOf(tight + 1, low + 1) to high - 1
+            Band.LOW -> veryLow + 1 to low - 1
+            Band.TIGHT -> low to minOf(tight, high - 1)
+            Band.TARGET -> maxOf(tight + 1, low) to high - 1
             Band.HIGH -> high to veryHigh - 1
             Band.VERY_HIGH -> veryHigh to null
         }

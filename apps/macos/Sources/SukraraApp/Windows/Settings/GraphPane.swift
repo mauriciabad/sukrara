@@ -250,7 +250,7 @@ struct GraphPane: View {
     static func bandName(_ id: String) -> String {
         switch id {
         case "graph.band.veryLow": L10n.t("Very low up to")
-        case "graph.band.low": L10n.t("Low up to")
+        case "graph.band.low": L10n.t("Low below")
         case "graph.band.tight": L10n.t("Very good up to")
         case "graph.band.high": L10n.t("High from")
         case "graph.band.veryHigh": L10n.t("Very high from")

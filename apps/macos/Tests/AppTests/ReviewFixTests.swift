@@ -59,7 +59,7 @@ import Testing
         m.alerts.update { $0[.low].threshold = 80 }
         m.setNumber(150, MacSettings.bandTight)
         m.useDefaults()
-        #expect(m.shownAlerts[.low].threshold == 69 && m.graph.bands.tight == 140)
+        #expect(m.shownAlerts[.low].threshold == 70 && m.graph.bands.tight == 140)
         m.useOwn()
         #expect(m.shownAlerts[.low].threshold == 80 && m.graph.bands.tight == 150)
     }

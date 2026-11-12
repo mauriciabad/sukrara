@@ -32,17 +32,26 @@ settings relax.min=15                         # the default until round 22 (now 
 scenario The mute ends once back in range by the margin
  0  glucose 65   => Low glucose
  2  mute low     => clear low                 # until 32
- 4  glucose 80                                # more than 10 above the low threshold (69): back by the margin …
+ 4  glucose 80                                # 10 above the low threshold (70): back by the margin …
 14               => back low                  # … for 10 min: the mute ends
 20  glucose 65   => Low glucose               # a new episode, not muted
 25               => Low glucose
 26
 
-scenario Back by the margin starts above the threshold plus the margin
+scenario Back by the margin starts at the low threshold plus the margin
  0  glucose 65   => Low glucose
  2  mute low     => clear low                 # until 32
- 4  glucose 79                                # 10 above the low threshold (69): in range, not yet back by the margin
-15  glucose 80                                # more than 10 above it: back by the margin …
+ 4  glucose 79                                # 9 above the low threshold (70): in range, not yet back by the margin
+15  glucose 80                                # 10 above it: back by the margin …
+25               => back low                  # … for 10 min: the mute ends
+26
+
+scenario With low off, back by the margin starts more than the margin above very low (it includes its limit)
+settings low=off
+ 0  glucose 50   => Very low glucose
+ 2  mute low     => clear very_low            # until 32
+ 4  glucose 65                                # 10 above very low's 55: 55 would still be very low, not back
+15  glucose 66                                # more than 10 above it: back by the margin …
 25               => back low                  # … for 10 min: the mute ends
 26
 

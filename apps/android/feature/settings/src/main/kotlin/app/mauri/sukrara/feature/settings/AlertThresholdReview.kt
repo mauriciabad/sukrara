@@ -138,7 +138,7 @@ internal fun AlertThresholdReviewContent(
 }
 
 /**
- * The reviewed thresholds of [draft]: one row per kind ("Low — At or below 70 mg/dL", "Off (…)"), each opening THE number
+ * The reviewed thresholds of [draft]: one row per kind ("Low — Below 70 mg/dL", "Off (…)"), each opening THE number
  * dialog limited to the values that keep the levels in order. This review and setup's alert step (the app passes it
  * in) show the same rows.
  */

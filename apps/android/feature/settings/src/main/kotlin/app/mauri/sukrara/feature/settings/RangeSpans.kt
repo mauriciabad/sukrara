@@ -14,8 +14,9 @@ import java.util.Locale
 
 /**
  * The whole mg/dL values a limit makes count, as a range or alert row says them under its number ("Low: 56–69 mg/dL",
- * "In range: 70–179 mg/dL"; the Mac's RangeSpans is the same). Every limit is the first value of the range it names,
- * inclusive (SPEC §1, contracts/graph/range/bands.json), so the number alone decides: nothing to choose.
+ * "In range: 70–179 mg/dL"; the Mac's RangeSpans is the same). The low limit is the first value in range (low is
+ * strictly below it), every other limit the first value of the range it names (very low at or below it, the highs at
+ * or above it; SPEC §1, contracts/graph/range/bands.json), so the number alone decides: nothing to choose.
  */
 object RangeSpans {
     enum class Name { VERY_LOW, LOW, TIGHT, IN_RANGE, HIGH, VERY_HIGH, EXTREMELY_HIGH }
@@ -37,11 +38,11 @@ object RangeSpans {
     ): List<Span> {
         val (vl, l, t, h, vh) = limits.map { it.toInt() }
         val eh = limits[5].toInt()
-        val inRange = Span(Name.IN_RANGE, l + 1, h - 1)
+        val inRange = Span(Name.IN_RANGE, l, h - 1)
         return when (index) {
             0 -> listOf(Span(Name.VERY_LOW, null, vl))
-            1 -> listOf(Span(Name.LOW, vl + 1, l), inRange)
-            2 -> listOf(Span(Name.TIGHT, l + 1, minOf(t, h - 1)))
+            1 -> listOf(Span(Name.LOW, vl + 1, l - 1), inRange)
+            2 -> listOf(Span(Name.TIGHT, l, minOf(t, h - 1)))
             3 -> listOf(Span(Name.HIGH, h, vh - 1), inRange)
             4 -> listOf(Span(Name.VERY_HIGH, vh, eh - 1))
             else -> listOf(Span(Name.EXTREMELY_HIGH, eh, null))
@@ -61,13 +62,16 @@ object RangeSpans {
         fun th(k: AlertKind) = s.rule(k).threshold.toInt()
         val lows = listOf(AlertKind.VERY_LOW, AlertKind.LOW).filter(::on)
         val highs = listOf(AlertKind.HIGH, AlertKind.VERY_HIGH, AlertKind.EXTREMELY_HIGH).filter(::on)
-        val inRange = Span(Name.IN_RANGE, lows.maxOfOrNull(::th)?.plus(1), highs.minOfOrNull(::th)?.minus(1))
+
+        // the first value no low matches: low's own limit (70), one above very low's (56) when low is off
+        fun inFrom(k: AlertKind) = if (k == AlertKind.LOW) th(k) else th(k) + 1
+        val inRange = Span(Name.IN_RANGE, lows.maxOfOrNull(::inFrom), highs.minOfOrNull(::th)?.minus(1))
 
         // the next kind on the way out bounds this one: low above very low, high under very high …
         fun above(vararg ks: AlertKind) = ks.filter(::on).minOfOrNull(::th)?.minus(1)
         return when (kind) {
             AlertKind.VERY_LOW -> listOf(Span(Name.VERY_LOW, null, th(kind)))
-            AlertKind.LOW -> listOf(Span(Name.LOW, AlertKind.VERY_LOW.takeIf(::on)?.let { th(it) + 1 }, th(kind)), inRange)
+            AlertKind.LOW -> listOf(Span(Name.LOW, AlertKind.VERY_LOW.takeIf(::on)?.let { th(it) + 1 }, th(kind) - 1), inRange)
             AlertKind.HIGH -> listOf(Span(Name.HIGH, th(kind), above(AlertKind.VERY_HIGH, AlertKind.EXTREMELY_HIGH)), inRange)
             AlertKind.VERY_HIGH -> listOf(Span(Name.VERY_HIGH, th(kind), above(AlertKind.EXTREMELY_HIGH)))
             AlertKind.EXTREMELY_HIGH -> listOf(Span(Name.EXTREMELY_HIGH, th(kind), null))
@@ -125,7 +129,7 @@ fun spanWords(): SpanWords =
         LocalConfiguration.current.locales[0],
     )
 
-/** A row's value with the spans it sets under it: "69 mg/dL\nLow: 56–69 mg/dL\nIn range: 70–179 mg/dL". */
+/** A row's value with the spans it sets under it: "70 mg/dL\nLow: 56–69 mg/dL\nIn range: 70–179 mg/dL". */
 fun withSpans(
     value: String,
     spans: String?,

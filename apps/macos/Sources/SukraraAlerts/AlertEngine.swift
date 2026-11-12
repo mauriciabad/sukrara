@@ -169,14 +169,13 @@ public struct AlertEngine: Sendable {
     /// Mute all's end in force at `t` (nil = off).
     public func muteAllEnd(at t: Date) -> Date? { muteAllUntil.flatMap { $0 > t ? $0 : nil } }
 
-    /// The level kind `reading` is in at `t`, or nil (stale, in range, alerts off). Lows `<=`, highs `>=`; a LO
+    /// The level kind `reading` is in at `t`, or nil (stale, in range, alerts off). `AlertKind.reaches`: low `<`, very
+    /// low `<=`, highs `>=`; a LO
     /// matches every low kind and a HI every high kind, whatever the thresholds (its real value is beyond them all).
     public static func level(of reading: GlucoseSample?, _ s: AlertSettings, at t: Date) -> AlertKind? {
         guard let r = reading, s.on, t.timeIntervalSince(r.at) <= freshness else { return nil }
         return AlertKind.levelsByPriority.first { k in
-            s[k].on
-                && (k.isLowSide
-                    ? r.isLo || r.mgdl <= s[k].threshold : r.isHi || r.mgdl >= s[k].threshold)
+            s[k].on && ((k.isLowSide ? r.isLo : r.isHi) || k.reaches(r.mgdl, s[k].threshold))
         }
     }
 

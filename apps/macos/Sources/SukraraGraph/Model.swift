@@ -7,18 +7,19 @@ import Foundation
 
 // MARK: - Model
 
-/// The user's ranges, mg/dL. A value at a limit belongs to the range beyond it (the owner, #181: "≥ for high ranges,
-/// ≤ for low ranges"): very low ≤ `veryLow` < low ≤ `low` < in range < `high` ≤ high < `veryHigh` ≤ very high;
-/// "very good" (tight) = above `low` up to and including `tight`, inside in range.
+/// The user's ranges, mg/dL (the owner, 2026-11-12: "the 70 is the threshold, but 70 itself is excluded from the
+/// interval -> (70, 55) is low [55,-Infinity) is very low"): very low ≤ `veryLow` < low < `low` ≤ in range < `high` ≤
+/// high < `veryHigh` ≤ very high. The low limit is the first value in range, every other limit the first value of the
+/// range beyond it; "very good" (tight) = from `low` up to and including `tight`, inside in range.
 /// `extremelyHigh` (≥, like the extremely high alert) only colours the line and the number; time in range counts it as
 /// very high (LibreView's five ranges). Every surface, statistic and word goes through `of`
 /// (contracts/graph/range/bands.json; Bands.kt on Android is the same).
 public struct Bands: Codable, Equatable, Hashable, Sendable {
-    public var veryLow = 55, low = 69, tight = 140, high = 180, veryHigh = 250, extremelyHigh = 300
+    public var veryLow = 55, low = 70, tight = 140, high = 180, veryHigh = 250, extremelyHigh = 300
 
     func of(_ mgdl: Double) -> Band {
         if mgdl <= Double(veryLow) { return .veryLow }
-        if mgdl <= Double(low) { return .low }
+        if mgdl < Double(low) { return .low }
         if mgdl >= Double(veryHigh) { return .veryHigh }
         if mgdl >= Double(high) { return .high }
         if mgdl <= Double(tight) { return .tight }
@@ -30,9 +31,9 @@ public struct Bands: Codable, Equatable, Hashable, Sendable {
     func span(_ band: Band) -> (lo: Int?, hi: Int?) {
         switch band {
         case .veryLow: (nil, veryLow)
-        case .low: (veryLow + 1, low)
-        case .tight: (low + 1, min(tight, high - 1))
-        case .target: (max(tight + 1, low + 1), high - 1)
+        case .low: (veryLow + 1, low - 1)
+        case .tight: (low, min(tight, high - 1))
+        case .target: (max(tight + 1, low), high - 1)
         case .high: (high, veryHigh - 1)
         case .veryHigh: (veryHigh, nil)
         }
@@ -48,7 +49,7 @@ public struct Bands: Codable, Equatable, Hashable, Sendable {
             veryHigh: vh, extremelyHigh: min(max(extremelyHigh, vh + 10), 450))
     }
     public init(
-        veryLow: Int = 55, low: Int = 69, tight: Int = 140, high: Int = 180, veryHigh: Int = 250,
+        veryLow: Int = 55, low: Int = 70, tight: Int = 140, high: Int = 180, veryHigh: Int = 250,
         extremelyHigh: Int = 300
     ) {
         self.veryLow = veryLow

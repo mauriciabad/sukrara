@@ -35,8 +35,20 @@ public enum AlertKind: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// Lows alert at or below their threshold (low 70 alerts at 70); the other levels at or above it.
+    /// Very low and low: the kinds below the range.
     public var isLowSide: Bool { self == .veryLow || self == .low }
+
+    /// `mgdl` is in this level kind at `threshold` (SPEC §1; the card's ranges, contracts/graph/range/bands.json): low
+    /// strictly below it (low 70 alerts at 69, 70 is in range), very low at or below it (very low 55 alerts at 55), the
+    /// highs at or above it. False for the other kinds.
+    public func reaches(_ mgdl: Double, _ threshold: Double) -> Bool {
+        switch self {
+        case .low: mgdl < threshold
+        case .veryLow: mgdl <= threshold
+        case .high, .veryHigh, .extremelyHigh: mgdl >= threshold
+        case .fallingFast, .risingFast, .noData: false
+        }
+    }
 
     /// Severity within a side: moving to a more severe kind alerts at once.
     public var severity: Int {

@@ -102,8 +102,24 @@ enum class AlertKind(
 
     val isLevel: Boolean get() = group == AlertGroup.LEVEL
 
-    /** Lows alert at or below their threshold (low 70 alerts at 70); the other levels at or above it. */
+    /** Very low and low: the kinds below the range. */
     val isLowSide: Boolean get() = side == Side.LOW
+
+    /**
+     * [mgdl] is in this level kind at [threshold] (SPEC §1; the card's ranges, contracts/graph/range/bands.json): low
+     * strictly below it (low 70 alerts at 69, 70 is in range), very low at or below it (very low 55 alerts at 55),
+     * the highs at or above it. False for the other kinds.
+     */
+    fun reaches(
+        mgdl: Double,
+        threshold: Double,
+    ): Boolean =
+        when (this) {
+            LOW -> mgdl < threshold
+            VERY_LOW -> mgdl <= threshold
+            HIGH, VERY_HIGH, EXTREMELY_HIGH -> mgdl >= threshold
+            else -> false
+        }
 
     companion object {
         /** Level kinds by severity: the first that matches is the one active level alert. */

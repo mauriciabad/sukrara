@@ -199,7 +199,7 @@ struct AlertsRangesPane: View {
             .disabled(readOnly || !model.shownAlerts.night.on)
     }
 
-    /// "Always on · up to 54 mg/dL · every 5 min", "Off" (one alert's night rule).
+    /// "Always on · up to 55 mg/dL · every 5 min", "Off" (one alert's night rule).
     static func nightSummary(_ kind: AlertKind, _ n: NightSettings, unit: GlucoseUnit) -> String {
         var s = AlertSettings()
         s[kind] = n[kind]
@@ -236,15 +236,17 @@ struct AlertsRangesPane: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// "Up to 70 mg/dL · every 5 min · Quest · like an alarm" (what applies).
+    /// "Below 70 mg/dL · every 5 min · Quest · like an alarm" (what applies; very low "Up to 55 mg/dL").
     static func summary(_ kind: AlertKind, _ s: AlertSettings, unit: GlucoseUnit) -> String {
         let r = s[kind]
         let when: String =
             switch kind.group {
             case .level:
-                kind.isLowSide
-                    ? L10n.t("Up to \(unit.format(Int(r.threshold))) \(unit.symbol)")
-                    : L10n.t("From \(unit.format(Int(r.threshold))) \(unit.symbol)")
+                kind == .low
+                    ? L10n.t("Below \(unit.format(Int(r.threshold))) \(unit.symbol)")
+                    : kind == .veryLow
+                        ? L10n.t("Up to \(unit.format(Int(r.threshold))) \(unit.symbol)")
+                        : L10n.t("From \(unit.format(Int(r.threshold))) \(unit.symbol)")
             case .rate: L10n.t("Faster than \(unit.rateText(r.threshold)) \(unit.rateSymbol)")
             case .noData: L10n.t("After \(Durations.text(Int(r.threshold))) without data")
             }

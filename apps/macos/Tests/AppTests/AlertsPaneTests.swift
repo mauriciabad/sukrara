@@ -13,14 +13,14 @@ import Testing
 @Suite struct AlertsPaneTests {
     @Test func summarySaysWhatApplies() {
         var s = AlertSettings()
-        #expect(AlertsRangesPane.summary(.low, s, unit: .mgdl) == "Up to 69 mg/dL · every 5 min · Quest")
+        #expect(AlertsRangesPane.summary(.low, s, unit: .mgdl) == "Below 70 mg/dL · every 5 min · Quest")
         #expect(AlertsRangesPane.summary(.veryLow, s, unit: .mgdl).hasSuffix("like an alarm"))
         s[.high].on = false
         s[.high].repeatMin = 0
         s.sounds.kinds[AlertKind.high.rawValue] = "none"
         #expect(AlertsRangesPane.summary(.high, s, unit: .mgdl) == "Off · From 180 mg/dL · once · silent")
         #expect(AlertsRangesPane.summary(.noData, s, unit: .mgdl).hasPrefix("After 20 min without data"))
-        #expect(AlertsRangesPane.summary(.low, s, unit: .mmol).hasPrefix("Up to 3.8 mmol/L"))
+        #expect(AlertsRangesPane.summary(.low, s, unit: .mmol).hasPrefix("Below 3.9 mmol/L"))
     }
 
     /// The test alert goes through the notifier as its own notification; the engine and its mutes don't see it.

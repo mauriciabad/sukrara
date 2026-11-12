@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -38,6 +39,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
@@ -150,7 +152,8 @@ fun DialogRadio(
 /**
  * SPA SettingsAlertDialog's expressive buttons at the dialog's end: the outlined dismiss, then the filled confirm.
  * [other]: a third action before them as a text button (*Test*, *Remove*), in the error colour when [otherDanger]; the
- * buttons wrap at a large font.
+ * buttons wrap at a large font. [onConfirm] is last, so a trailing lambda is the confirm (a typed number's OK once
+ * went to [onOther] and saved nothing, 2026-11-12).
  */
 @Composable
 fun DialogButtons(
@@ -159,11 +162,11 @@ fun DialogButtons(
     modifier: Modifier = Modifier,
     confirm: String? = null,
     confirmEnabled: Boolean = true,
-    onConfirm: () -> Unit = {},
     other: String? = null,
     otherEnabled: Boolean = true,
     otherDanger: Boolean = false,
     onOther: () -> Unit = {},
+    onConfirm: () -> Unit = {},
 ) {
     FlowRow(
         modifier.fillMaxWidth().padding(SettingsDimension.dialogItemPadding),
@@ -226,6 +229,15 @@ fun NumberDialog(
     val unit = unitText(shown.spec)
     val rangeText = stringResource(R.string.ds_custom_range, shown.shownMin, shown.shownMax, unit)
     val check = shown.check(text)
+
+    // OK and the keyboard's Done: a valid typed value saves and closes
+    fun save() {
+        (check as? NumberInput.Check.Ok)?.let {
+            haptics.confirm()
+            onChoose(it.value)
+            onClose()
+        }
+    }
     SettingsDialog(title = title, onDismissRequest = onClose) {
         Column(Modifier.selectableGroup().verticalScroll(rememberScrollState())) {
             for (p in shown.options) {
@@ -261,7 +273,9 @@ fun NumberDialog(
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType = if (shown.spec.decimals > 0) KeyboardType.Decimal else KeyboardType.Number,
+                            imeAction = ImeAction.Done,
                         ),
+                    keyboardActions = KeyboardActions(onDone = { save() }),
                     modifier = Modifier.fillMaxWidth().padding(SettingsDimension.textFieldPadding).focusRequester(focus),
                 )
             }
@@ -270,13 +284,8 @@ fun NumberDialog(
                 onDismiss = onClose,
                 confirm = if (custom) stringResource(R.string.ds_ok) else null,
                 confirmEnabled = check is NumberInput.Check.Ok,
-            ) {
-                (check as? NumberInput.Check.Ok)?.let {
-                    haptics.confirm()
-                    onChoose(it.value)
-                    onClose()
-                }
-            }
+                onConfirm = ::save,
+            )
         }
     }
 }

@@ -83,7 +83,7 @@ public struct GlucoseReport: Equatable, Sendable {
             row(.veryHigh, span(.veryHigh), t.veryHigh, .veryHigh),
             row(.high, span(.high), t.high, nil),
             row(.above, "", t.above, .above, strong: true),
-            row(.target, "\(u(b.low + 1))–\(u(b.high - 1))", t.inRange, .inRange, strong: true),
+            row(.target, "\(u(b.low))–\(u(b.high - 1))", t.inRange, .inRange, strong: true),
             row(.tight, span(.tight), t.tight, nil),
             row(.low, span(.low), t.low, nil),
             row(.veryLow, span(.veryLow), t.veryLow, .veryLow),

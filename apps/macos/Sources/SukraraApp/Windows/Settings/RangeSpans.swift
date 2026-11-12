@@ -6,8 +6,9 @@ import SukraraCore
 import SukraraGraph
 
 /// The whole mg/dL values a limit makes count, as a range or alert row says them under its number ("Low: 56–69 mg/dL",
-/// "In range: 70–179 mg/dL"; Android's RangeSpans is the same). Every limit is the first value of the range it names,
-/// inclusive (SPEC §1, contracts/graph/range/bands.json), so the number alone decides: nothing to choose.
+/// "In range: 70–179 mg/dL"; Android's RangeSpans is the same). The low limit is the first value in range (low is
+/// strictly below it), every other limit the first value of the range it names (very low at or below it, the highs at
+/// or above it; SPEC §1, contracts/graph/range/bands.json), so the number alone decides: nothing to choose.
 enum RangeSpans {
     enum Name: CaseIterable { case veryLow, low, tight, inRange, high, veryHigh, extremelyHigh }
 
@@ -21,11 +22,11 @@ enum RangeSpans {
     /// The ranges the Ranges limit `index` sets (very low, low, very good, high, very high, extremely high): its own
     /// range, and in range for the low and high limits that bound it.
     static func ofBand(_ b: Bands, _ index: Int) -> [Span] {
-        let inRange = Span(name: .inRange, lo: b.low + 1, hi: b.high - 1)
+        let inRange = Span(name: .inRange, lo: b.low, hi: b.high - 1)
         switch index {
         case 0: return [Span(name: .veryLow, lo: nil, hi: b.veryLow)]
-        case 1: return [Span(name: .low, lo: b.veryLow + 1, hi: b.low), inRange]
-        case 2: return [Span(name: .tight, lo: b.low + 1, hi: min(b.tight, b.high - 1))]
+        case 1: return [Span(name: .low, lo: b.veryLow + 1, hi: b.low - 1), inRange]
+        case 2: return [Span(name: .tight, lo: b.low, hi: min(b.tight, b.high - 1))]
         case 3: return [Span(name: .high, lo: b.high, hi: b.veryHigh - 1), inRange]
         case 4: return [Span(name: .veryHigh, lo: b.veryHigh, hi: b.extremelyHigh - 1)]
         default: return [Span(name: .extremelyHigh, lo: b.extremelyHigh, hi: nil)]
@@ -54,13 +55,14 @@ enum RangeSpans {
         func th(_ k: AlertKind) -> Int { Int(rule(k).threshold) }
         let lows = [AlertKind.veryLow, .low].filter(on)
         let highs = [AlertKind.high, .veryHigh, .extremelyHigh].filter(on)
-        let inRange = Span(
-            name: .inRange, lo: lows.map(th).max().map { $0 + 1 }, hi: highs.map(th).min().map { $0 - 1 })
+        // the first value no low matches: low's own limit (70), one above very low's (56) when low is off
+        func inFrom(_ k: AlertKind) -> Int { k == .low ? th(k) : th(k) + 1 }
+        let inRange = Span(name: .inRange, lo: lows.map(inFrom).max(), hi: highs.map(th).min().map { $0 - 1 })
         // the next kind on the way out bounds this one: low above very low, high under very high …
         func below(_ ks: [AlertKind]) -> Int? { ks.filter(on).map(th).min().map { $0 - 1 } }
         switch kind {
         case .veryLow: return [Span(name: .veryLow, lo: nil, hi: th(kind))]
-        case .low: return [Span(name: .low, lo: on(.veryLow) ? th(.veryLow) + 1 : nil, hi: th(kind)), inRange]
+        case .low: return [Span(name: .low, lo: on(.veryLow) ? th(.veryLow) + 1 : nil, hi: th(kind) - 1), inRange]
         case .high: return [Span(name: .high, lo: th(kind), hi: below([.veryHigh, .extremelyHigh])), inRange]
         case .veryHigh: return [Span(name: .veryHigh, lo: th(kind), hi: below([.extremelyHigh]))]
         case .extremelyHigh: return [Span(name: .extremelyHigh, lo: th(kind), hi: nil)]

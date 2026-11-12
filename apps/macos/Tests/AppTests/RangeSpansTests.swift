@@ -25,7 +25,27 @@ import Testing
         #expect(RangeSpans.text(RangeSpans.ofBand(b, 0), unit: .mgdl) == "Very low: up to 55 mg/dL")
         #expect(RangeSpans.text(RangeSpans.ofBand(b, 5), unit: .mgdl) == "Extremely high: from 300 mg/dL")
         // the row being changed: its typed value
-        #expect(RangeSpans.ofBand(RangeSpans.replacing(b, 1, 75), 1).first == Span(name: .low, lo: 56, hi: 75))
+        #expect(RangeSpans.ofBand(RangeSpans.replacing(b, 1, 75), 1).first == Span(name: .low, lo: 56, hi: 74))
+    }
+
+    /// The person's own limits: low is below theirs (79 is low, 80 in range), very low at or below theirs (60).
+    @Test func theirOwnLimits() {
+        let own = Bands(veryLow: 60, low: 80, tight: 150, high: 200, veryHigh: 270, extremelyHigh: 320)
+        #expect(RangeSpans.ofBand(own, 0) == [Span(name: .veryLow, lo: nil, hi: 60)])
+        #expect(
+            RangeSpans.ofBand(own, 1) == [Span(name: .low, lo: 61, hi: 79), Span(name: .inRange, lo: 80, hi: 199)])
+        #expect(RangeSpans.ofBand(own, 2) == [Span(name: .tight, lo: 80, hi: 150)])
+        var s = AlertSettings()
+        s[.low].threshold = 80
+        s[.veryLow].threshold = 60
+        #expect(RangeSpans.ofAlert(.veryLow) { s[$0] } == [Span(name: .veryLow, lo: nil, hi: 60)])
+        #expect(
+            RangeSpans.ofAlert(.low) { s[$0] } == [
+                Span(name: .low, lo: 61, hi: 79), Span(name: .inRange, lo: 80, hi: 179),
+            ])
+        // low off: in range starts just above very low's limit
+        s[.low].on = false
+        #expect(RangeSpans.ofAlert(.high) { s[$0] }.last == Span(name: .inRange, lo: 61, hi: 179))
     }
 
     @Test func theAlertsAtTheirDefaults() {

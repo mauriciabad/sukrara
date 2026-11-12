@@ -62,6 +62,23 @@ class RangeSpansTest {
         assertEquals(Span(Name.VERY_HIGH, 250, 299), RangeSpans.ofAlert(AlertKind.VERY_HIGH, s).first())
     }
 
+    /** The person's own limits: low is below theirs (79 is low, 80 in range), very low at or below theirs (60). */
+    @Test fun theirOwnLimits() {
+        val own = listOf(60.0, 80.0, 150.0, 200.0, 270.0, 320.0)
+        assertEquals(listOf(Span(Name.VERY_LOW, null, 60)), RangeSpans.ofBand(own, 0))
+        assertEquals(listOf(Span(Name.LOW, 61, 79), Span(Name.IN_RANGE, 80, 199)), RangeSpans.ofBand(own, 1))
+        assertEquals(listOf(Span(Name.TIGHT, 80, 150)), RangeSpans.ofBand(own, 2))
+        val s =
+            AlertSettings()
+                .withRule(AlertKind.LOW, AlertSettings().rule(AlertKind.LOW).copy(threshold = 80.0))
+                .withRule(AlertKind.VERY_LOW, AlertSettings().rule(AlertKind.VERY_LOW).copy(threshold = 60.0))
+        assertEquals(listOf(Span(Name.VERY_LOW, null, 60)), RangeSpans.ofAlert(AlertKind.VERY_LOW, s))
+        assertEquals(listOf(Span(Name.LOW, 61, 79), Span(Name.IN_RANGE, 80, 179)), RangeSpans.ofAlert(AlertKind.LOW, s))
+        // low off: in range starts just above very low's limit
+        val noLow = s.withRule(AlertKind.LOW, s.rule(AlertKind.LOW).copy(on = false))
+        assertEquals(Span(Name.IN_RANGE, 61, 179), RangeSpans.ofAlert(AlertKind.HIGH, noLow)[1])
+    }
+
     @Test fun writtenInTheUnitOfTheScreen() {
         assertEquals("low: 3.1–3.8 mmol/L\nin_range: 3.9–9.9 mmol/L", words(GlucoseUnit.MMOL).text(RangeSpans.ofBand(defaults, 1)))
         // an empty range says nothing, a single value once

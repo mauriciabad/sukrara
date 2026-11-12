@@ -4,6 +4,17 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **The low limit reads 70 again, and 70 is in range** (both apps; the owner: "the 70 is the threshold, but 70 itself
+  is excluded from the interval -> (70, 55) is low [55,-Infinity) is very low"): 0.14.3 showed the low limit as 69;
+  now the ranges' and the low alert's default is 70 again and low means **below** it, so 69 is low and 70 in range,
+  as before 0.14.3. Very low still includes its limit: 55 is very low, on the card and in the alerts. The chart's line
+  reads 70, Settings › Ranges says *Low below* and the low alert *Below 70 mg/dL*; the line under each says *Low:
+  56–69 mg/dL*, *In range: 70–179 mg/dL* as before. A low you set yourself (69, say) stays as you set it; 70 is a
+  preset again to go back.
+- **A typed number saves again (Android)**: since 0.14.0 *OK* under *Custom…* in every number setting (range limits,
+  alert thresholds, reminders, quiet times …) did nothing; it saves and closes again, and so does the keyboard's
+  *Done*.
+
 ## 0.14.3 (GitHub prerelease)
 
 - **Low is below 70, and the low alerts ring where the card says Low** (both apps; the owner: "Low is below 70 (70 is

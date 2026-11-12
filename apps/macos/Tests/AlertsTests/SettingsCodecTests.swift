@@ -10,7 +10,7 @@ import Testing
 @Suite struct SettingsCodecTests {
     /// The SPEC §3 example, as Android writes it (ints where Kotlin has ints, `2.0` rates, `alarm` only where true).
     static let specExample = """
-        {"v":1,"on":true,"alerts":{"very_low":{"on":true,"mgdl":55,"repeatMin":5,"alarm":true},"low":{"on":true,"mgdl":69,"repeatMin":5},
+        {"v":1,"on":true,"alerts":{"very_low":{"on":true,"mgdl":55,"repeatMin":5,"alarm":true},"low":{"on":true,"mgdl":70,"repeatMin":5},
         "high":{"on":true,"mgdl":180,"repeatMin":15},"very_high":{"on":true,"mgdl":250,"repeatMin":10},
         "extremely_high":{"on":true,"mgdl":300,"repeatMin":5,"alarm":true},
         "falling_fast":{"on":false,"rate":2.0,"repeatMin":30},"rising_fast":{"on":false,"rate":2.0,"repeatMin":30},
@@ -42,7 +42,7 @@ import Testing
         let s = AlertSettings()
         #expect(s.on && s.source == .wearer)
         #expect(s[.veryLow] == AlertRule(on: true, threshold: 55, repeatMin: 5, alarm: true))
-        #expect(s[.low] == AlertRule(on: true, threshold: 69, repeatMin: 5))
+        #expect(s[.low] == AlertRule(on: true, threshold: 70, repeatMin: 5))
         #expect(s[.high] == AlertRule(on: true, threshold: 180, repeatMin: 15))
         #expect(s[.veryHigh] == AlertRule(on: true, threshold: 250, repeatMin: 10))
         #expect(s[.extremelyHigh] == AlertRule(on: true, threshold: 300, repeatMin: 5, alarm: true))
@@ -97,7 +97,7 @@ import Testing
 
     @Test func perKindAlarmIsRead() {
         let s = AlertSettings.decode(Data(#"{"v":1,"alerts":{"very_low":{"alarm":false},"low":{"alarm":true}}}"#.utf8))
-        #expect(!s[.veryLow].alarm && s[.low].alarm && s[.low].threshold == 69)
+        #expect(!s[.veryLow].alarm && s[.low].alarm && s[.low].threshold == 70)
     }
 
     /// #37: the waits and the margin are read and coerced into the schema (a low may wait at most 15 min).

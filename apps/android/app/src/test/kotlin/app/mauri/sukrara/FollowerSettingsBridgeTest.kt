@@ -111,7 +111,7 @@ class FollowerSettingsBridgeTest {
                 0.0,
             )
             b.choose(SettingsFrom.Default)
-            assertEquals(69.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)
+            assertEquals(70.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)
             b.choose(SettingsFrom.Custom)
             assertEquals(65.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)
             assertNull(b.alertMirror.first())
@@ -161,7 +161,7 @@ class FollowerSettingsBridgeTest {
                 0.0,
             )
             b.resetToDefault()
-            assertEquals(69.0, own.flow(GraphSettings.Bands[1]).first(), 0.0)
+            assertEquals(70.0, own.flow(GraphSettings.Bands[1]).first(), 0.0)
             assertEquals(
                 AlertSettings().rule(AlertKind.LOW).threshold,
                 alerts.state.value
