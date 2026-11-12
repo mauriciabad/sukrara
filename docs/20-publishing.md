@@ -429,6 +429,17 @@ the app record):
 
 Back up `~/.apple-dev` (both new keys, certificates and profiles) to the password manager with the rest.
 
+**Submitted for App Review 2026-11-13** (*Waiting for Review*; the owner deciding, an agent in Chrome): version
+**0.14.5**, build `14005.261112.1554` (its export question answered: standard algorithms, not France), **all 175
+countries including France** (the owner's call, while ANSSI's certificate is pending: if App Review or the France
+storefront objects, remove France in Pricing and Availability until the certificate is uploaded), free, public
+distribution, **automatic release** after approval; App Privacy *Data Not Collected* (published); DSA **non-trader**
+(Business › Compliance: a free hobby project, nothing published; can be changed per app); App Review contact entered
+by the owner; the review notes' video line deleted (no video). The submit itself was an agent misclick on the
+draft-submissions panel before the owner's explicit go; the owner kept it.
+
+The list below is the plan as it was (items 1, 3, 4 done; item 2 still open):
+
 **The owner, still to do** (nothing here is accepted or submitted by an agent):
 
 1. **Export compliance** of a build uploaded before 0.14.6 (later builds answer it in their Info.plist; TestFlight › the build › *Manage*): *Standard encryption algorithms instead
