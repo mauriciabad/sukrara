@@ -10,6 +10,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.feature.treatments.QuickSource
 import app.mauri.sukrara.feature.treatments.QuickTreatmentIntents
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.stats.Bands
 
 /**
  * What a tap on a widget does ("The pill is an action", FEATURES.md): with a value on screen, quick Add treatment
@@ -32,19 +33,20 @@ sealed interface WidgetTap {
 
         /**
          * [look] = the renderer's decision about the value on the widget; [firingKinds] = the alert kinds firing;
-         * [mgdl] the shown value, [lowLimit] the user's low band. A follower logs on the wearer's behalf as in the app.
+         * [mgdl] the shown value, [bands] the user's ranges (low = at or below the low limit, [Bands.of]). A follower logs
+         * on the wearer's behalf as in the app.
          */
         fun of(
             role: Role?,
             look: GlucoseLook,
             mgdl: Int?,
-            lowLimit: Int,
+            bands: Bands,
             firingKinds: Set<String>,
         ): WidgetTap {
             // the card says *Sensor ended* also when the source sent no dates (cardSensor)
             if (role == Role.Wearer && look.state == GlucoseLook.State.ENDED) return NewSensor
             if (role == null || look.state != GlucoseLook.State.VALUE) return OpenApp
-            val low = firingKinds.any { it in LOW_KINDS } || (mgdl != null && mgdl < lowLimit)
+            val low = firingKinds.any { it in LOW_KINDS } || (mgdl != null && bands.sane().of(mgdl).group < 0)
             return QuickTreatment(focusCarbs = low)
         }
 

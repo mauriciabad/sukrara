@@ -221,15 +221,15 @@ class LiveNotification(
         return style.setCriticalMetric(0)
     }
 
-    /** The value's style by the person's ranges: danger below the low band, caution above the high one. */
+    /** The value's style by the person's ranges (a limit in the range beyond it, [Bands.of]): danger low, caution high. */
     @RequiresApi(METRIC_STYLE_SDK)
     private fun semantic(
         mgdl: Int,
         bands: Bands,
     ): Int =
-        when {
-            mgdl < bands.low -> Notification.SEMANTIC_STYLE_DANGER
-            mgdl > bands.high -> Notification.SEMANTIC_STYLE_CAUTION
+        when (bands.sane().of(mgdl).group) {
+            -1 -> Notification.SEMANTIC_STYLE_DANGER
+            1 -> Notification.SEMANTIC_STYLE_CAUTION
             else -> Notification.SEMANTIC_STYLE_SAFE
         }
 

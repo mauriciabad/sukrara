@@ -205,7 +205,7 @@ fun widgetTap(
         role = frame.glucose.role,
         look = widgetLook(model, frame.config.unit),
         mgdl = model.latest?.sgv,
-        lowLimit = frame.config.bands.low,
+        bands = frame.config.bands,
         firingKinds = frame.glucose.alerts.firingKinds,
     )
 }

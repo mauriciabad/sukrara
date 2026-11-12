@@ -12,6 +12,10 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   with its unit and arrow, *Open Sukrara*), or else a *Monitoring problems* notice, and tries the full alert again.
   Settings › Alert reliability (Android) and the menu bar panel (Mac) say *An alert couldn't be shown*, with *Copy
   report*. The failure also reaches logcat now, not only the diagnostic log.
+- **A value at a limit is in the range beyond it** (#181): at exactly 180 mg/dL (the high limit) the value is high,
+  at 70 low, at 54 very low and at 250 very high, on both apps: the value's and the line's colour, the range word,
+  the status bar, the menu bar, the notification, time in range and the report's ranges (*High 180–249*). Time in
+  range now counts readings at 70 and 180 outside the range. Alerts are unchanged.
 
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 

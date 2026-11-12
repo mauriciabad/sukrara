@@ -177,8 +177,14 @@ enum DefaultAlertRules {
     @Test func widgetsLookLikeThePoc() throws {
         let file = GraphFixtures.object("widgets/poc.json")
         let cases = try #require(file["cases"] as? [[String: Any]])
-        let differences: [(String, Set<String>)] = (file["differences"] as? [[String: Any]] ?? []).flatMap { o in
-            ((o["fields"] as? [String]) ?? []).map { ($0, Set((o["scenes"] as? [String]) ?? [])) }
+        // field → the scenes where the PoC's answer no longer holds, on purpose (with `numbers`: only its numbers)
+        let differences: [(String, Set<String>, Bool)] = (file["differences"] as? [[String: Any]] ?? []).flatMap { o in
+            ((o["fields"] as? [String]) ?? []).map {
+                ($0, Set((o["scenes"] as? [String]) ?? []), (o["numbers"] as? Bool) ?? false)
+            }
+        }
+        func masked(_ s: String) -> String {
+            s.replacingOccurrences(of: "[0-9]+", with: "#", options: .regularExpression)
         }
         let variants = (file["settings"] as? [String: [String: Any]] ?? [:]).mapValues(Self.config)
         let scenesRoot = GraphFixtures.object("layout/scenes.json")
@@ -213,8 +219,10 @@ enum DefaultAlertRules {
                 "rings": lay.all("slot.text").map(\.info),
             ]
             for field in got.keys.sorted() {
-                if differences.contains(where: { $0.0 == field && $0.1.contains(sc.id) }) { continue }
-                let a = Self.canonical(want[field]), b = Self.canonical(got[field])
+                let differs = differences.filter { $0.0 == field && $0.1.contains(sc.id) }
+                if differs.contains(where: { !$0.2 }) { continue }
+                var a = Self.canonical(want[field]), b = Self.canonical(got[field])
+                if !differs.isEmpty { (a, b) = (masked(a), masked(b)) }
                 if a != b {
                     problems.append(
                         "\(c["surface"] ?? "") \(card) \(sc.id) \(c["settings"] ?? ""): \(field) PoC \(a), now \(b)")

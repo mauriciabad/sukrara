@@ -8,8 +8,12 @@
   {"name": "extremely high from its own bound", "sgv": 300, "expect": {"range": "extremely_high", "text": "Extremely high"}},
   {"name": "in range: nothing", "sgv": 120, "expect": {"range": null}},
   {"name": "very good range: nothing", "sgv": 100, "expect": {"range": null}},
-  {"name": "the high bound itself is in range", "sgv": 180, "expect": {"range": null}},
-  {"name": "the low bound itself is in range", "sgv": 70, "expect": {"range": null}},
+  {"name": "the high limit is high (#181: a limit belongs to the range beyond it)", "sgv": 180, "expect": {"range": "high", "text": "High"}},
+  {"name": "the low limit is low", "sgv": 70, "expect": {"range": "low", "text": "Low"}},
+  {"name": "the very low limit is very low", "sgv": 54, "expect": {"range": "very_low", "text": "Very low"}},
+  {"name": "the very high limit is very high", "sgv": 250, "expect": {"range": "very_high", "text": "Very high"}},
+  {"name": "just inside the limits: in range", "sgv": 71, "expect": {"range": null}},
+  {"name": "just under the high limit: in range", "sgv": 179, "expect": {"range": null}},
   {"name": "Eat carbs already says the side in words", "sgv": 64, "pill": {"kind": "carbs", "tonal": false}, "expect": {"range": null}},
   {"name": "Take insulin already says the side in words", "sgv": 240, "pill": {"kind": "rapid", "tonal": false}, "expect": {"range": null}},
   {"name": "a carbs mute pill says what was done, not the range", "sgv": 64, "pill": {"kind": "carbs", "tonal": true}, "expect": {"range": "low", "text": "Low"}},
@@ -19,6 +23,7 @@
   {"name": "LO: the text already says it", "sgv": 39, "expect": {"range": null}},
   {"name": "HI: the text already says it", "sgv": 401, "expect": {"range": null}},
   {"name": "the person's high 200: 190 is in range", "sgv": 190, "bands": {"high": 200}, "expect": {"range": null}},
-  {"name": "the person's low 80: 75 is low", "sgv": 75, "bands": {"low": 80}, "expect": {"range": "low", "text": "Low"}}
+  {"name": "the person's low 80: 75 is low", "sgv": 75, "bands": {"low": 80}, "expect": {"range": "low", "text": "Low"}},
+  {"name": "the person's high 200 is high", "sgv": 200, "bands": {"high": 200}, "expect": {"range": "high", "text": "High"}}
  ]
 }

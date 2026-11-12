@@ -811,11 +811,14 @@ class CardLayoutTest {
         val tol = file["boxTolerance"].double()!!.toFloat()
         // drawn as the PoC's widgets were (native text measuring, a 3× screen)
         val pd = 3f
-        // field → the scenes where the PoC's answer no longer holds, on purpose
+        // field → the scenes where the PoC's answer no longer holds, on purpose (with `numbers`: only its numbers)
         val differences =
             file["differences"]!!.jsonArray.map { it.jsonObject }.flatMap { o ->
-                o["fields"]!!.jsonArray.map { f -> f.str()!! to o["scenes"]!!.jsonArray.map { it.str()!! }.toSet() }
+                o["fields"]!!.jsonArray.map { f ->
+                    Triple(f.str()!!, o["scenes"]!!.jsonArray.map { it.str()!! }.toSet(), o["numbers"].bool() == true)
+                }
             }
+        val digits = Regex("\\d+")
         val variants =
             file["settings"]!!.jsonObject.mapValues { (_, v) ->
                 val o = v.jsonObject
@@ -867,8 +870,14 @@ class CardLayoutTest {
             val got = pocAnswers(l)
             val id = "${c["surface"].str()} ${w.toInt()}x${h.toInt()} ${sc.id} ${c["settings"].str()}"
             for ((field, value) in got) {
-                if (differences.any { (f, scenes) -> f == field && sc.id in scenes }) continue
+                val differs = differences.filter { (f, scenes) -> f == field && sc.id in scenes }
+                if (differs.any { !it.third }) continue
                 val expected = want[field]
+                if (differs.isNotEmpty()) {
+                    val (a, b) = listOf(fixtureValue(expected), value).map { digits.replace(it.toString(), "#") }
+                    if (a != b) problems += "$id: $field PoC $a, now $b (numbers masked)"
+                    continue
+                }
                 val same =
                     when (field) {
                         "boxes" -> {

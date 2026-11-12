@@ -20,7 +20,7 @@ public struct GlucoseReport: Equatable, Sendable {
         }
         public var kind: Kind
         public var id: String { kind.rawValue }
-        /// The range in the user's unit ("> 250", "181–250"); empty for the group totals.
+        /// The range in the user's unit ("≥ 250", "180–249"); empty for the group totals.
         public var range: String
         /// The share as a percentage's number ("64", "5.2"), without "%".
         public var share: String
@@ -65,19 +65,28 @@ public struct GlucoseReport: Equatable, Sendable {
         let m = GlucoseMetrics.of(readings, from: now - TimeInterval(days) * 86400, to: now, bands: b)
         let t = m.tir
         func u(_ mg: Int) -> String { unit.cardText(mg) }
+        /// A band's whole values, a limit in the range beyond it ("180–249", "≥ 250"; Android ReportCard the same).
+        func span(_ band: Band) -> String {
+            switch b.span(band) {
+            case (nil, let hi?): "≤ \(u(hi))"
+            case (let lo?, nil): "≥ \(u(lo))"
+            case (let lo?, let hi?): "\(u(lo))–\(u(hi))"
+            default: ""
+            }
+        }
         func row(_ kind: Row.Kind, _ range: String, _ share: Double, _ goal: Goal?, strong: Bool = false) -> Row {
             Row(
                 kind: kind, range: range, share: ShareText.of(share, goal), goal: goal?.text,
                 met: goal.flatMap { $0.metShare(share) }, strong: strong)
         }
         let rows = [
-            row(.veryHigh, "> \(u(b.veryHigh))", t.veryHigh, .veryHigh),
-            row(.high, "\(u(b.high + 1))–\(u(b.veryHigh))", t.high, nil),
+            row(.veryHigh, span(.veryHigh), t.veryHigh, .veryHigh),
+            row(.high, span(.high), t.high, nil),
             row(.above, "", t.above, .above, strong: true),
-            row(.target, "\(u(b.low))–\(u(b.high))", t.inRange, .inRange, strong: true),
-            row(.tight, "\(u(b.low))–\(u(b.tight))", t.tight, nil),
-            row(.low, "\(u(b.veryLow))–\(u(b.low - 1))", t.low, nil),
-            row(.veryLow, "< \(u(b.veryLow))", t.veryLow, .veryLow),
+            row(.target, "\(u(b.low + 1))–\(u(b.high - 1))", t.inRange, .inRange, strong: true),
+            row(.tight, span(.tight), t.tight, nil),
+            row(.low, span(.low), t.low, nil),
+            row(.veryLow, span(.veryLow), t.veryLow, .veryLow),
             row(.below, "", t.below, .below, strong: true),
         ]
         let order: [Band] = [.veryHigh, .high, .target, .tight, .low, .veryLow]

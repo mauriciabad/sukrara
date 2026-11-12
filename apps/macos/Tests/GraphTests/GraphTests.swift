@@ -43,7 +43,7 @@ func cardContext(_ size: CGSize) -> CGContext {
 /// Every fixture set has cases (a moved or emptied folder would let the parameterized tests pass with none).
 @Test(arguments: [
     "freshness/freshness.json", "clock", "sensor", "place/place.json", "mark", "share", "status.json", "labels",
-    "trend/trend.json", "range/range.json",
+    "trend/trend.json", "range/range.json", "range/bands.json",
 ])
 func fixtureSetHasCases(_ set: String) {
     #expect(!GraphFixtures.cases(set).isEmpty, "\(set) under \(GraphFixtures.dir.path)")

@@ -281,13 +281,15 @@ enum GlucoseGraph {
                     lo = min(lo, pts[j].sgv); hi = max(hi, pts[j].sgv); j += 1
                 }
                 let cx = left + (col + 0.5) * d
+                // each piece between two limits in the colour of the values inside it (a limit itself belongs to the
+                // range beyond it: Bands.of)
                 var a = lo
                 for e in edges where e > a && e <= hi {
-                    ctx.setStrokeColor(pal.at(b, Double(a)))
+                    ctx.setStrokeColor(pal.at(b, Double(a + e) / 2))
                     ctx.strokeLineSegments(between: [CGPoint(x: cx, y: y(Double(a))), CGPoint(x: cx, y: y(Double(e)))])
                     a = e
                 }
-                ctx.setStrokeColor(pal.at(b, Double(a)))
+                ctx.setStrokeColor(pal.at(b, Double(a + hi) / 2))
                 ctx.strokeLineSegments(between: [CGPoint(x: cx, y: y(Double(a))), CGPoint(x: cx, y: y(Double(hi)))])
                 k = j
             }

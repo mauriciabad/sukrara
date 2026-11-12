@@ -576,15 +576,17 @@ object GlucoseGraph {
                     j++
                 }
                 val cx = left + (col + 0.5f) * d
+                // each piece between two limits in the colour of the values inside it (a limit itself belongs to the
+                // range beyond it: Bands.of)
                 var a = lo
                 for (e in edges) {
                     if (e in (a + 1)..hi) {
-                        seg.color = pal.at(b, a)
+                        seg.color = pal.at(b, (a + e) / 2.0)
                         cv.drawLine(cx, y(a.toFloat()), cx, y(e.toFloat()), seg)
                         a = e
                     }
                 }
-                seg.color = pal.at(b, a)
+                seg.color = pal.at(b, (a + hi) / 2.0)
                 cv.drawLine(cx, y(a.toFloat()), cx, y(hi.toFloat()), seg)
                 k = j
             }

@@ -183,7 +183,7 @@ private fun lastPlaceName(p: LastPlace): String =
         },
     )
 
-/** A range's name with its span ("In range 70–180 mg/dL"), as the ring-order list and the ring-count choice say it. */
+/** A range's name with its span, a limit in the range beyond it ("High · 180–249"), as the ring-order list says it. */
 @Composable
 fun bandName(
     band: Band,
@@ -192,10 +192,10 @@ fun bandName(
     val b = c.bands
     return when (band) {
         Band.VERY_LOW -> stringResource(R.string.st_ring_very_low, b.veryLow)
-        Band.LOW -> stringResource(R.string.st_ring_low, b.veryLow, b.low - 1)
-        Band.TIGHT -> stringResource(R.string.st_ring_tight, b.low, b.tight)
-        Band.TARGET -> stringResource(R.string.st_ring_target, b.tight + 1, b.high)
-        Band.HIGH -> stringResource(R.string.st_ring_high, b.high + 1, b.veryHigh)
+        Band.LOW -> b.span(band).let { (lo, hi) -> stringResource(R.string.st_ring_low, lo!!, hi!!) }
+        Band.TIGHT -> b.span(band).let { (lo, hi) -> stringResource(R.string.st_ring_tight, lo!!, hi!!) }
+        Band.TARGET -> b.span(band).let { (lo, hi) -> stringResource(R.string.st_ring_target, lo!!, hi!!) }
+        Band.HIGH -> b.span(band).let { (lo, hi) -> stringResource(R.string.st_ring_high, lo!!, hi!!) }
         Band.VERY_HIGH -> stringResource(R.string.st_ring_very_high, b.veryHigh)
     }
 }
@@ -407,8 +407,18 @@ private fun rangeName(
 
     fun number(mgdl: Int) = unit.text(mgdl, locale)
     return when (r) {
-        TirRange.IN_RANGE -> stringResource(R.string.st_ring_counts_in_range, number(c.bands.low), number(c.bands.high), unit.symbol)
-        TirRange.TIGHT -> stringResource(R.string.st_ring_counts_tight, number(c.bands.low), number(c.bands.tight), unit.symbol)
+        TirRange.IN_RANGE -> {
+            stringResource(
+                R.string.st_ring_counts_in_range,
+                number(c.bands.low + 1),
+                number(c.bands.high - 1),
+                unit.symbol,
+            )
+        }
+
+        TirRange.TIGHT -> {
+            stringResource(R.string.st_ring_counts_tight, number(c.bands.low + 1), number(c.bands.tight), unit.symbol)
+        }
     }
 }
 

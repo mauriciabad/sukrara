@@ -15,8 +15,9 @@ extension GlucoseCard {
     /// The side of `config`'s ranges the newest reading of `data` is on; nil without a reading. Below = very low +
     /// low, above = high + very high (the time-in-range groups).
     public static func rangeSide(_ data: CardData, config: GraphConfig) -> RangeSide? {
-        guard let v = data.latest?.v else { return nil }
-        switch config.bands.sane().of(v).group {
+        // the value as written (whole mg/dL): 179.6 reads 180, so it is high like the card's 180
+        guard let sgv = data.latest?.sgv else { return nil }
+        switch config.bands.sane().of(Double(sgv)).group {
         case 0: return .below
         case 2: return .above
         default: return .inRange

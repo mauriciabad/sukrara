@@ -120,6 +120,20 @@ default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, 
 absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
 `text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
 
+## Ranges at their limits (`range/bands.json`)
+
+Which range a value is in (#181, the owner: ranges are inclusive, ≥ for the highs and ≤ for the lows): a value at a
+limit belongs to the range beyond it, very low ≤ 54 < low ≤ 70 < in range < 180 ≤ high < 250 ≤ very high, very good
+from above the low limit up to and including its own (140), extremely high's colour from its limit (300). `Bands.of`
+on both platforms (Android `stats/Bands.kt`, Mac `Model.swift`), the one decision behind every colour, range word,
+status bar / menu bar side, notification style, time in range and the report. Run by `GraphFixtureTest.bands`
+(Android) and `BandsFixtureTests` (Mac). `cases`: `name`, `sgv`, optional `bands` (`{veryLow, low, tight, high,
+veryHigh, extremelyHigh}`, missing = the defaults); `expect` `band` (`Bands.of`: `VERY_LOW` … `VERY_HIGH`) and `colour`
+(the palette's colour of the value, `GraphPalette.at`: a band's, or `extremelyHigh`). `spans`: the whole values each
+band holds (`Bands.span`, `[lowest, highest]`, `null` = open-ended), as the report and the ring order write them. `tir`:
+readings 5 min apart (`sgv`), the last 5 min before now; `expect` each band's share of time in range. The alert rules
+are separate (../alerts/SPEC.md §1: lows strictly below their threshold, highs at or above it).
+
 ## Spoken sentence (`spoken/*.json`)
 
 THE sentence TalkBack and VoiceOver say for the card on every surface (#25; docs/FEATURES.md, "Spoken sentence"): `A11y`
@@ -174,7 +188,8 @@ window, the % column and the boxes of the number, the slots' row and the plot.
 - Mac: `LayoutTests.widgetsLookLikeThePoc` draws each case with the Mac widgets' style: every field equal (SF Pro Rounded
   is narrower, so the boxes are Android's to match).
 - `differences`: what deliberately departs from the PoC, by field and scene, with the reason (today: a sensor past its
-  end that keeps sending keeps its value, #3). A change to the card that breaks a case either restores the PoC's look
+  end that keeps sending keeps its value, #3; time in range with a limit in the range beyond it, #181). With `numbers`
+  the field is still compared, every number masked (`#`): only the numbers may differ. A change to the card that breaks a case either restores the PoC's look
   or adds a difference the owner agreed to; the file itself is never edited by hand.
 - Made from the frozen PoC, never by running anything inside `poc/`: copy `poc/spikes/showcase-android` (and link its
   sibling spikes) to a scratch directory, set the copy's `jvmToolchain(21)` and Robolectric's `--add-opens` JVM

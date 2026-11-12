@@ -15,7 +15,10 @@ import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.long
 import app.mauri.sukrara.graph.Fixtures.str
+import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.Bands
+import app.mauri.sukrara.graph.stats.GlucosePoint
+import app.mauri.sukrara.graph.stats.GlucoseStats
 import app.mauri.sukrara.graph.stats.Goal
 import app.mauri.sukrara.graph.stats.ShareText
 import app.mauri.sukrara.graph.stats.TimeInRange
@@ -84,6 +87,67 @@ class GraphFixtureTest {
             val e = c["expect"]!!.jsonObject
             assertEquals(name(c), e["range"].str(), got?.key)
             if (got != null) assertEquals(name(c), e["text"].str(), words.range(got))
+        }
+    }
+
+    /** The ranges at their limits (contracts/graph/range/bands.json): the band, the colour, the spans, time in range. */
+    @Test
+    fun bands() {
+        val file = Fixtures.read("range/bands.json")
+
+        fun bandsOf(c: JsonObject): Bands {
+            val o = c["bands"]?.jsonObject
+            val d = Bands()
+
+            fun v(
+                k: String,
+                def: Int,
+            ) = o?.get(k).long()?.toInt() ?: def
+            return Bands(
+                v("veryLow", d.veryLow),
+                v("low", d.low),
+                v("tight", d.tight),
+                v("high", d.high),
+                v("veryHigh", d.veryHigh),
+                v("extremelyHigh", d.extremelyHigh),
+            )
+        }
+        val pal = GraphPalette.LIGHT
+        val colours =
+            mapOf(
+                "veryLow" to pal.veryLow,
+                "low" to pal.low,
+                "tight" to pal.tight,
+                "target" to pal.target,
+                "high" to pal.high,
+                "veryHigh" to pal.veryHigh,
+                "extremelyHigh" to pal.extremelyHigh,
+            )
+        val cs = file["cases"]!!.jsonArray.map { it.jsonObject }
+        assertTrue(cs.isNotEmpty())
+        for (c in cs) {
+            val b = bandsOf(c)
+            val sgv = c["sgv"].long()!!.toInt()
+            val e = c["expect"]!!.jsonObject
+            assertEquals(name(c), e["band"].str(), b.of(sgv).name)
+            assertEquals(name(c), colours.getValue(e["colour"].str()!!), pal.at(b, sgv))
+        }
+        for (c in file["spans"]!!.jsonArray.map { it.jsonObject }) {
+            val b = bandsOf(c)
+            for ((band, span) in c["expect"]!!.jsonObject) {
+                val (lo, hi) = span.jsonArray.map { it.long()?.toInt() }
+                assertEquals("${name(c)}: $band", lo to hi, b.span(Band.valueOf(band)))
+            }
+        }
+        val now = 1_800_000_000L
+        for (c in file["tir"]!!.jsonArray.map { it.jsonObject }) {
+            // one reading every 5 minutes, the last 5 minutes before now: each counts the same
+            val sgvs = c["sgv"]!!.jsonArray.map { it.long()!!.toInt() }
+            val pts = sgvs.mapIndexed { i, v -> GlucosePoint(now - (sgvs.size - i) * 300L, v, null) }
+            val tir = GlucoseStats.timeInRange(pts, now - sgvs.size * 300L, now, Bands())
+            for ((band, share) in c["expect"]!!.jsonObject) {
+                assertEquals("${name(c)}: $band", share.double()!!, tir.share(Band.valueOf(band)), 1e-9)
+            }
         }
     }
 

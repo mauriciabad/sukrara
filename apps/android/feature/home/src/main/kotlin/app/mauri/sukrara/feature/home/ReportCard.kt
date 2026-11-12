@@ -234,15 +234,24 @@ private fun Ranges(
                 y += h + gap
             }
         }
-        // the ranges in the person's unit ("181–250 mg/dL", "10,1–13,9 mmol/L")
+        // the ranges in the person's unit, a limit in the range beyond it ("180–249 mg/dL", "10,0–13,8 mmol/L")
         val unit = LocalGlucoseUnit.current
         val locale = LocalConfiguration.current.locales[0]
 
         fun n(mgdl: Int) = unit.text(mgdl, locale)
+
+        fun span(band: Band) =
+            b.span(band).let { (lo, hi) ->
+                when {
+                    lo == null -> "≤ ${n(hi!!)}"
+                    hi == null -> "≥ ${n(lo)}"
+                    else -> "${n(lo)}–${n(hi)}"
+                }
+            }
         val sym = unit.symbol
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            RangeRow(stringResource(R.string.report_very_high), "> ${n(b.veryHigh)} $sym", m.tir.veryHigh, Goal.VERY_HIGH, tone)
-            RangeRow(stringResource(R.string.report_high), "${n(b.high + 1)}–${n(b.veryHigh)} $sym", m.tir.high, null, tone)
+            RangeRow(stringResource(R.string.report_very_high), "${span(Band.VERY_HIGH)} $sym", m.tir.veryHigh, Goal.VERY_HIGH, tone)
+            RangeRow(stringResource(R.string.report_high), "${span(Band.HIGH)} $sym", m.tir.high, null, tone)
             RangeRow(
                 stringResource(R.string.report_above),
                 stringResource(R.string.report_above_detail),
@@ -254,7 +263,7 @@ private fun Ranges(
             HorizontalDivider()
             RangeRow(
                 stringResource(R.string.report_in_range),
-                "${n(b.low)}–${n(b.high)} $sym",
+                "${n(b.low + 1)}–${n(b.high - 1)} $sym",
                 m.tir.inRange,
                 Goal.IN_RANGE,
                 tone,
@@ -262,14 +271,14 @@ private fun Ranges(
             )
             RangeRow(
                 stringResource(R.string.report_very_good),
-                stringResource(R.string.report_very_good_detail, "${n(b.low)}–${n(b.tight)}", sym),
+                stringResource(R.string.report_very_good_detail, span(Band.TIGHT), sym),
                 m.tir.tight,
                 null,
                 tone,
             )
             HorizontalDivider()
-            RangeRow(stringResource(R.string.report_low), "${n(b.veryLow)}–${n(b.low - 1)} $sym", m.tir.low, null, tone)
-            RangeRow(stringResource(R.string.report_very_low), "< ${n(b.veryLow)} $sym", m.tir.veryLow, Goal.VERY_LOW, tone)
+            RangeRow(stringResource(R.string.report_low), "${span(Band.LOW)} $sym", m.tir.low, null, tone)
+            RangeRow(stringResource(R.string.report_very_low), "${span(Band.VERY_LOW)} $sym", m.tir.veryLow, Goal.VERY_LOW, tone)
             RangeRow(
                 stringResource(R.string.report_below),
                 stringResource(R.string.report_below_detail),

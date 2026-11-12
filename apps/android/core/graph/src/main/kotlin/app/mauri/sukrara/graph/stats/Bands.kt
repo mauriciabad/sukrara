@@ -19,9 +19,12 @@ data class GlucosePoint(
 fun Reading.toPoint(): GlucosePoint = GlucosePoint(t.epochSecond, mgdl, rateMgdlPerMin?.toDouble())
 
 /**
- * The person's ranges, mg/dL, as in LibreView's report: very low < [veryLow] ≤ low < [low] ≤ in range ≤ [high] < high
- * ≤ [veryHigh] < very high. Inside in range, the "very good" (tight) band [low]..[tight]. [extremelyHigh] (≥) only
- * colours the line and the number: time in range keeps LibreView's five ranges. Defaults from the settings schema.
+ * The person's ranges, mg/dL. A value at a limit belongs to the range beyond it (the owner, #181: "≥ for high ranges,
+ * ≤ for low ranges"): very low ≤ [veryLow] < low ≤ [low] < in range < [high] ≤ high < [veryHigh] ≤ very high. Inside
+ * in range, the "very good" (tight) band from above [low] up to and including [tight]. [extremelyHigh] (≥) only
+ * colours the line and the number: time in range keeps LibreView's five ranges. Defaults from the settings schema;
+ * every surface, statistic and word goes through [of] (contracts/graph/range/bands.json; Bands in Model.swift on the
+ * Mac is the same).
  */
 data class Bands(
     val veryLow: Int = SettingsSpec.BAND_VERY_LOW.default.toInt(),
@@ -33,15 +36,29 @@ data class Bands(
 ) {
     fun of(mgdl: Double): Band =
         when {
-            mgdl < veryLow -> Band.VERY_LOW
-            mgdl < low -> Band.LOW
+            mgdl <= veryLow -> Band.VERY_LOW
+            mgdl <= low -> Band.LOW
+            mgdl >= veryHigh -> Band.VERY_HIGH
+            mgdl >= high -> Band.HIGH
             mgdl <= tight -> Band.TIGHT
-            mgdl <= high -> Band.TARGET
-            mgdl <= veryHigh -> Band.HIGH
-            else -> Band.VERY_HIGH
+            else -> Band.TARGET
         }
 
     fun of(mgdl: Int) = of(mgdl.toDouble())
+
+    /**
+     * The whole mg/dL values [band] holds, lowest and highest (null = open-ended), as the report and the ring order
+     * write them ("180–249", "≥ 250"); empty bands (the very good one reaching the high limit) give lowest > highest.
+     */
+    fun span(band: Band): Pair<Int?, Int?> =
+        when (band) {
+            Band.VERY_LOW -> null to veryLow
+            Band.LOW -> veryLow + 1 to low
+            Band.TIGHT -> low + 1 to minOf(tight, high - 1)
+            Band.TARGET -> maxOf(tight + 1, low + 1) to high - 1
+            Band.HIGH -> high to veryHigh - 1
+            Band.VERY_HIGH -> veryHigh to null
+        }
 
     /** Clamped so the order always holds whatever was stored (low < tight ≤ high < very high < extremely high). */
     fun sane(): Bands {

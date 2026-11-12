@@ -22,16 +22,17 @@ class GlucoseStatsTest {
     ) = GlucosePoint(min * 60L, v, null)
 
     @Test fun bands() {
-        assertEquals(Band.VERY_LOW, b.of(53))
-        assertEquals(Band.LOW, b.of(54))
-        assertEquals(Band.LOW, b.of(69))
-        assertEquals(Band.TIGHT, b.of(70))
+        // a limit belongs to the range beyond it (#181; every limit in contracts/graph/range/bands.json)
+        assertEquals(Band.VERY_LOW, b.of(54))
+        assertEquals(Band.LOW, b.of(55))
+        assertEquals(Band.LOW, b.of(70))
+        assertEquals(Band.TIGHT, b.of(71))
         assertEquals(Band.TIGHT, b.of(140))
         assertEquals(Band.TARGET, b.of(141))
-        assertEquals(Band.TARGET, b.of(180))
-        assertEquals(Band.HIGH, b.of(181))
-        assertEquals(Band.HIGH, b.of(250))
-        assertEquals(Band.VERY_HIGH, b.of(251))
+        assertEquals(Band.TARGET, b.of(179))
+        assertEquals(Band.HIGH, b.of(180))
+        assertEquals(Band.HIGH, b.of(249))
+        assertEquals(Band.VERY_HIGH, b.of(250))
         assertEquals(Bands(54, 120, 130, 140, 150, 300), Bands(54, 200, 10, 90, 100, 300).sane())
     }
 

@@ -7,20 +7,35 @@ import Foundation
 
 // MARK: - Model
 
-/// The user's ranges, mg/dL: very low < `veryLow` ≤ low < `low` ≤ in range ≤ `high` < high ≤ `veryHigh` < very high
-/// "very good" (tight) = `low`…`tight`, inside in range.
+/// The user's ranges, mg/dL. A value at a limit belongs to the range beyond it (the owner, #181: "≥ for high ranges,
+/// ≤ for low ranges"): very low ≤ `veryLow` < low ≤ `low` < in range < `high` ≤ high < `veryHigh` ≤ very high;
+/// "very good" (tight) = above `low` up to and including `tight`, inside in range.
 /// `extremelyHigh` (≥, like the extremely high alert) only colours the line and the number; time in range counts it as
-/// very high (LibreView's five ranges).
+/// very high (LibreView's five ranges). Every surface, statistic and word goes through `of`
+/// (contracts/graph/range/bands.json; Bands.kt on Android is the same).
 public struct Bands: Codable, Equatable, Hashable, Sendable {
     public var veryLow = 54, low = 70, tight = 140, high = 180, veryHigh = 250, extremelyHigh = 300
 
     func of(_ mgdl: Double) -> Band {
-        if mgdl < Double(veryLow) { return .veryLow }
-        if mgdl < Double(low) { return .low }
+        if mgdl <= Double(veryLow) { return .veryLow }
+        if mgdl <= Double(low) { return .low }
+        if mgdl >= Double(veryHigh) { return .veryHigh }
+        if mgdl >= Double(high) { return .high }
         if mgdl <= Double(tight) { return .tight }
-        if mgdl <= Double(high) { return .target }
-        if mgdl <= Double(veryHigh) { return .high }
-        return .veryHigh
+        return .target
+    }
+
+    /// The whole mg/dL values `band` holds, lowest and highest (nil = open-ended), as the report writes them
+    /// ("180–249", "≥ 250"); an empty band (very good reaching the high limit) gives lowest > highest.
+    func span(_ band: Band) -> (lo: Int?, hi: Int?) {
+        switch band {
+        case .veryLow: (nil, veryLow)
+        case .low: (veryLow + 1, low)
+        case .tight: (low + 1, min(tight, high - 1))
+        case .target: (max(tight + 1, low + 1), high - 1)
+        case .high: (high, veryHigh - 1)
+        case .veryHigh: (veryHigh, nil)
+        }
     }
 
     /// Clamped so the order always holds.

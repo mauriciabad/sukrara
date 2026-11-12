@@ -64,7 +64,9 @@ class SystemUiWordsTest {
         assertEquals("Sukrara: 112 miligramos por decilitro, bajando, en rango", e.desc)
         assertEquals("Sukrara, bajando", e.trendDesc)
         // the range in words where the colour shows it (#26)
-        assertEquals("Sukrara: 250 miligramos por decilitro, subiendo rápido, alta", icons(state(250, rate = 2.5), es).desc)
+        assertEquals("Sukrara: 240 miligramos por decilitro, subiendo rápido, alta", icons(state(240, rate = 2.5), es).desc)
+        // a limit belongs to the range beyond it (#181)
+        assertEquals("Sukrara: 250 miligramos por decilitro, subiendo rápido, muy alta", icons(state(250, rate = 2.5), es).desc)
     }
 
     @Test fun `struck, no trend, no readings, ended`() {

@@ -1969,18 +1969,18 @@
         }
       }
     },
-    "Low below" : {
+    "Low up to" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Low below"
+            "value" : "Low up to"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Baja por debajo de"
+            "value" : "Baja hasta"
           }
         }
       }
@@ -4417,18 +4417,18 @@
         }
       }
     },
-    "Very low below" : {
+    "Very low up to" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Very low below"
+            "value" : "Very low up to"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Muy baja por debajo de"
+            "value" : "Muy baja hasta"
           }
         }
       }

@@ -1,0 +1,33 @@
+{
+ "about": "Which range a value is in, at and around every limit (#181, the owner: a value at a limit belongs to the range beyond it, ≥ for the highs, ≤ for the lows; very good up to and including its own limit). Bands.of decides it for every surface: the value's and the line's colour (extremely high from its own limit), the range word, the root status bar, the Mac menu bar, the notification's style, the widget tap, time in range, the report and the ring order. Run by GraphFixtureTest.bands (Android) and BandsFixtureTests (Mac). Format: ../README.md, 'Ranges at their limits'.",
+ "cases": [
+  {"name": "under the very low limit", "sgv": 53, "expect": {"band": "VERY_LOW", "colour": "veryLow"}},
+  {"name": "the very low limit is very low", "sgv": 54, "expect": {"band": "VERY_LOW", "colour": "veryLow"}},
+  {"name": "just above the very low limit: low", "sgv": 55, "expect": {"band": "LOW", "colour": "low"}},
+  {"name": "under the low limit", "sgv": 69, "expect": {"band": "LOW", "colour": "low"}},
+  {"name": "the low limit is low", "sgv": 70, "expect": {"band": "LOW", "colour": "low"}},
+  {"name": "just above the low limit: in range, very good", "sgv": 71, "expect": {"band": "TIGHT", "colour": "tight"}},
+  {"name": "very good up to and including its limit", "sgv": 140, "expect": {"band": "TIGHT", "colour": "tight"}},
+  {"name": "just above very good: in range", "sgv": 141, "expect": {"band": "TARGET", "colour": "target"}},
+  {"name": "just under the high limit: in range", "sgv": 179, "expect": {"band": "TARGET", "colour": "target"}},
+  {"name": "the high limit is high", "sgv": 180, "expect": {"band": "HIGH", "colour": "high"}},
+  {"name": "just under the very high limit: high", "sgv": 249, "expect": {"band": "HIGH", "colour": "high"}},
+  {"name": "the very high limit is very high", "sgv": 250, "expect": {"band": "VERY_HIGH", "colour": "veryHigh"}},
+  {"name": "just under the extremely high limit: very high", "sgv": 299, "expect": {"band": "VERY_HIGH", "colour": "veryHigh"}},
+  {"name": "the extremely high limit: very high in time in range, its own colour", "sgv": 300, "expect": {"band": "VERY_HIGH", "colour": "extremelyHigh"}},
+  {"name": "the person's low 80 is low", "sgv": 80, "bands": {"low": 80}, "expect": {"band": "LOW", "colour": "low"}},
+  {"name": "the person's high 200 is high", "sgv": 200, "bands": {"high": 200}, "expect": {"band": "HIGH", "colour": "high"}},
+  {"name": "the person's high 200: 199 is in range", "sgv": 199, "bands": {"high": 200}, "expect": {"band": "TARGET", "colour": "target"}},
+  {"name": "very good reaching the high limit: the limit is still high", "sgv": 180, "bands": {"tight": 180}, "expect": {"band": "HIGH", "colour": "high"}},
+  {"name": "very good reaching the high limit: under it is very good", "sgv": 179, "bands": {"tight": 180}, "expect": {"band": "TIGHT", "colour": "tight"}}
+ ],
+ "spans": [
+  {"name": "the default ranges, as the report writes them", "expect": {"VERY_LOW": [null, 54], "LOW": [55, 70], "TIGHT": [71, 140], "TARGET": [141, 179], "HIGH": [180, 249], "VERY_HIGH": [250, null]}},
+  {"name": "the person's own ranges", "bands": {"veryLow": 60, "low": 80, "tight": 150, "high": 200, "veryHigh": 270}, "expect": {"VERY_LOW": [null, 60], "LOW": [61, 80], "TIGHT": [81, 150], "TARGET": [151, 199], "HIGH": [200, 269], "VERY_HIGH": [270, null]}},
+  {"name": "very good reaching the high limit: in range is all very good", "bands": {"tight": 180}, "expect": {"VERY_LOW": [null, 54], "LOW": [55, 70], "TIGHT": [71, 179], "TARGET": [181, 179], "HIGH": [180, 249], "VERY_HIGH": [250, null]}}
+ ],
+ "tir": [
+  {"name": "readings at the limits count beyond them", "sgv": [54, 70, 140, 180, 250], "expect": {"VERY_LOW": 0.2, "LOW": 0.2, "TIGHT": 0.2, "TARGET": 0, "HIGH": 0.2, "VERY_HIGH": 0.2}},
+  {"name": "just inside the limits: all in range", "sgv": [71, 179, 141, 100], "expect": {"VERY_LOW": 0, "LOW": 0, "TIGHT": 0.5, "TARGET": 0.5, "HIGH": 0, "VERY_HIGH": 0}}
+ ]
+}

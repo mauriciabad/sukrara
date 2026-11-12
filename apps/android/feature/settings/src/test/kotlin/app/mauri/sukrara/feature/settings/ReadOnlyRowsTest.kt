@@ -85,6 +85,6 @@ class ReadOnlyRowsTest {
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) { RangesContent(GraphPrefs(), { _, _ -> }, {}, readOnly = true) }
         }
-        compose.onNodeWithText("Low below").assertIsNotEnabled()
+        compose.onNodeWithText("Low up to").assertIsNotEnabled()
     }
 }

@@ -55,7 +55,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   and Import history all use them without asking again. *Sign out* there (asks first) signs out everywhere; if
   LibreView stops accepting the password (you changed it), every place says so and the screen asks again.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
-  every card: never by colour alone) and a chart of your *Time shown* (12 h by default; its
+  every card: never by colour alone; a value exactly at a limit is in the range beyond it, so 180 is high and 70 low,
+  in colours and time in range alike) and a chart of your *Time shown* (12 h by default; its
   words follow a larger system font; a double tap shows 3 h and back) you can scroll and pinch-zoom through the
   last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
   beside the value in a ring of its quiet time left (on the widgets and the notification too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
