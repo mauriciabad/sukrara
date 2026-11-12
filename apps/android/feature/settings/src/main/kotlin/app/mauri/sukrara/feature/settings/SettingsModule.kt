@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.settings.advanced.AdvancedPort
 import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
+import app.mauri.sukrara.feature.settings.search.SearchEntry
 import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarPort
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -51,6 +52,8 @@ class SettingsModule(
     overviewSharing: Flow<OverviewSharing> = flowOf(OverviewSharing()),
     settingsFrom: SettingsFromPort = SettingsFromPort.None,
     sensorCalendar: () -> SensorCalendarPort = { SensorCalendarPort.None },
+    /** Other features' rows the settings search finds ([SettingsDeps.moreSearch]). */
+    moreSearch: List<SearchEntry> = emptyList(),
 ) {
     val deps: SettingsDeps =
         object : SettingsDeps {
@@ -87,6 +90,7 @@ class SettingsModule(
 
             override val overviewSharing = overviewSharing
             override val settingsFrom = settingsFrom
+            override val moreSearch = moreSearch
             override val sensorCalendar by lazy { sensorCalendar() }
         }
 

@@ -548,6 +548,10 @@ afterwards). Never a hosted site, never the user's phone.
 Emulator (`medium_phone` wearer, `small_phone` follower; debug = synthetic glucose) and a Mac test build with
 throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh` covers the rest.
 
+- [ ] Settings search (Android, #181), light and dark, English and Spanish: the pill opens the full-screen search with
+      the recent searches; *night* lists *Night alerts* once (Alerts), opening it shows Alerts › Night alerts and Back
+      walks up through Alerts to Settings; *battery*, *vary*, *garmin* open Alert reliability, Alerts, Share with apps
+      scrolled to the row, which flashes; each result has its section's icon and where it is in the accent colour.
 - [ ] Every number row (Graph: the six ranges, time shown and per place, rings, periods, lines, vertical lines; Alerts:
       thresholds, remind, quiet times, Mute…, Relax, the margin, Mute all custom; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value

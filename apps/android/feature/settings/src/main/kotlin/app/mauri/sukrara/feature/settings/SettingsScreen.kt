@@ -224,6 +224,7 @@ private fun SettingsPages(
                 sharing,
                 from,
                 recent,
+                moreSearch = deps.moreSearch,
                 onBack = onBack,
             )
         }

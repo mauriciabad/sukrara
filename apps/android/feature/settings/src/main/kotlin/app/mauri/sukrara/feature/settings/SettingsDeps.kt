@@ -16,6 +16,8 @@ import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.settings.advanced.AdvancedPort
 import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
+import app.mauri.sukrara.feature.settings.search.SearchEntry
+import app.mauri.sukrara.feature.settings.search.SettingsIndex
 import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarPort
 import app.mauri.sukrara.protocol.event.Avatar
 import kotlinx.coroutines.flow.Flow
@@ -100,6 +102,12 @@ interface SettingsDeps {
 
     /** A follower's *Settings from* (Settings › Settings from); nothing on the wearer's phone. */
     val settingsFrom: SettingsFromPort get() = SettingsFromPort.None
+
+    /**
+     * The rows of other features' settings pages the search finds besides [SettingsIndex]'s (Share with apps': the app
+     * lists them, with those modules' strings, and checks them against the pages).
+     */
+    val moreSearch: List<SearchEntry> get() = emptyList()
 }
 
 /**

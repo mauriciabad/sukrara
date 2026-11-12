@@ -365,6 +365,8 @@ class AppGraph(
             closedTips = home.bannerMemory.data.map { it.closed },
             restoreClosedTips = { scope.launch { home.bannerMemory.update { it.restoreAll() } } },
             sensorCalendar = { sensorCalendar },
+            // Share with apps' rows, which the settings search finds too (their strings are :integrations')
+            moreSearch = AppsSearch.entries,
             advanced = {
                 AppAdvanced(
                     role.data.map { it.role },

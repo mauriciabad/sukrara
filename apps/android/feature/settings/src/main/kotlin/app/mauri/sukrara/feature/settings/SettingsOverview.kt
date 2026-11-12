@@ -32,6 +32,7 @@ import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
 import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.OtherPage
 import app.mauri.sukrara.feature.settings.search.RecentSearch
+import app.mauri.sukrara.feature.settings.search.SearchEntry
 import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.feature.settings.search.SectionIcon
 import app.mauri.sukrara.feature.settings.search.SettingsSearchBar
@@ -82,6 +83,8 @@ fun SettingsOverviewContent(
     /** The search's recent queries; [searchQuery]: open with the search open on it (the gallery's search states). */
     recent: RecentSearch = RecentSearch(),
     searchQuery: String? = null,
+    /** Other features' rows the search finds ([SettingsDeps.moreSearch]). */
+    moreSearch: List<SearchEntry> = emptyList(),
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -109,6 +112,7 @@ fun SettingsOverviewContent(
             build = actions.build,
             recent = recent,
             initialQuery = searchQuery,
+            more = moreSearch,
         )
         BannerSlot(
             Banner(

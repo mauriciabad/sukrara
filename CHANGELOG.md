@@ -33,7 +33,7 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 - **Android › Settings search** is the PoC's again (#181): a full-screen search with each result's section icon and
   where it is (page and group), ranked like Android's own search (groups and other words find rows too), one result per
   page, and a result opens its page through the menus (Back walks up) at its row, which flashes; Alert reliability's
-  checklist and the night alerts' pages are searchable. Opening *Night alerts* from it crashed the app (and stopped
+  checklist, Share with apps' rows and the night alerts' pages are searchable. Opening *Night alerts* from it crashed the app (and stopped
   monitoring) on 0.13–0.14.1 release builds while the night alerts or a quiet side applied: their lines' strings were
   found by name and had been shrunk away. They are found by the ids written in code now, so no build can lose them.
 

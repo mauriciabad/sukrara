@@ -196,6 +196,8 @@ fun SettingsSearchBar(
     build: Set<BuildFeature> = BuildFeature.entries.toSet(),
     recent: RecentSearch = RecentSearch(),
     initialQuery: String? = null,
+    /** Other features' rows ([app.mauri.sukrara.feature.settings.SettingsDeps.moreSearch]). */
+    more: List<SearchEntry> = emptyList(),
 ) {
     val res = LocalResources.current
     val haptics = rememberHaptics()
@@ -203,8 +205,8 @@ fun SettingsSearchBar(
     val state = rememberContainedSearchBarState(if (initialQuery != null) SearchBarValue.Expanded else SearchBarValue.Collapsed)
     val text = rememberTextFieldState(initialQuery.orEmpty())
     val items =
-        remember(res, pens, wearer, build) {
-            SettingsIndex.entries.filter { it.shownOn(pens, wearer, build) }.map { it.item(res) }
+        remember(res, pens, wearer, build, more) {
+            (SettingsIndex.entries + more).filter { it.shownOn(pens, wearer, build) }.map { it.item(res) }
         }
     val expanded = state.currentValue == SearchBarValue.Expanded || state.targetValue == SearchBarValue.Expanded
 

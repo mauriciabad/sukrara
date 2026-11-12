@@ -41,6 +41,8 @@
     <string name="in_apps_watch_group">Relojes</string>
     <string name="in_apps_phone_group">Apps de este móvil</string>
     <string name="in_apps_xdrip">Servidor xDrip+</string>
+    <!-- Settings search: other words that find the xDrip+ server row, never shown [CHAR LIMIT=NONE] -->
+    <string name="in_apps_xdrip_keywords">Garmin, reloj, Connect IQ</string>
     <string name="in_apps_xdrip_off">Para relojes Garmin · mientras está activado, cualquier app de este móvil puede leerlo</string>
     <string name="in_apps_xdrip_on">Activado · 127.0.0.1:17580</string>
     <string name="in_apps_xdrip_busy">Otra app usa el puerto 17580 · desactiva su servidor y luego desactiva y activa este</string>

@@ -818,9 +818,10 @@ reliability's checklist and the night alerts' pages; `SettingsIndexTest` checks 
 flashes its row. The crash was resource shrinking (the mute and night lines' strings were found by name and removed from
 release builds); those strings are found by ids written in code now. Still discarded: the PoC's index mode (composing
 the pages invisibly to build the index): the declarative `SettingsIndex` with its test against the rendered pages keeps
-the same guarantee without composing every page on each search; rows of other features' inner pages (Share with apps'
-services, Sharing, Backup) are found by their overview rows only, as their pages live in modules the settings feature
-can't depend on.
+the same guarantee without composing every page on each search. Share with apps' rows are listed by the app
+(`AppsSearch`, its strings are `:integrations`', checked against the page by `AppsSearchTest`); Sharing, Backup, Profile
+and the services' own pages are found by the rows that open them only: their content depends on live state (an
+identity, a sign-in) and lives in modules the settings feature can't depend on.
 
 ### In Sukrara: screen motion (#169, 2026-11-11)
 

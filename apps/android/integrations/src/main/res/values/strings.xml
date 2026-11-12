@@ -42,6 +42,8 @@
     <string name="in_apps_watch_group">Watches</string>
     <string name="in_apps_phone_group">Apps on this phone</string>
     <string name="in_apps_xdrip">xDrip+ server</string>
+    <!-- Settings search: other words that find the xDrip+ server row, never shown [CHAR LIMIT=NONE] -->
+    <string name="in_apps_xdrip_keywords">Garmin, watch, Connect IQ</string>
     <string name="in_apps_xdrip_off">For Garmin watches · any app on this phone can read it while it\'s on</string>
     <string name="in_apps_xdrip_on">On · 127.0.0.1:17580</string>
     <string name="in_apps_xdrip_busy">Another app uses port 17580 · turn its server off, then this one off and on</string>
