@@ -623,10 +623,16 @@ open testing at once, with no *Apply for production* step) and no new fee.
   https://play.google.com/apps/internaltest/4700763397995090600; the owner uploaded the `.aab` by hand; signing
   certificate `27:EC:21:…:8D:96`). The store listing en-US + es-ES is filled in and saved (2026-11-12, AI asset
   declaration *Don't label assets*).
-- **Still open** ([#142](https://github.com/mauriciabad/sukrara/issues/142)): Data safety (a draft, the premise
-  disputed: [Data safety](#google-play-data-safety-health-apps-and-permission-declarations-drafts)), the foreground
-  service declaration (needs the video, [#185](https://github.com/mauriciabad/sukrara/issues/185)), the Health Connect
-  declaration (hasn't appeared), then *Send changes for review*:
+- **Sent for review 2026-11-13, straight to production** (the owner's decision: 0.x releases are public
+  work-in-progress, the polished UI is 1.0; the listing says "still in development"). Data safety submitted by the
+  owner as *No data collected* (the own-account exemption). Foreground service (`connectedDevice`): *Continuous data
+  transfer to an external device*, video https://www.youtube.com/watch?v=aXdZv9Sv4qo (the 2026-11-11 emulator video,
+  accepted by the owner after all; Unlisted on @mauriciabad, comments off). Production release **0.14.5** (14005, the
+  bundle already on internal), full rollout, all 177 countries + rest of world; **managed publishing off**, so it
+  goes live as soon as Google approves. First production notes (en-US + es-ES, entered in the Console only):
+  "First version on Google Play. Sukrara is still in development: the core features are there, and new versions come
+  often with improvements and new features. Found a problem or have an idea? Tell me at
+  github.com/mauriciabad/sukrara/issues". The Health Connect declaration never appeared. Steps as they were:
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
 
 ### Google Play: reviewer access (App access)
@@ -1298,7 +1304,13 @@ Privacy policy, Health apps, the store listing en-US + es-ES (draft), internal t
 https://play.google.com/apps/internaltest/4700763397995090600), the full-screen intent and exact alarm declarations.
 Done 2026-11-12: the store listing's new text (en-US + es-ES), its AI asset declaration (*Don't label assets*), saved.
 
-Left, in order:
+Done 2026-11-13: all of 1–4 below; the release went to **production**, not open testing (see the account section).
+
+Left: watch the review (answer Play truthfully: root and LSPosed, the text above; a rejection of `USE_EXACT_ALARM`
+or the root features: the note at the end); after approval, item 6's check on a spare phone (does Play take over a
+GitHub install?) before telling GitHub users to switch.
+
+The steps, as they were:
 
 1. **App content › Data safety**: settle the open premise. The definitions, flow by flow, and the recommended *No*
    (with this draft as the fallback) are in
