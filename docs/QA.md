@@ -306,7 +306,7 @@ Before the unlock `run-as` can't reach the app (its data dir is locked): `adb ro
       `RUNNING_LOCKED`. Within a minute `logcat`: `Sukrara.monitor: start (LockedBoot): Started`; lock screen: the
       glucose notification with the value and *Monitoring before unlock* (public, silent; `dumpsys notification
       --noredact`: id 3 on `status`); a new reading every minute; no `FATAL`.
-- [ ] Still locked, when the curve goes below 70: *Low glucose* rings (`alert.low`, `RingtonePlayer` plays
+- [ ] Still locked, when the curve reaches 69: *Low glucose* rings (`alert.low`, `RingtonePlayer` plays
       `content://app.mauri.sukrara.alertsound/low`); its buttons and the swipe work on the lock screen.
 - [ ] `adb root`: `/data/user_de/0/app.mauri.sukrara/files/locked-readings.csv` grows a line a minute.
 - [ ] Unlock (`input keyevent 82`, swipe up, `input text 1234`, Enter): id 3 goes at once, the same process and service
@@ -556,6 +556,11 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       thresholds, remind, quiet times, Mute…, Relax, the margin, Mute all custom; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a custom value shows as *Custom* + value.
+- [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step; Mac
+      Settings › Graph › Ranges, an alert's Details…, its night rule, setup's Alerts step), mg/dL and mmol/L, English and
+      Spanish: under the number a line says the values it covers (*Low: 56–69 mg/dL*, *In range: 70–179 mg/dL* under
+      low and high, *Very low: up to 55*, *Extremely high: from 300*); typing a custom value (Android dialog, Mac field
+      or stepper) changes it as you type; turning very high off makes high's line reach extremely high (*180–299*).
 - [ ] Glucose unit mmol/L (Android Settings › Ranges › *Glucose unit*; Mac Settings › General › *Unit*), in English and
       Spanish: the card, the chart's range labels, the average slot, the glucose notification's title and Live Update,
       an alert (*Send a test alert* and a real low), widgets, the System UI text, the Quick Settings tile, the report,

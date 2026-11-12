@@ -85,7 +85,7 @@ object Rules {
         return AlertKind.LEVELS_BY_SEVERITY.firstOrNull { k ->
             val rule = s.rule(k)
             rule.on &&
-                if (k.isBelowThreshold) r.isLo || r.mgdl < rule.threshold else r.isHi || r.mgdl >= rule.threshold
+                if (k.isLowSide) r.isLo || r.mgdl <= rule.threshold else r.isHi || r.mgdl >= rule.threshold
         }
     }
 
@@ -114,7 +114,7 @@ object Rules {
     }
 
     /**
-     * [r] is back in range by the margin for [side] (SPEC §2 "Scope and end"): lows at least `backMgdl` above the highest
+     * [r] is back in range by the margin for [side] (SPEC §2 "Scope and end"): lows more than `backMgdl` above the highest
      * enabled low threshold, highs below the lowest enabled high threshold minus it, a rate side when [r]'s rate
      * doesn't match it. No data is judged by the caller (readings coming). Null = [r] can't tell: a rate side and a
      * reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1). [margin]: the
@@ -128,7 +128,7 @@ object Rules {
                     AlertKind.entries
                         .filter { it.side == Side.LOW && s.rule(it).on }
                         .maxOfOrNull { s.rule(it).threshold }
-                        .let { edge -> edge == null || r.mgdl >= edge + margin }
+                        .let { edge -> edge == null || r.mgdl > edge + margin }
             }
 
             Side.HIGH -> {

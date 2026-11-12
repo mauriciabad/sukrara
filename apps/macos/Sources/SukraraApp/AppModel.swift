@@ -395,7 +395,7 @@ public final class AppModel {
     }
 
     /// A low alert is up (Add treatment then puts the focus on Carbs).
-    var isLow: Bool { alerts?.ui.active[.level]?.kind.isBelowThreshold == true }
+    var isLow: Bool { alerts?.ui.active[.level]?.kind.isLowSide == true }
 
     var look: GlucoseLook { GlucoseCard.face(cardData, unit: unit, surface: .menubarTitle) }
 

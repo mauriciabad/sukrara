@@ -276,7 +276,7 @@ class SetupViewModelTest {
             vm.ui.first { it != null }
             vm.editThreshold(AlertKind.LOW, 75.0)
             assertEquals(
-                70.0,
+                69.0,
                 alerts.settings.value
                     .rule(AlertKind.LOW)
                     .threshold,

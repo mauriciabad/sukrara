@@ -55,7 +55,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   and Import history all use them without asking again. *Sign out* there (asks first) signs out everywhere; if
   LibreView stops accepting the password (you changed it), every place says so and the screen asks again.
 - **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
-  every card: never by colour alone; a value exactly at a limit is in the range beyond it, so 180 is high and 70 low,
+  every card: never by colour alone; a value exactly at a limit is in the range beyond it, so 180 is high and 69 low (70 is in range),
   in colours and time in range alike) and a chart of your *Time shown* (12 h by default; its
   words follow a larger system font; a double tap shows 3 h and back) you can scroll and pinch-zoom through the
   last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
@@ -80,7 +80,9 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   also puts a **lock-screen widget** around the fingerprint icon: the value and arrow left of it, time in range right
   of it, the graph below; the fingerprint and every lock-screen gesture work through it, and a tap adds a treatment
   without unlocking (Settings › Lock screen: on by default, five backgrounds for busy wallpapers, light or dark).
-- **Alerts**: very low, low, high, very high, rising / falling fast and no data; each on its own channel,
+- **Alerts**: very low, low, high, very high, rising / falling fast and no data, each ringing at its threshold (at
+  the defaults where the card names the range: very low up to 55, low 56–69, high from 180; every threshold and range
+  limit says under it which values it covers, *Low: 56–69 mg/dL*); each on its own channel,
   Do Not Disturb respected by default (the "like an alarm" ones ring where the mode allows alarms); *Let Sukrara
   through* in the reliability checklist makes them an exception to every mode through Android's own grant, keeping your
   channel choices, and *Don't let Sukrara through* undoes it; home says when a mode on now keeps alerts quiet; alerts that come close together still ring in full (Android's notification
@@ -237,7 +239,7 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   7 days by day with the phone's entries, edit or delete your own with undo.
 - **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
 - **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, updates,
-  Quit, a link to the website's [Android page](https://sukrara.mauri.app/android/)), Graph (time shown per place, treatments on the graph, lines, ranges, sensor countdown and time left), Rings
+  Quit, a link to the website's [Android page](https://sukrara.mauri.app/android/)), Graph (time shown per place, treatments on the graph, lines, ranges with the values each limit covers, sensor countdown and time left), Rings
   (rings and numbers, ring order you drag, last treatment), Alerts (per alert with its summary and details, quiet times, the notification's buttons, sounds with preview, what's
   quiet now) and Following.
 - The card shows the wearer's treatments on the chart with their mute lines, the last treatment beside the value and

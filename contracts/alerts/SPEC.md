@@ -6,8 +6,8 @@ One rule set for **Sukrara for Android** (wearer + follower) and **Sukrara for M
 
 | `k` | Fires when (reading ≤ 15 min old) | Default on | Default threshold | Default re-alert | Sound mood |
 |---|---|---|---|---|---|
-| `very_low` | `sgv < mgdl` | on | 55 mg/dL | 5 min, alarm volume | *game over*: longer (~3–4 s), unmistakable, not harsh |
-| `low` | `sgv < mgdl` (and not very low) | on | 70 mg/dL | 5 min | *lost a life*: short, descending |
+| `very_low` | `sgv ≤ mgdl` | on | 55 mg/dL | 5 min, alarm volume | *game over*: longer (~3–4 s), unmistakable, not harsh |
+| `low` | `sgv ≤ mgdl` (and not very low) | on | 69 mg/dL | 5 min | *lost a life*: short, descending |
 | `high` | `sgv ≥ mgdl` (and not very high) | on | 180 mg/dL | 15 min | *final lap*: short "speed up" jingle (frequent → brief) |
 | `very_high` | `sgv ≥ mgdl` (and not extremely high) | on | 250 mg/dL | 10 min | *boss incoming*: a bit longer than high |
 | `extremely_high` | `sgv ≥ mgdl` | on | 300 mg/dL | 5 min, alarm volume | *final boss*: the most insistent high, never muted |
@@ -15,8 +15,11 @@ One rule set for **Sukrara for Android** (wearer + follower) and **Sukrara for M
 | `rising_fast` | `rate ≥ +rate` | off | 2.0 mg/dL/min | 30 min | quick up sweep |
 | `no_data` | no reading for `min` minutes since the last reading, or since the reading source started when that is newer (a source that never delivers a first reading alerts too), unless the sensor has ended or is warming up (core/SensorLife; a running one clears) | on | 20 min | 60 min | *connection lost* blip |
 
-The defaults are the user's own settings (2026-10-18). Lows are **strictly below** the threshold (low 70 alerts at
-69, not at 70); highs are at or above it.
+The defaults are the user's own settings (2026-10-18), low's 70 → 69 (2026-11-12). Every threshold is the first value
+of the range it names, inclusive: lows alert **at or below** it, highs at or above it (the owner, 2026-11-12: "Low is
+below 70 (70 is in the okay range), so from 69 downwards. And very low from 55 or lower"). So at the defaults very low
+≤ 55, low 56–69, in range 70–179, high 180–249, very high 250–299, extremely high ≥ 300, the same limits as the card's
+ranges (contracts/graph `range/bands.json`): every alert fires exactly where the card names its range.
 
 **The source's start.** No data needs something to count from: the last reading, or the moment the reading source
 started (a sensor paired and connecting, Juggluco chosen or reached, a follow the wearer allowed), whichever is newer,
@@ -70,11 +73,11 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
   0) want every reading in the window past the threshold; xDrip+'s persistent high waits 60 min; Libre and Nightscout
   have none. Limits: lows 0–15 min, highs 0–240 min, both 0 (= at once) by default, today's behaviour.
 - **Back by the margin** (#37, `persistence.marginMgdl`, default 0 = today's behaviour): a level episode counts as back
-  in range only once a fresh reading is at least the margin inside the threshold (lows ≥ the highest enabled low
+  in range only once a fresh reading is at least the margin inside the threshold (lows > the highest enabled low
   threshold + margin, highs < the lowest enabled high threshold − margin; a LO / HI never). Between the threshold and
   the margin nothing alerts and the notification goes (the value isn't past the threshold), but the episode holds (its
-  hold time doesn't run) and a waiting first alert keeps counting, so a value bouncing 68–73 around a low threshold of
-  70 with a 5 mg/dL margin is **one** episode: no new first alert, the repeat count goes on. No product was found with
+  hold time doesn't run) and a waiting first alert keeps counting, so a value bouncing 67–72 around a low threshold of
+  69 with a 5 mg/dL margin is **one** episode: no new first alert, the repeat count goes on. No product was found with
   such a band (the closest is xDrip+'s "heading in the right direction" check); a Libre reads within a few mg/dL, so
   5 (lows) to 10 (highs) is the sensible range to suggest.
 - **Night alerts** (#38, `night`; off by default): a second set of every kind's rule (on, threshold, repeat, like an
@@ -147,7 +150,7 @@ low would be muted, and we don't want that … I don't want muting to stop when 
   f30; before, the notification never muted those two). Treatment mutes are unchanged: rapid insulin never quiets
   extremely high.
 - They don't end with the episode. A Mute ends at its time; Mute and Remind less both end once the side is **back by the
-  margin**: lows at least `backMgdl` above the low threshold (the highest enabled low-side one), highs below the high
+  margin**: lows more than `backMgdl` above the low threshold (the highest enabled low-side one), highs below the high
   threshold (the lowest enabled high-side one) minus `backMgdl`, a rate side while its rate doesn't match, no data while
   readings come — for `backMin` minutes in a row (fresh readings; the engine reports `back <side>`). A reading that
   crosses back out before that restarts the count, so glucose that oscillates at the edge stays quiet. Defaults:
@@ -235,7 +238,7 @@ at once: no after-treatment pill, and the mute line and ring of the entries logg
   "on": true,
   "alerts": {
     "very_low":     {"on": true,  "mgdl": 55,  "repeatMin": 5,  "alarm": true},
-    "low":          {"on": true,  "mgdl": 70,  "repeatMin": 5,  "alarm": false},
+    "low":          {"on": true,  "mgdl": 69,  "repeatMin": 5,  "alarm": false},
     "high":         {"on": true,  "mgdl": 180, "repeatMin": 15, "alarm": false},
     "very_high":    {"on": true,  "mgdl": 250, "repeatMin": 10, "alarm": false},
     "extremely_high": {"on": true, "mgdl": 300, "repeatMin": 5, "alarm": true},
@@ -253,7 +256,7 @@ at once: no after-treatment pill, and the mute line and ring of the entries logg
   "night": {"on": false, "from": 1320, "to": 420,
     "alerts": {
       "very_low":     {"on": true,  "mgdl": 55,  "repeatMin": 5,  "alarm": true},
-      "low":          {"on": true,  "mgdl": 70,  "repeatMin": 5,  "alarm": false},
+      "low":          {"on": true,  "mgdl": 69,  "repeatMin": 5,  "alarm": false},
       "high":         {"on": true,  "mgdl": 180, "repeatMin": 15, "alarm": false},
       "very_high":    {"on": true,  "mgdl": 250, "repeatMin": 10, "alarm": false},
       "extremely_high": {"on": true, "mgdl": 300, "repeatMin": 5, "alarm": true},

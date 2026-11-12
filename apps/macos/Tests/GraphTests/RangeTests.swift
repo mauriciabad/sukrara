@@ -101,9 +101,9 @@ private let now = GraphFixtures.now
     #expect(side(180) == .above)
     #expect(side(179.6) == .above)  // written 180
     #expect(side(179) == .inRange)
-    #expect(side(71) == .inRange)
-    #expect(side(70) == .below)
-    #expect(side(54) == .below)
+    #expect(side(70) == .inRange)
+    #expect(side(69) == .below)
+    #expect(side(55) == .below)
 }
 
 /// An out-of-range value says its range in words on the card, never by colour alone (Android RangeWordTest).

@@ -138,7 +138,7 @@ internal fun AlertThresholdReviewContent(
 }
 
 /**
- * The reviewed thresholds of [draft]: one row per kind ("Low — Below 70 mg/dL", "Off (…)"), each opening THE number
+ * The reviewed thresholds of [draft]: one row per kind ("Low — At or below 70 mg/dL", "Off (…)"), each opening THE number
  * dialog limited to the values that keep the levels in order. This review and setup's alert step (the app passes it
  * in) show the same rows.
  */
@@ -148,13 +148,17 @@ fun AlertThresholdRows(
     onThreshold: (AlertKind, Double) -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf<AlertKind?>(null) }
+    val words = spanWords()
     SettingsGroup {
         for (kind in ThresholdReviewViewModel.ReviewedKinds) {
             val rule = draft.rule(kind)
             val sentence = thresholdSentence(kind, rule.threshold)
             ValueRow(
                 kindName(kind),
-                if (rule.on) sentence else stringResource(R.string.st_review_off, sentence),
+                withSpans(
+                    if (rule.on) sentence else stringResource(R.string.st_review_off, sentence),
+                    words.text(RangeSpans.ofAlert(kind, draft)),
+                ),
                 { editing = kind },
                 icon = kindIcon(kind),
             )
@@ -163,7 +167,17 @@ fun AlertThresholdRows(
     editing?.let { kind ->
         val spec = SchemaPrefs.thresholdSpec(kind)
         val label = numberLabeler()
-        NumberDialog(kindName(kind), thresholdInput(draft, kind), draft.rule(kind).threshold, { label(spec, it) }, { editing = null }) {
+
+        fun spans(v: Double) = RangeSpans.ofAlert(kind, AlertEdits.threshold(kind, v)(draft))
+        NumberDialog(
+            kindName(kind),
+            thresholdInput(draft, kind),
+            draft.rule(kind).threshold,
+            { label(spec, it) },
+            { editing = null },
+            sub = { words.text(spans(it).take(1)) },
+            live = { words.text(spans(it)) },
+        ) {
             onThreshold(kind, it)
         }
     }

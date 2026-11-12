@@ -23,10 +23,10 @@ class GlucoseStatsTest {
 
     @Test fun bands() {
         // a limit belongs to the range beyond it (#181; every limit in contracts/graph/range/bands.json)
-        assertEquals(Band.VERY_LOW, b.of(54))
-        assertEquals(Band.LOW, b.of(55))
-        assertEquals(Band.LOW, b.of(70))
-        assertEquals(Band.TIGHT, b.of(71))
+        assertEquals(Band.VERY_LOW, b.of(55))
+        assertEquals(Band.LOW, b.of(56))
+        assertEquals(Band.LOW, b.of(69))
+        assertEquals(Band.TIGHT, b.of(70))
         assertEquals(Band.TIGHT, b.of(140))
         assertEquals(Band.TARGET, b.of(141))
         assertEquals(Band.TARGET, b.of(179))

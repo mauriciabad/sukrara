@@ -163,7 +163,7 @@ public struct SideSnoozes: Codable, Equatable, Sendable {
     }
 }
 
-/// The margin rule (SPEC §2): `reading` is back in range by the margin for `side`. Lows at least `backMgdl` above the
+/// The margin rule (SPEC §2): `reading` is back in range by the margin for `side`. Lows more than `backMgdl` above the
 /// highest enabled low-side threshold, highs below the lowest enabled high-side threshold minus `backMgdl`, a rate
 /// side while its rate doesn't match; no data always (a reading came). Nil = `reading` can't tell: a rate side and a
 /// reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped (SPEC §1). `margin`: the
@@ -179,7 +179,7 @@ public func isBackByMargin(_ side: AlertSide, _ reading: GlucoseSample, _ s: Ale
         guard let edge = [AlertKind.veryLow, .low].filter({ s[$0].on }).map({ s[$0].threshold }).max() else {
             return true
         }
-        return reading.mgdl >= edge + m
+        return reading.mgdl > edge + m
     case .high:
         if reading.isHi { return false }
         guard

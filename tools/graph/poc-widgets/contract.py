@@ -82,7 +82,7 @@ doc = {
         {'fields': ['value', 'trend', 'boxes'], 'scenes': ['ended-sending'],
          'reason': "#3: a sensor past its end whose readings keep arriving keeps its value (with 'Ended · Replace sensor'); the PoC showed 'Sensor ended' at once"},
         {'fields': ['pct', 'rings', 'slots'], 'scenes': ['covered', 'high190', 'live', 'low'], 'numbers': True,
-         'reason': "#181 (the owner, 2026-11-11): a value at a limit belongs to the range beyond it (≥ high is high, ≤ low is low; ../range/bands.json); the PoC counted 70 and 180 in range, so time in range differs where readings sit on a limit: these fields are compared with their numbers masked (kinds, windows, ranges and how many still match)"},
+         'reason': "#181 (the owner, 2026-11-11): a value at a limit belongs to the range beyond it (≥ high is high, ≤ low is low; ../range/bands.json); the PoC counted 180 in range and 55 as low (Sukrara's defaults: very low up to 55, low up to 69, high from 180), so time in range differs where readings sit on a limit: these fields are compared with their numbers masked (kinds, windows, ranges and how many still match)"},
     ],
     'cases': cases,
 }

@@ -181,7 +181,16 @@ public struct SetupView: View {
             let name = AlertsRangesPane.kindName(kind)
             NumberSettingRow(
                 label: model.settings.shownAlerts[kind].on ? name : L10n.t("\(name) (off)"), format: format,
-                value: Binding(get: { model.threshold(kind) }, set: { model.setThreshold($0, kind) }))
+                value: Binding(get: { model.threshold(kind) }, set: { model.setThreshold($0, kind) }),
+                span: { v in
+                    let shown = model.settings.shownAlerts
+                    return RangeSpans.text(
+                        RangeSpans.ofAlert(kind) { k in
+                            var r = shown[k]
+                            r.threshold = k == kind ? v : model.threshold(k)
+                            return r
+                        }, unit: model.settings.unit)
+                })
         }
     }
 

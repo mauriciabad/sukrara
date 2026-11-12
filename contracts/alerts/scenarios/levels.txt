@@ -1,16 +1,24 @@
 # Thresholds, severity and repeats (format: spikes/alerts/SPEC.md §7)
 
-scenario Low is strictly below 70
+scenario Low is at or below 69 (the default, the card's Low): 69 alerts, 70 is in range
  0  glucose 70
  1  glucose 69   => Low glucose
  2  glucose 70   => clear low
  4
 
-scenario Very low is below 55 and wins over low; getting better doesn't alert
- 0  glucose 55   => Low glucose
- 1  glucose 54   => clear low; Very low glucose      # more severe: at once
- 2  glucose 55   => clear very_low                   # back to low: no alert, the user knows
- 3  glucose 54                                       # very low again within its repeat: quiet
+scenario A threshold the user set counts at its limit too
+settings low=80 very_low=60
+ 0  glucose 81
+ 1  glucose 80   => Low glucose
+ 2  glucose 61                                       # still a low: very low is at or below 60
+ 3  glucose 60   => clear low; Very low glucose
+ 4
+
+scenario Very low is at or below 55 (the default, the card's Very low) and wins over low; getting better doesn't alert
+ 0  glucose 56   => Low glucose
+ 1  glucose 55   => clear low; Very low glucose      # more severe: at once
+ 2  glucose 56   => clear very_low                   # back to low: no alert, the user knows
+ 3  glucose 55                                       # very low again within its repeat: quiet
  6               => Very low glucose                 # 5 min after the last alert
  7
 

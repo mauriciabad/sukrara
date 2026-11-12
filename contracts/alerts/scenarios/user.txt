@@ -10,7 +10,7 @@ settings low.repeat=5 carbs.mute=5
 10               => nothing
 13               => Low glucose · eat more
 14  carbs 5      => clear low
-15  glucose 70   => nothing                   # 70 is in range (lows are strictly below), same episode
+15  glucose 70   => nothing                   # 70 is in range (low is at or below 69), same episode
 16  glucose 69   => nothing                   # quiet until the second carbs' window ends
 19               => Low glucose · eat more again
 20  glucose 70   => clear low

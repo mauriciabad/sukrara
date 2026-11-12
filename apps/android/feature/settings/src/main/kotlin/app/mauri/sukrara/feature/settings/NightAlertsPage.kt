@@ -132,7 +132,7 @@ fun NightAlertsContent(
     }
 }
 
-/** "Below 70 mg/dL · every 5 min · like an alarm": one alert's night rule in words. */
+/** "At or below 70 mg/dL · every 5 min · like an alarm": one alert's night rule in words. */
 @Composable
 private fun nightKindSummary(
     kind: AlertKind,
@@ -172,7 +172,10 @@ fun NightKindContent(
         SettingsGroup(title = stringResource(R.string.st_alert_when)) {
             ValueRow(
                 stringResource(R.string.st_threshold),
-                thresholdSentence(kind, rule.threshold),
+                withSpans(
+                    thresholdSentence(kind, rule.threshold),
+                    spanWords().text(RangeSpans.ofAlert(kind, NightEdits.asRules(ui.settings))),
+                ),
                 { dialog = "threshold" },
                 enabled = rule.on,
                 icon = DsR.drawable.ds_ic_dia_range,
@@ -200,12 +203,18 @@ fun NightKindContent(
     when (dialog) {
         "threshold" -> {
             val spec = SchemaPrefs.thresholdSpec(kind)
+            val night = NightEdits.asRules(ui.settings)
+            val words = spanWords()
+
+            fun spans(v: Double) = RangeSpans.ofAlert(kind, AlertEdits.threshold(kind, v)(night))
             NumberDialog(
                 stringResource(R.string.st_threshold),
-                thresholdInput(NightEdits.asRules(ui.settings), kind),
+                thresholdInput(night, kind),
                 rule.threshold,
                 { label(spec, it) },
                 { dialog = null },
+                sub = { words.text(spans(it).take(1)) },
+                live = { words.text(spans(it)) },
             ) { v -> edit(NightEdits.rule(kind) { it.copy(threshold = spec.coerce(v)) }) }
         }
 

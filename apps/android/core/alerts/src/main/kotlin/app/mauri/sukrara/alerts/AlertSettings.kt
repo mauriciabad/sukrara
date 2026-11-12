@@ -181,7 +181,7 @@ data class AlertSettings(
         val DEFAULT_RULES: Map<AlertKind, KindRule> =
             mapOf(
                 AlertKind.VERY_LOW to KindRule(on = true, threshold = 55.0, repeatMin = 5, alarm = true),
-                AlertKind.LOW to KindRule(on = true, threshold = 70.0, repeatMin = 5),
+                AlertKind.LOW to KindRule(on = true, threshold = 69.0, repeatMin = 5),
                 AlertKind.HIGH to KindRule(on = true, threshold = 180.0, repeatMin = 15),
                 AlertKind.VERY_HIGH to KindRule(on = true, threshold = 250.0, repeatMin = 10),
                 AlertKind.EXTREMELY_HIGH to KindRule(on = true, threshold = 300.0, repeatMin = 5, alarm = true),

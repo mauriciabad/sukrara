@@ -20,6 +20,8 @@ struct NumberSettingRow: View {
     let format: NumberSpec
     @Binding var value: Double
     var readOnly = false
+    /// What a value means, under the row ("Low: 56–69 mg/dL"): the value set, or while typing a valid one, that one.
+    var span: ((Double) -> String?)? = nil
     @Environment(\.glucoseUnit) private var unit
     @State private var custom = false
     @State private var text = ""
@@ -30,12 +32,28 @@ struct NumberSettingRow: View {
     private var isCustom: Bool { custom || !(shown.isPreset(shownValue) || shown.specialOf(shownValue) != nil) }
 
     var body: some View {
-        if readOnly {
-            // a mirrored value in words, never a dimmed pop-up (#106: faint in dark mode)
-            LabeledContent(label) { ReadOnlyValue(value: Self.word(format, value, unit)) }
-        } else {
-            editor
+        VStack(alignment: .leading, spacing: 4) {
+            if readOnly {
+                // a mirrored value in words, never a dimmed pop-up (#106: faint in dark mode)
+                LabeledContent(label) { ReadOnlyValue(value: Self.word(format, value, unit)) }
+            } else {
+                editor
+            }
+            if let line = span?(spanValue) {
+                Text(line)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: line)
+            }
         }
+    }
+
+    /// The value the span line speaks of: a valid value being typed, else the one set.
+    private var spanValue: Double {
+        guard !readOnly, isCustom, shown.custom, let v = shown.parse(text) else { return value }
+        return format.stored(v, unit)
     }
 
     private var editor: some View {

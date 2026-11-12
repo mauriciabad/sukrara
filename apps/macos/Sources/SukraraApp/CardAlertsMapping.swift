@@ -29,7 +29,7 @@ enum CardAlertsMapping {
     static func status(_ ui: AlertUIState, marks: [GraphMark], now: Date) -> AlertStatus {
         let all = ui.muteAllUntil.map { min($0.timeIntervalSince1970, AlertStatus.never) }
         guard let level = ui.active[.level] else { return all.map { .muted(until: $0) } ?? .none }
-        let side: AlertStatus.Side = level.kind.isBelowThreshold ? .low : .high
+        let side: AlertStatus.Side = level.kind.isLowSide ? .low : .high
         switch level.quiet {
         case .treatment(let kind, let at, let until)?:
             let k = kind == .carbs ? Treatment.Kind.carbs.rawValue : Treatment.Kind.rapid.rawValue
@@ -75,7 +75,7 @@ enum CardAlertsMapping {
         guard let kind = AlertEngine.level(of: latest, settings, at: now) else {
             return all.map { .muted(until: $0) } ?? .none
         }
-        let side: AlertStatus.Side = kind.isBelowThreshold ? .low : .high
+        let side: AlertStatus.Side = kind.isLowSide ? .low : .high
         if let by = settings.quietedBy(kind) {
             let k = by == .carbs ? Treatment.Kind.carbs.rawValue : Treatment.Kind.rapid.rawValue
             let cover = marks.filter { $0.k == k && $0.t <= t }

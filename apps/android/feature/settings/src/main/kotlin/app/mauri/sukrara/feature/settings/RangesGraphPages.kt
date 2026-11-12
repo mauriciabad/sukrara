@@ -127,11 +127,13 @@ fun RangesContent(
             ValueRow(stringResource(R.string.st_unit), prefs.unit.symbol, { choosingUnit = true }, icon = DsR.drawable.ds_ic_tune)
         }
         FooterText(stringResource(R.string.st_unit_footer))
+        val words = spanWords()
         SettingsGroup {
             SchemaPrefs.Bands.forEachIndexed { i, setting ->
+                // the number, then exactly which values it makes count ("Low: 56–69 mg/dL")
                 ValueRow(
                     stringResource(titles[i]),
-                    numberLabel(SchemaPrefs.bandSpec(setting), prefs.bands[i]),
+                    withSpans(numberLabel(SchemaPrefs.bandSpec(setting), prefs.bands[i]), words.text(RangeSpans.ofBand(prefs.bands, i))),
                     { editing = i },
                     icon = bandIcons[i],
                     readOnly = readOnly,
@@ -177,7 +179,18 @@ fun RangesContent(
                 unit = unit,
             )
         val label = numberLabeler()
-        NumberDialog(stringResource(titles[i]), input, prefs.bands[i], { label(spec, it) }, { editing = null }) {
+        val words = spanWords()
+
+        fun spans(v: Double) = RangeSpans.ofBand(prefs.bands.toMutableList().also { it[i] = v }, i)
+        NumberDialog(
+            stringResource(titles[i]),
+            input,
+            prefs.bands[i],
+            { label(spec, it) },
+            { editing = null },
+            sub = { words.text(spans(it).take(1)) },
+            live = { words.text(spans(it)) },
+        ) {
             onSet(setting, it)
         }
     }

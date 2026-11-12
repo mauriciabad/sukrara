@@ -37,12 +37,12 @@ private struct Scene {
 }
 
 /// The alert decision the layout scenes are drawn with: the alert engine's default rules (contracts/alerts/SPEC.md §3:
-/// very low 55, low 70, high 180, very high 250, extremely high 300; carbs quiet lows 15 min, rapid insulin quiets
+/// very low 55, low 69 (both at or below), high 180, very high 250, extremely high 300; carbs quiet lows 15 min, rapid insulin quiets
 /// highs 60 min, never extremely high), as Android does for these fixtures.
 enum DefaultAlertRules {
     private static let levels: [(kind: String, side: AlertStatus.Side, low: Bool, mgdl: Double)] = [
         ("very_low", .low, true, 55), ("extremely_high", .high, false, 300), ("very_high", .high, false, 250),
-        ("low", .low, true, 70), ("high", .high, false, 180),
+        ("low", .low, true, 69), ("high", .high, false, 180),
     ]
 
     static func muteEnd(_ m: GraphMark) -> TimeInterval? {
@@ -62,7 +62,7 @@ enum DefaultAlertRules {
 
     private static func status(_ r: GraphReading?, _ marks: [GraphMark], now: TimeInterval) -> AlertStatus {
         guard let r, now - r.t <= 15 * 60,
-            let level = levels.first(where: { $0.low ? r.v < $0.mgdl : r.v >= $0.mgdl })
+            let level = levels.first(where: { $0.low ? r.v <= $0.mgdl : r.v >= $0.mgdl })
         else { return .none }
         let by = level.kind == "extremely_high" ? nil : (level.side == .low ? "carbs" : "rapid")
         let cover = marks.filter { $0.k == by && $0.t <= now }

@@ -123,7 +123,8 @@ absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extr
 ## Ranges at their limits (`range/bands.json`)
 
 Which range a value is in (#181, the owner: ranges are inclusive, ≥ for the highs and ≤ for the lows): a value at a
-limit belongs to the range beyond it, very low ≤ 54 < low ≤ 70 < in range < 180 ≤ high < 250 ≤ very high, very good
+limit belongs to the range beyond it (a limit is the first value of the range it names; 2026-11-12: "Low is below
+70 … very low from 55 or lower"), very low ≤ 55 < low ≤ 69 < in range < 180 ≤ high < 250 ≤ very high, very good
 from above the low limit up to and including its own (140), extremely high's colour from its limit (300). `Bands.of`
 on both platforms (Android `stats/Bands.kt`, Mac `Model.swift`), the one decision behind every colour, range word,
 status bar / menu bar side, notification style, time in range and the report. Run by `GraphFixtureTest.bands`
@@ -132,7 +133,7 @@ veryHigh, extremelyHigh}`, missing = the defaults); `expect` `band` (`Bands.of`:
 (the palette's colour of the value, `GraphPalette.at`: a band's, or `extremelyHigh`). `spans`: the whole values each
 band holds (`Bands.span`, `[lowest, highest]`, `null` = open-ended), as the report and the ring order write them. `tir`:
 readings 5 min apart (`sgv`), the last 5 min before now; `expect` each band's share of time in range. The alert rules
-are separate (../alerts/SPEC.md §1: lows strictly below their threshold, highs at or above it).
+are separate settings with the same comparison (../alerts/SPEC.md §1: lows at or below their threshold, highs at or above it).
 
 ## Spoken sentence (`spoken/*.json`)
 

@@ -465,7 +465,7 @@ private extension DateComponents {
         let settings = scratchSettings()
         let m = SetupModel(settings: settings)
         m.flow.open(.alerts)
-        m.setThreshold(70, .low)  // the value in use: no change
+        m.setThreshold(69, .low)  // the value in use: no change
         m.confirmThresholds()
         #expect(m.flow.states[.alerts] == .done && settings.settingsFrom == .wearer)
         #expect(settings.store.value(MacSettings.alerts).isEmpty)
@@ -750,7 +750,7 @@ final class RecordingSender: TreatmentActions {
 @Suite struct SettingsPanesTests {
     @Test func numbersAreCoercedAndOnlyValidValuesStored() {
         let s = scratchStore()
-        #expect(s.number(MacSettings.bandLow) == 70)
+        #expect(s.number(MacSettings.bandLow) == 69)
         #expect(!s.setNumber(500, for: MacSettings.bandLow))
         #expect(s.setNumber(72, for: MacSettings.bandLow))
         #expect(s.number(MacSettings.bandLow) == 72)
@@ -766,7 +766,7 @@ final class RecordingSender: TreatmentActions {
         a.reload()
         #expect(a.readError && a.settings.on && a.settings[.low].threshold == 75)
         a.resetToDefaults()
-        #expect(!a.readError && a.settings[.low].threshold == 70)
+        #expect(!a.readError && a.settings[.low].threshold == 69)
     }
 
     @Test func wearerSettingsMirrorByWirePath() {

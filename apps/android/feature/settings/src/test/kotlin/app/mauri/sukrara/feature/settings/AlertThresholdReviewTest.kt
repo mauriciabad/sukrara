@@ -45,7 +45,7 @@ class AlertThresholdReviewTest {
             )
             assertEquals(0, store.writes)
             assertEquals(
-                70.0,
+                69.0,
                 store.state.value
                     .rule(AlertKind.LOW)
                     .threshold,

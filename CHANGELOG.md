@@ -4,6 +4,14 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **Low is below 70, and the low alerts ring where the card says Low** (both apps; the owner: "Low is below 70 (70 is
+  in the okay range), so from 69 downwards. And very low from 55 or lower"): every limit is the first value of the
+  range it names, so at the defaults very low is up to 55, low 56–69, in range 70–179, high 180–249 and very high from
+  250, on the card (colours, range word, time in range, report) and in the alerts alike. The low limits' defaults are
+  now 55 and 69 (were 54 and 70), and the low and very low alerts ring **at** their threshold, not only below it (a
+  low alert at 69 rings at 69). Time in range counts 70 in range again, like LibreView; 180 stays high.
+- **Each range limit and alert threshold says which values it covers** (both apps): *Low: 56–69 mg/dL*, *In range:
+  70–179 mg/dL*, *Very high: 250–299* under the number, in your unit, and it follows the number while you type.
 - **Add treatment (Android) looks like the earlier app again** (#181): each field's label carries its chart marker and
   stays on the outline, so the dialog no longer jumps in height when you move between fields; the time is a chip next
   to the title; over the lock screen *Unlock* sits where *Open Sukrara* does, without the extra countdown line, and the

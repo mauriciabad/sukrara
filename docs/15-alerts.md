@@ -56,9 +56,12 @@ Screenshots (emulator, debug build):
 | No data | 20 min | 60 min | *connection lost* |
 
 The defaults are the user's own settings since 2026-10-18 (before: low 65, high 185, repeats 15/30/30/15, Arcade).
-Lows are **strictly below** the threshold since 2026-10-18 (low 70 alerts at 69, not at 70: 70 is in range, as in
-LibreView's ranges); highs are at or above it. Very low 55 and very high 250 follow the consensus Time-in-Range levels
-(Nightscout's `BG_LOW` is also 55).
+Lows were **strictly below** the threshold from 2026-10-18 (low 70 alerted at 69, not at 70: 70 was in range, as in
+LibreView's ranges); highs are at or above it. Very low 55 and very high 250 followed the consensus Time-in-Range levels
+(Nightscout's `BG_LOW` is also 55). Since 2026-11-12 every threshold is the first value of the range it names: lows
+alert **at or below** it, and low's default is 69 (the owner: "Low is below 70 (70 is in the okay range), so from 69
+downwards. And very low from 55 or lower"), the card's ranges' limits too, so the alerts ring where the card names the
+range: very low ≤ 55, low 56–69, in range 70–179.
 
 - Level alerts: one at a time, the most severe wins; moving to a worse one fires at once (high → very high).
 - Episodes, treatment-anchored repeats and the headlines: see [the 2026-10-18 round](#episodes-and-treatment-anchored-repeats-2026-10-18).

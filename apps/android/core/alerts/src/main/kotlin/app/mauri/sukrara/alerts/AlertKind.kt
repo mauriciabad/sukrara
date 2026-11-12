@@ -102,8 +102,8 @@ enum class AlertKind(
 
     val isLevel: Boolean get() = group == AlertGroup.LEVEL
 
-    /** Lows alert strictly below their threshold (low 70 alerts at 69); the other levels at or above it. */
-    val isBelowThreshold: Boolean get() = side == Side.LOW
+    /** Lows alert at or below their threshold (low 70 alerts at 70); the other levels at or above it. */
+    val isLowSide: Boolean get() = side == Side.LOW
 
     companion object {
         /** Level kinds by severity: the first that matches is the one active level alert. */

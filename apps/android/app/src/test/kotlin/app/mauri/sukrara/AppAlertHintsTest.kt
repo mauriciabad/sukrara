@@ -43,6 +43,11 @@ class AppAlertHintsTest {
         assertTrue(hints.lowNow()) // very low is the low side too
         latest(110)
         assertFalse(hints.lowNow())
+        // the low threshold is the first low value (69 by default), 70 is in range
+        latest(69)
+        assertTrue(hints.lowNow())
+        latest(70)
+        assertFalse(hints.lowNow())
         latest(60, age = Duration.ofMinutes(30))
         assertFalse(hints.lowNow()) // stale: nothing is known now
         // a low is a low whether or not its alert is on

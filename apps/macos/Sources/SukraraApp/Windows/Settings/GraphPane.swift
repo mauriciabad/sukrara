@@ -44,8 +44,14 @@ struct GraphPane: View {
                 marksSection
                 linesSection
                 Section {
-                    ForEach(MacSettings.bands, id: \.id) { band in
-                        NumberSettingRow(label: Self.bandName(band.id), format: band.format, value: number(band))
+                    ForEach(Array(MacSettings.bands.enumerated()), id: \.element.id) { i, band in
+                        // the number, then exactly which values it makes count ("Low: 56–69 mg/dL")
+                        NumberSettingRow(
+                            label: Self.bandName(band.id), format: band.format, value: number(band),
+                            span: { v in
+                                RangeSpans.text(
+                                    RangeSpans.ofBand(RangeSpans.replacing(g.bands, i, v), i), unit: model.unit)
+                            })
                     }
                     HStack {
                         Spacer()

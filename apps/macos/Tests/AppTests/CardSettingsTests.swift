@@ -135,8 +135,8 @@ import Testing
         own[.low].threshold = 80
         let wearer = try #require(WearerSettings(json: #"{"alerts":{"alerts":{"high":{"mgdl":200}}}}"#, wearer: "Ana"))
         let w = own.inUse(from: .wearer, wearer: wearer)
-        #expect(w[.high].threshold == 200 && w[.low].threshold == 70 && w.source == .wearer)  // not sent: default
-        #expect(own.inUse(from: .default, wearer: wearer)[.low].threshold == 70)
+        #expect(w[.high].threshold == 200 && w[.low].threshold == 69 && w.source == .wearer)  // not sent: default
+        #expect(own.inUse(from: .default, wearer: wearer)[.low].threshold == 69)
         let c = own.inUse(from: .custom, wearer: wearer)
         #expect(c[.low].threshold == 80 && c.source == .own)
     }

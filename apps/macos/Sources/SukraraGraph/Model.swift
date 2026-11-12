@@ -14,7 +14,7 @@ import Foundation
 /// very high (LibreView's five ranges). Every surface, statistic and word goes through `of`
 /// (contracts/graph/range/bands.json; Bands.kt on Android is the same).
 public struct Bands: Codable, Equatable, Hashable, Sendable {
-    public var veryLow = 54, low = 70, tight = 140, high = 180, veryHigh = 250, extremelyHigh = 300
+    public var veryLow = 55, low = 69, tight = 140, high = 180, veryHigh = 250, extremelyHigh = 300
 
     func of(_ mgdl: Double) -> Band {
         if mgdl <= Double(veryLow) { return .veryLow }
@@ -48,7 +48,7 @@ public struct Bands: Codable, Equatable, Hashable, Sendable {
             veryHigh: vh, extremelyHigh: min(max(extremelyHigh, vh + 10), 450))
     }
     public init(
-        veryLow: Int = 54, low: Int = 70, tight: Int = 140, high: Int = 180, veryHigh: Int = 250,
+        veryLow: Int = 55, low: Int = 69, tight: Int = 140, high: Int = 180, veryHigh: Int = 250,
         extremelyHigh: Int = 300
     ) {
         self.veryLow = veryLow

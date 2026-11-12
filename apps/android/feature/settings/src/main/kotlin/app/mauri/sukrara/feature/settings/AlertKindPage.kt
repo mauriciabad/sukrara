@@ -105,7 +105,7 @@ fun AlertKindContent(
         SettingsGroup(title = stringResource(R.string.st_alert_when)) {
             ValueRow(
                 stringResource(R.string.st_threshold),
-                thresholdSentence(kind, rule.threshold),
+                withSpans(thresholdSentence(kind, rule.threshold), spanWords().text(RangeSpans.ofAlert(kind, ui.settings))),
                 { dialog = "threshold" },
                 enabled = rule.on,
                 icon = DsR.drawable.ds_ic_dia_range,
@@ -168,17 +168,17 @@ fun AlertKindContent(
         }
 
         "threshold" -> {
+            val words = spanWords()
+
+            fun spans(v: Double) = RangeSpans.ofAlert(kind, AlertEdits.threshold(kind, v)(ui.settings))
             NumberDialog(
-                stringResource(
-                    R.string.st_threshold,
-                ),
+                stringResource(R.string.st_threshold),
                 thresholdInput(ui.settings, kind),
                 rule.threshold,
                 { label(thresholdSpec, it) },
-                {
-                    dialog =
-                        null
-                },
+                { dialog = null },
+                sub = { words.text(spans(it).take(1)) },
+                live = { words.text(spans(it)) },
             ) {
                 actions.edit(AlertEdits.threshold(kind, it))
             }

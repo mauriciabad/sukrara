@@ -90,7 +90,7 @@ struct AlertText: Equatable {
         case .noData: base = "Sin datos de glucosa"
         }
         guard f.treated > 0, f.kind.group == .level else { return base }
-        if f.kind.isBelowThreshold { return base + (f.treated == 1 ? " · come más" : " · vuelve a comer") }
+        if f.kind.isLowSide { return base + (f.treated == 1 ? " · come más" : " · vuelve a comer") }
         return base + (f.treated == 1 ? " · sigue alta tras la insulina" : " · sigue alta tras más insulina")
     }
 

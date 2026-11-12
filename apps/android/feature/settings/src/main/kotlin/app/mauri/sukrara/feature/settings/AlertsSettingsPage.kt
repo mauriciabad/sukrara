@@ -74,7 +74,7 @@ val KindGroups =
         R.string.st_group_signal to listOf(AlertKind.NO_DATA),
     )
 
-/** "Below 70 mg/dL · every 5 min · Quest": when it alerts, how often it reminds, which sound. */
+/** "At or below 70 mg/dL · every 5 min · Quest": when it alerts, how often it reminds, which sound. */
 @Composable
 fun kindSummary(
     s: AlertSettings,

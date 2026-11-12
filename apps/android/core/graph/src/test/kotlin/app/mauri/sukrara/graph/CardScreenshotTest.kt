@@ -69,7 +69,7 @@ class CardScreenshotTest {
             )
         return listOf(
             "in-range" to Scenes.model(Scenes.day(125), w, treatments = meal),
-            "low" to Scenes.model(Scenes.day(70, rate = -2.2, swing = 12), w, status = CardStatus.Needed(lowSide = true)),
+            "low" to Scenes.model(Scenes.day(69, rate = -2.2, swing = 12), w, status = CardStatus.Needed(lowSide = true)),
             // out of range without an action pill: the range in words (#26)
             "low-no-alert" to Scenes.model(Scenes.day(64, rate = -1.2, swing = 8), w),
             "high" to Scenes.model(Scenes.day(230, rate = 1.4), w, status = CardStatus.Paused(false, Scenes.NOW + 45 * 60)),
@@ -153,7 +153,7 @@ class CardScreenshotTest {
     @Test
     fun mmol() {
         val mmol = style.copy(graph = style.graph?.copy(unit = GlucoseUnit.MMOL), unit = GlucoseUnit.MMOL)
-        val model = Scenes.model(Scenes.day(70, rate = -2.2, swing = 12), Scenes.words(), status = CardStatus.Needed(lowSide = true))
+        val model = Scenes.model(Scenes.day(69, rate = -2.2, swing = 12), Scenes.words(), status = CardStatus.Needed(lowSide = true))
         for (dark in listOf(false, true)) shoot("low-mmol", model, dark, large = false, st = mmol)
     }
 }

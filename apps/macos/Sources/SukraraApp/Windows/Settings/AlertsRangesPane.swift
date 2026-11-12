@@ -199,7 +199,7 @@ struct AlertsRangesPane: View {
             .disabled(readOnly || !model.shownAlerts.night.on)
     }
 
-    /// "Always on · below 55 mg/dL · every 5 min", "Off" (one alert's night rule).
+    /// "Always on · up to 54 mg/dL · every 5 min", "Off" (one alert's night rule).
     static func nightSummary(_ kind: AlertKind, _ n: NightSettings, unit: GlucoseUnit) -> String {
         var s = AlertSettings()
         s[kind] = n[kind]
@@ -236,14 +236,14 @@ struct AlertsRangesPane: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// "Below 70 mg/dL · every 5 min · Quest · like an alarm" (what applies).
+    /// "Up to 70 mg/dL · every 5 min · Quest · like an alarm" (what applies).
     static func summary(_ kind: AlertKind, _ s: AlertSettings, unit: GlucoseUnit) -> String {
         let r = s[kind]
         let when: String =
             switch kind.group {
             case .level:
-                kind.isBelowThreshold
-                    ? L10n.t("Below \(unit.format(Int(r.threshold))) \(unit.symbol)")
+                kind.isLowSide
+                    ? L10n.t("Up to \(unit.format(Int(r.threshold))) \(unit.symbol)")
                     : L10n.t("From \(unit.format(Int(r.threshold))) \(unit.symbol)")
             case .rate: L10n.t("Faster than \(unit.rateText(r.threshold)) \(unit.rateSymbol)")
             case .noData: L10n.t("After \(Durations.text(Int(r.threshold))) without data")
@@ -356,7 +356,14 @@ private struct AlertDetails: View {
                             label: L10n.t("Threshold"), format: format,
                             value: Binding(
                                 get: { shown.threshold }, set: { v in model.alerts.update { $0[kind].threshold = v } }),
-                            readOnly: readOnly)
+                            readOnly: readOnly,
+                            span: { v in
+                                let rules = model.shownAlerts
+                                return RangeSpans.text(
+                                    RangeSpans.ofAlert(kind) { k in
+                                        k == kind ? AlertRule(on: true, threshold: v, repeatMin: 0) : rules[k]
+                                    }, unit: model.unit)
+                            })
                     }
                     NumberSettingRow(
                         label: L10n.t("Repeat"), format: SettingsSpec.alertRepeat,
@@ -460,7 +467,14 @@ private struct NightDetails: View {
                             value: Binding(
                                 get: { shown.threshold },
                                 set: { v in model.alerts.update { $0.night[kind].threshold = v } }),
-                            readOnly: readOnly)
+                            readOnly: readOnly,
+                            span: { v in
+                                let night = model.shownAlerts.night
+                                return RangeSpans.text(
+                                    RangeSpans.ofAlert(kind) { k in
+                                        k == kind ? AlertRule(on: true, threshold: v, repeatMin: 0) : night[k]
+                                    }, unit: model.unit)
+                            })
                     }
                     NumberSettingRow(
                         label: L10n.t("Repeat"), format: SettingsSpec.alertRepeat,

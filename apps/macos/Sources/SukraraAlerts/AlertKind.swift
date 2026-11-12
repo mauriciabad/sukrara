@@ -35,8 +35,8 @@ public enum AlertKind: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// Lows alert strictly below their threshold (low 70 alerts at 69); the other levels at or above it.
-    public var isBelowThreshold: Bool { self == .veryLow || self == .low }
+    /// Lows alert at or below their threshold (low 70 alerts at 70); the other levels at or above it.
+    public var isLowSide: Bool { self == .veryLow || self == .low }
 
     /// Severity within a side: moving to a more severe kind alerts at once.
     public var severity: Int {
@@ -74,7 +74,7 @@ public enum AlertKind: String, CaseIterable, Codable, Sendable {
     public func headline(treated: Int = 0) -> String {
         let base = group == .level ? "\(title) glucose" : title
         guard treated > 0, group == .level else { return base }
-        if isBelowThreshold { return base + (treated == 1 ? " · eat more" : " · eat more again") }
+        if isLowSide { return base + (treated == 1 ? " · eat more" : " · eat more again") }
         return base + (treated == 1 ? " · still high after insulin" : " · still high after more insulin")
     }
 }

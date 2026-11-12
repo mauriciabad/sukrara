@@ -28,7 +28,7 @@ class AppAlertHints(
     private val clock: Clock,
 ) : AlertHints {
     /**
-     * The latest fresh reading is under the low threshold, whether or not the low alert is on (eating is what a low
+     * The latest fresh reading is at or under the low threshold, whether or not the low alert is on (eating is what a low
      * needs either way); before the settings are read, the default threshold.
      */
     override fun lowNow(): Boolean {
@@ -36,7 +36,7 @@ class AppAlertHints(
         val reading = AlertReading(latest.t.epochSecond, latest.mgdl, latest.rateMgdlPerMin)
         if (!Rules.fresh(reading, clock.now().epochSecond)) return false
         val s = settings.value ?: AlertSettings()
-        return latest.mgdl < s.rule(AlertKind.LOW).threshold
+        return latest.mgdl <= s.rule(AlertKind.LOW).threshold
     }
 
     override val quiet: Flow<QuietRules> =

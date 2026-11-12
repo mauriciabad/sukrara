@@ -16,7 +16,7 @@ class AlertThresholdsTest {
     @Test
     fun `shows the runtime's values`() {
         assertEquals(55.0, t.value(ThresholdField.VeryLow), 0.0)
-        assertEquals(70.0, t.value(ThresholdField.Low), 0.0)
+        assertEquals(69.0, t.value(ThresholdField.Low), 0.0)
         assertEquals(180.0, t.value(ThresholdField.High), 0.0)
         assertEquals(250.0, t.value(ThresholdField.VeryHigh), 0.0)
         assertEquals(300.0, t.value(ThresholdField.ExtremelyHigh), 0.0)

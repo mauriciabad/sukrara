@@ -196,7 +196,8 @@ fun unitText(spec: NumberSpec): String =
  * values ("Off") and presets as radio rows (choosing one saves and closes), then — when the spec takes custom values —
  * "Custom", already selected when the current value isn't an option, revealing a number field with the unit as suffix,
  * the allowed range as supporting text and an error in its place while the text isn't valid; OK saves. Exact values
- * are typed, never dragged: glucose limits and minutes are precise. [label] names an option ("1 h", "Off").
+ * are typed, never dragged: glucose limits and minutes are precise. [label] names an option ("1 h", "Off"), [sub]
+ * says more under it; [live] says what a valid typed value means, under the field as it changes ("Low: 56–69 mg/dL").
  * [focusField] false keeps the keyboard closed (screenshot tests).
  */
 @Suppress("ktlint:compose:modifier-missing-check")
@@ -209,6 +210,7 @@ fun NumberDialog(
     onClose: () -> Unit,
     focusField: Boolean = true,
     sub: (Double) -> String? = { null },
+    live: (Double) -> String? = { null },
     onChoose: (Double) -> Unit,
 ) {
     // a glucose format follows the screen's unit (mmol/L: its schema variant), values stay stored ones
@@ -253,7 +255,9 @@ fun NumberDialog(
                     suffix = { Text(unit) },
                     singleLine = true,
                     isError = error != null,
-                    supportingText = { Text(error ?: rangeText) },
+                    supportingText = {
+                        Text(error ?: listOfNotNull((check as? NumberInput.Check.Ok)?.let { live(it.value) }, rangeText).joinToString("\n"))
+                    },
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType = if (shown.spec.decimals > 0) KeyboardType.Decimal else KeyboardType.Number,
