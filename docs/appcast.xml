@@ -14,6 +14,18 @@
     <description>Updates of Sukrara for Mac (the GitHub and Homebrew version).</description>
     <language>en</language>
     <item>
+      <title>Sukrara 0.14.2</title>
+      <pubDate>Thu, 12 Nov 2026 02:53:47 GMT</pubDate>
+      <sparkle:version>14002</sparkle:version>
+      <sparkle:shortVersionString>0.14.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <sparkle:channel>prerelease</sparkle:channel>
+      <sparkle:fullReleaseNotesLink>https://github.com/mauriciabad/sukrara/releases/tag/v0.14.2</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[<ul><li><b>Android alerts are posted again</b> (release builds): resource shrinking removed the alert and mute texts the app looks up by name, so a real alert's notification couldn't be built and no alert showed (the alert logic itself fired). Every string is kept now, and the release check fails if one is missing from the APK.</li><li><b>An alert that can't be shown still rings</b> (Android and Mac): if an alert's notification can't be built or posted, Sukrara shows it plain on the same channel (its sound, vibration and Do Not Disturb behaviour: the kind, the value with its unit and arrow, <i>Open Sukrara</i>), or else a <i>Monitoring problems</i> notice, and tries the full alert again. Settings › Alert reliability (Android) and the menu bar panel (Mac) say <i>An alert couldn't be shown</i>, with <i>Copy report</i>. The failure also reaches logcat now, not only the diagnostic log.</li><li><b>A value at a limit is in the range beyond it</b> (<a href="https://github.com/mauriciabad/sukrara/issues/181">#181</a>): at exactly 180 mg/dL (the high limit) the value is high, at 70 low, at 54 very low and at 250 very high, on both apps: the value's and the line's colour, the range word, the status bar, the menu bar, the notification, time in range and the report's ranges (<i>High 180–249</i>). Time in range now counts readings at 70 and 180 outside the range. Alerts are unchanged.</li><li><b>The Mac disk image has its own icons</b> (<a href="https://github.com/mauriciabad/sukrara/issues/181">#181</a>): the opened volume is a Sukrara drive and the <code>.dmg</code> file a disk image page with that drive, no longer the app's icon.</li></ul>]]></description>
+      <enclosure url="https://github.com/mauriciabad/sukrara/releases/download/v0.14.2/Sukrara-0.14.2.dmg" length="15039638" type="application/octet-stream"
+        sparkle:edSignature="ltVu5XBd+FGpX1bLM2QDKmw4NESm40kmlpFM0tLCOPzqiD40XFHMOlJOkrRChgGd5Hbb33/XFtp0jNDxEeoqCQ=="/>
+    </item>
+    <item>
       <title>Sukrara 0.14.0</title>
       <pubDate>Wed, 11 Nov 2026 21:31:17 GMT</pubDate>
       <sparkle:version>14000</sparkle:version>
