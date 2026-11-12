@@ -50,6 +50,9 @@ class TestTreatmentsApp :
     /** The pen entry *Already logged by your pen?* names (null = no pen entry near the typed dose). */
     var penNear: app.mauri.sukrara.core.model.PenNearEntry? = null
 
+    /** The insulin [penNear] is ("rapid" / "long"): only a typed dose of that kind finds it, like the pens' log. */
+    var penNearKind = "rapid"
+
     /** The log the dialog saves into. */
     val repo = InMemoryTreatmentsRepository()
 
@@ -64,7 +67,7 @@ class TestTreatmentsApp :
             hints,
             penDuplicates =
                 app.mauri.sukrara.core.model
-                    .PenDuplicates { _, _ -> penNear },
+                    .PenDuplicates { kind, _ -> penNear?.takeIf { kind == penNearKind } },
         )
     }
 }

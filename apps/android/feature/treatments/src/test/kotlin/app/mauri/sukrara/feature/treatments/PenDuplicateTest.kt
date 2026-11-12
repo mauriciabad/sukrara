@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.PenNearEntry
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.TreatmentKind
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -52,11 +53,15 @@ class PenDuplicateTest {
     @After
     fun tearDown() {
         app.penNear = null
+        app.penNearKind = "rapid"
         shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
     }
 
-    private fun typeAndSave() {
-        compose.onNodeWithText(app.getString(R.string.treatment_rapid)).performTextInput("8")
+    private fun typeAndSave(
+        field: Int = R.string.treatment_rapid,
+        amount: String = "8",
+    ) {
+        compose.onNodeWithText(app.getString(field)).performTextInput(amount)
         compose.onNodeWithTag("treatment-save").performClick()
         settle()
     }
@@ -99,6 +104,48 @@ class PenDuplicateTest {
             compose.onAllNodesWithText(app.getString(R.string.treatment_cancel))[1].performClick()
             settle()
             scenario.onActivity { assertFalse(it.countdownPaused) }
+        }
+    }
+
+    /**
+     * The owner's 0.14.3 report: 5.5u rapid from the smart pen, then 15u long-acting from a plain pen typed at the same
+     * time. Only a pen entry of the typed insulin asks; long-acting is never the rapid pen's injection (and back).
+     */
+    @Test fun onlyAPenEntryOfTheTypedInsulinAsks() =
+        runBlocking {
+            val m = app.treatments
+            val long = NewEntry(TreatmentKind.LongInsulin, 15.0)
+            val rapid = NewEntry(TreatmentKind.RapidInsulin, 5.5)
+            app.penNearKind = "rapid"
+            assertNull(m.penDuplicate(listOf(long), null))
+            assertNull(m.penDuplicate(listOf(long, NewEntry(TreatmentKind.Carbs, 30.0)), null))
+            assertEquals(rapid, m.penDuplicate(listOf(long, rapid), null)?.first)
+            app.penNearKind = "long"
+            assertNull(m.penDuplicate(listOf(rapid), null))
+            assertEquals(long, m.penDuplicate(listOf(rapid, long), null)?.first)
+        }
+
+    @Test fun longActingTypedAfterARapidPenReadIsSavedWithoutAsking() {
+        ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Home)).use { scenario ->
+            typeAndSave(R.string.treatment_long, "15")
+            compose.onNodeWithText(title).assertDoesNotExist()
+            val saved = runBlocking { app.repo.changedSince(Instant.EPOCH) }.map { it.treatment }
+            assertEquals(listOf(TreatmentKind.LongInsulin to 15.0), saved.map { it.kind to it.amount })
+            scenario.onActivity { assertFalse(it.countdownPaused) }
+        }
+    }
+
+    /** The same over the lock screen: saved at once, the countdown never stood still for a question. */
+    @Test fun overTheLockScreenLongActingIsSavedWithoutAsking() {
+        shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(true)
+        compose.mainClock.autoAdvance = false
+        ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Notification)).use { scenario ->
+            settle()
+            typeAndSave(R.string.treatment_long, "15")
+            compose.onNodeWithText(title).assertDoesNotExist()
+            scenario.onActivity { assertFalse(it.countdownPaused) }
+            val saved = runBlocking { app.repo.changedSince(Instant.EPOCH) }.map { it.treatment }
+            assertEquals(listOf(TreatmentKind.LongInsulin to 15.0), saved.map { it.kind to it.amount })
         }
     }
 

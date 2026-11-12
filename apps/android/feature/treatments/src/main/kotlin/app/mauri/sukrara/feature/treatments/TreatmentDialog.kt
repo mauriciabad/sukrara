@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.treatments
 
+import android.view.View
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -54,6 +56,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +77,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -90,6 +94,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -798,6 +803,27 @@ private fun CountdownRing(
 }
 
 /**
+ * The M3 scrim behind a dialog opened over the treatment dialog (*When?*, *Already logged by your pen?*). The quick
+ * dialog's window draws its own scrim and turns the window dim off (`Theme.Sukrara.QuickTreatment`), and a Compose
+ * dialog's window takes that theme, so without this it opened undimmed, flat on the card behind it (an M3 dialog has
+ * tonal elevation, no shadow). Called from inside the dialog's content: it dims what is behind that dialog's window.
+ */
+@Composable
+internal fun DialogScrim() {
+    val view = LocalView.current
+    SideEffect {
+        val window =
+            generateSequence<Any>(view) { (it as? View)?.parent }
+                .firstNotNullOfOrNull { (it as? DialogWindowProvider)?.window }
+        window?.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        window?.setDimAmount(DIALOG_DIM)
+    }
+}
+
+/** M3's scrim opacity (the quick dialog's own scrim is the same). */
+internal const val DIALOG_DIM = 0.32f
+
+/**
  * When it happened: a segmented button switches between the time picker (a time later than now means yesterday,
  * [TreatmentForm.pickTime]) and *Minutes ago*: a number field with one-tap 5 / 15 / 30 / 60 chips
  * ([TreatmentForm.agoMinutes], under a day; resolved when saving). *Now* resets it; Cancel and back keep what was set.
@@ -826,7 +852,10 @@ private fun WhenDialog(
     }
     AlertDialog(
         onDismissRequest = onDone,
-        title = { Text(stringResource(R.string.treatment_pick_title)) },
+        title = {
+            DialogScrim()
+            Text(stringResource(R.string.treatment_pick_title))
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {

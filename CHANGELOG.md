@@ -4,6 +4,13 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **Long-acting insulin typed after a pen read no longer asks *Already logged by your pen?* (Android)** (the owner:
+  5.5u rapid from the smart pen, then 15u long-acting from a plain pen): the question compared the typed dose with
+  pen entries of either insulin, so any long-acting dose near a rapid pen injection asked. Now only a pen entry of the
+  same insulin within *Doses you type: time apart* asks, as in the PoC and on the Mac. When it does ask, the question
+  dims the Add treatment dialog behind it instead of sitting flat on it, with *Log anyway* and *Cancel*; the *When?*
+  picker gets the same dim.
+
 ## 0.14.4 (GitHub prerelease)
 
 - **The low limit reads 70 again, and 70 is in range** (both apps; the owner: "the 70 is the threshold, but 70 itself

@@ -294,7 +294,10 @@ interface PensPort {
     fun openJugglucoInfo()
 }
 
-/** The treatment dialog's *Already logged by your pen?*: a live pen entry of [kind] within the match window of [at]. */
+/**
+ * The treatment dialog's *Already logged by your pen?*: a live pen entry of [kind] (never the other insulin) within the
+ * match window of [at].
+ */
 fun interface PenDuplicates {
     suspend fun near(
         kind: String,

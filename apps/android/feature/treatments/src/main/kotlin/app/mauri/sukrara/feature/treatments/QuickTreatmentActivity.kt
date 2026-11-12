@@ -697,8 +697,9 @@ class QuickTreatmentActivity : ComponentActivity() {
 }
 
 /**
- * *Already logged by your pen?*: a pen entry of insulin is this close to the typed dose. *Cancel* goes back to the form;
- * *Log anyway* saves what was typed (a second injection is the person's call).
+ * *Already logged by your pen?*: a pen entry of the typed insulin is this close to the typed dose. The PoC's dialog: an
+ * M3 alert over the treatment dialog with its scrim ([DialogScrim]), *Log anyway* the filled button (a second injection
+ * is the person's call) and *Cancel* back to the form; back and a tap on the scrim cancel too.
  */
 @Composable
 internal fun PenDuplicateDialog(
@@ -709,7 +710,10 @@ internal fun PenDuplicateDialog(
     val amount = (if (pen.units % 1.0 == 0.0) "${pen.units.toLong()}" else String.format(java.util.Locale.ROOT, "%.1f", pen.units)) + "u"
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.treatment_pen_duplicate_title)) },
+        title = {
+            DialogScrim()
+            Text(stringResource(R.string.treatment_pen_duplicate_title))
+        },
         text = {
             Text(
                 stringResource(
@@ -720,7 +724,7 @@ internal fun PenDuplicateDialog(
                 ),
             )
         },
-        confirmButton = { TextButton(onClick = onLog) { Text(stringResource(R.string.treatment_pen_duplicate_log)) } },
-        dismissButton = { Button(onClick = onCancel) { Text(stringResource(R.string.treatment_cancel)) } },
+        confirmButton = { Button(onClick = onLog) { Text(stringResource(R.string.treatment_pen_duplicate_log)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.treatment_cancel)) } },
     )
 }

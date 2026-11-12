@@ -263,18 +263,15 @@ class PensModule(
     }
 
     /**
-     * The treatment dialog's *Already logged by your pen?*: a live pen entry of either insulin within the match window
-     * of the typed time, read from the (synced) log on any role, so a follower typing into the wearer's log is warned
-     * too. The typed kind first; a pen set to the other kind still counts (a long pen left on the default *rapid*).
+     * The treatment dialog's *Already logged by your pen?*: a live pen entry of the typed kind within the match window
+     * of the typed time ([PenEngine.near], the PoC's rule), read from the (synced) log on any role, so a follower typing
+     * into the wearer's log is warned too. Never the other insulin: long-acting typed at a rapid pen injection's time
+     * (both pens at a meal) is a second injection, not this one again.
      */
     val duplicates =
         app.mauri.sukrara.core.model.PenDuplicates { kind, at ->
-            val entries = penEntries()
             val window = (settings.flow(Match).first() * 60).toLong()
-            val e =
-                PenEngine.near(entries, kind, at, window = window)
-                    ?: PenEngine.near(entries, if (kind == "long") "rapid" else "long", at, window = window)
-            e?.let {
+            PenEngine.near(penEntries(), kind, at, window = window)?.let {
                 app.mauri.sukrara.core.model
                     .PenNearEntry(it.id, it.a, it.t)
             }
