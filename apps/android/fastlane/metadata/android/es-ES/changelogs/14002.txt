@@ -1,0 +1,1 @@
+• Las alertas vuelven a mostrarse: una alerta real podía saltar sin que apareciera su notificación, porque faltaban en la app textos que necesita. Ya están todos, y cada versión se comprueba para que no falten.

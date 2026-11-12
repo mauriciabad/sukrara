@@ -1,0 +1,1 @@
+• Alerts show again: a real alert could fire without its notification ever appearing, because texts it needs were missing from the app. They're all in now, and every release is checked for them.

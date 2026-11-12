@@ -2,7 +2,7 @@
 
 Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
-## Unreleased
+## Unreleased — Android alerts show again
 
 - **Android alerts are posted again** (release builds): resource shrinking removed the alert and mute texts the app
   looks up by name, so a real alert's notification couldn't be built and no alert showed (the alert logic itself
