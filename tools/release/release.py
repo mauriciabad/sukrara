@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """One command publishes a version to every channel (#187, docs/DEVELOPMENT.md › Release):
 
-    tools/release/release.py <version> [--dry-run] [--from <step>] [--app-review]
+    tools/release/release.py <version> [--dry-run] [--from <step>]
 
 Runs on the release Mac (the keys stay there), in any clean checkout whose HEAD is origin/next: the main checkout or a
 worktree, on any branch or a detached HEAD. Every push names its refspec (HEAD:next, HEAD:main); nothing needs a local
@@ -14,7 +14,8 @@ left (resume with --from <step>; every step can run again):
   preconditions  a clean tree, HEAD = origin/next, its Checks run green or still running (not awaited: the version
                  commit's run covers it; a failed one stops), the new version above VERSION, CHANGELOG.md's Unreleased section, the Play notes
                  (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
-                 characters), no tag yet, the keys and gh
+                 characters) and the App Store notes (apps/macos/AppStore/whats-new/…, see appstore), no tag yet,
+                 the keys and gh
   version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md), CHANGELOG's Unreleased → the
                  version's entry; commit, push to next (fast-forward; its Checks run is awaited before github)
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
@@ -34,13 +35,15 @@ left (resume with --from <step>; every step can run again):
   testflight     the App Store pkg the gate built and validated (built once by mac-appstore.sh if it's missing, e.g.
                  --from testflight in a fresh checkout), its version and build number checked, uploaded by
                  mac-appstore.sh --upload; then App Store Connect processes the build (export compliance: summary)
+  appstore       the App Store version: created (or the editable one reused), the build attached, What's New from
+                 apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt (at most 4000 characters), released
+                 after approval, submitted for App Review (needs the App Manager key); while another version is in
+                 review it waits on TestFlight, and a later release submits the newest
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
                exits 1 when a check would stop the release
 --from STEP    starts at STEP (the release commit must be checked out: VERSION = <version>)
---app-review   never run yet: also submits the App Store build for App Review (needs an App Store Connect key with App
-               Manager access, and the listing, App Privacy and EU trader status done in App Store Connect)
 """
 import argparse
 import hashlib
@@ -63,10 +66,13 @@ REPO = "mauriciabad/sukrara"
 REPO_URL = "https://github.com/" + REPO
 TAP = "mauriciabad/homebrew-tap"
 FEED_URL = "https://sukrara.mauri.app/appcast.xml"
-STEPS = ["preconditions", "version", "gate", "github", "sparkle", "homebrew", "play", "testflight", "summary"]
+STEPS = ["preconditions", "version", "gate", "github", "sparkle", "homebrew", "play", "testflight", "appstore",
+         "summary"]
 PLAY_LANGS = ["en-US", "es-ES"]
 PLAY_TRACKS = ["internal", "production"]
 PLAY_NOTES = "apps/android/fastlane/metadata/android/%s/changelogs/%d.txt"
+ASC_LANGS = ["en-US", "es-ES"]
+ASC_NOTES = "apps/macos/AppStore/whats-new/%s/%d.txt"
 DIST = "apps/android/app/build/dist"
 MAC_BUILD = "apps/macos/build"
 DOCS_WITH_VERSION = ["docs/DEVELOPMENT.md", "docs/QA.md", "docs/FEATURES.md"]
@@ -194,6 +200,23 @@ def read_play_notes(root, version):
     return notes
 
 
+def read_appstore_notes(root, version):
+    """{locale: text}: the App Store's "What's New" for the version code (at most 4000 characters each)."""
+    notes, code = {}, version_code(version)
+    for lang in ASC_LANGS:
+        path = os.path.join(root, ASC_NOTES % (lang, code))
+        if not os.path.exists(path):
+            raise ValueError("no App Store notes %s (what's new on the Mac, %s, at most %d characters)"
+                             % (os.path.relpath(path, root), lang, stores.ASC_WHATS_NEW_MAX))
+        with open(path, encoding="utf-8") as f:
+            text = f.read().strip()
+        if not text or len(text) > stores.ASC_WHATS_NEW_MAX:
+            raise ValueError("App Store notes %s: %d characters (1 to %d)"
+                             % (os.path.relpath(path, root), len(text), stores.ASC_WHATS_NEW_MAX))
+        notes[lang] = text
+    return notes
+
+
 def appcast_item(feed, version):
     """{length, signature, url} of the version's item in docs/appcast.xml, or None."""
     m = re.search(r"<item>\s*<title>Sukrara %s</title>(.*?)</item>" % re.escape(version), feed, re.S)
@@ -281,11 +304,10 @@ def sha256(path):
 
 
 class Release:
-    def __init__(self, version, dry, app_review):
+    def __init__(self, version, dry):
         self.v = version
         self.code = version_code(version)
         self.dry = dry
-        self.app_review = app_review
         self.changelog = None  # dry run: the CHANGELOG the version step would write
         self.notes_state = []  # what the summary reports as still manual
         self.would_stop = []  # dry run: every check that would have stopped the release
@@ -420,10 +442,11 @@ class Release:
             changelog_release(self.read("CHANGELOG.md"), self.v)
         except ValueError as e:
             self.ok(False, str(e))
-        try:
-            read_play_notes(ROOT, self.v)
-        except ValueError as e:
-            self.ok(False, str(e))
+        for read in (read_play_notes, read_appstore_notes):
+            try:
+                read(ROOT, self.v)
+            except ValueError as e:
+                self.ok(False, str(e))
         for f, what in [("~/.android/sukrara-release.jks", "the Android release key"),
                         ("~/.android/sukrara-play.json", "the Play service account key")]:
             self.ok(os.path.exists(os.path.expanduser(f)), "no %s (%s)" % (what, f))
@@ -692,8 +715,6 @@ class Release:
                 print("  no pkg yet (the gate builds it); if the gate left none, would run: tools/release/mac-appstore.sh")
             print("  would check its version and build number, then run: tools/release/mac-appstore.sh --upload")
             print("  would wait until the build's processingState is VALID")
-            if self.app_review:
-                print("  would submit it for App Review: " + json.dumps(stores.asc_submission_bodies("<app>", "<ver>")[0]))
             return
         asc = stores.AppStoreConnect()
         app = asc.app_id()
@@ -721,14 +742,35 @@ class Release:
         if found.get("encryption") is None:
             self.notes_state.append("TestFlight: build %s shows Missing Compliance: App Store Connect › TestFlight › "
                                     "the build › Manage (docs/20-publishing.md › Mac App Store: signing)" % build)
-        if self.app_review:
-            asc.submit_for_review(app, self.v, found["id"])
-            print("  submitted %s (%s) for App Review" % (self.v, build))
+
+    def appstore(self):
+        """The App Store version of this release, with its TestFlight build and "What's New", submitted for App Review
+        and released automatically once approved (like Play production). Apple reviews one version at a time: while
+        another is in review the release stays on TestFlight, and a later release submits the newest."""
+        try:
+            notes = read_appstore_notes(ROOT, self.v)
+        except ValueError as e:
+            self.ok(False, str(e))
+            return
+        if self.dry:
+            print("  would find the App Store versions, then create or reuse %s (release after approval), attach its "
+                  "VALID build, set What's New (%s) and submit it for App Review; nothing while another version is "
+                  "in review" % (self.v, ", ".join(sorted(notes))))
+            return
+        asc = stores.AppStoreConnect()
+        app = asc.app_id()
+        b = [x for x in asc.builds(app, version=self.v) if x["state"] == "VALID" and not x["expired"]]
+        self.ok(bool(b), "no VALID %s build in App Store Connect: run --from testflight" % self.v)
+        action, why = asc.submit_for_review(app, self.v, b[0]["id"], notes)
+        print("  %s: %s (build %s)" % (action, why, b[0]["build"]))
+        if action == "wait":
+            self.notes_state.append("App Store: %s stays on TestFlight (%s); the next release after that review "
+                                    "submits the newest" % (self.v, why))
 
     def summary(self):
         print("Sukrara %s (%d):" % (self.v, self.code))
         if self.dry:
-            print("  would report GitHub, Sparkle, Homebrew, Play and TestFlight")
+            print("  would report GitHub, Sparkle, Homebrew, Play, TestFlight and the App Store")
             return
 
         def line(name, fn):
@@ -768,8 +810,11 @@ class Release:
                 return "no %s build" % self.v
             return "%s %s, export compliance %s" % (b[0]["build"], b[0]["state"],
                                                      "answered" if b[0]["encryption"] is not None else "MISSING")
+        def appstore():
+            asc = stores.AppStoreConnect()
+            return ", ".join("%s %s" % (v["version"], v["state"]) for v in asc.versions(asc.app_id())[:3])
         for name, fn in [("GitHub", github), ("Sparkle", sparkle), ("Homebrew", homebrew), ("Play", play),
-                         ("TestFlight", testflight)]:
+                         ("TestFlight", testflight), ("App Store", appstore)]:
             line(name, fn)
         for n in self.notes_state:
             print("  manual: " + n)
@@ -780,13 +825,12 @@ def main(argv):
     p.add_argument("version")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--from", dest="start", choices=STEPS, default=STEPS[0])
-    p.add_argument("--app-review", action="store_true")
     a = p.parse_args(argv)
     try:
         parse_version(a.version)
     except ValueError as e:
         sys.exit(str(e))
-    rel = Release(a.version, a.dry_run, a.app_review)
+    rel = Release(a.version, a.dry_run)
     steps = STEPS[STEPS.index(a.start):]
     if a.start not in ("preconditions", "version") and not a.dry_run:
         current = rel.read("VERSION").strip()

@@ -107,12 +107,14 @@ checkout or a worktree, on any branch or a detached HEAD (every push names its r
 local `next` or `main` is needed). Before it: write CHANGELOG.md's `## Unreleased` section (optionally
 `## Unreleased — <summary>`, which becomes the entry's title) and the Google Play notes,
 `apps/android/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `es-ES/…` (what's new on Android, at
-most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read too). Then the steps, in order; each
+most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read too), and the App Store notes,
+`apps/macos/AppStore/whats-new/en-US/<versionCode>.txt` and `es-ES/…` (what's new on the Mac, at most 4000 characters
+each; no build reads either). Then the steps, in order; each
 checks its result and stops with what's done, what's left and the `--from <step>` that resumes (every step can run
 again: it skips what's already there):
 
 1. `preconditions`: a clean tree at `origin/next`, its Checks run green or still running (not awaited: a failed one
-   stops the release), the version above `VERSION`, a non-empty Unreleased section, the Play notes, no tag yet,
+   stops the release), the version above `VERSION`, a non-empty Unreleased section, the Play and App Store notes, no tag yet,
    `tools/check/strict`, the keys, `gh`. A Checks run counts on any branch (the same commit is the same tree): the
    commit's push run or one started by hand (`gh workflow run checks.yml --ref next` when the push run is stuck, e.g.
    in a GitHub Actions incident); one green run is enough, a pull_request run doesn't count.
@@ -136,23 +138,27 @@ again: it skips what's already there):
    item.
 6. `homebrew`: the tap's cask (bumped by `homebrew-tap.yml`) at the version, with the dmg's sha256 and
    `auto_updates true`.
-7. `play`: the play bundle on the **internal** track with the en-US / es-ES notes, through the Android Publisher API
-   (edits.insert → bundles.upload → tracks.update → edits.commit) with the service account
-   `~/.android/sukrara-play.json`; a version code already on the track is left alone.
+7. `play`: the play bundle on the **internal and production** tracks with the en-US / es-ES notes, through the
+   Android Publisher API (edits.insert → bundles.upload → tracks.update → edits.commit) with the service account
+   `~/.android/sukrara-play.json`; a track that already has the version code is left alone. Managed publishing is
+   off: production goes live once Google approves it.
 8. `testflight`: unless App Store Connect has a build of the version already, the gate's pkg
    (`build/Sukrara-<version>-appstore.pkg`; missing, e.g. `--from testflight` in a fresh checkout, `mac-appstore.sh`
    builds and validates it once), its version and build number checked, uploaded with `mac-appstore.sh --upload`
    (which never builds); then waits until App Store Connect has processed it. A new build shows *Missing Compliance*
-   until its export question is answered: the one click left (docs/20-publishing.md › Mac App Store: signing and App
-   Store Connect).
-9. `summary`: every channel's state (`--from summary` alone shows it any time).
+   until its export question is answered (since 0.14.6 the App Store build's Info.plist answers it).
+9. `appstore`: the App Store version of the release (a new one, or the editable one reused: never submitted, rejected
+   or removed from review), its VALID build attached, *What's New* from the App Store notes (once a version is live),
+   released automatically after approval, submitted for App Review. Apple reviews one version at a time: while
+   another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
+   newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/AuthKey_<id>.p8`; the
+   *Developer* notary key is kept as `notary-AuthKey_….p8`, notarization reads it from the keychain profile).
+10. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
 nothing, and exits 1 with the list when a check would stop the release. Read-only store checks: `python3
 tools/release/stores.py play-tracks` (opens an edit, lists the tracks, deletes the edit) and `asc-builds`.
-The `play` step puts every release on Play's internal **and production** tracks (managed publishing is off: production
-goes live once Google approves it). `--app-review` (not used yet) also submits the App Store build for App Review; it
-needs an App Store Connect key with App Manager access (today's key is *Developer*). Tests: `python3 tools/release/test_release.py` (CI).
+Every release goes to both stores' review: Play production and the App Store. Tests: `python3 tools/release/test_release.py` (CI).
 
 ## Strings (Android, English + Spain Spanish)
 

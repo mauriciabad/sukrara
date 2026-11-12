@@ -23,14 +23,15 @@ import sys
 # one of its exclusions.
 # - android: its tests read tools/check/allow.json and tools/release/android-cert.sha256, its jobs run
 #   tools/release scripts, and VERSION is the versionCode (an :app input). The Play notes (fastlane metadata) are text
-#   the release command checks and uploads; no build reads them.
+#   the release command checks and uploads; no build reads them. The same for the Mac's App Store notes
+#   (apps/macos/AppStore/whats-new/).
 # - mac: no Mac build, test or bundle step reads tools/ (the settings generator's output is checked by the rules job,
 #   the release scripts run on the release Mac). VERSION reaches only Bundle/bundle.sh's Info.plist, and the release
 #   command's gate bundles, notarizes and launch-smokes the app with the new VERSION before anything is published, so
 #   the version commit doesn't run the Mac job again over an unchanged app.
 GROUPS = {
     "android": (["apps/android/", "contracts/", "tools/", "VERSION", "assets/"], ["apps/android/fastlane/"]),
-    "mac": (["apps/macos/", "contracts/", "assets/"], []),
+    "mac": (["apps/macos/", "contracts/", "assets/"], ["apps/macos/AppStore/whats-new/"]),
 }
 DEPTH = 300
 

@@ -219,8 +219,8 @@ def asc_key_paths():
 
 
 def asc_submission_bodies(app_id, version_id, platform="MAC_OS"):
-    """The App Review submission (release.py --app-review): a review submission for the platform, its one item (the
-    App Store version), then the PATCH that submits it."""
+    """The App Review submission: a review submission for the platform, its one item (the App Store version), then the
+    PATCH that submits it."""
     return (
         {"data": {"type": "reviewSubmissions", "attributes": {"platform": platform},
                   "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}},
@@ -230,6 +230,36 @@ def asc_submission_bodies(app_id, version_id, platform="MAC_OS"):
         lambda submission_id: {"data": {"type": "reviewSubmissions", "id": submission_id,
                                         "attributes": {"submitted": True}}},
     )
+
+
+ASC_WHATS_NEW_MAX = 4000
+# App Store version states (appVersionState, else the older appStoreState).
+ASC_EDITABLE = {"PREPARE_FOR_SUBMISSION", "READY_FOR_REVIEW", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED",
+                "INVALID_BINARY"}
+ASC_IN_FLIGHT = {"WAITING_FOR_REVIEW", "IN_REVIEW", "ACCEPTED", "PENDING_APPLE_RELEASE", "PENDING_DEVELOPER_RELEASE",
+                 "PROCESSING_FOR_DISTRIBUTION", "PROCESSING_FOR_APP_STORE", "WAITING_FOR_EXPORT_COMPLIANCE"}
+ASC_LIVE = {"READY_FOR_DISTRIBUTION", "READY_FOR_SALE"}
+
+
+def asc_version_plan(versions, version):
+    """What the release does with the App Store, given the app's versions for the platform ([{id, version, state}],
+    any order) and the version being released:
+      ("done", id, why)    this version is already submitted, in review or live (re-running is safe)
+      ("wait", id, why)    another version is in review or waiting to release: Apple allows one at a time, so this
+                           release stays on TestFlight and the next release after that review submits the newest
+      ("reuse", id, why)   the one editable version (never submitted, rejected or removed from review) becomes this one
+      ("create", None, why) a new version (every earlier one is live or replaced)
+    (submit_for_review sets "What's New" only when a version is live: the first version has none.)"""
+    for v in versions:
+        if v["version"] == version and (v["state"] in ASC_IN_FLIGHT or v["state"] in ASC_LIVE):
+            return ("done", v["id"], "%s is %s" % (version, v["state"]))
+    for v in versions:
+        if v["state"] in ASC_IN_FLIGHT:
+            return ("wait", v["id"], "%s is %s (one version in review at a time)" % (v["version"], v["state"]))
+    for v in versions:
+        if v["state"] in ASC_EDITABLE:
+            return ("reuse", v["id"], "%s (%s) becomes %s" % (v["version"], v["state"], version))
+    return ("create", None, "a new App Store version %s" % version)
 
 
 class AppStoreConnect:
@@ -277,24 +307,51 @@ class AppStoreConnect:
                         "uploaded": a.get("uploadedDate"), "expired": a.get("expired")})
         return out
 
-    def submit_for_review(self, app_id, version, build_id, platform="MAC_OS"):
-        """release.py --app-review only (needs a key with App Manager or Admin access, the Developer key gets 403): the
-        App Store version `version` with build `build_id`, submitted for App Review. Never run yet."""
-        found = self.call("GET", "/v1/apps/%s/appStoreVersions" % app_id,
-                          {"filter[versionString]": version, "filter[platform]": platform})["data"]
-        if found:
-            version_id = found[0]["id"]
+    def versions(self, app_id, platform="MAC_OS"):
+        """The app's App Store versions for the platform: [{id, version, state, release}]."""
+        data = self.call("GET", "/v1/apps/%s/appStoreVersions" % app_id, {
+            "filter[platform]": platform, "limit": "20",
+            "fields[appStoreVersions]": "versionString,appVersionState,appStoreState,releaseType"})["data"]
+        return [{"id": d["id"], "version": d["attributes"].get("versionString"),
+                 "state": d["attributes"].get("appVersionState") or d["attributes"].get("appStoreState"),
+                 "release": d["attributes"].get("releaseType")} for d in data]
+
+    def submit_for_review(self, app_id, version, build_id, whats_new, platform="MAC_OS"):
+        """The App Store version `version` with build `build_id`, released automatically after approval, its "What's New"
+        ({locale: text}) set when an earlier version is live, submitted for App Review. Needs a key with App Manager
+        or Admin access (the Developer key gets 403). Returns (action, why) from asc_version_plan."""
+        versions = self.versions(app_id, platform)
+        action, version_id, why = asc_version_plan(versions, version)
+        if action in ("done", "wait"):
+            return action, why
+        attrs = {"versionString": version, "releaseType": "AFTER_APPROVAL"}
+        if action == "reuse":
+            self.call("PATCH", "/v1/appStoreVersions/%s" % version_id,
+                      body={"data": {"type": "appStoreVersions", "id": version_id, "attributes": attrs}})
         else:
+            attrs["platform"] = platform
             version_id = self.call("POST", "/v1/appStoreVersions", body={"data": {
-                "type": "appStoreVersions", "attributes": {"platform": platform, "versionString": version},
+                "type": "appStoreVersions", "attributes": attrs,
                 "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]["id"]
         self.call("PATCH", "/v1/appStoreVersions/%s/relationships/build" % version_id,
                   body={"data": {"type": "builds", "id": build_id}})
+        if any(v["state"] in ASC_LIVE for v in versions):
+            locs = self.call("GET", "/v1/appStoreVersions/%s/appStoreVersionLocalizations" % version_id,
+                             {"fields[appStoreVersionLocalizations]": "locale"})["data"]
+            for loc in locs:
+                text = whats_new.get(loc["attributes"]["locale"]) or whats_new.get("en-US")
+                self.call("PATCH", "/v1/appStoreVersionLocalizations/%s" % loc["id"], body={"data": {
+                    "type": "appStoreVersionLocalizations", "id": loc["id"], "attributes": {"whatsNew": text}}})
+        drafts = self.call("GET", "/v1/reviewSubmissions", {"filter[app]": app_id, "filter[platform]": platform,
+                                                             "filter[state]": "READY_FOR_REVIEW"})["data"]
         create, item, submit = asc_submission_bodies(app_id, version_id, platform)
-        submission_id = self.call("POST", "/v1/reviewSubmissions", body=create)["data"]["id"]
-        self.call("POST", "/v1/reviewSubmissionItems", body=item(submission_id))
+        if drafts:  # a draft submission already holds this version (added for review by hand, never submitted)
+            submission_id = drafts[0]["id"]
+        else:
+            submission_id = self.call("POST", "/v1/reviewSubmissions", body=create)["data"]["id"]
+            self.call("POST", "/v1/reviewSubmissionItems", body=item(submission_id))
         self.call("PATCH", "/v1/reviewSubmissions/%s" % submission_id, body=submit(submission_id))
-        return submission_id
+        return "submitted", why
 
 
 # --- read-only checks ------------------------------------------------------------------------------------------------
@@ -321,6 +378,8 @@ def asc_builds():
     for b in asc.builds(app, limit=5):
         print("  %-8s %-24s %-10s encryption=%s uploaded=%s" % (b["version"], b["build"], b["state"], b["encryption"],
                                                                 b["uploaded"]))
+    for v in asc.versions(app):
+        print("  App Store %-8s %-28s release=%s" % (v["version"], v["state"], v["release"]))
 
 
 if __name__ == "__main__":

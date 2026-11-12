@@ -884,10 +884,18 @@ Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub,
   completed`, full rollout; managed publishing off, so it goes live once Google approves it); the service account has
   *Release to production*. Each track that already has the versionCode is skipped, so re-running is safe. The owner
   decided 0.x goes to production (public work in progress); the 1.0.0-only `--production` flag is gone.
-- **`--app-review` (never run yet)**: App Store: the App Store version created or found, the build attached, a review submission with that
-  version, submitted (`reviewSubmissions` / `reviewSubmissionItems`); needs a key with *App Manager* or *Admin*
-  access (the *Developer* key gets 403). The listing, screenshots, App Privacy and the EU trader status have to be
-  done first in App Store Connect.
+- **App Store, every release (since 2026-11-13)**: the `appstore` step after `testflight`. It lists the app's App
+  Store versions and then: a version already submitted, in review or live is left alone (re-running is safe); while
+  **another** version is in review or waiting to release it does nothing (Apple reviews one version at a time; the
+  build stays on TestFlight and the summary says so, a later release submits the newest); otherwise the editable
+  version (never submitted, rejected, removed from review) is reused or a new one created, as `versionString` =
+  the release with `releaseType: AFTER_APPROVAL`, the VALID build attached, *What's New* set on every localization
+  from `apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt` (only once a version is live: the first has
+  none), and a review submission (an existing draft one reused) submitted. App Store Connect copies the listing and
+  screenshots to each new version (to be confirmed on the first automatic submission). Needs the key with *App Manager* access (*Sukrara release*,
+  `~/.apple-dev/AuthKey_<id>.p8`); the *Developer* key `VCB5XBQ3QZ` (*Sukrara notary*) stays for notarization, its
+  file renamed `notary-AuthKey_VCB5XBQ3QZ.p8` so the scripts pick the release key. Replaces the never-run
+  `--app-review` flag.
 
 **In Sukrara.** Added: the above. Discarded, with the reason: fastlane / `gcloud` / `google-auth` (none is on the
 release Mac; three REST calls and a JWT don't need them, and fewer tools means fewer keys in more places);

@@ -12,7 +12,8 @@ import changes  # noqa: E402
 
 DIFFS = {
     "docs": ["docs/FEATURES.md", "CHANGELOG.md", "README.md"],
-    "notes": ["apps/android/fastlane/metadata/android/en-US/changelogs/14004.txt"],
+    "notes": ["apps/android/fastlane/metadata/android/en-US/changelogs/14004.txt",
+              "apps/macos/AppStore/whats-new/es-ES/14004.txt"],
     "version": ["VERSION", "CHANGELOG.md", "docs/DEVELOPMENT.md"],
     "android": ["apps/android/app/build.gradle.kts"],
     "contracts": ["contracts/alerts/SPEC.md"],
@@ -24,7 +25,7 @@ class Groups(unittest.TestCase):
     def test_groups(self):
         none = {"android": False, "mac": False}
         self.assertEqual(changes.groups(DIFFS["docs"]), none)
-        self.assertEqual(changes.groups(DIFFS["notes"]), none)  # the Play notes: no build reads them
+        self.assertEqual(changes.groups(DIFFS["notes"]), none)  # the Play / App Store notes: no build reads them
         self.assertEqual(changes.groups(DIFFS["version"]), dict(none, android=True))  # the release gate bundles the Mac app
         self.assertEqual(changes.groups(["tools/check/check.py"]), dict(none, android=True))
         self.assertEqual(changes.groups(DIFFS["android"]), dict(none, android=True))

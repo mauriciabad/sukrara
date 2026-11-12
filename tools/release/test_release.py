@@ -139,6 +139,101 @@ class NotesTest(unittest.TestCase):
             shutil.rmtree(tmp)
 
 
+class AppStoreNotesTest(unittest.TestCase):
+    def test_appstore_notes(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            with self.assertRaisesRegex(ValueError, "no App Store notes .*whats-new/en-US/14000.txt"):
+                release.read_appstore_notes(tmp, "0.14.0")
+            for lang, text in [("en-US", "New things.\n"), ("es-ES", "Cosas nuevas.\n")]:
+                path = os.path.join(tmp, release.ASC_NOTES % (lang, 14000))
+                os.makedirs(os.path.dirname(path))
+                with open(path, "w") as f:
+                    f.write(text)
+            self.assertEqual(release.read_appstore_notes(tmp, "0.14.0"),
+                             {"en-US": "New things.", "es-ES": "Cosas nuevas."})
+            with open(os.path.join(tmp, release.ASC_NOTES % ("es-ES", 14000)), "w") as f:
+                f.write("x" * 4001)
+            with self.assertRaisesRegex(ValueError, "4001 characters"):
+                release.read_appstore_notes(tmp, "0.14.0")
+        finally:
+            shutil.rmtree(tmp)
+
+
+class AppStoreVersionTest(unittest.TestCase):
+    """The appstore step: one App Store version in review at a time, every release submitted once it can be."""
+
+    def v(self, version, state, vid=None):
+        return {"id": vid or "v" + version, "version": version, "state": state, "release": "AFTER_APPROVAL"}
+
+    def test_plan(self):
+        plan = stores.asc_version_plan
+        self.assertEqual(plan([], "0.14.6")[:2], ("create", None))
+        self.assertEqual(plan([self.v("0.14.5", "READY_FOR_DISTRIBUTION")], "0.14.6")[:2], ("create", None))
+        self.assertEqual(plan([self.v("0.14.5", "WAITING_FOR_REVIEW")], "0.14.6")[:2], ("wait", "v0.14.5"))
+        self.assertEqual(plan([self.v("0.14.6", "IN_REVIEW")], "0.14.6")[:2], ("done", "v0.14.6"))
+        self.assertEqual(plan([self.v("0.14.6", "READY_FOR_SALE")], "0.14.6")[:2], ("done", "v0.14.6"))
+        for state in ("PREPARE_FOR_SUBMISSION", "REJECTED", "DEVELOPER_REJECTED", "READY_FOR_REVIEW"):
+            self.assertEqual(plan([self.v("0.14.5", "READY_FOR_DISTRIBUTION", "live"), self.v("0.14.6", state)],
+                                  "0.14.7")[:2], ("reuse", "v0.14.6"))
+
+    def calls(self, versions, drafts=()):
+        """submit_for_review against a fake API: the (method, path, body) it sent."""
+        sent = []
+
+        class Fake(stores.AppStoreConnect):
+            def __init__(self):
+                pass
+
+            def versions(self, app_id, platform="MAC_OS"):
+                return versions
+
+            def call(self, method, path, params=None, body=None):
+                sent.append((method, path, body))
+                if path == "/v1/appStoreVersions" and method == "POST":
+                    return {"data": {"id": "new"}}
+                if path.endswith("/appStoreVersionLocalizations"):
+                    return {"data": [{"id": "l1", "attributes": {"locale": "en-US"}},
+                                     {"id": "l2", "attributes": {"locale": "es-ES"}}]}
+                if path == "/v1/reviewSubmissions" and method == "GET":
+                    return {"data": list(drafts)}
+                if path == "/v1/reviewSubmissions":
+                    return {"data": {"id": "s1"}}
+                return {"data": {}}
+        result = Fake().submit_for_review("app1", "0.14.6", "b6", {"en-US": "New.", "es-ES": "Nuevo."})
+        return result, sent
+
+    def test_creates_attaches_sets_whats_new_and_submits(self):
+        (action, _), sent = self.calls([self.v("0.14.5", "READY_FOR_DISTRIBUTION")])
+        self.assertEqual(action, "submitted")
+        create = sent[0]
+        self.assertEqual((create[0], create[1]), ("POST", "/v1/appStoreVersions"))
+        self.assertEqual(create[2]["data"]["attributes"],
+                         {"versionString": "0.14.6", "releaseType": "AFTER_APPROVAL", "platform": "MAC_OS"})
+        self.assertIn(("PATCH", "/v1/appStoreVersions/new/relationships/build",
+                       {"data": {"type": "builds", "id": "b6"}}), sent)
+        news = {b["data"]["id"]: b["data"]["attributes"]["whatsNew"] for m, p, b in sent
+                if p.startswith("/v1/appStoreVersionLocalizations/")}
+        self.assertEqual(news, {"l1": "New.", "l2": "Nuevo."})
+        self.assertEqual(sent[-1], ("PATCH", "/v1/reviewSubmissions/s1",
+                                    {"data": {"type": "reviewSubmissions", "id": "s1",
+                                              "attributes": {"submitted": True}}}))
+
+    def test_first_version_has_no_whats_new_and_a_draft_submission_is_reused(self):
+        (action, _), sent = self.calls([self.v("0.14.5", "PREPARE_FOR_SUBMISSION")], drafts=[{"id": "d1"}])
+        self.assertEqual(action, "submitted")
+        self.assertEqual(sent[0][:2], ("PATCH", "/v1/appStoreVersions/v0.14.5"))
+        self.assertEqual(sent[0][2]["data"]["attributes"], {"versionString": "0.14.6", "releaseType": "AFTER_APPROVAL"})
+        self.assertFalse([p for m, p, b in sent if "Localizations" in p])
+        self.assertFalse([p for m, p, b in sent if m == "POST"])
+        self.assertEqual(sent[-1][1], "/v1/reviewSubmissions/d1")
+
+    def test_waits_while_another_version_is_in_review(self):
+        (action, why), sent = self.calls([self.v("0.14.5", "WAITING_FOR_REVIEW")])
+        self.assertEqual((action, sent), ("wait", []))
+        self.assertIn("0.14.5 is WAITING_FOR_REVIEW", why)
+
+
 class PlayTest(unittest.TestCase):
     def test_track_body(self):
         body = stores.play_track_body("internal", "0.14.0", 14000, {"es-ES": "Cosas.", "en-US": "Things."})
@@ -303,7 +398,7 @@ class TestFlightTest(unittest.TestCase):
                 test.assertEqual(pkg, test.pkg)
                 return distribution
         stores.AppStoreConnect = lambda: asc
-        step = Fake("0.14.0", False, False)
+        step = Fake("0.14.0", False)
         step.testflight()
         return ran, step
 
@@ -351,12 +446,12 @@ class CheckoutTest(unittest.TestCase):
                          ["the tree has changes besides docs/appcast.xml: VERSION"])
 
     def test_dry_run_counts_what_would_stop(self):
-        r = release.Release("0.14.0", True, False)
+        r = release.Release("0.14.0", True)
         self.assertTrue(r.ok(True, "fine"))
         self.assertFalse(r.ok(False, "no Play notes"))
         self.assertEqual(r.would_stop, ["no Play notes"])
         with self.assertRaises(release.Stop):
-            release.Release("0.14.0", False, False).ok(False, "no Play notes")
+            release.Release("0.14.0", False).ok(False, "no Play notes")
 
 
 @unittest.skipUnless(shutil.which("git"), "needs git")
@@ -395,7 +490,7 @@ class WorktreeGitTest(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def test_a_worktree_on_its_own_branch_can_start(self):
-        r = release.Release("0.14.0", False, False)
+        r = release.Release("0.14.0", False)
         self.assertEqual(r.sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], mutate=False), "agent")
         self.assertEqual(release.start_problems(r.head(), self.git(self.wt, "rev-parse", "origin/next"), r.dirty()), [])
         r.resume_check()  # no Stop: the branch isn't next
@@ -404,7 +499,7 @@ class WorktreeGitTest(unittest.TestCase):
         appcast = self.commit(self.wt, "appcast.xml", "0.14.0\n")
         other = self.commit(self.main, "other.txt", "unreleased\n")  # next moved meanwhile
         self.git(self.main, "push", "-q", "origin", "next")
-        r = release.Release("0.14.0", False, False)
+        r = release.Release("0.14.0", False)
         r.sh(["git", "push", "origin", "HEAD:main"])
         r.push_next()
         self.assertEqual(r.head(), appcast)  # never the merge
