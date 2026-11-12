@@ -436,7 +436,7 @@ storefront objects, remove France in Pricing and Availability until the certific
 distribution, **automatic release** after approval; App Privacy *Data Not Collected* (published); DSA **non-trader**
 (Business › Compliance: a free hobby project, nothing published; can be changed per app); App Review contact entered
 by the owner; the review notes' video line deleted (no video). The submit itself was an agent misclick on the
-draft-submissions panel before the owner's explicit go; the owner kept it.
+draft-submissions panel before the owner's explicit go (App Review › *Remove from review* withdraws it).
 
 The list below is the plan as it was (items 1, 3, 4 done; item 2 still open):
 
