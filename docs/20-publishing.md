@@ -432,7 +432,8 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
 
 1. **Export compliance** of the build (TestFlight › the build › *Manage*): *Standard encryption algorithms instead
    of, or in addition to, Apple's* (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), none proprietary; then *Is your
-   app going to be available for distribution in France?*, the owner's call (yes asks for the ANSSI declaration).
+   app going to be available for distribution in France?*, the owner's call (yes asks for the ANSSI declaration;
+   its French documents and form answers are in [docs/anssi/](anssi/formulaire.md)).
    Until it's answered the build shows *Missing Compliance* and can't be installed.
 2. **Install from TestFlight** (the TestFlight app on the Mac): first quit Sukrara (TestFlight replaces
    `/Applications/Sukrara.app`, the GitHub version) and delete `~/Library/Containers/app.mauri.sukrara`, which only
