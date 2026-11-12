@@ -1,0 +1,1 @@
+• Sharing: each message from a follower is handled once, also after a restart. Before, a follower could get its key again, an ended follow could bring its notice again, and an older name change could replace a newer one.

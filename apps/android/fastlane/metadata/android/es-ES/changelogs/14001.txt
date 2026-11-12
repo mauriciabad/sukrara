@@ -1,0 +1,1 @@
+• Compartir: cada mensaje de un seguidor se atiende una sola vez, también tras reiniciar. Antes, un seguidor podía recibir su clave otra vez, un seguimiento terminado podía repetir su aviso y un cambio de nombre antiguo podía sustituir a uno más reciente.
