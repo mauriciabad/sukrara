@@ -12,13 +12,14 @@
   <a href="https://sukrara.mauri.app">sukrara.mauri.app</a>
 </p>
 
-Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home
-screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect,
-with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and
-family, or yourself, through the Android and macOS companion apps (more coming soon...). It's compatible with the DIY
-diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to
-understand.
-
+Sukrara shows your continuous glucose monitor (CGM) readings live on your **Android phone**, at a glance: in the status
+bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It reads a **FreeStyle
+Libre 3** straight from the sensor, and [other sensors](#compatible-cgm-sensors) directly or through Juggluco. It
+alerts you when glucose goes low or high or stops arriving, with minimal alarm fatigue thanks to smart features and
+discreet sound packs, and lets you log insulin and carbs in seconds. The people who look after you see your glucose
+live on their Android phone or in their **Mac menu bar** (or your own), shared **end-to-end encrypted** over public
+Nostr relays or Bluetooth nearby. There's no cloud account to create and no server to host. It's compatible with the
+DIY diabetes ecosystem (xDrip+, Nightscout...), and its glucose charts are advanced, beautiful and easy to understand.
 The name is Catalan-ish: *sucre* (sugar) + *ara* (now).
 
 > **Important disclaimer: a DIY project**
