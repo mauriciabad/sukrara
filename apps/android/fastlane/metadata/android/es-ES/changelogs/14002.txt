@@ -1,1 +1,2 @@
 • Las alertas vuelven a mostrarse: una alerta real podía saltar sin que apareciera su notificación, porque faltaban en la app textos que necesita. Ya están todos, y cada versión se comprueba para que no falten.
+• Si aun así no se puede mostrar la notificación de una alerta, Sukrara muestra una sencilla en el canal de la alerta, y Fiabilidad de las alertas dice «No se pudo mostrar una alerta» con Copiar informe.

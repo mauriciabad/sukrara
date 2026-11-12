@@ -1,1 +1,2 @@
 • Alerts show again: a real alert could fire without its notification ever appearing, because texts it needs were missing from the app. They're all in now, and every release is checked for them.
+• If an alert's notification still can't be shown, Sukrara shows a plain one on the alert's channel, and Alert reliability says "An alert couldn't be shown" with Copy report.
