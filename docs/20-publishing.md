@@ -1102,114 +1102,182 @@ Abuse): answer truthfully, in English:
 
 Not a form, but a policy to keep in mind: `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (the alert checklist's *No battery
 restrictions*, which opens Android's own dialog). Play allows it where the core function breaks under Doze; an alerting
-glucose monitor is that case, and the listing says why ("So that alarms arrive while the phone sleeps, Sukrara asks
-to run without battery restrictions").
+glucose monitor is that case.
 
 ### Google Play: store listing (drafts, en + es)
 
 For Play Console › Grow users › Store presence › Main store listing (default language **English (United States) –
 en-US**) and a translation **Spanish (Spain) – es-ES** (*Manage translations › Add your own translations*). Play's
 limits: app name 30 characters, short description 80, full description 4000; no emoji, no "best" / "#1", no
-testimonials or calls to action about ratings. The listing leads with the alarms because Play requires the core
-function behind `USE_EXACT_ALARM` to be documented and promoted in the description
-[[G11]](https://support.google.com/googleplay/android-developer/answer/16558241). It names the status bar feature
-briefly as a user-facing feature and never the means (no "root" / "LSPosed"); the declarations above say how it works.
-No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
+testimonials or calls to action about ratings. The listing names the alarms in its opening paragraph and gives them
+a section of their own because Play requires the core function behind `USE_EXACT_ALARM` to be documented and promoted
+in the description [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) (the declaration
+above says they are the first thing it describes; since 2026-11-12 they are the opening paragraph's second sentence).
+It names the status bar feature briefly as a user-facing feature and never the means (no "root" / "LSPosed"); the
+declarations above say how it works. No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
 
-**State (2026-11-11)**: everything below is filled in for en-US and es-ES (name, short and full description, icon,
-feature graphic, the 8 phone screenshots per language in order) and saved as a **draft** only. The Review step asks an
-**AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*), still unanswered.
+**State (2026-11-12)**: everything below is filled in for en-US and es-ES (name, short and full description, icon,
+feature graphic, the 8 phone screenshots per language in order) and saved as a **draft** only. On 2026-11-12 the
+owner rewrote the short and full description in their own voice (with the DIY disclaimer); the texts below are that
+version with its spelling and grammar fixed, entered for en-US, and its es-ES translation, still to be entered. The
+Review step asks an **AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*), still unanswered.
 
 | Field | en-US | es-ES |
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
-| Short description (≤ 80) | `Live glucose and alarms from your CGM sensor, shared with family. No account.` (77) | `Glucosa en directo y alarmas de tu sensor, compartidas en familia. Sin cuenta.` (78) |
+| Short description (≤ 80) | `Your glucose in status bar and home screen widget. Discreet alarms, cool sounds` (79) | `Tu glucosa en la barra de estado y en widgets. Alarmas discretas, sonidos chulos` (80) |
 | App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art) | the same |
 | Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
 | Contact | `support-googleplay@a.mauri.app`, https://sukrara.mauri.app (set) | the same |
 
-**Full description, en-US** (2823 characters):
+**Full description, en-US** (3993 characters):
 
 ```text
-Sukrara shows your glucose live on your phone and rings an alarm when it goes too low or too high, changes fast, or stops arriving. It reads a FreeStyle Libre 3 or Libre 3 Plus sensor directly over Bluetooth, or follows someone who wears one and uses Sukrara.
+Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect, with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and family, or yourself, through the Android and macOS companion apps (more coming soon...). It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to understand.
 
-Glucose alarms that ring on time
-• Very low, low, high, very high and extremely high alarms, rising or falling fast, and a missed-readings alarm when no glucose arrives, each with your own threshold and sound.
-• The very low alarm rings at alarm volume and wakes the screen like an alarm clock, also in Do Not Disturb when you allow it. Alarms repeat while your glucose stays out of range, and a very low you don't answer can alert the people who follow you.
-• Mute them when you choose. After you log carbs, low alarms give them time to work; after insulin, high alarms do.
-• A checklist makes sure alarms can ring (notifications, Do Not Disturb, battery, Bluetooth), with a test alarm you can send any time.
+Important disclaimer
+I made Sukrara for myself and share it with everybody. I use it every day, at my own risk, and it works fine, but I can't guarantee it. Anyone else who uses it does so at their own risk too. The apps are still in development: all the core features are there, but many more improvements and cool features are coming.
 
-Your glucose wherever you look
-• The value, its trend arrow and a chart you can scroll back 31 days, with time in range.
-• Home-screen widgets, an ongoing notification and a Live Update next to the clock, also on the lock screen.
-• Glucose in the status bar on supported phones, with advanced setup.
+Interconnectivity
+- Send to LibreView, Tidepool, Nightscout and Health Connect.
+- Can act as an xDrip+ or Nightscout API, and broadcast glucose to apps like AAPS.
+- Family and friends see your glucose live on their devices.
+- Companion apps via Bluetooth when nearby, or Nostr (internet) when far away.
+- Can read glucose data from Juggluco.
+- Everything stays on your phone by default.
 
-Treatments in seconds
-• Log insulin, carbs and notes from the app, the notification, a Quick Settings tile or the lock screen.
-• Read the doses from a compatible insulin pen by holding it to the phone.
+Alarms and notifications
+- Highly customizable alarms.
+- Each alert type has its own sound and vibration.
+- Sounds are discreet, with a different intensity for each alert type.
+- Pick your favorite sound pack or make your own.
+- Minimal alert fatigue: alerts go quiet when you've already acted.
+- Optionally, alarms can ring loud, even in Do Not Disturb.
+- Configure how alarms repeat.
+- Unacknowledged very lows can alert the people who follow you.
 
-Share with the people who look after you
-• Family and friends see your glucose live on their phones or on a Mac, end-to-end encrypted, over the internet or Bluetooth nearby. You approve every follower.
-• Follow someone else and get your own alarms for their glucose.
-• No account to create and no server to host.
+Log effortlessly
+- Supports smart insulin pens:
+   - NovoPen Echo® Plus.
+   - Tells priming apart from injections.
+- Quick actions in notifications.
+- Quick log pop-up by tapping the widget, the notification or the Quick Settings tile.
+- Add logs from companion apps.
 
-Your data stays yours
-• Everything stays on your phone until you turn on a connection: LibreView, Tidepool, Nightscout, Health Connect, apps such as xDrip+ and AAPS, Garmin watches.
-• No ads, no analytics, no tracking. Free and open source (GPL-3.0).
+Glucose always at a glance
+- Status bar chip via Live Update.
+- Anywhere in the status bar with advanced setup.
+- Home screen widget. You never need to open the app.
+- Lock screen widget with advanced setup. No need to unlock or touch the phone.
+- Persistent notification with the widget.
+- Any other device, like a Garmin watch.
+- macOS companion app with glucose in the menu bar, alarms and widgets.
 
-What you need
-• Android 16 or newer on a 64-bit phone.
-• To read a sensor: a FreeStyle Libre 3 or Libre 3 Plus sensor, NFC and Bluetooth. Support for some Dexcom, Accu-Chek SmartGuide and Aidex sensors is experimental and untested.
-• To follow someone: an invite from their phone.
-• So that alarms arrive while the phone sleeps, Sukrara asks to run without battery restrictions.
+Data analysis and reports
+- Glucose report: time in ranges, avg. glucose, GMI (estimated HbA1c) and glucose variability (CV).
+- Your doctor or clinic still gets your data through LibreView or Tidepool.
+- Import/export your history and settings.
+- Gamification: cool visual effects from 90% time in range.
 
-Important
-Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Don't make treatment decisions from it: ask your doctor or diabetes care team for medical advice. Sukrara is an early preview.
+Widget & glucose chart
+- Glucose value and trend.
+- Time in range over the last 24 h.
+- Time since your last insulin or carbs, or time in range over 7 days.
+- 12 h glucose chart with range bands and colors.
+- Glucose distribution.
+- Markers for insulin and carb logs.
+- Handles edge cases: data gaps, a sensor about to expire, muted alarms...
 
-FreeStyle Libre and LibreView are trademarks of Abbott. Sukrara is not affiliated with or endorsed by Abbott. Other product names are trademarks of their owners.
+More
+- Battery optimized.
+- Many settings, but organized and explained. Trust the defaults.
+- A nice sensor expiry flow with a Live Update and subtle reminders.
+- Multilingual, but English is the main language.
+- No ads, no analytics, no tracking, no account.
+- Free and open source (GPL-3.0). Code on GitHub: mauriciabad/sukrara.
+- Actively developed: contact me to add or change features.
+
+Compatible CGM sensors
+Abbott's FreeStyle Libre 2, 2+, 3, 3+; Dexcom G6/G7/ONE+; Accu-Chek SmartGuide; Sibionics GS1; CareSens Air; and LinX / AiDEX X. For some, you need to install Juggluco.
+
+Legal
+Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Don't make treatment decisions based on it. Use at your own risk. All product and company names mentioned are trademarks of their respective owners. Sukrara is an independent project, not affiliated with them.
 ```
 
-**Full description, es-ES** (3079 characters):
+**Full description, es-ES** (3997 characters):
 
 ```text
-Sukrara muestra tu glucosa en directo en el teléfono y hace sonar una alarma cuando baja o sube demasiado, cambia rápido o deja de llegar. Lee un sensor FreeStyle Libre 3 o Libre 3 Plus directamente por Bluetooth, o sigue a alguien que lo lleva y usa Sukrara.
+Sukrara muestra en tu móvil, en directo y de un vistazo, la glucosa de tu monitor continuo (MCG): en la barra de estado, widgets, pantalla de bloqueo y notificaciones, así que casi nunca abres la app. Todas las alarmas que esperarías, con mínima fatiga gracias a funciones inteligentes y sonidos discretos. Comparte tu glucosa con familia y amigos, o contigo, con las apps para Android y macOS (y pronto más...). Compatible con el ecosistema DIY de diabetes (xDrip+, Nightscout...). Y con gráficas avanzadas, bonitas y fáciles de entender.
 
-Alarmas de glucosa que suenan a tiempo
-• Alarmas de muy baja, baja, alta, muy alta y extremadamente alta, de subida o bajada rápida, y de lecturas perdidas cuando no llega la glucosa, cada una con tu umbral y tu sonido.
-• La alarma de muy baja suena a volumen de alarma y enciende la pantalla como un despertador, también en No molestar si lo permites. Las alarmas se repiten mientras la glucosa siga fuera de rango, y una muy baja sin respuesta puede avisar a quienes te siguen.
-• Siléncialas cuando quieras. Tras registrar hidratos, las alarmas de baja les dan tiempo para actuar; tras la insulina, las de alta.
-• Una lista comprueba que las alarmas pueden sonar (notificaciones, No molestar, batería, Bluetooth), con una alarma de prueba que puedes enviar cuando quieras.
+Aviso importante
+Hice Sukrara para mí y la comparto con todos. La uso a diario bajo mi responsabilidad y funciona bien, pero no puedo garantizarlo. Quien la use, también lo hace bajo la suya. Las apps siguen en desarrollo: lo esencial ya está, pero llegarán muchas más mejoras y novedades.
 
-Tu glucosa allí donde mires
-• El valor, su flecha de tendencia y una gráfica que puedes recorrer hasta 31 días atrás, con el tiempo en rango.
-• Widgets en la pantalla de inicio, una notificación permanente y una actualización en directo junto al reloj, también en la pantalla de bloqueo.
-• La glucosa en la barra de estado en teléfonos compatibles, con configuración avanzada.
+Interconectividad
+- Envía a LibreView, Tidepool, Nightscout y Health Connect.
+- Actúa como API de xDrip+ o Nightscout y emite la glucosa a apps como AAPS.
+- Familia y amigos ven tu glucosa en directo en sus dispositivos.
+- Apps complementarias por Bluetooth de cerca o Nostr (internet) de lejos.
+- Puede leer la glucosa de Juggluco.
+- Por defecto, todo se queda en tu móvil.
 
-Tratamientos en segundos
-• Registra insulina, hidratos y notas desde la app, la notificación, un ajuste rápido o la pantalla de bloqueo.
-• Lee las dosis de una pluma de insulina compatible acercándola al teléfono.
+Alarmas y notificaciones
+- Alarmas muy personalizables.
+- Cada tipo de alerta con su sonido y vibración.
+- Sonidos discretos, con intensidad distinta según la alerta.
+- Elige tu paquete de sonidos o crea el tuyo.
+- Mínima fatiga: las alertas se callan cuando ya has actuado.
+- Opcional: alarmas a todo volumen, incluso en No molestar.
+- Configura cómo se repiten las alarmas.
+- Una muy baja sin respuesta puede avisar a quienes te siguen.
 
-Comparte con quienes te cuidan
-• Familia y amigos ven tu glucosa en directo en su teléfono o en un Mac, cifrada de extremo a extremo, por internet o por Bluetooth cerca. Tú apruebas a cada seguidor.
-• Sigue a otra persona y recibe tus propias alarmas de su glucosa.
-• Sin cuenta que crear ni servidor que mantener.
+Registra sin esfuerzo
+- Plumas de insulina inteligentes:
+   - NovoPen Echo® Plus.
+   - Distingue el purgado de las inyecciones.
+- Acciones rápidas en notificaciones.
+- Registro rápido tocando el widget, la notificación o el ajuste rápido.
+- Añade registros desde las apps complementarias.
 
-Tus datos siguen siendo tuyos
-• Todo se queda en tu teléfono hasta que activas una conexión: LibreView, Tidepool, Nightscout, Health Connect, apps como xDrip+ y AAPS, relojes Garmin.
-• Sin anuncios, sin analíticas, sin rastreo. Libre y de código abierto (GPL-3.0).
+Tu glucosa siempre a la vista
+- Chip en la barra de estado (actualización en directo).
+- En cualquier sitio de la barra de estado, con configuración avanzada.
+- Widget de pantalla de inicio. Nunca tienes que abrir la app.
+- Widget de pantalla de bloqueo, con configuración avanzada. Sin desbloquear ni tocar el móvil.
+- Notificación permanente con el widget.
+- Otros dispositivos, como un reloj Garmin.
+- App de macOS con la glucosa en la barra de menús, alarmas y widgets.
 
-Qué necesitas
-• Android 16 o posterior en un teléfono de 64 bits.
-• Para leer un sensor: un sensor FreeStyle Libre 3 o Libre 3 Plus, NFC y Bluetooth. La compatibilidad con algunos sensores Dexcom, Accu-Chek SmartGuide y Aidex es experimental y no está probada.
-• Para seguir a alguien: una invitación desde su teléfono.
-• Para que las alarmas lleguen mientras el teléfono duerme, Sukrara pide funcionar sin restricciones de batería.
+Análisis e informes
+- Informe: tiempo en rangos, glucosa media, GMI (HbA1c estimada) y variabilidad (CV).
+- Tu médico o clínica aún recibe tus datos por LibreView o Tidepool.
+- Importa/exporta tu historial y tus ajustes.
+- Gamificación: efectos chulos desde el 90 % de tiempo en rango.
 
-Importante
-Sukrara no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad. No tomes decisiones de tratamiento con él: consulta a tu médico o a tu equipo de diabetes. Sukrara es una versión preliminar.
+Widget y gráfica
+- Valor y tendencia de la glucosa.
+- Tiempo en rango de las últimas 24 h.
+- Tiempo desde tu última insulina o hidratos, o tiempo en rango de 7 días.
+- Gráfica de 12 h con franjas de rango y colores.
+- Distribución de la glucosa.
+- Marcas de insulina e hidratos.
+- Casos límite: huecos de datos, sensor a punto de caducar, alarmas silenciadas...
 
-FreeStyle Libre y LibreView son marcas comerciales de Abbott. Sukrara no está afiliada a Abbott ni cuenta con su respaldo. Los demás nombres de productos son marcas comerciales de sus propietarios.
+Más
+- Bajo consumo de batería.
+- Muchos ajustes, pero ordenados y explicados. Fíate de los predeterminados.
+- Caducidad del sensor bien resuelta, con actualización en directo y recordatorios sutiles.
+- Multilingüe (el idioma principal es el inglés).
+- Sin anuncios, analíticas, rastreo ni cuenta.
+- Libre y de código abierto (GPL-3.0). GitHub: mauriciabad/sukrara.
+- En desarrollo activo: escríbeme para añadir o cambiar funciones.
+
+Sensores MCG compatibles
+FreeStyle Libre 2, 2+, 3 y 3+ de Abbott; Dexcom G6/G7/ONE+; Accu-Chek SmartGuide; Sibionics GS1; CareSens Air; y LinX / AiDEX X. Algunos necesitan Juggluco.
+
+Legal
+Sukrara no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad. No tomes decisiones de tratamiento basándote en ella. Úsala bajo tu responsabilidad. Los nombres de productos y empresas son marcas de sus propietarios. Sukrara es un proyecto independiente, sin relación con ellos.
 ```
 
 Every claim above is in the app today (docs/FEATURES.md); change the listing in the same change as a feature it names.

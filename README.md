@@ -12,257 +12,104 @@
   <a href="https://sukrara.mauri.app">sukrara.mauri.app</a>
 </p>
 
-Sukrara shows live glucose from a **FreeStyle Libre 3** on your **Android phone** (read straight from the sensor) and
-on the **Mac menu bar** of the people who look after you (or your own). It alerts you when glucose goes low or high or
-stops arriving, lets you log insulin and carbs in seconds, and shares readings **end-to-end encrypted** over public
-Nostr relays or Bluetooth nearby. There's no cloud account to create and no server to host. The name is
-Catalan-ish: *sucre* (sugar) + *ara* (now).
+Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home
+screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect,
+with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and
+family, or yourself, through the Android and macOS companion apps (more coming soon...). It's compatible with the DIY
+diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to
+understand.
 
-> **Not a medical device** (see the [disclaimer](#disclaimer)). Sukrara is a **preview** (0.x) until it's been tested
-> on a real sensor.
+The name is Catalan-ish: *sucre* (sugar) + *ara* (now).
 
-## What it does today
+> **Important disclaimer: a DIY project**
+>
+> I made Sukrara for myself and share it with everybody. I use it every day, at my own risk, and it works fine, but I
+> can't guarantee it. Anyone else who uses it does so at their own risk too. The apps are still in development: all
+> the core features are there, but many more improvements and cool features are coming. See also [Legal](#legal).
 
-The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURES.md). In short:
+## What it does
 
-**Android (you wear the sensor)**
-- **Reads the Libre 3 / 3 Plus directly**: hold the phone to the sensor to start a new one or take over a running one
-  (NFC), then Sukrara keeps it connected over Bluetooth by itself, with 24 h backfill and automatic reconnects. It
-  uses your **LibreView account's receiver ID**, so a sensor can move between Sukrara and Abbott's app. Or read from **Juggluco's local web server** if Juggluco keeps the sensor.
-- **Other sensors, untested**: Dexcom G7 / ONE+ / Stelo (read along with the Dexcom app), Dexcom G6 / ONE, Accu-Chek
-  SmartGuide and Aidex X / LinX / GlucoRx. They were never tested with a real sensor: the new sensor screen tags them
-  *Untested* and asks you to confirm before pairing; while you wear one, home asks for feedback (*Send feedback*
-  opens a pre-filled GitHub issue with nothing personal) and Settings › Sensor names the family and why a connected
-  sensor sends no value.
-- **LO / HI** from any sensor show as *LO* / *HI*, never a made-up number, and sound the very low / extremely high
-  alert at once (Android and Mac).
-- **mg/dL or mmol/L** (Settings › Ranges; Mac Settings › General): every number you read or type follows it, on both
-  apps: the card, the chart's range labels, notifications, alerts, widgets, the status bar, the Mac menu bar,
-  TalkBack / VoiceOver, the report, the export and every glucose setting (mmol/L with one decimal, `7,8` in Spanish).
-  Values stay stored in mg/dL, so switching never moves a threshold.
-- A guided **new sensor** screen: a step bar (Sensor · Scan · Pair · Readings), which sensor, a drawing of where to hold
-  the phone (this phone's NFC antenna) with tips after 10 s, ticked pairing steps and *Taking longer?* after 45 s, the
-  warm-up countdown in a ring, haptics on the tap, the screen kept on, every failure handled on the same screen
-  (ended sensor, Libre 1/2, a tag that isn't a sensor, another app holding the sensor, Bluetooth off, a wrong ID or PIN).
-- **Settings like the phone's own**: every settings page (and *Share with someone*) is drawn by the stock Settings
-  app's components (AOSP SettingsLib SPA): its collapsing title, rounded groups, switches, main switches, radios,
-  banners and dialogs, in your phone's colours, light or dark.
-- **Settings › Sensor**: the current sensor (status, serial, start, end and time left), the reading source (Libre 3
-  directly or Juggluco, saying first what changes; Juggluco's web-server API secret, kept encrypted), the LibreView account
-  (email and receiver ID) and *Pair new sensor*.
-- **One LibreView account**: sign in once (setup, a new sensor, Settings › Sensor or Share with apps › LibreView all
-  open the same screen); the email and password stay encrypted on the phone and starting sensors, the LibreView upload
-  and Import history all use them without asking again. *Sign out* there (asks first) signs out everywhere; if
-  LibreView stops accepting the password (you changed it), every place says so and the screen asks again.
-- **Home screen**, glucose first: the value, trend arrow (an out-of-range value says *Low* / *High* in words too, on
-  every card: never by colour alone; low is below 70 and very low 55 or lower, so 69 is low, 70 in range, 55 very low and 180 high,
-  in colours and time in range alike) and a chart of your *Time shown* (12 h by default; its
-  words follow a larger system font; a double tap shows 3 h and back) you can scroll and pinch-zoom through the
-  last 31 days (7 / 14 / 30-day rings count them too), treatments on the chart with their mute lines and the last one
-  beside the value in a ring of its quiet time left (on the widgets and the notification too), a pill that acts (*Eat carbs* opens Add treatment with Carbs
-  focused, a mute's pill its ways out), a chip for each other quiet alert, a **Mute alerts** button (30 min … 8 h,
-  until you turn it off, custom) that becomes the countdown with *Unmute* / *Change time*, the sensor's end date with *Pair new sensor* in its last day,
-  one banner at a time for what needs you (monitoring stopped, alerts may not ring,
-  damaged saved data, finish setup), the last 24 h of treatments (tap one to edit its amount, time or note, with
-  *Undo*; delete + undo; a follower's entry nothing took yet says *Not sent* with *Retry*), and a **glucose report** card (1 / 7 / 14 / 30 days: time in the five ranges with their goals, average, GMI, CV, how much of the period has data). Never a bare "---": when
-  there's no value it says why and what to do (Bluetooth off, the sensor used by another app, a scan or a new pairing
-  needed, the phone's clock behind the readings, the sensor warming up or ended…). A sensor past its end that keeps
-  sending (a Dexcom's grace period) keeps its value with an *Ended · Replace sensor* pill, and its lows still alert.
-- A **live notification** that is also a **Live Update chip** next to the clock (Android 16 QPR2+), with the same
-  freshness steps as the card: from 5 min the number is struck through, from 20 min it's gone. Tap → *Add treatment*.
-  It shows on the lock screen without unlocking (Settings › Status bar › *Glucose on the lock screen* turns that off).
-  Without the chip it is a card in your range's colour with the graph, its icon the number itself (Settings › Status
-  bar); on Android 17 the Live Update expands to the value styled by range.
-- **On a rooted phone** (KernelSU, Magisk or APatch; Sukrara asks for root when you turn it on and says how to allow
-  it): the value and its arrow as **system icons** beside Wi-Fi and the battery;
-  with Sukrara's **LSPosed module** in System UI also as text beside the clock, in its range colour, placed next to the
-  icon you choose and first in line when the status bar is crowded (Settings › Status bar › With root). The module
-  also puts a **lock-screen widget** around the fingerprint icon: the value and arrow left of it, time in range right
-  of it, the graph below; the fingerprint and every lock-screen gesture work through it, and a tap adds a treatment
-  without unlocking (Settings › Lock screen: on by default, five backgrounds for busy wallpapers, light or dark).
-- **Alerts**: very low, low, high, very high, rising / falling fast and no data, each ringing where the card names
-  the range (at the defaults very low up to 55, low below 70, high from 180; every threshold and range limit says
-  under it which values it covers, *Low: 56–69 mg/dL*); each on its own channel,
-  Do Not Disturb respected by default (the "like an alarm" ones ring where the mode allows alarms); *Let Sukrara
-  through* in the reliability checklist makes them an exception to every mode through Android's own grant, keeping your
-  channel choices, and *Don't let Sukrara through* undoes it; home says when a mode on now keeps alerts quiet; alerts that come close together still ring in full (Android's notification
-  cooldown doesn't quieten them; a test alert with the phone unlocked tells whether Android only vibrates then, and if so Sukrara plays the alert sound itself while you use the phone). *Mute…*, *Remind less*, *Unmute* and *Change time* on the notification,
-  in the app and with TalkBack; *Mute all* with a visible strip to undo it; every quiet alert with its ways out
-  (*Unmute*, *Alert me anyway*, *Remind as usual*, *Change to*) on home and in Settings › Alerts › *Active now*. A low
-  or a high can wait a few minutes out of range before its first alert, and bounces just inside the threshold can count
-  as the same alert (Settings › Alerts › *Near a threshold*; off by default; very low and extremely high never wait).
-  *Night alerts*: other thresholds, reminders and alarms every night between the hours you choose, with *Night alerts
-  until 7:00* on home while they apply (very low always rings). When nobody answers a very low on your phone for 5 min, your
-  followers get it as *Very low glucose · no response*, through their own mutes (each follower can turn that off; you
-  can too, or wait longer). Settings › Alerts › *Lately* shows what alerted, what you muted, when Mute all ran out and what came back after a restart in the last day. The no-data check runs from an exact alarm,
-  independent of the monitoring service; it also rings for a sensor (or follow) that never sends a first reading, and
-  keeps real time when the phone's clock is set back. After a restart (an overnight update), before you first unlock the
-  phone, Sukrara already reads your sensor and alerts you as usual (*Monitoring before unlock* on the lock screen);
-  followers, uploads and the app wait for the unlock, which adds those readings to your history. A follower's phone, or
-  Juggluco as the source, can't run before the unlock: it says *Unlock to resume monitoring* and rings as *No data* when
-  that alert would have. An alert whose notification can't be shown still rings: plain on its own channel (the kind,
-  the value and arrow, *Open Sukrara*), or else as a *Monitoring problems* notice, and Settings › Alert reliability
-  (Mac: the menu bar panel) says *An alert couldn't be shown* with *Copy report*.
-- **Sensor end**: reminders you set (up to six, 0–3 days before at a time; earlier at the first unlock; one the
-  evening before a night-time end), a live countdown in the sensor's last hours, a warm-up countdown with *Sensor
-  ready*, a note on home in a new sensor's first 12 hours (readings can be less accurate: check a surprising one with a
-  meter), *Sensor ended* with *Replace sensor* (it opens the new-sensor flow; again every 2 h, or as you set it, out of
-  your night until you start a new sensor), and optionally the sensor's end as an event in Sukrara's own calendar or
-  one you pick (Settings › Sensor end).
-- **Monitoring** in one foreground service that comes back by itself (boot, update, a 15 min health check); before the
-  first reading every surface says *Not monitoring: no sensor yet* and no no-data alarm is armed.
-- **Treatments**: a quick dialog for rapid / long insulin, carbs and a note (from the notification, the Quick
-  Settings tile *Add treatment*, which also shows your glucose, or home), each field marked with its chart marker,
-  *now*, a time or *minutes ago* from the chip beside the title, a line saying which alerts it quiets and for
-  how long, and a 10 s countdown when opened on the lock screen (a ring on *Cancel*, also in the *When?* picker, and
-  one spoken *Closes in 10 seconds* with TalkBack). After *Save* a snackbar says what was saved, with *Undo*; what the
-  countdown closes on is kept as a draft and offered after the unlock (*Treatment not saved*, *Discard*).
-- **Home-screen widgets** (*Glucose*, *Glucose graph*, *Glucose and graph*) drawn by the same card renderer at the
-  size the launcher really gives them (measured, never stretched; *Glucose* down to one cell), on the wallpaper's
-  colours, with the same card as their picker preview; home offers *Add
-  widget* until a graph widget is placed (or says how to add it by hand when the launcher can't) and then opens its
-  settings; a tap opens *Add treatment* (a new sensor once yours has ended); they switch to the dark theme with the
-  phone.
-- **Settings** for daily use (a full-screen search that finds every row by its title, summary, group or other words, ranked like Android's own, each result with its section's icon and where it is, opening its page through the menus at that row, flashed; accents optional, your recent searches one tap away; an icon on every row): alerts (an on/off switch on each alert row, thresholds you confirm, repeats, sounds,
-  quiet rules, *Play sound* and *Send a test alert*), an alert reliability checklist with *Fix* buttons
-  (notifications, alarms, full-screen, battery, alert sound, sound while the phone is unlocked, Bluetooth; Do Not Disturb as a plain statement with one button; an alert Android refused shows on home with
-  *Copy report*) and the same real test alert to hear what gets through (also in first-run setup), ranges and the whole graph (lines, time
-  per place, slots, ring order, treatments on the graph, sensor time; your card live on top), lock screen
-  *Time to save*, sensor (*Forget this sensor*, *Open Sukrara when you scan a sensor*), your profile, backup and data
-  export from the overview, Advanced (export / import / reset your settings as a file, the relays with *Reconnect
-  now*, the log, your sharing identity, counts of what was sent, stored and refused), and About with the GitHub
-  version's update (below), a link to the website's [Mac page](https://sukrara.mauri.app/mac/) and the
-  [privacy policy](https://sukrara.mauri.app/privacy).
-- **Screens move like Android's own Settings**: pages slide in and out, the back gesture shows the page you'll land on
-  (let go early to stay), setup fades in over the app; nothing moves with *Remove animations* on.
-- **Insulin pens** (NovoPen Echo Plus, NFC): hold the pen to the unlocked phone from any app and Sukrara logs the
-  insulin you injected, priming kept apart, never twice (a typed dose is replaced, a typed duplicate asks *Already logged
-  by your pen?*), with *Undo*; it asks when unsure, on a card under the glucose card (*Priming or injected?*, *Same
-  injection?* with your typed entries to choose from). Holding the pen while Add treatment is open fills the dose and
-  its time in the dialog (already logged, with *Undo*). Uploads wait until the pen's session is over. Settings › Insulin pens lists your pens: each pen's page (name,
-  insulin type, forget), its *Doses read* with per-dose *Priming* / *Injected* corrections (also from the entry's row
-  on home, *from the pen*, read only on a follower), the untested NovoPen 6's display check, where this phone's NFC
-  antenna is, and what gets in the way (tag intents blocked, NFC off, Juggluco also reading pens) with the way to fix
-  it. A read that brings injections older than 3 days (the pen not read for days) logs them and asks you to *Review*
-  them, with *Undo this read*.
-- **Sharing core**: your sharing identity, restorable from its recovery code so existing followers keep following;
-  readings, alerts and your sensor (a new one warming up, its end) go to approved followers over Nostr relays
-  (protocol v2), the sensor even before its first reading. *How readings travel* turns sharing over
-  the internet off (Bluetooth followers keep every reading) or sends readings in batches every few minutes instead of
-  each one. If another device is publishing as the same identity, Sukrara stops and says so instead of fighting it.
-- **First-run setup** in a calm, fixed order: role (confirmed) → what alerts need → sensor → confirm your alert
-  thresholds → your followers (restore once this phone has your sensor, or start fresh) → bring your history back →
-  home. Any step can wait, and leaving half-way loses nothing: a rotation, the app closed or Back returns to the same
-  step, and home's *Finish setup* banner resumes the walk where you left it, then brings back each skipped step.
-- **Sharing screens**: *How you appear* (your name and a generated picture, on home's top bar), invite one person (QR
-  that springs in, link to send or copy, works once for 24 h; the screen moves on by itself when they ask, when you
-  allow them and when it expires), allow or deny their request (the dialog shows over any screen, with their picture
-  and the invite they used; you type a code only if another device also tried the link), see followers with their
-  pictures, let one *add entries*, remove them (confirmed; removed ones fold away), **Backup** to your password manager
-  in one tap or a recovery code (when no password manager can take it, the page opens Android's setting for one and
-  asks again on return, or makes the code right there; home says *Not backed up* until then; setup restores from
-  either), **Replace this identity**
-  without reinstalling (restore another one or start fresh, confirmed with the followers who lose your readings named;
-  their Sukrara is told first and says you stopped sharing instead of warning that no data arrives),
-  and a clear screen when another device is sharing as you.
-- **Bluetooth nearby**: followers' phones and Macs in range get your readings straight from your phone, even without
-  internet (on by default, *Over Bluetooth nearby*); Settings › Sharing lists the devices connected now and the ones
-  paired nearby that are out of range, says when
-  Bluetooth is off or the Nearby devices permission is missing, and offers the fix; the live notification says
-  *2 followers · 1 nearby* (and *Nightscout API on Wi-Fi* while devices on your home Wi-Fi can read it).
-- **Follow someone from an Android phone**: paste (or open) the wearer's invite link, scan their QR code (camera or a
-  picture of it, read on the phone), see who is inviting (their name and picture from the invite) and tap *Follow* or
-  *Cancel*, or find their phone nearby over
-  Bluetooth while they have *Pair nearby* on (Settings › Sharing; both phones show the same 6-digit code and you each
-  confirm it, so a stranger's phone can't pose as theirs), wait for them to allow you (after a link, with the code
-  they ask for only if another device also tried it; the screen moves on by itself when they answer), then their readings, sensor, entries and alerts arrive over the relays and drive
-  home, widgets, the live notification and your own alerts (including *no data*); near their phone they also arrive over
-  Bluetooth, without internet. Add entries when they let you;
-  notifications say when an invite was used, declined or your access removed; *Stop following* in Settings › Sharing.
-  **Settings from** (Settings): use the wearer's ranges, graph and alert rules (kept up to date), Sukrara's defaults,
-  or your own (start them by copying the wearer's or from the defaults); sounds and no-data alerts are always yours.
-- **Share with apps**: upload your Libre 3 glucose and entries to **LibreView** for your clinic (with your one LibreView
-  account, signing in again by itself when its session ends; asks before taking over another uploading device; readings not sent yet survive a restart; only from the moment you switch it on; a cloud on each
-  entry on home says whether LibreView has it, every 5 / 15 / 60 min or your own interval; a home banner suggests LibreView or Tidepool until one is set up), to your own **Nightscout** site (https, access token kept encrypted; 30-day catch-up,
-  pauses when another app uploads to the same site; an entry another app already put there, like an AndroidAPS bolus, is
-  never doubled), to **Tidepool** (both roles; a follower only after its own
-  choice; password used once), an **xDrip+-compatible server** on this phone for **Garmin** watches (off until you
-  switch it on; loopback only), a **Nightscout API on this phone** for apps like xDrip+ and GlucoDataHandler (off by
-  default, API secret required; an extra opt-in also serves devices on your home Wi-Fi with a plain warning and its
-  own Wi-Fi secret you can replace any time),
-  **glucose broadcasts** to the apps you allow (AndroidAPS, GlucoDataHandler, xDrip+: the Libre 3 read by this phone
-  only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
-  readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share. Every app and
-  service there shows its own app icon, and Garmin Connect is listed under the xDrip+ server with its switch.
-- **Import history** (wearer; also setup's last step, *Bring your history back*): the new app starts empty and brings
-  back the last 90 days from **Tidepool** (signed in), **LibreView**'s *Download glucose data* file (in whatever date
-  layout your LibreView account's language and country write: day or month first, 12 or 24 hours; a file it still
-  can't read says which date and what to do) or a **Sukrara export** (this app's or the earlier app's), with progress
-  and *Stop*. Nothing is ever counted twice (the sensor's own
-  readings win; importing again adds only what is missing), and imported history is never uploaded again.
-- English and Spanish (Spain) everywhere.
-- **TalkBack hears one sentence** for the glucose card everywhere (home, widgets, the notification card, the Quick
-  Settings tile, and in your language on the root status-bar icons and the System UI text): the value, trend, range in
-  words and age, the alert or mute, the slots and the chart summary, the same words as the Mac's VoiceOver.
-- **Read glucose aloud**: the app shortcut (long-press the Sukrara icon, TalkBack's actions on it, or pin it to the
-  home screen) says the value, trend, range and age with the phone's voice, without opening anything; again to stop.
+Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATURES.md).
 
-**Mac (you follow someone, from the menu bar)**
-- The value in its range colour, the card's trend arrow at its angle and the mute bell in the **menu bar**, struck
-  through when old, a symbol when readings stop or the sensor ends, with a tooltip; click for the **panel** with the
-  card and chart (drawn by the same renderer rules as Android, tested against the same fixtures); scroll, pinch or
-  two-finger double tap the chart through the stored 31 days. The card's pill is
-  pressable (Eat carbs / Take insulin open Add Treatment; a mute opens its ways out).
-- **Follow** a wearer with an invite link (pasted, dropped or opened, `https://sukrara.mauri.app/join#…` or
-  `sukrara:`; a build with a provisioning profile opens the web invite straight from Safari, Mail or Messages), its
-  QR code scanned with the Mac's camera (or an iPhone as Continuity Camera; read on the Mac, nothing recorded), a QR
-  code image or **nearby** Bluetooth pairing (the Mac and the phone show the same 6-digit code to
-  confirm before anything is followed); a link always shows who is inviting first, with *Follow* / *Cancel*, then waits
-  for the wearer's Allow (with the same code line as Android) and moves on by itself when it arrives; readings,
-  alerts and
-  treatments arrive end-to-end encrypted. Choose the name the wearer sees for this Mac and its generated picture
-  (*How you appear*); the wearer's picture shows in Following and the nearby dialog. A setup window walks Welcome → Follow → Alerts → Notifications → Open at
-  login; closed half-way, *Finish Setup…* in the panel reopens it on the same step.
-- **Juggluco on this network** (off by default): while the Mac follows nobody, it reads glucose from Juggluco's web
-  server on the home network (found automatically, or by its address; optional API secret in the Keychain), with the
-  same card, rings, sensor life and alerts. Plain http, to home-network addresses only; says so when macOS's Local
-  Network permission is off, with the way to turn it on.
-- **Alerts** with sound packs and the same rules and timeline scenarios as Android (also the waits and margin *Near a
-  threshold* and *Night Alerts*, with their line in the panel while they apply; the wearer's very low nobody answered
-  shows as *Very low glucose · no response*, through this Mac's mutes, unless you turn that off); mute, change the
-  time, a custom length, Alert Me Anyway, Remind Less and unmute from the panel; Send Test Alert. A Focus holds
-  the alerts back by default; setup and Settings › Alerts say so and *Let Sukrara Through* makes the alarms **Time
-  Sensitive** (through every Focus that allows them; a build with a provisioning profile), or open the system setting
-  when Time Sensitive is off or the build can't post it. With a profile the follower key is in the data-protection keychain (moved there once from the login
-  keychain).
-- **Treatments**: add rapid / long / carbs / note with *When?* (a time or minutes ago) and the quiet line, see the last
-  7 days by day with the phone's entries, edit or delete your own with undo.
-- **Glucose Report** (1 / 7 / 14 / 30 days: time in ranges with goals, average, GMI, CV) and **Export CSV…** by period.
-- **Settings** in five panes: General (*Settings from* Wearer / Default / Custom, in Custom starting from the wearer's or Sukrara's defaults; unit, open at login, updates,
-  Quit, a link to the website's [Android page](https://sukrara.mauri.app/android/)), Graph (time shown per place, treatments on the graph, lines, ranges with the values each limit covers, sensor countdown and time left), Rings
-  (rings and numbers, ring order you drag, last treatment), Alerts (per alert with its summary and details, quiet times, the notification's buttons, sounds with preview, what's
-  quiet now) and Following.
-- The card shows the wearer's treatments on the chart with their mute lines, the last treatment beside the value and
-  a pill that counts down while a treatment quiets the alert; the widgets too.
-- **Desktop widgets** (Glucose, Glucose graph, Glucose + graph) with the same card; they age by themselves (struck
-  through at 5 min, the graph dimmed with the reading's time, no value at 20 min) and a tap opens Add treatment.
-- **No value never goes unexplained**: the panel and the widgets say why (not following anyone, waiting for the
-  wearer to allow this Mac, no readings from the wearer's phone since 9:50, Juggluco not found…) and the panel offers
-  the way out (*Follow Someone…*, *Following Settings…*, *Juggluco Settings…*).
-- VoiceOver reads the card as the same sentence as Android's TalkBack (value, trend, range in words, age, the alert
-  or mute, the slots, the chart summary) in the menu bar, the panel and the widgets; every card writes the range
-  under an out-of-range value (*Low*, *Very high*) and the status item's tooltip says it.
-- English and Spanish (Spain) by the Mac's language: the windows, the panel's lines and every word the card draws
-  (*Come hidratos*, *quedan 45 min*, *Calentando · 40 min*), the same words as Android's.
-- **Read Glucose Aloud** from any app with ⌃⇧⌘G (switch it off in Settings › General), from the menu bar value's
-  right-click menu or its VoiceOver action: the same sentence, in VoiceOver's voice when VoiceOver is on.
+### Interconnectivity
 
-**Not included**: carbs and insulin in Health Connect, and Nightscout upload over plain `http://`
-([docs/FEATURES.md › Not included](docs/FEATURES.md#not-included), with the reasons).
+- Send to LibreView, Tidepool, Nightscout and Health Connect.
+- Can act as an xDrip+ or Nightscout API, and broadcast glucose to apps like AAPS.
+- Sukrara companion apps:
+  - Family and friends see your glucose live on their devices.
+  - Via Bluetooth when nearby, or Nostr (internet) when far away.
+  - Platforms: macOS and Android.
+  - End-to-end encrypted, no server to host.
+- Can read glucose data from Juggluco.
+- Everything stays on your phone by default.
+- [Planned]: Define a formal open standard for sharing glucose over Nostr.
 
-**Garmin watch:** switch on *Settings › Share with apps › xDrip+ server*; watch faces and data fields made for xDrip+
-read it through Garmin Connect. While **Juggluco** is Sukrara's source, Juggluco keeps its own server and feeds the
-watch. Upload uses a new device name per install (`Sukrara-…`), so a Nightscout site shows Sukrara as a new uploader.
+### Alarms and notifications
+
+- Highly customizable alarms.
+- Each alert type has its own sound and vibration.
+- Sounds are discreet, with a different intensity for each alert type.
+- Pick your favorite sound pack or make your own.
+- Minimal alert fatigue: alerts go quiet when you've already acted.
+- Optionally, alarms can ring loud, even in Do Not Disturb.
+- Configure how alarms repeat while your glucose stays out of range.
+- Unacknowledged very lows can alert the people who follow you.
+- Quick actions in notifications, like Mute for 1 h.
+- [Planned]: Predictions, more and cooler sound packs...
+
+### Log effortlessly
+
+- Supports smart insulin pens:
+  - NovoPen Echo® Plus.
+  - Tells priming apart from injections.
+- Quick actions in notifications.
+- Quick log pop-up by tapping the widget, the notification or the Quick Settings tile.
+- Add logs from the Sukrara companion apps.
+- [Planned]: Garmin watch app, MCP for AI assistants, voice assistants...
+
+### Glucose always at a glance
+
+- Status bar chip via Live Update.
+- Anywhere in the status bar with root (e.g. next to the signal icons).
+- Home screen widget. You never need to open the app.
+- Lock screen widget with root. No need to unlock or touch the phone.
+- Persistent notification with the widget.
+- Any other device, like a Mac or a Garmin watch.
+- macOS companion app with glucose in the menu bar, alarms and widgets.
+- [Planned]: Android Auto, Home Assistant, Garmin, Pebble...
+
+### Data analysis and reports
+
+- Glucose report: time in ranges, average glucose, GMI (estimated HbA1c) and glucose variability (CV).
+- Your doctor or clinic still gets your data through LibreView or Tidepool.
+- Import/export your history and settings.
+- Gamification: cool visual effects from 90% time in range. (More TBD)
+- The home screen widget shows a lot of useful data, cleanly:
+  - Glucose value and trend.
+  - Time in range over the last 24 h.
+  - Time since your last insulin or carbs, or time in range over 7 days.
+  - 12 h glucose chart with range bands and colors.
+  - Glucose distribution.
+  - Markers for insulin and carb logs.
+  - Handles edge cases: data gaps, a sensor about to expire, muted alarms...
+- [Planned]: Advanced charts, more gamification...
+
+### More
+
+- Battery optimized.
+- Many settings, but organized and explained. Trust the defaults.
+- A nice sensor expiry flow with a Live Update and subtle reminders.
+- Real-time readings from almost any CGM.
+- Multilingual, but English is the main language.
+- No ads, no analytics, no tracking, no account.
+- Free and open source (GPL-3.0). Code on GitHub: mauriciabad/sukrara.
+- Actively developed: contact me to add or change features.
+- [Planned]: Massive UI/UX improvements.
+
+### Compatible CGM sensors
+
+Abbott's FreeStyle Libre 2, 2 Plus, 3 and 3 Plus; Dexcom G6, G7 and ONE+; Accu-Chek SmartGuide; Sibionics GS1;
+CareSens Air; and LinX / AiDEX X. For some, you need to install Juggluco.
 
 ## Install
 
@@ -338,11 +185,13 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: [CHANGELOG.md](CHANGELOG.md). The investigations, one
 report each: `docs/NN-*.md`.
 
-## Disclaimer
+## Legal
 
-- **Not a medical device.** Values may be wrong, late or missing, and alerts may not ring. Don't make treatment
-  decisions or rely on alarms from anything in this repo.
-- FreeStyle Libre is a trademark of Abbott. This project is not affiliated with Abbott or with Juggluco.
+Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Don't make
+treatment decisions based on it. Use at your own risk. All product and company names mentioned are trademarks of their
+respective owners. Sukrara is an independent project, not affiliated with them.
+
+- Values may be wrong, late or missing, and alerts may not ring.
 - The sensor is read for interoperability with the author's own glucose data. Per-sensor pairing data is a secret
   and is never committed here.
 - The direct-sensor code also compiles [Juggluco](https://github.com/j-kaltes/Juggluco)'s GPLv3 sources, which are
