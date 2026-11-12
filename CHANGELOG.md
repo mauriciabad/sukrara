@@ -4,6 +4,8 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+## 0.14.5 (GitHub prerelease)
+
 - **Long-acting insulin typed after a pen read no longer asks *Already logged by your pen?* (Android)** (the owner:
   5.5u rapid from the smart pen, then 15u long-acting from a plain pen): the question compared the typed dose with
   pen entries of either insulin, so any long-acting dose near a rapid pen injection asked. Now only a pen entry of the

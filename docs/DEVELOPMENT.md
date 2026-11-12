@@ -26,7 +26,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
-| Version | `tools/release/version.sh` → `0.14.4 14004 prerelease` (from `VERSION`) |
+| Version | `tools/release/version.sh` → `0.14.5 14005 prerelease` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs on every push, each push its own run at once (pushes never queue behind or
 cancel each other; a pull request's newer push cancels its older run). Its `changes` job (`tools/ci/changes.py`)
