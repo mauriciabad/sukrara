@@ -431,7 +431,7 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
 
 **The owner, still to do** (nothing here is accepted or submitted by an agent):
 
-1. **Export compliance** of the build (TestFlight › the build › *Manage*): *Standard encryption algorithms instead
+1. **Export compliance** of a build uploaded before 0.14.6 (later builds answer it in their Info.plist; TestFlight › the build › *Manage*): *Standard encryption algorithms instead
    of, or in addition to, Apple's* (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), none proprietary; then *Is your
    app going to be available for distribution in France?*: **No** until ANSSI's certificate is uploaded (yes blocks the
    build until then). Until it's answered the build shows *Missing Compliance* and can't be installed.
@@ -454,8 +454,8 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
 
 **Next uploads**: `tools/release/release.py` (its `testflight` step), or by hand `tools/release/mac-appstore.sh`
 (build, pkg, `altool --validate-app`), then `--upload` (uploads that pkg, builds nothing); each upload
-gets a new `CFBundleVersion` and goes to the Owner group by itself once its export question is answered (or once
-`ITSAppUsesNonExemptEncryption` is in the Info.plist).
+gets a new `CFBundleVersion` and goes to the Owner group by itself: since 0.14.6 the App Store build's Info.plist
+answers the export question (`ITSAppUsesNonExemptEncryption` NO, see *One-command release*).
 
 ### Mac App Store: the listing (entered 2026-11-11)
 
@@ -853,12 +853,13 @@ Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub,
   App Store Connect API (key `VCB5XBQ3QZ`, *Developer*) until the build is `VALID`. Checked read-only (`stores.py
   asc-builds`): app 6833533014, build 0.13.0 (13000.261111.1531) `VALID`, `usesNonExemptEncryption` unset (*Missing
   Compliance*).
-- **Export compliance stays one click per build** (TestFlight › the build › *Manage*) until the owner decides. Sukrara
-  uses non-exempt encryption (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), so `ITSAppUsesNonExemptEncryption`
-  `NO` would be false, and `YES` needs an `ITSEncryptionExportComplianceCode` from an approved compliance document;
-  the France question (ANSSI) is the owner's call. The API can answer per build (`PATCH /v1/builds/{id}`,
-  `usesNonExemptEncryption: true`), but that's a write nobody has tried with the *Developer* key, and it doesn't answer
-  France; once the owner has answered the first build and chosen, the release can set it the same way.
+- **Export compliance is answered by the build** (since 0.14.6): `bundle.sh --app-store` writes
+  `ITSAppUsesNonExemptEncryption` NO into the App Store version's Info.plist, so no build asks in TestFlight. That is
+  the owner's answer (standard algorithms, not distributed in France) as App Store Connect stores it: build 14003,
+  answered by hand on 2026-11-12, reads `usesNonExemptEncryption: false`. Once ANSSI's certificate is approved
+  (France (ANSSI) above), it becomes YES plus Apple's `ITSEncryptionExportComplianceCode`. The API can't answer a
+  build after upload with the *Developer* key (`PATCH /v1/builds/{id}` returns 403), so a build uploaded before
+  0.14.6 is answered by hand.
 - **`--production` (from 1.0.0, never run yet)**: Play: the same versionCode also on `production` (`status:
   completed`; managed publishing off so it goes live after review); needs *Release to production* for the service
   account. App Store: the App Store version created or found, the build attached, a review submission with that

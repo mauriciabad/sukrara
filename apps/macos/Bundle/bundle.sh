@@ -263,6 +263,11 @@ if [ "$APP_STORE" = 1 ]; then
     V=$(plutil -extract "$K" raw -o - "$RES_PLIST" 2>/dev/null) || die "the resource bundle has no $K"
     for P in "$APP/Contents/Info.plist" "$APPEX/Contents/Info.plist"; do plutil -insert "$K" -string "$V" "$P"; done
   done
+  # Export compliance, answered once here instead of per build in App Store Connect: the owner's answer (standard
+  # algorithms, not distributed in France) is what App Store Connect stores as usesNonExemptEncryption = false (build
+  # 14003, 2026-11-12). Once ANSSI's certificate is approved and France is added, this becomes YES plus Apple's
+  # ITSEncryptionExportComplianceCode (docs/20-publishing.md › France (ANSSI)).
+  plutil -insert ITSAppUsesNonExemptEncryption -bool NO "$APP/Contents/Info.plist"
 fi
 # With a provisioning profile: embedded, and the entitlements only it grants (the app's are checked by `ungranted`).
 # Embedded readable by everyone (install -m 644), whatever the mode in PROFILES_DIR (~/.apple-dev is chmod 600):
