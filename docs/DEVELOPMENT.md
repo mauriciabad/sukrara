@@ -26,7 +26,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
-| Version | `tools/release/version.sh` → `0.14.0 14000 prerelease` (from `VERSION`) |
+| Version | `tools/release/version.sh` → `0.14.1 14001 prerelease` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs the rules on every push and the Android / Mac jobs when their paths (or
 `contracts/`, `tools/`, `VERSION`, `assets/`) change; `gate` is the only required check. Every `uses:` is pinned to a

@@ -2,7 +2,9 @@
 
 Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
-## Unreleased — sharing messages handled once, the Mac keeps running when a relay drops
+## Unreleased
+
+## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 
 - **Sharing (Android, wearer)**: each message from a follower is handled once, also across restarts (#78). Before, every
   start handled again every message the relays still kept: an allowed follower got its key again, an ended follow
