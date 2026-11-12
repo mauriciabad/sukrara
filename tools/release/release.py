@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """One command publishes a version to every channel (#187, docs/DEVELOPMENT.md › Release):
 
-    tools/release/release.py <version> [--dry-run] [--from <step>] [--production]
+    tools/release/release.py <version> [--dry-run] [--from <step>] [--app-review]
 
 Runs on the release Mac (the keys stay there), in any clean checkout whose HEAD is origin/next: the main checkout or a
 worktree, on any branch or a detached HEAD. Every push names its refspec (HEAD:next, HEAD:main); nothing needs a local
@@ -29,7 +29,8 @@ left (resume with --from <step>; every step can run again):
   sparkle        docs/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
                  at https://sukrara.mauri.app/appcast.xml serves the item
   homebrew       the tap's workflow committed the cask for this version (the dmg's sha256)
-  play           the play bundle on Google Play's internal track with the en-US / es-ES notes (Android Publisher API)
+  play           the play bundle on Google Play's internal and production tracks with the en-US / es-ES notes (Android
+                 Publisher API; managed publishing is off, so production goes live once Google approves it)
   testflight     the App Store pkg the gate built and validated (built once by mac-appstore.sh if it's missing, e.g.
                  --from testflight in a fresh checkout), its version and build number checked, uploaded by
                  mac-appstore.sh --upload; then App Store Connect processes the build (export compliance: summary)
@@ -38,8 +39,8 @@ left (resume with --from <step>; every step can run again):
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
                exits 1 when a check would stop the release
 --from STEP    starts at STEP (the release commit must be checked out: VERSION = <version>)
---production   from 1.0.0 only, and never yet: also promotes the Play release to production and submits the App Store
-               build for review (needs Play production rights and an App Store Connect key with App Manager access)
+--app-review   never run yet: also submits the App Store build for App Review (needs an App Store Connect key with App
+               Manager access, and the listing, App Privacy and EU trader status done in App Store Connect)
 """
 import argparse
 import hashlib
@@ -64,6 +65,7 @@ TAP = "mauriciabad/homebrew-tap"
 FEED_URL = "https://sukrara.mauri.app/appcast.xml"
 STEPS = ["preconditions", "version", "gate", "github", "sparkle", "homebrew", "play", "testflight", "summary"]
 PLAY_LANGS = ["en-US", "es-ES"]
+PLAY_TRACKS = ["internal", "production"]
 PLAY_NOTES = "apps/android/fastlane/metadata/android/%s/changelogs/%d.txt"
 DIST = "apps/android/app/build/dist"
 MAC_BUILD = "apps/macos/build"
@@ -279,11 +281,11 @@ def sha256(path):
 
 
 class Release:
-    def __init__(self, version, dry, production):
+    def __init__(self, version, dry, app_review):
         self.v = version
         self.code = version_code(version)
         self.dry = dry
-        self.production = production
+        self.app_review = app_review
         self.changelog = None  # dry run: the CHANGELOG the version step would write
         self.notes_state = []  # what the summary reports as still manual
         self.would_stop = []  # dry run: every check that would have stopped the release
@@ -599,47 +601,50 @@ class Release:
         self.wait("the Homebrew cask at %s (%s)" % (self.v, TAP), cask, 20 * 60)
 
     def play(self):
+        """The play bundle on the internal and the production track (every release goes to production: 0.x is public
+        work in progress, the owner's 2026-11-13 decision). Managed publishing is off, so production goes live once
+        Google approves it. A track that already has the version code is left alone (re-running is safe)."""
         aab = self.path("%s/Sukrara-%s-play.aab" % (DIST, self.v))
         try:
             notes = read_play_notes(ROOT, self.v)
         except ValueError as e:
             self.ok(False, str(e))
             return
-        body = stores.play_track_body("internal", self.v, self.code, notes)
-        prod = stores.play_track_body("production", self.v, self.code, notes) if self.production else None
+        bodies = [stores.play_track_body(t, self.v, self.code, notes) for t in PLAY_TRACKS]
         if self.dry:
-            print("  would upload %s (versionCode %d) to the internal track:" % (os.path.relpath(aab, ROOT), self.code))
-            print("    edits.insert → bundles.upload → tracks.update " + json.dumps(body, ensure_ascii=False))
-            if prod:
-                print("    tracks.update " + json.dumps(prod, ensure_ascii=False))
-            print("    → edits.commit")
+            print("  would upload %s (versionCode %d) to the %s tracks:"
+                  % (os.path.relpath(aab, ROOT), self.code, " and ".join(PLAY_TRACKS)))
+            print("    edits.insert → bundles.upload")
+            for body in bodies:
+                print("    tracks.update " + json.dumps(body, ensure_ascii=False))
+            print("    → edits.commit (production: sent for review, live on approval)")
             return
         self.ok(os.path.exists(aab), "no %s: run the gate (play-bundle.sh)" % aab)
         play = stores.Play()
         edit = play.insert_edit()
         try:
-            if stores.track_has(play.track(edit, "internal"), self.code):
-                print("  the internal track already has %d" % self.code)
-                if not prod:
-                    play.delete_edit(edit)
-                    return
-            else:
-                if self.code not in [int(b["versionCode"]) for b in play.bundles(edit)]:
-                    up = play.upload_bundle(edit, aab)
-                    self.ok(int(up["versionCode"]) == self.code, "Play read versionCode %s" % up["versionCode"])
-                    self.ok(up.get("sha256") == sha256(aab), "Play's sha256 of the bundle isn't the local one")
-                    print("  uploaded versionCode %d" % self.code)
-                play.update_track(edit, body)
-            if prod:
-                play.update_track(edit, prod)  # --production, from 1.0.0: managed publishing off, so it goes live
+            todo = [b for b in bodies if not stores.track_has(play.track(edit, b["track"]), self.code)]
+            for b in bodies:
+                if b not in todo:
+                    print("  the %s track already has %d" % (b["track"], self.code))
+            if not todo:
+                play.delete_edit(edit)
+                return
+            if self.code not in [int(b["versionCode"]) for b in play.bundles(edit)]:
+                up = play.upload_bundle(edit, aab)
+                self.ok(int(up["versionCode"]) == self.code, "Play read versionCode %s" % up["versionCode"])
+                self.ok(up.get("sha256") == sha256(aab), "Play's sha256 of the bundle isn't the local one")
+                print("  uploaded versionCode %d" % self.code)
+            for b in todo:
+                play.update_track(edit, b)
             try:
                 play.commit(edit)
             except stores.ApiError as e:
                 if "changesNotSentForReview" not in e.message:
                     raise
                 play.commit(edit, not_for_review=True)
-                self.notes_state.append("Play: other changes wait in Play Console › Publishing overview (the API "
-                                        "couldn't send them for review)")
+                self.notes_state.append("Play: the release waits in Play Console › Publishing overview (the API "
+                                        "couldn't send it for review): Send changes for review there")
         except BaseException:
             try:
                 play.delete_edit(edit)
@@ -648,11 +653,12 @@ class Release:
             raise
         check = play.insert_edit()
         try:
-            rel = stores.track_has(play.track(check, "internal"), self.code)
+            rels = {t: stores.track_has(play.track(check, t), self.code) for t in PLAY_TRACKS}
         finally:
             play.delete_edit(check)
-        self.ok(rel is not None, "the internal track doesn't list %d after the commit" % self.code)
-        print("  internal track: %s %d %s" % (rel["name"], self.code, rel["status"]))
+        for t, rel in rels.items():
+            self.ok(rel is not None, "the %s track doesn't list %d after the commit" % (t, self.code))
+            print("  %s track: %s %d %s" % (t, rel["name"], self.code, rel["status"]))
 
     def pkg_distribution(self, pkg):
         """The Distribution file of a productbuild pkg (pkgutil --expand into a temporary directory)."""
@@ -686,7 +692,7 @@ class Release:
                 print("  no pkg yet (the gate builds it); if the gate left none, would run: tools/release/mac-appstore.sh")
             print("  would check its version and build number, then run: tools/release/mac-appstore.sh --upload")
             print("  would wait until the build's processingState is VALID")
-            if self.production:
+            if self.app_review:
                 print("  would submit it for App Review: " + json.dumps(stores.asc_submission_bodies("<app>", "<ver>")[0]))
             return
         asc = stores.AppStoreConnect()
@@ -715,7 +721,7 @@ class Release:
         if found.get("encryption") is None:
             self.notes_state.append("TestFlight: build %s shows Missing Compliance: App Store Connect › TestFlight › "
                                     "the build › Manage (docs/20-publishing.md › Mac App Store: signing)" % build)
-        if self.production:
+        if self.app_review:
             asc.submit_for_review(app, self.v, found["id"])
             print("  submitted %s (%s) for App Review" % (self.v, build))
 
@@ -774,15 +780,13 @@ def main(argv):
     p.add_argument("version")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--from", dest="start", choices=STEPS, default=STEPS[0])
-    p.add_argument("--production", action="store_true")
+    p.add_argument("--app-review", action="store_true")
     a = p.parse_args(argv)
     try:
         parse_version(a.version)
     except ValueError as e:
         sys.exit(str(e))
-    if a.production and parse_version(a.version)[0] == 0:
-        sys.exit("--production is for 1.0.0 and later (0.x goes to testing tracks only)")
-    rel = Release(a.version, a.dry_run, a.production)
+    rel = Release(a.version, a.dry_run, a.app_review)
     steps = STEPS[STEPS.index(a.start):]
     if a.start not in ("preconditions", "version") and not a.dry_run:
         current = rel.read("VERSION").strip()

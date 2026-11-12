@@ -150,9 +150,9 @@ again: it skips what's already there):
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
 nothing, and exits 1 with the list when a check would stop the release. Read-only store checks: `python3
 tools/release/stores.py play-tracks` (opens an edit, lists the tracks, deletes the edit) and `asc-builds`.
-`--production` (from 1.0.0; not used yet) also promotes the Play release to production and submits the App Store build
-for review; it needs Play production rights for the service account and an App Store Connect key with App Manager
-access (today's key is *Developer*). Tests: `python3 tools/release/test_release.py` (CI).
+The `play` step puts every release on Play's internal **and production** tracks (managed publishing is off: production
+goes live once Google approves it). `--app-review` (not used yet) also submits the App Store build for App Review; it
+needs an App Store Connect key with App Manager access (today's key is *Developer*). Tests: `python3 tools/release/test_release.py` (CI).
 
 ## Strings (Android, English + Spain Spanish)
 

@@ -609,9 +609,11 @@ open testing at once, with no *Apply for production* step) and no new fee.
   uploadable as is. Play's Digital Asset Links snippet matches `docs/.well-known/assetlinks.json`.
 - **API access**: Google Cloud project `sukrara-play` with the Google Play Android Developer API enabled; service
   account `sukrara-play-upload@sukrara-play.iam.gserviceaccount.com`, JSON key at **`~/.android/sukrara-play.json`**
-  (0600, outside the repo; recreate with `gcloud iam service-accounts keys create`). In Play Console it has only *View
-  app information*, *Release apps to testing tracks* and *Manage testing tracks and edit tester lists* for Sukrara: no
-  production, store listing or policy declarations. Checked: it opens an edit and lists the tracks.
+  (0600, outside the repo; recreate with `gcloud iam service-accounts keys create`). In Play Console, for Sukrara only: *View
+  app information*, *Release apps to testing tracks*, *Manage testing tracks and edit tester lists* and (since
+  2026-11-13, for `release.py`'s production step) *Release to production, exclude devices, and use Play App Signing*,
+  which Play ties to *Manage policy declarations* and *Manage deep links* (locked on); no store listing. Checked: it
+  opens an edit and lists the tracks.
 - **App content done**: Ads (none), Advertising ID (not used), Government apps (no), Financial features (none),
   Content rating (IARC, *All Other App Types*: users exchange text — treatment notes reach the wearer's followers —,
   blockable, invited friends only, no location; result all ages / PEGI 3 / ESRB E / USK 0).
@@ -843,7 +845,7 @@ since 0.12.0, and a Developer ID build is never released unnotarized.
 ### One-command release (#187)
 
 Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub, Sparkle, Homebrew, Google Play
-(internal testing) and TestFlight; the keys stay on the release Mac, none is a GitHub secret. The store calls are in
+(internal testing and production) and TestFlight; the keys stay on the release Mac, none is a GitHub secret. The store calls are in
 `tools/release/stores.py` (Python stdlib; the JWTs are signed by `openssl`, the Play key going to it on stdin, the
 `.p8` staying in its file; nothing prints a key):
 
@@ -867,9 +869,11 @@ Built 2026-11-11. `tools/release/release.py` runs the gate and publishes GitHub,
   (France (ANSSI) above), it becomes YES plus Apple's `ITSEncryptionExportComplianceCode`. The API can't answer a
   build after upload with the *Developer* key (`PATCH /v1/builds/{id}` returns 403), so a build uploaded before
   0.14.6 is answered by hand.
-- **`--production` (from 1.0.0, never run yet)**: Play: the same versionCode also on `production` (`status:
-  completed`; managed publishing off so it goes live after review); needs *Release to production* for the service
-  account. App Store: the App Store version created or found, the build attached, a review submission with that
+- **Play production, every release (since 2026-11-13)**: the same versionCode also on `production` (`status:
+  completed`, full rollout; managed publishing off, so it goes live once Google approves it); the service account has
+  *Release to production*. Each track that already has the versionCode is skipped, so re-running is safe. The owner
+  decided 0.x goes to production (public work in progress); the 1.0.0-only `--production` flag is gone.
+- **`--app-review` (never run yet)**: App Store: the App Store version created or found, the build attached, a review submission with that
   version, submitted (`reviewSubmissions` / `reviewSubmissionItems`); needs a key with *App Manager* or *Admin*
   access (the *Developer* key gets 403). The listing, screenshots, App Privacy and the EU trader status have to be
   done first in App Store Connect.

@@ -219,7 +219,7 @@ def asc_key_paths():
 
 
 def asc_submission_bodies(app_id, version_id, platform="MAC_OS"):
-    """The App Review submission (--production, from 1.0.0): a review submission for the platform, its one item (the
+    """The App Review submission (release.py --app-review): a review submission for the platform, its one item (the
     App Store version), then the PATCH that submits it."""
     return (
         {"data": {"type": "reviewSubmissions", "attributes": {"platform": platform},
@@ -278,8 +278,8 @@ class AppStoreConnect:
         return out
 
     def submit_for_review(self, app_id, version, build_id, platform="MAC_OS"):
-        """--production only (from 1.0.0; needs a key with App Manager or Admin access, the Developer key gets 403):
-        the App Store version `version` with build `build_id`, submitted for App Review. Never run before 1.0.0."""
+        """release.py --app-review only (needs a key with App Manager or Admin access, the Developer key gets 403): the
+        App Store version `version` with build `build_id`, submitted for App Review. Never run yet."""
         found = self.call("GET", "/v1/apps/%s/appStoreVersions" % app_id,
                           {"filter[versionString]": version, "filter[platform]": platform})["data"]
         if found:
