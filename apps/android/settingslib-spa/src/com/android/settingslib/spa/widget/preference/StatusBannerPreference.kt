@@ -94,8 +94,10 @@ fun StatusBannerPreference(
     model: StatusBannerPreferenceModel,
 ) {
     SettingsCard {
-        SettingsCardContent {
-            val surfaceBright = MaterialTheme.colorScheme.surfaceBright
+        // Sukrara: the card in the row's colour (was the card's default, surface): the row inside it is drawn in
+        // surfaceBright, so in a dark theme it showed as a lighter rectangle inside a darker card
+        val surfaceBright = MaterialTheme.colorScheme.surfaceBright
+        SettingsCardContent(containerColor = surfaceBright) {
             Row(
                 modifier =
                     Modifier

@@ -28,6 +28,15 @@ Changes against the AOSP sources (each is also marked "Sukrara:" in the code whe
 - widget/scaffold/CustomizedAppBar.kt: pages open with the large title expanded, like Android 17's
   View-based Settings pages (BasePreferencesFragment.onResume → setExpanded(true)); SPA's expressive
   bar starts collapsed.
+- framework/compose/HighlightBox.kt: the highlighted row is brought into view a frame later (once the
+  scrolling page knows its size).
+- widget/preference/Preference.kt: Preference takes an optional onClickLabel (TalkBack's "double tap
+  to …"), passed to the click like a View preference's.
+- widget/preference/RadioPreferences.kt: Radio2 rows are highlighted like BaseLayout's rows.
+- widget/ui/Category.kt: the category's margins are decided in the same layout pass as its rows (no
+  first frame drawn full width).
+- widget/preference/StatusBannerPreference.kt: the card has the colour of the row inside it
+  (surfaceBright); with the card's default surface, a dark theme showed the row as a lighter rectangle.
 
    =========================================================================
    ==  NOTICE file corresponding to the section 4 d of                    ==

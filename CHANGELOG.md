@@ -28,6 +28,8 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 - **App icons in Settings are back** (Android, #181): the rows for LibreView, Tidepool, Nightscout, the xDrip+ server,
   Health Connect, Juggluco and every app glucose is sent to show that app's own icon again, as in the earlier app, and
   Garmin Connect is listed under the xDrip+ server again.
+- **Android › Alert reliability** (dark theme): with every check on, the top banner is one card again; it showed a
+  grey rectangle inside a darker card (#181).
 
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 

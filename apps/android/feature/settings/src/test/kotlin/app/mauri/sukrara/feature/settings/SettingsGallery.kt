@@ -289,6 +289,11 @@ class SettingsGallery {
                         alerts = AlertSettings(),
                     ) {}
                 },
+            // every check on: SPA's status banner, one card in both themes (#181)
+            "reliability-ready" to
+                {
+                    ReliabilityContent(AlertReadiness(emptySet(), unlockedSound = UnlockedSound.Heard), {}, alerts = AlertSettings()) {}
+                },
             // a failed alert step (Copy report) and the unanswered Vibrate only when unlocked
             "reliability-delivery-unlocked" to {
                 ReliabilityContent(

@@ -3,12 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.semantics
@@ -118,18 +120,23 @@ internal fun ReliabilityContent(
     }
 }
 
+/** The test tag of the banner that says everything alerts need is on. */
+internal const val READY_BANNER_TAG = "reliability-ready"
+
 /** SPA's StatusBannerPreference at the top while everything alerts need is on (Safety Center's "all good"). */
 @Composable
 private fun ReadyBanner() {
     val title = stringResource(R.string.st_reliability_ready)
     val check = ImageVector.vectorResource(DsR.drawable.ds_ic_check_circle)
-    StatusBannerPreference(
-        object : StatusBannerPreferenceModel {
-            override val title = title
-            override val icon: @Composable () -> ImageVector = { check }
-            override val iconLevel = StatusBannerLevel.LOW
-        },
-    )
+    Box(Modifier.testTag(READY_BANNER_TAG)) {
+        StatusBannerPreference(
+            object : StatusBannerPreferenceModel {
+                override val title = title
+                override val icon: @Composable () -> ImageVector = { check }
+                override val iconLevel = StatusBannerLevel.LOW
+            },
+        )
+    }
 }
 
 /**
