@@ -16,6 +16,8 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   at 70 low, at 54 very low and at 250 very high, on both apps: the value's and the line's colour, the range word,
   the status bar, the menu bar, the notification, time in range and the report's ranges (*High 180–249*). Time in
   range now counts readings at 70 and 180 outside the range. Alerts are unchanged.
+- **The Mac disk image has its own icons** (#181): the opened volume is a Sukrara drive and the `.dmg` file a disk
+  image page with that drive, no longer the app's icon.
 
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 

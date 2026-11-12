@@ -8,6 +8,7 @@ change the concept in `brand.py` and re-export.
 | `brand.json` | name, domain, application ids, brand + range colours, thresholds |
 | `glyph.svg` | one-colour glyph (source for any small/mono use) |
 | `macos/AppIcon.icns` | `CFBundleIconFile` of the .app (Big Sur grid, 1024 master in `AppIcon-1024.png` / `AppIcon.svg`) |
+| `macos/dmg/Volume.icns`, `macos/dmg/DiskImage.icns` | the Mac disk image's own icons (`apps/macos/Bundle/dmg.sh`): the volume (a Sukrara drive, `.VolumeIcon.icns`) and the `.dmg` file (a disk image page with that drive); `*-512.png` previews. Not from `brand.py`: drawn by `swift assets/brand/sukrara/macos/dmg/icons.swift` (from the repo root) from `macos/AppIcon.svg`'s glyph; re-run after the app icon changes |
 | `macos/MenubarGlyph*.png` | template image (black + alpha, set `isTemplate`) for menus / "no data yet" |
 | `macos/Brand.swift` | name, URL, range colours as `NSColor` |
 | `android/res/` | adaptive launcher icon with a monochrome layer (themed icons): copy into `app/src/main/res`, then `android:icon="@mipmap/ic_launcher"`; `drawable/ic_stat_sukrara.xml` is the notification small icon |

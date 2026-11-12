@@ -5,10 +5,12 @@
 #
 # Packages build/Sukrara.app (run Bundle/bundle.sh first) as build/Sukrara-<version>.dmg (a window with the app, an
 # arrow and an Applications shortcut; needs dmgbuild: `uv tool install dmgbuild`, else a plain image with the same
-# two items) and build/Sukrara-mac-<version>.zip (ditto, keeps the signature). The dmg is signed with the certificate
-# that signed the app, named by its SHA-1 (after a renewal two valid identities share a name), and checked by mounting
-# it and verifying the app inside. Images are made and mounted with `diskutil image` (hdiutil's attach / create /
-# detach are deprecated since macOS 27; dmgbuild still calls hdiutil itself).
+# two items) and build/Sukrara-mac-<version>.zip (ditto, keeps the signature). The image has its own icons (#181), from
+# assets/brand/sukrara/macos/dmg (icons.swift): the volume a Sukrara drive (.VolumeIcon.icns, custom icon flag), the
+# .dmg file a disk image page with that drive (set last, outside the signed data; a download drops it). The dmg is
+# signed with the certificate that signed the app, named by its SHA-1 (after a renewal two valid identities share a
+# name), and checked by mounting it and verifying the app inside. Images are made and mounted with `diskutil image`
+# (hdiutil's attach / create / detach are deprecated since macOS 27; dmgbuild still calls hdiutil itself).
 # NOTARY_PROFILE=<profile>: notarize + staple the dmg (needs a Developer ID build); its window then has no first-launch
 # help. Without it, Gatekeeper asks on first launch (System Settings → Privacy & Security → Open Anyway), and the window
 # says so.
@@ -34,6 +36,8 @@ if [ "${DMG_FORCE:-}" != 1 ]; then
 fi
 DMG=$OUT/Sukrara-$VER.dmg
 W=$OUT/dmg
+ICONS=$(cd "$HERE/../../.." && pwd)/assets/brand/sukrara/macos/dmg
+for i in Volume DiskImage; do [ -f "$ICONS/$i.icns" ] || die "no $ICONS/$i.icns: run swift $ICONS/icons.swift"; done
 rm -rf "$W" "$DMG"
 mkdir -p "$W"
 # The signing certificate's SHA-1: the leaf the app carries (cert0, DER), so the dmg gets exactly the app's identity.
@@ -47,12 +51,15 @@ fi
 if command -v dmgbuild >/dev/null; then
   swift "$HERE/dmg/background.swift" "$W" ${NOTARY_PROFILE:+--notarized}
   tiffutil -cathidpicheck "$W/background.png" "$W/background@2x.png" -out "$W/background.tiff" >/dev/null
-  dmgbuild -s "$HERE/dmg/settings.py" -D app="$APP" -D background="$W/background.tiff" Sukrara "$DMG"
+  dmgbuild -s "$HERE/dmg/settings.py" -D app="$APP" -D background="$W/background.tiff" \
+    -D volume_icon="$ICONS/Volume.icns" Sukrara "$DMG"
 else
   echo "dmg.sh: dmgbuild not found: plain image without the window layout (uv tool install dmgbuild)" >&2
   mkdir -p "$W/root"
   cp -R "$APP" "$W/root/"
   ln -s /Applications "$W/root/Applications"
+  cp "$ICONS/Volume.icns" "$W/root/.VolumeIcon.icns"
+  SetFile -a C "$W/root"  # the volume root's custom icon flag: diskutil keeps it
   diskutil image create from --format UDZO --volumeName Sukrara "$W/root" "$DMG" >/dev/null
 fi
 if [ -n "$SHA" ]; then codesign --force --sign "$SHA" $TS "$DMG"; fi
@@ -76,6 +83,9 @@ if [ -n "${NOTARY_PROFILE:-}" ]; then
   grep -q 'status: Accepted' "$OUT/notary-dmg.log" || die "notarization of $DMG failed (see $OUT/notary-dmg.log)"
   xcrun stapler staple "$DMG"
 fi
+# The .dmg file's own Finder icon, last: it lives in extended attributes, outside what was signed and stapled.
+swift "$HERE/dmg/file-icon.swift" "$ICONS/DiskImage.icns" "$DMG" || die "can't set the icon of $DMG"
+if [ -n "$SHA" ]; then codesign --verify --strict "$DMG" || die "$DMG fails codesign --verify after its icon was set"; fi
 ZIP=$OUT/Sukrara-mac-$VER.zip
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"

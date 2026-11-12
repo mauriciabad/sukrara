@@ -228,6 +228,12 @@ reachable with VoiceOver the same way.
   wire an old follower stops receiving when the protocol changes. So the GitHub version (the dmg, GitHub releases, the
   Homebrew cask) keeps itself current with **Sparkle 2** (#91; docs/20-publishing.md › Sparkle: the update feed), and
   an update is one click: *Install and Relaunch*. The App Store version has no updater (the store updates it).
+- **The disk image** (`apps/macos/Bundle/dmg.sh`): opening it shows the app, an arrow and the Applications folder on a
+  light window (*Install Sukrara* · *Drag the icon onto the Applications folder*). It has its own icons, not the app's
+  (#181; `assets/brand/sukrara/macos/dmg`, drawn by `icons.swift` from the app icon's glyph): the opened volume (Finder's
+  sidebar, the desktop, the window's title) is a Sukrara drive, the brand gradient and the cube glyph over a silver base
+  with a lime light; the `.dmg` file is a disk image page with that drive on it. The file's icon lives in extended
+  attributes, so a downloaded `.dmg` shows the system's disk image icon; the opened volume always shows its own.
 - **The feed**: `https://sukrara.mauri.app/appcast.xml` (`docs/appcast.xml` on the website, `SUFeedURL`), checked
   once a day while *Check for updates automatically* is on, and on every *Check for Updates…*. Each item is the
   notarized dmg of a GitHub release, signed with Sukrara's EdDSA key; Sparkle checks that signature against the

@@ -2,14 +2,16 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# dmgbuild settings for the Sukrara installer window (dmg.sh passes -D app=… -D background=…).
+# dmgbuild settings for the Sukrara installer window (dmg.sh passes -D app=… -D background=… -D volume_icon=…).
 # dmgbuild writes the Finder layout (.DS_Store) itself, so no Finder scripting or GUI session is needed.
 import os.path
 
 app = defines["app"]
 files = [app]
 symlinks = {"Applications": "/Applications"}
-icon = os.path.join(app, "Contents/Resources/AppIcon.icns")   # volume icon in Finder's sidebar / desktop
+# The volume's own icon in Finder's sidebar, the desktop and the window's title: a drive (#181: not the app's icon);
+# dmgbuild copies it to .VolumeIcon.icns and sets the volume's custom icon flag (SetFile -a C).
+icon = defines["volume_icon"]
 background = defines["background"]                            # 640×400 pt, 1× + 2× in one TIFF
 
 format = "UDZO"
