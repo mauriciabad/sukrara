@@ -1,0 +1,2 @@
+• La insulina lenta escrita tras leer la pluma inteligente ya no pregunta «¿Ya registrada por tu pluma?»: solo pregunta una dosis de la pluma de la misma insulina dentro del tiempo de coincidencia.
+• Cuando pregunta, oscurece el diálogo de Añadir tratamiento detrás, con Registrar igualmente y Cancelar.

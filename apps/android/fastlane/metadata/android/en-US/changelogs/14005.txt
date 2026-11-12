@@ -1,0 +1,2 @@
+• Long-acting insulin typed after a smart pen read no longer asks "Already logged by your pen?": only a pen dose of the same insulin within the match time asks.
+• When it does ask, the question dims the Add treatment dialog behind it, with Log anyway and Cancel.
