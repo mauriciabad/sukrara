@@ -107,6 +107,15 @@ tasks.withType<Test>().configureEach {
         .file(rootDir.resolve("../../tools/check/allow.json"))
         .withPropertyName("allowJson")
         .withPathSensitivity(PathSensitivity.NONE)
+    // ManifestTest also reads every module's own manifests (no main one may name the DebugReceiver)
+    inputs
+        .files(
+            fileTree(rootDir) {
+                include("**/src/*/AndroidManifest.xml")
+                exclude("**/build/**", ".gradle/**")
+            },
+        ).withPropertyName("moduleManifests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 androidComponents {

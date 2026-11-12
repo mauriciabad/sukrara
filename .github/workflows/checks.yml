@@ -3,64 +3,69 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # The repo's guards (CLAUDE.md → tools/check) plus every app's builds and tests over the shared contracts/.
 # The trigger is never path-filtered (a skipped workflow leaves a required check pending forever): the `changes` job
-# decides which jobs run, and `gate` is the ONLY required check: it fails unless every job that should have run passed.
+# decides which jobs run (tools/ci/changes.py: what changed since the newest commit with a green run; nothing for a
+# commit that already has one, e.g. main fast-forwarded to next's), and `gate` is the ONLY required check: it fails
+# unless every job that should have run passed.
 name: Checks
 on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      full:
+        description: Run every job, whatever changed
+        type: boolean
+        default: false
 permissions:
   contents: read
+# A pull request's newer push cancels its older run. Pushes never wait for or cancel each other: every pushed commit
+# gets its own run at once (the release waits for its version commit's run, which must neither queue behind the run
+# before it nor be cancelled by the one after); a later commit's run covers what an unfinished one changed (changes.py).
 concurrency:
-  group: checks-${{ github.ref }}
+  group: checks-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     outputs:
-      android: ${{ steps.filter.outputs.android }}
-      mac: ${{ steps.filter.outputs.mac }}
-      poc: ${{ steps.filter.outputs.poc }}
+      rules: ${{ steps.plan.outputs.rules }}
+      android: ${{ steps.plan.outputs.android }}
+      mac: ${{ steps.plan.outputs.mac }}
+      range: ${{ steps.plan.outputs.range }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        id: filter
         with:
-          filters: |
-            android:
-              - 'apps/android/**'
-              - 'contracts/**'
-              - 'tools/**'
-              - 'VERSION'
-              - 'assets/**'
-            mac:
-              - 'apps/macos/**'
-              - 'contracts/**'
-              - 'tools/**'
-              - 'VERSION'
-              - 'assets/**'
-            poc:
-              - 'poc/**'
+          fetch-depth: 0
+      - name: What changed since the newest green commit
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FULL: ${{ inputs.full }}
+        run: python3 tools/ci/changes.py >> "$GITHUB_OUTPUT"
 
   rules:
+    needs: changes
+    if: needs.changes.outputs.rules == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: tools/check/run.sh over the pushed / PR range
+      - name: tools/check/run.sh since the newest green commit (a PR's base)
         env:
-          BEFORE: ${{ github.event.before }}
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RANGE: ${{ needs.changes.outputs.range }}
         run: |
-          if [ -n "$BASE" ]; then RANGE="$BASE..$HEAD_SHA"
-          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] && git cat-file -e "$BEFORE" 2>/dev/null; then RANGE="$BEFORE..$HEAD_SHA"
-          else RANGE="origin/main..$HEAD_SHA"; fi
           echo "range: $RANGE"
           tools/check/run.sh --range "$RANGE"
       - name: The checks' own tests
         run: tools/check/run.sh --selftest
+      - name: Which jobs a run needs (tools/ci/changes.py)
+        run: python3 tools/ci/test_changes.py
       - name: Generated settings code is up to date
         run: python3 tools/settings/gen.py --check
       - name: The local test relay's tests (loopback only)
@@ -74,23 +79,20 @@ jobs:
       - name: Scripts parse
         run: for f in tools/*.sh tools/*/*.sh; do bash -n "$f" || exit 1; done
 
+  # `./gradlew check` runs as two jobs side by side: `android` is all of it but Android Lint (`check -x lint`: unit +
+  # contract tests, spotlessCheck) plus Roborazzi verify, `android-lint` is `lint`; together exactly `check`'s tasks.
+  # `android-release` and `android-play` build the release outputs meanwhile. Each starts from .github/actions/gradle
+  # (Gradle's build cache from the newest run: only what a change touches runs again).
   android:
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: ./.github/actions/gradle
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-      # Pinned in :sensor (ndkVersion / cmake version); ubuntu-24.04 ships neither. Only a build with a Juggluco
-      # checkout compiles the Libre 3 core (NativeCore) and CI has none, so this runs once SUKRARA_JUGGLUCO is set.
-      - name: Android NDK + CMake for the Libre 3 core
-        if: env.SUKRARA_JUGGLUCO != ''
-        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;28.2.13676358" "cmake;4.1.2"'
-      - name: ./gradlew check (unit + contract tests, lint) + Roborazzi verify
+          cache: android-test
+      - name: ./gradlew check -x lint (unit + contract tests, spotless) + Roborazzi verify
         working-directory: apps/android
         # No -x verifyReleaseSigning: `check` builds no release output (the release unit tests are off), so it must pass
         # without the owner's key; the guard on preReleaseBuild only stops real release builds.
@@ -98,7 +100,7 @@ jobs:
         # recorded on this same runner image by goldens.yml (Mac renders differ in text antialiasing and blending).
         # `check` includes spotlessCheck (ktlint + Compose rules + GPL header; QualityConventionPlugin).
         run: >-
-          ./gradlew --no-daemon check
+          ./gradlew --no-daemon check -x lint
           :core:graph:verifyRoborazziDebug :widgets:verifyRoborazziDebug :monitor:verifyRoborazziDebug :pen:verifyRoborazziDebug
       # :feature:sharing's other screenshot tests are review galleries, never goldens: only the Share with someone goldens
       # (#170, its dark theme) are verified, by filtering the test task.
@@ -121,6 +123,36 @@ jobs:
             { echo "::error::Room schema changed by the build: bump @Database version, commit the new schema, add a migration"; exit 1; }
           test -z "$(git ls-files --others --exclude-standard -- 'apps/android/*/schemas')" ||
             { echo "::error::a new Room schema the build exported isn't committed"; exit 1; }
+      - name: Roborazzi diffs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: roborazzi-diffs
+          path: apps/android/**/build/outputs/roborazzi
+          if-no-files-found: ignore
+
+  android-lint:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/gradle
+        with:
+          cache: android-lint
+      - name: ./gradlew lint (check's Android Lint; errors and the curated warnings fail, QualityConventionPlugin)
+        working-directory: apps/android
+        run: ./gradlew --no-daemon lint
+
+  android-release:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/gradle
+        with:
+          cache: android-release
       # The alert sounds are looked up by name, so only keep_alert_sounds.xml stops resource shrinking from removing
       # them (a silent alarm on release builds only). An unsigned release build is shrunk exactly like the signed one.
       - name: Alert sounds survive release resource shrinking
@@ -129,13 +161,6 @@ jobs:
           # no Libre 3 core on CI (a separate checkout): skip its checks, the sounds are what this step verifies
           ./gradlew --no-daemon :app:assembleFullRelease -x verifyReleaseSigning -x verifyJuggluco -x verifyFullReleaseApkNativeCore
           ../../tools/release/verify-sounds.sh app/build/outputs/apk/full/release/app-full-release-unsigned.apk
-      - name: Roborazzi diffs
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: roborazzi-diffs
-          path: apps/android/**/build/outputs/roborazzi
-          if-no-files-found: ignore
 
   # The Google Play build (play flavor): the bundle builds and passes every check play-bundle.sh makes before an
   # upload except the signer and the Libre 3 core (no release key, no Juggluco checkout on CI): bundletool validate,
@@ -147,11 +172,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: ./.github/actions/gradle
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
+          cache: android-play
       - name: Play bundle, unsigned, checked
         run: tools/release/play-bundle.sh --unsigned
 
@@ -185,49 +208,14 @@ jobs:
           Bundle/bundle.sh --unsigned --app-store
           Bundle/smoke.sh
 
-  poc-android:
-    needs: changes
-    if: needs.changes.outputs.poc == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
-        id: jdk21
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: gradle
-      - name: PoC unit tests
-        working-directory: poc/spikes/showcase-android
-        env:
-          GALLERY_JAVA_HOME: ${{ steps.jdk21.outputs.path }}
-        run: ./gradlew --no-daemon :app:testDebugUnitTest
-
-  poc-mac:
-    needs: changes
-    if: needs.changes.outputs.poc == 'true'
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: swift build
-        working-directory: poc/spikes/menubar
-        run: swift build
-      - name: PoC self-tests
-        working-directory: poc/spikes/menubar
-        run: |
-          for t in alerts-selftest graphselftest exportselftest treatmentsselftest bleselftest argsselftest identityselftest settingsselftest panelselftest; do
-            .build/debug/GlucoseBar -$t || exit 1
-          done
+  # No PoC build jobs: poc/ is frozen (never edited; untouched since the monorepo began), so jobs that ran only when
+  # poc/ changed never ran. Its Python reference still runs in `rules` (sync_crosscheck.py).
 
   gate:
     # The only required check. Passes only when every job either succeeded, or was skipped because `changes` said
-    # its paths didn't change; a failed, cancelled or unexpectedly skipped job fails it.
+    # it wasn't needed; a failed, cancelled or unexpectedly skipped job fails it.
     if: always()
-    needs: [changes, rules, android, android-play, mac, poc-android, poc-mac]
+    needs: [changes, rules, android, android-lint, android-release, android-play, mac]
     runs-on: ubuntu-latest
     steps:
       - name: Every job that should have run passed
@@ -238,15 +226,15 @@ jobs:
           import json, os, sys
           needs = json.loads(os.environ["RESULTS"])
           out = needs.get("changes", {}).get("outputs", {})
-          wanted = {"changes": True, "rules": True, "android": out.get("android") == "true",
-                    "android-play": out.get("android") == "true",
-                    "mac": out.get("mac") == "true", "poc-android": out.get("poc") == "true",
-                    "poc-mac": out.get("poc") == "true"}
+          android = out.get("android") == "true"
+          wanted = {"changes": True, "rules": out.get("rules") == "true", "android": android,
+                    "android-lint": android, "android-release": android, "android-play": android,
+                    "mac": out.get("mac") == "true"}
           bad = []
           for job, should in wanted.items():
               r = needs.get(job, {}).get("result")
               ok = r == "success" or (r == "skipped" and not should)
-              print("%-12s %-9s %s" % (job, r, "ok" if ok else "FAILED"))
+              print("%-15s %-9s %s" % (job, r, "ok" if ok else "FAILED"))
               if not ok:
                   bad.append(job)
           sys.exit(1 if bad else 0)

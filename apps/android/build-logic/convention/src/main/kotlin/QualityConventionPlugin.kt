@@ -7,14 +7,22 @@ import com.android.build.api.dsl.CommonExtension
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.withType
 
 /**
  * Static checks every module runs in `./gradlew check`. Android Lint aborts on errors and treats a curated set of
  * warnings as errors (the ones that hurt the person using the app: untranslated or hardcoded text, exported
  * components, API levels); everything else stays a warning. Spotless runs ktlint (+ the Compose rules, style in
  * `.editorconfig`) and keeps the GPL header on every Kotlin file: `./gradlew spotlessApply` fixes both.
+ *
+ * Every test task also takes the module's own `src/` as an input: several tests read files there directly (manifests,
+ * drawables, the release source set, jni.c, the goldens in `src/test/snapshots`), and CI keeps Gradle's build cache
+ * between runs, so without it a hit would reuse a verdict made over the old files (Room's `schemas/` reach the tests
+ * as test assets, RoomConventionPlugin). Tests that read other modules' files declare those in their own build file.
  */
 class QualityConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
@@ -36,6 +44,9 @@ class QualityConventionPlugin : Plugin<Project> {
                 target("*.gradle.kts")
                 ktlint(ktlint)
             }
+        }
+        tasks.withType<Test>().configureEach {
+            inputs.dir("src").optional().withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("moduleSources")
         }
         pluginManager.withPlugin("com.android.base") {
             extensions.getByType<CommonExtension>().lint.apply {

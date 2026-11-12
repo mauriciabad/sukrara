@@ -1,0 +1,48 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+# What every Android job of checks.yml starts with: JDK 21 with the dependency cache (setup-java), Gradle's build
+# cache kept between runs, and Gradle sized for the runner.
+#
+# The build cache: apps/android sets org.gradle.caching, and each job saves ~/.gradle/caches/build-cache-1 under its own
+# key per commit and restores the newest one, so a task whose inputs didn't change (an untouched module's compile, lint
+# or tests) is taken from it instead of run again. Every input a task reads is declared (tests that read files
+# directly: QualityConventionPlugin's `src/`, app / monitor / designsystem build files), so a hit is the same verdict.
+# Entries unused for 2 days are removed at the end of each build, which keeps each saved cache to what recent commits
+# use (the repository's 10 GB of Actions cache is shared with setup-java's dependency cache).
+name: Gradle on CI
+description: JDK 21, the dependency cache, Gradle's build cache from the newest run of this job, every core
+inputs:
+  cache:
+    description: The build cache's name (one per job; jobs build different tasks)
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      with:
+        distribution: temurin
+        java-version: '21'
+        cache: gradle
+    - name: Gradle's build cache from the newest run
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.gradle/caches/build-cache-1
+        key: gradle-build-cache-${{ inputs.cache }}-${{ github.sha }}
+        restore-keys: gradle-build-cache-${{ inputs.cache }}-
+    # apps/android/gradle.properties keeps a build small for agents building side by side on a 16 GB Mac (3 workers,
+    # 2 GB heap); the runner has its 4 cores and 16 GB to itself. The user home's properties win over the project's.
+    - name: Gradle sized for the runner, build cache cleanup
+      shell: bash
+      run: |
+        mkdir -p ~/.gradle/init.d
+        printf 'org.gradle.workers.max=%s\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\n' \
+          "$(nproc)" > ~/.gradle/gradle.properties
+        printf '%s\n' 'beforeSettings {' '    caches {' '        cleanup = Cleanup.ALWAYS' \
+          '        buildCache.setRemoveUnusedEntriesAfterDays(2)' '    }' '}' > ~/.gradle/init.d/ci-caches.gradle.kts
+    # Pinned in :sensor (ndkVersion / cmake version); ubuntu-24.04 ships neither. Only a build with a Juggluco
+    # checkout compiles the Libre 3 core (NativeCore) and CI has none, so this runs once SUKRARA_JUGGLUCO is set.
+    - name: Android NDK + CMake for the Libre 3 core
+      if: env.SUKRARA_JUGGLUCO != ''
+      shell: bash
+      run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;28.2.13676358" "cmake;4.1.2"'

@@ -39,3 +39,16 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
 }
+
+tasks.withType<Test>().configureEach {
+    // AlertCopyTest reads :core:designsystem's and :core:graph's strings; HookCodeTest reads :core:graph's, :core:data's
+    // and :core:model's main Kotlin (the System UI module keeps its own copies in step)
+    inputs
+        .files(
+            fileTree(rootDir) {
+                include("core/designsystem/src/main/res/**", "core/graph/src/main/res/**")
+                include("core/graph/src/main/**/*.kt", "core/data/src/main/**/*.kt", "core/model/src/main/**/*.kt")
+            },
+        ).withPropertyName("coreSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}

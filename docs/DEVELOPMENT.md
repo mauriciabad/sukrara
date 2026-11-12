@@ -28,8 +28,21 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
 | Version | `tools/release/version.sh` → `0.14.4 14004 prerelease` (from `VERSION`) |
 
-CI (`.github/workflows/checks.yml`) runs the rules on every push and the Android / Mac jobs when their paths (or
-`contracts/`, `tools/`, `VERSION`, `assets/`) change; `gate` is the only required check. Every `uses:` is pinned to a
+CI (`.github/workflows/checks.yml`) runs on every push, each push its own run at once (pushes never queue behind or
+cancel each other; a pull request's newer push cancels its older run). Its `changes` job (`tools/ci/changes.py`)
+compares the commit with the newest ancestor that has a green run of its own, not with the push before: the rules
+run over that range, the Android jobs when `apps/android/` (but its `fastlane/` Play notes), `contracts/`, `tools/`,
+`VERSION` or `assets/` changed in it, the Mac job when `apps/macos/`, `contracts/` or `assets/` did (no Mac step reads
+`tools/`; `VERSION` reaches only the bundle, which the release gate builds and smokes); docs and CHANGELOG.md alone run
+only the rules. The PoC has no build jobs: it is frozen. A commit
+that already has a green run (main fast-forwarded to next's commit, a tag) runs nothing again. `gate` is the only
+required check. Android is four jobs side by side: `android` (`./gradlew check -x lint` + Roborazzi verify),
+`android-lint` (`lint`; the two together are exactly `check`), `android-release` (the shrunk release APK keeps the
+alert sounds) and `android-play`; each keeps Gradle's build cache between runs (`.github/actions/gradle`), so only the
+tasks a change touches run again. That's only right while every file a task reads is one of its declared inputs: a
+test that reads a file directly (not through the classpath or `Contracts`) gets it from its module's `src/`
+(QualityConventionPlugin) or declares it in its build file (app, monitor, designsystem). `gh workflow run checks.yml
+--ref next -f full=true` runs every job whatever changed. Every `uses:` is pinned to a
 commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`); Dependabot
 (`.github/dependabot.yml`) moves both weekly. Look a tag's SHA up with `gh api repos/<owner>/<action>/commits/<tag>
 --jq .sha`.
@@ -98,20 +111,25 @@ most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read 
 checks its result and stops with what's done, what's left and the `--from <step>` that resumes (every step can run
 again: it skips what's already there):
 
-1. `preconditions`: a clean tree at `origin/next`, its green Checks run, the version above `VERSION`, a non-empty
-   Unreleased section, the Play notes, no tag yet, `tools/check/strict`, the keys, `gh`. Every wait for Checks takes
-   the commit's push run or one started by hand (`gh workflow run checks.yml --ref next` when the push run is stuck,
-   e.g. in a GitHub Actions incident); one green run is enough, a pull_request run doesn't count.
+1. `preconditions`: a clean tree at `origin/next`, its Checks run green or still running (not awaited: a failed one
+   stops the release), the version above `VERSION`, a non-empty Unreleased section, the Play notes, no tag yet,
+   `tools/check/strict`, the keys, `gh`. A Checks run counts on any branch (the same commit is the same tree): the
+   commit's push run or one started by hand (`gh workflow run checks.yml --ref next` when the push run is stuck, e.g.
+   in a GitHub Actions incident); one green run is enough, a pull_request run doesn't count.
 2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …
-   (GitHub prerelease)` with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run goes on while
-   the gate runs, and is awaited before anything is published.
+   (GitHub prerelease)` with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run starts at once
+   (it never queues behind the run before it), goes on while the gate runs, and covers every change since the newest
+   green commit, the previous HEAD's included; it is the release's one wait for CI, in `github`.
 3. `gate`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final --no-build` on
    the emulator, `play-bundle.sh`, `mac-release.sh` (notarized, Sparkle-signed, `verify-app.sh --notarized`, writes
    `docs/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`: the pkg `testflight`
-   uploads). `./gradlew check` and `swift test` aren't run again: the green Checks run on the same commit ran them.
-4. `github`: Checks on `next` green, `main` fast-forwarded, tag `v<version>`, `gh release create --prerelease
-   --latest=false` (`--latest` from 1.0.0) with the APK, the Android mapping, the dmg and the zip (their sha256 checked
-   against the release's), notes from the CHANGELOG entry with the disclaimer and the files; Checks on `main` green.
+   uploads). `./gradlew check` and `swift test` aren't run again: the release commit's green Checks run ran them (the
+   Mac job ran on the newest green commit with the same Mac sources: `VERSION` reaches only the bundle, which this
+   gate builds, notarizes and smokes).
+4. `github`: the release commit's Checks run green, `main` fast-forwarded, tag `v<version>`, `gh release create
+   --prerelease --latest=false` (`--latest` from 1.0.0) with the APK, the Android mapping, the dmg and the zip (their
+   sha256 checked against the release's), notes from the CHANGELOG entry with the disclaimer and the files. `main`'s
+   own run isn't awaited: it finds the commit's green run and runs nothing again.
 5. `sparkle`: the dmg on the release is the one `docs/appcast.xml` signs → the appcast committed and pushed to `main`
    and `next` (if `next` moved meanwhile, the commit is merged into it; HEAD stays on the appcast commit, so a re-run
    never brings `next`'s other work to `main`), Pages deployed, and https://sukrara.mauri.app/appcast.xml serves the

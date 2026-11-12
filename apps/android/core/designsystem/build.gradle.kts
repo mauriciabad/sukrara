@@ -34,3 +34,15 @@ dependencies {
     testImplementation(libs.androidx.activity.compose)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
+tasks.withType<Test>().configureEach {
+    // AppIconsTest reads every module's main Kotlin (only the shared loader may load app / service icons)
+    inputs
+        .files(
+            fileTree(rootDir) {
+                include("**/src/main/**/*.kt")
+                exclude("**/build/**", ".gradle/**", "settingslib-spa/**")
+            },
+        ).withPropertyName("moduleKotlin")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}

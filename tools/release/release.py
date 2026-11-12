@@ -11,8 +11,8 @@ worktree, on any branch or a detached HEAD. Every push names its refspec (HEAD:n
 `next` or `main` branch. The steps, in order; each checks its result and stops on failure with what's done and what's
 left (resume with --from <step>; every step can run again):
 
-  preconditions  a clean tree, HEAD = origin/next, a green Checks run on that commit (its push or one started by hand),
-                 the new version above VERSION, CHANGELOG.md's Unreleased section, the Play notes
+  preconditions  a clean tree, HEAD = origin/next, its Checks run green or still running (not awaited: the version
+                 commit's run covers it; a failed one stops), the new version above VERSION, CHANGELOG.md's Unreleased section, the Play notes
                  (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
                  characters), no tag yet, the keys and gh
   version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md), CHANGELOG's Unreleased → the
@@ -20,10 +20,12 @@ left (resume with --from <step>; every step can run again):
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
                  play-bundle.sh, mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized inside, writes
                  docs/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate). ./gradlew check and swift test
-                 aren't repeated: the green Checks run on this exact commit ran them.
-  github         the Checks run on next green; main fast-forwarded, tag v<version>, the GitHub release (prerelease while
-                 0.x) with the APK, the Android mapping, the dmg and the zip, notes from the CHANGELOG entry; Checks on
-                 main green
+                 aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
+                 commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
+  github         the release commit's Checks run green (its push or one started by hand, any branch; the one wait for
+                 CI); main fast-forwarded, tag v<version>, the GitHub release (prerelease while 0.x) with the APK, the
+                 Android mapping, the dmg and the zip, notes from the CHANGELOG entry. main's own run isn't awaited:
+                 the commit's green run is what it finds (tools/ci/changes.py)
   sparkle        docs/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
                  at https://sukrara.mauri.app/appcast.xml serves the item
   homebrew       the tap's workflow committed the cask for this version (the dmg's sha256)
@@ -339,9 +341,12 @@ class Release:
         out = self.sh(["gh"] + args, mutate=False)
         return json.loads(out) if out else None
 
-    def checks_state(self, sha, branch, workflow="checks.yml"):
-        runs = commit_runs(self.gh_json(["run", "list", "-R", REPO, "--workflow", workflow, "--commit", sha, "--branch",
-                                         branch, "--json", "event,status,conclusion,url", "-L", "20"]) or [])
+    def checks_state(self, sha, branch=None, workflow="checks.yml"):
+        """The state of `workflow`'s runs on commit `sha`: on any branch (a commit is the same tree wherever it was
+        pushed), or on `branch` only (Pages deploys from main)."""
+        where = ["--branch", branch] if branch else []
+        runs = commit_runs(self.gh_json(["run", "list", "-R", REPO, "--workflow", workflow, "--commit", sha] + where
+                                        + ["--json", "event,status,conclusion,url", "-L", "20"]) or [])
         state = pick_run(runs)  # one green run is enough: a stuck or failed-to-start one beside it doesn't count
         if state == "failure":
             return "failure (%s)" % ", ".join(r.get("url", "") for r in runs)
@@ -431,8 +436,12 @@ class Release:
         key, issuer = stores.asc_key_paths()
         self.ok(bool(key and issuer), "no App Store Connect API key / issuer (~/.apple-dev)")
         self.sh(["gh", "auth", "status"], mutate=False)
-        state = self.checks_state(sha, "next")
-        self.ok(state == "success", "the Checks run on %s (next) is %s, not green" % (sha[:8], state))
+        # Not awaited here: the version commit's run (awaited in github) covers every change since the newest green
+        # commit (tools/ci/changes.py), this one's included. Only a run that already failed stops the release.
+        state = self.checks_state(sha)
+        self.ok(state in ("success", "pending"), "the Checks run on %s is %s" % (sha[:8], state))
+        if state == "pending":
+            print("  Checks on %s still running: the version commit's run covers it" % sha[:8])
 
     def version(self):
         current = self.read("VERSION").strip()
@@ -497,7 +506,7 @@ class Release:
         sha = self.head()
         self.ok(self.read("VERSION").strip() == self.v or (self.dry and self.changelog is not None),
                 "VERSION isn't %s: check out the release commit" % self.v)
-        self.wait("Checks on next (%s)" % sha[:8], lambda: self.checks_state(sha, "next"), 150 * 60)
+        self.wait("Checks on %s" % sha[:8], lambda: self.checks_state(sha), 150 * 60)
         self.check_dmg_is_the_signed_one()
         files = artifacts(self.v)
         for rel in files.values():
@@ -536,7 +545,8 @@ class Release:
                     self.sh(["gh", "release", "upload", "v" + self.v, "-R", REPO, self.path(rel)])
                 elif assets[name].get("digest") and assets[name]["digest"] != want:
                     raise Stop("the release's %s isn't the local file (%s)" % (name, assets[name]["digest"]))
-        self.wait("Checks on main (%s)" % sha[:8], lambda: self.checks_state(sha, "main"), 150 * 60)
+        # No second wait on main: main now points at the commit whose run is green above, and that run is what main's
+        # own run finds (tools/ci/changes.py: an already green commit needs nothing again).
 
     def sparkle(self):
         item = appcast_item(self.read("docs/appcast.xml"), self.v)
