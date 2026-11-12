@@ -621,11 +621,12 @@ open testing at once, with no *Apply for production* step) and no new fee.
   requirements apply); Full-screen intent and Exact alarms (both *Alarm clock*); internal testing release 0.13.0
   (versionCode 13000, tester list *Testers*: the Console account; opt-in link
   https://play.google.com/apps/internaltest/4700763397995090600; the owner uploaded the `.aab` by hand; signing
-  certificate `27:EC:21:…:8D:96`). The store listing en-US + es-ES is filled in but saved as a **draft** only.
+  certificate `27:EC:21:…:8D:96`). The store listing en-US + es-ES is filled in and saved (2026-11-12, AI asset
+  declaration *Don't label assets*).
 - **Still open** ([#142](https://github.com/mauriciabad/sukrara/issues/142)): Data safety (a draft, the premise
   disputed: [Data safety](#google-play-data-safety-health-apps-and-permission-declarations-drafts)), the foreground
   service declaration (needs the video, [#185](https://github.com/mauriciabad/sukrara/issues/185)), the Health Connect
-  declaration (hasn't appeared), the listing's AI asset answer, then *Send changes for review*:
+  declaration (hasn't appeared), then *Send changes for review*:
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
 
 ### Google Play: reviewer access (App access)
@@ -1117,10 +1118,11 @@ It names the status bar feature briefly as a user-facing feature and never the m
 declarations above say how it works. No dosing language (no *Take insulin*): Sukrara isn't a dosing aid.
 
 **State (2026-11-12)**: everything below is filled in for en-US and es-ES (name, short and full description, icon,
-feature graphic, the 8 phone screenshots per language in order) and saved as a **draft** only. On 2026-11-12 the
+feature graphic, the 8 phone screenshots per language in order) and saved. On 2026-11-12 the
 owner rewrote the short and full description in their own voice (with the DIY disclaimer); the texts below are that
 version with its spelling and grammar fixed, and its es-ES translation, both entered and saved the same day. The
-Review step asks an **AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*), still unanswered.
+Review step's **AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*) is
+answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 
 | Field | en-US | es-ES |
 |---|---|---|
@@ -1294,21 +1296,20 @@ Done 2026-11-11: App access (*No, no part of the app is restricted*), Target aud
 Privacy policy, Health apps, the store listing en-US + es-ES (draft), internal testing (release 0.13.0, versionCode
 13000, *Available to internal testers*, not reviewed; opt-in link
 https://play.google.com/apps/internaltest/4700763397995090600), the full-screen intent and exact alarm declarations.
+Done 2026-11-12: the store listing's new text (en-US + es-ES), its AI asset declaration (*Don't label assets*), saved.
 
 Left, in order:
 
-1. **Store presence › Main store listing**: answer the **AI asset declaration** in the Review step, then *Save* (the
-   listing is a draft until then).
-2. **App content › Data safety**: settle the open premise. The definitions, flow by flow, and the recommended *No*
+1. **App content › Data safety**: settle the open premise. The definitions, flow by flow, and the recommended *No*
    (with this draft as the fallback) are in
    [Privacy answers for both stores](#privacy-answers-for-both-stores-drafts-2026-11-11). Then *Submit*. It's required
    before any review.
-3. **The video** ([#185](https://github.com/mauriciabad/sukrara/issues/185), recorded on the owner's phone), uploaded
+2. **The video** ([#185](https://github.com/mauriciabad/sukrara/issues/185), recorded on the owner's phone), uploaded
    to YouTube as *Unlisted* (check it plays signed out); then **App content › Foreground service permissions**
    (`connectedDevice`): *Continuous data transfer to an external device* or *Other* with
    [the description](#google-play-data-safety-health-apps-and-permission-declarations-drafts), and the link. Save.
-4. **Health Connect** declaration, if it appears: [the text above](#google-play-data-safety-health-apps-and-permission-declarations-drafts).
-5. **Publishing overview**: *Send changes for review*. Answer any question from Play truthfully (root and LSPosed: the
+3. **Health Connect** declaration, if it appears: [the text above](#google-play-data-safety-health-apps-and-permission-declarations-drafts).
+4. **Publishing overview**: *Send changes for review*. Answer any question from Play truthfully (root and LSPosed: the
    text above).
 6. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
    replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
