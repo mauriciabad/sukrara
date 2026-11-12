@@ -432,9 +432,17 @@ Back up `~/.apple-dev` (both new keys, certificates and profiles) to the passwor
 
 1. **Export compliance** of the build (TestFlight › the build › *Manage*): *Standard encryption algorithms instead
    of, or in addition to, Apple's* (NIP-44: secp256k1, ChaCha20, HMAC-SHA256; TLS), none proprietary; then *Is your
-   app going to be available for distribution in France?*, the owner's call (yes asks for the ANSSI declaration;
-   its French documents and form answers are in [docs/anssi/](anssi/formulaire.md)).
-   Until it's answered the build shows *Missing Compliance* and can't be installed.
+   app going to be available for distribution in France?*: **No** until ANSSI's certificate is uploaded (yes blocks the
+   build until then). Until it's answered the build shows *Missing Compliance* and can't be installed.
+
+   **France (ANSSI)**: French law requires a declaration to ANSSI for supplying encryption software in France, and
+   Apple asks for its certificate before the App Store can list Sukrara in France. Filed by the owner on 2026-11-12 on
+   demarche.numerique.gouv.fr (file 35378242, "Déclaration relative à un moyen de cryptologie", as an individual; the
+   brochures and form answers are in git history, commit 26365c80). Next: the certificate ("attestation de
+   déclaration") arrives by email, the owner uploads it in App Store Connect › App Information › *App Encryption
+   Documentation*; Apple then gives an `ITSEncryptionExportComplianceCode`, which goes into the App Store build's
+   Info.plist together with `ITSAppUsesNonExemptEncryption` YES, and France is added in Pricing and Availability.
+   A new kind of encryption in the apps needs a new declaration.
 2. **Install from TestFlight** (the TestFlight app on the Mac): first quit Sukrara (TestFlight replaces
    `/Applications/Sukrara.app`, the GitHub version) and delete `~/Library/Containers/app.mauri.sukrara`, which only
    holds the agents' offline smoke runs. QA Q6, Q8 and Q22 on it; `tools/install.sh mac` goes back to the GitHub
