@@ -4,6 +4,11 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
 
 ## Unreleased
 
+- **Add treatment (Android) looks like the earlier app again** (#181): each field's label carries its chart marker and
+  stays on the outline, so the dialog no longer jumps in height when you move between fields; the time is a chip next
+  to the title; over the lock screen *Unlock* sits where *Open Sukrara* does, without the extra countdown line, and the
+  dialog now closes unsaved after 10 s by default (was 20 s; Settings › Lock screen › *Time to save*).
+
 ## 0.14.2 — Android alerts show again (GitHub prerelease)
 
 - **Android alerts are posted again** (release builds): resource shrinking removed the alert and mute texts the app

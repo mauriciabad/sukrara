@@ -94,7 +94,7 @@ object SettingsSpec {
     val PEN_MATCH_UNITS = NumberSpec("penMatchUnits", "u", 0.0, 5.0, 0.5, 0.5, 1.0, 1, listOf(0.5, 1.0, 2.0), 1.0, mapOf(), true, 0)
     val PEN_MATCH_SHARE = NumberSpec("penMatchShare", "%", 0.0, 50.0, 5.0, 5.0, 1.0, 0, listOf(10.0, 25.0, 50.0), 25.0, mapOf(), true, 0)
     val PEN_OFFER = NumberSpec("penOffer", "h", 1.0, 72.0, 1.0, 1.0, 1.0, 0, listOf(6.0, 12.0, 24.0, 48.0), 24.0, mapOf(), true, 0)
-    val LOCK_TREATMENT_TIME = NumberSpec("lockTreatmentTime", "s", 10.0, 120.0, 5.0, 5.0, 1.0, 0, listOf(10.0, 20.0, 30.0, 60.0), 20.0, mapOf(), true, 0)
+    val LOCK_TREATMENT_TIME = NumberSpec("lockTreatmentTime", "s", 10.0, 120.0, 5.0, 5.0, 1.0, 0, listOf(10.0, 20.0, 30.0, 60.0), 10.0, mapOf(), true, 0)
     val THRESHOLD_NO_DATA = NumberSpec("thresholdNoData", "min", 5.0, 240.0, 1.0, 5.0, 1.0, 0, listOf(10.0, 15.0, 20.0, 30.0, 60.0), 20.0, mapOf(), true, 0)
     val ALERT_REPEAT = NumberSpec("alertRepeat", "min", 1.0, 240.0, 1.0, 5.0, 1.0, 0, listOf(0.0, 5.0, 10.0, 15.0, 30.0, 60.0, 120.0), 5.0, mapOf(0.0 to "once"), true, 0)
     val MUTE_INSULIN = NumberSpec("muteInsulin", "min", 10.0, 360.0, 1.0, 15.0, 1.0, 0, listOf(30.0, 45.0, 60.0, 90.0, 120.0, 180.0), 60.0, mapOf(), true, 0)

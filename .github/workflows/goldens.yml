@@ -1,7 +1,8 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Records the Android Roborazzi goldens (:core:graph, :widgets, :monitor, :pen, :feature:sharing's Share with someone → src/test/snapshots) on the same runner image that
+# Records the Android Roborazzi goldens (:core:graph, :widgets, :monitor, :pen, :feature:sharing's Share with someone,
+# :feature:treatments' Add treatment dialog → src/test/snapshots) on the same runner image that
 # verifies them in checks.yml, commits them to the branch it was dispatched on and re-runs Checks there.
 # Robolectric's native graphics draw text and alpha blends a little differently on macOS and Linux, so goldens
 # recorded on a Mac fail CI (Roborazzi's FAQ: record and verify in the same environment). A Mac recording is never
@@ -33,10 +34,14 @@ jobs:
       - name: Record the Share with someone goldens
         working-directory: apps/android
         run: ./gradlew --no-daemon :feature:sharing:testDebugUnitTest --tests '*ShareScreenGoldenTest' -Proborazzi.test.record=true
+      # :feature:treatments' other screenshot tests are review galleries too: only the Add treatment dialog's goldens (#181)
+      - name: Record the Add treatment dialog goldens
+        working-directory: apps/android
+        run: ./gradlew --no-daemon :feature:treatments:testDebugUnitTest --tests '*TreatmentDialogGoldenTest' -Proborazzi.test.record=true
       - name: Commit them to the branch
         id: commit
         run: |
-          git add -A apps/android/core/graph/src/test/snapshots apps/android/widgets/src/test/snapshots apps/android/monitor/src/test/snapshots apps/android/pen/src/test/snapshots apps/android/feature/sharing/src/test/snapshots
+          git add -A apps/android/core/graph/src/test/snapshots apps/android/widgets/src/test/snapshots apps/android/monitor/src/test/snapshots apps/android/pen/src/test/snapshots apps/android/feature/sharing/src/test/snapshots apps/android/feature/treatments/src/test/snapshots
           if git diff --cached --quiet; then echo "goldens unchanged"; echo "pushed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git status --short
           git config user.name "github-actions[bot]"

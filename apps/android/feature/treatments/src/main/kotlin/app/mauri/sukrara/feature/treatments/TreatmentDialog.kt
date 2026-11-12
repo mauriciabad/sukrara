@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -13,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,8 +30,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +49,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -58,7 +67,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -67,6 +80,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -74,22 +88,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
+import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
+import app.mauri.sukrara.graph.TreatmentMarks
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
 /**
  * What the form holds while the person types: the three amounts and the note as typed (after the input filters)
- * and when the entries happen ([at] null = now, resolved when saving).
+ * and when the entries happen ([at] null = now, resolved when saving). The fields edit [rapidText] & co. directly
+ * (Material's state-based text field: the only one whose label can stay on the outline, so nothing floats); [rapid]
+ * & co. read and replace that text.
  */
 @Stable
 class TreatmentFormState(
@@ -102,10 +122,23 @@ class TreatmentFormState(
     /** Editing one stored entry of this kind (home's list): one amount field and its note, one entry; null = adding. */
     val editing: TreatmentKind? = null,
 ) {
-    var rapid by mutableStateOf(rapid)
-    var long by mutableStateOf(long)
-    var carbs by mutableStateOf(carbs)
-    var note by mutableStateOf(note)
+    internal val rapidText = TextFieldState(rapid)
+    internal val longText = TextFieldState(long)
+    internal val carbsText = TextFieldState(carbs)
+    internal val noteText = TextFieldState(note)
+
+    var rapid: String
+        get() = rapidText.text.toString()
+        set(value) = rapidText.put(value)
+    var long: String
+        get() = longText.text.toString()
+        set(value) = longText.put(value)
+    var carbs: String
+        get() = carbsText.text.toString()
+        set(value) = carbsText.put(value)
+    var note: String
+        get() = noteText.text.toString()
+        set(value) = noteText.put(value)
     var at by mutableStateOf(at)
 
     /** Minutes before the moment of saving (the *Minutes ago* mode) instead of [at]; null = not relative. */
@@ -169,6 +202,11 @@ class TreatmentFormState(
     }
 }
 
+/** Replaces the text (cursor at the end) only when it differs, so a field being typed in keeps its cursor. */
+private fun TextFieldState.put(value: String) {
+    if (text.toString() != value) setTextAndPlaceCursorAtEnd(value)
+}
+
 /** The form, kept through a rotation; [at] = *When* to start with (a pen read's injection), else now. */
 @Composable
 fun rememberTreatmentFormState(at: Instant? = null): TreatmentFormState =
@@ -202,15 +240,18 @@ data class DraftLine(
 
 /**
  * Add insulin, carbs and a note in one go: rapid, long-acting and carbs side by side, a note below, all optional;
- * each filled field becomes its own entry at the chosen time (default now). Laid out like an M3 basic dialog (28 dp
- * corners, surface-container-high, 24 dp padding, confirming action last). The first field is focused so the number
- * pad is up at once — Carbs instead when [focusCarbs] (a low is going on), Long-acting when [focusLong] (a rapid pen's
- * dose was just read). Next walks the fields, Done saves.
+ * each filled field becomes its own entry at the chosen time (default now). The PoC's dialog (#181: the owner's
+ * reference): an M3 basic dialog (28 dp corners, surface-container-high, 24 dp padding, confirming action last) with
+ * the title and the *When* chip on one line, each field's label marked with its kind's chart marker, and the start
+ * action (*Open Sukrara* / *Unlock*) apart from *Cancel* and *Save*. The first field is focused so the number pad is up
+ * at once — Carbs instead when [focusCarbs] (a low is going on), Long-acting when [focusLong] (a rapid pen's dose was
+ * just read). Next walks the fields, Done saves.
  *
  * [onOpenApp] adds *Open Sukrara* (the quick dialog, where a tap no longer opens the app); [lock] shows the
- * lock-screen countdown with *Unlock*; [draft] says the form holds what a countdown kept, with *Discard*; [penLine] is
- * the pen's line under the fields (reading a pen into the dialog). Editing one entry ([TreatmentFormState.editing]):
- * that kind's field only, its note and its time, under *Edit carbs* / … .
+ * lock-screen countdown (the ring on *Cancel*) with *Unlock* in *Open Sukrara*'s place; [draft] says the form holds
+ * what a countdown kept, with *Discard*; [penLine] is the pen's line under the fields (reading a pen into the dialog).
+ * Editing one entry ([TreatmentFormState.editing]): that kind's field only, its note and its time, under *Edit carbs*
+ * / … .
  */
 @Composable
 fun TreatmentDialogContent(
@@ -256,13 +297,22 @@ fun TreatmentDialogContent(
     }
 
     Surface(
-        modifier = modifier.widthIn(min = 280.dp, max = 560.dp).testTag("treatment-dialog"),
+        modifier = modifier.widthIn(min = 280.dp, max = 560.dp).fillMaxWidth().testTag("treatment-dialog"),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 6.dp,
     ) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(stringResource(editTitle(form.editing)), style = MaterialTheme.typography.headlineSmall)
+        // optional lines (draft, quiet, limits) carry their own top gap inside their reveal, so they slide in and out
+        // without a gap that jumps
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(editTitle(form.editing)),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                Spacer(Modifier.width(8.dp))
+                WhenChip(form, zone, now, onPick = { picking = true })
+            }
             DraftRow(draft, zone)
             // side by side; stacked at large font sizes so labels and units never truncate. Editing: its kind's field
             // only (a note has none)
@@ -271,65 +321,66 @@ fun TreatmentDialogContent(
             val fields: @Composable (Modifier) -> Unit = { fieldModifier ->
                 if (TreatmentKind.RapidInsulin in shown) {
                     AmountField(
-                        form.rapid,
-                        { form.rapid = it },
+                        form.rapidText,
+                        "rapid",
                         R.string.treatment_rapid,
-                        R.string.treatment_unit_u,
-                        fieldModifier.focusRequester(first),
+                        fieldModifier.focusRequester(first).testTag("treatment-rapid"),
                     )
                 }
                 if (TreatmentKind.LongInsulin in shown) {
                     AmountField(
-                        form.long,
-                        { form.long = it },
+                        form.longText,
+                        "long",
                         R.string.treatment_long,
-                        R.string.treatment_unit_u,
-                        fieldModifier.focusRequester(longFocus),
+                        fieldModifier.focusRequester(longFocus).testTag("treatment-long"),
                     )
                 }
                 if (TreatmentKind.Carbs in shown) {
-                    AmountField(form.carbs, {
-                        form.carbs = it
-                    }, R.string.treatment_carbs, R.string.treatment_unit_g, fieldModifier.focusRequester(carbsFocus))
+                    AmountField(
+                        form.carbsText,
+                        "carbs",
+                        R.string.treatment_carbs,
+                        fieldModifier.focusRequester(carbsFocus).testTag("treatment-carbs"),
+                    )
                 }
             }
-            if (form.editing == TreatmentKind.Note) {
-                Unit
-            } else if (stacked || form.editing != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { fields(Modifier.fillMaxWidth()) }
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { fields(Modifier.weight(1f)) }
+            if (form.editing != TreatmentKind.Note) {
+                Spacer(Modifier.height(GAP))
+                if (stacked || form.editing != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { fields(Modifier.fillMaxWidth()) }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { fields(Modifier.weight(1f)) }
+                }
             }
-            OutlinedTextField(
-                value = form.note,
-                onValueChange = { form.note = TreatmentForm.clip(it, TreatmentForm.NOTE_BYTES) },
-                label = { Text(stringResource(R.string.treatment_note)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { save() }),
-                modifier = Modifier.fillMaxWidth().focusRequester(noteFocus),
-            )
-            if (entries == null) {
+            Spacer(Modifier.height(GAP))
+            NoteField(form, onDone = { save() }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus).testTag("treatment-note"))
+            penLine?.let { line -> Box(Modifier.padding(top = GAP)) { line() } }
+            QuietLine(form, quiet, now)
+            Reveal(entries == null) {
                 Text(
                     stringResource(R.string.treatment_limits, TreatmentForm.MAX_UNITS.toInt(), TreatmentForm.MAX_GRAMS.toInt()),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("treatment-limits"),
+                    modifier = Modifier.padding(top = GAP).semantics { liveRegion = LiveRegionMode.Polite }.testTag("treatment-limits"),
                 )
             }
-            penLine?.invoke()
-            QuietLine(form, quiet, now)
-            WhenRow(form, zone, now, onPick = { picking = true })
-            if (lock != null) {
-                LockRow(lock)
-                LockAnnouncement(lock.announce)
-            }
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, androidx.compose.ui.Alignment.End)) {
-                if (onOpenApp != null) TextButton(onClick = onOpenApp) { Text(stringResource(R.string.treatment_open_app)) }
-                CountdownCancel(lock, onCancel)
-                Button(onClick = save, enabled = form.canSave, modifier = Modifier.testTag("treatment-save")) {
-                    Text(stringResource(R.string.treatment_save))
+            Spacer(Modifier.height(GAP))
+            Box {
+                DialogActionRow(
+                    start =
+                        if (onOpenApp == null && lock == null) {
+                            null
+                        } else {
+                            { StartAction(lock, onOpenApp) }
+                        },
+                ) {
+                    CountdownCancel(lock, onCancel)
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = save, enabled = form.canSave, modifier = Modifier.testTag("treatment-save")) {
+                        Text(stringResource(R.string.treatment_save))
+                    }
                 }
+                if (lock != null) LockAnnouncement(lock.announce)
             }
         }
     }
@@ -356,7 +407,7 @@ private fun DraftRow(
     if (draft != null) last = draft
     Reveal(draft != null) {
         val shown = last ?: return@Reveal
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("treatment-draft")) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = GAP).testTag("treatment-draft")) {
             Text(
                 stringResource(R.string.treatment_draft_line, ClockText.time(shown.keptAt.epochSecond, zone = zone)),
                 style = MaterialTheme.typography.bodyMedium,
@@ -371,55 +422,137 @@ private fun DraftRow(
     }
 }
 
+/**
+ * One amount (the PoC's field, #181): the label always sits small on the outline (never inside the empty field) with
+ * the kind's marker, the unit shows throughout and the digits are large. A label floating up and down resized the
+ * field and the dialog while it moved (`TreatmentDialogHeightTest`); this way nothing moves when the focus does.
+ */
 @Composable
 private fun AmountField(
-    value: String,
-    onValue: (String) -> Unit,
+    state: TextFieldState,
+    kind: String,
     label: Int,
-    unit: Int,
     modifier: Modifier = Modifier,
 ) {
-    val invalid = TreatmentForm.parse(value, grams = unit == R.string.treatment_unit_g) == TreatmentForm.Amount.Invalid
+    val grams = kind == "carbs"
+    val invalid = TreatmentForm.parse(state.text.toString(), grams) == TreatmentForm.Amount.Invalid
     OutlinedTextField(
-        value = value,
-        onValueChange = { onValue(TreatmentForm.filterAmount(it)) },
-        label = { Text(stringResource(label), maxLines = 1) },
-        suffix = { Text(stringResource(unit)) },
-        isError = invalid,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+        state = state,
         modifier = modifier,
+        inputTransformation = AmountInput,
+        textStyle = MaterialTheme.typography.titleLarge,
+        labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
+        label = { KindLabel(kind, stringResource(label)) },
+        suffix = { Text(stringResource(if (grams) R.string.treatment_unit_g else R.string.treatment_unit_u)) },
+        isError = invalid,
+        lineLimits = TextFieldLineLimits.SingleLine,
+        // whole grams: the plain number pad; insulin has a decimal mark
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = if (grams) KeyboardType.Number else KeyboardType.Decimal,
+                imeAction = ImeAction.Next,
+            ),
     )
 }
 
+/** Keeps what [TreatmentForm.filterAmount] keeps of an edit. */
+private val AmountInput =
+    InputTransformation {
+        val typed = toString()
+        val kept = TreatmentForm.filterAmount(typed)
+        if (kept != typed) replace(0, length, kept)
+    }
+
+/**
+ * The note: one line of text that wraps up to three lines (a hardware Enter types a space), the note marker in its
+ * label (always on the outline, like the amounts'), an example while it's empty, the byte count from 20 bytes before
+ * the limit. Done saves.
+ */
 @Composable
-private fun WhenRow(
+private fun NoteField(
+    form: TreatmentFormState,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val bytes = form.note.toByteArray().size
+    OutlinedTextField(
+        state = form.noteText,
+        modifier = modifier,
+        inputTransformation = NoteInput,
+        // on the outline like the amounts' labels: a label sinking back into the empty note resized the dialog too
+        labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
+        label = { KindLabel("note", stringResource(R.string.treatment_note)) },
+        placeholder = { Text(stringResource(R.string.treatment_note_placeholder), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        supportingText =
+            if (bytes > TreatmentForm.NOTE_BYTES - NOTE_COUNT_FROM) {
+                { Text(stringResource(R.string.treatment_note_count, bytes, TreatmentForm.NOTE_BYTES)) }
+            } else {
+                null
+            },
+        lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 3),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+        onKeyboardAction = { onDone() },
+    )
+}
+
+/** No line breaks and at most [TreatmentForm.NOTE_BYTES] bytes. */
+private val NoteInput =
+    InputTransformation {
+        val typed = toString()
+        val kept = TreatmentForm.clip(typed.replace('\n', ' '), TreatmentForm.NOTE_BYTES)
+        if (kept != typed) replace(0, length, kept)
+    }
+
+/** A field's label: the kind's marker, then its name on one line. */
+@Composable
+private fun KindLabel(
+    kind: String,
+    text: String,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        KindMark(kind)
+        Spacer(Modifier.width(6.dp))
+        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/**
+ * The marker the charts draw for [kind] ([TreatmentMarks.marker], in its colour): rapid ▼ filled, long ▽ outlined,
+ * carbs ●, note ◆. Decoration only: the label's words say the kind.
+ */
+@Composable
+internal fun KindMark(
+    kind: String,
+    modifier: Modifier = Modifier,
+) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val color = TreatmentMarks.color(TreatmentMarks.palette(dark), kind)
+    Canvas(modifier.size(MARK_SIZE).clearAndSetSemantics { }) {
+        drawIntoCanvas { TreatmentMarks.marker(it.nativeCanvas, kind, size.width / 2, size.height / 2, size.width / 2, color) }
+    }
+}
+
+/**
+ * When the entries happen, at the end of the title line (the PoC's place and look: an M3 assist chip): *Now*,
+ * *16 min ago*, *Today 14:05* or *Yesterday 23:40*; its words cross-fade when they change. A tap opens *When?*.
+ */
+@Composable
+private fun WhenChip(
     form: TreatmentFormState,
     zone: ZoneId,
     now: () -> Instant,
     onPick: () -> Unit,
 ) {
-    val words = CardWords.of(LocalContext.current.resources)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        val relative = form.at != null || form.ago != null
-        FilterChip(
-            selected = !relative,
-            onClick = {
-                form.at = null
-                form.ago = null
-            },
-            label = { Text(stringResource(R.string.treatment_now)) },
-        )
-        FilterChip(
-            selected = relative,
-            onClick = onPick,
-            label = { Text(whenLabel(form, zone, now(), words)) },
-            modifier = Modifier.testTag("treatment-when"),
-        )
-    }
+    val label = whenLabel(form, zone, now(), CardWords.of(LocalContext.current.resources))
+    val spoken = stringResource(R.string.treatment_when_a11y, label)
+    AssistChip(
+        onClick = onPick,
+        label = { Swap(label) { Text(it, maxLines = 1) } },
+        modifier = Modifier.testTag("treatment-when").semantics { contentDescription = spoken },
+    )
 }
 
-/** The *When* chip's words: "Earlier…", "16 min ago", "At 14:05" (today) or "Yesterday 23:40". */
+/** The *When* chip's words: "Now", "16 min ago", "Today 14:05" or "Yesterday 23:40". */
 @Composable
 private fun whenLabel(
     form: TreatmentFormState,
@@ -435,11 +568,11 @@ private fun whenLabel(
         }
 
         at == null -> {
-            stringResource(R.string.treatment_earlier)
+            stringResource(R.string.treatment_now)
         }
 
         at.atZone(zone).toLocalDate() == now.atZone(zone).toLocalDate() -> {
-            stringResource(R.string.treatment_at, ClockText.time(at.epochSecond, zone = zone))
+            stringResource(R.string.treatment_today, ClockText.time(at.epochSecond, zone = zone))
         }
 
         else -> {
@@ -476,7 +609,7 @@ private fun QuietLine(
             shown,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("treatment-quiet"),
+            modifier = Modifier.padding(top = GAP).semantics { liveRegion = LiveRegionMode.Polite }.testTag("treatment-quiet"),
         )
     }
 }
@@ -497,7 +630,8 @@ private fun quietText(
 
 /**
  * TalkBack's one *Closes in 10 seconds* ([on] once the activity says it is due): a polite live region that is empty
- * until then, so it is spoken once and never per second (the Cancel button's state carries the 5 s steps).
+ * until then, so it is spoken once and never per second (the Cancel button's state carries the 5 s steps). It takes
+ * no room in the layout.
  */
 @Composable
 private fun LockAnnouncement(on: Boolean) {
@@ -510,16 +644,63 @@ private fun LockAnnouncement(on: Boolean) {
     )
 }
 
+/**
+ * The action row's start (the PoC's): *Open Sukrara*, or over the lock screen *Unlock* in its place (TalkBack: *Unlock
+ * to keep editing*); they cross-fade when the phone is unlocked with the dialog up.
+ */
 @Composable
-private fun LockRow(lock: LockInfo) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        Text(
-            stringResource(R.string.treatment_lock_closes, lock.seconds),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(onClick = lock.onUnlock) { Text(stringResource(R.string.treatment_unlock)) }
+private fun StartAction(
+    lock: LockInfo?,
+    onOpenApp: (() -> Unit)?,
+) {
+    val reduced = LocalReducedMotion.current
+    Crossfade(lock != null, animationSpec = Motion.defaultEffects(reduced), label = "unlock") { locked ->
+        if (locked) {
+            val spoken = stringResource(R.string.treatment_unlock_a11y)
+            TextButton(onClick = {
+                lock?.onUnlock?.invoke()
+            }, modifier = Modifier.semantics { contentDescription = spoken }.testTag("treatment-unlock")) {
+                Text(stringResource(R.string.treatment_unlock))
+            }
+        } else if (onOpenApp != null) {
+            TextButton(onClick = onOpenApp) { Text(stringResource(R.string.treatment_open_app)) }
+        }
+    }
+}
+
+/**
+ * The dialog's action row: [start] (*Open Sukrara* / *Unlock*) at the start, [end] (*Cancel*, *Save*) at the end. When
+ * they don't fit on one line, [start] wraps to its own start-aligned line above (M3: dialog buttons that don't fit
+ * stack; a button is never ellipsized).
+ */
+@Composable
+private fun DialogActionRow(
+    start: (@Composable () -> Unit)?,
+    end: @Composable () -> Unit,
+) {
+    Layout(
+        contents = listOf(start ?: {}, { Row(verticalAlignment = Alignment.CenterVertically) { end() } }),
+        modifier = Modifier.testTag("treatment-actions"),
+    ) { (startMeasurables, endMeasurables), c ->
+        val loose = c.copy(minWidth = 0, minHeight = 0)
+        val e = endMeasurables.first().measure(loose)
+        val st = startMeasurables.map { it.measure(loose) }
+        val sw = st.maxOfOrNull { it.width } ?: 0
+        val sh = st.maxOfOrNull { it.height } ?: 0
+        val gap = 8.dp.roundToPx()
+        val w = if (c.hasBoundedWidth) c.maxWidth else sw + gap + e.width
+        if (st.isEmpty() || sw + gap + e.width <= w) {
+            val h = maxOf(sh, e.height)
+            layout(w, h) {
+                st.forEach { it.place(0, (h - it.height) / 2) }
+                e.place(w - e.width, (h - e.height) / 2)
+            }
+        } else {
+            layout(w, sh + e.height) {
+                st.forEach { it.place(0, 0) }
+                e.place(w - e.width, sh)
+            }
+        }
     }
 }
 
@@ -732,3 +913,12 @@ private fun editTitle(kind: TreatmentKind?): Int =
 private val AGO_CHIPS = listOf(5, 15, 30, 60)
 
 private const val STACK_FONT_SCALE = 1.3f
+
+/** The gap between the dialog's parts (the PoC's). */
+private val GAP = 16.dp
+
+/** A field label's kind marker (the PoC's 10 dp). */
+private val MARK_SIZE = 10.dp
+
+/** The note's byte count shows from this many bytes before the limit. */
+private const val NOTE_COUNT_FROM = 20

@@ -67,7 +67,7 @@
     "penMatchUnits": {"unit": "u", "min": 0, "max": 5, "step": 0.5, "nudge": 0.5, "decimals": 1, "presets": [0.5, 1, 2], "default": 1},
     "penMatchShare": {"unit": "%", "min": 0, "max": 50, "step": 5, "nudge": 5, "presets": [10, 25, 50], "default": 25},
     "penOffer": {"unit": "h", "min": 1, "max": 72, "step": 1, "nudge": 1, "presets": [6, 12, 24, 48], "default": 24},
-    "lockTreatmentTime": {"unit": "s", "min": 10, "max": 120, "step": 5, "nudge": 5, "presets": [10, 20, 30, 60], "default": 20},
+    "lockTreatmentTime": {"unit": "s", "min": 10, "max": 120, "step": 5, "nudge": 5, "presets": [10, 20, 30, 60], "default": 10},
     "thresholdNoData": {"unit": "min", "min": 5, "max": 240, "step": 1, "nudge": 5, "presets": [10, 15, 20, 30, 60], "default": 20},
     "alertRepeat": {"unit": "min", "min": 1, "max": 240, "step": 1, "nudge": 5, "presets": [0, 5, 10, 15, 30, 60, 120], "default": 5, "special": {"0": "once"}},
     "muteInsulin": {"unit": "min", "min": 10, "max": 360, "step": 1, "nudge": 15, "presets": [30, 45, 60, 90, 120, 180], "default": 60},
