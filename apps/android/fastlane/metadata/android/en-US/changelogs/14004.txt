@@ -1,0 +1,2 @@
+• The low limit is 70 again: low is below 70, so 70 is in range; very low still includes 55. The chart's line reads 70.
+• A typed number saves again: OK under Custom… in range limits, alert thresholds and other number settings did nothing since 0.14.0.

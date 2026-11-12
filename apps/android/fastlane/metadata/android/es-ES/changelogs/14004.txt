@@ -1,0 +1,2 @@
+• El límite bajo vuelve a ser 70: bajo es por debajo de 70, así que 70 está en rango; muy bajo sigue incluyendo 55. La línea del gráfico marca 70.
+• Un número escrito vuelve a guardarse: Aceptar en Personalizado… de los límites, umbrales de alerta y otros ajustes numéricos no hacía nada desde 0.14.0.
