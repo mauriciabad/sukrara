@@ -1119,7 +1119,7 @@ declarations above say how it works. No dosing language (no *Take insulin*): Suk
 **State (2026-11-12)**: everything below is filled in for en-US and es-ES (name, short and full description, icon,
 feature graphic, the 8 phone screenshots per language in order) and saved as a **draft** only. On 2026-11-12 the
 owner rewrote the short and full description in their own voice (with the DIY disclaimer); the texts below are that
-version with its spelling and grammar fixed, entered for en-US, and its es-ES translation, still to be entered. The
+version with its spelling and grammar fixed, and its es-ES translation, both entered and saved the same day. The
 Review step asks an **AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*), still unanswered.
 
 | Field | en-US | es-ES |
