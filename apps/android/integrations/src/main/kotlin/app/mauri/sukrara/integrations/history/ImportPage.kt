@@ -42,6 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.model.storage.ImportSource
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
@@ -245,6 +247,7 @@ fun ImportContent(
                         stringResource(R.string.in_import_tidepool_summary, ui.tidepoolEmail)
                     },
                 enabled = !ui.running,
+                leading = { ServiceIcon(Service.Tidepool) },
                 onClickLabel = stringResource(R.string.in_import_action),
             )
         } else {
@@ -253,6 +256,7 @@ fun ImportContent(
                 actions.openTidepool,
                 summary = stringResource(R.string.in_import_tidepool_sign_in),
                 enabled = !ui.running,
+                leading = { ServiceIcon(Service.Tidepool) },
             )
         }
         ActionRow(
@@ -260,6 +264,7 @@ fun ImportContent(
             { libreView = true },
             summary = stringResource(R.string.in_import_libreview_summary),
             enabled = !ui.running,
+            leading = { ServiceIcon(Service.LibreView) },
         )
     }
     SettingsGroup(title = stringResource(R.string.in_apps_files_group)) {

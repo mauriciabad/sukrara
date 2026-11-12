@@ -25,6 +25,9 @@ Sukrara's releases. 0.x versions are previews (GitHub prereleases).
   range now counts readings at 70 and 180 outside the range. Alerts are unchanged.
 - **The Mac disk image has its own icons** (#181): the opened volume is a Sukrara drive and the `.dmg` file a disk
   image page with that drive, no longer the app's icon.
+- **App icons in Settings are back** (Android, #181): the rows for LibreView, Tidepool, Nightscout, the xDrip+ server,
+  Health Connect, Juggluco and every app glucose is sent to show that app's own icon again, as in the earlier app, and
+  Garmin Connect is listed under the xDrip+ server again.
 
 ## 0.14.1 — sharing messages handled once, the Mac keeps running when a relay drops (GitHub prerelease)
 

@@ -25,6 +25,7 @@ import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.Category
 import app.mauri.sukrara.designsystem.rows.CategoryIcon
@@ -140,12 +141,12 @@ fun SettingsOverviewContent(
                     listOf(
                         BannerChoice(
                             stringResource(R.string.st_clinic_libreview),
-                            DsR.drawable.ds_ic_service_libreview,
+                            Service.LibreView,
                             actions.openClinicUpload,
                         ),
                         BannerChoice(
                             stringResource(R.string.st_clinic_tidepool),
-                            DsR.drawable.ds_ic_service_tidepool,
+                            Service.Tidepool,
                             actions.openClinicTidepool,
                         ),
                     ),

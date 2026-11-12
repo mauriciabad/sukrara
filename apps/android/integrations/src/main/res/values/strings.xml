@@ -46,6 +46,7 @@
     <string name="in_apps_xdrip_on">On · 127.0.0.1:17580</string>
     <string name="in_apps_xdrip_busy">Another app uses port 17580 · turn its server off, then this one off and on</string>
     <string name="in_apps_xdrip_juggluco">Juggluco is the source, so Juggluco serves the watch</string>
+    <string name="in_apps_reader_summary">Through the xDrip+ server</string>
     <string name="in_apps_xdrip_read_by">read by %1$s</string>
     <string name="in_apps_xdrip_last_asked">last asked %1$s</string>
     <string name="in_apps_xdrip_not_asked">not asked yet</string>

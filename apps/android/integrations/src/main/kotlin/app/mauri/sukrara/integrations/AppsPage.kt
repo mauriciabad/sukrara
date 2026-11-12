@@ -13,6 +13,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.designsystem.icons.PackageIcon
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
@@ -41,14 +44,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** What Share with apps shows. */
 data class AppsUi(
     val wearer: Boolean,
     val xdripOn: Boolean,
     val xdrip: XdripState,
-    /** Installed apps that read the xDrip+ server (Garmin Connect), by label. */
-    val readers: List<String>,
+    /** Installed apps that read the xDrip+ server (Garmin Connect). */
+    val readers: List<ServerReader>,
     /** The Nightscout upload's state (wearer only). */
     val nightscout: UploadStatus,
     /** The LibreView upload's state (wearer only). */
@@ -78,6 +82,12 @@ class AppsActions(
     val openImport: () -> Unit = {},
 )
 
+/** An installed app that reads the xDrip+ server: its package (for its icon) and its name. */
+data class ServerReader(
+    val pkg: String,
+    val label: String,
+)
+
 /**
  * Installed apps known to read glucose from the xDrip+ server rather than broadcasts. Garmin watch apps can't open
  * sockets: Garmin Connect (or the Connect IQ app) makes the request for them. Each package is in the manifest's
@@ -92,15 +102,15 @@ object ServerReaders {
             "com.garmin.connectiq",
         )
 
-    /** The installed ones' labels (PackageManager: call off the main thread). */
-    fun installed(context: Context): List<String> {
+    /** The installed ones, by name (PackageManager: call off the main thread). */
+    fun installed(context: Context): List<ServerReader> {
         val pm = context.packageManager
         return PACKAGES
             .mapNotNull { p ->
                 runCatching { pm.getApplicationInfo(p, PackageManager.ApplicationInfoFlags.of(0)) }
                     .getOrNull()
-                    ?.let { pm.getApplicationLabel(it).toString() }
-            }.sortedBy { it.lowercase() }
+                    ?.let { ServerReader(p, pm.getApplicationLabel(it).toString()) }
+            }.sortedBy { it.label.lowercase() }
     }
 }
 
@@ -118,7 +128,7 @@ class AppsViewModel(
     context: Context,
     io: CoroutineDispatcher,
 ) : ViewModel() {
-    private val readers = MutableStateFlow<List<String>>(emptyList())
+    private val readers = MutableStateFlow<List<ServerReader>>(emptyList())
     val ui: StateFlow<AppsUi?> =
         combine(
             combine(module.wearer, module.xdrip.on, module.xdrip.state) { w, on, x -> Triple(w, on, x) },
@@ -183,7 +193,8 @@ fun AppsPage(
 
 /**
  * Settings › Share with apps: LibreView and the Nightscout upload (wearer), the xDrip+ server for Garmin watches with who reads it and
- * when it was last asked, and Export data.
+ * when it was last asked (and each installed app that reads it, with that server's switch), and Export data. Every row
+ * that stands for another app or service shows that app's icon ([ServiceIcon] / [PackageIcon]), as the PoC did.
  */
 @Composable
 fun AppsContent(
@@ -195,17 +206,48 @@ fun AppsContent(
     SettingsIntro(stringResource(if (ui.wearer) R.string.in_apps_intro_wearer else R.string.in_apps_intro_follower))
     SettingsGroup(title = stringResource(R.string.in_apps_clinic_group)) {
         if (ui.wearer) {
-            NavigationRow(stringResource(R.string.in_lv_title), actions.openLibreView, summary = libreViewStatusText(ui.libreView, now))
+            NavigationRow(
+                stringResource(R.string.in_lv_title),
+                actions.openLibreView,
+                summary = libreViewStatusText(ui.libreView, now),
+                leading = { ServiceIcon(Service.LibreView) },
+            )
         }
-        NavigationRow(stringResource(R.string.in_tp_title), actions.openTidepool, summary = tidepoolStatusText(ui.tidepool, now))
+        NavigationRow(
+            stringResource(R.string.in_tp_title),
+            actions.openTidepool,
+            summary = tidepoolStatusText(ui.tidepool, now),
+            leading = { ServiceIcon(Service.Tidepool) },
+        )
     }
     if (ui.wearer) {
         SettingsGroup(title = stringResource(R.string.in_apps_nightscout_group)) {
-            NavigationRow(stringResource(R.string.in_ns_title), actions.openNightscout, summary = uploadStatusText(ui.nightscout, now))
+            NavigationRow(
+                stringResource(R.string.in_ns_title),
+                actions.openNightscout,
+                summary = uploadStatusText(ui.nightscout, now),
+                leading = { ServiceIcon(Service.Nightscout) },
+            )
         }
     }
     SettingsGroup(title = stringResource(R.string.in_apps_watch_group)) {
-        SwitchRow(stringResource(R.string.in_apps_xdrip), ui.xdripOn, actions.setXdrip, summary = xdripSummary(ui, now))
+        SwitchRow(
+            stringResource(R.string.in_apps_xdrip),
+            ui.xdripOn,
+            actions.setXdrip,
+            summary = xdripSummary(ui, now),
+            leading = { ServiceIcon(Service.Xdrip) },
+        )
+        // where the person looks for Garmin: each installed app that reads the server, with the server's own switch
+        for (r in ui.readers) {
+            SwitchRow(
+                r.label,
+                ui.xdripOn,
+                actions.setXdrip,
+                summary = stringResource(R.string.in_apps_reader_summary),
+                leading = { PackageIcon(r.pkg) },
+            )
+        }
     }
     SettingsGroup(title = stringResource(R.string.in_apps_phone_group)) {
         if (ui.wearer) {
@@ -213,23 +255,36 @@ fun AppsContent(
                 stringResource(R.string.in_bc_title),
                 actions.openBroadcasts,
                 summary = broadcastStatusText(ui.broadcasts, ui.broadcastApps > 0, now),
+                icon = DsR.drawable.ds_ic_send,
             )
             NavigationRow(
                 stringResource(R.string.in_hc_title),
                 actions.openHealthConnect,
                 summary = healthStatusText(ui.healthConnect, now),
+                leading = { ServiceIcon(Service.HealthConnect) },
             )
         }
-        NavigationRow(stringResource(R.string.in_nsapi_title), actions.openNightscoutApi, summary = nsApiStatusText(ui.nightscoutApi, now))
+        NavigationRow(
+            stringResource(R.string.in_nsapi_title),
+            actions.openNightscoutApi,
+            summary = nsApiStatusText(ui.nightscoutApi, now),
+            leading = { ServiceIcon(Service.Nightscout) },
+        )
     }
     SettingsGroup(title = stringResource(R.string.in_apps_files_group)) {
         if (ui.wearer) {
-            NavigationRow(stringResource(R.string.in_import_title), actions.openImport, summary = importStatusText(ui.history))
+            NavigationRow(
+                stringResource(R.string.in_import_title),
+                actions.openImport,
+                summary = importStatusText(ui.history),
+                icon = DsR.drawable.ds_ic_download,
+            )
         }
         NavigationRow(
             stringResource(R.string.in_export_title),
             actions.openExport,
             summary = stringResource(R.string.in_apps_export_summary),
+            icon = DsR.drawable.ds_ic_file_export,
         )
     }
     FooterText(stringResource(R.string.in_apps_footer))
@@ -261,6 +316,6 @@ private fun xdripSummary(
                     ?: stringResource(R.string.in_apps_xdrip_not_asked)
         }
     }
-    if (ui.readers.isNotEmpty()) parts += stringResource(R.string.in_apps_xdrip_read_by, ui.readers.joinToString())
+    if (ui.readers.isNotEmpty()) parts += stringResource(R.string.in_apps_xdrip_read_by, ui.readers.joinToString { it.label })
     return parts.joinToString(" · ")
 }

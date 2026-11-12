@@ -36,6 +36,8 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -599,11 +601,14 @@ private fun SourceGroup(
         for (source in SourceChoice.entries) {
             val selected = source == current
             val juggluco = source == SourceChoice.Juggluco
+            // Juggluco's own icon (the PoC's); this phone: the phone symbol
             RadioRow(
                 stringResource(if (juggluco) R.string.st_sensor_source_juggluco else R.string.st_sensor_source_direct),
                 selected,
                 { if (!selected) onChoose(source) },
                 summary = stringResource(if (juggluco) R.string.st_sensor_source_juggluco_why else R.string.st_sensor_source_direct_why),
+                icon = DsR.drawable.ds_ic_smartphone.takeIf { !juggluco },
+                leading = if (juggluco) ({ ServiceIcon(Service.Juggluco) }) else null,
             )
         }
     }

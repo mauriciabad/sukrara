@@ -190,7 +190,8 @@ The full catalog, with every rule and number, is [docs/FEATURES.md](docs/FEATURE
   own Wi-Fi secret you can replace any time),
   **glucose broadcasts** to the apps you allow (AndroidAPS, GlucoDataHandler, xDrip+: the Libre 3 read by this phone
   only, one format per app, pinned to the app's signature), **Health Connect** (opt-in: this phone's own sensor
-  readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share.
+  readings, the last 30 days first), and **Export data** as a LibreView-layout CSV to save or share. Every app and
+  service there shows its own app icon, and Garmin Connect is listed under the xDrip+ server with its switch.
 - **Import history** (wearer; also setup's last step, *Bring your history back*): the new app starts empty and brings
   back the last 90 days from **Tidepool** (signed in), **LibreView**'s *Download glucose data* file (in whatever date
   layout your LibreView account's language and country write: day or month first, 12 or 24 hours; a file it still

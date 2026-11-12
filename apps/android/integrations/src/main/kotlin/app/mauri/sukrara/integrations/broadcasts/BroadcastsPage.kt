@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.designsystem.icons.PackageIcon
 import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -43,6 +44,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** Why an allowed app gets nothing. */
 enum class AppProblem { NotInstalled, SignerChanged }
@@ -173,9 +175,9 @@ fun BroadcastsPage(
 }
 
 /**
- * Settings › Share with apps › *Send glucose to apps*: every app on the phone that listens for glucose broadcasts, a
- * switch each (none on by default), what was last sent or why nothing is, and allowed apps that were removed or
- * changed with their way out.
+ * Settings › Share with apps › *Send glucose to apps*: every app on the phone that listens for glucose broadcasts, with
+ * its own icon and a switch each (none on by default), what was last sent or why nothing is, and allowed apps that were
+ * removed or changed with their way out.
  */
 @Composable
 fun BroadcastsContent(
@@ -187,10 +189,10 @@ fun BroadcastsContent(
     SettingsIntro(stringResource(R.string.in_bc_intro))
     if (!ui.wearer) {
         SettingsGroup {
-            InfoRow(stringResource(R.string.in_bc_follower))
+            InfoRow(stringResource(R.string.in_bc_follower), icon = DsR.drawable.ds_ic_info)
             // allowed while this phone wore the sensor: still removable here
             for (a in ui.apps.orEmpty().filter { it.allowed || it.problem != null }) {
-                ActionRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
+                ActionRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) }, leading = { PackageIcon(a.pkg) })
             }
         }
         FooterText(stringResource(R.string.in_bc_footer))
@@ -202,7 +204,13 @@ fun BroadcastsContent(
     val list = ui.apps
     if (list != null) {
         SettingsGroup(title = stringResource(R.string.in_bc_apps_group)) {
-            if (list.isEmpty()) InfoRow(stringResource(R.string.in_bc_none), summary = stringResource(R.string.in_bc_none_summary))
+            if (list.isEmpty()) {
+                InfoRow(
+                    stringResource(R.string.in_bc_none),
+                    summary = stringResource(R.string.in_bc_none_summary),
+                    icon = DsR.drawable.ds_ic_info,
+                )
+            }
             for (a in list) {
                 when (a.problem) {
                     null -> {
@@ -211,6 +219,7 @@ fun BroadcastsContent(
                             a.allowed,
                             { actions.setAllowed(a.pkg, it) },
                             summary = a.pkg + " · " + formats(a.actions),
+                            leading = { PackageIcon(a.pkg) },
                         )
                     }
 
@@ -219,9 +228,14 @@ fun BroadcastsContent(
                             a.label,
                             { reallow = a.pkg },
                             summary = stringResource(R.string.in_bc_changed, a.pkg),
+                            leading = { PackageIcon(a.pkg) },
                             onClickLabel = stringResource(R.string.in_bc_reallow_action),
                         )
-                        ActionRow(stringResource(R.string.in_bc_remove, a.label), { actions.remove(a.pkg) })
+                        ActionRow(
+                            stringResource(R.string.in_bc_remove, a.label),
+                            { actions.remove(a.pkg) },
+                            icon = DsR.drawable.ds_ic_delete,
+                        )
                     }
 
                     AppProblem.NotInstalled -> {
@@ -229,6 +243,7 @@ fun BroadcastsContent(
                             a.label,
                             { actions.remove(a.pkg) },
                             summary = stringResource(R.string.in_bc_gone),
+                            leading = { PackageIcon(a.pkg) },
                             onClickLabel = stringResource(R.string.in_bc_remove_action),
                         )
                     }

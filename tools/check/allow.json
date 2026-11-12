@@ -198,7 +198,10 @@
   },
   "queries": {
     "package:com.google.android.calendar": "open the sensor-end event in Google Calendar (:monitor, :app, :feature:settings)",
-    "package:tk.glucodata": "Juggluco: pens through Juggluco and Settings › Sensor's Open Juggluco (:pen, :feature:settings)",
+    "package:tk.glucodata": "Juggluco: pens through Juggluco, Settings › Sensor's Open Juggluco and Juggluco's own icon on its rows (:pen, :feature:settings, :core:designsystem AppIcons)",
+    "package:com.eveningoutpost.dexdrip": "xDrip+'s own icon on the xDrip+ server row when it is installed (:core:designsystem AppIcons)",
+    "package:com.google.android.healthconnect.controller": "Health Connect's own icon on its row (Google's builds; :core:designsystem AppIcons)",
+    "package:com.android.healthconnect.controller": "Health Connect's own icon on its row (AOSP builds; :core:designsystem AppIcons)",
     "package:com.garmin.android.apps.connectmobile": "Share with apps: Garmin Connect reads the xDrip+ server (:integrations)",
     "package:com.garmin.connectiq": "Share with apps: Connect IQ reads the xDrip+ server (:integrations)",
     "intent:com.eveningoutpost.dexdrip.BgEstimate": "glucose broadcasts: the apps that receive this format, listed for the person to allow (:integrations Broadcaster)",

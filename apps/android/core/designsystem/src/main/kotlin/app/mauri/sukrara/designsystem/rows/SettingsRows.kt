@@ -249,6 +249,7 @@ private fun warningText(text: String?): CharSequence? =
  * SPA's SwitchPreference: the whole row toggles (TalkBack: "switch, on"). A disabled row is greyed out and explains
  * why in [summary]. [readOnly]: a value this phone doesn't decide (a follower's mirrored setting): the switch shows it
  * at full contrast but can't be flipped (TalkBack: "switch, on, disabled"; the page says why and how to change it).
+ * [leading] replaces [icon] (an app's icon, [app.mauri.sukrara.designsystem.icons.ServiceIcon]): decorative.
  */
 @Composable
 fun SwitchRow(
@@ -260,9 +261,10 @@ fun SwitchRow(
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
     readOnly: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     val haptics = rememberHaptics()
-    val i = iconOf(icon, null)
+    val i = iconOf(icon, leading)
     RowBox(title, modifier) {
         if (readOnly) {
             SwitchPreference(switchModel(title, summary, i, checked, changeable = true, onCheckedChange = null), readOnlySwitch(checked))
@@ -454,7 +456,8 @@ fun DangerRow(
 /**
  * One option of a choice that stays on the page (two or three options that shouldn't hide behind a dialog): SPA
  * RadioPreferences' row (Radio2); the whole row selects (TalkBack: "radio button, selected"). Put the options of one
- * choice in one [SettingsGroup] with `Modifier.selectableGroup()`.
+ * choice in one [SettingsGroup] with `Modifier.selectableGroup()`. [icon] / [leading] after the radio button, as SPA
+ * draws an option's icon.
  */
 @Composable
 fun RadioRow(
@@ -464,11 +467,13 @@ fun RadioRow(
     modifier: Modifier = Modifier,
     summary: String? = null,
     enabled: Boolean = true,
+    @DrawableRes icon: Int? = null,
     leading: (@Composable () -> Unit)? = null,
 ) {
     val haptics = rememberHaptics()
+    val i = iconOf(icon, leading)
     RowBox(title, modifier) {
-        Radio2(ListPreferenceOption(id = 1, text = title, summary = summary.orEmpty(), icon = leading), if (selected) 1 else 0, enabled) {
+        Radio2(ListPreferenceOption(id = 1, text = title, summary = summary.orEmpty(), icon = i), if (selected) 1 else 0, enabled) {
             if (!selected) haptics.tick()
             onSelect()
         }

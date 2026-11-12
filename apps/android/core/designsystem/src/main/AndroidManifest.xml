@@ -2,4 +2,14 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- the apps whose real icon a row shows when they're installed (icons/AppIcons Service): Juggluco, xDrip+, Health
+         Connect (Google's and AOSP's package) -->
+    <queries>
+        <package android:name="tk.glucodata" />
+        <package android:name="com.eveningoutpost.dexdrip" />
+        <package android:name="com.google.android.healthconnect.controller" />
+        <package android:name="com.android.healthconnect.controller" />
+    </queries>
+</manifest>

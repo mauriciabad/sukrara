@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The Health Connect logo as an app icon, for when its app can't be read (normally designsystem's AppIcons loads the system
+     module's own icon). Logo: developer.android.com/static/downloads/assets/health_connect_logo.png, from the Health
+     Connect UI guidelines (developer.android.com/health-and-fitness/health-connect/ui/guidelines, "Assets"): used
+     unchanged, on white as the guidelines ask. Inset so the logo stays inside the 66 dp safe zone of the 108 dp
+     adaptive canvas. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/white"/>
+    <foreground>
+        <inset android:drawable="@drawable/ds_ic_app_health_connect_logo" android:inset="27%"/>
+    </foreground>
+</adaptive-icon>

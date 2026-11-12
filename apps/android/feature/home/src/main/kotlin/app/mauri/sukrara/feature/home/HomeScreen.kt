@@ -98,6 +98,7 @@ import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
@@ -959,12 +960,12 @@ private fun banner(
                     listOf(
                         BannerChoice(
                             stringResource(R.string.banner_clinic_libreview),
-                            DsR.drawable.ds_ic_service_libreview,
+                            Service.LibreView,
                             open(HomeAction.OpenClinicUpload),
                         ),
                         BannerChoice(
                             stringResource(R.string.banner_clinic_tidepool),
-                            DsR.drawable.ds_ic_service_tidepool,
+                            Service.Tidepool,
                             open(HomeAction.OpenTidepool),
                         ),
                     ),

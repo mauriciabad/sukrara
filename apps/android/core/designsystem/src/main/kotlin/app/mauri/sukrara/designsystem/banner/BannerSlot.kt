@@ -4,7 +4,6 @@
 package app.mauri.sukrara.designsystem.banner
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +43,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import com.android.settingslib.spa.framework.theme.SettingsDimension
@@ -52,10 +53,13 @@ import com.android.settingslib.spa.widget.banner.SettingsBanner
 import com.android.settingslib.spa.widget.banner.SettingsBannerContent
 import com.android.settingslib.spa.widget.ui.SettingsBody
 
-/** One of a banner's equal choices (*LibreView* / *Tidepool*): a pill with the service's own, untinted [icon]. */
+/**
+ * One of a banner's equal choices (*LibreView* / *Tidepool*): a pill with the [service]'s own app icon ([ServiceIcon],
+ * the size AOSP Settings draws app icons at).
+ */
 data class BannerChoice(
     val label: String,
-    @param:DrawableRes val icon: Int,
+    val service: Service,
     val onClick: () -> Unit,
 )
 
@@ -137,7 +141,7 @@ private fun TipCard(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp),
                     ) {
-                        Image(painterResource(c.icon), contentDescription = null, modifier = Modifier.size(28.dp))
+                        ServiceIcon(c.service)
                         Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
                     }
                 }
@@ -254,7 +258,7 @@ private fun SafetyCard(b: Banner) {
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp),
                         ) {
-                            Image(painterResource(c.icon), contentDescription = null, modifier = Modifier.size(28.dp))
+                            ServiceIcon(c.service)
                             Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
                         }
                     }

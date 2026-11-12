@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Juggluco's launcher icon (github.com/j-kaltes/Juggluco, GPL-3.0): its mipmap-anydpi-v26/ic_launcher.xml with the
+     same two layers, copied unchanged. Shown when Juggluco isn't installed; otherwise designsystem's AppIcons loads the app's own. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ds_ic_app_juggluco_background"/>
+    <foreground android:drawable="@drawable/ds_ic_app_juggluco_foreground"/>
+</adaptive-icon>

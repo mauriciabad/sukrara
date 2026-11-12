@@ -45,6 +45,7 @@
     <string name="in_apps_xdrip_on">Activado · 127.0.0.1:17580</string>
     <string name="in_apps_xdrip_busy">Otra app usa el puerto 17580 · desactiva su servidor y luego desactiva y activa este</string>
     <string name="in_apps_xdrip_juggluco">Juggluco es la fuente, así que Juggluco da los datos al reloj</string>
+    <string name="in_apps_reader_summary">A través del servidor de xDrip+</string>
     <string name="in_apps_xdrip_read_by">lo lee %1$s</string>
     <string name="in_apps_xdrip_last_asked">última consulta %1$s</string>
     <string name="in_apps_xdrip_not_asked">aún sin consultas</string>

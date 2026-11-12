@@ -103,7 +103,7 @@ class IntegrationsGallery {
                         true,
                         true,
                         XdripState.Listening(now - Duration.ofMinutes(2)),
-                        listOf("Garmin Connect"),
+                        listOf(ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect")),
                         configured.status,
                         UploadStatus.Ok(now - Duration.ofMinutes(1), 1),
                         broadcastApps = 2,

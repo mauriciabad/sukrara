@@ -39,6 +39,8 @@ import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.nfc.AntennaArt
 import app.mauri.sukrara.designsystem.nfc.antennaSpot
 import app.mauri.sukrara.designsystem.rows.FooterText
@@ -222,7 +224,7 @@ fun PensContent(
                     stringResource(R.string.st_pens_juggluco),
                     vm::openJuggluco,
                     summary = stringResource(R.string.st_pens_juggluco_summary),
-                    icon = DsR.drawable.ds_ic_warning,
+                    leading = { ServiceIcon(Service.Juggluco) },
                 )
             }
             if (ui.notify && ui.taps.notifyBlocked) {

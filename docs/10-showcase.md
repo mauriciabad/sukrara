@@ -1203,6 +1203,33 @@ phone* with the xDrip+ server's switch (`bridge/ServerReaders.kt`): the user had
 app); feature rows (Bluetooth, Nostr, GitHub…) keep 24 dp symbols as in AOSP. The Mac app shows no service icons
 (its settings are plain SwiftUI forms), so nothing changed there. Screenshots: `docs/img/icons/`.
 
+#### In Sukrara (apps/android, #181, 2026-11-12)
+
+The owner: "In settings we had app icons in some items. please bring all of them back." Sukrara's settings had none
+on these rows (the clinic banner's pills had two hand-made round 28 dp pictures).
+
+Added: `ui/AppIcons.kt` as `:core:designsystem` `icons/AppIcons.kt` (the same AOSP IconDrawableFactory / LauncherIcons
+port, `Service` with the six services, `ServiceIcon` / `PackageIcon` at SPA's 32 dp; a load that throws now leaves
+the place empty instead of crashing the page) and the PoC's bundled icons unchanged as `ds_ic_app_*` (the table
+above is their provenance; the files keep the source and licence notes). Every PoC place got its icon back: Share with
+apps' LibreView, Tidepool, Nightscout upload, Nightscout API, xDrip+ server, Health Connect; the apps that get glucose
+broadcasts (now on *Send glucose to apps*, also the changed, uninstalled and follower's *Remove* rows); Garmin Connect /
+Connect IQ as rows under the xDrip+ server with its switch (Sukrara had only "read by Garmin Connect" in the server's
+summary, so the row the owner had looked for was gone too); Juggluco on Settings › Sensor's *Reading source* (the
+other option the phone symbol, as in the PoC) and on Insulin pens' *Juggluco also reads pens* (instead of a warning
+symbol); the clinic banner's pills on home and the Settings overview. New against the PoC: Import history's
+*Tidepool* and *LibreView* rows (the PoC had no import page), and symbols on the rows next to them that had none
+(*Send glucose to apps*, *Import history*, *Export data*), so the titles line up. The manifest's `<queries>` name
+Juggluco, xDrip+ and both Health Connect packages (allow.json, `ManifestTest`). The PoC's `AppIconsTest` is ported
+(bundled icons are adaptive or 48 dp legacy, drawn at 32 dp, no other icon loader anywhere in the app's main sources);
+its source-text row check became `ServiceRowsTest` (:integrations) and `ServiceIconRowsTest` (:feature:settings),
+which find each row and its icon on the drawn page.
+
+Left out: the service icon inside a service's own page (the Health Connect and Nightscout API pages' switches): the
+PoC had those switches on the Share with apps list, where the icon now is on the row that opens the page, and no
+service page of the PoC repeated it. Discarded: `ds_ic_service_libreview` / `_tidepool` (the hand-cropped pictures,
+superseded by `ServiceIcon`).
+
 ## Insulin pens (investigation 29)
 
 Tap a NovoPen Echo Plus (NovoPen 6 untested) on the wearer's unlocked phone, from any app: its injections are logged at
