@@ -284,7 +284,8 @@ class UpdateModule(
 
     /**
      * The new version's first broadcast (`MY_PACKAGE_REPLACED`; `:monitor` starts monitoring from the same one): the
-     * download goes, the notification too; after an automatic update it says which version is running now.
+     * download goes, the notification too; after an automatic update it says which version is running now. That
+     * notification is posted before the pending install is cleared, as in show(): whoever sees it cleared finds it.
      */
     suspend fun onReplaced() {
         dir().deleteRecursively()
@@ -293,8 +294,8 @@ class UpdateModule(
             ports.record.data
                 .first()
                 .pending ?: return
-        ports.record.update { it.copy(pending = null) }
         if (pending.automatic && pending.version == ports.installed) notifier.updated(pending.model())
+        ports.record.update { it.copy(pending = null) }
     }
 
     private suspend fun fetch(): Result<Release?> =

@@ -46,6 +46,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * The updater (#188) against a local release server: the daily check and its notification, automatic installs, the
@@ -61,7 +62,9 @@ class UpdateModuleTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val settings = InMemorySettingsRepository()
     private val record = InMemoryStateStore(UpdateRecord())
-    private val posted = mutableListOf<Notification>()
+
+    // the receiver posts from its own thread (Dispatchers.Default) while the test reads
+    private val posted: MutableList<Notification> = CopyOnWriteArrayList()
     private var cancelled = 0
     private var hold = AlertHold()
 
