@@ -109,11 +109,13 @@ import Testing
                 #expect(t.format == format, "\(t.id)")
                 #expect(t.value as? Double == format.default, "\(t.id)")
             }
-            if let b = Self.bool(row["default"]) {
+            // the Mac's own default where the schema gives one, else the row's
+            let schemaDefault = (row["mac"] as? [String: Any])?["default"] ?? row["default"]
+            if let b = Self.bool(schemaDefault) {
                 #expect(t.value as? Bool == b, "\(t.id)")
-            } else if let s = row["default"] as? String {
+            } else if let s = schemaDefault as? String {
                 #expect(t.value as? String == s, "\(t.id)")
-            } else if let list = row["default"] as? [Double] {
+            } else if let list = schemaDefault as? [Double] {
                 #expect(t.value as? String == list.map { String(Int($0)) }.joined(separator: ","), "\(t.id)")
             }
             if let values = row["values"] as? [String], let v = t.value as? String {

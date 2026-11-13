@@ -35,9 +35,12 @@ class AppGraphTest {
             graph.settingsUi,
             graph.sensorUi,
             graph.home,
+            graph.setup,
             graph.treatments,
             graph.widgets,
         ).forEach { checkNotNull(it) }
+        // the GitHub build's update suggestion (setup's step, home's banner) builds with them; none in the Play build
+        graph.updateSuggestion
     }
 
     @Test fun homeAndSettingsShowTheSameAlertChecklist() {

@@ -111,4 +111,19 @@ class BannerSlotTest {
         // a kind this build no longer has isn't counted
         assertEquals(0, BannerMemory(mapOf("Gone" to 1L)).closed)
     }
+
+    @Test fun `the updates suggestion comes after finish setup and before the other tips, and stays closed`() {
+        val env = everything.copy(updateChecksOff = true)
+        assertEquals(BannerKind.FinishSetup, pick(env = env))
+        val noSetup = env.copy(nextSetupStep = null)
+        assertEquals(BannerKind.TurnOnUpdates, pick(env = noSetup))
+        // on, or no updater in this build (Google Play: null): never
+        assertEquals(BannerKind.NotBackedUp, pick(env = noSetup.copy(updateChecksOff = false)))
+        assertEquals(BannerKind.NotBackedUp, pick(env = noSetup.copy(updateChecksOff = null)))
+        // Not now: closed for good (no day like Finish setup's Later), counted among the closed tips
+        val closed = BannerMemory().dismiss(BannerKind.TurnOnUpdates, NOW)
+        assertEquals(BannerKind.NotBackedUp, pick(env = noSetup, memory = closed, at = NOW.plus(Duration.ofDays(365))))
+        assertEquals(1, closed.closed)
+        assertEquals(BannerKind.TurnOnUpdates, pick(env = noSetup, memory = closed.restoreAll()))
+    }
 }

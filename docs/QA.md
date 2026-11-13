@@ -799,7 +799,20 @@ adb -s emulator-5584 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceive
 ```
 
 The command ends the app; open it again: with a test server it checks once at start (otherwise an hour after start,
-then daily). `SYNTHETIC --ez on true` for monitoring; `--ei cycle 135` brings a low (an alert), `--ei cycle 0` ends it.
+then daily), but only once *Check for updates automatically* is on (opt-in: off as installed). `SYNTHETIC --ez on true`
+for monitoring; `--ei cycle 135` brings a low (an alert), `--ei cycle 0` ends it.
+
+- [ ] Opt-in, on a fresh install (`pm clear`): setup shows *Keep Sukrara up to date* right after the alert checklist
+  (Step 4 of 8 for a wearer), its two buttons equal in size and style; *Not now* → the sensor step, About's switch off,
+  and home never shows the banner (Settings › *Show closed tips* shows it again, then *Turn on* there). Again with
+  *Turn on* → About's switch on. Back from the sensor step shows *Keep it on* / *Turn off*.
+- [ ] An install from before (setup finished, the switch never stored; or `pm clear` + finish setup with the step
+  answered, then clear only the `settings` DataStore's `updateChecks` and the `home-banners` file): no setup walk for
+  it; home shows *Keep Sukrara up to date* after any *Finish setup* banner, *Turn on* → the snackbar *Sukrara checks
+  for updates once a day…*, the banner leaves and About's switch is on; turning it off in About doesn't bring the
+  banner back. *Not now* → *Tip closed* with *Undo* (brings it back). The Settings overview shows the same card at
+  its top, before the clinic's.
+- [ ] The Google Play build (`:app:assemblePlayDebug`): no updates step (Step N of 7), no banner on home or Settings.
 
 - [ ] *Sukrara 0.x is available* arrives once, silent, under *Silent* in the shade, never in the *Glucose alerts*
   group; *Update* and *Release notes* (opens the test page); tapping it opens Settings › About. A second check of the
@@ -818,7 +831,8 @@ then daily). `SYNTHETIC --ez on true` for monitoring; `--ei cycle 135` brings a 
 - [ ] *Install updates automatically* on (Wi-Fi): after the check the update installs without a tap once allowed
   (or says *Android asks you to confirm this update* and offers *Install*); the new version posts *Sukrara updated to
   0.x* with *Release notes*.
-- [ ] TalkBack reads every update row and the notification's buttons; Spanish strings fit.
+- [ ] TalkBack reads every update row, the setup step's lines and both buttons, the banner and its two pills, and the
+  notification's buttons; Spanish strings fit (the step and the banner at the largest font too).
 - [ ] The release (not emulator): after publishing, the GitHub version on the owner's phone shows the update within a
   day, the asset is `Sukrara-<version>.apk` with GitHub's digest, and it installs and comes back monitoring.
 

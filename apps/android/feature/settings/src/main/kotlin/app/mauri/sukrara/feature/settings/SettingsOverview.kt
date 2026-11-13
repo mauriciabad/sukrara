@@ -52,6 +52,10 @@ class OverviewActions(
     val dismissClinicBanner: () -> Unit = {},
     /** Undo on the "Tip closed" snackbar. */
     val restoreClinicBanner: () -> Unit = {},
+    /** The updates suggestion (the GitHub version): *Turn on*, *Not now* and its Undo. */
+    val turnOnUpdates: () -> Unit = {},
+    val dismissUpdatesBanner: () -> Unit = {},
+    val restoreUpdatesBanner: () -> Unit = {},
     /** *Show closed tips*: home's and this page's closed tips can show again. */
     val restoreClosedTips: () -> Unit = {},
     /** Settings › Insulin pens is offered (the wearer's phone with NFC). */
@@ -85,6 +89,8 @@ fun SettingsOverviewContent(
     searchQuery: String? = null,
     /** Other features' rows the search finds ([SettingsDeps.moreSearch]). */
     moreSearch: List<SearchEntry> = emptyList(),
+    /** The GitHub version's daily update check is off and not answered: its suggestion comes before the clinic's. */
+    updatesBanner: Boolean = false,
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -93,6 +99,7 @@ fun SettingsOverviewContent(
     val closedText = stringResource(R.string.st_tip_closed)
     val shownText = stringResource(R.string.st_tips_shown)
     val undoText = stringResource(R.string.st_undo)
+    val updatesOnText = stringResource(R.string.st_updates_banner_on)
     SettingsPage(stringResource(R.string.st_settings_title), onBack, snackbar = snackbar) {
         SettingsSearchBar(
             // the menu's path: each page above the result first, so Back walks up as from the menus
@@ -114,7 +121,48 @@ fun SettingsOverviewContent(
             initialQuery = searchQuery,
             more = moreSearch,
         )
-        BannerSlot(
+
+        // a closed tip says so, with Undo; Settings › Show closed tips brings it back later
+        fun close(
+            dismiss: () -> Unit,
+            restore: () -> Unit,
+        ) {
+            haptics.confirm()
+            dismiss()
+            scope.launch {
+                val result = snackbar.showSnackbar(closedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
+                if (result == SnackbarResult.ActionPerformed) restore()
+            }
+        }
+        val updates =
+            Banner(
+                "updates",
+                DsR.drawable.ds_ic_update,
+                stringResource(R.string.st_updates_banner_title),
+                stringResource(R.string.st_updates_banner_text),
+                null,
+                {},
+                null,
+                // opt-in (F-Droid's rule): two equal pills
+                choices =
+                    listOf(
+                        BannerChoice(stringResource(R.string.st_updates_banner_turn_on), null) {
+                            haptics.toggle(true)
+                            actions.turnOnUpdates()
+                            scope.launch {
+                                snackbar.showSnackbar(
+                                    updatesOnText,
+                                    withDismissAction = true,
+                                    duration = SnackbarDuration.Short,
+                                )
+                            }
+                        },
+                        BannerChoice(stringResource(R.string.st_updates_banner_not_now), null) {
+                            close(actions.dismissUpdatesBanner, actions.restoreUpdatesBanner)
+                        },
+                    ),
+            )
+        val clinic =
             Banner(
                 "clinic",
                 DsR.drawable.ds_ic_cloud_upload,
@@ -122,20 +170,7 @@ fun SettingsOverviewContent(
                 stringResource(R.string.st_clinic_text),
                 null,
                 {},
-                {
-                    haptics.confirm()
-                    actions.dismissClinicBanner()
-                    scope.launch {
-                        val result =
-                            snackbar.showSnackbar(
-                                closedText,
-                                undoText,
-                                withDismissAction = true,
-                                duration = SnackbarDuration.Short,
-                            )
-                        if (result == SnackbarResult.ActionPerformed) actions.restoreClinicBanner()
-                    }
-                },
+                { close(actions.dismissClinicBanner, actions.restoreClinicBanner) },
                 choices =
                     listOf(
                         BannerChoice(
@@ -149,7 +184,13 @@ fun SettingsOverviewContent(
                             actions.openClinicTidepool,
                         ),
                     ),
-            ).takeIf { clinicBanner },
+            )
+        BannerSlot(
+            when {
+                updatesBanner -> updates
+                clinicBanner -> clinic
+                else -> null
+            },
             // SPA's banner colour on a settings page
             tipContainer = MaterialTheme.colorScheme.surface,
         )

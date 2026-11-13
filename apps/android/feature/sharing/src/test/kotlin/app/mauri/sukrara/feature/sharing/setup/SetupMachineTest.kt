@@ -221,4 +221,54 @@ class SetupMachineTest {
     fun `no Finish-setup items before a role`() {
         assertEquals(emptyList<FinishItem>(), m.finishItems(SetupRecord(skipped = setOf(Alerts)), none))
     }
+
+    private val github = facts.copy(updates = UpdateChoice.Open)
+
+    @Test
+    fun `the GitHub version asks about updates right after the alert checklist, both roles - never Google Play`() {
+        val u = SetupStep.Updates
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, u, Sensor, Alerts, Identity, SetupStep.History), m.steps(github))
+        assertEquals(
+            listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, u, Alerts),
+            m.steps(github.copy(role = Role.Follower)),
+        )
+        // no updater (the Google Play build): no step, whatever was recorded
+        assertTrue(u !in m.steps(facts) && u !in m.steps(facts.copy(role = Role.Follower)))
+        assertEquals(Sensor, m.next(m.completePermissions(wearer()), facts))
+    }
+
+    @Test
+    fun `Turn on or Not now answer the updates step and the walk goes on`() {
+        val r = m.completePermissions(wearer())
+        assertEquals(SetupStep.Updates, m.next(r, github))
+        assertEquals(Sensor, m.next(m.completeUpdates(r), github))
+        assertEquals(Sensor, m.next(m.skip(r, SetupStep.Updates), github))
+        // answered elsewhere first (home's banner, Settings › About): on, or off on purpose
+        assertEquals(Sensor, m.next(r, github.copy(updates = UpdateChoice.On)))
+        assertEquals(Sensor, m.next(r, github.copy(updates = UpdateChoice.Off)))
+        // Back from the sensor step shows it again (its answer kept)
+        assertEquals(SetupStep.Updates, m.previous(Sensor, github))
+        assertTrue(m.answers(SetupStep.Updates, m::completeUpdates))
+    }
+
+    @Test
+    fun `a walk left at the updates step resumes there, but skipping it is no Finish-setup item`() {
+        val r = m.completePermissions(wearer())
+        assertEquals(SetupCard.Resume(SetupStep.Updates), m.card(r, github))
+        val skipped = listOf(SetupStep.Updates, Sensor, Alerts, Identity, SetupStep.History).fold(r) { x, s -> m.skip(x, s) }
+        assertTrue(m.finishItems(skipped, github).none { it.step == SetupStep.Updates })
+    }
+
+    @Test
+    fun `an install that finished setup before the step existed is not sent back - the banner asks instead`() {
+        val before = listOf(Sensor, Alerts, Identity, SetupStep.History).fold(m.completePermissions(wearer())) { r, s -> m.skip(r, s) }
+        assertNull(m.next(before, github))
+        // history still offered on its own when it is the only step left
+        val noHistory = listOf(Sensor, Alerts, Identity).fold(m.completePermissions(wearer())) { r, s -> m.skip(r, s) }
+        assertTrue(m.historyDue(noHistory, github))
+        // a follower's walk: the alert step after it was answered
+        val follower = github.copy(role = Role.Follower, following = true)
+        val followed = m.skip(m.completePermissions(m.completeJoin(wearer(), follower)), Alerts)
+        assertNull(m.next(followed, follower))
+    }
 }

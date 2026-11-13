@@ -31,6 +31,7 @@ fun SetupCard.label(context: Context): String =
                     SetupStep.Role -> R.string.sh_setup_role_title
                     SetupStep.Join -> R.string.sh_join_title
                     SetupStep.Permissions -> R.string.sh_setup_permissions_title
+                    SetupStep.Updates -> R.string.sh_setup_updates_title
                     SetupStep.Sensor -> R.string.sh_setup_sensor_title
                     SetupStep.Alerts -> R.string.sh_setup_alerts_title
                     SetupStep.Identity -> R.string.sh_identity_title

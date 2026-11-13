@@ -5,8 +5,15 @@ package app.mauri.sukrara.core.data
 
 import app.mauri.sukrara.core.data.settings.SECURE_STORE
 import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.data.settings.UpdateSettings
 import app.mauri.sukrara.core.data.settings.schemaStores
+import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.settings.SettingsSpec
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -87,6 +94,26 @@ class SettingsSchemaTest {
             assertTrue(info.id, (kinds - "no_data").all { info.mirrors(it) })
         }
         assertFalse(SettingsSpec.SETTINGS.single { it.id == "alerts.threshold.no_data" }.mirrors())
+    }
+
+    /** A row's default on Android: the platform's own (with its reason) where the schema gives one, else the row's. */
+    private fun androidDefault(id: String): Boolean {
+        val row =
+            Json
+                .parseToJsonElement(Contracts.file("settings/settings.json").readText())
+                .jsonObject["settings"]!!
+                .jsonArray
+                .map { it.jsonObject }
+                .single { it["id"]!!.jsonPrimitive.content == id }
+        val own = row["android"]!!.jsonObject["default"]
+        return (own ?: row["default"]!!).jsonPrimitive.boolean
+    }
+
+    @Test
+    fun `the update switches start where the schema says on Android - the daily check is opt-in here`() {
+        assertEquals(androidDefault("update.automaticChecks"), UpdateSettings.AutomaticChecks.default)
+        assertFalse(UpdateSettings.AutomaticChecks.default)
+        assertEquals(androidDefault("update.automaticInstall"), UpdateSettings.AutomaticInstall.default)
     }
 
     @Test(expected = IllegalArgumentException::class)

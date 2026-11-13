@@ -50,6 +50,7 @@ import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupUi
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
+import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
 import app.mauri.sukrara.feature.sharing.share.ApproveDialog
 import app.mauri.sukrara.feature.sharing.share.ApproveRefusedDialog
 import app.mauri.sukrara.feature.sharing.share.InviteProgress
@@ -218,6 +219,8 @@ class SharingScreenshotTest {
                     a.copy(sendTestAlert = {}),
                 )
             },
+            "setup-3b-updates" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.Open)), a) },
+            "setup-3b-updates-on" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.On)), a) },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
             "setup-4-sensor-live" to { SetupContent(ui(SetupStep.Sensor, 4, live), a) },
             "setup-5-alerts" to { SetupContent(ui(SetupStep.Alerts, 5, live), a) },

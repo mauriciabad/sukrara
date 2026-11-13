@@ -285,8 +285,20 @@ windows are standard AppKit; the row's *Install…* has the hint *Shows what's n
   while Settings › About was open and sent the person to the browser. Now it says when there is an update, or installs
   it by itself, without the person having to remember. The Google Play version has none of this: Play updates it
   ([Google Play build](#google-play-build-android)).
+- **Opt-in** (the owner's decision, 2026-11-13): one APK, signed with Sukrara's key, serves GitHub, Obtainium and
+  later F-Droid, whose inclusion policy allows updates that bypass it only with the person's consent (opt-in, declining
+  no harder than accepting, the person told it bypasses the store). So **Check for updates automatically** is off until
+  the person turns it on (the schema's Android default, `update.automaticChecks` `android.default` with its reason; the
+  Mac's Sparkle keeps checking by default: the Mac isn't on F-Droid). So nobody misses updates, it is suggested twice:
+  setup's *Keep Sukrara up to date* step ([First-run setup (Android)](#first-run-setup-android)) and the
+  [Keep-Sukrara-up-to-date banner](#keep-sukrara-up-to-date-banner) on home and the top of the Settings overview, both
+  saying what it does (once a day it asks GitHub; a notification tells; nothing installs without the person's *Update*
+  unless automatic installs are on too), where updates come from (GitHub releases, outside any app store, checked
+  against Sukrara's own key) and why (the phone is an alarm; an old version can stop sharing when the protocol
+  changes). An install from before this, which never stored the switch, starts with it off too (no backwards
+  compatibility): its banner asks.
 - **The daily check** (`:update` `UpdateCheckWorker`, WorkManager, any network, first an hour after the app starts,
-  then once a day) while **Check for updates automatically** is on (on by default): the GitHub releases
+  then once a day) while **Check for updates automatically** is on (off until turned on): the GitHub releases
   (`api.github.com/repos/mauriciabad/sukrara/releases`, all of them: the newest that is neither a draft nor a
   prerelease, a release candidate; every release is a normal one), plus About's check each time the page opens. A newer release is announced **once per
   version** in a notification: *Sukrara 0.14.0 is available* · *Update to install it. Monitoring comes back by itself
@@ -318,14 +330,17 @@ windows are standard AppKit; the row's *Install…* has the hint *Shows what's n
   Tap Install.* After an automatic update the new version says *Sukrara updated to 0.14.0* · *Monitoring is back.*
   with *Release notes*.
 - Both switches are the Mac's two rows (schema `update.automaticChecks`, `update.automaticInstall`, store `settings`
-  on Android); Settings search finds them and *Check again*. Strings in English and Spanish.
+  on Android; the daily check starts off on Android and on on the Mac: the schema's per-platform default with its
+  reason); Settings search finds them and *Check again*. Strings in English and Spanish.
 - **Who never has one**: the Google Play version (`:update` isn't in the play flavor: no worker, no receiver, no
   `REQUEST_INSTALL_PACKAGES`; `ManifestTest`, `verify-apk.sh --play`). Debug builds read GitHub and trust only the
   release key like a release build, unless the `UPDATES` debug command points them at a local test release
   (`tools/updates/serve.py`, trusting the debug key; docs/QA.md Q25).
 
-**States and exits**: *Turned off* (the daily check off): no check and no notification by itself; About still checks
-when it opens → the switch back on (About, or Settings search). *Checking*: About's row says *Checking for updates…*
+**States and exits**: *Never answered* (the daily check off, as installed): no check and no notification by itself;
+About still checks when it opens → setup's step or the banner (*Turn on* / *Not now*), or the switch in About (or
+Settings search). *Turned off* (the daily check off on purpose): the same, and no suggestion → the switch back on (About,
+or Settings search; Settings › *Show closed tips* shows the banner again). *Checking*: About's row says *Checking for updates…*
 → it ends by itself. *Up to date*: About's *Up to date* → *Check again*. *Couldn't check* (offline, GitHub refused):
 About → *Check again*, or *Open the releases page*; the daily check tries again later without a word. *Available*: the
 notification (*Update*, *Release notes*, swipe it away: it isn't announced again, About still shows it) and About's
@@ -396,7 +411,7 @@ TalkBack reads each row's title and summary.
 ## First-run setup (Android)
 
 Android (`apps/android/feature/sharing` `setup/`): a calm ordered journey from install to home. The order is
-binding: **Welcome → Role → Permissions → Sensor → Alert thresholds → Your followers → Bring your history back → home**. "Step N of M" is announced by TalkBack; steps cross-fade with a spring (snaps with reduced
+binding: **Welcome → Role → Permissions → Keep Sukrara up to date (GitHub version) → Sensor → Alert thresholds → Your followers → Bring your history back → home** (a follower: Welcome → Role → Follow someone → Permissions → Keep Sukrara up to date → Alert thresholds). "Step N of M" is announced by TalkBack; steps cross-fade with a spring (snaps with reduced
 motion); setup done gives a confirm haptic. Progress is kept in the typed store `setup` (`SetupMachine`, pure;
 `SetupMachineTest`): only what the person answered (each step done or skipped). Where setup is (a step reached with
 Back, the step shown alone, the Finish-setup steps already shown) is screen state saved with the screen, so a rotation,
@@ -421,6 +436,22 @@ role lives in its own store (`role`), so a damaged setup file never asks for the
   alert that matters most (`TestAlert.kind`: the first alert that is on and rings like an alarm, else the first that is
   on; hidden while none is on) and then says *Sent: check your notifications. It goes away by itself in 2 min.* (TalkBack
   hears it; it can be sent again). *Continue anyway* / *Later*.
+- **Keep Sukrara up to date** (the GitHub version only: the Google Play build has no updater, so no step and one step
+  fewer in "Step N of M"; `SetupStep.Updates`, `SetupFacts.updates` null): right after the alert checklist, while the
+  person is already deciding what keeps the alarm working, and before the sensor. The update icon in a tonal circle,
+  *Keep Sukrara up to date* · "Sukrara is your alarm, and the way phones share glucose changes from time to time: an old
+  version can stop sharing or following until it's updated.", three lines with quiet icons: *Once a day, Sukrara asks
+  GitHub whether there's a new version.* · *A quiet notification tells you. Nothing installs until you tap Update,
+  unless you also turn on automatic installs in Settings › About.* · *Updates come straight from Sukrara's GitHub
+  releases, outside any app store, so no store checks them. Sukrara installs only a file signed with its own key.*,
+  then *Off until you turn it on. You can change it any time in Settings › About.* and two equal buttons side by side
+  (the same tonal style and width: declining is no harder than accepting), *Turn on* (toggle-on haptic) and *Not now*
+  (toggle-off haptic; the switch stays off and the suggestion is closed, so home's banner doesn't ask again). Both go
+  on to the sensor. Reached again with Back it shows the answer: *On: Sukrara checks for updates once a day…* with
+  *Keep it on* / *Turn off*. Done also when it was answered elsewhere first (the switch on, or the banner closed) and,
+  for an install that finished setup before the step existed (a later step answered), passed: the banner asks there
+  instead. Not a Finish-setup item (the banner is its second chance); a walk left on it resumes there (*Next: Keep
+  Sukrara up to date*).
 - **Sensor**: *Set up sensor* opens the new-sensor flow (Libre 3 start / takeover with the LibreView receiver ID: the
   app's one [LibreView account](#libreview-account), signed in here once for everything, or Juggluco). Until a reading arrives it says "Not monitoring: no sensor yet. No alert can ring until a reading
   arrives."; the step completes only with a live reading from this phone's own sensor (≤ 15 min old): "Reading
@@ -460,7 +491,8 @@ Sensor, Alerts and Followers → *Skip* / *Later* (→ the Finish setup banner �
 *Later* / Back again). Permissions' *Send a test alert* → the test notification (tap, swipe or 2 min) and the card's
 *Sent* line; *Send* again any time; nothing to undo (it changes nothing). Permissions' *Do Not Disturb* and *Sound while
 the phone is unlocked* → as on Settings › Alert reliability (below), the same controls; neither blocks *Continue*
-except an unanswered unlocked test (*Continue anyway* / *Later* stay). Role → choose → confirm / *Cancel*; a role change that deletes history → *Delete the earlier history?* → *Export CSV first* (Export data; Back → the same dialog) / *Delete and continue* / *Cancel* (nothing changes); Follower in this build → stays on the role step with the note. Sensor waiting → *Set up sensor* (the new-sensor flow, its own Cancel) / *Later*;
+except an unanswered unlocked test (*Continue anyway* / *Later* stay). Updates (GitHub version) → *Turn on* / *Not now* (both → Sensor; Back → it again with the answer: *Keep it on* / *Turn
+off*); the switch stays in Settings › About either way. Role → choose → confirm / *Cancel*; a role change that deletes history → *Delete the earlier history?* → *Export CSV first* (Export data; Back → the same dialog) / *Delete and continue* / *Cancel* (nothing changes); Follower in this build → stays on the role step with the note. Sensor waiting → *Set up sensor* (the new-sensor flow, its own Cancel) / *Later*;
 reading received → *Continue*. Alerts → edit (number dialog *Cancel* / OK) → *Use these thresholds*, disabled with the
 order message while stored levels are out of order. Followers → restore disabled (no reading yet: the note says so) / restoring ("Looking for your backup on the relays…") / restore error (inline,
 the code stays, fix and retry; never drops into Start fresh: needs password, wrong password, not a code, relays
@@ -961,6 +993,33 @@ launcher's picker or home's *Add widget*) → *Widget settings* opens; back keep
 the reading's time), *no readings* (20 min+), *sensor ended* (the graph widget's pill: the flag and *Sensor ended*)
 and *warming up* (the graph widget's pill: the disc and *Warming up · 40m*) show on the widget itself; the tap opens the app where the reason and its fix are. *Follower* → the same exits.
 
+## Keep-Sukrara-up-to-date banner
+
+Android, the GitHub version, both roles: home's banner place (`BannerKind.TurnOnUpdates`, right after *Finish setup*
+and before the other tips: an old version can stop sharing, and one tap answers it for good) and the top of the
+Settings overview (before *Share your data with your clinic*). While **Check for updates automatically** is off and the
+suggestion was never answered (`UpdateSuggestion`, app module; `UpdateSuggestionTest`, `BannerSlotTest`), a card with
+the update symbol says *Keep Sukrara up to date* · "Sukrara can ask GitHub for a new version once a day and tell you.
+Updates come from GitHub, outside any app store, and nothing installs without your OK. An old version can stop
+sharing." with two equal pills side by side, **Turn on** and **Not now** (no close button: *Not now* is the close).
+*Turn on* sets the switch (toggle-on haptic) and the card leaves with a snackbar *Sukrara checks for updates once a day.
+Settings › About changes it.* *Not now* closes it like every tip: the snackbar *Tip closed…* with *Undo*. Not red.
+Every install that never turned the check on sees it, existing ones included (the switch was on by default before
+2026-11-13; it starts off now), after *Finish setup* in the one banner place (a walk not yet past its step asks
+there itself; once *Finish setup* is put off with *Later*, this banner may take the place, and either answer counts). The Google Play version never shows it (no updater: `HomeEnvironment.updateChecksOff` and the overview's flow
+stay null / false). Mac: none (Sparkle checks by default).
+
+**What brings it back**: only the person: the snackbar's *Undo*, or Settings › *Show closed tips* while the check is
+still off. Answering anywhere answers it everywhere: setup's *Not now*, the banner's *Not now* (on home or Settings), or
+turning the switch off in Settings › About (a deliberate off is never asked about again) close it; turning the check on
+anywhere hides it. Turning the check off later doesn't bring it back.
+
+**States and exits**: *shown* (off, unanswered) → *Turn on* (on; the banner leaves; About's switch turns it off again)
+or *Not now* (closed; *Undo* in the snackbar). *Closed* → stays closed; Settings › *Show closed tips* shows it again
+while the check is off; the switch stays in Settings › About. *On* → not shown. Google Play version, or before the
+setting is read → not shown. TalkBack reads the card (title, text) and each pill as a button; the snackbar's *Undo*
+is focusable.
+
 ## Add-the-widget banner
 
 Android, wearer and follower homes (`:widgets` `WidgetPresence` feeds home's `widgetPlaced` and `widgetPinnable` on every resume and the pin callback; `:feature:home` `BannerKind.AddWidget`; tests `BannerSlotTest`, `HomeTextTest` `widgetBanner*`, gallery `widget-banner`, `widget-banner-manual`). Sukrara is meant to be used through the big home-screen widget, so while no graph widget is placed (`AppWidgetManager.getAppWidgetIds` of *Glucose + graph* or *Glucose graph* is empty; the value widget and the lock screen widget don't count) home shows a card under the glucose panel: the widgets icon, *Put your glucose on the home screen* (es *Pon tu glucosa en la pantalla de inicio*), a close button and the pill *Add widget* (es *Añadir widget*). The pill asks the launcher to place *Glucose + graph* (`requestPinAppWidget`; the launcher's own dialog, with the widget's preview in the request: `EXTRA_APPWIDGET_PREVIEW` = Glance `composeForPreview` of the picker's `providePreview`, one layout per preview size: without it Pixel Launcher shows a blank card with the app icon). When the launcher can't pin (`isRequestPinAppWidgetSupported` false, or it refused a request in this run of the app) the card has no button and says *Touch & hold the home screen, then tap Widgets › Sukrara.* (es *Mantén pulsada la pantalla de inicio y toca Widgets › Sukrara.*); a refusal switches it at once. Checked again whenever home resumes and on the pin's success callback, so the card leaves as soon as the widget is placed; the same callback (it carries the new widget's id) opens that widget's *Widget settings* over the app, as placing it from the picker does. Not red, not before setup. Close hides it for good on this phone (`home-banners` `BannerMemory`, not in the settings export: widgets are per launcher; Settings → *Show closed tips* brings it back); placing a widget is not a dismissal, so removing it later (or a launcher reset) brings the card back. No debug command: on the emulator, remove the graph widgets to see it. Mac: none (the menubar is its main surface; macOS has no API to place a widget).
@@ -980,9 +1039,9 @@ Android (`apps/android/monitor` `systemui/SystemAccess`, `SystemUiTest`): Settin
 ## Closed tips
 
 Android, both roles (`:feature:home` `banners/HomeBanners.kt` `BannerMemory`, typed state `home-banners`; tests
-`BannerSlotTest`). Home's info tips (*Back up your account*, *Put your glucose on the home screen*, *Share your data
-with your clinic*, *Finish setup*'s *Later*) and the Settings overview's *Share your data with your clinic* banner close
-into one memory. Every close shows a snackbar *Tip closed. Settings › Show closed tips brings it back.* with *Undo* (es
+`BannerSlotTest`). Home's info tips (*Keep Sukrara up to date*, *Back up your account*, *Put your glucose on the home screen*, *Share your data
+with your clinic*, *Finish setup*'s *Later*) and the Settings overview's *Keep Sukrara up to date* and *Share your data
+with your clinic* banners close into one memory (turning the update check off in About closes its tip too). Every close shows a snackbar *Tip closed. Settings › Show closed tips brings it back.* with *Undo* (es
 *Consejo cerrado…*, *Deshacer*), over home or the settings overview wherever it was closed; *Undo* puts the tip back at
 once. The Settings overview (wearer and follower, above *About*) shows *Show closed tips* with *2 tips closed* while any
 tip is closed (Finish setup's *Later* doesn't count: it comes back after a day by itself); it is an action row (no
@@ -994,7 +1053,7 @@ down to 200 dp, easing with the spatial spring; reduced motion: at once) and tak
 action stops short of the floating button and wraps at a large font (`SafetyBannerFitTest`: 360 × 640 dp at 2×
 font). Mac: none (the dropdown has no closable tips).
 
-**States and exits**: *Tip shown* → its close button (TalkBack *Dismiss*) closes it. *Just closed* → the snackbar's
+**States and exits**: *Tip shown* → its close button (TalkBack *Dismiss*; the updates tip: *Not now*) closes it. *Just closed* → the snackbar's
 *Undo* (a TalkBack-focusable button) brings it back; the snackbar leaves by itself or with its close button. *Closed* →
 Settings → *Show closed tips* brings every closed tip back; nothing closed → the row isn't shown.
 
@@ -1215,7 +1274,8 @@ button and system Back (TalkBack's *Back* action, three-button navigation) do th
   `ManifestTest`, `SettingsSearchTest`, `AboutLinksTest`, `verify-apk.sh --play`):
   - **No updater**: About shows *0.12.0 · Google Play version*, *About the versions* (the website's
     explanation), *Sukrara on other devices*, *Report a problem*, *Source code* and *Privacy policy*; no *Checking for
-    updates…* / *Up to date* / *Update available* row, no *Updates* switches, no *Check again* in search, no update
+    updates…* / *Up to date* / *Update available* row, no *Updates* switches, no *Check again* in search, no setup step
+    *Keep Sukrara up to date* and no *Keep Sukrara up to date* banner, no update
     notification, no download or install and no `REQUEST_INSTALL_PACKAGES` (`:update` is a full-flavor dependency
     only, [Updates (Android, GitHub version)](#updates-android-github-version)); nothing contacts the GitHub API.
     Play brings the updates (its policy forbids an app updating itself). No disabled row and no "install the other

@@ -209,7 +209,7 @@
     <string name="st_update_failed_install">Android no la instaló. Sukrara %1$s sigue funcionando; no ha cambiado nada. Toca para reintentar.</string>
     <string name="st_update_group">Actualizaciones</string>
     <string name="st_update_auto_checks">Buscar actualizaciones automáticamente</string>
-    <string name="st_update_auto_checks_summary">Una vez al día; una notificación avisa cuando hay una versión nueva</string>
+    <string name="st_update_auto_checks_summary">Una vez al día, Sukrara pregunta a GitHub; una notificación avisa cuando hay una versión nueva</string>
     <string name="st_update_auto_install">Instalar actualizaciones automáticamente</string>
     <string name="st_update_auto_install_summary">Con wifi, cuando no haya ninguna alerta a la vista. Android te pide una vez que permitas instalar desde Sukrara, y puede pedirte que lo confirmes</string>
     <string name="st_update_auto_install_off">Necesita la búsqueda automática</string>
@@ -694,6 +694,11 @@
     </plurals>
     <string name="st_pen_earlier_doses">Dosis anteriores</string>
     <string name="st_pen_changed_since_open">Esa entrada cambió o se borró mientras tanto</string>
+    <string name="st_updates_banner_title">Mantén Sukrara al día</string>
+    <string name="st_updates_banner_text">Sukrara puede preguntar a GitHub una vez al día si hay una versión nueva y avisarte. Las actualizaciones llegan de GitHub, fuera de cualquier tienda de apps, y no se instala nada sin tu permiso. Una versión antigua puede dejar de compartir.</string>
+    <string name="st_updates_banner_turn_on">Activar</string>
+    <string name="st_updates_banner_not_now">Ahora no</string>
+    <string name="st_updates_banner_on">Sukrara busca actualizaciones una vez al día. Se cambia en Acerca de.</string>
     <string name="st_clinic_title">Comparte tus datos con tu clínica</string>
     <string name="st_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
     <string name="st_clinic_libreview">LibreView</string>

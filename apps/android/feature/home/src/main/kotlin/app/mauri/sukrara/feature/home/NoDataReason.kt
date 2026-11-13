@@ -227,6 +227,9 @@ sealed interface HomeAction {
     /** The Tidepool upload's page (the clinic banner's *Tidepool*). */
     data object OpenTidepool : HomeAction
 
+    /** *Turn on* on the updates suggestion: the GitHub version's daily update check goes on. */
+    data object TurnOnUpdates : HomeAction
+
     /** NFC taps blocked by Android: its screen that allows them. */
     data object AllowTaps : HomeAction
 

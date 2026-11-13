@@ -85,6 +85,11 @@
     <string name="banner_widget_text">See your glucose on the home screen without opening the app.</string>
     <string name="banner_widget_action">Add widget</string>
     <string name="banner_widget_manual">Touch &amp; hold the home screen, then tap Widgets › Sukrara.</string>
+    <string name="banner_updates_title">Keep Sukrara up to date</string>
+    <string name="banner_updates_text">Sukrara can ask GitHub for a new version once a day and tell you. Updates come from GitHub, outside any app store, and nothing installs without your OK. An old version can stop sharing.</string>
+    <string name="banner_updates_turn_on">Turn on</string>
+    <string name="banner_updates_not_now">Not now</string>
+    <string name="banner_updates_on">Sukrara checks for updates once a day. Settings › About changes it.</string>
     <string name="banner_clinic_title">Share your data with your clinic</string>
     <string name="banner_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>
     <string name="banner_clinic_libreview">LibreView</string>

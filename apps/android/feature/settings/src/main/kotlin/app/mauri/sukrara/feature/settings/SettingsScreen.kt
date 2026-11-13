@@ -187,6 +187,7 @@ private fun SettingsPages(
             val readiness by deps.readiness.readiness.collectAsStateWithLifecycle()
             val apps by deps.appsShared.collectAsStateWithLifecycle(emptySet())
             val clinic by deps.clinicBanner.collectAsStateWithLifecycle(false)
+            val updatesBanner by deps.updatesBanner.collectAsStateWithLifecycle(false)
             val closedTips by deps.closedTips.collectAsStateWithLifecycle(0)
             val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
@@ -207,6 +208,9 @@ private fun SettingsPages(
                     openClinicTidepool = openClinicTidepool,
                     dismissClinicBanner = deps::dismissClinicBanner,
                     restoreClinicBanner = deps::restoreClinicBanner,
+                    turnOnUpdates = deps::turnOnUpdates,
+                    dismissUpdatesBanner = deps::dismissUpdatesBanner,
+                    restoreUpdatesBanner = deps::restoreUpdatesBanner,
                     restoreClosedTips = deps::restoreClosedTips,
                     pens = deps.pensAvailable(),
                     build =
@@ -225,6 +229,7 @@ private fun SettingsPages(
                 from,
                 recent,
                 moreSearch = deps.moreSearch,
+                updatesBanner = updatesBanner,
                 onBack = onBack,
             )
         }

@@ -45,6 +45,10 @@ class SettingsModule(
     clinicBanner: Flow<Boolean> = flowOf(false),
     dismissClinicBanner: () -> Unit = {},
     restoreClinicBanner: () -> Unit = {},
+    updatesBanner: Flow<Boolean> = flowOf(false),
+    turnOnUpdates: () -> Unit = {},
+    dismissUpdatesBanner: () -> Unit = {},
+    restoreUpdatesBanner: () -> Unit = {},
     closedTips: Flow<Int> = flowOf(0),
     restoreClosedTips: () -> Unit = {},
     advanced: () -> AdvancedPort = { AdvancedPort.None },
@@ -79,6 +83,14 @@ class SettingsModule(
             override fun dismissClinicBanner() = dismissClinicBanner()
 
             override fun restoreClinicBanner() = restoreClinicBanner()
+
+            override val updatesBanner = updatesBanner
+
+            override fun turnOnUpdates() = turnOnUpdates()
+
+            override fun dismissUpdatesBanner() = dismissUpdatesBanner()
+
+            override fun restoreUpdatesBanner() = restoreUpdatesBanner()
 
             override val closedTips = closedTips
 

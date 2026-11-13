@@ -44,8 +44,8 @@ Android 16 or newer on an arm64 phone, with NFC and Bluetooth to read the sensor
 
 - **APK from GitHub:** download `Sukrara-<version>.apk` from the
   [latest release](https://github.com/mauriciabad/sukrara/releases) on the phone and open it; allow installs from your
-  browser when asked. Updates install over the old version and keep your data; the app tells you in Settings › About
-  when there is a new one.
+  browser when asked. Updates install over the old version and keep your data; turn on *Check for updates
+  automatically* (setup and a banner offer it) and the app tells you when there is a new one, or look in Settings › About.
 - **[Obtainium](https://obtainium.imranr.dev/):** add `https://github.com/mauriciabad/sukrara`; it installs the GitHub releases and their updates for you, and checks they're signed with Sukrara's key.
 - **Google Play:** in preparation.
 
@@ -57,7 +57,7 @@ your data. Settings › About shows which one you have, next to the version numb
 
 | | GitHub version | Google Play version |
 |---|---|---|
-| Updates | Sukrara updates itself: once a day it looks for a newer release, tells you in a quiet notification and installs it with one tap, after checking it is Sukrara's own (or, if you turn it on, by itself), never while an alert is showing; Obtainium works too | Google Play updates it, like any app from Play |
+| Updates | Sukrara can update itself once you turn it on (setup and a banner suggest it; off until you do): once a day it asks GitHub for a newer release, outside any app store, tells you in a quiet notification and installs it with one tap, after checking it is Sukrara's own (or, if you turn that on too, by itself), never while an alert is showing; Obtainium works too | Google Play updates it, like any app from Play |
 | Where to get it | [GitHub releases](https://github.com/mauriciabad/sukrara/releases), [Obtainium](https://obtainium.imranr.dev/) | Google Play (in preparation) |
 | Features | all of them | all of them |
 

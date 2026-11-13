@@ -253,18 +253,29 @@ fun HomeContent(
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     val closedText = stringResource(R.string.home_tip_closed)
+    val updatesOnText = stringResource(R.string.banner_updates_on)
     val shownBanner =
-        banner(state, callbacks) { kind ->
-            haptics.confirm()
-            // every close can be undone here; Settings › Show closed tips brings them back later
-            scope.launch {
-                val result = snackbar.showSnackbar(closedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
-                if (result == SnackbarResult.ActionPerformed) {
-                    haptics.confirm()
-                    callbacks.onRestore(kind)
+        banner(
+            state,
+            callbacks,
+            onDismiss = { kind ->
+                haptics.confirm()
+                // every close can be undone here; Settings › Show closed tips brings them back later
+                scope.launch {
+                    val result = snackbar.showSnackbar(closedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
+                    if (result == SnackbarResult.ActionPerformed) {
+                        haptics.confirm()
+                        callbacks.onRestore(kind)
+                    }
                 }
-            }
-        }
+            },
+            onTurnOnUpdates = {
+                haptics.toggle(true)
+                callbacks.onAction(HomeAction.TurnOnUpdates)
+                // the banner leaves: say what is on now and where it changes
+                scope.launch { snackbar.showSnackbar(updatesOnText, withDismissAction = true, duration = SnackbarDuration.Short) }
+            },
+        )
     // a safety banner sits right under the card (seen without scrolling); a tip goes below the glucose block
     val safetyBanner = shownBanner?.takeIf { it.severity == BannerSeverity.Safety }
     val infoBanner = shownBanner?.takeIf { it.severity == BannerSeverity.Info }
@@ -800,6 +811,8 @@ private fun banner(
     state: HomeUiState,
     callbacks: HomeCallbacks,
     onDismiss: (BannerKind) -> Unit,
+    /** *Turn on* on the updates suggestion (the screen confirms it: haptic and snackbar). */
+    onTurnOnUpdates: () -> Unit = {},
 ): Banner? {
     val kind = state.banner ?: return null
     val dismiss: (() -> Unit)? =
@@ -914,6 +927,25 @@ private fun banner(
                 open(HomeAction.OpenSetup),
                 dismiss,
                 severity,
+            )
+        }
+
+        // opt-in (F-Droid's rule): two equal pills; Not now closes it like any tip (Undo, Show closed tips)
+        BannerKind.TurnOnUpdates -> {
+            Banner(
+                kind.name,
+                DsR.drawable.ds_ic_update,
+                stringResource(R.string.banner_updates_title),
+                stringResource(R.string.banner_updates_text),
+                null,
+                {},
+                null,
+                severity,
+                choices =
+                    listOf(
+                        BannerChoice(stringResource(R.string.banner_updates_turn_on), null, onTurnOnUpdates),
+                        BannerChoice(stringResource(R.string.banner_updates_not_now), null, dismiss ?: {}),
+                    ),
             )
         }
 

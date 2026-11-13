@@ -105,6 +105,8 @@ class UpdateModuleTest {
                     }
             }
         server.start()
+        // the daily check is opt-in (off as installed): these tests are about what it does once turned on
+        runBlocking { settings.set(UpdateSettings.AutomaticChecks, true) }
         module = build()
     }
 
@@ -167,12 +169,13 @@ class UpdateModuleTest {
             assertNull(installWork())
         }
 
-    @Test fun `with the daily check off nothing is fetched`() =
+    @Test fun `with the daily check off nothing is fetched - as installed, until the person turns it on`() =
         runBlocking {
             settings.set(UpdateSettings.AutomaticChecks, false)
             assertTrue(module.dailyCheck())
             assertEquals(0, server.requestCount)
             assertTrue(posted.isEmpty())
+            assertFalse(InMemorySettingsRepository().flow(UpdateSettings.AutomaticChecks).first())
         }
 
     @Test fun `with automatic installs on the daily check starts an install on an unmetered network`() =

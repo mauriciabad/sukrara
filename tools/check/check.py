@@ -952,6 +952,15 @@ def check_settings(ch, rep):
             for k in s[p]["key"].split(","):
                 if s[p]["store"] != "system" and not KEY_NAME.match(k):
                     rep.add("FAIL", "settings", "setting %s: %s key '%s' isn't a camelCase name." % (sid, p, k))
+            # a platform's own default: the same setting starting elsewhere, only with the reason and a real difference
+            if "default" in s[p] or "defaultReason" in s[p]:
+                own, shared = s[p].get("default"), s.get("default")
+                if len(s[p].get("defaultReason", "").strip()) < 20:
+                    rep.add("FAIL", "settings", "setting %s: the %s 'default' needs a 'defaultReason' (why this platform starts\n"
+                            "elsewhere)." % (sid, p))
+                if type(own) is not type(shared) or own == shared:
+                    rep.add("FAIL", "settings", "setting %s: the %s 'default' must be a different value of the row's type\n"
+                            "(else drop it and keep the row's 'default')." % (sid, p))
         ps = {s[p].get("path") for p in on}
         if len(ps) > 1:
             rep.add("FAIL", "settings", "setting %s: the platforms address different fields (%s)." % (sid, ", ".join(sorted(map(str, ps)))))

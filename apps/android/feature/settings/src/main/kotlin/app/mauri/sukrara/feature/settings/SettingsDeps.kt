@@ -81,6 +81,21 @@ interface SettingsDeps {
     /** Undo on the "Tip closed" snackbar after [dismissClinicBanner]. */
     fun restoreClinicBanner() {}
 
+    /**
+     * The GitHub version's daily update check is off and its suggestion wasn't answered (the same memory as home's
+     * banner); always false in the Google Play build.
+     */
+    val updatesBanner: Flow<Boolean> get() = flowOf(false)
+
+    /** *Turn on* on the updates suggestion: the daily check goes on. */
+    fun turnOnUpdates() {}
+
+    /** *Not now* on the updates suggestion (on home too). */
+    fun dismissUpdatesBanner() {}
+
+    /** Undo on the "Tip closed" snackbar after [dismissUpdatesBanner]. */
+    fun restoreUpdatesBanner() {}
+
     /** How many tips (home's and this one) are closed: *Show closed tips* shows while any is. */
     val closedTips: Flow<Int> get() = flowOf(0)
 

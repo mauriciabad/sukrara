@@ -150,15 +150,15 @@ class SetupViewModel(
             m.roles.role,
             m.hub.state,
             combine(m.sharing.state, m.follower.state, ::Pair),
-            combine(m.alertSettings.settings, m.alertsConfirmedAt, ::Pair),
+            combine(m.alertSettings.settings, m.alertsConfirmedAt, m.updateChoice, ::Triple),
         ) {
             record,
             role,
             glucose,
             (share, follow),
-            (alerts, confirmedAt),
+            (alerts, confirmedAt, updates),
             ->
-            Inputs(record, role, glucose, share, follow, alerts, confirmedAt != null)
+            Inputs(record, role, glucose, share, follow, alerts, confirmedAt != null, updates)
         }
 
     val ui: StateFlow<SetupUi?> =
@@ -180,6 +180,7 @@ class SetupViewModel(
                     ownSensorLive = RestoreGate.ownSensorLive(i.glucose, now),
                     hasIdentity = i.share is OwnerShareState.Sharing || i.share is OwnerShareState.AnotherAppSharingAsYou,
                     alertsConfirmed = i.alertsConfirmed,
+                    updates = i.updates,
                 )
             val steps = SetupMachine.steps(facts)
             val single = mode != Mode.Walk
@@ -519,6 +520,20 @@ class SetupViewModel(
 
     fun skip(step: SetupStep) = record { SetupMachine.skip(it, step) }
 
+    /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, then the walk goes on. */
+    fun turnOnUpdates() =
+        act {
+            m.updates?.turnOn()
+            write(SetupMachine::completeUpdates)
+        }
+
+    /** *Not now* (or *Turn off*) on the updates step: the check stays off, the suggestion closed, the walk goes on. */
+    fun updatesNotNow() =
+        act {
+            m.updates?.notNow()
+            write { SetupMachine.skip(it, SetupStep.Updates) }
+        }
+
     /**
      * *Bring it back*: the history step is done (written first, while this screen still lives), then [open] runs
      * (Import history takes setup's place: there is nothing after this step to come back to).
@@ -590,6 +605,7 @@ class SetupViewModel(
         val follow: FollowState,
         val alerts: AlertSettings,
         val alertsConfirmed: Boolean,
+        val updates: UpdateChoice?,
     )
 
     private data class Locals(

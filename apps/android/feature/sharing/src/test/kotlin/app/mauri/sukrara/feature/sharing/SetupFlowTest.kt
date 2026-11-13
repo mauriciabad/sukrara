@@ -30,7 +30,9 @@ import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupScreen
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupViewModel
+import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
 import app.mauri.sukrara.share.owner.OwnerShareState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -55,7 +57,11 @@ class SetupFlowTest {
     private val sharing = FakeOwnerSharing()
     private val record = InMemoryStateStore(SetupRecord())
 
-    private val module =
+    /** The GitHub version's update check (null [updates] = a build without an updater, as Google Play). */
+    private val updateChoice = MutableStateFlow(UpdateChoice.Open)
+    private var updates: SetupUpdates? = null
+
+    private val module by lazy {
         SetupModule(
             ApplicationProvider.getApplicationContext<Application>(),
             record,
@@ -68,7 +74,9 @@ class SetupFlowTest {
             startMonitoring = {},
             readiness = FakeReadiness(),
             clock = clock,
+            updates = updates,
         )
+    }
 
     private fun recorded() = (record.data as StateFlow<SetupRecord>).value
 
@@ -158,6 +166,38 @@ class SetupFlowTest {
         shows(HOME)
         // Later and Back keep both on the card
         assertEquals(finished, recorded())
+    }
+
+    @Test
+    fun `the GitHub version asks about updates after the alert checklist - Not now and Turn on both go on`() {
+        updates =
+            SetupUpdates(
+                updateChoice,
+                turnOn = { updateChoice.value = UpdateChoice.On },
+                notNow = { updateChoice.value = UpdateChoice.Off },
+            )
+        host(open = true)
+        tap("Start")
+        tap("I wear the sensor")
+        tap("Continue")
+        tap("Confirm", scroll = false)
+        shows("Let alerts reach you")
+        tap("Continue")
+        shows("Step 4 of 8")
+        shows("Keep Sukrara up to date")
+        shows("Off until you turn it on. You can change it any time in Settings › About.")
+        tap("Not now")
+        shows("Connect your sensor")
+        assertEquals(UpdateChoice.Off, updateChoice.value)
+        // Back shows it again, as answered; Turn on goes on to the sensor too
+        back()
+        shows("Keep Sukrara up to date")
+        tap("Turn on")
+        shows("Connect your sensor")
+        assertEquals(UpdateChoice.On, updateChoice.value)
+        back()
+        shows("Keep it on")
+        shows("Turn off")
     }
 
     @Test

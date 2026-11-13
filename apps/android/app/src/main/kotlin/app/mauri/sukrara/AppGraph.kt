@@ -334,6 +334,14 @@ class AppGraph(
      */
     val updates: AppUpdates? by lazy { Store.updates(this) }
 
+    /**
+     * The suggestion to turn the updater's daily check on (it is opt-in): setup's step, home's and the Settings
+     * overview's banner; null without an updater (the Google Play build).
+     */
+    val updateSuggestion: UpdateSuggestion? by lazy {
+        updates?.let { UpdateSuggestion(data.settings, { home.bannerMemory }, clock, scope) }
+    }
+
     val settingsUi by lazy {
         SettingsModule(
             // the pages show the settings in use (a follower's mirrored rows per *Settings from*); writes go to this phone's own
@@ -361,6 +369,10 @@ class AppGraph(
                 },
             dismissClinicBanner = { scope.launch { home.bannerMemory.update { it.dismiss(BannerKind.ShareWithClinic, clock.now()) } } },
             restoreClinicBanner = { scope.launch { home.bannerMemory.update { it.restore(BannerKind.ShareWithClinic) } } },
+            updatesBanner = updateSuggestion?.banner ?: flowOf(false),
+            turnOnUpdates = { updateSuggestion?.turnOn() },
+            dismissUpdatesBanner = { updateSuggestion?.dismiss() },
+            restoreUpdatesBanner = { updateSuggestion?.restore() },
             closedTips = home.bannerMemory.data.map { it.closed },
             restoreClosedTips = { scope.launch { home.bannerMemory.update { it.restoreAll() } } },
             sensorCalendar = { sensorCalendar },
@@ -542,6 +554,8 @@ class AppGraph(
                     startMonitoring = { startMonitoring(StartReason.App) },
                     clearRole = { role.update { it.copy(role = null) } },
                 ),
+            // the updates step (the GitHub version only)
+            updates = updateSuggestion?.setup(),
         )
     }
 
@@ -644,6 +658,7 @@ class AppGraph(
             penQuestionsOf = { pens.homeQuestions },
             penReadOf = { pens.lastRead.map { r -> r?.let { PenRead(it.first, it.second) } } },
             clinicUploadSet = { integrations.clinicUploadSet },
+            updateChecksOff = { updateSuggestion?.checksOff ?: emptyFlow() },
             clinicMarks = { integrations.libreView.entryMarks.map { m -> m?.let(::LibreViewMarks) } },
             untestedSensor =
                 sensor.source.detail

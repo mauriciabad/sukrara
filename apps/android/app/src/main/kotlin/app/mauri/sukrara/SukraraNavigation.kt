@@ -798,6 +798,10 @@ private fun route(
             backStack.push(TidepoolRoute)
         }
 
+        HomeAction.TurnOnUpdates -> {
+            context.graph.updateSuggestion?.turnOn()
+        }
+
         HomeAction.AllowTaps -> {
             TagIntents.openAllow(context)
         }

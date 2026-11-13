@@ -611,6 +611,17 @@
     <string name="sh_scan_read">Invite read. Add your name if you like and tap Join.</string>
     <string name="sh_scan_picture_none">No Sukrara invite QR code in that picture. Try a sharper screenshot, or paste the link.</string>
     <!-- setup: Bring your history back (offered once) -->
+    <string name="sh_setup_updates_title">Keep Sukrara up to date</string>
+    <string name="sh_setup_updates_body">Sukrara is your alarm, and the way phones share glucose changes from time to time: an old version can stop sharing or following until it\'s updated.</string>
+    <string name="sh_setup_updates_daily">Once a day, Sukrara asks GitHub whether there\'s a new version.</string>
+    <string name="sh_setup_updates_choice">A quiet notification tells you. Nothing installs until you tap Update, unless you also turn on automatic installs in Settings › About.</string>
+    <string name="sh_setup_updates_source">Updates come straight from Sukrara\'s GitHub releases, outside any app store, so no store checks them. Sukrara installs only a file signed with its own key.</string>
+    <string name="sh_setup_updates_on">On: Sukrara checks for updates once a day. You can change it any time in Settings › About.</string>
+    <string name="sh_setup_updates_later">Off until you turn it on. You can change it any time in Settings › About.</string>
+    <string name="sh_setup_updates_turn_on">Turn on</string>
+    <string name="sh_setup_updates_not_now">Not now</string>
+    <string name="sh_setup_updates_keep">Keep it on</string>
+    <string name="sh_setup_updates_turn_off">Turn off</string>
     <string name="sh_setup_history_title">Bring your history back</string>
     <string name="sh_setup_history_body">Sukrara starts with an empty history. Bring back the last 90 days from Tidepool, LibreView or a file you exported from the earlier app, so your graph, reports and last doses are there again.</string>
     <string name="sh_setup_history_note">Nothing is counted twice: your sensor\'s own readings win, and importing again only adds what is missing. You can also do it later in Settings › Share with apps › Import history.</string>

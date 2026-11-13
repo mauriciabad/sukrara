@@ -143,6 +143,7 @@ class HomeGallery {
                     .copy(profile = HomeProfile("Núria", Avatar.v1(0, "drop", 45, 3), followers = 2)),
             "profile-no-name" to ui(Samples.wearer()).copy(profile = HomeProfile("", null, followers = 0)),
             "clinic-banner" to ui(Samples.wearer(), banner = BannerKind.ShareWithClinic),
+            "updates-banner" to ui(Samples.wearer(), banner = BannerKind.TurnOnUpdates),
             "widget-banner" to ui(Samples.wearer(), banner = BannerKind.AddWidget),
             // the launcher can't place it from the app: the hand-made way, no button (Close is the exit)
             "widget-banner-manual" to ui(Samples.wearer(), banner = BannerKind.AddWidget).copy(widgetPinnable = false),

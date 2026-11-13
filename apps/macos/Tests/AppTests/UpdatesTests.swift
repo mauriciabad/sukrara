@@ -135,7 +135,11 @@ import Testing
             try JSONSerialization.jsonObject(
                 with: Data(contentsOf: Contracts.url("settings/settings.json"))) as? [String: Any]
         let settings = try #require(rows?["settings"] as? [[String: Any]])
-        func schemaDefault(_ id: String) -> Bool? { settings.first { $0["id"] as? String == id }?["default"] as? Bool }
+        // the Mac's own default where the schema gives one (Android's update check is opt-in; the Mac's isn't)
+        func schemaDefault(_ id: String) -> Bool? {
+            let row = settings.first { $0["id"] as? String == id }
+            return ((row?["mac"] as? [String: Any])?["default"] ?? row?["default"]) as? Bool
+        }
         #expect(sparkle["SUEnableAutomaticChecks"] as? Bool == schemaDefault("update.automaticChecks"))
         #expect((sparkle["SUAutomaticallyUpdate"] as? Bool ?? false) == schemaDefault("update.automaticInstall"))
 

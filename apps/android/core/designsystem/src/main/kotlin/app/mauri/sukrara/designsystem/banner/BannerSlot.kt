@@ -54,12 +54,12 @@ import com.android.settingslib.spa.widget.banner.SettingsBannerContent
 import com.android.settingslib.spa.widget.ui.SettingsBody
 
 /**
- * One of a banner's equal choices (*LibreView* / *Tidepool*): a pill with the [service]'s own app icon ([ServiceIcon],
- * the size AOSP Settings draws app icons at).
+ * One of a banner's equal choices (*LibreView* / *Tidepool*, *Turn on* / *Not now*): a pill, with the [service]'s own
+ * app icon ([ServiceIcon], the size AOSP Settings draws app icons at) when it opens a service; null = text only.
  */
 data class BannerChoice(
     val label: String,
-    val service: Service,
+    val service: Service?,
     val onClick: () -> Unit,
 )
 
@@ -139,14 +139,28 @@ private fun TipCard(
                     Button(
                         onClick = c.onClick,
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp),
+                        contentPadding = choicePadding(c),
                     ) {
-                        ServiceIcon(c.service)
-                        Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
+                        ChoiceLabel(c)
                     }
                 }
             }
         }
+    }
+}
+
+/** A choice pill's padding: tight at the start for a service's icon, the button's own for text alone. */
+private fun choicePadding(c: BannerChoice) =
+    if (c.service != null) PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp) else ButtonDefaults.ContentPadding
+
+/** A choice pill's content: the service's icon and its name, or the text alone. */
+@Composable
+private fun ChoiceLabel(c: BannerChoice) {
+    if (c.service != null) {
+        ServiceIcon(c.service)
+        Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
+    } else {
+        Text(c.label, maxLines = 1)
     }
 }
 
@@ -256,10 +270,9 @@ private fun SafetyCard(b: Banner) {
                         FilledTonalButton(
                             onClick = c.onClick,
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(start = 6.dp, top = 4.dp, end = 16.dp, bottom = 4.dp),
+                            contentPadding = choicePadding(c),
                         ) {
-                            ServiceIcon(c.service)
-                            Text(c.label, Modifier.padding(start = 8.dp), maxLines = 1)
+                            ChoiceLabel(c)
                         }
                     }
                 }

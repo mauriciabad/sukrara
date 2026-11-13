@@ -18,6 +18,7 @@ import app.mauri.sukrara.update.UpdateNotificationPorts
 import app.mauri.sukrara.update.UpdatePorts
 import app.mauri.sukrara.update.UpdateRecord
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * The GitHub build (GitHub releases, Obtainium; docs/20-publishing.md › Flavors): root and the LSPosed module in
@@ -32,8 +33,17 @@ internal object Store {
     /** The updater ([AppGraph.updates] keeps THE one; construction does no I/O, [start] runs it). */
     fun updates(graph: AppGraph): AppUpdates? = UpdateModule(graph.app, ports(graph))
 
-    /** At app start: the daily check follows its switch once the phone is unlocked. */
-    fun start(graph: AppGraph) = (graph.updates as UpdateModule).start()
+    /**
+     * At app start: the daily check follows its switch once the phone is unlocked, and the switch turned off in About
+     * closes its suggestion ([UpdateSuggestion]).
+     */
+    fun start(graph: AppGraph) {
+        (graph.updates as UpdateModule).start()
+        graph.scope.launch {
+            graph.unlocked.first { it }
+            graph.updateSuggestion?.start()
+        }
+    }
 
     private fun ports(graph: AppGraph): UpdatePorts {
         val app = graph.app

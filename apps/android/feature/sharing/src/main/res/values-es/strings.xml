@@ -483,6 +483,17 @@
     <string name="sh_scan_read">Invitación leída. Añade tu nombre si quieres y toca Unirme.</string>
     <string name="sh_scan_picture_none">No hay ningún código QR de invitación de Sukrara en esa imagen. Prueba con una captura más nítida o pega el enlace.</string>
     <!-- configuración: Recupera tu historial (se ofrece una vez) -->
+    <string name="sh_setup_updates_title">Mantén Sukrara al día</string>
+    <string name="sh_setup_updates_body">Sukrara es tu alarma, y la forma en que los teléfonos comparten la glucosa cambia de vez en cuando: una versión antigua puede dejar de compartir o de seguir hasta que se actualice.</string>
+    <string name="sh_setup_updates_daily">Una vez al día, Sukrara pregunta a GitHub si hay una versión nueva.</string>
+    <string name="sh_setup_updates_choice">Una notificación discreta te avisa. No se instala nada hasta que tocas Actualizar, salvo que también actives la instalación automática en Ajustes › Acerca de.</string>
+    <string name="sh_setup_updates_source">Las actualizaciones llegan directamente de las versiones de Sukrara en GitHub, fuera de cualquier tienda de apps, así que ninguna tienda las revisa. Sukrara solo instala un archivo firmado con su propia clave.</string>
+    <string name="sh_setup_updates_on">Activado: Sukrara busca actualizaciones una vez al día. Puedes cambiarlo cuando quieras en Ajustes › Acerca de.</string>
+    <string name="sh_setup_updates_later">Desactivado hasta que lo actives. Puedes cambiarlo cuando quieras en Ajustes › Acerca de.</string>
+    <string name="sh_setup_updates_turn_on">Activar</string>
+    <string name="sh_setup_updates_not_now">Ahora no</string>
+    <string name="sh_setup_updates_keep">Mantener activado</string>
+    <string name="sh_setup_updates_turn_off">Desactivar</string>
     <string name="sh_setup_history_title">Recupera tu historial</string>
     <string name="sh_setup_history_body">Sukrara empieza con el historial vacío. Recupera los últimos 90 días desde Tidepool, LibreView o un archivo exportado de la app anterior, para volver a tener tu gráfica, tus informes y tus últimas dosis.</string>
     <string name="sh_setup_history_note">Nada cuenta doble: las lecturas de tu sensor mandan, e importar otra vez solo añade lo que falta. También puedes hacerlo más tarde en Ajustes › Compartir con apps › Importar historial.</string>

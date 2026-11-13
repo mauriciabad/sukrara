@@ -38,6 +38,12 @@ enum class BannerKind(val safety: Boolean) {
 
     /** First-run setup isn't finished: the next step. "Later" hides it for [SETUP_LATER]. */
     FinishSetup(safety = false),
+
+    /**
+     * The GitHub version's daily update check is off and was never answered (it is opt-in): *Turn on* / *Not now*,
+     * equal. Above the other tips: an old version can stop sharing, and one tap answers it for good.
+     */
+    TurnOnUpdates(safety = false),
     NotBackedUp(safety = false),
     AddWidget(safety = false),
     ShareWithClinic(safety = false),
@@ -52,6 +58,8 @@ data class HomeEnvironment(
     /** The launcher can place the widget from the app; false = the banner says how to add it by hand (no button). */
     val widgetPinnable: Boolean = true,
     val clinicUploadSet: Boolean? = null,
+    /** The daily update check is off; null = this build has no updater (Google Play) or it isn't known yet. */
+    val updateChecksOff: Boolean? = null,
     /** What Android blocks of the taps that are on (pen reading On, *Open Sukrara when you scan a sensor*). */
     val tapsBlocked: BlockedTaps = BlockedTaps(),
     /** The System UI module needs a restart ([ModuleState.Restart] / [ModuleState.Update]); null = it doesn't. */
@@ -151,6 +159,7 @@ object HomeBanners {
                     BannerKind.TapsBlocked -> env.tapsBlocked.any
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.FinishSetup -> env.nextSetupStep != null
+                    BannerKind.TurnOnUpdates -> env.updateChecksOff == true
                     BannerKind.NotBackedUp -> env.backedUp == false
                     BannerKind.AddWidget -> env.widgetPlaced == false
                     BannerKind.ShareWithClinic -> env.clinicUploadSet == false

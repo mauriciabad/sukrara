@@ -29,6 +29,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -79,8 +80,8 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * The first-run setup (brief 24, binding order): welcome → role → permissions → sensor →
- * alert thresholds → sharing identity → bring your history back (wearer) → home. Each step says "Step N of M" to
+ * The first-run setup (brief 24, binding order): welcome → role → permissions → keep Sukrara up to date (the GitHub
+ * version) → sensor → alert thresholds → sharing identity → bring your history back (wearer) → home. Each step says "Step N of M" to
  * TalkBack, has Back (except the first; there Back leaves, and home's "Finish setup" banner resumes the walk)
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
@@ -155,6 +156,10 @@ data class SetupActions(
     val refreshNearby: () -> Unit = {},
     val completeJoin: () -> Unit = {},
     val completePermissions: () -> Unit = {},
+    /** *Turn on* / *Keep it on* on the updates step. */
+    val turnOnUpdates: () -> Unit = {},
+    /** *Not now* / *Turn off* on the updates step. */
+    val updatesNotNow: () -> Unit = {},
     val fix: (AlertRequirement) -> Unit = {},
     val answerUnlocked: (UnlockedSound) -> Unit = {},
     /** The unlocked-sound test ([app.mauri.sukrara.core.model.AlertReadinessSource.testUnlockedSound]). */
@@ -205,6 +210,8 @@ private fun SetupViewModel.actions(
             refreshNearby = ::refreshNearby,
             completeJoin = ::completeJoin,
             completePermissions = ::completePermissions,
+            turnOnUpdates = ::turnOnUpdates,
+            updatesNotNow = ::updatesNotNow,
             fix = { r -> readinessFix(r) },
             answerUnlocked = { readinessAnswerUnlocked(it) },
             testUnlocked = ::readinessTestUnlocked,
@@ -261,6 +268,7 @@ fun SetupContent(
                         SetupStep.Role -> RoleStep(u, actions)
                         SetupStep.Join -> JoinStep(u, actions)
                         SetupStep.Permissions -> PermissionsStep(u, actions)
+                        SetupStep.Updates -> UpdatesStep(u, actions)
                         SetupStep.Sensor -> SensorStep(u, actions)
                         SetupStep.Alerts -> AlertConfirmStep(u, actions)
                         SetupStep.Identity -> IdentityStep(u, actions)
@@ -648,6 +656,78 @@ private fun ColumnScope.HistoryStep(actions: SetupActions) {
         actions.openHistoryImport,
         secondary = listOf(stringResource(R.string.sh_setup_history_skip) to { actions.skip(SetupStep.History) }),
     )
+}
+
+/**
+ * *Keep Sukrara up to date* (the GitHub version): what the daily check does, where updates come from and why it
+ * matters, then two equal choices (F-Droid's rule: declining is no harder than accepting). Reached again with Back, it
+ * shows the current answer: *Keep it on* / *Turn off*.
+ */
+@Composable
+private fun ColumnScope.UpdatesStep(
+    u: SetupUi,
+    actions: SetupActions,
+) {
+    val on = u.facts.updates == UpdateChoice.On
+    val haptics = rememberHaptics()
+    Box(
+        Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painterResource(DsR.drawable.ds_ic_update),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(28.dp),
+        )
+    }
+    StepHeader(stringResource(R.string.sh_setup_updates_title), stringResource(R.string.sh_setup_updates_body))
+    UpdatesPoint(DsR.drawable.ds_ic_schedule, stringResource(R.string.sh_setup_updates_daily))
+    UpdatesPoint(DsR.drawable.ds_ic_notifications, stringResource(R.string.sh_setup_updates_choice))
+    UpdatesPoint(DsR.drawable.ds_ic_public, stringResource(R.string.sh_setup_updates_source))
+    // off by default (opt-in); reached again with Back once on, it says so
+    Text(
+        stringResource(if (on) R.string.sh_setup_updates_on else R.string.sh_setup_updates_later),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
+    // equal weight: the same button, the same width, side by side
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FilledTonalButton(
+            onClick = {
+                haptics.toggle(true)
+                actions.turnOnUpdates()
+            },
+            enabled = !u.busy,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+        ) { Text(stringResource(if (on) R.string.sh_setup_updates_keep else R.string.sh_setup_updates_turn_on)) }
+        FilledTonalButton(
+            onClick = {
+                haptics.toggle(false)
+                actions.updatesNotNow()
+            },
+            enabled = !u.busy,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+        ) { Text(stringResource(if (on) R.string.sh_setup_updates_turn_off else R.string.sh_setup_updates_not_now)) }
+    }
+}
+
+/** One line of what the daily check does: a quiet icon and the sentence (TalkBack reads the sentence). */
+@Composable
+private fun UpdatesPoint(
+    icon: Int,
+    text: String,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Icon(
+            painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 2.dp).size(20.dp),
+        )
+        Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 12.dp).weight(1f))
+    }
 }
 
 /** Opens [intent] if anything can handle it (a settings page some phones lack). */

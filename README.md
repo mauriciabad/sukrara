@@ -118,8 +118,10 @@ Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releas
 sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
 
 Android comes in two versions, the same app with the same key (installs over each other, keeping the data): the
-**GitHub version** (GitHub releases, Obtainium), which **updates itself**: once a day it looks for a new version and
-says so in a quiet notification (*Update*, *Release notes*; never in the alerts), downloads it, checks that it is the
+**GitHub version** (GitHub releases, Obtainium), which **can update itself once you turn it on** (opt-in, so the
+same APK can go on F-Droid: setup's *Keep Sukrara up to date* step and a banner on home and in Settings suggest it, with
+*Turn on* and *Not now* side by side; Settings › About › Updates keeps the switch): once a day it asks GitHub for a new
+version, outside any app store, and says so in a quiet notification (*Update*, *Release notes*; never in the alerts), downloads it, checks that it is the
 release's file and signed with Sukrara's key, and installs it, never while an alert is showing or a very low is on;
 monitoring comes back by itself right after. Android asks you once to allow installs from Sukrara; with *Install
 updates automatically* on (Settings › About › Updates, off by default) it updates without a tap where Android allows

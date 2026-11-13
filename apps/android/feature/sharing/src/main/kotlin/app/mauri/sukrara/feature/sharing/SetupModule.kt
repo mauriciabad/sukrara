@@ -21,6 +21,7 @@ import app.mauri.sukrara.feature.sharing.setup.SetupMachine
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
+import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
 import app.mauri.sukrara.feature.sharing.share.LaterRequests
 import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 
@@ -67,6 +69,18 @@ data class RoleLoss(
 }
 
 /**
+ * The GitHub version's update suggestion as setup's *Keep Sukrara up to date* step sees it (the app's
+ * `UpdateSuggestion`; null in the Google Play build, which has no updater).
+ */
+class SetupUpdates(
+    val choice: Flow<UpdateChoice>,
+    /** *Turn on*: the daily check is on. */
+    val turnOn: suspend () -> Unit,
+    /** *Not now*: the daily check stays off and the suggestion is closed (home's banner doesn't ask again). */
+    val notNow: suspend () -> Unit,
+)
+
+/**
  * What the setup flow and the sharing screens need from the app: `AppGraph` implements it by returning its
  * [SetupModule]. Navigation to other features (the sensor flow) goes through callbacks the app passes to the screens.
  */
@@ -100,7 +114,12 @@ class SetupModule(
     val clock: Clock,
     /** The follower role (join, stop following). */
     val follower: FollowerSharing = FollowerSharing.None,
+    /** The updates step's port; null = this build has no updater (Google Play): no step. */
+    val updates: SetupUpdates? = null,
 ) {
+    /** The daily update check's answer ([SetupFacts.updates]); null = no updater in this build. */
+    val updateChoice: Flow<UpdateChoice?> by lazy { updates?.choice ?: flowOf(null) }
+
     /** An invite link opened on this phone before it follows anyone: setup's join step starts with it. */
     val pendingInvite = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
@@ -149,13 +168,13 @@ class SetupModule(
             roles.role,
             hub.state,
             combine(sharing.state, follower.state, ::Pair),
-            combine(alertsConfirmedAt, readiness.readiness, ::Pair),
+            combine(alertsConfirmedAt, readiness.readiness, updateChoice, ::Triple),
         ) {
             record,
             role,
             glucose,
             (share, follow),
-            (confirmed, checklist),
+            (confirmed, checklist, updates),
             ->
             SetupProgress(
                 record,
@@ -166,6 +185,7 @@ class SetupModule(
                     hasIdentity = share is OwnerShareState.Sharing || share is OwnerShareState.AnotherAppSharingAsYou,
                     alertsConfirmed = confirmed != null,
                     alertsReady = checklist.setupReady,
+                    updates = updates,
                 ),
             )
         }

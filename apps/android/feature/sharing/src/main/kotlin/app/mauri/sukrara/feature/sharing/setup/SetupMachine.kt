@@ -19,6 +19,14 @@ enum class SetupStep {
     Join,
     Permissions,
 
+    /**
+     * The GitHub version only (null [SetupFacts.updates] = a build without an updater, Google Play: never shown):
+     * *Keep Sukrara up to date*, the opt-in for the daily update check (F-Droid's rule: updates that bypass a store are
+     * opt-in, declining no harder than accepting). *Turn on* or *Not now*, both final here; Settings › About keeps the
+     * switch. Not a Finish-setup item: once passed, home's suggestion banner is its second chance.
+     */
+    Updates,
+
     Sensor,
     Alerts,
     Identity,
@@ -62,7 +70,21 @@ data class SetupFacts(
     val alertsConfirmed: Boolean = false,
     /** Every item of the alert checklist is met (the Allow-alerts row drops out). */
     val alertsReady: Boolean = false,
+    /** The daily update check's answer; null = this build has no updater (Google Play): no updates step. */
+    val updates: UpdateChoice? = null,
 )
+
+/** Where the GitHub version's daily update check stands (it is opt-in: off until the person turns it on). */
+enum class UpdateChoice {
+    /** Off and never answered: setup's step and the suggestion banner offer it. */
+    Open,
+
+    /** Turned on (here, the banner or Settings › About). */
+    On,
+
+    /** Off on purpose: *Not now* (setup or the banner), or turned off in Settings › About. */
+    Off,
+}
 
 /**
  * One line of the home "Finish setup" card: a skipped step that still matters; tapping reopens [step]. In the order
@@ -100,10 +122,14 @@ object SetupMachine {
     fun steps(facts: SetupFacts): List<SetupStep> =
         when (facts.role) {
             // a follower's history is the wearer's (it comes from their phone): nothing to import
-            Role.Follower -> listOf(SetupStep.Welcome, SetupStep.Role, SetupStep.Join, SetupStep.Permissions, SetupStep.Alerts)
+            Role.Follower -> {
+                listOf(SetupStep.Welcome, SetupStep.Role, SetupStep.Join, SetupStep.Permissions, SetupStep.Updates, SetupStep.Alerts)
+            }
 
-            Role.Wearer, null -> SetupStep.entries - SetupStep.Join
-        }
+            Role.Wearer, null -> {
+                SetupStep.entries - SetupStep.Join
+            }
+        }.filter { it != SetupStep.Updates || facts.updates != null }
 
     /** *Bring it back* opens Import history: the step is done (offered once). */
     fun completeHistory(record: SetupRecord): SetupRecord = record.done(SetupStep.History)
@@ -182,13 +208,32 @@ object SetupMachine {
         // joined, and the person moved on from the waiting screen (its code); a follow that ended asks again
         if (step == SetupStep.Join) {
             facts.following && step in record.completed
+        } else if (step == SetupStep.Updates) {
+            step in record.completed || step in record.skipped || facts.updates != UpdateChoice.Open || passed(step, record, facts)
         } else {
             step in record.completed ||
                 (facts.role != null && (step == SetupStep.Welcome || step == SetupStep.Role)) ||
                 (step == SetupStep.Alerts && facts.alertsConfirmed)
         }
 
+    /**
+     * The walk already went past [step]: a later step was answered. Only for a step added to the walk after people
+     * finished it (*Keep Sukrara up to date*): an install from before it isn't sent back into setup for it (home's
+     * suggestion banner offers it instead).
+     */
+    private fun passed(
+        step: SetupStep,
+        record: SetupRecord,
+        facts: SetupFacts,
+    ): Boolean {
+        val steps = steps(facts)
+        return steps.drop(steps.indexOf(step) + 1).any { it in record.completed || it in record.skipped }
+    }
+
     fun completeWelcome(record: SetupRecord): SetupRecord = record.done(SetupStep.Welcome)
+
+    /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, the step done. */
+    fun completeUpdates(record: SetupRecord): SetupRecord = record.done(SetupStep.Updates)
 
     /** P10: the role to store, or why not: refused until [confirmed]. */
     fun chooseRole(
