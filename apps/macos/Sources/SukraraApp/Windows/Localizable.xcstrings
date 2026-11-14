@@ -1057,6 +1057,22 @@
         }
       }
     },
+    "Default (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Predeterminado (%@)"
+          }
+        }
+      }
+    },
     "Defaults…" : {
       "localizations" : {
         "en" : {
@@ -1233,6 +1249,22 @@
         }
       }
     },
+    "Edit exceptions: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit exceptions: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar excepciones: %@"
+          }
+        }
+      }
+    },
     "Edit Treatment" : {
       "localizations" : {
         "en" : {
@@ -1325,6 +1357,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Todas las flechas, la tendencia leída en voz alta y las alertas Bajada rápida / Subida rápida usan esto."
+          }
+        }
+      }
+    },
+    "Exceptions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exceptions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excepciones"
           }
         }
       }
@@ -2317,6 +2365,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lecturas"
+          }
+        }
+      }
+    },
+    "Sensor time left" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor time left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo restante del sensor"
           }
         }
       }
@@ -5681,22 +5745,6 @@
         }
       }
     },
-    "Each place can show a window of its own; Same as default follows the default." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Each place can show a window of its own; Same as default follows the default."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada lugar puede mostrar su propio periodo; Igual que el predeterminado sigue al predeterminado."
-          }
-        }
-      }
-    },
     "Fainter" : {
       "localizations" : {
         "en" : {
@@ -6477,38 +6525,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Distribución del tiempo en rango"
-          }
-        }
-      }
-    },
-    "Time left in the menu bar panel" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Time left in the menu bar panel"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiempo restante en el panel de la barra de menús"
-          }
-        }
-      }
-    },
-    "Time left on widgets" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Time left on widgets"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiempo restante en los widgets"
           }
         }
       }

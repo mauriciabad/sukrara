@@ -61,6 +61,7 @@ import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import app.mauri.sukrara.feature.settings.SettingsScreen
 import app.mauri.sukrara.feature.settings.TestAlert
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
 import app.mauri.sukrara.feature.sharing.backup.BackupViewModel
@@ -261,6 +262,11 @@ data class SettingsKey(
                 SettingsRoute.GraphMarks
             }
 
+            "exceptions" -> {
+                kind?.let { k -> PlaceSetting.entries.firstOrNull { it.name == k } }?.let(SettingsRoute::PlaceExceptions)
+                    ?: SettingsRoute.Graph
+            }
+
             "lock" -> {
                 SettingsRoute.LockScreen
             }
@@ -322,6 +328,7 @@ data class SettingsKey(
                 SettingsRoute.Rings -> SettingsKey("rings")
                 SettingsRoute.ImportExport -> SettingsKey("files")
                 SettingsRoute.GraphMarks -> SettingsKey("marks")
+                is SettingsRoute.PlaceExceptions -> SettingsKey("exceptions", route.setting.name)
                 SettingsRoute.LockScreen -> SettingsKey("lock")
                 SettingsRoute.Pens -> SettingsKey("pens")
                 is SettingsRoute.Pen -> SettingsKey("pen", serial = route.serial)

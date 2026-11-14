@@ -186,11 +186,22 @@ public final class SettingsModel {
         if store.setNumber(v, for: n) { revision += 1 }
     }
 
-    /// A place's own time shown (0 = same as the default) and sensor time left: always this Mac's.
+    /// A place's own time shown (0 = Default): always this Mac's (docs/38).
     public func placeHours(_ p: GraphPlace) -> Double { _ = revision; return store.number(p.hours) }
     public func setPlaceHours(_ v: Double, _ p: GraphPlace) { if store.setNumber(v, for: p.hours) { revision += 1 } }
-    public func sensorTime(_ p: GraphPlace) -> Bool { _ = revision; return store.value(p.sensorTime) }
-    public func setSensorTime(_ on: Bool, _ p: GraphPlace) { store.set(on, for: p.sensorTime); revision += 1 }
+    /// The sensor's time left: the default every place follows, always this Mac's.
+    public var sensorTime: Bool {
+        get { _ = revision; return store.value(MacSettings.sensorTime) }
+        set { store.set(newValue, for: MacSettings.sensorTime); revision += 1 }
+    }
+    /// A place's own sensor time left (nil = Default).
+    public func sensorPlace(_ p: GraphPlace) -> Bool? {
+        _ = revision; return PlaceOverride(stored: store.value(p.sensorTime)).own
+    }
+    public func setSensorPlace(_ own: Bool?, _ p: GraphPlace) {
+        store.set(PlaceOverride(own: own).rawValue, for: p.sensorTime)
+        revision += 1
+    }
 
     /// Changes this Mac's card settings (Custom only): `change` edits the current ones, the result is stored.
     public func updateGraph(_ change: (inout GraphConfig) -> Void) {
@@ -214,9 +225,9 @@ public final class SettingsModel {
     public func resetRingOrder() { updateGraph { $0.ringOrder = DEFAULT_RING_ORDER } }
     /// Any card setting differs from the defaults (the place's own ones included).
     public var graphChanged: Bool {
-        graph != GraphConfig()
+        graph != GraphConfig() || !sensorTime
             || GraphPlace.allCases.contains {
-                placeHours($0) != MacSettings.menubarHours.format.default || !sensorTime($0)
+                placeHours($0) != MacSettings.menubarHours.format.default || sensorPlace($0) != nil
             }
     }
 
@@ -226,8 +237,9 @@ public final class SettingsModel {
         writeGraph(GraphConfig())
         for p in GraphPlace.allCases {
             store.set(p.hours.format.default, for: p.hours.spec)
-            store.set(true, for: p.sensorTime)
+            store.set(PlaceOverride.default.rawValue, for: p.sensorTime)
         }
+        store.set(true, for: MacSettings.sensorTime)
         revision += 1
     }
 

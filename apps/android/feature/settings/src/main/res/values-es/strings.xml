@@ -136,6 +136,7 @@
     <string name="st_ranges_title">Rangos</string>
     <string name="st_trend_title">Flecha de tendencia</string>
     <string name="st_trend_summary">De dónde sacan la tendencia todas las flechas, la tendencia leída en voz alta y las alertas rápidas</string>
+    <string name="st_exceptions_keywords">por lugar, app, notificación, widgets, propio, distinto</string>
     <string name="st_trend_keywords">flecha, tendencia, dirección, velocidad, retraso, suavizado, sensor</string>
     <string name="st_trend_from">Tendencia a partir de</string>
     <string name="st_trend_quick">Rápida</string>
@@ -490,8 +491,7 @@
     <string name="st_graph_line_full">%1$d líneas: quita una para añadir otra</string>
     <string name="st_graph_line_exists">Esa línea ya está</string>
     <string name="st_graph_line_remove">Quitar la línea de %1$s</string>
-    <string name="st_graph_hours_default">Por defecto</string>
-    <string name="st_graph_hours_same">Igual que por defecto (%1$s)</string>
+    <string name="st_graph_hours_default">Predeterminado</string>
     <string name="st_graph_beside">Junto al valor</string>
     <string name="st_slot_main">Hueco principal</string>
     <string name="st_slot_second">Segundo hueco</string>

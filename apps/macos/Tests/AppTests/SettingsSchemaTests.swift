@@ -44,6 +44,7 @@ import Testing
             t("graph.side", MacSettings.side), t("graph.marks", MacSettings.marks),
             t("graph.columnCrown", MacSettings.columnCrown), t("graph.lines", MacSettings.lines),
             t("graph.lastPlace", MacSettings.lastPlace), t("graph.lastElse", MacSettings.lastElse),
+            t("graph.sensorTime", MacSettings.sensorTime),
             t("graph.sensorTime.place", MacSettings.menubarSensorTime),
             t("graph.sensorTime.place", MacSettings.widgetSensorTime),
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
@@ -186,6 +187,7 @@ import Testing
             "settingsFrom": SettingsFrom.allCases.map(\.rawValue),
             "unit": GlucoseUnit.allCases.map(\.rawValue),
             "trend": TrendSetting.allCases.map(\.rawValue),
+            "placeOverride": PlaceOverride.allCases.map(\.rawValue),
             "markKind": MarkShow.kinds,
             "markPart": MarkShow.allParts,
         ]
@@ -202,6 +204,7 @@ import Testing
         #expect(Self.rows["graph.ringRange"]?["values"] as? [String] == TirRange.allCases.map(\.rawValue))
         #expect(Self.rows["graph.lastPlace"]?["values"] as? [String] == LastPlace.allCases.map(\.rawValue))
         #expect(Self.rows["general.unit"]?["values"] as? [String] == GlucoseUnit.allCases.map(\.rawValue))
+        #expect(Self.rows["graph.sensorTime.place"]?["values"] as? [String] == PlaceOverride.allCases.map(\.rawValue))
         #expect(Self.rows["alerts.sounds.pack"]?["values"] as? [String] == Self.option("soundPack"))
         let order = Self.rows["graph.ringOrder"]?["values"] as? [String] ?? []
         #expect(Set(order) == Set(Band.allCases.map(\.name)))

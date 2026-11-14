@@ -28,21 +28,22 @@ struct GraphPane: View {
                 }
             }
             Section {
-                if model.editable {
-                    NumberSettingRow(
-                        label: L10n.t("Default"), format: MacSettings.graphHours.format,
-                        value: number(MacSettings.graphHours))
-                }
-                ForEach(GraphPlace.allCases, id: \.self) { place in
-                    NumberSettingRow(
-                        label: Self.placeName(place), format: place.hours.format,
-                        value: Binding(
-                            get: { model.placeHours(place) }, set: { model.setPlaceHours($0, place) }))
+                // the default is mirrored (read-only outside Custom); the exceptions are always this Mac's
+                NumberSettingRow(
+                    label: L10n.t("Default"), format: MacSettings.graphHours.format,
+                    value: number(MacSettings.graphHours), readOnly: !model.editable)
+                // each place is this Mac's own (docs/38): the row names only the ones that differ
+                ExceptionsRow(title: L10n.t("Time shown"), summary: hoursSummary) {
+                    ForEach(GraphPlace.allCases, id: \.self) { place in
+                        NumberSettingRow(
+                            label: Self.placeName(place), format: place.hours.format,
+                            value: Binding(
+                                get: { model.placeHours(place) }, set: { model.setPlaceHours($0, place) }),
+                            defaultValue: hoursWord)
+                    }
                 }
             } header: {
                 Text(L10n.t("Time shown"))
-            } footer: {
-                note(L10n.t("Each place can show a window of its own; Same as default follows the default."))
             }
             if model.editable {
                 Section(L10n.t("Graph")) {
@@ -55,25 +56,31 @@ struct GraphPane: View {
                 marksSection
                 linesSection
             }
-            Section {
-                if model.editable {
+            if model.editable {
+                Section {
                     NumberSettingRow(
                         label: L10n.t("Sensor countdown (last hours)"), format: MacSettings.countdownHours.format,
                         value: number(MacSettings.countdownHours))
+                } header: {
+                    Text(L10n.t("Sensor"))
+                } footer: {
+                    note(
+                        L10n.t(
+                            "A ring over the main ring counts down the sensor's last hours. The warm-up and Sensor ended show either way."
+                        ))
                 }
-                Toggle(
-                    L10n.t("Time left in the menu bar panel"),
-                    isOn: Binding(get: { model.sensorTime(.menubar) }, set: { model.setSensorTime($0, .menubar) }))
-                Toggle(
-                    L10n.t("Time left on widgets"),
-                    isOn: Binding(get: { model.sensorTime(.widget) }, set: { model.setSensorTime($0, .widget) }))
+            }
+            Section {
+                Toggle(L10n.t("Default"), isOn: $model.sensorTime)
+                ExceptionsRow(title: L10n.t("Sensor time left"), summary: sensorSummary) {
+                    ForEach(GraphPlace.allCases, id: \.self) { place in
+                        OverridePicker(
+                            label: Self.placeName(place), defaultOn: model.sensorTime,
+                            own: Binding(get: { model.sensorPlace(place) }, set: { model.setSensorPlace($0, place) }))
+                    }
+                }
             } header: {
-                Text(L10n.t("Sensor"))
-            } footer: {
-                note(
-                    L10n.t(
-                        "A ring over the main ring counts down the sensor's last hours. The warm-up and Sensor ended show either way."
-                    ))
+                Text(L10n.t("Sensor time left"))
             }
             if model.editable {
                 Section {
@@ -175,7 +182,6 @@ struct GraphPane: View {
             g.columnCrown ? L10n.t("crown when all in range") : nil,
         ].compactMap { $0 }
         return [
-            (L10n.t("Time shown"), NumberSettingRow.word(SettingsSpec.graphHours, Double(g.hours))),
             (
                 L10n.t("Lines across the graph"),
                 g.lines.isEmpty
@@ -196,6 +202,22 @@ struct GraphPane: View {
                 NumberSettingRow.word(SettingsSpec.countdownHours, Double(g.countdownHours))
             ),
         ]
+    }
+
+    /// The default time shown in words ("12 h").
+    private var hoursWord: String { NumberSettingRow.word(SettingsSpec.graphHours, Double(g.hours)) }
+
+    private var hoursSummary: String {
+        PlaceExceptions.summary(
+            GraphPlace.allCases.map { p in
+                let own = model.placeHours(p)
+                return (Self.placeName(p), own > 0 ? NumberSettingRow.word(SettingsSpec.placeHours, own) : nil)
+            })
+    }
+
+    private var sensorSummary: String {
+        PlaceExceptions.summary(
+            GraphPlace.allCases.map { p in (Self.placeName(p), model.sensorPlace(p).map(ReadOnlyValue.onOff)) })
     }
 
     private func number(_ n: MacSettings.Number) -> Binding<Double> {

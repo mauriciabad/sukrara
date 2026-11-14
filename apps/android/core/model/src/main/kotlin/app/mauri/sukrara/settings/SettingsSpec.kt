@@ -116,7 +116,7 @@ object SettingsSpec {
     val NUMBERS: Map<String, NumberSpec> = mapOf("bandVeryLow" to BAND_VERY_LOW, "bandLow" to BAND_LOW, "bandTight" to BAND_TIGHT, "bandHigh" to BAND_HIGH, "bandVeryHigh" to BAND_VERY_HIGH, "bandExtremelyHigh" to BAND_EXTREMELY_HIGH, "graphHours" to GRAPH_HOURS, "placeHours" to PLACE_HOURS, "ringCount" to RING_COUNT, "ringWindow" to RING_WINDOW, "line" to LINE, "gridHours" to GRID_HOURS, "countdownHours" to COUNTDOWN_HOURS, "endedRepeatHours" to ENDED_REPEAT_HOURS, "thresholdVeryLow" to THRESHOLD_VERY_LOW, "thresholdLow" to THRESHOLD_LOW, "thresholdHigh" to THRESHOLD_HIGH, "thresholdVeryHigh" to THRESHOLD_VERY_HIGH, "thresholdExtremelyHigh" to THRESHOLD_EXTREMELY_HIGH, "thresholdRate" to THRESHOLD_RATE, "penPrimeBelow" to PEN_PRIME_BELOW, "penCluster" to PEN_CLUSTER, "penPrimeBefore" to PEN_PRIME_BEFORE, "penPending" to PEN_PENDING, "penMatch" to PEN_MATCH, "penMatchUnits" to PEN_MATCH_UNITS, "penMatchShare" to PEN_MATCH_SHARE, "penOffer" to PEN_OFFER, "lockTreatmentTime" to LOCK_TREATMENT_TIME, "thresholdNoData" to THRESHOLD_NO_DATA, "alertRepeat" to ALERT_REPEAT, "muteInsulin" to MUTE_INSULIN, "muteFalling" to MUTE_FALLING, "muteRising" to MUTE_RISING, "muteCarbs" to MUTE_CARBS, "actionMute" to ACTION_MUTE, "actionRelax" to ACTION_RELAX, "backMgdl" to BACK_MGDL, "backMin" to BACK_MIN, "persistLow" to PERSIST_LOW, "persistHigh" to PERSIST_HIGH, "persistMargin" to PERSIST_MARGIN, "escalateMin" to ESCALATE_MIN, "muteAll" to MUTE_ALL, "libreViewInterval" to LIBRE_VIEW_INTERVAL, "nostrInterval" to NOSTR_INTERVAL)
 
     /** Option lists both platforms offer, in order (schema "options"). */
-    val OPTIONS: Map<String, List<String>> = mapOf("alertKind" to listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data"), "exportPeriod" to listOf("sensor", "7", "14", "30", "all"), "reportPeriod" to listOf("1", "7", "14", "30"), "slotKind" to listOf("TIR", "GMI", "AVERAGE", "CV"), "tirRange" to listOf("IN_RANGE", "TIGHT"), "lastPlace" to listOf("OFF", "NEAR_VALUE", "END"), "soundPack" to listOf("arcade", "kart", "quest", "soft", "system", "none"), "settingsFrom" to listOf("wearer", "default", "custom"), "unit" to listOf("mgdl", "mmol"), "trend" to listOf("quick", "balanced", "smooth", "sensor"), "markKind" to listOf("rapid", "long", "carbs", "note"), "markPart" to listOf("point", "line", "amount", "time"), "markParts.rapid" to listOf("point", "line", "amount", "time"), "markParts.long" to listOf("point", "amount", "time"), "markParts.carbs" to listOf("point", "line", "amount", "time"), "markParts.note" to listOf("point"), "markDefault.rapid" to listOf("point", "line", "amount", "time"), "markDefault.long" to listOf("point", "amount", "time"), "markDefault.carbs" to listOf("point"), "markDefault.note" to listOf("point"))
+    val OPTIONS: Map<String, List<String>> = mapOf("alertKind" to listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data"), "exportPeriod" to listOf("sensor", "7", "14", "30", "all"), "reportPeriod" to listOf("1", "7", "14", "30"), "slotKind" to listOf("TIR", "GMI", "AVERAGE", "CV"), "tirRange" to listOf("IN_RANGE", "TIGHT"), "lastPlace" to listOf("OFF", "NEAR_VALUE", "END"), "soundPack" to listOf("arcade", "kart", "quest", "soft", "system", "none"), "settingsFrom" to listOf("wearer", "default", "custom"), "unit" to listOf("mgdl", "mmol"), "placeOverride" to listOf("default", "on", "off"), "trend" to listOf("quick", "balanced", "smooth", "sensor"), "markKind" to listOf("rapid", "long", "carbs", "note"), "markPart" to listOf("point", "line", "amount", "time"), "markParts.rapid" to listOf("point", "line", "amount", "time"), "markParts.long" to listOf("point", "amount", "time"), "markParts.carbs" to listOf("point", "line", "amount", "time"), "markParts.note" to listOf("point"), "markDefault.rapid" to listOf("point", "line", "amount", "time"), "markDefault.long" to listOf("point", "amount", "time"), "markDefault.carbs" to listOf("point"), "markDefault.note" to listOf("point"))
 
     val SETTINGS: List<SettingInfo> = listOf(
         SettingInfo("glucose.trend", "enum", null, true, "graph.trend", "graph:trend", "defaults:trend", null, null, null, listOf()),
@@ -140,7 +140,8 @@ object SettingsSpec {
         SettingInfo("graph.gridHours", "number", "gridHours", true, "graph.gridHours", "graph:gridHours", "defaults:gridHours", null, null, null, listOf()),
         SettingInfo("graph.lastPlace", "enum", null, true, "graph.lastPlace", "graph:lastPlace", "defaults:lastPlace", null, null, null, listOf()),
         SettingInfo("graph.lastElse", "slot", "ringWindow", true, "graph.lastElse", "graph:lastElse", "defaults:lastElse", null, null, null, listOf()),
-        SettingInfo("graph.sensorTime.place", "bool", null, false, null, "graph:sensorTimeApp,sensorTimeNotification,sensorTimeWidgets", "defaults:menubarSensorTime,widgetSensorTime", null, null, null, listOf()),
+        SettingInfo("graph.sensorTime", "bool", null, false, null, "graph:sensorTime", "defaults:sensorTime", null, null, null, listOf()),
+        SettingInfo("graph.sensorTime.place", "enum", null, false, null, "graph:placeSensorTimeApp,placeSensorTimeNotification,placeSensorTimeWidgets", "defaults:placeSensorTimeMenubar,placeSensorTimeWidget", null, null, null, listOf()),
         SettingInfo("sensor.countdownHours", "number", "countdownHours", true, "graph.countdownHours", "sensor:countdownHours", "defaults:countdownHours", null, null, null, listOf()),
         SettingInfo("follower.settingsFrom", "enum", null, false, null, "sharing:settingsFrom", "defaults:settingsFrom", null, null, null, listOf()),
         SettingInfo("alerts.on", "bool", null, false, null, "alerts:alerts", "defaults:alerts", "on", null, null, listOf()),
@@ -287,9 +288,10 @@ object SettingsSpec {
         const val GRID_HOURS = "gridHours"
         const val LAST_PLACE = "lastPlace"
         const val LAST_ELSE = "lastElse"
-        const val SENSOR_TIME_APP = "sensorTimeApp"
-        const val SENSOR_TIME_NOTIFICATION = "sensorTimeNotification"
-        const val SENSOR_TIME_WIDGETS = "sensorTimeWidgets"
+        const val SENSOR_TIME = "sensorTime"
+        const val PLACE_SENSOR_TIME_APP = "placeSensorTimeApp"
+        const val PLACE_SENSOR_TIME_NOTIFICATION = "placeSensorTimeNotification"
+        const val PLACE_SENSOR_TIME_WIDGETS = "placeSensorTimeWidgets"
         const val COUNTDOWN_HOURS = "countdownHours"
         const val SETTINGS_FROM = "settingsFrom"
         const val ALERTS = "alerts"

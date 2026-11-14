@@ -63,7 +63,7 @@ class GraphSettingsTest {
             settings.set(GraphSettings.LastElse, "")
             settings.set(GraphSettings.Marks, "rapid:point,long:point,carbs:point+amount,note:")
             settings.set(GraphSettings.PlaceHours.getValue(GraphPlace.NOTIFICATION), 3.0)
-            settings.set(GraphSettings.SensorTime.getValue(GraphPlace.WIDGETS), false)
+            settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.WIDGETS), "off")
             val c = GraphSettings.config(settings).first()
             assertEquals(listOf(SlotKind.GMI, SlotKind.AVERAGE, SlotKind.CV), c.slots.map { it.kind })
             assertFalse(c.slots[0].faded)
@@ -79,6 +79,32 @@ class GraphSettingsTest {
             assertEquals(c.defaultHours, c.hours(GraphPlace.APP))
             assertFalse(c.sensorTime(GraphPlace.WIDGETS))
             assertTrue(c.sensorTime(GraphPlace.APP))
+        }
+
+    /** #209: the sensor's time left has a default every place follows; a place's Default / On / Off is its own. */
+    @Test fun eachPlaceFollowsTheSensorTimeDefaultUnlessItHasItsOwn() =
+        runTest {
+            settings.set(GraphSettings.SensorTime, false)
+            settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.NOTIFICATION), "on")
+            var c = GraphSettings.config(settings).first()
+            assertFalse(c.sensorTime(GraphPlace.APP))
+            assertTrue(c.sensorTime(GraphPlace.NOTIFICATION))
+            assertFalse(c.sensorTime(GraphPlace.WIDGETS))
+            settings.set(GraphSettings.SensorTime, true)
+            settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.WIDGETS), "off")
+            settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.NOTIFICATION), "default")
+            c = GraphSettings.config(settings).first()
+            assertEquals(mapOf(GraphPlace.WIDGETS to false), c.sensorPlace)
+            assertTrue(c.sensorTime(GraphPlace.APP) && c.sensorTime(GraphPlace.NOTIFICATION))
+            // an unknown stored name reads as Default
+            settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.WIDGETS), "maybe")
+            assertTrue(GraphSettings.config(settings).first().sensorTime(GraphPlace.WIDGETS))
+            // the values are the schema's option list, in order
+            assertEquals(
+                app.mauri.sukrara.settings.SettingsSpec.OPTIONS
+                    .getValue("placeOverride"),
+                PlaceOverride.entries.map { it.key },
+            )
         }
 
     @Test fun damagedTextReadsAsTheDefault() =

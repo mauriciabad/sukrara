@@ -217,11 +217,32 @@ import Testing
     @Test func placesKeepTheirOwnHoursAndSensorTime() {
         let s = custom()
         s.setNumber(24, for: MacSettings.widgetHours)
-        s.set(false, for: MacSettings.widgetSensorTime)
+        s.set("off", for: MacSettings.widgetSensorTime)
         let menubar = GraphConfig.load(from: s, wearer: nil, place: .menubar)
         let widget = GraphConfig.load(from: s, wearer: nil, place: .widget)
         #expect(menubar.hours == 12 && menubar.sensorTime)
         #expect(widget.hours == 24 && !widget.sensorTime)
+    }
+
+    /// #209 (docs/38): the sensor's time left has a default every place follows; a place's Default / On / Off is its own.
+    @Test func eachPlaceFollowsTheSensorTimeDefaultUnlessItHasItsOwn() {
+        let s = custom()
+        s.set(false, for: MacSettings.sensorTime)
+        s.set("on", for: MacSettings.menubarSensorTime)
+        #expect(GraphConfig.load(from: s, wearer: nil, place: .menubar).sensorTime)
+        #expect(!GraphConfig.load(from: s, wearer: nil, place: .widget).sensorTime)
+        s.set(true, for: MacSettings.sensorTime)
+        s.set("default", for: MacSettings.menubarSensorTime)
+        s.set("maybe", for: MacSettings.widgetSensorTime)  // unknown = Default
+        #expect(GraphConfig.load(from: s, wearer: nil, place: .menubar).sensorTime)
+        #expect(GraphConfig.load(from: s, wearer: nil, place: .widget).sensorTime)
+    }
+
+    /// The Exceptions row names only the places that differ, or None.
+    @Test func exceptionsSummaryNamesOnlyThePlacesThatDiffer() {
+        #expect(PlaceExceptions.summary([("Menu bar panel", nil), ("Widgets", nil)]) == "None")
+        #expect(PlaceExceptions.summary([("Menu bar panel", nil), ("Widgets", "6 h")]) == "Widgets: 6 h")
+        #expect(PlaceExceptions.defaultChoice("12 h") == "Default (12 h)")
     }
 
     @Test func settingsFromDecidesTheMirroredValues() throws {

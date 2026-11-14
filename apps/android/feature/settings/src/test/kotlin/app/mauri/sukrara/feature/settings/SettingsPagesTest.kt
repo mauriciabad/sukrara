@@ -53,6 +53,7 @@ class SettingsPagesTest {
             "graph.lines",
             "graph.lastPlace",
             "graph.lastElse",
+            "graph.sensorTime",
             "graph.sensorTime.place",
             // Settings › Lock screen
             "lock.treatmentTime",

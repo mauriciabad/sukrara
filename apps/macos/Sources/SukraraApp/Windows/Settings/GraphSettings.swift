@@ -9,7 +9,7 @@ public enum GraphPlace: String, CaseIterable, Sendable {
     case menubar, widget
 
     var hours: MacSettings.Number { self == .menubar ? MacSettings.menubarHours : MacSettings.widgetHours }
-    var sensorTime: SettingSpec<Bool> {
+    var sensorTime: SettingSpec<String> {
         self == .menubar ? MacSettings.menubarSensorTime : MacSettings.widgetSensorTime
     }
 }
@@ -60,10 +60,11 @@ extension GraphConfig {
             high: n(MacSettings.bandHigh), veryHigh: n(MacSettings.bandVeryHigh),
             extremelyHigh: n(MacSettings.bandExtremelyHigh))
         c.hours = n(MacSettings.graphHours)
+        c.sensorTime = store.value(MacSettings.sensorTime)
         if let place {
             let own = store.number(place.hours)
             if own > 0 { c.hours = Int(own) }
-            c.sensorTime = store.value(place.sensorTime)
+            if let on = PlaceOverride(stored: store.value(place.sensorTime)).own { c.sensorTime = on }
         }
         c.ringCount = n(MacSettings.ringCount)
         c.slots = parseSlots(src.string("graph.slots", MacSettings.slots)) ?? c.slots

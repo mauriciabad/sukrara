@@ -22,6 +22,9 @@ struct NumberSettingRow: View {
     var readOnly = false
     /// What a value means, under the row ("Low: 56–69 mg/dL"): the value set, or while typing a valid one, that one.
     var span: ((Double) -> String?)? = nil
+    /// A place's exception (docs/38): what *Default* means here ("12 h"); the format's `same_as_default` value is then
+    /// the first item, "Default (12 h)", above a separator.
+    var defaultValue: String? = nil
     @Environment(\.glucoseUnit) private var unit
     @State private var custom = false
     @State private var text = ""
@@ -59,14 +62,26 @@ struct NumberSettingRow: View {
     private var editor: some View {
         VStack(alignment: .leading, spacing: 4) {
             Picker(label, selection: choice) {
+                if let defaultValue, let same = shown.special.first(where: { $0.value == "same_as_default" })?.key {
+                    Text(PlaceExceptions.defaultChoice(defaultValue)).tag(Optional(same))
+                    Divider()
+                }
                 ForEach(
-                    shown.presets + shown.special.keys.filter { !shown.presets.contains($0) }.sorted(), id: \.self
+                    shown.presets
+                        + shown.special.keys.filter {
+                            !shown.presets.contains($0)
+                                && (defaultValue == nil || shown.specialOf($0) != "same_as_default")
+                        }.sorted(), id: \.self
                 ) {
                     Text(Self.word(shown, $0)).tag(Optional($0))
                 }
                 if shown.custom { Text(L10n.t("Custom…")).tag(Double?.none) }
             }
-            .accessibilityValue(Self.word(format, value, unit))
+            .accessibilityValue(
+                defaultValue.flatMap {
+                    format.specialOf(value) == "same_as_default" ? PlaceExceptions.defaultChoice($0) : nil
+                }
+                    ?? Self.word(format, value, unit))
             if isCustom && shown.custom {
                 NumberField(label: label, text: $text, unit: shown.unit, step: nudge, submit: commit)
                 Text(L10n.t("Enter \(shown.text(shown.min))–\(shown.text(shown.max)) \(shown.unit)"))

@@ -10,6 +10,7 @@ import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonArray
@@ -17,6 +18,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * THE schema against the search (#205, docs/35): every setting of `contracts/settings/settings.json` that has a row on
@@ -42,7 +44,7 @@ class SchemaSearchTest {
             put("graph.band.extremelyHigh", R.string.st_band_extremely_high to page(SettingsRoute.Readings))
             put("general.unit", R.string.st_unit to page(SettingsRoute.Readings))
             put("graph.hours", R.string.st_graph_hours_default to page(SettingsRoute.Graph))
-            put("graph.hours.place", R.string.st_place_app to page(SettingsRoute.Graph))
+            put("graph.hours.place", R.string.st_place_app to page(SettingsRoute.PlaceExceptions(PlaceSetting.Hours)))
             put("graph.side", R.string.st_graph_side to page(SettingsRoute.Graph))
             put("graph.columnCrown", R.string.st_graph_crown to page(SettingsRoute.Graph))
             put("graph.lines", R.string.st_graph_line_add to page(SettingsRoute.Graph))
@@ -55,7 +57,8 @@ class SchemaSearchTest {
             put("graph.ringMarks", R.string.st_graph_marks to page(SettingsRoute.Rings))
             put("graph.lastPlace", R.string.st_last to page(SettingsRoute.Rings))
             put("graph.lastElse", R.string.st_last_else to page(SettingsRoute.Rings))
-            put("graph.sensorTime.place", R.string.st_place_app to page(SettingsRoute.SensorEnd))
+            put("graph.sensorTime", R.string.st_graph_hours_default to page(SettingsRoute.SensorEnd))
+            put("graph.sensorTime.place", R.string.st_place_app to page(SettingsRoute.PlaceExceptions(PlaceSetting.SensorTime)))
             put("sensor.countdownHours", R.string.st_sensorend_countdown_hours to page(SettingsRoute.SensorEnd))
             put("sensor.reminders", R.string.st_sensorend_reminders to page(SettingsRoute.SensorEnd))
             put("sensorCalendar.on", R.string.st_calendar_title to page(SettingsRoute.SensorEnd))
@@ -131,7 +134,9 @@ class SchemaSearchTest {
             "glucose.trend" to (R.string.st_trend_title to page(SettingsRoute.AlertKindPage(AlertKind.FALLING_FAST))),
             "alerts.night.from" to (R.string.st_sensorend_bedtime to page(SettingsRoute.SensorEnd)),
             "alerts.night.to" to (R.string.st_sensorend_wakeup to page(SettingsRoute.SensorEnd)),
-            "graph.sensorTime.place" to (R.string.st_place_app to page(SettingsRoute.Graph)),
+            "graph.sensorTime" to (R.string.st_graph_hours_default to page(SettingsRoute.Graph)),
+            // Graph's Exceptions row opens the same page as Sensor end's (docs/38)
+            "graph.sensorTime.place" to (DsR.string.ds_exceptions to page(SettingsRoute.Graph)),
         )
 
     /** Android settings without a row the settings search lists here, with why. */

@@ -13,6 +13,30 @@ import app.mauri.sukrara.settings.SettingsSpec
 enum class GraphPlace { APP, NOTIFICATION, WIDGETS }
 
 /**
+ * One place's own value of a switch that has a default for every place (schema option `placeOverride`, docs/38):
+ * [DEFAULT] follows the default, [ON] / [OFF] are the place's own. [on] = the place's own value, null = the default's.
+ */
+enum class PlaceOverride(
+    val key: String,
+    val on: Boolean?,
+) {
+    DEFAULT("default", null),
+    ON("on", true),
+    OFF("off", false),
+    ;
+
+    companion object {
+        val keys: Set<String> = entries.map { it.key }.toSet()
+
+        /** A stored name; unknown = [DEFAULT]. */
+        fun of(key: String): PlaceOverride = entries.firstOrNull { it.key == key } ?: DEFAULT
+
+        /** A place's own value (null = the default) as stored. */
+        fun of(on: Boolean?): PlaceOverride = entries.first { it.on == on }
+    }
+}
+
+/**
  * Everything the graph and slot settings decide (contracts/settings/settings.json `graph.*`), with the schema's
  * defaults. The settings repository stores each field under its own schema key and builds this; the renderer only
  * reads it ([rings], [graphStyle], [lastElseRing]).
@@ -37,8 +61,10 @@ data class GraphConfig(
     val lastPlace: LastPlace = LastPlace.NEAR_VALUE,
     /** What the last-treatment slot shows while there's no recent treatment (null = nothing). */
     val lastElse: RingSpec? = DEFAULT_LAST_ELSE,
-    /** Places whose card leaves out the sensor's time left. */
-    val sensorHidden: Set<GraphPlace> = emptySet(),
+    /** Whether a card shows the sensor's time left (`graph.sensorTime`): every place without an exception. */
+    val sensorTimeDefault: Boolean = true,
+    /** The places with their own sensor time left (`graph.sensorTime.place` On / Off); absent = [sensorTimeDefault]. */
+    val sensorPlace: Map<GraphPlace, Boolean> = emptyMap(),
     val marks: MarkShow = MarkShow.DEFAULT,
     /**
      * The glucose unit every number is written in (`general.unit`, not mirrored: each device keeps its own;
@@ -46,7 +72,7 @@ data class GraphConfig(
      */
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
 ) {
-    fun sensorTime(p: GraphPlace) = p !in sensorHidden
+    fun sensorTime(p: GraphPlace) = sensorPlace[p] ?: sensorTimeDefault
 
     /** The place's window; 0 in the schema means "same as the default". */
     fun hours(p: GraphPlace) = placeHours[p]?.takeIf { it > 0 } ?: defaultHours

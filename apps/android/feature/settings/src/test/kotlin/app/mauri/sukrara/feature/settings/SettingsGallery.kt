@@ -59,6 +59,8 @@ import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
+import app.mauri.sukrara.feature.settings.graph.PlaceExceptionsContent
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.graph.Reorder
 import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
@@ -308,8 +310,25 @@ class SettingsGallery {
                         ringCount = 3,
                         lastElse = null,
                         ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0),
-                        sensorHidden = setOf(GraphPlace.WIDGETS),
+                        sensorPlace = mapOf(GraphPlace.WIDGETS to false),
                     ),
+                    GraphActions(),
+                    {},
+                )
+            },
+            // a setting's Exceptions (docs/38): one place with its own value, the others on Default
+            "exceptions-hours" to {
+                PlaceExceptionsContent(
+                    PlaceSetting.Hours,
+                    GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)),
+                    GraphActions(),
+                    {},
+                )
+            },
+            "exceptions-sensor" to {
+                PlaceExceptionsContent(
+                    PlaceSetting.SensorTime,
+                    GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)),
                     GraphActions(),
                     {},
                 )
@@ -691,6 +710,9 @@ class SettingsGallery {
                     "finetuning",
                     "files",
                     "sensorend",
+                    "graph-custom",
+                    "exceptions-hours",
+                    "exceptions-sensor",
                 ),
         )
 }

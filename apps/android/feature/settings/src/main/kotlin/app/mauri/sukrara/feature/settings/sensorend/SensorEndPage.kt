@@ -59,6 +59,7 @@ import app.mauri.sukrara.feature.settings.SchemaPrefs
 import app.mauri.sukrara.feature.settings.SeeAlso
 import app.mauri.sukrara.feature.settings.SeeAlsoLink
 import app.mauri.sukrara.feature.settings.SettingsPage
+import app.mauri.sukrara.feature.settings.graph.SensorTimeRows
 import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GraphPlace
@@ -72,6 +73,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -81,14 +83,15 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * Everything Settings › Sensor end shows. [sensor] = the wearer's sensor as the hub knows it; [config]'s night is THE
- * night (the night alerts' window, docs/35 §7); [sensorTime] = whether each place shows the sensor's time left
- * (`graph.sensorTime.place`, the same switches as Graph's).
+ * night (the night alerts' window, docs/35 §7); [sensorTime] = whether a card shows the sensor's time left
+ * (`graph.sensorTime`, the default) and [sensorPlace] the places with their own (the same rows as Graph's, docs/38).
  */
 data class SensorEndPrefs(
     val config: SensorEndConfig,
     val countdownHours: Int,
     val sensor: SensorState,
-    val sensorTime: Map<GraphPlace, Boolean> = GraphPlace.entries.associateWith { true },
+    val sensorTime: Boolean = true,
+    val sensorPlace: Map<GraphPlace, Boolean> = emptyMap(),
 )
 
 class SensorEndViewModel(
@@ -96,10 +99,8 @@ class SensorEndViewModel(
     sensor: Flow<SensorState>,
     private val alerts: AlertSettingsStore,
 ) : ViewModel() {
-    private val sensorTime: Flow<Map<GraphPlace, Boolean>> =
-        combine(GraphPlace.entries.map { p -> settings.flow(GraphSettings.SensorTime.getValue(p)) }) { on ->
-            GraphPlace.entries.zip(on.toList()).toMap()
-        }
+    private val sensorTime: Flow<Pair<Boolean, Map<GraphPlace, Boolean>>> =
+        GraphSettings.config(settings).map { it.sensorTimeDefault to it.sensorPlace }.distinctUntilChanged()
 
     val prefs: StateFlow<SensorEndPrefs?> =
         combine(
@@ -109,7 +110,7 @@ class SensorEndViewModel(
             sensor,
             sensorTime,
         ) { c, night, h, s, time ->
-            SensorEndPrefs(c.withNight(night.first, night.second), h.toInt(), s, time)
+            SensorEndPrefs(c.withNight(night.first, night.second), h.toInt(), s, time.first, time.second)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** THE night's start or end (the night alerts' `night.from` / `to`): one time range, edited here and in Night alerts. */
@@ -122,11 +123,9 @@ class SensorEndViewModel(
         }
     }
 
-    fun setSensorTime(
-        place: GraphPlace,
-        on: Boolean,
-    ) {
-        viewModelScope.launch { settings.set(GraphSettings.SensorTime.getValue(place), on) }
+    /** The sensor's time left: the default every place follows (its exceptions are on their own page). */
+    fun setSensorTime(on: Boolean) {
+        viewModelScope.launch { settings.set(GraphSettings.SensorTime, on) }
     }
 
     /** Applies [transform] to the stored settings (never to a stale copy). */
@@ -148,26 +147,13 @@ class SensorEndActions(
     val setCountdownHours: (Double) -> Unit = {},
     /** THE night's start ([from]) or end ([to]): the night alerts' window. */
     val setNight: (from: Int?, to: Int?) -> Unit = { _, _ -> },
-    val setSensorTime: (GraphPlace, Boolean) -> Unit = { _, _ -> },
+    val setSensorTime: (Boolean) -> Unit = {},
+    /** The sensor time's Exceptions page (docs/38). */
+    val openSensorPlaces: () -> Unit = {},
     /** *See also*: Settings › Sensor and Alerts › Night alerts. */
     val openSensor: () -> Unit = {},
     val openNight: () -> Unit = {},
 )
-
-/** The places the sensor's time left shows in, as Graph names them. */
-private fun placeTitle(p: GraphPlace): Int =
-    when (p) {
-        GraphPlace.APP -> R.string.st_place_app
-        GraphPlace.NOTIFICATION -> R.string.st_place_notification
-        GraphPlace.WIDGETS -> R.string.st_place_widgets
-    }
-
-private fun placeIconOf(p: GraphPlace): Int =
-    when (p) {
-        GraphPlace.APP -> DsR.drawable.ds_ic_smartphone
-        GraphPlace.NOTIFICATION -> DsR.drawable.ds_ic_notifications
-        GraphPlace.WIDGETS -> DsR.drawable.ds_ic_widgets
-    }
 
 /** "On the end day" / "1 day before". */
 @Composable
@@ -295,16 +281,9 @@ fun SensorEndContent(
                 icon = DsR.drawable.ds_ic_dia_sensor,
             )
         }
-        // the sensor's time left on the card, per place: its home is here, Graph shows the same switches
+        // the sensor's time left on the card: its home is here, Graph shows the same rows (docs/38)
         SettingsGroup(title = stringResource(R.string.st_graph_sensor)) {
-            for (p in GraphPlace.entries) {
-                SwitchRow(
-                    stringResource(placeTitle(p)),
-                    prefs.sensorTime.getValue(p),
-                    { on -> actions.setSensorTime(p, on) },
-                    icon = placeIconOf(p),
-                )
-            }
+            SensorTimeRows(prefs.sensorTime, prefs.sensorPlace, actions.setSensorTime, actions.openSensorPlaces)
         }
         calendar?.let { (state, port) -> SensorCalendarGroup(state, port) }
         FooterText(stringResource(R.string.st_sensorend_footer))

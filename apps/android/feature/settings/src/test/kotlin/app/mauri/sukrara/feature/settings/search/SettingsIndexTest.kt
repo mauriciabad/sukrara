@@ -86,6 +86,8 @@ import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
+import app.mauri.sukrara.feature.settings.graph.PlaceExceptionsContent
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
@@ -109,6 +111,7 @@ import app.mauri.sukrara.feature.settings.statusbar.RootStatusBarSection
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarPrefs
 import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.MarkShow
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -304,6 +307,12 @@ class SettingsIndexTest {
             Scene("graph, changed", SearchTarget.Page(SettingsRoute.Graph)) {
                 GraphContent(GraphConfig(lines = listOf(80, 160)), GraphActions(), {})
             },
+            *PlaceSetting.entries
+                .map { setting ->
+                    Scene("exceptions $setting", SearchTarget.Page(SettingsRoute.PlaceExceptions(setting))) {
+                        PlaceExceptionsContent(setting, GraphConfig(placeHours = mapOf(GraphPlace.APP to 6)), GraphActions(), {})
+                    }
+                }.toTypedArray(),
             Scene("graph marks", SearchTarget.Page(SettingsRoute.GraphMarks)) { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             Scene("graph marks, changed", SearchTarget.Page(SettingsRoute.GraphMarks)) {
                 GraphMarksContent(GraphConfig(marks = MarkShow.DEFAULT.withoutLabels()), GraphActions(), {})

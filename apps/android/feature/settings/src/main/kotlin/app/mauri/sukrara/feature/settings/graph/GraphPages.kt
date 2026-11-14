@@ -42,11 +42,17 @@ import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.DangerRow
+import app.mauri.sukrara.designsystem.rows.ExceptionsRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
+import app.mauri.sukrara.designsystem.rows.OnOffOverrideDialog
+import app.mauri.sukrara.designsystem.rows.PlaceRow
+import app.mauri.sukrara.designsystem.rows.PlaceValue
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.designsystem.rows.defaultChoice
+import app.mauri.sukrara.designsystem.rows.onOffText
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SeeAlso
 import app.mauri.sukrara.feature.settings.SeeAlsoLink
@@ -79,8 +85,13 @@ class GraphActions(
     val ringRange: (TirRange) -> Unit = {},
     val ringOrder: (List<Band>) -> Unit = {},
     val marks: (MarkShow) -> Unit = {},
+    /** A place's own time shown (0 = Default). */
     val placeHours: (GraphPlace, Double) -> Unit = { _, _ -> },
-    val sensorTime: (GraphPlace, Boolean) -> Unit = { _, _ -> },
+    /** The sensor's time left: the default, and a place's own (null = Default). */
+    val sensorTime: (Boolean) -> Unit = {},
+    val sensorPlace: (GraphPlace, Boolean?) -> Unit = { _, _ -> },
+    /** A setting's Exceptions page (docs/38). */
+    val openExceptions: (PlaceSetting) -> Unit = {},
     val reset: (GraphSection) -> Unit = {},
     val openMarks: () -> Unit = {},
     /** Settings › Readings (the ranges: Graph's *Ranges* row, Rings' *See also*). */
@@ -96,6 +107,8 @@ private sealed interface GraphDialog : java.io.Serializable {
     data object DefaultHours : GraphDialog
 
     data class PlaceHours(val place: GraphPlace) : GraphDialog
+
+    data class SensorPlace(val place: GraphPlace) : GraphDialog
 
     data object RingCount : GraphDialog
 
@@ -160,7 +173,7 @@ fun slotKindName(kind: SlotKind): String =
     )
 
 @Composable
-private fun placeName(p: GraphPlace): String =
+fun placeName(p: GraphPlace): String =
     stringResource(
         when (p) {
             GraphPlace.APP -> R.string.st_place_app
@@ -171,7 +184,7 @@ private fun placeName(p: GraphPlace): String =
 
 /** Where a per-place setting applies: the app, the notification, the widgets. */
 @DrawableRes
-private fun placeIcon(p: GraphPlace): Int =
+fun placeIcon(p: GraphPlace): Int =
     when (p) {
         GraphPlace.APP -> DsR.drawable.ds_ic_smartphone
         GraphPlace.NOTIFICATION -> DsR.drawable.ds_ic_notifications
@@ -268,17 +281,8 @@ fun GraphContent(
                 icon = DsR.drawable.ds_ic_schedule,
                 readOnly = readOnly,
             )
-            // the time shown per place is always this phone's own
-            for (p in GraphPlace.entries) {
-                val own = c.placeHours[p]
-                ValueRow(
-                    placeName(p),
-                    own?.let { label(SettingsSpec.PLACE_HOURS, it.toDouble()) }
-                        ?: stringResource(R.string.st_graph_hours_same, label(SettingsSpec.GRAPH_HOURS, c.defaultHours.toDouble())),
-                    { dialog = GraphDialog.PlaceHours(p) },
-                    icon = placeIcon(p),
-                )
-            }
+            // the places are always this phone's own (docs/38): only the ones that differ are named
+            ExceptionsRow(hoursPlaces(c, label), { actions.openExceptions(PlaceSetting.Hours) }, icon = DsR.drawable.ds_ic_tune)
         }
 
         val besideGraphTitle = stringResource(R.string.st_graph_beside_graph)
@@ -333,8 +337,9 @@ fun GraphContent(
 }
 
 /**
- * The sensor's time left per place (`graph.sensorTime.place`, each phone's own): its home is Settings › Sensor end,
- * and Graph shows the same switches (docs/35 §7: one setting, two places, never a copy).
+ * The sensor's time left (`graph.sensorTime` and its places, each phone's own): its home is Settings › Sensor end, and
+ * Graph shows the same rows (docs/35 §7: one setting, two places, never a copy). The default's switch, then its
+ * Exceptions (docs/38).
  */
 @Composable
 fun SensorTimeGroup(
@@ -343,8 +348,75 @@ fun SensorTimeGroup(
 ) {
     val sensorTitle = stringResource(R.string.st_graph_sensor)
     SettingsGroup(title = sensorTitle, titleAction = { ResetIcon(GraphSection.SensorTime, c, sensorTitle, actions.reset) }) {
-        for (p in GraphPlace.entries) SwitchRow(placeName(p), c.sensorTime(p), { actions.sensorTime(p, it) }, icon = placeIcon(p))
+        SensorTimeRows(c.sensorTimeDefault, c.sensorPlace, actions.sensorTime) { actions.openExceptions(PlaceSetting.SensorTime) }
     }
+}
+
+/** The sensor time's rows, on Graph and on Sensor end: the default's switch and its Exceptions. */
+@Composable
+fun SensorTimeRows(
+    default: Boolean,
+    own: Map<GraphPlace, Boolean>,
+    setDefault: (Boolean) -> Unit,
+    openExceptions: () -> Unit,
+) {
+    SwitchRow(stringResource(R.string.st_graph_hours_default), default, setDefault, icon = DsR.drawable.ds_ic_hourglass_top)
+    ExceptionsRow(sensorPlaces(own), openExceptions, icon = DsR.drawable.ds_ic_tune)
+}
+
+/** The settings with a default and per-place exceptions (docs/38): each has an Exceptions page. */
+enum class PlaceSetting { Hours, SensorTime }
+
+/** Each place's own time shown in words (null = Default). */
+@Composable
+private fun hoursPlaces(
+    c: GraphConfig,
+    label: (NumberSpec, Double) -> String,
+): List<PlaceValue> =
+    GraphPlace.entries.map { p ->
+        PlaceValue(placeName(p), c.placeHours[p]?.let { label(SettingsSpec.PLACE_HOURS, it.toDouble()) }, placeIcon(p))
+    }
+
+/** Each place's own sensor time left in words (null = Default). */
+@Composable
+private fun sensorPlaces(own: Map<GraphPlace, Boolean>): List<PlaceValue> =
+    GraphPlace.entries.map { p -> PlaceValue(placeName(p), own[p]?.let { onOffText(it) }, placeIcon(p)) }
+
+/**
+ * A setting's Exceptions page (docs/38): one row per place, its own value or *Default (…)*; a row's dialog offers
+ * *Default* first. The places are always this phone's own, so a follower edits them in every *Settings from* mode.
+ */
+@Composable
+fun PlaceExceptionsContent(
+    setting: PlaceSetting,
+    c: GraphConfig,
+    actions: GraphActions,
+    onBack: () -> Unit,
+) {
+    var dialog by rememberSaveable { mutableStateOf<GraphDialog?>(null) }
+    val label = numberLabeler()
+    SettingsPage(stringResource(DsR.string.ds_exceptions), onBack) {
+        when (setting) {
+            PlaceSetting.Hours -> {
+                SettingsGroup(title = stringResource(R.string.st_graph_hours)) {
+                    val default = label(SettingsSpec.GRAPH_HOURS, c.defaultHours.toDouble())
+                    for (p in hoursPlaces(c, label).zip(GraphPlace.entries)) {
+                        PlaceRow(p.first, default, { dialog = GraphDialog.PlaceHours(p.second) })
+                    }
+                }
+            }
+
+            PlaceSetting.SensorTime -> {
+                SettingsGroup(title = stringResource(R.string.st_graph_sensor)) {
+                    val default = onOffText(c.sensorTimeDefault)
+                    for (p in sensorPlaces(c.sensorPlace).zip(GraphPlace.entries)) {
+                        PlaceRow(p.first, default, { dialog = GraphDialog.SensorPlace(p.second) })
+                    }
+                }
+            }
+        }
+    }
+    GraphDialogs(dialog, c, actions, label, periodLabeler()) { dialog = null }
 }
 
 /** "In range 70–179 mg/dL · in Readings": the target range the graph colours with, and where it is set. */
@@ -559,13 +631,21 @@ private fun GraphDialogs(
         }
 
         is GraphDialog.PlaceHours -> {
+            // 0 = Default, the first choice, said with the default's value (docs/38)
+            val default = defaultChoice(label(SettingsSpec.GRAPH_HOURS, c.defaultHours.toDouble()))
             NumberDialog(
                 placeName(dialog.place),
                 NumberInput(SettingsSpec.PLACE_HOURS),
                 (c.placeHours[dialog.place] ?: 0).toDouble(),
-                number(SettingsSpec.PLACE_HOURS),
+                { v -> if (v == 0.0) default else label(SettingsSpec.PLACE_HOURS, v) },
                 close,
             ) { actions.placeHours(dialog.place, it) }
+        }
+
+        is GraphDialog.SensorPlace -> {
+            OnOffOverrideDialog(placeName(dialog.place), c.sensorTimeDefault, c.sensorPlace[dialog.place], close) {
+                actions.sensorPlace(dialog.place, it)
+            }
         }
 
         GraphDialog.RingCount -> {

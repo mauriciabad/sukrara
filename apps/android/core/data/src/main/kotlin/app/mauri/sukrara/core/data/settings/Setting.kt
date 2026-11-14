@@ -83,14 +83,19 @@ object SchemaSettings {
         return Setting(id, store, key, format.default, doublePreferencesKey(key), format::coerce)
     }
 
-    /** One place's key of a per-place bool setting (`graph.sensorTime.place`), like [numberAt]. */
-    fun boolAt(
+    /**
+     * One place's key of a per-place enum setting (`graph.sensorTime.place`: default / on / off), like [numberAt];
+     * unknown names read as [default].
+     */
+    fun textAt(
         id: String,
         index: Int,
-        default: Boolean,
-    ): Setting<Boolean> {
-        val (store, key) = placeKey(androidInfo(id, "bool"), index)
-        return Setting(id, store, key, default, booleanPreferencesKey(key)) { it }
+        default: String,
+        allowed: Set<String>,
+    ): Setting<String> {
+        val (store, key) = placeKey(androidInfo(id, "enum"), index)
+        require(default in allowed) { "$id default '$default' not in $allowed" }
+        return Setting(id, store, key, default, stringPreferencesKey(key)) { if (it in allowed) it else default }
     }
 
     private fun placeKey(

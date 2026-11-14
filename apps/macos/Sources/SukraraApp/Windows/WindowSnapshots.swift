@@ -339,14 +339,48 @@
                 $0.ringOrder = [.veryLow, .low, .tight, .target, .high, .veryHigh]
             }
             own.setPlaceHours(24, .widget)
+            own.setSensorPlace(false, .menubar)
+            // a setting's Exceptions sheet (docs/38): one place with its own value, the other on Default
+            out.append(
+                (
+                    "settings-graph-exceptions",
+                    AnyView(
+                        ExceptionsSheet(
+                            title: L10n.t("Time shown"),
+                            places: {
+                                ForEach(GraphPlace.allCases, id: \.self) { place in
+                                    NumberSettingRow(
+                                        label: GraphPane.placeName(place), format: place.hours.format,
+                                        value: .constant(own.placeHours(place)), defaultValue: "12 h")
+                                }
+                            }
+                        ) {}
+                    )
+                ))
+            out.append(
+                (
+                    "settings-graph-exceptions-sensor",
+                    AnyView(
+                        ExceptionsSheet(
+                            title: L10n.t("Sensor time left"),
+                            places: {
+                                ForEach(GraphPlace.allCases, id: \.self) { place in
+                                    OverridePicker(
+                                        label: GraphPane.placeName(place), defaultOn: true,
+                                        own: .constant(own.sensorPlace(place)))
+                                }
+                            }
+                        ) {}
+                    )
+                ))
             let marta = WearerSettings(
                 json: #"{"graph":{"tight":130,"defaultHours":6,"lines":"","lastPlace":"END"}}"#, wearer: "Marta")
             let fromWearer = SettingsModel(store: scratch(), follow: following, wearer: marta, version: "0.12.0")
             for (name, pane, model, height) in [
                 ("settings-readings", SettingsModel.Pane.readings, own, 1060.0),
                 ("settings-readings-wearer", .readings, fromWearer, 1000),
-                ("settings-graph", .graph, own, 1260),
-                ("settings-graph-wearer", .graph, fromWearer, 760),
+                ("settings-graph", .graph, own, 1280),
+                ("settings-graph-wearer", .graph, fromWearer, 860),
                 ("settings-rings", .rings, own, 1300),
                 ("settings-rings-wearer", .rings, fromWearer, 700),
                 ("settings-following", .following, own, 560),

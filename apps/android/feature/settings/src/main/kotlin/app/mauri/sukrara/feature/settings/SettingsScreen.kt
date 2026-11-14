@@ -38,6 +38,8 @@ import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.graph.GraphViewModel
+import app.mauri.sukrara.feature.settings.graph.PlaceExceptionsContent
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenViewModel
@@ -103,6 +105,9 @@ sealed interface SettingsRoute {
 
     /** Settings › Graph › Treatments on the graph. */
     data object GraphMarks : SettingsRoute
+
+    /** A setting's Exceptions (docs/38): Graph › Time shown's, Sensor end › Sensor time left's (also from Graph). */
+    data class PlaceExceptions(val setting: PlaceSetting) : SettingsRoute
 
     data object LockScreen : SettingsRoute
 
@@ -395,7 +400,7 @@ private fun SettingsPages(
             }
         }
 
-        SettingsRoute.Graph, SettingsRoute.GraphMarks, SettingsRoute.Rings -> {
+        SettingsRoute.Graph, SettingsRoute.GraphMarks, SettingsRoute.Rings, is SettingsRoute.PlaceExceptions -> {
             val vm = viewModel { GraphViewModel(deps.settings) }
             val config by vm.config.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
@@ -415,6 +420,8 @@ private fun SettingsPages(
                     marks = vm::marks,
                     placeHours = vm::placeHours,
                     sensorTime = vm::sensorTime,
+                    sensorPlace = vm::sensorPlace,
+                    openExceptions = { navigate(SettingsRoute.PlaceExceptions(it)) },
                     reset = vm::reset,
                     openMarks = { navigate(SettingsRoute.GraphMarks) },
                     openReadings = { navigate(SettingsRoute.Readings) },
@@ -423,6 +430,7 @@ private fun SettingsPages(
                 when (route) {
                     SettingsRoute.Graph -> GraphContent(it, actions, onBack, from.readOnly, withNote)
                     SettingsRoute.Rings -> RingsContent(it, actions, onBack, from.readOnly, withNote)
+                    is SettingsRoute.PlaceExceptions -> PlaceExceptionsContent(route.setting, it, actions, onBack)
                     else -> GraphMarksContent(it, actions, onBack, from.readOnly, withNote)
                 }
             }
@@ -525,6 +533,7 @@ private fun SettingsPages(
                         vm::setCountdownHours,
                         vm::setNight,
                         vm::setSensorTime,
+                        openSensorPlaces = { navigate(SettingsRoute.PlaceExceptions(PlaceSetting.SensorTime)) },
                         openSensor = openSensor,
                         openNight = { navigate(SettingsRoute.NightAlerts) },
                     ),

@@ -136,6 +136,7 @@
     <string name="st_ranges_title">Ranges</string>
     <string name="st_trend_title">Trend arrow</string>
     <string name="st_trend_summary">Where every arrow, spoken trend and the fast alerts take the trend from</string>
+    <string name="st_exceptions_keywords">per place, app, notification, widgets, own, override, different</string>
     <string name="st_trend_keywords">arrow, trend, direction, rate, delay, lag, smoothing, sensor</string>
     <string name="st_trend_from">Trend from</string>
     <string name="st_trend_quick">Quick</string>
@@ -489,7 +490,6 @@
     <string name="st_graph_line_exists">That line is already there</string>
     <string name="st_graph_line_remove">Remove the line at %1$s</string>
     <string name="st_graph_hours_default">Default</string>
-    <string name="st_graph_hours_same">Same as default (%1$s)</string>
     <string name="st_graph_beside">Beside the value</string>
     <string name="st_slot_main">Main slot</string>
     <string name="st_slot_second">Second slot</string>

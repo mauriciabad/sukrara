@@ -178,4 +178,12 @@
         <item quantity="one">%1$s + %2$d commit</item>
         <item quantity="other">%1$s + %2$d commits</item>
     </plurals>
+    <!-- a setting with a default and per-place exceptions (docs/38) -->
+    <string name="ds_default_value">Default (%1$s)</string>
+    <string name="ds_on">On</string>
+    <string name="ds_off">Off</string>
+    <string name="ds_exceptions">Exceptions</string>
+    <string name="ds_exceptions_none">None</string>
+    <string name="ds_exception">%1$s: %2$s</string>
+    <string name="ds_list_separator">", "</string>
 </resources>

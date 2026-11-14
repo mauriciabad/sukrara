@@ -68,9 +68,14 @@ object GraphSettings {
     val PlaceHours: Map<GraphPlace, Setting<Double>> =
         GraphPlace.entries.associateWith { SchemaSettings.numberAt("graph.hours.place", it.ordinal) }
 
-    /** Whether each place's card shows the sensor's time left. */
-    val SensorTime: Map<GraphPlace, Setting<Boolean>> =
-        GraphPlace.entries.associateWith { SchemaSettings.boolAt("graph.sensorTime.place", it.ordinal, default = true) }
+    /** Whether a card shows the sensor's time left: the default every place follows unless it has its own. */
+    val SensorTime = SchemaSettings.bool("graph.sensorTime", default = GraphConfig().sensorTimeDefault)
+
+    /** Each place's own sensor time left ([PlaceOverride]: Default follows [SensorTime]). */
+    val SensorTimePlace: Map<GraphPlace, Setting<String>> =
+        GraphPlace.entries.associateWith {
+            SchemaSettings.textAt("graph.sensorTime.place", it.ordinal, PlaceOverride.DEFAULT.key, PlaceOverride.keys)
+        }
 
     /** The person's graph settings, a new [GraphConfig] on every change (ranges always in order: [Bands.sane]). */
     fun config(settings: SettingsRepository): Flow<GraphConfig> {
@@ -92,17 +97,21 @@ object GraphSettings {
                     .filter { it.second > 0 }
                     .toMap()
             }
-        val hidden =
-            combine(GraphPlace.entries.map { settings.flow(SensorTime.getValue(it)) }) { v ->
-                GraphPlace.entries.filterIndexed { i, _ -> !v[i] }.toSet()
+        val sensorOwn =
+            combine(GraphPlace.entries.map { settings.flow(SensorTimePlace.getValue(it)) }) { v ->
+                GraphPlace.entries
+                    .zip(v)
+                    .mapNotNull { (p, o) -> PlaceOverride.of(o).on?.let { p to it } }
+                    .toMap()
             }
-        val places = combine(hours, hidden, settings.flow(GlucoseUnitSetting)) { h, s, u -> Triple(h, s, GlucoseUnit.of(u)) }
+        val sensor = combine(settings.flow(SensorTime), sensorOwn) { default, own -> default to own }
+        val places = combine(hours, sensor, settings.flow(GlucoseUnitSetting)) { h, s, u -> Triple(h, s, GlucoseUnit.of(u)) }
         return combine(bands, numbers, switches, combine(enums, texts) { e, t -> e to t }, places) {
             b,
             (defaultHours, grid, rings),
             (side, crown, marks),
             (e, t),
-            (placeHours, sensorHidden, unit),
+            (placeHours, sensor, unit),
             ->
             GraphConfig(
                 bands = b,
@@ -121,7 +130,8 @@ object GraphSettings {
                     app.mauri.sukrara.graph.LastPlace
                         .valueOf(e.second),
                 lastElse = GraphText.parseSlot(t[3]),
-                sensorHidden = sensorHidden,
+                sensorTimeDefault = sensor.first,
+                sensorPlace = sensor.second,
                 marks = MarkShow.parse(t[4]),
                 unit = unit,
             )
