@@ -82,7 +82,7 @@ class AlertsModule(
     canLogTreatments: () -> Boolean = { false },
     /**
      * The glucose notification (`LiveNotification`), which IS the alert while one is up (docs/36); null = every alert
-     * as a notification of its own (as with *Alerts on my watch*).
+     * as a notification of its own (as with *Separate alert notifications*).
      */
     glucose: GlucoseAlertSink? = null,
 ) {
@@ -139,15 +139,15 @@ class AlertsModule(
     /** Settings' sound preview and *Send a test alert*. */
     val tryOut = AlertTryOut(ctx, notifier)
 
-    /** *Alerts on my watch* now (off until the store answered: the glucose notification carries the alert). */
-    private val watchNow =
+    /** *Separate alert notifications* now (off until the store answered: the glucose notification carries the alert). */
+    private val separateNow =
         alertSettings
-            .flow(SurfaceSettings.WatchAlerts)
+            .flow(SurfaceSettings.SeparateAlerts)
             .catch { emit(false) }
             .stateIn(scope, SharingStarted.Eagerly, false)
 
     /**
-     * How alerts show (docs/36): through the glucose notification, or with *Alerts on my watch* each as a notification
+     * How alerts show (docs/36): through the glucose notification, or with *Separate alert notifications* each as a notification
      * of its own; the plain stand-in and the problem notice are separate either way.
      */
     val presenter =
@@ -155,7 +155,7 @@ class AlertsModule(
             notifier,
             glucose ?: NoGlucose,
             // the glucose notification's channel turned off: it can't carry them either
-            watch = { glucose == null || watchNow.value || !glucose.canCarry() },
+            watch = { glucose == null || separateNow.value || !glucose.canCarry() },
         )
 
     /** THE alert runtime of this process; also every surface's [AlertControls]. */
@@ -254,8 +254,8 @@ class AlertsModule(
         AlertChannels.ensure(ctx)
         runtime.observe(scope, hub.state, wearerSettings, remoteEvents)
         scope.launch {
-            // *Alerts on my watch* switched: what is up shows again, silently, on the other side
-            watchNow.drop(1).distinctUntilChanged().collect {
+            // *Separate alert notifications* switched: what is up shows again, silently, on the other side
+            separateNow.drop(1).distinctUntilChanged().collect {
                 hub.state.value.alerts.firingKinds
                     .forEach { kind -> runCatching { runtime.reshow(kind) } }
             }

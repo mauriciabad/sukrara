@@ -65,8 +65,8 @@ class AlertsActions(
     val muteSide: (String, Int) -> Unit = { _, _ -> },
     /** Settings › Alerts › Night alerts (#38). */
     val openNight: () -> Unit = {},
-    /** *Alerts on my watch* (docs/36). */
-    val setWatch: (Boolean) -> Unit = {},
+    /** *Separate alert notifications* (docs/36). */
+    val setSeparate: (Boolean) -> Unit = {},
 )
 
 /** The alert rows' groups: lows, highs, rates, signal. */
@@ -360,15 +360,15 @@ fun AlertsSettingsContent(
             // phone is the moment to suggest it
             val watchApp = remember { context.hasWatchApp() }
             SwitchRow(
-                stringResource(R.string.st_alerts_watch),
-                ui.watch,
-                actions.setWatch,
+                stringResource(R.string.st_alerts_separate),
+                ui.separate,
+                actions.setSeparate,
                 summary =
                     stringResource(
                         when {
-                            ui.watch -> R.string.st_alerts_watch_on
-                            watchApp -> R.string.st_alerts_watch_suggested
-                            else -> R.string.st_alerts_watch_off
+                            ui.separate -> R.string.st_alerts_separate_on
+                            watchApp -> R.string.st_alerts_separate_suggested
+                            else -> R.string.st_alerts_separate_off
                         },
                     ),
                 icon = DsR.drawable.ds_ic_watch,
@@ -572,7 +572,7 @@ enum class WaitKind(
 }
 
 /**
- * The phone has a watch's companion app (Wear OS, Pixel Watch, Galaxy Wearable): *Alerts on my watch* is suggested.
+ * The phone has a watch's companion app (Wear OS, Pixel Watch, Galaxy Wearable): *Separate alert notifications* is suggested.
  * Declared in the manifest's `<queries>`, so Android lets Sukrara see exactly these packages.
  */
 internal fun Context.hasWatchApp(): Boolean =

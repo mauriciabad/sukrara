@@ -105,7 +105,7 @@ class SettingsPagesTest {
             "alerts.actions.backMin",
             "alerts.sounds.pack",
             "alerts.sounds.shuffle",
-            "alerts.watch",
+            "alerts.separate",
             "alerts.thresholdsConfirmedAt",
             // Settings › Sensor (the app joins it to the sensor module)
             "source.source",

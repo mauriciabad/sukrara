@@ -6,8 +6,6 @@
     <string name="app_name" translatable="false">Sukrara</string>
     <string name="app_restart_systemui_failed">Couldn’t restart System UI: %1$s</string>
     <string name="app_open_failed">This phone can’t open that screen</string>
-    <!-- the lengths sheet of an alert's Mute in a Live Update: %1$s = the side ("Low", "Falling fast") -->
-    <string name="app_mute_sheet_title">%1$s alerts</string>
-    <!-- before each length, for TalkBack ("Mute for 30 min") -->
-    <string name="app_mute_sheet_for">Mute for</string>
+    <!-- the lengths dialog of an alert's Mute in a Live Update: %1$s = the side as the mute lines name it -->
+    <string name="app_mute_sheet_title">Mute %1$s</string>
 </resources>

@@ -388,7 +388,7 @@ object SettingsIndex {
                 R.string.st_sounds_title,
                 R.string.st_sound_pack to null,
                 R.string.st_shuffle to null,
-                R.string.st_alerts_watch to R.string.st_alerts_watch_on,
+                R.string.st_alerts_separate to R.string.st_alerts_separate_on,
                 R.string.st_notification_settings to R.string.st_notification_settings_summary,
             )
             // each alert's own page, so a hit opens that alert ("Remind every · Alerts › Low › Alert when")

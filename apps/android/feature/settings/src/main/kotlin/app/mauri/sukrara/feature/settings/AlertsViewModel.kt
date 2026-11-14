@@ -31,8 +31,8 @@ data class AlertsUi(
     val mirrored: Boolean = false,
     /** This phone follows someone (its *Settings from* exists): it takes escalations instead of sending them (#39). */
     val follower: Boolean = false,
-    /** *Alerts on my watch* (docs/36): every alert also a notification of its own, which a watch gets. */
-    val watch: Boolean = false,
+    /** *Separate alert notifications* (docs/36): every alert also a notification of its own, which a watch gets. */
+    val separate: Boolean = false,
 ) {
     /** [kind]'s on / threshold / remind come from *Settings from* (read-only here). */
     fun mirrors(kind: AlertKind): Boolean = mirrored && kind != AlertKind.NO_DATA
@@ -143,13 +143,13 @@ class AlertsViewModel(
             deps.settingsFrom.alertsInUse,
             deps.alertState,
             deps.settingsFrom.state,
-            deps.settings.flow(SurfaceSettings.WatchAlerts),
-        ) { own, inUse, st, from, watch ->
-            AlertsUi(inUse ?: own, st, mirrored = from.readOnly, follower = from != null, watch = watch)
+            deps.settings.flow(SurfaceSettings.SeparateAlerts),
+        ) { own, inUse, st, from, separate ->
+            AlertsUi(inUse ?: own, st, mirrored = from.readOnly, follower = from != null, separate = separate)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), null)
 
-    fun setWatch(on: Boolean) {
-        viewModelScope.launch { deps.settings.set(SurfaceSettings.WatchAlerts, on) }
+    fun setSeparate(on: Boolean) {
+        viewModelScope.launch { deps.settings.set(SurfaceSettings.SeparateAlerts, on) }
     }
 
     fun edit(transform: (AlertSettings) -> AlertSettings) {

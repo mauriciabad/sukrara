@@ -164,6 +164,8 @@ class AlertNotifier(
             category = AlertCategory.of(alarm, AlertCategory.Dnd.of(nm)),
             buttons = listOfNotNull(treatment(kind), AlertButton.Unmute),
             mutedUntil = until,
+            // "Lows muted" already names the side: no range word beside the value (nothing said twice)
+            rangeSaid = kind.isLevel,
         )
     }
 

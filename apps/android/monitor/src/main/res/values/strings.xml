@@ -141,10 +141,10 @@
     <string name="monitor_chip_value">%1$s</string>
     <!-- Live Update chip once the value is 5 min old: the reading's time -->
     <string name="monitor_chip_stale">%1$s</string>
-    <!-- Android 17 Live Update card (MetricStyle): the value's label while fresh (once late: the reading's time) -->
-    <string name="monitor_metric_now">Now</string>
-    <!-- the muted side's countdown in the Android 17 Live Update (the title says which side is muted) -->
+        <!-- the muted side's countdown in the Android 17 Live Update (the title says which side is muted) -->
     <string name="monitor_metric_mute_left">Time left</string>
+    <!-- the value metric's label while a rate alert (Falling fast) is up: how fast, %1$s = the rate in the unit ("2.4") -->
+    <string name="monitor_metric_rate">%1$s/min</string>
     <!-- the Live Update's title on Android 17 while no alert is up and the value is in range (out of range: card_range_*) -->
     <string name="monitor_range_in_range">In range</string>
     <!-- the glucose notification while two alerts are up: the other one's title ("Also: Falling fast") -->

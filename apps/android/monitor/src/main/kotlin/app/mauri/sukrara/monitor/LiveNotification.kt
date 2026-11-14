@@ -31,6 +31,7 @@ import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.StatusBadge
+import app.mauri.sukrara.graph.TrendMark
 import app.mauri.sukrara.graph.ValueGlyphs
 import app.mauri.sukrara.graph.cardModelOf
 import app.mauri.sukrara.graph.face
@@ -429,10 +430,13 @@ class LiveNotification(
         alert: GlucoseAlert?,
     ): Notification.MetricStyle {
         val bands = frame?.config?.bands ?: Bands()
-        val label =
-            content.readingAt?.let { Freshness.timeText(it.epochSecond, now.epochSecond) }
-                ?: context.getString(R.string.monitor_metric_now)
-        val shown = listOfNotNull(look.text, look.arrowText).joinToString(" ")
+        val label = metricLabel(content, look, alert, frame?.config?.unit ?: GlucoseUnit.MGDL)
+        // text only: a metric is a CharSequence and only parcelable spans survive (no picture of the renderer's arrow);
+        // THE text arrow in bold, which the system font draws heavier than the thin default (docs/36 §10)
+        val shown =
+            SpannableString(listOfNotNull(look.text, look.arrowText).joinToString(" ")).apply {
+                look.arrowText?.let { setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), length - it.length, length, 0) }
+            }
         val value =
             if (look.strike || content.mgdl == null) {
                 Notification.Metric(Notification.Metric.FixedText(shown), label)
@@ -460,6 +464,30 @@ class LiveNotification(
             }
         }
         return style.setCriticalMetric(0)
+    }
+
+    /**
+     * The value metric's label (the owner, 2026-11-14: "Now" said nothing): the reading's time once it is late; while
+     * fresh, the trend in words ("Falling", "Steady"), or, when the alert's title already says the trend (*Falling
+     * fast*), the rate ("2.4/min"): never what the title says. Sentence case, as every label.
+     */
+    internal fun metricLabel(
+        content: LiveNotificationContent,
+        look: GlucoseLook,
+        alert: GlucoseAlert?,
+        unit: GlucoseUnit,
+    ): String {
+        content.readingAt?.let { return Freshness.timeText(it.epochSecond, Instant.now().epochSecond) }
+        val trend = CardWords.of(context.resources).trend(look.band.takeIf { look.trend == TrendMark.ARROW })
+        val rate = look.rate?.takeIf { look.trend == TrendMark.ARROW }
+        val repeats = alert != null && alert.title.contains(trend, ignoreCase = true)
+        val label =
+            if (repeats && rate != null) {
+                context.getString(R.string.monitor_metric_rate, unit.rateText(kotlin.math.abs(rate), java.util.Locale.getDefault()))
+            } else {
+                trend
+            }
+        return label.replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }
     }
 
     /** The value's style by the person's ranges (a limit in the range beyond it, [Bands.of]): danger low, caution high. */

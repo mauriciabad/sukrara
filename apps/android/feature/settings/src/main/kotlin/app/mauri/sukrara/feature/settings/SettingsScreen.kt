@@ -251,7 +251,7 @@ private fun SettingsPages(
                     clock,
                     AlertsActions(vm::edit, vm::muteAll, vm::unmuteAll, { k -> navigate(SettingsRoute.AlertKindPage(k)) }, {
                         navigate(SettingsRoute.ThresholdReview)
-                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }, vm::setWatch),
+                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }, vm::setSeparate),
                     header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
                 )

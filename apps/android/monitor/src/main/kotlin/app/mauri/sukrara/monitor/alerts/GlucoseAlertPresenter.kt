@@ -31,7 +31,7 @@ interface GlucoseAlertSink {
     /**
      * Whether it can carry an alert: false when the person turned its channel off (Android then drops every post on
      * it, so the alert would stay as it rang, never updated, muted or cleared): the alerts are notifications of their
-     * own then, as with *Alerts on my watch*.
+     * own then, as with *Separate alert notifications*.
      */
     fun canCarry(): Boolean = true
 
@@ -55,7 +55,7 @@ interface GlucoseAlertSink {
  * ring is shown, the other is a line under it ("Also: Falling fast") and rings through the same notification on its
  * own turn.
  *
- * With *Alerts on my watch* ([watch]) every alert is a notification of its own instead ([separate]: Wear OS bridges
+ * With *Separate alert notifications* ([watch]) every alert is a notification of its own instead ([separate]: Wear OS bridges
  * those, never an ongoing notification) and the glucose notification carries no alert. The plain alert and the
  * *Monitoring problems* notice stay the separate stand-ins when the alert can't be shown.
  */
@@ -223,7 +223,7 @@ class GlucoseAlertPresenter(
     }
 
     /**
-     * *Alerts on my watch* now; when it changed, what was up moves to the other side (the glucose notification drops
+     * *Separate alert notifications* now; when it changed, what was up moves to the other side (the glucose notification drops
      * its alert; the separate notifications go): the runtime shows them again from its own state on its next pass.
      */
     @Synchronized

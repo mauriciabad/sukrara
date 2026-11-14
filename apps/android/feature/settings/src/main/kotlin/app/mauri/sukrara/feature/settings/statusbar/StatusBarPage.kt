@@ -230,7 +230,7 @@ fun StatusBarContent(
                 stringResource(R.string.st_statusbar_colorize),
                 prefs.colorize,
                 onColorize,
-                summary = stringResource(if (prefs.colorize) R.string.st_statusbar_colorize_on else R.string.st_statusbar_colorize_off),
+                summary = stringResource(if (chipShows) R.string.st_statusbar_number_icon_chip else R.string.st_statusbar_colorize_on),
                 enabled = !chipShows,
                 icon = DsR.drawable.ds_ic_palette,
             )

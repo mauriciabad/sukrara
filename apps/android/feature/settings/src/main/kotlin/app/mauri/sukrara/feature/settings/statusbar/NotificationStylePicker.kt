@@ -210,7 +210,8 @@ private fun DrawScope.drawChipPicture(ink: PictureInk) {
         Size(pillSize.width * 0.4f, pillSize.height * 0.4f),
         CornerRadius(pillSize.height),
     )
-    val card = notification(ink, top = size.height * 0.3f, height = size.height * 0.5f)
+    // a basic notification: the value and its words, no chart (shorter than the graph's)
+    val card = notification(ink, top = size.height * 0.3f, height = size.height * 0.36f)
     // the value large and its words: text lines, no chart
     drawRoundRect(ink.good, Offset(card.x, card.y + size.height * 0.16f), Size(size.width * 0.26f, size.height * 0.12f), CornerRadius(8f))
     drawRoundRect(
@@ -225,7 +226,11 @@ private fun DrawScope.drawChipPicture(ink: PictureInk) {
 private fun DrawScope.drawCardPicture(ink: PictureInk) {
     statusBar(ink)
     val h = size.height * 0.16f
-    drawRoundRect(ink.line, Offset(size.width * 0.21f, h * 0.3f), Size(h * 0.4f, h * 0.4f), CornerRadius(2f))
+    // the notification icon, highlighted: in this choice it is what the status bar shows of the glucose
+    val icon = Offset(size.width * 0.21f, h * 0.22f)
+    val iconSize = h * 0.56f
+    drawCircle(ink.accent.copy(alpha = 0.25f), iconSize, Offset(icon.x + iconSize / 2, icon.y + iconSize / 2))
+    drawRoundRect(ink.accent, icon, Size(iconSize, iconSize), CornerRadius(3f))
     val card = notification(ink, top = size.height * 0.24f, height = size.height * 0.74f)
     drawRoundRect(ink.good, Offset(card.x, card.y + size.height * 0.12f), Size(size.width * 0.22f, size.height * 0.1f), CornerRadius(8f))
     // a ring on the right

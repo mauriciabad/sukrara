@@ -5,6 +5,5 @@
 <resources>
     <string name="app_restart_systemui_failed">No se ha podido reiniciar la IU del sistema: %1$s</string>
     <string name="app_open_failed">Este teléfono no puede abrir esa pantalla</string>
-    <string name="app_mute_sheet_title">Alertas %1$s</string>
-    <string name="app_mute_sheet_for">Silenciar durante</string>
+    <string name="app_mute_sheet_title">Silenciar: %1$s</string>
 </resources>

@@ -34,11 +34,11 @@ object SurfaceSettings {
     val Colorize = SchemaSettings.bool("statusbar.colorize", default = false)
 
     /**
-     * Settings › Alerts › *Alerts on my watch*: every alert is also a notification of its own (Wear OS bridges those;
-     * never the ongoing glucose notification), and the glucose notification shows no alert. Off: the glucose
-     * notification IS the alert while one is up (docs/36).
+     * Settings › Alerts › *Separate alert notifications*: every alert is also a notification of its own (a watch or
+     * another connected device gets only those: Wear OS never bridges the ongoing glucose notification), and the
+     * glucose notification shows no alert. Off: the glucose notification IS the alert while one is up (docs/36).
      */
-    val WatchAlerts = SchemaSettings.bool("alerts.watch", default = false)
+    val SeparateAlerts = SchemaSettings.bool("alerts.separate", default = false)
 
     /** Without the chip, the notification's small icon is the number itself. */
     val NumberIcon = SchemaSettings.bool("statusbar.icon", default = true)
