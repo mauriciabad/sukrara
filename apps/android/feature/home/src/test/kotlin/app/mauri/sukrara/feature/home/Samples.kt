@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.testing.trended
 import java.time.Duration
 import java.time.Instant
 import kotlin.math.sin
@@ -27,11 +28,12 @@ object Samples {
         source: SourceId = SourceId.Libre3,
     ): List<Reading> {
         val end = NOW.minus(Duration.ofMinutes(ageMin))
-        return (0 until 12 * 60 step 5).map { i ->
-            val t = end.minus(Duration.ofMinutes((12 * 60 - 5 - i).toLong()))
-            val wave = (sin(i / 90.0) * 45).toInt()
-            Reading(t, (last + wave - (sin((12 * 60 - 5) / 90.0) * 45).toInt()).coerceIn(40, 400), -1.2, source)
-        }
+        return (0 until 12 * 60 step 5)
+            .map { i ->
+                val t = end.minus(Duration.ofMinutes((12 * 60 - 5 - i).toLong()))
+                val wave = (sin(i / 90.0) * 45).toInt()
+                Reading(t, (last + wave - (sin((12 * 60 - 5) / 90.0) * 45).toInt()).coerceIn(40, 400), -1.2, source)
+            }.trended()
     }
 
     fun wearer(

@@ -38,6 +38,9 @@ enum class CardSurface(
     /** An alert notification's body (#195): the newest reading's value and trend, its time once late, struck when stale. */
     ALERT_NOTIFICATION("alert-notification", Kind.GLYPH),
 
+    /** Settings › Ranges › Trend arrow's live preview (#204): the newest value and its arrow under each choice. */
+    TREND_PREVIEW("trend-preview", Kind.GLYPH),
+
     /** Picture sheets and fixtures (tests only; tools/check keeps it out of the app). */
     TEST("test", Kind.CARD),
     ;

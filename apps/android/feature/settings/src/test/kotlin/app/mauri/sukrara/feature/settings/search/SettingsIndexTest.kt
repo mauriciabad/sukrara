@@ -25,12 +25,14 @@ import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.UpdateState
 import app.mauri.sukrara.core.testing.FakeClock
@@ -60,6 +62,9 @@ import app.mauri.sukrara.feature.settings.RangesContent
 import app.mauri.sukrara.feature.settings.ReliabilityContent
 import app.mauri.sukrara.feature.settings.SettingsOverviewContent
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.TrendArrowContent
+import app.mauri.sukrara.feature.settings.TrendArrowUi
+import app.mauri.sukrara.feature.settings.TrendPreview
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
@@ -234,6 +239,13 @@ class SettingsIndexTest {
             // changed: Reset shows
             Scene("ranges, changed", SearchTarget.Page(SettingsRoute.Ranges)) {
                 RangesContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {})
+            },
+            Scene("trend arrow", SearchTarget.Page(SettingsRoute.TrendArrow)) {
+                TrendArrowContent(
+                    TrendArrowUi(TrendSetting.Balanced, TrendSetting.entries.associateWith { TrendPreview(null, null) }, GlucoseUnit.MGDL),
+                    {},
+                    {},
+                )
             },
             Scene("graph", SearchTarget.Page(SettingsRoute.Graph)) { GraphContent(GraphConfig(), GraphActions(), {}) },
             Scene(

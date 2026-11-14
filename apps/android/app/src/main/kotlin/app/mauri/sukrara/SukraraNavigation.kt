@@ -197,6 +197,7 @@ data class SettingsKey(
             "night" -> SettingsRoute.NightAlerts
             "nightkind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::NightKindPage) ?: SettingsRoute.NightAlerts
             "ranges" -> SettingsRoute.Ranges
+            "trend" -> SettingsRoute.TrendArrow
             "graph" -> SettingsRoute.Graph
             "marks" -> SettingsRoute.GraphMarks
             "lock" -> SettingsRoute.LockScreen
@@ -221,6 +222,7 @@ data class SettingsKey(
                 SettingsRoute.NightAlerts -> SettingsKey("night")
                 is SettingsRoute.NightKindPage -> SettingsKey("nightkind", route.kind.wire)
                 SettingsRoute.Ranges -> SettingsKey("ranges")
+                SettingsRoute.TrendArrow -> SettingsKey("trend")
                 SettingsRoute.Graph -> SettingsKey("graph")
                 SettingsRoute.GraphMarks -> SettingsKey("marks")
                 SettingsRoute.LockScreen -> SettingsKey("lock")

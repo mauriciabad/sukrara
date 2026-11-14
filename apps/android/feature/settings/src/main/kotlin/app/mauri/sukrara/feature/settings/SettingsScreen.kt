@@ -79,6 +79,9 @@ sealed interface SettingsRoute {
 
     data object Ranges : SettingsRoute
 
+    /** Settings › Ranges › Trend arrow (#204; docs/35 moves it under Glucose). */
+    data object TrendArrow : SettingsRoute
+
     data object Graph : SettingsRoute
 
     /** Settings › Graph › Treatments on the graph. */
@@ -297,8 +300,27 @@ private fun SettingsPages(
             val prefs by vm.prefs.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             prefs?.let {
-                RangesContent(it, vm::set, onBack, vm::reset, readOnly = from.readOnly, onUnit = vm::setUnit) {
+                RangesContent(
+                    it,
+                    vm::set,
+                    onBack,
+                    vm::reset,
+                    readOnly = from.readOnly,
+                    onUnit = vm::setUnit,
+                    onTrend = { navigate(SettingsRoute.TrendArrow) },
+                ) {
                     SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = cardPreview)
+                }
+            }
+        }
+
+        SettingsRoute.TrendArrow -> {
+            val vm = viewModel { TrendArrowViewModel(deps.settings, deps.recent, deps.clock) }
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            ui?.let {
+                TrendArrowContent(it, vm::choose, onBack, readOnly = from.readOnly) {
+                    SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) })
                 }
             }
         }

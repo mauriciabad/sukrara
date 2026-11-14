@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -33,6 +34,8 @@ class SettingsModule(
     clock: Clock,
     sensor: Flow<SensorState>,
     appsShared: Flow<Set<AppOutput>>,
+    /** The hub's recent readings (the Trend arrow page's preview). */
+    recent: Flow<List<Reading>>,
     /** Root and the System UI module; null in a build without them. */
     systemAccess: SystemAccessPort?,
     /** Which version this is: Google Play or GitHub (About). */
@@ -70,6 +73,7 @@ class SettingsModule(
             override val updates: AppUpdates? by lazy { updates() }
             override val clock = clock
             override val sensor = sensor
+            override val recent = recent
             override val appsShared = appsShared
             override val systemAccess = systemAccess
             override val alertPlayback = alertPlayback

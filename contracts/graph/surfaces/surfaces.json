@@ -335,6 +335,15 @@
         ],
         "entry": "AlertCopy.bodyOf (AlertLiveValue: when it is posted again)",
         "what": "an alert notification's body (#195): the newest reading's value and arrow, its time once late, struck through from 5 min; updated without sound while the alert is up"
+      },
+      {
+        "id": "trend-preview",
+        "kind": "glyph",
+        "files": [
+          "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/TrendArrowPage.kt"
+        ],
+        "entry": "TrendArrowViewModel.previews",
+        "what": "Settings › Ranges › Trend arrow (#204): the newest value and its arrow under each choice (the preview on top, the arrow beside each choice) as the card shows them, turned with a spring, and where the trend came from"
       }
     ]
   },

@@ -11,6 +11,7 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.PensPort
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -68,6 +69,9 @@ interface SettingsDeps {
 
     /** The wearer's sensor as the hub knows it (Settings › Sensor end shows its end). */
     val sensor: Flow<SensorState>
+
+    /** The hub's recent readings, oldest first (the Trend arrow page previews each choice on them). */
+    val recent: Flow<List<Reading>> get() = flowOf(emptyList())
 
     /** Which outputs Share with apps has on (the overview row's summary). */
     val appsShared: Flow<Set<AppOutput>>

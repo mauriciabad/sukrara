@@ -402,7 +402,8 @@ class SyncFixturesTest {
                     """{"veryLow":54,"low":$low,"tight":140,"high":180,"veryHigh":250,"extremelyHigh":300,"defaultHours":12,"ringCount":2,
                "slots":"TIR:86400:1,TIR:604800:1,GMI:1209600:1","ringRange":"TIGHT","ringOrder":"TIGHT,TARGET,HIGH,VERY_HIGH,VERY_LOW,LOW",
                "ringMarks":true,"side":false,"marks":"rapid:point+line+amount+time,long:point+amount+time,carbs:point,note:point",
-               "columnCrown":true,"lines":"100,120","gridHours":3,"lastPlace":"END","lastElse":"GMI:1209600:1","countdownHours":8}""",
+               "columnCrown":true,"lines":"100,120","gridHours":3,"lastPlace":"END","lastElse":"GMI:1209600:1","countdownHours":8,
+               "trend":"quick"}""",
                 ).jsonObject
         val alerts =
             Json

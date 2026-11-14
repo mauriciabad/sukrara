@@ -31,6 +31,7 @@ class SettingsPagesTest {
         setOf(
             // Settings › Ranges: the glucose unit, then the six ranges
             "general.unit",
+            "glucose.trend",
             "graph.band.veryLow",
             "graph.band.low",
             "graph.band.tight",

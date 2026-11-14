@@ -11,8 +11,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.Setting
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
@@ -20,6 +22,7 @@ import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.rows.FooterText
+import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.graph.PreviewCard
@@ -31,10 +34,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** The six stored ranges the Ranges page shows (mg/dL), lowest first, and the glucose unit they are shown in. */
+/**
+ * The six stored ranges the Ranges page shows (mg/dL), lowest first, the glucose unit they are shown in and the *Trend
+ * arrow* choice its row says.
+ */
 data class GraphPrefs(
     val bands: List<Double> = SchemaPrefs.Bands.map { it.default },
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
+    val trend: TrendSetting = TrendSetting.DEFAULT,
 ) {
     val isDefault: Boolean get() = bands == SchemaPrefs.Bands.map { it.default }
 }
@@ -65,7 +72,8 @@ class GraphPrefsViewModel(
         combine(
             combine(SchemaPrefs.Bands.map { settings.flow(it) }) { it.toList() },
             settings.flow(GraphSettings.GlucoseUnitSetting),
-        ) { bands, unit -> GraphPrefs(bands, GlucoseUnit.of(unit)) }
+            TrendReadings.setting(settings),
+        ) { bands, unit, trend -> GraphPrefs(bands, GlucoseUnit.of(unit), trend) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun set(
@@ -87,9 +95,10 @@ class GraphPrefsViewModel(
 }
 
 /**
- * Ranges: the live card, the glucose unit (mg/dL or mmol/L, every number in the app), the six bands the graph colours
- * and time in range use, Reset ranges. [readOnly] = a follower not in Custom: the bands in use, nothing to change
- * ([preview] says why and opens *Settings from*); the unit is this phone's own and stays editable.
+ * Ranges: the live card, the glucose unit (mg/dL or mmol/L, every number in the app), the *Trend arrow* row (its page:
+ * [onTrend]), the six bands the graph colours and time in range use, Reset ranges. [readOnly] = a follower not in
+ * Custom: the bands in use, nothing to change ([preview] says why and opens *Settings from*); the unit is this phone's
+ * own and stays editable; the trend's page opens read-only.
  */
 @Composable
 fun RangesContent(
@@ -99,6 +108,7 @@ fun RangesContent(
     onReset: () -> Unit = {},
     readOnly: Boolean = false,
     onUnit: (GlucoseUnit) -> Unit = {},
+    onTrend: () -> Unit = {},
     preview: @Composable () -> Unit = {},
 ) {
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -127,6 +137,14 @@ fun RangesContent(
             ValueRow(stringResource(R.string.st_unit), prefs.unit.symbol, { choosingUnit = true }, icon = DsR.drawable.ds_ic_tune)
         }
         FooterText(stringResource(R.string.st_unit_footer))
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_trend_title),
+                onTrend,
+                summary = trendChoiceName(prefs.trend),
+                icon = DsR.drawable.ds_ic_trending_up,
+            )
+        }
         val words = spanWords()
         SettingsGroup {
             SchemaPrefs.Bands.forEachIndexed { i, setting ->

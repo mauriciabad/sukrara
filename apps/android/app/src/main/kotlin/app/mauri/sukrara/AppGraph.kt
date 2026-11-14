@@ -372,6 +372,10 @@ class AppGraph(
             appVersion = appVersion,
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
+            recent =
+                monitor.hub.state
+                    .map { it.recent }
+                    .distinctUntilChanged(),
             systemAccess = monitor.root?.access,
             distribution = Store.distribution,
             updates = { updates },

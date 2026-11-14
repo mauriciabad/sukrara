@@ -160,6 +160,7 @@ object SettingsIndex {
             is SettingsRoute.NightKindPage -> kindNames.getValue(route.kind)
             SettingsRoute.NightAlerts -> R.string.st_night_title
             SettingsRoute.Ranges -> R.string.st_ranges_title
+            SettingsRoute.TrendArrow -> R.string.st_trend_title
             SettingsRoute.Graph -> R.string.st_graph_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
             SettingsRoute.LockScreen -> R.string.st_lock_title
@@ -180,6 +181,7 @@ object SettingsIndex {
             is SettingsRoute.AlertKindPage, SettingsRoute.NightAlerts, SettingsRoute.ThresholdReview -> SettingsRoute.Alerts
             is SettingsRoute.NightKindPage -> SettingsRoute.NightAlerts
             SettingsRoute.GraphMarks -> SettingsRoute.Graph
+            SettingsRoute.TrendArrow -> SettingsRoute.Ranges
             SettingsRoute.Log -> SettingsRoute.Advanced
             is SettingsRoute.Pen -> SettingsRoute.Pens
             is SettingsRoute.PenDoses -> SettingsRoute.Pen(route.serial)
@@ -432,6 +434,30 @@ object SettingsIndex {
                 SettingsRoute.Ranges,
                 null,
                 R.string.st_unit to R.string.st_unit_footer,
+            )
+            // the Trend arrow row opens its page: found by its words (arrow, trend, delay …) too
+            add(
+                SearchEntry(
+                    R.string.st_trend_title,
+                    SearchTarget.Page(SettingsRoute.Ranges),
+                    trail(SettingsRoute.Ranges),
+                    SearchTarget.Page(SettingsRoute.TrendArrow),
+                    R.string.st_trend_summary,
+                    highlight = null,
+                    keywords = R.string.st_trend_keywords,
+                ),
+            )
+            rows(
+                SettingsRoute.TrendArrow,
+                R.string.st_trend_from,
+                R.string.st_trend_quick to R.string.st_trend_quick_summary,
+                R.string.st_trend_balanced to R.string.st_trend_balanced_summary,
+                R.string.st_trend_smooth to R.string.st_trend_smooth_summary,
+                R.string.st_trend_sensor to R.string.st_trend_sensor_summary,
+            )
+            rows(
+                SettingsRoute.Ranges,
+                null,
                 R.string.st_band_very_low to null,
                 R.string.st_band_low to null,
                 R.string.st_band_tight to null,
