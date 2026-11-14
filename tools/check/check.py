@@ -50,7 +50,8 @@ Checks
               TrendRate.kt, Mac SukraraCore TrendRate.swift) at one place (allow.json 'trend_annotate_ok'), and every arrow,
               word, output and alert reads the reading's trend. Fails on: the sensor's own rate (`sensorRate`) in app code
               outside allow.json 'sensor_rate_ok' (the model, storage, the wire codecs, device records; each with the
-              reason); a write of a reading's trend (Kotlin `copy(… trend =` / `Reading(… trend =`, Swift `Reading(… trend:`; the
+              reason); a write of a reading's trend (Kotlin `copy(… trend =` / `Reading(… trend =`, also wrapped over
+              lines, or a fifth `Reading(` argument; Swift `Reading(… trend:`; the
               Mac's setter is internal to SukraraCore) outside
               TrendRate; `TrendRate.annotate(` outside 'trend_annotate_ok'; a Nightscout direction name or a trend arrow
               glyph in a string literal outside the TrendAngle files (Android graph/CardModel.kt, Mac SukraraGraph
@@ -807,7 +808,55 @@ TREND_ANGLE = (ANDROID + "core/graph/src/main/kotlin/app/mauri/sukrara/graph/Car
 SENSOR_RATE = re.compile(r"\bsensorRate\b")
 # a reading's trend written: Kotlin copy(… trend = …) / Reading(… trend = …) (a data class: no other way); Swift
 # Reading(… trend: …) (its setter is internal to SukraraCore: the compiler stops the rest)
-KT_TREND_WRITE = re.compile(r"\b(?:copy|Reading)\([^)]*\btrend\s*=(?!=)")
+KT_TREND_CALL = re.compile(r"\b(copy|Reading)\(")
+KT_TREND_ARG = re.compile(r"\s*trend\s*=(?!=)")
+# Reading(t, mgdl, sensorRate, source, trend): a fifth argument is the trend
+KT_READING_ARGS = 5
+
+
+def top_args(call):
+    """The top-level arguments of a call's text `name(a, b(c, d), e)` (as call_text gives it): ['a', 'b(c, d)', 'e']."""
+    i = call.find("(")
+    if i < 0:
+        return []
+    args, cur, depth, quote = [], "", 0, None
+    for c in call[i + 1:]:
+        if quote:
+            cur += c
+            if c == quote:
+                quote = None
+            continue
+        if c in "\"'":
+            quote = c
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            if depth == 0:
+                break
+            depth -= 1
+        elif c == "," and depth == 0:
+            args.append(cur)
+            cur = ""
+            continue
+        cur += c
+    if cur.strip():
+        args.append(cur)
+    return [a.strip() for a in args]
+
+
+def kt_trend_written(code, k):
+    """A Kotlin `copy(…)` / `Reading(…)` call starting on code line k writes a trend: a `trend =` argument (also on its
+    own line, as ktlint wraps a long call) or a fifth argument to Reading (by position)."""
+    line = code[k][1]
+    for m in KT_TREND_CALL.finditer(line):
+        if re.search(r"\b(?:class|fun)\s+$", line[:m.start()]):
+            continue  # the declaration itself
+        args = top_args(call_text(code, k, m.start()))
+        if any(KT_TREND_ARG.match(a) for a in args):
+            return True
+        if m.group(1) == "Reading" and len(args) >= KT_READING_ARGS:
+            return True
+    return False
 SWIFT_TREND_WRITE = re.compile(r"\bReading\([^)]*\btrend:")
 TREND_ANNOTATE = re.compile(r"\bTrendRate\.annotate\s*\(")
 TREND_NAME = re.compile(r'"(?:DoubleUp|SingleUp|FortyFiveUp|Flat|FortyFiveDown|SingleDown|DoubleDown)"')
@@ -826,15 +875,19 @@ def check_trend(ch, rep):
             continue
         kt = lang == "kt"
         own = p in (TREND_KT, TREND_SWIFT)
-        for n, l in code_lines(ch.blob(p) or ""):
+        code = code_lines(ch.blob(p) or "")
+        for k, (n, l) in enumerate(code):
+            if not own and kt and kt_trend_written(code, k):
+                rep.add("FAIL", "trend", "%s:%d writes a reading's trend. Only TrendRate.annotate does (%s), at the one\n"
+                        "place readings are read." % (p, n, TREND_KT))
             if not own and p not in rate_ok and SENSOR_RATE.search(l):
                 rep.add("FAIL", "trend", "%s:%d reads the sensor's own rate (sensorRate). Every arrow, word, output and alert\n"
                         "reads the reading's trend (Reading.rate / .trend, contracts/trend); the sensor's rate is only stored,\n"
                         "sent and written to device records: a file that must is listed in allow.json sensor_rate_ok with\n"
                         "the reason." % (p, n))
-            if not own and (KT_TREND_WRITE if kt else SWIFT_TREND_WRITE).search(l):
+            if not own and not kt and SWIFT_TREND_WRITE.search(l):
                 rep.add("FAIL", "trend", "%s:%d writes a reading's trend. Only TrendRate.annotate does (%s), at the one\n"
-                        "place readings are read." % (p, n, TREND_KT if kt else TREND_SWIFT))
+                        "place readings are read." % (p, n, TREND_SWIFT))
             if not own and p not in annotate_ok and TREND_ANNOTATE.search(l):
                 rep.add("FAIL", "trend", "%s:%d calls TrendRate.annotate. THE trend is worked out at one place per platform\n"
                         "(allow.json trend_annotate_ok, with the reason); everything else reads Reading.trend." % (p, n))

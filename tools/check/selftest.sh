@@ -138,6 +138,20 @@ case_ "the sensor's own rate in storage is allowed" pass trend apps/android/core
 internal fun Reading.toEntity() = ReadingEntity(t.toEpochMilli(), source.id, mgdl, sensorRate)"
 case_ "a reading's trend written outside TrendRate fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
 fun flat(r: Reading) = r.copy(trend = null)"
+case_ "a reading's trend written on its own line (as ktlint wraps it) fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun flat(r: Reading) =
+    r.copy(
+        mgdl = 100,
+        trend = null,
+    )"
+case_ "a reading built with a trend by position fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun made(r: Reading) = Reading(r.t, r.mgdl, null, r.source, r.trend)"
+case_ "another class's trend argument passes" pass trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun egv(b: ByteArray) =
+    Egv(
+        mgdl = 100,
+        trend = Dexcom.trend(b[15]),
+    )"
 case_ "a Mac reading built with a trend fails" fail trend apps/macos/Sources/SukraraApp/T.swift "$HDR
 let r = Reading(t: .now, mgdl: 100, sensorRate: nil, trend: nil)"
 case_ "TrendRate.annotate outside the one place fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
