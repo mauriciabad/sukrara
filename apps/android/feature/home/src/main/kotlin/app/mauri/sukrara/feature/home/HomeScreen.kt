@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.home
 
 import android.text.format.DateUtils
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
@@ -213,40 +214,8 @@ fun HomeContent(
 ) {
     val haptics = rememberHaptics()
     val snackbar = remember { SnackbarHostState() }
-    val deletedText = stringResource(if (state.undoInClinic) R.string.home_treatment_deleted_clinic else R.string.home_treatment_deleted)
+    TreatmentSnackbars(state, callbacks, penNotice, snackbar)
     val undoText = stringResource(R.string.home_undo)
-    LaunchedEffect(state.undo) {
-        if (state.undo == null) return@LaunchedEffect
-        val result = snackbar.showSnackbar(deletedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
-        if (result == SnackbarResult.ActionPerformed) {
-            haptics.confirm()
-            callbacks.onUndo()
-        } else {
-            callbacks.onUndoGone()
-        }
-    }
-    val penTexts =
-        mapOf(
-            PenNotice.Kind.Changed to stringResource(R.string.home_pen_changed),
-            PenNotice.Kind.Removed to stringResource(R.string.home_pen_removed),
-            PenNotice.Kind.ChangedSince to stringResource(R.string.home_pen_changed_since),
-            PenNotice.Kind.UndoFailed to stringResource(R.string.home_pen_undo_failed),
-        )
-    LaunchedEffect(penNotice) {
-        val notice = penNotice ?: return@LaunchedEffect
-        val result =
-            snackbar.showSnackbar(
-                penTexts.getValue(notice.kind),
-                actionLabel = if (notice.undo != null) undoText else null,
-                withDismissAction = true,
-                duration = if (notice.undo != null) SnackbarDuration.Long else SnackbarDuration.Short,
-            )
-        callbacks.pen.shown(notice)
-        if (result == SnackbarResult.ActionPerformed) {
-            haptics.confirm()
-            notice.undo?.let(callbacks.pen.undo)
-        }
-    }
     val follower = state.glucose.role == Role.Follower
     // Mute alerts' lengths: from the home control, its Change time, the quiet sheet and the card's TalkBack action
     var muteDialog by rememberSaveable { mutableStateOf(false) }
@@ -338,6 +307,54 @@ fun HomeContent(
     }
 }
 
+/**
+ * The treatment lists' snackbars on [snackbar] (home and the Treatments page): *Treatment deleted* with *Undo* for as
+ * long as it shows, and the pen sheet's results with their *Undo*.
+ */
+@Composable
+internal fun TreatmentSnackbars(
+    state: HomeUiState,
+    callbacks: HomeCallbacks,
+    penNotice: PenNotice?,
+    snackbar: SnackbarHostState,
+) {
+    val haptics = rememberHaptics()
+    val deletedText = stringResource(if (state.undoInClinic) R.string.home_treatment_deleted_clinic else R.string.home_treatment_deleted)
+    val undoText = stringResource(R.string.home_undo)
+    LaunchedEffect(state.undo) {
+        if (state.undo == null) return@LaunchedEffect
+        val result = snackbar.showSnackbar(deletedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
+        if (result == SnackbarResult.ActionPerformed) {
+            haptics.confirm()
+            callbacks.onUndo()
+        } else {
+            callbacks.onUndoGone()
+        }
+    }
+    val penTexts =
+        mapOf(
+            PenNotice.Kind.Changed to stringResource(R.string.home_pen_changed),
+            PenNotice.Kind.Removed to stringResource(R.string.home_pen_removed),
+            PenNotice.Kind.ChangedSince to stringResource(R.string.home_pen_changed_since),
+            PenNotice.Kind.UndoFailed to stringResource(R.string.home_pen_undo_failed),
+        )
+    LaunchedEffect(penNotice) {
+        val notice = penNotice ?: return@LaunchedEffect
+        val result =
+            snackbar.showSnackbar(
+                penTexts.getValue(notice.kind),
+                actionLabel = if (notice.undo != null) undoText else null,
+                withDismissAction = true,
+                duration = if (notice.undo != null) SnackbarDuration.Long else SnackbarDuration.Short,
+            )
+        callbacks.pen.shown(notice)
+        if (result == SnackbarResult.ActionPerformed) {
+            haptics.confirm()
+            notice.undo?.let(callbacks.pen.undo)
+        }
+    }
+}
+
 /** Home's scrolling column; [viewport] = its visible height (a safety banner under the card must fit in it). */
 @Composable
 private fun HomeColumn(
@@ -377,6 +394,7 @@ private fun HomeColumn(
             },
             penRead = penRead,
             openPenPage = { callbacks.onAction(HomeAction.OpenPen(it)) },
+            openAll = { callbacks.onAction(HomeAction.OpenTreatments) },
         ) {
             haptics.confirm()
             callbacks.onDelete(it)
@@ -1189,9 +1207,9 @@ private fun MuteAllDialog(
 }
 
 /**
- * The last 24 h of entries. A row this phone may change is one button that opens the treatment dialog on it (amount,
- * time, note; TalkBack *edit*), a pen's row opens its sheet; Delete stays a button of its own. A writer's entry nothing
- * took yet says *Sending…* under it, then *Not sent* with *Retry*.
+ * The last 24 h of entries (#207, docs/37): each a [TreatmentRow] (tap edits or opens a pen's doses, long press opens
+ * *Edit* / *Delete*, swipe deletes, *Undo* on the snackbar), newest first; *See all* opens the Treatments page with
+ * the last 31 days. Shown while there is anything to list or to see there.
  */
 @Composable
 private fun Treatments(
@@ -1202,73 +1220,55 @@ private fun Treatments(
     onRetry: (Treatment) -> Unit,
     penRead: PenRead? = null,
     openPenPage: (String) -> Unit = {},
+    openAll: () -> Unit = {},
     onDelete: (Treatment) -> Unit,
 ) {
     val treatments = state.treatments
-    val readOnly = state.readOnly
-    val fromPen = state.fromPen
-    val marks = state.marks
     val now = state.now
     val resources = LocalContext.current.resources
     val words = remember(resources) { CardWords.of(resources) }
     val stale = penRead?.takeIf { now.epochSecond - it.at > PEN_STALE_S }
-    Reveal(treatments.isNotEmpty() || stale != null) {
+    val older = state.chartTreatments.any { it.at <= now }
+    Reveal(treatments.isNotEmpty() || stale != null || older) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(R.string.home_treatments),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f).semantics { heading() },
             )
-            // the pen hasn't been read for a day: a quiet reminder where the doses are, opening that pen
-            if (stale != null) {
-                val ago = TreatmentMarks.duration(now.epochSecond - stale.at, words)
-                TextButton(onClick = { openPenPage(stale.serial) }) {
-                    Text(stringResource(R.string.home_pen_read_ago, ago), style = MaterialTheme.typography.labelLarge)
-                }
+            TextButton(onClick = openAll) { Text(stringResource(R.string.home_treatments_see_all)) }
+        }
+        // the pen hasn't been read for a day: a quiet reminder where the doses are, opening that pen
+        if (stale != null) {
+            val ago = TreatmentMarks.duration(now.epochSecond - stale.at, words)
+            TextButton(onClick = { openPenPage(stale.serial) }, modifier = Modifier.padding(start = 4.dp)) {
+                Text(stringResource(R.string.home_pen_read_ago, ago), style = MaterialTheme.typography.labelLarge)
             }
         }
-        val openLabel = stringResource(R.string.home_pen_open)
-        val editLabel = stringResource(R.string.home_treatment_edit)
-        treatments.forEach { t ->
-            // keyed by the entry: a row's state stays with its treatment when one is added or removed above it
-            key(t.id) {
-                val pen = t.id in fromPen
-                val label = treatmentLabel(t, pen)
-                val time = clockTime(t.at)
-                // a pen row is one button (its sheet: the doses, Priming / Injected), any other row this phone may change
-                // opens its edit; Delete stays a button of its own
-                val open =
-                    when {
-                        pen -> Modifier.clickable(onClickLabel = openLabel) { openPen(t) }.heightIn(min = 48.dp)
-                        t.id !in readOnly -> Modifier.clickable(onClickLabel = editLabel) { onEdit(t) }.heightIn(min = 48.dp)
-                        else -> Modifier
-                    }
-                Row(
-                    Modifier.fillMaxWidth().then(open).padding(start = 16.dp, end = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(time, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
-                    // the time since the entry in the card's short durations ("12m", "3h")
-                    Text(
-                        TreatmentMarks.duration(now.epochSecond - t.at.epochSecond, words),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Reveal(treatments.isEmpty()) {
+            Text(
+                stringResource(R.string.home_treatments_none_today),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+        val r = LocalReducedMotion.current
+        Column(Modifier.animateContentSize(Motion.defaultSpatial(r))) {
+            state.rows().forEach { row ->
+                // keyed by the entry: a row's state stays with its treatment when one is added or removed above it
+                key(row.treatment.id) {
+                    val t = row.treatment
+                    TreatmentRow(
+                        row,
+                        now,
+                        state.config.unit,
+                        onOpen = { if (row.fromPen) openPen(t) else onEdit(t) },
+                        onDelete = { onDelete(t) },
+                        onOpenUpload = openClinicUpload,
+                        onRetry = { onRetry(t) },
                     )
-                    marks[t.id]?.let { mark ->
-                        // every mark opens the LibreView page: what it has, why an entry waits, the way back in when stopped
-                        IconButton(onClick = openClinicUpload) { UploadMarkIcon(mark) }
-                    }
-                    if (t.id !in readOnly) {
-                        IconButton(onClick = { onDelete(t) }) {
-                            Icon(
-                                painterResource(R.drawable.home_ic_delete),
-                                contentDescription = stringResource(R.string.home_treatment_delete, label, time),
-                            )
-                        }
-                    }
                 }
-                DeliveryLine(state.delivery[t.id], label) { onRetry(t) }
             }
         }
     }
@@ -1280,47 +1280,6 @@ private fun Treatments(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
-    }
-}
-
-/**
- * A writer's entry on its way (#75): *Sending…* while a relay or the wearer's phone hasn't taken it, *Not sent* in the
- * error colour with *Retry* once 2 minutes passed without (it is still sent again on every connect). Slides in and out;
- * the line is a polite live region, *Retry* names the entry for TalkBack.
- */
-@Composable
-private fun DeliveryLine(
-    delivery: TreatmentDelivery?,
-    label: String,
-    onRetry: () -> Unit,
-) {
-    var last by remember { mutableStateOf(delivery) }
-    if (delivery != null) last = delivery
-    Reveal(delivery != null) {
-        val failed = last == TreatmentDelivery.Failed
-        Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp).testTag("treatment-delivery"),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painterResource(if (failed) DsR.drawable.ds_ic_error else DsR.drawable.ds_ic_send),
-                contentDescription = null,
-                tint = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(16.dp),
-            )
-            Text(
-                stringResource(if (failed) R.string.home_treatment_not_sent else R.string.home_treatment_sending),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f).padding(start = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
-            )
-            if (failed) {
-                val retryLabel = stringResource(R.string.home_treatment_retry_label, label)
-                TextButton(onClick = onRetry, modifier = Modifier.semantics { contentDescription = retryLabel }) {
-                    Text(stringResource(R.string.home_treatment_retry))
-                }
-            }
-        }
     }
 }
 
@@ -1343,44 +1302,6 @@ object PenHints {
 
 /** *Pen read 2d ago* shows once the newest read is older than a day. */
 private const val PEN_STALE_S = 24 * 3600L
-
-/** The clinic upload's quiet mark: the entry is in LibreView, on its way, or waiting for the upload to run again. */
-@Composable
-private fun UploadMarkIcon(mark: UploadMark) {
-    val (icon, label) =
-        when (mark) {
-            UploadMark.Uploaded -> R.drawable.home_ic_cloud_done to R.string.home_treatment_in_clinic
-            UploadMark.Updating -> R.drawable.home_ic_cloud_upload to R.string.home_treatment_clinic_updating
-            UploadMark.Pending -> R.drawable.home_ic_cloud_upload to R.string.home_treatment_not_in_clinic
-            UploadMark.Stopped -> R.drawable.home_ic_cloud_off to R.string.home_treatment_clinic_stopped
-        }
-    Icon(
-        painterResource(icon),
-        contentDescription = stringResource(label),
-        tint = MaterialTheme.colorScheme.outline,
-        modifier = Modifier.size(18.dp),
-    )
-}
-
-/**
- * "4.5u rapid insulin", "30g carbs": the amount as the card writes it ([TreatmentMarks.amount]) and the kind; a pen's
- * entry adds "· from the pen".
- */
-@Composable
-private fun treatmentLabel(
-    t: Treatment,
-    fromPen: Boolean,
-): String {
-    val amount = TreatmentMarks.amount(t).orEmpty()
-    val kind =
-        when (t.kind) {
-            TreatmentKind.RapidInsulin -> stringResource(R.string.home_treatment_rapid, amount)
-            TreatmentKind.LongInsulin -> stringResource(R.string.home_treatment_long, amount)
-            TreatmentKind.Carbs -> stringResource(R.string.home_treatment_carbs, amount)
-            TreatmentKind.Note -> stringResource(R.string.home_treatment_note)
-        }.let { if (fromPen) stringResource(R.string.home_treatment_from_pen, it) else it }
-    return if (t.note.isBlank()) kind else "$kind · ${t.note}"
-}
 
 /** "just now" / "5 minutes ago" / "in 3 days", in the phone's language (never "0 minutes ago"). */
 @Composable

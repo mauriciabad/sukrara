@@ -115,6 +115,12 @@ jobs:
         run: >-
           ./gradlew --no-daemon :feature:treatments:testDebugUnitTest --tests '*TreatmentDialogGoldenTest'
           -Proborazzi.test.verify=true
+      # :feature:home likewise: only the treatment list's goldens (#207: its states, the Treatments page)
+      - name: Roborazzi verify (treatment list)
+        working-directory: apps/android
+        run: >-
+          ./gradlew --no-daemon :feature:home:testDebugUnitTest --tests '*TreatmentListGoldenTest'
+          -Proborazzi.test.verify=true
       # Room exports each schema version while compiling; one the build changed but nobody committed would ship a
       # database that old installs can't open (tools/check room-schema keeps committed versions unchanged).
       - name: Room schemas the build exported are committed

@@ -4,6 +4,11 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **A cleaner treatment list** (Android, #207): each entry starts with its chart marker in its colour, a pen icon
+  replaces *· from the pen*, and the glucose with its trend arrow when you logged it sits at the end. The cloud shows
+  only when an entry isn't in LibreView yet (and for a moment after it gets there). The trash button is gone: swipe a
+  row or long-press it to delete, with *Undo* as before. *See all* opens a new Treatments page with the last 31 days
+  by day.
 - **The trend arrow comes from your readings** (both apps, #204; the owner: the arrow said → through a rise of 1
   mg/dL a minute, and "falling" minutes into a rebound). Every arrow, spoken trend and output used the sensor's own
   rate, which lags about 7 minutes and reads only a third of how fast glucose moves. Now one trend, worked out from the

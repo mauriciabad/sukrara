@@ -6,6 +6,7 @@ package app.mauri.sukrara.feature.home
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -90,12 +91,12 @@ class HomeTextTest {
         show(muted)
         compose.onNodeWithText("Alerts muted · 1 h 12 min left").assertIsDisplayed()
         compose.onNodeWithText("30g carbs").assertExists()
-        compose.onNodeWithText("25m").assertExists()
+        compose.onNodeWithText(" · 25m", substring = true).assertExists()
         compose.onNodeWithText("4.5u rapid insulin").assertExists()
-        compose.onNodeWithText("3h").assertExists()
+        compose.onNodeWithText(" · 3h", substring = true).assertExists()
     }
 
-    /** A pen's entry says where it came from and is one button that opens its sheet; a read-only row is no button. */
+    /** A pen's entry says where it came from (its pen icon) and is one button that opens its sheet; a read-only row is no button. */
     @Test fun penRowOpensItsSheet() {
         val opened = mutableListOf<String>()
         show(
@@ -104,7 +105,11 @@ class HomeTextTest {
             callbacks = HomeCallbacks(pen = PenCallbacks(open = { opened += it.id })),
             readOnly = setOf("a"),
         )
-        compose.onNode(hasText("4.5u rapid insulin · from the pen") and hasClickAction()).performScrollTo().performClick()
+        compose
+            .onNode(
+                hasText("4.5u rapid insulin") and hasContentDescription("from the pen") and hasClickAction(),
+            ).performScrollTo()
+            .performClick()
         assertEquals(listOf("b"), opened)
         compose.onNode(hasText("30g carbs") and hasClickAction()).assertDoesNotExist()
     }

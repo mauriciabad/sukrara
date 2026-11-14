@@ -463,4 +463,47 @@ class HomeViewModelTest {
             runCurrent()
             assertEquals(BannerKind.DataProblem, vm.state.value.banner)
         }
+
+    @Test fun `the Treatments page lists 31 days with the same marks, pens and delete as home's 24 h (#207)`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val today = Samples.treatment(id = "today", minutesAgo = 60)
+            val lastWeek = Samples.treatment(id = "week", minutesAgo = 7 * 24 * 60)
+            val tooOld = Samples.treatment(id = "old", minutesAgo = 32 * 24 * 60)
+            listOf(today, lastWeek, tooOld).forEach { deps.treatments.upsertIfNewer(TreatmentRecord(it)) }
+            deps.pens[lastWeek.id] = penEntry(lastWeek)
+            val home = HomeViewModel(deps)
+            val page = HomeViewModel(deps, HomeViewModel.HISTORY_WINDOW)
+            backgroundScope.launch { home.state.collect {} }
+            backgroundScope.launch { page.state.collect {} }
+            runCurrent()
+            assertEquals(
+                listOf("today"),
+                home.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(
+                listOf("today", "week"),
+                page.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(setOf("week"), page.state.value.fromPen)
+
+            page.delete(lastWeek)
+            runCurrent()
+            assertEquals(
+                listOf("today"),
+                page.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(lastWeek, page.state.value.undo)
+            page.undoDelete()
+            runCurrent()
+            assertEquals(
+                listOf("today", "week"),
+                page.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(listOf("delete week", "undo week"), deps.writes)
+        }
 }

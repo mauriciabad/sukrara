@@ -49,6 +49,7 @@ import app.mauri.sukrara.feature.home.HomeAction
 import app.mauri.sukrara.feature.home.HomeScreen
 import app.mauri.sukrara.feature.home.HomeViewModel
 import app.mauri.sukrara.feature.home.PanelPreview
+import app.mauri.sukrara.feature.home.TreatmentHistoryScreen
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInRoute
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorRoute
 import app.mauri.sukrara.feature.settings.AlertThresholdRows
@@ -159,6 +160,10 @@ data object ImportRoute : NavKey
 /** Export data on everything this phone keeps: setup's *Export CSV first* before a role change deletes it. */
 @Serializable
 data object ExportAllRoute : NavKey
+
+/** Home › Last 24 hours › See all: the Treatments page (#207). */
+@Serializable
+data object TreatmentsRoute : NavKey
 
 /** Settings › Share with apps › LibreView. */
 @Serializable
@@ -380,6 +385,13 @@ fun SukraraNavigation(
                             viewModel = viewModel(factory = HomeViewModel.factory(graph.home)),
                             onAction = { route(it, backStack, context, graph.home) },
                             onOpenDataProblems = { backStack.add(DataProblemsRoute) },
+                        )
+                    }
+                    entry<TreatmentsRoute> {
+                        TreatmentHistoryScreen(
+                            viewModel = viewModel(factory = HomeViewModel.factory(graph.home, HomeViewModel.HISTORY_WINDOW)),
+                            onAction = { route(it, backStack, context, graph.home) },
+                            onBack = { backStack.pop(TreatmentsRoute) },
                         )
                     }
                     entry<SharingRoute> {
@@ -794,6 +806,10 @@ private fun route(
 
         HomeAction.OpenClinicUpload -> {
             backStack.push(LibreViewRoute)
+        }
+
+        HomeAction.OpenTreatments -> {
+            backStack.push(TreatmentsRoute)
         }
 
         HomeAction.OpenTidepool -> {

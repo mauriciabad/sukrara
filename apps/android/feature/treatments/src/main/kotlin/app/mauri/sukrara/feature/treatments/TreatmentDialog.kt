@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,10 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -105,7 +101,7 @@ import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
-import app.mauri.sukrara.graph.TreatmentMarks
+import app.mauri.sukrara.graph.TreatmentKindMark
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -515,25 +511,9 @@ private fun KindLabel(
     text: String,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        KindMark(kind)
+        TreatmentKindMark(kind, size = MARK_SIZE)
         Spacer(Modifier.width(6.dp))
         Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-/**
- * The marker the charts draw for [kind] ([TreatmentMarks.marker], in its colour): rapid ▼ filled, long ▽ outlined,
- * carbs ●, note ◆. Decoration only: the label's words say the kind.
- */
-@Composable
-internal fun KindMark(
-    kind: String,
-    modifier: Modifier = Modifier,
-) {
-    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val color = TreatmentMarks.color(TreatmentMarks.palette(dark), kind)
-    Canvas(modifier.size(MARK_SIZE).clearAndSetSemantics { }) {
-        drawIntoCanvas { TreatmentMarks.marker(it.nativeCanvas, kind, size.width / 2, size.height / 2, size.width / 2, color) }
     }
 }
 

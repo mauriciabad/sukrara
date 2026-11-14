@@ -6,7 +6,9 @@
 plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
-    id("sukrara.screenshots.gallery")
+    // the treatment list's goldens (TreatmentListGoldenTest, #207); its other screenshots are review galleries, written
+    // with -Proborazzi.test.record=true
+    id("sukrara.screenshots.goldens")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("sukrara.contracts")
 }
@@ -21,4 +23,7 @@ dependencies {
     testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

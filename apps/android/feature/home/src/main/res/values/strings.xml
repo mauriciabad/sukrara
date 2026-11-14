@@ -122,15 +122,16 @@
     <string name="home_treatment_long">%1$s long insulin</string>
     <string name="home_treatment_carbs">%1$s carbs</string>
     <string name="home_treatment_note">Note</string>
-    <!-- %1$s = "8.5u rapid insulin": an entry an insulin pen logged -->
-    <string name="home_treatment_from_pen">%1$s · from the pen</string>
+    <!-- TalkBack: an entry an insulin pen logged (its row's pen icon) -->
+    <string name="home_treatment_pen_source">from the pen</string>
     <!-- TalkBack: what tapping a pen entry's row does -->
     <string name="home_pen_open">show its doses</string>
     <string name="home_pen_changed">Entry changed</string>
     <string name="home_pen_removed">Removed from your log</string>
     <string name="home_pen_changed_since">This entry changed meanwhile. Nothing was saved.</string>
     <string name="home_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
-    <string name="home_treatment_delete">Delete %1$s at %2$s</string>
+    <!-- TalkBack: a treatment row's Delete action (swipe, menu) -->
+    <string name="home_treatment_action_delete">Delete</string>
     <!-- TalkBack: what a tap on a treatment row does -->
     <string name="home_treatment_edit">edit</string>
     <string name="home_treatment_sending">Sending…</string>
@@ -144,6 +145,22 @@
     <string name="home_treatment_clinic_updating">LibreView has an older version: updating</string>
     <string name="home_treatment_clinic_stopped">LibreView upload stopped</string>
     <string name="home_tip_closed">Tip closed. Settings › Show closed tips brings it back.</string>
+    <!-- #207: the list's "view more" and the history page -->
+    <string name="home_treatments_see_all">See all</string>
+    <string name="home_treatments_none_today">Nothing logged in the last 24 hours</string>
+    <string name="home_treatment_menu_edit">Edit</string>
+    <string name="home_treatment_menu_doses">Show doses</string>
+    <!-- TalkBack: what a long press on a treatment row does (opens its menu) -->
+    <string name="home_treatment_menu_label">show options</string>
+    <!-- TalkBack: %1$s = "142 milligrams per decilitre, rising": the glucose when the entry was logged -->
+    <string name="home_treatment_glucose_then">glucose then %1$s</string>
+    <string name="history_title">Treatments</string>
+    <string name="history_today">Today</string>
+    <string name="history_yesterday">Yesterday</string>
+    <string name="history_empty">No treatments in the last 31 days</string>
+    <string name="history_empty_hint">Entries you log, and doses your pen reads, show up here.</string>
+    <string name="history_footer">The last 31 days. Older entries are in your export and in LibreView or Tidepool if you upload there.</string>
+    <string name="history_back">Back</string>
     <string name="home_undo">Undo</string>
 
     <!-- Damaged data -->
