@@ -26,3 +26,15 @@ scenario The user's settings with a reading every 5 min: the timer alerts when t
 28                                => Low glucose · eat more
 30  glucose 90                    => clear low
 40
+
+scenario The owner's evening: rapid insulin logged inside the carbs' window changes nothing for the lows  # #193
+at 08:09
+ 0  glucose 50   => Very low glucose
+ 2  carbs 35     => clear very_low                # 8:11: quiet until 8:26
+ 6  glucose 52
+10  glucose 60                                    # low now: quiet too
+13  glucose 54                                    # very low again: still quiet
+16  insulin 3                                     # 8:25: rapid insulin answers highs only
+17               => Very low glucose · eat more   # 8:26: the carbs' window ends, still very low: at once
+22               => Very low glucose · eat more
+23

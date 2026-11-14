@@ -77,3 +77,37 @@ scenario Carbs don't quiet highs
 scenario Insulin doesn't quiet lows
  0  glucose 60, insulin 2  => Low glucose
  1
+
+scenario Insulin inside the carbs' window, still low: quiet until the window ends, then at once  # #193
+ 0  glucose 62   => Low glucose
+ 2  carbs 35     => clear low
+16  insulin 3                                     # a minute before the window ends
+17               => Low glucose · eat more
+22               => Low glucose · eat more
+23
+
+scenario Insulin logged as the carbs' window ends: the alert is the window's end, not the insulin's  # #193
+ 0  glucose 50   => Very low glucose
+ 2  carbs 35     => clear very_low
+17  insulin 3    => Very low glucose · eat more
+22               => Very low glucose · eat more
+23
+
+scenario Insulin inside the carbs' window, back in range by its end: nothing  # #193
+ 0  glucose 50   => Very low glucose
+ 2  carbs 35     => clear very_low
+10  glucose 75                                    # the carbs worked
+16  insulin 3
+17
+25
+
+scenario Insulin inside the carbs' window on a follower: very low keeps its repeats, low is quiet there too  # #193
+mirror
+ 0  glucose 50   => Very low glucose; follower Very low glucose
+ 2  carbs 35     => clear very_low
+ 5               => follower Very low glucose · eat more
+ 8  glucose 60   => follower clear very_low       # low: the carbs quiet it on the follower too
+16  insulin 3
+17               => Low glucose · eat more; follower Low glucose · eat more
+22               => Low glucose · eat more; follower Low glucose · eat more
+23
