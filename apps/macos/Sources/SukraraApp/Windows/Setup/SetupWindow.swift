@@ -218,8 +218,10 @@ public struct SetupView: View {
                 Button(L10n.t("Back")) { model.flow.back() }
                 Spacer()
                 Button(L10n.t("Skip")) { model.skip(step) }
+                // one default button per window: on Follow someone, Return belongs to the invite link's Continue until
+                // the follow is done
                 Button(primaryTitle(step)) { Task { await primary(step) } }
-                    .keyboardShortcut(.defaultAction)
+                    .keyboardShortcut(step == .follow && !followDone ? nil : .defaultAction)
                     .disabled(
                         (step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil)
                             || (step == .alerts && !model.thresholdsInOrder))

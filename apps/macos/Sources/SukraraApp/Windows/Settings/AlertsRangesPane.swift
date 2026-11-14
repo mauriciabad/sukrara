@@ -413,14 +413,8 @@ struct QuietDetails: View {
                 }
             }
             .formStyle(.grouped)
-            HStack {
-                // Esc closes it, as Done does
-                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
-                    .opacity(0).frame(width: 0, height: 0).accessibilityHidden(true)
-                Spacer()
-                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
-            }
-            .padding([.horizontal, .bottom], 20)
+            DialogButtons(L10n.t("Done"), cancel: nil, confirm: done)
+                .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480, height: 300)
     }
@@ -528,11 +522,8 @@ struct AlertDetails: View {
                 }
             }
             .formStyle(.grouped)
-            HStack {
-                Spacer()
-                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
-            }
-            .padding([.horizontal, .bottom], 20)
+            DialogButtons(L10n.t("Done"), cancel: nil, confirm: done)
+                .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480, height: kind.group == .rate ? 620 : 520)
     }
@@ -626,11 +617,8 @@ private struct NightDetails: View {
                 }
             }
             .formStyle(.grouped)
-            HStack {
-                Spacer()
-                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
-            }
-            .padding([.horizontal, .bottom], 20)
+            DialogButtons(L10n.t("Done"), cancel: nil, confirm: done)
+                .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480, height: 380)
     }
@@ -700,14 +688,8 @@ struct FineTuning: View {
                 }
             }
             .formStyle(.grouped)
-            HStack {
-                // Esc closes it, as Done does
-                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
-                    .opacity(0).frame(width: 0, height: 0).accessibilityHidden(true)
-                Spacer()
-                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
-            }
-            .padding([.horizontal, .bottom], 20)
+            DialogButtons(L10n.t("Done"), cancel: nil, confirm: done)
+                .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480, height: 600)
     }

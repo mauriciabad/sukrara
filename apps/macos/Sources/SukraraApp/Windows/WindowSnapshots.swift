@@ -404,6 +404,9 @@
                             quiet: { _, carbs, _ in carbs ? L10n.t("Lows quiet for \(Durations.text(15))") : nil },
                             save: { _, _ in }, cancel: {}))
                 ))
+            // the When? popover's two ways: minutes ago (a number field) and a clock time
+            out.append(("treatment-when-ago", AnyView(WhenPicker(when: .ago(15)) { _ in })))
+            out.append(("treatment-when-time", AnyView(WhenPicker(when: .now) { _ in })))
             let t0 = Int64(Date().timeIntervalSince1970)
             let rows: [TreatmentsModel.Row] = [
                 .init(treatment: Treatment(id: "1", k: .rapid, a: 4.5, t: t0 - 600, u: 1, o: .mac), delivery: .sending),

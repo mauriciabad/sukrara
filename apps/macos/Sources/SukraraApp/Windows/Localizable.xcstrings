@@ -5137,22 +5137,6 @@
         }
       }
     },
-    "Value" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Value"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valor"
-          }
-        }
-      }
-    },
     "Very good up to" : {
       "localizations" : {
         "en" : {
@@ -7745,22 +7729,6 @@
         }
       }
     },
-    "Pizza, exercise, sick…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pizza, exercise, sick…"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pizza, ejercicio, enfermo…"
-          }
-        }
-      }
-    },
     "Remind Less" : {
       "localizations" : {
         "en" : {
@@ -9201,22 +9169,6 @@
         }
       }
     },
-    "Your name" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your name"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu nombre"
-          }
-        }
-      }
-    },
     "Only the people you share with see your name and picture. They travel end-to-end encrypted and are never posted publicly." : {
       "localizations" : {
         "en" : {
@@ -9501,22 +9453,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dirección"
-          }
-        }
-      }
-    },
-    "Find it automatically" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Find it automatically"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscarla automáticamente"
           }
         }
       }
@@ -9981,6 +9917,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mientras las últimas lecturas muestran que la glucosa sube claramente hacia el rango a tiempo, las alertas de baja esperan. Llegan enseguida si se estanca o dejan de llegar lecturas. Una muy baja solo espera en el teléfono de quien lleva el sensor, nunca su primera alerta."
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre"
+          }
+        }
+      }
+    },
+    "Blank address: Sukrara finds Juggluco by itself. Blank secret: Juggluco asks for none." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blank address: Sukrara finds Juggluco by itself. Blank secret: Juggluco asks for none."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dirección en blanco: Sukrara encuentra Juggluco por sí sola. Secreto en blanco: Juggluco no pide ninguno."
           }
         }
       }

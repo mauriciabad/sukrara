@@ -739,23 +739,22 @@ private struct CustomMuteAll: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                TextField(
-                    L10n.t("Mute alerts for"),
+                Text(L10n.t("Mute alerts for")).accessibilityHidden(true)
+                TextInput(
+                    label: L10n.t("Mute alerts for"),
                     text: Binding(
                         get: { text },
                         set: {
                             text = $0
                             invalid = false
-                        }), prompt: Text(verbatim: "2 h 30 min")
+                        })
                 )
-                .textFieldStyle(.roundedBorder)
                 .focused($focused)
                 .onSubmit(commit)
                 .accessibilityHint(note)
-                Button(L10n.t("Mute"), action: commit).disabled(text.isEmpty)
-                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
             }
             Text(note).font(.caption).foregroundStyle(invalid ? Color.red : Color.secondary)
+            DialogButtons(L10n.t("Mute"), enabled: !text.isEmpty, cancel: done, confirm: commit)
         }
         .onAppear { focused = true }
     }

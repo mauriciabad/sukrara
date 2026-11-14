@@ -150,7 +150,7 @@ struct SettingsFromPicker: View {
                     }
                 Button(L10n.t("Reset to Defaults…")) { model.confirmingReset = true }
                     .confirmationDialog(L10n.t("Reset to Sukrara's defaults?"), isPresented: $model.confirmingReset) {
-                        Button(L10n.t("Reset to Defaults")) { model.resetToDefaults() }
+                        Button(L10n.t("Reset to Defaults"), role: .destructive) { model.resetToDefaults() }
                         Button(L10n.t("Cancel"), role: .cancel) {}
                     } message: {
                         Text(

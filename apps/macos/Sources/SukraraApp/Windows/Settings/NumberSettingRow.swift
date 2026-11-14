@@ -68,19 +68,7 @@ struct NumberSettingRow: View {
             }
             .accessibilityValue(Self.word(format, value, unit))
             if isCustom && shown.custom {
-                HStack {
-                    // no title beside it: in a Form it took a column of its own and broke as "Val-ue"
-                    TextField(L10n.t("Value"), text: $text)  // settings-ok: number input
-                        .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 70)
-                        .onSubmit(commit)
-                        .accessibilityLabel(label)
-                    Stepper("", onIncrement: { nudge(1) }, onDecrement: { nudge(-1) })  // settings-ok: number input
-                        .labelsHidden()
-                        .accessibilityLabel(L10n.t("Adjust \(label)"))
-                    Text(shown.unit).foregroundStyle(.secondary)
-                }
+                NumberField(label: label, text: $text, unit: shown.unit, step: nudge, submit: commit)
                 Text(L10n.t("Enter \(shown.text(shown.min))–\(shown.text(shown.max)) \(shown.unit)"))
                     .font(.caption)
                     .foregroundStyle(shown.parse(text) == nil ? .red : .secondary)

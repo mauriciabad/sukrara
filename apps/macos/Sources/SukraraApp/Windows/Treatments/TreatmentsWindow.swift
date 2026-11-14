@@ -19,6 +19,31 @@ enum TreatmentKindLook {
     static func unit(_ k: Treatment.Kind) -> String { k == .carbs ? "g" : "u" }
 }
 
+/// An amount of rapid, long or carbs, typed or stepped (`NumberField`): rapid in 0.5u steps, long in 1u, carbs in 5g,
+/// within the form's limits (`TreatmentForm`). Add Treatment and Edit Treatment.
+struct AmountField: View {
+    let kind: Treatment.Kind
+    @Binding var text: String
+    var invalid = false
+    var submit: () -> Void
+    var focus: FocusState<Treatment.Kind?>.Binding
+
+    var body: some View {
+        let grams = kind == .carbs
+        let step = kind == .rapid ? 0.5 : grams ? 5 : 1
+        NumberField(
+            label: TreatmentKindLook.name(kind), text: $text, unit: TreatmentKindLook.unit(kind),
+            step: { sign in
+                text = NumberField<Treatment.Kind?>.stepped(
+                    text, by: sign * step,
+                    in: (grams ? 1 : 0.5)...(grams ? TreatmentForm.maxGrams : TreatmentForm.maxUnits),
+                    decimals: grams ? 0 : 1)
+            },
+            keep: TreatmentForm.filterAmount, invalid: invalid, width: nil, submit: submit, focus: focus,
+            focusValue: kind)
+    }
+}
+
 /// Add Treatment: Rapid, Long and Carbs side by side, a Note with its byte counter, and *When?* (a chip that opens a
 /// clock time / minutes-ago picker); the line under them says which alerts the entries will quiet. Return saves,
 /// Escape cancels. The focused field is the one the latest reading (or the card's pill) suggests.
@@ -109,16 +134,13 @@ public struct AddTreatmentView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 kindLabel(.note)
-                TextField(
-                    L10n.t("Note"),
+                TextInput(
+                    label: L10n.t("Note"),
                     text: Binding(
-                        get: { fields.note }, set: { fields.note = TreatmentForm.filterNote($0, old: fields.note) }),
-                    prompt: Text(L10n.t("Pizza, exercise, sick…"))
+                        get: { fields.note }, set: { fields.note = TreatmentForm.filterNote($0, old: fields.note) })
                 )
-                .textFieldStyle(.roundedBorder)
                 .focused($focus, equals: .note)
                 .onSubmit(commit)
-                .accessibilityLabel(L10n.t("Note"))
                 let bytes = fields.note.utf8.count
                 if bytes > Treatment.noteBytes - 20 {
                     Text(verbatim: "\(bytes) / \(Treatment.noteBytes)")
@@ -135,14 +157,7 @@ public struct AddTreatmentView: View {
                 Text(L10n.t("Insulin up to 100u, carbs up to 500g."))
                     .font(.callout).foregroundStyle(.red)
             }
-            HStack {
-                Spacer()
-                Button(L10n.t("Cancel"), action: cancel).keyboardShortcut(.cancelAction)
-                Button(L10n.t("Save")) { commit() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!fields.canSave)
-            }
-            .controlSize(.large)
+            DialogButtons(L10n.t("Save"), enabled: fields.canSave, cancel: cancel, confirm: commit)
         }
         .padding(20)
         .frame(width: 440)
@@ -199,22 +214,9 @@ public struct AddTreatmentView: View {
         let invalid = TreatmentForm.parse(text.wrappedValue, grams: k == .carbs) == .invalid
         return VStack(alignment: .leading, spacing: 4) {
             kindLabel(k)
-            HStack(spacing: 4) {
-                TextField(
-                    TreatmentKindLook.name(k),
-                    text: Binding(
-                        get: { text.wrappedValue }, set: { text.wrappedValue = TreatmentForm.filterAmount($0) }),
-                    prompt: Text(verbatim: "0")
-                )
-                .textFieldStyle(.roundedBorder)
-                .focused($focus, equals: k)
-                .onSubmit(commit)
-                .accessibilityLabel(TreatmentKindLook.name(k))
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(invalid ? Color.red : .clear))
-                Text(TreatmentKindLook.unit(k)).foregroundStyle(.secondary).accessibilityHidden(true)
-            }
+            AmountField(kind: k, text: text, invalid: invalid, submit: commit, focus: $focus)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func commit() {
@@ -252,10 +254,25 @@ struct WhenPicker: View {
     @State private var date = Date()
     @State private var relative = false
     @State private var minutes = ""
+    @State private var finished = false
+    @State private var opened: Shown?
     @FocusState private var minutesFocus: Bool
 
+    private var typed: TreatmentForm.When? { TreatmentForm.When.fromPicker(minutesAgo: minutes) }
+
+    /// What OK takes: the typed minutes ago, or the picked clock time (nil: the minutes aren't a valid number).
+    private var choice: TreatmentForm.When? {
+        if relative { return typed }
+        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return .fromPicker(hour: c.hour ?? 0, minute: c.minute ?? 0, now: Date())
+    }
+
+    private func finish(_ picked: TreatmentForm.When?) {
+        finished = true
+        done(picked)
+    }
+
     var body: some View {
-        let typed = TreatmentForm.When.fromPicker(minutesAgo: minutes)
         VStack(alignment: .leading, spacing: 12) {
             Text(L10n.t("When?")).font(.headline)
             Picker(L10n.t("When?"), selection: $relative) {
@@ -265,21 +282,18 @@ struct WhenPicker: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             if relative {
-                HStack(spacing: 6) {
-                    TextField(
-                        L10n.t("Minutes ago"),
-                        text: Binding(get: { minutes }, set: { minutes = TreatmentForm.filterMinutes($0) })
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 70)
-                    .focused($minutesFocus)
-                    Text(verbatim: "min").foregroundStyle(.secondary).accessibilityHidden(true)
-                }
+                NumberField(
+                    label: L10n.t("Minutes ago"), text: $minutes, unit: "min",
+                    step: { sign in
+                        minutes = NumberField<Bool>.stepped(
+                            minutes, by: sign * 5, in: 0...Double(TreatmentForm.maxAgoMinutes))
+                    },
+                    keep: TreatmentForm.filterMinutes, submit: { if let typed { finish(typed) } },
+                    focus: $minutesFocus, focusValue: true)
+                // presets fill the field (actions, not a selection: the field shows what is chosen)
                 HStack(spacing: 6) {
                     ForEach(TreatmentForm.agoPresets, id: \.self) { m in
-                        let on = typed == .ago(m)
                         Button(Durations.text(m)) { minutes = "\(m)" }
-                            .buttonStyle(on ? AnyPrimitiveButtonStyle(.borderedProminent) : .init(.bordered))
                     }
                 }
                 .controlSize(.small)
@@ -288,24 +302,16 @@ struct WhenPicker: View {
                     .datePickerStyle(.stepperField)
                     .labelsHidden()
             }
-            HStack {
-                Button(L10n.t("Now")) { done(.now) }
-                Spacer()
-                Button(L10n.t("Cancel")) { done(nil) }.keyboardShortcut(.cancelAction)
-                Button(L10n.t("OK")) {
-                    if relative {
-                        done(typed)
-                    } else {
-                        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
-                        done(.fromPicker(hour: c.hour ?? 0, minute: c.minute ?? 0, now: Date()))
-                    }
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(relative && typed == nil)
+            DialogButtons(
+                L10n.t("OK"), enabled: choice != nil, cancel: { finish(nil) }, confirm: { choice.map(finish) }
+            ) {
+                Button(L10n.t("Now")) { finish(.now) }
             }
         }
         .padding(14)
         .frame(width: 280)
+        // closed by a click outside: a changed choice is kept, as OK would (Human Interface Guidelines, Popovers)
+        .onDisappear { if !finished, opened != Shown(date, relative, minutes), let choice { done(choice) } }
         .onAppear {
             switch when {
             case .now: break
@@ -314,16 +320,20 @@ struct WhenPicker: View {
                 relative = true
                 minutes = "\(m)"
             }
+            opened = Shown(date, relative, minutes)
         }
         .onChange(of: relative) { _, r in if r { minutesFocus = true } }
     }
-}
 
-/// A button style chosen at run time (the preset that matches the typed minutes is prominent).
-struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
-    private let make: (Configuration) -> AnyView
-    init<S: PrimitiveButtonStyle>(_ style: S) { make = { AnyView(style.makeBody(configuration: $0)) } }
-    func makeBody(configuration: Configuration) -> some View { make(configuration) }
+    /// What the picker showed when it opened: closing it unchanged changes nothing.
+    private struct Shown: Equatable {
+        let date: Date, relative: Bool, minutes: String
+        init(_ date: Date, _ relative: Bool, _ minutes: String) {
+            self.date = date
+            self.relative = relative
+            self.minutes = minutes
+        }
+    }
 }
 
 /// The Treatments window: the last 7 days grouped by day, newest first, each entry with its kind's marker, time,

@@ -142,12 +142,17 @@ struct JugglucoRows: View {
                     Button(L10n.t("Open System Settings…"), action: JugglucoModel.openLocalNetworkSettings)
                 }
             }
-            TextField(
-                L10n.t("Address"), text: $model.addressDraft, prompt: Text(L10n.t("Find it automatically"))
-            )
-            .onSubmit(model.saveAddress)
-            SecureField(L10n.t("API secret"), text: $model.secretDraft, prompt: Text(L10n.t("None")))
-                .onSubmit(model.saveSecret)
+            LabeledContent(L10n.t("Address")) {
+                TextInput(label: L10n.t("Address"), text: $model.addressDraft).onSubmit(model.saveAddress)
+            }
+            LabeledContent(L10n.t("API secret")) {
+                TextInput(label: L10n.t("API secret"), text: $model.secretDraft, secure: true)
+                    .onSubmit(model.saveSecret)
+            }
+            Text(L10n.t("Blank address: Sukrara finds Juggluco by itself. Blank secret: Juggluco asks for none."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
