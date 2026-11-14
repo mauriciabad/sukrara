@@ -25,6 +25,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
@@ -46,7 +47,7 @@ sealed interface ThresholdReviewResult {
 
 /**
  * Review alert thresholds (never silently defaulted). Shows the thresholds in use as a draft; changes
- * stay in the draft until *Use these thresholds*, which saves them and the confirmation time together. Leaving
+ * stay in the draft until *Confirm thresholds*, which saves them and the confirmation time together. Leaving
  * (Cancel / back) stores nothing.
  */
 class ThresholdReviewViewModel(
@@ -114,7 +115,7 @@ class ThresholdReviewViewModel(
     }
 }
 
-/** The review's content: one row per reviewed kind, then *Use these thresholds* and *Cancel*. */
+/** The review's content: one row per reviewed kind, then *Confirm thresholds* and *Cancel*. */
 @Composable
 internal fun AlertThresholdReviewContent(
     draft: AlertSettings,
@@ -138,9 +139,10 @@ internal fun AlertThresholdReviewContent(
 }
 
 /**
- * The reviewed thresholds of [draft]: one row per kind ("Low — Below 70 mg/dL", "Off (…)"), each opening THE number
- * dialog limited to the values that keep the levels in order. This review and setup's alert step (the app passes it
- * in) show the same rows.
+ * The reviewed thresholds of [draft]: one row per kind, its name and only what sets it off ("Low" — "Below 70",
+ * "No data" — "After 20 min", "Off" when the kind is off), each opening THE number dialog limited to the values that
+ * keep the levels in order (the dialog says the values a typed number covers). This review and setup's alert step (the
+ * app passes it in) show the same rows.
  */
 @Composable
 fun AlertThresholdRows(
@@ -152,13 +154,9 @@ fun AlertThresholdRows(
     SettingsGroup {
         for (kind in ThresholdReviewViewModel.ReviewedKinds) {
             val rule = draft.rule(kind)
-            val sentence = thresholdSentence(kind, rule.threshold)
             ValueRow(
                 kindName(kind),
-                withSpans(
-                    if (rule.on) sentence else stringResource(R.string.st_review_off, sentence),
-                    words.text(RangeSpans.ofAlert(kind, draft)),
-                ),
+                if (rule.on) reviewThreshold(kind, rule.threshold) else stringResource(R.string.st_review_off),
                 { editing = kind },
                 icon = kindIcon(kind),
             )
@@ -180,5 +178,24 @@ fun AlertThresholdRows(
         ) {
             onThreshold(kind, it)
         }
+    }
+}
+
+/**
+ * A reviewed row's description: the comparison the engine makes and the number, without the glucose unit (every value
+ * on the page is in the person's unit, and the size of the number says which): "At or below 55", "Below 70",
+ * "At or above 180", "After 20 min".
+ */
+@Composable
+internal fun reviewThreshold(
+    kind: AlertKind,
+    value: Double,
+): String {
+    if (kind == AlertKind.NO_DATA) return stringResource(R.string.st_review_after, numberLabel(SchemaPrefs.thresholdSpec(kind), value))
+    val v = SchemaPrefs.thresholdSpec(kind).text(value, LocalGlucoseUnit.current)
+    return when (kind) {
+        AlertKind.LOW -> stringResource(R.string.st_threshold_below, v)
+        AlertKind.VERY_LOW -> stringResource(R.string.st_threshold_at_or_below, v)
+        else -> stringResource(R.string.st_threshold_above, v)
     }
 }

@@ -56,9 +56,9 @@
     <string name="sh_setup_sensor_live">Lectura recibida. Sukrara está monitorizando.</string>
     <string name="sh_setup_sensor_open">Configurar sensor</string>
     <string name="sh_setup_alerts_title">Revisa tus alertas</string>
-    <string name="sh_setup_alerts_body">Sukrara te avisa con estos valores. Toca uno para cambiarlo. Nada cambia hasta que confirmes.</string>
+    <string name="sh_setup_alerts_body">No se guarda nada hasta que confirmes.</string>
     <string name="sh_setup_alerts_order">Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto.</string>
-    <string name="sh_setup_alerts_confirm">Usar estos umbrales</string>
+    <string name="sh_setup_alerts_confirm">Confirmar umbrales</string>
     <string name="sh_identity_title">Tus seguidores</string>
     <string name="sh_identity_body">Recupera a tus seguidores con tu código de recuperación o empieza de cero con invitaciones nuevas.</string>
     <string name="sh_identity_sharing">Compartir está configurado. Seguidores: %1$d.</string>

@@ -21,9 +21,11 @@
     <string name="st_review_title">Revisar umbrales de alerta</string>
     <string name="st_review_confirmed">Confirmados</string>
     <string name="st_review_not_confirmed">Aún sin confirmar</string>
-    <string name="st_review_intro">Estos son los valores que te avisarán. Revisa cada uno; toca una fila para cambiarlo. No se guarda nada hasta que toques Usar estos umbrales.</string>
-    <string name="st_review_off">Desactivada (%1$s)</string>
-    <string name="st_review_confirm">Usar estos umbrales</string>
+    <string name="st_review_intro">No se guarda nada hasta que confirmes.</string>
+    <string name="st_review_off">Desactivada</string>
+    <!-- Revisar umbrales de alerta: la fila sin datos, tras cuánto sin lecturas avisa ("Tras 20 min") -->
+    <string name="st_review_after">Tras %1$s</string>
+    <string name="st_review_confirm">Confirmar umbrales</string>
     <string name="st_quiet_title">Silencios</string>
     <string name="st_quiet_insulin">Silenciar glucosa alta tras la insulina</string>
     <string name="st_quiet_carbs">Silenciar glucosa baja tras los hidratos</string>

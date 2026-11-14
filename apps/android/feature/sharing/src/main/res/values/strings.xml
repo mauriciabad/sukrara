@@ -97,11 +97,11 @@
     <!-- Setup alerts step: title -->
     <string name="sh_setup_alerts_title">Check your alerts</string>
     <!-- Setup alerts step: explanation -->
-    <string name="sh_setup_alerts_body">Sukrara alerts you at these values. Tap one to change it. Nothing changes until you confirm.</string>
+    <string name="sh_setup_alerts_body">Nothing is saved until you confirm.</string>
     <!-- Error: thresholds out of order -->
     <string name="sh_setup_alerts_order">Keep the order: very low below low, low below high, high below very high, very high below extremely high.</string>
     <!-- Button: confirm the alert thresholds -->
-    <string name="sh_setup_alerts_confirm">Use these thresholds</string>
+    <string name="sh_setup_alerts_confirm">Confirm thresholds</string>
     <!-- Setup identity step: title -->
     <string name="sh_identity_title">Your followers</string>
     <!-- Setup identity step: explanation -->

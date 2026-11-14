@@ -256,6 +256,15 @@ class SettingsGallery {
             "alert-kind-very-low" to
                 { AlertKindContent(AlertKind.VERY_LOW, AlertsUi(AlertSettings(), AlertUiState()), clock, AlertKindActions()) {} },
             "threshold-review" to { AlertThresholdReviewContent(AlertSettings(), { _, _ -> }, {}, {}) },
+            "threshold-review-off" to {
+                val s = AlertSettings()
+                AlertThresholdReviewContent(
+                    s.withRule(AlertKind.VERY_HIGH, s.rule(AlertKind.VERY_HIGH).copy(on = false)),
+                    { _, _ -> },
+                    {},
+                    {},
+                )
+            },
             "readings" to { ReadingsContent(GraphPrefs(), { _, _ -> }, {}) },
             "readings-changed" to { ReadingsContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}) },
             "readings-follower" to {
@@ -665,6 +674,7 @@ class SettingsGallery {
                     "alerts",
                     "alert-kind-low-muted",
                     "threshold-review",
+                    "threshold-review-off",
                     "about-update",
                     "sensor",
                     "sensor-juggluco-signed-out",

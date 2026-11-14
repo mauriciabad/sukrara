@@ -10,7 +10,7 @@ import app.mauri.sukrara.feature.sharing.R
 
 /**
  * P4: the alert thresholds the runtime will use, in Settings' own rows ([SetupActions.thresholdRows]: the same names,
- * sentences and number dialog as Settings › Review alert thresholds); "Use these thresholds" is the only way to
+ * sentences and number dialog as Settings › Review alert thresholds); "Confirm thresholds" is the only way to
  * complete the step (Later → "Alerts not confirmed" on the Finish-setup card). Nothing is saved until the person
  * confirms.
  */

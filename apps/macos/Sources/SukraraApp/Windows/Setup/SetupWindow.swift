@@ -13,7 +13,7 @@ public final class SetupModel {
     /// The settings window's model: the alert rules in use and "Settings from" (one alert store for both windows, so
     /// neither writes back a stale copy of the other's change).
     public let settings: SettingsModel
-    /// Thresholds changed on the alert step; nothing is stored before Use these.
+    /// Thresholds changed on the alert step; nothing is stored before Confirm thresholds.
     var editedThresholds: [AlertKind: Double] = [:]
     @ObservationIgnored let store: any SettingsStoring
     /// Asks for notification permission; true = granted.
@@ -52,7 +52,7 @@ public final class SetupModel {
 
     func setThreshold(_ value: Double, _ kind: AlertKind) { editedThresholds[kind] = value }
 
-    /// The five levels keep their order (very low < low < high < very high < extremely high); else Use these waits.
+    /// The five levels keep their order (very low < low < high < very high < extremely high); else Confirm thresholds waits.
     var thresholdsInOrder: Bool {
         let levels = Self.reviewedKinds.filter { $0 != .noData }.map(threshold)
         return zip(levels, levels.dropFirst()).allSatisfy { $0 < $1 }
@@ -61,7 +61,7 @@ public final class SetupModel {
     /// The levels come from the wearer or the defaults (not this Mac's own): changing one changes that.
     var levelsMirrored: Bool { settings.settingsFrom != .custom }
 
-    /// Use these: stores the changed thresholds and completes the step (never confirmed silently: only this button).
+    /// Confirm thresholds: stores the changed thresholds and completes the step (never confirmed silently: only this button).
     /// A changed level applies only as this Mac's own rule, so the settings in use become this Mac's own first
     /// (Custom, starting from the wearer's or the defaults: nothing else on screen changes); no data is always this
     /// Mac's. Nothing changed = nothing stored.
@@ -145,10 +145,8 @@ public struct SetupView: View {
     /// levels come from under them.
     private var thresholds: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(
-                L10n.t(
-                    "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these."
-                ))
+            // the one thing the rows don't show: every other settings change applies at once, these wait
+            Text(L10n.t("Nothing is saved until you confirm."))
             Form {
                 ForEach(SetupModel.reviewedKinds, id: \.self) { thresholdRow($0) }
             }
@@ -178,19 +176,25 @@ public struct SetupView: View {
         if let number = SettingsSpec.settings.first(where: { $0.id == id })?.number,
             let format = SettingsSpec.numbers[number]
         {
-            let name = AlertsRangesPane.kindName(kind)
+            let on = model.settings.shownAlerts[kind].on
             NumberSettingRow(
-                label: model.settings.shownAlerts[kind].on ? name : L10n.t("\(name) (off)"), format: format,
+                label: AlertsRangesPane.kindName(kind), format: format,
                 value: Binding(get: { model.threshold(kind) }, set: { model.setThreshold($0, kind) }),
-                span: { v in
-                    let shown = model.settings.shownAlerts
-                    return RangeSpans.text(
-                        RangeSpans.ofAlert(kind) { k in
-                            var r = shown[k]
-                            r.threshold = k == kind ? v : model.threshold(k)
-                            return r
-                        }, unit: model.settings.unit)
-                })
+                span: { v in Self.thresholdLine(kind, v, on: on, unit: model.settings.unit) })
+        }
+    }
+
+    /// The line under a threshold: what sets the alert off, the comparison the engine makes on the number in the pop-up
+    /// beside it (which carries the unit): "Up to 55", "Below 70", "From 180" (SPEC §1); "Off" for an alert that is off;
+    /// nothing for no data, whose "20 min" already says it. As Android's review rows (`reviewThreshold`).
+    static func thresholdLine(_ kind: AlertKind, _ v: Double, on: Bool, unit: GlucoseUnit) -> String? {
+        if !on { return L10n.t("Off") }
+        let n = unit.format(Int(v))
+        switch kind {
+        case .low: return L10n.t("Below \(n)")
+        case .veryLow: return L10n.t("Up to \(n)")
+        case .high, .veryHigh, .extremelyHigh: return L10n.t("From \(n)")
+        case .fallingFast, .risingFast, .noData: return nil
         }
     }
 
@@ -232,7 +236,7 @@ public struct SetupView: View {
 
     private func primaryTitle(_ s: SetupFlow.Step) -> String {
         switch s {
-        case .alerts: L10n.t("Use these")
+        case .alerts: L10n.t("Confirm thresholds")
         case .notifications: L10n.t("Allow…")
         case .openAtLogin: model.loginItem?.status == .on ? L10n.t("Continue") : L10n.t("Open at login")
         default: L10n.t("Continue")

@@ -624,8 +624,8 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a valid typed value saves with OK and with
       the keyboard's Done (the dialog closes, the row shows it); a custom value shows as *Custom* + value.
-- [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step; Mac
-      Settings › Readings › Ranges, an alert's Details…, its night rule, setup's Alerts step), mg/dL and mmol/L, English and
+- [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step's number dialog; Mac
+      Settings › Readings › Ranges, an alert's Details…, its night rule), mg/dL and mmol/L, English and
       Spanish: under the number a line says the values it covers (*Low: 56–69 mg/dL*, *In range: 70–179 mg/dL* under
       low and high, *Very low: up to 55*, *Extremely high: from 300*); typing a custom value (Android dialog, Mac field
       or stepper) changes it as you type; turning very high off makes high's line reach extremely high (*180–299*).

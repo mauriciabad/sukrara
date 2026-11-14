@@ -49,22 +49,6 @@
         }
       }
     },
-    "%@ (off)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ (off)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ (desactivada)"
-          }
-        }
-      }
-    },
     "%@ stopped sharing with you. Paste a new link to follow again." : {
       "localizations" : {
         "en" : {
@@ -4513,22 +4497,6 @@
         }
       }
     },
-    "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara alerts you at these values. Change any of them here: nothing changes until you choose Use these."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara te avisa con estos valores. Cambia los que quieras aquí: nada cambia hasta que elijas Usar estos."
-          }
-        }
-      }
-    },
     "Sukrara opens at login." : {
       "localizations" : {
         "en" : {
@@ -5181,22 +5149,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Usar las alertas y rangos por defecto?"
-          }
-        }
-      }
-    },
-    "Use these" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use these"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar estos"
           }
         }
       }
@@ -9837,6 +9789,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ + %lld cambios"
+          }
+        }
+      }
+    },
+    "Nothing is saved until you confirm." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is saved until you confirm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se guarda nada hasta que confirmes."
+          }
+        }
+      }
+    },
+    "Confirm thresholds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm thresholds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmar umbrales"
+          }
+        }
+      }
+    },
+    "Below %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por debajo de %@"
+          }
+        }
+      }
+    },
+    "Up to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hasta %@"
+          }
+        }
+      }
+    },
+    "From %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde %@"
           }
         }
       }

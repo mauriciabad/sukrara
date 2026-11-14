@@ -261,7 +261,7 @@ object SetupMachine {
         facts: SetupFacts,
     ): SetupRecord = if (facts.ownSensorLive) record.done(SetupStep.Sensor) else record
 
-    /** P4: the only way to complete the alert step is "Use these thresholds" (the thresholds are saved first). */
+    /** P4: the only way to complete the alert step is "Confirm thresholds" (the thresholds are saved first). */
     fun confirmAlerts(record: SetupRecord): SetupRecord = record.done(SetupStep.Alerts)
 
     /** The identity exists (restored, or started fresh after confirming). */

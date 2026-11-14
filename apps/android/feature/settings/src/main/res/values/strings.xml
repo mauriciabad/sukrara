@@ -21,9 +21,11 @@
     <string name="st_review_title">Review alert thresholds</string>
     <string name="st_review_confirmed">Confirmed</string>
     <string name="st_review_not_confirmed">Not confirmed yet</string>
-    <string name="st_review_intro">These are the values that will alert you. Check each one; tap a row to change it. Nothing is saved until you tap Use these thresholds.</string>
-    <string name="st_review_off">Off (%1$s)</string>
-    <string name="st_review_confirm">Use these thresholds</string>
+    <string name="st_review_intro">Nothing is saved until you confirm.</string>
+    <string name="st_review_off">Off</string>
+    <!-- Review alert thresholds: the no data row, after how long without a reading it alerts ("After 20 min") -->
+    <string name="st_review_after">After %1$s</string>
+    <string name="st_review_confirm">Confirm thresholds</string>
     <string name="st_quiet_title">Quiet times</string>
     <string name="st_quiet_insulin">Quiet highs after insulin</string>
     <string name="st_quiet_carbs">Quiet lows after carbs</string>
