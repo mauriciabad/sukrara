@@ -31,4 +31,18 @@ class AlertCodecTest {
             AlertCodec.decode("""{"v":2,"type":"alert","id":"a1","k":"very_low","state":"escalate","at":1}""")
         }
     }
+
+    /**
+     * #195: the wearer's silent show crosses the wire as `show` (the app maps its alert events through this codec both
+     * ways: an unknown state was dropped on the wearer and refused on the follower).
+     */
+    @Test fun aSilentShowRoundTrips() {
+        val json = """{"v":2,"type":"alert","id":"s1","k":"low","state":"show","at":100,"t":90,"sgv":66,"r":-0.5,"th":70,"n":1,"tr":0}"""
+        val show = AlertCodec.decode(json)
+        assertTrue(show.show && !show.fire && !show.answered)
+        assertEquals("show", show.state)
+        assertTrue("\"state\":\"show\"" in AlertCodec.encode(show))
+        assertEquals(show, AlertCodec.decode(AlertCodec.encode(show)))
+        assertEquals("clear", AlertCodec.decode(AlertCodec.encode(show.copy(show = false))).state)
+    }
 }

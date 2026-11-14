@@ -18,7 +18,8 @@ import kotlinx.serialization.json.put
  * A glucose alert the wearer fired or cleared (PROTOCOL-v2 §Alerts, kind 21079). [id] is random per firing and a
  * clear repeats it; [n] counts the episode's alerts; [tr] = treatments the headline acknowledges (0, 1, 2 = more).
  * #39: [esc] on a very low's fire = minutes nobody answered it on the wearer's phone (null = not escalated);
- * [answered] = state `answered` (the escalated very low [id] was answered there).
+ * [answered] = state `answered` (the escalated very low [id] was answered there). #195: [show] = state `show` (the
+ * episode's alert on screen again without sound; the fields of a fire, a new [id] a later clear repeats).
  */
 data class AlertPayload(
     val id: String,
@@ -33,12 +34,15 @@ data class AlertPayload(
     val tr: Int,
     val esc: Int? = null,
     val answered: Boolean = false,
+    val show: Boolean = false,
 ) {
     val state: String get() =
         if (fire) {
             "fire"
         } else if (answered) {
             "answered"
+        } else if (show) {
+            "show"
         } else {
             "clear"
         }
@@ -75,7 +79,7 @@ object AlertCodec {
         o.requireV(Wire.V)
         if (o.string("type") != "alert") throw InvalidPayload("type must be alert")
         val kind = o.string("k")?.takeIf { it in KINDS } ?: throw InvalidPayload("unknown alert kind")
-        val state = o.string("state")?.takeIf { it in STATES } ?: throw InvalidPayload("state must be fire|clear|answered")
+        val state = o.string("state")?.takeIf { it in STATES } ?: throw InvalidPayload("state must be fire|show|clear|answered")
         val id = o.string("id")?.takeIf { it.isNotEmpty() } ?: throw InvalidPayload("missing id")
         return AlertPayload(
             id = id,
@@ -90,8 +94,9 @@ object AlertCodec {
             tr = o.longOrNull("tr")?.toInt() ?: 0,
             esc = if (state == "fire") o.longOrNull("esc")?.toInt() else null,
             answered = state == "answered",
+            show = state == "show",
         )
     }
 
-    private val STATES = setOf("fire", "clear", "answered")
+    private val STATES = setOf("fire", "show", "clear", "answered")
 }
