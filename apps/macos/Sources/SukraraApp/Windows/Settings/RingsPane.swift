@@ -48,7 +48,7 @@ struct RingsPane: View {
                             "Clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down."
                         )
                     )
-                    .font(.callout).foregroundStyle(.secondary)
+                    .formFooter()
                 }
                 Section(L10n.t("Last treatment")) {
                     Picker(L10n.t("Position"), selection: graphValue(\.lastPlace)) {

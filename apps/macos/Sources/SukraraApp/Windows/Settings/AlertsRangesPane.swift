@@ -51,7 +51,7 @@ struct AlertsRangesPane: View {
                         "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”."
                     )
                 )
-                .font(.callout).foregroundStyle(.secondary)
+                .formFooter()
             }
             Section(L10n.t("Quiet times")) {
                 quiet(L10n.t("Quiet after insulin"), \.muteAfterInsulin, "alerts.muteAfterInsulin.min")
@@ -70,7 +70,7 @@ struct AlertsRangesPane: View {
                         "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
                     )
                 )
-                .font(.callout).foregroundStyle(.secondary)
+                .formFooter()
             }
             Section {
                 NumberSettingRow(
@@ -108,7 +108,7 @@ struct AlertsRangesPane: View {
                         "Mute and Remind less end once the value is back inside the threshold by this margin for this long."
                     )
                 )
-                .font(.callout).foregroundStyle(.secondary)
+                .formFooter()
             }
             Section(L10n.t("Sounds")) {
                 HStack {
@@ -180,7 +180,7 @@ struct AlertsRangesPane: View {
                     "Other thresholds, reminders and alarms every night. Very low always alerts at night. The quiet times, the waits near a threshold, the notification's buttons and the sounds are the same day and night."
                 )
             )
-            .font(.callout).foregroundStyle(.secondary)
+            .formFooter()
         }
     }
 
@@ -378,7 +378,7 @@ private struct AlertDetails: View {
                         Text(
                             L10n.t("When it alerts follows the wearer's rules. Choose Custom to change it on this Mac.")
                         )
-                        .font(.callout).foregroundStyle(.secondary)
+                        .formFooter()
                     }
                 }
                 Section {
@@ -422,7 +422,7 @@ private struct AlertDetails: View {
                             "Like an alarm: Time Sensitive, so it shows and plays during a Focus when Sukrara is allowed to. The test alert is a real notification titled “Test”; nothing is muted or logged."
                         )
                     )
-                    .font(.callout).foregroundStyle(.secondary)
+                    .formFooter()
                 }
             }
             .formStyle(.grouped)
@@ -491,7 +491,7 @@ private struct NightDetails: View {
                             set: { v in model.alerts.update { $0.night[kind].alarm = v } }))
                 } footer: {
                     Text(L10n.t("Applies only between the night alerts' start and end."))
-                        .font(.callout).foregroundStyle(.secondary)
+                        .formFooter()
                 }
             }
             .formStyle(.grouped)

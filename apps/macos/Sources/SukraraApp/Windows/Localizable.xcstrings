@@ -289,6 +289,22 @@
         }
       }
     },
+    "About Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de Sukrara"
+          }
+        }
+      }
+    },
     "Add Treatment" : {
       "localizations" : {
         "en" : {
@@ -589,6 +605,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Otro dispositivo ha usado esta invitación. Pide una nueva."
+          }
+        }
+      }
+    },
+    "App Store version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Store version"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión de App Store"
           }
         }
       }
@@ -1553,6 +1585,22 @@
         }
       }
     },
+    "Free software under the GNU GPL 3.0 or later" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free software under the GNU GPL 3.0 or later"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Software libre bajo la GNU GPL 3.0 o posterior"
+          }
+        }
+      }
+    },
     "From %@: these follow their phone" : {
       "localizations" : {
         "en" : {
@@ -1597,6 +1645,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "General"
+          }
+        }
+      }
+    },
+    "GitHub version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub version"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión de GitHub"
           }
         }
       }
@@ -2177,22 +2241,6 @@
         }
       }
     },
-    "Open Website" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Website"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir la web"
-          }
-        }
-      }
-    },
     "Opens %@'s page on the website" : {
       "localizations" : {
         "en" : {
@@ -2237,6 +2285,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Política de privacidad"
+          }
+        }
+      }
+    },
+    "Rings and numbers beside the value, ring order and the last treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rings and numbers beside the value, ring order and the last treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anillos y números junto al valor, orden de los anillos y último tratamiento"
           }
         }
       }
@@ -2321,6 +2385,22 @@
         }
       }
     },
+    "Settings from, unit, glucose source, startup and updates" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings from, unit, glucose source, startup and updates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de, unidad, fuente de glucosa, inicio y actualizaciones"
+          }
+        }
+      }
+    },
     "Shows what's new and installs it" : {
       "localizations" : {
         "en" : {
@@ -2333,6 +2413,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Muestra las novedades y la instala"
+          }
+        }
+      }
+    },
+    "Software Update" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Software Update"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualizaciones"
+          }
+        }
+      }
+    },
+    "Source Code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código fuente"
           }
         }
       }
@@ -2417,6 +2529,38 @@
         }
       }
     },
+    "The person this Mac follows" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The person this Mac follows"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona a la que sigue este Mac"
+          }
+        }
+      }
+    },
+    "The version, the privacy policy, the website and Sukrara on other devices" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The version, the privacy policy, the website and Sukrara on other devices"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La versión, la política de privacidad, la web y Sukrara en otros dispositivos"
+          }
+        }
+      }
+    },
     "Their glucose shows in the menu bar now." : {
       "localizations" : {
         "en" : {
@@ -2445,6 +2589,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Este Mac ya sigue a alguien. Primero deja de seguir en Ajustes › Seguimiento y luego vuelve a abrir el enlace."
+          }
+        }
+      }
+    },
+    "Time shown, lines, ranges, treatments and the sensor on the graph" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time shown, lines, ranges, treatments and the sensor on the graph"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo mostrado, líneas, rangos, tratamientos y el sensor en el gráfico"
+          }
+        }
+      }
+    },
+    "Version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión"
+          }
+        }
+      }
+    },
+    "Version %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión %@"
+          }
+        }
+      }
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@ (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión %@ (%@)"
           }
         }
       }
@@ -2529,18 +2737,18 @@
         }
       }
     },
-    "Sukrara on Other Devices" : {
+    "Website" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sukrara on Other Devices"
+            "value" : "Website"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sukrara en otros dispositivos"
+            "value" : "Web"
           }
         }
       }
@@ -3725,22 +3933,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara se abre al iniciar sesión."
-          }
-        }
-      }
-    },
-    "Sukrara Settings" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara Settings"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajustes de Sukrara"
           }
         }
       }
@@ -5949,6 +6141,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quien lleva el sensor"
+          }
+        }
+      }
+    },
+    "When to alert, quiet rules, sounds and notifications" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When to alert, quiet rules, sounds and notifications"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuándo avisar, reglas de silencio, sonidos y notificaciones"
           }
         }
       }

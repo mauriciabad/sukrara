@@ -132,9 +132,9 @@ too), links the privacy policy and links to the website's
 
 The Mac app likewise: the **GitHub version** (the dmg and the Homebrew cask), which **updates itself**: once a day it
 looks for a new version (signed by Sukrara and checked before it installs) and offers it in the menu bar panel, with
-*Install and Relaunch* in one click (Settings › General › About: *Check for Updates…*, automatic checks, automatic
+*Install and Relaunch* in one click (Settings › General › Software Update: *Check for Updates…*, automatic checks, automatic
 install; [docs/FEATURES.md › Updates](docs/FEATURES.md#updates-mac-github-version)); and the **App Store version** (in
-preparation, TestFlight first), sandboxed and updated by the Mac App Store, so without an updater of its own. Settings › General › About says which one is installed, that Sukrara isn't a medical device,
+preparation, TestFlight first), sandboxed and updated by the Mac App Store, so without an updater of its own. About Sukrara (app menu, right-click menu, Settings › General) says which one is installed, that Sukrara isn't a medical device,
 and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](docs/FEATURES.md#mac-app-store-version-mac)).
 
 - **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from

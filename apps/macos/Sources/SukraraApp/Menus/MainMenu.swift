@@ -13,7 +13,10 @@ enum MainMenu {
             submenu(
                 "Sukrara",
                 [
-                    // the standard place (Settings… ⌘, first in the app menu); target nil reaches the delegate
+                    // the standard places (About first, then Settings… ⌘,); target nil reaches the delegate
+                    NSMenuItem(
+                        title: L10n.t("About Sukrara"), action: #selector(AppDelegate.showAbout(_:)), keyEquivalent: ""),
+                    .separator(),
                     NSMenuItem(
                         title: L10n.t("Settings…"), action: #selector(AppDelegate.showSettings(_:)), keyEquivalent: ","),
                     .separator(),

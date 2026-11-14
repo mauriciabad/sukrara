@@ -79,6 +79,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.wearerChanged(WindowCoordinator.wearerSettings(snapshot))
         }
         contextMenu.openSettings = { [weak windows] in windows?.openSettings() }
+        contextMenu.openAbout = { [weak windows] in windows?.openAbout() }
         contextMenu.openTreatments = { [weak windows] in windows?.openTreatments() }
         contextMenu.openReport = { [weak windows] in windows?.openReport() }
         let links = PanelLinks(
@@ -139,6 +140,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Settings… ⌘, in the main menu (reached through the responder chain while a Sukrara window is key).
     @objc func showSettings(_ sender: Any?) {
         fromPanel { $0.openSettings() }
+    }
+
+    /// About Sukrara in the main menu.
+    @objc func showAbout(_ sender: Any?) {
+        fromPanel { $0.openAbout() }
     }
 
     public func applicationDidBecomeActive(_ notification: Notification) {

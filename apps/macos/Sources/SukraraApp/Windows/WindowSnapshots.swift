@@ -46,8 +46,11 @@
                             .background(Color(nsColor: .windowBackgroundColor))
                         let file = dir.appending(path: "\(name)-\(dark ? "dark" : "light")\(large ? "-large" : "").png")
                         let appearance: NSAppearance.Name = dark ? .darkAqua : .aqua
+                        // the settings window and About in their real frame: the toolbar and the window's own
+                        // style come from `SnapWindow` (the title from the chrome)
+                        let framed = name.hasPrefix("settings-") || name.hasPrefix("about-") ? "" : nil
                         let data =
-                            try windowed[name].map { try windowPNG(v, title: $0, appearance: appearance) }
+                            try (windowed[name] ?? framed).map { try windowPNG(v, title: $0, appearance: appearance) }
                             ?? png(v, appearance: appearance)
                         try data.write(to: file)
                         n += 1
@@ -61,7 +64,7 @@
         /// and toolbar included, drawn offscreen.
         static func windowPNG(_ view: some View, title: String, appearance: NSAppearance.Name) throws -> Data {
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-            window.title = title
+            if !title.isEmpty { window.title = title }  // empty: the window sets its own (settings: the pane)
             window.isReleasedWhenClosed = false
             window.appearance = NSAppearance(named: appearance)
             let offscreen = CGPoint(x: -20_000, y: -20_000)
@@ -245,8 +248,8 @@
                         "settings-general-juggluco-\(name)",
                         AnyView(
                             SettingsView(
-                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}
-                            ).frame(width: 560, height: 820))
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 560, height: 820))
                     ))
             }
             out.append(
@@ -255,8 +258,8 @@
                     AnyView(
                         SettingsView(
                             model: settings, loginItem: LoginItem(service: SnapLogin(status: .enabled)),
-                            updates: Self.updates, openFollow: {}
-                        ).frame(width: 560, height: 640))
+                            updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(settings, width: 560, height: 640))
                 ))
             out.append(
                 (
@@ -264,8 +267,8 @@
                     AnyView(
                         SettingsView(
                             model: settings, loginItem: LoginItem(service: SnapLogin(status: .requiresApproval)),
-                            updates: Self.updates, openFollow: {}
-                        ).frame(width: 560, height: 700))
+                            updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(settings, width: 560, height: 700))
                 ))
             let refused = LoginItem(service: SnapLogin(status: .notRegistered, refuses: true))
             refused.set(true)
@@ -274,16 +277,16 @@
                     "settings-general-login-failed",
                     AnyView(
                         SettingsView(
-                            model: settings, loginItem: refused, updates: Self.updates, openFollow: {}
-                        ).frame(width: 560, height: 700))
+                            model: settings, loginItem: refused, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(settings, width: 560, height: 700))
                 ))
             out.append(
                 (
                     "settings-general-login-unavailable",
                     AnyView(
                         SettingsView(
-                            model: settings, loginItem: nil, updates: Self.updates, openFollow: {}
-                        ).frame(width: 560, height: 700))
+                            model: settings, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(settings, width: 560, height: 700))
                 ))
             let alerts = SettingsModel(store: store, follow: following, version: "0.12.0")
             alerts.pane = .alerts
@@ -293,8 +296,8 @@
                     "settings-alerts",
                     AnyView(
                         SettingsView(
-                            model: alerts, loginItem: nil, updates: Self.updates, openFollow: {}
-                        ).frame(width: 560, height: 900))
+                            model: alerts, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(alerts, width: 560, height: 900))
                 ))
             let mirrored = SettingsModel(
                 store: store, follow: following,
@@ -308,8 +311,8 @@
                     "settings-alerts-mirrored",
                     AnyView(
                         SettingsView(
-                            model: mirrored, loginItem: nil, updates: Self.updates, openFollow: {}
-                        ).frame(width: 560, height: 900))
+                            model: mirrored, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(mirrored, width: 560, height: 900))
                 ))
             // the Graph and Rings panes: this Mac's own (Custom, a few values changed) and the wearer's (read-only)
             func scratch() -> DefaultsSettingsStore {
@@ -342,8 +345,8 @@
                         name,
                         AnyView(
                             SettingsView(
-                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}
-                            ).frame(width: 600, height: height))
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 600, height: height))
                     ))
             }
             // following nobody: Follow… and Scan QR Code…
@@ -354,8 +357,8 @@
                     "settings-following-none",
                     AnyView(
                         SettingsView(
-                            model: nobody, loginItem: nil, updates: Self.updates, openFollow: {}
-                        ).frame(width: 600, height: 560))
+                            model: nobody, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(nobody, width: 600, height: 560))
                 ))
             let general = SettingsModel(store: ownStore, follow: following, wearer: marta, version: "0.12.0")
             general.pane = .general
@@ -364,8 +367,8 @@
                     "settings-general-custom",
                     AnyView(
                         SettingsView(
-                            model: general, loginItem: nil, updates: Self.updates, openFollow: {}
-                        ).frame(width: 600, height: 860))
+                            model: general, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(general, width: 600, height: 1240))
                 ))
             out.append(
                 (
@@ -429,6 +432,11 @@
                 report.days = days == 3 ? 7 : 14
                 out.append((name, AnyView(ReportView(model: report))))
             }
+            // About Sukrara: the GitHub version and the App Store version
+            for (name, distribution) in [("about-github", Distribution.github), ("about-appstore", .appStore)] {
+                let about = AboutView(version: "0.12.0", build: "12000", distribution: distribution, icon: brandIcon)
+                out.append((name, AnyView(about.aboutWindow())))
+            }
             return out
         }
 
@@ -459,6 +467,16 @@
         }
 
         enum SnapError: Error { case render }
+
+        /// The brand's app icon for About (a render isn't the app bundle, whose icon this is).
+        static var brandIcon: NSImage {
+            let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent()
+            return NSImage(contentsOf: repo.appending(path: "assets/brand/sukrara/macos/AppIcon.icns"))
+                ?? NSApp.applicationIconImage
+        }
+
     }
 
     /// A login item service in a fixed state (snapshots never touch the real login items).
@@ -470,5 +488,47 @@
         }
         func register() throws { if refuses { throw Refused() } }
         func unregister() throws {}
+    }
+
+    /// Finishes the window a render draws in (`windowPNG`) as the app does: `configure` once it is in a window.
+    struct SnapWindow: NSViewRepresentable {
+        let configure: (NSWindow) -> AnyObject?
+
+        final class Host: NSView {
+            var configure: ((NSWindow) -> AnyObject?)?
+            var kept: AnyObject?
+            override func viewDidMoveToWindow() {
+                super.viewDidMoveToWindow()
+                guard let window, let configure else { return }
+                self.configure = nil
+                kept = configure(window)
+            }
+        }
+
+        func makeNSView(context: Context) -> Host {
+            let v = Host()
+            v.configure = configure
+            return v
+        }
+        func updateNSView(_ nsView: Host, context: Context) {}
+    }
+
+    extension View {
+        /// The settings window as the app opens it (`SettingsWindowChrome`: the toolbar, the pane's title), drawn at
+        /// `height` so the whole form shows.
+        func settingsWindow(_ model: SettingsModel, width: CGFloat, height: CGFloat) -> some View {
+            frame(width: SettingsWindowChrome.width, height: height)
+                .background(
+                    SnapWindow { SettingsWindowChrome(window: $0, model: model, fitsPane: false) })
+        }
+
+        /// The About window as the app opens it (`AboutWindow`).
+        func aboutWindow() -> some View {
+            background(
+                SnapWindow {
+                    AboutWindow.configure($0)
+                    return nil
+                })
+        }
     }
 #endif

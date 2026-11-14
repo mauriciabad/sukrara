@@ -204,6 +204,14 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       Shift-click stay in range; a custom value (7 h, 45 days, 183 mg/dL) survives a relaunch and shows in the panel /
       widgets; the per-place windows; ring order: drag a range onto another (insertion line), Control-click Move Up /
       Down, VoiceOver actions; Details… of an alert in Custom vs Wearer; *Send Test Alert*. Snapshots: `sukrara-snap windows` → `settings-*.png`.
+- [ ] Settings window and About (#181), in the running test build and in `settings-*.png` / `about-*.png`: the
+      pane buttons sit in the title bar with the traffic lights (one bar, no tab view, no frame inside the window),
+      the active one highlighted, minimize and zoom dimmed, the title = the pane; switching panes resizes the window
+      from its top edge (animated; instant with Reduce Motion) and each form starts at its top; section footers align
+      left; ⌘, opens it on the last pane, ⌘W closes it; Tab reaches the pane buttons with full keyboard access and
+      VoiceOver reads them by name. About Sukrara from the app menu, the right-click menu and Settings › General: icon,
+      name, *Version x.y.z (build)* (selectable), *GitHub version* / *App Store version*, the medical reminder, the
+      links open the browser, ⌘W closes it; light, dark, large text, Spanish.
 - [ ] Read Glucose Aloud (#159): ⌃⇧⌘G in another app says the menu bar value's sentence in the Mac's language (also
       in Spanish); again while it speaks stops it; with VoiceOver on, VoiceOver says it in its own voice; the status
       item's right-click menu has *Read Glucose Aloud ⌃⇧⌘G* first; VoiceOver on the value → VO-Command-Space → *Read
@@ -228,8 +236,8 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       `follow-scan-*.png`, `settings-following-none-*.png`.
 - [ ] App Store version (#186): offline, `Bundle/bundle.sh --app-store && Bundle/smoke.sh` (sandboxed, *offline,
       sandboxed* in its last line); `tools/release/verify-app.sh build/Sukrara.app --app-store`. Online only from
-      TestFlight (docs/20-publishing.md › Mac App Store: signing): Settings › General › About says *… · App Store
-      version* without *Check for Updates…* or the update switches, the right-click menu has no *Check for
+      TestFlight (docs/20-publishing.md › Mac App Store: signing): Settings › General › Version says *… · App Store
+      version* without *Check for Updates…* or the update switches, About Sukrara says *App Store version*, the right-click menu has no *Check for
       Updates…*; following over the relays, the
       phone nearby, Juggluco on this network, an alert with its sound and through a Focus, the widgets, open at login,
       *Export CSV…* to a folder you pick, the QR scanner, a web invite link; both versions show the medical reminder and
@@ -238,7 +246,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       GitHub version installed from its dmg or the cask (not a dev build), right-click › *Check for Updates…* →
       Sparkle's window with the new version and its notes → *Install Update* → the download → *Install and Relaunch*
       → Sukrara quits and comes back as the new version (About), still following, alerts and the widgets as before,
-      no Keychain prompt. *Check for Updates…* again → *You're up to date!*. Settings › General › About: *Last checked
+      no Keychain prompt. *Check for Updates…* again → *You're up to date!*. Settings › General › Software Update: *Last checked
       …* moved; turn *Check for updates automatically* off → the download switch dims; on again. A scheduled find
       while you work shows the panel row (*Sukrara x.y.z is available*, *Later* / *Install…*), not a window over your
       app. Offline *Check for Updates…* → Sparkle's error → *OK*, nothing installed. VoiceOver reads the windows, the

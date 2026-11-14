@@ -391,8 +391,8 @@ and the alert sounds (`Library/Sounds` of the container, where notifications loo
 the App Group, the data-protection keychain, `SMAppService`, the global shortcut (`RegisterEventHotKey`), the camera,
 Bluetooth, the save panel and `Host.current()` work as before (checked with a sandboxed probe and the smoke run: no
 sandbox denial in the log). The Mac app opens no listening socket, so no `network.server`. Fixed on the way, in both
-versions, for App Review: the in-app medical reminder (setup's Welcome and Settings › General › About, 1.4.1) and the
-privacy policy link (About, 5.1.1). `Bundle/smoke.sh` now runs a sandboxed bundle with its dev data in a fresh folder
+versions, for App Review: the in-app medical reminder (setup's Welcome and About Sukrara, 1.4.1) and the
+privacy policy link (About Sukrara, 5.1.1). `Bundle/smoke.sh` now runs a sandboxed bundle with its dev data in a fresh folder
 in its container (the only place it may write); CI's mac job builds and smoke-runs it unsigned.
 
 **Not yet checked**: what only a running, online App Store build shows (relays, the phone nearby, Juggluco, alerts with

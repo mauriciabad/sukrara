@@ -4,7 +4,7 @@
 import AppKit
 
 /// The status item's right-click menu: Read Glucose Aloud (with its system-wide shortcut while that is on),
-/// Treatments…, Glucose Report…, Settings…, Check for Updates… (not in the App Store version: the store updates it),
+/// Treatments…, Glucose Report…, About Sukrara, Settings…, Check for Updates… (not in the App Store version: the store updates it),
 /// Quit. An item whose window or service this run doesn't have (an offline dev run has no updater) is disabled rather
 /// than doing nothing; *Check for Updates…* is also dimmed while the updater is busy.
 final class ContextMenu: NSObject {
@@ -12,6 +12,7 @@ final class ContextMenu: NSObject {
     var openTreatments: (() -> Void)?
     var openReport: (() -> Void)?
     var openSettings: (() -> Void)?
+    var openAbout: (() -> Void)?
     /// The updater (Sparkle): *Check for Updates…* runs its check, whose windows say what it found.
     var updates: Updates?
     /// This version updates itself (false in the App Store version: no Check for Updates… item at all).
@@ -33,6 +34,7 @@ final class ContextMenu: NSObject {
         menu.addItem(item(L10n.t("Treatments…"), #selector(treatments), enabled: openTreatments != nil))
         menu.addItem(item(L10n.t("Glucose Report…"), #selector(report), enabled: openReport != nil))
         menu.addItem(.separator())
+        menu.addItem(item(L10n.t("About Sukrara"), #selector(about), enabled: openAbout != nil))
         menu.addItem(item(L10n.t("Settings…"), #selector(settings), key: ",", enabled: openSettings != nil))
         if hasUpdater {
             menu.addItem(
@@ -56,5 +58,6 @@ final class ContextMenu: NSObject {
     @objc private func treatments() { openTreatments?() }
     @objc private func report() { openReport?() }
     @objc private func settings() { openSettings?() }
+    @objc private func about() { openAbout?() }
     @objc private func checkForUpdates() { updates?.checkNow() }
 }

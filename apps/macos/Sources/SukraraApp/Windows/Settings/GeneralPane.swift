@@ -5,9 +5,10 @@ import SukraraCore
 import SukraraShare
 import SwiftUI
 
-/// General: Settings from (with what's in use and Copy the wearer's settings…), units, open at login, About (the
-/// version and which one, the updater in the GitHub version, not a medical device, the privacy policy, Quit),
-/// Sukrara on other devices (the website's page per app).
+/// General: Settings from (with what's in use and Copy the wearer's settings…), glucose (unit, read aloud), source
+/// (Juggluco), startup (open at login), Software Update (the version and which one, the updater in the GitHub
+/// version), About Sukrara and Quit. The medical-device reminder, the privacy policy and Sukrara on other devices are
+/// in the About window (`AboutView`).
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
@@ -16,6 +17,8 @@ struct GeneralPane: View {
     /// runs.
     var updates: Updates?
     var openFollow: () -> Void
+    /// Opens the About window (nil when this run has none: renders).
+    var openAbout: (() -> Void)? = nil
 
     var body: some View {
         Form {
@@ -29,7 +32,7 @@ struct GeneralPane: View {
                         "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
                     )
                 )
-                .font(.callout).foregroundStyle(.secondary)
+                .formFooter()
             }
             Section {
                 Picker(L10n.t("Unit"), selection: $model.unit) {
@@ -57,7 +60,7 @@ struct GeneralPane: View {
                         "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
                     )
                 )
-                .font(.callout).foregroundStyle(.secondary)
+                .formFooter()
             }
             .onAppear(perform: model.juggluco.load)
             .onDisappear {
@@ -67,40 +70,28 @@ struct GeneralPane: View {
             Section(L10n.t("Startup")) {
                 OpenAtLoginRows(loginItem: loginItem)
             }
-            Section(L10n.t("About")) {
-                HStack {
-                    Text(Self.versionText(model.version, model.distribution))
-                    Spacer()
-                    if let updates {
-                        Button(L10n.t("Check for Updates…"), action: updates.checkNow).disabled(!updates.canCheck)
+            Section {
+                LabeledContent(L10n.t("Version")) {
+                    HStack {
+                        Text(Self.versionText(model.version, model.distribution)).textSelection(.enabled)
+                        if let updates {
+                            Button(L10n.t("Check for Updates…"), action: updates.checkNow)
+                                .disabled(!updates.canCheck)
+                        }
                     }
                 }
                 if let updates { UpdateRows(updates: updates) }
-                // App Review 1.4.1: the reminder to check before acting on a value (also on setup's first step)
-                Text(
-                    L10n.t(
-                        "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor's app or a meter, and ask your doctor, before you decide on a treatment."
-                    )
-                )
-                .font(.callout).foregroundStyle(.secondary)
+            } header: {
+                if model.distribution.hasOwnUpdater { Text(L10n.t("Software Update")) }
+            }
+            Section {
                 HStack {
-                    // App Review 5.1.1: the privacy policy is linked inside the app too
-                    Link(L10n.t("Privacy Policy"), destination: Self.privacyURL)
-                        .help(Self.privacyURL.absoluteString)
+                    if let openAbout {
+                        Button(L10n.t("About Sukrara"), action: openAbout)
+                            .help(L10n.t("The version, the privacy policy, the website and Sukrara on other devices"))
+                    }
                     Spacer()
                     Button(L10n.t("Quit Sukrara")) { NSApp.terminate(nil) }
-                }
-            }
-            Section(L10n.t("Sukrara on Other Devices")) {
-                ForEach(OtherDevice.all) { device in
-                    LabeledContent {
-                        Link(L10n.t("Open Website"), destination: device.url)
-                            .help(device.url.absoluteString)
-                            .accessibilityHint(L10n.t("Opens \(device.name)'s page on the website"))
-                    } label: {
-                        Text(device.name)
-                        Text(device.summary)
-                    }
                 }
             }
         }
@@ -109,7 +100,6 @@ struct GeneralPane: View {
 }
 
 extension GeneralPane {
-    static let privacyURL = URL(string: "https://sukrara.mauri.app/privacy")!
 
     /// "0.13.0 · GitHub version" / "0.13.0 · App Store version" (Android: "· Google Play version").
     static func versionText(_ version: String, _ distribution: Distribution) -> String {
@@ -345,7 +335,8 @@ struct FollowingRows: View {
     }
 }
 
-/// The settings window's content: five panes; the window reopens on the last one.
+/// The settings window's content: the pane chosen in the window's toolbar (`SettingsWindowChrome`), one grouped form
+/// filling the window (no tab view inside it); the window reopens on the last one.
 struct SettingsView: View {
     @Bindable var model: SettingsModel
     /// Open at login (LoginItem over SMAppService.mainApp, schema `general.openAtLogin`).
@@ -356,28 +347,24 @@ struct SettingsView: View {
     var reconnect: (() -> Void)? = nil
     /// The running alert rules (Send Test Alert, Active now); nil in an offline run.
     var alerts: AlertController? = nil
+    /// Opens the About window (nil when this run has none: renders).
+    var openAbout: (() -> Void)? = nil
 
     var body: some View {
-        TabView(selection: $model.pane) {
-            GeneralPane(
-                model: model, loginItem: loginItem, updates: updates, openFollow: openFollow
-            )
-            .tabItem { Label(L10n.t("General"), systemImage: "gearshape") }
-            .tag(SettingsModel.Pane.general)
-            GraphPane(model: model)
-                .tabItem { Label(L10n.t("Graph"), systemImage: "chart.xyaxis.line") }
-                .tag(SettingsModel.Pane.graph)
-            RingsPane(model: model)
-                .tabItem { Label(L10n.t("Rings"), systemImage: "circle.circle") }
-                .tag(SettingsModel.Pane.rings)
-            AlertsRangesPane(model: model, controller: alerts)
-                .tabItem { Label(L10n.t("Alerts"), systemImage: "bell") }
-                .tag(SettingsModel.Pane.alerts)
-            FollowingPane(model: model, openFollow: openFollow, reconnect: reconnect)
-                .tabItem { Label(L10n.t("Following"), systemImage: "person.2") }
-                .tag(SettingsModel.Pane.following)
+        Group {
+            switch model.pane {
+            case .general:
+                GeneralPane(
+                    model: model, loginItem: loginItem, updates: updates, openFollow: openFollow,
+                    openAbout: openAbout)
+            case .graph: GraphPane(model: model)
+            case .rings: RingsPane(model: model)
+            case .alerts: AlertsRangesPane(model: model, controller: alerts)
+            case .following: FollowingPane(model: model, openFollow: openFollow, reconnect: reconnect)
+            }
         }
+        .id(model.pane)  // each pane starts at its top
         .environment(\.glucoseUnit, model.unit)
-        .frame(minWidth: 560, minHeight: 560)
+        .frame(minWidth: 560, minHeight: 360)
     }
 }

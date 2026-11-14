@@ -39,6 +39,8 @@ final class WindowCoordinator {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
 
+    static var build: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "" }
+
     // MARK: runtime → windows
 
     /// A follower snapshot: the link, the nearby offer, the wearer's mirrored settings and the treatments.
@@ -89,8 +91,26 @@ final class WindowCoordinator {
     /// Settings on its last pane, or on `pane` (a no-data reason's way out).
     func openSettings(pane: SettingsModel.Pane? = nil) {
         if let pane { settings.pane = pane }
-        windows.show(.settings, title: L10n.t("Sukrara Settings")) {
-            SettingsWindowContent(model: settings, app: model) { [weak self] in self?.openFollow() }
+        windows.show(
+            .settings, title: settings.pane.title, sizedByWindow: true,
+            configure: { [weak self] w in
+                guard let self else { return }
+                settingsChrome = SettingsWindowChrome(window: w, model: settings)
+            }
+        ) {
+            SettingsWindowContent(
+                model: settings, app: model, openFollow: { [weak self] in self?.openFollow() },
+                openAbout: { [weak self] in self?.openAbout() })
+        }
+    }
+
+    /// The settings window's toolbar and size (kept while the window lives; a new window makes a new one).
+    private var settingsChrome: SettingsWindowChrome?
+
+    /// About Sukrara (app menu, right-click menu, Settings › General).
+    func openAbout() {
+        windows.show(.about, title: L10n.t("About Sukrara"), configure: AboutWindow.configure) {
+            AboutView(version: Self.version, build: Self.build, distribution: model.plan.distribution)
         }
     }
 
@@ -230,6 +250,7 @@ private struct SettingsWindowContent: View {
     let model: SettingsModel
     let app: AppModel
     let openFollow: () -> Void
+    let openAbout: () -> Void
 
     var body: some View {
         SettingsView(
@@ -238,6 +259,7 @@ private struct SettingsWindowContent: View {
             updates: app.updates,
             openFollow: openFollow,
             reconnect: app.follower == nil ? nil : { [weak app] in app?.networkCameBack() },
-            alerts: app.alerts)
+            alerts: app.alerts,
+            openAbout: openAbout)
     }
 }

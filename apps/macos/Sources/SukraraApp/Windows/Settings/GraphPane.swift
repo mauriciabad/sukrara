@@ -220,7 +220,7 @@ struct GraphPane: View {
         Binding(get: { g[keyPath: path] }, set: { v in model.updateGraph { $0[keyPath: path] = v } })
     }
 
-    private func note(_ s: String) -> some View { Text(s).font(.callout).foregroundStyle(.secondary) }
+    private func note(_ s: String) -> some View { Text(s).formFooter() }
 
     static func placeName(_ p: GraphPlace) -> String {
         switch p {
@@ -290,7 +290,7 @@ struct SettingsFromSection: View {
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
                     Text(model.inUse + " " + L10n.t("To change these on this Mac, choose Custom."))
-                        .font(.callout).foregroundStyle(.secondary)
+                        .formFooter()
                     Spacer()
                     Button(L10n.t("Use my own settings")) { model.useOwn() }
                     Button(L10n.t("Change…")) { model.pane = .general }

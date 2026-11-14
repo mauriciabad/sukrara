@@ -6,7 +6,7 @@ import Testing
 
 @testable import SukraraApp
 
-/// Settings › General › *Sukrara on Other Devices* (#179): each row opens that app's page on the website, never a
+/// About › Sukrara on other devices (#179): each row opens that app's page on the website, never a
 /// download.
 @Suite struct OtherDevicesTests {
     @Test func eachAppOpensItsPageOnTheWebsite() {

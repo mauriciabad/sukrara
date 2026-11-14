@@ -8,22 +8,26 @@ import SwiftUI
 /// from an accessory menu bar app). One window per kind, frames remembered under `app.mauri.sukrara.<kind>`; the
 /// app shows in the Dock and the app switcher while one is open, so keyboard users can reach it.
 public final class AppWindows: NSObject, NSWindowDelegate {
-    public enum Kind: String, Sendable { case settings, setup, treatments, addTreatment, report }
+    public enum Kind: String, Sendable { case settings, setup, treatments, addTreatment, report, about }
 
     private var windows: [Kind: NSWindow] = [:]
 
     /// `nearMenuBar`: a new window opens under the menu bar (Add Treatment), not where it was: centred under
     /// `anchor` (the status item, in screen coordinates) and kept on its screen, else at the top right.
+    /// `sizedByWindow`: the window, not the content, decides the size (Settings: each pane's height, the form scrolls).
+    /// `configure` finishes a new window (its toolbar, its style) after its frame is restored.
     public func show(
-        _ kind: Kind, title: String, nearMenuBar: Bool = false, anchor: NSRect? = nil,
-        @ViewBuilder content: () -> some View
+        _ kind: Kind, title: String, nearMenuBar: Bool = false, anchor: NSRect? = nil, sizedByWindow: Bool = false,
+        configure: ((NSWindow) -> Void)? = nil, @ViewBuilder content: () -> some View
     ) {
         if let w = windows[kind] {
             w.makeKeyAndOrderFront(nil)
             NSApp.activate()
             return
         }
-        let w = NSWindow(contentViewController: NSHostingController(rootView: content()))
+        let host = NSHostingController(rootView: content())
+        if sizedByWindow { host.sizingOptions = [] }
+        let w = NSWindow(contentViewController: host)
         w.title = title
         w.styleMask.insert(.closable)
         w.isReleasedWhenClosed = false
@@ -35,9 +39,10 @@ public final class AppWindows: NSObject, NSWindowDelegate {
                 ?? NSScreen.main ?? NSScreen.screens.first
         {
             w.setFrameTopLeftPoint(Self.underMenuBar(size: w.frame.size, anchor: anchor, area: screen.visibleFrame))
-        } else {
+        } else if kind != .about {  // About opens centred each time, like the standard panel
             w.setFrameAutosaveName("app.mauri.sukrara.\(kind.rawValue)")
         }
+        configure?(w)
         windows[kind] = w
         NSApp.setActivationPolicy(.regular)
         w.makeKeyAndOrderFront(nil)

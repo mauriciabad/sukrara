@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
-/// *Sukrara on Other Devices* (Settings › General, #179): each other app's page on the website (what it does, how to
+/// Sukrara on other devices (the About window, #179): each other app's page on the website (what it does, how to
 /// get it), never a download. The website is docs/ (.github/workflows/website.yml); the pages are docs/android/index.md and docs/mac/index.md.
 struct OtherDevice: Identifiable, Equatable {
     var name: String
