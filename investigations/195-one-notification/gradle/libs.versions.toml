@@ -1,0 +1,8 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+[versions]
+androidGradlePlugin = "9.0.1"
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

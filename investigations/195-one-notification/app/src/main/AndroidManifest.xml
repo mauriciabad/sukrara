@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@drawable/ic_stat"
+        android:label="OneNotif"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+
+        <!-- The full-screen intent's target: shows over the lock screen. -->
+        <activity
+            android:name=".AlarmActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
+        <!-- adb: am start-foreground-service -n dev.spike.onenotif/.OneService -\-es cmd <command> (README) -->
+        <service
+            android:name=".OneService"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Notification lab: one glucose notification that rings" />
+        </service>
+
+        <!-- The notification's delete intent: logs the swipe (an answer while ringing) and posts it again. -->
+        <receiver
+            android:name=".Dismissed"
+            android:exported="false" />
+    </application>
+</manifest>
