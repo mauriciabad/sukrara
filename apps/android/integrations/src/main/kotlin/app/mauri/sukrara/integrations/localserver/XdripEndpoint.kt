@@ -142,15 +142,5 @@ object XdripEndpoint {
     /** The Nightscout direction of [r]'s trend: its text band, as every arrow shows it (contracts/trend). */
     fun direction(r: Reading): String = TrendAngle.nightscout(r.trend?.band)
 
-    private fun trend(r: Reading): Int =
-        when (direction(r)) {
-            "DoubleUp" -> 1
-            "SingleUp" -> 2
-            "FortyFiveUp" -> 3
-            "Flat" -> 4
-            "FortyFiveDown" -> 5
-            "SingleDown" -> 6
-            "DoubleDown" -> 7
-            else -> 0
-        }
+    private fun trend(r: Reading): Int = TrendAngle.nightscoutTrend(r.trend?.band)
 }

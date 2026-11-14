@@ -141,6 +141,31 @@
     }
   ],
   "durations_ok": {},
+  "sensor_rate_ok": {
+    "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/Reading.kt": "the model: the stored field and LO / HI normalising (a flag has no rate)",
+    "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/db/Repositories.kt": "storage: the history keeps the sensor's own rate",
+    "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/readings/RecentReadings.kt": "storage: the device-protected window keeps the sensor's own rate",
+    "apps/android/share/src/main/kotlin/app/mauri/sukrara/share/owner/usecase/Publishing.kt": "the wire: live r / chunk rate100 are the sensor's own rate (PROTOCOL-v2)",
+    "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/tidepool/TidepoolData.kt": "a device record: Tidepool's trendRate is the sensor's own (the owner's decision, #204)",
+    "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/export/GlucoseCsv.kt": "a device record: the CSV's rate column is the sensor's own (contracts/export, the owner's decision)",
+    "apps/macos/Sources/SukraraCore/Model/Reading.swift": "the model: the stored field (Codable key rate) and LO / HI normalising",
+    "apps/macos/Sources/SukraraCore/Stores/ReadingsFileStore.swift": "storage: readings.csv keeps the sensor's own rate",
+    "apps/macos/Sources/SukraraCore/Export/GlucoseCsv.swift": "a device record: the CSV's rate column is the sensor's own (contracts/export)",
+    "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift": "an input: Juggluco's rate is the sensor's own",
+    "apps/macos/Sources/SukraraShare/Follower/FollowerRuntime.swift": "the wire: a follower decodes the wearer's r / rate100 as the sensor's own rate",
+    "apps/macos/Sources/SukraraApp/Launch/FixtureFollower.swift": "synthetic fixture readings for snapshots and tests, built with a sensor rate",
+    "apps/macos/Sources/SukraraApp/Panel/ShellSnapshots.swift": "synthetic snapshot readings, built with a sensor rate",
+    "apps/macos/Sources/SukraraApp/Windows/WindowSnapshots.swift": "synthetic snapshot readings, built with a sensor rate"
+  },
+  "trend_annotate_ok": {
+    "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/readings/TrendReadings.kt": "THE one place on Android: every read of the readings repository",
+    "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/TrendArrowPage.kt": "the Trend arrow page previews what each choice would show for the same readings",
+    "apps/android/core/testing/src/main/kotlin/app/mauri/sukrara/core/testing/Trended.kt": "test support: readings handed to a consumer in a test, annotated as the one place would",
+    "apps/macos/Sources/SukraraApp/AppModel.swift": "THE one place on the Mac: apply(readings:) and loadHistory()"
+  },
+  "trend_names_ok": {
+    "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/broadcasts/BroadcastPayloads.kt": "the xDrip+ broadcast keeps xDrip+'s own names and thresholds (doubled from 3.5) for the apps that read it, on THE trend's rate"
+  },
   "states_pending": [
     {
       "section": "Readings and backfill",

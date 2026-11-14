@@ -46,6 +46,15 @@ Checks
               drawText / Text with sgv or mgdl, LO / HI literals): it shows the look's text (GlucoseCard.face), so a
               new surface that skips the renderer fails too. Data and event text (CSV, logs, an alert's reading) is
               listed in the registry's value_text_ok with the reason; a single line is marked '// card-ok: <why>'.
+  trend       THE trend (#204, contracts/trend): one module per platform works it out (Android :core:model
+              TrendRate.kt, Mac SukraraCore TrendRate.swift) at one place (allow.json 'trend_annotate_ok'), and every arrow,
+              word, output and alert reads the reading's trend. Fails on: the sensor's own rate (`sensorRate`) in app code
+              outside allow.json 'sensor_rate_ok' (the model, storage, the wire codecs, device records; each with the
+              reason); a write of a reading's trend (Kotlin `copy(… trend =` / `Reading(… trend =`, Swift `Reading(… trend:`; the
+              Mac's setter is internal to SukraraCore) outside
+              TrendRate; `TrendRate.annotate(` outside 'trend_annotate_ok'; a Nightscout direction name or a trend arrow
+              glyph in a string literal outside the TrendAngle files (Android graph/CardModel.kt, Mac SukraraGraph
+              Freshness.swift) and allow.json 'trend_names_ok' (the xDrip+ broadcast's own rule). Whole tree.
   clock       every clock time goes through THE clock formatter with the one 24-hour setting (Android :core:graph
               ClockText.kt, Mac SukraraCore Clock.swift; no own hour24 flag or time formatter elsewhere)
   debug       debug code is compiled out of release builds: Android DebugReceiver / DebugFakes / DebugRelays / Synthetic* in
@@ -790,6 +799,54 @@ def check_clock(ch, rep):
                         % (p, n, bad.group(0)))
 
 
+TREND_KT = KT_MODEL + "TrendRate.kt"
+TREND_SWIFT = MAC_SOURCES + "SukraraCore/Model/TrendRate.swift"
+# the TrendAngle files: the one place a band becomes a text arrow or a Nightscout direction name
+TREND_ANGLE = (ANDROID + "core/graph/src/main/kotlin/app/mauri/sukrara/graph/CardModel.kt",
+               MAC_SOURCES + "SukraraGraph/Freshness.swift")
+SENSOR_RATE = re.compile(r"\bsensorRate\b")
+# a reading's trend written: Kotlin copy(… trend = …) / Reading(… trend = …) (a data class: no other way); Swift
+# Reading(… trend: …) (its setter is internal to SukraraCore: the compiler stops the rest)
+KT_TREND_WRITE = re.compile(r"\b(?:copy|Reading)\([^)]*\btrend\s*=(?!=)")
+SWIFT_TREND_WRITE = re.compile(r"\bReading\([^)]*\btrend:")
+TREND_ANNOTATE = re.compile(r"\bTrendRate\.annotate\s*\(")
+TREND_NAME = re.compile(r'"(?:DoubleUp|SingleUp|FortyFiveUp|Flat|FortyFiveDown|SingleDown|DoubleDown)"')
+TREND_GLYPH = re.compile(r'"[^"\n]*[⇈↑↗↘↓⇊][^"\n]*"|"→"')
+
+
+def check_trend(ch, rep):
+    """trend: see the module doc. Whole tree at the change's revision."""
+    allow = load("allow.json")
+    rate_ok = allow.get("sensor_rate_ok", {})
+    annotate_ok = allow.get("trend_annotate_ok", {})
+    names_ok = allow.get("trend_names_ok", {})
+    for p in tree_files(ch):
+        lang = app_code(p)
+        if not lang:
+            continue
+        kt = lang == "kt"
+        own = p in (TREND_KT, TREND_SWIFT)
+        for n, l in code_lines(ch.blob(p) or ""):
+            if not own and p not in rate_ok and SENSOR_RATE.search(l):
+                rep.add("FAIL", "trend", "%s:%d reads the sensor's own rate (sensorRate). Every arrow, word, output and alert\n"
+                        "reads the reading's trend (Reading.rate / .trend, contracts/trend); the sensor's rate is only stored,\n"
+                        "sent and written to device records: a file that must is listed in allow.json sensor_rate_ok with\n"
+                        "the reason." % (p, n))
+            if not own and (KT_TREND_WRITE if kt else SWIFT_TREND_WRITE).search(l):
+                rep.add("FAIL", "trend", "%s:%d writes a reading's trend. Only TrendRate.annotate does (%s), at the one\n"
+                        "place readings are read." % (p, n, TREND_KT if kt else TREND_SWIFT))
+            if not own and p not in annotate_ok and TREND_ANNOTATE.search(l):
+                rep.add("FAIL", "trend", "%s:%d calls TrendRate.annotate. THE trend is worked out at one place per platform\n"
+                        "(allow.json trend_annotate_ok, with the reason); everything else reads Reading.trend." % (p, n))
+            if p not in TREND_ANGLE and p not in names_ok:
+                bad = TREND_NAME.search(l) or TREND_GLYPH.search(l)
+                if bad:
+                    rep.add("FAIL", "trend", "%s:%d writes a trend arrow or Nightscout direction itself (%s). They come from\n"
+                            "the trend's band through TrendAngle (text / symbol / nightscout / nightscoutTrend; %s);\n"
+                            "an output with its own rule is listed in allow.json trend_names_ok with the reason."
+                            % (p, n, bad.group(0), " / ".join(TREND_ANGLE)))
+
+
 DURATIONS_KT = KT_MODEL + "Durations.kt"
 DURATIONS_SWIFT = MAC_SOURCES + "SukraraCore/Durations.swift"
 DURATIONS_LEVEL = "FAIL"
@@ -1008,9 +1065,12 @@ def check_paths(ch, rep):
     files = tree_files(ch)
     present = set(files)
     named = [CLOCK_KT, CLOCK_SWIFT, DURATIONS_KT, DURATIONS_SWIFT, SETTINGS_SCHEMA, SETTINGS_KT, SETTINGS_SWIFT, ALERT_SPEC,
-             SURFACES, CATALOG, NSC, "docs/FEATURES.md", "contracts/settings/durations.json"]
+             SURFACES, CATALOG, NSC, "docs/FEATURES.md", "contracts/settings/durations.json", TREND_KT, TREND_SWIFT,
+             *TREND_ANGLE]
     allow = load("allow.json")
     named += sorted(allow.get("durations_ok", {}))
+    for key in ("sensor_rate_ok", "trend_annotate_ok", "trend_names_ok"):
+        named += sorted(allow.get(key, {}))
     named += sorted(CLOCK_OK)
     for p in named:
         rep.pending(present, p, "paths", "named by tools/check/check.py")
@@ -1295,6 +1355,7 @@ def main(argv):
         check_cleartext(ch, rep)
         check_card(ch, rep)
         check_clock(ch, rep)
+        check_trend(ch, rep)
         check_settings(ch, rep)
         check_states(ch, rep)
         check_durations(ch, rep)

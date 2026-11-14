@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.integrations.nightscout.NsDocs
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -169,7 +170,7 @@ object NightscoutApi {
             // no trend: no delta (a 0 would read as flat), direction NONE
             d?.let { put("delta", Math.round(it * 1000) / 1000.0) }
             put("direction", dir)
-            put("trend", TRENDS.indexOf(dir).coerceAtLeast(0))
+            put("trend", TrendAngle.nightscoutTrend(r.trend?.band))
             put("noise", 1)
             put("utcOffset", 0)
             put("mills", ms)
@@ -313,9 +314,6 @@ object NightscoutApi {
             .joinToString("") { String.format(Locale.US, "%02x", it) }
 
     private const val FOLLOWING = "Sukrara (following)"
-
-    /** Nightscout's numeric trends, by index (0 = none). */
-    private val TRENDS = listOf("NONE", "DoubleUp", "SingleUp", "FortyFiveUp", "Flat", "FortyFiveDown", "SingleDown", "DoubleDown")
 
     private val UNAUTHORIZED = HttpAnswer("401 Unauthorized", "{\"status\":401,\"message\":\"Unauthorized\"}")
 

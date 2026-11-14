@@ -106,6 +106,9 @@ object TrendAngle {
      */
     fun nightscout(band: Int?): String = band?.let { NIGHTSCOUT[it.coerceIn(-3, 3) + 3] } ?: "NONE"
 
+    /** The band's Nightscout trend number (1 = DoubleUp … 4 = Flat … 7 = DoubleDown; 0 without a trend). */
+    fun nightscoutTrend(band: Int?): Int = band?.let { 4 - it.coerceIn(-3, 3) } ?: 0
+
     private val DEGREES = listOf(90f, 90f, 45f, 0f, -45f, -90f, -90f)
     private val SYMBOLS = listOf("⇊", "↓", "↘", "→", "↗", "↑", "⇈")
     private val NIGHTSCOUT = listOf("DoubleDown", "SingleDown", "FortyFiveDown", "Flat", "FortyFiveUp", "SingleUp", "DoubleUp")

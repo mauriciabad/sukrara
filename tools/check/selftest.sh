@@ -132,6 +132,20 @@ case_ "a hand-written defaults key fails" fail settings apps/macos/Sources/Sukra
 let v = UserDefaults.standard.integer(forKey: \"graphHours\")"
 case_ "a Stepper in a Mac settings pane fails" fail settings apps/macos/Sources/SukraraApp/Windows/Settings/X.swift "$HDR
 let s = Stepper(\"x\", value: \$v, in: 1...9)"
+case_ "the sensor's own rate read by a surface fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun arrow(r: Reading) = TrendAngle.text(r.sensorRate)"
+case_ "the sensor's own rate in storage is allowed" pass trend apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/db/Repositories.kt "$HDR
+internal fun Reading.toEntity() = ReadingEntity(t.toEpochMilli(), source.id, mgdl, sensorRate)"
+case_ "a reading's trend written outside TrendRate fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun flat(r: Reading) = r.copy(trend = null)"
+case_ "a Mac reading built with a trend fails" fail trend apps/macos/Sources/SukraraApp/T.swift "$HDR
+let r = Reading(t: .now, mgdl: 100, sensorRate: nil, trend: nil)"
+case_ "TrendRate.annotate outside the one place fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun again(rs: List<Reading>) = TrendRate.annotate(rs, TrendSetting.Quick)"
+case_ "a Nightscout direction written by hand fails" fail trend apps/android/x/src/main/kotlin/app/mauri/sukrara/T.kt "$HDR
+fun direction(rate: Double) = if (rate > 1) \"FortyFiveUp\" else \"Flat\""
+case_ "a trend arrow written by hand fails" fail trend apps/macos/Sources/SukraraApp/T.swift "$HDR
+let up = \"↗\""
 case_ "minutes written by hand fail" fail durations apps/android/x/src/main/kotlin/app/mauri/sukrara/D.kt "$HDR
 fun d(m: Int) = \"\$m min\""
 case_ "a cleartext URL in app Kotlin fails" fail cleartext apps/android/integrations/src/main/kotlin/app/mauri/sukrara/N.kt "$HDR

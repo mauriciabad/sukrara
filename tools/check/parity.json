@@ -21,6 +21,16 @@
       }
     },
     {
+      "name": "trend",
+      "level": "fail",
+      "why": "THE trend (contracts/trend, #204): Android :core:model TrendRate and Mac SukraraCore TrendRate work it out number for number, and both run the shared cases",
+      "sides": {
+        "android": ["apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/TrendRate.kt"],
+        "mac": ["apps/macos/Sources/SukraraCore/Model/TrendRate.swift"],
+        "contracts": ["contracts/trend/*", "tools/trend/*"]
+      }
+    },
+    {
       "name": "alerts",
       "level": "fail",
       "why": "One alert engine: Android :core:alerts and Mac SukraraAlerts implement the same rules (contracts/alerts/SPEC.md)",

@@ -221,9 +221,9 @@ private fun TrendPreviewCard(ui: TrendArrowUi) {
                     add(stringResource(R.string.st_trend_preview_readings, signed(rate, ui.unit, locale)))
                 }
             }
-            val sensorRate = sensor?.rate?.takeIf { sensor.trend == TrendMark.ARROW }
-            if (ui.choice != TrendSetting.Sensor && sensorRate != null && ui.shown.from == TrendFrom.Readings) {
-                add(stringResource(R.string.st_trend_preview_compare, TrendAngle.text(sensor.band), signed(sensorRate, ui.unit, locale)))
+            val sensorSays = sensor?.rate?.takeIf { sensor.trend == TrendMark.ARROW }
+            if (ui.choice != TrendSetting.Sensor && sensorSays != null && ui.shown.from == TrendFrom.Readings) {
+                add(stringResource(R.string.st_trend_preview_compare, TrendAngle.text(sensor.band), signed(sensorSays, ui.unit, locale)))
             }
         }
     val said =
