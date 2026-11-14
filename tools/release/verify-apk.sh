@@ -3,7 +3,11 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Checks a release APK before it reaches a phone or a GitHub release:
-#   tools/release/verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt>
+#   tools/release/verify-apk.sh [--release] [--play] [--unsigned] <apk> <mapping.txt>
+# --release: a release build (android-release.sh, play-bundle.sh): the manifest's app.mauri.sukrara.build says
+#   "release". Without it (tools/install.sh, CI) it must say "development <commits> <commit> <date>": a build that
+#   isn't a published release never shows the release wording (tools/release/build-info.sh,
+#   docs/DEVELOPMENT.md › Development and release builds).
 # --play: the Google Play build (play flavor; tools/release/play-bundle.sh passes the bundle's universal APK): the
 #   permissions are allow.json's with `play_permissions` applied (no install permissions), and no updater is
 #   inside (#188: no app.mauri.sukrara.update class in the R8 mapping, no UpdateReceiver in the manifest, no
@@ -24,16 +28,17 @@
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
-play=0 unsigned=0
+play=0 unsigned=0 release=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    --release) release=1; shift ;;
     --play) play=1; shift ;;
     --unsigned) unsigned=1; shift ;;
     *) break ;;
   esac
 done
-apk="${1:?usage: verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt>}"
-mapping="${2:?usage: verify-apk.sh [--play] [--unsigned] <apk> <mapping.txt> (R8 renames classes: only the mapping shows them)}"
+apk="${1:?usage: verify-apk.sh [--release] [--play] [--unsigned] <apk> <mapping.txt>}"
+mapping="${2:?usage: verify-apk.sh [--release] [--play] [--unsigned] <apk> <mapping.txt> (R8 renames classes: only the mapping shows them)}"
 fail=0
 bad() { echo "FAIL $*"; fail=1; }
 ok() { echo "ok   $*"; }
@@ -74,6 +79,21 @@ else bad "lib/arm64-v8a/libsukrara_libre3.so missing (third_party/Juggluco not b
 manifest="$("$aapt2" dump xmltree --file AndroidManifest.xml "$apk")"
 if printf '%s\n' "$manifest" | grep -Eq 'DebugReceiver|DebugFakes|DebugRelays|Synthetic'; then bad "the manifest registers debug components"
 else ok "manifest has no debug components"; fi
+
+# What the build is (About shows it): a release only from the release scripts, every other build a development build.
+build="$(printf '%s\n' "$manifest" | awk '
+  /^ *E: / { inmeta = ($2 == "meta-data") }
+  inmeta && /android:name\(/ && /"app\.mauri\.sukrara\.build"/ { found = 1 }
+  inmeta && found && /android:value\(/ { sub(/^[^"]*"/, ""); sub(/".*$/, ""); print; exit }')"
+if [ $release = 1 ]; then
+  [ "$build" = release ] && ok "a release build (About: $want_name · GitHub / Google Play version)" \
+    || bad "app.mauri.sukrara.build is '$build', want 'release' (built without SUKRARA_RELEASE_BUILD=1 at the release commit?)"
+else
+  case "$build" in
+    "development "*) ok "a development build: $build (About: Development build · …)" ;;
+    *) bad "app.mauri.sukrara.build is '$build', want 'development …': only a release script builds a release" ;;
+  esac
+fi
 
 # The System UI module is in both builds (the Play build too: the owner's decision of 2026-11-11, #142). LSPosed finds
 # it by META-INF/xposed; the manifest has its provider, the hello receiver and the permission that feeds it.

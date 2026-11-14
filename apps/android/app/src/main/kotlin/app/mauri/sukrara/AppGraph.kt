@@ -27,6 +27,7 @@ import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.UploadHold
+import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import app.mauri.sukrara.feature.home.PenRead
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
@@ -370,6 +371,7 @@ class AppGraph(
             alertState = monitor.hub.state.map { it.alerts },
             readiness = alerts.readiness,
             appVersion = appVersion,
+            appBuild = AppBuildInfo.build(app),
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
             recent =

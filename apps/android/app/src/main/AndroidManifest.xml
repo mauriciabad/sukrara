@@ -32,6 +32,11 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Sukrara.Window">
+        <!-- What this build is: "release" or "development <commits> <commit> <date>" (tools/release/build-info.sh,
+             the app convention plugin); About and every report show it (AppBuildInfo), verify-apk.sh checks it -->
+        <meta-data
+            android:name="app.mauri.sukrara.build"
+            android:value="${sukraraBuild}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

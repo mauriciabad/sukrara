@@ -65,8 +65,9 @@ installer="$(echo "$pkg_line" | awk '{print $2}')"
 echo "app: $(echo "$app_line" | cut -d'"' -f2)"
 echo "pkg: $(echo "$pkg_line" | cut -d'"' -f2)"
 
-SIGN_ID="$SIGN_ID" "$root/apps/macos/Bundle/bundle.sh" --app-store
-"$root/tools/release/verify-app.sh" "$build/Sukrara.app" --app-store
+# a release build (tools/release/build-info.sh): only from the release commit; verify-app.sh --release checks it
+SUKRARA_RELEASE_BUILD=1 SIGN_ID="$SIGN_ID" "$root/apps/macos/Bundle/bundle.sh" --app-store
+"$root/tools/release/verify-app.sh" "$build/Sukrara.app" --app-store --release
 codesign -dvv "$build/Sukrara.app" 2>&1 | grep -Eq 'Authority=(Apple Distribution|3rd Party Mac Developer Application):' \
   || die "the app isn't signed for the Mac App Store"
 

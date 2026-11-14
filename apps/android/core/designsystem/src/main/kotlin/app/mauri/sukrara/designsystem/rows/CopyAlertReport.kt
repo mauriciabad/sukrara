@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import kotlinx.coroutines.launch
 
 /**
@@ -27,8 +28,7 @@ fun rememberCopyAlertReport(readiness: AlertReadiness): () -> Unit {
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
     return {
-        val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
-        val text = readiness.report(version ?: "?", Build.VERSION.SDK_INT)
+        val text = readiness.report(AppBuildInfo.report(context), Build.VERSION.SDK_INT)
         scope.launch {
             clipboard.setClipEntry(ClipData.newPlainText("Sukrara", text).toClipEntry())
             haptics.confirm()

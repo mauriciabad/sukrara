@@ -242,6 +242,10 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       phone nearby, Juggluco on this network, an alert with its sound and through a Focus, the widgets, open at login,
       *Export CSV…* to a folder you pick, the QR scanner, a web invite link; both versions show the medical reminder and
       *Privacy Policy* in About. Then `tools/install.sh mac` back to the GitHub version.
+- [ ] Development and release builds: after `tools/install.sh mac`, About Sukrara shows *Version x.y.z (build)* and
+      *Development build · x.y.z + n commits · <commit> · <date>* (selectable), Settings › General › Version the same
+      line, and *Check for Updates…* doesn't offer x.y.z itself; the notarized dmg of the release says *GitHub version*
+      / *x.y.z · GitHub version* there instead.
 - [ ] Updates (Sparkle, #91), after a release that added an item to `docs/appcast.xml`: on a Mac with the previous
       GitHub version installed from its dmg or the cask (not a dev build), right-click › *Check for Updates…* →
       Sparkle's window with the new version and its notes → *Install Update* → the download → *Install and Relaunch*
@@ -398,6 +402,10 @@ over nothing:
 - [ ] The GitHub build's About says *0.14.5 · GitHub version* with the same *About the versions* link and its update
   rows.
 - [ ] TalkBack reads the About rows with their summaries.
+- [ ] Development and release builds (docs/FEATURES.md › Development and release builds): after `tools/install.sh
+  phone`, About says *Development build · <version> + <n> commits · <commit> · <date>* (the commit install.sh printed),
+  in Spanish *Versión de desarrollo · …*; the update check offers no release with the same version (*Up to date*).
+  The GitHub release's APK and the Google Play build say *<version> · GitHub version* / *· Google Play version*.
 
 ## Q11 Sensor reminders and countdowns
 

@@ -474,6 +474,7 @@ private fun SettingsPages(
             AboutContent(
                 deps.appVersion,
                 deps.distribution,
+                deps.appBuild,
                 state,
                 updates?.let {
                     AboutUpdates(

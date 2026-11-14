@@ -6,6 +6,7 @@ package app.mauri.sukrara.feature.settings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
@@ -31,6 +32,8 @@ class SettingsModule(
     alertState: Flow<AlertUiState>,
     readiness: AlertReadinessSource,
     appVersion: String,
+    /** What build it is (About): a release or a development build (`AppBuildInfo.build`). */
+    appBuild: AppBuild,
     clock: Clock,
     sensor: Flow<SensorState>,
     appsShared: Flow<Set<AppOutput>>,
@@ -69,6 +72,7 @@ class SettingsModule(
             override val alertState = alertState
             override val readiness = readiness
             override val appVersion = appVersion
+            override val appBuild = appBuild
             override val distribution = distribution
             override val updates: AppUpdates? by lazy { updates() }
             override val clock = clock

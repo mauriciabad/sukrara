@@ -54,6 +54,7 @@ import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
+import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import app.mauri.sukrara.integrations.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -198,8 +199,7 @@ object ImportProblem {
         return "$REPO/issues/new?" + q.entries.joinToString("&") { "${enc(it.key)}=${enc(it.value)}" }
     }
 
-    fun appVersion(context: Context): String =
-        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
+    fun appVersion(context: Context): String = AppBuildInfo.report(context)
 
     private fun enc(s: String) = URLEncoder.encode(s, Charsets.UTF_8).replace("+", "%20")
 }

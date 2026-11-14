@@ -36,11 +36,13 @@ public final class SettingsModel {
     public let version: String
     /// Which version this is (Settings › General › About says so).
     public let distribution: Distribution
+    /// A release or a development build (the version's text says which).
+    public let appBuild: AppBuild
     private var revision = 0
 
     public init(
         store: any SettingsStoring, follow: FollowModel, wearer: WearerSettings? = nil, version: String,
-        distribution: Distribution = .github
+        distribution: Distribution = .github, appBuild: AppBuild = .release
     ) {
         self.store = store
         self.alerts = AlertSettingsStore(store: store)
@@ -49,6 +51,7 @@ public final class SettingsModel {
         self.wearer = wearer
         self.version = version
         self.distribution = distribution
+        self.appBuild = appBuild
         pane = Pane(rawValue: store.value(MacSettings.settingsPane)) ?? .general
     }
 

@@ -13,7 +13,7 @@ enum AlertReport {
 
     /// Puts the report on the clipboard; a haptic confirms the click where there's a trackpad.
     static func copy(_ failedSteps: Set<String>) {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+        let version = AppBuild.current.report(WindowCoordinator.version)
         let v = ProcessInfo.processInfo.operatingSystemVersion
         let report = text(
             failedSteps: failedSteps, version: version, os: "\(v.majorVersion).\(v.minorVersion).\(v.patchVersion)")

@@ -28,6 +28,7 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
@@ -125,7 +126,15 @@ class SettingsGallery {
     /** About's updater with the daily check on and automatic installs off (the defaults). */
     private val updates = AboutUpdates({}, {}, {}, {}, automaticChecks = true, automaticInstall = false, {}, {})
 
-    private fun about(state: UpdateState?) = @Composable { AboutContent("0.12.0", Distribution.GitHub, state, updates) {} }
+    private fun about(state: UpdateState?) = @Composable {
+        AboutContent(
+            "0.12.0",
+            Distribution.GitHub,
+            AppBuild.Release,
+            state,
+            updates,
+        ) {}
+    }
 
     private val sensorWorking =
         SensorSettingsState(
@@ -322,9 +331,17 @@ class SettingsGallery {
             "about-installing" to about(UpdateState.Installing(release)),
             "about-failed" to about(UpdateState.Failed(release, UpdateFailure.Signature)),
             "about-auto-off" to
-                { AboutContent("0.12.0", Distribution.GitHub, UpdateState.UpToDate, AboutUpdates({}, {}, {}, {}, false, true, {}, {})) {} },
+                {
+                    AboutContent(
+                        "0.12.0",
+                        Distribution.GitHub,
+                        AppBuild.Release,
+                        UpdateState.UpToDate,
+                        AboutUpdates({}, {}, {}, {}, false, true, {}, {}),
+                    ) {}
+                },
             // the Google Play build: no updater
-            "about-play" to { AboutContent("0.12.0", Distribution.GooglePlay, null, null) {} },
+            "about-play" to { AboutContent("0.12.0", Distribution.GooglePlay, AppBuild.Release, null, null) {} },
             "sensor" to { SensorSettingsContent(sensorWorking, now, zone, SensorSettingsActions()) {} },
             "sensor-this-phone" to {
                 SensorSettingsContent(

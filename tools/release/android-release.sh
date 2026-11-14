@@ -8,6 +8,8 @@
 # with its R8 mapping gzipped next to it, Sukrara-<version>-android-mapping.txt.gz, a release asset (crash traces from a
 # phone are unreadable without it; it isn't secret, the source is public; About lists only the Mac files as downloads),
 # and a copy in ~/.android/sukrara-mappings/<version>-mapping.txt.
+# A release build (SUKRARA_RELEASE_BUILD=1, tools/release/build-info.sh): built only from the release commit, About says
+# "<version> · GitHub version"; verify-apk.sh --release checks it.
 # Refuses unless tools/check/strict exists. Prints the APK path on the last line.
 set -eu
 . "$(dirname "$0")/lib.sh"
@@ -21,7 +23,8 @@ version="$1"
 JAVA_HOME="$(dirname "$(dirname "$(jdk_tool java)")")"
 ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 SUKRARA_KEYSTORE_PASSWORD="$(release_password)" || { echo "no release key password (Keychain item sukrara-android-release)" >&2; exit 2; }
-export JAVA_HOME ANDROID_HOME SUKRARA_KEYSTORE_PASSWORD
+SUKRARA_RELEASE_BUILD=1
+export JAVA_HOME ANDROID_HOME SUKRARA_KEYSTORE_PASSWORD SUKRARA_RELEASE_BUILD
 
 apk="$root/apps/android/app/build/outputs/apk/full/release/app-full-release.apk"
 mapping="$root/apps/android/app/build/outputs/mapping/fullRelease/mapping.txt"
@@ -29,7 +32,7 @@ rm -f "$apk"   # a failed build must not leave an old APK to ship
 # --no-daemon: the key's password must not stay in a long-lived Gradle daemon's environment.
 (cd "$root/apps/android" && ./gradlew --no-daemon --console=plain :app:assembleFullRelease)
 unset SUKRARA_KEYSTORE_PASSWORD
-"$root/tools/release/verify-apk.sh" "$apk" "$mapping"
+"$root/tools/release/verify-apk.sh" --release "$apk" "$mapping"
 
 dist="$root/apps/android/app/build/dist"
 mkdir -p "$dist" "$HOME/.android/sukrara-mappings"

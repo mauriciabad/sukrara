@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.UpdateFailure
 import app.mauri.sukrara.core.model.UpdateRelease
 import app.mauri.sukrara.core.model.UpdateState
@@ -23,6 +25,7 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
+import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** The website (docs/, published by .github/workflows/website.yml). */
@@ -55,6 +58,22 @@ enum class Distribution(
     /** The `play` flavor: Google Play updates it; no updater of its own. */
     GooglePlay(R.string.st_version_play),
 }
+
+/**
+ * About's version: a release says its number and where it comes from ("0.14.5 · GitHub version"); any other build says
+ * it is a development build and of what ("Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov"), so nobody
+ * takes it for the release (docs/DEVELOPMENT.md › Development and release builds).
+ */
+fun versionSummary(
+    context: Context,
+    installed: String,
+    distribution: Distribution,
+    build: AppBuild,
+): String =
+    when (build) {
+        AppBuild.Release -> context.getString(distribution.version, installed)
+        is AppBuild.Development -> AppBuildInfo.developmentText(context, installed, build)
+    }
 
 /** One app of Sukrara on another device: its row under *Sukrara on other devices* and its page on the website. */
 data class OtherDevice(
@@ -96,6 +115,7 @@ class AboutUpdates(
 fun AboutContent(
     installed: String,
     distribution: Distribution,
+    build: AppBuild,
     update: UpdateState?,
     updates: AboutUpdates?,
     onBack: () -> Unit,
@@ -105,7 +125,7 @@ fun AboutContent(
         SettingsGroup {
             InfoRow(
                 stringResource(R.string.st_about_version),
-                summary = stringResource(distribution.version, installed),
+                summary = versionSummary(context, installed, distribution, build),
                 icon = DsR.drawable.ds_ic_info,
             )
             if (updates != null) UpdateRows(installed, update, updates)

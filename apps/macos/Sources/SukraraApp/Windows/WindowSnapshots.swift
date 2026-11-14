@@ -446,7 +446,8 @@
             }
             // About Sukrara: the GitHub version and the App Store version
             for (name, distribution) in [("about-github", Distribution.github), ("about-appstore", .appStore)] {
-                let about = AboutView(version: "0.12.0", build: "12000", distribution: distribution, icon: brandIcon)
+                let about = AboutView(
+                    version: "0.12.0", build: "12000", distribution: distribution, appBuild: .release, icon: brandIcon)
                 out.append((name, AnyView(about.aboutWindow())))
             }
             return out

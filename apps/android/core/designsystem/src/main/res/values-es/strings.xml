@@ -162,4 +162,11 @@
     <string name="ds_pen_q_by_follower">Añadida por alguien que te sigue</string>
     <string name="ds_pen_q_none">Ninguna</string>
     <string name="ds_pen_q_none_text">Registrar la dosis de la pluma como una inyección aparte</string>
+    <!-- A build that isn't a published release (AppBuildInfo.developmentText): "Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov" -->
+    <string name="ds_version_development">Versión de desarrollo</string>
+    <plurals name="ds_version_commits">
+        <item quantity="one">%1$s + %2$d cambio</item>
+        <item quantity="many">%1$s + %2$d cambios</item>
+        <item quantity="other">%1$s + %2$d cambios</item>
+    </plurals>
 </resources>

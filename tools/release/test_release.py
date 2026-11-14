@@ -520,5 +520,73 @@ class WorktreeGitTest(unittest.TestCase):
         self.assertEqual(self.git(self.origin, "rev-parse", "main"), appcast)
 
 
+@unittest.skipUnless(shutil.which("git"), "needs git")
+class BuildInfoTest(unittest.TestCase):
+    """tools/release/build-info.sh: what both apps say they are. A release only from the release scripts
+    (SUKRARA_RELEASE_BUILD=1) at the release commit (docs/appcast.xml aside); every other build a development build."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1", GIT_AUTHOR_NAME="t",
+                        GIT_AUTHOR_EMAIL="t@example.com", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.com",
+                        GIT_COMMITTER_DATE="2026-11-14T10:00:00Z")
+        self.env.pop("SUKRARA_RELEASE_BUILD", None)
+        os.makedirs(os.path.join(self.tmp, "tools", "release"))
+        os.makedirs(os.path.join(self.tmp, "docs"))
+        shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), "build-info.sh"),
+                    os.path.join(self.tmp, "tools", "release"))
+        self.git("init", "-q")
+        self.write("VERSION", "0.14.5\n")
+        self.write("docs/appcast.xml", "0.14.4\n")
+        self.release = self.commit("Version 0.14.5")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def git(self, *args):
+        return subprocess.run(["git"] + list(args), cwd=self.tmp, check=True, capture_output=True, text=True,
+                              env=self.env).stdout.strip()
+
+    def write(self, name, text):
+        with open(os.path.join(self.tmp, name), "w") as f:
+            f.write(text)
+
+    def commit(self, msg):
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", msg)
+        return self.git("rev-parse", "--short=8", "HEAD")
+
+    def info(self, release=False):
+        env = dict(self.env, SUKRARA_RELEASE_BUILD="1") if release else self.env
+        r = subprocess.run(["sh", "tools/release/build-info.sh"], cwd=self.tmp, capture_output=True, text=True, env=env)
+        return r.returncode, r.stdout.strip()
+
+    def test_only_the_release_scripts_build_a_release(self):
+        self.assertEqual(self.info(), (0, "development 0 %s 2026-11-14" % self.release))  # install.sh at the release
+        self.assertEqual(self.info(release=True), (0, "release"))
+
+    def test_the_appcast_after_the_gate_is_still_the_release(self):
+        self.write("docs/appcast.xml", "0.14.5\n")  # mac-release.sh writes it in the gate
+        self.assertEqual(self.info(release=True), (0, "release"))
+        feed = self.commit("Sparkle feed: Sukrara 0.14.5")  # release.py's sparkle step, before testflight
+        self.assertEqual(self.info(release=True), (0, "release"))
+        self.assertEqual(self.info(), (0, "development 0 %s 2026-11-14" % feed))
+
+    def test_a_later_commit_or_a_change_is_never_a_release(self):
+        self.write("CHANGELOG.md", "more\n")
+        self.assertEqual(self.info(release=True)[0], 1)  # uncommitted
+        later = self.commit("more")
+        self.write("other.txt", "x\n")
+        self.commit("other")
+        self.assertEqual(self.info(release=True)[0], 1)
+        self.assertEqual(self.info(), (0, "development 2 %s 2026-11-14" % self.git("rev-parse", "--short=8", "HEAD")))
+        self.assertNotEqual(later, self.release)
+
+    def test_outside_git_it_is_a_development_build(self):
+        shutil.rmtree(os.path.join(self.tmp, ".git"))
+        self.assertEqual(self.info(), (0, "development ? ? ?"))
+        self.assertEqual(self.info(release=True)[0], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

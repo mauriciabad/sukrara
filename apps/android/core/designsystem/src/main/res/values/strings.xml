@@ -167,4 +167,10 @@
     <string name="ds_pen_q_by_follower">Added by someone who follows you</string>
     <string name="ds_pen_q_none">None of these</string>
     <string name="ds_pen_q_none_text">Log the pen\'s dose as an injection of its own</string>
+    <!-- A build that isn't a published release (AppBuildInfo.developmentText): "Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov" -->
+    <string name="ds_version_development">Development build</string>
+    <plurals name="ds_version_commits">
+        <item quantity="one">%1$s + %2$d commit</item>
+        <item quantity="other">%1$s + %2$d commits</item>
+    </plurals>
 </resources>

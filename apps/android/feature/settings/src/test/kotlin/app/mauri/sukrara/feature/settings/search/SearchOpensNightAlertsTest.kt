@@ -23,6 +23,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertQuietReason
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
@@ -80,6 +81,7 @@ class SearchOpensNightAlertsTest {
             override val readiness = FakeReadiness()
             override val appVersion = "0.14.2"
             override val distribution = Distribution.GitHub
+            override val appBuild = AppBuild.Release
             override val updates = null
             override val clock = FakeClock(now, ZoneOffset.UTC)
             override val sensor = flowOf(SensorState.None)

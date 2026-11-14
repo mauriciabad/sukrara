@@ -25,6 +25,7 @@ import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
@@ -291,6 +292,7 @@ class SettingsIndexTest {
                 AboutContent(
                     "0.12.0",
                     Distribution.GitHub,
+                    AppBuild.Release,
                     UpdateState.UpToDate,
                     AboutUpdates({}, {}, {}, {}, automaticChecks = true, automaticInstall = false, {}, {}),
                 ) {}

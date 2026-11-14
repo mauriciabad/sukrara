@@ -26,7 +26,8 @@ final class WindowCoordinator {
         self.adapter = adapter
         follow = FollowModel(status: .notFollowing, actions: adapter)
         settings = SettingsModel(
-            store: store, follow: follow, version: Self.version, distribution: model.plan.distribution)
+            store: store, follow: follow, version: Self.version, distribution: model.plan.distribution,
+            appBuild: .current)
         settings.newestReading = { [weak model] in model?.newestReading }
         setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
@@ -111,7 +112,8 @@ final class WindowCoordinator {
     /// About Sukrara (app menu, right-click menu, Settings › General).
     func openAbout() {
         windows.show(.about, title: L10n.t("About Sukrara"), configure: AboutWindow.configure) {
-            AboutView(version: Self.version, build: Self.build, distribution: model.plan.distribution)
+            AboutView(
+                version: Self.version, build: Self.build, distribution: model.plan.distribution, appBuild: .current)
         }
     }
 

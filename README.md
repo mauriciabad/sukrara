@@ -152,7 +152,8 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   works).
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
-  link handler.
+  link handler. Such a build isn't a release and says so: About shows *Development build · 0.14.5 + 23 commits ·
+  d744fd74 · 14 Nov*, and the updater offers only a newer release.
 
 ## Repository layout
 

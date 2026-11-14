@@ -74,7 +74,8 @@ struct GeneralPane: View {
             Section {
                 LabeledContent(L10n.t("Version")) {
                     HStack {
-                        Text(Self.versionText(model.version, model.distribution)).textSelection(.enabled)
+                        Text(Self.versionText(model.version, model.distribution, model.appBuild)).textSelection(
+                            .enabled)
                         if let updates {
                             Button(L10n.t("Check for Updates…"), action: updates.checkNow)
                                 .disabled(!updates.canCheck)
@@ -102,9 +103,14 @@ struct GeneralPane: View {
 
 extension GeneralPane {
 
-    /// "0.13.0 · GitHub version" / "0.13.0 · App Store version" (Android: "· Google Play version").
-    static func versionText(_ version: String, _ distribution: Distribution) -> String {
-        switch distribution {
+    /// "0.13.0 · GitHub version" / "0.13.0 · App Store version" (Android: "· Google Play version") for a release; any
+    /// other build says it is a development build and of what ("Development build · 0.14.5 + 23 commits · d744fd74 ·
+    /// 14 Nov"), so nobody takes it for the release.
+    static func versionText(
+        _ version: String, _ distribution: Distribution, _ build: AppBuild, locale: Locale = .current
+    ) -> String {
+        if let dev = build.developmentText(version, locale: locale) { return dev }
+        return switch distribution {
         case .github: L10n.t("\(version) · GitHub version")
         case .appStore: L10n.t("\(version) · App Store version")
         }

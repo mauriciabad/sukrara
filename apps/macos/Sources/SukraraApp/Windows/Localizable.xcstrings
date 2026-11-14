@@ -9536,6 +9536,54 @@
           }
         }
       }
+    },
+    "Development build" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Development build"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión de desarrollo"
+          }
+        }
+      }
+    },
+    "%@ + 1 commit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ + 1 commit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ + 1 cambio"
+          }
+        }
+      }
+    },
+    "%@ + %lld commits" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ + %lld commits"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ + %lld cambios"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
