@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- A copy of Sukrara's monitor_notif_card_collapsed: the renderer's header row, at most 48 dp. -->
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_header"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:adjustViewBounds="true"
+    android:scaleType="fitStart" />

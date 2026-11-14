@@ -312,3 +312,231 @@ apps where it applies:
 | Moving the foreground service to the alert's id (`move`) | It still isn't bridged to a watch, it's one more state to keep right, and it gains nothing over ringing the glucose notification |
 | ProgressStyle or BigPicture "graph" in the Live Update | Not the card: 10 segments / 4 points, or not promotable (docs/19) |
 | `FLAG_INSISTENT` (a looping sound) | It isn't today's behaviour; the repeat rules already re-ring |
+
+## 8. The owner's questions (round 2)
+
+*2026-11-14, second round. The phone was checked read-only over adb. The pictures come from the prototype's `mock`
+command on Android 17 (API 37.0) and Android 16 QPR2 (API 36.1) emulators, with synthetic values only. Option B uses
+the renderer's own card pictures (`NotificationCard.renderNotificationArt`). Research: the Android docs and the AOSP
+source on `android16-qpr1/qpr2-release` and `android17-release`.*
+
+> "'Value in the status bar': I would expect that by default a user sees the glucose in the status bar, probably with
+> the chip, because the other requires root. If we merge notifications, what happens with the quick actions? I need to
+> see some examples (images/screenshots) of how the proposal would look to decide. I'm worried about 'Google's
+> guidance against alerts on Live Updates': what do they suggest, having duplicate notifications? It doesn't seem like
+> a good alternative... But when I use root for the status bar number, I no longer have a Live Update? So it is a
+> different thing?"
+
+### 8.1 The phone, now (0.14.5, `14005`, installed 17:19; Android 17 `CP3A.261005.005`)
+
+| Checked | Found |
+|---|---|
+| The glucose notification (`dumpsys notification`) | id 1 on `glucose.live` in **`DecoratedCustomViewStyle`**, colorized, with both custom views (the card with the graph). Title `113 mg/dL →`, subtext *1 follower*, one action *Open Sukrara*. **Not promoted** (no `PROMOTED_ONGOING`): it is the card, not a Live Update |
+| Settings › Status bar (on screen) | ***Live Update chip* off**, *Number as notification icon* on, *Glucose on the lock screen* on. With root: ***Value in the status bar* on** (*Before the mobile signal*), *Colour by range* on, *Hide Sukrara's notification icon* on |
+| Android's *Live updates* switch for Sukrara | On (allowed). The app-op `POST_PROMOTED_NOTIFICATIONS` was last refused 1 d 17 h ago, which matches when the chip was turned off |
+| Status bar | `111→` before the signal icons: the root value works. `dumpsys statusbar` lists both of Sukrara's slots (`sukrara_glucose`, `sukrara_glucose_trend`) as visible |
+| LSPosed (logcat) | Sukrara's module is loaded in System UI (`attached to KEYGUARD`). **The PoC's module (`app.mauri.sukrara.poc` 0.11.52, installed 2026-10-25, suspended) is also still enabled with System UI in its scope.** Its hook runs too (`fit skip … not a slot: placement`, 23 lines), so two Sukrara hooks share one System UI. The PoC's module should be turned off in LSPosed, or the PoC uninstalled |
+| System UI | Running since 16:39, before the 17:19 install. It logs `Failed to open APK` for three deleted Sukrara install paths, so it still holds the earlier APKs. That is what *Restart System UI* after an install is for |
+
+So the round-1 diagnosis holds for the state the owner described, with the chip **on**: the Live Update, with no
+graph and the `mg/dL` line. The phone has since been switched to chip off and root value on. That gives **the card with
+the graph and the value in the bar**: option B below, plus root.
+
+### 8.2 Chip, number icon and root value: three different things
+
+| | What it is | Root | Where it shows | Graph in the notification |
+|---|---|---|---|---|
+| **Live Update chip** | Android's own pill for a *promoted* notification (System UI `chips/notification`). It shows the small icon (Sukrara's trend arrow) and `setShortCriticalText` (≤ 7 characters; 96 dp at most per the guide) | no | Next to the clock, **unlocked only** ("Chips are never shown when locked"). Hidden while Sukrara is on screen and while the shade is open. One chip per app and 3 at most system-wide (`MAX_VISIBLE_CHIPS`); all shrink to icons when crowded. A tap shows the notification as a heads-up | **no**: promotion forbids custom views and colorizing |
+| **Number as notification icon** | The notification's small icon drawn as the number with the arrow under it (`ValueGlyphs.icon`), tinted by the system | no | Among the notification icons on the left, at the system's icon size, which is tiny (see B). It moves into the overflow dot when many apps have icons | yes (the card) |
+| **Root value** | Sukrara draws the value itself: either two status icons through root (`slot:` placements), or text by the clock or the signal with the LSPosed module | yes | Always, including the lock screen's status bar, coloured by range. **Not a notification**, so it doesn't depend on the notification's layout | yes (the card) |
+
+**So yes, they are different things.** The chip *is* the notification, promoted. The root value is drawn next to it,
+whatever the notification is. The two can coexist, but then the value shows twice in the bar. With the root value on,
+the chip adds nothing and costs the graph. That is why the phone, with the chip off, now has the card and no Live
+Update.
+
+**The default.** Agreed: everyone should see the value in the status bar by default, without root. The chip and the
+number icon both do that without root:
+
+- The chip is **readable**: full-size digits and the arrow in a pill. It takes the graph out of the notification.
+- The number icon keeps the graph, but it is **small** (the B pictures).
+
+That trade-off is the decision.
+
+### 8.3 Can a Live Update show the graph?
+
+**Not the card.** In `Notification.java` (android17-release), `hasPromotableCharacteristics()` requires
+`hasPromotableStyle()`, which allows no style, BigText, Call, **Metric** or **Progress**. It also requires
+`!containsCustomViews() && !isColorizedRequested()`. Each way to show a graph, checked:
+
+| Way | Verdict |
+|---|---|
+| BigPictureStyle | **Not promotable** (missing from `hasPromotableStyle`). Posting one gives a plain notification without the chip |
+| MetricStyle (API 37) | Up to 3 metrics (value, label, unit; text, numbers, times, timers). **No chart**, and "this style doesn't display the large icon" |
+| ProgressStyle | At most **10 segments** (`MAX_PROGRESS_SEGMENT_LIMIT`; more are merged into one) and **4 points**. Colours are kept (adjusted for contrast), and it takes tracker, start and end icons. Prototyped as option C: the last 3 h as 10 segments of 18 min, coloured by range; a red point where the low began; the trend as the tracker. It reads as "in range, then low", not as a curve. The AOD redraws it white on black |
+| Large icon (a bitmap) | **Shown** in the promoted card in the shade and on the lock screen, but not with MetricStyle. The AOD keeps only a grayscale icon, tinted white. Prototyped as a 3 h sparkline (option C): about 48 dp, a trend shape rather than a readable graph |
+
+So the most a Live Update can carry is option C: a 10-step range strip plus a thumbnail sparkline. The value is then
+only title text, not big. Under "One graph everywhere", the sparkline would also have to become a renderer surface (a
+new `CardPart`).
+
+### 8.4 Google's guidance on alerts, and Maps
+
+- **The exact words** ([Live Updates](https://developer.android.com/develop/ui/views/notifications/live-update)):
+  - "**Inappropriate uses:** Ads, promotions, chat messages, alerts, upcoming calendar events, and quick access to app
+    features."
+  - The appropriate uses: "Active navigation, ongoing phone calls, active rideshare tracking, and active food delivery
+    tracking."
+  - "A key use case for Live Updates is monitoring, when the user gets significant benefit from glancing at the Live
+    Update to keep an eye on the evolving state of the activity."
+  - "If an activity occurs in the past, don't use a Live Update. Instead, use a standard notification."
+- **What they suggest instead, and why.** For alerts, the guide gives no reason and names no alternative.
+  - The nearest is "use a standard notification" for something that has already happened.
+  - That is today's design: the Live Update for the ongoing glucose, and the alert as a standard notification beside
+    it. **So yes, their implied alternative is two notifications** (D).
+  - The rule reads as being against *promoting a notification in order to alert*: using the chip and the top of the
+    shade to grab attention. It doesn't read as being against an ongoing monitoring Live Update whose state turns
+    urgent.
+  - The guide says nothing about sound, heads-up or `setOnlyAlertOnce` on a Live Update.
+- **Not enforced.**
+  - `isPromotable()` checks only the characteristics and that the channel's importance is above MIN.
+  - The attention helper and System UI's heads-up suppressors never look at promotion. A promoted notification on an
+    alert channel rings like any other: measured in §4, and visible in these pictures.
+  - So the risks are policy, not behaviour. A future release could demote or quiet promoted rings, and the person can
+    turn off Live Updates for Sukrara.
+  - The card (B) is not promoted, so the guidance doesn't apply to it at all.
+- **Maps.** Nothing found shows Maps' Live Update popping up, sounding or vibrating at a turn.
+  - Every report describes the heads-up only **after a tap on the chip**
+    ([Android Authority](https://www.androidauthority.com/google-maps-live-updates-3532808/),
+    [9to5Google](https://9to5google.com/2025/03/06/google-maps-android-16-live-updates-feature/)). System UI has
+    exactly that path (`isShowingHeadsUpFromChipTap`).
+  - The turn prompts are Maps' voice guidance, audio that Maps plays itself (round 1, §2).
+  - So **Maps doesn't do what we propose**: it keeps its Live Update quiet. Ringing through the Live Update is allowed
+    by the platform, but it goes beyond Google's own example.
+
+### 8.5 Quick actions in the merged notification
+
+Android shows at most 3 actions.
+
+**Found in the prototype (Android 17): a promoted notification drops a direct-reply action.** Today's *Mute…* is a
+`RemoteInput` that offers the lengths as chips. In the Live Update it disappeared: only *Log carbs* and *Remind less*
+showed, although 3 actions were posted. In the card (B, not promoted) the chips show inline, as today. So in a Live
+Update, *Mute…* has to be a plain button. It opens the lengths sheet over the lock screen, the way *Log carbs* opens
+the treatment dialog.
+
+| State | Buttons (≤ 3, in this order) | Tap on the notification |
+|---|---|---|
+| Normal (wearer) | None (*Open Sukrara* goes, since the tap already opens the app). *Replace sensor* once the sensor has ended; *Set up sensor* when not monitoring | Add treatment (quick dialog) |
+| Alert ringing, low side (very low, low, falling fast) | *Log carbs* · *Mute…* · *Remind less* (*Remind as usual* while relaxed) | The quick dialog, Carbs focused |
+| Alert ringing, high side (high, rising fast) | *Mute…* · *Remind less* (no log action: today's `addLogAction` is carbs only) | The app |
+| Between rings (the alert still up, silent) | The same as while ringing | The same |
+| Muted | *Log carbs* (low side) · *Unmute* · *Change time*. The countdown is a `TimeDifference` metric on Android 17 (A) or the card's pill (B) | The same |
+| No data | *Mute…* · *Remind less* | The app (source / sensor) |
+| Follower | *Mute…* · *Remind less*; *Log carbs* only with *Can add entries* (`canLog`, as today). No buttons while no alert is up | The app |
+| Swiped while an alert is up | Back to the normal buttons (seen), re-posted silently | — |
+
+In B, the lock screen shows the card **collapsed** (the header row, no buttons) until it is expanded. In A and C the
+Live Update shows expanded, with its buttons. An alarm-level kind opens full screen in every option.
+
+### 8.6 Pictures
+
+Each picture shows three panels: the heads-up while ringing (otherwise the home screen's status bar), the shade, and
+the lock screen. They are Android 17 unless the file name says `android36`. Synthetic values: 138 → in range, then a
+low falling to 62. Dark theme, like the owner's phone.
+
+**A. The chip by default (Live Update: MetricStyle on Android 17, BigText on 16).** The bar shows `→ 138` / `↘ 62`
+in a pill. The card has no graph.
+
+![A, normal](img/notification/one-a-normal-android37.png)
+![A, low ringing](img/notification/one-a-ring-android37.png)
+![A, between rings](img/notification/one-a-between-android37.png)
+![A, muted](img/notification/one-a-muted-android37.png)
+![A on Android 16, normal](img/notification/one-a-normal-android36.png)
+![A on Android 16, low ringing](img/notification/one-a-ring-android36.png)
+
+**B. The card with the graph by default (the number icon in the bar).** The renderer's card in the range colour, with
+its pill (*Eat carbs*; *1h left · Low*). The bar shows the small number icon.
+
+![B, normal](img/notification/one-b-normal-android37.png)
+![B, low ringing](img/notification/one-b-ring-android37.png)
+![B, between rings](img/notification/one-b-between-android37.png)
+![B, muted](img/notification/one-b-muted-android37.png)
+![B on Android 16, normal](img/notification/one-b-normal-android36.png)
+![B on Android 16, low ringing](img/notification/one-b-ring-android36.png)
+
+**C. A "graph" inside the Live Update (a ProgressStyle range strip + a sparkline as the large icon).**
+
+![C, normal](img/notification/one-c-normal-android37.png)
+![C, low ringing](img/notification/one-c-ring-android37.png)
+![C on Android 16, normal](img/notification/one-c-normal-android36.png)
+![C on Android 16, low ringing](img/notification/one-c-ring-android36.png)
+
+**D. Today: 0.14.5's default, the Live Update (with the `mg/dL` line and *Open Sukrara*) plus the alert as a
+notification of its own.**
+
+- While ringing, the heads-up is the alert, not the card.
+- The shade and the lock screen hold two Sukrara notifications that both say 62.
+- On the Android 17 lock screen, the alert that was already seen even collapses to a dot under the Live Update.
+
+![D, normal](img/notification/one-d-normal-android37.png)
+![D, low ringing](img/notification/one-d-ring-android37.png)
+![D, muted](img/notification/one-d-muted-android37.png)
+![D on Android 16, normal](img/notification/one-d-normal-android36.png)
+![D on Android 16, low ringing](img/notification/one-d-ring-android36.png)
+
+### 8.7 Comparison
+
+| | A. Chip (Live Update) | B. Card with graph | C. Live Update + strip/sparkline | D. Today (two) |
+|---|---|---|---|---|
+| Value in the status bar without root | **Readable pill** + arrow (unlocked, and not while Sukrara is open) | Small number icon | Readable pill | Readable pill |
+| Graph | No | **The renderer's card** | 10-step range strip + 48 dp sparkline | No |
+| The alert rings through it | Yes (same id, on the alert channel) | Yes | Yes | No: a separate notification |
+| Duplicate notifications | No | No | No | **Yes** |
+| *Mute…* lengths as inline chips | No (plain button → sheet) | **Yes** | No (plain button) | Yes (in the alert) |
+| Lock screen | Expanded, with buttons | Collapsed header until expanded | Expanded, with buttons | The Live Update + the alert |
+| Same look on Android 16 and 17 | No (BigText vs MetricStyle) | **Yes** (Sukrara draws it) | Nearly (ProgressStyle on both) | No |
+| Watch | Wear OS 7 *may* bridge Live Updates (the manufacturer's choice); otherwise *Alerts on my watch* | Never bridged (it's ongoing): *Alerts on my watch* | As A | The alert is bridged today |
+| Root needed | No | No | No | No |
+| Google's guidance | Off-guide while ringing (not enforced) | Doesn't apply (not promoted) | Off-guide while ringing | Follows it |
+
+### 8.8 Recommendation
+
+**One notification in every case: A, B or C, never D.**
+
+- D's duplicate shows in every ringing picture: two Sukrara entries say 62, the heads-up isn't the card, and on the
+  lock screen the alert can fold into a dot.
+- Google's alternative is exactly this duplicate. Its concern is Live Updates used to grab attention, not a monitoring
+  Live Update that turns urgent.
+- The platform rings the merged notification like any other (§4, and these pictures).
+
+**The default follows the status bar, as the owner expects:**
+
+1. **Without the root value: the chip (A) by default.** It gives everyone a readable value in the bar without root,
+   and that is what people glance at dozens of times a day. The notification is then the A card. On Android 17 that
+   is the big value with its arrow, coloured by range, the range or the alert in words, the slot, and the muted
+   countdown. *Mute…* becomes a plain button that opens the lengths sheet.
+2. **With *Value in the status bar* (root) on: the card (B), automatically.** The bar already shows the value, so the
+   chip is redundant and only costs the graph. That is the owner's phone today, but done by Sukrara instead of by
+   hand. The Status bar page then says the chip is off because the bar already shows the value.
+3. **A switch for people without root who prefer the graph:** *Graph in the notification*. It means B: the chip off,
+   and the number icon carries the value.
+4. **C is left out.**
+   - 10 segments of 18 min and a 48 dp thumbnail aren't the graph.
+   - The sparkline would be a new renderer surface to maintain.
+   - MetricStyle can't show it, and the AOD drops it.
+   - If the owner still wants a hint of history inside the Live Update, the ProgressStyle strip alone is the only
+     cheap one (no new surface). It would replace MetricStyle's big value, so it isn't recommended.
+
+This reverses round 1's "card by default" for people without root. For them, the status bar matters more than the
+graph, which is one tap away in the app and on the widgets. The card stays wherever the bar already has the value.
+The rest of §5.2 is unchanged: ringing through the one notification, the ring window, going back to silent, the
+swipe, *Alerts on my watch*. The one addition is that *Mute…* is a plain button in the Live Update.
+
+**Decisions for the owner (round 2):**
+
+1. One notification, A or B depending on the root value as above: yes / no.
+2. C's range strip in the Live Update: no (recommended) / yes.
+3. A watch for alerts? (from round 1, still open)
+
+**Phone follow-ups (no code):** turn off the PoC's module in LSPosed (or uninstall PoC 0.11.52), then *Restart System
+UI* once.

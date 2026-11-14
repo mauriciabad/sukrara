@@ -7,7 +7,14 @@ Nothing here is part of Sukrara. The values are made up. Run it only on an emula
 
 ```
 app/src/main/kotlin/dev/spike/onenotif/OneService.kt   the service, its channels and every command (KDoc lists them)
+app/src/main/kotlin/dev/spike/onenotif/Mock.kt         docs/36 §8's options A–D in each state (the `mock` command)
 ```
+
+Option B (the card) shows the renderer's own pictures. They aren't in the repo: render them with a throwaway
+Robolectric test in `:monitor` that calls `NotificationCard.renderNotificationArt` (header, collapsed header, chart),
+`ValueGlyphs.icon` and `ValueGlyphs.trendIcon` for the states `normal`, `low`, `muted`, writes
+`<state>-header|collapsed|graph|icon|trend.png` and `<state>-bg.txt` (the range colour, hex), then copy them into the
+app's `files/art/` with `adb push` + `run-as dev.spike.onenotif cp`.
 
 ## Build and run
 
@@ -33,6 +40,7 @@ s ring --es ch notif          # the notification-volume channel instead
 s separate                    # today's design: a second notification for the alert
 s move ; s back               # the foreground service moved to the alert's id and back
 s update --es metric sukrara  # Android 17: 0.14.5's MetricStyle card; --es metric fixed: the value + arrow + unit
+s mock --es opt A --es state ring --ez plainMute true   # docs/36 §8's pictures: opt A|B|C|D, state normal|ring|between|muted
 adb logcat -s OneNotif RingtonePlayer   # every post's channel, flags, promotion; the system's sound player
 adb shell dumpsys notification --noredact | grep -A40 dev.spike.onenotif
 ```

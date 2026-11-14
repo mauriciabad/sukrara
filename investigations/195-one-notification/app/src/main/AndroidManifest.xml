@@ -14,8 +14,8 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_stat"
-        android:label="OneNotif"
+        android:icon="@drawable/ic_app"
+        android:label="Sukrara"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
         <!-- The full-screen intent's target: shows over the lock screen. -->
@@ -38,6 +38,11 @@
         <!-- The notification's delete intent: logs the swipe (an answer while ringing) and posts it again. -->
         <receiver
             android:name=".Dismissed"
+            android:exported="false" />
+
+        <!-- The pictures' actions (Mock): they do nothing. -->
+        <receiver
+            android:name=".Noop"
             android:exported="false" />
     </application>
 </manifest>

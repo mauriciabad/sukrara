@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The prototype's app icon (Android 16+ shows it in the notification header): a red disc, like Sukrara's. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#D7263D"
+        android:pathData="M24,2a22,22 0 1,0 0.01,0z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,12l10,5.5v13l-10,5.5l-10,-5.5v-13z" />
+</vector>

@@ -33,6 +33,7 @@ import android.widget.TextView
  * - `separate`: a second notification (id [ID_ALERT]) on the alert channel: today's design
  * - `move`: startForeground(ID_ALERT, ringing alert) then cancel(ID_GLUCOSE); `back`: the reverse
  * - any command: [--es metric sukrara|fixed|""] the Android 17 card's style (see [metric])
+ * - `mock` --es opt A|B|C|D --es state normal|ring|between|muted: the pictures of docs/36 §8 ([Mock])
  * - `dump`: log every active notification's channel, flags and promotion
  * - `stop`
  */
@@ -95,6 +96,14 @@ class OneService : Service() {
             "back" -> {
                 startForeground(ID_GLUCOSE, glucose(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
                 nm.cancel(ID_ALERT)
+            }
+
+            "mock" -> {
+                val opt = intent?.getStringExtra("opt") ?: "A"
+                val state = intent?.getStringExtra("state") ?: "normal"
+                ringing = state == "ring"
+                Mock.plainMute = intent?.getBooleanExtra("plainMute", false) ?: false
+                startForeground(ID_GLUCOSE, Mock.post(this, opt, state), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             }
 
             "stop" -> {
