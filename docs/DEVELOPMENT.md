@@ -23,6 +23,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | The checks' own tests | `tools/check/run.sh --selftest` |
 | Cross-surface card tests | `tools/check/run.sh --layout` |
 | Settings code after a schema change | `python3 tools/settings/gen.py` (commit both SettingsSpec files) |
+| Play Store icon + apple-touch-icon | `python3 -I tools/brand/store_icons.py` (from the frozen `poc/spikes/brand/brand.py` shapes) |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |

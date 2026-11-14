@@ -13,7 +13,7 @@ change the concept in `brand.py` and re-export.
 | `macos/Brand.swift` | name, URL, range colours as `NSColor` |
 | `android/res/` | adaptive launcher icon with a monochrome layer (themed icons): copy into `app/src/main/res`, then `android:icon="@mipmap/ic_launcher"`; `drawable/ic_stat_sukrara.xml` is the notification small icon |
 | `android/Brand.kt` | name, URL, brand + range colours for Compose |
-| `android/play-store-512.png` | store / about-screen icon |
+| `android/play-store-512.png` | store / about-screen icon: full bleed, cropped to the 72 units launchers show. Not from `brand.py` (it renders the whole 108 canvas, glyph at 2/3 size): `python3 -I tools/brand/store_icons.py` renders it and `web/apple-touch-icon.png` from `brand.py`'s shapes |
 | `garmin/launcher_icon_*.png` | Connect IQ `launcherIcon` (colour circle, or `_mono` for MIP screens); use the size the SDK's device profile asks for |
 | `web/` | `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png` (PWA manifest), `og.png` (link previews) |
 

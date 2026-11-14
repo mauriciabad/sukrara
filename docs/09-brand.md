@@ -200,6 +200,14 @@ A `README.md` in the folder says what goes where.
   needs from the app (adb/DUMP-protected feature toggles, upload intervals…) is in `poc/spikes/power/README.md`. Message
   that session when the app is installed on the phone.
 
+## In Sukrara
+
+- **Added:** the committed set in `assets/brand/sukrara/`; `tools/brand/store_icons.py` renders the Play Store icon and
+  the apple-touch-icon from `brand.py`'s shapes, cropped to the 72-unit area launchers show (`18 18 72 72`).
+- **Discarded:** `brand.py`'s own renders of those two, made from the whole 108 canvas: the bleed shrank the glyph to
+  2/3 of the launcher's size (#210). And its renderer, `render.swift`, which no longer builds (`TrendArrow.swift`
+  needs a `TrendMark` it doesn't list); `tools/brand/svg2png.swift` does the same SVG drawing.
+
 ## Open
 
 - [x] Name and icon picked: Sukrara · live. Assets exported to `assets/sukrara/`.
