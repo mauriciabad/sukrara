@@ -60,6 +60,19 @@ object TreatmentForm {
         return if (rounded <= 0) Amount.Invalid else Amount.Valid(rounded)
     }
 
+    /**
+     * Whether [text] is empty or exactly the amount Save stores (insulin to 0.1 u, whole grams): `4.5`, `.5`, `12,0`,
+     * `30.`, not `.243` or `1.25` (only rounding makes them a dose). The lock-screen draft keeps only such a form: a
+     * thumb on the number pad types the others, and a draft fills every dialog for hours.
+     */
+    fun exact(
+        text: String,
+        grams: Boolean,
+    ): Boolean {
+        val amount = parse(text, grams)
+        return amount == Amount.Empty || (amount is Amount.Valid && text.trim().replace(',', '.').toDouble() == amount.value)
+    }
+
     /** The entries Save creates, in kind order (rapid, long, carbs, note); null = an amount is invalid. */
     fun entries(
         rapid: String,

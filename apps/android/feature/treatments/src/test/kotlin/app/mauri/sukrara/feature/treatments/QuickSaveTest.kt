@@ -113,6 +113,23 @@ class QuickSaveTest {
             assertNull(m.draft())
         }
 
+    /**
+     * The owner's 0.14.5 report: every Add treatment opened with `.243` in Rapid. A thumb on the number pad over the
+     * lock screen typed it, the countdown kept it (it "could be saved": 0.2u) and the draft filled every dialog for
+     * 12 h. A draft keeps only amounts Save would store exactly as they show (insulin to 0.1u, whole grams).
+     */
+    @Test fun anAmountThatOnlyRoundsIntoADoseIsNoDraft() =
+        runTest {
+            assertNull(TreatmentDraft.of(TreatmentFormState(rapid = ".243"), t0))
+            assertNull(TreatmentDraft.of(TreatmentFormState(rapid = "4.5", long = "12.25"), t0))
+            assertNull(TreatmentDraft.of(TreatmentFormState(carbs = "30.6", note = "Pasta"), t0))
+            assertNotNull(TreatmentDraft.of(TreatmentFormState(rapid = ".5", long = "12,0", carbs = "30."), t0))
+            // one kept by an earlier version is no longer offered
+            val m = module()
+            m.keepDraft(TreatmentDraft(rapid = ".243", atMs = t0.toEpochMilli(), keptMs = t0.toEpochMilli()), "")
+            assertNull(m.draft())
+        }
+
     @Test fun nothingTypedKeepsNothing() {
         assertNull(TreatmentDraft.of(TreatmentFormState(), t0))
         assertTrue(!TreatmentDraft.EMPTY.offered(t0))

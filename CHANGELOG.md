@@ -18,6 +18,10 @@ Sukrara's releases. 0.x versions are previews.
   fast move has lasted 5 minutes (on the owner's readings, at 2 mg/dL/min about 9 times a day, as often as glucose
   really moved that fast, about 9 minutes after it began; with the sensor's rate they rang twice a day and missed most
   fast moves). *From the sensor* keeps them as they were.
+- **Add treatment no longer opens with a stray `.243` in Rapid (Android)** (the owner). A thumb on the number pad
+  while the dialog was over the lock screen typed it; when the dialog closed by itself it was kept as an unsaved entry
+  and filled every Add treatment for 12 hours. Only amounts typed as Save stores them (insulin to 0.1 u, whole grams)
+  are kept now, and such a kept entry is no longer offered.
 
 - **Releases are normal GitHub releases now**, marked *Latest*, also 0.12.0 … 0.14.5 (they were prereleases, so
   GitHub's *Latest* was still the old proof of concept). [Obtainium](https://obtainium.imranr.dev/) no longer needs

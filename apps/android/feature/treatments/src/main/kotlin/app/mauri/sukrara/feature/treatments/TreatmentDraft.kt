@@ -31,8 +31,8 @@ data class TreatmentDraft(
     val at: Instant get() = Instant.ofEpochMilli(atMs)
     val keptAt: Instant get() = Instant.ofEpochMilli(keptMs)
 
-    /** Still offered at [now]: kept, and not longer ago than [KEEP]. */
-    fun offered(now: Instant): Boolean = keptMs > 0 && Duration.between(keptAt, now) < KEEP
+    /** Still offered at [now]: kept, not longer ago than [KEEP], and every amount [exact] (one kept before that rule isn't). */
+    fun offered(now: Instant): Boolean = keptMs > 0 && Duration.between(keptAt, now) < KEEP && exact(rapid, long, carbs)
 
     /** The form filled with it, at its time (Save stores it then; *Now* moves it to the moment of saving). */
     fun form(): TreatmentFormState = TreatmentFormState(rapid, long, carbs, note, at = at)
@@ -40,15 +40,28 @@ data class TreatmentDraft(
     companion object {
         val EMPTY = TreatmentDraft()
 
+        /** Every amount is exactly what Save stores ([TreatmentForm.exact]), so the draft is what was meant. */
+        private fun exact(
+            rapid: String,
+            long: String,
+            carbs: String,
+        ): Boolean =
+            TreatmentForm.exact(rapid, grams = false) && TreatmentForm.exact(long, grams = false) &&
+                TreatmentForm.exact(carbs, grams = true)
+
         /** How long a draft is offered: an entry kept longer is rather typed again. */
         val KEEP: Duration = Duration.ofHours(12)
 
-        /** [form] as a draft kept at [now]; null when nothing was typed (nothing to keep). */
+        /**
+         * [form] as a draft kept at [now]; null when nothing was typed (nothing to keep) or an amount is not [exact]:
+         * `.243` in Rapid is a thumb on the number pad over the lock screen, not a dose (the owner's 0.14.5 report: it
+         * filled every Add treatment for 12 h).
+         */
         fun of(
             form: TreatmentFormState,
             now: Instant,
         ): TreatmentDraft? =
-            if (!form.hasInput) {
+            if (!form.hasInput || !exact(form.rapid, form.long, form.carbs)) {
                 null
             } else {
                 TreatmentDraft(form.rapid, form.long, form.carbs, form.note, (form.whenAt(now) ?: now).toEpochMilli(), now.toEpochMilli())

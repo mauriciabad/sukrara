@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.AlertUiState
@@ -32,7 +34,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSystemClock
+import java.time.Duration
 
 /** The app's Application stand-in: gives the quick dialog its module, like `App` does. */
 class TestTreatmentsApp :
@@ -203,6 +208,52 @@ class QuickTreatmentTest {
                 ).setup()
                 .get()
         assertTrue(activity.isFinishing)
+    }
+
+    /**
+     * The owner's 0.14.5 report: `.243` in Rapid on every Add treatment. Typed by a thumb on the number pad while the
+     * dialog was over the lock screen, it was kept when the countdown ended; such an amount is no draft, a dose is.
+     */
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-xxhdpi")
+    fun theLockScreenCountdownKeepsOnlyADoseAsTyped() {
+        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        assertNull(runOutOnTheLockScreen(".243"))
+        val kept = runOutOnTheLockScreen("4.5")
+        assertEquals("4.5", kept?.rapid)
+        // the next dialog opens with the kept dose, marked as the draft it is
+        ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Home)).use {
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-draft").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("4.5").assertExists()
+        }
+    }
+
+    /** Opens the dialog over the lock screen, types [rapid] and lets the countdown run out; the draft it kept. */
+    private fun runOutOnTheLockScreen(rapid: String): TreatmentDraft? {
+        val keyguard = Shadows.shadowOf(app.getSystemService(android.app.KeyguardManager::class.java))
+        keyguard.setKeyguardLocked(true)
+        compose.mainClock.autoAdvance = false
+        try {
+            ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Widget)).use { scenario ->
+                repeat(5) { compose.mainClock.advanceTimeByFrame() }
+                compose.waitForIdle()
+                compose.onNodeWithTag("treatment-rapid").performTextInput(rapid)
+                ShadowSystemClock.advanceBy(Duration.ofSeconds(130))
+                repeat(5) { compose.mainClock.advanceTimeByFrame() }
+                compose.waitForIdle()
+                assertTrue("the countdown closed the dialog", scenario.state == Lifecycle.State.DESTROYED || finishing(scenario))
+            }
+        } finally {
+            keyguard.setKeyguardLocked(false)
+            compose.mainClock.autoAdvance = true
+        }
+        return kotlinx.coroutines.runBlocking { app.treatments.draft() }
+    }
+
+    private fun finishing(scenario: ActivityScenario<QuickTreatmentActivity>): Boolean {
+        var f = false
+        scenario.onActivity { f = it.isFinishing }
+        return f
     }
 
     @Test fun carbsFirstWhileTheLatestReadingIsLow() {
