@@ -301,10 +301,12 @@ final class Notifier: AlertNotifying {
             })
     }
 
-    /// How a notification shows while Sukrara is in front: one posted again without sound (an alert's value updated,
-    /// shown again silently, #195) goes to the list only, never a banner again; a ringing one as always.
-    nonisolated static func presentation(silent: Bool) -> UNNotificationPresentationOptions {
-        silent ? [.list] : [.banner, .sound, .list]
+    /// How a notification shows while Sukrara is in front: an alert posted again without sound (its value updated,
+    /// shown again silently, #195: passive) goes to the list only, never a banner again; everything else as always. Not
+    /// by its sound: a ringing alert whose sound is None has none, and must still show.
+    nonisolated static func presentation(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {
+        let silentAlert = content.interruptionLevel == .passive && content.userInfo[firingKey] != nil
+        return silentAlert ? [.list] : [.banner, .sound, .list]
     }
 
     /// The side whose *Log Carbs…* was chosen (it opens Add Treatment with Carbs focused), or nil for any other answer.

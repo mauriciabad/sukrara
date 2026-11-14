@@ -215,8 +215,6 @@ import UserNotifications
             let muted = cat.identifier.hasPrefix(AlertNotificationIDs.mutedCategory)
             #expect(cat.options.contains(.customDismissAction) == !muted, "\(cat.identifier)")
         }
-        #expect(Notifier.presentation(silent: true) == [.list])
-        #expect(Notifier.presentation(silent: false) == [.banner, .sound, .list])
     }
 
     // MARK: helpers

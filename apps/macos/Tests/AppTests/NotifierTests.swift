@@ -173,6 +173,21 @@ final class FakeCenter: NotificationPosting {
         #expect(center.added.map(\.identifier).allSatisfy { $0 == AlertNotificationIDs.notificationID(.level) })
     }
 
+    /// #195 review: while Sukrara is in front, only an alert posted again without sound stays out of the banners. A
+    /// ringing alert whose sound is None (no sound in its content) still shows, and so do the muted and stopped notes.
+    @Test func inFrontOnlyASilentRepostStaysOutOfTheBanners() {
+        var s = AlertSettings()
+        s.sounds.pack = "none"
+        let n = notifier(settings: s)
+        n.post(firing(.veryLow, mgdl: 50), sound: true, category: AlertNotificationIDs.alertCategory)
+        n.post(firing(.veryLow, mgdl: 44), sound: false, category: AlertNotificationIDs.alertCategory)
+        n.postMuted(.low, until: clock.now.addingTimeInterval(1800))
+        n.monitoringStopped("Bluetooth is off")
+        let shown = center.added.map { Notifier.presentation($0.content) }
+        #expect(center.added[0].content.sound == nil)
+        #expect(shown == [[.banner, .sound, .list], [.list], [.banner, .sound, .list], [.banner, .sound, .list]])
+    }
+
     /// #184: a Focus holds Sukrara's alerts back by default; letting it through makes the alarms Time Sensitive, when
     /// macOS allows it.
     @Test func alarmsAreTimeSensitiveOnlyWhenThePersonLetsSukraraThrough() {

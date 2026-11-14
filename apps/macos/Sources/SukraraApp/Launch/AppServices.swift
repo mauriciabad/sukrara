@@ -229,7 +229,7 @@ final class NotificationResponder: NSObject, UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter, willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        Notifier.presentation(silent: notification.request.content.sound == nil)
+        Notifier.presentation(notification.request.content)
     }
 
     nonisolated func userNotificationCenter(
