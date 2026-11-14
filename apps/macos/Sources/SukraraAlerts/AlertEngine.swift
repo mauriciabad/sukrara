@@ -262,6 +262,13 @@ public struct AlertEngine: Sendable {
         let noData =
             (noDataSince.map { nd.on && t.timeIntervalSince($0) >= nd.threshold * 60 } ?? false)
             && !expectsNoReading(at: t)
+        // a Mute over by its time: an alert of its side from before it comes at once (SPEC §2), also when the repeat is
+        // later (`due` can't read the end once `advance` clears it)
+        for (g, e) in episodes {
+            if let u = snoozes[e.side]?.until, u <= t, let fired = e.firedAt, fired < u {
+                episodes[g]?.liftPending = true
+            }
+        }
         let backSides = snoozes.advance(at: t, backMin: s.notificationActions.backMin) { side -> Bool? in
             switch side {
             case .noData: return !noData

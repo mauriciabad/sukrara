@@ -243,7 +243,12 @@ class AlertEngine(
         val noData = since != null && noDataRule.on && now - since >= noDataRule.threshold * 60 && !sensorSilent(now)
         for (side in snoozes.keys.toList()) {
             val sn = snoozes.getValue(side)
-            if (sn.until in 1..now) putSnooze(side, sn.copy(until = 0)) // the Mute's time is over
+            if (sn.until in 1..now) {
+                // the Mute's time is over: an alert of its side from before it comes at once (SPEC §2), also when the
+                // repeat is later (`due` can't read the end once it is cleared)
+                episodes.values.forEach { e -> if (e.side == side && (e.firedAt ?: Long.MAX_VALUE) < sn.until) e.liftPending = true }
+                putSnooze(side, sn.copy(until = 0))
+            }
             val cur = snoozes[side] ?: continue
             if (!fresh && side != Side.NO_DATA) continue // nothing new to judge the margin by
             val back =

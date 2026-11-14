@@ -12,6 +12,13 @@ scenario Mute quiets the low for its minutes; at once when it ends
 42               => Low glucose
 43
 
+scenario A Mute that ends before the repeat: at once when it ends, not at the repeat
+ 0  glucose 190  => High glucose
+ 1  mute high 3  => clear high               # until 4; the high's repeat is 15 min
+ 4               => High glucose             # still high when the mute ends: at once
+19               => High glucose             # the repeats count from there
+20
+
 scenario Mute for… with typed minutes
 settings mute.min=20
  0  glucose 65   => Low glucose
