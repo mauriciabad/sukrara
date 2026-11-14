@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -193,7 +194,7 @@ fun trendChoiceName(s: TrendSetting): String = stringResource(s.title)
 @Composable
 private fun TrendPreviewCard(ui: TrendArrowUi) {
     val look = ui.shown.look
-    val locale = Locale.getDefault()
+    val locale = LocalLocale.current.platformLocale
     val words = CardWords.of(LocalContext.current.resources)
     val sensor = ui.previews.getValue(TrendSetting.Sensor).look
     val lines =

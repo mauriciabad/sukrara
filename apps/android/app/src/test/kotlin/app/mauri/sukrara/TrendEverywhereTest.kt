@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertKind
@@ -68,7 +69,7 @@ import java.util.Locale
  * turns them all at once. The Mac's TrendEverywhereTests run the same readings.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [36], application = Application::class)
 class TrendEverywhereTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -184,9 +185,11 @@ class TrendEverywhereTest {
             if (NsDocs.entry(latest, "d", ZoneOffset.UTC, NsApi.V1)["direction"]!!.jsonPrimitive.content == ns) text else "off"
         out["nightscout endpoint"] = if (NightscoutApi.entry(latest)["direction"]!!.jsonPrimitive.content == ns) text else "off"
         out["xdrip endpoint"] = if (XdripEndpoint.direction(latest) == ns) text else "off"
-        // the settings page's preview asks the card's face as its own registered surface
+        // the settings page's preview asks the card's face as its own registered surface (the observer is global: only
+        // the faces asked on this thread count, not those background work elsewhere in the JVM asks meanwhile)
         val asked = mutableListOf<CardSurface>()
-        GlucoseCard.faceObserver = { surface, _ -> asked += surface }
+        val me = Thread.currentThread()
+        GlucoseCard.faceObserver = { surface, _ -> if (Thread.currentThread() == me) asked += surface }
         val preview =
             try {
                 TrendArrowPreview.of(s.recent, now, GlucoseUnit.MGDL).getValue(setting.value).look!!
