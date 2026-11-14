@@ -70,7 +70,7 @@ class NotificationArt(
  * content column. Drawn at most at 2x density so the three pictures stay far below the binder's parcel limit.
  *
  * Its ground: by default the system's notification colour (the value in its range colour, the theme's palette);
- * with *Card in the range colour* the range colour itself ([background]: the value in black or white ink, the slots
+ * with *Coloured background* the range colour itself ([background]: the value in black or white ink, the slots
  * on discs), the renderer's pill rule keeping every pill legible on it ([notificationCardStyle] `ground`).
  */
 object NotificationCard {
@@ -129,7 +129,7 @@ object NotificationCard {
         )
 
     /**
-     * The card for [model] at [wDp] wide; [bg] = the range colour it is painted in (*Card in the range colour*), null =
+     * The card for [model] at [wDp] wide; [bg] = the range colour it is painted in (*Coloured background*), null =
      * the system's notification colour; [graph] false skips the chart (reused from before); [rangeSaid] = the alert's
      * title above it names the value's range, so the card draws no range word (contracts/graph: pills per surface).
      * One whole-card style for all parts ([notificationCardStyle]), so the whole-card decisions are made once.

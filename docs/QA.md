@@ -139,10 +139,10 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       `alert_alarm.very_low`, ids 1000+, gone 10 s later with the glucose notification carrying the alert); a very low and
       falling fast on one reading: *Very low glucose* in front on its channel, *Also: Falling fast*; the glucose channel
       turned off in Android's settings during an alert: the alert shows as a notification of its own. Graph: the value smaller than the
-      rings, two rings expanded and collapsed, no *Low* word beside a level alert's title, *Card in the range colour*
+      rings, two rings expanded and collapsed, no *Low* word beside a level alert's title, *Coloured background*
       keeps every pill legible (white / black on red).
 - [ ] Settings › Status bar picker: Chip / Graph side by side with their pictures, one radio group with TalkBack; with
-      the root value on, Graph chosen and the chip disabled with its note. Settings › Alerts › *Alerts on my watch*: on →
+      the root value on, Graph chosen and the chip disabled with its note. Settings › Alerts › *Separate alert notifications*: on →
       a separate alert beside the glucose notification (ids 1000+), which carries no alert; its summary suggests it with
       a watch app installed. Real watch (when one is paired): the separate alert buzzes the watch.
 

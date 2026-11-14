@@ -48,7 +48,7 @@ import java.time.Instant
  * from the notification manager for every state: the channel (the kind's on a ring and through the ring window, the
  * silent one otherwise), the flags (only-alert-once except on a ring, ongoing), the title, the buttons and their order
  * (never an ellipsis), the full-screen intent only on silent → alarm, the swipe that hides the alert and comes back
- * silent, the muted note, and *Alerts on my watch*: two notifications then, the glucose one without the alert.
+ * silent, the muted note, and *Separate alert notifications*: two notifications then, the glucose one without the alert.
  * (The Live Update's promotion needs Android 16 QPR2+, which Robolectric doesn't have: QA.md and the docs/36 pictures
  * check it on the emulators.)
  */
@@ -334,7 +334,7 @@ class OneNotificationTest {
         assertFalse("no unit anywhere", t.contains("mg/dL"))
     }
 
-    @Test fun `Alerts on my watch makes the alert a notification of its own and the glucose one carries none`() {
+    @Test fun `Separate alert notifications make the alert a notification of its own and the glucose one carries none`() {
         serviceShows()
         val p = presenter(watch = true)
         p.show(fire(AlertKind.LOW), settings, silent = false, who = null, relaxedMin = 0)

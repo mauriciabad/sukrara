@@ -65,7 +65,7 @@ class AlertNotifier(
     private fun words(): AlertWords = AlertWords.of(ctx, AlertWords.Ids + AlertCopy.Ids, strict = true)
 
     /**
-     * The alert as a notification of its own (*Alerts on my watch*: a watch is bridged only to these; the glucose
+     * The alert as a notification of its own (*Separate alert notifications*: a watch is bridged only to these; the glucose
      * notification then shows no alert). The same words, buttons and channel as the glucose notification's alert.
      */
     override fun show(

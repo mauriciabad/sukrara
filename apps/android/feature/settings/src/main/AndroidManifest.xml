@@ -7,7 +7,7 @@
     <!-- Settings › Sensor's *Open Juggluco* (SensorSettingsPage) -->
     <queries>
         <package android:name="tk.glucodata" />
-        <!-- Settings › Alerts suggests *Alerts on my watch* when a watch's companion app is on the phone (docs/36) -->
+        <!-- Settings › Alerts suggests *Separate alert notifications* when a watch's companion app is on the phone (docs/36) -->
         <package android:name="com.google.android.wearable.app" />
         <package android:name="com.google.android.apps.wear.companion" />
         <package android:name="com.samsung.android.app.watchmanager" />

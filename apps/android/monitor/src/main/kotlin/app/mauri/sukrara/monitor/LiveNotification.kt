@@ -73,7 +73,7 @@ import java.util.concurrent.TimeUnit
  *   value styled by range, labelled *Now* or with the late reading's time, then the card's slots), below it BigText.
  * - **the card** (chosen, or automatically while the root value is in the bar, or Live Updates refused) → the
  *   renderer's header row collapsed and header + chart expanded, on the system's notification colour, or in the range
- *   colour (grey once struck through) with *Card in the range colour*; the small icon is the number itself (*Number
+ *   colour (grey once struck through) with *Coloured background*; the small icon is the number itself (*Number
  *   icon*) or the arrow. Without its pictures (the first post, the screen off with an out-of-date card, a drawing
  *   failure) it posts the same notification as text, never an old picture.
  *
@@ -316,7 +316,7 @@ class LiveNotification(
     }
 
     /**
-     * The title: with an alert its title ("Low glucose · Eat carbs" in a Live Update, where no pill shows it; the
+     * The title: with an alert its title ("Low · Eat carbs" in a Live Update, where no pill shows it; the
      * value first on Android 16, whose Live Update has no big value: "62 ↘ · Low glucose · Eat carbs"); without, the
      * value ("138 →", "64 ↘ · Low"), or on Android 17's Live Update the range in words (the value is the metric's).
      */
@@ -333,8 +333,13 @@ class LiveNotification(
         if (alert == null) {
             return if (metric) resolve(content.rangeWords ?: content.title, now) else resolve(content.title, now)
         }
-        // the pill's words ("Eat carbs"), which the card draws under its value
-        val words = if (card) listOf(alert.title) else listOfNotNull(alert.title, pillWords(alert, frame, now))
+        // the pill's words, which the card draws under its value, after a " · " in lower case as the headline's own
+        // context ("Low · eat carbs"); none when the headline already says what to do ("Low · eat more")
+        val pill =
+            pillWords(alert, frame, now)
+                ?.takeIf { !card && " · " !in alert.title }
+                ?.replaceFirstChar { it.lowercase(java.util.Locale.getDefault()) }
+        val words = listOfNotNull(alert.title, pill)
         val value = content.look?.let { resolve(content.title, now) }.takeIf { !metric && !card }
         return listOfNotNull(value?.substringBefore(" · "), *words.toTypedArray()).joinToString(" · ")
     }
@@ -503,7 +508,7 @@ class LiveNotification(
         }
 
     /**
-     * The card: on the system's notification colour, or with *Card in the range colour* colorized in the range colour
+     * The card: on the system's notification colour, or with *Coloured background* colorized in the range colour
      * (keeps the icon first and shown although the channel is LOW); when [frame] is drawn, the renderer's header row and
      * chart as custom views, with the alert's title over them while one is up (and as the heads-up while it rings).
      */
@@ -532,7 +537,7 @@ class LiveNotification(
         }
     }
 
-    /** The card's ground with *Card in the range colour* (null: the system's notification colour). */
+    /** The card's ground with *Coloured background* (null: the system's notification colour). */
     private fun cardColor(
         content: LiveNotificationContent,
         frame: CardFrame?,

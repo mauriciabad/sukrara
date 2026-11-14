@@ -24,7 +24,7 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * THE alert buttons as Android actions, for the glucose notification that carries the alert and for the separate
- * alerts of *Alerts on my watch*: one place, so both say and do the same. Words without "…" (the owner, 2026-11-14:
+ * alerts of *Separate alert notifications*: one place, so both say and do the same. Words without "…" (the owner, 2026-11-14:
  * Treatment opens a dialog without one, so an ellipsis no longer means anything), each with an icon (Android shows
  * action icons only where its templates draw them: Wear OS and the Android Auto / older templates; the phone's
  * standard, Live Update and custom templates on 16 and 17 show the words only, so the words must stand alone).

@@ -59,7 +59,8 @@ class MuteAlertActivity : ComponentActivity() {
                 }
                 first?.let { min ->
                     MuteSheet(
-                        side = MuteText.sideName(kind.side, words),
+                        // "Mute lows" / "Silenciar bajas": the side as the mute lines name it, in the title's lower case
+                        side = MuteText.sideName(kind.side, words).lowercase(java.util.Locale.getDefault()),
                         first = min,
                         label = { MuteText.line(MuteLine.Choice(it), words) },
                         onMute = { m ->

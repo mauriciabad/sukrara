@@ -170,7 +170,7 @@ data class CardStyle(
     val ground: Int? = null,
     /**
      * The place around the card already says the value's range in words (the notification's title names the level
-     * alert: "Low glucose"): no range word under the value (#26 is met by the title), the status pill stays.
+     * alert: "Low"): no range word under the value (#26 is met by the title), the status pill stays.
      */
     val rangeSaid: Boolean = false,
     /**

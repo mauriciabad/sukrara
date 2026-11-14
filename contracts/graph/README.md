@@ -129,7 +129,7 @@ decided by the renderer from two style inputs the place around the card sets, ne
 | Place | Status pill | Range word |
 |---|---|---|
 | Widgets, lock-screen widget, app panel, *Sensor ready* | yes | yes (#26), unless the pill says the side |
-| Android glucose notification, title naming a level alert (`rangeSaid`: "Low glucose · Eat carbs", "Low alerts muted") | yes | no: the title says it in words |
+| Android glucose notification, title naming a level alert (`rangeSaid`: "Low · Eat carbs", "Lows muted") | yes | no: the title says it in words |
 | Android glucose notification, no alert in the title | yes | yes |
 
 **Contrast on any ground** (`PillContrast`, both platforms; Android `PillContrastTest`, Mac `PillContrastTests`): a

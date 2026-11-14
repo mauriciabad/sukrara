@@ -17,7 +17,7 @@ data class GlucoseAlert(
     val kind: AlertKind,
     /** The firing it shows (the swipe's answer names it); null for a side's muted note. */
     val firingId: String?,
-    /** "Low glucose · eat more", or the muted note's "Low alerts muted". */
+    /** "Low · eat more", or the muted note's "Lows muted". */
     val title: String,
     /** The alert's value line ("62 mg/dL ↘", the card's face, surface `alert-notification`): where no value shows. */
     val body: String,

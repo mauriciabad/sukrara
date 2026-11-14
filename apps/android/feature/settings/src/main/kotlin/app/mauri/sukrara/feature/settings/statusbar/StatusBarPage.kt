@@ -186,7 +186,7 @@ fun Context.openLiveUpdateSettings() {
  * The page: *Glucose notification*, the chip or the graph side by side with a picture of each (they exclude each
  * other: a Live Update can't hold a graph; the graph whatever the choice while [rootValue] is in the bar), *Allow Live
  * Updates for Sukrara* while the chip is chosen and Android refuses it (the way to fix it, not a dead choice),
- * *Number icon* (only meaningful with the graph: its summary says so), *Card in the range colour* (the graph's card),
+ * *Number icon* (only meaningful with the graph: its summary says so), *Coloured background* (the graph's card),
  * *Glucose on the lock screen* (#94: on by default; its summary says what the lock screen shows). The footer explains
  * what each one changes.
  */

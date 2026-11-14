@@ -221,7 +221,7 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
     Android 16 never for an update of the glucose notification, which is always there), the glucose notification shows
     the alert silently and carries it on once that one goes (a Mute or a swipe takes it at once). Two groups: the ring
     that is due in front, the other a line (*Also: Falling fast*); two rings on one reading keep the one that must be
-    heard in front, on its channel (the other would be muted by Android anyway). **Alerts on my watch** (Settings ›
+    heard in front, on its channel (the other would be muted by Android anyway). **Separate alert notifications** (Settings ›
     Alerts, off by default; its summary suggests it when the Wear OS, Pixel Watch or Galaxy Wearable app is on the
     phone): Wear OS never bridges an ongoing notification, so each alert is then also a notification of its own (these
     rules, one slot per group) and the glucose notification carries none. The same when the person turned the glucose
@@ -1485,7 +1485,7 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   While an alert is up it carries its title (*Low glucose · Eat carbs* in the Live Update, *Low glucose* over the card),
   its buttons *Treatment* · *Remind less* · *Mute* and its swipe; each ring re-posts it on the kind's channel
   (`GlucoseAlertPresenter`, `LiveNotification` as `GlucoseAlertSink`), the 10 s after a ring stay there, then it is
-  silent again with the alert. *Alerts on my watch* (Settings › Alerts) adds the separate alerts and takes the alert
+  silent again with the alert. *Separate alert notifications* (Settings › Alerts) adds the separate alerts and takes the alert
   off it.
 - One post path (`PostGate`): the same content is never posted twice; at most one post per second, the first change
   after a quiet second at once, a burst folded into its latest content; monotonic clock.
@@ -1497,7 +1497,7 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   owner found the old full-height value too large) and two slots beside it (`CardPart.SLOTS` at the header's full 64 dp,
   two rings where the column allows, as on the widget; the collapsed 48 dp row keeps full-size rings) collapsed, the
   header + the chart (the Notification place's window) expanded; while an alert is up its title above them and as the
-  heads-up. On the system's notification colour by default (the value in its range colour); *Card in the range colour*
+  heads-up. On the system's notification colour by default (the value in its range colour); *Coloured background*
   (`statusbar.colorize`, off by default) colorizes it in the range colour (grey once struck through), the renderer's pill
   rule keeping every pill legible on it (`CardStyle.ground`, `PillContrast`). A level alert's title names the range, so
   the card draws no separate range word then (`CardStyle.rangeSaid`, contracts/graph *Pills per surface*). The slots count the stored days and the live window (`CardFrame.slots`, the 31-day history), so
@@ -1527,9 +1527,9 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   real phone with *Hide silent notifications* on / off, sensitive content off and the always-on display).
 - **States and exits**: *Chip* ↔ *Graph* → Settings › Status bar › *Glucose notification* (or Android's per-app Live
   Updates setting, or demote it from the chip → the card); back in the same places (*Allow Live Updates* row when
-  Android refuses it); *Value in the status bar* (root) on → the graph until it is off. *Card in the range colour* →
+  Android refuses it); *Value in the status bar* (root) on → the graph until it is off. *Coloured background* →
   the same page. *An alert up on it* → its buttons, the swipe (seen until the next ring), the reading back in range;
-  *Alerts on my watch* → Settings › Alerts. *Number icon* → Settings › Status bar. *Notification swiped away* → it comes back (it is the
+  *Separate alert notifications* → Settings › Alerts. *Number icon* → Settings › Status bar. *Notification swiped away* → it comes back (it is the
   monitoring service's; turning off the `glucose.live` channel in Android's settings hides it, the app's home still shows
   the value). *Value on the lock screen* (default) ↔ *Monitoring only* → Settings › Status bar › *Glucose on the lock
   screen*, either way at any time (TalkBack reads the switch and its summary); the next post follows it. *Not monitoring* → *Set up sensor* (notification action, home) → sensor setup; leaves on the first reading.

@@ -52,7 +52,7 @@
     <string name="st_night_kind_footer">Solo se aplica entre el inicio y el fin de las alertas de noche; el resto del día esta alerta sigue su propia página.</string>
     <string name="st_escalation_title">Si nadie responde a una muy baja</string>
     <string name="st_escalation_on">Avisar a quien me sigue</string>
-    <string name="st_escalation_on_summary">Quien te sigue recibe «Glucosa muy baja · sin respuesta» si nadie la responde en este teléfono</string>
+    <string name="st_escalation_on_summary">Quien te sigue recibe «Muy baja · sin respuesta» si nadie la responde en este teléfono</string>
     <string name="st_escalation_min">Tras</string>
     <string name="st_escalation_follow">Si no responde a una muy baja</string>
     <string name="st_escalation_follow_summary">Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono</string>

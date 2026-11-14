@@ -211,7 +211,7 @@ object DebugFakes {
                     .first()
             val gap = intent.getLongExtra("gapMs", 0L)
             val reminder = intent.getBooleanExtra("reminder", false)
-            // through the presenter: the glucose notification rings (or, with Alerts on my watch, separate alerts)
+            // through the presenter: the glucose notification rings (or, with Separate alert notifications, separate alerts)
             val notifier = graph.alerts.presenter
             val kinds =
                 (intent.getStringExtra("kinds") ?: "low,falling_fast").split(',').mapNotNull { w ->
