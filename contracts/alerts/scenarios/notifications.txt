@@ -43,7 +43,7 @@ shows
 18
 
 scenario Once no data holds, the low and falling-fast alerts go: no data's own alert says the last value
-settings no_data=10 falling_fast=on
+settings no_data=10 falling_fast=on trend=sensor
  0  glucose 65 rate -2.5   => Low glucose; Falling fast
  1  sensor off
  5               => Low glucose                                    # the repeat (the reading is 5 min old)

@@ -4,7 +4,7 @@ The cross-platform specs, schemas and fixtures that every Sukrara app (Android [
 Mac [`apps/macos`](../apps/macos/), …) consumes and is tested against, so the apps never diverge.
 
 **Change rule:** a change here lands with every implementation (and their tests) in the same change. `tools/check`
-enforces it (parity groups `alert-scenarios`, `alert-spec`, `graph`, `settings`, `protocol-v2`, `identity`,
+enforces it (parity groups `alert-scenarios`, `alert-spec`, `graph`, `trend`, `settings`, `protocol-v2`, `identity`,
 `treatments`, `export`; skip only with a `Parity-skip: <group>: <reason>` trailer) and CI runs every app's tests when
 anything here changes. **Alert scenario expectations never change without the owner's OK.**
 
@@ -25,6 +25,7 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 | `alerts/sounds/mac/*.caf`, `alerts/sounds/android/raw/*.ogg` | the four sound packs × eight kinds × three intensities (+ silence) | Mac bundle, Android `:monitor` resources |
 | `graph/**` | the card / graph fixtures (layout scenes + rules + expectations, freshness, labels, sensor, clock, share, mark, place, status) | `:core:graph`, `SukraraGraph` tests |
 | `graph/surfaces/surfaces.json` | THE registry of every place that shows the card or its value (app paths) | `tools/check` card rules, cross-surface tests |
+| `trend/` (+ `tools/trend/cases.py`) | THE trend (#204): the rate from the readings (or the sensor's), the text band with hysteresis, the doubled arrow's hold, the drawn angle, what the fast alerts judge; the quiets' clear-move cases | `TrendRateTest` / `TrendFixtureTest` / `TrendEverywhereTest` (Android), `TrendRateTests` / `TrendFixtureTests` / `TrendEverywhereTests` (Mac) |
 | `settings/settings.json` | THE settings schema: every setting, its store + key per platform, number formats, mirroring | `tools/settings/gen.py` → `SettingsSpec`, `SettingsSchemaTest` on every app, `tools/check` |
 | `settings/durations.json` | duration formatting cases ("1 h 30 min") | every `Durations` test |
 | `settings/units.json` | THE glucose units: mg/dL ↔ mmol/L factor and rounding, values and rates as written (en / es), typed mmol/L → stored mg/dL | `UnitsFixtureTest` (Android), `GlucoseUnitTests` (Mac); `gen.py` checks the schema's mmol/L variants |

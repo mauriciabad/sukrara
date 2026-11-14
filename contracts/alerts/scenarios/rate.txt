@@ -1,0 +1,113 @@
+# Falling fast / rising fast on THE trend (#204, SPEC §2 "Fast alerts read the trend", contracts/trend). Format:
+# SPEC.md §7: `glucose <mg/dL> moving <mg/dL/min>` = the readings change that much a minute from then on; `rate` =
+# the sensor's own rate on every reading. The trend is Balanced (from the readings) unless `trend=` says otherwise.
+# A reading a minute unless `readings every` says otherwise.
+
+scenario A real fall while the sensor lags: the readings alert once the fall held 5 min  # #204
+settings falling_fast=on
+ 0  glucose 170 moving -2.5 rate -0.8   # the sensor's rate (Abbott's lags and flattens): -0.8
+ 3                                      # 3 min of readings: the readings' trend, -2.5
+ 8                         => Falling fast   # -2.5 at every reading since 3: held 5 min
+20
+
+scenario The same fall from the sensor: its rate never says fast  # #204
+settings falling_fast=on trend=sensor
+ 0  glucose 170 moving -2.5 rate -0.8
+20
+
+scenario Flat readings while the sensor says -3: the fallback's 3 min can't hold 5, so nothing  # #204
+settings falling_fast=on
+ 0  glucose 120 rate -3   # minutes 0-2: too few readings, the sensor's -3; from 3 the readings' 0
+15
+
+scenario From the sensor, the sensor's -3 alerts at once, as before  # #204
+settings falling_fast=on trend=sensor
+ 0  glucose 120 rate -3   => Falling fast
+15
+
+scenario A 5-min sensor: the hold reaches back to the reading before  # #204
+settings falling_fast=on
+ 0  readings every 5, glucose 170 moving -3   # 170, 155, 140: no sensor rate
+ 5                                            # two readings over 5 min: -3, but nothing before it to hold
+10                         => Falling fast    # -3 at 10 and at 5
+16
+
+scenario A gap starts the hold over: the episode stays, its repeat comes on time  # #204
+settings falling_fast=on
+ 0  glucose 170 moving -2.5
+ 8                         => Falling fast
+10  sensor off
+24  sensor on, glucose 140 moving -2.5         # 15 min since the last reading: the trend starts over
+38                         => Falling fast     # its repeat (30 min after 8): held again since 32
+40
+
+scenario Switching to From the sensor mid-fall: from that reading the sensor's rate is judged  # #204
+settings falling_fast=on
+ 0  glucose 170 moving -2.5 rate -0.8
+ 8                         => Falling fast
+12  set trend=sensor       => clear falling_fast   # the sensor says -0.8
+16  set trend=balanced                             # the readings' trend again: held at once, no ring due
+20
+
+scenario A follower mirroring the wearer alerts at the same reading  # #204
+mirror
+settings falling_fast=on
+ 0  glucose 170 moving -2.5 rate -0.8
+ 8                         => Falling fast; follower Falling fast
+12
+
+scenario The owner's evening: the rebound is rising fast from the readings at 20:45; the sensor's rate never  # #193, #204
+at 20:23
+settings rising_fast=on very_low=off low=off
+0:22  glucose 54 rate -1.03
+1:22  glucose 53 rate -1.09
+2:22  glucose 54 rate -0.92
+3:22  glucose 55 rate -0.82
+4:22  glucose 57 rate -0.73
+5:22  glucose 57 rate -0.66
+6:22  glucose 58 rate -0.61
+7:22  glucose 59 rate -0.56
+8:22  glucose 59 rate -0.51
+9:22  glucose 61 rate -0.42
+10:22 glucose 63 rate -0.31
+11:22 glucose 66 rate -0.14
+12:22 glucose 69 rate 0.0
+13:22 glucose 72 rate 0.0
+14:22 glucose 75 rate 0.0
+15:22 glucose 76 rate 0.47
+16:22 glucose 76 rate 0.44
+17:22 glucose 83 rate 0.66
+18:22 glucose 89 rate 0.82
+19:22 glucose 93 rate 0.94       # the readings' trend passes 2 at 20:40 (2.35), 3 at 20:42: not yet 5 min
+20:22 glucose 95 rate 0.97
+21:22 glucose 97 rate 1.0
+22:22 glucose 99 rate 1.06       => Rising fast   # 20:45: at least 2 at every reading since 20:40
+23
+
+scenario The owner's evening from the sensor: never rising fast  # #193, #204
+at 20:23
+settings rising_fast=on very_low=off low=off trend=sensor
+0:22  glucose 54 rate -1.03
+1:22  glucose 53 rate -1.09
+2:22  glucose 54 rate -0.92
+3:22  glucose 55 rate -0.82
+4:22  glucose 57 rate -0.73
+5:22  glucose 57 rate -0.66
+6:22  glucose 58 rate -0.61
+7:22  glucose 59 rate -0.56
+8:22  glucose 59 rate -0.51
+9:22  glucose 61 rate -0.42
+10:22 glucose 63 rate -0.31
+11:22 glucose 66 rate -0.14
+12:22 glucose 69 rate 0.0
+13:22 glucose 72 rate 0.0
+14:22 glucose 75 rate 0.0
+15:22 glucose 76 rate 0.47
+16:22 glucose 76 rate 0.44
+17:22 glucose 83 rate 0.66
+18:22 glucose 89 rate 0.82
+19:22 glucose 93 rate 0.94
+20:22 glucose 95 rate 0.97
+21:22 glucose 97 rate 1.0
+22:22 glucose 99 rate 1.06
+23

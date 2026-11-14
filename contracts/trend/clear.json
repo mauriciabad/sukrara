@@ -3,8 +3,8 @@
     "The trend both falling / rising quiets read from the readings (contracts/alerts/SPEC.md §2 'Trend from the",
     "readings', #193). Each case: the readings ([epoch s, mg/dL], oldest first, as the engine keeps them), now, the",
     "direction (up = rising), and the expected least-squares slope in mg/dL/min of a clear move, or null with why.",
-    "Run by Android TrendTest and Mac TrendTests (to 1e-9). Written by python3 tools/alerts/trend_cases.py (a reference",
-    "of the rule): a change to the rule changes it there and in both apps."
+    "Run by Android TrendRateTest and Mac TrendRateTests (to 1e-9). Written by python3 tools/trend/cases.py (a",
+    "reference of the rule): a change to the rule changes it there and in both apps."
   ],
   "cases": [
     {"name": "the owner's evening at 20:08:18", "readings": [[1762072498, 57]], "now": 1762072498, "up": true, "slope": null, "why": "too few readings"},

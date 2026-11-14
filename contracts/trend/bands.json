@@ -1,0 +1,66 @@
+{
+  "_about": [
+    "THE arrow of a trend (contracts/trend/README.md): 'arrows' = per band (-3 … 3, null = no trend) the text arrow",
+    "every text place writes, whether it is drawn doubled, the words TalkBack / VoiceOver say (en, es) and the",
+    "Nightscout direction the upload and the local endpoints send; 'plain' = a rate's band with nothing before it;",
+    "'angles' = the drawn arrow's rotation (degrees, y-down: negative = up), continuous; 'sequences' = rates at",
+    "readings [epoch s, rate or null] and the band shown at each (hysteresis 0.2; band ±3 only once the rate was",
+    "at least 3 for 2 min). Written by python3 tools/trend/cases.py; run by both apps' TrendRate and arrow tests."
+  ],
+  "arrows": [
+    {"band": 3, "text": "⇈", "double": true, "words": {"en": "rising very fast", "es": "subiendo muy rápido"}, "nightscout": "DoubleUp"},
+    {"band": 2, "text": "↑", "double": false, "words": {"en": "rising fast", "es": "subiendo rápido"}, "nightscout": "SingleUp"},
+    {"band": 1, "text": "↗", "double": false, "words": {"en": "rising", "es": "subiendo"}, "nightscout": "FortyFiveUp"},
+    {"band": 0, "text": "→", "double": false, "words": {"en": "steady", "es": "estable"}, "nightscout": "Flat"},
+    {"band": -1, "text": "↘", "double": false, "words": {"en": "falling", "es": "bajando"}, "nightscout": "FortyFiveDown"},
+    {"band": -2, "text": "↓", "double": false, "words": {"en": "falling fast", "es": "bajando rápido"}, "nightscout": "SingleDown"},
+    {"band": -3, "text": "⇊", "double": true, "words": {"en": "falling very fast", "es": "bajando muy rápido"}, "nightscout": "DoubleDown"},
+    {"band": null, "text": "○", "double": null, "words": {"en": "trend unknown", "es": "tendencia desconocida"}, "nightscout": "NONE"}
+  ],
+  "plain": [
+    {"rate": 5.0, "band": 3},
+    {"rate": 3.0, "band": 3},
+    {"rate": 2.9, "band": 2},
+    {"rate": 2.0, "band": 2},
+    {"rate": 1.99, "band": 1},
+    {"rate": 1.5, "band": 1},
+    {"rate": 1.0, "band": 1},
+    {"rate": 0.99, "band": 0},
+    {"rate": 0.0, "band": 0},
+    {"rate": -0.6, "band": 0},
+    {"rate": -0.99, "band": 0},
+    {"rate": -1.0, "band": -1},
+    {"rate": -1.5, "band": -1},
+    {"rate": -1.99, "band": -1},
+    {"rate": -2.0, "band": -2},
+    {"rate": -2.9, "band": -2},
+    {"rate": -3.0, "band": -3},
+    {"rate": -5.0, "band": -3}
+  ],
+  "angles": [
+    {"rate": 0.0, "deg": 0.0},
+    {"rate": 0.1, "deg": -3.0},
+    {"rate": 0.5, "deg": -15.0},
+    {"rate": 1.0, "deg": -30.0},
+    {"rate": 1.5, "deg": -45.0},
+    {"rate": 2.0, "deg": -60.0},
+    {"rate": 2.9, "deg": -87.0},
+    {"rate": 3.0, "deg": -90.0},
+    {"rate": 5.0, "deg": -90.0},
+    {"rate": -0.5, "deg": 15.0},
+    {"rate": -1.0, "deg": 30.0},
+    {"rate": -2.5, "deg": 75.0},
+    {"rate": -3.0, "deg": 90.0},
+    {"rate": -4.0, "deg": 90.0}
+  ],
+  "sequences": [
+    {"name": "hysteresis", "about": "a band is left only 0.2 past its edge; the doubled arrow needs the rate at 3 for 2 min", "points": [[1800000000, 0.0], [1800000060, 0.9], [1800000120, 1.0], [1800000180, 1.1], [1800000240, 1.25], [1800000300, 1.1], [1800000360, 0.85], [1800000420, 0.75], [1800000480, -0.95], [1800000540, -1.0], [1800000600, -1.25], [1800000660, -0.95], [1800000720, -0.7], [1800000780, 2.1], [1800000840, 2.25], [1800000900, 3.1], [1800000960, 3.25], [1800001020, 2.9], [1800001080, 2.7], [1800001140, -3.3], [1800001200, 0.0]], "bands": [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, -1, -1, 0, 1, 2, 2, 2, 2, 2, -2, 0]},
+    {"name": "fresh start", "about": "no band before: the plain band", "points": [[1800000000, 1.0], [1800000060, 0.9], [1800000120, 0.85]], "bands": [1, 1, 1]},
+    {"name": "no rate restarts", "about": "after a reading without a rate the band starts fresh", "points": [[1800000000, 1.1], [1800000060, 0.9], [1800000120, null], [1800000180, 0.9], [1800000240, 1.1]], "bands": [1, 1, null, 0, 0]},
+    {"name": "doubled after 2 min", "about": "3.4 at every reading of 2 min (3 readings of a 1-min sensor)", "points": [[1800000000, 2.5], [1800000060, 3.4], [1800000120, 3.4], [1800000180, 3.4], [1800000240, 3.4], [1800000300, 2.9], [1800000360, 2.75], [1800000420, 2.5]], "bands": [2, 2, 2, 3, 3, 3, 2, 2]},
+    {"name": "a blip over 3", "about": "one or two readings over 3: not doubled", "points": [[1800000000, 2.5], [1800000060, 3.5], [1800000120, 3.5], [1800000180, 2.5], [1800000240, 3.5], [1800000300, 2.5]], "bands": [2, 2, 2, 2, 2, 2]},
+    {"name": "falling, doubled", "about": "the same downwards", "points": [[1800000000, -2.0], [1800000060, -3.3], [1800000120, -3.3], [1800000180, -3.3], [1800000240, -2.85], [1800000300, -2.7]], "bands": [-2, -2, -2, -3, -3, -2]},
+    {"name": "doubled at once from a 5-min sensor's second reading", "about": "2 min reach back to the reading 5 min before", "points": [[1800000000, -3.5], [1800000300, -3.5], [1800000600, -3.5]], "bands": [-2, -3, -3]},
+    {"name": "a gap restarts", "about": "a step over 12.5 min: no band before, and the hold starts over", "points": [[1800000000, 1.1], [1800000800, 0.9], [1800001600, 0.9]], "bands": [1, 0, 0]}
+  ]
+}

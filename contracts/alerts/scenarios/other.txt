@@ -101,18 +101,18 @@ scenario A fall that stops above range alerts at once, though the sensor's rate 
 16
 
 scenario Rate alerts are off by default
- 0  glucose 120 rate -3
- 1
+ 0  glucose 120 moving -3 rate -3   # falling 3 a minute, the readings and the sensor agree
+10
 
 scenario Falling fast next to a low; carbs quiet it too, and its message gives no advice
-settings falling_fast=on
+settings falling_fast=on trend=sensor   # the sensor's rate counts at once; the readings' trend: rate.txt
  0  glucose 60 rate -3   => Low glucose; Falling fast
  1  carbs 15             => clear low; clear falling_fast
 16                       => Low glucose · eat more; Falling fast
 17
 
 scenario Falling fast into a LO: the LO has no rate, so the fall's episode and its repeats go on (its notification goes)
-settings falling_fast=on falling_fast.repeat=10
+settings falling_fast=on falling_fast.repeat=10 trend=sensor   # a LO has no trend whatever the setting
  0  glucose 60 rate -3   => Low glucose; Falling fast
  1  glucose 39           => clear low; Very low glucose; clear falling_fast   # LO, no rate: no sign the fall stopped,
                                                                               # but at a LO the very low is the message (#127)
@@ -123,7 +123,7 @@ settings falling_fast=on falling_fast.repeat=10
 12
 
 scenario Carbs during a LO after falling fast: nothing stale is left up, both come back after the carbs' window
-settings falling_fast=on
+settings falling_fast=on trend=sensor
  0  glucose 60 rate -3   => Low glucose; Falling fast
  1  glucose 39           => clear low; Very low glucose; clear falling_fast   # LO: the fall's notification goes (#127)
  2  carbs 15             => clear very_low
@@ -133,7 +133,7 @@ settings falling_fast=on
 
 scenario LO readings don't end a falling-fast Mute: no rate is no sign the fall stopped
 mirror
-settings falling_fast=on escalate=off   # about the Mute alone: an unanswered very low's escalation is escalation.txt
+settings falling_fast=on escalate=off trend=sensor   # about the Mute alone: an unanswered very low's escalation is escalation.txt
  0  glucose 60 rate -3              => Low glucose; Falling fast; follower Low glucose; follower Falling fast
  1  mute falling_fast 2h, follower mute falling_fast 2h   => clear falling_fast; follower clear falling_fast
  2  glucose 39                      => clear low; Very low glucose; follower clear low; follower Very low glucose
@@ -143,7 +143,7 @@ settings falling_fast=on escalate=off   # about the Mute alone: an unanswered ve
 15
 
 scenario Rising fast; insulin quiets it
-settings rising_fast=on
+settings rising_fast=on trend=sensor
  0  glucose 150 rate 3   => Rising fast
  1  insulin 2            => clear rising_fast
 61                       => Rising fast

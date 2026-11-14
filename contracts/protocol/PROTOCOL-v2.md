@@ -23,6 +23,11 @@ All tags/ids below: `H(x) = hex(sha256(x))[:32]`.
 
 All content is JSON, NIP-44 v2 encrypted. Every event has a NIP-40 `expiration`.
 
+A reading's `r` (live) and `rate100` (hour chunk, mg/dL/min × 100) are **the sensor's own rate** as the sensor sent
+it (null / absent without one), never the trend the wearer's phone shows: every device works THE trend out from the
+readings it has, with the mirrored *Trend arrow* setting ([contracts/trend](../trend/README.md), #204). An alert
+event's `r` is the trend's rate the wearer's alert showed ([Alerts](#alerts--v2-addition-2026-10-17-investigation-15)).
+
 | Event | kind | signed by | tags | content (decrypted) |
 |---|---|---|---|---|
 | **live** | 21078 | `D` | `["gk", gk_n]`, exp now+1 h | `{"v":2,"t":unix_s,"sgv":mgdl,"r":rate|null,"dev":src,"ss"?,"se"?,"sw"?}` → `G_n`; or reading-less `{"v":2,"ss","se","sw"}` ([sensor life](#sensor-life)) |
@@ -248,7 +253,9 @@ per-place windows and sensor time, the alerts main switch) is per device and nev
   e.g. `"TIR:86400:1,TIR:604800:1,GMI:1209600:1"`), `ringRange` (`IN_RANGE` / `TIGHT`), `ringOrder` (the six bands
   comma-separated, `TIGHT,TARGET,HIGH,VERY_HIGH,VERY_LOW,LOW`), `ringMarks`, `side`, `columnCrown` (bools), `lines`
   (`"100,120"`), `gridHours` (h, 0 = off), `lastPlace` (`OFF` / `NEAR_VALUE` / `END`), `lastElse` (one slot, `""` =
-  nothing), plus `countdownHours` (the sensor countdown, h).
+  nothing), plus `countdownHours` (the sensor countdown, h) and `trend` (the *Trend arrow* setting, #204: `quick` /
+  `balanced` / `smooth` / `sensor`, [contracts/trend](../trend/README.md)). Each device works the trend out from the
+  readings it has with this setting (the wire's `r` / `rate100` stay the sensor's own rate).
 - `alerts`: the [alerts SPEC §3](../alerts/SPEC.md) shape with only `alerts.<kind>.{on, mgdl|rate, repeatMin}` for the 7
   kinds other than `no_data`, `muteAfterInsulin`, `muteFallingHigh`, `muteRisingLow` (#193), `muteAfterCarbs`
   (`{on, min}`), `persistence` (`{lowMin, highMin, marginMgdl}`, #37) and `night` (`{on, from, to, alerts.<kind>.{on,

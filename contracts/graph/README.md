@@ -152,13 +152,12 @@ every 5 min before it at that value), `sensor` `{start, end}` (s from now; warm-
 `slots.json` (`A11y.metric` / `A11y.last`): `slot` `{kind, range?, window, text}` (`text` = the number the slot draws,
 `<0.1` / `>99.9` included) or `last` `{k, a, age}` with an optional `with` (the carbs drawn inside running insulin).
 
-## Trend arrow (`trend/trend.json`)
+## Trend arrow
 
-The one trend arrow per platform (`TrendAngle`): a case is `rate` (mg/dL/min, null = no trend) and `expect`
-`{text, deg, double}` — the text arrow every text place writes (`○` without a rate), the drawn arrow's rotation in
-degrees (y-down, negative = up) and whether it is doubled. Android `TrendFixtureTest` (plus the glucose notification's
-title in `LiveNotificationContentTest`), Mac `TrendFixtureTests` (plus the menu bar and alert titles in
-`MenubarTitleTests`).
+THE trend and its arrow are in [`../trend`](../trend/README.md) (#204): every surface draws the arrow of the reading's
+trend (`bands.json`: the band's text, words and doubling; the drawn angle, continuous). Android `TrendFixtureTest` (plus
+the glucose notification's title in `LiveNotificationContentTest`) and `TrendEverywhereTest`, Mac `TrendFixtureTests`
+(plus the menu bar and alert titles in `MenubarTitleTests`) and `TrendEverywhereTests`.
 
 ## Freshness steps (`freshness/freshness.json`)
 

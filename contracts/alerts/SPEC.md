@@ -11,8 +11,8 @@ One rule set for **Sukrara for Android** (wearer + follower) and **Sukrara for M
 | `high` | `sgv ≥ mgdl` (and not very high) | on | 180 mg/dL | 15 min | *final lap*: short "speed up" jingle (frequent → brief) |
 | `very_high` | `sgv ≥ mgdl` (and not extremely high) | on | 250 mg/dL | 10 min | *boss incoming*: a bit longer than high |
 | `extremely_high` | `sgv ≥ mgdl` | on | 300 mg/dL | 5 min, alarm volume | *final boss*: the most insistent high, never muted |
-| `falling_fast` | `rate ≤ −rate` | off | 2.0 mg/dL/min | 30 min | quick down sweep |
-| `rising_fast` | `rate ≥ +rate` | off | 2.0 mg/dL/min | 30 min | quick up sweep |
+| `falling_fast` | `held ≤ −rate` (*Fast alerts read the trend*, below) | off | 2.0 mg/dL/min | 30 min | quick down sweep |
+| `rising_fast` | `held ≥ +rate` | off | 2.0 mg/dL/min | 30 min | quick up sweep |
 | `no_data` | no reading for `min` minutes since the last reading, or since the reading source started when that is newer (a source that never delivers a first reading alerts too), unless the sensor has ended or is warming up (core/SensorLife; a running one clears) | on | 20 min | 60 min | *connection lost* blip |
 
 The defaults are the user's own settings (2026-10-18). Low alerts **strictly below** its threshold, very low **at or
@@ -42,14 +42,16 @@ every low kind and HI every high kind whatever their thresholds, so the most sev
 extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.txt`).
 
 - **Level alerts** (`very_low`, `low`, `high`, `very_high`, `extremely_high`): at most one is active, the most severe
-  that matches. **Rate alerts** are independent of level alerts; `rate` is the reading's trend in mg/dL/min. No rate →
-  no rate alert, but a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped:
-  an open rate episode stays (no new first alert, its repeat stays due, its hold doesn't run down) and a rate side's
-  Mute / Remind less isn't back by it, but **its notification goes** (#127): at a LO the very low is the message, and a
-  silent "60 mg/dL ↓ · falling 3 mg/dL/min" left up beside it misleads on a locked phone or a parent's screen (Dexcom G7
-  gives one or the other at or below 55, not both); the same for a HI and rising fast. The first rated reading that
-  still matches alerts at once if its repeat came due meanwhile (scenarios `other.txt`). `no_data` is checked by a
-  timer, cleared by the next reading.
+  that matches. **Rate alerts** are independent of level alerts; they judge the reading's trend held for 5 min
+  (`held`, mg/dL/min, *Fast alerts read the trend* below). No held rate → no rate alert, but a fresh reading without
+  one is no sign the fast change stopped: an open rate episode stays (no new first alert, its repeat stays due, its
+  hold doesn't run down) and a rate side's Mute / Remind less isn't back by it. A reading with a trend that isn't held
+  yet (the first 5 min of readings after a gap or a LO / HI) changes nothing else either. A reading without any trend
+  (a LO / HI has none) also takes **its notification away** (#127): at a LO the very low is the message, and a silent
+  "60 mg/dL ↓ · falling 3 mg/dL/min" left up beside it misleads on a locked phone or a parent's screen (Dexcom G7
+  gives one or the other at or below 55, not both); the same for a HI and rising fast. The first held reading that
+  still matches alerts at once if its repeat came due meanwhile (scenarios `other.txt`, `rate.txt`). `no_data` is
+  checked by a timer, cleared by the next reading.
 - **Episodes.** Each group (level, rate, no data) has at most one episode: a stretch of time on one *side* (lows,
   highs, falling fast, rising fast, no data). It starts when a kind of that side matches and ends once nothing of that
   side has matched for the **hold time** = the kind's `repeatMin`, at least 5 min. A reading back in range for a
@@ -158,11 +160,11 @@ ever quiets urgent low because of carbs). The user's own Mute / Mute all (below)
 |---|---|---|---|
 | `muteAfterInsulin` | on, 60 min | `high`, `very_high`, `rising_fast` | A `rapid` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
 | `muteAfterCarbs` | on, 15 min | `very_low` (the wearer's own phone only, #2), `low`, `falling_fast` | A `carbs` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
-| `muteFallingHigh` | on, 20 min | `high`, `very_high` | The readings show a clear fall (*Trend from the readings*, below) and `sgv + slope × min < high.mgdl`: back below the high threshold within `min` minutes at that slope. Any alert of the side, the first too. Re-evaluated on every reading and when the newest reading gets too old for a trend (the timer wakes then). It only postpones: when it ends (the fall stalls, the readings stop, or it no longer gets back in time), an alert that came due meanwhile fires at once; it doesn't restart the count. |
+| `muteFallingHigh` | on, 20 min | `high`, `very_high` | The readings show a clear fall (*Clear move in the readings*, below) and `sgv + slope × min < high.mgdl`: back below the high threshold within `min` minutes at that slope. Any alert of the side, the first too. Re-evaluated on every reading and when the newest reading gets too old for a trend (the timer wakes then). It only postpones: when it ends (the fall stalls, the readings stop, or it no longer gets back in time), an alert that came due meanwhile fires at once; it doesn't restart the count. |
 | `muteRisingLow` | on, 20 min | `low`; `very_low` (the wearer's own phone only, and never its first alert nor the escalation to it) | The low-side mirror (#193): a clear rise and `sgv + slope × min` back in range (it matches no enabled low kind: at least `low.mgdl`, or above `very_low.mgdl` when low is off) within `min` minutes. Low: any alert, the first too (a dip that is already rebounding). Very low: only once a very low has alerted in the episode, so the first very low and low → very low alert at once; it holds its repeats and the alert at the end of a mute or treatment window. Never depends on treatments. Re-evaluated and ended like the falling one: the moment the rise stalls (flat or falling), the readings stop or it no longer gets back in time, a low that came due meanwhile alerts at once; it doesn't restart the count. Off → every low repeats as without it. |
 
-**Trend from the readings** (#193; one function per platform, Android `Trend` / Mac `Trend`, both quiet rules): the
-sensor's own `rate` lags by many minutes. On the owner's evening (#193, scenario `user.txt`) the values climbed 1–3
+**Clear move in the readings** (#193; one function per platform, `TrendRate.clear` on Android and the Mac, both quiet
+rules; it reads the readings themselves, never the trend setting): the sensor's own rate lags by many minutes. On the owner's evening (#193, scenario `user.txt`) the values climbed 1–3
 mg/dL a minute from 20:27 while the sensor's rate stayed negative until 20:35 and turned positive only at 20:38; a fall
 lags the same way, so a rate-based falling-high quiet started minutes late and, worse, held a high for minutes after it
 stopped falling. So the direction comes from the readings this device has, and a move is **clear** at `now` when:
@@ -188,9 +190,29 @@ Readings arriving late (older than 2.5 min when they come), a clock set forward 
 first minutes after a gap are no trend either: the alert comes as without the rule. A reading that arrives out of order
 (backfill) still fills the window. The readings are kept with the episodes (Android `AlertMemory.recent`, Mac
 `Snapshot.recent`), so a restart or the alarm with the service dead judges the same trend; a clock set back moves them
-with everything else. The function's cases, edges included, are [`trend.json`](trend.json) (written by
-`tools/alerts/trend_cases.py`, run by Android `TrendTest` and Mac `TrendTests`); the timelines are `trend.txt`, the
-falling ones in `other.txt` and the owner's evening in `user.txt`.
+with everything else. The function's cases, edges included, are [`contracts/trend/clear.json`](../trend/clear.json)
+(written by `tools/trend/cases.py`, run by Android `TrendRateTest` and Mac `TrendRateTests`); the timelines are
+`trend.txt`, the falling ones in `other.txt` and the owner's evening in `user.txt`. Why the quiets keep this rule rather
+than the arrow's trend (docs/34 §7): its 5-min slope is the quickest smooth-enough one (±1 in 2 min), and its guards
+answer "is it clearly still moving?": a weighted slope notices a stall 1–2 min later, the wrong side for a rule that
+holds an alert.
+
+**Fast alerts read the trend** (#204; [`contracts/trend`](../trend/README.md), docs/34): `falling_fast` / `rising_fast`
+judge THE trend every arrow shows (the setting *Trend arrow*: Quick / Balanced / Smooth from the readings, or From the
+sensor; mirrored from the wearer like the thresholds), **held**: from the readings, the rate must be past the threshold
+at every reading of the last 5 min (back to the first reading at or before 5 min earlier, none more than 12.5 min after
+the one before, each with a trend); `held` is the rate nearest zero among them (0 when they disagree in sign, none
+when they don't reach back 5 min). From the sensor, the sensor's rate counts at once, as before: it is already
+smoothed and lags about 7 min, holding it would add 5 more. Why: on the owner's 4.6 days of 1-min Libre 3 readings the
+readings' trend (Balanced) passes 2 mg/dL/min about 17 times a day (episodes 30 min apart; ~25 counting every swing),
+mostly short swings around a 5–10 mg/dL Libre step. Held 5 min, at the default 2.0 the alerts come about 9.5 times a
+day: about as often as the readings truly move that fast for 5 min (8.4 a day by a hindsight slope), 0.4 a day without
+such a move, a median 9 min after the move began (p90 10) and missing 1 of 39 such moves; Abbott's own rate (today's
+alerts): 1.9 a day, 11 min (p90 19), missing 32 of 39. Held 2 or 3 min: 16 / 14 a day; 10 min: misses almost all; a
+5-min average or a 15-min delta: no better. At 3.0: 3.2 a day. `held` is worked out with the trend for every reading
+(`TrendRate`, contracts/trend/rate.json), so a restart, a follower with the same readings or a backfill judge the same.
+A change of the setting counts from the next reading. The alert's text (its arrow and "falling 3 mg/dL/min") is the
+trend now, as on the card. The #193 quiets keep their own rule (above).
 
 **Notification actions** (round f30; the user, 2026-10-21: "two kinds of buttons … Mute 30 min doesn't conceptually
 belong there"). Android's guidance: "A notification can offer up to three action buttons … these action buttons must
@@ -229,7 +251,7 @@ low would be muted, and we don't want that … I don't want muting to stop when 
 - They don't end with the episode. A Mute ends at its time; Mute and Remind less both end once the side is **back by the
   margin**: the reading moved `backMgdl` further out still matches no enabled kind of the side (§1 "Back by the
   margin": lows from the low threshold + `backMgdl`, 80 at the defaults, or more than very low's + `backMgdl` when low
-  is off; highs below the lowest enabled high threshold minus `backMgdl`), a rate side while its rate doesn't match, no data while
+  is off; highs below the lowest enabled high threshold minus `backMgdl`), a rate side while its held rate doesn't match, no data while
   readings come — for `backMin` minutes in a row (fresh readings; the engine reports `back <side>`). A reading that
   crosses back out before that restarts the count, so glucose that oscillates at the edge stays quiet. Defaults:
   **10 mg/dL for 10 min** (a Libre's reading noise is a few mg/dL; 10 minutes is two of the shortest repeats).
@@ -400,7 +422,7 @@ expiration now + 1 h, content NIP-44 `D → G_n`:
 | `k` | alert kind (§1) |
 | `state` | `fire` (the rules alert, including re-alerts; the wearer's own notification actions don't change it, §2), `show` (#195: the episode's alert on screen again without sound between its alerts, §1 "Showing an alert"; a new `id`, the fields of `fire`), `clear` (condition left: remove it) or `answered` (#39: the very low `id` escalated with `esc` was answered on the wearer's phone) |
 | `at` | when the wearer fired/cleared (unix s) |
-| `t`, `sgv`, `r` | the reading that triggered it (`no_data`: the last reading, may be null) |
+| `t`, `sgv`, `r` | the reading that triggered it (`no_data`: the last reading, may be null); `r` = its trend's rate (contracts/trend, the wearer's setting), null without one |
 | `th` | the threshold that matched (mg/dL, mg/dL/min, or minutes for `no_data`) |
 | `n` | 1 for the first firing of the episode, 2… for the next ones |
 | `tr` | treatments acknowledged in the headline (§1): 0, 1, or 2 for two or more; 0 for rate and no-data alerts |
@@ -483,8 +505,10 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
 25                                          # the last line's minute is where the run ends (or `end N`)
 ```
 
-- A line is `<minute>[:<ss>] [events, …] [=> expectations; …]`. Events: `glucose <mg/dL> [rate <mg/dL/min>]
-  [age <min>]` (what the sensor reads from now on; without `rate` the readings have no rate), `readings every <n>` (default 1 min), `sensor off|on`,
+- A line is `<minute>[:<ss>] [events, …] [=> expectations; …]`. Events: `glucose <mg/dL> [moving <mg/dL/min>]
+  [rate <mg/dL/min>] [age <min>]` (what the sensor reads from now on: `moving` = the readings change that much a
+  minute from this line on, `⌊mg/dL + moving × minutes since + 0.5⌋`, else they stay; `rate` = the sensor's own rate
+  on every reading, without it the readings have none; #204), `readings every <n>` (default 1 min), `sensor off|on`,
   `sensor ended` (the sensor reaches its end now; readings stop), `sensor started` (a new sensor starts now, 60 min
   warm-up; readings stay off until `sensor on`), `source started` (the reading source starts now: no data counts from
   it, §1), `clock back <length>` (the wearer's clock is set back: from then on it gets the scenario's time minus the
@@ -508,7 +532,11 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
   §2), feeds the platform's `AlertMirror`, which also gets every reading (its Mute / Remind less end by the margin). Its
   actions are expected as `follower <headline>` / `follower clear <kind>` / `follower back <side>`, compared
   apart from the wearer's (the order between the two within a minute is free); the follower's own `no_data` isn't run.
-- Settings keys: `alerts=on|off`, `<kind>=on|off|<threshold>`, `<kind>.repeat=<min>`,
+- The readings' trend: the driver keeps every reading it delivered and gives the engine the newest with THE trend
+  of contracts/trend (`TrendRate.annotate` over them, as the app does: its rate and `held`); `trend=quick|balanced|
+  smooth|sensor` sets the *Trend arrow* setting (default `balanced`), from the next reading on. A follower (`mirror`)
+  gets the same readings.
+- Settings keys: `trend=…`, `alerts=on|off`, `<kind>=on|off|<threshold>`, `<kind>.repeat=<min>`,
   `carbs.mute|insulin.mute|falling.mute|rising.mute=off|<min>`, `mute.min=<min>`, `relax.min=<min>`, `back.mgdl=<mg/dL>`,
   `back.min=<min>`, `persist.low=<min>`, `persist.high=<min>`, `persist.margin=<mg/dL>`, `night=on|off`,
   `night.from=HH:MM`, `night.to=HH:MM`, `night.<kind>=on|off|<threshold>`, `night.<kind>.repeat=<min>`,

@@ -29,6 +29,7 @@
     "soundPack": {"values": ["arcade", "kart", "quest", "soft", "system", "none"], "label": "Sound packs (and per alert)"},
     "settingsFrom": {"values": ["wearer", "default", "custom"], "label": "Followers: Settings from"},
     "unit": {"values": ["mgdl", "mmol"], "label": "Glucose unit the values are written in (mg/dL or mmol/L)"},
+    "trend": {"values": ["quick", "balanced", "smooth", "sensor"], "label": "Trend arrow: from the readings, Quick / Balanced / Smooth (weighting 2 / 3 / 5 min), or From the sensor (its own rate); contracts/trend"},
     "markKind": {"values": ["rapid", "long", "carbs", "note"], "label": "Treatments on the graph: the kinds, in label order"},
     "markPart": {"values": ["point", "line", "amount", "time"], "label": "Treatments on the graph: what each kind can show (the marker, the mute line, the amount label, the time label)"},
     "markParts.rapid": {"values": ["point", "line", "amount", "time"], "label": "Rapid insulin: every part"},
@@ -89,6 +90,7 @@
     "nostrInterval": {"unit": "min", "min": 1, "max": 240, "step": 1, "nudge": 5, "presets": [0, 5, 15, 30, 60], "default": 0, "special": {"0": "every_reading"}}
   },
   "settings": [
+    {"id": "glucose.trend", "section": "glucose", "label": "Trend arrow: where every arrow, spoken trend and the fast alerts take the trend from (contracts/trend, #204)", "type": "enum", "values": ["quick", "balanced", "smooth", "sensor"], "default": "balanced", "mirror": true, "wire": "graph.trend", "android": {"store": "graph", "key": "trend"}, "mac": {"store": "defaults", "key": "trend"}},
     {"id": "graph.band.veryLow", "section": "graph", "label": "Very low up to", "type": "number", "number": "bandVeryLow", "mirror": true, "wire": "graph.veryLow", "android": {"store": "graph", "key": "bandVeryLow"}, "mac": {"store": "defaults", "key": "bandVeryLow"}},
     {"id": "graph.band.low", "section": "graph", "label": "Low below", "type": "number", "number": "bandLow", "mirror": true, "wire": "graph.low", "android": {"store": "graph", "key": "bandLow"}, "mac": {"store": "defaults", "key": "bandLow"}},
     {"id": "graph.band.tight", "section": "graph", "label": "Very good up to", "type": "number", "number": "bandTight", "mirror": true, "wire": "graph.tight", "android": {"store": "graph", "key": "bandTight"}, "mac": {"store": "defaults", "key": "bandTight"}},
