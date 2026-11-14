@@ -123,7 +123,7 @@ fun AdvancedScreen(
     onBack: () -> Unit,
 ) {
     val state by port.state.collectAsStateWithLifecycle(AdvancedState())
-    val context = LocalContext.current
+    val checking = stringResource(R.string.st_adv_checking)
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     AdvancedContent(
@@ -133,7 +133,7 @@ fun AdvancedScreen(
                 port.checkNow()
                 scope.launch {
                     snackbar.showSnackbar(
-                        context.getString(R.string.st_adv_checking),
+                        checking,
                         withDismissAction = true,
                         duration = SnackbarDuration.Short,
                     )
