@@ -151,9 +151,9 @@ class SpokenFixtureTest {
     }
 
     @Test
-    fun placeHoursZeroMeansTheDefault() {
-        val c = GraphConfig(defaultHours = 12, placeHours = mapOf(GraphPlace.entries.first() to 0))
-        assertEquals(12, c.hours(GraphPlace.entries.first()))
+    fun placeHoursZeroMeansTheApps() {
+        val c = GraphConfig(appHours = 12, placeHours = mapOf(GraphPlace.NOTIFICATION to 0))
+        assertEquals(12, c.hours(GraphPlace.NOTIFICATION))
     }
 
     @Test

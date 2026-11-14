@@ -32,6 +32,23 @@ class Haptics internal constructor(
         view.performHapticFeedback(HapticFeedbackConstants.SEGMENT_TICK)
     }
 
+    /** A wheel passed one more value under the finger: the lightest, frequent tick. */
+    fun scrollTick() {
+        view.performHapticFeedback(HapticFeedbackConstants.SEGMENT_FREQUENT_TICK)
+    }
+
+    /** A swipe crossed the point where letting go acts ([on]), or went back before it. */
+    fun threshold(on: Boolean) {
+        view.performHapticFeedback(
+            if (on) HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE else HapticFeedbackConstants.GESTURE_THRESHOLD_DEACTIVATE,
+        )
+    }
+
+    /** A long press opened something (a row's menu). */
+    fun longPress() {
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+
     /** A toggle switched on / off. */
     fun toggle(on: Boolean) {
         view.performHapticFeedback(if (on) HapticFeedbackConstants.TOGGLE_ON else HapticFeedbackConstants.TOGGLE_OFF)

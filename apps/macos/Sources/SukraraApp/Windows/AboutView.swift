@@ -13,6 +13,8 @@ struct AboutView: View {
     let version: String
     let build: String
     let distribution: Distribution
+    /// A release or a development build: a development build says so instead of the distribution's name.
+    let appBuild: AppBuild
     /// The app's icon (the bundle's; a render passes the brand icon).
     var icon: NSImage = NSApp.applicationIconImage
 
@@ -36,8 +38,9 @@ struct AboutView: View {
                 .font(.callout).foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .padding(.top, 2)
-            Text(Self.distributionName(distribution))
+            Text(Self.buildName(distribution, appBuild, version: version))
                 .font(.callout).foregroundStyle(.secondary)
+                .textSelection(.enabled)
             Label {
                 Text(
                     L10n.t(
@@ -102,6 +105,14 @@ struct AboutView: View {
     /// "Version 0.14.5 (14005)" as the standard About panel writes it; a build equal to the version isn't repeated.
     static func versionLine(_ version: String, _ build: String) -> String {
         build.isEmpty || build == version ? L10n.t("Version \(version)") : L10n.t("Version \(version) (\(build))")
+    }
+
+    /// Under the version: the distribution's name for a release; "Development build · 0.14.5 + 23 commits · d744fd74 ·
+    /// 14 Nov" for any other build (docs/DEVELOPMENT.md › Development and release builds).
+    static func buildName(_ distribution: Distribution, _ build: AppBuild, version: String, locale: Locale = .current)
+        -> String
+    {
+        build.developmentText(version, locale: locale) ?? distributionName(distribution)
     }
 
     /// "GitHub version" / "App Store version" (Android: "Google Play version").

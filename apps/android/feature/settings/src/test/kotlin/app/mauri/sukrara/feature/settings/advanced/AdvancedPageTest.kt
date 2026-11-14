@@ -56,22 +56,31 @@ class AdvancedPageTest {
     }
 
     @Test
-    fun `reset asks first, then runs, reconnect and log are one tap`() {
+    fun `the settings file's reset asks first, then runs (Import and export)`() {
         var reset = 0
-        var check = 0
-        var log = 0
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
-                AdvancedContent(
-                    AdvancedState(relays = listOf(RelayRow("wss://r.example.invalid", connected = false))),
-                    AdvancedActions(reset = { reset++ }, checkNow = { check++ }, openLog = { log++ }),
-                ) {}
+                ImportExportContent(SettingsFileActions(reset = { reset++ }), onBack = {})
             }
         }
         compose.onNodeWithText("Reset all settings").performScrollTo().performClick()
         assertEquals(0, reset)
         compose.onNodeWithText("Reset").performClick()
         assertEquals(1, reset)
+    }
+
+    @Test
+    fun `reconnect and log are one tap`() {
+        var check = 0
+        var log = 0
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                AdvancedContent(
+                    AdvancedState(relays = listOf(RelayRow("wss://r.example.invalid", connected = false))),
+                    AdvancedActions(checkNow = { check++ }, openLog = { log++ }),
+                ) {}
+            }
+        }
         compose.onNodeWithText("Reconnect now").performScrollTo().performClick()
         compose.onNodeWithText("Log").performScrollTo().performClick()
         assertTrue(check == 1 && log == 1)

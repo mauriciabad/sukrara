@@ -47,6 +47,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.settings.SettingsSpec
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -65,6 +66,13 @@ class AlertsActions(
     val muteSide: (String, Int) -> Unit = { _, _ -> },
     /** Settings › Alerts › Night alerts (#38). */
     val openNight: () -> Unit = {},
+    /** Settings › Alerts › Fine-tuning (the rarely touched rows). */
+    val openFineTuning: () -> Unit = {},
+    /** *See also*: Alert reliability and Readings (the ranges, separate from the alert levels). */
+    val openReliability: () -> Unit = {},
+    val openReadings: () -> Unit = {},
+    /** Settings › Alerts › one quiet rule. */
+    val openQuiet: (QuietKind) -> Unit = {},
     /** *Separate alert notifications* (docs/36). */
     val setSeparate: (Boolean) -> Unit = {},
 )
@@ -253,95 +261,11 @@ fun AlertsSettingsContent(
                 )
             }
         }
+        // each quiet rule: the switch turns it on or off, the row opens its page (its length, what it does)
         SettingsGroup(title = stringResource(R.string.st_quiet_title)) {
-            for (which in QuietKind.entries) {
-                val rule = AlertEdits.quietRule(s, which)
-                val spec = SchemaPrefs.spec(AlertEdits.quietSpecId(which))
-                SwitchRow(
-                    stringResource(
-                        when (which) {
-                            QuietKind.AfterInsulin -> R.string.st_quiet_insulin
-                            QuietKind.AfterCarbs -> R.string.st_quiet_carbs
-                            QuietKind.FallingHigh -> R.string.st_quiet_falling
-                            QuietKind.RisingLow -> R.string.st_quiet_rising
-                        },
-                    ),
-                    rule.on,
-                    { on -> actions.edit(AlertEdits.quiet(which) { it.copy(on = on) }) },
-                    summary =
-                        stringResource(
-                            if (which.byTrend) R.string.st_quiet_within_summary else R.string.st_quiet_for,
-                            numberLabel(spec, rule.min.toDouble()),
-                        ),
-                    icon = quietIcon(which),
-                    readOnly = ui.mirrored,
-                )
-                if (rule.on) {
-                    ValueRow(stringResource(quietLengthTitle(which)), numberLabel(spec, rule.min.toDouble()), {
-                        dialog =
-                            "quiet:${which.name}"
-                    }, icon = DsR.drawable.ds_ic_timer, readOnly = ui.mirrored)
-                }
-            }
+            for (which in QuietKind.entries) QuietRuleRow(ui, which, actions.edit) { actions.openQuiet(which) }
         }
 
-        // #37: a low or high waits before its first alert; bounces inside the margin stay one episode
-        SettingsGroup(title = stringResource(R.string.st_wait_title)) {
-            for (which in WaitKind.entries) {
-                val spec = SchemaPrefs.spec(which.specId)
-                ValueRow(
-                    stringResource(which.title),
-                    numberLabel(spec, which.value(s).toDouble()),
-                    { dialog = "wait:${which.name}" },
-                    icon = which.icon,
-                    readOnly = ui.mirrored,
-                )
-            }
-        }
-        FooterText(stringResource(R.string.st_wait_footer))
-
-        SettingsGroup(title = stringResource(R.string.st_actions_title)) {
-            ValueRow(
-                stringResource(
-                    R.string.st_action_mute,
-                ),
-                numberLabel(SchemaPrefs.spec("alerts.actions.muteMin"), s.actions.muteMin.toDouble()),
-                {
-                    dialog = "actionMute"
-                },
-                icon = DsR.drawable.ds_ic_notifications_off,
-            )
-            ValueRow(
-                stringResource(
-                    R.string.st_action_relax,
-                ),
-                numberLabel(SchemaPrefs.spec("alerts.actions.relaxMin"), s.actions.relaxMin.toDouble()),
-                {
-                    dialog = "actionRelax"
-                },
-                icon = DsR.drawable.ds_ic_snooze,
-            )
-            ValueRow(
-                stringResource(
-                    R.string.st_action_back_mgdl,
-                ),
-                numberLabel(SchemaPrefs.spec("alerts.actions.backMgdl"), s.actions.backMgdl.toDouble()),
-                {
-                    dialog = "backMgdl"
-                },
-                icon = DsR.drawable.ds_ic_trending_down,
-            )
-            ValueRow(
-                stringResource(
-                    R.string.st_action_back_min,
-                ),
-                numberLabel(SchemaPrefs.spec("alerts.actions.backMin"), s.actions.backMin.toDouble()),
-                {
-                    dialog = "backMin"
-                },
-                icon = DsR.drawable.ds_ic_repeat,
-            )
-        }
         SettingsGroup(title = stringResource(R.string.st_sounds_title)) {
             ValueRow(
                 stringResource(R.string.st_sound_pack),
@@ -380,7 +304,27 @@ fun AlertsSettingsContent(
                 icon = DsR.drawable.ds_ic_tune,
             )
         }
+        // the rarely touched rows: one named subpage at the end (docs/35: no global advanced mode)
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_finetune_title),
+                actions.openFineTuning,
+                summary = stringResource(R.string.st_finetune_summary),
+                icon = DsR.drawable.ds_ic_tune,
+            )
+        }
         FooterText(stringResource(R.string.st_alerts_footer))
+        SeeAlso(
+            listOf(
+                SeeAlsoLink(stringResource(R.string.st_reliability_title), null, Section.Reliability, actions.openReliability),
+                SeeAlsoLink(
+                    stringResource(R.string.st_readings_title),
+                    stringResource(R.string.st_overview_readings),
+                    Section.Readings,
+                    actions.openReadings,
+                ),
+            ),
+        )
     }
     AlertsDialogs(dialog, ui, actions) { dialog = null }
 }
@@ -429,24 +373,6 @@ private fun AlertsDialogs(
             ) { actions.muteAll(it) }
         }
 
-        dialog.startsWith("quiet:") -> {
-            val which = QuietKind.valueOf(dialog.removePrefix("quiet:"))
-            val spec = SchemaPrefs.spec(AlertEdits.quietSpecId(which))
-            NumberDialog(stringResource(quietLengthTitle(which)), NumberInput(spec), AlertEdits.quietRule(s, which).min.toDouble(), {
-                label(spec, it)
-            }, close) { v ->
-                actions.edit(AlertEdits.quiet(which) { it.copy(min = spec.coerce(v).toInt()) })
-            }
-        }
-
-        dialog.startsWith("wait:") -> {
-            val which = WaitKind.valueOf(dialog.removePrefix("wait:"))
-            val spec = SchemaPrefs.spec(which.specId)
-            NumberDialog(stringResource(which.title), NumberInput(spec), which.value(s).toDouble(), { label(spec, it) }, close) { v ->
-                actions.edit { which.set(it, spec.coerce(v).toInt()) }
-            }
-        }
-
         dialog == "escalateMin" -> {
             val spec = SchemaPrefs.spec("alerts.escalation.min")
             NumberDialog(
@@ -457,51 +383,6 @@ private fun AlertsDialogs(
                 close,
             ) { v ->
                 actions.edit { it.copy(escalation = it.escalation.copy(min = spec.coerce(v).toInt())) }
-            }
-        }
-
-        dialog == "actionMute" -> {
-            val spec = SchemaPrefs.spec("alerts.actions.muteMin")
-            NumberDialog(
-                stringResource(R.string.st_action_mute),
-                NumberInput(spec),
-                s.actions.muteMin.toDouble(),
-                { label(spec, it) },
-                close,
-            ) { v ->
-                actions.edit { it.copy(actions = it.actions.copy(muteMin = spec.coerce(v).toInt())) }
-            }
-        }
-
-        dialog == "actionRelax" -> {
-            val spec = SchemaPrefs.spec("alerts.actions.relaxMin")
-            // only intervals slower than every level alert's repeat (SPEC §3 relaxMin)
-            val input =
-                NumberInput(
-                    spec,
-                    presets = s.relaxChoices().map { it.toDouble() },
-                    customMin = (s.relaxFloor() + 1).toDouble().coerceAtMost(spec.max),
-                )
-            NumberDialog(stringResource(R.string.st_action_relax), input, s.actions.relaxMin.toDouble(), { label(spec, it) }, close) { v ->
-                actions.edit { it.copy(actions = it.actions.copy(relaxMin = spec.coerce(v).toInt())) }
-            }
-        }
-
-        dialog == "backMgdl" -> {
-            val spec = SchemaPrefs.spec("alerts.actions.backMgdl")
-            NumberDialog(stringResource(R.string.st_action_back_mgdl), NumberInput(spec), s.actions.backMgdl.toDouble(), {
-                label(spec, it)
-            }, close) { v ->
-                actions.edit { it.copy(actions = it.actions.copy(backMgdl = spec.coerce(v).toInt())) }
-            }
-        }
-
-        dialog == "backMin" -> {
-            val spec = SchemaPrefs.spec("alerts.actions.backMin")
-            NumberDialog(stringResource(R.string.st_action_back_min), NumberInput(spec), s.actions.backMin.toDouble(), {
-                label(spec, it)
-            }, close) { v ->
-                actions.edit { it.copy(actions = it.actions.copy(backMin = spec.coerce(v).toInt())) }
             }
         }
 

@@ -273,3 +273,36 @@ enum TreatmentMarks {
         each { s, font, c, px, base in Ink.draw(ctx, s, x: px, y: base, font, c) }
     }
 }
+
+extension GlucoseCard {
+    /// A treatment kind's badge for places that list entries (the Treatments window): THE chart's marker (`marker`:
+    /// rapid ▼ filled, long ▽ outlined, carbs ●, note ◆) in the kind's tonal ink on a circle of its tonal tint, the
+    /// colours of the card's taken (tonal) pill (`StatusBadge.colors`). `kind` = rapid | long | carbs | note; `size`
+    /// points square, `scale` pixels per point.
+    public static func treatmentBadge(kind: String, size: CGFloat, scale: CGFloat = 2, dark: Bool) -> CGImage? {
+        let px = max(4, Int(size * scale))
+        guard
+            let ctx = CGContext(
+                data: nil, width: px, height: px, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        // y-down points, like the chart
+        ctx.translateBy(x: 0, y: CGFloat(px))
+        ctx.scaleBy(x: scale, y: -scale)
+        let (tint, ink) = StatusBadge.colors(
+            StatusBadge.Look(kind: kind, text: "", short: "", tonal: true), dark: dark, knockout: false)
+        ctx.setFillColor(tint)
+        ctx.fillEllipse(in: CGRect(x: 0, y: 0, width: size, height: size))
+        // a drop's area sits above its box's centre: nudged down so it looks centred in the circle
+        let dy: CGFloat = kind == "rapid" || kind == "long" ? size * 0.03 : 0
+        TreatmentMarks.marker(ctx, kind, x: size / 2, y: size / 2 + dy, r: size * 0.26, color: ink)
+        return ctx.makeImage()
+    }
+
+    /// A past reading as VoiceOver says it, in the card's words: "142 milligrams per decilitre, rising" (`band` = the
+    /// reading's own trend band, nil = "trend unknown"); LO / HI as "below 40 …" / "above 400 …".
+    public static func spokenReading(sgv: Int, band: Int?, unit: GlucoseUnit, words: CardWords = .current) -> String {
+        A11y.reading(sgv, band: band, unit: unit, words: words)
+    }
+}

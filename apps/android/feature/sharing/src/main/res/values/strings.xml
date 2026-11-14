@@ -32,7 +32,7 @@
     <!-- Setup welcome: what the app does -->
     <string name="sh_setup_welcome_body">Sukrara reads your glucose sensor, alerts you when you need it and shares your glucose with the people you choose.</string>
     <!-- Setup welcome: what setup will do -->
-    <string name="sh_setup_welcome_steps">A few short steps: choose how you use this phone, allow what alerts need, connect your sensor, check your alerts and bring your followers. You can leave any step for later.</string>
+    <string name="sh_setup_welcome_steps">Choose how you use this phone, allow what alerts need, connect your sensor and check your alerts: that is all Sukrara needs. Followers, insulin pens and your history are optional. You can leave any step for later.</string>
     <!-- Setup welcome: the reminder that Sukrara is not a medical device (the same sentence as Settings › About) -->
     <string name="sh_setup_not_medical">Sukrara isn\'t a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor\'s app or a meter, and ask your doctor, before you decide on a treatment.</string>
     <!-- Setup role step: title -->
@@ -97,11 +97,11 @@
     <!-- Setup alerts step: title -->
     <string name="sh_setup_alerts_title">Check your alerts</string>
     <!-- Setup alerts step: explanation -->
-    <string name="sh_setup_alerts_body">Sukrara alerts you at these values. Tap one to change it. Nothing changes until you confirm.</string>
+    <string name="sh_setup_alerts_body">Nothing is saved until you confirm.</string>
     <!-- Error: thresholds out of order -->
     <string name="sh_setup_alerts_order">Keep the order: very low below low, low below high, high below very high, very high below extremely high.</string>
     <!-- Button: confirm the alert thresholds -->
-    <string name="sh_setup_alerts_confirm">Use these thresholds</string>
+    <string name="sh_setup_alerts_confirm">Confirm thresholds</string>
     <!-- Setup identity step: title -->
     <string name="sh_identity_title">Your followers</string>
     <!-- Setup identity step: explanation -->
@@ -178,8 +178,6 @@
     <string name="sh_finish_sensor">Connect your sensor</string>
     <!-- Finish setup item -->
     <string name="sh_finish_alerts">Alerts not confirmed</string>
-    <!-- Finish setup item -->
-    <string name="sh_finish_identity">Restore your followers</string>
     <!-- Share screen title -->
     <string name="sh_share_title">Share with someone</string>
     <!-- Share screen explanation -->
@@ -556,6 +554,7 @@
     <string name="sh_interval_every">Every %1$s</string>
     <string name="sh_interval_unavailable">Sharing over the internet is off</string>
     <string name="sh_nearby_title">Over Bluetooth nearby</string>
+    <string name="sh_nearby_use">Share over Bluetooth nearby</string>
     <string name="sh_nearby_off">Off. Followers get readings over the internet.</string>
     <string name="sh_nearby_off_no_internet">Off. Followers get no new readings.</string>
     <string name="sh_nearby_bluetooth_off">Bluetooth is off</string>
@@ -627,4 +626,18 @@
     <string name="sh_setup_history_note">Nothing is counted twice: your sensor\'s own readings win, and importing again only adds what is missing. You can also do it later in Settings › Share with apps › Import history.</string>
     <string name="sh_setup_history_open">Bring it back</string>
     <string name="sh_setup_history_skip">Start empty</string>
+    <!-- Setup: progress in the optional part (#181), announced by TalkBack; %1$d = step, %2$d = steps -->
+    <string name="sh_setup_extra_of">Optional step %1$d of %2$d</string>
+    <!-- Setup: between the essentials and the optional steps -->
+    <string name="sh_setup_ready_title">The essentials are done</string>
+    <string name="sh_setup_ready_body">The rest is optional. Set it up now, or later from Settings.</string>
+    <string name="sh_setup_ready_rest">Set up the rest</string>
+    <!-- Setup: the insulin pens step (optional) -->
+    <string name="sh_setup_pens_title">Insulin pens</string>
+    <string name="sh_setup_pens_body">With a smart insulin pen such as NovoPen 6 or NovoPen Echo Plus, hold it to the back of the phone after you inject: Sukrara logs the dose.</string>
+    <string name="sh_setup_pens_on">Read my pens</string>
+    <string name="sh_setup_pens_none">I don\'t use a smart pen</string>
+    <string name="sh_setup_pens_done">Pens are read. Hold one to the back of the phone, unlocked, from any app.</string>
+    <string name="sh_setup_ready_title_pending">Some essentials are left for later</string>
+    <string name="sh_setup_ready_pending">Still to do: %1$s. Home\'s Finish setup banner brings you back to them.</string>
 </resources>

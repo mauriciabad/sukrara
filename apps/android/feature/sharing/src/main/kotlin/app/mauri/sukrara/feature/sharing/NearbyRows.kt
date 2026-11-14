@@ -118,6 +118,8 @@ fun PairNearbyRow(
     until: Long?,
     onChange: (Boolean) -> Unit,
     now: () -> Long = { System.currentTimeMillis() / 1000 },
+    /** Greyed while Bluetooth sharing is off or blocked; an open pairing keeps it (the way to stop it). */
+    enabled: Boolean = true,
 ) {
     val clock by rememberUpdatedState(now)
     val left by produceState(until?.let { it - clock() }, until) {
@@ -131,6 +133,7 @@ fun PairNearbyRow(
         checked = until != null,
         onCheckedChange = onChange,
         icon = DsR.drawable.ds_ic_bluetooth_searching,
+        enabled = enabled || until != null,
         summary =
             if (until == null) {
                 stringResource(R.string.sh_pair_nearby_off)

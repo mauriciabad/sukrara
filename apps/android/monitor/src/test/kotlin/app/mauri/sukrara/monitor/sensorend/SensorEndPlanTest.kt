@@ -16,7 +16,9 @@ import java.time.ZoneId
 /** The sensor-end rules on virtual time (Madrid, so the DST days are real ones). */
 class SensorEndPlanTest {
     private val zone = ZoneId.of("Europe/Madrid")
-    private val cfg = SensorEndConfig()
+
+    // a night set to 23:00–07:00 (THE night, the night alerts' window: SensorEndConfig.withNight)
+    private val cfg = SensorEndConfig().withNight(23 * 60, 7 * 60)
 
     private fun t(s: String) = LocalDateTime.parse(s).atZone(zone).toEpochSecond()
 
@@ -48,6 +50,15 @@ class SensorEndPlanTest {
         val m = mem("2026-03-10T07:30")
         val slots = SensorEndPlan.slots(m.start, m.end, cfg.copy(evening = false), zone).map { it.at }
         assertEquals(listOf(t("2026-03-09T09:00")), slots)
+    }
+
+    @Test
+    fun `a night of equal times is no night - no evening reminder, Sensor ended again at any hour`() {
+        val none = cfg.withNight(7 * 60, 7 * 60)
+        val m = mem("2026-03-10T03:10")
+        assertNull(SensorEndPlan.eveningSlot(m.end, none, zone))
+        assertFalse(SensorEndPlan.inNight(t("2026-03-10T03:10"), none, zone))
+        assertEquals(t("2026-03-10T03:10"), SensorEndPlan.outOfNight(t("2026-03-10T03:10"), none, zone))
     }
 
     @Test

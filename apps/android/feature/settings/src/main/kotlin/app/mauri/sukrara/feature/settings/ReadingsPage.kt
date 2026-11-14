@@ -26,6 +26,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.graph.PreviewCard
+import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.graph.GraphSettings
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +36,7 @@ import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * The six stored ranges the Ranges page shows (mg/dL), lowest first, the glucose unit they are shown in and the *Trend
+ * The six stored ranges the Readings page shows (mg/dL), lowest first, the glucose unit they are shown in and the *Trend
  * arrow* choice its row says.
  */
 data class GraphPrefs(
@@ -95,13 +96,15 @@ class GraphPrefsViewModel(
 }
 
 /**
- * Ranges: the live card, the glucose unit (mg/dL or mmol/L, every number in the app), the *Trend arrow* row (its page:
- * [onTrend]), the six bands the graph colours and time in range use, Reset ranges. [readOnly] = a follower not in
- * Custom: the bands in use, nothing to change ([preview] says why and opens *Settings from*); the unit is this phone's
- * own and stays editable; the trend's page opens read-only.
+ * Settings › Readings (docs/35: how each reading is shown, judged and where it heads): the live card, the glucose unit
+ * (mg/dL or mmol/L, every number in the app), the *Trend arrow* row (its page: [onTrend]), the six ranges the graph,
+ * rings, report and status bar colour with, Reset ranges, and *See also* Alerts ([onAlerts]: the alert levels are
+ * separate, as LibreLink keeps them). [readOnly] = a follower not in Custom: the bands in use, nothing to change
+ * ([preview] says why and opens *Settings from*); the unit is this phone's own and stays editable; the trend's page
+ * opens read-only.
  */
 @Composable
-fun RangesContent(
+fun ReadingsContent(
     prefs: GraphPrefs,
     onSet: (Setting<Double>, Double) -> Unit,
     onBack: () -> Unit,
@@ -109,6 +112,7 @@ fun RangesContent(
     readOnly: Boolean = false,
     onUnit: (GlucoseUnit) -> Unit = {},
     onTrend: () -> Unit = {},
+    onAlerts: () -> Unit = {},
     preview: @Composable () -> Unit = {},
 ) {
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -131,7 +135,7 @@ fun RangesContent(
             DsR.drawable.ds_ic_dia_very_high,
             DsR.drawable.ds_ic_dia_extremely_high,
         )
-    SettingsPage(stringResource(R.string.st_ranges_title), onBack) {
+    SettingsPage(stringResource(R.string.st_readings_title), onBack) {
         PreviewCard(preview)
         SettingsGroup {
             ValueRow(stringResource(R.string.st_unit), prefs.unit.symbol, { choosingUnit = true }, icon = DsR.drawable.ds_ic_tune)
@@ -146,7 +150,7 @@ fun RangesContent(
             )
         }
         val words = spanWords()
-        SettingsGroup {
+        SettingsGroup(title = stringResource(R.string.st_ranges_title)) {
             SchemaPrefs.Bands.forEachIndexed { i, setting ->
                 // the number, then exactly which values it makes count ("Low: 56–69 mg/dL")
                 ValueRow(
@@ -170,6 +174,11 @@ fun RangesContent(
             }
         }
         FooterText(stringResource(R.string.st_ranges_footer))
+        SeeAlso(
+            listOf(
+                SeeAlsoLink(stringResource(R.string.st_alerts_title), null, Section.Alerts, onAlerts),
+            ),
+        )
     }
     if (choosingUnit) {
         ChoiceDialog(

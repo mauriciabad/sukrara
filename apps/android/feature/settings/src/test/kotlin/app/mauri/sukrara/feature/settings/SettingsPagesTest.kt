@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.settings
 
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.settings.SettingsSpec
@@ -52,6 +53,7 @@ class SettingsPagesTest {
             "graph.lines",
             "graph.lastPlace",
             "graph.lastElse",
+            "graph.sensorTime",
             "graph.sensorTime.place",
             // Settings › Lock screen
             "lock.treatmentTime",
@@ -242,6 +244,7 @@ class SettingsPagesTest {
                 override val readiness = FakeReadiness()
                 override val appVersion = "0.12.0"
                 override val distribution = Distribution.GitHub
+                override val appBuild = AppBuild.Release
                 override val updates = null
                 override val clock = FakeClock()
                 override val sensor = flowOf(app.mauri.sukrara.core.model.SensorState.None)

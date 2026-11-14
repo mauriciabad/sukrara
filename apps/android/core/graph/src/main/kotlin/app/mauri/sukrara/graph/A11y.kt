@@ -292,15 +292,18 @@ object A11y {
         )
     }
 
-    /** The last-treatment slot: "Rapid insulin 3 units, 10 min ago", then the carbs drawn inside it. */
+    /** The last-treatment slot: "10 min ago, rapid insulin 3 units", then the carbs drawn inside it. */
     internal fun last(
         info: LastTreatment.Info,
         now: Long,
         w: CardWords,
     ): String =
-        listOfNotNull(info, info.carbs).joinToString(". ") { treatment(it.tr.k, it.tr.amount, now - it.tr.t, w) }
+        listOfNotNull(info, info.carbs).joinToString(". ") { sentence(w, treatment(it.tr.k, it.tr.amount, now - it.tr.t, w)) }
 
-    /** One treatment: its kind, amount and age ("Carbs 45 grams, just now", "Note, 10 min ago"). */
+    /**
+     * One treatment, its age first as the slot draws it (#206), then its kind and amount ("just now, carbs 45 grams",
+     * "10 min ago, note"); [last] makes it a sentence.
+     */
     internal fun treatment(
         k: String,
         amount: Double,

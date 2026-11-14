@@ -63,4 +63,13 @@ import Testing
             #expect(Durations.parse(input) == c[1] as? Int, "parse(\"\(input)\")")
         }
     }
+
+    /// A length VoiceOver reads in full words, so a compact "15m" is never "15 metres" (#181).
+    @Test func spokenInFullWords() {
+        #expect(Durations.spoken(15, .en) == "15 minutes")
+        #expect(Durations.spoken(60, .en) == "1 hour")
+        #expect(Durations.spoken(90, .en) == "1 hour, 30 minutes")
+        #expect(Durations.spoken(5, .es) == "5 minutos")
+        #expect(Durations.spoken(60, .es) == "1 hora")
+    }
 }

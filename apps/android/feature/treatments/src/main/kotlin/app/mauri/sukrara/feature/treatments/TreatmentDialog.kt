@@ -16,11 +16,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +28,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -42,7 +39,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -59,8 +55,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,10 +68,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -92,7 +87,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import app.mauri.sukrara.core.model.Durations
@@ -103,12 +97,20 @@ import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
+import app.mauri.sukrara.designsystem.sheet.SheetActions
+import app.mauri.sukrara.designsystem.sheet.SheetButton
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
+import app.mauri.sukrara.designsystem.time.LengthChips
+import app.mauri.sukrara.designsystem.time.LengthWheel
+import app.mauri.sukrara.designsystem.time.nearestIndex
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
-import app.mauri.sukrara.graph.TreatmentMarks
+import app.mauri.sukrara.graph.TreatmentKindLabel
+import app.mauri.sukrara.graph.TreatmentKindMark
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * What the form holds while the person types: the three amounts and the note as typed (after the input filters)
@@ -257,6 +259,11 @@ data class DraftLine(
  * what a countdown kept, with *Discard*; [penLine] is the pen's line under the fields (reading a pen into the dialog).
  * Editing one entry ([TreatmentFormState.editing]): that kind's field only, its note and its time, under *Edit carbs*
  * / … .
+ *
+ * [sheet] = opened from the app (home's *Add treatment*, a row of a treatment list): the same form as the content of the
+ * app's bottom sheet ([SukraraSheet] gives the surface and padding), its buttons with icons, and [onDelete] (an edit)
+ * as *Delete* at the row's start (#207 round 2: everything opened from a list is a sheet). Outside the app it stays
+ * the floating dialog.
  */
 @Composable
 fun TreatmentDialogContent(
@@ -273,6 +280,10 @@ fun TreatmentDialogContent(
     draft: DraftLine? = null,
     focusLong: Boolean = false,
     penLine: (@Composable () -> Unit)? = null,
+    sheet: Boolean = false,
+    onDelete: (() -> Unit)? = null,
+    /** In a sheet: [app.mauri.sukrara.designsystem.sheet.SheetScope.awaitEntrance] (the keyboard waits for it). */
+    awaitEntrance: suspend () -> Unit = {},
 ) {
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
@@ -290,7 +301,10 @@ fun TreatmentDialogContent(
             onSave(list, form.whenAt(now()))
         }
     }
+    val entrance by rememberUpdatedState(awaitEntrance)
     LaunchedEffect(Unit) {
+        // in the sheet: once it starts rising, so the keyboard comes up with it
+        entrance()
         runCatching {
             when {
                 form.editing == TreatmentKind.Note -> noteFocus
@@ -301,14 +315,10 @@ fun TreatmentDialogContent(
         }
     }
 
-    Surface(
-        modifier = modifier.widthIn(min = 280.dp, max = 560.dp).fillMaxWidth().testTag("treatment-dialog"),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
+    DialogSurface(sheet, modifier) {
         // optional lines (draft, quiet, limits) carry their own top gap inside their reveal, so they slide in and out
         // without a gap that jumps
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(if (sheet) 0.dp else 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(editTitle(form.editing)),
@@ -370,22 +380,34 @@ fun TreatmentDialogContent(
                 )
             }
             Spacer(Modifier.height(GAP))
-            Box {
-                DialogActionRow(
+            if (sheet) {
+                SheetActions(
                     start =
-                        if (onOpenApp == null && lock == null) {
-                            null
-                        } else {
-                            { StartAction(lock, onOpenApp) }
+                        onDelete?.let { delete ->
+                            {
+                                SheetButton(
+                                    stringResource(R.string.treatment_delete),
+                                    DsR.drawable.ds_ic_delete,
+                                    delete,
+                                    Modifier.testTag("treatment-delete"),
+                                    destructive = true,
+                                )
+                            }
                         },
-                ) {
-                    CountdownCancel(lock, onCancel)
-                    Spacer(Modifier.width(8.dp))
-                    Button(onClick = save, enabled = form.canSave, modifier = Modifier.testTag("treatment-save")) {
-                        Text(stringResource(R.string.treatment_save))
-                    }
-                }
-                if (lock != null) LockAnnouncement(lock.announce)
+                    end = {
+                        SheetButton(stringResource(R.string.treatment_cancel), DsR.drawable.ds_ic_close, onCancel)
+                        SheetButton(
+                            stringResource(R.string.treatment_save),
+                            DsR.drawable.ds_ic_check,
+                            save,
+                            Modifier.testTag("treatment-save"),
+                            primary = true,
+                            enabled = form.canSave,
+                        )
+                    },
+                )
+            } else {
+                DialogActions(form, lock, onOpenApp, onCancel, save)
             }
         }
     }
@@ -397,6 +419,53 @@ fun TreatmentDialogContent(
             lock = lock,
             onDone = { picking = false },
         )
+    }
+}
+
+/** The floating dialog's card, or nothing of its own in a [sheet] (the sheet is the surface). */
+@Composable
+private fun DialogSurface(
+    sheet: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    if (sheet) {
+        Box(modifier.fillMaxWidth().testTag("treatment-dialog")) { content() }
+    } else {
+        Surface(
+            modifier = modifier.widthIn(min = 280.dp, max = 560.dp).fillMaxWidth().testTag("treatment-dialog"),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            content = content,
+        )
+    }
+}
+
+/** The floating dialog's action row: *Open Sukrara* / *Unlock* at the start, *Cancel* (the countdown) and *Save*. */
+@Composable
+private fun DialogActions(
+    form: TreatmentFormState,
+    lock: LockInfo?,
+    onOpenApp: (() -> Unit)?,
+    onCancel: () -> Unit,
+    save: () -> Unit,
+) {
+    Box {
+        DialogActionRow(
+            start =
+                if (onOpenApp == null && lock == null) {
+                    null
+                } else {
+                    { StartAction(lock, onOpenApp) }
+                },
+        ) {
+            CountdownCancel(lock, onCancel)
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = save, enabled = form.canSave, modifier = Modifier.testTag("treatment-save")) {
+                Text(stringResource(R.string.treatment_save))
+            }
+        }
+        if (lock != null) LockAnnouncement(lock.announce)
     }
 }
 
@@ -447,7 +516,7 @@ private fun AmountField(
         inputTransformation = AmountInput,
         textStyle = MaterialTheme.typography.titleLarge,
         labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
-        label = { KindLabel(kind, stringResource(label)) },
+        label = { TreatmentKindLabel(kind, stringResource(label)) },
         suffix = { Text(stringResource(if (grams) R.string.treatment_unit_g else R.string.treatment_unit_u)) },
         isError = invalid,
         lineLimits = TextFieldLineLimits.SingleLine,
@@ -470,8 +539,8 @@ private val AmountInput =
 
 /**
  * The note: one line of text that wraps up to three lines (a hardware Enter types a space), the note marker in its
- * label (always on the outline, like the amounts'), an example while it's empty, the byte count from 20 bytes before
- * the limit. Done saves.
+ * label (always on the outline, like the amounts'), empty while empty (#181: no example), the byte count from 20 bytes
+ * before the limit. Done saves.
  */
 @Composable
 private fun NoteField(
@@ -486,8 +555,7 @@ private fun NoteField(
         inputTransformation = NoteInput,
         // on the outline like the amounts' labels: a label sinking back into the empty note resized the dialog too
         labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
-        label = { KindLabel("note", stringResource(R.string.treatment_note)) },
-        placeholder = { Text(stringResource(R.string.treatment_note_placeholder), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        label = { TreatmentKindLabel("note", stringResource(R.string.treatment_note)) },
         supportingText =
             if (bytes > TreatmentForm.NOTE_BYTES - NOTE_COUNT_FROM) {
                 { Text(stringResource(R.string.treatment_note_count, bytes, TreatmentForm.NOTE_BYTES)) }
@@ -507,35 +575,6 @@ private val NoteInput =
         val kept = TreatmentForm.clip(typed.replace('\n', ' '), TreatmentForm.NOTE_BYTES)
         if (kept != typed) replace(0, length, kept)
     }
-
-/** A field's label: the kind's marker, then its name on one line. */
-@Composable
-private fun KindLabel(
-    kind: String,
-    text: String,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        KindMark(kind)
-        Spacer(Modifier.width(6.dp))
-        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-/**
- * The marker the charts draw for [kind] ([TreatmentMarks.marker], in its colour): rapid ▼ filled, long ▽ outlined,
- * carbs ●, note ◆. Decoration only: the label's words say the kind.
- */
-@Composable
-internal fun KindMark(
-    kind: String,
-    modifier: Modifier = Modifier,
-) {
-    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val color = TreatmentMarks.color(TreatmentMarks.palette(dark), kind)
-    Canvas(modifier.size(MARK_SIZE).clearAndSetSemantics { }) {
-        drawIntoCanvas { TreatmentMarks.marker(it.nativeCanvas, kind, size.width / 2, size.height / 2, size.width / 2, color) }
-    }
-}
 
 /**
  * When the entries happen, at the end of the title line (the PoC's place and look: an M3 assist chip): *Now*,
@@ -825,9 +864,10 @@ internal const val DIALOG_DIM = 0.32f
 
 /**
  * When it happened: a segmented button switches between the time picker (a time later than now means yesterday,
- * [TreatmentForm.pickTime]) and *Minutes ago*: a number field with one-tap 5 / 15 / 30 / 60 chips
- * ([TreatmentForm.agoMinutes], under a day; resolved when saving). *Now* resets it; Cancel and back keep what was set.
- * Over the lock screen Cancel carries the countdown ring (the countdown keeps running behind the picker).
+ * [TreatmentForm.pickTime]) and *Minutes ago*: THE length wheel (minutes and hours in one scroll,
+ * [TreatmentForm.AGO_WHEEL], under a day; resolved when saving) with the one-tap lengths as compact chips under it
+ * (a tap scrolls the wheel there). *Now* resets it; Cancel and back keep what was set. Over the lock screen Cancel
+ * carries the countdown ring (the countdown keeps running behind the picker).
  */
 @Composable
 private fun WhenDialog(
@@ -840,16 +880,11 @@ private fun WhenDialog(
     val initial = (form.at ?: now()).atZone(zone).toLocalTime()
     val state = rememberTimePickerState(initial.hour, initial.minute, ClockText.hour24)
     var relative by rememberSaveable { mutableStateOf(form.ago != null) }
-    var minutes by rememberSaveable { mutableStateOf(form.ago?.toString().orEmpty()) }
-    val parsed = TreatmentForm.agoMinutes(minutes)
-    val field = remember { FocusRequester() }
-    val words = CardWords.of(LocalContext.current.resources)
-
-    fun pickAgo(m: Int) {
-        form.ago = m.takeIf { it > 0 }
-        form.at = null
-        onDone()
+    var minutes by rememberSaveable {
+        mutableIntStateOf(TreatmentForm.AGO_WHEEL[nearestIndex(TreatmentForm.AGO_WHEEL, form.ago ?: TreatmentForm.AGO_START)])
     }
+    val words = CardWords.of(LocalContext.current.resources).durations
+    val haptics = rememberHaptics()
     AlertDialog(
         onDismissRequest = onDone,
         title = {
@@ -875,41 +910,36 @@ private fun WhenDialog(
                 if (!relative) {
                     TimePicker(state)
                 } else {
-                    OutlinedTextField(
+                    LengthWheel(
+                        values = TreatmentForm.AGO_WHEEL,
                         value = minutes,
-                        onValueChange = { minutes = TreatmentForm.filterMinutes(it) },
-                        modifier = Modifier.width(200.dp).focusRequester(field).testTag("when-minutes"),
-                        suffix = { Text(stringResource(R.string.treatment_unit_min)) },
-                        singleLine = true,
-                        isError = minutes.isNotEmpty() && parsed == null,
-                        textStyle = MaterialTheme.typography.headlineMedium,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { parsed?.let(::pickAgo) }),
+                        onValue = { minutes = it },
+                        label = stringResource(R.string.treatment_mode_ago),
+                        words = words,
                     )
-                    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                        for (q in AGO_CHIPS) {
-                            FilterChip(
-                                selected = parsed == q,
-                                onClick = { minutes = "$q" },
-                                label = { Text(Durations.text(q.toLong(), words.durations), maxLines = 1) },
-                            )
-                        }
-                    }
-                    LaunchedEffect(Unit) { runCatching { field.requestFocus() } }
+                    LengthChips(
+                        minutes = TreatmentForm.AGO_CHIPS,
+                        words = words,
+                        onPick = {
+                            haptics.tick()
+                            minutes = it
+                        },
+                        selected = minutes,
+                    )
                 }
             }
         },
         confirmButton = {
             Button(
-                enabled = !relative || parsed != null,
                 onClick = {
                     if (relative) {
-                        parsed?.let(::pickAgo)
+                        form.ago = minutes
+                        form.at = null
                     } else {
                         form.at = TreatmentForm.pickTime(now(), zone, LocalTime.of(state.hour, state.minute))
                         form.ago = null
-                        onDone()
                     }
+                    onDone()
                 },
             ) { Text(stringResource(R.string.treatment_ok)) }
         },
@@ -938,16 +968,10 @@ private fun editTitle(kind: TreatmentKind?): Int =
         TreatmentKind.Note -> R.string.treatment_edit_note
     }
 
-/** The *Minutes ago* one-tap lengths. */
-private val AGO_CHIPS = listOf(5, 15, 30, 60)
-
 private const val STACK_FONT_SCALE = 1.3f
 
 /** The gap between the dialog's parts (the PoC's). */
 private val GAP = 16.dp
-
-/** A field label's kind marker (the PoC's 10 dp). */
-private val MARK_SIZE = 10.dp
 
 /** The note's byte count shows from this many bytes before the limit. */
 private const val NOTE_COUNT_FROM = 20

@@ -113,9 +113,10 @@ object Slots {
         }
 
     /**
-     * A slot as words for a text-only place (value, label): "86%" · "In range 1d", "4.5u" · "12m ago". The label stands
-     * alone (the Live Update's metric labels), so it is in sentence case like every other label there (the owner,
-     * round 3 of #36: "some places start with uppercase and some are all lowercase"), in the words' language.
+     * A slot as words for a text-only place (value, label): "86%" · "In range 1d"; the last treatment as the ring draws
+     * it (#206), the time since it as the value and the amount as its label: "12m" · "4.5u". The label stands alone (the
+     * Live Update's metric labels), so it is in sentence case like every other label there (the owner, round 3 of #36),
+     * in the words' language.
      */
     fun text(
         item: SlotItem,
@@ -142,7 +143,7 @@ object Slots {
             }
 
             is SlotItem.Last -> {
-                (TreatmentMarks.label(item.info.tr, 8) ?: item.info.tr.k) to w.ago(w.shortDuration(now - item.info.tr.t))
+                w.shortDuration(now - item.info.tr.t) to (TreatmentMarks.label(item.info.tr, 8) ?: item.info.tr.k)
             }
         }
 
@@ -248,7 +249,8 @@ object Slots {
 
     /**
      * Draw [item] as a circle of [radius] around ([cx], [cy]) with the sensor [countdown] ring over it; returns what a
-     * time-in-range ring wrote in its centre (null for the other slots), for the layout report (`slot.text`).
+     * time-in-range ring wrote in its centre (null for the other slots), for the layout report (`slot.text`; the
+     * last-treatment slot reports its two lines into [rec] itself, `slot.last` and `slot.last.amount`).
      */
     internal fun draw(
         cv: Canvas,
@@ -261,6 +263,7 @@ object Slots {
         d: Float,
         w: CardWords,
         countdown: Double?,
+        rec: CardLayout? = null,
     ): String? {
         when {
             item is SlotItem.Metric && item.spec.kind == SlotKind.TIR -> {
@@ -272,7 +275,7 @@ object Slots {
             }
 
             item is SlotItem.Last -> {
-                LastSlot.draw(cv, cx, cy, radius, item.info, nowS, pal, d, w)
+                LastSlot.draw(cv, cx, cy, radius, item.info, nowS, pal, d, w, rec)
             }
         }
         SensorBadge.drawCountdown(cv, cx, cy, radius, countdown, pal)
@@ -281,14 +284,42 @@ object Slots {
 }
 
 /**
- * The last-treatment slot: the kind's marker, the amount in its colour and the time since it; around it a ring for
- * the share of the alert mute still left. Insulin with carbs riding along: two concentric rings and both amounts.
+ * The last-treatment slot: the kind's marker, the time since it as the main number in the middle and the amount under
+ * it in the kind's colour (#206, the owner: "the time since it was done is more important than the amount"); around
+ * it a ring for the share of the alert mute still left. Insulin with carbs riding along: two concentric rings, the
+ * insulin's time and both amounts. Both lines shrink to fit the ring (the time stays the larger), whatever the font
+ * size: the slot's text follows its ring, not the system font. contracts/graph/layout/rules.json `lastSlot`.
  */
 internal object LastSlot {
     /** Smallest slot radius (dp) that draws insulin + carbs concentric. */
     const val PAIR_MIN_DP = 20f
 
+    /** The amount's text is at most this share of the time's. */
+    private const val AMOUNT_OF_TIME = 0.75f
+
     private fun bold(w: Int) = Typeface.create(Typeface.DEFAULT, w, false)
+
+    /** [p]'s text size for [s]: [size], smaller when [s] would be wider than [room]. */
+    private fun fit(
+        p: Paint,
+        s: String,
+        size: Float,
+        room: Float,
+    ): Float {
+        p.textSize = size
+        return min(size, size * room / p.measureText(s).coerceAtLeast(1f))
+    }
+
+    /** The box of [s] drawn centred on [cx] at [base] with [p] (its cap height), for the layout report. */
+    private fun box(
+        p: Paint,
+        s: String,
+        cx: Float,
+        base: Float,
+    ): RectF {
+        val w = p.measureText(s)
+        return RectF(cx - w / 2, base - p.textSize * 0.72f, cx + w / 2, base)
+    }
 
     fun draw(
         cv: Canvas,
@@ -300,8 +331,9 @@ internal object LastSlot {
         pal: GraphPalette,
         d: Float,
         w: CardWords,
+        rec: CardLayout? = null,
     ) {
-        info.carbs?.takeIf { radius >= PAIR_MIN_DP * d }?.let { return drawPair(cv, cx, cy, radius, info, it, nowS, pal) }
+        info.carbs?.takeIf { radius >= PAIR_MIN_DP * d }?.let { return drawPair(cv, cx, cy, radius, info, it, nowS, pal, w, rec) }
         val sw = radius * 0.2f
         val oval = RectF(cx - radius + sw / 2, cy - radius + sw / 2, cx + radius - sw / 2, cy + radius - sw / 2)
         val ring =
@@ -319,24 +351,29 @@ internal object LastSlot {
             cv.drawArc(oval, -90f, (360f * left).coerceAtLeast(2f), false, ring)
         }
         TreatmentMarks.marker(cv, info.tr.k, cx, cy - radius * 0.4f, radius * 0.14f, c, pal.bg.takeIf { it != 0 })
-        val inner = (radius - sw) * 2 * 0.86f
-        val num =
+        // the time: the main number, in the middle
+        val time = w.shortDuration(nowS - info.tr.t)
+        val main =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = c
+                color = pal.ink
                 textAlign = Paint.Align.CENTER
                 typeface = bold(800)
-                textSize = radius * 0.5f
             }
-        val s = TreatmentMarks.amount(info.tr).orEmpty()
-        num.textSize = min(num.textSize, num.textSize * inner / num.measureText(s).coerceAtLeast(1f))
-        cv.drawText(s, cx, cy + radius * 0.17f, num)
+        main.textSize = fit(main, time, radius * 0.5f, (radius - sw) * 2 * 0.86f)
+        val base = cy + radius * 0.17f
+        cv.drawText(time, cx, base, main)
+        // the amount under it, smaller, in the kind's colour (the circle is narrower there)
+        val amount = TreatmentMarks.amount(info.tr).orEmpty()
         val sub =
-            Paint(num).apply {
-                textSize = radius * 0.3f
-                typeface = bold(600)
-                color = pal.inkSoft
+            Paint(main).apply {
+                typeface = bold(700)
+                color = c
             }
-        cv.drawText(w.shortDuration(nowS - info.tr.t), cx, cy + radius * 0.17f + sub.textSize * 1.25f, sub)
+        sub.textSize = fit(sub, amount, min(radius * 0.3f, main.textSize * AMOUNT_OF_TIME), (radius - sw) * 2 * 0.7f)
+        val subBase = base + radius * 0.3f * 1.25f
+        cv.drawText(amount, cx, subBase, sub)
+        rec?.add("slot.last", box(main, time, cx, base), time)
+        rec?.add("slot.last.amount", box(sub, amount, cx, subBase), amount)
     }
 
     private fun drawPair(
@@ -348,6 +385,8 @@ internal object LastSlot {
         carbs: LastTreatment.Info,
         nowS: Long,
         pal: GraphPalette,
+        w: CardWords,
+        rec: CardLayout?,
     ) {
         val tp = TreatmentMarks.palette(pal.dark)
         val outerSw = radius * 0.16f
@@ -370,23 +409,35 @@ internal object LastSlot {
                 cv.drawArc(oval, -90f, (360f * left).coerceAtLeast(2f), false, ring)
             }
         }
-        // the two amounts in the inner circle, one size so they read as a pair
-        val room = (innerR - innerSw / 2) * 2 * 0.84f
-        val num =
+        // inside the inner circle: the insulin's time as the main number, the two amounts under it in their colours
+        val inside = innerR - innerSw / 2
+        val time = w.shortDuration(nowS - ins.tr.t)
+        val main =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = pal.ink
                 textAlign = Paint.Align.CENTER
                 typeface = bold(800)
-                textSize = radius * 0.36f
             }
+        main.textSize = fit(main, time, radius * 0.42f, inside * 2 * 0.84f)
+        val base = cy + radius * 0.04f
+        cv.drawText(time, cx, base, main)
         val a = TreatmentMarks.amount(ins.tr).orEmpty()
         val b = TreatmentMarks.amount(carbs.tr).orEmpty()
-        val widest = maxOf(num.measureText(a), num.measureText(b)).coerceAtLeast(1f)
-        num.textSize = min(num.textSize, num.textSize * room / widest)
-        val cap = num.textSize * 0.72f
-        val gap = num.textSize * 0.28f
-        num.color = TreatmentMarks.color(tp, ins.tr.k)
-        cv.drawText(a, cx, cy - gap / 2, num)
-        num.color = TreatmentMarks.color(tp, carbs.tr.k)
-        cv.drawText(b, cx, cy + gap / 2 + cap, num)
+        val both = "$a $b"
+        val sub =
+            Paint(main).apply {
+                typeface = bold(700)
+                textAlign = Paint.Align.LEFT
+            }
+        sub.textSize = fit(sub, both, min(radius * 0.26f, main.textSize * AMOUNT_OF_TIME), inside * 2 * 0.72f)
+        val subBase = base + radius * 0.26f * 1.3f
+        var x = cx - sub.measureText(both) / 2
+        sub.color = TreatmentMarks.color(tp, ins.tr.k)
+        cv.drawText(a, x, subBase, sub)
+        x += sub.measureText("$a ")
+        sub.color = TreatmentMarks.color(tp, carbs.tr.k)
+        cv.drawText(b, x, subBase, sub)
+        rec?.add("slot.last", box(main, time, cx, base), time)
+        rec?.add("slot.last.amount", box(sub, both, cx, subBase), both)
     }
 }

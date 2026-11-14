@@ -29,6 +29,18 @@ object TreatmentForm {
     /** Longest "minutes ago": under a day, like a picked time (at most 23:59 back). */
     const val MAX_AGO_MIN = 1439
 
+    /**
+     * The *Minutes ago* wheel's lengths, minutes and hours in one scroll: every minute to 1 h, every 5 min to 6 h, every
+     * 15 min after that, under a day (a time further back is picked as a time).
+     */
+    val AGO_WHEEL: List<Int> = (1..60) + (65..360 step 5) + (375..MAX_AGO_MIN step 15)
+
+    /** The wheel's length when *Minutes ago* opens without one. */
+    const val AGO_START = 5
+
+    /** The *Minutes ago* one-tap lengths beside the wheel. */
+    val AGO_CHIPS = listOf(5, 15, 30, 60)
+
     /** An amount field's parsed value. */
     sealed interface Amount {
         data object Empty : Amount

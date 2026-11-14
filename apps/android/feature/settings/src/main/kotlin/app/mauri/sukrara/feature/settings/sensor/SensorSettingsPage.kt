@@ -49,9 +49,12 @@ import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.feature.settings.BlockedTapsKind
 import app.mauri.sukrara.feature.settings.ConfirmDialog
 import app.mauri.sukrara.feature.settings.R
+import app.mauri.sukrara.feature.settings.SeeAlso
+import app.mauri.sukrara.feature.settings.SeeAlsoLink
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.StateStrip
 import app.mauri.sukrara.feature.settings.TapsBlockedCard
+import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
 import kotlinx.coroutines.delay
@@ -71,6 +74,8 @@ class SensorSettingsActions(
     val allowTaps: () -> Unit = {},
     val resume: () -> Unit = {},
     val setJugglucoSecret: (String) -> Unit = {},
+    /** Settings › Sensor end (docs/35 §7: its own overview row stays, and Sensor links to it). */
+    val openSensorEnd: () -> Unit = {},
 )
 
 /** Settings › Sensor with its ViewModel; the "ends in" time moves every minute. */
@@ -81,6 +86,7 @@ fun SensorSettingsScreen(
     onPairNewSensor: () -> Unit,
     onSignIn: () -> Unit,
     onBack: () -> Unit,
+    onSensorEnd: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     // back from Android's app page (where NFC taps are allowed again): read it again
@@ -107,6 +113,7 @@ fun SensorSettingsScreen(
             viewModel::allowTaps,
             viewModel::resume,
             viewModel::setJugglucoSecret,
+            onSensorEnd,
         ),
         onBack,
     )
@@ -147,6 +154,16 @@ fun SensorSettingsContent(
             )
         }
         FooterText(stringResource(R.string.st_sensor_footer))
+        SeeAlso(
+            listOf(
+                SeeAlsoLink(
+                    stringResource(R.string.st_sensorend_title),
+                    stringResource(R.string.st_sensorend_link_summary),
+                    Section.SensorEnd,
+                    actions.openSensorEnd,
+                ),
+            ),
+        )
         confirming?.let { target ->
             val toJuggluco = target == SourceChoice.Juggluco
             ConfirmDialog(

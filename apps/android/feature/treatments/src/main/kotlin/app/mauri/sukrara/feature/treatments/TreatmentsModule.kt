@@ -99,6 +99,17 @@ class TreatmentsModule(
         return Saved { scope.launch { runCatching { previous.await()?.let { log.undo(it) } } } }
     }
 
+    /**
+     * Deletes [original] (the edit sheet's *Delete*, #207) in the app's scope, like home's delete: a tombstone version
+     * through the log, synced, retracted from LibreView / Tidepool by their uploads; [Saved.undo] brings it back as a
+     * newer version. Null when this phone may not add entries.
+     */
+    fun delete(original: Treatment): Saved? {
+        if (!canAdd()) return null
+        val previous = scope.async { runCatching { log.delete(original.id) }.getOrNull() }
+        return Saved { scope.launch { runCatching { previous.await()?.let { log.undo(it) } } } }
+    }
+
     /** The draft the lock-screen countdown kept, while it is offered ([TreatmentDraft.offered]); else null. */
     suspend fun draft(): TreatmentDraft? = runCatching { drafts.data.first() }.getOrNull()?.takeIf { it.offered(clock.now()) }
 

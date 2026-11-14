@@ -5,7 +5,7 @@ import SukraraCore
 import SukraraGraph
 import SwiftUI
 
-/// Settings › General › Trend arrow (#204, contracts/trend): where every arrow, spoken trend and the fast alerts take
+/// Settings › Readings › Trend arrow (#204, contracts/trend): where every arrow, spoken trend and the fast alerts take
 /// the trend from: Quick / Balanced / Smooth from the readings, or From the sensor. A live preview of the newest value
 /// and its arrow on top (registered glyph surface `trend-preview`); outside Custom the choice is read-only with where
 /// it comes from, like the other mirrored settings (the exit: Settings from › Custom, at the top of General).

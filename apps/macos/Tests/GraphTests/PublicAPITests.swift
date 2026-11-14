@@ -51,6 +51,23 @@ import Testing
         #expect(GlucoseCard.face(CardData(readings: [], now: now), unit: .mgdl, surface: .menubarTitle).text == nil)
     }
 
+    /// A past reading (the Treatments window's glucose then) as the card writes and says it (#207).
+    @Test func aPastReadingIsWrittenAndSpokenLikeTheCards() {
+        #expect(Freshness.valueText(142, unit: .mgdl) == "142")
+        #expect(Freshness.valueText(112, unit: .mmol) == GlucoseUnit.mmol.cardText(112))
+        #expect(Freshness.valueText(39, unit: .mgdl) == "LO" && Freshness.valueText(401, unit: .mmol) == "HI")
+        #expect(
+            GlucoseCard.spokenReading(sgv: 142, band: 1, unit: .mgdl, words: .en)
+                == "142 milligrams per decilitre, rising")
+        #expect(
+            GlucoseCard.spokenReading(sgv: 90, band: nil, unit: .mgdl, words: .en)
+                == "90 milligrams per decilitre, trend unknown")
+        for kind in ["rapid", "long", "carbs", "note"] {
+            let badge = GlucoseCard.treatmentBadge(kind: kind, size: 22, scale: 2, dark: false)
+            #expect(badge?.width == 44 && badge?.height == 44)
+        }
+    }
+
     /// The value widget's sentence (no chart) in `words`, with the default settings unless `config` says otherwise.
     private func spoken(
         _ data: CardData, _ unit: GlucoseUnit = .mgdl, surface: CardSurface = .widgetValue,

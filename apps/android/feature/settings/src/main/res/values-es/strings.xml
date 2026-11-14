@@ -21,9 +21,11 @@
     <string name="st_review_title">Revisar umbrales de alerta</string>
     <string name="st_review_confirmed">Confirmados</string>
     <string name="st_review_not_confirmed">Aún sin confirmar</string>
-    <string name="st_review_intro">Estos son los valores que te avisarán. Revisa cada uno; toca una fila para cambiarlo. No se guarda nada hasta que toques Usar estos umbrales.</string>
-    <string name="st_review_off">Desactivada (%1$s)</string>
-    <string name="st_review_confirm">Usar estos umbrales</string>
+    <string name="st_review_intro">No se guarda nada hasta que confirmes.</string>
+    <string name="st_review_off">Desactivada</string>
+    <!-- Revisar umbrales de alerta: la fila sin datos, tras cuánto sin lecturas avisa ("Tras 20 min") -->
+    <string name="st_review_after">Tras %1$s</string>
+    <string name="st_review_confirm">Confirmar umbrales</string>
     <string name="st_quiet_title">Silencios</string>
     <string name="st_quiet_insulin">Silenciar glucosa alta tras la insulina</string>
     <string name="st_quiet_carbs">Silenciar glucosa baja tras los hidratos</string>
@@ -33,6 +35,11 @@
     <string name="st_quiet_within_summary">De vuelta en rango en %1$s</string>
     <string name="st_quiet_for">Durante %1$s</string>
     <string name="st_quiet_length">Cuánto tiempo</string>
+    <string name="st_quiet_use">Usar este silencio</string>
+    <string name="st_quiet_insulin_footer">La insulina rápida que registras silencia las alertas de glucosa alta, muy alta y subida rápida mientras empieza a actuar. La glucosa extremadamente alta siempre avisa.</string>
+    <string name="st_quiet_carbs_footer">Los hidratos que registras silencian las alertas de glucosa baja y bajada rápida mientras actúan, y la muy baja en el teléfono de quien lleva el sensor. Quien te sigue y el Mac siguen avisando de una muy baja.</string>
+    <string name="st_quiet_falling_footer">Mientras las últimas lecturas muestran que la glucosa baja claramente hacia el rango a tiempo, las alertas de alta y muy alta esperan. Llegan enseguida si se estanca o dejan de llegar lecturas.</string>
+    <string name="st_quiet_rising_footer">Mientras las últimas lecturas muestran que la glucosa sube claramente hacia el rango a tiempo, las alertas de baja esperan. Llegan enseguida si se estanca o dejan de llegar lecturas. Una muy baja solo espera en el teléfono de quien lleva el sensor, nunca su primera alerta.</string>
     <string name="st_wait_title">Cerca de un umbral</string>
     <string name="st_wait_low">Las alertas de glucosa baja esperan</string>
     <string name="st_wait_high">Las alertas de glucosa alta esperan</string>
@@ -129,10 +136,10 @@
     <string name="st_special_off">Desactivado</string>
     <string name="st_special_none">Ninguno</string>
     <string name="st_special_until_turned_off">Hasta que lo desactives</string>
-    <string name="st_special_default">Predeterminado</string>
     <string name="st_ranges_title">Rangos</string>
     <string name="st_trend_title">Flecha de tendencia</string>
     <string name="st_trend_summary">De dónde sacan la tendencia todas las flechas, la tendencia leída en voz alta y las alertas rápidas</string>
+    <string name="st_places_keywords">por lugar, notificación, widgets, propio, distinto, igual que la app</string>
     <string name="st_trend_keywords">flecha, tendencia, dirección, velocidad, retraso, suavizado, sensor</string>
     <string name="st_trend_from">Tendencia a partir de</string>
     <string name="st_trend_quick">Rápida</string>
@@ -183,14 +190,13 @@
     <string name="st_overview_alerts_on">Activadas · umbrales, sonidos, Silenciar todo</string>
     <string name="st_overview_alerts_off">Desactivadas: nada te avisará</string>
     <string name="st_overview_reliability_problem">%1$d por arreglar</string>
-    <string name="st_overview_ranges">Bandas de la gráfica y tiempo en rango</string>
-    <string name="st_overview_graph">Tiempo mostrado, anillos, tiempo en rango</string>
+    <string name="st_overview_graph">Tiempo mostrado, líneas, tratamientos en la gráfica</string>
     <string name="st_sensor">Sensor</string>
     <string name="st_sensor_summary">Sensor actual, origen de las lecturas, LibreView</string>
     <string name="st_sharing">Compartir</string>
     <string name="st_sharing_summary">Seguidores y dispositivos</string>
     <string name="st_apps">Compartir con apps</string>
-    <string name="st_apps_summary">Nightscout, relojes Garmin, un archivo para tu clínica</string>
+    <string name="st_apps_summary">Nightscout, relojes Garmin, tu clínica</string>
     <string name="st_apps_nightscout">Subir a Nightscout</string>
     <string name="st_apps_xdrip">Servidor xDrip+</string>
     <string name="st_apps_tidepool">Tidepool</string>
@@ -470,7 +476,7 @@
         <item quantity="many">Cada %d horas</item>
         <item quantity="other">Cada %d horas</item>
     </plurals>
-    <string name="st_sensorend_footer">Un recordatorio que llegaría después del final del sensor se omite. El inicio de la cuenta atrás también decide cuándo la gráfica muestra el anillo de cuenta atrás del sensor. Con el chip de glucosa activado, la cuenta atrás del final se queda en las notificaciones para que la barra de estado siga mostrando tu glucosa. Desliza una cuenta atrás para ocultarla con este sensor. Android no comparte su horario de descanso con las apps, así que indica tu noche aquí. Después del final, «Sensor terminado» vuelve cada cierto tiempo hasta que inicies un sensor nuevo, nunca en tu noche.</string>
+    <string name="st_sensorend_footer">Un recordatorio que llegaría después del final del sensor se omite. El inicio de la cuenta atrás también decide cuándo la gráfica muestra el anillo de cuenta atrás del sensor. Con el chip de glucosa activado, la cuenta atrás del final se queda en las notificaciones para que la barra de estado siga mostrando tu glucosa. Desliza una cuenta atrás para ocultarla con este sensor. Tu noche es la misma que la de Alertas de noche (Android no comparte su horario de descanso con las apps). Después del final, «Sensor terminado» vuelve cada cierto tiempo hasta que inicies un sensor nuevo, nunca en tu noche.</string>
     <string name="st_reset_section">Restablecer %1$s</string>
     <string name="st_reset">Restablecer</string>
     <string name="st_slot_tir">Tiempo en rango</string>
@@ -480,6 +486,27 @@
     <string name="st_place_app">App</string>
     <string name="st_place_notification">Notificación</string>
     <string name="st_place_widgets">Widgets</string>
+    <!-- un ajuste que fija la app y que la notificación y los widgets pueden cambiar (docs/38) -->
+    <string name="st_same_as_app">Igual que la app</string>
+    <string name="st_same_as_app_value">Igual que la app (%1$s)</string>
+    <string name="st_where_app">en la app</string>
+    <string name="st_where_notification">en la notificación</string>
+    <string name="st_where_widgets">en los widgets</string>
+    <!-- un valor y dónde se aplica: "3 h en la notificación" -->
+    <string name="st_value_where">%1$s %2$s</string>
+    <string name="st_places_group">Notificación y widgets</string>
+    <string name="st_places_footer">Un widget también puede tener el suyo: mantenlo pulsado y elige Ajustes del widget.</string>
+    <string name="st_hours_notification">Tiempo mostrado en la notificación</string>
+    <string name="st_hours_widgets">Tiempo mostrado en los widgets</string>
+    <string name="st_sensor_time_show">Mostrar el tiempo restante del sensor</string>
+    <string name="st_sensor_time_notification">Tiempo restante del sensor en la notificación</string>
+    <string name="st_sensor_time_widgets">Tiempo restante del sensor en los widgets</string>
+    <!-- TalkBack: un tiempo mostrado dicho completo -->
+    <plurals name="st_hours_spoken">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="many">%1$d horas</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
     <string name="st_last_off">Desactivado</string>
     <string name="st_last_near">Junto al valor</string>
     <string name="st_last_end">Tras los demás huecos</string>
@@ -495,8 +522,6 @@
     <string name="st_graph_line_full">%1$d líneas: quita una para añadir otra</string>
     <string name="st_graph_line_exists">Esa línea ya está</string>
     <string name="st_graph_line_remove">Quitar la línea de %1$s</string>
-    <string name="st_graph_hours_default">Por defecto</string>
-    <string name="st_graph_hours_same">Igual que por defecto (%1$s)</string>
     <string name="st_graph_beside">Junto al valor</string>
     <string name="st_slot_main">Hueco principal</string>
     <string name="st_slot_second">Segundo hueco</string>
@@ -519,7 +544,7 @@
     <string name="st_graph_sensor">Tiempo restante del sensor</string>
     <string name="st_graph_reset_all">Restablecer el gráfico</string>
     <string name="st_graph_reset_all_title">¿Restablecer el gráfico?</string>
-    <string name="st_graph_reset_all_text">Las líneas, el tiempo mostrado, los huecos, el orden del anillo, los tratamientos en el gráfico y el tiempo del sensor vuelven a sus valores por defecto. Tus rangos se mantienen.</string>
+    <string name="st_graph_reset_all_text">Las líneas, el tiempo mostrado, junto a la gráfica, los tratamientos en la gráfica y el tiempo del sensor vuelven a sus valores por defecto. Tus rangos y anillos se mantienen.</string>
     <string name="st_move_up">Subir</string>
     <string name="st_move_down">Bajar</string>
     <string name="st_move_top">Mover al principio</string>
@@ -768,7 +793,7 @@
     <string name="st_export_title">Exportar datos</string>
     <string name="st_export_summary">Lecturas y tratamientos en un archivo</string>
     <string name="st_adv_title">Avanzado</string>
-    <string name="st_adv_overview_summary">Archivo de ajustes, relays, registro</string>
+    <string name="st_adv_overview_summary">Relays, registro, estadísticas</string>
     <string name="st_adv_file">Archivo de ajustes</string>
     <string name="st_adv_export">Exportar ajustes</string>
     <string name="st_adv_export_summary">Tus opciones en un archivo, para guardarlas o preparar otro teléfono</string>
@@ -902,4 +927,34 @@
     <string name="st_calendar_gcal_hint">Google Calendar → Ajustes → Gestionar cuentas → Sukrara</string>
     <string name="st_unit">Unidad de glucosa</string>
     <string name="st_unit_footer">Todos los valores de glucosa se muestran y se escriben en esta unidad: la tarjeta, la gráfica, las notificaciones, las alertas, los widgets, la barra de estado y estos ajustes. Sukrara guarda los valores en mg/dL, así que cambiarla nunca cambia un umbral.</string>
+    <!-- la reorganización de los ajustes (#205, docs/35) -->
+    <string name="st_readings_title">Lecturas</string>
+    <string name="st_overview_readings">Unidad, rangos, flecha de tendencia</string>
+    <string name="st_readings_keywords">Rangos, glucosa, rango objetivo, tiempo en rango, TIR, colores, mmol/L, mg/dL</string>
+    <string name="st_rings_title">Anillos</string>
+    <string name="st_overview_rings">Anillos y números junto al valor, último tratamiento</string>
+    <string name="st_rings_keywords">Gráfica, GMI, media, CV, variabilidad, tiempo en rango, premios</string>
+    <string name="st_rings_reset_all">Restablecer los anillos</string>
+    <string name="st_rings_reset_all_title">¿Restablecer los anillos?</string>
+    <string name="st_rings_reset_all_text">Los anillos y números junto al valor, el último tratamiento, lo que cuenta un anillo, los premios y el orden del anillo vuelven a sus valores por defecto. Tus rangos se mantienen.</string>
+    <string name="st_rings_footer">Se aplican a la app, la notificación y los widgets. Un anillo cuenta con tus rangos (Lecturas).</string>
+    <string name="st_graph_ranges_summary">En rango %1$s–%2$s %3$s · en Lecturas</string>
+    <string name="st_graph_keywords">Gráfico, líneas, horas</string>
+    <string name="st_see_also">Ver también</string>
+    <string name="st_finetune_title">Ajuste fino</string>
+    <string name="st_finetune_summary">Espera cerca de un umbral, botones de la notificación</string>
+    <string name="st_finetune_keywords">Avanzado, persistencia, margen, rebote, silenciar, relajar</string>
+    <string name="st_finetune_reset">Restablecer el ajuste fino</string>
+    <string name="st_finetune_reset_title">¿Restablecer el ajuste fino?</string>
+    <string name="st_finetune_reset_text">Las esperas cerca de un umbral, el margen y las duraciones de los botones de la notificación vuelven a sus valores por defecto.</string>
+    <string name="st_finetune_footer">Pocas veces hace falta: los valores por defecto sirven a casi todos. La búsqueda encuentra cada fila de aquí.</string>
+    <string name="st_files_title">Importar y exportar</string>
+    <string name="st_overview_files">Exportar datos, importar historial, archivo de ajustes</string>
+    <string name="st_files_keywords">Archivos, CSV, Nightscout, archivo de ajustes, Avanzado, Exportar</string>
+    <string name="st_files_footer">Archivos que creas o abres tú. Compartir y Compartir con apps envían tus datos en vivo; Copia de seguridad guarda tu identidad para compartir.</string>
+    <string name="st_night_shared">La misma noche mantiene en silencio los recordatorios del sensor (Fin del sensor).</string>
+    <string name="st_sensorend_night_footer">La misma noche que Alertas de noche: cambiarla aquí la cambia también allí.</string>
+    <string name="st_sensorend_link_summary">Cuándo termina este sensor, recordatorios, cuentas atrás</string>
+    <string name="st_trend_alert_footer">Las alertas rápidas usan la flecha de tendencia: la misma elección que Lecturas › Flecha de tendencia.</string>
+    <string name="st_finish_setup">Termina la configuración</string>
 </resources>

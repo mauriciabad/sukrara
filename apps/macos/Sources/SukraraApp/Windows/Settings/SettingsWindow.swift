@@ -102,10 +102,11 @@ extension SettingsModel.Pane {
     var title: String {
         switch self {
         case .general: L10n.t("General")
+        case .following: L10n.t("Following")
+        case .alerts: L10n.t("Alerts")
+        case .readings: L10n.t("Readings")
         case .graph: L10n.t("Graph")
         case .rings: L10n.t("Rings")
-        case .alerts: L10n.t("Alerts")
-        case .following: L10n.t("Following")
         }
     }
 
@@ -113,21 +114,23 @@ extension SettingsModel.Pane {
     var symbol: String {
         switch self {
         case .general: "gearshape"
+        case .following: "person.2"
+        case .alerts: "bell.badge"
+        case .readings: "drop"
         case .graph: "chart.xyaxis.line"
         case .rings: "circle.circle"
-        case .alerts: "bell.badge"
-        case .following: "person.2"
         }
     }
 
     /// The toolbar button's tooltip: what the pane holds.
     var help: String {
         switch self {
-        case .general: L10n.t("Settings from, unit, glucose source, startup and updates")
-        case .graph: L10n.t("Time shown, lines, ranges, treatments and the sensor on the graph")
+        case .general: L10n.t("Settings from, reading aloud, open at login and updates")
+        case .following: L10n.t("The person this Mac follows, and Juggluco on this network")
+        case .alerts: L10n.t("When to alert, night alerts, quiet times, sounds and fine-tuning")
+        case .readings: L10n.t("The unit, the ranges and the trend arrow")
+        case .graph: L10n.t("Time shown, lines, treatments and the sensor on the graph")
         case .rings: L10n.t("Rings and numbers beside the value, ring order and the last treatment")
-        case .alerts: L10n.t("When to alert, quiet rules, sounds and notifications")
-        case .following: L10n.t("The person this Mac follows")
         }
     }
 
@@ -135,10 +138,11 @@ extension SettingsModel.Pane {
     var height: CGFloat {
         switch self {
         case .general: 640
-        case .graph: 700
-        case .rings: 680
+        case .following: 560
         case .alerts: 720
-        case .following: 440
+        case .readings: 720
+        case .graph: 680
+        case .rings: 680
         }
     }
 }

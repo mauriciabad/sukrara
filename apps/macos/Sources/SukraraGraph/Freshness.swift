@@ -87,10 +87,21 @@ public enum Freshness: Sendable {
             return GlucoseLook(state: .noReadings, fresh: fr, text: nil, strike: false, trend: nil)
         }
         return GlucoseLook(
-            state: .value, fresh: fr, text: GlucoseRange.isLo(sgv) ? "LO" : GlucoseRange.isHi(sgv) ? "HI" : format(sgv),
+            state: .value, fresh: fr, text: valueText(sgv, format: format),
             strike: fr.strike,
             trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate,
             band: rate == nil ? nil : band ?? rate.map(TrendRate.plainBand), ended: ended)
+    }
+
+    /// A value as the card writes it: the number in the user's unit ("112", "6.2"), or LO / HI outside the sensor's
+    /// 40–400 mg/dL (graph/Freshness.kt `valueText`). For a past reading a place shows as it was (the Treatments
+    /// window's glucose then); the newest reading's value always comes from `GlucoseCard.face`.
+    public static func valueText(_ sgv: Int, unit: GlucoseUnit) -> String {
+        valueText(sgv, format: { unit.cardText($0) })
+    }
+
+    static func valueText(_ sgv: Int, format: (Int) -> String) -> String {
+        GlucoseRange.isLo(sgv) ? "LO" : GlucoseRange.isHi(sgv) ? "HI" : format(sgv)
     }
 
     /// "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days (`timeKind`);

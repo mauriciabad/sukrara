@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.AlertHold
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.UpdateFailure
 import app.mauri.sukrara.core.model.UpdateRelease
 import app.mauri.sukrara.core.model.UpdateState
@@ -60,7 +61,7 @@ class AboutLinksTest {
     private fun show() =
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
-                AboutContent("0.12.0", distribution, update, updates.takeIf { distribution == Distribution.GitHub }) {}
+                AboutContent("0.12.0", distribution, AppBuild.Release, update, updates.takeIf { distribution == Distribution.GitHub }) {}
             }
         }
 

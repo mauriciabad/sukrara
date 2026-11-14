@@ -184,6 +184,15 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         previousApp.activate()
     }
 
+    /// Puts Sukrara in front as the panel opens: macOS sends trackpad gestures only to the app in front, so without it
+    /// a pinch over the chart goes to the app behind (#181, 2026-11-14: "I cannot pinch to zoom"). The cooperative
+    /// `NSApp.activate()` leaves an accessory app behind even on a click on its own status item (tried with a real
+    /// click, 2026-11-14); `ignoringOtherApps` is what brings it forward. Closing gives the front back
+    /// (`popoverDidClose`).
+    static func bringToFront() {
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     func showPanel() {
         guard let button = item.button, !popover.isShown else { return }
         showPanel(from: button)
@@ -195,7 +204,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         let front = NSWorkspace.shared.frontmostApplication
         previousApp = front?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : front
         handingOff = false
-        NSApp.activate()
+        Self.bringToFront()
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }

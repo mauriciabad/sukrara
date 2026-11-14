@@ -32,6 +32,17 @@ class ReleasesTest {
         assertNull(Releases.newer(releases, "0.13.0"))
     }
 
+    /**
+     * A development build (tools/install.sh: versionName / versionCode are its base release's, About says
+     * "Development build · 0.12.1 + 23 commits …") is newer than its base release: the updater compares the plain
+     * versionName, so the base release (or an older one) is never offered over it, a newer release is.
+     */
+    @Test
+    fun `a development build is offered only a release newer than its base`() {
+        assertNull(Releases.newer(releases, "0.12.1"))
+        assertEquals("v0.12.1", Releases.newer(releases, "0.11.53")?.tag)
+    }
+
     @Test
     fun `the release's APK is its Sukrara-version apk with GitHub's SHA-256`() {
         val apk = checkNotNull(releases[1].apk)

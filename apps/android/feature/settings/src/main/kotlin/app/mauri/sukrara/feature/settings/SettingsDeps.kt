@@ -8,6 +8,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.PensPort
@@ -46,6 +47,9 @@ interface SettingsDeps {
 
     /** The installed version (`BuildConfig.VERSION_NAME`). */
     val appVersion: String
+
+    /** What build it is: a release, or a development build of a later commit (About's version). */
+    val appBuild: AppBuild
 
     /** Which version this is (About: *Google Play version* / *GitHub version*). */
     val distribution: Distribution
@@ -99,6 +103,12 @@ interface SettingsDeps {
 
     /** Undo on the "Tip closed" snackbar after [dismissUpdatesBanner]. */
     fun restoreUpdatesBanner() {}
+
+    /**
+     * *Finish setup* (#181): the optional setup steps still open, by title ("Your followers · Insulin pens"); null =
+     * none (no row).
+     */
+    val setupExtras: Flow<String?> get() = flowOf(null)
 
     /** How many tips (home's and this one) are closed: *Show closed tips* shows while any is. */
     val closedTips: Flow<Int> get() = flowOf(0)

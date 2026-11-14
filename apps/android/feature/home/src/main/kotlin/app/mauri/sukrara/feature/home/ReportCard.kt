@@ -42,6 +42,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -52,11 +53,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.GraphPalette
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.Bands
@@ -192,6 +195,9 @@ private fun PeriodPicker(
     days: Int,
     onDays: (Int) -> Unit,
 ) {
+    // the card's compact lengths ("7d"; Spanish "7 d"), like every row of lengths side by side (#181); spoken in words
+    val resources = LocalContext.current.resources
+    val words = remember(resources) { CardWords.of(resources).durations }
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         REPORT_DAYS.forEachIndexed { i, d ->
             val spoken = pluralStringResource(R.plurals.report_days, d, d)
@@ -201,7 +207,7 @@ private fun PeriodPicker(
                 shape = SegmentedButtonDefaults.itemShape(i, REPORT_DAYS.size),
                 modifier = Modifier.semantics { contentDescription = spoken },
                 icon = {},
-            ) { Text(stringResource(R.string.report_days_short, d), maxLines = 1) }
+            ) { Text(Durations.whole(d * 1440L, words), maxLines = 1) }
         }
     }
 }

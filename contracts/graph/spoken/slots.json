@@ -1,5 +1,5 @@
 {
- "about": "What TalkBack and VoiceOver say for each slot beside the value (#25): a report ring by the number it draws, the last treatment by its kind, amount and age. Run by SpokenFixtureTest (Android, A11y.metric / A11y.last) and SpokenFixtureTests (Mac, the same). Format: ../README.md, 'Spoken sentence'.",
+ "about": "What TalkBack and VoiceOver say for each slot beside the value (#25): a report ring by the number it draws, the last treatment by its age first (the time since it is the slot's main number, #206), then its kind and amount. Run by SpokenFixtureTest (Android, A11y.metric / A11y.last) and SpokenFixtureTests (Mac, the same). Format: ../README.md, 'Spoken sentence'.",
  "cases": [
   {"name": "time in range, one day", "slot": {"kind": "TIR", "range": "IN_RANGE", "window": 86400, "text": "86"},
    "expect": {"en": "86% in range over 1 day", "es": "86% en rango durante 1 día"}},
@@ -20,14 +20,14 @@
   {"name": "CV in words", "slot": {"kind": "CV", "window": 86400, "text": "37"},
    "expect": {"en": "Variability 37% over 1 day", "es": "Variabilidad 37% durante 1 día"}},
   {"name": "last rapid insulin", "last": {"k": "rapid", "a": 4.5, "age": 720},
-   "expect": {"en": "Rapid insulin 4.5 units, 12 min ago", "es": "Insulina rápida 4,5 unidades, hace 12 min"}},
+   "expect": {"en": "12 min ago, rapid insulin 4.5 units", "es": "Hace 12 min, insulina rápida 4,5 unidades"}},
   {"name": "last long-acting insulin, one unit", "last": {"k": "long", "a": 1, "age": 10800},
-   "expect": {"en": "Long-acting insulin 1 unit, 3 h ago", "es": "Insulina lenta 1 unidad, hace 3 h"}},
+   "expect": {"en": "3 h ago, long-acting insulin 1 unit", "es": "Hace 3 h, insulina lenta 1 unidad"}},
   {"name": "last carbs, just now", "last": {"k": "carbs", "a": 45, "age": 30},
-   "expect": {"en": "Carbs 45 grams, just now", "es": "Hidratos 45 gramos, ahora mismo"}},
+   "expect": {"en": "Just now, carbs 45 grams", "es": "Ahora mismo, hidratos 45 gramos"}},
   {"name": "last note", "last": {"k": "note", "a": 0, "age": 600},
-   "expect": {"en": "Note, 10 min ago", "es": "Nota, hace 10 min"}},
+   "expect": {"en": "10 min ago, note", "es": "Hace 10 min, nota"}},
   {"name": "insulin with the carbs drawn inside it", "last": {"k": "rapid", "a": 3, "age": 600}, "with": {"k": "carbs", "a": 30, "age": 900},
-   "expect": {"en": "Rapid insulin 3 units, 10 min ago. Carbs 30 grams, 15 min ago", "es": "Insulina rápida 3 unidades, hace 10 min. Hidratos 30 gramos, hace 15 min"}}
+   "expect": {"en": "10 min ago, rapid insulin 3 units. 15 min ago, carbs 30 grams", "es": "Hace 10 min, insulina rápida 3 unidades. Hace 15 min, hidratos 30 gramos"}}
  ]
 }

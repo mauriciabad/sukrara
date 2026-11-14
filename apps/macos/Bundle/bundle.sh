@@ -35,6 +35,9 @@
 #                                widget) it is signed for upload instead (tools/release/mac-appstore.sh), and no longer
 #                                runs here. Apple Distribution never signs the GitHub version.
 # Version: <repo>/VERSION (x.y.z); CFBundleVersion = versionCode = x*1000000 + y*1000 + z (0.12.0 → 12000).
+# What the build is: Info.plist SukraraBuild = tools/release/build-info.sh's line: "release" only with
+#   SUKRARA_RELEASE_BUILD=1 (mac-release.sh, mac-appstore.sh) at the release commit (else the build stops), every other
+#   build "development <commits> <commit> <date>" (About and Settings say "Development build · …"; verify-app.sh).
 # Never copy the result into /Applications or ~/Applications by hand: tools/install.sh mac does that.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -54,7 +57,7 @@ for arg in "$@"; do
     --no-profile) NO_PROFILE=1 ;;
     --dev) DEV=1 ;;
     --app-store) APP_STORE=1 ;;
-    -h|--help) sed -n '5,38p' "$0"; exit 0 ;;
+    -h|--help) sed -n '5,41p' "$0"; exit 0 ;;
     *) die "unknown argument '$arg' (--unsigned, --no-profile, --dev, --app-store)" ;;
   esac
 done
@@ -126,6 +129,7 @@ CODE=$(echo "$VERSION" | awk -F. '{ print $1 * 1000000 + $2 * 1000 + $3 }')
 BUILD=$CODE
 [ "$DEV" = 1 ] && BUILD="$CODE.$(date -u +%y%m%d%H%M)"
 [ "$APP_STORE" = 1 ] && BUILD="$CODE.$(date -u +%y%m%d.%H%M)"
+SUKRARA_BUILD=$("$REPO/tools/release/build-info.sh") || die "tools/release/build-info.sh refused (see above)"
 
 # Identity and provisioning profiles (before building, so a missing one fails fast)
 SIGN=-; TS=--timestamp=none; PROFILE=; WIDGET_PROFILE=; STORE_SIGNED=0
@@ -244,7 +248,7 @@ cp -R "$HERE/es.lproj" "$APP/Contents/Resources/"
 
 fill() {
   sed -e "s/@VERSION@/$VERSION/g" -e "s/@BUILD@/$BUILD/g" -e "s/@GROUP@/$GROUP/g" -e "s/@TEAM@/$TEAM/g" \
-    -e "s/@DISTRIBUTION@/$DISTRIBUTION/g" "$1" > "$2"
+    -e "s/@DISTRIBUTION@/$DISTRIBUTION/g" -e "s/@SUKRARA_BUILD@/$SUKRARA_BUILD/g" "$1" > "$2"
   plutil -lint -s "$2"
 }
 fill "$HERE/Info.plist.in" "$APP/Contents/Info.plist"
@@ -370,4 +374,4 @@ if [ "$APP_STORE" = 1 ]; then
   if [ "$STORE_SIGNED" = 1 ]; then VARIANT="App Store version, signed for upload (doesn't run here)"
   else VARIANT="App Store version, sandboxed, signed to run here"; fi
 fi
-echo "built $APP $VERSION ($BUILD), $VARIANT, signed: $SIGNED_BY"
+echo "built $APP $VERSION ($BUILD), $SUKRARA_BUILD, $VARIANT, signed: $SIGNED_BY"

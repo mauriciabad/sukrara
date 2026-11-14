@@ -215,7 +215,7 @@ public enum GlucoseCard {
         for (i, item) in items.enumerated() {
             let centre = Slots.draw(
                 ctx, item, center: CGPoint(x: cx[i], y: box.midY), radius: size / 2, now: now, pal, d: d, unit: st.unit,
-                words: st.words, countdown: i == main ? countdown : nil)
+                words: st.words, countdown: i == main ? countdown : nil, rec: rec)
             // exactly what a ring writes in its centre (contracts/graph/widgets/poc.json `rings`: the number, no "%")
             if let centre { rec.add("slot.text", nil, centre) }
             rec.add(
@@ -635,13 +635,27 @@ public enum GlucoseCard {
 
     /// The card as a bitmap (widgets, PNG evidence): `scale` px per point, y-down.
     /// `overflow`: room around the card in the picture (it is `overflow` larger on every side) for what overflows the
-    /// card, such as a ring's laurel or crown; the card itself keeps `size`.
+    /// card, such as a ring's laurel or crown; the card itself keeps `size`. `background` fills the whole picture,
+    /// the overflow too.
     static func image(
         size: CGSize, scale: CGFloat = 2, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
         _ st: CardStyle, _ pal: GraphPalette, background: CGColor? = nil, surface: CardSurface,
         metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
         overflow: CGFloat = 0, view: ChartView? = nil
     ) -> CGImage? {
+        render(
+            size: size, scale: scale, readings: readings, marks: marks, now: now, st, pal, background: background,
+            surface: surface, metricsOf: metricsOf, alerts: alerts, overflow: overflow, view: view
+        )?.image
+    }
+
+    /// `image` with what it laid out (one drawing for both).
+    static func render(
+        size: CGSize, scale: CGFloat = 2, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
+        _ st: CardStyle, _ pal: GraphPalette, background: CGColor? = nil, surface: CardSurface,
+        metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
+        overflow: CGFloat = 0, view: ChartView? = nil
+    ) -> (image: CGImage, layout: CardLayout)? {
         let pw = max(16, Int((size.width + 2 * overflow) * scale)),
             ph = max(16, Int((size.height + 2 * overflow) * scale))
         guard
@@ -652,13 +666,16 @@ public enum GlucoseCard {
         else { return nil }
         ctx.translateBy(x: 0, y: CGFloat(ph))
         ctx.scaleBy(x: scale, y: -scale)
+        if let background {
+            ctx.setFillColor(background)
+            ctx.fill(CGRect(x: 0, y: 0, width: size.width + 2 * overflow, height: size.height + 2 * overflow))
+        }
         ctx.translateBy(x: overflow, y: overflow)
-        if let background { ctx.setFillColor(background); ctx.fill(CGRect(origin: .zero, size: size)) }
-        draw(
+        let layout = draw(
             ctx, size: size, readings: readings, marks: marks, now: now, st, pal, surface: surface, part: .all,
             metricsOf: metricsOf,
             alerts: alerts, view: view)
-        return ctx.makeImage()
+        return ctx.makeImage().map { ($0, layout) }
     }
 }
 
@@ -695,8 +712,12 @@ public struct CardData: Sendable, Equatable, Codable {
     public var latest: GraphReading? { readings.max { $0.t < $1.t } }
 
     /// A slot's numbers: the stored history's for a window longer than `readings` cover (counted for these ranges in
-    /// the last day), else counted from `readings` at `now` (exact, also in a widget frame hours ahead).
+    /// the last day), else counted from `readings` at `now` (exact, also in a widget frame hours ahead). Numbers
+    /// counted over these same readings at this same moment are taken as they are: the same count, not done again.
     func metrics(_ spec: RingSpec, _ bands: Bands) -> GlucoseMetrics {
+        if let slots, slots.at == now, slots.counted == readings.count, let m = slots.metrics(spec.window, bands) {
+            return m
+        }
         let covered = readings.map(\.t).min().map { now - $0 } ?? 0
         if spec.window > covered + 3600, let slots, now - slots.at < 86_400, now >= slots.at - 3600,
             let m = slots.metrics(spec.window, bands)
@@ -720,6 +741,9 @@ public struct SlotNumbers: Sendable, Equatable, Codable {
     var entries: [Entry]
     /// When they were counted (epoch s): the windows end then.
     public var at: TimeInterval
+    /// How many readings they were counted over (with `at`: a card drawn over that very history at that moment takes
+    /// them as they are instead of counting again; the panel's chart redraws on every scroll step).
+    var counted: Int
 
     /// The numbers for every window a card with any of `configs` can show (its slots, also those beyond the ring
     /// count a place may show, and the last-treatment slot's ring), over `history` up to `now`.
@@ -735,7 +759,7 @@ public struct SlotNumbers: Sendable, Equatable, Codable {
                         metrics: GlucoseMetrics.of(history, from: now - window, to: now, bands: bands)))
             }
         }
-        return SlotNumbers(entries: entries, at: now)
+        return SlotNumbers(entries: entries, at: now, counted: history.count)
     }
 
     func metrics(_ window: TimeInterval, _ bands: Bands) -> GlucoseMetrics? {
@@ -770,13 +794,42 @@ extension GlucoseCard {
         return tinted ? img.flatMap(tintedMask) : img
     }
 
-    /// A tinted widget's card (#189): white, its opacity how strongly each pixel shows (the pixel's brightness, its
-    /// largest channel, × its opacity), no colour of its own. The system draws the tinted modes on a material that is
-    /// dark or light by the wallpaper behind it, not by the system's appearance: a bitmap with its own light (or dark)
-    /// ink vanishes on one of them, as the dark theme's light ink did on the light desktop material. The widget fills
-    /// this mask with its primary style (template image), which the system picks for that material, like its own text.
-    /// The brightness rather than the luminance keeps a range colour (a red value, a green arc) as strong as the grey
-    /// ink it stands for, while the grid and band keep the tinted palette's faintness.
+    /// A desktop widget's picture of `surface` at `size`, `overflow` pt larger on every side (it reaches over the
+    /// widget's margins to its edges). In full colour the card is drawn on its own opaque background
+    /// (`widgetBackground`) over the whole picture; `tinted` (the system asked for accented / vibrant) gives the
+    /// `tintedMask` instead.
+    ///
+    /// Opaque because of how the dimmed desktop draws a widget (an app in front, #189): it doesn't ask for a tinted
+    /// mode, it draws the full-colour widget greyscale, each pixel by its luminance, with its opacity lifted, and the
+    /// container background the same way. A dark card on a see-through background turned into light inks on a light
+    /// grey card: the value washed out, the dark grid and the faint band came out strongest. On its own dark card the
+    /// light inks stay light on dark, and the grid and band, already blended into the card, stay as faint as they look.
+    public static func widgetImage(
+        surface: CardSurface, size: CGSize, config: GraphConfig, overrides: PlaceOverrides = PlaceOverrides(),
+        data: CardData, unit: GlucoseUnit, dark: Bool, tinted: Bool, scale: CGFloat, overflow: CGFloat,
+        words: CardWords = .current
+    ) -> CGImage? {
+        if tinted {
+            return image(
+                surface: surface, size: size, config: config, overrides: overrides, data: data, unit: unit,
+                dark: dark, tinted: true, scale: scale, overflow: overflow, words: words)
+        }
+        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
+        style.unit = unit
+        return image(
+            size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
+            palette(surface, dark: dark, contrast: false), background: widgetBackground(dark: dark), surface: surface,
+            metricsOf: data.metrics, alerts: data.alerts, overflow: overflow)
+    }
+
+    /// A desktop widget's container background: the card's own colour, opaque (`widgetImage`).
+    public static func widgetBackground(dark: Bool) -> CGColor { GraphPalette.of(dark: dark).bg }
+
+    /// A tinted widget's card: white, its opacity how strongly each pixel shows (the pixel's brightness, its largest
+    /// channel, × its opacity), no colour of its own, for the widget to fill with the system's primary ink (template
+    /// image) when the system asks for accented / vibrant rendering. The brightness rather than the luminance keeps a
+    /// range colour (a red value, a green arc) as strong as the grey ink it stands for, while the grid and band keep the
+    /// tinted palette's faintness. (The dimmed desktop doesn't ask for these modes: `widgetImage`.)
     static func tintedMask(_ img: CGImage) -> CGImage? {
         let w = img.width, h = img.height
         guard
@@ -802,26 +855,38 @@ extension GlucoseCard {
         return surface == .menubarCard ? p.onModule(contrast: contrast) : p
     }
 
-    /// Where `surface`'s card at `size` draws its plot and, while `view` scrolls or zooms it, the "Now" pill (points
-    /// from the top left; nil when not drawn). The panel turns gestures over the plot into a `ChartView` and puts its
-    /// "Now" button on the pill.
-    public static func chartRects(
-        surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit,
-        view: ChartView? = nil, words: CardWords = .current
-    ) -> (plot: CGRect?, now: CGRect?) {
-        guard
-            let ctx = CGContext(
-                data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return (nil, nil) }
+    /// The room every surface leaves around the card, on every side, for what the card draws past its edges: a ring's
+    /// laurel, flowers and crown, the value's digits overhanging the card's left edge (#181: the panel cut them). The
+    /// renderer keeps all its ink within it (`OverflowTests`).
+    public static let overflowRoom: CGFloat = 12
+
+    /// What a pressable, scrollable card (the panel) needs from one drawing: the card as a bitmap (as `image`, with
+    /// `overflowRoom` around the card on every side: place it that much past the card's frame), and where it drew its
+    /// plot, the "Now" pill (while `view` scrolls or zooms it) and its status pill (Eat carbs, Take insulin, a mute),
+    /// in points from the card's top left; nil when not drawn. The panel turns gestures over the plot into a
+    /// `ChartView` and puts its buttons on the pills. One drawing per frame: a scroll redraws only this.
+    public struct Picture {
+        public let image: CGImage?
+        public let plot: CGRect?
+        public let now: CGRect?
+        public let pill: CGRect?
+        /// The room around the card in `image`, on every side (`overflowRoom`).
+        public var overflow: CGFloat { GlucoseCard.overflowRoom }
+    }
+
+    public static func picture(
+        surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit, dark: Bool,
+        scale: CGFloat = 2, view: ChartView? = nil, contrast: Bool = false, words: CardWords = .current
+    ) -> Picture {
         var style = surface.style(config, PlaceOverrides(), sensor: data.sensor, words: words)
         style.unit = unit
-        let layout = draw(
-            ctx, size: size, readings: data.readings, marks: data.marks, now: data.now, style,
-            GraphPalette.of(dark: false), surface: surface, part: .all, metricsOf: data.metrics, alerts: data.alerts,
-            view: view)
-        return (layout.first("chart.plot")?.box, layout.first("chart.now")?.box)
+        let r = render(
+            size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
+            Self.palette(surface, dark: dark, contrast: contrast), surface: surface, metricsOf: data.metrics,
+            alerts: data.alerts, overflow: overflowRoom, view: view)
+        return Picture(
+            image: r?.image, plot: r?.layout.first("chart.plot")?.box, now: r?.layout.first("chart.now")?.box,
+            pill: r?.layout.first("value.pill")?.box)
     }
 
     /// The length of `surface`'s chart window (s) with `config`: what a zoom starts from (nil = no chart).

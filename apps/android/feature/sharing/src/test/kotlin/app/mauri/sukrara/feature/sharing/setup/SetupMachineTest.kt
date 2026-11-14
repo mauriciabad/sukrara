@@ -5,9 +5,13 @@ package app.mauri.sukrara.feature.sharing.setup
 
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Alerts
+import app.mauri.sukrara.feature.sharing.setup.SetupStep.History
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Identity
+import app.mauri.sukrara.feature.sharing.setup.SetupStep.Pens
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Permissions
+import app.mauri.sukrara.feature.sharing.setup.SetupStep.Ready
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Sensor
+import app.mauri.sukrara.feature.sharing.setup.SetupStep.Updates
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Welcome
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -22,9 +26,27 @@ class SetupMachineTest {
 
     private fun wearer(): SetupRecord = m.completeWelcome(SetupRecord())
 
+    /** The essentials answered: permissions done, sensor and alerts skipped. */
+    private fun essentials(): SetupRecord = m.skip(m.skip(m.completePermissions(wearer()), Sensor), Alerts)
+
     @Test
-    fun `the exact step order`() {
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Identity, SetupStep.History), m.steps(facts))
+    fun `the exact step order - essentials, Ready, then the optional steps`() {
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Identity, History), m.steps(facts))
+        // every part of the GitHub version on a phone with NFC
+        val all = facts.copy(updates = UpdateChoice.Open, pens = false)
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Updates, Identity, Pens, History), m.steps(all))
+        assertTrue(listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Sensor, Alerts).all { it.essential })
+        assertTrue(listOf(Updates, Identity, Pens, History).all { it.extra && !it.essential })
+    }
+
+    @Test
+    fun `step N of M counts within its part`() {
+        val all = facts.copy(updates = UpdateChoice.Open, pens = false)
+        assertEquals(3 to 5, m.place(Permissions, all))
+        assertEquals(5 to 5, m.place(Alerts, all))
+        assertNull(m.place(Ready, all))
+        assertEquals(1 to 4, m.place(Updates, all))
+        assertEquals(4 to 4, m.place(History, all))
     }
 
     @Test
@@ -53,7 +75,12 @@ class SetupMachineTest {
     fun `a follower joins before anything else and can't skip it`() {
         assertEquals(Result.Done(Role.Follower), m.chooseRole(Role.Follower, confirmed = true, none))
         val follower = none.copy(role = Role.Follower)
+        // nothing optional for a follower on Google Play: no Ready either
         assertEquals(listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts), m.steps(follower))
+        assertEquals(
+            listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts, Ready, Updates),
+            m.steps(follower.copy(updates = UpdateChoice.Open, pens = false)),
+        )
         assertTrue(SetupStep.Join !in m.steps(facts))
         val start = m.completeWelcome(SetupRecord())
         assertEquals(SetupStep.Join, m.next(start, follower))
@@ -99,17 +126,79 @@ class SetupMachineTest {
     }
 
     @Test
-    fun `identity completes only once an identity exists`() {
-        val r = m.confirmAlerts(m.skip(m.completePermissions(wearer()), Sensor))
-        assertEquals(Identity, m.next(m.completeIdentity(r, facts), facts))
-        val shared = facts.copy(hasIdentity = true)
-        assertEquals(SetupStep.History, m.next(m.completeIdentity(r, shared), shared))
+    fun `after the essentials Ready - Set up the rest walks the optional steps`() {
+        var r = essentials()
+        assertEquals(Ready, m.next(r, facts))
+        assertEquals(listOf(Identity, History), m.extrasLeft(r, facts))
+        r = m.continueExtras(r)
+        assertEquals(Identity, m.next(r, facts))
+        // Back from the first optional step shows Ready again
+        assertEquals(Ready, m.previous(Identity, facts))
     }
 
     @Test
-    fun `skipped steps become Finish-setup items and drop out when their fact changes`() {
+    fun `Later on Ready ends the walk - the optional steps wait on Settings' Finish setup`() {
+        val all = facts.copy(updates = UpdateChoice.Open, pens = false)
+        val later = m.skip(essentials(), Ready)
+        assertNull(m.next(later, all))
+        assertEquals(listOf(Updates, Identity, Pens, History), m.extrasLeft(later, all))
+        // home never names an optional step (home stays about glucose): only the skipped essentials
+        assertEquals(SetupCard.Finish(FinishItem.AlertsNotConfirmed), m.card(later, all))
+        // Finish setup in Settings: the walk goes on into them
+        val resumed = m.continueExtras(later)
+        assertEquals(Updates, m.next(resumed, all))
+        assertTrue(Ready in resumed.completed && Ready !in resumed.skipped)
+    }
+
+    @Test
+    fun `an optional step left with Later stays on Finish setup, a final answer leaves it`() {
+        val all = facts.copy(updates = UpdateChoice.Open, pens = false)
+        var r = m.continueExtras(essentials())
+        r = m.skip(r, Updates) // Not now: final
+        r = m.skip(r, Identity) // Later
+        r = m.skip(r, Pens) // Later
+        r = m.skip(r, History) // Start empty: final
+        assertNull(m.next(r, all))
+        assertEquals(listOf(Identity, Pens), m.extrasLeft(r, all))
+        // Finish setup again: the ones put off come back, the final ones don't
+        assertEquals(Identity, m.next(m.continueExtras(r), all))
+        // answered elsewhere: an identity exists, pen reading answered in Settings
+        assertEquals(emptyList<SetupStep>(), m.extrasLeft(r, all.copy(hasIdentity = true, pens = true)))
+    }
+
+    @Test
+    fun `the pens step - wearer with NFC only, done when reading is answered anywhere`() {
+        assertTrue(Pens !in m.steps(facts))
+        assertTrue(Pens !in m.steps(facts.copy(role = Role.Follower, pens = false)))
+        val nfc = facts.copy(pens = false)
+        val r = m.completeIdentity(m.continueExtras(essentials()), nfc.copy(hasIdentity = true))
+        val shared = nfc.copy(hasIdentity = true)
+        assertEquals(Pens, m.next(r, shared))
+        assertEquals(History, m.next(m.completePens(r), shared))
+        assertEquals(History, m.next(r, shared.copy(pens = true)))
+        assertTrue(m.answers(Pens, m::completePens))
+    }
+
+    @Test
+    fun `nothing optional on this phone - the essentials end setup`() {
+        val follower = none.copy(role = Role.Follower, following = true)
+        val r = m.confirmAlerts(m.completePermissions(m.completeJoin(wearer(), follower)))
+        assertNull(m.next(r, follower))
+        assertTrue(m.extrasLeft(r, follower).isEmpty())
+    }
+
+    @Test
+    fun `identity completes only once an identity exists`() {
+        val r = m.continueExtras(essentials())
+        assertEquals(Identity, m.next(m.completeIdentity(r, facts), facts))
+        val shared = facts.copy(hasIdentity = true)
+        assertEquals(History, m.next(m.completeIdentity(r, shared), shared))
+    }
+
+    @Test
+    fun `skipped essentials become Finish-setup items and drop out when their fact changes`() {
         var r = wearer()
-        for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
+        for (s in listOf(Permissions, Sensor, Alerts, Ready)) r = m.skip(r, s)
         assertNull(m.next(r, facts))
         assertEquals(FinishItem.entries, m.finishItems(r, facts))
         val later = facts.copy(ownSensorLive = true, hasIdentity = true)
@@ -117,22 +206,21 @@ class SetupMachineTest {
     }
 
     @Test
-    fun `the Finish-setup walk shows each skipped step once, in item order, then home`() {
+    fun `the Finish-setup walk shows each skipped essential once, in item order, then home`() {
         var r = wearer()
-        for (s in listOf(Permissions, Sensor, Alerts, Identity, SetupStep.History)) r = m.skip(r, s)
+        for (s in listOf(Permissions, Sensor, Alerts, Ready)) r = m.skip(r, s)
         assertEquals(Permissions, m.nextItem(r, facts, emptySet()))
         assertEquals(Alerts, m.nextItem(r, facts, setOf(Permissions)))
         // Later on a step shown alone keeps it skipped (on the card) and moves on, never back to it
         r = m.skip(r, Alerts)
         assertEquals(Sensor, m.nextItem(r, facts, setOf(Permissions, Alerts)))
-        assertEquals(Identity, m.nextItem(r, facts, setOf(Permissions, Alerts, Sensor)))
-        assertNull(m.nextItem(r, facts, setOf(Permissions, Alerts, Sensor, Identity)))
+        assertNull(m.nextItem(r, facts, setOf(Permissions, Alerts, Sensor)))
         // a step done meanwhile drops out by itself
-        assertEquals(Identity, m.nextItem(m.confirmAlerts(r), facts.copy(ownSensorLive = true), setOf(Permissions)))
+        assertNull(m.nextItem(m.confirmAlerts(r), facts.copy(ownSensorLive = true), setOf(Permissions)))
     }
 
     @Test
-    fun `leaving the walk half-way loses nothing - home's banner resumes it at the step left`() {
+    fun `leaving the walk half-way loses nothing - home's banner resumes it at the essential left`() {
         // Back on the step after the role, before answering anything
         var r = wearer()
         assertEquals(SetupCard.Resume(Permissions), m.card(r, facts))
@@ -141,10 +229,10 @@ class SetupMachineTest {
         // a skipped step stays skipped; the walk resumes after it
         r = m.skip(r, Sensor)
         assertEquals(SetupCard.Resume(Alerts), m.card(r, facts))
-        r = m.skip(m.skip(m.skip(r, Alerts), Identity), SetupStep.History)
-        // the walk is over: the first skipped step that still matters
+        r = m.skip(r, Alerts)
+        // the essentials are over (the walk waits at Ready): the first skipped one that still matters
         assertEquals(SetupCard.Finish(FinishItem.AlertsNotConfirmed), m.card(r, facts))
-        assertNull(m.card(r, facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true, alertsReady = true)))
+        assertNull(m.card(r, facts.copy(ownSensorLive = true, alertsConfirmed = true, alertsReady = true)))
         // before a role home says setup is incomplete (no banner); a follower's join is led to by home's own reason
         assertNull(m.card(SetupRecord(), none))
         assertNull(m.card(m.completeWelcome(SetupRecord()), none.copy(role = Role.Follower)))
@@ -156,7 +244,8 @@ class SetupMachineTest {
         assertEquals(Welcome, m.previous(SetupStep.Role, none))
         assertNull(m.previous(Permissions, facts))
         assertEquals(Permissions, m.previous(Sensor, facts))
-        assertEquals(Identity, m.previous(SetupStep.History, facts))
+        assertEquals(Alerts, m.previous(Ready, facts))
+        assertEquals(Identity, m.previous(History, facts))
         // a follower can still go back to the role from the join step (a phone that wears the sensor after all)
         val follower = none.copy(role = Role.Follower)
         assertEquals(SetupStep.Role, m.previous(SetupStep.Join, follower))
@@ -180,33 +269,33 @@ class SetupMachineTest {
 
     @Test
     fun `bring your history back is offered once, to a wearer, and again after the database was replaced`() {
-        val done =
-            m.completeIdentity(
-                m.confirmAlerts(m.completeSensor(m.completePermissions(wearer()), facts.copy(ownSensorLive = true))),
-                facts.copy(hasIdentity = true),
-            )
-        val live = facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true)
-        assertEquals(SetupStep.History, m.next(done, live))
-        assertTrue(m.historyDue(done, live))
+        val shared = facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true)
+        val done = m.completeIdentity(m.continueExtras(m.completeSensor(m.completePermissions(wearer()), shared)), shared)
+        assertEquals(History, m.next(done, shared))
+        assertTrue(m.historyDue(done, shared))
         // either answer is final, and it never becomes a Finish-setup item
-        for (answered in listOf(m.completeHistory(done), m.skip(done, SetupStep.History))) {
-            assertNull(m.next(answered, live))
-            assertTrue(m.finishItems(answered, live).isEmpty())
-            assertTrue(!m.historyDue(answered, live))
+        for (answered in listOf(m.completeHistory(done), m.skip(done, History))) {
+            assertNull(m.next(answered, shared))
+            assertTrue(m.finishItems(answered, shared).isEmpty())
+            assertTrue(m.extrasLeft(answered, shared).isEmpty())
+            assertTrue(!m.historyDue(answered, shared))
             // a replaced database offers it again
-            assertTrue(m.historyDue(m.reopen(answered, SetupStep.History), live))
+            assertTrue(m.historyDue(m.reopen(answered, History), shared))
         }
         // never to a follower (their history is the wearer's) or before a role
-        assertTrue(SetupStep.History !in m.steps(facts.copy(role = Role.Follower)))
-        assertTrue(!m.historyDue(done, live.copy(role = Role.Follower)) && !m.historyDue(done, live.copy(role = null)))
+        assertTrue(History !in m.steps(facts.copy(role = Role.Follower)))
+        assertTrue(!m.historyDue(done, shared.copy(role = Role.Follower)) && !m.historyDue(done, shared.copy(role = null)))
     }
 
     @Test
-    fun `history is never offered on its own while the walk stopped at an earlier step`() {
+    fun `history is never offered on its own while other steps are open`() {
         // the walk left on the step after the role: the banner resumes it there, history comes last in the walk
         assertTrue(!m.historyDue(wearer(), facts))
-        val skippedAll = listOf(Permissions, Sensor, Alerts, Identity).fold(wearer()) { r, s -> m.skip(r, s) }
-        assertTrue(m.historyDue(skippedAll, facts))
+        // the walk waits at Ready, or the person put the optional steps off with other ones still open
+        assertTrue(!m.historyDue(essentials(), facts))
+        assertTrue(!m.historyDue(m.skip(essentials(), Ready), facts))
+        // everything else answered: offered on its own at launch
+        assertTrue(m.historyDue(m.skip(essentials(), Ready), facts.copy(hasIdentity = true)))
     }
 
     @Test
@@ -214,61 +303,48 @@ class SetupMachineTest {
         val confirmed = facts.copy(alertsConfirmed = true)
         val r = m.skip(m.skip(m.completePermissions(wearer()), Sensor), Alerts)
         assertTrue(FinishItem.AlertsNotConfirmed !in m.finishItems(r, confirmed))
-        assertEquals(Identity, m.next(m.reopen(r, Alerts), confirmed))
+        assertEquals(Ready, m.next(m.reopen(r, Alerts), confirmed))
     }
 
     @Test
-    fun `no Finish-setup items before a role`() {
+    fun `no Finish-setup items or optional steps before a role`() {
         assertEquals(emptyList<FinishItem>(), m.finishItems(SetupRecord(skipped = setOf(Alerts)), none))
+        assertEquals(emptyList<SetupStep>(), m.extrasLeft(SetupRecord(skipped = setOf(Alerts)), none))
     }
 
     private val github = facts.copy(updates = UpdateChoice.Open)
 
     @Test
-    fun `the GitHub version asks about updates right after the alert checklist, both roles - never Google Play`() {
-        val u = SetupStep.Updates
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, u, Sensor, Alerts, Identity, SetupStep.History), m.steps(github))
-        assertEquals(
-            listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, u, Alerts),
-            m.steps(github.copy(role = Role.Follower)),
-        )
+    fun `the GitHub version asks about updates first among the optional steps, both roles - never Google Play`() {
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Updates, Identity, History), m.steps(github))
         // no updater (the Google Play build): no step, whatever was recorded
-        assertTrue(u !in m.steps(facts) && u !in m.steps(facts.copy(role = Role.Follower)))
-        assertEquals(Sensor, m.next(m.completePermissions(wearer()), facts))
+        assertTrue(Updates !in m.steps(facts) && Updates !in m.steps(facts.copy(role = Role.Follower)))
     }
 
     @Test
     fun `Turn on or Not now answer the updates step and the walk goes on`() {
-        val r = m.completePermissions(wearer())
-        assertEquals(SetupStep.Updates, m.next(r, github))
-        assertEquals(Sensor, m.next(m.completeUpdates(r), github))
-        assertEquals(Sensor, m.next(m.skip(r, SetupStep.Updates), github))
+        val r = m.continueExtras(essentials())
+        assertEquals(Updates, m.next(r, github))
+        assertEquals(Identity, m.next(m.completeUpdates(r), github))
+        assertEquals(Identity, m.next(m.skip(r, Updates), github))
         // answered elsewhere first (home's banner, Settings › About): on, or off on purpose
-        assertEquals(Sensor, m.next(r, github.copy(updates = UpdateChoice.On)))
-        assertEquals(Sensor, m.next(r, github.copy(updates = UpdateChoice.Off)))
-        // Back from the sensor step shows it again (its answer kept)
-        assertEquals(SetupStep.Updates, m.previous(Sensor, github))
-        assertTrue(m.answers(SetupStep.Updates, m::completeUpdates))
+        assertEquals(Identity, m.next(r, github.copy(updates = UpdateChoice.On)))
+        assertEquals(Identity, m.next(r, github.copy(updates = UpdateChoice.Off)))
+        // Back from the next step shows it again (its answer kept)
+        assertEquals(Updates, m.previous(Identity, github))
+        assertTrue(m.answers(Updates, m::completeUpdates))
     }
 
     @Test
-    fun `a walk left at the updates step resumes there, but skipping it is no Finish-setup item`() {
-        val r = m.completePermissions(wearer())
-        assertEquals(SetupCard.Resume(SetupStep.Updates), m.card(r, github))
-        val skipped = listOf(SetupStep.Updates, Sensor, Alerts, Identity, SetupStep.History).fold(r) { x, s -> m.skip(x, s) }
-        assertTrue(m.finishItems(skipped, github).none { it.step == SetupStep.Updates })
-    }
-
-    @Test
-    fun `an install that finished setup before the step existed is not sent back - the banner asks instead`() {
-        val before = listOf(Sensor, Alerts, Identity, SetupStep.History).fold(m.completePermissions(wearer())) { r, s -> m.skip(r, s) }
+    fun `an install that finished setup before Ready and the pens step existed is not sent back`() {
+        val before = listOf(Sensor, Alerts, Identity, History).fold(m.completePermissions(wearer())) { r, s -> m.skip(r, s) }
+        // Ready was passed (a later step answered): no walk, no banner for it
         assertNull(m.next(before, github))
-        // history still offered on its own when it is the only step left
-        val noHistory = listOf(Sensor, Alerts, Identity).fold(m.completePermissions(wearer())) { r, s -> m.skip(r, s) }
-        assertTrue(m.historyDue(noHistory, github))
+        // the new pens step waits on Settings' Finish setup, with the followers put off back then
+        assertEquals(listOf(Identity, Pens), m.extrasLeft(before, github.copy(pens = false)))
         // a follower's walk: the alert step after it was answered
         val follower = github.copy(role = Role.Follower, following = true)
         val followed = m.skip(m.completePermissions(m.completeJoin(wearer(), follower)), Alerts)
-        assertNull(m.next(followed, follower))
+        assertEquals(Ready, m.next(followed, follower))
     }
 }

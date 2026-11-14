@@ -149,6 +149,45 @@ class CardScreenshotTest {
         }
     }
 
+    /**
+     * The last-treatment slot on its own (`last-slot-<theme>`, #206): rapid insulin, carbs and insulin with carbs, each
+     * at the largest slot (radius 42 dp), the smallest (15 dp) and the smallest beside a laurel (10 dp), with the widest
+     * times the slot shows ("3h 59m") and "now".
+     */
+    @Test
+    fun lastSlots() {
+        val w = Scenes.words()
+        val rapid = Scenes.treatment("i", TreatmentKind.RapidInsulin, 4.5, 12 * 60)
+        val late = Scenes.treatment("i2", TreatmentKind.RapidInsulin, 12.5, 239 * 60)
+        val carbs = Scenes.treatment("c", TreatmentKind.Carbs, 45.0, 65 * 60)
+        val fresh = Scenes.treatment("c2", TreatmentKind.Carbs, 30.0, 20)
+        val pairCarbs = LastTreatment.Info(Scenes.treatment("c3", TreatmentKind.Carbs, 30.0, 8 * 60), Scenes.NOW + 60 * 60)
+        val infos =
+            listOf(
+                LastTreatment.Info(rapid, Scenes.NOW + 50 * 60),
+                LastTreatment.Info(late, Scenes.NOW + 60),
+                LastTreatment.Info(carbs, Scenes.NOW + 20 * 60),
+                LastTreatment.Info(fresh, Scenes.NOW + 90 * 60),
+                LastTreatment.Info(rapid, Scenes.NOW + 50 * 60, carbs = pairCarbs),
+            )
+        val radii = listOf(42f, 15f, 10f)
+        val cell = 92f
+        val rows = radii.map { 2 * it + 8 }
+        for (dark in listOf(false, true)) {
+            val pal = GraphPalette.of(dark)
+            val bmp = Bitmap.createBitmap((cell * infos.size * d).toInt(), (rows.sum() * d).toInt(), Bitmap.Config.ARGB_8888)
+            val cv = Canvas(bmp).apply { drawColor(pal.bg) }
+            var top = 0f
+            for ((row, r) in radii.withIndex()) {
+                for ((col, info) in infos.withIndex()) {
+                    LastSlot.draw(cv, (col + 0.5f) * cell * d, (top + rows[row] / 2) * d, r * d, info, Scenes.NOW, pal, d, w)
+                }
+                top += rows[row]
+            }
+            bmp.captureRoboImage("src/test/snapshots/last-slot-${if (dark) "dark" else "light"}.png")
+        }
+    }
+
     /** The card in mmol/L (contracts/settings/units.json): the value, the range labels and the slots' numbers. */
     @Test
     fun mmol() {

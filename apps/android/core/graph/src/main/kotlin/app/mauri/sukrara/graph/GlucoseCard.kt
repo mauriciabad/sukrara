@@ -372,7 +372,7 @@ object GlucoseCard {
                 cv.drawCircle(cx[i], cy, if (marked) ringR + 3 * d else size / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = disc })
             }
             val ring = countdown.takeIf { i == main }
-            val centre = Slots.draw(cv, item, cx[i], cy, ringR, model.nowS, pal, d, model.words, ring)
+            val centre = Slots.draw(cv, item, cx[i], cy, ringR, model.nowS, pal, d, model.words, ring, rec)
             rec.add(
                 "slot",
                 RectF(cx[i] - ringR, cy - ringR, cx[i] + ringR, cy + ringR),

@@ -58,6 +58,13 @@ class ManifestTest {
         assertEquals(openOnPurpose, open.toSet())
     }
 
+    /** A debug build is a development build (About says so); only a release build at the release commit says release. */
+    @Test
+    fun `the debug build says it is a development build`() {
+        val meta = root.getElementsByTagName("meta-data").let { list -> (0 until list.length).map { list.item(it) as Element } }
+        assertEquals("development", meta.single { it.attr("name") == "app.mauri.sukrara.build" }.attr("value"))
+    }
+
     @Test
     fun `only Sukrara's own intents open the new-sensor flow`() {
         assertEquals("false", named("app.mauri.sukrara.SensorSetupActivity").attr("exported"))

@@ -29,6 +29,7 @@ import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.rows.whyRes
+import app.mauri.sukrara.feature.settings.search.Section
 import com.android.settingslib.spa.widget.preference.StatusBannerLevel
 import com.android.settingslib.spa.widget.preference.StatusBannerPreference
 import com.android.settingslib.spa.widget.preference.StatusBannerPreferenceModel
@@ -53,6 +54,8 @@ internal fun ReliabilityContent(
     onLetThroughDnd: (Boolean) -> Unit = {},
     alerts: AlertSettings? = null,
     playback: AlertPlayback = AlertPlayback.None,
+    /** *See also* Alerts (docs/35 §7: Alerts ↔ Alert reliability). */
+    openAlerts: () -> Unit = {},
     onBack: () -> Unit,
 ) {
     SettingsPage(stringResource(R.string.st_reliability_title), onBack) {
@@ -117,6 +120,7 @@ internal fun ReliabilityContent(
             SettingsGroup(title = stringResource(R.string.st_reliability_test_title)) { ReliabilityTestRow(alerts, playback) }
         }
         FooterText(stringResource(R.string.st_reliability_footer))
+        SeeAlso(listOf(SeeAlsoLink(stringResource(R.string.st_alerts_title), null, Section.Alerts, openAlerts)))
     }
 }
 

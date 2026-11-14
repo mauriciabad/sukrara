@@ -57,15 +57,15 @@ struct IdentityEditor: View {
                 AvatarView(avatar: draft.avatar, name: draft.name, size: 88)
                     .id((draft.avatar?.json ?? "") + AvatarDrawing.initial(draft.name))
                     .transition(reduceMotion ? .opacity : .scale(scale: 0.85).combined(with: .opacity))
-                VStack(alignment: .leading, spacing: 6) {
-                    Button(L10n.t("Shuffle")) { change { draft.shuffle() } }
-                    Button(draft.customizing ? L10n.t("Done") : L10n.t("Customize")) {
-                        withAnimation(reduceMotion ? nil : .snappy) { draft.customizing.toggle() }
-                    }
-                    .buttonStyle(.link)
-                }
+                Button(L10n.t("Shuffle")) { change { draft.shuffle() } }
             }
-            if draft.customizing {
+            // showing and hiding controls is a disclosure's job (Human Interface Guidelines, Disclosure controls)
+            DisclosureGroup(
+                L10n.t("Customize"),
+                isExpanded: Binding(
+                    get: { draft.customizing },
+                    set: { open in withAnimation(reduceMotion ? nil : .snappy) { draft.customizing = open } })
+            ) {
                 VStack(alignment: .leading, spacing: 10) {
                     Picker(
                         L10n.t("Shape"),
@@ -94,11 +94,12 @@ struct IdentityEditor: View {
                     }
                     Button(L10n.t("Turn the Colours")) { change { draft.turn() } }
                 }
-                .transition(.opacity)
+                .padding(.top, 6)
             }
-            TextField(L10n.t("Your name"), text: $draft.name)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: draft.name) { draft.clampName() }
+            LabeledContent(L10n.t("Name")) {
+                TextInput(label: L10n.t("Name"), text: $draft.name)
+                    .onChange(of: draft.name) { draft.clampName() }
+            }
             Text(
                 L10n.t(
                     "Only the people you share with see your name and picture. They travel end-to-end encrypted and are never posted publicly."
@@ -128,12 +129,8 @@ struct IdentitySheet: View {
             IdentityEditor(draft: draft)
             Text(L10n.t("The person you follow sees the change as soon as it reaches them."))
                 .font(.callout).foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button(L10n.t("Cancel"), role: .cancel, action: onCancel).keyboardShortcut(.cancelAction)
-                Button(L10n.t("Save")) { onSave(draft.name, draft.avatar) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!draft.canSave)
+            DialogButtons(L10n.t("Save"), enabled: draft.canSave, cancel: onCancel) {
+                onSave(draft.name, draft.avatar)
             }
         }
         .padding(20)

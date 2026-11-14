@@ -82,7 +82,7 @@ import Testing
         m.useOwn()
         m.setNumber(150, MacSettings.bandTight)
         m.setNumber(3, MacSettings.ringCount)
-        m.setPlaceHours(6, .menubar)
+        m.setPlaceHours(6, .widget)
         m.alerts.update {
             $0[.low].threshold = 80
             $0[.high].repeatMin = 60
@@ -103,7 +103,7 @@ import Testing
         // what isn't mirrored stays this Mac's own
         #expect(m.alerts.settings[.noData] == before[.noData] && m.alerts.settings[.low].alarm == before[.low].alarm)
         #expect(m.alerts.settings.sounds == before.sounds && m.alerts.settings.notificationActions.muteMin == 60)
-        #expect(m.placeHours(.menubar) == 6)
+        #expect(m.placeHours(.widget) == 6)
     }
 
     @Test func resetToDefaultsDoesNothingOutsideCustom() {

@@ -52,7 +52,9 @@ if [ $unsigned = 1 ]; then
     -x verifyReleaseSigning -x verifyJuggluco -x verifyPlayReleaseBundleNativeCore -x verifyPlayReleaseApkNativeCore)
 else
   SUKRARA_KEYSTORE_PASSWORD="$(release_password)" || { echo "no release key password (Keychain item sukrara-android-release)" >&2; exit 2; }
-  export SUKRARA_KEYSTORE_PASSWORD
+  # a release build (tools/release/build-info.sh): only from the release commit; verify-apk.sh --release checks it
+  SUKRARA_RELEASE_BUILD=1
+  export SUKRARA_KEYSTORE_PASSWORD SUKRARA_RELEASE_BUILD
   # --no-daemon: the key's password must not stay in a long-lived Gradle daemon's environment.
   (cd "$root/apps/android" && ./gradlew --no-daemon --console=plain $tasks)
   unset SUKRARA_KEYSTORE_PASSWORD
@@ -90,7 +92,7 @@ else bad "no base/root/META-INF/xposed/java_init.list: LSPosed wouldn't find the
 # What a phone gets: bundletool's universal APK, or Gradle's play APK.
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT INT TERM
-verify_flags="--play"
+verify_flags="--release --play"
 [ $unsigned = 1 ] && verify_flags="--play --unsigned"
 if [ -n "$bundletool" ]; then
   if $bundletool validate --bundle="$aab" >"$tmp/validate.txt" 2>&1; then ok "bundletool validate"

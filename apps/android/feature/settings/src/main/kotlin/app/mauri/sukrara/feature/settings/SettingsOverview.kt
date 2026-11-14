@@ -68,9 +68,19 @@ class OverviewActions(
     val openBackup: () -> Unit = {},
     /** Export data (CSV / Nightscout JSON). */
     val openExport: () -> Unit = {},
+    /** Import history (the wearer's phone). */
+    val openImport: () -> Unit = {},
+    /** *Finish setup*: setup's optional steps still open. */
+    val openFinishSetup: () -> Unit = {},
 )
 
-/** The settings overview (wearer): *Share your data with your clinic* until set up, Mute all's state with Unmute, then one row per page. */
+/**
+ * The settings overview: *Share your data with your clinic* until set up, Mute all's state with Unmute, then one row per
+ * page in the order of docs/35 (as AOSP Settings' homepage, `top_level_settings.xml`: groups of coloured icons, each
+ * row titled as the page it opens): [Alerts · Alert reliability] [Settings from · Readings · Graph · Rings] [Status
+ * bar · Lock screen] [Sensor · Sensor end · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
+ * [Show closed tips · Advanced · About].
+ */
 @Composable
 fun SettingsOverviewContent(
     alertsOn: Boolean,
@@ -91,6 +101,8 @@ fun SettingsOverviewContent(
     moreSearch: List<SearchEntry> = emptyList(),
     /** The GitHub version's daily update check is off and not answered: its suggestion comes before the clinic's. */
     updatesBanner: Boolean = false,
+    /** Setup's optional steps still open, by title (the *Finish setup* row's summary); null = none, no row. */
+    setupExtras: String? = null,
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -112,6 +124,7 @@ fun SettingsOverviewContent(
                     OtherPage.Profile -> actions.openProfile()
                     OtherPage.Backup -> actions.openBackup()
                     OtherPage.Export -> actions.openExport()
+                    OtherPage.Import -> actions.openImport()
                 }
             },
             pens = actions.pens,
@@ -194,6 +207,18 @@ fun SettingsOverviewContent(
             // SPA's banner colour on a settings page
             tipContainer = MaterialTheme.colorScheme.surface,
         )
+        // setup's optional steps left for later (#181): first, as stock Settings' "Finish setting up" suggestion; gone
+        // once each is answered
+        if (setupExtras != null) {
+            SettingsGroup {
+                NavigationRow(
+                    stringResource(R.string.st_finish_setup),
+                    actions.openFinishSetup,
+                    summary = setupExtras,
+                    leading = { CategoryIcon(DsR.drawable.ds_ic_check_circle, Category.Blue) },
+                )
+            }
+        }
         if (sharing.wearer) {
             SettingsGroup {
                 val name = sharing.name?.takeIf { it.isNotBlank() }
@@ -233,102 +258,72 @@ fun SettingsOverviewContent(
                 )
             }
             NavigationRow(
-                stringResource(R.string.st_ranges_title),
-                {
-                    actions.open(SettingsRoute.Ranges)
-                },
-                summary =
-                    stringResource(
-                        R.string.st_overview_ranges,
-                    ),
-                leading = { SectionIcon(Section.Ranges) },
+                stringResource(R.string.st_readings_title),
+                { actions.open(SettingsRoute.Readings) },
+                summary = stringResource(R.string.st_overview_readings),
+                leading = { SectionIcon(Section.Readings) },
             )
             NavigationRow(
                 stringResource(R.string.st_graph_title),
-                {
-                    actions.open(SettingsRoute.Graph)
-                },
-                summary =
-                    stringResource(
-                        R.string.st_overview_graph,
-                    ),
+                { actions.open(SettingsRoute.Graph) },
+                summary = stringResource(R.string.st_overview_graph),
                 leading = { SectionIcon(Section.Graph) },
+            )
+            NavigationRow(
+                stringResource(R.string.st_rings_title),
+                { actions.open(SettingsRoute.Rings) },
+                summary = stringResource(R.string.st_overview_rings),
+                leading = { SectionIcon(Section.Rings) },
             )
         }
         SettingsGroup {
             NavigationRow(
                 stringResource(R.string.st_statusbar_title),
-                {
-                    actions.open(SettingsRoute.StatusBar)
-                },
-                summary =
-                    stringResource(
-                        R.string.st_overview_statusbar,
-                    ),
+                { actions.open(SettingsRoute.StatusBar) },
+                summary = stringResource(R.string.st_overview_statusbar),
                 leading = { SectionIcon(Section.StatusBar) },
             )
             NavigationRow(
                 stringResource(R.string.st_lock_title),
-                {
-                    actions.open(SettingsRoute.LockScreen)
-                },
-                summary =
-                    stringResource(
-                        R.string.st_overview_lock,
-                    ),
+                { actions.open(SettingsRoute.LockScreen) },
+                summary = stringResource(R.string.st_overview_lock),
                 leading = { SectionIcon(Section.LockScreen) },
             )
         }
+        // the devices on the body: the sensor (and when it ends: its own row, also linked from Sensor) and the pens
         SettingsGroup {
             NavigationRow(
-                stringResource(
-                    R.string.st_sensor,
-                ),
+                stringResource(R.string.st_sensor),
                 actions.openSensor,
                 summary = stringResource(R.string.st_sensor_summary),
-                leading = {
-                    SectionIcon(Section.Sensor)
-                },
+                leading = { SectionIcon(Section.Sensor) },
             )
             NavigationRow(
                 stringResource(R.string.st_sensorend_title),
-                {
-                    actions.open(SettingsRoute.SensorEnd)
-                },
-                summary =
-                    stringResource(
-                        R.string.st_overview_sensorend,
-                    ),
+                { actions.open(SettingsRoute.SensorEnd) },
+                summary = stringResource(R.string.st_overview_sensorend),
                 leading = { SectionIcon(Section.SensorEnd) },
             )
-            NavigationRow(
-                stringResource(
-                    R.string.st_sharing,
-                ),
-                actions.openSharing,
-                summary = stringResource(R.string.st_sharing_summary),
-                leading = {
-                    SectionIcon(Section.Sharing)
-                },
-            )
-            NavigationRow(stringResource(R.string.st_apps), actions.openApps, summary = appsSummary(appsShared), leading = {
-                SectionIcon(Section.Apps)
-            })
             if (actions.pens) {
                 NavigationRow(
                     stringResource(R.string.st_pens_title),
-                    {
-                        actions.open(SettingsRoute.Pens)
-                    },
-                    summary =
-                        stringResource(
-                            R.string.st_overview_pens,
-                        ),
+                    { actions.open(SettingsRoute.Pens) },
+                    summary = stringResource(R.string.st_overview_pens),
                     leading = { SectionIcon(Section.Pens) },
                 )
             }
         }
+        // your data: live to people, live to apps, an automatic copy, files you make yourself
         SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_sharing),
+                actions.openSharing,
+                summary = stringResource(R.string.st_sharing_summary),
+                leading = { SectionIcon(Section.Sharing) },
+            )
+            NavigationRow(stringResource(R.string.st_apps), actions.openApps, summary = appsSummary(appsShared), leading = {
+                SectionIcon(Section.Apps)
+            })
             if (sharing.wearer) {
                 NavigationRow(
                     stringResource(R.string.st_backup_title),
@@ -357,10 +352,10 @@ fun SettingsOverviewContent(
                 )
             }
             NavigationRow(
-                stringResource(R.string.st_export_title),
-                actions.openExport,
-                summary = stringResource(R.string.st_export_summary),
-                leading = { SectionIcon(Section.Export) },
+                stringResource(R.string.st_files_title),
+                { actions.open(SettingsRoute.ImportExport) },
+                summary = stringResource(R.string.st_overview_files),
+                leading = { SectionIcon(Section.ImportExport) },
             )
         }
         SettingsGroup {

@@ -98,6 +98,17 @@ class PensModule(
     /** The reading setting (Ask / On / Off). */
     val readingFlow: Flow<PenReading> = settings.flow(Reading).map { PenReading.of(it) }
 
+    /**
+     * Setup's *Insulin pens* step: whether reading is answered (on or off, anywhere; false = still *Ask*); null = this
+     * phone can't read pens (no NFC, outside the debug build's made-up NFC).
+     */
+    val setupAnswer: Flow<Boolean?> by lazy {
+        combine(fakeNfc, readingFlow) { fake, r -> if (hasNfc || fake) r != PenReading.Ask else null }.distinctUntilChanged()
+    }
+
+    /** *Read my pens* in setup: reading on. */
+    suspend fun turnOnReading() = settings.set(Reading, PenReading.On.value)
+
     suspend fun reading(): PenReading = PenReading.of(settings.flow(Reading).first())
 
     suspend fun notifyAfterRead(): Boolean = settings.flow(Notify).first()

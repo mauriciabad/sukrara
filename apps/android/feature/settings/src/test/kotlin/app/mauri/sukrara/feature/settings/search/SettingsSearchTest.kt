@@ -22,6 +22,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsHighlight
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import org.junit.After
@@ -148,6 +149,39 @@ class SettingsSearchTest {
         assertEquals(context.getString(R.string.st_lock_time), SettingsSearch.match("timer", index()).first().title)
     }
 
+    /** A quiet rule's row opens its page; its length is found there, flashed, through Alerts › the rule. */
+    @Test
+    fun quietRuleLengthIsOnTheRulesPage() {
+        val carbs = SettingsSearch.match("quiet lows after carbs", index()).first()
+        assertEquals(SearchTarget.Page(SettingsRoute.QuietRulePage(QuietKind.AfterCarbs)), carbs.target)
+        assertEquals(null, carbs.highlight)
+        val within = SettingsSearch.match("back in range within", index())
+        val falling = within.first { it.target == SearchTarget.Page(SettingsRoute.QuietRulePage(QuietKind.FallingHigh)) }
+        assertEquals("Alerts › Quiet highs falling back into range", falling.where)
+        assertEquals("Back in range within", falling.highlight)
+        assertEquals(
+            listOf(SettingsRoute.Alerts, SettingsRoute.QuietRulePage(QuietKind.FallingHigh)),
+            SettingsIndex.path(SettingsRoute.QuietRulePage(QuietKind.FallingHigh)),
+        )
+    }
+
+    /** #205: the pages' old names still find where they moved (muscle memory), in both languages' words. */
+    @Test
+    fun oldPageNamesFindTheNewPages() {
+        val readings = SearchTarget.Page(SettingsRoute.Readings)
+        val rings = SearchTarget.Page(SettingsRoute.Rings)
+        val files = SearchTarget.Page(SettingsRoute.ImportExport)
+        assertTrue(SettingsSearch.match("ranges", index()).any { it.target == readings })
+        assertTrue(SettingsSearch.match("graph", index()).any { it.target == rings })
+        assertTrue(SettingsSearch.match("export", index()).any { it.target == files })
+        assertTrue(SettingsSearch.match("mmol", index()).any { it.target == readings })
+        // a moved row keeps its words: the rings' rows are found on Rings, the settings file on Import and export
+        assertTrue(SettingsSearch.match("gmi", index()).any { it.target == rings })
+        assertEquals("Rings › Beside the value", SettingsSearch.match("centre counts", index()).first().where)
+        assertEquals("Import and export › Settings file", SettingsSearch.match("reset all settings", index()).first().where)
+        assertTrue(SettingsSearch.match("fine", index()).any { it.target == SearchTarget.Page(SettingsRoute.AlertsFineTuning) })
+    }
+
     /** Every settings page with rows of its own is searchable. */
     @Test
     fun everyPageHasEntries() {
@@ -155,9 +189,13 @@ class SettingsSearchTest {
             listOf(
                 SettingsRoute.Alerts,
                 SettingsRoute.NightAlerts,
-                SettingsRoute.Ranges,
+                SettingsRoute.AlertsFineTuning,
+                SettingsRoute.Readings,
+                SettingsRoute.TrendArrow,
                 SettingsRoute.Graph,
                 SettingsRoute.GraphMarks,
+                SettingsRoute.Rings,
+                SettingsRoute.ImportExport,
                 SettingsRoute.LockScreen,
                 SettingsRoute.Pens,
                 SettingsRoute.Reliability,
@@ -167,10 +205,13 @@ class SettingsSearchTest {
                 SettingsRoute.ThresholdReview,
                 SettingsRoute.Advanced,
                 SettingsRoute.SettingsFrom,
-            ) + AlertKind.entries.map(SettingsRoute::AlertKindPage) + AlertKind.entries.map(SettingsRoute::NightKindPage)
+            ) + AlertKind.entries.map(SettingsRoute::AlertKindPage) + AlertKind.entries.map(SettingsRoute::NightKindPage) +
+                QuietKind.entries.map(SettingsRoute::QuietRulePage)
         val targets = SettingsIndex.entries.map { it.target }.toSet()
         for (p in pages) assertTrue("$p has no search entries", SearchTarget.Page(p) in targets)
-        for (o in OtherPage.entries) assertTrue("$o has no search entry", SearchTarget.Other(o) in targets)
+        // Export data and Import history are `:integrations`' rows on Import and export: the app's AppsSearch lists them
+        val inApp = setOf(OtherPage.Export, OtherPage.Import)
+        for (o in OtherPage.entries - inApp) assertTrue("$o has no search entry", SearchTarget.Other(o) in targets)
     }
 
     /** #134: Profile and Backup are the wearer's rows, Settings from a follower's; pens only where pens are read. */

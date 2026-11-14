@@ -116,28 +116,39 @@
     <string name="home_treatment_long">%1$s de insulina lenta</string>
     <string name="home_treatment_carbs">%1$s de hidratos</string>
     <string name="home_treatment_note">Nota</string>
-    <!-- %1$s = "8.5u rapid insulin": an entry an insulin pen logged -->
-    <string name="home_treatment_from_pen">%1$s · de la pluma</string>
+    <!-- TalkBack: una entrada que registró una pluma (el icono de pluma de su fila) -->
+    <string name="home_treatment_pen_source">de la pluma</string>
     <!-- TalkBack: what tapping a pen entry's row does -->
     <string name="home_pen_open">ver sus dosis</string>
     <string name="home_pen_changed">Entrada cambiada</string>
     <string name="home_pen_removed">Quitado de tu registro</string>
     <string name="home_pen_changed_since">Esta entrada cambió mientras tanto. No se guardó nada.</string>
     <string name="home_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
-    <string name="home_treatment_delete">Borrar %1$s de las %2$s</string>
     <!-- TalkBack: lo que hace tocar una fila de tratamiento -->
     <string name="home_treatment_edit">editar</string>
     <string name="home_treatment_sending">Enviando…</string>
     <string name="home_treatment_not_sent">No enviado</string>
     <string name="home_treatment_retry">Reintentar</string>
     <string name="home_treatment_retry_label">Reintentar el envío de %1$s</string>
-    <string name="home_treatment_deleted">Tratamiento borrado</string>
-    <string name="home_treatment_deleted_clinic">Tratamiento borrado. También se quitará de LibreView.</string>
+    <string name="home_treatment_deleted">Borrado: %1$s</string>
+    <string name="home_treatment_deleted_clinic">Borrado: %1$s. También se quita de LibreView.</string>
     <string name="home_treatment_in_clinic">En LibreView</string>
     <string name="home_treatment_not_in_clinic">Aún no está en LibreView</string>
     <string name="home_treatment_clinic_updating">LibreView tiene una versión anterior: actualizando</string>
     <string name="home_treatment_clinic_stopped">La subida a LibreView está parada</string>
     <string name="home_tip_closed">Consejo cerrado. Ajustes › Mostrar consejos cerrados lo recupera.</string>
+    <!-- #207: "ver más" de la lista y la página del historial -->
+    <string name="home_treatments_see_all">Ver todo</string>
+    <string name="home_treatments_none_today">Nada anotado en las últimas 24 horas</string>
+    <!-- TalkBack: %1$s = "142 miligramos por decilitro, subiendo": la glucosa cuando se anotó -->
+    <string name="home_treatment_glucose_then">glucosa entonces %1$s</string>
+    <string name="history_title">Tratamientos</string>
+    <string name="history_today">Hoy</string>
+    <string name="history_yesterday">Ayer</string>
+    <string name="history_empty">Ningún tratamiento en los últimos 31 días</string>
+    <string name="history_empty_hint">Aquí aparecen las entradas que anotas y las dosis que lee tu pluma.</string>
+    <string name="history_footer">Los últimos 31 días. Las entradas anteriores están en tu exportación, y en LibreView o Tidepool si subes allí.</string>
+    <string name="history_back">Atrás</string>
     <string name="home_undo">Deshacer</string>
 
     <string name="data_title">Datos dañados</string>
@@ -198,7 +209,6 @@
     <string name="banner_taps_turn_off">Desactivar</string>
     <!-- Glucose report card on home -->
     <string name="report_title">Informe de glucosa</string>
-    <string name="report_days_short">%1$d d</string>
     <plurals name="report_days">
         <item quantity="one">%1$d día</item>
         <item quantity="other">%1$d días</item>

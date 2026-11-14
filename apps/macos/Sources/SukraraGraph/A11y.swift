@@ -108,8 +108,8 @@ public struct CardWords: Sendable {
         slotCv: { "Variability \($0)% over \($1)" },
         lessThan: { "less than \($0)" }, moreThan: { "more than \($0)" },
         units: { "\($0) \($1 ? "unit" : "units")" }, grams: { "\($0) \($1 ? "gram" : "grams")" },
-        lastRapid: { "Rapid insulin \($0), \($1)" }, lastLong: { "Long-acting insulin \($0), \($1)" },
-        lastCarbs: { "Carbs \($0), \($1)" }, lastNote: { "Note, \($0)" },
+        lastRapid: { "\($1), rapid insulin \($0)" }, lastLong: { "\($1), long-acting insulin \($0)" },
+        lastCarbs: { "\($1), carbs \($0)" }, lastNote: { "\($0), note" },
         chart: { "Last \($0) hours: \($1)% in range, \($2)% below, \($3)% above" },
         chartEmpty: { "Last \($0) hours: no data" })
 
@@ -151,8 +151,8 @@ public struct CardWords: Sendable {
         slotCv: { "Variabilidad \($0)% durante \($1)" },
         lessThan: { "menos de \($0)" }, moreThan: { "más de \($0)" },
         units: { "\($0) \($1 ? "unidad" : "unidades")" }, grams: { "\($0) \($1 ? "gramo" : "gramos")" },
-        lastRapid: { "Insulina rápida \($0), \($1)" }, lastLong: { "Insulina lenta \($0), \($1)" },
-        lastCarbs: { "Hidratos \($0), \($1)" }, lastNote: { "Nota, \($0)" },
+        lastRapid: { "\($1), insulina rápida \($0)" }, lastLong: { "\($1), insulina lenta \($0)" },
+        lastCarbs: { "\($1), hidratos \($0)" }, lastNote: { "\($0), nota" },
         chart: { "Últimas \($0) horas: \($1)% en rango, \($2)% por debajo, \($3)% por encima" },
         chartEmpty: { "Últimas \($0) horas: sin datos" })
 
@@ -267,6 +267,22 @@ extension CardWords {
 enum A11y {
     private static let maxSlots = 4
 
+    /// A value with its unit, once: "112 milligrams per decilitre"; LO / HI as "below 40 …" / "above 400 …".
+    static func number(_ sgv: Int, unit: GlucoseUnit, words w: CardWords) -> String {
+        let u = w.unit(unit)
+        return switch sgv {
+        case ..<GlucoseRange.floor: w.below("\(unit.format(GlucoseRange.floor, locale: w.locale)) \(u)")
+        case GlucoseRange.hi...: w.above("\(unit.format(GlucoseRange.ceiling, locale: w.locale)) \(u)")
+        default: "\(unit.format(sgv, locale: w.locale)) \(u)"
+        }
+    }
+
+    /// A past reading as VoiceOver says it: the value with its unit and its trend's word, "142 milligrams per
+    /// decilitre, rising" (no age, range or alert: the place says when it is from). `band` = the reading's trend band.
+    static func reading(_ sgv: Int, band: Int?, unit: GlucoseUnit, words w: CardWords) -> String {
+        number(sgv, unit: unit, words: w) + ", " + w.trend(band)
+    }
+
     /// "112 milligrams per decilitre, falling, in range, 2 min ago" (or why there's no value), then the alert or mute
     /// the status pill says when a value is shown and the place draws the badge.
     static func value(_ data: CardData, unit: GlucoseUnit, surface: CardSurface, style: CardStyle, words w: CardWords)
@@ -281,16 +297,10 @@ enum A11y {
             glucose = w.noReadingSince(data.latest.map { Freshness.timeText($0.t, now: data.now) } ?? "")
         case .value:
             guard let r = data.latest else { return w.noReadings }
-            let u = w.unit(unit)
             let bound = r.sgv < GlucoseRange.floor || r.sgv >= GlucoseRange.hi
-            let number =
-                switch r.sgv {
-                case ..<GlucoseRange.floor: w.below("\(unit.format(GlucoseRange.floor, locale: w.locale)) \(u)")
-                case GlucoseRange.hi...: w.above("\(unit.format(GlucoseRange.ceiling, locale: w.locale)) \(u)")
-                default: "\(unit.format(r.sgv, locale: w.locale)) \(u)"
-                }
             let parts = [
-                number, look.strike ? w.old : nil, look.strike ? nil : w.trend(look.trend == .arrow ? look.band : nil),
+                number(r.sgv, unit: unit, words: w), look.strike ? w.old : nil,
+                look.strike ? nil : w.trend(look.trend == .arrow ? look.band : nil),
                 bound ? nil : w.range(r.sgv, style.bands.sane()), w.age(data.now - r.t),
             ]
             glucose = parts.compactMap { $0 }.joined(separator: ", ")
@@ -410,14 +420,15 @@ enum A11y {
         return w.sentence(phrase)
     }
 
-    /// The last-treatment slot: "Rapid insulin 3 units, 10 min ago", then the carbs drawn inside it.
+    /// The last-treatment slot: "10 min ago, rapid insulin 3 units", then the carbs drawn inside it.
     static func last(_ info: LastTreatment.Info, now: TimeInterval, words w: CardWords) -> String {
         ([info.tr] + [info.carbs?.tr].compactMap { $0 })
-            .map { treatment($0.k, amount: $0.a, age: now - $0.t, words: w) }
+            .map { w.sentence(treatment($0.k, amount: $0.a, age: now - $0.t, words: w)) }
             .joined(separator: ". ")
     }
 
-    /// One treatment: its kind, amount and age ("Carbs 45 grams, just now", "Note, 10 min ago").
+    /// One treatment, its age first as the slot draws it (#206), then its kind and amount ("just now, carbs 45 grams",
+    /// "10 min ago, note"); `last` makes it a sentence.
     static func treatment(_ k: String, amount: Double, age: TimeInterval, words w: CardWords) -> String {
         let number = w.decimal(TreatmentMarks.number(amount))
         let ago = w.age(age)

@@ -13,6 +13,7 @@ import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.graph.GraphText
 import app.mauri.sukrara.graph.LastPlace
 import app.mauri.sukrara.graph.MarkShow
+import app.mauri.sukrara.graph.PlaceOverride
 import app.mauri.sukrara.graph.RingSpec
 import app.mauri.sukrara.graph.stats.Band
 import app.mauri.sukrara.graph.stats.TirRange
@@ -57,10 +58,14 @@ class GraphViewModel(
         hours: Double,
     ) = set(GraphSettings.PlaceHours.getValue(place), hours)
 
-    fun sensorTime(
+    /** The sensor's time left: the app's, every place follows it unless it has its own. */
+    fun sensorTime(on: Boolean) = set(GraphSettings.SensorTime, on)
+
+    /** A place's own sensor time left; null = Same as the app. */
+    fun sensorPlace(
         place: GraphPlace,
-        on: Boolean,
-    ) = set(GraphSettings.SensorTime.getValue(place), on)
+        own: Boolean?,
+    ) = set(GraphSettings.SensorTimePlace.getValue(place), PlaceOverride.of(own).key)
 
     /** Puts [section]'s settings back to their defaults. */
     fun reset(section: GraphSection) {
@@ -68,7 +73,10 @@ class GraphViewModel(
     }
 }
 
-/** The groups of the Graph pages, each with its own Reset; [All] = everything the Graph page shows (not the ranges). */
+/**
+ * The groups of the Graph and Rings pages, each with its own Reset; [All] = everything the Graph page shows (not the
+ * ranges, not the rings), [Rings] = everything the Rings page shows.
+ */
 enum class GraphSection(
     val settings: List<Setting<*>>,
 ) {
@@ -88,9 +96,12 @@ enum class GraphSection(
     RingOrder(listOf(GraphSettings.RingOrder)),
     BesideGraph(listOf(GraphSettings.Side, GraphSettings.ColumnCrown)),
     Marks(listOf(GraphSettings.Marks)),
-    SensorTime(GraphSettings.SensorTime.values.toList()),
+    SensorTime(listOf(GraphSettings.SensorTime) + GraphSettings.SensorTimePlace.values),
     All(
-        listOf(Lines, Time, Beside, RingOrder, BesideGraph, Marks, SensorTime).flatMap { it.settings },
+        listOf(Lines, Time, BesideGraph, Marks, SensorTime).flatMap { it.settings },
+    ),
+    Rings(
+        listOf(Beside, RingOrder).flatMap { it.settings },
     ),
     ;
 
@@ -107,7 +118,7 @@ enum class GraphSection(
             }
 
             Time -> {
-                c.defaultHours != d.defaultHours || c.placeHours.isNotEmpty()
+                c.appHours != d.appHours || c.placeHours.isNotEmpty()
             }
 
             Beside -> {
@@ -128,11 +139,15 @@ enum class GraphSection(
             }
 
             SensorTime -> {
-                c.sensorHidden.isNotEmpty()
+                c.appSensorTime != d.appSensorTime || c.sensorPlace.isNotEmpty()
             }
 
             All -> {
-                c.copy(bands = d.bands) != d
+                listOf(Lines, Time, BesideGraph, Marks, SensorTime).any { it.changed(c) }
+            }
+
+            Rings -> {
+                Beside.changed(c) || RingOrder.changed(c)
             }
         }
     }

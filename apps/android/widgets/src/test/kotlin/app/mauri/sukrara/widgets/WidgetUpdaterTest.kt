@@ -220,7 +220,7 @@ class WidgetUpdaterTest {
             placements.value = WidgetPlacements(mapOf(7 to WidgetOverrides(hours = 3)))
             runCurrent()
             assertEquals(2, redraws)
-            config.value = GraphConfig(defaultHours = 6)
+            config.value = GraphConfig(appHours = 6)
             runCurrent()
             assertEquals(3, redraws)
             dark = true

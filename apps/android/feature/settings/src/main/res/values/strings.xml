@@ -21,9 +21,11 @@
     <string name="st_review_title">Review alert thresholds</string>
     <string name="st_review_confirmed">Confirmed</string>
     <string name="st_review_not_confirmed">Not confirmed yet</string>
-    <string name="st_review_intro">These are the values that will alert you. Check each one; tap a row to change it. Nothing is saved until you tap Use these thresholds.</string>
-    <string name="st_review_off">Off (%1$s)</string>
-    <string name="st_review_confirm">Use these thresholds</string>
+    <string name="st_review_intro">Nothing is saved until you confirm.</string>
+    <string name="st_review_off">Off</string>
+    <!-- Review alert thresholds: the no data row, after how long without a reading it alerts ("After 20 min") -->
+    <string name="st_review_after">After %1$s</string>
+    <string name="st_review_confirm">Confirm thresholds</string>
     <string name="st_quiet_title">Quiet times</string>
     <string name="st_quiet_insulin">Quiet highs after insulin</string>
     <string name="st_quiet_carbs">Quiet lows after carbs</string>
@@ -33,6 +35,11 @@
     <string name="st_quiet_within_summary">Back in range within %1$s</string>
     <string name="st_quiet_for">For %1$s</string>
     <string name="st_quiet_length">How long</string>
+    <string name="st_quiet_use">Use this quiet time</string>
+    <string name="st_quiet_insulin_footer">Rapid insulin you log keeps high, very high and rising fast alerts quiet while it starts working. Extremely high always alerts.</string>
+    <string name="st_quiet_carbs_footer">Carbs you log keep low and falling fast alerts quiet while they work, and very low on the wearer\'s phone. Followers and the Mac still alert on a very low.</string>
+    <string name="st_quiet_falling_footer">While the last readings show glucose clearly falling back into range in time, high and very high alerts wait. They come at once if it stalls or the readings stop.</string>
+    <string name="st_quiet_rising_footer">While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the wearer\'s phone, never its first alert.</string>
     <string name="st_wait_title">Near a threshold</string>
     <string name="st_wait_low">Low alerts wait</string>
     <string name="st_wait_high">High alerts wait</string>
@@ -129,10 +136,10 @@
     <string name="st_special_off">Off</string>
     <string name="st_special_none">None</string>
     <string name="st_special_until_turned_off">Until you turn it off</string>
-    <string name="st_special_default">Default</string>
     <string name="st_ranges_title">Ranges</string>
     <string name="st_trend_title">Trend arrow</string>
     <string name="st_trend_summary">Where every arrow, spoken trend and the fast alerts take the trend from</string>
+    <string name="st_places_keywords">per place, notification, widgets, own, different, same as the app</string>
     <string name="st_trend_keywords">arrow, trend, direction, rate, delay, lag, smoothing, sensor</string>
     <string name="st_trend_from">Trend from</string>
     <string name="st_trend_quick">Quick</string>
@@ -183,14 +190,13 @@
     <string name="st_overview_alerts_on">On · thresholds, sounds, Mute all</string>
     <string name="st_overview_alerts_off">Off: nothing will alert you</string>
     <string name="st_overview_reliability_problem">%1$d to fix</string>
-    <string name="st_overview_ranges">Bands of the graph and time in range</string>
-    <string name="st_overview_graph">Time shown, rings, time in range</string>
+    <string name="st_overview_graph">Time shown, lines, treatments on the graph</string>
     <string name="st_sensor">Sensor</string>
     <string name="st_sensor_summary">Current sensor, reading source, LibreView</string>
     <string name="st_sharing">Sharing</string>
     <string name="st_sharing_summary">Followers and devices</string>
     <string name="st_apps">Share with apps</string>
-    <string name="st_apps_summary">Nightscout, Garmin watches, a file for your clinic</string>
+    <string name="st_apps_summary">Nightscout, Garmin watches, your clinic</string>
     <string name="st_apps_libreview" translatable="false">LibreView</string>
     <string name="st_apps_nightscout">Nightscout upload</string>
     <string name="st_apps_xdrip">xDrip+ server</string>
@@ -468,7 +474,7 @@
         <item quantity="one">Every hour</item>
         <item quantity="other">Every %d hours</item>
     </plurals>
-    <string name="st_sensorend_footer">A reminder that would come after the sensor ends is skipped. The countdown start also sets when the graph shows the sensor\'s countdown ring. While the glucose chip is on, the end countdown stays in the notifications so the status bar keeps your glucose. Swipe a countdown away to hide it for this sensor. Android doesn\'t share its Bedtime schedule with apps, so set your night here. After the end, “Sensor ended” comes back every so often until you start a new sensor, never in your night.</string>
+    <string name="st_sensorend_footer">A reminder that would come after the sensor ends is skipped. The countdown start also sets when the graph shows the sensor\'s countdown ring. While the glucose chip is on, the end countdown stays in the notifications so the status bar keeps your glucose. Swipe a countdown away to hide it for this sensor. Your night is the same as Night alerts\' (Android doesn\'t share its Bedtime schedule with apps). After the end, “Sensor ended” comes back every so often until you start a new sensor, never in your night.</string>
     <string name="st_reset_section">Reset %1$s</string>
     <string name="st_reset">Reset</string>
     <string name="st_slot_tir">Time in range</string>
@@ -478,6 +484,26 @@
     <string name="st_place_app">App</string>
     <string name="st_place_notification">Notification</string>
     <string name="st_place_widgets">Widgets</string>
+    <!-- a setting the app sets that the notification and the widgets can change (docs/38) -->
+    <string name="st_same_as_app">Same as the app</string>
+    <string name="st_same_as_app_value">Same as the app (%1$s)</string>
+    <string name="st_where_app">in the app</string>
+    <string name="st_where_notification">in the notification</string>
+    <string name="st_where_widgets">on widgets</string>
+    <!-- a value and where it applies: "3 h in the notification" -->
+    <string name="st_value_where">%1$s %2$s</string>
+    <string name="st_places_group">Notification and widgets</string>
+    <string name="st_places_footer">A widget can also have its own: touch and hold it, then Widget settings.</string>
+    <string name="st_hours_notification">Time shown in the notification</string>
+    <string name="st_hours_widgets">Time shown on widgets</string>
+    <string name="st_sensor_time_show">Show the sensor time left</string>
+    <string name="st_sensor_time_notification">Sensor time left in the notification</string>
+    <string name="st_sensor_time_widgets">Sensor time left on widgets</string>
+    <!-- TalkBack: a time shown said in full -->
+    <plurals name="st_hours_spoken">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
     <string name="st_last_off">Off</string>
     <string name="st_last_near">Next to the value</string>
     <string name="st_last_end">After the other slots</string>
@@ -493,8 +519,6 @@
     <string name="st_graph_line_full">%1$d lines: remove one to add another</string>
     <string name="st_graph_line_exists">That line is already there</string>
     <string name="st_graph_line_remove">Remove the line at %1$s</string>
-    <string name="st_graph_hours_default">Default</string>
-    <string name="st_graph_hours_same">Same as default (%1$s)</string>
     <string name="st_graph_beside">Beside the value</string>
     <string name="st_slot_main">Main slot</string>
     <string name="st_slot_second">Second slot</string>
@@ -517,7 +541,7 @@
     <string name="st_graph_sensor">Sensor time left</string>
     <string name="st_graph_reset_all">Reset graph settings</string>
     <string name="st_graph_reset_all_title">Reset the graph settings?</string>
-    <string name="st_graph_reset_all_text">Lines, time shown, slots, ring order, treatments on the graph and sensor time go back to their defaults. Your ranges stay.</string>
+    <string name="st_graph_reset_all_text">Lines, time shown, beside the graph, treatments on the graph and sensor time go back to their defaults. Your ranges and rings stay.</string>
     <string name="st_move_up">Move up</string>
     <string name="st_move_down">Move down</string>
     <string name="st_move_top">Move to top</string>
@@ -762,7 +786,7 @@
     <string name="st_export_title">Export data</string>
     <string name="st_export_summary">Readings and treatments as a file</string>
     <string name="st_adv_title">Advanced</string>
-    <string name="st_adv_overview_summary">Settings file, relays, log</string>
+    <string name="st_adv_overview_summary">Relays, log, statistics</string>
     <string name="st_adv_file">Settings file</string>
     <string name="st_adv_export">Export settings</string>
     <string name="st_adv_export_summary">Your options as a file, to keep or to set up another phone</string>
@@ -888,4 +912,35 @@
     <string name="st_calendar_gcal_hint">Google Calendar → Settings → Manage accounts → Sukrara</string>
     <string name="st_unit">Glucose unit</string>
     <string name="st_unit_footer">Every glucose number is shown and typed in this unit: the card, the graph, notifications, alerts, widgets, the status bar and these settings. Sukrara keeps the values in mg/dL, so switching never changes a threshold.</string>
+    <!-- the settings reorganisation (#205, docs/35) -->
+    <string name="st_readings_title">Readings</string>
+    <string name="st_overview_readings">Unit, ranges, trend arrow</string>
+    <string name="st_readings_keywords">Ranges, glucose, target range, time in range, TIR, colours, mmol/L, mg/dL</string>
+    <string name="st_rings_title">Rings</string>
+    <string name="st_overview_rings">Rings and numbers beside the value, last treatment</string>
+    <string name="st_rings_keywords">Graph, GMI, average, CV, variability, time in range, rewards</string>
+    <string name="st_rings_reset_all">Reset ring settings</string>
+    <string name="st_rings_reset_all_title">Reset the ring settings?</string>
+    <string name="st_rings_reset_all_text">The rings and numbers beside the value, the last treatment, what a ring counts, rewards and the ring order go back to their defaults. Your ranges stay.</string>
+    <string name="st_rings_footer">These apply to the app, the notification and the widgets. A ring counts with your ranges (Readings).</string>
+    <string name="st_graph_ranges_summary">In range %1$s–%2$s %3$s · in Readings</string>
+    <string name="st_graph_keywords">Chart, lines, hours</string>
+    <string name="st_see_also">See also</string>
+    <string name="st_finetune_title">Fine-tuning</string>
+    <string name="st_finetune_summary">Waiting near a threshold, notification buttons</string>
+    <string name="st_finetune_keywords">Advanced, persistence, margin, bounce, mute, relax</string>
+    <string name="st_finetune_reset">Reset fine-tuning</string>
+    <string name="st_finetune_reset_title">Reset fine-tuning?</string>
+    <string name="st_finetune_reset_text">The waits near a threshold, the margin and the notification buttons\' lengths go back to their defaults.</string>
+    <string name="st_finetune_footer">Rarely needed: the defaults suit most people. Search finds every row here.</string>
+    <string name="st_files_title">Import and export</string>
+    <string name="st_overview_files">Export data, import history, settings file</string>
+    <string name="st_files_keywords">Files, CSV, Nightscout, settings file, Advanced, Export</string>
+    <string name="st_files_footer">Files you make or open yourself. Sharing and Share with apps send your data live; Backup keeps your sharing identity.</string>
+    <string name="st_night_shared">The same night keeps the sensor reminders quiet (Sensor end).</string>
+    <string name="st_sensorend_night_footer">The same night as Night alerts: changing it here changes it there too.</string>
+    <string name="st_sensorend_link_summary">When this sensor ends, reminders, countdowns</string>
+    <string name="st_trend_alert_footer">The fast alerts use the trend arrow: the same choice as Readings › Trend arrow.</string>
+    <!-- Settings overview: setup's optional steps still open (#181); the summary lists them -->
+    <string name="st_finish_setup">Finish setup</string>
 </resources>

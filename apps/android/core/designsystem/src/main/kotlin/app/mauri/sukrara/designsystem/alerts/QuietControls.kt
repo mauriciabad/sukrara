@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,8 +33,8 @@ import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.core.model.AlertQuietReason
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertUiState
-import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.time.LengthChips
 import java.time.Instant
 
 /** A way out of a quiet side, in the order the controls show them. */
@@ -95,7 +94,7 @@ private fun exitName(e: QuietExit): String =
 /**
  * One quiet side with its ways out: its line counting down ([MuteText]: "Low alerts muted · 12 min left"), the
  * reminder line when it also reminds less, *Unmute* / *Alert me anyway*, *Remind as usual*, and for a mute the lengths
- * it can *Change to*. [now] ticks with the caller ([rememberCountdownNow]); nothing shows once the quiet is over.
+ * it can *Change to* (THE length chips: "15m", "1h"). [now] ticks with the caller ([rememberCountdownNow]); nothing shows once the quiet is over.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -134,14 +133,10 @@ fun QuietRow(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (m in lengths) {
-                    OutlinedButton(onClick = {
-                        haptics.confirm()
-                        onChangeTo(m)
-                    }) { Text(Durations.text(m.toLong(), words.durations)) }
-                }
-            }
+            LengthChips(lengths, words.durations, onPick = {
+                haptics.confirm()
+                onChangeTo(it)
+            })
         }
     }
 }

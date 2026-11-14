@@ -63,6 +63,11 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Quick actions in notifications: Treatment, Remind less, Mute for 1h.
 - [Planned]: Predictions, more and cooler sound packs...
 
+### Ready in a few steps
+
+- Setup asks only what alerts and monitoring need (permissions, sensor, alert levels); followers, insulin pens, updates
+  and your old history come after, right away or later from Settings › Finish setup.
+
 ### Log effortlessly
 
 - Supports smart insulin pens:
@@ -70,7 +75,11 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - Tells priming apart from injections.
 - Quick actions in notifications.
 - Quick log pop-up by tapping the widget, the notification, an alert's Treatment or the Quick Settings tile.
+- Set when it happened by scrolling back the minutes and hours in one wheel, or with one tap (5m, 15m, 30m, 1h).
 - Add logs from the Sukrara companion apps.
+- Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each entry with its chart marker,
+  the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Tap an entry to
+  edit it or add a note (pen doses too) in a sheet; swipe it away to delete, with Undo.
 - [Planned]: Garmin watch app, MCP for AI assistants, voice assistants...
 
 ### Glucose always at a glance
@@ -90,12 +99,12 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 - Glucose report: time in ranges, average glucose, GMI (estimated HbA1c) and glucose variability (CV).
 - Your doctor or clinic still gets your data through LibreView or Tidepool.
-- Import/export your history and settings.
+- Import/export your history and settings (Settings › Import and export).
 - Gamification: cool visual effects from 90% time in range. (More TBD)
 - The home screen widget shows a lot of useful data, cleanly:
   - Glucose value and trend.
   - Time in range over the last 24 h.
-  - Time since your last insulin or carbs, or time in range over 7 days.
+  - Time since your last insulin or carbs as the big number, its amount under it, or time in range over 7 days.
   - 12 h glucose chart with range bands and colors.
   - Glucose distribution.
   - Markers for insulin and carb logs.
@@ -105,7 +114,10 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 ### More
 
 - Battery optimized.
-- Many settings, but organized and explained. Trust the defaults.
+- Many settings, but organized and explained: Alerts, Readings (unit, ranges, trend arrow), Graph, Rings, Sensor
+  end, your data; rare ones in Alerts › Fine-tuning; search finds every one, old names included. Trust the defaults.
+  A setting that can differ in the notification or the widgets (time shown, the sensor's time left) is one row that
+  says the app's value and only the places that differ; its page sets each place or keeps it the same as the app.
 - A nice sensor expiry flow with a Live Update and subtle reminders.
 - Real-time readings from almost any CGM.
 - Multilingual, but English is the main language.
@@ -154,7 +166,8 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   works).
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
-  link handler.
+  link handler. Such a build isn't a release and says so: About shows *Development build · 0.14.5 + 23 commits ·
+  d744fd74 · 14 Nov*, and the updater offers only a newer release.
 
 ## Repository layout
 

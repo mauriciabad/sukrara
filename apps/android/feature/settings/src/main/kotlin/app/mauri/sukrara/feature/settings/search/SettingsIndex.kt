@@ -12,12 +12,17 @@ import app.mauri.sukrara.designsystem.rows.Category
 import app.mauri.sukrara.designsystem.rows.CategoryIcon
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
+import app.mauri.sukrara.feature.settings.quietFooter
+import app.mauri.sukrara.feature.settings.quietLengthTitle
+import app.mauri.sukrara.feature.settings.quietName
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** Settings pages that belong to other features: the overview opens them ([SettingsSearchBar]'s `onOpenOther`). */
-enum class OtherPage { Sensor, Sharing, Apps, Profile, Backup, Export }
+enum class OtherPage { Sensor, Sharing, Apps, Profile, Backup, Export, Import }
 
 /** Where a search result leads: a settings page, or another feature's page. */
 sealed interface SearchTarget {
@@ -93,18 +98,19 @@ enum class Section(
     Alerts(DsR.drawable.ds_ic_notifications, Category.Red),
     Reliability(DsR.drawable.ds_ic_check_circle, Category.Red),
     SettingsFrom(DsR.drawable.ds_ic_tune, Category.Blue),
-    Ranges(DsR.drawable.ds_ic_dia_range, Category.Purple),
+    Readings(DsR.drawable.ds_ic_water_drop, Category.Purple),
     Graph(DsR.drawable.ds_ic_monitoring, Category.Purple),
+    Rings(DsR.drawable.ds_ic_donut_large, Category.Purple),
     StatusBar(DsR.drawable.ds_ic_smartphone, Category.Indigo),
     LockScreen(DsR.drawable.ds_ic_screen_lock_portrait, Category.Teal),
     Sensor(DsR.drawable.ds_ic_dia_sensor, Category.Green),
-    SensorEnd(DsR.drawable.ds_ic_hourglass_top, Category.Orange),
+    SensorEnd(DsR.drawable.ds_ic_sports_score, Category.Orange),
     Sharing(DsR.drawable.ds_ic_group, Category.Blue),
     Apps(DsR.drawable.ds_ic_apps, Category.Orange),
     Pens(DsR.drawable.ds_ic_dia_pen, Category.Blue),
     Profile(DsR.drawable.ds_ic_account_circle, Category.Blue),
     Backup(DsR.drawable.ds_ic_backup, Category.Green),
-    Export(DsR.drawable.ds_ic_file_export, Category.Yellow),
+    ImportExport(DsR.drawable.ds_ic_file_export, Category.Yellow),
     Advanced(DsR.drawable.ds_ic_code, Category.Grey),
     About(DsR.drawable.ds_ic_info, Category.Grey),
     ;
@@ -120,7 +126,7 @@ enum class Section(
                         OtherPage.Apps -> Apps
                         OtherPage.Profile -> Profile
                         OtherPage.Backup -> Backup
-                        OtherPage.Export -> Export
+                        OtherPage.Export, OtherPage.Import -> ImportExport
                     }
                 }
 
@@ -128,12 +134,14 @@ enum class Section(
                     when (SettingsIndex.path(target.route).first()) {
                         SettingsRoute.Reliability -> Reliability
                         SettingsRoute.SettingsFrom -> SettingsFrom
-                        SettingsRoute.Ranges -> Ranges
+                        SettingsRoute.Readings -> Readings
                         SettingsRoute.Graph -> Graph
+                        SettingsRoute.Rings -> Rings
                         SettingsRoute.StatusBar -> StatusBar
                         SettingsRoute.LockScreen -> LockScreen
                         SettingsRoute.SensorEnd -> SensorEnd
                         SettingsRoute.Pens -> Pens
+                        SettingsRoute.ImportExport -> ImportExport
                         SettingsRoute.Advanced -> Advanced
                         SettingsRoute.About -> About
                         else -> Alerts
@@ -159,10 +167,15 @@ object SettingsIndex {
             is SettingsRoute.AlertKindPage -> kindNames.getValue(route.kind)
             is SettingsRoute.NightKindPage -> kindNames.getValue(route.kind)
             SettingsRoute.NightAlerts -> R.string.st_night_title
-            SettingsRoute.Ranges -> R.string.st_ranges_title
+            SettingsRoute.AlertsFineTuning -> R.string.st_finetune_title
+            is SettingsRoute.QuietRulePage -> quietName(route.which)
+            SettingsRoute.Readings -> R.string.st_readings_title
             SettingsRoute.TrendArrow -> R.string.st_trend_title
             SettingsRoute.Graph -> R.string.st_graph_title
+            SettingsRoute.Rings -> R.string.st_rings_title
+            SettingsRoute.ImportExport -> R.string.st_files_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
+            is SettingsRoute.PlacePage -> placeTitle(route.setting)
             SettingsRoute.LockScreen -> R.string.st_lock_title
             SettingsRoute.Pens -> R.string.st_pens_title
             SettingsRoute.Reliability -> R.string.st_reliability_title
@@ -178,14 +191,50 @@ object SettingsIndex {
     /** The page whose row opens [route] (null: the overview's): an alert's page is under Alerts. */
     fun parent(route: SettingsRoute): SettingsRoute? =
         when (route) {
-            is SettingsRoute.AlertKindPage, SettingsRoute.NightAlerts, SettingsRoute.ThresholdReview -> SettingsRoute.Alerts
-            is SettingsRoute.NightKindPage -> SettingsRoute.NightAlerts
-            SettingsRoute.GraphMarks -> SettingsRoute.Graph
-            SettingsRoute.TrendArrow -> SettingsRoute.Ranges
-            SettingsRoute.Log -> SettingsRoute.Advanced
-            is SettingsRoute.Pen -> SettingsRoute.Pens
-            is SettingsRoute.PenDoses -> SettingsRoute.Pen(route.serial)
-            else -> null
+            is SettingsRoute.AlertKindPage,
+            SettingsRoute.NightAlerts,
+            SettingsRoute.ThresholdReview,
+            SettingsRoute.AlertsFineTuning,
+            is SettingsRoute.QuietRulePage,
+            -> {
+                SettingsRoute.Alerts
+            }
+
+            is SettingsRoute.NightKindPage -> {
+                SettingsRoute.NightAlerts
+            }
+
+            SettingsRoute.GraphMarks -> {
+                SettingsRoute.Graph
+            }
+
+            // a setting's page with its places is under its home: Time shown in Graph, the sensor time in Sensor end
+            is SettingsRoute.PlacePage -> {
+                when (route.setting) {
+                    PlaceSetting.Hours -> SettingsRoute.Graph
+                    PlaceSetting.SensorTime -> SettingsRoute.SensorEnd
+                }
+            }
+
+            SettingsRoute.TrendArrow -> {
+                SettingsRoute.Readings
+            }
+
+            SettingsRoute.Log -> {
+                SettingsRoute.Advanced
+            }
+
+            is SettingsRoute.Pen -> {
+                SettingsRoute.Pens
+            }
+
+            is SettingsRoute.PenDoses -> {
+                SettingsRoute.Pen(route.serial)
+            }
+
+            else -> {
+                null
+            }
         }
 
     /** The pages the menus pass through to [route], the overview's row first: a result opens them all (Back walks up). */
@@ -208,16 +257,60 @@ object SettingsIndex {
         for ((t, s) in rows) add(SearchEntry(t, on, trail, summary = s, group = group, pensOnly = pensOnly, seen = seen, needs = needs))
     }
 
+    /**
+     * A *See also* row of [route] that opens another page ([target], titled [title]): found as that page (the result is
+     * the page, at its top). AOSP Settings links pages the same way (a Preference whose fragment or intent opens the
+     * other screen; SettingsLib SPA's `SettingsEntryBuilder.createLinkFrom`): one page reachable from several.
+     */
+    private fun MutableList<SearchEntry>.link(
+        route: SettingsRoute,
+        @StringRes title: Int,
+        target: SearchTarget,
+        @StringRes summary: Int? = null,
+        seen: Seen = Seen.Everyone,
+    ) {
+        val on = SearchTarget.Page(route)
+        add(SearchEntry(title, on, trail(route), target, summary, R.string.st_see_also, highlight = null, seen = seen))
+    }
+
     /** The row of [route]'s parent page that opens [route] (titled with [route]'s title): the result opens [route]. */
     private fun MutableList<SearchEntry>.pageRow(
         route: SettingsRoute,
         @StringRes group: Int?,
         @StringRes summary: Int? = null,
+        @StringRes keywords: Int? = null,
     ) {
         val parent = checkNotNull(parent(route))
         val title = checkNotNull(pageTitle(route))
-        add(SearchEntry(title, SearchTarget.Page(parent), trail(parent), SearchTarget.Page(route), summary, group, highlight = null))
+        add(
+            SearchEntry(
+                title,
+                SearchTarget.Page(parent),
+                trail(parent),
+                SearchTarget.Page(route),
+                summary,
+                group,
+                highlight = null,
+                keywords = keywords,
+            ),
+        )
     }
+
+    /** The title of a setting's page with its places (docs/38): the setting's name. */
+    private fun placeTitle(setting: PlaceSetting): Int =
+        when (setting) {
+            PlaceSetting.Hours -> R.string.st_graph_hours
+            PlaceSetting.SensorTime -> R.string.st_graph_sensor
+        }
+
+    /** The place rows of a setting's page (docs/38), in its *Notification and widgets* group. */
+    private fun MutableList<SearchEntry>.places(setting: PlaceSetting) =
+        rows(
+            SettingsRoute.PlacePage(setting),
+            R.string.st_places_group,
+            R.string.st_place_notification to null,
+            R.string.st_place_widgets to null,
+        )
 
     private val overviewTrail = listOf(R.string.st_settings_title)
 
@@ -277,17 +370,39 @@ object SettingsIndex {
 
     val entries: List<SearchEntry> =
         buildList {
-            // the overview's rows: the pages themselves
+            // the overview's rows: the pages themselves, in the overview's order (docs/35); a moved page's old name is
+            // among its keywords, so muscle memory still finds it ("Ranges" → Readings, "Graph" → Rings)
             add(overview(R.string.st_alerts_title, R.string.st_overview_alerts_on, SearchTarget.Page(SettingsRoute.Alerts)))
             add(overview(R.string.st_reliability_title, R.string.st_reliability_ready, SearchTarget.Page(SettingsRoute.Reliability)))
-            add(overview(R.string.st_ranges_title, R.string.st_overview_ranges, SearchTarget.Page(SettingsRoute.Ranges)))
-            add(overview(R.string.st_graph_title, R.string.st_overview_graph, SearchTarget.Page(SettingsRoute.Graph)))
+            add(overview(R.string.st_from_title, null, SearchTarget.Page(SettingsRoute.SettingsFrom), seen = Seen.Follower))
+            add(
+                overview(
+                    R.string.st_readings_title,
+                    R.string.st_overview_readings,
+                    SearchTarget.Page(SettingsRoute.Readings),
+                    keywords = R.string.st_readings_keywords,
+                ),
+            )
+            add(
+                overview(
+                    R.string.st_graph_title,
+                    R.string.st_overview_graph,
+                    SearchTarget.Page(SettingsRoute.Graph),
+                    keywords = R.string.st_graph_keywords,
+                ),
+            )
+            add(
+                overview(
+                    R.string.st_rings_title,
+                    R.string.st_overview_rings,
+                    SearchTarget.Page(SettingsRoute.Rings),
+                    keywords = R.string.st_rings_keywords,
+                ),
+            )
             add(overview(R.string.st_statusbar_title, R.string.st_overview_statusbar, SearchTarget.Page(SettingsRoute.StatusBar)))
             add(overview(R.string.st_lock_title, R.string.st_overview_lock, SearchTarget.Page(SettingsRoute.LockScreen)))
             add(overview(R.string.st_sensor, R.string.st_sensor_summary, SearchTarget.Other(OtherPage.Sensor)))
             add(overview(R.string.st_sensorend_title, R.string.st_overview_sensorend, SearchTarget.Page(SettingsRoute.SensorEnd)))
-            add(overview(R.string.st_sharing, R.string.st_sharing_summary, SearchTarget.Other(OtherPage.Sharing)))
-            add(overview(R.string.st_apps, R.string.st_apps_summary, SearchTarget.Other(OtherPage.Apps)))
             add(
                 overview(
                     R.string.st_pens_title,
@@ -297,12 +412,20 @@ object SettingsIndex {
                     keywords = R.string.st_pens_keywords,
                 ),
             )
+            add(overview(R.string.st_sharing, R.string.st_sharing_summary, SearchTarget.Other(OtherPage.Sharing)))
+            add(overview(R.string.st_apps, R.string.st_apps_summary, SearchTarget.Other(OtherPage.Apps)))
             add(overview(R.string.st_backup_title, null, SearchTarget.Other(OtherPage.Backup), seen = Seen.Wearer))
-            add(overview(R.string.st_export_title, R.string.st_export_summary, SearchTarget.Other(OtherPage.Export)))
+            add(
+                overview(
+                    R.string.st_files_title,
+                    R.string.st_overview_files,
+                    SearchTarget.Page(SettingsRoute.ImportExport),
+                    keywords = R.string.st_files_keywords,
+                ),
+            )
             add(overview(R.string.st_adv_title, R.string.st_adv_overview_summary, SearchTarget.Page(SettingsRoute.Advanced)))
             add(overview(R.string.st_about_title, null, SearchTarget.Page(SettingsRoute.About)))
             add(overview(R.string.st_profile_title, R.string.st_profile_summary, SearchTarget.Other(OtherPage.Profile), seen = Seen.Wearer))
-            add(overview(R.string.st_from_title, null, SearchTarget.Page(SettingsRoute.SettingsFrom), seen = Seen.Follower))
             // Settings › Sensor's own rows (another feature's page)
             sensor(
                 R.string.st_sensor_current,
@@ -320,6 +443,18 @@ object SettingsIndex {
                 R.string.st_sensor_source_juggluco to R.string.st_sensor_source_juggluco_why,
             )
             sensor(R.string.st_sensor_juggluco, R.string.st_sensor_juggluco_secret to null)
+            // Sensor ↔ Sensor end (docs/35 §7): its own overview row stays, and the Sensor page links to it
+            add(
+                SearchEntry(
+                    R.string.st_sensorend_title,
+                    SearchTarget.Other(OtherPage.Sensor),
+                    listOf(R.string.st_sensor),
+                    SearchTarget.Page(SettingsRoute.SensorEnd),
+                    R.string.st_sensorend_link_summary,
+                    R.string.st_see_also,
+                    highlight = null,
+                ),
+            )
             sensor(
                 R.string.st_sensor_this_phone,
                 R.string.st_sensor_open_on_scan to null,
@@ -338,6 +473,7 @@ object SettingsIndex {
                 add(SearchEntry(r.nameRes(), SearchTarget.Page(reliability), trail(reliability), summary = r.whyRes()))
             }
             rows(reliability, R.string.st_reliability_test_title, R.string.st_send_test to null)
+            link(reliability, R.string.st_alerts_title, SearchTarget.Page(SettingsRoute.Alerts))
 
             val alerts = SettingsRoute.Alerts
             rows(alerts, null, R.string.st_alerts_main to null, R.string.st_mute_all to null)
@@ -358,31 +494,8 @@ object SettingsIndex {
                 seen = Seen.Follower,
             )
             pageRow(SettingsRoute.ThresholdReview, null)
-            rows(
-                alerts,
-                R.string.st_quiet_title,
-                R.string.st_quiet_insulin to null,
-                R.string.st_quiet_carbs to null,
-                R.string.st_quiet_falling to null,
-                R.string.st_quiet_rising to null,
-                R.string.st_quiet_length to null,
-                R.string.st_quiet_within to null,
-            )
-            rows(
-                alerts,
-                R.string.st_wait_title,
-                R.string.st_wait_low to R.string.st_wait_footer,
-                R.string.st_wait_high to R.string.st_wait_footer,
-                R.string.st_wait_margin to R.string.st_wait_footer,
-            )
-            rows(
-                alerts,
-                R.string.st_actions_title,
-                R.string.st_action_mute to null,
-                R.string.st_action_relax to null,
-                R.string.st_action_back_mgdl to null,
-                R.string.st_action_back_min to null,
-            )
+            // each quiet rule's row opens its page: its switch and its length are there
+            for (which in QuietKind.entries) pageRow(SettingsRoute.QuietRulePage(which), R.string.st_quiet_title)
             rows(
                 alerts,
                 R.string.st_sounds_title,
@@ -391,6 +504,40 @@ object SettingsIndex {
                 R.string.st_alerts_separate to R.string.st_alerts_separate_on,
                 R.string.st_notification_settings to R.string.st_notification_settings_summary,
             )
+            // the rarely touched rows: one named subpage at the end of Alerts (docs/35: no global advanced mode)
+            add(
+                SearchEntry(
+                    R.string.st_finetune_title,
+                    SearchTarget.Page(alerts),
+                    trail(alerts),
+                    SearchTarget.Page(SettingsRoute.AlertsFineTuning),
+                    R.string.st_finetune_summary,
+                    highlight = null,
+                    keywords = R.string.st_finetune_keywords,
+                ),
+            )
+            link(alerts, R.string.st_reliability_title, SearchTarget.Page(SettingsRoute.Reliability))
+            link(alerts, R.string.st_readings_title, SearchTarget.Page(SettingsRoute.Readings), R.string.st_overview_readings)
+            for (which in QuietKind.entries) {
+                rows(SettingsRoute.QuietRulePage(which), null, R.string.st_quiet_use to null, quietLengthTitle(which) to quietFooter(which))
+            }
+            val fine = SettingsRoute.AlertsFineTuning
+            rows(
+                fine,
+                R.string.st_wait_title,
+                R.string.st_wait_low to R.string.st_wait_footer,
+                R.string.st_wait_high to R.string.st_wait_footer,
+                R.string.st_wait_margin to R.string.st_wait_footer,
+            )
+            rows(
+                fine,
+                R.string.st_actions_title,
+                R.string.st_action_mute to null,
+                R.string.st_action_relax to null,
+                R.string.st_action_back_mgdl to null,
+                R.string.st_action_back_min to null,
+            )
+            rows(fine, null, R.string.st_finetune_reset to null)
             // each alert's own page, so a hit opens that alert ("Remind every · Alerts › Low › Alert when")
             for (kind in kindNames.keys) {
                 val page = SettingsRoute.AlertKindPage(kind)
@@ -411,6 +558,10 @@ object SettingsIndex {
                     R.string.st_channel_settings to R.string.st_channel_settings_summary,
                 )
             }
+            // the fast alerts use the trend arrow: its choice is on their pages too (docs/35 §7: the same setting)
+            for (kind in listOf(AlertKind.FALLING_FAST, AlertKind.RISING_FAST)) {
+                rows(SettingsRoute.AlertKindPage(kind), R.string.st_alert_when, R.string.st_trend_title to null)
+            }
             // Alerts › Night alerts, and each alert's night rule
             rows(
                 SettingsRoute.NightAlerts,
@@ -420,6 +571,8 @@ object SettingsIndex {
                 R.string.st_night_to to null,
             )
             for ((kind, group) in kindGroups) pageRow(SettingsRoute.NightKindPage(kind), group)
+            // THE night also keeps the sensor reminders quiet: Night alerts links Sensor end (the wearer's phone)
+            link(SettingsRoute.NightAlerts, R.string.st_sensorend_title, SearchTarget.Page(SettingsRoute.SensorEnd), seen = Seen.Wearer)
             for (kind in kindNames.keys) {
                 rows(
                     SettingsRoute.NightKindPage(kind),
@@ -431,17 +584,14 @@ object SettingsIndex {
             }
             rows(SettingsRoute.ThresholdReview, null, R.string.st_review_confirm to null)
 
-            rows(
-                SettingsRoute.Ranges,
-                null,
-                R.string.st_unit to R.string.st_unit_footer,
-            )
+            val readings = SettingsRoute.Readings
+            rows(readings, null, R.string.st_unit to R.string.st_unit_footer)
             // the Trend arrow row opens its page: found by its words (arrow, trend, delay …) too
             add(
                 SearchEntry(
                     R.string.st_trend_title,
-                    SearchTarget.Page(SettingsRoute.Ranges),
-                    trail(SettingsRoute.Ranges),
+                    SearchTarget.Page(readings),
+                    trail(readings),
                     SearchTarget.Page(SettingsRoute.TrendArrow),
                     R.string.st_trend_summary,
                     highlight = null,
@@ -457,18 +607,30 @@ object SettingsIndex {
                 R.string.st_trend_sensor to R.string.st_trend_sensor_summary,
             )
             rows(
-                SettingsRoute.Ranges,
-                null,
+                readings,
+                R.string.st_ranges_title,
                 R.string.st_band_very_low to null,
                 R.string.st_band_low to null,
                 R.string.st_band_tight to null,
                 R.string.st_band_high to null,
                 R.string.st_band_very_high to null,
                 R.string.st_band_extremely_high to null,
-                R.string.st_ranges_reset to R.string.st_ranges_reset_summary,
             )
+            rows(readings, null, R.string.st_ranges_reset to R.string.st_ranges_reset_summary)
+            // the ranges aren't the alert levels (LibreLink keeps them apart too): Readings links Alerts
+            link(readings, R.string.st_alerts_title, SearchTarget.Page(SettingsRoute.Alerts))
 
             val graph = SettingsRoute.Graph
+            // the ranges colour the graph: a Ranges row atop opens them in Readings (docs/35 §7)
+            add(
+                SearchEntry(
+                    R.string.st_ranges_title,
+                    SearchTarget.Page(graph),
+                    trail(graph),
+                    SearchTarget.Page(readings),
+                    highlight = null,
+                ),
+            )
             rows(
                 graph,
                 R.string.st_graph_lines,
@@ -476,17 +638,41 @@ object SettingsIndex {
                 R.string.st_graph_line_add to null,
                 R.string.st_graph_grid to null,
             )
+            // Time shown: the app's value and the places that differ; its page has them all (docs/38)
+            pageRow(SettingsRoute.PlacePage(PlaceSetting.Hours), null, keywords = R.string.st_places_keywords)
+            places(PlaceSetting.Hours)
             rows(
                 graph,
-                R.string.st_graph_hours,
-                R.string.st_graph_hours to null,
-                R.string.st_graph_hours_default to null,
-                R.string.st_place_app to null,
-                R.string.st_place_notification to null,
-                R.string.st_place_widgets to null,
+                R.string.st_graph_beside_graph,
+                R.string.st_graph_side to R.string.st_graph_side_summary,
+                R.string.st_graph_crown to null,
             )
+            pageRow(SettingsRoute.GraphMarks, null)
+            // the sensor time's row, the same as Sensor end's: it opens the same page
+            add(
+                SearchEntry(
+                    R.string.st_graph_sensor,
+                    SearchTarget.Page(graph),
+                    trail(graph),
+                    SearchTarget.Page(SettingsRoute.PlacePage(PlaceSetting.SensorTime)),
+                    highlight = null,
+                    keywords = R.string.st_places_keywords,
+                ),
+            )
+            rows(graph, null, R.string.st_graph_reset_all to null)
             rows(
-                graph,
+                SettingsRoute.GraphMarks,
+                R.string.st_marks_rapid,
+                R.string.st_marks_point to null,
+                R.string.st_marks_line to R.string.st_marks_line_summary,
+                R.string.st_marks_amount to null,
+                R.string.st_marks_time to null,
+            )
+            rows(SettingsRoute.GraphMarks, null, R.string.st_marks_reset to null)
+
+            val rings = SettingsRoute.Rings
+            rows(
+                rings,
                 R.string.st_graph_beside,
                 R.string.st_graph_rings to null,
                 R.string.st_slot_main to null,
@@ -499,24 +685,9 @@ object SettingsIndex {
                 R.string.st_ring_counts to null,
                 R.string.st_graph_marks to R.string.st_graph_marks_summary,
             )
-            rows(
-                graph,
-                R.string.st_graph_beside_graph,
-                R.string.st_graph_side to R.string.st_graph_side_summary,
-                R.string.st_graph_crown to null,
-            )
-            pageRow(SettingsRoute.GraphMarks, null)
-            rows(graph, R.string.st_graph_sensor, R.string.st_graph_sensor to null)
-            rows(graph, null, R.string.st_graph_reset_all to null)
-            rows(
-                SettingsRoute.GraphMarks,
-                R.string.st_marks_rapid,
-                R.string.st_marks_point to null,
-                R.string.st_marks_line to R.string.st_marks_line_summary,
-                R.string.st_marks_amount to null,
-                R.string.st_marks_time to null,
-            )
-            rows(SettingsRoute.GraphMarks, null, R.string.st_marks_reset to null)
+            rows(rings, R.string.st_ring_order, R.string.st_ring_order to R.string.st_ring_order_footer)
+            rows(rings, null, R.string.st_rings_reset_all to null)
+            link(rings, R.string.st_readings_title, SearchTarget.Page(readings), R.string.st_overview_readings)
 
             val lock = SettingsRoute.LockScreen
             add(
@@ -589,6 +760,7 @@ object SettingsIndex {
             rows(sensorEnd, null, R.string.st_sensorend_current to null)
             rows(sensorEnd, R.string.st_sensorend_reminders, R.string.st_sensorend_reminders to null, R.string.st_sensorend_add to null)
             rows(sensorEnd, null, R.string.st_sensorend_unlock to R.string.st_sensorend_unlock_summary)
+            // THE night (docs/35 §7): the same time range as Night alerts, edited here too
             rows(
                 sensorEnd,
                 R.string.st_sensorend_night,
@@ -603,7 +775,22 @@ object SettingsIndex {
                 R.string.st_sensorend_countdown_hours to null,
                 R.string.st_sensorend_warmup to R.string.st_sensorend_warmup_summary,
             )
+            // the sensor's time left on the card: its home is here, Graph has the same row (docs/35 §7, docs/38)
+            pageRow(SettingsRoute.PlacePage(PlaceSetting.SensorTime), null, keywords = R.string.st_places_keywords)
+            rows(SettingsRoute.PlacePage(PlaceSetting.SensorTime), null, R.string.st_sensor_time_show to null)
+            places(PlaceSetting.SensorTime)
             rows(sensorEnd, R.string.st_sensorend_after, R.string.st_sensorend_again to null)
+            // the sensor's end in the calendar (the wearer's phone)
+            rows(
+                sensorEnd,
+                R.string.st_calendar_group,
+                R.string.st_calendar_title to null,
+                R.string.st_calendar_where to null,
+                R.string.st_calendar_gcal_title to R.string.st_calendar_gcal_hint,
+                seen = Seen.Wearer,
+            )
+            link(sensorEnd, R.string.st_sensor, SearchTarget.Other(OtherPage.Sensor), R.string.st_sensor_summary)
+            link(sensorEnd, R.string.st_night_title, SearchTarget.Page(SettingsRoute.NightAlerts))
 
             val about = SettingsRoute.About
             rows(about, null, R.string.st_about_version to null)
@@ -637,13 +824,6 @@ object SettingsIndex {
             )
 
             val advanced = SettingsRoute.Advanced
-            rows(
-                advanced,
-                R.string.st_adv_file,
-                R.string.st_adv_export to R.string.st_adv_export_summary,
-                R.string.st_adv_import to R.string.st_adv_import_summary,
-                R.string.st_adv_reset to R.string.st_adv_reset_summary,
-            )
             rows(advanced, R.string.st_adv_relays, R.string.st_adv_relays to null, R.string.st_adv_check_now to null)
             add(
                 SearchEntry(
@@ -661,6 +841,20 @@ object SettingsIndex {
             rows(advanced, R.string.st_adv_stats, R.string.st_adv_sent to null, seen = Seen.Wearer)
             rows(advanced, R.string.st_adv_stats, R.string.st_adv_received to null, seen = Seen.Follower)
             rows(advanced, R.string.st_adv_stats, R.string.st_adv_notification to null)
+
+            // Import and export: Export data and Import history (`:integrations`' rows: the app's `AppsSearch`), the
+            // settings file (out of Advanced: it isn't an advanced feature, docs/35 §7) and the other data pages
+            val files = SettingsRoute.ImportExport
+            rows(
+                files,
+                R.string.st_adv_file,
+                R.string.st_adv_export to R.string.st_adv_export_summary,
+                R.string.st_adv_import to R.string.st_adv_import_summary,
+                R.string.st_adv_reset to R.string.st_adv_reset_summary,
+            )
+            link(files, R.string.st_sharing, SearchTarget.Other(OtherPage.Sharing), R.string.st_sharing_summary)
+            link(files, R.string.st_apps, SearchTarget.Other(OtherPage.Apps), R.string.st_apps_summary)
+            link(files, R.string.st_backup_title, SearchTarget.Other(OtherPage.Backup), seen = Seen.Wearer)
 
             val from = SettingsRoute.SettingsFrom
             rows(

@@ -81,6 +81,17 @@ class HomeViewModelTest {
 
         override suspend fun mayChangeTreatment(id: String) = mayChange
 
+        override suspend fun editNote(
+            id: String,
+            note: String,
+        ): Treatment? {
+            writes += "note $id $note"
+            if (!mayChange) return null
+            val stored = treatments.get(id) ?: return null
+            treatments.upsertIfNewer(stored.copy(treatment = stored.treatment.copy(note = note, modifiedAt = clock.now().plusMillis(500))))
+            return stored.treatment
+        }
+
         override suspend fun undoTreatment(previous: Treatment) {
             writes += "undo ${previous.id}"
             treatments.upsertIfNewer(TreatmentRecord(previous.copy(modifiedAt = clock.now().plusSeconds(1))))
@@ -462,5 +473,82 @@ class HomeViewModelTest {
             vm.dismiss(BannerKind.DataProblem)
             runCurrent()
             assertEquals(BannerKind.DataProblem, vm.state.value.banner)
+        }
+
+    @Test fun `the Treatments page lists 31 days with the same marks, pens and delete as home's 24 h (#207)`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val today = Samples.treatment(id = "today", minutesAgo = 60)
+            val lastWeek = Samples.treatment(id = "week", minutesAgo = 7 * 24 * 60)
+            val tooOld = Samples.treatment(id = "old", minutesAgo = 32 * 24 * 60)
+            listOf(today, lastWeek, tooOld).forEach { deps.treatments.upsertIfNewer(TreatmentRecord(it)) }
+            deps.pens[lastWeek.id] = penEntry(lastWeek)
+            val home = HomeViewModel(deps)
+            val page = HomeViewModel(deps, HomeViewModel.HISTORY_WINDOW)
+            backgroundScope.launch { home.state.collect {} }
+            backgroundScope.launch { page.state.collect {} }
+            runCurrent()
+            assertEquals(
+                listOf("today"),
+                home.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(
+                listOf("today", "week"),
+                page.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(setOf("week"), page.state.value.fromPen)
+
+            page.delete(lastWeek)
+            runCurrent()
+            assertEquals(
+                listOf("today"),
+                page.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(lastWeek, page.state.value.undo)
+            page.undoDelete()
+            runCurrent()
+            assertEquals(
+                listOf("today", "week"),
+                page.state.value.treatments
+                    .map { it.id },
+            )
+            assertEquals(listOf("delete week", "undo week"), deps.writes)
+        }
+
+    @Test fun `a pen entry's note is saved through the log, with Undo (#207)`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val pen = Samples.treatment(id = "p1")
+            deps.treatments.upsertIfNewer(TreatmentRecord(pen))
+            deps.pens[pen.id] = penEntry(pen)
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            vm.openPen(pen)
+            runCurrent()
+            vm.notePen("Pizza")
+            runCurrent()
+            assertEquals(
+                "Pizza",
+                deps.treatments
+                    .get("p1")
+                    ?.treatment
+                    ?.note,
+            )
+            val notice = vm.penNotice.value!!
+            assertEquals(PenNotice.Kind.NoteChanged, notice.kind)
+            vm.undoNote(notice.noteUndo!!)
+            runCurrent()
+            assertEquals(
+                "",
+                deps.treatments
+                    .get("p1")
+                    ?.treatment
+                    ?.note,
+            )
+            assertEquals(listOf("note p1 Pizza", "undo p1"), deps.writes)
         }
 }

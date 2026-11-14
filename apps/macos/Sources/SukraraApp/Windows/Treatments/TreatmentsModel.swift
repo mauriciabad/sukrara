@@ -148,7 +148,82 @@ public final class TreatmentsModel {
     /// The runtime reported a delivery change (relay OK, the phone's echo, or a timeout).
     public func set(_ id: String, _ state: TreatmentDeliveryState) {
         guard let i = rows.firstIndex(where: { $0.id == id }) else { return }
+        noteAccepted(id, from: rows[i].delivery, to: state)
         rows[i].delivery = state
+    }
+
+    // MARK: what a row's delivery shows (status only when it says something)
+
+    /// How long an entry the phone has just accepted shows its "On the phone" check before it fades out.
+    public static let acceptedSeconds: TimeInterval = 3
+
+    /// The entries that became accepted while this model watched, and until when their check shows.
+    public private(set) var justAccepted: [String: Date] = [:]
+
+    /// What a row's delivery shows: *Sending* while it travels, *Not sent* with Retry when it failed, and the "On the
+    /// phone" check only for `acceptedSeconds` after the phone accepted it; nothing for an entry that has arrived
+    /// (relay took it, the phone has it) or one this Mac didn't write.
+    public enum Shown: Equatable, Sendable { case sending, failed, accepted }
+
+    static func shown(_ delivery: TreatmentDeliveryState?, acceptedUntil: Date?, now: Date) -> Shown? {
+        switch delivery {
+        case .sending: .sending
+        case .failed: .failed
+        case .accepted: acceptedUntil.map { $0 > now ? .accepted : nil } ?? nil
+        case .sent, nil: nil
+        }
+    }
+
+    public func shown(_ row: Row) -> Shown? {
+        Self.shown(row.delivery, acceptedUntil: justAccepted[row.id], now: now())
+    }
+
+    /// The check's time is over (the window fades it out).
+    public func acceptedShown(_ id: String) { justAccepted[id] = nil }
+
+    private func noteAccepted(_ id: String, from old: TreatmentDeliveryState?, to new: TreatmentDeliveryState?) {
+        if new == .accepted, old != nil, old != .accepted {
+            justAccepted[id] = now().addingTimeInterval(Self.acceptedSeconds)
+        } else if new != .accepted, justAccepted[id] != nil {
+            justAccepted[id] = nil
+        }
+    }
+
+    // MARK: glucose then
+
+    /// The readings (oldest first, each with its own trend: `AppModel.allReadings`) a row's glucose then comes from.
+    @ObservationIgnored public var readings: () -> [Reading] = { [] }
+    /// The unit the card writes values in.
+    @ObservationIgnored public var unit: () -> GlucoseUnit = { .mgdl }
+
+    /// How far from an entry's time a reading may be to be its glucose then.
+    public static let glucoseThenWindow: TimeInterval = 5 * 60
+
+    /// The reading nearest `t` within ±`glucoseThenWindow` in `readings` (oldest first), the earlier one on a tie;
+    /// nil when none is that close.
+    static func glucoseThen(_ readings: [Reading], at t: Date) -> Reading? {
+        // first reading at or after t
+        var lo = 0, hi = readings.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if readings[mid].t < t { lo = mid + 1 } else { hi = mid }
+        }
+        let before = lo > 0 ? readings[lo - 1] : nil
+        let after = lo < readings.count ? readings[lo] : nil
+        let best: Reading? =
+            switch (before, after) {
+            case (let b?, let a?): a.t.timeIntervalSince(t) < t.timeIntervalSince(b.t) ? a : b
+            case (let b?, nil): b
+            case (nil, let a?): a
+            case (nil, nil): nil
+            }
+        guard let best, abs(best.t.timeIntervalSince(t)) <= glucoseThenWindow else { return nil }
+        return best
+    }
+
+    /// The glucose then of `row`'s entry, from `readings`.
+    public func glucoseThen(_ row: Row) -> Reading? {
+        Self.glucoseThen(readings(), at: Date(timeIntervalSince1970: TimeInterval(row.treatment.t)))
     }
 
     /// The runtime's newest list (visible entries) and the delivery of each entry this Mac wrote. A row marked
@@ -158,6 +233,7 @@ public final class TreatmentsModel {
         self.canWrite = canWrite
         let failedRows = rows.filter { $0.delivery == .failed }
         let failed = Set(failedRows.map(\.id))
+        let before = Dictionary(rows.map { ($0.id, $0.delivery) }, uniquingKeysWith: { a, _ in a })
         let hidden = undo?.kind == .deleted ? undo?.before.id : nil
         let synced = treatments.filter { !$0.del && $0.id != hidden }
             .map { t in
@@ -166,6 +242,9 @@ public final class TreatmentsModel {
             }
         // an entry the runtime refused never reached it: keep it on screen with Retry instead of dropping it
         let ids = Set(synced.map(\.id))
+        for row in synced where before[row.id] != nil {
+            noteAccepted(row.id, from: before[row.id] ?? nil, to: row.delivery)
+        }
         rows = (synced + failedRows.filter { !ids.contains($0.id) }).sorted { $0.treatment.t > $1.treatment.t }
     }
 

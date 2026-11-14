@@ -17,26 +17,16 @@ struct PanelView: View {
     let model: AppModel
     /// The window layer's entry points (nil in a render without windows).
     var links: PanelLinks?
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.colorSchemeContrast) private var contrast
-    /// The screen's pixels per point: the card is drawn at it (sharp on any display, no wasted pixels on a 1x one).
-    @Environment(\.displayScale) private var displayScale
-    /// Where the chart looks (scrolled / zoomed through time; nil end = now).
-    @State private var scroll: ChartScroll
+    /// Where the chart starts looking (snapshots; the app opens on now).
+    let scroll: ChartScroll
+    /// Mute all's Custom… field is open: Return belongs to it, not to Add Treatment….
+    @State private var customMute = false
 
-    /// `scroll`: where the chart starts looking (snapshots; the app opens on now).
     init(model: AppModel, links: PanelLinks? = nil, scroll: ChartScroll = ChartScroll()) {
         self.model = model
         self.links = links
-        _scroll = State(initialValue: scroll)
+        self.scroll = scroll
     }
-    /// Mute all's Custom… field is open: Return belongs to it, not to Add Treatment….
-    @State private var customMute = false
-    /// The chart's y range, Now pill and way back to now, gliding (`ChartEase`).
-    @State private var ease = ChartEase()
-    /// Something glides: the card redraws every frame until it settles.
-    @State private var gliding = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let cardSize = CGSize(width: 340, height: 196)
 
@@ -62,7 +52,7 @@ struct PanelView: View {
                 }
                 if retrying, let block { block }
                 if model.notMonitoringReason == nil || retrying {
-                    card
+                    PanelCard(model: model, links: links, scroll: scroll)
                 }
                 // why there's no value and what to do: in the card's place, or under a card whose value is hidden
                 if !retrying, let block { block }
@@ -85,11 +75,6 @@ struct PanelView: View {
             }
             .padding(14)
             .frame(width: Self.cardSize.width + 28, alignment: .leading)
-            // the panel opens at now again
-            .onDisappear {
-                scroll = ChartScroll()
-                ease = ChartEase()
-            }
         }
     }
 
@@ -99,9 +84,79 @@ struct PanelView: View {
         case nil: nil
         case .follow: links.openFollow
         case .following: { links.openSettingsPane(.following) }
-        case .juggluco: { links.openSettingsPane(.general) }
+        case .juggluco: { links.openSettingsPane(.following) }
         }
     }
+
+    /// The recessed module behind the card (12 pt corners; black 18 % in dark mode, white 50 % in light mode; an
+    /// outline with Increase Contrast).
+    static func module(scheme: ColorScheme, increased: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(scheme == .dark ? Color.black.opacity(0.18) : Color.white.opacity(0.5))
+            .overlay {
+                if increased {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                }
+            }
+    }
+
+    /// An alert macOS refused (posted again plain, or not at all): said here with *Copy Report* (the steps and macOS's
+    /// errors, no value) until an alert of that group is posted.
+    private func alertNotShownWarning(_ failed: Set<String>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(L10n.t("An alert couldn't be shown"), systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(
+                L10n.t("macOS refused its notification, so Sukrara posted it again plain. The next alert tries again.")
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            Button(L10n.t("Copy Report")) { AlertReport.copy(failed) }
+        }
+    }
+
+    private var notificationsWarning: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(
+                model.notificationPermission == .denied
+                    ? L10n.t("Notifications are off: alerts can't reach you.")
+                    : L10n.t("Alert banners or sounds are off: alerts may go unnoticed."),
+                systemImage: "exclamationmark.triangle.fill"
+            )
+            .foregroundStyle(.orange)
+            Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
+        }
+    }
+}
+
+/// The panel's card: the one renderer's picture (`GlucoseCard.picture`, one drawing per frame) with the chart's
+/// gestures, VoiceOver's actions, the Now button and the status pill over it. Its own view, so a scroll or a pinch
+/// redraws the card alone, not the panel's rows (#181, 2026-11-14: "the scroll in the graph is choppy").
+struct PanelCard: View {
+    let model: AppModel
+    var links: PanelLinks?
+    /// Where the chart looks (scrolled / zoomed through time; nil end = now).
+    @State private var scroll: ChartScroll
+    /// The chart's y range, Now pill and way back to now, gliding (`ChartEase`).
+    @State private var ease = ChartEase()
+    /// Something glides: the card redraws every frame until it settles.
+    @State private var gliding = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+    /// The screen's pixels per point: the card is drawn at it (sharp on any display, no wasted pixels on a 1x one).
+    @Environment(\.displayScale) private var displayScale
+
+    /// `scroll`: where the chart starts looking (snapshots; the app opens on now).
+    init(model: AppModel, links: PanelLinks?, scroll: ChartScroll = ChartScroll()) {
+        self.model = model
+        self.links = links
+        _scroll = State(initialValue: scroll)
+    }
+
+    var body: some View { card }
 
     @ViewBuilder private var card: some View {
         let data = model.panelData
@@ -118,6 +173,11 @@ struct PanelView: View {
         .task(id: ease) {
             try? await Task.sleep(for: .seconds(Glide.settle + 0.05))
             if !Task.isCancelled { gliding = false }
+        }
+        // the panel opens at now again
+        .onDisappear {
+            scroll = ChartScroll()
+            ease = ChartEase()
         }
     }
 
@@ -146,14 +206,15 @@ struct PanelView: View {
 
     @ViewBuilder private func cardImage(_ data: CardData, view: ChartView?) -> some View {
         let increased = contrast == .increased
-        if let image = GlucoseCard.image(
-            surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
+        let rects = GlucoseCard.picture(
+            surface: .menubarCard, size: PanelView.cardSize, config: model.graph, data: data, unit: model.unit,
             dark: scheme == .dark, scale: displayScale, view: view, contrast: increased)
-        {
-            let rects = GlucoseCard.chartRects(
-                surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit,
-                view: view)
+        if let image = rects.image {
+            // the picture is `overflow` larger on every side (a ring's flowers, the value's digits reach past the card):
+            // laid out at the card's size, drawn over the panel's margin, nothing cut (#181)
             Image(decorative: image, scale: displayScale)
+                .padding(-rects.overflow)
+                .frame(width: PanelView.cardSize.width, height: PanelView.cardSize.height)
                 .accessibilityElement()
                 .accessibilityLabel(
                     GlucoseCard.accessibilityLabel(data, unit: model.unit, surface: .menubarCard, config: model.graph)
@@ -166,19 +227,19 @@ struct PanelView: View {
                         ChartGestures(
                             scroll: { dx, _ in moveChart(by: dx, plotWidth: plot.width, data) },
                             zoom: { factor, x in
-                                zoomChart(factor, at: (x * Self.cardSize.width - plot.minX) / plot.width, data)
+                                zoomChart(factor, at: (x * PanelView.cardSize.width - plot.minX) / plot.width, data)
                             },
                             smartZoom: { x in
                                 let b = chart(data)
                                 scroll.smartZoom(
-                                    anchor: Double((x * Self.cardSize.width - plot.minX) / plot.width),
+                                    anchor: Double((x * PanelView.cardSize.width - plot.minX) / plot.width),
                                     default: b.default, first: b.first, now: b.now)
                             }
                         )
-                        .frame(width: Self.cardSize.width, height: Self.cardSize.height)
+                        .frame(width: PanelView.cardSize.width, height: PanelView.cardSize.height)
                     }
                 }
-                .overlay(alignment: .topLeading) { pill(data) }
+                .overlay(alignment: .topLeading) { pill(data, at: rects.pill) }
                 .overlay(alignment: .topLeading) {
                     if let now = rects.now, scroll.away {
                         Button {
@@ -193,21 +254,8 @@ struct PanelView: View {
                     }
                 }
                 // the module reaches 6 pt past the card, into the panel's margin (the card keeps its size)
-                .background(Self.module(scheme: scheme, increased: increased).padding(-6))
+                .background(PanelView.module(scheme: scheme, increased: increased).padding(-6))
         }
-    }
-
-    /// The recessed module behind the card (12 pt corners; black 18 % in dark mode, white 50 % in light mode; an
-    /// outline with Increase Contrast).
-    static func module(scheme: ColorScheme, increased: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(scheme == .dark ? Color.black.opacity(0.18) : Color.white.opacity(0.5))
-            .overlay {
-                if increased {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-                }
-            }
     }
 
     /// The bounds a gesture works within: the place's own length, the oldest reading, now.
@@ -231,14 +279,11 @@ struct PanelView: View {
 
     /// The card's pill as a control over the spot the renderer drew it: Eat carbs / Take insulin opens Add Treatment
     /// with that field focused, a mute pill opens its ways out (the same as the blocks below).
-    @ViewBuilder private func pill(_ data: CardData) -> some View {
+    @ViewBuilder private func pill(_ data: CardData, at rect: CGRect?) -> some View {
         let canAdd = AddTreatmentAvailability(model) == .available && links != nil
         let action = PillAction.of(
             data.alerts.status, canAdd: canAdd, muteAll: model.alerts?.ui.muteAllUntil != nil)
-        if action != .none,
-            let rect = GlucoseCard.pillRect(
-                surface: .menubarCard, size: Self.cardSize, config: model.graph, data: data, unit: model.unit)
-        {
+        if action != .none, let rect {
             let spot = Color.clear.contentShape(Capsule()).frame(width: rect.width, height: rect.height)
             Group {
                 switch action {
@@ -281,35 +326,6 @@ struct PanelView: View {
             }
             .help(L10n.t("Show what you can do"))
             .offset(x: rect.minX, y: rect.minY)
-        }
-    }
-
-    /// An alert macOS refused (posted again plain, or not at all): said here with *Copy Report* (the steps and macOS's
-    /// errors, no value) until an alert of that group is posted.
-    private func alertNotShownWarning(_ failed: Set<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(L10n.t("An alert couldn't be shown"), systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-            Text(
-                L10n.t("macOS refused its notification, so Sukrara posted it again plain. The next alert tries again.")
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-            Button(L10n.t("Copy Report")) { AlertReport.copy(failed) }
-        }
-    }
-
-    private var notificationsWarning: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                model.notificationPermission == .denied
-                    ? L10n.t("Notifications are off: alerts can't reach you.")
-                    : L10n.t("Alert banners or sounds are off: alerts may go unnoticed."),
-                systemImage: "exclamationmark.triangle.fill"
-            )
-            .foregroundStyle(.orange)
-            Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
         }
     }
 }
@@ -723,23 +739,22 @@ private struct CustomMuteAll: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                TextField(
-                    L10n.t("Mute alerts for"),
+                Text(L10n.t("Mute alerts for")).accessibilityHidden(true)
+                TextInput(
+                    label: L10n.t("Mute alerts for"),
                     text: Binding(
                         get: { text },
                         set: {
                             text = $0
                             invalid = false
-                        }), prompt: Text(verbatim: "2 h 30 min")
+                        })
                 )
-                .textFieldStyle(.roundedBorder)
                 .focused($focused)
                 .onSubmit(commit)
                 .accessibilityHint(note)
-                Button(L10n.t("Mute"), action: commit).disabled(text.isEmpty)
-                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
             }
             Text(note).font(.caption).foregroundStyle(invalid ? Color.red : Color.secondary)
+            DialogButtons(L10n.t("Mute"), enabled: !text.isEmpty, cancel: done, confirm: commit)
         }
         .onAppear { focused = true }
     }

@@ -11,21 +11,28 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +47,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -57,6 +65,9 @@ import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.sheet.SheetActions
+import app.mauri.sukrara.designsystem.sheet.SheetButton
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import java.util.Locale
 
 /** `8.5u`: dot, lowercase u, no space (the pen's own way of writing doses). */
@@ -142,8 +153,9 @@ fun PenDoseRow(
  * A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows): the amount and time, *From the pen ·
  * 1.5u primed*, each dose with *Priming* / *Injected*, the note and the entry it replaced. Once a dose changed:
  * *Cancel* / *Save* ([onSave] with each dose's role; *Remove from log* when every dose is priming). [onSave] null = read
- * only (a follower): the roles in words and *Done*. [onDelete] (the entry's own delete with its *Undo*) shows *Delete*
- * while nothing is being changed.
+ * only (a follower): the roles in words and *Done*. [onNote] makes the note a field (#207: a pen entry carries a note
+ * like any entry); a changed note is saved with *Save* too. [onDelete] (the entry's own delete with its *Undo*) shows
+ * *Delete* while nothing is being changed. Built on [SukraraSheet]; every button has its icon.
  *
  * Feel: a flipped dose's amount flies from its row to the total it joins (the injected amount, or *primed*) and both
  * totals count to their new values in 0.5u steps; with reduced motion the numbers simply change. TalkBack hears the
@@ -156,10 +168,17 @@ fun PenEntrySheet(
     time: (Long) -> String,
     onSave: ((List<Boolean>) -> Unit)?,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
+    onNote: ((String) -> Unit)? = null,
+    noteMark: @Composable () -> Unit = {},
 ) {
     val roles = remember(entry) { mutableStateListOf(*entry.doses.map { it.primed }.toTypedArray()) }
-    val changed = roles.toList() != entry.doses.map { it.primed }
+    val noteState = remember(entry) { TextFieldState(entry.note) }
+    val note = noteState.text.toString()
+    val rolesChanged = roles.toList() != entry.doses.map { it.primed }
+    val noteChanged = onNote != null && note.trim() != entry.note
+    val changed = rolesChanged || noteChanged
     val inj = entry.doses.filterIndexed { i, _ -> !roles[i] }
     val a = round1(inj.sumOf { it.units })
     val pr = round1(entry.doses.filterIndexed { i, _ -> roles[i] }.sumOf { it.units })
@@ -173,12 +192,9 @@ fun PenEntrySheet(
     val title = if (inj.isEmpty()) stringResource(R.string.ds_pen_nothing_injected) else "${penUnits(a)} $kind"
     val from = stringResource(R.string.ds_pen_from_pen)
     val primedText = pr.takeIf { it > 0 }?.let { stringResource(R.string.ds_pen_primed, penUnits(it)) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    SukraraSheet(onDismiss, modifier) {
         Box(Modifier.onGloballyPositioned { flight.origin = it.positionInRoot() }) {
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (inj.isEmpty() && shownA < 0.01) title else "${penUnits(shownA)} $kind",
@@ -221,7 +237,19 @@ fun PenEntrySheet(
                     )
                 }
                 HorizontalDivider()
-                if (entry.note.isNotEmpty()) Text(entry.note, style = MaterialTheme.typography.bodyMedium)
+                if (onNote != null) {
+                    // the Add treatment form's note: its label on the outline, empty while empty, up to 3 lines
+                    OutlinedTextField(
+                        state = noteState,
+                        modifier = Modifier.fillMaxWidth().testTag("pen-note"),
+                        labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
+                        label = { MarkedText(noteMark, stringResource(R.string.ds_pen_note)) },
+                        inputTransformation = PenNotes.input,
+                        lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 3),
+                    )
+                } else if (entry.note.isNotEmpty()) {
+                    MarkedText(noteMark, entry.note, MaterialTheme.typography.bodyMedium)
+                }
                 entry.replaced?.let { (ra, rt) ->
                     Text(
                         stringResource(R.string.ds_pen_replaced, penUnits(ra), time(rt)),
@@ -229,28 +257,40 @@ fun PenEntrySheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                    if (changed && onSave != null) {
-                        TextButton(onClick = {
-                            roles.clear()
-                            roles.addAll(entry.doses.map { it.primed })
-                        }) { Text(stringResource(R.string.ds_cancel)) }
-                        Button(onClick = {
-                            onSave(roles.toList())
-                            onDismiss()
-                        }) { Text(stringResource(if (inj.isEmpty()) R.string.ds_pen_remove else R.string.ds_pen_save)) }
-                    } else {
-                        if (onDelete != null) {
-                            TextButton(
-                                onClick = {
-                                    onDelete()
+                if (changed) {
+                    SheetActions(
+                        end = {
+                            SheetButton(stringResource(R.string.ds_cancel), R.drawable.ds_ic_close, {
+                                roles.clear()
+                                roles.addAll(entry.doses.map { it.primed })
+                                noteState.setTextAndPlaceCursorAtEnd(entry.note)
+                            })
+                            val removes = inj.isEmpty()
+                            SheetButton(
+                                stringResource(if (removes) R.string.ds_pen_remove else R.string.ds_pen_save),
+                                if (removes) R.drawable.ds_ic_delete else R.drawable.ds_ic_check,
+                                {
+                                    if (rolesChanged) onSave?.invoke(roles.toList())
+                                    if (noteChanged && !removes) onNote?.invoke(note.trim())
                                     onDismiss()
                                 },
-                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            ) { Text(stringResource(R.string.ds_pen_delete)) }
-                        }
-                        Button(onClick = onDismiss) { Text(stringResource(R.string.ds_pen_done)) }
-                    }
+                                primary = true,
+                            )
+                        },
+                    )
+                } else {
+                    SheetActions(
+                        start =
+                            onDelete?.let { delete ->
+                                {
+                                    SheetButton(stringResource(R.string.ds_pen_delete), R.drawable.ds_ic_delete, {
+                                        delete()
+                                        onDismiss()
+                                    }, destructive = true)
+                                }
+                            },
+                        end = { SheetButton(stringResource(R.string.ds_pen_done), R.drawable.ds_ic_check, onDismiss, primary = true) },
+                    )
                 }
             }
             FlyingDose(flight)
@@ -310,3 +350,36 @@ private fun FlyingDose(flight: DoseFlight) {
 }
 
 private const val FLY_MS = 320
+
+/** [mark] (the note's chart marker, given by the caller) and [text] on one line, as every place names a note. */
+@Composable
+private fun MarkedText(
+    mark: @Composable () -> Unit,
+    text: String,
+    style: androidx.compose.ui.text.TextStyle = androidx.compose.ui.text.TextStyle.Default,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        mark()
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = style)
+    }
+}
+
+/** A pen entry's note as every entry's: at most [Treatment] note bytes (100 UTF-8 bytes), cut on a character. */
+internal object PenNotes {
+    const val BYTES = 100
+
+    /** Keeps what [clip] keeps of an edit. */
+    val input =
+        InputTransformation {
+            val typed = toString()
+            val kept = clip(typed)
+            if (kept != typed) replace(0, length, kept)
+        }
+
+    fun clip(text: String): String {
+        var t = text.replace('\n', ' ')
+        while (t.toByteArray(Charsets.UTF_8).size > BYTES) t = t.dropLast(1)
+        return t
+    }
+}

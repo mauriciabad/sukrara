@@ -23,6 +23,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | The checks' own tests | `tools/check/run.sh --selftest` |
 | Cross-surface card tests | `tools/check/run.sh --layout` |
 | Settings code after a schema change | `python3 tools/settings/gen.py` (commit both SettingsSpec files) |
+| Play Store icon + apple-touch-icon | `python3 -I tools/brand/store_icons.py` (from the frozen `poc/spikes/brand/brand.py` shapes) |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
@@ -65,8 +66,9 @@ commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`)
 
 Every install must contain all merged work, or features silently vanish from the owner's devices:
 `tools/install.sh phone|mac [--dry-run]`. It refuses a dirty tree, a HEAD without `origin/main`, the branches in
-`tools/check/integration.txt` or the commit installed last time, and failing checks; then it builds the release,
-verifies it (`tools/release/verify-apk.sh` / `verify-app.sh`), installs in place and records the commit in
+`tools/check/integration.txt` or the commit installed last time, and failing checks; then it builds the release variant
+as a development build (signed like a release; About says *Development build · …*, see [Development and release
+builds](#development-and-release-builds)), verifies it (`tools/release/verify-apk.sh` / `verify-app.sh`), installs in place and records the commit in
 `<git common dir>/sukrara-installed-<target>`.
 
 On the Mac it replaces the installed copy wherever it is: `/Applications/Sukrara.app` (the notarized release from the
@@ -98,6 +100,34 @@ scratch folders for such a dry run.
   `generate_keys`: service `https://sparkle-project.org`, account `ed25519`), with a backup at `~/.apple-dev/sparkle-eddsa-private.key` (chmod 600) for the
   password manager; its public key is `SUPublicEDKey` in `apps/macos/Bundle/sparkle.plist`. `mac-release.sh` signs the
   notarized dmg with it and writes `docs/appcast.xml` (docs/20-publishing.md › Sparkle: the update feed).
+
+## Development and release builds
+
+Every build says what it is wherever the version shows, so nobody takes a build of `next` for the release
+(`tools/release/build-info.sh`, one line both apps carry: Android the manifest's `app.mauri.sukrara.build` meta-data,
+the Mac Info.plist `SukraraBuild`):
+
+- **Release** (`release`): only with `SUKRARA_RELEASE_BUILD=1`, which only the release scripts set
+  (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only from the release commit (the
+  last commit that changed `VERSION`, with no other change and no untracked file; `docs/appcast.xml` may differ:
+  `mac-release.sh` writes it in the gate and `release.py` commits it before `testflight`); anything else stops the
+  build. About and Settings keep *0.14.5 · GitHub version* / *Google Play version* / *App Store version*.
+- **Development** (`development <commits> <commit> <date>`): every other build: `tools/install.sh` (which unsets the
+  flag), CI, Android debug builds (`development` alone, so the build cache keeps them), `swift build` / `swift test`
+  (no Info.plist). About and Settings say *Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov* (Spanish
+  *Versión de desarrollo · 0.14.5 + 23 cambios · …*): the commits since the release commit (those that change more than
+  `docs/appcast.xml`), HEAD's hash and its commit date; what git can't tell (a shallow clone) is left out. Reports
+  (*Copy report*, sensor feedback, the import's issue, the Mac's *Copy Report*) say *0.14.5 development build +23
+  d744fd74 2026-11-14*.
+- **Checks**: `verify-apk.sh` / `verify-app.sh` expect a development build unless given `--release` (the release
+  scripts pass it): a release can't carry the development wording, an install.sh build can't carry the release's.
+  `test_release.py` (`BuildInfoTest`), `AppBuildTest` / `VersionSummaryTest` / `ManifestTest` (Android),
+  `AppBuildTests` (Mac).
+- **Updates**: versionName / CFBundleShortVersionString and versionCode / CFBundleVersion stay the base release's
+  (`VERSION`), so `adb install -r` and the Mac install over a release keep working, and the updaters (Android's
+  `Releases.newer` + `ApkCheck`, Sparkle's CFBundleVersion) never offer the base release or an older one over a
+  development build, only a newer release (`VERSION` moves only at a release, so a newer release has everything the
+  development build has). The Google Play and App Store builds are always releases.
 
 ## Release
 

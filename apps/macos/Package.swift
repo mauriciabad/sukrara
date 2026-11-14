@@ -81,7 +81,7 @@ let package = Package(
         ),
         // Offline snapshot renderer for every surface (debug builds only).
         .executableTarget(
-            name: "sukrara-snap", dependencies: ["SukraraApp", "SukraraCore", "SukraraGraph"],
+            name: "sukrara-snap", dependencies: ["SukraraApp", "SukraraCore", "SukraraGraph", "SukraraTesting"],
             swiftSettings: mainActorByDefault),
 
         // Test support: fakes for every store / transport protocol and the contracts/ locator.

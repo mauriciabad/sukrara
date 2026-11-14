@@ -20,7 +20,6 @@
     <string name="treatment_unit_u">u</string>
     <string name="treatment_unit_g">g</string>
     <string name="treatment_note">Nota</string>
-    <string name="treatment_note_placeholder">Pizza, ejercicio, enfermo…</string>
     <string name="treatment_note_count">%1$d / %2$d</string>
     <string name="treatment_limits">Insulina hasta %1$du, hidratos hasta %2$dg, más de 0</string>
     <string name="treatment_now">Ahora</string>
@@ -39,6 +38,9 @@
     <string name="treatment_saved_snack">Guardado: %1$s</string>
     <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
     <string name="treatment_changed_snack">Cambiado: %1$s</string>
+    <!-- #207: Borrar en la hoja de edición, y su snackbar; %1$s = "4,5u de insulina rápida" -->
+    <string name="treatment_delete">Borrar</string>
+    <string name="treatment_deleted_snack">Borrado: %1$s</string>
     <string name="treatment_undo">Deshacer</string>
     <string name="treatment_undone">Deshecho</string>
     <string name="treatment_entry_rapid">%1$s de insulina rápida</string>
@@ -60,14 +62,12 @@
     <string name="treatment_yesterday">Ayer %1$s</string>
     <string name="treatment_mode_time">Hora</string>
     <string name="treatment_mode_ago">Minutos antes</string>
-    <string name="treatment_unit_min">min</string>
     <string name="treatment_quiet_highs">Altas silenciadas %1$s</string>
     <string name="treatment_quiet_lows">Bajas silenciadas %1$s</string>
     <string name="treatment_quiet_both">Altas silenciadas %1$s · bajas silenciadas %2$s</string>
     <string name="treatment_pen_duplicate_title">¿Ya registrada por tu pluma?</string>
     <string name="treatment_pen_duplicate_text">Tu pluma registró %1$s a las %2$s. ¿Registrar también esta dosis?</string>
     <string name="treatment_pen_duplicate_log">Registrar igualmente</string>
-    <string name="treatment_pen_hint">¿Te has inyectado? Acerca la pluma al móvil.</string>
     <string name="treatment_pen_reading">Leyendo la pluma…</string>
     <string name="treatment_pen_logged">Registrada desde tu pluma</string>
     <string name="treatment_pen_logged_primed">Registrada desde tu pluma · %1$s de purgado</string>

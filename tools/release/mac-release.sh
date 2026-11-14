@@ -21,6 +21,8 @@
 # CHANGELOG.md section as notes (no channel: every release is a normal one). Only the dmg is the update (Sparkle installs
 # from it); the zip stays a plain download. Commit docs/appcast.xml after the GitHub release with the dmg is published.
 # An unnotarized build never goes in the appcast.
+# A release build (SUKRARA_RELEASE_BUILD=1, tools/release/build-info.sh): built only from the release commit, About
+# says "GitHub version"; verify-app.sh --release checks it.
 # Refuses unless tools/check/strict exists. Prints the dmg and zip paths on the last two lines.
 set -eu
 . "$(dirname "$0")/lib.sh"
@@ -60,9 +62,9 @@ case "$line" in
     ;;
 esac
 
-"$root/apps/macos/Bundle/bundle.sh"
-if [ "$notarize" = 1 ]; then "$root/tools/release/verify-app.sh" "$build/Sukrara.app" --notarized
-else "$root/tools/release/verify-app.sh" "$build/Sukrara.app"; fi
+SUKRARA_RELEASE_BUILD=1 "$root/apps/macos/Bundle/bundle.sh"
+if [ "$notarize" = 1 ]; then "$root/tools/release/verify-app.sh" "$build/Sukrara.app" --notarized --release
+else "$root/tools/release/verify-app.sh" "$build/Sukrara.app" --release; fi
 "$root/apps/macos/Bundle/dmg.sh"
 dmg="$build/Sukrara-$version.dmg"
 zip="$build/Sukrara-mac-$version.zip"

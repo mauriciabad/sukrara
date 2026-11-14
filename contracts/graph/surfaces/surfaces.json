@@ -364,6 +364,8 @@
       "GlucoseCard": [
         "draw",
         "image",
+        "widgetImage",
+        "widgetBackground",
         "face",
         "accessibilityLabel",
         "noValueText",
@@ -371,9 +373,11 @@
         "rangeSide",
         "trendImage",
         "noReadingsSymbol",
-        "pillRect",
-        "chartRects",
-        "chartSpan"
+        "picture",
+        "overflowRoom",
+        "chartSpan",
+        "treatmentBadge",
+        "spokenReading"
       ],
       "SensorBadge": [
         "look",
@@ -402,7 +406,8 @@
       "Freshness": [
         "timeText",
         "nextChange",
-        "nextChangeAt"
+        "nextChangeAt",
+        "valueText"
       ]
     },
     "value_text_ok": [

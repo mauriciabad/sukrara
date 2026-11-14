@@ -197,6 +197,9 @@ sealed interface HomeAction {
         val id: String,
     ) : HomeAction
 
+    /** The Treatments page: the last 31 days of entries (the list's *See all*, #207). */
+    data object OpenTreatments : HomeAction
+
     /** Add treatment with Carbs ([carbs]) or Rapid focused: the card's *Eat carbs* / *Take insulin* pill. */
     data class Treat(
         val carbs: Boolean,

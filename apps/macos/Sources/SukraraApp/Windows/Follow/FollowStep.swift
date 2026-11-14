@@ -85,12 +85,10 @@ struct FollowStep: View {
         )
         .fixedSize(horizontal: false, vertical: true)
         HStack {
-            TextField(L10n.t("Invite link"), text: $follow.linkText)
-                .textFieldStyle(.roundedBorder)
+            TextInput(label: L10n.t("Invite link"), text: $follow.linkText)
                 .onSubmit { Task { await follow.lookUp() } }
-                .accessibilityLabel(L10n.t("Invite link"))
             Button(L10n.t("Continue")) { Task { await follow.lookUp() } }
-                .keyboardShortcut(.defaultAction)
+                .keyboardShortcut(follow.linkText.isEmpty ? nil : .defaultAction)
                 .disabled(follow.linkText.isEmpty || follow.status == .joining)
         }
         HStack {
@@ -143,12 +141,8 @@ struct InviteConfirmDialog: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     MacNameField(follow: follow)
-                    HStack {
-                        Spacer()
-                        Button(L10n.t("Cancel")) { follow.cancelInvite() }
-                            .keyboardShortcut(.cancelAction)
-                        Button(L10n.t("Follow")) { Task { await follow.confirmInvite() } }
-                            .buttonStyle(.borderedProminent)
+                    DialogButtons(L10n.t("Follow"), returnConfirms: false, cancel: { follow.cancelInvite() }) {
+                        Task { await follow.confirmInvite() }
                     }
                 }
             }
@@ -165,9 +159,7 @@ struct MacNameField: View {
 
     var body: some View {
         LabeledContent(L10n.t("Name for this Mac")) {
-            TextField(L10n.t("Name for this Mac"), text: $follow.macName)
-                .textFieldStyle(.roundedBorder)
-                .labelsHidden()
+            TextInput(label: L10n.t("Name for this Mac"), text: $follow.macName)
                 .frame(maxWidth: 240)
                 .onChange(of: follow.macName) {
                     if follow.macName.utf16.count > Profile.maxName {
@@ -245,7 +237,6 @@ struct PairingCodeView: View {
                             Spacer()
                             // no Return shortcut: comparing is the point, and Return belongs to the link field
                             Button(L10n.t("Same Code")) { Task { await follow.confirmNearby(same: true) } }
-                                .buttonStyle(.borderedProminent)
                         }
                     }
                 } else {

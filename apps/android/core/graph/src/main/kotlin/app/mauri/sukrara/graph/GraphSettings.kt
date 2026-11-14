@@ -64,13 +64,21 @@ object GraphSettings {
             SettingsSpec.OPTIONS.getValue("unit").toSet(),
         )
 
-    /** Each place's own window in hours (0 = the default's). */
+    /** Each place's own window in hours (0 = the app's, [Hours]); only the places that can differ ([GraphPlace.OWN]). */
     val PlaceHours: Map<GraphPlace, Setting<Double>> =
-        GraphPlace.entries.associateWith { SchemaSettings.numberAt("graph.hours.place", it.ordinal) }
+        GraphPlace.OWN.associateWith { SchemaSettings.numberAt("graph.hours.place", placeIndex(it)) }
 
-    /** Whether each place's card shows the sensor's time left. */
-    val SensorTime: Map<GraphPlace, Setting<Boolean>> =
-        GraphPlace.entries.associateWith { SchemaSettings.boolAt("graph.sensorTime.place", it.ordinal, default = true) }
+    /** Whether the app's card shows the sensor's time left: every place follows it unless it has its own. */
+    val SensorTime = SchemaSettings.bool("graph.sensorTime", default = GraphConfig().appSensorTime)
+
+    /** Each place's own sensor time left ([PlaceOverride]: Same follows [SensorTime]). */
+    val SensorTimePlace: Map<GraphPlace, Setting<String>> =
+        GraphPlace.OWN.associateWith {
+            SchemaSettings.textAt("graph.sensorTime.place", placeIndex(it), PlaceOverride.SAME.key, PlaceOverride.keys)
+        }
+
+    /** A place's key in a per-place setting's comma list: its position in the schema's `places.android`, by name. */
+    private fun placeIndex(p: GraphPlace): Int = GraphPlace.OWN_NAMES.indexOf(p.name).also { require(it >= 0) { "$p has no own value" } }
 
     /** The person's graph settings, a new [GraphConfig] on every change (ranges always in order: [Bands.sane]). */
     fun config(settings: SettingsRepository): Flow<GraphConfig> {
@@ -86,27 +94,31 @@ object GraphSettings {
         val enums = combine(settings.flow(RingRange), settings.flow(LastPlace)) { range, last -> range to last }
         val texts = combine(listOf(Slots, RingOrder, Lines, LastElse, Marks).map(settings::flow)) { it.toList() }
         val hours =
-            combine(GraphPlace.entries.map { settings.flow(PlaceHours.getValue(it)) }) { v ->
-                GraphPlace.entries
+            combine(GraphPlace.OWN.map { settings.flow(PlaceHours.getValue(it)) }) { v ->
+                GraphPlace.OWN
                     .zip(v.map(Double::toInt))
                     .filter { it.second > 0 }
                     .toMap()
             }
-        val hidden =
-            combine(GraphPlace.entries.map { settings.flow(SensorTime.getValue(it)) }) { v ->
-                GraphPlace.entries.filterIndexed { i, _ -> !v[i] }.toSet()
+        val sensorOwn =
+            combine(GraphPlace.OWN.map { settings.flow(SensorTimePlace.getValue(it)) }) { v ->
+                GraphPlace.OWN
+                    .zip(v)
+                    .mapNotNull { (p, o) -> PlaceOverride.of(o).on?.let { p to it } }
+                    .toMap()
             }
-        val places = combine(hours, hidden, settings.flow(GlucoseUnitSetting)) { h, s, u -> Triple(h, s, GlucoseUnit.of(u)) }
+        val sensor = combine(settings.flow(SensorTime), sensorOwn) { app, own -> app to own }
+        val places = combine(hours, sensor, settings.flow(GlucoseUnitSetting)) { h, s, u -> Triple(h, s, GlucoseUnit.of(u)) }
         return combine(bands, numbers, switches, combine(enums, texts) { e, t -> e to t }, places) {
             b,
-            (defaultHours, grid, rings),
+            (appHours, grid, rings),
             (side, crown, marks),
             (e, t),
-            (placeHours, sensorHidden, unit),
+            (placeHours, sensor, unit),
             ->
             GraphConfig(
                 bands = b,
-                defaultHours = defaultHours,
+                appHours = appHours,
                 placeHours = placeHours,
                 gridHours = grid,
                 ringCount = rings,
@@ -121,7 +133,8 @@ object GraphSettings {
                     app.mauri.sukrara.graph.LastPlace
                         .valueOf(e.second),
                 lastElse = GraphText.parseSlot(t[3]),
-                sensorHidden = sensorHidden,
+                appSensorTime = sensor.first,
+                sensorPlace = sensor.second,
                 marks = MarkShow.parse(t[4]),
                 unit = unit,
             )

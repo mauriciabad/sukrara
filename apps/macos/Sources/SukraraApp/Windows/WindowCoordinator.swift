@@ -26,10 +26,14 @@ final class WindowCoordinator {
         self.adapter = adapter
         follow = FollowModel(status: .notFollowing, actions: adapter)
         settings = SettingsModel(
-            store: store, follow: follow, version: Self.version, distribution: model.plan.distribution)
+            store: store, follow: follow, version: Self.version, distribution: model.plan.distribution,
+            appBuild: .current)
         settings.newestReading = { [weak model] in model?.newestReading }
         setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
+        // the rows' glucose then: the readings the card shows (each with its own trend) and the card's unit
+        treatments.readings = { [weak model] in model?.allReadings ?? [] }
+        treatments.unit = { [weak model] in model?.unit ?? .mgdl }
         report = ReportModel(store: store, app: model)
         setup.requestNotifications = requestNotifications
         setup.loginItem = model.loginItem
@@ -111,13 +115,14 @@ final class WindowCoordinator {
     /// About Sukrara (app menu, right-click menu, Settings › General).
     func openAbout() {
         windows.show(.about, title: L10n.t("About Sukrara"), configure: AboutWindow.configure) {
-            AboutView(version: Self.version, build: Self.build, distribution: model.plan.distribution)
+            AboutView(
+                version: Self.version, build: Self.build, distribution: model.plan.distribution, appBuild: .current)
         }
     }
 
     func openTreatments() {
         windows.show(.treatments, title: L10n.t("Treatments")) {
-            TreatmentsView(model: treatments) { [weak self] in self?.openAddTreatment() }
+            TreatmentsView(model: treatments) { [weak self] in self?.openAddTreatment(atPointer: true) }
         }
     }
 
@@ -125,20 +130,23 @@ final class WindowCoordinator {
         windows.show(.report, title: L10n.t("Glucose Report")) { ReportView(model: report) }
     }
 
-    /// Add treatment, placed under the menu bar: the Carbs field has the focus while the latest reading is below
-    /// the range (or a low alert is up), else Rapid; the card's pill names the field itself (`focus`).
-    /// The status item's frame on screen (set by `AppDelegate`): Add Treatment opens under it.
+    /// The status item's frame on screen (set by `AppDelegate`): Add Treatment opened from the panel opens under it.
     var statusItemFrame: () -> NSRect? = { nil }
     private let addFocus = AddTreatmentFocus()
 
-    func openAddTreatment(focus: Treatment.Kind? = nil) {
+    /// Add treatment: the Carbs field has the focus while the latest reading is below the range (or a low alert is up),
+    /// else Rapid; the card's pill names the field itself (`focus`). It opens under the status item (from the panel)
+    /// or, `atPointer`, centred on the pointer (a click elsewhere: a desktop widget, the Treatments window's +).
+    func openAddTreatment(focus: Treatment.Kind? = nil, atPointer: Bool = false) {
         let low =
             model.isLow
             || (model.look.state == .value && GlucoseCard.rangeSide(model.cardData, config: model.graph) == .below)
         let field = focus ?? (low ? .carbs : .rapid)
         // already open: a pill's field choice moves the focus there (nothing typed is lost)
         if let focus, windows.isOpen(.addTreatment) { addFocus.request(focus) }
-        windows.show(.addTreatment, title: L10n.t("Add Treatment"), nearMenuBar: true, anchor: statusItemFrame()) {
+        let placement: AppWindows.Placement =
+            atPointer ? .atPointer(NSEvent.mouseLocation) : .underMenuBar(anchor: statusItemFrame())
+        windows.show(.addTreatment, title: L10n.t("Add Treatment"), placement: placement) {
             AddTreatmentView(
                 focus: field, focusRequests: addFocus,
                 quiet: { [weak model] rapid, carbs, at in
@@ -167,7 +175,8 @@ final class WindowCoordinator {
     func open(_ url: URL) {
         switch AppLink(url) {
         case .newTreatment:
-            if treatments.canWrite { openAddTreatment() } else { openTreatments() }
+            // a widget click: the pointer is on the widget
+            if treatments.canWrite { openAddTreatment(atPointer: true) } else { openTreatments() }
         case .panel:
             openPanel()
         case .invite(let text):

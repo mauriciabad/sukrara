@@ -97,17 +97,17 @@ object SurfaceSettings {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** Invalid reminders are dropped; a missing field keeps its default; an invalid night window: the default one. */
+    /**
+     * Invalid reminders are dropped; a missing field keeps its default. The night isn't stored here: it is THE night
+     * (`alerts.night.from` / `to`), which the reader puts in ([SensorEndConfig.withNight]).
+     */
     fun decodeSensorEnd(text: String): SensorEndConfig {
         if (text.isBlank()) return SensorEndConfig()
         val w = runCatching { json.decodeFromString(Wire.serializer(), text) }.getOrNull() ?: return SensorEndConfig()
         val d = SensorEndConfig()
         val reminders =
             w.reminders?.mapNotNull { r -> runCatching { SensorReminder(r.days, r.minute) }.getOrNull() } ?: d.reminders
-        val ns = w.nightStart ?: d.nightStart
-        val ne = w.nightEnd ?: d.nightEnd
-        val night = runCatching { d.copy(nightStart = ns, nightEnd = ne) }.getOrDefault(d)
-        return night
+        return d
             .copy(
                 reminders = reminders,
                 countdown = w.countdown ?: d.countdown,
@@ -128,8 +128,6 @@ object SurfaceSettings {
                 c.warmup,
                 c.unlock,
                 c.evening,
-                c.nightStart,
-                c.nightEnd,
                 c.endedRepeatHours,
             ),
         )
@@ -147,8 +145,6 @@ object SurfaceSettings {
         val warmup: Boolean? = null,
         val unlock: Boolean? = null,
         val evening: Boolean? = null,
-        val nightStart: Int? = null,
-        val nightEnd: Int? = null,
         val endedRepeatHours: Int? = null,
     )
 }

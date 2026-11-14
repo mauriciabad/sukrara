@@ -145,6 +145,7 @@ object SensorEndPlan {
         cfg: SensorEndConfig,
         zone: ZoneId,
     ): Boolean {
+        if (cfg.nightStart == cfg.nightEnd) return false
         val m = local(t, zone).toLocalTime().toSecondOfDay() / 60
         return if (cfg.nightStart < cfg.nightEnd) m in cfg.nightStart until cfg.nightEnd else m >= cfg.nightStart || m < cfg.nightEnd
     }

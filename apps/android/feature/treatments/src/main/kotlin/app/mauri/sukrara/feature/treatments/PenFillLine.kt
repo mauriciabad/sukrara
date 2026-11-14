@@ -34,7 +34,7 @@ import app.mauri.sukrara.designsystem.pen.penUnits
 
 /** What the dialog shows of the pen under its fields (only while pens can be read into it). */
 sealed interface PenLine {
-    /** Pens can be read: *Injected? Hold your pen to the phone.* while no insulin is typed. */
+    /** Pens can be read, nothing read yet: no line (#181: the form doesn't remind the person to hold a pen). */
     data object Ready : PenLine
 
     /** The pen answered: *Reading your pen…* with the wavy ring. */
@@ -58,28 +58,22 @@ sealed interface PenLine {
 }
 
 /**
- * The pen's line under the dialog's fields: the hint, *Reading your pen…*, *Logged from your pen · 1.5u primed* with
- * *Undo* (and *Also logged: 2 earlier injections*), or the read's words. A polite live region, amounts spoken as
+ * The pen's line under the dialog's fields: *Reading your pen…*, *Logged from your pen · 1.5u primed* with *Undo* (and *Also logged: 2 earlier injections*), or the read's words. A polite live region, amounts spoken as
  * units; it crossfades between states (snaps with reduced motion).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PenFillLine(
     line: PenLine?,
-    showHint: Boolean,
     onUndo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shown = line?.takeIf { it != PenLine.Ready || showHint }
+    val shown = line?.takeIf { it != PenLine.Ready }
     Swap(shown, modifier.fillMaxWidth()) { l ->
         val muted = MaterialTheme.colorScheme.onSurfaceVariant
         when (l) {
-            null -> {
+            null, PenLine.Ready -> {
                 Unit
-            }
-
-            PenLine.Ready -> {
-                Text(stringResource(R.string.treatment_pen_hint), style = MaterialTheme.typography.bodyMedium, color = muted)
             }
 
             PenLine.Reading -> {

@@ -3,7 +3,10 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Checks a Mac bundle before it is installed or released:
-#   tools/release/verify-app.sh <Sukrara.app> [--unsigned | --notarized | --app-store]
+#   tools/release/verify-app.sh <Sukrara.app> [--unsigned | --notarized | --app-store] [--release]
+# - what the build is (Info.plist SukraraBuild, tools/release/build-info.sh): with --release (mac-release.sh,
+#   mac-appstore.sh) "release"; without (tools/install.sh, CI) "development <commits> <commit> <date>", so About and
+#   Settings say "Development build · …": a build that isn't a published release never shows the release wording
 # - bundle id app.mauri.sukrara, version / build = tools/release/version.sh (dev builds may add .<yyMMddHHmm>)
 # - the widget extension (app.mauri.sukrara.widget) is inside
 # - the camera's usage description (the QR scanner; macOS ends an app that opens the camera without one)
@@ -26,10 +29,18 @@
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/lib.sh"
-app="${1:?usage: verify-app.sh <Sukrara.app> [--unsigned | --notarized | --app-store]}"
-mode="${2:-}"
-case "$mode" in "" | --unsigned | --notarized | --app-store) ;;
-  *) echo "unknown argument '$mode' (--unsigned, --notarized, --app-store)" >&2; exit 2 ;; esac
+app="${1:?usage: verify-app.sh <Sukrara.app> [--unsigned | --notarized | --app-store] [--release]}"
+shift
+mode="" release=0
+for arg in "$@"; do
+  case "$arg" in
+    --release) release=1 ;;
+    --unsigned | --notarized | --app-store)
+      [ -z "$mode" ] || { echo "only one of --unsigned, --notarized, --app-store" >&2; exit 2; }
+      mode=$arg ;;
+    *) echo "unknown argument '$arg' (--unsigned, --notarized, --app-store, --release)" >&2; exit 2 ;;
+  esac
+done
 fail=0
 bad() { echo "FAIL $*"; fail=1; }
 ok() { echo "ok   $*"; }
@@ -47,6 +58,16 @@ case "$(plist "$app" CFBundleVersion)" in
 esac
 [ -n "$(plist "$app" NSCameraUsageDescription)" ] && ok "camera usage description (QR scanner)" \
   || bad "no NSCameraUsageDescription: macOS ends the app when the QR scanner opens the camera"
+build="$(plist "$app" SukraraBuild)"
+if [ $release = 1 ]; then
+  [ "$build" = release ] && ok "a release build (About: the distribution's name)" \
+    || bad "SukraraBuild is '$build', want 'release' (built without SUKRARA_RELEASE_BUILD=1 at the release commit?)"
+else
+  case "$build" in
+    "development "*) ok "a development build: $build (About: Development build · …)" ;;
+    *) bad "SukraraBuild is '$build', want 'development …': only a release script builds a release" ;;
+  esac
+fi
 want_dist=github
 [ "$mode" = --app-store ] && want_dist=appStore
 dist="$(plist "$app" SukraraDistribution)"

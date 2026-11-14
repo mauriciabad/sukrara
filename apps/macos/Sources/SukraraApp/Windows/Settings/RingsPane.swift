@@ -6,7 +6,8 @@ import SukraraGraph
 import SwiftUI
 
 /// Rings: the rings and numbers beside the value (how many, each one's kind, period and Fainter), what a ring's centre
-/// counts, the rewards, the ring order and the last-treatment slot. Outside Custom: a read-only summary.
+/// counts (with the way to the ranges, in Readings), the rewards, the ring order and the last-treatment slot. Outside
+/// Custom: a read-only summary.
 struct RingsPane: View {
     @Bindable var model: SettingsModel
 
@@ -28,9 +29,14 @@ struct RingsPane: View {
                             Self.slotNames[i], g.slots[i], fainter: i > 0,
                             set: { r in model.updateGraph { $0.slots[i] = r } })
                     }
-                    Picker(L10n.t("A ring's centre counts"), selection: graphValue(\.ringRange)) {
-                        Text(L10n.t("In range")).tag(TirRange.inRange)
-                        Text(L10n.t("Very good")).tag(TirRange.tight)
+                    HStack {
+                        Picker(L10n.t("A ring's centre counts"), selection: graphValue(\.ringRange)) {
+                            Text(L10n.t("In range")).tag(TirRange.inRange)
+                            Text(L10n.t("Very good")).tag(TirRange.tight)
+                        }
+                        // the ranges it counts are set in Readings
+                        Button(L10n.t("Ranges…")) { model.pane = .readings }
+                            .help(L10n.t("The ranges a ring counts are in the Readings pane"))
                     }
                     Toggle(L10n.t("Rewards on the rings (laurel, flowers, crown)"), isOn: graphValue(\.ringMarks))
                 }

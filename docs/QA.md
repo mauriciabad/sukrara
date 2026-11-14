@@ -207,6 +207,17 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       closes the panel); right-click menu; Treatments… (7 days, delete with ⌫ / context menu, ⌘W; a pen entry from the phone: total as title, *From the pen · 1.5u primed*, the triangle opens the doses with *primed* on air shots, tooltip *Read from the pen on …'s phone* (no serial); Add Treatment with rapid within 45 min of a pen entry → *Already logged by the pen?*, Cancel keeps the insulin typed and saves carbs / note, Log Anyway saves; VoiceOver reads the row as one sentence and each dose as *12:37, 1 unit, primed*; a correction on the phone shows here within seconds; chart mark = the total; synthetic: `sukrara-snap windows <dir>` → `treatments-*.png`, `treatment-add-*.png`); Glucose Report (report only, period, Export CSV…); Settings (each pane; ⌘, ⌘W, paste in
       the invite field); light and dark, over a bright and a dark window/wallpaper, Increase Contrast and Reduce
       Transparency (System Settings → Accessibility → Display).
+- [ ] Add Treatment placement and inputs (#181), in the running test build: from the panel (row, Return, a pill) it
+      opens centred under the status item, whole, its top 6 pt under the menu bar; a click on the desktop widget and
+      the Treatments window's + open it centred on the pointer, whole on that screen (try the widget near the top edge
+      and on a second display). No placeholder in any field of the app (Add / Edit Treatment, the When? popover, the
+      panel's Mute all Custom…, How You Appear, Juggluco, the invite link, Custom numbers). Amounts, minutes ago and
+      Custom numbers: field + stepper + unit, ↑ ↓ step (rapid 0.5u, long 1u, carbs 5g, minutes 5); Cancel and Save at
+      the regular height, Escape / Return; the alert sheets' Done closes with Escape; a click outside the When? popover
+      keeps a changed time, unchanged keeps *Now*. Synthetic: `sukrara-snap windows` → `treatment-*.png`.
+- [ ] Card overflow (#181): `sukrara-snap shell` → `panel-flowers-*.png`: the flowers and laurel at the card's right
+      and top edges and the value's first digit at its left edge are whole, drawn over the panel's margin (compare
+      docs/img/mac-ux/panel-overflow-*.png); the same on the real panel with a ring at 95 % or more.
 - [ ] Synthetic renders (the only snapshot path; offline, scratch data, debug builds): `cd apps/macos && swift build &&
       .build/debug/sukrara-snap shell|windows|card <dir>` (`shell-es` / `windows-es` for Spanish): the menu bar title
       + panel in each state, every window state (light, dark, large text) and every card surface. Never into the repo.
@@ -261,6 +272,10 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       phone nearby, Juggluco on this network, an alert with its sound and through a Focus, the widgets, open at login,
       *Export CSV…* to a folder you pick, the QR scanner, a web invite link; both versions show the medical reminder and
       *Privacy Policy* in About. Then `tools/install.sh mac` back to the GitHub version.
+- [ ] Development and release builds: after `tools/install.sh mac`, About Sukrara shows *Version x.y.z (build)* and
+      *Development build · x.y.z + n commits · <commit> · <date>* (selectable), Settings › General › Version the same
+      line, and *Check for Updates…* doesn't offer x.y.z itself; the notarized dmg of the release says *GitHub version*
+      / *x.y.z · GitHub version* there instead.
 - [ ] Updates (Sparkle, #91), after a release that added an item to `docs/appcast.xml`: on a Mac with the previous
       GitHub version installed from its dmg or the cask (not a dev build), right-click › *Check for Updates…* →
       Sparkle's window with the new version and its notes → *Install Update* → the download → *Install and Relaunch*
@@ -275,10 +290,13 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 
 ## Q7 Mac widgets
 
-- [ ] `sukrara-snap card <dir>` before/after: `widget-*` for every family and state, light, dark and tinted.
-- [ ] Tinted (#189): dark appearance, a bright wallpaper, then a dark one; click another window so the desktop widgets
-  dim: on both, the value, arrow and ring numbers read as strongly as the system's own widget text, the grid and band
-  stay faint (System Settings › Desktop & Dock › *Dim widgets on desktop* *Automatic*). Same in light appearance.
+- [ ] `sukrara-snap card <dir>` before/after: `widget-*` for every family and state, light, dark and `-dimmed` (the
+  dimmed desktop's greyscale, `DimmedDesktop`).
+- [ ] Dimmed (#189): dark appearance, a bright wallpaper, then a dark one; click another window so the desktop widgets
+  dim (System Settings › Desktop & Dock › *Dim widgets on desktop* *Automatically*): on both, the widget is a dark
+  card like Apple's Calendar next to it, the value, arrow and ring numbers light and clearly the strongest, the grid
+  and band faint. Same in light appearance (a light card, dark inks). `screencapture -l <window id>` of the widget's
+  window (NotificationCenter) shows it without the wallpaper; compare with `-dimmed` from `sukrara-snap`.
 - [ ] Real widgets only via `tools/install.sh mac` (restarts the widget extension); they update within a minute.
 
 ## Q8 Alerts on a device
@@ -417,6 +435,10 @@ over nothing:
 - [ ] The GitHub build's About says *0.14.5 · GitHub version* with the same *About the versions* link and its update
   rows.
 - [ ] TalkBack reads the About rows with their summaries.
+- [ ] Development and release builds (docs/FEATURES.md › Development and release builds): after `tools/install.sh
+  phone`, About says *Development build · <version> + <n> commits · <commit> · <date>* (the commit install.sh printed),
+  in Spanish *Versión de desarrollo · …*; the update check offers no release with the same version (*Up to date*).
+  The GitHub release's APK and the Google Play build say *<version> · GitHub version* / *· Google Play version*.
 
 ## Q11 Sensor reminders and countdowns
 
@@ -589,7 +611,7 @@ afterwards). Never a hosted site, never the user's phone.
 
 ## Q26 Trend arrow
 
-- Android (emulator, debug synthetic source): Settings › Ranges › *Trend arrow*: the preview shows the newest value
+- Android (emulator, debug synthetic source): Settings › Readings › *Trend arrow*: the preview shows the newest value
   and an arrow that matches the home card's; pick each choice: the preview's arrow turns with a short spring (none with
   Remove animations on), each row's own arrow says what it would show, the Ranges row's summary follows. With the
   synthetic source rising and falling, the home card's arrow turns smoothly between readings (not in 45° steps), the
@@ -609,17 +631,61 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       the recent searches; *night* lists *Night alerts* once (Alerts), opening it shows Alerts › Night alerts and Back
       walks up through Alerts to Settings; *battery*, *vary*, *garmin* open Alert reliability, Alerts, Share with apps
       scrolled to the row, which flashes; each result has its section's icon and where it is in the accent colour.
-- [ ] Every number row (Graph: the six ranges, time shown and per place, rings, periods, lines, vertical lines; Alerts:
-      thresholds, remind, quiet times, Mute…, Relax, the margin, Mute all custom; Sensor countdown; Nostr / LibreView intervals) opens the
+- [ ] Settings sections (#205, docs/35 §7), light and dark, English and Spanish, wearer and follower: the overview
+      reads [Alerts · Alert reliability] [Settings from · Readings (drop) · Graph · Rings] [Status bar · Lock screen]
+      [Sensor · Sensor end (chequered flag) · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
+      [Advanced · About]; each page's title is its row's. Search *ranges*, *mmol*, *graph*, *gmi*, *export*, *settings
+      file*, *margin*: each finds the page the row moved to and flashes the row. Alerts › *Fine-tuning* holds the waits
+      and the notification buttons (*Reset fine-tuning* asks first). Falling fast's *Trend arrow* row and Readings ›
+      Trend arrow show the same choice and change each other. Change *Bedtime* in Sensor end: Night alerts › *Starts*
+      shows it (and back). Sensor end's *Sensor time left* rows and Graph's change each other. Every *See also*
+      row opens its page and Back returns: Alerts ↔ Alert reliability, Alerts ↔ Readings, Rings → Readings, Graph's
+      *Ranges* → Readings, Sensor ↔ Sensor end, Night alerts → Sensor end (wearer), and Sharing / Share with apps /
+      Backup / Import and export link the other three (no Backup on a follower). TalkBack reads every link row.
+- [ ] A switch with its own options (owner 2026-11-14), light and dark, English and Spanish, wearer and follower: no
+      row anywhere appears or disappears under a switch. Alerts › *Quiet times*: four two-target rows (switch + summary
+      *For 1 h* / *Back in range within 20 min* / *Off*); the switch toggles without opening, the row opens the rule's
+      page (*Use this quiet time*, its length greyed while off, what it does); search *how long* / *back in range
+      within* opens the rule's page with the row flashed, Back walks up through Alerts. Sharing › *Over Bluetooth
+      nearby*: the same row (a warning row while Bluetooth is off or the permission is missing); its page has *Share over
+      Bluetooth nearby*, the fix row, *Pair nearby* (greyed while off, an open pairing keeps its switch) and the devices
+      nearby (a device opens its follower). Share with apps › Nightscout API: *Share with apps on this phone* is the
+      main switch; *Also on this Wi-Fi* stays visible, greyed with *Turn on … first* while it is off. Mac Alerts › Quiet
+      times: each rule is a row with its summary, *Details…* and its switch; the sheet has the switch, the length (greyed
+      while off) and what it does; Done and Esc close it; VoiceOver reads *… details* on the button. TalkBack reads the
+      row and its switch as two nodes.
+- [ ] A setting the app sets, that a place can change (#209, docs/38), light and dark, English and Spanish, font size
+      1× and 2×, wearer and follower, TalkBack / VoiceOver. Android: Graph › *Time shown* says *12 h*; its page has the
+      live card, the *App* radios and *Notification and widgets* (both *Same as the app*). Notification → 3 h (the
+      dialog starts with *Same as the app (12 h)*): the row says *12 h · 3 h in the notification* on one line and the
+      notification's chart shows 3 h. Widgets → 6 h: three lines, *12 h in the app* / *3 h in the notification* / *6 h
+      on widgets*, never a break inside one. Widgets → 3 h too: *3 h in the notification and on widgets*. At font size
+      2× one differing place takes the per-line form. Change the app's value: places on *Same as the app* follow.
+      Sensor end / Graph › *Sensor time left*: the switch turns the app's off; its page's Widgets → *Off*: the row says
+      *Off on widgets* and the widgets lose the badge. A follower in Wearer sees the app's value read-only and still
+      edits the places. Search *notification*: the page opens with the row flashed. A home widget's *Widget settings*
+      rows say *Same as in Settings*. Mac Graph: each setting is one row (value + chevron; *6 h on widgets* under the
+      title only when widgets differ); it opens its page inside the pane, the back button, ⌘[ and Esc return; the
+      Widgets pop-up is grey and borderless while it follows, a normal pop-up with its own value; its menu starts with
+      *Same as the menu bar (12 h)*. VoiceOver reads *Widgets, 12 hours, same as the menu bar*.
+- [ ] Mac panes (#205): the toolbar shows General, Following, Alerts, Readings (drop), Graph, Rings in that order, each
+      tooltip names what it holds and the window resizes per pane (no animation with Reduce Motion). Readings: change a
+      range → Graph's *Ranges* row and the menu bar colour follow; *Alert Levels…* opens Alerts; in Wearer / Default the
+      ranges and the trend are read-only with their source, the unit stays editable. Graph *Edit in Readings…*, Rings
+      *Ranges…*, Alerts *Ranges…* land on Readings; the panel's Juggluco no-data button lands on Following with the
+      Juggluco rows under the follow link. Falling fast *Details…* › *Trend from* and Readings › Trend arrow change each
+      other; *Fine-tuning…* opens the sheet, Done and Esc close it, VoiceOver reads every row.
+- [ ] Every number row (Readings: the six ranges; Graph: time shown and the widgets' own, lines, vertical lines; Rings: rings,
+      periods; Alerts: thresholds, remind, quiet times, Mute all custom; Fine-tuning: Mute…, Relax, the margin; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a valid typed value saves with OK and with
       the keyboard's Done (the dialog closes, the row shows it); a custom value shows as *Custom* + value.
-- [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step; Mac
-      Settings › Graph › Ranges, an alert's Details…, its night rule, setup's Alerts step), mg/dL and mmol/L, English and
+- [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step's number dialog; Mac
+      Settings › Readings › Ranges, an alert's Details…, its night rule), mg/dL and mmol/L, English and
       Spanish: under the number a line says the values it covers (*Low: 56–69 mg/dL*, *In range: 70–179 mg/dL* under
       low and high, *Very low: up to 55*, *Extremely high: from 300*); typing a custom value (Android dialog, Mac field
       or stepper) changes it as you type; turning very high off makes high's line reach extremely high (*180–299*).
-- [ ] Glucose unit mmol/L (Android Settings › Ranges › *Glucose unit*; Mac Settings › General › *Unit*), in English and
+- [ ] Glucose unit mmol/L (Android Settings › Readings › *Glucose unit*; Mac Settings › Readings › *Unit*), in English and
       Spanish: the card, the chart's range labels, the average slot, the glucose notification's title and Live Update,
       an alert (*Send a test alert* and a real low), widgets, the System UI text, the Quick Settings tile, the report,
       TalkBack / VoiceOver and the Mac menu bar all write mmol/L with one decimal (`3,9` in Spanish); every glucose
@@ -630,7 +696,7 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       the page; the drop settles with a spring and a haptic tick per slot. TalkBack offers Move up / down / to top / to
       bottom. Mac: drag a row: the image is the row, a gap opens and the others slide; Escape returns it unchanged;
       Control-click → Move Up / Move Down. No position numbers on either.
-- [ ] Follower: overview *Settings from* = Wearer; Graph shows only per-place times and sensor time; Alerts rows say
+- [ ] Follower: overview *Settings from* = Wearer; Graph's mirrored rows are read-only and the places on its Time shown / Sensor time left pages stay editable; Alerts rows say
       "Set by the wearer's app" and quiet times are hidden. Change a range on the wearer's emulator: the follower's
       graph follows within a minute. *Custom* → the rows appear; *Copy the wearer's settings* asks first, then copies.
 - [ ] Mac: the same choices per number (pop-up + *Custom…* field and stepper), Settings from in General, drag to
@@ -676,6 +742,21 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       Settings › Sharing. Once a role exists nothing of setup opens by itself, except *Bring your history back* at
       launch when it is the only step left. Mac (`swift test --filter SetupFlowTests`): close the setup window
       half-way, *Finish Setup…* reopens the same step.
+- [ ] Setup in two parts (#181, emulator, `pm clear`): *Step N of 5* over the essentials only; after the thresholds
+      *The essentials are done* lists the optional steps (with *Later* on Permissions / Sensor: *Some essentials are
+      left for later* and what is still to do). *Later* → home (no banner for the optional steps) → Settings' first row
+      *Finish setup* with their titles (and no updates suggestion beside it) → *Optional step 1 of N*; *Later* on
+      *Your followers* keeps it on the row, *Not now* / *Start empty* don't. `PEN_TAGS --ez blocked false` (made-up NFC):
+      *Insulin pens* → *Read my pens* turns Settings › Insulin pens' reading On; *I don't use a smart pen* leaves *Ask*.
+      Dark mode and Spanish (*Paso opcional 1 de 3*, *Termina la configuración*); TalkBack reads each step's counter.
+
+- [ ] Add treatment (#181, emulator): the note is empty while empty (no example), no pen reminder under the fields;
+      *When?* › *Minutes ago* is the length wheel (flick: a tick per length, minutes then hours in one scroll, it
+      snaps), the chips *5m* *15m* *30m* *1h* scroll it there; TalkBack: *Minutes ago, 5 minutes*, swipe up / down
+      steps one length, the chips read *5 minutes*; Spanish *5 min* / *1 h*. Home's quiet sheet *Change to* and the
+      report's *1d* … *30d* use the same short lengths. The sheet with the keyboard: opening, both come up together;
+      drag the sheet down slowly: the keyboard follows under the finger and leaves with it, a short drag springs back
+      with the keyboard; again with Remove animations on. `screenrecord` the two and step the frames.
 
 ## Q21 Insulin pens
 
@@ -804,7 +885,7 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
 Synthetic data only: a throwaway Tidepool account and files written from the emulator, never the owner's.
 
 - [ ] Fresh install (emulator, wearer): setup's last step *Bring your history back*; *Start empty* goes home and the
-      step never comes back; reinstall, *Bring it back* opens Settings › Share with apps › Import history and Back
+      step never comes back; reinstall, *Bring it back* opens Settings › Import and export › Import history and Back
       lands on home.
 - [ ] An update that bumps the database version over an install with history (debug build): the history is empty, no
       crash, and the next launch opens *Bring your history back* on its own; Back counts as *Start empty*.

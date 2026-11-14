@@ -24,4 +24,7 @@ dependencies {
     testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // WidgetSettingsTest composes one widget's own settings and opens its dialogs
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

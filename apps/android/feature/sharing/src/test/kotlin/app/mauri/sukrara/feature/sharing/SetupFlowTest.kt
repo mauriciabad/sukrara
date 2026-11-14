@@ -34,6 +34,7 @@ import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
 import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -75,8 +76,13 @@ class SetupFlowTest {
             readiness = FakeReadiness(),
             clock = clock,
             updates = updates,
+            pens = pens,
         )
     }
+
+    /** Pen reading on a phone with NFC (null [pens] = no NFC: no pens step). */
+    private val penReading = MutableStateFlow<Boolean?>(false)
+    private var pens: SetupPens? = null
 
     private fun recorded() = (record.data as StateFlow<SetupRecord>).value
 
@@ -132,7 +138,7 @@ class SetupFlowTest {
         assertEquals(SetupRecord(completed = setOf(SetupStep.Welcome)), recorded())
 
         tap(OPEN, scroll = false)
-        shows("Step 3 of 7")
+        shows("Step 3 of 5")
         shows("Let alerts reach you")
         tap("Continue")
         shows("Connect your sensor")
@@ -168,8 +174,45 @@ class SetupFlowTest {
         assertEquals(finished, recorded())
     }
 
+    /**
+     * The essentials of a wearer's walk, the sensor and the thresholds left for later: Ready never says "done" then, it
+     * names what is still to do.
+     */
+    private fun walkTheEssentials() {
+        tap("Start")
+        tap("I wear the sensor")
+        tap("Continue")
+        tap("Confirm", scroll = false)
+        shows("Let alerts reach you")
+        tap("Continue")
+        shows("Connect your sensor")
+        tap("Later")
+        shows("Check your alerts")
+        tap("Later")
+        shows("Some essentials are left for later")
+        compose.onNodeWithText("Still to do:", substring = true).assertExists()
+    }
+
     @Test
-    fun `the GitHub version asks about updates after the alert checklist - Not now and Turn on both go on`() {
+    fun `the essentials end on Ready - Later goes home and leaves the optional steps for Settings`() {
+        host(open = true)
+        walkTheEssentials()
+        // what is left, by title
+        shows("Your followers")
+        shows("Bring your history back")
+        tap("Later")
+        shows(HOME)
+        assertEquals(true, SetupStep.Ready in recorded().skipped)
+        assertEquals(listOf(SetupStep.Identity, SetupStep.History), runBlocking { module.extrasLeft.first() })
+        // Settings' Finish setup: the walk goes on into them
+        runBlocking { module.continueExtras() }
+        tap(OPEN, scroll = false)
+        shows("Optional step 1 of 2")
+        shows("Your followers")
+    }
+
+    @Test
+    fun `the GitHub version asks about updates first among the optional steps - Not now and Turn on both go on`() {
         updates =
             SetupUpdates(
                 updateChoice,
@@ -177,27 +220,51 @@ class SetupFlowTest {
                 notNow = { updateChoice.value = UpdateChoice.Off },
             )
         host(open = true)
-        tap("Start")
-        tap("I wear the sensor")
-        tap("Continue")
-        tap("Confirm", scroll = false)
-        shows("Let alerts reach you")
-        tap("Continue")
-        shows("Step 4 of 8")
+        walkTheEssentials()
         shows("Keep Sukrara up to date")
+        tap("Set up the rest")
+        shows("Optional step 1 of 3")
         shows("Off until you turn it on. You can change it any time in Settings › About.")
         tap("Not now")
-        shows("Connect your sensor")
+        shows("Optional step 2 of 3")
         assertEquals(UpdateChoice.Off, updateChoice.value)
-        // Back shows it again, as answered; Turn on goes on to the sensor too
+        // Back shows it again, as answered; Turn on goes on too
         back()
         shows("Keep Sukrara up to date")
         tap("Turn on")
-        shows("Connect your sensor")
+        shows("Optional step 2 of 3")
         assertEquals(UpdateChoice.On, updateChoice.value)
         back()
         shows("Keep it on")
         shows("Turn off")
+    }
+
+    @Test
+    fun `insulin pens - Read my pens turns reading on, I don't use a smart pen is final`() {
+        pens = SetupPens(penReading) { penReading.value = true }
+        sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
+        host(open = true)
+        walkTheEssentials()
+        shows("Insulin pens")
+        tap("Set up the rest")
+        shows(
+            "With a smart insulin pen such as NovoPen 6 or NovoPen Echo Plus, hold it to the back of the phone after you inject: Sukrara logs the dose.",
+        )
+        tap("Read my pens")
+        shows("Bring your history back")
+        assertEquals(true, penReading.value)
+        // Back: pens are read, Continue goes on
+        back()
+        shows("Pens are read. Hold one to the back of the phone, unlocked, from any app.")
+        tap("Continue")
+        shows("Bring your history back")
+        // on a phone where reading is still Ask, I don't use a smart pen answers it for good
+        penReading.value = false
+        runBlocking { record.update { it.copy(completed = it.completed - SetupStep.Pens) } }
+        // the walk is back on the step that is open again
+        tap("I don't use a smart pen")
+        shows("Bring your history back")
+        assertEquals(true, SetupStep.Pens in recorded().completed)
     }
 
     @Test

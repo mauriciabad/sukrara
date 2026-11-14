@@ -50,8 +50,8 @@ import Testing
         store.updates = Updates(engine: StillUpdater())
         #expect(!store.menu.items.contains { $0.title == title })
         #expect(store.menu.items.contains { $0.title == L10n.t("Quit Sukrara") })
-        #expect(GeneralPane.versionText("0.13.0", .appStore) == L10n.t("0.13.0 · App Store version"))
-        #expect(GeneralPane.versionText("0.13.0", .github) == L10n.t("0.13.0 · GitHub version"))
+        #expect(GeneralPane.versionText("0.13.0", .appStore, .release) == L10n.t("0.13.0 · App Store version"))
+        #expect(GeneralPane.versionText("0.13.0", .github, .release) == L10n.t("0.13.0 · GitHub version"))
     }
 
     @Test func theShortcutIsControlShiftCommandGNeverVoiceOversKeys() {

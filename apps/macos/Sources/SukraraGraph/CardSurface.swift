@@ -24,7 +24,7 @@ public enum CardSurface: String, CaseIterable, Sendable {
     case widgetCombined = "widget-combined"
     /// An alert notification's body (#195): the newest reading's value and arrow, its time once late.
     case alertNotification = "alert-notification"
-    /// Settings › General › Trend arrow's live preview (#204): the newest value and its arrow as the card shows them.
+    /// Settings › Readings › Trend arrow's live preview (#204): the newest value and its arrow as the card shows them.
     case trendPreview = "trend-preview"
     /// Snapshots and tests that draw the card outside any registered surface.
     case test = "test"

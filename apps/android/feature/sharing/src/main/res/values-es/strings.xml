@@ -19,7 +19,7 @@
     <string name="sh_setup_check_missing">Falta</string>
     <string name="sh_setup_welcome_title">Te damos la bienvenida a Sukrara</string>
     <string name="sh_setup_welcome_body">Sukrara lee tu sensor de glucosa, te avisa cuando lo necesitas y comparte tu glucosa con quien tú elijas.</string>
-    <string name="sh_setup_welcome_steps">Unos pocos pasos: elige cómo usas este móvil, permite lo que necesitan las alertas, conecta tu sensor, revisa tus alertas y trae a tus seguidores. Puedes dejar cualquier paso para más tarde.</string>
+    <string name="sh_setup_welcome_steps">Elige cómo usas este móvil, permite lo que necesitan las alertas, conecta tu sensor y revisa tus alertas: es todo lo que Sukrara necesita. Seguidores, plumas de insulina e historial son opcionales. Puedes dejar cualquier paso para más tarde.</string>
     <string name="sh_setup_not_medical">Sukrara no es un producto sanitario: los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar. Mira la app de tu sensor o un glucómetro, y consulta a tu médico, antes de decidir un tratamiento.</string>
     <string name="sh_setup_role_title">¿Cómo usarás este móvil?</string>
     <string name="sh_setup_role_body">Elige una opción. Decide qué hace este móvil.</string>
@@ -56,9 +56,9 @@
     <string name="sh_setup_sensor_live">Lectura recibida. Sukrara está monitorizando.</string>
     <string name="sh_setup_sensor_open">Configurar sensor</string>
     <string name="sh_setup_alerts_title">Revisa tus alertas</string>
-    <string name="sh_setup_alerts_body">Sukrara te avisa con estos valores. Toca uno para cambiarlo. Nada cambia hasta que confirmes.</string>
+    <string name="sh_setup_alerts_body">No se guarda nada hasta que confirmes.</string>
     <string name="sh_setup_alerts_order">Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto.</string>
-    <string name="sh_setup_alerts_confirm">Usar estos umbrales</string>
+    <string name="sh_setup_alerts_confirm">Confirmar umbrales</string>
     <string name="sh_identity_title">Tus seguidores</string>
     <string name="sh_identity_body">Recupera a tus seguidores con tu código de recuperación o empieza de cero con invitaciones nuevas.</string>
     <string name="sh_identity_sharing">Compartir está configurado. Seguidores: %1$d.</string>
@@ -98,7 +98,6 @@
     <string name="sh_finish_allow">Permite lo que necesitan las alertas</string>
     <string name="sh_finish_sensor">Conecta tu sensor</string>
     <string name="sh_finish_alerts">Alertas sin confirmar</string>
-    <string name="sh_finish_identity">Restaura tus seguidores</string>
     <string name="sh_share_title">Compartir con alguien</string>
     <string name="sh_share_body">Crea una invitación para una persona. Ella pide seguirte; tú la permites.</string>
     <string name="sh_share_label">¿Para quién es?</string>
@@ -428,6 +427,7 @@
     <string name="sh_interval_every">Cada %1$s</string>
     <string name="sh_interval_unavailable">Compartir por internet está desactivado</string>
     <string name="sh_nearby_title">Por Bluetooth cerca</string>
+    <string name="sh_nearby_use">Compartir por Bluetooth cerca</string>
     <string name="sh_nearby_off">Desactivado. Los seguidores reciben las lecturas por internet.</string>
     <string name="sh_nearby_off_no_internet">Desactivado. Los seguidores no reciben lecturas nuevas.</string>
     <string name="sh_nearby_bluetooth_off">El Bluetooth está desactivado</string>
@@ -499,4 +499,15 @@
     <string name="sh_setup_history_note">Nada cuenta doble: las lecturas de tu sensor mandan, e importar otra vez solo añade lo que falta. También puedes hacerlo más tarde en Ajustes › Compartir con apps › Importar historial.</string>
     <string name="sh_setup_history_open">Recuperarlo</string>
     <string name="sh_setup_history_skip">Empezar vacío</string>
+    <string name="sh_setup_extra_of">Paso opcional %1$d de %2$d</string>
+    <string name="sh_setup_ready_title">Lo esencial está listo</string>
+    <string name="sh_setup_ready_body">El resto es opcional. Configúralo ahora o más tarde desde Ajustes.</string>
+    <string name="sh_setup_ready_rest">Configurar el resto</string>
+    <string name="sh_setup_pens_title">Plumas de insulina</string>
+    <string name="sh_setup_pens_body">Con una pluma de insulina inteligente como NovoPen 6 o NovoPen Echo Plus, acércala a la parte trasera del móvil después de pincharte: Sukrara registra la dosis.</string>
+    <string name="sh_setup_pens_on">Leer mis plumas</string>
+    <string name="sh_setup_pens_none">No uso una pluma inteligente</string>
+    <string name="sh_setup_pens_done">Las plumas se leen. Acerca una a la parte trasera del móvil, desbloqueado, desde cualquier app.</string>
+    <string name="sh_setup_ready_title_pending">Quedan cosas esenciales para más tarde</string>
+    <string name="sh_setup_ready_pending">Falta: %1$s. El aviso Termina la configuración de la pantalla principal te lleva a ellas.</string>
 </resources>

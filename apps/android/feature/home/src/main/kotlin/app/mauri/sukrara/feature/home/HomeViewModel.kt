@@ -103,6 +103,16 @@ interface HomeDeps {
      */
     suspend fun deleteTreatment(id: String): Treatment?
 
+    /**
+     * Sets entry [id]'s note to [note] (the pen sheet's note, #207: a pen entry carries a note like any entry) through
+     * the treatment log: a newer version, synced and sent to LibreView / Tidepool like any edit; the pen keys stay.
+     * Returns the version it replaced, or null when it isn't stored or this phone may not change it.
+     */
+    suspend fun editNote(
+        id: String,
+        note: String,
+    ): Treatment? = null
+
     /** Brings [previous] (what [deleteTreatment] returned) back as the newest version, through the treatment log. */
     suspend fun undoTreatment(previous: Treatment)
 
@@ -181,8 +191,10 @@ data class PenSheet(
 data class PenNotice(
     val kind: Kind,
     val undo: PenEntryInfo? = null,
+    /** A note change's *Undo*: the version before it. */
+    val noteUndo: Treatment? = null,
 ) {
-    enum class Kind { Changed, Removed, ChangedSince, UndoFailed }
+    enum class Kind { Changed, Removed, ChangedSince, UndoFailed, NoteChanged }
 }
 
 /** The wearer's own row on home: picture, name (blank = not set yet) and how many follow. */
@@ -201,7 +213,10 @@ data class HomeUiState(
     val readiness: AlertReadiness? = null,
     val nextSetupStep: String?,
     val dataProblems: List<DataProblem>,
-    /** The last 24 h, newest first (deleted ones are gone; the undo brings them back). */
+    /**
+     * The listed entries (home: the last 24 h; the Treatments page: 31 days), newest first (deleted ones are gone; the
+     * undo brings them back).
+     */
     val treatments: List<Treatment>,
     /** Every reading home can scroll to (31 days), oldest first: the stored days joined with the live window. */
     val history: List<Reading> = glucose.recent,
@@ -237,6 +252,8 @@ data class HomeUiState(
 
 class HomeViewModel(
     private val deps: HomeDeps,
+    /** How far back [HomeUiState.treatments] lists: home's last 24 h, or the Treatments page's [HISTORY_WINDOW]. */
+    private val listWindow: Duration = TREATMENTS_WINDOW,
 ) : ViewModel() {
     private val undo = MutableStateFlow<Treatment?>(null)
     private val undoInClinic = MutableStateFlow(false)
@@ -260,7 +277,7 @@ class HomeViewModel(
             .flatMapLatest { hour -> deps.treatments.between(hour - CHART_WINDOW, hour + Duration.ofHours(1) + FUTURE_SLACK) }
             .mapLatest { list ->
                 // only the listed (last day's) entries have a Delete button to decide
-                val listed = list.filter { it.at >= deps.clock.now() - TREATMENTS_WINDOW - Duration.ofHours(1) }
+                val listed = list.filter { it.at >= deps.clock.now() - listWindow - Duration.ofHours(1) }
                 Recent(
                     list,
                     listed.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id },
@@ -288,7 +305,7 @@ class HomeViewModel(
             val (pendingUndo, inClinic) = undone
             val now = maxOf(tick, deps.clock.now())
             val chart = recent.treatments.sortedByDescending { it.at }
-            val listed = chart.filter { it.at >= now - TREATMENTS_WINDOW && it.at <= now + FUTURE_SLACK }
+            val listed = chart.filter { it.at >= now - listWindow && it.at <= now + FUTURE_SLACK }
             val look = homeLook(glucose, now, config.unit)
             HomeUiState(
                 glucose = glucose,
@@ -451,6 +468,21 @@ class HomeViewModel(
         viewModelScope.launch { if (!deps.restorePen(was)) _penNotice.value = PenNotice(PenNotice.Kind.UndoFailed) }
     }
 
+    /** The sheet's *Save* with a changed note: the entry's note through the log (*Entry changed*, with *Undo*). */
+    fun notePen(note: String) {
+        val sheet = _penSheet.value?.takeIf { it.editable } ?: return
+        viewModelScope.launch {
+            val was = deps.editNote(sheet.treatment.id, note)
+            _penNotice.value =
+                if (was == null) PenNotice(PenNotice.Kind.ChangedSince) else PenNotice(PenNotice.Kind.NoteChanged, noteUndo = was)
+        }
+    }
+
+    /** The snackbar's *Undo* after a note change: the version before it comes back. */
+    fun undoNote(was: Treatment) {
+        viewModelScope.launch { deps.undoTreatment(was) }
+    }
+
     /** *Delete* on the sheet: home's own delete (its snackbar offers *Undo*). */
     fun deletePen() {
         val sheet = _penSheet.value?.takeIf { it.deletable } ?: return
@@ -490,10 +522,16 @@ class HomeViewModel(
         /** How far back the chart scrolls (the stored history's 31 days). */
         private val CHART_WINDOW: Duration = Duration.ofDays(31)
 
+        /** The Treatments page (#207): the chart's 31 days, the entries and readings home already holds. */
+        val HISTORY_WINDOW: Duration = CHART_WINDOW
+
         /** Entries logged a little ahead (a dose about to be taken) still show. */
         private val FUTURE_SLACK: Duration = Duration.ofHours(1)
         private const val MINUTE_MS = 60_000L
 
-        fun factory(deps: HomeDeps) = viewModelFactory { initializer { HomeViewModel(deps) } }
+        fun factory(
+            deps: HomeDeps,
+            listWindow: Duration = TREATMENTS_WINDOW,
+        ) = viewModelFactory { initializer { HomeViewModel(deps, listWindow) } }
     }
 }

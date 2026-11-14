@@ -55,22 +55,13 @@ struct QRScannerView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                HStack {
-                    Spacer()
-                    Button(L10n.t("Cancel"), action: cancel)
-                        .keyboardShortcut(.cancelAction)
-                    switch scanner.phase {
-                    case .notAsked:
-                        Button(L10n.t("Allow Camera")) { Task { await scanner.allow() } }
-                            .keyboardShortcut(.defaultAction)
-                            .buttonStyle(.borderedProminent)
-                    case .denied:
-                        Button(L10n.t("Open System Settings…")) { Self.openCameraSettings() }
-                            .keyboardShortcut(.defaultAction)
-                            .buttonStyle(.borderedProminent)
-                    default:
-                        EmptyView()
-                    }
+                switch scanner.phase {
+                case .notAsked:
+                    DialogButtons(L10n.t("Allow Camera"), cancel: cancel) { Task { await scanner.allow() } }
+                case .denied:
+                    DialogButtons(L10n.t("Open System Settings…"), cancel: cancel, confirm: Self.openCameraSettings)
+                default:
+                    DialogButtons(nil, cancel: cancel) {}
                 }
             }
             .padding(4)

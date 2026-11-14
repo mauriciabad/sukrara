@@ -599,6 +599,72 @@ final class RecordingSender: TreatmentActions {
     }
 }
 
+/// The Treatments window's rows (#207): the glucose then, and the delivery shown only while it says something.
+@Suite struct TreatmentRowTests {
+    static func at(_ s: TimeInterval) -> Date { Date(timeIntervalSince1970: s) }
+    static let readings = [
+        Reading(t: at(1000), mgdl: 100), Reading(t: at(1300), mgdl: 120), Reading(t: at(1600), mgdl: 140),
+    ]
+
+    @Test func glucoseThenIsTheNearestReadingWithinFiveMinutes() {
+        let pick = { TreatmentsModel.glucoseThen(Self.readings, at: Self.at($0))?.mgdl }
+        #expect(pick(1290) == 120 && pick(1000) == 100 && pick(1500) == 140)
+        // a tie: the earlier reading
+        #expect(pick(1150) == 100 && pick(1450) == 120)
+        // before the first and after the last, up to 5 min away
+        #expect(pick(700) == 100 && pick(1900) == 140)
+        #expect(pick(699) == nil && pick(1901) == nil)
+        #expect(TreatmentsModel.glucoseThen([], at: Self.at(1000)) == nil)
+    }
+
+    @Test func aRowsGlucoseThenComesFromTheModelsReadings() {
+        let m = TreatmentsModel(
+            rows: [.init(treatment: TreatmentsUndoTests.mine, delivery: nil)], canWrite: false, actions: nil)
+        #expect(m.glucoseThen(m.rows[0]) == nil)
+        m.readings = { Self.readings }
+        #expect(m.glucoseThen(m.rows[0])?.mgdl == 100)
+    }
+
+    @Test func deliveryShowsOnlyWhenItSaysSomething() {
+        let now = Self.at(5000)
+        #expect(TreatmentsModel.shown(.sending, acceptedUntil: nil, now: now) == .sending)
+        #expect(TreatmentsModel.shown(.failed, acceptedUntil: nil, now: now) == .failed)
+        #expect(TreatmentsModel.shown(.sent, acceptedUntil: nil, now: now) == nil)
+        #expect(TreatmentsModel.shown(.accepted, acceptedUntil: nil, now: now) == nil)
+        #expect(TreatmentsModel.shown(.accepted, acceptedUntil: Self.at(5001), now: now) == .accepted)
+        #expect(TreatmentsModel.shown(.accepted, acceptedUntil: now, now: now) == nil)
+        #expect(TreatmentsModel.shown(nil, acceptedUntil: Self.at(5001), now: now) == nil)
+    }
+
+    @Test func anEntryAcceptedWhileWatchedShowsItsCheckForThreeSeconds() async {
+        var clock = Self.at(2000)
+        let sender = RecordingSender()
+        let m = TreatmentsModel(rows: [], canWrite: true, actions: sender, now: { clock })
+        await m.add([TreatmentsUndoTests.mine])
+        #expect(m.shown(m.rows[0]) == .sending)
+        m.set("a", .sent)
+        #expect(m.shown(m.rows[0]) == nil)
+        m.sync([TreatmentsUndoTests.mine], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.shown(m.rows[0]) == .accepted)
+        clock += TreatmentsModel.acceptedSeconds - 0.1
+        #expect(m.shown(m.rows[0]) == .accepted)
+        clock += 0.2
+        #expect(m.shown(m.rows[0]) == nil)
+        // the window's fade-out clears it; a later sync of the same state shows nothing again
+        m.acceptedShown("a")
+        m.sync([TreatmentsUndoTests.mine], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.shown(m.rows[0]) == nil && m.justAccepted.isEmpty)
+    }
+
+    @Test func entriesAlreadyAcceptedWhenTheyFirstArriveShowNoCheck() {
+        let m = TreatmentsModel(rows: [], canWrite: true, actions: nil)
+        m.sync([TreatmentsUndoTests.mine], deliveries: ["a": .accepted], canWrite: true)
+        #expect(m.shown(m.rows[0]) == nil)
+        m.set("a", .accepted)
+        #expect(m.shown(m.rows[0]) == nil)
+    }
+}
+
 @Suite struct QRImportTests {
     /// The short invite link of contracts/protocol/identity/vectors.json.
     static let link: String = {
@@ -792,16 +858,56 @@ final class RecordingSender: TreatmentActions {
         #expect(own.bands.low == 75 && own.hours == 6)
     }
 
-    /// Add Treatment opens centred under the status item, kept 12 pt inside the screen, 6 pt under the menu bar.
-    @Test @MainActor func addTreatmentOpensUnderTheStatusItem() {
-        let area = NSRect(x: 0, y: 0, width: 1440, height: 875)
+    /// Add Treatment from the panel opens centred under the status item, kept 12 pt inside the screen, 6 pt under the
+    /// menu bar (the status item stands above the visible frame: its screen is the one it is over).
+    @Test func addTreatmentOpensUnderTheStatusItem() {
+        let area = NSRect(x: 0, y: 0, width: 1440, height: 875),
+            other = NSRect(x: 1440, y: 0, width: 1920, height: 1055)
         let size = NSSize(width: 400, height: 300)
-        let mid = AppWindows.underMenuBar(size: size, anchor: NSRect(x: 900, y: 875, width: 60, height: 24), area: area)
-        #expect(mid == NSPoint(x: 730, y: 869))
-        let edge = AppWindows.underMenuBar(
-            size: size, anchor: NSRect(x: 1400, y: 875, width: 40, height: 24), area: area)
-        #expect(edge.x == 1028, "\(edge)")
-        #expect(AppWindows.underMenuBar(size: size, anchor: nil, area: area).x == 1028)
+        func at(_ p: AppWindows.Placement) -> NSPoint {
+            AppWindows.origin(size: size, p, screens: [area, other], main: area)
+        }
+        #expect(at(.underMenuBar(anchor: NSRect(x: 900, y: 875, width: 60, height: 24))) == NSPoint(x: 730, y: 569))
+        #expect(at(.underMenuBar(anchor: NSRect(x: 1400, y: 875, width: 40, height: 24))).x == 1028)
+        #expect(at(.underMenuBar(anchor: nil)).x == 1028)
+        // the status item on the second screen's menu bar
+        #expect(at(.underMenuBar(anchor: NSRect(x: 2000, y: 1055, width: 40, height: 24))) == NSPoint(x: 1820, y: 749))
+    }
+
+    /// From a widget (or any click away from the panel) it opens centred on the pointer, kept whole on that screen
+    /// (#181: "I'd expect it near my cursor").
+    @Test func addTreatmentOpensAtThePointer() {
+        let area = NSRect(x: 0, y: 0, width: 1440, height: 875),
+            other = NSRect(x: 1440, y: 0, width: 1920, height: 1055)
+        let size = NSSize(width: 440, height: 250)
+        func at(_ p: NSPoint) -> NSPoint {
+            AppWindows.origin(size: size, .atPointer(p), screens: [area, other], main: area)
+        }
+        #expect(at(NSPoint(x: 700, y: 400)) == NSPoint(x: 480, y: 275))
+        // near the top right corner: whole, 12 pt in
+        #expect(at(NSPoint(x: 1430, y: 870)) == NSPoint(x: 988, y: 613))
+        // near the bottom
+        #expect(at(NSPoint(x: 700, y: 5)).y == 12)
+        // a widget on the second screen
+        #expect(at(NSPoint(x: 2400, y: 500)) == NSPoint(x: 2180, y: 375))
+    }
+
+    /// The real window: sized to its content before it is placed, so it stays centred under the status item and its top
+    /// 6 pt under the menu bar once it has laid out (#181: it grew from a few points tall to its size after being
+    /// placed, past the top of the screen).
+    @Test @MainActor func addTreatmentStaysWhereItWasPlaced() throws {
+        let windows = AppWindows()
+        let screen = try #require(NSScreen.main).visibleFrame
+        let anchor = NSRect(x: screen.midX - 15, y: screen.maxY, width: 30, height: 24)
+        windows.show(.addTreatment, title: "Add Treatment", placement: .underMenuBar(anchor: anchor)) {
+            AddTreatmentView(focus: .rapid, save: { _, _ in }, cancel: {})
+        }
+        let w = try #require(windows.window(.addTreatment))
+        defer { w.close() }
+        for _ in 0..<10 { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+        #expect(abs(w.frame.midX - anchor.midX) < 1, "\(w.frame)")
+        #expect(w.frame.maxY == screen.maxY - 6, "\(w.frame)")
+        #expect(w.frame.width > 300 && w.frame.height > 150, "\(w.frame)")
     }
 
     @Test func aPillAsksTheOpenWindowToMoveTheFocus() {

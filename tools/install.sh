@@ -10,11 +10,16 @@
 # HEAD contains the commit installed last time (else features vanish from the device), and tools/check/run.sh passes.
 # Records what it installed in <git common dir>/sukrara-installed-<target> (shared by all worktrees).
 # --dry-run runs every check but only prints the build / install commands.
+# What it installs is a development build, never a release (tools/release/build-info.sh): About and Settings say
+# "Development build · <version> + <n> commits · <commit> · <date>"; verify-apk.sh / verify-app.sh check it. The
+# updaters treat it as its base version: they offer only a newer release (docs/DEVELOPMENT.md › Development and release
+# builds).
 set -eu
 TARGET=${1:-}; DRY=0
 [ "${2:-}" = "--dry-run" ] && DRY=1
 case "$TARGET" in phone|mac) ;; *) echo "usage: tools/install.sh phone|mac [--dry-run]" >&2; exit 2 ;; esac
 ROOT=$(git rev-parse --show-toplevel); cd "$ROOT"
+unset SUKRARA_RELEASE_BUILD # only the release scripts build a release
 . tools/release/lib.sh
 SERIAL=${ANDROID_SERIAL:-62240DLCH0005W}
 RECORD="$(cd "$(git rev-parse --git-common-dir)" && pwd)/sukrara-installed-$TARGET"

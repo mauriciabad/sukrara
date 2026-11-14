@@ -27,6 +27,7 @@ import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.UploadHold
+import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import app.mauri.sukrara.feature.home.PenRead
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
@@ -39,10 +40,13 @@ import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
 import app.mauri.sukrara.feature.sharing.SetupModule
+import app.mauri.sukrara.feature.sharing.SetupPens
 import app.mauri.sukrara.feature.sharing.SharingDeps
 import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
+import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.label
+import app.mauri.sukrara.feature.sharing.setup.summary
 import app.mauri.sukrara.feature.treatments.AndroidDraftNotice
 import app.mauri.sukrara.feature.treatments.DialogPen
 import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
@@ -372,6 +376,7 @@ class AppGraph(
             alertState = monitor.hub.state.map { it.alerts },
             readiness = alerts.readiness,
             appVersion = appVersion,
+            appBuild = AppBuildInfo.build(app),
             clock = clock,
             sensor = monitor.hub.state.map { it.sensor },
             recent =
@@ -389,11 +394,17 @@ class AppGraph(
                 },
             dismissClinicBanner = { scope.launch { home.bannerMemory.update { it.dismiss(BannerKind.ShareWithClinic, clock.now()) } } },
             restoreClinicBanner = { scope.launch { home.bannerMemory.update { it.restore(BannerKind.ShareWithClinic) } } },
-            updatesBanner = updateSuggestion?.banner ?: flowOf(false),
+            // while Settings' Finish setup names the updates step, its own banner doesn't ask the same again
+            updatesBanner =
+                updateSuggestion?.banner?.let { banner ->
+                    combine(banner, setup.extrasLeft) { on, left -> on && SetupStep.Updates !in left }
+                } ?: flowOf(false),
             turnOnUpdates = { updateSuggestion?.turnOn() },
             dismissUpdatesBanner = { updateSuggestion?.dismiss() },
             restoreUpdatesBanner = { updateSuggestion?.restore() },
             closedTips = home.bannerMemory.data.map { it.closed },
+            // setup's optional steps left for later (#181): Settings' *Finish setup* row
+            setupExtras = setup.extrasLeft.map { left -> left.takeIf { it.isNotEmpty() }?.summary(app) },
             restoreClosedTips = { scope.launch { home.bannerMemory.update { it.restoreAll() } } },
             sensorCalendar = { sensorCalendar },
             // Share with apps' rows, which the settings search finds too (their strings are :integrations')
@@ -580,6 +591,8 @@ class AppGraph(
                 ),
             // the updates step (the GitHub version only)
             updates = updateSuggestion?.setup(),
+            // the optional insulin pens step (a phone with NFC)
+            pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
         )
     }
 

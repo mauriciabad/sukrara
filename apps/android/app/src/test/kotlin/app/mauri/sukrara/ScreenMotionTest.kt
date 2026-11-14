@@ -5,7 +5,9 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.designsystem.motion.ScreenMotion
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -28,6 +30,7 @@ class ScreenMotionTest {
                 ShareRoute,
                 InviteHereRoute("https://sukrara.mauri.app/join#x"),
                 ProfileRoute,
+                NearbyRoute,
                 BackupRoute,
                 ReplaceIdentityRoute,
                 DataProblemsRoute,
@@ -56,9 +59,16 @@ class ScreenMotionTest {
                 SettingsRoute.AlertKindPage(AlertKind.LOW),
                 SettingsRoute.NightAlerts,
                 SettingsRoute.NightKindPage(AlertKind.VERY_LOW),
-                SettingsRoute.Ranges,
+                SettingsRoute.QuietRulePage(QuietKind.AfterCarbs),
+                SettingsRoute.AlertsFineTuning,
+                SettingsRoute.Readings,
+                SettingsRoute.TrendArrow,
                 SettingsRoute.Graph,
                 SettingsRoute.GraphMarks,
+                SettingsRoute.PlacePage(PlaceSetting.Hours),
+                SettingsRoute.PlacePage(PlaceSetting.SensorTime),
+                SettingsRoute.Rings,
+                SettingsRoute.ImportExport,
                 SettingsRoute.LockScreen,
                 SettingsRoute.Pens,
                 SettingsRoute.Pen("ABC123"),

@@ -18,7 +18,7 @@ struct EditTreatmentView: View {
     /// nil = the entry's own time.
     @State private var when: TreatmentForm.When?
     @State private var pickTime = false
-    @FocusState private var focused: Bool
+    @FocusState private var focused: Treatment.Kind?
 
     init(
         treatment: Treatment, save: @escaping (Double, String, Int64) -> Void, cancel: @escaping () -> Void
@@ -98,52 +98,27 @@ struct EditTreatmentView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 4) {
-                Label(TreatmentKindLook.name(treatment.k), systemImage: TreatmentKindLook.symbol(treatment.k))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                KindLabel(kind: treatment.k)
                 if treatment.k == .note {
-                    TextField(
-                        L10n.t("Note"),
-                        text: Binding(get: { text }, set: { text = TreatmentForm.filterNote($0, old: text) }),
-                        prompt: Text(L10n.t("Pizza, exercise, sick…"))
+                    TextInput(
+                        label: L10n.t("Note"),
+                        text: Binding(get: { text }, set: { text = TreatmentForm.filterNote($0, old: text) })
                     )
-                    .textFieldStyle(.roundedBorder)
-                    .focused($focused)
+                    .focused($focused, equals: .note)
                     .onSubmit(commit)
-                    .accessibilityLabel(L10n.t("Note"))
                 } else {
-                    HStack(spacing: 4) {
-                        TextField(
-                            TreatmentKindLook.name(treatment.k),
-                            text: Binding(get: { text }, set: { text = TreatmentForm.filterAmount($0) }),
-                            prompt: Text(verbatim: "0")
-                        )
-                        .textFieldStyle(.roundedBorder)
-                        .focused($focused)
-                        .onSubmit(commit)
-                        .accessibilityLabel(TreatmentKindLook.name(treatment.k))
-                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(invalid ? Color.red : .clear))
-                        Text(TreatmentKindLook.unit(treatment.k)).foregroundStyle(.secondary).accessibilityHidden(true)
-                    }
+                    AmountField(kind: treatment.k, text: $text, invalid: invalid, submit: commit, focus: $focused)
                 }
             }
             if invalid {
                 Text(L10n.t("Insulin up to 100u, carbs up to 500g.")).font(.callout).foregroundStyle(.red)
             }
-            HStack {
-                Spacer()
-                Button(L10n.t("Cancel"), action: cancel).keyboardShortcut(.cancelAction)
-                Button(L10n.t("Save"), action: commit)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(result == nil)
-            }
-            .controlSize(.large)
+            DialogButtons(L10n.t("Save"), enabled: result != nil, cancel: cancel, confirm: commit)
         }
         .padding(20)
         .frame(width: 360)
         .fixedSize(horizontal: false, vertical: true)
-        .onAppear { focused = true }
+        .onAppear { focused = treatment.k }
     }
 
     private func commit() {

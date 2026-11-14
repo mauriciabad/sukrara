@@ -165,7 +165,7 @@ fun numberLabeler(): (NumberSpec, Double) -> String {
             "off" to stringResource(R.string.st_special_off),
             "none" to stringResource(R.string.st_special_none),
             "until_turned_off" to stringResource(R.string.st_special_until_turned_off),
-            "same_as_default" to stringResource(R.string.st_special_default),
+            "same_as_app" to stringResource(R.string.st_same_as_app),
         )
     val units =
         mapOf(

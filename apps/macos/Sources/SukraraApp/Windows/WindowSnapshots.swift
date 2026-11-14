@@ -254,9 +254,10 @@
                 m.juggluco.available = { true }
                 m.juggluco.state = { state }
                 m.juggluco.pausedFor = { paused }
+                m.pane = .following
                 out.append(
                     (
-                        "settings-general-juggluco-\(name)",
+                        "settings-following-juggluco-\(name)",
                         AnyView(
                             SettingsView(
                                 model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
@@ -308,7 +309,7 @@
                     AnyView(
                         SettingsView(
                             model: alerts, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(alerts, width: 560, height: 900))
+                        ).settingsWindow(alerts, width: 560, height: 2300))
                 ))
             let mirrored = SettingsModel(
                 store: store, follow: following,
@@ -337,13 +338,41 @@
                 $0.ringCount = 3
                 $0.ringOrder = [.veryLow, .low, .tight, .target, .high, .veryHigh]
             }
-            own.setPlaceHours(24, .widget)
+            // the widgets differ (docs/38): their own time shown, the sensor time left off on them
+            own.setPlaceHours(6, .widget)
+            own.setSensorPlace(false, .widget)
             let marta = WearerSettings(
                 json: #"{"graph":{"tight":130,"defaultHours":6,"lines":"","lastPlace":"END"}}"#, wearer: "Marta")
             let fromWearer = SettingsModel(store: scratch(), follow: following, wearer: marta, version: "0.12.0")
+            // a setting's page in the Graph pane: the widgets following the menu bar (quiet), with their own, following
+            // Marta (the menu bar's value read-only)
+            let samesStore = scratch()
+            SettingsModel(store: samesStore, follow: following, version: "0.12.0").settingsFrom = .custom
+            let pages: [(String, any SettingsStoring, WearerSettings?, SettingsModel.GraphPage)] = [
+                ("settings-graph-time-shown", samesStore, nil, .hours),
+                ("settings-graph-time-shown-own", ownStore, nil, .hours),
+                ("settings-graph-time-shown-wearer", fromWearer.store, marta, .hours),
+                ("settings-graph-sensor-time", ownStore, nil, .sensorTime),
+                ("settings-graph-sensor-time-same", samesStore, nil, .sensorTime),
+            ]
+            for (name, store, wearer, page) in pages {
+                let m = SettingsModel(store: store, follow: following, wearer: wearer, version: "0.12.0")
+                m.pane = .graph
+                m.graphPage = page
+                out.append(
+                    (
+                        name,
+                        AnyView(
+                            SettingsView(
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 600, height: 360))
+                    ))
+            }
             for (name, pane, model, height) in [
-                ("settings-graph", SettingsModel.Pane.graph, own, 1500.0),
-                ("settings-graph-wearer", .graph, fromWearer, 900),
+                ("settings-readings", SettingsModel.Pane.readings, own, 1060.0),
+                ("settings-readings-wearer", .readings, fromWearer, 1000),
+                ("settings-graph", .graph, own, 1280),
+                ("settings-graph-wearer", .graph, fromWearer, 860),
                 ("settings-rings", .rings, own, 1300),
                 ("settings-rings-wearer", .rings, fromWearer, 700),
                 ("settings-following", .following, own, 560),
@@ -351,6 +380,7 @@
                 model.pane = pane
                 let m = SettingsModel(store: model.store, follow: model.follow, wearer: model.wearer, version: "0.12.0")
                 m.pane = pane
+                m.newestReading = { trendApp.newestReading }
                 out.append(
                     (
                         name,
@@ -369,7 +399,16 @@
                     AnyView(
                         SettingsView(
                             model: nobody, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(nobody, width: 600, height: 560))
+                        ).settingsWindow(nobody, width: 600, height: 800))
+                ))
+            // Alerts › Fine-tuning… and Falling fast's Details… (its trend arrow is Readings' setting)
+            out.append(("alerts-fine-tuning", AnyView(FineTuning(model: own) {})))
+            // a quiet rule's Details…: its switch, its length and what it does
+            out.append(("alerts-quiet-details", AnyView(QuietDetails(model: own, which: .afterCarbs) {})))
+            out.append(
+                (
+                    "alerts-details-falling-fast",
+                    AnyView(AlertDetails(model: own, kind: .fallingFast, controller: nil, readOnly: false) {})
                 ))
             let general = SettingsModel(store: ownStore, follow: following, wearer: marta, version: "0.12.0")
             general.pane = .general
@@ -380,7 +419,7 @@
                     AnyView(
                         SettingsView(
                             model: general, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(general, width: 600, height: 1560))
+                        ).settingsWindow(general, width: 600, height: 880))
                 ))
             out.append(
                 (
@@ -391,6 +430,9 @@
                             quiet: { _, carbs, _ in carbs ? L10n.t("Lows quiet for \(Durations.text(15))") : nil },
                             save: { _, _ in }, cancel: {}))
                 ))
+            // the When? popover's two ways: minutes ago (a number field) and a clock time
+            out.append(("treatment-when-ago", AnyView(WhenPicker(when: .ago(15)) { _ in })))
+            out.append(("treatment-when-time", AnyView(WhenPicker(when: .now) { _ in })))
             let t0 = Int64(Date().timeIntervalSince1970)
             let rows: [TreatmentsModel.Row] = [
                 .init(treatment: Treatment(id: "1", k: .rapid, a: 4.5, t: t0 - 600, u: 1, o: .mac), delivery: .sending),
@@ -410,6 +452,17 @@
             ]
             let tm = TreatmentsModel(rows: rows, canWrite: true, actions: nil)
             tm.wearer = "Marta"
+            // the note just reached the phone: its check shows for a few seconds
+            tm.set("4", .sent)
+            tm.set("4", .accepted)
+            // the glucose then from a synthetic day, each reading with its trend (the app's one place: AppModel)
+            let glucose = AppModel(
+                plan: LaunchPlan(mode: .normal, services: .none, data: .isolated(root: URL(fileURLWithPath: "/tmp"))))
+            glucose.apply(
+                readings: RealisticSynthetic.readings(until: TimeInterval(t0) - 60, days: 1).map {
+                    Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: $0.sgv, sensorRate: $0.rate)
+                })
+            tm.readings = { glucose.allReadings }
             out.append(("treatments", AnyView(TreatmentsView(model: tm, add: {}).frame(width: 460, height: 380))))
             // Edit Treatment on an amount and on a note (nothing changed yet: Save off)
             out.append(
@@ -446,7 +499,8 @@
             }
             // About Sukrara: the GitHub version and the App Store version
             for (name, distribution) in [("about-github", Distribution.github), ("about-appstore", .appStore)] {
-                let about = AboutView(version: "0.12.0", build: "12000", distribution: distribution, icon: brandIcon)
+                let about = AboutView(
+                    version: "0.12.0", build: "12000", distribution: distribution, appBuild: .release, icon: brandIcon)
                 out.append((name, AnyView(about.aboutWindow())))
             }
             return out

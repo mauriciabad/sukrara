@@ -23,3 +23,17 @@ interface UploadMarks {
     /** Deleting [t] takes it out of the clinic upload too (it has it, and the upload runs). */
     fun removesOnDelete(t: Treatment): Boolean
 }
+
+/**
+ * The mark a row shows (#207, docs/37: Google Photos' backup marks): nothing once the entry is in LibreView, the check
+ * only for [JUST_UPLOADED_MS] right after it got there ([justUploaded]); every state that isn't there yet, always.
+ */
+fun UploadMark?.shown(justUploaded: Boolean): UploadMark? =
+    when (this) {
+        null -> null
+        UploadMark.Uploaded -> takeIf { justUploaded }
+        else -> this
+    }
+
+/** How long a row shows the check after its entry got to LibreView (Google Photos: 3 s). */
+const val JUST_UPLOADED_MS = 3_000L

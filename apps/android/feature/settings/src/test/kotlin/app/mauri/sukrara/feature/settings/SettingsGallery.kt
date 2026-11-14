@@ -28,6 +28,7 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
@@ -47,8 +48,10 @@ import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
 import app.mauri.sukrara.feature.settings.advanced.AdvancedStats
+import app.mauri.sukrara.feature.settings.advanced.ImportExportContent
 import app.mauri.sukrara.feature.settings.advanced.LogContent
 import app.mauri.sukrara.feature.settings.advanced.RelayRow
+import app.mauri.sukrara.feature.settings.advanced.SettingsFileActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromContent
 import app.mauri.sukrara.feature.settings.follower.SettingsFromNote
@@ -57,6 +60,9 @@ import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.graph.Reorder
+import app.mauri.sukrara.feature.settings.graph.RingsContent
+import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
+import app.mauri.sukrara.feature.settings.graph.TimeShownContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
@@ -81,6 +87,7 @@ import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.RingSpec
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -125,7 +132,15 @@ class SettingsGallery {
     /** About's updater with the daily check on and automatic installs off (the defaults). */
     private val updates = AboutUpdates({}, {}, {}, {}, automaticChecks = true, automaticInstall = false, {}, {})
 
-    private fun about(state: UpdateState?) = @Composable { AboutContent("0.12.0", Distribution.GitHub, state, updates) {} }
+    private fun about(state: UpdateState?) = @Composable {
+        AboutContent(
+            "0.12.0",
+            Distribution.GitHub,
+            AppBuild.Release,
+            state,
+            updates,
+        ) {}
+    }
 
     private val sensorWorking =
         SensorSettingsState(
@@ -244,14 +259,47 @@ class SettingsGallery {
             "alert-kind-very-low" to
                 { AlertKindContent(AlertKind.VERY_LOW, AlertsUi(AlertSettings(), AlertUiState()), clock, AlertKindActions()) {} },
             "threshold-review" to { AlertThresholdReviewContent(AlertSettings(), { _, _ -> }, {}, {}) },
-            "ranges" to { RangesContent(GraphPrefs(), { _, _ -> }, {}) },
-            "ranges-changed" to { RangesContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}) },
-            "ranges-follower" to {
-                RangesContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}, readOnly = true) {
+            "threshold-review-off" to {
+                val s = AlertSettings()
+                AlertThresholdReviewContent(
+                    s.withRule(AlertKind.VERY_HIGH, s.rule(AlertKind.VERY_HIGH).copy(on = false)),
+                    { _, _ -> },
+                    {},
+                    {},
+                )
+            },
+            "readings" to { ReadingsContent(GraphPrefs(), { _, _ -> }, {}) },
+            "readings-changed" to { ReadingsContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}) },
+            "readings-follower" to {
+                ReadingsContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}, readOnly = true) {
                     SettingsFromNote(fromWearer, {})
                 }
             },
             "graph" to { GraphContent(GraphConfig(), GraphActions(), {}) },
+            "rings" to { RingsContent(GraphConfig(), GraphActions(), {}) },
+            "rings-custom" to {
+                RingsContent(
+                    GraphConfig(ringCount = 3, lastElse = null, ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0)),
+                    GraphActions(),
+                    {},
+                )
+            },
+            "rings-follower" to {
+                RingsContent(GraphConfig(), GraphActions(), {}, readOnly = true) { SettingsFromNote(fromWearer, {}) }
+            },
+            "finetuning" to { FineTuningContent(AlertsUi(AlertSettings(), AlertUiState()), {}) {} },
+            "finetuning-changed" to {
+                FineTuningContent(
+                    AlertsUi(AlertSettings().let { it.copy(actions = it.actions.copy(muteMin = 60)) }, AlertUiState()),
+                    {},
+                ) {}
+            },
+            "files" to {
+                ImportExportContent(SettingsFileActions(), onBack = {}) { DataLinks(DataPage.Files, wearer = true) {} }
+            },
+            "files-follower" to {
+                ImportExportContent(SettingsFileActions(), onBack = {}) { DataLinks(DataPage.Files, wearer = false) {} }
+            },
             "graph-follower" to {
                 GraphContent(GraphConfig(lines = listOf(80, 160)), GraphActions(), {}, readOnly = true) { SettingsFromNote(fromWearer, {}) }
             },
@@ -263,12 +311,24 @@ class SettingsGallery {
                         ringCount = 3,
                         lastElse = null,
                         ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0),
-                        sensorHidden = setOf(GraphPlace.WIDGETS),
+                        sensorPlace = mapOf(GraphPlace.WIDGETS to false),
                     ),
                     GraphActions(),
                     {},
                 )
             },
+            // a setting the app sets that places can change (docs/38): one place differs, then both, and the sensor's
+            "graph-one-place" to { GraphContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {}) },
+            "graph-places" to { GraphContent(placesConfig, GraphActions(), {}) },
+            "time-shown" to {
+                TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {})
+            },
+            "time-shown-follower" to {
+                TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {}, readOnly = true) {
+                    SettingsFromNote(fromWearer, {})
+                }
+            },
+            "sensor-time" to { SensorTimeContent(GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)), GraphActions(), {}) },
             "graph-marks" to { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             "lock" to { LockScreenContent(20.0, {}, {}) },
             // the lock-screen widget: shown (the module runs), waiting for a System UI restart, off
@@ -322,9 +382,17 @@ class SettingsGallery {
             "about-installing" to about(UpdateState.Installing(release)),
             "about-failed" to about(UpdateState.Failed(release, UpdateFailure.Signature)),
             "about-auto-off" to
-                { AboutContent("0.12.0", Distribution.GitHub, UpdateState.UpToDate, AboutUpdates({}, {}, {}, {}, false, true, {}, {})) {} },
+                {
+                    AboutContent(
+                        "0.12.0",
+                        Distribution.GitHub,
+                        AppBuild.Release,
+                        UpdateState.UpToDate,
+                        AboutUpdates({}, {}, {}, {}, false, true, {}, {}),
+                    ) {}
+                },
             // the Google Play build: no updater
-            "about-play" to { AboutContent("0.12.0", Distribution.GooglePlay, null, null) {} },
+            "about-play" to { AboutContent("0.12.0", Distribution.GooglePlay, AppBuild.Release, null, null) {} },
             "sensor" to { SensorSettingsContent(sensorWorking, now, zone, SensorSettingsActions()) {} },
             "sensor-this-phone" to {
                 SensorSettingsContent(
@@ -621,6 +689,7 @@ class SettingsGallery {
                     "alerts",
                     "alert-kind-low-muted",
                     "threshold-review",
+                    "threshold-review-off",
                     "about-update",
                     "sensor",
                     "sensor-juggluco-signed-out",
@@ -631,8 +700,77 @@ class SettingsGallery {
                     "advanced",
                     "statusbar-root-unasked",
                     "statusbar-root-not-allowed",
+                    "overview",
+                    "readings",
+                    "rings",
+                    "finetuning",
+                    "files",
+                    "sensorend",
+                    "graph-custom",
+                    "graph-places",
+                    "time-shown",
+                    "sensor-time",
                 ),
         )
+
+    /** The notification and the widgets with their own time shown, and the widgets without the sensor time (docs/38). */
+    private val placesConfig =
+        GraphConfig(
+            placeHours = mapOf(GraphPlace.NOTIFICATION to 3, GraphPlace.WIDGETS to 6),
+            sensorPlace = mapOf(GraphPlace.WIDGETS to false),
+        )
+
+    /** A place's dialog over its page (the whole screen: dialogs are windows of their own). */
+    private fun placeDialog(
+        name: String,
+        dark: Boolean,
+        row: String,
+        page: @Composable () -> Unit,
+    ) {
+        compose.setContent { SukraraTheme(dark = dark, dynamic = false) { page() } }
+        compose.onNodeWithText(row).performScrollTo().performClick()
+        compose.waitForIdle()
+        captureScreenRoboImage("build/outputs/roborazzi/settings-$name-${if (dark) "dark" else "light"}-font1x.png")
+    }
+
+    /** Graph scrolled to the sensor time's row: the Time shown and Sensor time left rows together (docs/38). */
+    @Test fun graphPlaceRows() {
+        var theme by mutableStateOf(false)
+        compose.setContent { SukraraTheme(dark = theme, dynamic = false) { GraphContent(placesConfig, GraphActions(), {}) } }
+        for (dark in listOf(false, true)) {
+            theme = dark
+            compose.onNodeWithText("Sensor time left").performScrollTo()
+            compose.waitForIdle()
+            compose.onRoot().captureRoboImage(
+                "build/outputs/roborazzi/settings-graph-place-rows-${if (dark) "dark" else "light"}-font1x.png",
+            )
+        }
+    }
+
+    /** Time shown in Spanish on the gallery's phone size (the whole page: the app's values and the places). */
+    @Test
+    @Config(qualifiers = "es-w411dp-h891dp-xxhdpi")
+    fun spanishTimeShown() {
+        compose.setContent {
+            SukraraTheme(dark = true, dynamic = false) {
+                TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {})
+            }
+        }
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/settings-es-time-shown-phone-dark-font1x.png")
+    }
+
+    @Test fun placeDialogs() {
+        placeDialog("time-shown-dialog", dark = false, row = "Notification") {
+            TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {})
+        }
+    }
+
+    @Test fun sensorPlaceDialog() {
+        placeDialog("sensor-time-dialog", dark = true, row = "Widgets") {
+            SensorTimeContent(GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)), GraphActions(), {})
+        }
+    }
 }
 
 private val rootOn = RootSettings(on = true, position = HookPosition.DEFAULT, color = true, hideIcon = true)

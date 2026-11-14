@@ -18,7 +18,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -44,11 +47,14 @@ import app.mauri.sukrara.core.model.TrendFrom
 import app.mauri.sukrara.core.model.TrendRate
 import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.designsystem.dialog.Choice
+import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.RadioRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.GlucoseCard
@@ -67,6 +73,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.Locale
 import kotlin.math.abs
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * What one choice of the *Trend arrow* says now (glyph surface `trend-preview`): the newest reading's [look] under that
@@ -133,7 +140,7 @@ object TrendArrowPreview {
 }
 
 /**
- * Glucose (Ranges) › Trend arrow: the live preview (the arrow turns with a spring as the choice changes; none with
+ * Readings › Trend arrow: the live preview (the arrow turns with a spring as the choice changes; none with
  * reduced motion), the four choices each with the arrow it would show now, and what the setting reaches. [readOnly] = a
  * follower mirroring the wearer: the choice in use, not changeable here ([note] says why and opens *Settings from*).
  */
@@ -183,9 +190,39 @@ private val TrendSetting.summary: Int
             TrendSetting.Sensor -> R.string.st_trend_sensor_summary
         }
 
-/** The name of [s] as the Ranges row shows it. */
+/** The name of [s] as the Readings row shows it. */
 @Composable
 fun trendChoiceName(s: TrendSetting): String = stringResource(s.title)
+
+/**
+ * The *Trend arrow* choice as a row of the fast alerts' pages (docs/35 §7: a setting editable where people expect it,
+ * the same setting and store as Readings › Trend arrow, never a copy): the choice in use, a tap opens the four choices
+ * (SPA's ListPreference dialog). [readOnly] = a follower mirroring the wearer's.
+ */
+@Composable
+fun TrendChoiceRow(
+    choice: TrendSetting,
+    onChoose: (TrendSetting) -> Unit,
+    readOnly: Boolean = false,
+) {
+    var choosing by rememberSaveable { mutableStateOf(false) }
+    ValueRow(
+        stringResource(R.string.st_trend_title),
+        stringResource(choice.title),
+        { choosing = true },
+        icon = DsR.drawable.ds_ic_trending_up,
+        readOnly = readOnly,
+    )
+    if (choosing) {
+        ChoiceDialog(
+            stringResource(R.string.st_trend_title),
+            TrendSetting.entries.map { Choice(stringResource(it.title), it, sub = stringResource(it.summary)) },
+            choice,
+            { choosing = false },
+            onChoose = onChoose,
+        )
+    }
+}
 
 /**
  * The preview on top: the newest value with the arrow of the choice in use, turning with a short spring when the

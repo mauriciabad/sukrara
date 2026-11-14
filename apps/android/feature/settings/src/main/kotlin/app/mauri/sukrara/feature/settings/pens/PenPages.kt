@@ -87,6 +87,7 @@ import app.mauri.sukrara.designsystem.rows.NumberButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsHeader
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.graph.ClockText
@@ -873,11 +874,8 @@ private fun LogSheet(
             if ((s.status == PenSessionStatus.Review || s.status == PenSessionStatus.NotLogged) && t != null) vm.sessionEntry(t) else null
     }
     val doses = { s.doses.mapIndexed { i, d -> d.key to roles[i] }.toMap() }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    SukraraSheet(onDismiss) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 if (inj.isEmpty()) stringResource(R.string.st_pen_nothing_injected) else units(a),
                 style = MaterialTheme.typography.headlineSmall,
@@ -942,11 +940,8 @@ private fun QuestionSheet(
         PenSameSheet(q, { ClockText.time(it) }, onAnswer = answer, onDismiss = onDismiss)
         return
     }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    SukraraSheet(onDismiss) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 stringResource(if (q.same) R.string.st_pen_h_same else R.string.st_pen_h_question),
                 style = MaterialTheme.typography.headlineSmall,

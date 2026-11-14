@@ -84,6 +84,8 @@ fun FollowingPage(
     onJoinAgain: () -> Unit,
     onLeft: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The page's foot: *See also* the other data pages (the app draws them). */
+    links: @Composable () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val nearby by viewModel.nearby.collectAsStateWithLifecycle()
@@ -112,6 +114,7 @@ fun FollowingPage(
         nearby = nearby,
         onRefreshNearby = viewModel::refreshNearby,
         modifier = modifier,
+        links = links,
     )
 }
 
@@ -128,127 +131,131 @@ fun FollowingContent(
     /** A *Pair nearby* join ended because the codes differed (said once the page shows "not following"). */
     mismatch: Boolean = false,
     onConfirmNearby: (same: Boolean) -> Unit = {},
+    /** Below the page, full width: *See also* the other data pages. */
+    links: @Composable () -> Unit = {},
 ) {
     var confirming by rememberSaveable { mutableStateOf(false) }
     val someone = stringResource(R.string.sh_join_someone)
     val name = Profile.shownName((state as? FollowState.Following)?.wearer?.name.orEmpty()).ifEmpty { someone }
-    Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        when (state) {
-            FollowState.Loading -> {
-                CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-            }
-
-            FollowState.NotFollowing -> {
-                if (mismatch) NoteCard(stringResource(R.string.sh_join_err_mismatch), error = true)
-                OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.sh_join_title)) }
-            }
-
-            is FollowState.Unreadable -> {
-                NoteCard(stringResource(R.string.sh_following_unreadable), error = true)
-            }
-
-            FollowState.Damaged -> {
-                NoteCard(stringResource(R.string.sh_following_damaged), error = true)
-            }
-
-            is FollowState.Following -> {
-                ConfirmWhenAllowed(state.status)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AvatarImage(state.wearer?.avatar, name, size = 64.dp)
-                    Text(
-                        stringResource(
-                            when (state.status) {
-                                FollowStatus.Active -> R.string.sh_following_active
-
-                                FollowStatus.New, FollowStatus.Requested -> R.string.sh_following_waiting
-
-                                // ended: never "Waiting for …" when no answer can come (#181)
-                                else -> R.string.sh_following_ended
-                            },
-                            name,
-                        ),
-                        style = MaterialTheme.typography.titleLarge,
-                        // the status changes by itself (Allow, Deny, removed): TalkBack says so
-                        modifier =
-                            Modifier.padding(start = 16.dp).semantics {
-                                heading()
-                                liveRegion = LiveRegionMode.Polite
-                            },
-                    )
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            when (state) {
+                FollowState.Loading -> {
+                    CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
                 }
-                when (state.status) {
-                    FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked, FollowStatus.Expired -> {
-                        val why =
-                            when (state.status) {
-                                FollowStatus.Declined -> R.string.sh_join_declined
-                                FollowStatus.InviteUsed -> R.string.sh_join_used
-                                FollowStatus.Expired -> R.string.sh_join_expired
-                                else -> R.string.sh_join_revoked
+
+                FollowState.NotFollowing -> {
+                    if (mismatch) NoteCard(stringResource(R.string.sh_join_err_mismatch), error = true)
+                    OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.sh_join_title))
+                    }
+                }
+
+                is FollowState.Unreadable -> {
+                    NoteCard(stringResource(R.string.sh_following_unreadable), error = true)
+                }
+
+                FollowState.Damaged -> {
+                    NoteCard(stringResource(R.string.sh_following_damaged), error = true)
+                }
+
+                is FollowState.Following -> {
+                    ConfirmWhenAllowed(state.status)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AvatarImage(state.wearer?.avatar, name, size = 64.dp)
+                        Text(
+                            stringResource(
+                                when (state.status) {
+                                    FollowStatus.Active -> R.string.sh_following_active
+
+                                    FollowStatus.New, FollowStatus.Requested -> R.string.sh_following_waiting
+
+                                    // ended: never "Waiting for …" when no answer can come (#181)
+                                    else -> R.string.sh_following_ended
+                                },
+                                name,
+                            ),
+                            style = MaterialTheme.typography.titleLarge,
+                            // the status changes by itself (Allow, Deny, removed): TalkBack says so
+                            modifier =
+                                Modifier.padding(start = 16.dp).semantics {
+                                    heading()
+                                    liveRegion = LiveRegionMode.Polite
+                                },
+                        )
+                    }
+                    when (state.status) {
+                        FollowStatus.Declined, FollowStatus.InviteUsed, FollowStatus.Revoked, FollowStatus.Expired -> {
+                            val why =
+                                when (state.status) {
+                                    FollowStatus.Declined -> R.string.sh_join_declined
+                                    FollowStatus.InviteUsed -> R.string.sh_join_used
+                                    FollowStatus.Expired -> R.string.sh_join_expired
+                                    else -> R.string.sh_join_revoked
+                                }
+                            NoteCard(stringResource(why, name), error = true)
+                            OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.sh_following_join_again))
                             }
-                        NoteCard(stringResource(why, name), error = true)
-                        OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.sh_following_join_again))
                         }
-                    }
 
-                    FollowStatus.New, FollowStatus.Requested -> {
-                        val pairing = state.pairing
-                        if (pairing != null) {
-                            PairingCodeCard(pairing, name, onSame = { onConfirmNearby(true) }, onDifferent = { onConfirmNearby(false) })
-                        } else {
-                            MatchCodeLine(name, state.code)
-                        }
-                    }
-
-                    FollowStatus.Active -> {
-                        val heard = state.lastHeardAt
-                        Text(
-                            if (heard == null) {
-                                stringResource(R.string.sh_following_never)
+                        FollowStatus.New, FollowStatus.Requested -> {
+                            val pairing = state.pairing
+                            if (pairing != null) {
+                                PairingCodeCard(pairing, name, onSame = { onConfirmNearby(true) }, onDifferent = { onConfirmNearby(false) })
                             } else {
-                                stringResource(
-                                    R.string.sh_following_last_heard,
-                                    DateUtils.getRelativeTimeSpanString(heard.toEpochMilli()).toString(),
-                                )
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Text(
-                            stringResource(if (state.canWrite) R.string.sh_following_can_write else R.string.sh_following_cannot_write),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
+                                MatchCodeLine(name, state.code)
+                            }
+                        }
+
+                        FollowStatus.Active -> {
+                            val heard = state.lastHeardAt
+                            Text(
+                                if (heard == null) {
+                                    stringResource(R.string.sh_following_never)
+                                } else {
+                                    stringResource(
+                                        R.string.sh_following_last_heard,
+                                        DateUtils.getRelativeTimeSpanString(heard.toEpochMilli()).toString(),
+                                    )
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                stringResource(if (state.canWrite) R.string.sh_following_can_write else R.string.sh_following_cannot_write),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
                     }
+                    val relays = state.relays
+                    Text(
+                        if (relays.isEmpty()) {
+                            stringResource(R.string.sh_following_relays_off)
+                        } else {
+                            stringResource(R.string.sh_following_relays, relays.values.count { it.connected }, relays.size)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    // "connected" only once the phone proved it's this wearer's (B§6), never on a bare connection
+                    Text(
+                        stringResource(R.string.sh_following_nearby, nearbySummary(nearby, on = true, wearer = false)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    NearbyFixRow(nearby, AndroidNearbyCentral.PERMISSIONS, onRefreshNearby)
                 }
-                val relays = state.relays
-                Text(
-                    if (relays.isEmpty()) {
-                        stringResource(R.string.sh_following_relays_off)
-                    } else {
-                        stringResource(R.string.sh_following_relays, relays.values.count { it.connected }, relays.size)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                // "connected" only once the phone proved it's this wearer's (B§6), never on a bare connection
-                Text(
-                    stringResource(R.string.sh_following_nearby, nearbySummary(nearby, on = true, wearer = false)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                NearbyFixRow(nearby, AndroidNearbyCentral.PERMISSIONS, onRefreshNearby)
+            }
+            if (failed) NoteCard(stringResource(R.string.sh_following_stop_failed), error = true)
+            if (state !is FollowState.Loading && state != FollowState.NotFollowing) {
+                OutlinedButton(
+                    onClick = { confirming = true },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.sh_following_stop)) }
             }
         }
-        if (failed) NoteCard(stringResource(R.string.sh_following_stop_failed), error = true)
-        if (state !is FollowState.Loading && state != FollowState.NotFollowing) {
-            OutlinedButton(
-                onClick = { confirming = true },
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.sh_following_stop)) }
-        }
+        links()
     }
     if (confirming) {
         AlertDialog(

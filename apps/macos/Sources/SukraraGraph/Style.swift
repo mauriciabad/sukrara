@@ -361,7 +361,7 @@ public struct GraphConfig: Codable, Equatable, Sendable {
     public var lastElse: RingSpec? = GraphConfig.defaultLastElse
     /// The sensor countdown ring's window, hours (`SettingsSpec.countdownHours`; Android: the Sensor settings).
     public var countdownHours = SensorLife.defaultCountdownHours
-    /// The sensor's time left on this place's cards (`<place>SensorTime`: menubarSensorTime, widgetSensorTime).
+    /// The sensor's time left on this place's cards (`sensorTime`; the widgets' own: `widgetSensorTime`).
     public var sensorTime = true
     /// Per treatment kind: the point, the mute line, the amount and the time label on the chart (carbs: the point only).
     public var marks = MarkShow.defaults

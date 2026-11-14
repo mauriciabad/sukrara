@@ -23,6 +23,18 @@ import Testing
         #expect(AlertsRangesPane.summary(.low, s, unit: .mmol).hasPrefix("Below 3.9 mmol/L"))
     }
 
+    /// A quiet rule's row says its length once (never under the switch as another row): "For 1 h", or Off.
+    @Test func quietRowSummarySaysTheLengthOrOff() {
+        var s = AlertSettings()
+        #expect(QuietRuleKind.afterInsulin.summary(s.muteAfterInsulin) == "For 1 h")
+        #expect(QuietRuleKind.afterCarbs.summary(s.muteAfterCarbs) == "For 15 min")
+        #expect(QuietRuleKind.fallingHigh.summary(s.muteFallingHigh) == "Back in range within 20 min")
+        s.muteRisingLow.on = false
+        #expect(QuietRuleKind.risingLow.summary(s.muteRisingLow) == "Off")
+        for q in QuietRuleKind.allCases { #expect(q.format != nil, "\(q) has a number format") }
+        #expect(QuietRuleKind.allCases.map { $0.minutesLabel }.filter { $0 == "Back in range within" }.count == 2)
+    }
+
     /// The test alert goes through the notifier as its own notification; the engine and its mutes don't see it.
     @Test func sendTestAlertPostsATestOnly() {
         let notifier = RecordingNotifier()

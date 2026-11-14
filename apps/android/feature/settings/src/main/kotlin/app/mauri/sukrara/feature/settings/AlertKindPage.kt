@@ -82,6 +82,8 @@ fun AlertKindContent(
     actions: AlertKindActions,
     /** Above the page's groups (a follower's *Settings from* note while [AlertsUi.mirrors] this kind). */
     header: @Composable () -> Unit = {},
+    /** The fast alerts' *Trend arrow* row (docs/35 §7: the same setting as Readings › Trend arrow), under *Alert when*. */
+    trend: @Composable () -> Unit = {},
     onBack: () -> Unit,
 ) {
     val rule = ui.settings.rule(kind)
@@ -119,6 +121,7 @@ fun AlertKindContent(
                 icon = DsR.drawable.ds_ic_repeat,
                 readOnly = ui.mirrors(kind),
             )
+            trend()
         }
 
         SettingsGroup(title = stringResource(R.string.st_sound_title)) {

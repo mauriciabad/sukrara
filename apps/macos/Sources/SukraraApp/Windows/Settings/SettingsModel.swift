@@ -11,12 +11,13 @@ import SukraraGraph
 /// mirrored values. Every change applies at once; the app picks it up through the defaults change.
 @Observable
 public final class SettingsModel {
-    public enum Pane: String, CaseIterable, Sendable { case general, graph, rings, alerts, following }
+    /// The panes in toolbar order (schema `settings.pane`'s values); an unknown stored one opens General.
+    public enum Pane: String, CaseIterable, Sendable { case general, following, alerts, readings, graph, rings }
 
     @ObservationIgnored let store: any SettingsStoring
     public let alerts: AlertSettingsStore
     public let follow: FollowModel
-    /// Juggluco on this network (Settings › General › Source).
+    /// Juggluco on this network (Settings › Following).
     public let juggluco: JugglucoModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
@@ -27,8 +28,15 @@ public final class SettingsModel {
     var focusStatus: FocusStatus? { timeSensitive.map { FocusStatus(through: throughFocus, timeSensitive: $0) } }
     /// The pane shown; the window reopens on it.
     public var pane: Pane {
-        didSet { store.set(pane.rawValue, for: MacSettings.settingsPane) }
+        didSet {
+            store.set(pane.rawValue, for: MacSettings.settingsPane)
+            graphPage = nil  // a pane opens at its top level
+        }
     }
+    /// A setting's page the Graph pane shows in its place (its row's chevron; back: ⌘[ / Esc); nil = the pane.
+    public var graphPage: GraphPage?
+    /// The Graph pane's settings with a page of their own: the menu bar's value and the widgets' (docs/38).
+    public enum GraphPage: Sendable { case hours, sensorTime }
     /// "Copy the wearer's settings…", "Reset to Defaults…" and "Reset all graph settings…" are asked first.
     public var confirmingCopy = false
     public var confirmingReset = false
@@ -36,11 +44,13 @@ public final class SettingsModel {
     public let version: String
     /// Which version this is (Settings › General › About says so).
     public let distribution: Distribution
+    /// A release or a development build (the version's text says which).
+    public let appBuild: AppBuild
     private var revision = 0
 
     public init(
         store: any SettingsStoring, follow: FollowModel, wearer: WearerSettings? = nil, version: String,
-        distribution: Distribution = .github
+        distribution: Distribution = .github, appBuild: AppBuild = .release
     ) {
         self.store = store
         self.alerts = AlertSettingsStore(store: store)
@@ -49,6 +59,7 @@ public final class SettingsModel {
         self.wearer = wearer
         self.version = version
         self.distribution = distribution
+        self.appBuild = appBuild
         pane = Pane(rawValue: store.value(MacSettings.settingsPane)) ?? .general
     }
 
@@ -115,7 +126,7 @@ public final class SettingsModel {
     /// Who the mirrored settings come from now, in one sentence (General › Settings › In use).
     public var inUse: String {
         switch settingsFrom {
-        case .custom: return L10n.t("This Mac's own settings, in the Graph, Rings and Alerts panes.")
+        case .custom: return L10n.t("This Mac's own settings, in the Alerts, Readings, Graph and Rings panes.")
         case .default: return L10n.t("Sukrara's defaults.")
         case .wearer:
             let who = wearer?.wearer ?? L10n.t("the wearer")
@@ -151,7 +162,7 @@ public final class SettingsModel {
         set { updateGraph { $0.trend = newValue } }
     }
 
-    /// The newest reading the app shows, with its trend (Glucose › Trend arrow's preview); nil = none.
+    /// The newest reading the app shows, with its trend (Readings › Trend arrow's preview); nil = none.
     @ObservationIgnored public var newestReading: () -> Reading? = { nil }
 
     public var unit: GlucoseUnit {
@@ -182,11 +193,22 @@ public final class SettingsModel {
         if store.setNumber(v, for: n) { revision += 1 }
     }
 
-    /// A place's own time shown (0 = same as the default) and sensor time left: always this Mac's.
+    /// A place's own time shown (0 = Same as the menu bar): always this Mac's (docs/38).
     public func placeHours(_ p: GraphPlace) -> Double { _ = revision; return store.number(p.hours) }
     public func setPlaceHours(_ v: Double, _ p: GraphPlace) { if store.setNumber(v, for: p.hours) { revision += 1 } }
-    public func sensorTime(_ p: GraphPlace) -> Bool { _ = revision; return store.value(p.sensorTime) }
-    public func setSensorTime(_ on: Bool, _ p: GraphPlace) { store.set(on, for: p.sensorTime); revision += 1 }
+    /// The sensor's time left on the menu bar's card, which every place follows; always this Mac's.
+    public var sensorTime: Bool {
+        get { _ = revision; return store.value(MacSettings.sensorTime) }
+        set { store.set(newValue, for: MacSettings.sensorTime); revision += 1 }
+    }
+    /// A place's own sensor time left (nil = Same as the menu bar).
+    public func sensorPlace(_ p: GraphPlace) -> Bool? {
+        _ = revision; return PlaceOverride(stored: store.value(p.sensorTime)).own
+    }
+    public func setSensorPlace(_ own: Bool?, _ p: GraphPlace) {
+        store.set(PlaceOverride(own: own).rawValue, for: p.sensorTime)
+        revision += 1
+    }
 
     /// Changes this Mac's card settings (Custom only): `change` edits the current ones, the result is stored.
     public func updateGraph(_ change: (inout GraphConfig) -> Void) {
@@ -210,9 +232,9 @@ public final class SettingsModel {
     public func resetRingOrder() { updateGraph { $0.ringOrder = DEFAULT_RING_ORDER } }
     /// Any card setting differs from the defaults (the place's own ones included).
     public var graphChanged: Bool {
-        graph != GraphConfig()
+        graph != GraphConfig() || !sensorTime
             || GraphPlace.allCases.contains {
-                placeHours($0) != MacSettings.menubarHours.format.default || !sensorTime($0)
+                placeHours($0) != $0.hours.format.default || sensorPlace($0) != nil
             }
     }
 
@@ -222,8 +244,9 @@ public final class SettingsModel {
         writeGraph(GraphConfig())
         for p in GraphPlace.allCases {
             store.set(p.hours.format.default, for: p.hours.spec)
-            store.set(true, for: p.sensorTime)
+            store.set(PlaceOverride.same.rawValue, for: p.sensorTime)
         }
+        store.set(true, for: MacSettings.sensorTime)
         revision += 1
     }
 

@@ -22,6 +22,12 @@ struct NumberSettingRow: View {
     var readOnly = false
     /// What a value means, under the row ("Low: 56–69 mg/dL"): the value set, or while typing a valid one, that one.
     var span: ((Double) -> String?)? = nil
+    /// A place that can follow the menu bar (docs/38): the menu bar's value. The format's `same_as_app` value is then the
+    /// first item, "Same as the menu bar (12 h)", above a separator, and while it's chosen the closed pop-up is quiet
+    /// (`PlacePopUp`).
+    var follows: Double? = nil
+    /// Where a read-only value comes from ("from Marta"), beside it.
+    var source: String? = nil
     @Environment(\.glucoseUnit) private var unit
     @State private var custom = false
     @State private var text = ""
@@ -35,7 +41,7 @@ struct NumberSettingRow: View {
         VStack(alignment: .leading, spacing: 4) {
             if readOnly {
                 // a mirrored value in words, never a dimmed pop-up (#106: faint in dark mode)
-                LabeledContent(label) { ReadOnlyValue(value: Self.word(format, value, unit)) }
+                LabeledContent(label) { ReadOnlyValue(value: Self.word(format, value, unit), source: source) }
             } else {
                 editor
             }
@@ -58,29 +64,25 @@ struct NumberSettingRow: View {
 
     private var editor: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker(label, selection: choice) {
-                ForEach(
-                    shown.presets + shown.special.keys.filter { !shown.presets.contains($0) }.sorted(), id: \.self
+            if let follows {
+                let followed = Self.word(shown, follows)
+                PlacePopUp(
+                    label: label, selection: choice, following: !isCustom && shownValue == same,
+                    followed: followed,
+                    spokenValue: Self.spoken(shown, isCustom || shownValue != same ? value : follows)
                 ) {
-                    Text(Self.word(shown, $0)).tag(Optional($0))
+                    if let same {
+                        Text(PlaceSummary.sameAsMenuBar(followed)).tag(Optional(same))
+                        Divider()
+                    }
+                    items
                 }
-                if shown.custom { Text(L10n.t("Custom…")).tag(Double?.none) }
+            } else {
+                Picker(label, selection: choice) { items }
+                    .accessibilityValue(Self.spoken(format, value, unit))
             }
-            .accessibilityValue(Self.word(format, value, unit))
             if isCustom && shown.custom {
-                HStack {
-                    // no title beside it: in a Form it took a column of its own and broke as "Val-ue"
-                    TextField(L10n.t("Value"), text: $text)  // settings-ok: number input
-                        .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 70)
-                        .onSubmit(commit)
-                        .accessibilityLabel(label)
-                    Stepper("", onIncrement: { nudge(1) }, onDecrement: { nudge(-1) })  // settings-ok: number input
-                        .labelsHidden()
-                        .accessibilityLabel(L10n.t("Adjust \(label)"))
-                    Text(shown.unit).foregroundStyle(.secondary)
-                }
+                NumberField(label: label, text: $text, unit: shown.unit, step: nudge, submit: commit)
                 Text(L10n.t("Enter \(shown.text(shown.min))–\(shown.text(shown.max)) \(shown.unit)"))
                     .font(.caption)
                     .foregroundStyle(shown.parse(text) == nil ? .red : .secondary)
@@ -92,6 +94,26 @@ struct NumberSettingRow: View {
         .onChange(of: unit) { text = shown.text(shownValue) }
     }
 
+    /// The format's presets and special values (the place's `same_as_app` aside), then Custom… (after a separator in a
+    /// place's pop-up).
+    @ViewBuilder private var items: some View {
+        ForEach(
+            shown.presets
+                + shown.special.keys.filter { !shown.presets.contains($0) && $0 != same }.sorted(), id: \.self
+        ) {
+            Text(Self.word(shown, $0)).tag(Optional($0))
+        }
+        if shown.custom {
+            if follows != nil { Divider() }
+            Text(L10n.t("Custom…")).tag(Double?.none)
+        }
+    }
+
+    /// A place's "Same as the menu bar" value (the format's `same_as_app`); nil for a row that follows nothing.
+    private var same: Double? {
+        follows == nil ? nil : shown.special.first(where: { $0.value == "same_as_app" })?.key
+    }
+
     private var choice: Binding<Double?> {
         Binding(
             get: { isCustom ? nil : shownValue },
@@ -100,6 +122,8 @@ struct NumberSettingRow: View {
                     custom = false
                     value = format.stored(new, unit)
                 } else {
+                    // a place that followed starts its own from the value it followed
+                    if let follows, shownValue == same { text = shown.text(follows) }
                     custom = true
                 }
             })
@@ -125,9 +149,20 @@ struct NumberSettingRow: View {
         case "once": L10n.t("Only once")
         case "none": L10n.t("None")
         case "until_turned_off": L10n.t("Until you turn it off")
-        case "same_as_default": L10n.t("Same as default")
         default: f.unit.isEmpty ? f.text(v) : "\(f.text(v)) \(f.unit)"
         }
+    }
+
+    /// A stored value as VoiceOver says it in `unit`: hours in full ("12 hours"), the rest as `word`.
+    static func spoken(_ f: NumberSpec, _ v: Double, _ unit: GlucoseUnit) -> String {
+        spoken(f.inUnit(unit), f.shown(v, unit))
+    }
+
+    /// A value of `f` in its own units as VoiceOver says it: "12 hours", "70 mg/dL", "Off".
+    static func spoken(_ f: NumberSpec, _ v: Double) -> String {
+        guard f.unit == "h", f.specialOf(v) == nil else { return word(f, v) }
+        return Measurement(value: v, unit: UnitDuration.hours)
+            .formatted(.measurement(width: .wide, usage: .asProvided).locale(L10n.locale))
     }
 }
 

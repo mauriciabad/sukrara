@@ -226,9 +226,11 @@ private fun model(
     icon: (@Composable () -> Unit)?,
     enabled: Boolean,
     onClick: (() -> Unit)?,
+    summaryDescription: String? = null,
 ) = object : PreferenceModel {
     override val title = title
     override val summary = { summary ?: "" }
+    override val summaryContentDescription = { summaryDescription }
     override val icon = icon
     override val enabled = { enabled }
     override val onClick = onClick
@@ -252,7 +254,7 @@ private fun switchModel(
 
 /** [text] in the error colour: a summary that says something outside the app stops the feature. */
 @Composable
-private fun warningText(text: String?): CharSequence? =
+private fun warningText(text: CharSequence?): CharSequence? =
     text?.let {
         val error = MaterialTheme.colorScheme.error
         buildAnnotatedString { withStyle(SpanStyle(color = error)) { append(it) } }
@@ -329,23 +331,28 @@ fun SplitSwitchRow(
  * Opens another screen: SPA's Preference (stock rows show no chevron). [leading] replaces [icon] with other content
  * (the overview's [CategoryIcon], a picture): decorative, the title says what the row is. [warning]: something outside
  * the app blocks what the row is about (icon and summary in the error colour; the row opens the fix). [onClickLabel]:
- * what a tap does, for TalkBack, when the title doesn't say it ("Fix").
+ * what a tap does, for TalkBack, when the title doesn't say it ("Fix"). [summary] may be styled text (one paragraph per
+ * line); [summaryDescription] = what TalkBack says for it instead (values in full).
  */
 @Composable
 fun NavigationRow(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    summary: String? = null,
+    summary: CharSequence? = null,
     @DrawableRes icon: Int? = null,
     enabled: Boolean = true,
     leading: (@Composable () -> Unit)? = null,
     warning: Boolean = false,
     onClickLabel: String? = null,
+    summaryDescription: String? = null,
 ) {
     val shown = if (warning) warningText(summary) else summary
     RowBox(title, modifier) {
-        Preference(model(title, shown, iconOf(icon, leading, warning), enabled, onClick), onClickLabel = onClickLabel)
+        Preference(
+            model(title, shown, iconOf(icon, leading, warning), enabled, onClick, summaryDescription),
+            onClickLabel = onClickLabel,
+        )
     }
 }
 
@@ -455,7 +462,7 @@ fun DangerRow(
 ) {
     var asking by rememberSaveable { mutableStateOf(false) }
     val haptics = rememberHaptics()
-    RowBox(title, modifier) { Preference(model(title, summary, iconOf(icon, null), enabled) { asking = true }) }
+    RowBox(title, modifier) { Preference(model(title, summary, iconOf(icon, null), enabled, onClick = { asking = true })) }
     if (asking) {
         AlertDialog(
             onDismissRequest = { asking = false },

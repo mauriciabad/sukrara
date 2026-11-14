@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
+import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import java.net.URLEncoder
 
 /**
@@ -50,14 +51,7 @@ object SensorFeedback {
         companion object {
             fun of(context: Context): Device =
                 Device(
-                    appVersion =
-                        runCatching {
-                            context.packageManager
-                                .getPackageInfo(
-                                    context.packageName,
-                                    0,
-                                ).versionName
-                        }.getOrNull().orEmpty(),
+                    appVersion = AppBuildInfo.report(context),
                     android = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                     phone = "${Build.MANUFACTURER} ${Build.MODEL}",
                 )

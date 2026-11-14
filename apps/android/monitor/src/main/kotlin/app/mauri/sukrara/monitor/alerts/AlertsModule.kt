@@ -197,9 +197,11 @@ class AlertsModule(
     private val sensorEndSettings: Flow<SensorEndSettings> =
         combine(
             SurfaceSettings.sensorEnd(alertSettings),
+            // THE night (docs/35 §7): the sensor reminders keep quiet in the night alerts' window
+            store.settings.map { it.night.fromMin to it.night.toMin }.distinctUntilChanged(),
             alertSettings.flow(SurfaceSettings.CountdownHours),
             alertSettings.flow(SurfaceSettings.StatusChip),
-        ) { config, hours, chip -> SensorEndSettings(config, hours.toInt(), chip) }
+        ) { config, night, hours, chip -> SensorEndSettings(config.withNight(night.first, night.second), hours.toInt(), chip) }
             .distinctUntilChanged()
             // a settings store that fails must never take the service down: the defaults hold
             .catch {

@@ -5,7 +5,7 @@ import Foundation
 import SukraraCore
 import os
 
-/// Where the Juggluco source is, in the app's words (Settings › General › Source and the panel).
+/// Where the Juggluco source is, in the app's words (Settings › Following and the panel).
 public enum LanState: Sendable, Equatable {
     /// The switch is off (or this Mac follows someone: following wins).
     case off

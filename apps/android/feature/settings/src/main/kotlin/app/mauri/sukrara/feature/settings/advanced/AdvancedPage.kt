@@ -79,8 +79,9 @@ sealed interface SettingsImport {
 }
 
 /**
- * Settings › Advanced from the rest of the app: the relays and identity, *Check now* (reconnect to the relays at
- * once, which also fetches waiting requests), the diagnostic log and the settings file (export / import / reset).
+ * Settings › Advanced and Import and export from the rest of the app: the relays and identity, *Check now* (reconnect
+ * to the relays at once, which also fetches waiting requests), the diagnostic log and the settings file (export /
+ * import / reset; on Import and export).
  */
 interface AdvancedPort {
     val state: Flow<AdvancedState>
@@ -114,17 +115,53 @@ interface AdvancedPort {
 /** The settings file's name: `sukrara-settings-2026-10-28.json`. */
 internal fun settingsFileName(today: LocalDate): String = "sukrara-settings-$today.json"
 
-/** Settings › Advanced with its file pickers; results show as a snackbar. */
+/** Settings › Advanced: relays with *Check now* (a snackbar says it), the log, the identity, the statistics. */
 @Composable
 fun AdvancedScreen(
     port: AdvancedPort,
-    today: () -> LocalDate,
     openLog: () -> Unit,
-    /** The threshold review: after new alert settings (import, reset) the person checks what alerts them now. */
-    openReview: () -> Unit,
     onBack: () -> Unit,
 ) {
     val state by port.state.collectAsStateWithLifecycle(AdvancedState())
+    val checking = stringResource(R.string.st_adv_checking)
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    AdvancedContent(
+        state,
+        AdvancedActions(
+            checkNow = {
+                port.checkNow()
+                scope.launch {
+                    snackbar.showSnackbar(
+                        checking,
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Short,
+                    )
+                }
+            },
+            openLog = openLog,
+        ),
+        snackbar,
+        onBack,
+    )
+}
+
+/**
+ * Settings › Import and export with its file pickers (docs/35 §7: the settings file left Advanced; it isn't an advanced
+ * feature): Export data and Import history ([dataRows], `:integrations`' rows the app draws), the settings file (export,
+ * import, reset; results show as a snackbar, new alert settings open the threshold review: [openReview]) and *See
+ * also* the other data pages ([links]).
+ */
+@Composable
+fun ImportExportScreen(
+    port: AdvancedPort,
+    today: () -> LocalDate,
+    /** The threshold review: after new alert settings (import, reset) the person checks what alerts them now. */
+    openReview: () -> Unit,
+    onBack: () -> Unit,
+    dataRows: @Composable () -> Unit = {},
+    links: @Composable () -> Unit = {},
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -174,9 +211,8 @@ fun AdvancedScreen(
                 if (result is SettingsImport.Done && result.alertsChanged) openReview()
             }
         }
-    AdvancedContent(
-        state,
-        AdvancedActions(
+    ImportExportContent(
+        SettingsFileActions(
             export = { exporter.launch(settingsFileName(today())) },
             import = { importer.launch(arrayOf(MIME, "text/plain", "*/*")) },
             reset = {
@@ -186,47 +222,35 @@ fun AdvancedScreen(
                     openReview()
                 }
             },
-            checkNow = {
-                port.checkNow()
-                say(res.getString(R.string.st_adv_checking))
-            },
-            openLog = openLog,
         ),
-        snackbar,
         onBack,
+        snackbar,
+        dataRows,
+        links,
     )
 }
 
-private const val MIME = "application/json"
-
-/** A settings file is a few KB: anything over this isn't one (and isn't read into memory). */
-private const val MAX_BYTES = 1_000_000
-
-private const val TOO_BIG = "\u0000too big"
-
-private fun readSmall(input: java.io.InputStream): String {
-    val bytes = input.readNBytes(MAX_BYTES + 1)
-    return if (bytes.size > MAX_BYTES) TOO_BIG else bytes.decodeToString()
-}
-
-class AdvancedActions(
+/** The settings file's three actions. */
+class SettingsFileActions(
     val export: () -> Unit = {},
     val import: () -> Unit = {},
     val reset: () -> Unit = {},
-    val checkNow: () -> Unit = {},
-    val openLog: () -> Unit = {},
 )
 
-/** Settings › Advanced: the settings file, the relays with *Check now*, the log and the identity, the statistics. */
+/**
+ * Settings › Import and export: the data files ([dataRows]: Import history on the wearer's phone, Export data), the
+ * settings file (export, import, reset: asks first), what the page is for, and *See also* the other data pages.
+ */
 @Composable
-fun AdvancedContent(
-    state: AdvancedState,
-    actions: AdvancedActions,
-    snackbar: SnackbarHostState? = null,
+fun ImportExportContent(
+    actions: SettingsFileActions,
     onBack: () -> Unit,
+    snackbar: SnackbarHostState? = null,
+    dataRows: @Composable () -> Unit = {},
+    links: @Composable () -> Unit = {},
 ) {
-    val haptics = rememberHaptics()
-    SettingsPage(stringResource(R.string.st_adv_title), onBack, snackbar = snackbar) {
+    SettingsPage(stringResource(R.string.st_files_title), onBack, snackbar = snackbar) {
+        dataRows()
         SettingsGroup(title = stringResource(R.string.st_adv_file)) {
             NavigationRow(
                 stringResource(R.string.st_adv_export),
@@ -251,6 +275,38 @@ fun AdvancedContent(
             )
         }
         FooterText(stringResource(R.string.st_adv_footer))
+        FooterText(stringResource(R.string.st_files_footer))
+        links()
+    }
+}
+
+private const val MIME = "application/json"
+
+/** A settings file is a few KB: anything over this isn't one (and isn't read into memory). */
+private const val MAX_BYTES = 1_000_000
+
+private const val TOO_BIG = "\u0000too big"
+
+private fun readSmall(input: java.io.InputStream): String {
+    val bytes = input.readNBytes(MAX_BYTES + 1)
+    return if (bytes.size > MAX_BYTES) TOO_BIG else bytes.decodeToString()
+}
+
+class AdvancedActions(
+    val checkNow: () -> Unit = {},
+    val openLog: () -> Unit = {},
+)
+
+/** Settings › Advanced: the relays with *Check now*, the log and the identity, the statistics. */
+@Composable
+fun AdvancedContent(
+    state: AdvancedState,
+    actions: AdvancedActions,
+    snackbar: SnackbarHostState? = null,
+    onBack: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    SettingsPage(stringResource(R.string.st_adv_title), onBack, snackbar = snackbar) {
         SettingsGroup(title = stringResource(R.string.st_adv_relays)) {
             if (state.relays.isEmpty()) {
                 InfoRow(

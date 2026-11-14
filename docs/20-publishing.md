@@ -1167,7 +1167,7 @@ answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
 | Short description (≤ 80) | `Your glucose in status bar and home screen widget. Discreet alarms, cool sounds` (79) | `Tu glucosa en la barra de estado y en widgets. Alarmas discretas, sonidos chulos` (80) |
-| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art) | the same |
+| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). The upload in Play Console is the earlier render (glyph at 2/3 size, #210): replace it once the production review is through, not during it | the same |
 | Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |

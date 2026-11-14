@@ -9,8 +9,50 @@ import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.TirRange
 import app.mauri.sukrara.settings.SettingsSpec
 
-/** Where a chart is shown; each place can follow the default window or have its own. */
-enum class GraphPlace { APP, NOTIFICATION, WIDGETS }
+/**
+ * Where a chart is shown. The app's own values are the shared ones ([GraphConfig.appHours], [GraphConfig.appSensorTime]);
+ * only the places in [OWN] can have their own (docs/38).
+ */
+enum class GraphPlace {
+    APP,
+    NOTIFICATION,
+    WIDGETS,
+    ;
+
+    companion object {
+        /**
+         * The places that can differ from the app, in page order: the schema's `places.android` of `graph.hours.place`
+         * and `graph.sensorTime.place` (GraphSettingsTest reads it), whose comma list of keys holds one per place.
+         */
+        val OWN_NAMES = listOf("NOTIFICATION", "WIDGETS")
+
+        val OWN: List<GraphPlace> = OWN_NAMES.map(::valueOf)
+    }
+}
+
+/**
+ * A place's own value of a switch the app sets (schema option `placeOverride`, docs/38): [SAME] follows the app,
+ * [ON] / [OFF] are the place's own. [on] = the place's own value, null = the app's.
+ */
+enum class PlaceOverride(
+    val key: String,
+    val on: Boolean?,
+) {
+    SAME("same", null),
+    ON("on", true),
+    OFF("off", false),
+    ;
+
+    companion object {
+        val keys: Set<String> = entries.map { it.key }.toSet()
+
+        /** A stored name; unknown = [SAME]. */
+        fun of(key: String): PlaceOverride = entries.firstOrNull { it.key == key } ?: SAME
+
+        /** A place's own value (null = the app's) as stored. */
+        fun of(on: Boolean?): PlaceOverride = entries.first { it.on == on }
+    }
+}
 
 /**
  * Everything the graph and slot settings decide (contracts/settings/settings.json `graph.*`), with the schema's
@@ -19,8 +61,9 @@ enum class GraphPlace { APP, NOTIFICATION, WIDGETS }
  */
 data class GraphConfig(
     val bands: Bands = Bands(),
-    val defaultHours: Int = SettingsSpec.GRAPH_HOURS.default.toInt(),
-    /** Per place; absent = [defaultHours]. */
+    /** The app's time shown (`graph.hours`): the shared one, every place without its own follows it. */
+    val appHours: Int = SettingsSpec.GRAPH_HOURS.default.toInt(),
+    /** The places in [GraphPlace.OWN] with their own time shown (`graph.hours.place`); absent = [appHours]. */
     val placeHours: Map<GraphPlace, Int> = emptyMap(),
     /** How many slots show (0–3) of [slots], main first. */
     val ringCount: Int = SettingsSpec.RING_COUNT.default.toInt(),
@@ -37,8 +80,10 @@ data class GraphConfig(
     val lastPlace: LastPlace = LastPlace.NEAR_VALUE,
     /** What the last-treatment slot shows while there's no recent treatment (null = nothing). */
     val lastElse: RingSpec? = DEFAULT_LAST_ELSE,
-    /** Places whose card leaves out the sensor's time left. */
-    val sensorHidden: Set<GraphPlace> = emptySet(),
+    /** Whether the app's card shows the sensor's time left (`graph.sensorTime`): every place without its own follows it. */
+    val appSensorTime: Boolean = true,
+    /** The places in [GraphPlace.OWN] with their own (`graph.sensorTime.place` On / Off); absent = [appSensorTime]. */
+    val sensorPlace: Map<GraphPlace, Boolean> = emptyMap(),
     val marks: MarkShow = MarkShow.DEFAULT,
     /**
      * The glucose unit every number is written in (`general.unit`, not mirrored: each device keeps its own;
@@ -46,10 +91,10 @@ data class GraphConfig(
      */
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
 ) {
-    fun sensorTime(p: GraphPlace) = p !in sensorHidden
+    fun sensorTime(p: GraphPlace) = sensorPlace[p] ?: appSensorTime
 
-    /** The place's window; 0 in the schema means "same as the default". */
-    fun hours(p: GraphPlace) = placeHours[p]?.takeIf { it > 0 } ?: defaultHours
+    /** The place's window; 0 in the schema means "same as the app". */
+    fun hours(p: GraphPlace) = placeHours[p]?.takeIf { it > 0 } ?: appHours
 
     /** [lastElse] with the ring settings applied. */
     fun lastElseRing() = lastElse?.copy(range = ringRange, order = ringOrder, marks = ringMarks)
@@ -71,14 +116,14 @@ data class GraphConfig(
             unit = unit,
         )
 
-    /** The app's home panel: the APP place's window and sensor time, the rings and last-treatment slot. */
+    /** The app's home panel: the app's window and sensor time, the rings and last-treatment slot. */
     fun appPanelStyle() =
         CardStyle(
-            graph = graphStyle(hours(GraphPlace.APP)),
+            graph = graphStyle(appHours),
             rings = rings(),
             last = lastPlace,
             lastElse = lastElseRing(),
-            sensorTime = sensorTime(GraphPlace.APP),
+            sensorTime = appSensorTime,
             bands = bands,
             unit = unit,
         )
