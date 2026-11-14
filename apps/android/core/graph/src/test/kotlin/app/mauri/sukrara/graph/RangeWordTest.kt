@@ -36,9 +36,12 @@ class RangeWordTest {
         return GlucoseCard.draw(Canvas(bmp), w, h, model, st, GraphPalette.of(false), 1f, CardSurface.TEST, CardPart.ALL)
     }
 
-    @Test fun `a low without a pill says Low under the value`() {
+    private fun word(lay: CardLayout) = lay.first("value.range")?.info?.substringBefore(" [")
+
+    @Test fun `a low without a pill says Low with the value`() {
         val lay = draw(Scenes.model(Scenes.day(64, swing = 6), Scenes.words()))
-        assertEquals("low [row]", lay.first("value.range")?.info)
+        // under the value, or beside it where the number keeps its size that way (contracts/graph "The value with a pill")
+        assertEquals("low", word(lay))
         assertNull(lay.first("value.status"))
     }
 
@@ -47,14 +50,14 @@ class RangeWordTest {
         assertEquals("Baja", es.range(RangeState.LOW))
         assertEquals("Muy alta", es.range(RangeState.VERY_HIGH))
         val lay = draw(Scenes.model(Scenes.day(262, swing = 6), es))
-        assertEquals("very_high [row]", lay.first("value.range")?.info)
+        assertEquals("very_high", word(lay))
     }
 
     @Test fun `Eat carbs says the side already, a mute pill doesn't`() {
         val needed = draw(Scenes.model(Scenes.day(64, swing = 6), Scenes.words(), status = CardStatus.Needed(lowSide = true)))
         assertNull(needed.first("value.range"))
         val paused = draw(Scenes.model(Scenes.day(64, swing = 6), Scenes.words(), status = CardStatus.Paused(true, Scenes.NOW + 600)))
-        assertEquals("low [row]", paused.first("value.range")?.info)
+        assertEquals("low", word(paused))
     }
 
     @Test fun `in range and struck values say nothing`() {

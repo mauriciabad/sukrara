@@ -11,6 +11,12 @@ import SukraraCore
 /// Value + trend arrow + rings + chart in one drawing (GlucoseCard.kt), adapting to the size.
 public enum GlucoseCard {
     static let minCoverage = 0.25
+    /// With a pill the number keeps at least this share of its size without it (contracts/graph "The value with a pill").
+    static let pillKeep: CGFloat = 0.85
+    /// A pill row's gap under the number's baseline, in pill heights (digits have no descent).
+    static let rowGap: CGFloat = 0.15
+    /// A row under the number only while the number's box keeps this height (pt; as before #36).
+    static let minRowNumber: CGFloat = 26
 
     /// Draw `part` of the card `st` for `surface` and return what was laid out. `metricsOf` gives a slot's numbers; by
     /// default computed from `readings` (enough for windows they cover). `alerts` = what the alert rules decided (the
@@ -340,20 +346,74 @@ public enum GlucoseCard {
         // not where the place around the card already says it (`CardStyle.rangeSaid`)
         let ground = rec.style.ground
         let range = rec.style.rangeSaid ? nil : RangeState.shown(face, sgv: r.sgv, bands: bands, pill: look)
-        let badgeRow = (look != nil || range != nil) && box.height - badgeH * 1.25 - smallH >= 26 * d
-        // the late time shares the badge's row (after the badge) when there is one
-        let timeH = badgeRow ? badgeH * 1.25 : smallH
-        let numBox = CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - timeH)
-        var numSize = numBox.height * 1.18
+        // A pill costs the number little (contracts/graph README "The value with a pill"; ValueFace.kt `drawNumber`):
+        // the number keeps `pillKeep` of its size without the pill or more.
+        let pill = look != nil || range != nil
         let arrowFactor: CGFloat = 0.62
-        func need() -> CGFloat { Ink.width(s, Ink.font(numSize, .bold, rounded: true)) + numSize * arrowFactor * 1.1 }
-        for _ in 0..<3 { let n = need(); if n > box.width { numSize *= box.width / n * 0.995 } }
+        // the number's size in a box `h` tall, fitted to the width too: number + arrow stay left of the slots
+        func sized(_ h: CGFloat) -> CGFloat {
+            var size = h * 1.18
+            for _ in 0..<3 {
+                let n = Ink.width(s, Ink.font(size, .bold, rounded: true)) + size * arrowFactor * 1.1
+                if n > box.width { size *= box.width / n * 0.995 }
+            }
+            return size
+        }
+        let capRatio = CTFontGetCapHeight(Ink.font(100, .bold, rounded: true)) / 100
+        // as without a pill (the late time on its own row)
+        let full = sized(box.height - smallH)
+        // a row right under the baseline: as large as without the pill, smaller only to fit the row
+        let rowSize = min(full, (box.height - badgeH * (1 + Self.rowGap)) / capRatio)
+        let iconH = min((box.height - smallH) * 0.5, 24 * d)
+        let besideNeed: CGFloat =
+            look != nil
+            ? iconH : range.map { RangeTag.width(w.rangeWord($0), h: min(iconH, 20 * d)) } ?? .greatestFiniteMagnitude
+        let wordsNeed = look.map { StatusBadge.width($0, h: iconH, short: true) } ?? besideNeed
+        func besideRoom(_ size: CGFloat) -> CGFloat {
+            box.width - (Ink.width(s, Ink.font(size, .bold, rounded: true)) + size * arrowFactor * 1.2)
+        }
+        let rowFits = rowSize >= Self.minRowNumber * 1.18 * d
+        enum PillMode { case none, row, beside, besideSmaller }
+        let mode: PillMode
+        if !pill {
+            mode = .none
+        } else if rowFits && rowSize >= full * 0.999 {
+            mode = .row  // the number as without the pill: under it
+        } else if besideRoom(full) >= wordsNeed {
+            mode = .beside  // the number as without the pill: beside it, with words
+        } else if rowFits && rowSize >= full * Self.pillKeep * 0.999 {
+            mode = .row  // a little smaller (never under pillKeep): under it
+        } else if besideRoom(full) >= besideNeed {
+            mode = .beside
+        } else if besideRoom(full * Self.pillKeep) >= besideNeed {
+            mode = .besideSmaller
+        } else if rowFits {
+            mode = .row  // the last resort: under a number as large as the row allows
+        } else {
+            mode = .none
+        }
+        let badgeRow = mode == .row
+        let numSize: CGFloat
+        switch mode {
+        case .row: numSize = rowSize
+        case .besideSmaller:
+            // as large as leaves the pill its room (text widths scale with the size)
+            let perSize = Ink.width(s, Ink.font(full, .bold, rounded: true)) / full + arrowFactor * 1.2
+            numSize = min(max((box.width - besideNeed) / perSize, full * Self.pillKeep), full)
+        default: numSize = full
+        }
         let num = Ink.font(numSize, .bold, rounded: true)
-        // no row for the badge: its icon goes beside the arrow if there's room
-        let iconH = min(numBox.height * 0.5, 24 * d)
-        let iconBadge =
-            look != nil && !badgeRow && box.width - (Ink.width(s, num) + numSize * arrowFactor * 1.2) >= iconH
         let capH = CTFontGetCapHeight(num)
+        // the number's box: the whole box but the time's own row; in a row the number and the pill as one group, centred
+        let numBox: CGRect
+        switch mode {
+        case .row:
+            let top = box.minY + (box.height - (capH + badgeH * (1 + Self.rowGap))) / 2
+            numBox = CGRect(x: box.minX, y: top, width: box.width, height: capH)
+        default:
+            numBox = CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height - smallH)
+        }
+        let iconBadge = look != nil && !badgeRow && besideRoom(numSize) >= iconH
         let baseY = numBox.midY + capH / 2
         Ink.draw(ctx, s, x: box.minX - numSize * 0.04, y: baseY, num, color, strike: fr.strike)
         rec.add(
@@ -381,7 +441,7 @@ public enum GlucoseCard {
             )
         }
         if badgeRow {
-            let top = numBox.maxY + badgeH * 0.25
+            let top = baseY + badgeH * Self.rowGap
             var tx = box.minX
             if let look {
                 // the pill keeps room for the range word: its short words or its icon rather than no word
@@ -416,20 +476,24 @@ public enum GlucoseCard {
                 }
             }
         } else {
+            // no row: the pill (its words where they fit, else its icon), then the range word, beside the arrow
+            var ix = x + arrowSize * 1.15
             if iconBadge, let look {
-                StatusBadge.draw(
-                    ctx, x: x + arrowSize * 1.15, y: numBox.midY - iconH / 2, h: iconH, maxW: iconH, look,
+                // the range word keeps its room when the pill can still say something shorter
+                let keep = range.map { RangeTag.width(w.rangeWord($0), h: min(iconH, 20 * d)) + iconH * 0.3 } ?? 0
+                let room = box.maxX - ix - keep >= iconH ? box.maxX - ix - keep : box.maxX - ix
+                let bw = StatusBadge.draw(
+                    ctx, x: ix, y: numBox.midY - iconH / 2, h: iconH, maxW: room, look,
                     dark: pal.dark,
                     knockout: pal.knockout, ground: ground)
                 rec.add(
                     "value.status",
-                    CGRect(x: x + arrowSize * 1.15, y: numBox.midY - iconH / 2, width: iconH, height: iconH),
-                    "\(look.kind) [icon]")
+                    CGRect(x: ix, y: numBox.midY - iconH / 2, width: bw, height: iconH),
+                    "\(look.kind) [beside]")
+                ix += bw + iconH * 0.3
             } else if let look {
                 rec.add("value.status", nil, "\(look.kind) (no room)")
             }
-            // no row: the range word beside the arrow (after the pill's icon) when it fits
-            let ix = x + arrowSize * 1.15 + (iconBadge ? iconH * 1.3 : 0)
             if let range {
                 let th = min(iconH, 20 * d)
                 if ix + RangeTag.width(w.rangeWord(range), h: th) <= box.maxX {

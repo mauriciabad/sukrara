@@ -902,7 +902,13 @@ class CardLayoutTest {
                             if (expected == null) {
                                 boxes.isEmpty()
                             } else {
-                                expected.jsonObject.all { (n, b) ->
+                                // a box named in `differences` as "boxes.<name>" no longer matches the PoC's, on purpose
+                                val skipped =
+                                    differences
+                                        .filter { (f, scenes) ->
+                                            f.startsWith("boxes.") && sc.id in scenes
+                                        }.map { it.first.removePrefix("boxes.") }
+                                expected.jsonObject.filterKeys { it !in skipped }.all { (n, b) ->
                                     val e = b.jsonArray.map { it.double()!!.toFloat() }
                                     val g = boxes[n] as? List<*> ?: return@all false
                                     e.indices.all { abs(e[it] - (g[it] as Float)) <= tol }

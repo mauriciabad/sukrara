@@ -112,8 +112,18 @@ object Slots {
             if (countdown != null) append(" [countdown]")
         }
 
-    /** A slot as words for a text-only place (value, short label): "86%" · "in range 1d", "4.5u" · "12m ago". */
+    /**
+     * A slot as words for a text-only place (value, label): "86%" · "In range 1d", "4.5u" · "12m ago". The label stands
+     * alone (the Live Update's metric labels), so it is in sentence case like every other label there (the owner,
+     * round 3 of #36: "some places start with uppercase and some are all lowercase"), in the words' language.
+     */
     fun text(
+        item: SlotItem,
+        now: Long,
+        w: CardWords,
+    ): Pair<String, String>? = words(item, now, w)?.let { (value, label) -> value to label.replaceFirstChar { it.titlecase(w.locale) } }
+
+    private fun words(
         item: SlotItem,
         now: Long,
         w: CardWords,

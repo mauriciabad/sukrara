@@ -36,6 +36,15 @@ internal class ValueFace(
     companion object {
         /** The largest a warming-up sensor's words are drawn (dp): the size of "Sensor ended", never a value's. */
         const val WARMUP_TEXT_DP = 20f
+
+        /** With a pill the number keeps at least this share of its size without it (contracts/graph "The value with a pill"). */
+        const val PILL_KEEP = 0.85f
+
+        /** A row under the number only while the number's box keeps this height (dp; as before #36). */
+        const val MIN_ROW_NUMBER_DP = 26f
+
+        /** A pill row's gap under the number's baseline, in pill heights (digits have no descent). */
+        const val ROW_GAP = 0.15f
     }
 
     /** Draw into [box] with the status pill [look] (null = none) and the value in [ink] (null = its range colour). */
@@ -216,8 +225,13 @@ internal class ValueFace(
     }
 
     /**
-     * The number + arrow (or the "no trend" ring), and under it the pill and / or the late time. The pill takes a row
-     * when the number keeps at least 26 dp; else its icon goes beside the arrow, or it is left out.
+     * The number + arrow (or the "no trend" ring), and the pill and / or the late time. A pill costs the number little
+     * (contracts/graph README "The value with a pill", the owner 2026-11-14: "it's fine to decrease it a little"): the
+     * number keeps [PILL_KEEP] of its size without the pill or more, in this order: a row right under the number's
+     * baseline when the number keeps its whole size (the digits have no descent: the gap is [ROW_GAP] of the pill), else
+     * beside the arrow when its words fit there, else the row under a number made smaller down to [PILL_KEEP], else
+     * beside with its icon (the number down to [PILL_KEEP] if needed), else under a number as large as the row allows
+     * (while its box keeps [MIN_ROW_NUMBER_DP]), else it is left out.
      */
     private fun drawNumber(
         cv: Canvas,
@@ -245,34 +259,92 @@ internal class ValueFace(
         // not where the place around the card already says it ([CardStyle.rangeSaid]: the notification's title)
         val range = if (rec.style.rangeSaid) null else RangeState.shown(face, r.sgv, bands, look)
         val rangeText = range?.let(w::range)
-        val badgeRow =
-            (look != null || range != null) &&
-                box.height() - badgeH * 1.25f - (if (fr.showTime) small.textSize * 1.25f else 0f) >= 26 * d
-        val timeH =
-            if (badgeRow) {
-                badgeH * 1.25f
-            } else if (fr.showTime) {
-                small.textSize * 1.25f
-            } else {
-                0f
-            }
-        val numBox = RectF(box.left, box.top, box.right, box.bottom - timeH)
+        val pill = look != null || range != null
+        val timeRow = if (fr.showTime) small.textSize * 1.25f else 0f
         val num =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 this.color = color
                 typeface = RoundedFont.typeface(700)
-                textSize = numBox.height() * 1.18f
                 isStrikeThruText = fr.strike
             }
         val s = checkNotNull(face.text)
 
-        // fit the width too: number + arrow stay left of the slots
-        fun need() = num.measureText(s) + num.textSize * ValueGlyphs.MARK_BOX * 1.1f
-        repeat(3) { need().let { n -> if (n > box.width()) num.textSize *= box.width() / n * 0.995f } }
-        val iconBadge =
-            look != null && !badgeRow &&
-                box.width() - (num.measureText(s) + num.textSize * ValueGlyphs.MARK_BOX * 1.2f) >= min(numBox.height() * 0.5f, 24 * d)
+        // the number's size in a box [h] tall, fitted to the width too: number + arrow stay left of the slots
+        fun sized(h: Float): Float {
+            num.textSize = h * 1.18f
+            repeat(3) {
+                val n = num.measureText(s) + num.textSize * ValueGlyphs.MARK_BOX * 1.1f
+                if (n > box.width()) num.textSize *= box.width() / n * 0.995f
+            }
+            return num.textSize
+        }
+        // as without a pill (the late time on its own row)
+        val full = sized(box.height() - timeRow)
+        // a row right under the baseline: the number as large as without the pill, smaller only to fit the row
+        val rowSize = min(full, (box.height() - badgeH * (1 + ROW_GAP)) / ValueGlyphs.CAP)
+        // what is left beside the number + arrow at [size] for the pill's icon at least
+        val iconH = min((box.height() - timeRow) * 0.5f, 24 * d)
+
+        // beside: the pill's icon at least, or the range word alone
+        val besideNeed = if (look != null) iconH else rangeText?.let { RangeTag.width(it, min(iconH, 20 * d)) } ?: Float.MAX_VALUE
+
+        fun besideRoom(size: Float) = box.width() - (num.apply { textSize = size }.measureText(s) + size * ValueGlyphs.MARK_BOX * 1.2f)
+        // beside with words: the pill's short words (a range word alone is words)
+        val wordsNeed = look?.let { StatusBadge.width(it, iconH, pal.dark, short = true) } ?: besideNeed
+        val rowFits = rowSize >= MIN_ROW_NUMBER_DP * 1.18f * d
+        val mode =
+            when {
+                !pill -> PillMode.NONE
+
+                // the number as without the pill: under it
+                rowFits && rowSize >= full * 0.999f -> PillMode.ROW
+
+                // the number as without the pill: beside it, with words
+                besideRoom(full) >= wordsNeed -> PillMode.BESIDE
+
+                // the number a little smaller (never under PILL_KEEP): under it
+                rowFits && rowSize >= full * PILL_KEEP * 0.999f -> PillMode.ROW
+
+                besideRoom(full) >= besideNeed -> PillMode.BESIDE
+
+                besideRoom(full * PILL_KEEP) >= besideNeed -> PillMode.BESIDE_SMALLER
+
+                // the last resort: under a number as large as the row allows
+                rowFits -> PillMode.ROW
+
+                else -> PillMode.NONE
+            }
+        val badgeRow = mode == PillMode.ROW
+        num.textSize =
+            when (mode) {
+                PillMode.ROW -> {
+                    rowSize
+                }
+
+                // as large as leaves the pill its room (text widths scale with the size)
+                PillMode.BESIDE_SMALLER -> {
+                    val perSize = num.apply { textSize = full }.measureText(s) / full + ValueGlyphs.MARK_BOX * 1.2f
+                    ((box.width() - besideNeed) / perSize).coerceIn(full * PILL_KEEP, full)
+                }
+
+                else -> {
+                    full
+                }
+            }
         val capH = num.textSize * ValueGlyphs.CAP
+        // the number's box: the whole box but the time's own row; in a row the number and the pill as one group, centred
+        val numBox =
+            when (mode) {
+                PillMode.ROW -> {
+                    val top = box.top + (box.height() - (capH + badgeH * (1 + ROW_GAP))) / 2
+                    RectF(box.left, top, box.right, top + capH)
+                }
+
+                else -> {
+                    RectF(box.left, box.top, box.right, box.bottom - timeRow)
+                }
+            }
+        val iconBadge = look != null && !badgeRow && besideRoom(num.textSize) >= iconH
         val cy = numBox.centerY()
         val baseY = cy + capH / 2
         val x0 = box.left - num.textSize * 0.04f
@@ -324,7 +396,7 @@ internal class ValueFace(
         }
         val time = if (fr.showTime) Freshness.timeText(r.t, nowS) else null
         if (badgeRow) {
-            val top = numBox.bottom + badgeH * 0.25f
+            val top = baseY + badgeH * ROW_GAP
             var rx = box.left
             if (look != null) {
                 // the pill keeps room for the range word: its short words or its icon rather than no word
@@ -356,13 +428,16 @@ internal class ValueFace(
             }
             return
         }
-        // no row: the pill's icon, then the range word, beside the arrow when they fit
-        val ih = min(numBox.height() * 0.5f, 24 * d)
+        // no row: the pill (its words where they fit, else its icon), then the range word, beside the arrow
+        val ih = iconH
         var ix = x + arrowSize * 1.15f
         if (iconBadge && look != null) {
-            StatusBadge.draw(cv, ix, cy - ih / 2, ih, ih, look, pal.dark, ground)
-            rec.add("value.status", RectF(ix, cy - ih / 2, ix + ih, cy + ih / 2), "${look.kind} [icon]")
-            ix += ih * 1.3f
+            // the range word keeps its room when the pill can still say something shorter
+            val keep = rangeText?.let { RangeTag.width(it, min(ih, 20 * d)) + ih * 0.3f } ?: 0f
+            val room = (box.right - ix).let { if (it - keep >= ih) it - keep else it }
+            val bw = StatusBadge.draw(cv, ix, cy - ih / 2, ih, room, look, pal.dark, ground)
+            rec.add("value.status", RectF(ix, cy - ih / 2, ix + bw, cy + ih / 2), "${look.kind} [beside]")
+            ix += bw + ih * 0.3f
         } else if (look != null) {
             rec.add("value.status", info = "${look.kind} (no room)")
         }
@@ -380,6 +455,9 @@ internal class ValueFace(
             rec.add("time.text", info = time)
         }
     }
+
+    /** Where the pill goes ([drawNumber]). */
+    private enum class PillMode { NONE, ROW, BESIDE, BESIDE_SMALLER }
 
     /** Each digit that changed slides out and the new one in (up for a rising value), clipped to the number's line. */
     private fun rollNumber(

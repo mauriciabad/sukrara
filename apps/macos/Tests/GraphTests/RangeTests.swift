@@ -124,15 +124,21 @@ private let now = GraphFixtures.now
             surface: .test, part: .all, alerts: CardAlerts(status: status))
     }
 
-    @Test func aLowWithoutAPillSaysLowUnderTheValue() {
+    /// The word without its placement: under the value, or beside it where the number keeps its size that way
+    /// (contracts/graph "The value with a pill").
+    private func word(_ lay: CardLayout) -> String? {
+        lay.first("value.range").map { String($0.info.split(separator: " [").first ?? "") }
+    }
+
+    @Test func aLowWithoutAPillSaysLowWithTheValue() {
         let lay = draw(readings(64))
-        #expect(lay.first("value.range")?.info == "low [row]")
+        #expect(word(lay) == "low")
         #expect(lay.first("value.status") == nil)
     }
 
     @Test func eatCarbsSaysTheSideAlreadyAMutePillDoesnt() {
         #expect(draw(readings(64), .needed(.low)).first("value.range") == nil)
-        #expect(draw(readings(64), .paused(.low, until: now + 600)).first("value.range")?.info == "low [row]")
+        #expect(word(draw(readings(64), .paused(.low, until: now + 600))) == "low")
     }
 
     @Test func inRangeAndStruckValuesSayNothing() {
@@ -141,7 +147,7 @@ private let now = GraphFixtures.now
     }
 
     @Test func veryHighIsSaidApartFromLow() {
-        #expect(draw(readings(262)).first("value.range")?.info == "very_high [row]")
+        #expect(word(draw(readings(262))) == "very_high")
     }
 
     /// A title around the card that names the level alert (Android's notification) says the range: no word, the pill
@@ -149,6 +155,48 @@ private let now = GraphFixtures.now
     @Test func aTitleThatNamesTheRangeDropsTheWordAndKeepsThePill() {
         let lay = draw(readings(64), .paused(.low, until: now + 600), rangeSaid: true)
         #expect(lay.first("value.range") == nil)
-        #expect(lay.first("value.status")?.info == "carbs [row]")
+        #expect(lay.first("value.status")?.info.hasPrefix("carbs") == true)
+    }
+}
+
+/// contracts/graph README "The value with a pill" (round 3 of #36; the owner: "it's fine to decrease it a little"):
+/// with a pill or the range word the number keeps at least 85 % of its height without one (Android PillValueSizeTest).
+@Suite struct PillValueSizeTests {
+    private func readings(_ v: Double) -> [GraphReading] {
+        (1...24).reversed().map { GraphReading(t: now - 60 - Double($0) * 300, v: v, rate: 0) }
+            + [GraphReading(t: now - 60, v: v, rate: -0.4)]
+    }
+
+    private func numberH(_ v: Double, _ status: AlertStatus, size: CGSize, rangeSaid: Bool, part: CardPart) -> CGFloat {
+        var st = CardSurface.widgetValue.style(GraphConfig(), sensor: nil)
+        st.rangeSaid = rangeSaid
+        let lay = GlucoseCard.draw(
+            cardContext(size), size: size, readings: readings(v), marks: [], now: now, st, GraphPalette.of(dark: false),
+            surface: .test, part: part, alerts: CardAlerts(status: status))
+        return lay.first("value.number")?.box?.height ?? 0
+    }
+
+    private func keeps(_ size: CGSize, part: CardPart, v: Double = 64) {
+        let bare = numberH(v, .none, size: size, rangeSaid: true, part: part)
+        #expect(bare > 0)
+        let side: AlertStatus.Side = v < 100 ? .low : .high
+        for status in [AlertStatus.needed(side), .paused(side, until: now + 1800)] {
+            let with = numberH(v, status, size: size, rangeSaid: false, part: part)
+            #expect(with >= bare * GlucoseCard.pillKeep - 0.5, "\(size) \(status): \(with / bare)")
+        }
+        let word = numberH(v, .none, size: size, rangeSaid: false, part: part)
+        #expect(word >= bare * GlucoseCard.pillKeep - 0.5, "\(size) range word: \(word / bare)")
+    }
+
+    @Test func theNotificationValueBoxKeepsTheNumberLarge() {
+        keeps(CGSize(width: 151, height: 48), part: .value)
+        keeps(CGSize(width: 171, height: 40), part: .value)
+        // (SF's "Very high" is wider than Android's: the Mac, which has no notification card, keeps 80 % there)
+    }
+
+    @Test func theWidgetsKeepTheNumberLarge() {
+        keeps(CGSize(width: 170, height: 80), part: .all)
+        keeps(CGSize(width: 250, height: 80), part: .all)
+        keeps(CGSize(width: 250, height: 80), part: .all, v: 262)
     }
 }
