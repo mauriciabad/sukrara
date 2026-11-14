@@ -59,7 +59,7 @@
     <!-- Nightscout API on this phone -->
     <string name="in_nsapi_title">Nightscout API on this phone</string>
     <string name="in_nsapi_intro">Apps on this phone that read a Nightscout site (xDrip+, GlucoDataHandler, watch faces) can read your glucose and entries from here instead, without the internet. They need the API secret below.</string>
-    <string name="in_nsapi_switch">Nightscout API</string>
+    <string name="in_nsapi_switch">Share with apps on this phone</string>
     <string name="in_nsapi_off">Off</string>
     <string name="in_nsapi_on">On · http://127.0.0.1:17581</string>
     <string name="in_nsapi_busy">Another app uses port 17581 · turn its server off, then this one off and on</string>
@@ -239,6 +239,7 @@
     <string name="in_nsapi_lan_group">On your home Wi-Fi</string>
     <string name="in_nsapi_lan_switch">Also on this Wi-Fi</string>
     <string name="in_nsapi_lan_off">Off · only apps on this phone can read it</string>
+    <string name="in_nsapi_lan_needs_api">Turn on sharing with apps on this phone first</string>
     <string name="in_nsapi_lan_starting">Starting…</string>
     <string name="in_nsapi_lan_on">On · http://%1$s:17581 for devices on this Wi-Fi</string>
     <string name="in_nsapi_lan_no_wifi">Paused · the phone isn\'t on Wi-Fi</string>

@@ -69,6 +69,8 @@ class AlertsActions(
     /** *See also*: Alert reliability and Readings (the ranges, separate from the alert levels). */
     val openReliability: () -> Unit = {},
     val openReadings: () -> Unit = {},
+    /** Settings › Alerts › one quiet rule. */
+    val openQuiet: (QuietKind) -> Unit = {},
 )
 
 /** The alert rows' groups: lows, highs, rates, signal. */
@@ -255,36 +257,9 @@ fun AlertsSettingsContent(
                 )
             }
         }
+        // each quiet rule: the switch turns it on or off, the row opens its page (its length, what it does)
         SettingsGroup(title = stringResource(R.string.st_quiet_title)) {
-            for (which in QuietKind.entries) {
-                val rule = AlertEdits.quietRule(s, which)
-                val spec = SchemaPrefs.spec(AlertEdits.quietSpecId(which))
-                SwitchRow(
-                    stringResource(
-                        when (which) {
-                            QuietKind.AfterInsulin -> R.string.st_quiet_insulin
-                            QuietKind.AfterCarbs -> R.string.st_quiet_carbs
-                            QuietKind.FallingHigh -> R.string.st_quiet_falling
-                            QuietKind.RisingLow -> R.string.st_quiet_rising
-                        },
-                    ),
-                    rule.on,
-                    { on -> actions.edit(AlertEdits.quiet(which) { it.copy(on = on) }) },
-                    summary =
-                        stringResource(
-                            if (which.byTrend) R.string.st_quiet_within_summary else R.string.st_quiet_for,
-                            numberLabel(spec, rule.min.toDouble()),
-                        ),
-                    icon = quietIcon(which),
-                    readOnly = ui.mirrored,
-                )
-                if (rule.on) {
-                    ValueRow(stringResource(quietLengthTitle(which)), numberLabel(spec, rule.min.toDouble()), {
-                        dialog =
-                            "quiet:${which.name}"
-                    }, icon = DsR.drawable.ds_ic_timer, readOnly = ui.mirrored)
-                }
-            }
+            for (which in QuietKind.entries) QuietRuleRow(ui, which, actions.edit) { actions.openQuiet(which) }
         }
 
         SettingsGroup(title = stringResource(R.string.st_sounds_title)) {
@@ -375,16 +350,6 @@ private fun AlertsDialogs(
                 { label(spec, it) },
                 close,
             ) { actions.muteAll(it) }
-        }
-
-        dialog.startsWith("quiet:") -> {
-            val which = QuietKind.valueOf(dialog.removePrefix("quiet:"))
-            val spec = SchemaPrefs.spec(AlertEdits.quietSpecId(which))
-            NumberDialog(stringResource(quietLengthTitle(which)), NumberInput(spec), AlertEdits.quietRule(s, which).min.toDouble(), {
-                label(spec, it)
-            }, close) { v ->
-                actions.edit(AlertEdits.quiet(which) { it.copy(min = spec.coerce(v).toInt()) })
-            }
         }
 
         dialog == "escalateMin" -> {

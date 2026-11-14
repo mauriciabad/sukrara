@@ -556,6 +556,7 @@
     <string name="sh_interval_every">Every %1$s</string>
     <string name="sh_interval_unavailable">Sharing over the internet is off</string>
     <string name="sh_nearby_title">Over Bluetooth nearby</string>
+    <string name="sh_nearby_use">Share over Bluetooth nearby</string>
     <string name="sh_nearby_off">Off. Followers get readings over the internet.</string>
     <string name="sh_nearby_off_no_internet">Off. Followers get no new readings.</string>
     <string name="sh_nearby_bluetooth_off">Bluetooth is off</string>

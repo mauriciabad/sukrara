@@ -377,6 +377,8 @@
                 ))
             // Alerts › Fine-tuning… and Falling fast's Details… (its trend arrow is Readings' setting)
             out.append(("alerts-fine-tuning", AnyView(FineTuning(model: own) {})))
+            // a quiet rule's Details…: its switch, its length and what it does
+            out.append(("alerts-quiet-details", AnyView(QuietDetails(model: own, which: .afterCarbs) {})))
             out.append(
                 (
                     "alerts-details-falling-fast",

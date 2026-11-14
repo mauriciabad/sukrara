@@ -612,6 +612,18 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       row opens its page and Back returns: Alerts ↔ Alert reliability, Alerts ↔ Readings, Rings → Readings, Graph's
       *Ranges* → Readings, Sensor ↔ Sensor end, Night alerts → Sensor end (wearer), and Sharing / Share with apps /
       Backup / Import and export link the other three (no Backup on a follower). TalkBack reads every link row.
+- [ ] A switch with its own options (owner 2026-11-14), light and dark, English and Spanish, wearer and follower: no
+      row anywhere appears or disappears under a switch. Alerts › *Quiet times*: four two-target rows (switch + summary
+      *For 1 h* / *Back in range within 20 min* / *Off*); the switch toggles without opening, the row opens the rule's
+      page (*Use this quiet time*, its length greyed while off, what it does); search *how long* / *back in range
+      within* opens the rule's page with the row flashed, Back walks up through Alerts. Sharing › *Over Bluetooth
+      nearby*: the same row (a warning row while Bluetooth is off or the permission is missing); its page has *Share over
+      Bluetooth nearby*, the fix row, *Pair nearby* (greyed while off, an open pairing keeps its switch) and the devices
+      nearby (a device opens its follower). Share with apps › Nightscout API: *Share with apps on this phone* is the
+      main switch; *Also on this Wi-Fi* stays visible, greyed with *Turn on … first* while it is off. Mac Alerts › Quiet
+      times: each rule is a row with its summary, *Details…* and its switch; the sheet has the switch, the length (greyed
+      while off) and what it does; Done and Esc close it; VoiceOver reads *… details* on the button. TalkBack reads the
+      row and its switch as two nodes.
 - [ ] Mac panes (#205): the toolbar shows General, Following, Alerts, Readings (drop), Graph, Rings in that order, each
       tooltip names what it holds and the window resizes per pane (no animation with Reduce Motion). Readings: change a
       range → Graph's *Ranges* row and the menu bar colour follow; *Alert Levels…* opens Alerts; in Wearer / Default the

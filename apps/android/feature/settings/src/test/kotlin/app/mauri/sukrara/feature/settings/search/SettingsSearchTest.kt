@@ -22,6 +22,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsHighlight
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import org.junit.After
@@ -148,6 +149,22 @@ class SettingsSearchTest {
         assertEquals(context.getString(R.string.st_lock_time), SettingsSearch.match("timer", index()).first().title)
     }
 
+    /** A quiet rule's row opens its page; its length is found there, flashed, through Alerts › the rule. */
+    @Test
+    fun quietRuleLengthIsOnTheRulesPage() {
+        val carbs = SettingsSearch.match("quiet lows after carbs", index()).first()
+        assertEquals(SearchTarget.Page(SettingsRoute.QuietRulePage(QuietKind.AfterCarbs)), carbs.target)
+        assertEquals(null, carbs.highlight)
+        val within = SettingsSearch.match("back in range within", index())
+        val falling = within.first { it.target == SearchTarget.Page(SettingsRoute.QuietRulePage(QuietKind.FallingHigh)) }
+        assertEquals("Alerts › Quiet highs falling back into range", falling.where)
+        assertEquals("Back in range within", falling.highlight)
+        assertEquals(
+            listOf(SettingsRoute.Alerts, SettingsRoute.QuietRulePage(QuietKind.FallingHigh)),
+            SettingsIndex.path(SettingsRoute.QuietRulePage(QuietKind.FallingHigh)),
+        )
+    }
+
     /** #205: the pages' old names still find where they moved (muscle memory), in both languages' words. */
     @Test
     fun oldPageNamesFindTheNewPages() {
@@ -188,7 +205,8 @@ class SettingsSearchTest {
                 SettingsRoute.ThresholdReview,
                 SettingsRoute.Advanced,
                 SettingsRoute.SettingsFrom,
-            ) + AlertKind.entries.map(SettingsRoute::AlertKindPage) + AlertKind.entries.map(SettingsRoute::NightKindPage)
+            ) + AlertKind.entries.map(SettingsRoute::AlertKindPage) + AlertKind.entries.map(SettingsRoute::NightKindPage) +
+                QuietKind.entries.map(SettingsRoute::QuietRulePage)
         val targets = SettingsIndex.entries.map { it.target }.toSet()
         for (p in pages) assertTrue("$p has no search entries", SearchTarget.Page(p) in targets)
         // Export data and Import history are `:integrations`' rows on Import and export: the app's AppsSearch lists them

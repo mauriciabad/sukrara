@@ -7,6 +7,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.designsystem.rows.nameRes
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import kotlinx.serialization.json.Json
@@ -75,13 +76,13 @@ class SchemaSearchTest {
             put("alerts.kind.alarm", R.string.st_alarm to page(SettingsRoute.AlertKindPage(low)))
             put("alerts.kind.sound", R.string.st_sound to page(SettingsRoute.AlertKindPage(low)))
             put("alerts.muteAfterInsulin.on", R.string.st_quiet_insulin to page(SettingsRoute.Alerts))
-            put("alerts.muteAfterInsulin.min", R.string.st_quiet_insulin to page(SettingsRoute.Alerts))
+            put("alerts.muteAfterInsulin.min", R.string.st_quiet_length to page(SettingsRoute.QuietRulePage(QuietKind.AfterInsulin)))
             put("alerts.muteFallingHigh.on", R.string.st_quiet_falling to page(SettingsRoute.Alerts))
-            put("alerts.muteFallingHigh.min", R.string.st_quiet_falling to page(SettingsRoute.Alerts))
+            put("alerts.muteFallingHigh.min", R.string.st_quiet_within to page(SettingsRoute.QuietRulePage(QuietKind.FallingHigh)))
             put("alerts.muteRisingLow.on", R.string.st_quiet_rising to page(SettingsRoute.Alerts))
-            put("alerts.muteRisingLow.min", R.string.st_quiet_rising to page(SettingsRoute.Alerts))
+            put("alerts.muteRisingLow.min", R.string.st_quiet_within to page(SettingsRoute.QuietRulePage(QuietKind.RisingLow)))
             put("alerts.muteAfterCarbs.on", R.string.st_quiet_carbs to page(SettingsRoute.Alerts))
-            put("alerts.muteAfterCarbs.min", R.string.st_quiet_carbs to page(SettingsRoute.Alerts))
+            put("alerts.muteAfterCarbs.min", R.string.st_quiet_length to page(SettingsRoute.QuietRulePage(QuietKind.AfterCarbs)))
             put("alerts.persistence.lowMin", R.string.st_wait_low to page(SettingsRoute.AlertsFineTuning))
             put("alerts.persistence.highMin", R.string.st_wait_high to page(SettingsRoute.AlertsFineTuning))
             put("alerts.persistence.marginMgdl", R.string.st_wait_margin to page(SettingsRoute.AlertsFineTuning))

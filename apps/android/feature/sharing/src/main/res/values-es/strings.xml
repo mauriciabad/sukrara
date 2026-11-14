@@ -428,6 +428,7 @@
     <string name="sh_interval_every">Cada %1$s</string>
     <string name="sh_interval_unavailable">Compartir por internet está desactivado</string>
     <string name="sh_nearby_title">Por Bluetooth cerca</string>
+    <string name="sh_nearby_use">Compartir por Bluetooth cerca</string>
     <string name="sh_nearby_off">Desactivado. Los seguidores reciben las lecturas por internet.</string>
     <string name="sh_nearby_off_no_internet">Desactivado. Los seguidores no reciben lecturas nuevas.</string>
     <string name="sh_nearby_bluetooth_off">El Bluetooth está desactivado</string>

@@ -47,17 +47,11 @@ import app.mauri.sukrara.designsystem.rows.NumberButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
-import app.mauri.sukrara.feature.sharing.BLOCKED
-import app.mauri.sukrara.feature.sharing.NearbyDevices
-import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.NearbyUi
-import app.mauri.sukrara.feature.sharing.PairNearbyRow
 import app.mauri.sukrara.feature.sharing.R
-import app.mauri.sukrara.feature.sharing.nearbySummary
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.settings.SettingsSpec
-import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
 import java.text.DateFormat
@@ -84,6 +78,8 @@ class FollowersActions(
     val refreshNearby: () -> Unit = {},
     /** *Pair nearby* on (10 min) / *Stop*. */
     val pairNearby: (Boolean) -> Unit = {},
+    /** Settings › Sharing › Over Bluetooth nearby. */
+    val openNearby: () -> Unit = {},
 )
 
 /**
@@ -98,8 +94,6 @@ fun FollowersPage(
     modifier: Modifier = Modifier,
     writerRefused: String? = null,
     nearby: NearbyUi = NearbyUi(),
-    /** The clock for *Pair nearby*'s countdown (epoch s; screenshot tests fix it). */
-    now: () -> Long = { System.currentTimeMillis() / 1000 },
     /** The page's foot: *See also* the other data pages (the app draws them). */
     links: @Composable () -> Unit = {},
 ) {
@@ -161,39 +155,8 @@ fun FollowersPage(
                 icon = DsR.drawable.ds_ic_schedule,
                 enabled = nearby.internet,
             )
-            SwitchRow(
-                title = stringResource(R.string.sh_nearby_title),
-                checked = nearby.on,
-                onCheckedChange = actions.setNearby,
-                summary = nearbySummary(nearby.status, nearby.on, wearer = true, internet = nearby.internet),
-                icon = DsR.drawable.ds_ic_bluetooth,
-            )
-            if (nearby.on) NearbyFixRow(nearby.status, AndroidNearbyServer.PERMISSIONS, actions.refreshNearby)
-            // an open pairing always keeps its switch (the way to stop it)
-            if ((nearby.on && nearby.status !in BLOCKED) ||
-                nearby.pairingUntil != null
-            ) {
-                PairNearbyRow(nearby.pairingUntil, actions.pairNearby, now)
-            }
-        }
-        // only links whose identity proof named an active follower: an unnamed one is never listed (no made-up name)
-        val devices = NearbyDevices.rows(state.followers, state.nearbyPaired, nearby.links)
-        if (nearby.on && devices.isNotEmpty()) {
-            SettingsGroup(title = stringResource(R.string.sh_nearby_devices)) {
-                for (row in devices) {
-                    val f = row.follower
-                    val title =
-                        row.device?.let {
-                            val device = stringResource(if (it == "mac") R.string.sh_nearby_mac else R.string.sh_nearby_phone)
-                            stringResource(R.string.sh_nearby_device_name, Profile.shownName(f.name), device)
-                        } ?: f.name
-                    PersonRow(
-                        f.avatarJson,
-                        title,
-                        stringResource(if (row.connected) R.string.sh_nearby_device_connected else R.string.sh_nearby_device_disconnected),
-                    ) { open = f.key }
-                }
-            }
+            // the row opens its page (the fix, Pair nearby, the devices nearby); the switch turns it on or off
+            NearbyRow(nearby, actions)
         }
         if (removed.isNotEmpty()) {
             // the hidden rest of the list: SettingsLib's NumberButtonPreference (*2 Removed*); *See less* folds it again

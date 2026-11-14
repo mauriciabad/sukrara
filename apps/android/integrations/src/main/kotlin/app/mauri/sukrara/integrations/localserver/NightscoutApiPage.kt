@@ -28,6 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +40,7 @@ import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
@@ -272,15 +276,18 @@ fun NightscoutApiContent(
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
     SettingsIntro(stringResource(R.string.in_nsapi_intro))
-    SettingsGroup {
-        SwitchRow(
-            stringResource(R.string.in_nsapi_switch),
-            ui.on,
-            actions.setOn,
-            summary = nsApiStatusText(ui.state, now),
-        )
+    // the page's main switch (SPA MainSwitchPreference), its status while on; Wi-Fi greyed while it is off
+    MainSwitchRow(stringResource(R.string.in_nsapi_switch), ui.on, actions.setOn)
+    if (ui.on) {
+        SettingsGroup {
+            InfoRow(
+                stringResource(R.string.in_ns_status),
+                Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                nsApiStatusText(ui.state, now),
+            )
+        }
     }
-    if (ui.on) LanGroup(ui, now, actions)
+    LanGroup(ui, now, actions)
     if (ui.on || ui.secret !is SecretView.Hidden) {
         SettingsGroup(title = stringResource(R.string.in_nsapi_secret_group)) {
             when (val s = ui.secret) {
@@ -332,7 +339,7 @@ fun NightscoutApiContent(
     FooterText(stringResource(R.string.in_nsapi_footer))
 }
 
-/** The status line on the switch and on Share with apps. */
+/** The status line on the page and on Share with apps. */
 @Composable
 fun nsApiStatusText(
     state: NsApiState,
@@ -413,9 +420,12 @@ private fun LanGroup(
             stringResource(R.string.in_nsapi_lan_switch),
             ui.lanOn,
             { on -> if (on) confirm = true else actions.setLan(false) },
+            // turning it off always works; on needs the API (the row says why)
+            enabled = ui.on || ui.lanOn,
             summary =
                 when {
                     ui.lanOn -> lanStatusText(ui.lan, now)
+                    !ui.on -> stringResource(R.string.in_nsapi_lan_needs_api)
                     ui.lanRefused -> stringResource(R.string.in_nsapi_lan_refused)
                     else -> stringResource(R.string.in_nsapi_lan_off)
                 },

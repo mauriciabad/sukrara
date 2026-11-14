@@ -20,6 +20,7 @@ struct AlertsRangesPane: View {
     @State private var editing: AlertKind?
     @State private var editingNight: AlertKind?
     @State private var fineTuning = false
+    @State private var editingQuiet: QuietRuleKind?
 
     var body: some View {
         Form {
@@ -64,16 +65,9 @@ struct AlertsRangesPane: View {
                 )
                 .formFooter()
             }
+            // each quiet rule: its switch and what it is set to; Details… opens its length and what it does
             Section(L10n.t("Quiet times")) {
-                quiet(L10n.t("Quiet after insulin"), \.muteAfterInsulin, "alerts.muteAfterInsulin.min")
-                quiet(L10n.t("Quiet after carbs"), \.muteAfterCarbs, "alerts.muteAfterCarbs.min")
-                // the pair that follow the readings back into range (#193): their minutes are a prediction's
-                quiet(
-                    L10n.t("Quiet highs falling back into range"), \.muteFallingHigh, "alerts.muteFallingHigh.min",
-                    minutes: L10n.t("Back in range within"))
-                quiet(
-                    L10n.t("Quiet lows rising back into range"), \.muteRisingLow, "alerts.muteRisingLow.min",
-                    minutes: L10n.t("Back in range within"))
+                ForEach(QuietRuleKind.allCases, id: \.self) { quietRow($0) }
             }
             Section(L10n.t("Sounds")) {
                 HStack {
@@ -106,6 +100,9 @@ struct AlertsRangesPane: View {
             }
         }
         .formStyle(.grouped)
+        .sheet(item: $editingQuiet) { which in
+            QuietDetails(model: model, which: which) { editingQuiet = nil }
+        }
         .sheet(isPresented: $fineTuning) {
             FineTuning(model: model) { fineTuning = false }
         }
@@ -191,30 +188,26 @@ struct AlertsRangesPane: View {
 
     /// One alert: its switch, a summary of what applies, and Details….
     private func kindRow(_ kind: AlertKind) -> some View {
-        let readOnly = model.alertsMirrored && kind != .noData
         let shown = model.shownAlerts[kind]
-        return HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Self.kindName(kind))
-                Text(Self.summary(kind, model.shownAlerts, unit: model.unit)).font(.callout).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button(L10n.t("Details…")) { editing = kind }
-                .controlSize(.small)
-                .accessibilityLabel(L10n.t("\(Self.kindName(kind)) alert details"))
-            if readOnly {
-                ReadOnlyValue(
-                    value: ReadOnlyValue.onOff(shown.on), source: model.mirrorSource, name: Self.kindName(kind))
-            } else {
-                Toggle(
-                    Self.kindName(kind),
-                    isOn: Binding(get: { shown.on }, set: { v in model.alerts.update { $0[kind].on = v } })
-                )
-                .labelsHidden()
-                .toggleStyle(.switch)
-            }
-        }
-        .accessibilityElement(children: .contain)
+        return ToggleDetailsRow(
+            title: Self.kindName(kind),
+            summary: Self.summary(kind, model.shownAlerts, unit: model.unit),
+            isOn: Binding(get: { shown.on }, set: { v in model.alerts.update { $0[kind].on = v } }),
+            readOnlySource: model.alertsMirrored && kind != .noData ? model.mirrorSource : nil,
+            detailsLabel: L10n.t("\(Self.kindName(kind)) alert details")
+        ) { editing = kind }
+    }
+
+    /// One quiet rule: its switch, its length while on (*For 15 min*) or *Off*, and Details….
+    private func quietRow(_ which: QuietRuleKind) -> some View {
+        let rule = model.shownAlerts[keyPath: which.path]
+        return ToggleDetailsRow(
+            title: which.name,
+            summary: which.summary(rule),
+            isOn: Binding(get: { rule.on }, set: { v in model.alerts.update { $0[keyPath: which.path].on = v } }),
+            readOnlySource: model.alertsMirrored ? model.mirrorSource : nil,
+            detailsLabel: L10n.t("\(which.name) details")
+        ) { editingQuiet = which }
     }
 
     /// "Below 70 mg/dL · every 5 min · Quest · like an alarm" (what applies; very low "Up to 55 mg/dL").
@@ -248,29 +241,6 @@ struct AlertsRangesPane: View {
         }
     }
 
-    private func quiet(
-        _ label: String, _ path: WritableKeyPath<AlertSettings, QuietRule>, _ id: String,
-        minutes: String = L10n.t("For")
-    ) -> some View {
-        let name = SettingsSpec.settings.first { $0.id == id }?.number ?? ""
-        let rule = model.shownAlerts[keyPath: path]
-        let on = Binding(get: { rule.on }, set: { v in model.alerts.update { $0[keyPath: path].on = v } })
-        let minutesLabel = minutes
-        let minutes = Binding(get: { rule.min }, set: { v in model.alerts.update { $0[keyPath: path].min = v } })
-        return VStack(alignment: .leading) {
-            if model.alertsMirrored {
-                LabeledContent(label) {
-                    ReadOnlyValue(value: ReadOnlyValue.onOff(rule.on), source: model.mirrorSource)
-                }
-            } else {
-                Toggle(label, isOn: on)
-            }
-            if let format = SettingsSpec.numbers[name], rule.on {
-                NumberSettingRow(label: minutesLabel, format: format, value: minutes, readOnly: model.alertsMirrored)
-            }
-        }
-    }
-
     private func alertBinding<V>(_ path: WritableKeyPath<AlertSettings, V>) -> Binding<V> {
         Binding(
             get: { model.alerts.settings[keyPath: path] }, set: { v in model.alerts.update { $0[keyPath: path] = v } })
@@ -295,6 +265,164 @@ struct AlertsRangesPane: View {
         case "none": L10n.t("No sound")
         default: p.capitalized
         }
+    }
+}
+
+/// A switch with its own options, as System Settings lists one (General › Sharing: each service's switch with an Info
+/// button whose sheet holds its options): the title, a summary of what is set, Details… and the switch. Never options
+/// that appear under the switch. [readOnlySource]: a mirrored switch, shown in words (*On — from Marta*), not dimmed.
+struct ToggleDetailsRow: View {
+    let title: String
+    let summary: String
+    @Binding var isOn: Bool
+    var readOnlySource: String? = nil
+    let detailsLabel: String
+    let details: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(summary).font(.callout).foregroundStyle(.secondary)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: summary)
+            }
+            Spacer()
+            Button(L10n.t("Details…"), action: details)
+                .controlSize(.small)
+                .accessibilityLabel(detailsLabel)
+            if let readOnlySource {
+                ReadOnlyValue(value: ReadOnlyValue.onOff(isOn), source: readOnlySource, name: title)
+            } else {
+                Toggle(title, isOn: $isOn).labelsHidden().toggleStyle(.switch)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// The quiet rules (SPEC §2), in the pane's order: the two after a treatment, then the pair that follow the readings
+/// back into range (their minutes are *Back in range within*).
+enum QuietRuleKind: String, CaseIterable, Identifiable {
+    case afterInsulin, afterCarbs, fallingHigh, risingLow
+
+    var id: String { rawValue }
+
+    var path: WritableKeyPath<AlertSettings, QuietRule> {
+        switch self {
+        case .afterInsulin: \.muteAfterInsulin
+        case .afterCarbs: \.muteAfterCarbs
+        case .fallingHigh: \.muteFallingHigh
+        case .risingLow: \.muteRisingLow
+        }
+    }
+
+    /// The schema id of its minutes.
+    var minutesID: String {
+        switch self {
+        case .afterInsulin: "alerts.muteAfterInsulin.min"
+        case .afterCarbs: "alerts.muteAfterCarbs.min"
+        case .fallingHigh: "alerts.muteFallingHigh.min"
+        case .risingLow: "alerts.muteRisingLow.min"
+        }
+    }
+
+    var byTrend: Bool { self == .fallingHigh || self == .risingLow }
+
+    var name: String {
+        switch self {
+        case .afterInsulin: L10n.t("Quiet after insulin")
+        case .afterCarbs: L10n.t("Quiet after carbs")
+        case .fallingHigh: L10n.t("Quiet highs falling back into range")
+        case .risingLow: L10n.t("Quiet lows rising back into range")
+        }
+    }
+
+    /// The minutes' label: how long after a treatment, or how soon it must be back in range.
+    var minutesLabel: String { byTrend ? L10n.t("Back in range within") : L10n.t("How long") }
+
+    /// What the rule does (the sheet's footer).
+    var explanation: String {
+        switch self {
+        case .afterInsulin:
+            L10n.t(
+                "Rapid insulin you log keeps high, very high and rising fast alerts quiet while it starts working. Extremely high always alerts."
+            )
+        case .afterCarbs:
+            L10n.t(
+                "Carbs you log keep low and falling fast alerts quiet while they work, and very low on the wearer's phone. Followers and the Mac still alert on a very low."
+            )
+        case .fallingHigh:
+            L10n.t(
+                "While the last readings show glucose clearly falling back into range in time, high and very high alerts wait. They come at once if it stalls or the readings stop."
+            )
+        case .risingLow:
+            L10n.t(
+                "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the wearer's phone, never its first alert."
+            )
+        }
+    }
+
+    var format: NumberSpec? {
+        SettingsSpec.settings.first { $0.id == minutesID }?.number.flatMap { SettingsSpec.numbers[$0] }
+    }
+
+    /// The row's summary: "For 1 h", "Back in range within 20 min", or "Off" (never the rule's name again).
+    func summary(_ rule: QuietRule) -> String {
+        guard rule.on else { return L10n.t("Off") }
+        let length = Durations.text(Int(rule.min))
+        return byTrend ? L10n.t("Back in range within \(length)") : L10n.t("For \(length)")
+    }
+}
+
+/// The sheet behind a quiet rule's Details…: its switch, its minutes (greyed while off, as System Settings greys the
+/// options of a service that is off) and what it does; read-only while the wearer's rules apply. Done or Esc closes it.
+struct QuietDetails: View {
+    @Bindable var model: SettingsModel
+    let which: QuietRuleKind
+    let done: () -> Void
+
+    var body: some View {
+        let rule = model.shownAlerts[keyPath: which.path]
+        let readOnly = model.alertsMirrored
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    if readOnly {
+                        LabeledContent(which.name) {
+                            ReadOnlyValue(value: ReadOnlyValue.onOff(rule.on), source: model.mirrorSource)
+                        }
+                    } else {
+                        Toggle(
+                            which.name,
+                            isOn: Binding(
+                                get: { rule.on }, set: { v in model.alerts.update { $0[keyPath: which.path].on = v } }))
+                    }
+                    if let format = which.format {
+                        NumberSettingRow(
+                            label: which.minutesLabel, format: format,
+                            value: Binding(
+                                get: { rule.min },
+                                set: { v in model.alerts.update { $0[keyPath: which.path].min = v } }),
+                            readOnly: readOnly
+                        )
+                        .disabled(!rule.on && !readOnly)
+                    }
+                } footer: {
+                    Text(which.explanation).formFooter()
+                }
+            }
+            .formStyle(.grouped)
+            HStack {
+                // Esc closes it, as Done does
+                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
+                    .opacity(0).frame(width: 0, height: 0).accessibilityHidden(true)
+                Spacer()
+                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
+            }
+            .padding([.horizontal, .bottom], 20)
+        }
+        .frame(width: 480, height: 300)
     }
 }
 

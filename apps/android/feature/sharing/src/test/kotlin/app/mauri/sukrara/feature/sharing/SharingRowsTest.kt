@@ -20,6 +20,7 @@ import app.mauri.sukrara.feature.sharing.backup.BackupScreen
 import app.mauri.sukrara.feature.sharing.backup.BackupUi
 import app.mauri.sukrara.feature.sharing.followers.FollowersActions
 import app.mauri.sukrara.feature.sharing.followers.FollowersPage
+import app.mauri.sukrara.feature.sharing.followers.NearbyPage
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.owner.OwnerShareState
 import org.junit.Assert.assertTrue
@@ -66,7 +67,15 @@ class SharingRowsTest {
                 nearby = NearbyUi(on = true, status = NearbyStatus.Searching, pairingUntil = null),
             )
         }
-        for (t in listOf("Backup", "Share with someone", "Pair nearby")) assertIcon(t)
+        for (t in listOf("Backup", "Share with someone", "Over Bluetooth nearby")) assertIcon(t)
+    }
+
+    @Test
+    fun nearbyRowsHaveIcons() {
+        show(scrolls = true) {
+            NearbyPage(sharing, NearbyUi(on = true, status = NearbyStatus.Searching, pairingUntil = null), FollowersActions())
+        }
+        for (t in listOf("Pair nearby")) assertIcon(t)
     }
 
     @Test

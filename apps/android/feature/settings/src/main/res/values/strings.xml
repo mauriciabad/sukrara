@@ -35,6 +35,11 @@
     <string name="st_quiet_within_summary">Back in range within %1$s</string>
     <string name="st_quiet_for">For %1$s</string>
     <string name="st_quiet_length">How long</string>
+    <string name="st_quiet_use">Use this quiet time</string>
+    <string name="st_quiet_insulin_footer">Rapid insulin you log keeps high, very high and rising fast alerts quiet while it starts working. Extremely high always alerts.</string>
+    <string name="st_quiet_carbs_footer">Carbs you log keep low and falling fast alerts quiet while they work, and very low on the wearer\'s phone. Followers and the Mac still alert on a very low.</string>
+    <string name="st_quiet_falling_footer">While the last readings show glucose clearly falling back into range in time, high and very high alerts wait. They come at once if it stalls or the readings stop.</string>
+    <string name="st_quiet_rising_footer">While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the wearer\'s phone, never its first alert.</string>
     <string name="st_wait_title">Near a threshold</string>
     <string name="st_wait_low">Low alerts wait</string>
     <string name="st_wait_high">High alerts wait</string>

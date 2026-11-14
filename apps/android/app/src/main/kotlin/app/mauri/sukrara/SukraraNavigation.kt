@@ -55,6 +55,7 @@ import app.mauri.sukrara.feature.sensor.newsensor.NewSensorRoute
 import app.mauri.sukrara.feature.settings.AlertThresholdRows
 import app.mauri.sukrara.feature.settings.DataLinks
 import app.mauri.sukrara.feature.settings.DataPage
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.SettingsDeps
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.SettingsRoute
@@ -74,6 +75,7 @@ import app.mauri.sukrara.feature.sharing.setup.SetupViewModel
 import app.mauri.sukrara.feature.sharing.share.ApproveHost
 import app.mauri.sukrara.feature.sharing.share.BackupPage
 import app.mauri.sukrara.feature.sharing.share.InviteHereScreen
+import app.mauri.sukrara.feature.sharing.share.NearbyScreen
 import app.mauri.sukrara.feature.sharing.share.ProfilePage
 import app.mauri.sukrara.feature.sharing.share.ShareScreen
 import app.mauri.sukrara.feature.sharing.share.SharingScreen
@@ -126,6 +128,10 @@ data class InviteHereRoute(
 /** "How you appear": the wearer's name and picture for followers (home's profile row, Settings › Sharing). */
 @Serializable
 data object ProfileRoute : NavKey
+
+/** Settings › Sharing › Over Bluetooth nearby: its switch, the fix, Pair nearby, the devices nearby. */
+@Serializable
+data object NearbyRoute : NavKey
 
 /** Backup: password manager, recovery code, relay backup (home's "Not backed up" card, Settings › Sharing). */
 @Serializable
@@ -198,30 +204,106 @@ data class SettingsKey(
 ) : NavKey {
     fun route(): SettingsRoute =
         when (page) {
-            "pen" -> serial?.let(SettingsRoute::Pen) ?: SettingsRoute.Pens
-            "pendoses" -> serial?.let { SettingsRoute.PenDoses(it, review) } ?: SettingsRoute.Pens
-            "alerts" -> SettingsRoute.Alerts
-            "kind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::AlertKindPage) ?: SettingsRoute.Alerts
-            "night" -> SettingsRoute.NightAlerts
-            "nightkind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::NightKindPage) ?: SettingsRoute.NightAlerts
-            "finetuning" -> SettingsRoute.AlertsFineTuning
-            "readings" -> SettingsRoute.Readings
-            "trend" -> SettingsRoute.TrendArrow
-            "graph" -> SettingsRoute.Graph
-            "rings" -> SettingsRoute.Rings
-            "files" -> SettingsRoute.ImportExport
-            "marks" -> SettingsRoute.GraphMarks
-            "lock" -> SettingsRoute.LockScreen
-            "pens" -> SettingsRoute.Pens
-            "reliability" -> SettingsRoute.Reliability
-            "statusbar" -> SettingsRoute.StatusBar
-            "sensorend" -> SettingsRoute.SensorEnd
-            "about" -> SettingsRoute.About
-            "review" -> SettingsRoute.ThresholdReview
-            "advanced" -> SettingsRoute.Advanced
-            "log" -> SettingsRoute.Log
-            "from" -> SettingsRoute.SettingsFrom
-            else -> SettingsRoute.Overview
+            "pen" -> {
+                serial?.let(SettingsRoute::Pen) ?: SettingsRoute.Pens
+            }
+
+            "pendoses" -> {
+                serial?.let { SettingsRoute.PenDoses(it, review) } ?: SettingsRoute.Pens
+            }
+
+            "alerts" -> {
+                SettingsRoute.Alerts
+            }
+
+            "kind" -> {
+                kind?.let(AlertKind::fromWire)?.let(SettingsRoute::AlertKindPage) ?: SettingsRoute.Alerts
+            }
+
+            "night" -> {
+                SettingsRoute.NightAlerts
+            }
+
+            "nightkind" -> {
+                kind?.let(AlertKind::fromWire)?.let(SettingsRoute::NightKindPage) ?: SettingsRoute.NightAlerts
+            }
+
+            "quiet" -> {
+                kind?.let { k -> QuietKind.entries.firstOrNull { it.name == k } }?.let(SettingsRoute::QuietRulePage)
+                    ?: SettingsRoute.Alerts
+            }
+
+            "finetuning" -> {
+                SettingsRoute.AlertsFineTuning
+            }
+
+            "readings" -> {
+                SettingsRoute.Readings
+            }
+
+            "trend" -> {
+                SettingsRoute.TrendArrow
+            }
+
+            "graph" -> {
+                SettingsRoute.Graph
+            }
+
+            "rings" -> {
+                SettingsRoute.Rings
+            }
+
+            "files" -> {
+                SettingsRoute.ImportExport
+            }
+
+            "marks" -> {
+                SettingsRoute.GraphMarks
+            }
+
+            "lock" -> {
+                SettingsRoute.LockScreen
+            }
+
+            "pens" -> {
+                SettingsRoute.Pens
+            }
+
+            "reliability" -> {
+                SettingsRoute.Reliability
+            }
+
+            "statusbar" -> {
+                SettingsRoute.StatusBar
+            }
+
+            "sensorend" -> {
+                SettingsRoute.SensorEnd
+            }
+
+            "about" -> {
+                SettingsRoute.About
+            }
+
+            "review" -> {
+                SettingsRoute.ThresholdReview
+            }
+
+            "advanced" -> {
+                SettingsRoute.Advanced
+            }
+
+            "log" -> {
+                SettingsRoute.Log
+            }
+
+            "from" -> {
+                SettingsRoute.SettingsFrom
+            }
+
+            else -> {
+                SettingsRoute.Overview
+            }
         }
 
     companion object {
@@ -232,6 +314,7 @@ data class SettingsKey(
                 is SettingsRoute.AlertKindPage -> SettingsKey("kind", route.kind.wire)
                 SettingsRoute.NightAlerts -> SettingsKey("night")
                 is SettingsRoute.NightKindPage -> SettingsKey("nightkind", route.kind.wire)
+                is SettingsRoute.QuietRulePage -> SettingsKey("quiet", route.which.name)
                 SettingsRoute.AlertsFineTuning -> SettingsKey("finetuning")
                 SettingsRoute.Readings -> SettingsKey("readings")
                 SettingsRoute.TrendArrow -> SettingsKey("trend")
@@ -431,9 +514,16 @@ fun SukraraNavigation(
                                 onReview = graph.setup.laterRequests::review,
                                 onProfile = { backStack.push(ProfileRoute) },
                                 onBackup = { backStack.push(BackupRoute) },
+                                onNearby = { backStack.push(NearbyRoute) },
                                 onClose = close,
                                 links = { DataLinks(DataPage.Sharing, wearer = true) { openData(it, backStack) } },
                             )
+                        }
+                    }
+                    entry<NearbyRoute> {
+                        val close = { backStack.pop(NearbyRoute) }
+                        SettingsPage(stringResource(SharingR.string.sh_nearby_title), close, scroll = false) {
+                            NearbyScreen(viewModel = viewModel(factory = SharingViewModel.factory(graph.setup.sharing)), onClose = close)
                         }
                     }
                     entry<InviteHereRoute> { key ->

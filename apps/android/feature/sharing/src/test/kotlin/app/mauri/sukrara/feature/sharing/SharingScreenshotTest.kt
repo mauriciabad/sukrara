@@ -34,6 +34,7 @@ import app.mauri.sukrara.feature.sharing.follower.FollowingContent
 import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
 import app.mauri.sukrara.feature.sharing.followers.FollowersActions
 import app.mauri.sukrara.feature.sharing.followers.FollowersPage
+import app.mauri.sukrara.feature.sharing.followers.NearbyPage
 import app.mauri.sukrara.feature.sharing.profile.ProfileSave
 import app.mauri.sukrara.feature.sharing.profile.ProfileScreen
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
@@ -260,27 +261,30 @@ class SharingScreenshotTest {
             "share-denied" to { ShareScreen(readyInvite, {}, {}, {}, progress = InviteProgress.Denied("Dad")) },
             "share-expired" to { ShareScreen(readyInvite, {}, {}, {}, progress = InviteProgress.Expired) },
             "followers" to { FollowersPage(sharing, FollowersActions()) },
-            "followers-pair-nearby" to {
-                FollowersPage(
+            "nearby-pair" to {
+                NearbyPage(
                     sharing,
+                    NearbyUi(status = NearbyStatus.Searching, pairingUntil = 1_761_600_000 + 581),
                     FollowersActions(),
-                    nearby = NearbyUi(status = NearbyStatus.Searching, pairingUntil = 1_761_600_000 + 581),
                     now = { 1_761_600_000 },
                 )
             },
-            "followers-nearby-devices" to {
-                FollowersPage(
+            "nearby-devices" to {
+                NearbyPage(
                     sharing.copy(nearbyPaired = setOf("k2")),
+                    NearbyUi(
+                        status = NearbyStatus.Connected(1),
+                        links = listOf(NearbyServerCore.Named("k1", "phone", 1_761_600_000_000)),
+                        internet = false,
+                    ),
                     FollowersActions(),
-                    nearby =
-                        NearbyUi(
-                            status = NearbyStatus.Connected(1),
-                            links = listOf(NearbyServerCore.Named("k1", "phone", 1_761_600_000_000)),
-                            internet = false,
-                        ),
                     now = { 1_761_600_000 },
                 )
             },
+            "nearby-off" to { NearbyPage(sharing, NearbyUi(on = false), FollowersActions()) },
+            "nearby-bluetooth-off" to { NearbyPage(sharing, NearbyUi(status = NearbyStatus.BluetoothOff), FollowersActions()) },
+            "followers-bluetooth-off" to
+                { FollowersPage(sharing, FollowersActions(), nearby = NearbyUi(status = NearbyStatus.BluetoothOff)) },
             "setup-join-find-nearby" to {
                 val offer =
                     NearbyOffer(

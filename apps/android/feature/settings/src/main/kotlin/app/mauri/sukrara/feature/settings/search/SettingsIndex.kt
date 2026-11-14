@@ -12,8 +12,12 @@ import app.mauri.sukrara.designsystem.rows.Category
 import app.mauri.sukrara.designsystem.rows.CategoryIcon
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
+import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.quietFooter
+import app.mauri.sukrara.feature.settings.quietLengthTitle
+import app.mauri.sukrara.feature.settings.quietName
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** Settings pages that belong to other features: the overview opens them ([SettingsSearchBar]'s `onOpenOther`). */
@@ -163,6 +167,7 @@ object SettingsIndex {
             is SettingsRoute.NightKindPage -> kindNames.getValue(route.kind)
             SettingsRoute.NightAlerts -> R.string.st_night_title
             SettingsRoute.AlertsFineTuning -> R.string.st_finetune_title
+            is SettingsRoute.QuietRulePage -> quietName(route.which)
             SettingsRoute.Readings -> R.string.st_readings_title
             SettingsRoute.TrendArrow -> R.string.st_trend_title
             SettingsRoute.Graph -> R.string.st_graph_title
@@ -188,6 +193,7 @@ object SettingsIndex {
             SettingsRoute.NightAlerts,
             SettingsRoute.ThresholdReview,
             SettingsRoute.AlertsFineTuning,
+            is SettingsRoute.QuietRulePage,
             -> SettingsRoute.Alerts
 
             is SettingsRoute.NightKindPage -> SettingsRoute.NightAlerts
@@ -434,16 +440,8 @@ object SettingsIndex {
                 seen = Seen.Follower,
             )
             pageRow(SettingsRoute.ThresholdReview, null)
-            rows(
-                alerts,
-                R.string.st_quiet_title,
-                R.string.st_quiet_insulin to null,
-                R.string.st_quiet_carbs to null,
-                R.string.st_quiet_falling to null,
-                R.string.st_quiet_rising to null,
-                R.string.st_quiet_length to null,
-                R.string.st_quiet_within to null,
-            )
+            // each quiet rule's row opens its page: its switch and its length are there
+            for (which in QuietKind.entries) pageRow(SettingsRoute.QuietRulePage(which), R.string.st_quiet_title)
             rows(
                 alerts,
                 R.string.st_sounds_title,
@@ -465,6 +463,9 @@ object SettingsIndex {
             )
             link(alerts, R.string.st_reliability_title, SearchTarget.Page(SettingsRoute.Reliability))
             link(alerts, R.string.st_readings_title, SearchTarget.Page(SettingsRoute.Readings), R.string.st_overview_readings)
+            for (which in QuietKind.entries) {
+                rows(SettingsRoute.QuietRulePage(which), null, R.string.st_quiet_use to null, quietLengthTitle(which) to quietFooter(which))
+            }
             val fine = SettingsRoute.AlertsFineTuning
             rows(
                 fine,

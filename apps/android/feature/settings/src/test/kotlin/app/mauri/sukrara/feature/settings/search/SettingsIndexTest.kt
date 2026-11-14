@@ -61,6 +61,8 @@ import app.mauri.sukrara.feature.settings.NightAlertsContent
 import app.mauri.sukrara.feature.settings.NightKindContent
 import app.mauri.sukrara.feature.settings.OverviewActions
 import app.mauri.sukrara.feature.settings.OverviewSharing
+import app.mauri.sukrara.feature.settings.QuietKind
+import app.mauri.sukrara.feature.settings.QuietRuleContent
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.ReadingsContent
 import app.mauri.sukrara.feature.settings.ReliabilityContent
@@ -258,6 +260,13 @@ class SettingsIndexTest {
             Scene("reliability, missing", SearchTarget.Page(SettingsRoute.Reliability)) {
                 ReliabilityContent(AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), {}) {}
             },
+            // each quiet rule's page: its main switch and its length
+            *QuietKind.entries
+                .map { which ->
+                    Scene("quiet $which", SearchTarget.Page(SettingsRoute.QuietRulePage(which))) {
+                        QuietRuleContent(which, AlertsUi(AlertSettings(), AlertUiState()), {}) {}
+                    }
+                }.toTypedArray(),
             Scene("fine-tuning", SearchTarget.Page(SettingsRoute.AlertsFineTuning)) {
                 FineTuningContent(AlertsUi(AlertSettings(), AlertUiState()), {}) {}
             },

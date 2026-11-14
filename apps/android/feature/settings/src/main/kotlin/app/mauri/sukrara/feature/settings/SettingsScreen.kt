@@ -80,6 +80,9 @@ sealed interface SettingsRoute {
     /** Settings › Alerts › Night alerts › one alert's night rule. */
     data class NightKindPage(val kind: AlertKind) : SettingsRoute
 
+    /** Settings › Alerts › one quiet rule (its switch, its length, what it does). */
+    data class QuietRulePage(val which: QuietKind) : SettingsRoute
+
     /** Settings › Alerts › Fine-tuning: the rarely touched rows (docs/35: no global advanced mode). */
     data object AlertsFineTuning : SettingsRoute
 
@@ -284,6 +287,7 @@ private fun SettingsPages(
                         openFineTuning = { navigate(SettingsRoute.AlertsFineTuning) },
                         openReliability = { navigate(SettingsRoute.Reliability) },
                         openReadings = { navigate(SettingsRoute.Readings) },
+                        openQuiet = { q -> navigate(SettingsRoute.QuietRulePage(q)) },
                     ),
                     header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
@@ -303,6 +307,21 @@ private fun SettingsPages(
                     AlertKindActions(vm::edit, vm::unmute, vm::remindAsUsual, deps.alertPlayback),
                     header = { if (it.mirrors(route.kind)) SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     trend = { if (route.kind in RateKinds) RateTrendRow(deps, from.readOnly) },
+                    onBack = onBack,
+                )
+            }
+        }
+
+        is SettingsRoute.QuietRulePage -> {
+            val vm = alertsViewModel(deps)
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            ui?.let {
+                QuietRuleContent(
+                    route.which,
+                    it,
+                    vm::edit,
+                    header = { if (it.mirrored) SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
                 )
             }
