@@ -45,6 +45,9 @@ class MuteAlertActivity : ComponentActivity() {
             return
         }
         val words = AlertWords.of(this)
+        // "Mute lows" / "Silenciar bajas": the side as the mute lines name it, in the title's lower case (read once, in the
+        // activity's own locale: it is recreated when that changes)
+        val side = MuteText.sideName(kind.side, words).lowercase(resources.configuration.locales[0])
         lifecycleScope.launch { graph.runningAlerts()?.runtime?.acknowledge(kind.wire) }
         setContent {
             SukraraTheme {
@@ -59,8 +62,7 @@ class MuteAlertActivity : ComponentActivity() {
                 }
                 first?.let { min ->
                     MuteSheet(
-                        // "Mute lows" / "Silenciar bajas": the side as the mute lines name it, in the title's lower case
-                        side = MuteText.sideName(kind.side, words).lowercase(java.util.Locale.getDefault()),
+                        side = side,
                         first = min,
                         label = { MuteText.line(MuteLine.Choice(it), words) },
                         onMute = { m ->
