@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * The `alert` event content (wearer → followers, SPEC §4; the envelope and encryption are `:core:protocol`'s).
- * [state] `fire` or `clear` (a clear repeats the [id] of the firing it ends); [at] unix s; [t]/[sgv]/[r] the reading
+ * [state] `fire`, `show` (on screen again without sound) or `clear` (a clear repeats the [id] of the firing it ends); [at] unix s; [t]/[sgv]/[r] the reading
  * (null for no data without one); [th] the threshold that matched; [n] the episode's count; [tr] treatments
  * acknowledged in the headline (0, 1, 2).
  */
@@ -37,6 +37,13 @@ data class AlertEvent(
 
         @SerialName("clear")
         CLEAR,
+
+        /**
+         * The episode's alert is on screen again without sound between its alerts (after a reading back in range for a
+         * moment, or a change to a milder kind of its side): followers show it silently (SPEC §1 "Showing an alert").
+         */
+        @SerialName("show")
+        SHOW,
 
         /** #39: the escalated very low [id] was answered on the wearer's phone. */
         @SerialName("answered")
@@ -73,6 +80,9 @@ data class AlertEvent(
                 n = f.n,
                 tr = f.treated,
             )
+
+        /** The silent show of [f] (same fields as [fire]). */
+        fun show(f: Firing) = fire(f).copy(state = State.SHOW)
 
         fun clear(kind: AlertKind, id: String, at: Long, last: AlertReading?) =
             AlertEvent(

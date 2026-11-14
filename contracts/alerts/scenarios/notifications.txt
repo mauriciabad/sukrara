@@ -1,0 +1,71 @@
+# What stays on screen between the alerts (#195; SPEC §1 "Showing an alert"). `shows` compares the silent shows
+# (`show <headline>`) and their clears too; the sounds and their timing are the rules of the other files.
+
+scenario Getting better shows the milder alert at once without sound; its sound waits for the repeat
+shows
+ 0  glucose 56   => Low glucose
+ 1  glucose 55   => clear low; Very low glucose          # worse: at once, with sound
+ 2  glucose 56   => clear very_low; show Low glucose     # better: the low is on screen at once, silently
+ 3  glucose 55   => clear low; show Very low glucose     # very low again within its repeat: on screen, silently
+ 6               => Very low glucose                     # 5 min after the last alert: the repeat rings
+ 7
+
+scenario A reading back in range for a moment takes the alert away; out again, it is back at once without sound
+shows
+ 0  glucose 65   => Low glucose
+ 2  glucose 72   => clear low                            # in range: nothing low to show
+ 3  glucose 66   => show Low glucose                     # low again in the same episode: shown, no sound
+ 5               => Low glucose                          # the repeat rings as before
+ 6
+
+scenario A high back over its threshold between repeats is shown again silently; the ring waits 15 min
+shows
+ 0  glucose 190  => High glucose
+ 4  glucose 178  => clear high
+ 6  glucose 185  => show High glucose
+15               => High glucose
+16
+
+scenario A first alert that waits shows nothing before it rings (nothing fired yet in the episode)
+shows
+settings persist.low=10
+ 0  glucose 65
+ 3  glucose 72
+ 4  glucose 66
+14               => Low glucose
+15
+
+scenario Treated: the alert goes with the carbs and comes back with sound when their window ends
+shows
+ 0  glucose 65   => Low glucose
+ 2  carbs 15     => clear low
+17               => Low glucose · eat more
+18
+
+scenario Once no data holds, the low and falling-fast alerts go: no data's own alert says the last value
+settings no_data=10 falling_fast=on
+ 0  glucose 65 rate -2.5   => Low glucose; Falling fast
+ 1  sensor off
+ 5               => Low glucose                                    # the repeat (the reading is 5 min old)
+10               => clear low; clear falling_fast; No glucose data
+11  sensor on, glucose 64 rate -0.5   => Low glucose; clear no_data  # a new low episode: its first alert
+12
+
+scenario The followers show the wearer's alert again without sound too
+shows
+mirror
+ 0  glucose 56   => Low glucose; follower Low glucose
+ 1  glucose 55   => clear low; Very low glucose; follower clear low; follower Very low glucose
+ 2  glucose 56   => clear very_low; show Low glucose; follower clear very_low; follower show Low glucose
+ 6               => Low glucose; follower Low glucose
+ 7
+
+scenario A follower's Mute keeps the wearer's silent shows away too
+shows
+mirror
+ 0  glucose 65   => Low glucose; follower Low glucose
+ 1  follower mute low 30   => follower clear low
+ 2  glucose 72   => clear low
+ 3  glucose 66   => show Low glucose
+ 5               => Low glucose
+ 6

@@ -56,7 +56,12 @@ object AlertNotes {
         val at = Instant.ofEpochSecond(now)
         val remote = input is AlertInput.Remote
         val out = ArrayList<AlertNote>()
-        val refired = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
+        // a ring or a silent show in the same group replaces the notification (very low → low): not an end
+        val refired =
+            effects
+                .mapNotNull { (it as? AlertEffect.Fire)?.firing ?: (it as? AlertEffect.Show)?.firing }
+                .map { it.kind.group }
+                .toSet()
         when (input) {
             is AlertInput.Mute -> {
                 out += AlertNote(at, AlertNoteType.Muted, input.kind.wire, minutes = input.minutes)

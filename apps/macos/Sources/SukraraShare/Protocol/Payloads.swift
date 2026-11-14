@@ -179,6 +179,9 @@ public struct AlertPayload: Equatable, Sendable {
     public let treatments: Int
     /// #39: the escalated very low `id` was answered on the wearer's phone (state `answered`).
     public var answered = false
+    /// State `show`: the firing is on screen again without sound (#195, a reading back in range for a moment or a
+    /// milder kind of its side).
+    public var shows = false
     /// #39 (`fire` of very low): nobody answered it on the wearer's phone for `esc` minutes; nil = not escalated.
     public var esc: Int?
 
@@ -187,8 +190,8 @@ public struct AlertPayload: Equatable, Sendable {
         try o.requireVersion(Wire.version)
         guard o.string("type") == "alert" else { throw PayloadError("type must be alert") }
         guard let kind = o.string("k"), kinds.contains(kind) else { throw PayloadError("unknown alert kind") }
-        guard let state = o.string("state"), ["fire", "clear", "answered"].contains(state) else {
-            throw PayloadError("state must be fire|clear|answered")
+        guard let state = o.string("state"), ["fire", "show", "clear", "answered"].contains(state) else {
+            throw PayloadError("state must be fire|show|clear|answered")
         }
         guard let id = o.string("id"), !id.isEmpty else { throw PayloadError("missing id") }
         var p = AlertPayload(
@@ -196,6 +199,7 @@ public struct AlertPayload: Equatable, Sendable {
             sgv: try o.optionalInt("sgv"), rate: try o.optionalNumber("r"), threshold: try o.optionalNumber("th"),
             count: try o.optionalInt("n") ?? 1, treatments: try o.optionalInt("tr") ?? 0)
         p.answered = state == "answered"
+        p.shows = state == "show"
         p.esc = state == "fire" ? try o.optionalInt("esc") : nil
         return p
     }

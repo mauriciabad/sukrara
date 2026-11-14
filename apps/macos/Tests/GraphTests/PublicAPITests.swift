@@ -106,7 +106,7 @@ import Testing
 
     @Test func everyCardSurfaceRendersABitmap() {
         let data = CardData(readings: [reading], now: now)
-        for s in CardSurface.allCases where s != .menubarTitle {
+        for s in CardSurface.allCases where s != .menubarTitle && s != .alertNotification {
             let image = GlucoseCard.image(
                 surface: s, size: CGSize(width: 332, height: 138), config: GraphConfig(), data: data, unit: .mmol,
                 dark: true)

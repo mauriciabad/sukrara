@@ -60,6 +60,15 @@ final class AlertController {
     @ObservationIgnored private var muteAllSeen: Date?
     /// #128: readings stamped at or before this don't feed the rules (set when monitoring ends, gone when a source starts).
     @ObservationIgnored private var fence: Date?
+    /// #195 (SPEC §1 "Showing an alert"): the newest reading (what an alert up shows), what each group's notification says
+    /// about it (its look when last posted), when each group last rang, and the groups the person dismissed or clicked
+    /// away: those stay away until the next ring (an update or a silent show never brings them back).
+    @ObservationIgnored private var latest: GlucoseSample?
+    @ObservationIgnored private var shownLook: [AlertGroup: AlertLiveValue.Look] = [:]
+    @ObservationIgnored private var rangAt: [AlertGroup: Date] = [:]
+    @ObservationIgnored private(set) var dismissed: Set<AlertGroup> = []
+    /// The engine's own next check (the wake is this or a shown value's next freshness step, the earlier).
+    @ObservationIgnored private var engineWake: Date?
 
     init(
         settings: AlertSettings, clock: any TimeSource, store: any AlertStateStoring, notifier: any AlertNotifying,
@@ -79,6 +88,7 @@ final class AlertController {
             mirrored = saved?.mirrored ?? [:]
         }
         fence = saved?.fence
+        latest = engine.context.latest
         run(effects)
     }
 
@@ -92,10 +102,12 @@ final class AlertController {
         if let fence, r.t <= fence { return }
         let sample = GlucoseSample(at: r.t, mgdl: Double(r.mgdl), rate: r.rate)
         noteClock()
+        if latest.map({ sample.at >= $0.at }) ?? true { latest = sample }
         if mirroring {
             for side in mirror.reading(sample, settings, at: clock.now) { notifier.removeMuted(side) }
         }
         handle(.reading(sample))
+        refreshValues()
     }
 
     func treatments(_ list: [AlertTreatment]) { handle(.treatments(list)) }
@@ -120,7 +132,7 @@ final class AlertController {
         guard on != mirroring else { return }
         mirroring = on
         if !on {
-            for g in AlertGroup.allCases where mirror.isShowing(g) && g != .noData { notifier.clear(g) }
+            for g in AlertGroup.allCases where mirror.isShowing(g) && g != .noData { remove(g) }
             mirror.forgetShown()
             mirrored = [:]
         }
@@ -146,18 +158,29 @@ final class AlertController {
             let escalated = p.esc != nil && settings.escalation.follow
             if mirror.fire(kind, id: p.id, at: at, escalated: escalated) {
                 if escalated { notifier.log(AlertLog.escalated(kind)) }
-                notifier.post(
+                present(
                     firing, sound: true, category: category(kind),
                     escalated: escalated || mirror.isEscalated(kind.group))
             }
+        } else if p.shows {
+            // #195: the wearer's alert on screen again without sound (back out of range, a milder kind)
+            let firing = AlertFiring(
+                id: p.id, kind: kind, at: at,
+                reading: p.sgv.map { sgv in
+                    GlucoseSample(
+                        at: Date(timeIntervalSince1970: TimeInterval(p.t ?? p.at)), mgdl: Double(sgv), rate: p.rate)
+                },
+                threshold: p.threshold ?? settings[kind].threshold, n: p.count, treated: p.treatments)
+            mirrored[kind.group] = firing
+            if mirror.show(kind, id: p.id, at: at) { present(firing, sound: false, category: category(kind)) }
         } else if p.answered {
             // answered on the wearer's phone: shown again plain, without sound
             if let id = mirror.answered(kind), let f = mirrored[kind.group], f.id == id {
                 notifier.log(AlertLog.answered(kind))
-                notifier.post(f, sound: false, category: category(kind), escalated: false)
+                present(f, sound: false, category: category(kind))
             }
         } else if mirror.clear(kind, id: p.id) {
-            notifier.clear(kind.group)
+            remove(kind.group)
         }
         save()
     }
@@ -173,7 +196,7 @@ final class AlertController {
         switch action {
         case .mute(let side, let minutes):
             let until = now.addingTimeInterval(TimeInterval(minutes * 60))
-            if mirror.mute(side, until: until) { notifier.clear(side.mainKind.group) }
+            if mirror.mute(side, until: until) { remove(side.mainKind.group) }
             handle(.mute(side, minutes: minutes))
             notifier.postMuted(side, until: until, category: mutedCategory(side))
         case .remindLess(let side):
@@ -191,7 +214,7 @@ final class AlertController {
             }
             if !shownAgain && !fired { reshow(side) }
         case .muteAll(let until):
-            for g in mirror.muteAll(until: until) { notifier.clear(g) }
+            for g in mirror.muteAll(until: until) { remove(g) }
             handle(.muteAll(until: until))
         case .unmuteAll:
             for id in mirror.unmuteAll(at: now) { showAgain(id) }
@@ -223,10 +246,11 @@ final class AlertController {
     /// Usual*), this Mac's own or the wearer's; with no alert up, the muted note while the side is muted.
     private func reshow(_ side: AlertSide) {
         let group = side.mainKind.group
+        dismissed.remove(group)  // the person acted on it: it is on screen
         if let f = engine.showing(group), f.kind.side == side {
-            notifier.post(f, sound: false, category: category(f.kind))
+            present(f, sound: false, category: category(f.kind))
         } else if mirroring, mirror.isShowing(group), let f = mirrored[group], f.kind.side == side {
-            notifier.post(f, sound: false, category: category(f.kind))
+            present(f, sound: false, category: category(f.kind))
         } else if let until = [
             engine.snoozes.muteEnd(side, at: clock.now), mirror.snoozes.muteEnd(side, at: clock.now),
         ]
@@ -247,8 +271,11 @@ final class AlertController {
     /// and this Mac's Mute all and side mutes end too (a "Mute all until you turn it off" set for one person must not
     /// silence the next one's very lows). A *Settings from* change is the same person: `setMirroring` keeps them.
     func resetMonitoring() {
-        for g in AlertGroup.allCases { notifier.clear(g) }
+        for g in AlertGroup.allCases { remove(g) }
         for side in AlertSide.allCases { notifier.removeMuted(side) }
+        rangAt = [:]
+        dismissed = []
+        latest = nil
         if engine.muteAllEnd(at: clock.now) != nil || mirror.muteAllEnd(at: clock.now) != nil
             || !engine.snoozes.active(at: clock.now).isEmpty || !mirror.snoozes.active(at: clock.now).isEmpty
         {
@@ -268,7 +295,10 @@ final class AlertController {
     }
 
     /// The timer fired, the Mac woke, or the clock changed.
-    func tick() { handle(.tick) }
+    func tick() {
+        handle(.tick)
+        refreshValues()
+    }
 
     /// Quitting: no timer outlives the controller.
     func stop() { wake.schedule(at: nil) {} }
@@ -305,26 +335,94 @@ final class AlertController {
         muteAllSeen = allEnd
         for effect in effects {
             switch effect {
-            case .fire(let f): notifier.post(f, sound: true, category: category(f.kind))
-            case .resume(let f): notifier.post(f, sound: false, category: category(f.kind))
-            case .clear(let f): notifier.clear(f.kind.group)
+            case .fire(let f): present(f, sound: true, category: category(f.kind))
+            case .resume(let f): present(f, sound: false, category: category(f.kind))
+            // the episode's alert on screen again without sound, unless the person dismissed it (then the next ring)
+            case .show(let f): present(f, sound: false, category: category(f.kind))
+            case .clear(let f): remove(f.kind.group)
             case .back(let side):
                 notifier.log(AlertLog.back(side))
                 notifier.removeMuted(side)
             case .schedule(let at):
-                nextWake = at
-                wake.schedule(at: at) { [weak self] in self?.tick() }
+                engineWake = at
             }
         }
+        if effects.contains(where: { if case .schedule = $0 { true } else { false } }) { scheduleWake() }
         refreshUI()
         save()
+    }
+
+    /// Wakes at the engine's next check, or earlier at a shown value's next freshness step (its time, then the ring).
+    private func scheduleWake() {
+        let step = latest.flatMap { r in
+            [AlertGroup.level, .rate].contains { g in shownLook[g] != nil && !dismissed.contains(g) }
+                ? AlertLiveValue.nextStep(r, now: clock.now) : nil
+        }
+        let at = [engineWake, step].compactMap { $0 }.min()
+        nextWake = at
+        wake.schedule(at: at) { [weak self] in self?.tick() }
+    }
+
+    /// Posts `f` (`sound` false: a resume, a silent show or an action's re-post): a silent one never brings back what
+    /// the person dismissed; a ring does. A level or rate alert shows the newest reading (#195).
+    private func present(_ f: AlertFiring, sound: Bool, category: String, escalated: Bool = false) {
+        let g = f.kind.group
+        if !sound && dismissed.contains(g) { return }
+        if sound {
+            dismissed.remove(g)
+            rangAt[g] = clock.now
+        }
+        var shown = f
+        if g != .noData, let r = latest, f.reading.map({ $0.at < r.at }) ?? true { shown.reading = r }
+        notifier.post(shown, sound: sound, category: category, escalated: escalated)
+        shownLook[g] = shown.reading.map { AlertLiveValue.look($0, now: clock.now) }
+    }
+
+    /// `g`'s alert goes (the rules ended it, a Mute, a reset).
+    private func remove(_ g: AlertGroup) {
+        notifier.clear(g)
+        shownLook[g] = nil
+    }
+
+    /// The alert of `g` on screen now (this Mac's own, or the wearer's mirrored one), or nil.
+    private func onScreen(_ g: AlertGroup) -> AlertFiring? {
+        if let f = engine.showing(g) { return f }
+        return mirroring && mirror.isShowing(g) ? mirrored[g] : nil
+    }
+
+    /// #195: every alert up shows the newest reading, posted again without sound when what it says changed enough
+    /// (`AlertLiveValue`: the value moved 5 mg/dL, the arrow or the freshness step changed; never right after it
+    /// rang). One the person dismissed stays away; no data keeps its last value (a new reading ends it).
+    private func refreshValues() {
+        guard let r = latest else { return }
+        let now = clock.now
+        for g in [AlertGroup.level, .rate] where !dismissed.contains(g) {
+            guard let f = onScreen(g), let shown = shownLook[g] else { continue }
+            if let fr = f.reading, fr.at > r.at { continue }
+            let next = AlertLiveValue.look(r, now: now)
+            guard AlertLiveValue.due(shown, next, rangAt: rangAt[g], now: now) else { continue }
+            var u = f
+            u.reading = r
+            notifier.post(
+                u, sound: false, category: category(f.kind), escalated: mirroring && mirror.isEscalated(g))
+            shownLook[g] = next
+        }
+    }
+
+    /// The person dismissed or clicked away `side`'s alert (#195; `firing` = the notification's, nil = whichever is up):
+    /// it stays away until its next ring.
+    func dismissed(_ side: AlertSide, firing: String? = nil) {
+        let g = side.mainKind.group
+        guard let f = onScreen(g), f.kind.side == side, firing.map({ $0 == f.id }) ?? true else { return }
+        dismissed.insert(g)
+        scheduleWake()
     }
 
     /// Posts the wearer's firing `id` with sound (Unmute / Remind as Usual on a mirrored alert): true = posted.
     @discardableResult
     private func showAgain(_ id: String?) -> Bool {
         guard mirroring, let id, let f = mirrored.values.first(where: { $0.id == id }) else { return false }
-        notifier.post(f, sound: true, category: category(f.kind))
+        present(f, sound: true, category: category(f.kind))
         return true
     }
 

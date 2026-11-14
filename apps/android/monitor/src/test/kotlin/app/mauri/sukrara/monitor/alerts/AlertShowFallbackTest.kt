@@ -33,9 +33,16 @@ class AlertShowFallbackTest {
         val plainFails = mutableSetOf<AlertGroup>()
         val problemFails = mutableSetOf<AlertGroup>()
 
-        override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
+        override fun show(
+            firing: Firing,
+            settings: AlertSettings,
+            silent: Boolean,
+            who: String?,
+            relaxedMin: Int,
+            now: Long,
+        ) {
             if (firing.kind.group in showFails) throw IllegalStateException("no such string")
-            inner.show(firing, settings, silent, who, relaxedMin)
+            inner.show(firing, settings, silent, who, relaxedMin, now)
         }
 
         override fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?) {

@@ -67,7 +67,7 @@
     "value_text_ok": [
       {
         "path": "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/alerts/AlertNotifier.kt",
-        "why": "an alert's notification says the reading that fired it (the event, not the live value)"
+        "why": "the plain fallback alert (plainValue): built from fixed resources and plain values only, so it can never fail; the alert's own body is surface alert-notification"
       }
     ],
     "surfaces": [
@@ -325,6 +325,16 @@
         ],
         "entry": "sentence",
         "what": "Read glucose aloud (the app shortcut): THE glucose sentence with its age and the pill's words, said by text-to-speech"
+      },
+      {
+        "id": "alert-notification",
+        "kind": "glyph",
+        "files": [
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/alerts/AlertCopy.kt",
+          "apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/alerts/AlertLiveValue.kt"
+        ],
+        "entry": "AlertCopy.bodyOf (AlertLiveValue: when it is posted again)",
+        "what": "an alert notification's body (#195): the newest reading's value and arrow, its time once late, struck through from 5 min; updated without sound while the alert is up"
       }
     ]
   },
@@ -388,7 +398,7 @@
     "value_text_ok": [
       {
         "path": "apps/macos/Sources/SukraraApp/Alerts/AlertText.swift",
-        "why": "an alert's notification says the reading that fired it; log lines"
+        "why": "no data's last value and the sensor's LO / HI bounds in the alert's words; log lines (the value itself comes from GlucoseCard.face, surface alert-notification)"
       }
     ],
     "surfaces": [
@@ -418,6 +428,15 @@
         "files": [
           "apps/macos/Sources/SukraraApp/AppModel.swift",
           "apps/macos/Sources/SukraraApp/StatusItem/MenubarTitle.swift"
+        ]
+      },
+      {
+        "id": "alert-notification",
+        "kind": "glyph",
+        "entry": "AlertText.body",
+        "what": "an alert notification's body (#195): the newest reading's value and arrow, its time once late (a notification can't strike text: the ring instead of the arrow says it is stale); updated without sound while the alert is up",
+        "files": [
+          "apps/macos/Sources/SukraraApp/Alerts/AlertText.swift"
         ]
       },
       {

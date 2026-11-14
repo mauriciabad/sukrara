@@ -12,6 +12,12 @@ sealed interface RuleAction {
     /** Alert now. */
     data class Fire(val firing: Firing) : RuleAction
 
+    /**
+     * Show [firing] without sound (SPEC §1 "Showing an alert"): the episode's alert is back on screen between its
+     * alerts, after a reading back in range for a moment or a change to a milder kind of its side.
+     */
+    data class Show(val firing: Firing) : RuleAction
+
     /** The notification of firing [id] goes (the condition left, a mute started, the kind changed). */
     data class Clear(val kind: AlertKind, val id: String, val at: Long) : RuleAction
 
@@ -236,11 +242,13 @@ class AlertEngine(
         }
         val r = last
         val fresh = Rules.fresh(r, now)
-        val level = Rules.levelOf(r, s, now)
-        val rateKind = Rules.rateOf(r, s, now)
         val noDataRule = s.rule(AlertKind.NO_DATA)
         val since = noDataSince()
         val noData = since != null && noDataRule.on && now - since >= noDataRule.threshold * 60 && !sensorSilent(now)
+        // once no data holds, the last reading is no longer now: the level and rate alerts go (no data's own alert
+        // says the last value and its time; SPEC §1 "Showing an alert")
+        val level = if (noData) null else Rules.levelOf(r, s, now)
+        val rateKind = if (noData) null else Rules.rateOf(r, s, now)
         for (side in snoozes.keys.toList()) {
             val sn = snoozes.getValue(side)
             if (sn.until in 1..now) {
@@ -270,12 +278,13 @@ class AlertEngine(
             }
         }
         // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
-        val holding = level == null && episodes[AlertGroup.LEVEL]?.let { Rules.outOfRange(it.side, r, s, now) } == true
+        val holding = level == null && !noData && episodes[AlertGroup.LEVEL]?.let { Rules.outOfRange(it.side, r, s, now) } == true
         step(AlertGroup.LEVEL, level, s, d, now, out, holding)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
         // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
         // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
         if (!fresh ||
+            noData ||
             r?.rate != null
         ) {
             step(AlertGroup.RATE, rateKind, s, d, now, out)
@@ -392,7 +401,16 @@ class AlertEngine(
             return
         }
         ep.next = due(ep, want, s, d, now)
-        if (now < ep.next) return
+        if (now < ep.next) {
+            // between its alerts the episode's alert stays on screen: after a reading back in range for a moment or a
+            // change to a milder kind it is shown again at once, without sound (its sound waits for the repeat)
+            if (ep.shown == null && ep.firedAt != null) {
+                val f = Firing(want, newId(), ep.n, last, s.rule(want).threshold, now, treated(ep, want, s, d, now))
+                ep.shown = f
+                out += RuleAction.Show(f)
+            }
+            return
+        }
         ep.n++
         ep.firedAt = now
         ep.firedKind = want

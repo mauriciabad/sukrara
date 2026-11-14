@@ -33,9 +33,16 @@ class AlertEffectIsolationTest {
     private class FlakyPresenter(private val inner: FakePresenter) : AlertPresenter by inner {
         var failing = false
 
-        override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
+        override fun show(
+            firing: Firing,
+            settings: AlertSettings,
+            silent: Boolean,
+            who: String?,
+            relaxedMin: Int,
+            now: Long,
+        ) {
             if (failing) throw SecurityException("refused")
-            inner.show(firing, settings, silent, who, relaxedMin)
+            inner.show(firing, settings, silent, who, relaxedMin, now)
         }
 
         override fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?) {

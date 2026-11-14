@@ -16,6 +16,7 @@ import Testing
             case .fire(let f): "fire \(f.kind.rawValue)"
             case .clear(let f): "clear \(f.kind.rawValue)"
             case .resume(let f): "resume \(f.kind.rawValue)"
+            case .show(let f): "show \(f.kind.rawValue)"
             case .back(let s): "back \(s.rawValue)"
             case .schedule: nil
             }

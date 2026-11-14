@@ -96,8 +96,10 @@ final class Notifier: AlertNotifying {
         content.categoryIdentifier = category
         content.threadIdentifier = AlertNotificationIDs.alertCategory
         content.userInfo = [Self.sideKey: f.kind.side.rawValue, Self.firingKey: f.id]
+        // a post without sound (its value updated, shown again silently, after an action or a relaunch, #195) never
+        // presents a banner again: passive, it only replaces what the list shows; the ring already broke through
         content.interruptionLevel =
-            (s[f.kind].alarm || escalated) && timeSensitive() ? .timeSensitive : .active
+            !sound ? .passive : (s[f.kind].alarm || escalated) && timeSensitive() ? .timeSensitive : .active
         content.sound = sound ? notificationSound(f.kind, s) : nil
         let group = f.kind.group
         let mine = next(group)
@@ -286,13 +288,23 @@ final class Notifier: AlertNotifying {
         ]
         return Set(
             plain.flatMap { id, actions in
-                [
-                    UNNotificationCategory(identifier: id, actions: actions, intentIdentifiers: []),
+                // an alert's dismissal reaches the app (#195: dismissed, it stays away until its next ring)
+                let options: UNNotificationCategoryOptions =
+                    id == AlertNotificationIDs.mutedCategory ? [] : [.customDismissAction]
+                return [
+                    UNNotificationCategory(
+                        identifier: id, actions: actions, intentIdentifiers: [], options: options),
                     UNNotificationCategory(
                         identifier: id + AlertNotificationIDs.logCarbsSuffix, actions: [log] + actions,
-                        intentIdentifiers: []),
+                        intentIdentifiers: [], options: options),
                 ]
             })
+    }
+
+    /// How a notification shows while Sukrara is in front: one posted again without sound (an alert's value updated,
+    /// shown again silently, #195) goes to the list only, never a banner again; a ringing one as always.
+    nonisolated static func presentation(silent: Bool) -> UNNotificationPresentationOptions {
+        silent ? [.list] : [.banner, .sound, .list]
     }
 
     /// The side whose *Log Carbs…* was chosen (it opens Add Treatment with Carbs focused), or nil for any other answer.

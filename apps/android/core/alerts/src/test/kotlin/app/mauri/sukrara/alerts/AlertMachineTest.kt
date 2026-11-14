@@ -156,6 +156,58 @@ class AlertMachineTest {
         assertTrue(clear.any { it == AlertEffect.Clear(AlertKind.LOW, "a") })
     }
 
+    /** #195: the wearer publishes its silent show as `show`; a mirroring follower shows it without sound. */
+    @Test fun aSilentShowGoesToTheFollowersAsShow() {
+        val w = machine()
+        w.start(null, null, null, t0)
+        w.handle(AlertInput.Reading(AlertReading(t0, 65)), t0)
+        w.handle(AlertInput.Reading(AlertReading(t0 + 60, 75)), t0 + 60)
+        val again = w.handle(AlertInput.Reading(AlertReading(t0 + 120, 66)), t0 + 120)
+        val shown = again.filterIsInstance<AlertEffect.Show>().single().firing
+        assertEquals(AlertKind.LOW, shown.kind)
+        val event = again.filterIsInstance<AlertEffect.Mirror>().single().event
+        assertEquals(AlertEvent.State.SHOW, event.state)
+        assertTrue(AlertEvent.encode(event).contains("\"state\":\"show\""))
+        assertEquals(event, AlertEvent.decode(AlertEvent.encode(event)))
+
+        val f = machine(AlertRole.FOLLOWER_MIRROR)
+        f.start(null, null, null, t0)
+        val got = f.handle(AlertInput.Remote(event), t0 + 120)
+        assertEquals(
+            event.id,
+            got
+                .filterIsInstance<AlertEffect.Show>()
+                .single()
+                .firing.id,
+        )
+        assertTrue("never a ring", got.none { it is AlertEffect.Fire })
+        assertTrue(
+            "the same show again (Bluetooth and relays) is shown once",
+            f.handle(AlertInput.Remote(event), t0 + 121).none {
+                it is AlertEffect.Show
+            },
+        )
+        f.handle(AlertInput.Mute(AlertKind.LOW, 30), t0 + 130)
+        val muted = f.handle(AlertInput.Remote(event.copy(id = "other", at = t0 + 140)), t0 + 140)
+        assertTrue("a Mute on the follower keeps it away", muted.none { it is AlertEffect.Show })
+    }
+
+    /** #195: once no data holds, the level and rate alerts go (scenario notifications.txt). */
+    @Test fun noDataClearsTheLevelAndRateAlerts() {
+        val base = AlertSettings()
+        val s =
+            base
+                .withRule(AlertKind.NO_DATA, base.rule(AlertKind.NO_DATA).copy(threshold = 10.0))
+                .withRule(AlertKind.FALLING_FAST, base.rule(AlertKind.FALLING_FAST).copy(on = true))
+        val m = machine(s = s)
+        m.start(null, null, null, t0)
+        m.handle(AlertInput.Reading(AlertReading(t0, 65, -2.5)), t0)
+        val due = m.handle(AlertInput.Tick, t0 + 600)
+        val cleared = due.filterIsInstance<AlertEffect.Clear>().map { it.kind }
+        assertEquals(listOf(AlertKind.LOW, AlertKind.FALLING_FAST), cleared)
+        assertEquals(listOf(AlertKind.NO_DATA), due.fires())
+    }
+
     @Test fun eventsRoundTripTheWireShape() {
         val e = AlertEvent.fire(Firing(AlertKind.HIGH, "0123456789abcdef", 2, AlertReading(1760649990, 192, -0.4), 180.0, 1760650000, 1))
         val text = AlertEvent.encode(e)

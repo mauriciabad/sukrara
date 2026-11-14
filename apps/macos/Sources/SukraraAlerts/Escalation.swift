@@ -14,6 +14,8 @@ public struct EscalationWatch: Equatable, Sendable {
         /// A firing; `esc` = minutes without an answer (escalated), nil = not escalated.
         case fire(AlertFiring, esc: Int?)
         case clear(AlertFiring)
+        /// The firing on screen again without sound (`show`, SPEC §1 "Showing an alert").
+        case show(AlertFiring)
         /// The escalated very low `id` was answered on the wearer's phone.
         case answered(AlertKind, id: String)
     }
@@ -57,6 +59,7 @@ public struct EscalationWatch: Equatable, Sendable {
             case .clear(let f):
                 if f.kind == .veryLow { self = EscalationWatch() }
                 out.append(.clear(f))
+            case .show(let f): out.append(.show(f))
             case .resume, .back, .schedule: break
             }
         }

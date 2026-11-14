@@ -35,6 +35,9 @@ enum class CardSurface(
     QUICK_TILE("quick-tile", Kind.GLYPH),
     READ_ALOUD("read-aloud", Kind.GLYPH),
 
+    /** An alert notification's body (#195): the newest reading's value and trend, its time once late, struck when stale. */
+    ALERT_NOTIFICATION("alert-notification", Kind.GLYPH),
+
     /** Picture sheets and fixtures (tests only; tools/check keeps it out of the app). */
     TEST("test", Kind.CARD),
     ;

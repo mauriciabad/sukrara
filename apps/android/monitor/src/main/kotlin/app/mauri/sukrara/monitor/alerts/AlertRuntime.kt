@@ -127,6 +127,19 @@ class AlertRuntime(
      */
     private val unposted = HashMap<AlertGroup, Boolean>()
 
+    /**
+     * #195, SPEC §1 "Showing an alert": the newest reading (what an alert shows while it is up), what each group's
+     * notification says about it (its look when last posted), when each group last rang, and the groups the person
+     * swiped or tapped away: those stay hidden until the next ring (an update or a silent show never brings them back).
+     */
+    private var latest: AlertReading? = null
+    private val shownLook = HashMap<AlertGroup, AlertLiveValue.Look>()
+    private val rangAt = HashMap<AlertGroup, Long>()
+    private val dismissed = HashSet<AlertGroup>()
+
+    /** The exact alarm as last set (the engine's next check, or earlier: a shown value's next freshness step). */
+    private var alarmAt: Long? = null
+
     private fun now(): Long = clock.now().epochSecond
 
     /** Feeds the runtime while the monitoring service runs (cancelled with [scope]). */
@@ -181,7 +194,9 @@ class AlertRuntime(
             notes = emptyList()
             muteAllSeen = 0
             unposted.clear()
-            attempt(Step.Alarm) { alarm.set(null) }
+            forgetShown()
+            latest = null
+            attempt(Step.Alarm) { setAlarm(null) }
             attempt(Step.Save) {
                 store.save { AlertRecord() }
                 lockedBoot(LockedBootPlan())
@@ -240,6 +255,7 @@ class AlertRuntime(
             val m = machine ?: return
             val f = firing[group]
             if (f != null) {
+                dismissed.remove(group) // the person acted on it: it is on screen
                 post(m, group, f, silent = true, relaxedMin(m, group, now()))
             } else {
                 mutedCards.remove(group)
@@ -277,10 +293,12 @@ class AlertRuntime(
                 sensor = window
                 run(AlertInput.Sensor(window), now)
             }
-            val latest = state.latest
-            if (latest != null && latest.t.epochSecond != fedReadingAt) {
-                fedReadingAt = latest.t.epochSecond
-                run(AlertInput.Reading(readingOf(latest)), now)
+            val newest = state.latest
+            if (newest != null && newest.t.epochSecond != fedReadingAt) {
+                fedReadingAt = newest.t.epochSecond
+                val r = readingOf(newest)
+                if (latest.let { it == null || r.t >= it.t }) latest = r
+                run(AlertInput.Reading(r), now)
             }
         }
     }
@@ -319,6 +337,7 @@ class AlertRuntime(
                 is AlertInput.Treatments -> doses = input.doses
                 is AlertInput.Sensor -> sensor = input.sensor
                 is AlertInput.Source -> sourceStart = input.startedAt
+                is AlertInput.Reading -> if (latest.let { it == null || input.reading.t >= it.t }) latest = input.reading
                 else -> Unit
             }
             run(input, now())
@@ -342,6 +361,7 @@ class AlertRuntime(
         muteAllSeen = record.muteAllUntil
         sensor = record.sensor?.window
         val saved = record.machine ?: return emptyList()
+        latest = saved.local.last
         role = if (saved.role == AlertRole.WEARER) Role.Wearer else Role.Follower
         return startMachine(saved.role, saved, now())
     }
@@ -360,9 +380,10 @@ class AlertRuntime(
         lastFired.clear()
         mutedCards.clear()
         unposted.clear()
+        forgetShown()
         if (alertRole == null) {
             machine = null
-            attempt(Step.Alarm) { alarm.set(null) }
+            attempt(Step.Alarm) { setAlarm(null) }
             attempt(Step.Save) { save() }
             attempt(Step.Publish) { publishUi(now) }
         } else {
@@ -405,7 +426,8 @@ class AlertRuntime(
         notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll, lastFired))
         muteAllSeen = muteAll
         effects.filterIsInstance<AlertEffect.Fire>().forEach { lastFired[it.firing.kind.group] = it.firing.kind }
-        effects.filterIsInstance<AlertEffect.Schedule>().forEach { e -> attempt(Step.Alarm) { alarm.set(e.at) } }
+        val scheduled = effects.filterIsInstance<AlertEffect.Schedule>()
+        scheduled.forEach { e -> attempt(Step.Alarm) { setAlarm(earliest(e.at, valueStepAt(now))) } }
         val firedNow = effects.filterIsInstance<AlertEffect.Fire>().map { it.firing.kind.group }.toSet()
         retryUnposted(m, now, skip = firedNow)
         for (e in ringOrder(effects, m.settingsAt(now))) {
@@ -419,11 +441,28 @@ class AlertRuntime(
                     post(m, group, e.firing, e.silent, relax)
                 }
 
+                // the episode's alert on screen again without sound (a reading back out of range, a milder kind), unless
+                // the person swiped or tapped it away: then it waits for the next ring
+                is AlertEffect.Show -> {
+                    val group = e.firing.kind.group
+                    firing[group] = e.firing
+                    mutedCards.remove(group)
+                    if (group !in dismissed) {
+                        val relax = relaxedMin(m, group, now)
+                        shownRelax[group] = relax
+                        post(m, group, e.firing, silent = true, relax)
+                    }
+                }
+
                 is AlertEffect.Clear -> {
-                    if (firing[e.kind.group].let { it == null || it.id == e.id }) {
-                        firing.remove(e.kind.group)
-                        unposted.remove(e.kind.group)
-                        attempt(Step.Notify, e.kind.group) { presenter.clear(e.kind.group) }
+                    val group = e.kind.group
+                    if (firing[group].let { it == null || it.id == e.id }) {
+                        // gone from the screen before its end: the person swiped or tapped it (it stays away until a ring)
+                        if (firing[group] != null && group !in unposted && group !in dismissed && !showing(group)) dismissed += group
+                        firing.remove(group)
+                        unposted.remove(group)
+                        shownLook.remove(group)
+                        attempt(Step.Notify, group) { presenter.clear(group) }
                     }
                 }
 
@@ -456,7 +495,13 @@ class AlertRuntime(
             }
         }
         refreshRelaxed(m, now)
+        refreshValues(m, now)
         reconcileMutedCards(now)
+        // a value on screen that turns late or stale needs a wake before the engine's own next check
+        if (scheduled.isNotEmpty()) {
+            val want = earliest(scheduled.last().at, valueStepAt(now))
+            if (want != alarmAt) attempt(Step.Alarm) { setAlarm(want) }
+        }
         attempt(Step.Save) { save() }
         attempt(Step.Publish) { publishUi(now) }
         return effects
@@ -470,10 +515,19 @@ class AlertRuntime(
      * silently when a stand-in already rang, else as loud as it was meant to be.
      */
     private suspend fun post(m: AlertMachine, group: AlertGroup, f: Firing, silent: Boolean, relax: Int) {
+        // swiped or tapped away: only a ring brings it back
+        if (silent && group in dismissed) return
         if (!silent) presenter.beforeRing()
-        val settings = m.settingsAt(now())
+        val now = now()
+        if (!silent) {
+            dismissed.remove(group)
+            rangAt[group] = now
+        }
+        val settings = m.settingsAt(now)
         val who = whoFor(m)
-        if (attempt(Step.Show, group) { presenter.show(f, settings, silent, who, relax) }) {
+        val shown = withLatest(f)
+        if (attempt(Step.Show, group) { presenter.show(shown, settings, silent, who, relax, now) }) {
+            shown.reading?.let { shownLook[group] = AlertLiveValue.look(it, now) } ?: shownLook.remove(group)
             unposted.remove(group)
             forget(Step.Plain, group)
             forget(Step.Problem, group)
@@ -564,11 +618,86 @@ class AlertRuntime(
     private suspend fun refreshRelaxed(m: AlertMachine, now: Long) {
         for ((group, f) in firing) {
             val relax = relaxedMin(m, group, now)
-            if (shownRelax[group] == relax || group in unposted) continue
+            if (shownRelax[group] == relax || group in unposted || group in dismissed) continue
             attempt(Step.Notify, group) {
-                presenter.show(f, m.settingsAt(now), silent = true, who = whoFor(m), relaxedMin = relax)
+                val shown = withLatest(f)
+                presenter.show(shown, m.settingsAt(now), silent = true, who = whoFor(m), relaxedMin = relax, now = now)
                 shownRelax[group] = relax
+                shown.reading?.let { shownLook[group] = AlertLiveValue.look(it, now) }
             }
+        }
+    }
+
+    /**
+     * #195: every alert up shows the newest reading, posted again without sound when what it says changed enough
+     * ([AlertLiveValue]: the value moved 5 mg/dL, the arrow or the freshness step changed; never right after it rang).
+     * One the person swiped or tapped away stays away (it is noted here when it is found gone). No data's alert keeps
+     * its last value: a new reading ends it.
+     */
+    private suspend fun refreshValues(m: AlertMachine, now: Long) {
+        val r = latest ?: return
+        for ((group, f) in firing.toMap()) {
+            if (f.kind == AlertKind.NO_DATA || group in dismissed || group in unposted) continue
+            val shown = shownLook[group] ?: continue
+            if (f.reading.let { it != null && it.t > r.t }) continue
+            val next = AlertLiveValue.look(r, now)
+            if (!AlertLiveValue.due(shown, next, rangAt[group], now)) continue
+            if (!showing(group)) {
+                dismissed += group
+                continue
+            }
+            attempt(Step.Notify, group) {
+                presenter.show(
+                    f.copy(reading = r),
+                    m.settingsAt(now),
+                    silent = true,
+                    who = whoFor(m),
+                    relaxedMin = relaxedMin(m, group, now),
+                    now = now,
+                )
+                shownLook[group] = next
+            }
+        }
+    }
+
+    /** [f] with the newest reading (a level or rate alert shows the value now; no data keeps its last one). */
+    private fun withLatest(f: Firing): Firing {
+        val r = latest ?: return f
+        if (f.kind == AlertKind.NO_DATA || f.reading.let { it != null && it.t >= r.t }) return f
+        return f.copy(reading = r)
+    }
+
+    /** Whether [group]'s alert is still on screen; a presenter that can't tell counts as yes. */
+    private fun showing(group: AlertGroup): Boolean = runCatching { presenter.isShowing(group) }.getOrDefault(true)
+
+    /** When a value on screen turns late or stale next (the card's next freshness step), or null. */
+    private fun valueStepAt(now: Long): Long? {
+        val r = latest ?: return null
+        val up = firing.any { (g, f) -> f.kind != AlertKind.NO_DATA && g !in dismissed && g in shownLook }
+        return if (up) AlertLiveValue.nextStepAt(r, now) else null
+    }
+
+    private fun earliest(
+        a: Long?,
+        b: Long?,
+    ): Long? = listOfNotNull(a, b).minOrNull()
+
+    private fun setAlarm(at: Long?) {
+        alarm.set(at)
+        alarmAt = at
+    }
+
+    /** Whose alerts the device shows changed (a role, Start fresh): nothing shown is remembered. */
+    private fun forgetShown() {
+        shownLook.clear()
+        rangAt.clear()
+        dismissed.clear()
+    }
+
+    /** The person swiped [kind]'s alert away (#195): it stays away until the next ring. */
+    suspend fun dismissed(kind: String) {
+        mutex.withLock {
+            AlertKind.fromWire(kind)?.group?.let { if (it in firing) dismissed += it }
         }
     }
 

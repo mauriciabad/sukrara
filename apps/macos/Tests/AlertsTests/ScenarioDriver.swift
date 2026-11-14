@@ -22,6 +22,9 @@ struct Scenario: CustomTestStringConvertible, Sendable {
     var lines: [Line]
     var end: Int
     var mirror: Bool
+    /// `shows`: also compare the silent shows (`show <headline>`, SPEC §1 "Showing an alert") and the clears of what
+    /// they showed; without it the timeline is the ringing alerts and their clears only.
+    var shows = false
     /// `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; nil = 08:54.
     var at: Int? = nil
 
@@ -52,18 +55,20 @@ struct Scenario: CustomTestStringConvertible, Sendable {
         var lines: [Line] = []
         var end: Int?
         var mirror = false
+        var shows = false
         var at: Int?
         func flush() {
             guard let t = title else { return }
             out.append(
                 Scenario(
                     file: file, title: t, settings: settings, lines: lines, end: end ?? lines.map(\.minute).max() ?? 0,
-                    mirror: mirror, at: at))
+                    mirror: mirror, shows: shows, at: at))
             title = nil
             settings = []
             lines = []
             end = nil
             mirror = false
+            shows = false
             at = nil
         }
         for raw in text.components(separatedBy: "\n") {
@@ -78,6 +83,8 @@ struct Scenario: CustomTestStringConvertible, Sendable {
                 end = Int(trim(l.dropFirst(4)))
             } else if l == "mirror" {
                 mirror = true
+            } else if l == "shows" {
+                shows = true
             } else if l.hasPrefix("at ") {
                 at = clockMinutes(String(l.dropFirst(3)))
             } else {
@@ -185,13 +192,23 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         treatments.filter { !$0.deleted }.map { AlertTreatment(kind: $0.kind, at: $0.at) }
     }
 
+    // the firings shown without sound (per device): without `shows` neither they nor their clears are compared
+    var silent: Set<String> = []
+    func shown(_ f: AlertFiring, _ prefix: String) {
+        silent.insert(prefix + f.id)
+        if sc.shows { record(prefix + "show " + f.headline) }
+    }
+    func cleared(_ f: AlertFiring, _ prefix: String) {
+        if sc.shows || !silent.contains(prefix + f.id) { record(prefix + "clear \(f.kind.rawValue)") }
+    }
     func wearerEffects(_ effects: [AlertEffect]) {
         for e in effects {
             switch e {
             case .fire(let f): record(f.headline)
-            case .clear(let f): record("clear \(f.kind.rawValue)")
+            case .show(let f): shown(f, "")
+            case .clear(let f): cleared(f, "")
             case .back(let side): record("back \(side.rawValue)")
-            case .resume(let f): record("resume \(f.kind.rawValue)")
+            case .resume(let f): if sc.shows || !silent.contains(f.id) { record("resume \(f.kind.rawValue)") }
             case .schedule: break
             }
         }
@@ -207,8 +224,11 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 if follower.fire(f.kind, id: f.id, at: f.at, escalated: escalated) {
                     record("follower \(f.headline)" + (escalated ? " · no response" : ""))
                 }
+            case .show(let f):
+                published[f.id] = f
+                if follower.show(f.kind, id: f.id, at: f.at) { shown(f, "follower ") }
             case .clear(let f):
-                if follower.clear(f.kind, id: f.id) { record("follower clear \(f.kind.rawValue)") }
+                if follower.clear(f.kind, id: f.id) { cleared(f, "follower ") }
             case .answered(let kind, _):
                 if follower.answered(kind) != nil { record("follower answered \(kind.rawValue)") }
             }

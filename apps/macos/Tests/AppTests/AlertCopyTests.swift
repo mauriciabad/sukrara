@@ -4,6 +4,7 @@
 import Foundation
 import SukraraAlerts
 import SukraraCore
+import SukraraGraph
 import SukraraTesting
 import Testing
 
@@ -20,6 +21,7 @@ import Testing
         var mgdl: Double?
         var rate: Double?
         var ageMin: Int?
+        var ageS: Int?
         var unit: String?
         var action: String?
         var platform: String?
@@ -46,6 +48,16 @@ import Testing
 
     static let at = Date(timeIntervalSince1970: 1_000_020)
 
+    /// A body case's reading time: `ageS` or `ageMin` before `at`.
+    static func readingAt(_ c: Case) -> Date { at.addingTimeInterval(-TimeInterval(c.ageS ?? (c.ageMin ?? 0) * 60)) }
+
+    /// `c`'s expected text, its `{time}` the reading's time as the card writes it (`Freshness.timeText`).
+    static func expected(_ text: String, _ c: Case) -> String {
+        text.replacingOccurrences(
+            of: "{time}",
+            with: Freshness.timeText(readingAt(c).timeIntervalSince1970, now: at.timeIntervalSince1970))
+    }
+
     /// The Mac panel's catalog value of `key` in `language`.
     static func catalog(_ key: String, _ language: String) throws -> String? {
         let json = try JSONSerialization.jsonObject(with: Data(contentsOf: LocalizationTests.catalog)) as? [String: Any]
@@ -60,9 +72,7 @@ import Testing
         text.unit = c.unit == "mmol" ? .mmol : .mgdl
         func firing() -> AlertFiring? {
             guard let kind = c.kind.flatMap(AlertKind.init(rawValue:)) else { return nil }
-            let reading = c.mgdl.map {
-                GlucoseSample(at: at.addingTimeInterval(TimeInterval(-(c.ageMin ?? 0) * 60)), mgdl: $0, rate: c.rate)
-            }
+            let reading = c.mgdl.map { GlucoseSample(at: readingAt(c), mgdl: $0, rate: c.rate) }
             return AlertFiring(
                 id: "e1", kind: kind, at: at, reading: reading, threshold: kind == .noData ? 20 : 70, n: 1,
                 treated: c.treated ?? 0)
@@ -93,7 +103,7 @@ import Testing
 
     @Test(arguments: cases())
     func copy(_ c: Case) throws {
-        #expect(try Self.word(c, .en) == (c.en_mac ?? c.en))
-        #expect(try Self.word(c, .es) == (c.es_mac ?? c.es))
+        #expect(try Self.word(c, .en) == Self.expected(c.en_mac ?? c.en, c))
+        #expect(try Self.word(c, .es) == Self.expected(c.es_mac ?? c.es, c))
     }
 }

@@ -29,6 +29,7 @@
     <string name="alert_context_after_insulin">sigue alta tras la insulina</string>
     <string name="alert_context_after_more_insulin">sigue alta tras más insulina</string>
     <string name="alert_text_value">%1$s %2$s</string>
+    <string name="alert_text_value_at">%1$s · %2$s</string>
     <string name="alert_text_glucose">%1$s %2$s</string>
     <string name="alert_text_lo">LO · por debajo de %1$s</string>
     <string name="alert_text_hi">HI · por encima de %1$s</string>
@@ -36,7 +37,7 @@
     <string name="alert_text_rising">%1$s · sube %2$s %3$s</string>
     <string name="alert_text_no_reading">Sin lectura reciente</string>
     <string name="alert_text_no_data">Aún no hay lecturas</string>
-    <string name="alert_text_no_data_last">Sin lecturas desde hace %1$s · última %2$s</string>
+    <string name="alert_text_no_data_last">Última lectura %1$s · %2$s</string>
     <string name="alert_relaxed_subtext">Avisos cada %1$s</string>
 
     <string name="alert_action_log_carbs">Registrar hidratos</string>

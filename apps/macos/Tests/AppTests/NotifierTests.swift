@@ -4,6 +4,7 @@
 import Foundation
 import SukraraAlerts
 import SukraraCore
+import SukraraGraph
 import SukraraTesting
 import Testing
 import UserNotifications
@@ -122,8 +123,10 @@ final class FakeCenter: NotificationPosting {
             id: "n", kind: .noData, at: clock.now,
             reading: GlucoseSample(at: clock.now.addingTimeInterval(-25 * 60), mgdl: 120, rate: nil), threshold: 20,
             n: 1, treated: 0)
-        #expect(en.body(old, now: clock.now) == "No reading for 25 min · last 120 mg/dL")
-        #expect(es.body(old, now: clock.now) == "Sin lecturas desde hace 25 min · última 120 mg/dL")
+        // #195: when the last reading came, never "for 25 min" (a time doesn't go out of date on a notification left up)
+        let at = Freshness.timeText(clock.now.timeIntervalSince1970 - 25 * 60, now: clock.now.timeIntervalSince1970)
+        #expect(en.body(old, now: clock.now) == "Last reading \(at) · 120 mg/dL")
+        #expect(es.body(old, now: clock.now) == "Última lectura \(at) · 120 mg/dL")
         let lo = firing(.veryLow, mgdl: 39, rate: nil)
         #expect(en.body(lo, now: clock.now).hasPrefix("LO · below 40 mg/dL"))
         #expect(es.headline(firing(.low, treated: 2)) == "Glucosa baja · vuelve a comer")
@@ -156,6 +159,18 @@ final class FakeCenter: NotificationPosting {
         // sounds: nil = nothing could be copied → the default sound, never silence
         notifier().post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
         #expect(center.added[1].content.sound != nil)
+    }
+
+    /// #195: a post without sound (a value update, a silent show, a re-post after an action) is passive: it replaces
+    /// what the list shows and never presents a banner again; an alarm that rings stays as loud as it was.
+    @Test func aSilentPostIsPassiveARingIsNot() {
+        var s = AlertSettings()
+        s.rules[.veryLow]?.alarm = true
+        notifier(settings: s, throughFocus: true).post(firing(.veryLow, mgdl: 50), sound: true, category: "")
+        notifier(settings: s, throughFocus: true).post(firing(.veryLow, mgdl: 48), sound: false, category: "")
+        notifier().post(firing(.low), sound: false, category: AlertNotificationIDs.alertCategory)
+        #expect(center.added.map(\.content.interruptionLevel) == [.timeSensitive, .passive, .passive])
+        #expect(center.added.map(\.identifier).allSatisfy { $0 == AlertNotificationIDs.notificationID(.level) })
     }
 
     /// #184: a Focus holds Sukrara's alerts back by default; letting it through makes the alarms Time Sensitive, when

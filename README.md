@@ -53,6 +53,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Pick your favorite sound pack or make your own.
 - Minimal alert fatigue: alerts go quiet when you've already acted, and wait while your glucose is clearly heading
   back into range.
+- An alert on screen shows the current value, updated silently, and stays up while you're still out of range.
 - Optionally, alarms can ring loud, even in Do Not Disturb.
 - Configure how alarms repeat while your glucose stays out of range.
 - Unacknowledged very lows can alert the people who follow you.

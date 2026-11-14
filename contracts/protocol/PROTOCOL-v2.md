@@ -183,7 +183,7 @@ settings: [`spikes/alerts/SPEC.md`](../alerts/SPEC.md); report: [docs/15](../../
 
 | Event | kind | signed by | tags | content (decrypted) |
 |---|---|---|---|---|
-| **alert** | 21079 (ephemeral) | `D` | `["gk", gk_n]`, exp now+1 h | `{"v":2,"type":"alert","id","k","state":"fire"\|"clear"\|"answered","at","t","sgv","r","th","n","tr","esc"}` → `G_n` |
+| **alert** | 21079 (ephemeral) | `D` | `["gk", gk_n]`, exp now+1 h | `{"v":2,"type":"alert","id","k","state":"fire"\|"show"\|"clear"\|"answered","at","t","sgv","r","th","n","tr","esc"}` → `G_n` |
 
 - `k` ∈ `very_low|low|high|very_high|extremely_high|falling_fast|rising_fast|no_data`; `id` is random per firing and a `clear`
   repeats it; `n` counts the episode's alerts; `tr` = treatments the headline acknowledges (0, 1, 2 = two or more:
@@ -195,6 +195,11 @@ settings: [`spikes/alerts/SPEC.md`](../alerts/SPEC.md); report: [docs/15](../../
   `alert`, next to `live`).
 - Followers subscribe with `kinds: [21078, 21079]` in the live REQ, apply the live acceptance rules, dedupe by event
   id, drop `type ≠ "alert"` and anything with `at` older than 10 min.
+- **`show`** (#195, [alerts SPEC §1 "Showing an alert"](../alerts/SPEC.md)): the episode's alert is on screen again
+  without sound between its alerts: after a reading back in range for a moment it is out of range again, or the kind
+  changed to a milder one of its side (very low → low). Same fields as `fire`, a new `id` (a later `clear` repeats it);
+  followers show it silently unless their own Mute or Mute all quiets the side (Remind less doesn't space it: it isn't a
+  ring). It never starts or carries an escalation.
 - **No answer to a very low** (#39, [alerts SPEC §4](../alerts/SPEC.md)): a `fire` of `very_low` carries `esc` (minutes)
   once nobody answered it on the wearer's phone for `escalation.min` minutes (default 5): the repeat due then, or the
   newest firing sent again with the same `id` and a new `at`. Followers that take escalations show it through their own

@@ -34,28 +34,44 @@ struct AlertText: Equatable {
         return headline(f) + (language == .en ? " · no response" : " · sin respuesta")
     }
 
-    /// The body: the value and arrow (`69 mg/dL ↘`), with the rate for falling / rising fast (`· falling 2.4
-    /// mg/dL/min`, `· falling 0.13 mmol/L/min`), and for no data how long and the last value. Never the threshold, never a made-up number: the
-    /// sensor's LO / HI as such (not its stored 39 / 401), and without a reading it says so.
+    /// The body (registered glyph surface `alert-notification`, contracts/graph/surfaces): the value and arrow
+    /// (`69 mg/dL ↘`), with the rate for falling / rising fast (`· falling 2.4 mg/dL/min`, `· falling 0.13
+    /// mmol/L/min`), and for no data when the last reading came and its value. The reading's look at `now` is the card's
+    /// (`GlucoseCard.face`): once late its time follows (`69 mg/dL ↘ · 14:05`); from 5 min the ring replaces the arrow
+    /// and the rate goes (a notification can't strike text through; Android does). Never the threshold, never a made-up
+    /// number: the sensor's LO / HI as such (not its stored 39 / 401), and without a reading it says so.
     func body(_ f: AlertFiring, now: Date) -> String {
         let en = language == .en
         if f.kind == .noData {
             // a source that never delivered a reading: nothing to count from but its start, nothing to show
             guard let r = f.reading else { return en ? "No reading yet" : "Aún no hay lecturas" }
-            let since = Durations.text(max(Int(f.threshold.rounded()), Int(now.timeIntervalSince(r.at) / 60)))
-            return en
-                ? "No reading for \(since) · last \(value(r))" : "Sin lecturas desde hace \(since) · última \(value(r))"
+            // when it came, not "for 20 min": a time never goes out of date on a notification left up
+            let at = Freshness.timeText(r.at.timeIntervalSince1970, now: now.timeIntervalSince1970)
+            return en ? "Last reading \(at) · \(value(r))" : "Última lectura \(at) · \(value(r))"
         }
         guard let r = f.reading else { return en ? "No recent reading" : "Sin lectura reciente" }
-        let shown = "\(value(r)) \(TrendAngle.text(r.rate))"
-        guard let rate = r.rate, f.kind == .fallingFast || f.kind == .risingFast else { return shown }
-        let amount = "\(unit.rateText(abs(rate), locale: locale)) \(unit.rateSymbol)"
-        switch (language, f.kind) {
-        case (.en, .fallingFast): return "\(shown) · falling \(amount)"
-        case (.en, _): return "\(shown) · rising \(amount)"
-        case (.es, .fallingFast): return "\(shown) · baja \(amount)"
-        case (.es, _): return "\(shown) · sube \(amount)"
+        let look = Self.look(r, now: now)
+        let shown = "\(value(r)) \(look.arrowText ?? "")"
+        var text = shown
+        if !look.strike, let rate = r.rate, f.kind == .fallingFast || f.kind == .risingFast {
+            let amount = "\(unit.rateText(abs(rate), locale: locale)) \(unit.rateSymbol)"
+            switch (language, f.kind) {
+            case (.en, .fallingFast): text = "\(shown) · falling \(amount)"
+            case (.en, _): text = "\(shown) · rising \(amount)"
+            case (.es, .fallingFast): text = "\(shown) · baja \(amount)"
+            case (.es, _): text = "\(shown) · sube \(amount)"
+            }
         }
+        guard look.fresh != .fresh else { return text }
+        return text + " · " + Freshness.timeText(r.at.timeIntervalSince1970, now: now.timeIntervalSince1970)
+    }
+
+    /// `r`'s look at `now`, the card's: the alert notification's surface asks `GlucoseCard.face` as itself.
+    static func look(_ r: GlucoseSample, now: Date) -> GlucoseLook {
+        let data = CardData(
+            readings: [GraphReading(t: r.at.timeIntervalSince1970, v: r.mgdl, rate: r.rate)],
+            now: now.timeIntervalSince1970)
+        return GlucoseCard.face(data, unit: .mgdl, surface: .alertNotification)
     }
 
     private var locale: Locale { Locale(identifier: language.rawValue) }

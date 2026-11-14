@@ -74,6 +74,9 @@ public enum AlertEffect: Equatable, Sendable {
     case clear(AlertFiring)
     /// After a relaunch: show that firing again without sound (it was up before).
     case resume(AlertFiring)
+    /// Show that firing without sound (SPEC §1 "Showing an alert"): the episode's alert on screen again between its
+    /// alerts, after a reading back in range for a moment or a change to a milder kind of its side.
+    case show(AlertFiring)
     /// The side's Mute / Remind less ended because glucose is back by the margin (history line).
     case back(AlertSide)
     /// Wake the engine with `.tick` at this time (nil = no timer needed). Always the last effect.
@@ -249,7 +252,13 @@ public struct AlertEngine: Sendable {
         }
         let r = context.latest
         let fresh = r.map { t.timeIntervalSince($0.at) <= Self.freshness } ?? false
-        let rules = context.scope == .all
+        let nd = s[.noData]
+        let noData =
+            (noDataSince.map { nd.on && t.timeIntervalSince($0) >= nd.threshold * 60 } ?? false)
+            && !expectsNoReading(at: t)
+        // once no data holds, the last reading is no longer now: the level and rate alerts go (no data's own alert
+        // says the last value and its time; SPEC §1 "Showing an alert")
+        let rules = context.scope == .all && !noData
         var rate: AlertKind?
         if rules, fresh, let v = r?.rate {
             if s[.fallingFast].on, v <= -s[.fallingFast].threshold {
@@ -258,10 +267,6 @@ public struct AlertEngine: Sendable {
                 rate = .risingFast
             }
         }
-        let nd = s[.noData]
-        let noData =
-            (noDataSince.map { nd.on && t.timeIntervalSince($0) >= nd.threshold * 60 } ?? false)
-            && !expectsNoReading(at: t)
         // a Mute over by its time: an alert of its side from before it comes at once (SPEC §2), also when the repeat is
         // later (`due` can't read the end once `advance` clears it)
         for (g, e) in episodes {
@@ -280,7 +285,7 @@ public struct AlertEngine: Sendable {
         out += backSides.map(AlertEffect.back)
         let level = rules ? Self.level(of: r, s, at: t) : nil
         // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
-        let holding = level == nil && (episodes[.level].map { isOutOfRange($0.side, r, s, at: t) } ?? false)
+        let holding = level == nil && !noData && (episodes[.level].map { isOutOfRange($0.side, r, s, at: t) } ?? false)
         step(.level, level, holding: holding, at: t, rng: &rng, out: &out)
         // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
         // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
@@ -375,7 +380,18 @@ public struct AlertEngine: Sendable {
             return
         }
         e.next = due(e, want, at: t)
-        guard let next = e.next, t >= next else { return }
+        guard let next = e.next, t >= next else {
+            // between its alerts the episode's alert stays on screen: after a reading back in range for a moment or a
+            // change to a milder kind it is shown again at once, without sound (its sound waits for the repeat)
+            if e.shown == nil, e.firedAt != nil {
+                let f = AlertFiring(
+                    id: AlertFiring.newID(using: &rng), kind: want, at: t, reading: context.latest,
+                    threshold: s[want].threshold, n: e.n, treated: treated(e, want, at: t))
+                e.shown = f
+                out.append(.show(f))
+            }
+            return
+        }
         e.n += 1
         e.firedAt = t
         e.firedKind = want

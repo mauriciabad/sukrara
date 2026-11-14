@@ -86,6 +86,21 @@ class WearerMirror(memory: MirrorMemory = MirrorMemory()) {
     }
 
     /**
+     * The wearer shows [f] again without sound (SPEC §4 `show`): the firing to show here silently, or null (the same one
+     * again, or this device's Mute / Mute all quiets the side). It isn't a ring, so Remind less doesn't space it.
+     */
+    fun show(f: Firing): Firing? {
+        val g = f.kind.group
+        if (newest[g]?.id == f.id) return null
+        newest[g] = f
+        newestCleared.remove(g)
+        val sn = snoozes[f.kind.side]
+        if ((sn != null && sn.until > f.at) || muteAllUntil > f.at) return null
+        shown[g] = f
+        return f
+    }
+
+    /**
      * The wearer cleared firing [id] of [kind]'s group: the notification shown here that goes (the one shown, or —
      * when this device skipped a relaxed repeat — the earlier one still up), or null. A late clear of an older firing
      * changes nothing.

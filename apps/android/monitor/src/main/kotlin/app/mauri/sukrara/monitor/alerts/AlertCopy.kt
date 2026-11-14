@@ -7,12 +7,15 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertReading
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
-import app.mauri.sukrara.graph.TrendAngle
+import app.mauri.sukrara.graph.CardSurface
+import app.mauri.sukrara.graph.Freshness
+import app.mauri.sukrara.graph.GlucoseCard
+import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.stats.GlucosePoint
 import app.mauri.sukrara.monitor.R
 import java.util.Locale
 
@@ -43,6 +46,7 @@ object AlertCopy {
             "alert_context_after_more_insulin" to R.string.alert_context_after_more_insulin,
             "alert_context_no_response" to R.string.alert_context_no_response,
             "alert_text_value" to R.string.alert_text_value,
+            "alert_text_value_at" to R.string.alert_text_value_at,
             "alert_text_glucose" to R.string.alert_text_glucose,
             "alert_text_lo" to R.string.alert_text_lo,
             "alert_text_hi" to R.string.alert_text_hi,
@@ -84,46 +88,77 @@ object AlertCopy {
     }
 
     /**
-     * An alert notification's body: the value and arrow (`69 mg/dL ↘`), with the rate for falling / rising fast, or for
-     * no data how long and the last value. Never a made-up number: without a reading it says so (no "0 mg/dL"), and
-     * without a rate the fast alerts show only the value. Numbers in the person's [unit] (`3,8 mmol/L`, `0,13
-     * mmol/L/min`) with [locale]'s decimal separator.
+     * An alert notification's body (registered glyph surface `alert-notification`, contracts/graph/surfaces): the value
+     * and arrow (`69 mg/dL ↘`), with the rate for falling / rising fast, or for no data when the last reading came and
+     * its value. The value's look is the card's ([GlucoseCard.face]) for the reading at [now]: once it is late the
+     * reading's time follows (`69 mg/dL ↘ · 14:05`), from 5 min it is struck through ([AlertBody.strikeTo]) with the
+     * ring for its trend. Never a made-up number: without a reading it says so (no "0 mg/dL"), and without a rate the
+     * fast alerts show only the value. Numbers in the person's [unit] (`3,8 mmol/L`, `0,13 mmol/L/min`) with
+     * [locale]'s decimal separator.
      */
     fun body(
         f: Firing,
         w: AlertWords,
         unit: GlucoseUnit,
         locale: Locale = Locale.getDefault(),
-    ): String {
+        now: Long = f.reading?.t ?: f.at,
+    ): String = bodyOf(f, w, unit, locale, now).text
+
+    /** [body], with where its strike-through ends. */
+    fun bodyOf(
+        f: Firing,
+        w: AlertWords,
+        unit: GlucoseUnit,
+        locale: Locale = Locale.getDefault(),
+        now: Long = f.reading?.t ?: f.at,
+    ): AlertBody {
         val r = f.reading
         if (f.kind == AlertKind.NO_DATA) {
             // a source that never delivered a reading: nothing to count from but its start, nothing to show
-            if (r == null) return w.get("alert_text_no_data")
-            val since = Durations.text(((f.at - r.t) / 60).coerceAtLeast(f.threshold.toLong()), w.durations)
-            return w.get("alert_text_no_data_last").format(since, value(r, w, unit, locale))
+            if (r == null) return AlertBody(w.get("alert_text_no_data"))
+            // when it came, not "for 20 min": a time never goes out of date on a notification left up
+            val at = Freshness.timeText(r.t, now, locale)
+            return AlertBody(w.get("alert_text_no_data_last").format(at, value(r, null, w, unit, locale)))
         }
-        if (r == null) return w.get("alert_text_no_reading")
-        val value = w.get("alert_text_value").format(value(r, w, unit, locale), TrendAngle.text(r.rate))
-        val rate = r.rate?.let { unit.rateText(kotlin.math.abs(it), locale) } ?: return value
-        return when (f.kind) {
-            AlertKind.FALLING_FAST -> w.get("alert_text_falling").format(value, rate, unit.rateSymbol)
-            AlertKind.RISING_FAST -> w.get("alert_text_rising").format(value, rate, unit.rateSymbol)
-            else -> value
-        }
+        if (r == null) return AlertBody(w.get("alert_text_no_reading"))
+        val look = GlucoseCard.face(GlucosePoint(r.t, r.mgdl, r.rate), now, null, CardSurface.ALERT_NOTIFICATION, unit, locale)
+        val shown = value(r, look.text, w, unit, locale)
+        val value = w.get("alert_text_value").format(shown, look.arrowText ?: TrendMark.RING)
+        // a struck value's rate is as old as it is: the ring says so, no "falling 2.4" beside it
+        val rate = r.rate?.takeIf { !look.strike }?.let { unit.rateText(kotlin.math.abs(it), locale) }
+        val text =
+            when {
+                rate == null -> value
+                f.kind == AlertKind.FALLING_FAST -> w.get("alert_text_falling").format(value, rate, unit.rateSymbol)
+                f.kind == AlertKind.RISING_FAST -> w.get("alert_text_rising").format(value, rate, unit.rateSymbol)
+                else -> value
+            }
+        val timed = if (look.fresh.showTime) w.get("alert_text_value_at").format(text, Freshness.timeText(r.t, now, locale)) else text
+        return AlertBody(timed, strikeTo = if (look.strike) shown.length else 0)
     }
 
-    /** `69 mg/dL`, or the sensor's LO / HI with what it means, the bound in [unit] (never its stored 39 / 401). */
+    /**
+     * `69 mg/dL` ([number] = the look's, else the reading's own: no data's last value), or the sensor's LO / HI with what
+     * it means, the bound in [unit] (never its stored 39 / 401).
+     */
     private fun value(
         r: AlertReading,
+        number: String?,
         w: AlertWords,
         unit: GlucoseUnit,
         locale: Locale,
     ): String {
-        fun glucose(mgdl: Int) = w.get("alert_text_glucose").format(unit.text(mgdl, locale), unit.symbol)
+        fun glucose(n: String) = w.get("alert_text_glucose").format(n, unit.symbol)
         return when {
-            r.isLo -> w.get("alert_text_lo").format(glucose(GlucoseRange.FLOOR))
-            r.isHi -> w.get("alert_text_hi").format(glucose(GlucoseRange.CEILING))
-            else -> glucose(r.mgdl)
+            r.isLo -> w.get("alert_text_lo").format(glucose(unit.text(GlucoseRange.FLOOR, locale)))
+            r.isHi -> w.get("alert_text_hi").format(glucose(unit.text(GlucoseRange.CEILING, locale)))
+            else -> glucose(number ?: unit.text(r.mgdl, locale))
         }
     }
 }
+
+/** An alert notification's body: its [text] and how much of it, from the start, is struck through (the value). */
+data class AlertBody(
+    val text: String,
+    val strikeTo: Int = 0,
+)

@@ -41,11 +41,30 @@ class FakePresenter : AlertPresenter {
         waits++
     }
 
-    override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
+    /** Every post of an alert: its kind, the value it showed, without sound or not, and when (#195). */
+    val posts = mutableListOf<Post>()
+
+    data class Post(val kind: AlertKind, val mgdl: Int?, val silent: Boolean, val now: Long)
+
+    /** Groups the person swiped or tapped away (gone from the shade, [isShowing] false). */
+    val gone = mutableSetOf<AlertGroup>()
+
+    override fun show(
+        firing: Firing,
+        settings: AlertSettings,
+        silent: Boolean,
+        who: String?,
+        relaxedMin: Int,
+        now: Long,
+    ) {
         slots[firing.kind.group] = firing.kind.wire
+        gone.remove(firing.kind.group)
         log += (if (silent) "resume " else "show ") + firing.kind.wire
+        posts += Post(firing.kind, firing.reading?.mgdl, silent, now)
         this.who += who
     }
+
+    override fun isShowing(group: AlertGroup): Boolean = group in slots && group !in gone
 
     override fun showPlain(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?) {
         slots[firing.kind.group] = "plain ${firing.kind.wire}"

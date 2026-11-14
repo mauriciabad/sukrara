@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.text.SpannableString
 import android.text.Spanned
+import android.text.style.StrikethroughSpan
 import android.text.style.TtsSpan
 import androidx.annotation.StringRes
 import app.mauri.sukrara.alerts.AlertGroup
@@ -64,16 +65,27 @@ class AlertNotifier(
     /** The app's words now, read once per post: a language change renames the next alert at once. */
     private fun words(): AlertWords = AlertWords.of(ctx, AlertWords.Ids + AlertCopy.Ids, strict = true)
 
-    override fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int) {
+    override fun show(
+        firing: Firing,
+        settings: AlertSettings,
+        silent: Boolean,
+        who: String?,
+        relaxedMin: Int,
+        now: Long,
+    ) {
         val kind = firing.kind
         // #39: the wearer's very low nobody answered rings like an alarm here, whatever this kind's setting
         val alarm = settings.rule(kind).alarm || firing.escalated
         val words = words()
+        val body = AlertCopy.bodyOf(firing, words, unit(), now = now)
+        val text = if (body.strikeTo > 0) struck(body) else body.text
+        // the header's age ("now", "3m", kept current by the system) is the reading's: the value's age, not the ring's
+        val reading = firing.reading?.takeIf { kind != AlertKind.NO_DATA }
         val b =
             base(kind, alarm, silent)
                 .setContentTitle(AlertCopy.headline(kind, firing.treated, words, firing.escalated))
-                .setContentText(AlertCopy.body(firing, words, unit()))
-                .setWhen(firing.at * 1000)
+                .setContentText(text)
+                .setWhen((reading?.t ?: firing.at) * 1000)
                 .setShowWhen(true)
                 .setAutoCancel(true)
         val relaxed =
@@ -198,6 +210,12 @@ class AlertNotifier(
         SoundGap.shared.alertRang()
         if (ownUnlockedSound) unlocked?.ringing(kind.group, AlertChannels.id(ctx, kind, alarm), alarm)
     }
+
+    /** The body with its stale value struck through (the card's look from 5 min). */
+    private fun struck(body: AlertBody): CharSequence =
+        SpannableString(body.text).apply { setSpan(StrikethroughSpan(), 0, body.strikeTo, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
+
+    override fun isShowing(group: AlertGroup): Boolean = nm.activeNotifications.any { it.id == idOf(group) }
 
     override fun clear(group: AlertGroup) {
         unlocked?.stop(group)

@@ -15,12 +15,14 @@ import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
+import app.mauri.sukrara.graph.Freshness
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -196,12 +198,22 @@ class AlertCopyTest {
         var checked = 0
         for (c in cases.map { it.jsonObject }) {
             val enText = word(c, en, Locale.ENGLISH) ?: continue
-            assertEquals("en $c", c.str("en"), enText)
-            assertEquals("es $c", c.str("es"), word(c, es, Locale.forLanguageTag("es")))
+            assertEquals("en $c", timed(c, "en", Locale.ENGLISH), enText)
+            assertEquals("es $c", timed(c, "es", Locale.forLanguageTag("es")), word(c, es, Locale.forLanguageTag("es")))
             checked++
         }
         assertTrue("every Android case", checked >= 50)
     }
+
+    /** [c]'s expected text in [lang], its `{time}` the reading's time as the card writes it ([Freshness.timeText]). */
+    private fun timed(
+        c: JsonObject,
+        lang: String,
+        locale: Locale,
+    ): String = c.str(lang).replace("{time}", Freshness.timeText(readingAt(c), AT, locale))
+
+    /** A body case's reading time: `ageS` or `ageMin` before [AT]. */
+    private fun readingAt(c: JsonObject): Long = AT - (c["ageS"]?.jsonPrimitive?.long ?: ((c["ageMin"]?.jsonPrimitive?.int ?: 0) * 60L))
 
     /** [c] worded on Android in [w] (numbers in [locale]), or null: a case of the Mac's alone. */
     private fun word(
@@ -225,14 +237,10 @@ class AlertCopyTest {
             "body" -> {
                 val reading =
                     c["mgdl"]?.let {
-                        AlertReading(
-                            AT - (c["ageMin"]?.jsonPrimitive?.int ?: 0) * 60L,
-                            it.jsonPrimitive.int,
-                            c.rate(),
-                        )
+                        AlertReading(readingAt(c), it.jsonPrimitive.int, c.rate())
                     }
                 val f = Firing(kind(), "e1", 1, reading, if (kind() == AlertKind.NO_DATA) 20.0 else 70.0, AT)
-                AlertCopy.body(f, w, if (c.str("unit") == "mmol") GlucoseUnit.MMOL else GlucoseUnit.MGDL, locale)
+                AlertCopy.body(f, w, if (c.str("unit") == "mmol") GlucoseUnit.MMOL else GlucoseUnit.MGDL, locale, now = AT)
             }
 
             "action" -> {
@@ -289,7 +297,7 @@ class AlertCopyTest {
         val hi = AlertReading(t = 1_000_000, mgdl = 401)
         assertTrue(AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en, GlucoseUnit.MGDL).startsWith("LO · below 40 mg/dL"))
         assertTrue(AlertCopy.body(firing(AlertKind.EXTREMELY_HIGH, hi), es, GlucoseUnit.MGDL).startsWith("HI · por encima de 400 mg/dL"))
-        assertTrue(AlertCopy.body(firing(AlertKind.NO_DATA, lo), en, GlucoseUnit.MGDL).endsWith("last LO · below 40 mg/dL"))
+        assertTrue(AlertCopy.body(firing(AlertKind.NO_DATA, lo), en, GlucoseUnit.MGDL).endsWith(" · LO · below 40 mg/dL"))
         assertTrue("39" !in AlertCopy.body(firing(AlertKind.VERY_LOW, lo), en, GlucoseUnit.MGDL))
     }
 

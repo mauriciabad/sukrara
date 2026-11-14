@@ -22,10 +22,12 @@ public enum CardSurface: String, CaseIterable, Sendable {
     case widgetValue = "widget-value"
     case widgetGraph = "widget-graph"
     case widgetCombined = "widget-combined"
+    /// An alert notification's body (#195): the newest reading's value and arrow, its time once late.
+    case alertNotification = "alert-notification"
     /// Snapshots and tests that draw the card outside any registered surface.
     case test = "test"
 
-    var glyph: Bool { self == .menubarTitle }
+    var glyph: Bool { self == .menubarTitle || self == .alertNotification }
 }
 
 /// What one `GlucoseCard.draw` call laid out (CardLayout in CardSurface.kt): every element, its box (in the call's own
@@ -87,7 +89,7 @@ extension CardSurface {
         rc.sensorTime = overrides.sensor ?? cfg.sensorTime
         var st: CardStyle
         switch self {
-        case .menubarCard, .menubarTitle, .test: st = cfg.cardStyle(graph: cfg.graphStyle())
+        case .menubarCard, .menubarTitle, .alertNotification, .test: st = cfg.cardStyle(graph: cfg.graphStyle())
         case .widgetValue: st = rc.cardStyle(graph: nil)
         case .widgetGraph:
             st = CardStyle(graph: g, rings: [], value: false, sensorTime: rc.sensorTime, bands: cfg.bands)

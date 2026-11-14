@@ -53,6 +53,9 @@ sealed interface AlertEffect {
     /** Post [firing]'s notification ([silent]: shown again after a restart, no sound). */
     data class Fire(val firing: Firing, val silent: Boolean = false) : AlertEffect
 
+    /** Show [firing] without sound: the episode's alert on screen again between its alerts (SPEC §1 "Showing an alert"). */
+    data class Show(val firing: Firing) : AlertEffect
+
     /** Remove the notification of firing [id]. */
     data class Clear(val kind: AlertKind, val id: String) : AlertEffect
 
@@ -355,6 +358,10 @@ class AlertMachine(
                 e.toFiring(escalated = settings.escalation.follow).let { f -> if (m.fire(f)) listOf(AlertEffect.Fire(f)) else emptyList() }
             }
 
+            AlertEvent.State.SHOW -> {
+                listOfNotNull(m.show(e.toFiring())?.let { AlertEffect.Show(it) })
+            }
+
             AlertEvent.State.CLEAR -> {
                 listOfNotNull(m.clear(e.k, e.id)?.let { AlertEffect.Clear(it.kind, it.id) })
             }
@@ -450,6 +457,7 @@ class AlertMachine(
         actions.map {
             when (it) {
                 is RuleAction.Fire -> AlertEffect.Fire(it.firing)
+                is RuleAction.Show -> AlertEffect.Show(it.firing)
                 is RuleAction.Clear -> AlertEffect.Clear(it.kind, it.id)
                 is RuleAction.Back -> AlertEffect.Back(it.side)
             }
@@ -460,6 +468,7 @@ class AlertMachine(
         actions.orEmpty().mapNotNull {
             when (it) {
                 is RuleAction.Fire -> AlertEffect.Mirror(AlertEvent.fire(it.firing))
+                is RuleAction.Show -> AlertEffect.Mirror(AlertEvent.show(it.firing))
                 is RuleAction.Clear -> AlertEffect.Mirror(AlertEvent.clear(it.kind, it.id, it.at, shared?.last))
                 is RuleAction.Back -> null
             }

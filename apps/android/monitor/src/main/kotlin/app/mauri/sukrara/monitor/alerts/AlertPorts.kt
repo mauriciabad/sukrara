@@ -18,10 +18,24 @@ import app.mauri.sukrara.alerts.Side
 /** Shows and removes alert notifications: one slot per [AlertGroup] (an alert, or its side's muted card). */
 interface AlertPresenter {
     /**
-     * Posts [firing] ([silent]: shown again after a restart, it already rang). [who] = the followed person, or null;
-     * [relaxedMin] > 0: the side reminds less (offer *Remind as usual*).
+     * Posts [firing] ([silent]: no sound: shown again after a restart, or its value updated, #195). [who] = the followed
+     * person, or null; [relaxedMin] > 0: the side reminds less (offer *Remind as usual*). [now]: the value's look is
+     * the reading's at this time (its time once late, struck from 5 min); by default the reading's own time (fresh).
      */
-    fun show(firing: Firing, settings: AlertSettings, silent: Boolean, who: String?, relaxedMin: Int)
+    fun show(
+        firing: Firing,
+        settings: AlertSettings,
+        silent: Boolean,
+        who: String?,
+        relaxedMin: Int,
+        now: Long = firing.reading?.t ?: firing.at,
+    )
+
+    /**
+     * Whether [group]'s alert is still on screen: false once the person swiped or tapped it away (#195: an update
+     * never brings it back).
+     */
+    fun isShowing(group: AlertGroup): Boolean = true
 
     /**
      * The alert as a plain notification, when [show] failed (0.14.1: strings [show] looks up by name were missing from

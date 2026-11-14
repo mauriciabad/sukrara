@@ -32,6 +32,8 @@
     <string name="alert_context_after_insulin">still high after insulin</string>
     <string name="alert_context_after_more_insulin">still high after more insulin</string>
     <string name="alert_text_value">%1$s %2$s</string>
+    <!-- a late reading (#195): %1$s = the value as alert_text_value (and the rate), %2$s = the reading's time (14:05, Tue 14:05) -->
+    <string name="alert_text_value_at">%1$s · %2$s</string>
     <!-- a glucose value: %1$s = the number in the person's unit (69, 3.8), %2$s = the unit (mg/dL, mmol/L) -->
     <string name="alert_text_glucose">%1$s %2$s</string>
     <!-- %1$s = the sensor's bound as alert_text_glucose (40 mg/dL, 2.2 mmol/L) -->
@@ -42,7 +44,8 @@
     <string name="alert_text_rising">%1$s · rising %2$s %3$s</string>
     <string name="alert_text_no_reading">No recent reading</string>
     <string name="alert_text_no_data">No reading yet</string>
-    <string name="alert_text_no_data_last">No reading for %1$s · last %2$s</string>
+    <!-- %1$s = when the last reading came (14:05, Tue 14:05, 12 Oct), %2$s = its value as alert_text_glucose -->
+    <string name="alert_text_no_data_last">Last reading %1$s · %2$s</string>
     <string name="alert_relaxed_subtext">Reminders every %1$s</string>
 
     <!-- Alert notification actions (Mute / Remind work from the lock screen, nothing opens; Log carbs opens the quick

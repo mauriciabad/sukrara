@@ -48,6 +48,11 @@ object AlertScenarios {
         val lines: List<Line>,
         val end: Int,
         val mirror: Boolean,
+        /**
+         * `shows`: also compare the silent shows (`show <headline>`, SPEC §1 "Showing an alert") and the clears of what
+         * they showed; without it the timeline is the ringing alerts and their clears only.
+         */
+        val shows: Boolean = false,
         /** `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; null = [T0]. */
         val at: Int? = null,
     )
@@ -79,16 +84,18 @@ object AlertScenarios {
         var lines = mutableListOf<Line>()
         var end: Int? = null
         var mirror = false
+        var shows = false
         var at: Int? = null
 
         fun flush() {
             val t = title ?: return
-            out += Scenario(file, t, settings, lines, end ?: lines.maxOf { it.minute }, mirror, at)
+            out += Scenario(file, t, settings, lines, end ?: lines.maxOf { it.minute }, mirror, shows, at)
             title = null
             settings = emptyList()
             lines = mutableListOf()
             end = null
             mirror = false
+            shows = false
             at = null
         }
         for (raw in text.lines()) {
@@ -110,6 +117,10 @@ object AlertScenarios {
 
                 l == "mirror" -> {
                     mirror = true
+                }
+
+                l == "shows" -> {
+                    shows = true
                 }
 
                 l.startsWith("at ") -> {
@@ -268,6 +279,18 @@ object AlertScenarios {
             got.getOrPut(((t - t0) / 60).toInt()) { mutableListOf() } += what
         }
 
+        // the firings shown without sound (per device): without `shows` neither they nor their clears are compared
+        val silent = HashSet<String>()
+
+        fun shown(f: Firing, prefix: String) {
+            silent += prefix + f.id
+            if (sc.shows) note(prefix + "show " + Headlines.english(f.kind, f.treated, f.escalated))
+        }
+
+        fun cleared(kind: AlertKind, id: String, prefix: String) {
+            if (sc.shows || prefix + id !in silent) note(prefix + "clear " + kind.wire)
+        }
+
         val wearer = device(s, t0)
 
         // the follower's own no_data isn't run (SPEC §7)
@@ -290,9 +313,10 @@ object AlertScenarios {
             effects.forEach { e ->
                 when (e) {
                     is AlertEffect.Fire -> note("follower ${Headlines.english(e.firing.kind, e.firing.treated, e.firing.escalated)}")
+                    is AlertEffect.Show -> shown(e.firing, "follower ")
                     is AlertEffect.Answered -> note("follower answered ${e.firing.kind.wire}")
                     is AlertEffect.Escalated -> error("a follower never escalates")
-                    is AlertEffect.Clear -> note("follower clear ${e.kind.wire}")
+                    is AlertEffect.Clear -> cleared(e.kind, e.id, "follower ")
                     is AlertEffect.Back -> note("follower back ${e.side.wire}")
                     is AlertEffect.Mirror -> error("a follower never publishes")
                     is AlertEffect.Schedule -> followerTimer = e.at
@@ -310,13 +334,18 @@ object AlertScenarios {
             effects.forEach { e ->
                 when (e) {
                     is AlertEffect.Fire -> {
-                        note(
-                            if (e.silent) "resume ${e.firing.kind.wire}" else Headlines.english(e.firing.kind, e.firing.treated),
-                        )
+                        when {
+                            !e.silent -> note(Headlines.english(e.firing.kind, e.firing.treated))
+                            sc.shows || e.firing.id !in silent -> note("resume ${e.firing.kind.wire}")
+                        }
+                    }
+
+                    is AlertEffect.Show -> {
+                        shown(e.firing, "")
                     }
 
                     is AlertEffect.Clear -> {
-                        note("clear ${e.kind.wire}")
+                        cleared(e.kind, e.id, "")
                     }
 
                     is AlertEffect.Back -> {

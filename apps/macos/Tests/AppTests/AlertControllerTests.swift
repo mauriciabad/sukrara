@@ -23,8 +23,11 @@ final class RecordingNotifier: AlertNotifying {
     var calls: [Call] = []
     var posts: [Call] { calls.filter { if case .post = $0 { true } else { false } } }
 
+    /// The value each post showed (#195: the newest reading while the alert is up), in order.
+    var values: [Double?] = []
     func post(_ f: AlertFiring, sound: Bool, category: String, escalated: Bool) {
         calls.append(.post(f.kind, id: f.id, sound: sound, category: category))
+        values.append(f.reading?.mgdl)
     }
     func clear(_ group: AlertGroup) { calls.append(.clear(group)) }
     func postMuted(_ side: AlertSide, until: Date, category: String) {

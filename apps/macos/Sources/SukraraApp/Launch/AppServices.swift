@@ -131,7 +131,15 @@ final class AppServices: ServiceStarting {
                 settings: settings, clock: SystemClock(), store: AlertStateFile(paths: plan.data.paths),
                 notifier: notifier, wake: TaskWake())
             alerts = controller
-            responder.handle = { [weak self] actionID, side, typed in
+            responder.handle = { [weak self] actionID, side, typed, firing in
+                // #195: an alert clicked or dismissed is seen: it stays away until its next ring
+                if let firing, let side = side.flatMap(AlertSide.init(rawValue:)),
+                    actionID == UNNotificationDefaultActionIdentifier
+                        || actionID == UNNotificationDismissActionIdentifier
+                {
+                    self?.alerts?.dismissed(side, firing: firing)
+                }
+                if actionID == UNNotificationDismissActionIdentifier { return }
                 if actionID == UNNotificationDefaultActionIdentifier {
                     self?.openPanel?()
                     return
@@ -214,13 +222,14 @@ private struct SilentCenter: NotificationPosting {
 /// The notification center's delegate. UserNotifications calls it off the main thread, so it is nonisolated, copies
 /// out the Sendable action id, side and typed text, and hands them to the main actor.
 final class NotificationResponder: NSObject, UNUserNotificationCenterDelegate {
-    /// Set once at launch on the main actor, before the delegate is installed; read on the main actor only.
-    var handle: ((String, String?, String?) -> Void)?
+    /// Set once at launch on the main actor, before the delegate is installed; read on the main actor only. The action,
+    /// the side, the typed text and the alert's firing id (nil on the muted note).
+    var handle: ((String, String?, String?, String?) -> Void)?
 
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter, willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound, .list]
+        Notifier.presentation(silent: notification.request.content.sound == nil)
     }
 
     nonisolated func userNotificationCenter(
@@ -229,6 +238,7 @@ final class NotificationResponder: NSObject, UNUserNotificationCenterDelegate {
         let actionID = response.actionIdentifier
         let side = response.notification.request.content.userInfo[Notifier.sideKey] as? String
         let typed = (response as? UNTextInputNotificationResponse)?.userText
-        await MainActor.run { handle?(actionID, side, typed) }
+        let firing = response.notification.request.content.userInfo[Notifier.firingKey] as? String
+        await MainActor.run { handle?(actionID, side, typed, firing) }
     }
 }

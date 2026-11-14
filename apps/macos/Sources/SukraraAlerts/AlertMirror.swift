@@ -79,6 +79,19 @@ public struct AlertMirror: Codable, Equatable, Sendable {
         return true
     }
 
+    /// The wearer shows its firing `id` of `kind` again without sound (`show`, SPEC §4): true = show it here silently.
+    /// Not when it is the same one again or this device's Mute / Mute all quiets the side; it isn't a ring, so Remind
+    /// less doesn't space it.
+    public mutating func show(_ kind: AlertKind, id: String, at: Date) -> Bool {
+        let g = kind.group
+        if newest[g]?.id == id { return false }
+        newest[g] = Newest(id: id, kind: kind)
+        newestCleared.remove(g)
+        if (snoozes[kind.side]?.isMuted(at: at) ?? false) || muteAllEnd(at: at) != nil { return false }
+        shown[g] = Newest(id: id, kind: kind)
+        return true
+    }
+
     /// The wearer cleared its firing `id` of `kind`'s group: true = the notification shown here goes. That's the firing
     /// shown here, or the wearer's newest one (a repeat skipped here left the earlier one up). A late older clear
     /// changes nothing.
