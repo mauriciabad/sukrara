@@ -93,7 +93,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - The home screen widget shows a lot of useful data, cleanly:
   - Glucose value and trend.
   - Time in range over the last 24 h.
-  - Time since your last insulin or carbs, or time in range over 7 days.
+  - Time since your last insulin or carbs as the big number, its amount under it, or time in range over 7 days.
   - 12 h glucose chart with range bands and colors.
   - Glucose distribution.
   - Markers for insulin and carb logs.

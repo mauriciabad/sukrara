@@ -182,7 +182,10 @@ own answer for 728 widget cards: the three widget kinds at every Android and Mac
 no rings (`ringCount` 0) and three rings with the last treatment at the end. For each: the value (and struck), whether a
 time shows in the value's place (the PoC: never while fresh, no "now"), the trend mark, the slots, what each
 time-in-range ring writes in its centre (`rings`, the layout element `slot.text`: the number alone, no "%"), the chart's
-window, the % column and the boxes of the number, the slots' row and the plot.
+window, the % column and the boxes of the number, the slots' row and the plot. The last-treatment ring's centre isn't part of it: the PoC
+wrote the amount as the main number, Sukrara the time since the treatment with the amount under it (#206, the owner's
+request), which `layout/rules.json` `last` (the time, shared by both platforms) and `lastSlot` (time over amount, both
+inside the ring, at every font scale) pin instead.
 
 - Android: `CardLayoutTest.widgetsLookLikeThePoc` draws each case with the widgets' real style (`widgetCardStyle`), native
   text measuring at 3×: every field equal and every box within `boxTolerance` (2 dp; the same Google Sans Flex).

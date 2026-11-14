@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import AppKit
 import CoreGraphics
 import CoreText
 import Foundation
@@ -316,12 +317,13 @@ enum Slots {
 
     /// Draw `item` as a circle of `radius` around `c`, with the sensor `countdown` ring over it (the main slot's; a
     /// time-in-range ring draws it under its crown); returns what a time-in-range ring wrote in its centre (nil for the
-    /// other slots), for the layout report (`slot.text`).
+    /// other slots), for the layout report (`slot.text`; the last-treatment slot reports its two lines into `rec`
+    /// itself, `slot.last` and `slot.last.amount`).
     @discardableResult
     static func draw(
         _ ctx: CGContext, _ item: SlotItem, center c: CGPoint, radius: CGFloat, now: TimeInterval, _ pal: GraphPalette,
         d: CGFloat, unit: GlucoseUnit, words w: CardWords,
-        countdown: Double? = nil
+        countdown: Double? = nil, rec: CardLayout? = nil
     ) -> String? {
         switch item {
         case let .metric(spec, m, e) where spec.kind == .tir:
@@ -331,27 +333,44 @@ enum Slots {
         case let .metric(spec, m, e):
             MetricGauge.draw(
                 ctx, center: c, radius: radius, m: m, spec: spec, pal, emphasis: e, d: d, glucose: unit, words: w)
-        case let .last(info): LastSlot.draw(ctx, center: c, radius: radius, info: info, now: now, pal, d: d, words: w)
+        case let .last(info):
+            LastSlot.draw(ctx, center: c, radius: radius, info: info, now: now, pal, d: d, words: w, rec: rec)
         }
         SensorBadge.drawCountdown(ctx, center: c, radius: radius, countdown, pal)
         return nil
     }
 }
 
-/// The last-treatment slot: the kind's marker, the amount ("4.5u", "30g") in the kind's colour and the time since it
-/// ("12m"); around it a ring in the kind's colour for the share of the alert mute still left, shrinking back to 12
-/// o'clock. When the mute is over (or the kind mutes nothing) only the grey track is left.
+/// The last-treatment slot: the kind's marker, the time since it ("12m") as the main number in the middle and the
+/// amount ("4.5u", "30g") under it in the kind's colour (#206, the owner: "the time since it was done is more important
+/// than the amount"); around it a ring in the kind's colour for the share of the alert mute still left, shrinking back
+/// to 12 o'clock. When the mute is over (or the kind mutes nothing) only the grey track is left. Both lines shrink to
+/// fit the ring (the time stays the larger): the slot's text follows its ring, not the system font
+/// (contracts/graph/layout/rules.json `lastSlot`; Slots.kt `LastSlot`).
 enum LastSlot {
     /// Smallest slot radius (pt) that draws insulin + carbs concentric; smaller slots show the insulin alone (PAIR_MIN_DP).
     static let pairMin: CGFloat = 20
+    /// The amount's text is at most this share of the time's.
+    private static let amountOfTime: CGFloat = 0.75
+
+    /// The size of `s` in `weight`: `size`, smaller when it would be wider than `room`.
+    private static func fit(_ s: String, _ size: CGFloat, _ weight: NSFont.Weight, room: CGFloat) -> CGFloat {
+        min(size, size * room / max(Ink.width(s, Ink.font(size, weight)), 1))
+    }
+
+    /// The box of `s` drawn centred on `x` at `base` in `font` (its cap height), for the layout report.
+    private static func box(_ s: String, x: CGFloat, base: CGFloat, _ font: CTFont, size: CGFloat) -> CGRect {
+        let w = Ink.width(s, font)
+        return CGRect(x: x - w / 2, y: base - size * 0.72, width: w, height: size * 0.72)
+    }
 
     static func draw(
         _ ctx: CGContext, center c: CGPoint, radius: CGFloat, info: LastTreatment.Info, now: TimeInterval,
         _ pal: GraphPalette,
-        d: CGFloat, words w: CardWords
+        d: CGFloat, words w: CardWords, rec: CardLayout? = nil
     ) {
         if let carbs = info.carbs, radius >= pairMin * d {
-            return drawPair(ctx, center: c, radius: radius, info, carbs.info, now: now, pal)
+            return drawPair(ctx, center: c, radius: radius, info, carbs.info, now: now, pal, words: w, rec: rec)
         }
         let sw = radius * 0.2, rr = radius - sw / 2
         ctx.saveGState()
@@ -371,23 +390,28 @@ enum LastSlot {
         TreatmentMarks.marker(
             ctx, info.tr.k, x: c.x, y: c.y - radius * 0.4, r: radius * 0.14, color: col,
             hole: pal.knockout ? nil : pal.bg.alpha > 0 ? pal.bg : nil)
-        let inner = (radius - sw) * 2 * 0.86
-        let s = TreatmentMarks.amount(info.tr) ?? ""
-        var size = radius * 0.5
-        size = min(size, size * inner / max(Ink.width(s, Ink.font(size, .heavy)), 1))
-        Ink.draw(ctx, s, x: c.x, y: c.y + radius * 0.17, Ink.font(size, .heavy), col, align: 0.5)
-        let sub = radius * 0.3
-        Ink.draw(
-            ctx, w.duration(now - info.tr.t), x: c.x, y: c.y + radius * 0.17 + sub * 1.25,
-            Ink.font(sub, .semibold), pal.inkSoft, align: 0.5)
+        // the time: the main number, in the middle
+        let time = w.duration(now - info.tr.t)
+        let size = fit(time, radius * 0.5, .heavy, room: (radius - sw) * 2 * 0.86)
+        let font = Ink.font(size, .heavy)
+        let base = c.y + radius * 0.17
+        Ink.draw(ctx, time, x: c.x, y: base, font, pal.ink, align: 0.5)
+        // the amount under it, smaller, in the kind's colour (the circle is narrower there)
+        let amount = TreatmentMarks.amount(info.tr) ?? ""
+        let sub = fit(amount, min(radius * 0.3, size * amountOfTime), .bold, room: (radius - sw) * 2 * 0.7)
+        let subFont = Ink.font(sub, .bold)
+        let subBase = base + radius * 0.3 * 1.25
+        Ink.draw(ctx, amount, x: c.x, y: subBase, subFont, col, align: 0.5)
+        rec?.add("slot.last", box(time, x: c.x, base: base, font, size: size), time)
+        rec?.add("slot.last.amount", box(amount, x: c.x, base: subBase, subFont, size: sub), amount)
     }
 
-    /// Insulin with carbs logged while it works (the user, 2026-10-21; CardStatus.kt `LastSlot.drawPair`): two
-    /// concentric rings, the outer one the insulin's mute left, the inner one the carbs', and the two amounts stacked
-    /// inside in their colours ("4.5u" over "45g"); no markers or time.
+    /// Insulin with carbs logged while it works (the user, 2026-10-21; Slots.kt `LastSlot.drawPair`): two concentric
+    /// rings, the outer one the insulin's mute left, the inner one the carbs', and inside the insulin's time as the main
+    /// number over the two amounts in their colours ("4.5u 45g"); no markers.
     private static func drawPair(
         _ ctx: CGContext, center c: CGPoint, radius: CGFloat, _ ins: LastTreatment.Info, _ carbs: LastTreatment.Info,
-        now: TimeInterval, _ pal: GraphPalette
+        now: TimeInterval, _ pal: GraphPalette, words w: CardWords, rec: CardLayout?
     ) {
         let outerSw = radius * 0.16, innerSw = radius * 0.13
         let outerR = radius - outerSw / 2
@@ -410,16 +434,23 @@ enum LastSlot {
             }
         }
         ctx.restoreGState()
-        // the two amounts in the inner circle, one size so they read as a pair
-        let room = (innerR - innerSw / 2) * 2 * 0.84
-        let a = TreatmentMarks.amount(ins.tr) ?? "", b = TreatmentMarks.amount(carbs.tr) ?? ""
-        var size = radius * 0.36
-        let widest = max(Ink.width(a, Ink.font(size, .heavy)), Ink.width(b, Ink.font(size, .heavy)), 1)
-        size = min(size, size * room / widest)
+        // inside the inner circle: the insulin's time as the main number, the two amounts under it in their colours
+        let inside = innerR - innerSw / 2
+        let time = w.duration(now - ins.tr.t)
+        let size = fit(time, radius * 0.42, .heavy, room: inside * 2 * 0.84)
         let font = Ink.font(size, .heavy)
-        let cap = size * 0.72, gap = size * 0.28
-        Ink.draw(ctx, a, x: c.x, y: c.y - gap / 2, font, color(ins.tr.k), align: 0.5)
-        Ink.draw(ctx, b, x: c.x, y: c.y + gap / 2 + cap, font, color(carbs.tr.k), align: 0.5)
+        let base = c.y + radius * 0.04
+        Ink.draw(ctx, time, x: c.x, y: base, font, pal.ink, align: 0.5)
+        let a = TreatmentMarks.amount(ins.tr) ?? "", b = TreatmentMarks.amount(carbs.tr) ?? ""
+        let both = "\(a) \(b)"
+        let sub = fit(both, min(radius * 0.26, size * amountOfTime), .bold, room: inside * 2 * 0.72)
+        let subFont = Ink.font(sub, .bold)
+        let subBase = base + radius * 0.26 * 1.3
+        let x = c.x - Ink.width(both, subFont) / 2
+        Ink.draw(ctx, a, x: x, y: subBase, subFont, color(ins.tr.k))
+        Ink.draw(ctx, b, x: x + Ink.width("\(a) ", subFont), y: subBase, subFont, color(carbs.tr.k))
+        rec?.add("slot.last", box(time, x: c.x, base: base, font, size: size), time)
+        rec?.add("slot.last.amount", box(both, x: c.x, base: subBase, subFont, size: sub), both)
     }
 }
 

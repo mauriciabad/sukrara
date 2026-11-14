@@ -62,8 +62,6 @@ class CardWords private constructor(
     /** "Muted · 1h 20m". */
     fun mutedFor(min: Long): String = r.getString(R.string.badge_muted_for, Durations.compact(min, durations))
 
-    fun ago(duration: String): String = r.getString(R.string.duration_ago, duration)
-
     fun readyAt(time: String): String = r.getString(R.string.card_ready_at, time)
 
     /** A slot's window: "1d", "12h". */

@@ -724,6 +724,9 @@ class CardLayoutTest {
         }
         if (warmShown == 0) problems += "warmup: no render shows a warming-up sensor (rule untested)"
 
+        // the last-treatment ring: the time since it is the main number, the amount under it, both inside the ring (#206)
+        problems += lastSlotProblems(renders)
+
         // one clock: every time a render draws follows its settings' 24-hour choice (the Mac's LayoutTests too)
         val hour24 = settings().associate { it.first to it.third }
 
@@ -750,6 +753,53 @@ class CardLayoutTest {
         // treatment labels only up to maxHours
         val maxHours = rulesFile["treatmentLabels"]!!.jsonObject["maxHours"].long()!!
         assertTrue("treatmentLabels maxHours", GlucoseGraph.LABELS_MAX_S == maxHours * 3600)
+        return problems
+    }
+
+    /** rules.json `lastSlot` (#206) on every render that shows the last-treatment slot (the Mac's LayoutTests too). */
+    private fun lastSlotProblems(renders: List<Render>): List<String> {
+        val rule = rulesFile["lastSlot"]!!.jsonObject
+        val time = rule["time"].str()!!
+        val amount = rule["amount"].str()!!
+        val problems = ArrayList<String>()
+        var shown = 0
+        for (r in renders) {
+            for (l in r.layouts) {
+                val slots = l.all("slot").filter { it.info.startsWith("LAST ") }
+                val times = l.all(time)
+                val amounts = l.all(amount)
+                if (slots.size != times.size || slots.size != amounts.size) {
+                    problems += "lastSlot on $r: ${slots.size} last-treatment slots, ${times.size} $time, ${amounts.size} $amount"
+                    continue
+                }
+                for ((i, s) in slots.withIndex()) {
+                    shown++
+                    val ring = s.box!!
+                    val t = times[i]
+                    val a = amounts[i]
+                    val tb = t.box!!
+                    val ab = a.box!!
+                    if ('%' in t.info || '%' in a.info) problems += "lastSlot on $r: a '%' in \"${t.info}\" / \"${a.info}\""
+                    if (t.info.isBlank()) problems += "lastSlot on $r: no time drawn"
+                    if (tb.centerY() >=
+                        ab.centerY()
+                    ) {
+                        problems += "lastSlot on $r: the time \"${t.info}\" isn't above the amount \"${a.info}\""
+                    }
+                    if (tb.height() <= ab.height()) {
+                        problems +=
+                            "lastSlot on $r: the time \"${t.info}\" (${tb.height() / l.d}dp) isn't larger than the amount (${ab.height() / l.d}dp)"
+                    }
+                    for ((what, b) in listOf(t.info to tb, a.info to ab)) {
+                        val inside =
+                            b.left >= ring.left - 0.05f && b.right <= ring.right + 0.05f &&
+                                b.top >= ring.top - 0.05f && b.bottom <= ring.bottom + 0.05f
+                        if (!inside) problems += "lastSlot on $r: \"$what\" $b runs out of its ring $ring"
+                    }
+                }
+            }
+        }
+        if (shown == 0) problems += "lastSlot: no render shows the last-treatment slot (rule untested)"
         return problems
     }
 

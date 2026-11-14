@@ -70,7 +70,11 @@ doc = {
         "slots' row, the plot). Android (PocWidgetsTest, :core:graph) must match every field and the boxes within",
         "'boxTolerance' dp (the same fonts); the Mac (PocWidgetsTests, GraphTests) every field but the boxes (SF Pro is",
         "narrower than Google Sans Flex). A deliberate change from the PoC is listed in 'differences' with its reason and",
-        "decides those fields instead ('numbers': compared with every number masked)."
+        "decides those fields instead ('numbers': compared with every number masked).",
+        "The last-treatment ring's centre is not compared ('slots' says only 'LAST <kind>', 'rings' is the time-in-range rings):",
+        "the PoC wrote the amount as its main number and the time under it; Sukrara writes the time since the treatment",
+        "as the main number and the amount under it (#206, the owner: 'the time since it was done is more important than",
+        "the amount'), pinned on both platforms by ../layout/rules.json 'last' and 'lastSlot'."
     ],
     'boxTolerance': 2,
     'settings': {

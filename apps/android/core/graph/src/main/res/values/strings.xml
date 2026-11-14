@@ -27,7 +27,6 @@
     <string name="duration_text_minutes">%1$d min</string>
     <string name="duration_text_hours">%1$d h</string>
     <string name="duration_text_hours_minutes">%1$d h %2$d min</string>
-    <string name="duration_ago">%1$s ago</string>
     <string name="period_days">%1$dd</string>
     <string name="period_hours">%1$dh</string>
     <string name="slot_average_short">avg</string>
@@ -104,10 +103,10 @@
     <string name="a11y_slot_cv">Variability %1$s%% over %2$s</string>
     <string name="a11y_less_than">less than %1$s</string>
     <string name="a11y_more_than">more than %1$s</string>
-    <string name="a11y_last_rapid">Rapid insulin %1$s, %2$s</string>
-    <string name="a11y_last_long">Long-acting insulin %1$s, %2$s</string>
-    <string name="a11y_last_carbs">Carbs %1$s, %2$s</string>
-    <string name="a11y_last_note">Note, %1$s</string>
+    <string name="a11y_last_rapid">%2$s, rapid insulin %1$s</string>
+    <string name="a11y_last_long">%2$s, long-acting insulin %1$s</string>
+    <string name="a11y_last_carbs">%2$s, carbs %1$s</string>
+    <string name="a11y_last_note">%1$s, note</string>
     <plurals name="a11y_units">
         <item quantity="one">%1$s unit</item>
         <item quantity="other">%1$s units</item>

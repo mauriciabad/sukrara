@@ -353,6 +353,7 @@ enum DefaultAlertRules {
         checkBadge(renders, rulesRoot, fail)
         checkDistribution(renders, rulesRoot, fail)
         checkWarmup(renders, rulesRoot, language: words.language, fail)
+        checkLastSlot(renders, rulesRoot, fail)
         #expect(failures == 0, "\(failures) layout failure(s) over \(renders.count) renders (\(words.language))")
     }
 
@@ -601,6 +602,47 @@ enum DefaultAlertRules {
             }
         }
         if shown == 0 { fail("warmup: no render shows a warming-up sensor (rule untested)") }
+    }
+
+    /// The last-treatment slot (rules.json "lastSlot", #206): the time since the treatment is the main number in the
+    /// middle, the amount under it and smaller, both inside the ring's box, never a "%" (CardLayoutTest on Android).
+    private func checkLastSlot(_ renders: [Render], _ root: JSON, _ fail: (String) -> Void) {
+        let rule = root.child("lastSlot")
+        guard let time = rule["time"] as? String, let amount = rule["amount"] as? String else {
+            return fail("rules.json has no \"lastSlot\"")
+        }
+        var shown = 0
+        for r in renders {
+            for l in r.layouts {
+                let slots = l.all("slot").filter { $0.info.hasPrefix("LAST ") }
+                let times = l.all(time), amounts = l.all(amount)
+                guard slots.count == times.count, slots.count == amounts.count else {
+                    fail(
+                        "lastSlot on \(r): \(slots.count) last-treatment slots, \(times.count) \(time), \(amounts.count) \(amount)"
+                    )
+                    continue
+                }
+                for (i, s) in slots.enumerated() {
+                    shown += 1
+                    guard let ring = s.box, let tb = times[i].box, let ab = amounts[i].box else {
+                        fail("lastSlot on \(r): an element without its box"); continue
+                    }
+                    let t = times[i].info, a = amounts[i].info
+                    if t.contains("%") || a.contains("%") { fail("lastSlot on \(r): a '%' in \"\(t)\" / \"\(a)\"") }
+                    if t.trimmingCharacters(in: .whitespaces).isEmpty { fail("lastSlot on \(r): no time drawn") }
+                    if tb.midY >= ab.midY {
+                        fail("lastSlot on \(r): the time \"\(t)\" isn't above the amount \"\(a)\"")
+                    }
+                    if tb.height <= ab.height {
+                        fail("lastSlot on \(r): the time \"\(t)\" (\(tb.height / l.d) pt) isn't larger than the amount")
+                    }
+                    for (what, b) in [(t, tb), (a, ab)] where !ring.insetBy(dx: -0.05, dy: -0.05).contains(b) {
+                        fail("lastSlot on \(r): \"\(what)\" \(b) runs out of its ring \(ring)")
+                    }
+                }
+            }
+        }
+        if shown == 0 { fail("lastSlot: no render shows the last-treatment slot (rule untested)") }
     }
 
     /// The distribution's erased outline: the dots plus one constant margin, everywhere.

@@ -209,7 +209,7 @@ public enum GlucoseCard {
         for (i, item) in items.enumerated() {
             let centre = Slots.draw(
                 ctx, item, center: CGPoint(x: cx[i], y: box.midY), radius: size / 2, now: now, pal, d: d, unit: st.unit,
-                words: st.words, countdown: i == main ? countdown : nil)
+                words: st.words, countdown: i == main ? countdown : nil, rec: rec)
             // exactly what a ring writes in its centre (contracts/graph/widgets/poc.json `rings`: the number, no "%")
             if let centre { rec.add("slot.text", nil, centre) }
             rec.add(
