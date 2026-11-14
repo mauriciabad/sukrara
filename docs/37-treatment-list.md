@@ -34,7 +34,11 @@ sheet, *Sending…* / *Not sent* / *Retry*. Only how they are reached changed.
 ## Not done
 
 - Day totals (units, grams) in the page's headers: useful, not asked; later.
-- The Mac's Treatments window (already a 7-day history) follows in its own change: the same badges, glucose then,
-  status only when it says something, and Edit / Delete on hover and in the context menu.
+- Nothing more on the Mac: its Treatments window (already a 7-day history) got the same badges, glucose then, status
+  only when it says something (*On the phone* for 3 s), the pen icon, and Edit / Delete on hover, in the context menu,
+  as VoiceOver actions and by trackpad swipe (0f66906c).
+- The long-press menu opens at the row's start, not under the finger.
+
+Pictures (synthetic data): [`docs/img/treatments`](img/treatments).
 - Glucose colour by range on the rows: the card's range colours would compete with the kind colours; the number stays
   neutral.

@@ -30,13 +30,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -80,6 +84,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import java.time.Instant
+import kotlin.math.abs
 import app.mauri.sukrara.core.designsystem.R as DsR
 import app.mauri.sukrara.core.graph.R as GraphR
 
@@ -138,10 +143,15 @@ internal fun TreatmentRow(
     val haptics = rememberHaptics()
     val changeable = !row.readOnly
     val label = treatmentLabel(t)
-    val swipe = rememberSwipeToDismissBoxState()
+    // letting go past 40 % of the row's width deletes; the strip and the haptic say so while the finger is down
+    val swipe = rememberSwipeToDismissBoxState(positionalThreshold = { it * DELETE_AT })
+    var width by remember { mutableIntStateOf(0) }
+    val armed by remember {
+        derivedStateOf { width > 0 && abs(swipe.offsetOrZero()) >= width * DELETE_AT }
+    }
     // one haptic where letting go deletes, one when the finger goes back before it
     LaunchedEffect(swipe) {
-        snapshotFlow { swipe.targetValue != SwipeToDismissBoxValue.Settled }.drop(1).collect { haptics.threshold(it) }
+        snapshotFlow { armed }.drop(1).collect { haptics.threshold(it) }
     }
     val scope = rememberCoroutineScope()
     var menu by remember { mutableStateOf(false) }
@@ -153,10 +163,10 @@ internal fun TreatmentRow(
         haptics.confirm()
         onDelete()
     }
-    Column(modifier) {
+    Column(modifier.onSizeChanged { width = it.width }) {
         SwipeToDismissBox(
             state = swipe,
-            backgroundContent = { DeleteBackground(swipe.dismissDirection, swipe.targetValue != SwipeToDismissBoxValue.Settled) },
+            backgroundContent = { DeleteBackground(swipe.dismissDirection, armed) },
             enableDismissFromStartToEnd = changeable,
             enableDismissFromEndToStart = changeable,
             gesturesEnabled = changeable,
@@ -465,6 +475,12 @@ internal fun treatmentLabel(t: Treatment): String {
         TreatmentKind.Note -> t.note.trim().ifEmpty { stringResource(R.string.home_treatment_note) }
     }
 }
+
+/** How far the row is swiped now (0 before it was laid out). */
+private fun SwipeToDismissBoxState.offsetOrZero(): Float = runCatching { requireOffset() }.getOrDefault(0f).takeUnless { it.isNaN() } ?: 0f
+
+/** The share of the row's width past which letting go deletes. */
+private const val DELETE_AT = 0.4f
 
 /** The trend arrow's bitmap size in px (drawn at 16 dp). */
 private const val ARROW_PX = 64
