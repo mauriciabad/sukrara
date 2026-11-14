@@ -113,12 +113,13 @@ class AlertLiveNotificationTest {
         assertEquals("the header's age is the reading's", (t0 + 120) * 1000, level()!!.`when`)
     }
 
-    @Test fun `no update in the 10 s after the alert rang, the next reading brings it`() {
+    @Test fun `no update in the 10 s after the alert rang, it comes when the guard ends`() {
         settings()
         reading(65, 0)
         reading(58, 5)
         assertEquals("65 mg/dL ○", level()!!.text().toString())
-        reading(58, 65)
+        assertEquals("it wakes when the guard ends", t0 + 10, rig.alarm.at)
+        tick(10)
         assertEquals("58 mg/dL ○", level()!!.text().toString())
     }
 

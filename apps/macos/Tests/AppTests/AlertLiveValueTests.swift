@@ -89,14 +89,16 @@ import UserNotifications
         #expect(notifier.posts.last == .post(.low, id: idOfFirst(), sound: false, category: lastCategory()))
     }
 
-    @Test func noUpdateWithin10sOfTheRingTheNextReadingBringsIt() {
+    @Test func noUpdateWithin10sOfTheRingItComesWhenTheGuardEnds() {
         let c = controller()
         c.reading(reading(65))
+        let rang = clock.now
         clock.advance(by: 5)
         c.reading(reading(58))
         #expect(notifier.values == [65])
-        clock.advance(by: 60)
-        c.reading(reading(58))
+        #expect(wake.at == rang.addingTimeInterval(10), "it wakes when the guard ends")
+        clock.advance(by: 5)
+        c.tick()
         #expect(notifier.values == [65, 58])
     }
 

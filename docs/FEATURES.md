@@ -196,7 +196,7 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
     what it says changed enough: the value moved 5 mg/dL (about 0.3 mmol/L; `AlertLiveValue`, one constant per
     platform, so it can be lowered), the arrow changed, or the card's freshness step did (the reading's time once late:
     `69 mg/dL ↘ · 14:05`; struck through with the ring from 5 min on Android, the ring and the time on the Mac); never
-    every 1 mg/dL wiggle, never in the 10 s after it rang (Android cuts a sound still playing on a silent update); the
+    every 1 mg/dL wiggle, never in the 10 s after it rang (Android cuts a sound still playing on a silent update; it is posted when they end); the
     phone and the Mac wake for those steps. The header's age (Android) is the reading's. The look is the card's
     (registered glyph surface `alert-notification`, `GlucoseCard.face`).
   - **Between its alerts the alert stays up.** Back in range (by the margin) it goes; out of range again within the

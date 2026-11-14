@@ -137,6 +137,9 @@ class AlertRuntime(
     private val rangAt = HashMap<AlertGroup, Long>()
     private val dismissed = HashSet<AlertGroup>()
 
+    /** An update held back by the guard after a ring: when it may be posted (the runtime wakes then). */
+    private var deferredAt: Long? = null
+
     /** The exact alarm as last set (the engine's next check, or earlier: a shown value's next freshness step). */
     private var alarmAt: Long? = null
 
@@ -636,12 +639,18 @@ class AlertRuntime(
      */
     private suspend fun refreshValues(m: AlertMachine, now: Long) {
         val r = latest ?: return
+        deferredAt = null
         for ((group, f) in firing.toMap()) {
             if (f.kind == AlertKind.NO_DATA || group in dismissed || group in unposted) continue
             val shown = shownLook[group] ?: continue
             if (f.reading.let { it != null && it.t > r.t }) continue
             val next = AlertLiveValue.look(r, now)
-            if (!AlertLiveValue.due(shown, next, rangAt[group], now)) continue
+            if (!AlertLiveValue.changed(shown, next)) continue
+            if (!AlertLiveValue.due(shown, next, rangAt[group], now)) {
+                // it just rang: the update waits for the end of the guard (a wake then, not the next step)
+                rangAt[group]?.let { deferredAt = earliest(deferredAt, it + AlertLiveValue.AFTER_RING_S) }
+                continue
+            }
             if (!showing(group)) {
                 dismissed += group
                 continue
@@ -674,7 +683,7 @@ class AlertRuntime(
     private fun valueStepAt(now: Long): Long? {
         val r = latest ?: return null
         val up = firing.any { (g, f) -> f.kind != AlertKind.NO_DATA && g !in dismissed && g in shownLook }
-        return if (up) AlertLiveValue.nextStepAt(r, now) else null
+        return if (up) earliest(AlertLiveValue.nextStepAt(r, now), deferredAt?.takeIf { it > now }) else null
     }
 
     private fun earliest(

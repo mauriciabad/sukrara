@@ -69,6 +69,8 @@ final class AlertController {
     @ObservationIgnored private(set) var dismissed: Set<AlertGroup> = []
     /// The engine's own next check (the wake is this or a shown value's next freshness step, the earlier).
     @ObservationIgnored private var engineWake: Date?
+    /// An update held back by the guard after a ring: when it may be posted (the Mac wakes then).
+    @ObservationIgnored private var deferredAt: Date?
 
     init(
         settings: AlertSettings, clock: any TimeSource, store: any AlertStateStoring, notifier: any AlertNotifying,
@@ -358,7 +360,8 @@ final class AlertController {
             [AlertGroup.level, .rate].contains { g in shownLook[g] != nil && !dismissed.contains(g) }
                 ? AlertLiveValue.nextStep(r, now: clock.now) : nil
         }
-        let at = [engineWake, step].compactMap { $0 }.min()
+        let held = deferredAt.flatMap { $0 > clock.now ? $0 : nil }
+        let at = [engineWake, step, held].compactMap { $0 }.min()
         nextWake = at
         wake.schedule(at: at) { [weak self] in self?.tick() }
     }
@@ -396,17 +399,28 @@ final class AlertController {
     private func refreshValues() {
         guard let r = latest else { return }
         let now = clock.now
+        let held = deferredAt
+        deferredAt = nil
         for g in [AlertGroup.level, .rate] where !dismissed.contains(g) {
             guard let f = onScreen(g), let shown = shownLook[g] else { continue }
             if let fr = f.reading, fr.at > r.at { continue }
             let next = AlertLiveValue.look(r, now: now)
-            guard AlertLiveValue.due(shown, next, rangAt: rangAt[g], now: now) else { continue }
+            guard AlertLiveValue.changed(shown, next) else { continue }
+            guard AlertLiveValue.due(shown, next, rangAt: rangAt[g], now: now) else {
+                // it just rang: the update waits for the end of the guard (a wake then, not the next step)
+                if let rang = rangAt[g] {
+                    let end = rang.addingTimeInterval(AlertLiveValue.afterRing)
+                    deferredAt = deferredAt.map { min($0, end) } ?? end
+                }
+                continue
+            }
             var u = f
             u.reading = r
             notifier.post(
                 u, sound: false, category: category(f.kind), escalated: mirroring && mirror.isEscalated(g))
             shownLook[g] = next
         }
+        if deferredAt != held { scheduleWake() }
     }
 
     /// The person dismissed or clicked away `side`'s alert (#195; `firing` = the notification's, nil = whichever is up):

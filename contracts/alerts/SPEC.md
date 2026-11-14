@@ -107,8 +107,8 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
     late (`69 mg/dL ↘ · 14:05`), from 5 min it is struck through with the ring for its trend (Android; a Mac
     notification can't strike text, it shows the ring and the time) and the fast kinds drop their rate. Never every
     1 mg/dL wiggle (a watch whose bridge buzzes on every update would buzz every minute), never in the **10 s** after
-    it rang (Android stops a sound or vibration still playing when its notification is updated without alerting); the
-    device wakes for the freshness steps. The value's look is the card's (`GlucoseCard.face`, registered glyph surface
+    it rang (Android stops a sound or vibration still playing when its notification is updated without alerting; an
+    update that comes due then is posted when the 10 s end); the device wakes for the freshness steps. The value's look is the card's (`GlucoseCard.face`, registered glyph surface
     `alert-notification`); the header's age is the reading's (Android `when`). No data's body says when the last
     reading came and its value (`Last reading 14:05 · 120 mg/dL`): a time never goes out of date.
   - **Between its alerts the episode's alert stays on screen.** A reading back in range (by the margin) removes it as
