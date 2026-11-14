@@ -68,6 +68,26 @@ class PillValueSizeTest {
         keeps(151f, 48f, notificationCardStyle(GraphConfig()), CardPart.VALUE, mgdl = 262)
     }
 
+    /** The pill is drawn, never dropped for room, on the notification's value boxes (in range and out, every kind). */
+    @Test fun `the notification's value box always shows the pill`() {
+        val st = notificationCardStyle(GraphConfig())
+        for ((w, h) in listOf(151f to 48f, 171f to 40f, 157f to 48f)) {
+            for (mgdl in listOf(64, 104, 262)) {
+                for (status in listOf(
+                    CardStatus.Needed(lowSide = mgdl < 100),
+                    CardStatus.Paused(mgdl < 100, Scenes.NOW + 1800),
+                    CardStatus.Muted(Scenes.NOW + 1800),
+                )) {
+                    val model = Scenes.model(Scenes.day(mgdl, swing = 6), Scenes.words(), status = status)
+                    val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+                    val lay = GlucoseCard.draw(Canvas(bmp), w, h, model, st, GraphPalette.of(true), 1f, CardSurface.TEST, CardPart.VALUE)
+                    val pill = lay.first("value.status")
+                    assertTrue("$w×$h $mgdl $status: ${pill?.info}", pill != null && pill.box != null)
+                }
+            }
+        }
+    }
+
     @Test fun `the widgets keep the number large`() {
         val value = widgetCardStyle(CardSurface.WIDGET_VALUE, GraphConfig())
         keeps(170f, 80f, value, CardPart.ALL)

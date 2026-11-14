@@ -132,8 +132,10 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       graph, light and dark): exactly one Sukrara notification while a low rings (`dumpsys notification --noredact`: id 1
       on `alert.low` without `ONLY_ALERT_ONCE`, `category=alarm`, `PROMOTED_ONGOING` with the chip; 10 s later on
       `glucose.live` with the alert still on it); buttons *Treatment · Remind less · Mute*, none with "…"; in the Live
-      Update *Mute* opens the lengths sheet over the lock screen (15m 30m 1h 2h; TalkBack reads "Mute for 30 min"); on the
-      card the chips; muted: *Low alerts muted* with *Time left* / the pill, only *Treatment* and *Unmute*; swipe it
+      Update *Mute* opens the length dialog over the lock screen (*Mute lows*: For 15 min … For 2 h, Custom; radio rows
+      TalkBack reads); on the card the chips 15m 30m 1h 2h; muted: *Lows muted* with *Time left* (17) / *· 29m left*
+      (the card), only *Treatment* and *Unmute*; the value's label is the trend in words, never *Now*; no "glucose" in
+      any title (*Very low*, *Low · eat carbs*); swipe it
       during a ring: it comes straight back on `glucose.live` without the alert and doesn't ring again; an alarm-level kind
       (very low) locked, screen off, on Android 16 and 17: full screen on the first ring (its own notification on
       `alert_alarm.very_low`, ids 1000+, gone 10 s later with the glucose notification carrying the alert); a very low and

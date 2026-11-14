@@ -73,8 +73,8 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   followers already get every very low at once; when nobody answers a very low on the wearer's phone for 5 min (the
   safest reasonable default: the very low's own 5-min repeat and Libre's re-alarm; Medtronic CareLink Connect texts a
   care partner after 0–30 min, Nightscout's Pushover retries urgent alarms every 2 min), the wearer's phone sends it
-  escalated and every follower that takes escalations (Android and Mac, on by default) shows **Very low glucose · no
-  response** (es *Glucosa muy baja · sin respuesta*, `copy.json` `headline_escalated`) at alarm volume / Time
+  escalated and every follower that takes escalations (Android and Mac, on by default) shows **Very low · no
+  response** (es *Muy baja · sin respuesta*, `copy.json` `headline_escalated`) at alarm volume / Time
   Sensitive, through its own Mute, Remind less and Mute all, once (its own quiet states apply to the escalated repeats
   after it). An answer on the wearer's phone: tapping or swiping the alert, opening the app, any of its buttons
   (*Mute*, *Remind less*, *Unmute*, *Treatment*), *Mute all* or carbs logged after it fired; a Mute or Mute all set before it is no

@@ -309,7 +309,7 @@ class LiveNotification(
         (buttons + sensor).take(MAX_ACTIONS).forEach(builder::addAction)
         when (content.layout) {
             Layout.LIVE_UPDATE -> liveUpdate(builder, content, now, frame, alert)
-            Layout.CARD -> card(builder, content, bg, art, alert, ringing)
+            Layout.CARD -> card(builder, content, bg, art, alert, ringing, alert?.let { alertLine(it, frame, now) })
             Layout.TEXT -> Unit
         }
         return builder.build()
@@ -333,15 +333,28 @@ class LiveNotification(
         if (alert == null) {
             return if (metric) resolve(content.rangeWords ?: content.title, now) else resolve(content.title, now)
         }
-        // the pill's words, which the card draws under its value, after a " · " in lower case as the headline's own
-        // context ("Low · eat carbs"); none when the headline already says what to do ("Low · eat more")
-        val pill =
-            pillWords(alert, frame, now)
-                ?.takeIf { !card && " · " !in alert.title }
-                ?.replaceFirstChar { it.lowercase(java.util.Locale.getDefault()) }
-        val words = listOfNotNull(alert.title, pill)
+        // Android 17's Live Update counts a mute down in a metric of its own: not in the title too
+        val words = listOf(alertLine(alert, frame, now, countdown = !metric))
         val value = content.look?.let { resolve(content.title, now) }.takeIf { !metric && !card }
         return listOfNotNull(value?.substringBefore(" · "), *words.toTypedArray()).joinToString(" · ")
+    }
+
+    /**
+     * The alert's line: its headline, then the pill's words after a " · " in lower case as the headline's own context
+     * ("Low · eat carbs"; the card's value box may only have room for the pill's icon); none when the headline already
+     * says what to do ("Low · eat more") or while muted.
+     */
+    private fun alertLine(
+        alert: GlucoseAlert,
+        frame: CardFrame?,
+        now: Instant,
+        countdown: Boolean = true,
+    ): String {
+        val pill =
+            pillWords(alert, frame, now, countdown)
+                ?.takeIf { " · " !in alert.title }
+                ?.replaceFirstChar { it.lowercase(java.util.Locale.getDefault()) }
+        return listOfNotNull(alert.title, pill).joinToString(" · ")
     }
 
     /** The second line: another alert up ("Also: Falling fast"), then the content's own (the sensor, the late time). */
@@ -358,15 +371,23 @@ class LiveNotification(
         return listOfNotNull(value, also, own).joinToString(" · ").ifEmpty { null }
     }
 
-    /** "Eat carbs" / "Take insulin": the card's pill while an alert asks for it (none while muted or treated). */
+    /**
+     * The card's pill in words: "Eat carbs" / "Take insulin" while an alert asks for it; with [countdown] also a muted
+     * side's "29m left" (where no metric counts it down: the card, Android 16).
+     */
     private fun pillWords(
         alert: GlucoseAlert,
         frame: CardFrame?,
         now: Instant,
+        countdown: Boolean,
     ): String? {
-        if (alert.mutedUntil != null) return null
         val status = frame?.state?.alerts?.status ?: return null
-        return StatusBadge.look(status, now.epochSecond, CardWords.of(context.resources))?.takeIf { !it.tonal }?.text
+        val look = StatusBadge.look(status, now.epochSecond, CardWords.of(context.resources)) ?: return null
+        return when {
+            alert.mutedUntil != null -> look.text.takeIf { countdown && look.tonal }
+            look.tonal -> null
+            else -> look.text
+        }
     }
 
     /** With an alert up, the tap opens Add treatment as an answer to it (#39): Carbs on the low side. */
@@ -436,12 +457,10 @@ class LiveNotification(
     ): Notification.MetricStyle {
         val bands = frame?.config?.bands ?: Bands()
         val label = metricLabel(content, look, alert, frame?.config?.unit ?: GlucoseUnit.MGDL)
-        // text only: a metric is a CharSequence and only parcelable spans survive (no picture of the renderer's arrow);
-        // THE text arrow in bold, which the system font draws heavier than the thin default (docs/36 §10)
-        val shown =
-            SpannableString(listOfNotNull(look.text, look.arrowText).joinToString(" ")).apply {
-                look.arrowText?.let { setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), length - it.length, length, 0) }
-            }
+        // text only (docs/36 §10): a metric's value is a CharSequence, a picture can't travel in it, System UI draws it in
+        // its own style (a bold span is dropped), and the system font has no heavier arrow set in all eight directions
+        // (Supplemental Arrows-C is missing; the Dingbats / Misc arrows mix weights): THE text arrow
+        val shown = listOfNotNull(look.text, look.arrowText).joinToString(" ")
         val value =
             if (look.strike || content.mgdl == null) {
                 Notification.Metric(Notification.Metric.FixedText(shown), label)
@@ -519,13 +538,14 @@ class LiveNotification(
         art: NotificationArt?,
         alert: GlucoseAlert?,
         ringing: Boolean,
+        line: String?,
     ) {
         if (content.look == null || content.mgdl == null) return
         bg?.let { b.setColorized(true).setColor(it) }
         if (art == null) return
         // TalkBack: the card's one sentence, as on every other surface (never the title's arrow); the alert's title first
-        val description = listOfNotNull(alert?.title, art.description).joinToString(". ")
-        val title = alert?.title
+        val description = listOfNotNull(line, art.description).joinToString(". ")
+        val title = line
         val ink = bg?.let(NotificationCard::ink)
         b
             .setShowWhen(false) // the late time is in the card
@@ -609,6 +629,8 @@ class LiveNotification(
                 frame.state.sensor,
                 frame.stored.size,
                 quiet,
+                // the pill under the value (an alert asking, a mute counting down) is drawn from it
+                frame.state.alerts.status,
             )
         val gKey = listOf(frame.config, frame.dark, frame.state.latest, frame.treatments, quiet, now.epochSecond / GRAPH_EVERY_S)
         val cached = artCache
