@@ -142,7 +142,7 @@ public enum JugglucoApi {
         }
         let r = rate.flatMap { $0.isFinite ? $0 : nil }
         return GlucoseRange.normalised(
-            Reading(t: Date(timeIntervalSince1970: t.rounded()), mgdl: Int(mgdl.rounded()), rate: r))
+            Reading(t: Date(timeIntervalSince1970: t.rounded()), mgdl: Int(mgdl.rounded()), sensorRate: r))
     }
 }
 

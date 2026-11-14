@@ -4,16 +4,27 @@
 import Foundation
 import SukraraCore
 
-/// A glucose reading as the rules see it: when it was taken, mg/dL, and its trend in mg/dL/min (nil = unknown).
-public struct GlucoseSample: Codable, Equatable, Sendable {
+/// A glucose reading as the rules see it: when it was taken, mg/dL, its trend's rate in mg/dL/min (nil = no trend)
+/// with its text `band` (the arrow the card shows), and `held`, the rate the fast alerts judge (contracts/trend: past
+/// their threshold for 5 min; nil = can't tell).
+public struct GlucoseSample: Codable, Equatable, Sendable, TrendSample {
     public var at: Date
     public var mgdl: Double
     public var rate: Double?
+    public var band: Int?
+    public var held: Double?
 
-    public init(at: Date, mgdl: Double, rate: Double? = nil) {
+    public init(at: Date, mgdl: Double, rate: Double? = nil, band: Int? = nil, held: Double? = nil) {
         self.at = at
         self.mgdl = mgdl
         self.rate = rate
+        self.band = band
+        self.held = held
+    }
+
+    /// A reading as the rules see it: its trend's rate and held rate (`TrendRate.annotate` already ran).
+    public init(_ r: Reading) {
+        self.init(at: r.t, mgdl: Double(r.mgdl), rate: r.trend?.rate, band: r.trend?.band, held: r.trend?.held)
     }
 
     /// The sensor's LO (below what it measures): below every low threshold (SPEC §1).

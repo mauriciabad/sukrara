@@ -3,67 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 import SukraraAlerts
-import SukraraTesting
 import Testing
 
-/// `Trend` and the two trend quiets (SPEC §2 "Trend from the readings", #193).
-@Suite struct TrendTests {
-    struct Case: Decodable, CustomTestStringConvertible {
-        let name: String
-        let readings: [[Double]]
-        let now: Double
-        let up: Bool
-        let slope: Double?
-        let why: String
-        var testDescription: String { name }
-    }
-
-    static func cases() -> [Case] {
-        struct File: Decodable { let cases: [Case] }
-        guard let data = try? Data(contentsOf: Contracts.url("alerts/trend.json")),
-            let file = try? JSONDecoder().decode(File.self, from: data)
-        else { return [] }
-        return file.cases
-    }
-
-    @Test func theSharedCasesAreThere() { #expect(Self.cases().count > 40) }
-
-    /// contracts/alerts/trend.json: the same cases Android's TrendTest runs.
-    @Test(arguments: cases())
-    func sharedCase(_ c: Case) {
-        let readings = c.readings.map { GlucoseSample(at: Date(timeIntervalSince1970: $0[0]), mgdl: $0[1]) }
-        let got = Trend.clear(readings, at: Date(timeIntervalSince1970: c.now), up: c.up)
-        if let want = c.slope {
-            #expect(got.map { abs($0 - want) < 1e-9 } == true, "\(c.name): \(String(describing: got)) ≠ \(want)")
-        } else {
-            #expect(got == nil, "\(c.name) (\(c.why))")
-        }
-    }
-
+/// The two trend quiets (SPEC §2 "Clear move in the readings", #193) in the engine; the rule's own cases are
+/// contracts/trend/clear.json (CoreTests `TrendRateTests`).
+@Suite struct QuietTrendTests {
     let t0 = Date(timeIntervalSince1970: 1_762_100_000)
     func run(_ mgdl: [Double], step: TimeInterval = 60) -> [GlucoseSample] {
         mgdl.enumerated().map { GlucoseSample(at: t0.addingTimeInterval(Double($0.offset) * step), mgdl: $0.element) }
-    }
-
-    @Test func keepHoldsTheWindowAscendingAndReplacesTheSameTime() {
-        var kept: [GlucoseSample] = []
-        for r in run([60, 61, 62, 63, 64, 65, 66]) { kept = Trend.keep(kept, r) }
-        // only the readings within 5 min of the newest: the one exactly 5 min before is out
-        #expect(kept == Array(run([60, 61, 62, 63, 64, 65, 66]).dropFirst(2)))
-        // a late (backfilled) reading fills its place; one of the same time replaces it
-        let late = t0.addingTimeInterval(240)
-        kept = Trend.keep(kept.filter { $0.at != late }, GlucoseSample(at: late, mgdl: 64))
-        #expect(kept.map(\.at) == (2...6).map { t0.addingTimeInterval(Double($0) * 60) })
-        kept = Trend.keep(kept, GlucoseSample(at: late, mgdl: 70))
-        #expect(kept.first { $0.at == late }?.mgdl == 70)
-        // a reading far older than the window is dropped at once
-        #expect(Trend.keep(kept, GlucoseSample(at: t0.addingTimeInterval(-3600), mgdl: 50)) == kept)
-    }
-
-    @Test func aWholeNumberSlopeIsExact() {
-        #expect(Trend.slope(run([61, 62, 63, 64, 65])) == 1)
-        #expect(Trend.slope(run([56, 56, 57, 57, 58])) == 0.5)
-        #expect(Trend.slope(run([60])) == 0)
     }
 
     /// The engine on readings `mgdl` (a minute apart) with `s`: the level episode's quiet after the last one.

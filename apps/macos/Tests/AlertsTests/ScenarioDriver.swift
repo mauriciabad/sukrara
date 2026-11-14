@@ -177,7 +177,17 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     let t0 = sc.at.map { base - base % 86400 + $0 * 60 } ?? base
     let utc = TimeZone(identifier: "UTC")!
     var s = AlertSettings()
-    for kv in sc.settings { try applySetting(&s, kv) }
+    // the *Trend arrow* setting (`trend=`, #204): not an alert setting, it decides the readings' trend
+    var trend = TrendSetting.balanced
+    func setTrend(_ kv: String) throws -> Bool {
+        guard kv.hasPrefix("trend=") else { return false }
+        guard let v = TrendSetting(rawValue: String(kv.dropFirst(6))) else {
+            throw ScenarioError.bad("bad setting \(kv)")
+        }
+        trend = v
+        return true
+    }
+    for kv in sc.settings where try !setTrend(kv) { try applySetting(&s, kv) }
     // the scenario's time (the monotonic clock); the wearer's own clock is `clock`, moved by `clock back`
     var clock = Date(timeIntervalSince1970: TimeInterval(t0))
     var real = clock
@@ -289,7 +299,12 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     }
 
     var glucose = 0.0
+    /// `moving`: mg/dL a minute from `movingFrom` (scenario s) on.
+    var moving: Double?
+    var movingFrom = 0
     var rate: Double?
+    /// Every reading delivered (the wearer's stamps): the trend is worked out over them as the app does.
+    var delivered: [Reading] = []
     var age = 0
     var sensorOn = true
     var every = 1
@@ -314,6 +329,8 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             switch w[0] {
             case "glucose":
                 glucose = Double(w[1]) ?? 0
+                moving = after("moving").flatMap(Double.init)
+                movingFrom = t
                 rate = after("rate").flatMap(Double.init)
                 age = after("age").flatMap(Int.init) ?? 0
                 if nextReading == nil { nextReading = t }
@@ -387,7 +404,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 default: throw ScenarioError.bad("unknown event: \(ev)")
                 }
             case "set":
-                for kv in w.dropFirst() { try applySetting(&s, kv) }
+                for kv in w.dropFirst() where try !setTrend(kv) { try applySetting(&s, kv) }
                 both(.settings(s))
             case "restart":
                 let (restarted, resumed) = AlertEngine.restore(
@@ -404,9 +421,17 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         }
         if sensorOn, let r = nextReading, r <= t {
             // stamped by the wearer's clock; the follower gets it with the wearer's own time
-            let rd = GlucoseSample(at: clock.addingTimeInterval(TimeInterval(-age * 60)), mgdl: glucose, rate: rate)
+            // ⌊mg/dL + moving × minutes since + 0.5⌋ (SPEC §7)
+            let mgdl = moving.map { (glucose + $0 * Double(t - movingFrom) / 60 + 0.5).rounded(.down) } ?? glucose
+            let stamp = clock.addingTimeInterval(TimeInterval(-age * 60))
+            delivered.append(Reading(t: stamp, mgdl: Int(mgdl), sensorRate: rate))
+            let annotated = TrendRate.annotate(delivered, setting: trend).last { $0.t == stamp }
+            let tr = annotated?.trend
+            let rd = GlucoseSample(at: stamp, mgdl: mgdl, rate: tr?.rate, band: tr?.band, held: tr?.held)
             both(.reading(rd))
-            followerReading(GlucoseSample(at: rd.at.addingTimeInterval(-offset), mgdl: glucose, rate: rate))
+            var fr = rd
+            fr.at = rd.at.addingTimeInterval(-offset)
+            followerReading(fr)
             nextReading = t + every * 60
         } else if let tm = timer, tm <= t {
             both(.tick)

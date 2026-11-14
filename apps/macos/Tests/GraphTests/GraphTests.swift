@@ -43,32 +43,57 @@ func cardContext(_ size: CGSize) -> CGContext {
 /// Every fixture set has cases (a moved or emptied folder would let the parameterized tests pass with none).
 @Test(arguments: [
     "freshness/freshness.json", "clock", "sensor", "place/place.json", "mark", "share", "status.json", "labels",
-    "trend/trend.json", "range/range.json", "range/bands.json",
+    "range/range.json", "range/bands.json",
 ])
 func fixtureSetHasCases(_ set: String) {
     #expect(!GraphFixtures.cases(set).isEmpty, "\(set) under \(GraphFixtures.dir.path)")
 }
 
-/// contracts/graph/trend: the one trend arrow (Android TrendFixtureTest): the drawn angle and double, the text arrow,
-/// and the face's `arrowText` every text place writes (a stale value writes the ring, as the card draws it).
+/// contracts/trend/bands.json: the one trend arrow (Android TrendFixtureTest): per band the text arrow, the doubled
+/// arrow and the words; the face's `arrowText` every text place writes (a stale value writes the ring, as the card
+/// draws it); the drawn angle, continuous.
 @Suite struct TrendFixtureTests {
-    @Test(arguments: GraphFixtures.cases("trend/trend.json"))
+    static func list(_ key: String) -> [JSON] {
+        (GraphFixtures.object("../trend/bands.json")[key] as? [[String: Any]] ?? []).map(JSON.init)
+    }
+
+    @Test func theArrowsAreThere() {
+        #expect(Self.list("arrows").count == 8)
+        #expect(!Self.list("angles").isEmpty)
+    }
+
+    @Test(arguments: list("arrows"))
     func arrow(_ c: JSON) {
-        let e = c.expect, rate = c.number("rate")
-        #expect(TrendAngle.text(rate) == e.string("text"))
-        if let rate, let deg = e.number("deg") {
-            #expect(abs(TrendAngle.deg(rate) - deg) < 1e-3)
-            #expect(TrendAngle.isDouble(rate) == e.bool("double"))
-        } else {
-            #expect(rate == nil && e.number("deg") == nil)
-        }
-        let fresh = Freshness.look(sgv: 100, t: now - 30, rate: rate, now: now, ended: false)
-        #expect(fresh.arrowText == e.string("text"))
-        let stale = Freshness.look(sgv: 100, t: now - 6 * 60, rate: rate, now: now, ended: false)
+        let band = c.number("band").map { Int($0) }
+        #expect(TrendAngle.text(band: band) == c.string("text"))
+        if let band { #expect(TrendAngle.isDouble(band: band) == c.bool("double")) }
+        // the face of a reading with that trend (a rate whose own band is something else: the trend's band wins)
+        let rate: Double? = band.map { Double($0) * 0.5 }
+        let fresh = Freshness.look(sgv: 100, t: now - 30, rate: rate, band: band, now: now, ended: false)
+        #expect(fresh.arrowText == c.string("text"))
+        let stale = Freshness.look(sgv: 100, t: now - 6 * 60, rate: rate, band: band, now: now, ended: false)
         #expect(stale.arrowText == "○")
         // one word per arrow, in both languages (VoiceOver)
-        #expect(CardWords.en.trend(rate) == e.child("words").string("en"))
-        #expect(CardWords.es.trend(rate) == e.child("words").string("es"))
+        #expect(CardWords.en.trend(band) == c.child("words").string("en"))
+        #expect(CardWords.es.trend(band) == c.child("words").string("es"))
+    }
+
+    @Test(arguments: list("angles"))
+    func angle(_ c: JSON) throws {
+        let rate = try #require(c.number("rate")), deg = try #require(c.number("deg"))
+        #expect(abs(TrendAngle.deg(rate) - deg) < 1e-6)
+    }
+
+    /// A reading's trend draws its own band: a rate of 3.4 not yet held 2 min is ↑, not ⇈, on every place.
+    @Test func theTrendsBandIsWhatTheCardShows() {
+        let held = GraphReading(t: now - 30, v: 180, rate: 3.4, band: 2)
+        let face = GlucoseCard.face(CardData(readings: [held], now: now), unit: .mgdl, surface: .menubarTitle)
+        #expect(face.arrowText == "↑" && face.band == 2)
+        // without a band (a reading with nothing before it): the plain band
+        let plain = GraphReading(t: now - 30, v: 180, rate: 3.4)
+        #expect(
+            GlucoseCard.face(CardData(readings: [plain], now: now), unit: .mgdl, surface: .menubarTitle).arrowText
+                == "⇈")
     }
 }
 

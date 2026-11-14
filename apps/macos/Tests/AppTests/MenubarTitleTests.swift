@@ -40,28 +40,31 @@ import Testing
         #expect(t.accessibilityLabel.contains("112"))
     }
 
-    /// Same rate, same arrow on every text place: the menu bar title and the alert title write the arrow of
-    /// contracts/graph/trend for each of its rates (the card draws it from the same `TrendAngle`).
+    /// Same trend, same arrow on every text place: the menu bar title and the alert title write the arrow of
+    /// contracts/trend/bands.json for each band (the card draws it from the same `TrendAngle`).
     @Test func everyTextPlaceWritesTheFixtureArrow() throws {
-        let url = Contracts.root.appending(path: "graph/trend/trend.json")
+        let url = Contracts.url("trend/bands.json")
         let root = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
-        let cases = try #require(root["cases"] as? [[String: Any]])
-        #expect(!cases.isEmpty)
+        let cases = try #require(root["arrows"] as? [[String: Any]])
+        #expect(cases.count == 8)
         let now = clock.now.timeIntervalSince1970
         for c in cases {
-            let rate = (c["rate"] as? NSNumber)?.doubleValue
-            let want = try #require((c["expect"] as? [String: Any])?["text"] as? String)
-            let data = CardData(readings: [GraphReading(t: now - 30, v: 64, rate: rate)], sensor: nil, now: now)
+            let band = (c["band"] as? NSNumber)?.intValue
+            let rate = band.map { Double($0) * 0.5 }
+            let want = try #require(c["text"] as? String)
+            let data = CardData(
+                readings: [GraphReading(t: now - 30, v: 64, rate: rate, band: band)], sensor: nil, now: now)
             let menubar = MenubarTitle.of(
                 look: GlucoseCard.face(data, unit: .mgdl, surface: .menubarTitle), spoken: "", alerts: .idle,
                 reason: nil)
-            #expect(menubar.text == "64 \(want)", "menu bar, \(c["name"] ?? "")")
+            #expect(menubar.text == "64 \(want)", "menu bar, band \(String(describing: band))")
             let firing = AlertFiring(
-                id: "a", kind: .low, at: clock.now, reading: GlucoseSample(at: clock.now, mgdl: 64, rate: rate),
+                id: "a", kind: .low, at: clock.now,
+                reading: GlucoseSample(at: clock.now, mgdl: 64, rate: rate, band: band),
                 threshold: 70, n: 1, treated: 0)
             #expect(
-                AlertText(language: .en).body(firing, now: clock.now) == "64 mg/dL \(want)", "alert, \(c["name"] ?? "")"
-            )
+                AlertText(language: .en).body(firing, now: clock.now) == "64 mg/dL \(want)",
+                "alert, band \(String(describing: band))")
         }
     }
 
@@ -119,7 +122,8 @@ import Testing
     @Test func titleStateMatrix() {
         let now = clock.now.timeIntervalSince1970
         let fresh = title(minutesAgo: 1)
-        #expect(fresh.value == "112" && fresh.mark == .arrow(-1.2) && fresh.tint == .plain && !fresh.strike)
+        #expect(
+            fresh.value == "112" && fresh.mark == .arrow(rate: -1.2, band: -1) && fresh.tint == .plain && !fresh.strike)
         #expect(fresh.tooltip.hasPrefix("Sukrara · reading at "))
         #expect(title(minutesAgo: 1, rate: nil).mark == .ring)
         let late = title(minutesAgo: 3)

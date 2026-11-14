@@ -219,10 +219,10 @@ extension GlucoseUnit {
 
 extension CardWords {
 
-    /// The trend in words, one word per arrow (`Trend`'s band; nil = unknown).
-    func trend(_ rate: Double?) -> String {
-        guard let rate else { return trend.unknown }
-        return switch Trend(rate: rate) {
+    /// The trend in words, one word per arrow (the trend's band, `Trend`; nil = unknown).
+    func trend(_ band: Int?) -> String {
+        guard let band else { return trend.unknown }
+        return switch Trend(band: band) {
         case .risingVeryFast: trend.risingVeryFast
         case .risingFast: trend.risingFast
         case .rising: trend.rising
@@ -290,7 +290,7 @@ enum A11y {
                 default: "\(unit.format(r.sgv, locale: w.locale)) \(u)"
                 }
             let parts = [
-                number, look.strike ? w.old : nil, look.strike ? nil : w.trend(look.trend == .arrow ? look.rate : nil),
+                number, look.strike ? w.old : nil, look.strike ? nil : w.trend(look.trend == .arrow ? look.band : nil),
                 bound ? nil : w.range(r.sgv, style.bands.sane()), w.age(data.now - r.t),
             ]
             glucose = parts.compactMap { $0 }.joined(separator: ", ")

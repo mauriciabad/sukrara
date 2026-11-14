@@ -51,6 +51,8 @@ public enum MacSettings {
     public static let reportDays = SettingSpec(key: SettingsSpec.Keys.reportDays, defaultValue: 14)
     public static let settingsFrom = SettingSpec(key: SettingsSpec.Keys.settingsFrom, defaultValue: "wearer")
     public static let unit = SettingSpec(key: SettingsSpec.Keys.unit, defaultValue: GlucoseUnit.mgdl.rawValue)
+    /// *Trend arrow* (schema `glucose.trend`, mirrored as `graph.trend`): quick / balanced / smooth / sensor.
+    public static let trend = SettingSpec(key: SettingsSpec.Keys.trend, defaultValue: TrendSetting.balanced.rawValue)
     /// *Read Glucose Aloud* from any app with Control-Shift-Command-G (on by default; off when another app needs the keys).
     public static let readAloudShortcut = SettingSpec(key: SettingsSpec.Keys.readAloudShortcut, defaultValue: true)
     /// Let Sukrara through a Focus: alarm-level alerts post Time Sensitive (off by default; #184).

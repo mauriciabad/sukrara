@@ -121,13 +121,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         let ink = color(title.tint)
         switch title.mark {
         case .arrow, .ring:
-            let rate: Double? = if case .arrow(let r) = title.mark { r } else { nil }
+            let (rate, band): (Double?, Int?) = if case .arrow(let r, let b) = title.mark { (r, b) } else { (nil, nil) }
             let size: CGFloat = 15
             // drawn when the bar draws it, in the ink of the bar's appearance then (light / dark)
             let img = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
                 let color = (ink ?? .black).cgColor
                 guard
-                    let cg = GlucoseCard.trendImage(rate: rate, size: size, scale: 2, color: color),
+                    let cg = GlucoseCard.trendImage(rate: rate, band: band, size: size, scale: 2, color: color),
                     let ctx = NSGraphicsContext.current?.cgContext
                 else { return false }
                 ctx.draw(cg, in: rect)

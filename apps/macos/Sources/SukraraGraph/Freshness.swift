@@ -59,7 +59,8 @@ public enum Freshness: Sendable {
         return nextChange(age: now - t).map { t + $0 }
     }
 
-    /// What every glucose surface shows for the latest reading (`sgv` at `t`, `rate` mg/dL/min) at `now`: the one
+    /// What every glucose surface shows for the latest reading (`sgv` at `t`, its trend's `rate` mg/dL/min and `band`)
+    /// at `now`: the one
     /// decision behind the card (menubar dropdown, widgets) and the menubar title. Android's `Freshness.look`
     /// (graph/Freshness.kt) is the same rule; both run contracts/graph/freshness. `warmup` = a new sensor's warm-up time
     /// left: its own state, before any value. `ended` = the sensor is past its end: while its readings keep arriving (the
@@ -68,7 +69,8 @@ public enum Freshness: Sendable {
     /// `GlucoseCard.face`.
     /// `format` writes a value in the user's unit (mg/dL by default); LO / HI outside 40–400 mg/dL.
     static func look(
-        sgv: Int?, t: TimeInterval?, rate: Double?, now: TimeInterval, ended: Bool = false, warmup: String? = nil,
+        sgv: Int?, t: TimeInterval?, rate: Double?, band: Int? = nil, now: TimeInterval, ended: Bool = false,
+        warmup: String? = nil,
         format: (Int) -> String = { "\($0)" }
     ) -> GlucoseLook {
         let fr = of(age: t.map { now - $0 })
@@ -87,7 +89,8 @@ public enum Freshness: Sendable {
         return GlucoseLook(
             state: .value, fresh: fr, text: GlucoseRange.isLo(sgv) ? "LO" : GlucoseRange.isHi(sgv) ? "HI" : format(sgv),
             strike: fr.strike,
-            trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate, ended: ended)
+            trend: rate != nil && !fr.strike ? TrendMark.arrow : TrendMark.noTrend, rate: rate,
+            band: rate == nil ? nil : band ?? rate.map(TrendRate.plainBand), ended: ended)
     }
 
     /// "14:05" today and under 12 h old, "Tue 14:05" from 12 h or on another day, "12 Oct" from 6 days (`timeKind`);
@@ -128,24 +131,24 @@ public enum TrendMark: String, Sendable {
     static func ringStroke(_ size: CGFloat) -> CGFloat { size * 0.11 }
 }
 
-/// The trend arrow's one decision (graph/CardModel.kt TrendAngle; contracts/graph/trend), one picture and one word per
-/// arrow (#4): the rate's band (`Trend`, Nightscout's ±1 / 2 / 3) gives the drawn arrow's angle, snapped to 0°, ±45°
-/// or ±90° (doubled from ±3), and THE text arrow every text place writes (the menu bar, alert titles). No place maps a
-/// rate to an arrow itself.
+/// The trend arrow's one decision (graph/CardModel.kt TrendAngle; contracts/trend `bands.json`): the drawn arrow turns
+/// with the trend's rate, continuously (`TrendRate.deg`: flat at 0, vertical from ±3 mg/dL/min), and is doubled with
+/// the band (±3); THE text arrow every text place writes (the menu bar, alert titles) and the words are the trend's
+/// band (Nightscout's ±1 / 2 / 3 with hysteresis). No place maps a rate to an arrow itself.
 public enum TrendAngle {
-    /// The drawn arrow's rotation in degrees, y-down (negative = up): the band's 0, ±45 or ±90.
-    public static func deg(_ rate: Double) -> Double { degrees[Trend(rate: rate).step + 3] }
+    /// The drawn arrow's rotation in degrees, y-down (negative = up): continuous, ±90 from ±3 mg/dL/min.
+    public static func deg(_ rate: Double) -> Double { TrendRate.deg(rate) }
 
-    public static func isDouble(_ rate: Double) -> Bool { abs(Trend(rate: rate).step) == 3 }
+    /// The arrow is drawn doubled (⇈ / ⇊): band ±3.
+    public static func isDouble(band: Int) -> Bool { abs(band) == 3 }
 
-    /// The text arrow for a rate.
-    public static func symbol(_ rate: Double) -> String { symbols[Trend(rate: rate).step + 3] }
+    /// The text arrow of a band.
+    public static func symbol(band: Int) -> String { symbols[max(-3, min(3, band)) + 3] }
 
-    private static let degrees: [Double] = [90, 90, 45, 0, -45, -90, -90]
     private static let symbols = ["⇊", "↓", "↘", "→", "↗", "↑", "⇈"]
 
-    /// `symbol` for a rate that may be missing: no rate = the "no trend" ring, as the card draws it.
-    public static func text(_ rate: Double?) -> String { rate.map(symbol) ?? TrendMark.ring }
+    /// `symbol` for a band that may be missing: no trend = the "no trend" ring, as the card draws it.
+    public static func text(band: Int?) -> String { band.map { symbol(band: $0) } ?? TrendMark.ring }
 }
 
 /// `Freshness.look`'s answer (graph/Freshness.kt GlucoseLook): the state; for a value its text, whether it's struck
@@ -164,6 +167,8 @@ public struct GlucoseLook: Equatable, Sendable {
     /// While warming up: the time left ("42m").
     public var warmup: String? = nil
     public var rate: Double? = nil
+    /// The trend's band (-3 … 3), nil without a trend: the text arrow, the words and the doubled arrow.
+    public var band: Int? = nil
     /// A value whose sensor is past its end while its readings keep arriving (#3): the card adds the "Ended · Replace
     /// sensor" pill (`StatusBadge.sensor`).
     public var ended = false
@@ -173,7 +178,7 @@ public struct GlucoseLook: Equatable, Sendable {
     /// one, the ring when it draws the "no trend" ring, nil without a value (graph/Freshness.kt `arrowText`).
     public var arrowText: String? {
         switch trend {
-        case .arrow: TrendAngle.text(rate)
+        case .arrow: TrendAngle.text(band: band)
         case .noTrend: TrendMark.ring
         case nil: nil
         }

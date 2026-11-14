@@ -26,7 +26,7 @@ import Testing
     func following(_ mgdl: Int) -> FollowerSnapshot {
         var snapshot = FollowerSnapshot.empty
         snapshot.link = .following(wearer: "Ana", canWrite: false)
-        snapshot.readings = [Reading(t: clock.now, mgdl: mgdl, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: mgdl, sensorRate: 0)]
         return snapshot
     }
 

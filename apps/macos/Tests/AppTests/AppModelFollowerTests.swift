@@ -28,7 +28,7 @@ import Testing
         // #40: the follow is the source's start: no data rings 20 min later if no reading ever comes
         #expect(model.notMonitoringReason == "Waiting for the first reading from the wearer")
         #expect(wake.at == clock.now.addingTimeInterval(20 * 60))
-        snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: 112, sensorRate: 0)]
         model.apply(snapshot)
         #expect(model.notMonitoringReason == nil && model.statusTitle == "112 →" && wake.at != nil)
         #expect(alerts.mirroring)
@@ -60,11 +60,11 @@ import Testing
         // a value hidden after 20 min: the card stays, the reason goes under it with the last reading's time
         snapshot.link = .following(wearer: "Ana", canWrite: false)
         let last = clock.now.addingTimeInterval(-45 * 60)
-        snapshot.readings = [Reading(t: last, mgdl: 131, rate: 0)]
+        snapshot.readings = [Reading(t: last, mgdl: 131, sensorRate: 0)]
         model.apply(snapshot)
         #expect(model.noDataReason == .wearerSilent(since: last.timeIntervalSince1970))
         #expect(model.notMonitoringReason == nil)
-        snapshot.readings = [Reading(t: clock.now, mgdl: 131, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: 131, sensorRate: 0)]
         model.apply(snapshot)
         #expect(model.noDataReason == nil)
     }
@@ -77,7 +77,7 @@ import Testing
         let model = AppModel(plan: plan, clock: clock, alerts: alerts)
         var snapshot = FollowerSnapshot.empty
         snapshot.link = .following(wearer: "Ana", canWrite: false)
-        snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: 112, sensorRate: 0)]
         model.apply(snapshot)
         #expect(alerts.nextWake != nil)
         snapshot.link = .broken(.keyUnreadable)
@@ -114,7 +114,7 @@ import Testing
         let model = AppModel(plan: plan, clock: clock, alerts: alerts)
         var snapshot = FollowerSnapshot.empty
         snapshot.link = .following(wearer: "Ana", canWrite: false)
-        snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: 112, sensorRate: 0)]
         model.apply(snapshot)
         #expect(alerts.nextWake != nil)  // armed: no data would ring if the readings stopped
         snapshot.link = .revoked
@@ -137,7 +137,7 @@ import Testing
         let model = AppModel(plan: plan, clock: clock, alerts: alerts)
         var snapshot = FollowerSnapshot.empty
         snapshot.link = .following(wearer: "Ana", canWrite: false)
-        snapshot.readings = [Reading(t: clock.now, mgdl: 112, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: 112, sensorRate: 0)]
         model.apply(snapshot)
         #expect(notifier.monitoring == [nil])  // monitoring started: nothing to show (a stale note goes)
         snapshot.link = .revoked

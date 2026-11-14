@@ -25,9 +25,9 @@ import Testing
         let r = try JugglucoApi.entries(Data(json.utf8), now: now)
         // oldest first, 0 and the future dropped
         #expect(r.map(\.mgdl) == [GlucoseRange.lo, GlucoseRange.hi, 118, 120])
-        #expect(r.last?.rate == 2)  // delta is the rate × 5
-        #expect(r[2].rate == nil)  // direction "" = no rate
-        #expect(r[1].rate == nil)  // HI has no rate
+        #expect(r.last?.sensorRate == 2)  // delta is the rate × 5
+        #expect(r[2].sensorRate == nil)  // direction "" = no rate
+        #expect(r[1].sensorRate == nil)  // HI has no rate
     }
 
     @Test func entriesWrittenBySukraraAreRefused() {
@@ -46,7 +46,7 @@ import Testing
         let data = lines.compactMap { parser.feed($0) }
         #expect(data.count == 1)
         let r = JugglucoApi.live(data[0], now: now)
-        #expect(r == Reading(t: Date(timeIntervalSince1970: 1_799_999_990), mgdl: 101, rate: -1.5))
+        #expect(r == Reading(t: Date(timeIntervalSince1970: 1_799_999_990), mgdl: 101, sensorRate: -1.5))
     }
 
     /// #136: `sgv.json?sensor=Y`'s `sensor_status` gives the sensor's start (the phone's local time) and, with the

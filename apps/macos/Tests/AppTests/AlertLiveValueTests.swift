@@ -28,7 +28,7 @@ import UserNotifications
     }
 
     /// A reading taken now (no rate: the ring for its trend).
-    func reading(_ mgdl: Int) -> Reading { Reading(t: clock.now, mgdl: mgdl, rate: nil) }
+    func reading(_ mgdl: Int) -> Reading { Reading(t: clock.now, mgdl: mgdl, sensorRate: nil) }
 
     func look(_ mgdl: Double, rate: Double? = -1.5, age: TimeInterval = 0) -> AlertLiveValue.Look {
         AlertLiveValue.look(

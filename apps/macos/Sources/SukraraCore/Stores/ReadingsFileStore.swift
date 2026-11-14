@@ -112,7 +112,7 @@ public actor ReadingsFileStore: ReadingsStoring {
 
     static func encode(_ reading: Reading) -> String {
         let millis = Int64((reading.t.timeIntervalSince1970 * 1000).rounded())
-        let rate = reading.rate.map { String($0) } ?? ""
+        let rate = reading.sensorRate.map { String($0) } ?? ""  // the sensor's own rate, as it came
         return "\(millis),\(reading.mgdl),\(rate)"  // card-ok: readings.csv storage format, never shown
     }
 
@@ -126,6 +126,6 @@ public actor ReadingsFileStore: ReadingsStoring {
             guard let value = Double(fields[2]), value.isFinite else { return nil }
             rate = value
         }
-        return Reading(t: Date(timeIntervalSince1970: Double(millis) / 1000), mgdl: mgdl, rate: rate)
+        return Reading(t: Date(timeIntervalSince1970: Double(millis) / 1000), mgdl: mgdl, sensorRate: rate)
     }
 }

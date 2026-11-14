@@ -79,6 +79,7 @@ extension GraphConfig {
         c.lastPlace = LastPlace(rawValue: src.string("graph.lastPlace", MacSettings.lastPlace)) ?? .nearValue
         c.lastElse = parseSlot(src.string("graph.lastElse", MacSettings.lastElse))
         c.countdownHours = n(MacSettings.countdownHours)
+        c.trend = TrendSetting(stored: src.string("glucose.trend", MacSettings.trend))
         return c
     }
 }

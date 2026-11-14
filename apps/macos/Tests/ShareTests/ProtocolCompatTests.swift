@@ -67,7 +67,7 @@ struct ProtocolCompatTests {
         #expect(saved.writers == expected["writers"] as? [String], "\(name)")
 
         let gotReadings = try await h.stores.readings.load(since: .distantPast).map { r -> [Double?] in
-            [r.t.timeIntervalSince1970, Double(r.mgdl), r.rate]
+            [r.t.timeIntervalSince1970, Double(r.mgdl), r.sensorRate]
         }
         let want = (expected["readings"] as! [[Any]]).map { row in row.map { JSONNumber.double($0) } }
         #expect(gotReadings == want, "\(name)")

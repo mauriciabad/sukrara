@@ -65,7 +65,7 @@ public enum GlucoseCsv {
             last = t
             var f = row(t, "0")
             f[4] = unit == .mmol ? tenths(Double(r.mgdl) / GlucoseUnit.mgdlPerMmol) : String(r.mgdl)
-            f[20] = r.rate.map(tenths) ?? ""
+            f[20] = r.sensorRate.map(tenths) ?? ""  // a device record: the sensor's own rate (#204)
             lines.append((t, 0, "", f))
         }
         for tr in treatments where !tr.del && tr.t >= from && tr.t < to {

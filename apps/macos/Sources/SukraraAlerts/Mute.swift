@@ -184,8 +184,8 @@ public func isBackByMargin(_ side: AlertSide, _ reading: GlucoseSample, _ s: Ale
         return ![AlertKind.high, .veryHigh, .extremelyHigh].contains {
             s[$0].on && $0.reaches(reading.mgdl + m, s[$0].threshold)
         }
-    case .fallingFast: return !s[.fallingFast].on ? true : reading.rate.map { $0 > -s[.fallingFast].threshold }
-    case .risingFast: return !s[.risingFast].on ? true : reading.rate.map { $0 < s[.risingFast].threshold }
+    case .fallingFast: return !s[.fallingFast].on ? true : reading.held.map { $0 > -s[.fallingFast].threshold }
+    case .risingFast: return !s[.risingFast].on ? true : reading.held.map { $0 < s[.risingFast].threshold }
     case .noData: return true
     }
 }

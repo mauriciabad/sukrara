@@ -78,7 +78,7 @@ struct Case: @unchecked Sendable, CustomTestStringConvertible {
         let readings = (o["readings"] as? [[String: Any]] ?? []).map {
             Reading(
                 t: Date(timeIntervalSince1970: TimeInterval(Self.i64($0["t"]))), mgdl: Int(Self.i64($0["sgv"])),
-                rate: ($0["rate"] as? NSNumber)?.doubleValue)
+                sensorRate: ($0["rate"] as? NSNumber)?.doubleValue)
         }
         let treatments = try (o["treatments"] as? [[String: Any]] ?? []).map { j -> Treatment in
             var j = j
@@ -202,13 +202,14 @@ struct Case: @unchecked Sendable, CustomTestStringConvertible {
         #expect(Trend(rate: 0.99) == .steady && Trend(rate: -0.99) == .steady)
         #expect(Trend(rate: 1) == .rising && Trend(rate: 2) == .risingFast && Trend(rate: 3) == .risingVeryFast)
         #expect(Trend(rate: -1.5) == .falling && Trend(rate: -2) == .fallingFast && Trend(rate: -3) == .fallingVeryFast)
-        #expect(Trend.words(rate: nil) == "trend unknown")
+        #expect(Trend.words(band: nil) == "trend unknown")
     }
 
     @Test func loAndHiAreStoredAsTheFlags() {
         let t = Date(timeIntervalSince1970: 1000)
-        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 35, rate: -2)) == Reading(t: t, mgdl: 39, rate: nil))
-        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 450, rate: 1)) == Reading(t: t, mgdl: 401, rate: nil))
-        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 120, rate: 1)) == Reading(t: t, mgdl: 120, rate: 1))
+        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 35, sensorRate: -2)) == Reading(t: t, mgdl: 39))
+        #expect(GlucoseRange.normalised(Reading(t: t, mgdl: 450, sensorRate: 1)) == Reading(t: t, mgdl: 401))
+        #expect(
+            GlucoseRange.normalised(Reading(t: t, mgdl: 120, sensorRate: 1)) == Reading(t: t, mgdl: 120, sensorRate: 1))
     }
 }

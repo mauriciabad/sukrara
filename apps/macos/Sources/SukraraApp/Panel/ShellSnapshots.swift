@@ -33,11 +33,11 @@
         private static func scenes() -> [(String, Scene)] {
             let now = Date()
             let day = RealisticSynthetic.readings(until: now.timeIntervalSince1970 - 60, days: 1).map {
-                Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: Int($0.v.rounded()), rate: $0.rate)
+                Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: Int($0.v.rounded()), sensorRate: $0.rate)
             }
             func ending(_ mgdl: Int, rate: Double, age: TimeInterval = 60) -> [Reading] {
                 day.filter { $0.t < now.addingTimeInterval(-age - 240) }
-                    + [Reading(t: now.addingTimeInterval(-age), mgdl: mgdl, rate: rate)]
+                    + [Reading(t: now.addingTimeInterval(-age), mgdl: mgdl, sensorRate: rate)]
             }
             let suite = "app.mauri.sukrara.snap.\(UUID().uuidString)"
             let store = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite)!)

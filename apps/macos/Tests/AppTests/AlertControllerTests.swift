@@ -67,7 +67,7 @@ final class RecordingWake: WakeScheduling {
     }
 
     func reading(_ mgdl: Int, minutesAgo: Double = 0, rate: Double? = 0) -> Reading {
-        Reading(t: clock.now.addingTimeInterval(-minutesAgo * 60), mgdl: mgdl, rate: rate)
+        Reading(t: clock.now.addingTimeInterval(-minutesAgo * 60), mgdl: mgdl, sensorRate: rate)
     }
 
     @Test func noTimerAndNoAlarmBeforeTheFirstReading() {

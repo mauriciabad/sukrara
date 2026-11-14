@@ -69,7 +69,7 @@ struct AlertText: Equatable {
     /// `r`'s look at `now`, the card's: the alert notification's surface asks `GlucoseCard.face` as itself.
     static func look(_ r: GlucoseSample, now: Date) -> GlucoseLook {
         let data = CardData(
-            readings: [GraphReading(t: r.at.timeIntervalSince1970, v: r.mgdl, rate: r.rate)],
+            readings: [GraphReading(t: r.at.timeIntervalSince1970, v: r.mgdl, rate: r.rate, band: r.band)],
             now: now.timeIntervalSince1970)
         return GlucoseCard.face(data, unit: .mgdl, surface: .alertNotification)
     }

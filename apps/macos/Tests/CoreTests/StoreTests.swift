@@ -11,7 +11,7 @@ struct StoreTests {
     let clock = FakeClock(Date(timeIntervalSince1970: 1_800_000_000))
 
     func reading(_ minutesAgo: Int, _ mgdl: Int, rate: Double? = nil) -> Reading {
-        Reading(t: clock.now.addingTimeInterval(Double(-minutesAgo * 60)), mgdl: mgdl, rate: rate)
+        Reading(t: clock.now.addingTimeInterval(Double(-minutesAgo * 60)), mgdl: mgdl, sensorRate: rate)
     }
 
     var csv: URL { directory.appending(path: ReadingsFileStore.fileName) }
@@ -24,7 +24,7 @@ struct StoreTests {
         let reopened = ReadingsFileStore(directory: directory, clock: clock)
         let all = try await reopened.load(since: .distantPast)
         #expect(all.map(\.mgdl) == [120, 125, 130])
-        #expect(all.first?.rate == 0.5 && all.last?.rate == nil)
+        #expect(all.first?.sensorRate == 0.5 && all.last?.sensorRate == nil)
         let text = try String(contentsOf: csv, encoding: .utf8)
         #expect(text.hasPrefix("t_ms,mgdl,rate\n") && text.hasSuffix("\n"))
         #expect(await reopened.issue == nil)

@@ -359,6 +359,9 @@ public struct GraphConfig: Codable, Equatable, Sendable {
     public var sensorTime = true
     /// Per treatment kind: the point, the mute line, the amount and the time label on the chart (carbs: the point only).
     public var marks = MarkShow.defaults
+    /// The *Trend arrow* setting (`glucose.trend`, mirrored): where every arrow takes the trend from (contracts/trend).
+    /// Read by the one place that works the trend out (`AppModel`), not by the renderer.
+    public var trend = TrendSetting.balanced
 
     static let defaultLastElse = RingSpec(window: 30 * 86400)
     /// `lastElse` with the ring settings applied.

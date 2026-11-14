@@ -28,9 +28,11 @@ extension GlucoseCard {
     public static let noReadingsSymbol = GlucoseLook.noReadingsSymbol
 
     /// The trend mark as a picture for text places that can show one (the menu bar): THE card's arrow at
-    /// `TrendAngle.deg`, doubled from ±3 mg/dL/min, or the "no trend" ring for `rate` nil. `size` points square,
+    /// `TrendAngle.deg` of `rate`, doubled with `band` ±3, or the "no trend" ring for `rate` nil. `size` points square,
     /// `scale` pixels per point, drawn in `color`.
-    public static func trendImage(rate: Double?, size: CGFloat, scale: CGFloat = 2, color: CGColor) -> CGImage? {
+    public static func trendImage(rate: Double?, band: Int?, size: CGFloat, scale: CGFloat = 2, color: CGColor)
+        -> CGImage?
+    {
         let px = max(4, Int(size * scale))
         guard
             let ctx = CGContext(
@@ -44,7 +46,7 @@ extension GlucoseCard {
         ctx.translateBy(x: size / 2, y: size / 2)
         if let rate {
             ctx.rotate(by: CGFloat(TrendAngle.deg(rate)) * .pi / 180)
-            drawArrow(ctx, scale: size, color: color, double: TrendAngle.isDouble(rate))
+            drawArrow(ctx, scale: size, color: color, double: band.map { TrendAngle.isDouble(band: $0) } ?? false)
         } else {
             let r = TrendMark.ringRadius(size)
             ctx.setStrokeColor(color)

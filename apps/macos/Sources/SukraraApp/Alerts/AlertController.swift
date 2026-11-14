@@ -103,7 +103,7 @@ final class AlertController {
     func reading(_ r: Reading) {
         // still on its way from a follow or source that ended: it can't arm no data again (#128)
         if let fence, r.t <= fence { return }
-        let sample = GlucoseSample(at: r.t, mgdl: Double(r.mgdl), rate: r.rate)
+        let sample = GlucoseSample(r)
         noteClock()
         if latest.map({ sample.at >= $0.at }) ?? true { latest = sample }
         if mirroring {

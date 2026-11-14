@@ -46,13 +46,13 @@ import Testing
         off.on = false
         c.settings(off)
         notifier.calls = []
-        c.reading(Reading(t: clock.now, mgdl: 55, rate: -1))
+        c.reading(Reading(t: clock.now, mgdl: 55, sensorRate: -1))
         #expect(notifier.posts.isEmpty)
     }
 
     @Test func aRelaunchReshowsTheOpenAlertSilently() {
         let c = controller()
-        c.reading(Reading(t: clock.now, mgdl: 60, rate: -0.5))
+        c.reading(Reading(t: clock.now, mgdl: 60, sensorRate: -0.5))
         clock.advance(by: 30)
         notifier.calls = []
         _ = controller()

@@ -3,24 +3,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
-/// The trend of a rate of change (mg/dL per minute): one of Nightscout's direction bands (±1 / 2 / 3; a boundary
-/// belongs to the steeper band), the same as Android's `TrendAngle.step` (contracts/graph/trend). One arrow and one
-/// word per band: ↗ rising, ↑ rising fast, ⇈ rising very fast (falling likewise).
+/// A trend's text band (contracts/trend `bands.json`): one of Nightscout's direction bands (±1 / 2 / 3), as
+/// `TrendRate` decides it for a reading (hysteresis, the doubled arrow's hold) or, `init(rate:)`, for a rate with
+/// nothing before it. One arrow and one word per band: ↗ rising, ↑ rising fast, ⇈ rising very fast (falling likewise).
 public enum Trend: String, Sendable, CaseIterable {
     case risingVeryFast, risingFast, rising, steady, falling, fallingFast, fallingVeryFast
 
     /// mg/dL per minute from which the arrow doubles (⇈ / ⇊).
     public static let fullScale = 3.0
 
-    public init(rate: Double) {
-        switch rate {
-        case Self.fullScale...: self = .risingVeryFast
-        case 2..<Self.fullScale: self = .risingFast
-        case 1..<2: self = .rising
-        case ...(-Self.fullScale): self = .fallingVeryFast
-        case ...(-2): self = .fallingFast
-        case ...(-1): self = .falling
-        default: self = .steady
+    /// The plain band of a rate with nothing before it (`TrendRate.plainBand`).
+    public init(rate: Double) { self.init(band: TrendRate.plainBand(rate)) }
+
+    /// A band -3 … 3 (`ReadingTrend.band`; clamped).
+    public init(band: Int) {
+        switch band {
+        case 3...: self = .risingVeryFast
+        case 2: self = .risingFast
+        case 1: self = .rising
+        case 0: self = .steady
+        case -1: self = .falling
+        case -2: self = .fallingFast
+        default: self = .fallingVeryFast
         }
     }
 
@@ -50,6 +54,6 @@ public enum Trend: String, Sendable, CaseIterable {
         }
     }
 
-    /// The words for an optional rate: "trend unknown" without one.
-    public static func words(rate: Double?) -> String { rate.map { Trend(rate: $0).words } ?? "trend unknown" }
+    /// The words for an optional band: "trend unknown" without one.
+    public static func words(band: Int?) -> String { band.map { Trend(band: $0).words } ?? "trend unknown" }
 }

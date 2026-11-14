@@ -18,7 +18,7 @@
         init(now: Date = Date()) {
             let t = now.timeIntervalSince1970
             history = RealisticSynthetic.readings(until: t - 60, days: 7).map {
-                Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: Int($0.v.rounded()), rate: $0.rate)
+                Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: Int($0.v.rounded()), sensorRate: $0.rate)
             }
             let readings = history.filter { $0.t.timeIntervalSince1970 >= t - 86400 }
             let start = Int(t) - 6 * 86400

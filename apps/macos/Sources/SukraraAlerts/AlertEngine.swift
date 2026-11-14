@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
+import SukraraCore
 
 /// Which rules run here: all of them, or only `no_data` (a follower mirroring the wearer checks its own link).
 public enum AlertScope: String, Codable, Sendable {
@@ -194,7 +195,7 @@ public struct AlertEngine: Sendable {
             // hide every reading until the clock caught up
             r.at = min(r.at, t)
             // an older one (a late or backfilled reading) still fills the trend's window
-            recent = Trend.keep(recent, r)
+            recent = TrendRate.keep(recent, r)
             if context.latest.map({ r.at > $0.at }) ?? true { context.latest = r }
             sourceDelivered = true
         case .treatments(let list): context.treatments = list
@@ -260,7 +261,7 @@ public struct AlertEngine: Sendable {
         // says the last value and its time; SPEC §1 "Showing an alert")
         let rules = context.scope == .all && !noData
         var rate: AlertKind?
-        if rules, fresh, let v = r?.rate {
+        if rules, fresh, let v = r?.held {
             if s[.fallingFast].on, v <= -s[.fallingFast].threshold {
                 rate = .fallingFast
             } else if s[.risingFast].on, v >= s[.risingFast].threshold {
@@ -279,7 +280,7 @@ public struct AlertEngine: Sendable {
             case .noData: return !noData
             case _ where !fresh: return nil
             case .low, .high: return r.flatMap { isBackByMargin(side, $0, s) } ?? false
-            case .fallingFast, .risingFast: return r?.rate == nil ? nil : rate?.side != side  // no rate: can't tell
+            case .fallingFast, .risingFast: return r?.held == nil ? nil : rate?.side != side  // not held: can't tell
             }
         }
         out += backSides.map(AlertEffect.back)
@@ -287,12 +288,13 @@ public struct AlertEngine: Sendable {
         // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
         let holding = level == nil && !noData && (episodes[.level].map { isOutOfRange($0.side, r, s, at: t) } ?? false)
         step(.level, level, holding: holding, at: t, rng: &rng, out: &out)
-        // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
-        // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
-        // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
-        if !(rules && fresh && r?.rate == nil) {
+        // a fresh reading without a held rate is no sign the fast change stopped: the rate episode stays (its repeat
+        // due, its hold not running down, a Mute holds); one without any trend (a LO / HI has none) also takes its
+        // notification away: at a LO the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads
+        // (#127, SPEC §1); a trend not held 5 min yet (after a gap or a LO) changes nothing
+        if !(rules && fresh) || r?.held != nil {
             step(.rate, rate, at: t, rng: &rng, out: &out)
-        } else if var e = episodes[.rate] {
+        } else if r?.rate == nil, var e = episodes[.rate] {
             hide(&e, at: t, out: &out)
             episodes[.rate] = e
         }
@@ -449,7 +451,7 @@ public struct AlertEngine: Sendable {
     /// rate) gets there within the falling rule's window: `newest + slope × min < high` (SPEC §2 `muteFallingHigh`).
     private func fallingBackMinutes(_ k: AlertKind, at t: Date) -> Int? {
         let s = inForce
-        guard s.muteFallingHigh.on, k == .high || k == .veryHigh, let v = Trend.clear(recent, at: t, up: false),
+        guard s.muteFallingHigh.on, k == .high || k == .veryHigh, let v = TrendRate.clear(recent, at: t, up: false),
             let r = recent.last
         else { return nil }
         let high = s[.high].threshold
@@ -464,7 +466,7 @@ public struct AlertEngine: Sendable {
     private func risingBackMinutes(_ k: AlertKind, _ e: Episode, at t: Date) -> Int? {
         let s = inForce
         let veryLowRepeat = k == .veryLow && s.wearersOwn && e.firedAt != nil && e.firedKind == .veryLow
-        guard s.muteRisingLow.on, k == .low || veryLowRepeat, let v = Trend.clear(recent, at: t, up: true),
+        guard s.muteRisingLow.on, k == .low || veryLowRepeat, let v = TrendRate.clear(recent, at: t, up: true),
             let r = recent.last
         else { return nil }
         let predicted = r.mgdl + v * s.muteRisingLow.min
@@ -501,7 +503,7 @@ public struct AlertEngine: Sendable {
             default: false
             }
         }
-        if byTrend, let r = recent.last { c.append(r.at.addingTimeInterval(Trend.maxAge + 1)) }
+        if byTrend, let r = recent.last { c.append(r.at.addingTimeInterval(TrendRate.clearMaxAge + 1)) }
         c += snoozes.wakeTimes(after: now, backMin: s.notificationActions.backMin)
         if let a = muteAllUntil, a > now, a < muteAllForever { c.append(a) }
         return c.filter { $0 > now }.min()

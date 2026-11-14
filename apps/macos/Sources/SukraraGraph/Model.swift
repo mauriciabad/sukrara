@@ -4,6 +4,7 @@
 import CoreGraphics
 import CoreText
 import Foundation
+import SukraraCore
 
 // MARK: - Model
 
@@ -119,16 +120,27 @@ struct TimeInRange: Codable, Equatable, Sendable {
     static let none = TimeInRange()
 }
 
-/// One reading for the graph: epoch seconds, mg/dL, rate mg/dL/min.
+/// One reading for the graph: epoch seconds, mg/dL, and its trend (contracts/trend): the rate in mg/dL/min and the
+/// text band the trend decided (hysteresis, the doubled arrow's hold).
 public struct GraphReading: Equatable, Sendable, Codable {
     public var t: TimeInterval
     public var v: Double
     public var rate: Double? = nil
+    /// The trend's band (-3 … 3); nil = the plain band of `rate` (a reading with nothing before it).
+    public var band: Int? = nil
     public var sgv: Int { Int(v.rounded()) }
-    public init(t: TimeInterval, v: Double, rate: Double? = nil) {
+    /// The band every arrow and word shows (nil = no trend).
+    public var trendBand: Int? { rate == nil ? nil : band ?? rate.map(TrendRate.plainBand) }
+    public init(t: TimeInterval, v: Double, rate: Double? = nil, band: Int? = nil) {
         self.t = t
         self.v = v
         self.rate = rate
+        self.band = band
+    }
+
+    /// A stored reading with its trend (`TrendRate.annotate` already ran: `AppModel`).
+    public init(_ r: Reading) {
+        self.init(t: r.t.timeIntervalSince1970, v: Double(r.mgdl), rate: r.trend?.rate, band: r.trend?.band)
     }
 }
 

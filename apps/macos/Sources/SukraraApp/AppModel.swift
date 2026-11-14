@@ -71,7 +71,11 @@ public final class AppModel {
     var unit: GlucoseUnit = .mgdl
     /// The card's settings (bands, hours…): this Mac's, or the wearer's mirrored ones (`GraphConfig.load`).
     var graph = GraphConfig() {
-        didSet { if graph != oldValue { refreshSlots() } }
+        didSet {
+            guard graph != oldValue else { return }
+            if graph.trend != oldValue.trend { trendChanged() }
+            refreshSlots()
+        }
     }
     /// The widgets' card settings: the same, with the Widgets place's own time shown and sensor time left.
     var widgetGraph = GraphConfig() {
@@ -296,12 +300,28 @@ public final class AppModel {
                 history.removeFirst(firstKept)
             }
         }
-        readings = sorted
+        readings = withTrend(sorted)
         now = clock.now
         if let latest = readings.last { alerts?.reading(latest) }
         refreshSlots()
         restartTicker()
     }
+
+    /// THE one place the Mac works out the trend (contracts/trend, #204): every reading the card, the menu bar, the
+    /// widgets, the alerts, the report and read aloud get has the trend of its own time, from the readings before it
+    /// with the *Trend arrow* setting in use (`graph.trend`: this Mac's, or the wearer's mirrored one). Sorted by time.
+    private func withTrend(_ list: [Reading]) -> [Reading] { TrendRate.annotate(list, setting: graph.trend) }
+
+    /// The *Trend arrow* setting changed: every arrow follows at once; the alert rules judge from the next reading
+    /// (contracts/alerts/SPEC.md §2 "Fast alerts read the trend").
+    private func trendChanged() {
+        readings = withTrend(readings)
+        history = withTrend(history)
+        feedWidget()
+    }
+
+    /// The newest reading with its trend (Settings › General › Trend arrow's preview).
+    var newestReading: Reading? { readings.last }
 
     func apply(sensor info: SensorInfo?) {
         sensor = info
@@ -313,7 +333,7 @@ public final class AppModel {
     /// The card's data at `now`, from the stores only (never made-up values on a release build).
     var cardData: CardData {
         CardData(
-            readings: readings.map { GraphReading(t: $0.t.timeIntervalSince1970, v: Double($0.mgdl), rate: $0.rate) },
+            readings: readings.map(GraphReading.init),
             marks: marks, sensor: sensor,
             alerts: cardAlerts, now: now.timeIntervalSince1970, slots: slots)
     }
@@ -324,7 +344,7 @@ public final class AppModel {
         guard let alerts, alerts.mirroring else {
             return CardAlertsMapping.of(alerts?.ui ?? .idle, settings: alerts?.settings, marks: marks, now: now)
         }
-        let latest = readings.last.map { GlucoseSample(at: $0.t, mgdl: Double($0.mgdl), rate: $0.rate) }
+        let latest = readings.last.map(GlucoseSample.init)
         return CardAlertsMapping.mirrored(
             latest: latest, settings: alerts.settings, marks: marks, sideMutes: alerts.mirroredSideMutes(at: now),
             muteAll: alerts.ui.muteAllUntil, now: now)
@@ -346,7 +366,7 @@ public final class AppModel {
     }
 
     static func graph(_ readings: [Reading]) -> [GraphReading] {
-        readings.map { GraphReading(t: $0.t.timeIntervalSince1970, v: Double($0.mgdl), rate: $0.rate) }
+        readings.map(GraphReading.init)
     }
 
     /// Counts every slot's numbers over the whole history once (the card surfaces only look them up).
@@ -378,7 +398,7 @@ public final class AppModel {
                 case .none: []
                 }
             guard let self, self.historySource == source else { return }
-            let sorted = loaded.sorted { $0.t < $1.t }
+            let sorted = self.withTrend(loaded)
             guard sorted != self.history else { return }
             self.history = sorted
             self.refreshSlots()

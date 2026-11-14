@@ -45,8 +45,8 @@ enum MenubarInk {
 struct MenubarTitle: Equatable {
     /// The picture beside (or instead of) the value.
     enum Mark: Equatable {
-        /// THE card arrow at the rate's angle (`GlucoseCard.trendImage`).
-        case arrow(Double)
+        /// THE card arrow at the trend's angle, doubled with its band (`GlucoseCard.trendImage`).
+        case arrow(rate: Double, band: Int)
         /// The "no trend" ring (a value without a rate).
         case ring
         /// An SF Symbol instead of a value (no readings for 20 min, the sensor ended), or beside the warm-up's time left.
@@ -121,7 +121,12 @@ struct MenubarTitle: Equatable {
             value = look.text ?? GlucoseCard.noValueText
             text = [value, look.arrowText].compactMap { $0 }.joined(separator: " ")
             switch look.trend {
-            case .arrow: mark = look.rate.map { .arrow($0) } ?? .ring
+            case .arrow:
+                if let rate = look.rate, let band = look.band {
+                    mark = .arrow(rate: rate, band: band)
+                } else {
+                    mark = .ring
+                }
             case .noTrend: mark = .ring
             case nil: mark = .none
             }

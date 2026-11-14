@@ -47,6 +47,7 @@ import Testing
             t("graph.sensorTime.place", MacSettings.menubarSensorTime),
             t("graph.sensorTime.place", MacSettings.widgetSensorTime),
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
+            t("glucose.trend", MacSettings.trend),
             t("setup.steps", MacSettings.setupSteps), t("source.jugglucoLan", MacSettings.jugglucoLan),
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
             t("report.days", MacSettings.reportDays),
@@ -184,6 +185,7 @@ import Testing
             "soundPack": AlertSoundSettings.packs + ["system", "none"],
             "settingsFrom": SettingsFrom.allCases.map(\.rawValue),
             "unit": GlucoseUnit.allCases.map(\.rawValue),
+            "trend": TrendSetting.allCases.map(\.rawValue),
             "markKind": MarkShow.kinds,
             "markPart": MarkShow.allParts,
         ]

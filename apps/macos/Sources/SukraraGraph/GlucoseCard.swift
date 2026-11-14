@@ -128,7 +128,8 @@ public enum GlucoseCard {
         format: (Int) -> String = { "\($0)" }
     ) -> GlucoseLook {
         Freshness.look(
-            sgv: latest?.sgv, t: latest?.t, rate: latest?.rate, now: now, ended: sensor?.ended == true,
+            sgv: latest?.sgv, t: latest?.t, rate: latest?.rate, band: latest?.trendBand, now: now,
+            ended: sensor?.ended == true,
             warmup: sensor?.warmup, format: format)
     }
 
@@ -358,15 +359,15 @@ public enum GlucoseCard {
             fr.strike ? "\(s) struck" : s)
         let x = box.minX + Ink.width(s, num) + numSize * 0.08
         let arrowSize = numSize * arrowFactor
-        if face.trend == .arrow, let rate = r.rate {
+        if face.trend == .arrow, let rate = face.rate, let band = face.band {
             ctx.saveGState()
             ctx.translateBy(x: x + arrowSize / 2, y: numBox.midY)
             ctx.rotate(by: CGFloat(TrendAngle.deg(rate)) * .pi / 180)
-            drawArrow(ctx, scale: arrowSize * 1.05, color: color, double: TrendAngle.isDouble(rate))
+            drawArrow(ctx, scale: arrowSize * 1.05, color: color, double: TrendAngle.isDouble(band: band))
             ctx.restoreGState()
             rec.add(
                 "value.trend", CGRect(x: x, y: numBox.midY - arrowSize / 2, width: arrowSize, height: arrowSize),
-                TrendAngle.isDouble(rate) ? "arrow double" : "arrow single")
+                TrendAngle.isDouble(band: band) ? "arrow double" : "arrow single")
         } else {
             // no trend (no rate, or the value is struck through): the hollow ring in the arrow's place
             ctx.setStrokeColor(color)

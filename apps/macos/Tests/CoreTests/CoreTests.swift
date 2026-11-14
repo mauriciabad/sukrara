@@ -34,14 +34,14 @@ import Testing
 
 @Suite struct ReadingCodingTests {
     @Test func encodesEpochMillisecondsWhateverTheEncoderStrategy() throws {
-        let reading = Reading(t: Date(timeIntervalSince1970: 1_800_000_000.123), mgdl: 104, rate: -1.5)
+        let reading = Reading(t: Date(timeIntervalSince1970: 1_800_000_000.123), mgdl: 104, sensorRate: -1.5)
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         encoder.dateEncodingStrategy = .iso8601  // must not matter
         let json = String(decoding: try encoder.encode(reading), as: UTF8.self)
         #expect(json == #"{"mgdl":104,"rate":-1.5,"t":1800000000123}"#)
         let back = try JSONDecoder().decode(Reading.self, from: Data(json.utf8))
-        #expect(back.mgdl == 104 && back.rate == -1.5)
+        #expect(back.mgdl == 104 && back.sensorRate == -1.5)
         #expect(abs(back.t.timeIntervalSince1970 - 1_800_000_000.123) < 0.0005)
     }
 

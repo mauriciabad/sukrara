@@ -22,7 +22,7 @@ import Testing
     /// numbers differ from the last 24 hours'.
     func month() -> [Reading] {
         stride(from: 30 * 86_400.0, to: 600, by: -900).map { ago in
-            Reading(t: clock.now.addingTimeInterval(-ago), mgdl: ago > 86_400 ? 220 : 110, rate: 0)
+            Reading(t: clock.now.addingTimeInterval(-ago), mgdl: ago > 86_400 ? 220 : 110, sensorRate: 0)
         }
     }
 
@@ -91,7 +91,7 @@ import Testing
         #expect(model.sensor?.end == start + 15 * 86_400 && model.cardData.sensor == model.sensor)
         var snapshot = FollowerSnapshot.empty
         snapshot.link = .following(wearer: "Ana", canWrite: false)
-        snapshot.readings = [Reading(t: clock.now, mgdl: 200, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now, mgdl: 200, sensorRate: 0)]
         snapshot.sensor = WearerSensor(start: 1000, end: 2000, warmupEnd: 1100)
         model.apply(snapshot)
         #expect(model.sensor?.start == 1000)  // the wearer's, never Juggluco's
@@ -123,7 +123,7 @@ import Testing
         var snapshot = FollowerSnapshot.empty
         snapshot.link = .following(wearer: "Ana", canWrite: false)
         snapshot.wearer = Profile(name: "Ana", avatar: nil)
-        snapshot.readings = [Reading(t: clock.now.addingTimeInterval(-30), mgdl: 200, rate: 0)]
+        snapshot.readings = [Reading(t: clock.now.addingTimeInterval(-30), mgdl: 200, sensorRate: 0)]
         model.apply(snapshot)
         #expect(model.readings.map(\.mgdl) == [200])
         #expect(model.lanPausedFor == "Ana")
