@@ -27,12 +27,16 @@ object AlertLiveValue {
     /** No update this soon (s) after the alert rang. */
     const val AFTER_RING_S = 10L
 
-    /** What the notification says about a reading: its value, its arrow (or the ring), its time shown, struck. */
+    /**
+     * What the notification says about a reading: its value, its arrow (or the ring), its time shown, struck, and
+     * whether it is the sensor's LO (-1) or HI (1), said in words whatever the number.
+     */
     data class Look(
         val mgdl: Int,
         val arrow: String?,
         val late: Boolean,
         val struck: Boolean,
+        val bound: Int = 0,
     )
 
     /** [r]'s look at [now], the card's ([GlucoseCard.face]). */
@@ -41,7 +45,19 @@ object AlertLiveValue {
         now: Long,
     ): Look {
         val face = GlucoseCard.face(GlucosePoint(r.t, r.mgdl, r.rate), now, null, CardSurface.ALERT_NOTIFICATION, GlucoseUnit.MGDL)
-        return Look(r.mgdl, face.arrowText, face.fresh.showTime, face.strike)
+        return Look(
+            r.mgdl,
+            face.arrowText,
+            face.fresh.showTime,
+            face.strike,
+            if (r.isLo) {
+                -1
+            } else if (r.isHi) {
+                1
+            } else {
+                0
+            },
+        )
     }
 
     /** Whether the notification showing [shown] is updated to [next]. */
@@ -52,18 +68,19 @@ object AlertLiveValue {
         abs(next.mgdl - shown.mgdl) >= MIN_MOVE_MGDL ||
             next.arrow != shown.arrow ||
             next.late != shown.late ||
-            next.struck != shown.struck
+            next.struck != shown.struck ||
+            next.bound != shown.bound
 
     /**
      * Whether to update now: something [changed] and the alert didn't ring in the last [AFTER_RING_S] ([rangAt], epoch
-     * s; null = it didn't ring since this notification was shown).
+     * s; null = it didn't ring since this notification was shown; one after [now], the clock set back, is long past).
      */
     fun due(
         shown: Look,
         next: Look,
         rangAt: Long?,
         now: Long,
-    ): Boolean = (rangAt == null || now - rangAt >= AFTER_RING_S) && changed(shown, next)
+    ): Boolean = (rangAt == null || now - rangAt !in 0 until AFTER_RING_S) && changed(shown, next)
 
     /** When [r]'s look changes by itself next (the card's next freshness step after [now]), or null. */
     fun nextStepAt(

@@ -61,6 +61,19 @@ class AlertLiveValueTest {
         assertFalse("nothing changed", AlertLiveValue.due(shown, at(72), rangAt = null, now = t))
     }
 
+    /** #195 review: the sensor's LO / HI is said in words ("LO · below 40"): a number after it is news, however close. */
+    @Test fun `leaving or reaching LO or HI changes it, without a rate too`() {
+        assertTrue("LO to 43", AlertLiveValue.changed(at(39, null), at(43, null)))
+        assertTrue("43 to LO", AlertLiveValue.changed(at(43, null), at(39, null)))
+        assertTrue("HI to 398", AlertLiveValue.changed(at(401, null), at(398, null)))
+        assertFalse("LO stays LO", AlertLiveValue.changed(at(39, null), at(39, null)))
+    }
+
+    /** #195 review: the clock set back after a ring (the ring now looks in the future) never holds the updates back. */
+    @Test fun `a ring in the future after the clock went back doesn't hold updates`() {
+        assertTrue(AlertLiveValue.due(at(70), at(80), rangAt = t + 3600, now = t))
+    }
+
     /** The registered glyph surface `alert-notification` (contracts/graph/surfaces): the card's look, asked as itself. */
     @Test fun `the look is the card's, asked as the alert notification surface`() {
         val seen = mutableSetOf<CardSurface>()

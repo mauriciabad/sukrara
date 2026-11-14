@@ -18,30 +18,34 @@ enum AlertLiveValue {
     /// the same rule).
     static let afterRing: TimeInterval = 10
 
-    /// What the notification says about a reading: its value, its arrow (or the ring), its time shown, stale.
+    /// What the notification says about a reading: its value, its arrow (or the ring), its time shown, stale, and
+    /// whether it is the sensor's LO (-1) or HI (1), said in words whatever the number.
     struct Look: Equatable {
         var mgdl: Int
         var arrow: String?
         var late: Bool
         var stale: Bool
+        var bound = 0
     }
 
     /// `r`'s look at `now`, the card's.
     static func look(_ r: GlucoseSample, now: Date) -> Look {
         let face = AlertText.look(r, now: now)
-        return Look(mgdl: Int(r.mgdl.rounded()), arrow: face.arrowText, late: face.fresh != .fresh, stale: face.strike)
+        return Look(
+            mgdl: Int(r.mgdl.rounded()), arrow: face.arrowText, late: face.fresh != .fresh, stale: face.strike,
+            bound: r.isLo ? -1 : r.isHi ? 1 : 0)
     }
 
     /// Whether the notification showing `shown` is updated to `next`.
     static func changed(_ shown: Look, _ next: Look) -> Bool {
         abs(next.mgdl - shown.mgdl) >= minMoveMgdl || next.arrow != shown.arrow || next.late != shown.late
-            || next.stale != shown.stale
+            || next.stale != shown.stale || next.bound != shown.bound
     }
 
     /// Whether to update now: something changed and the alert didn't ring in the last `afterRing` (`rangAt` nil = it
-    /// didn't ring since this notification was shown).
+    /// didn't ring since this notification was shown; one after `now`, the clock set back, is long past).
     static func due(_ shown: Look, _ next: Look, rangAt: Date?, now: Date) -> Bool {
-        (rangAt.map { now.timeIntervalSince($0) >= afterRing } ?? true) && changed(shown, next)
+        (rangAt.map { !(0..<afterRing).contains(now.timeIntervalSince($0)) } ?? true) && changed(shown, next)
     }
 
     /// When `r`'s look changes by itself next (the card's next freshness step after `now`), or nil.

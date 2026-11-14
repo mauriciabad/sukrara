@@ -64,6 +64,19 @@ import UserNotifications
         #expect(!AlertLiveValue.due(look(70), look(72), rangAt: nil, now: now))
     }
 
+    /// #195 review: the sensor's LO / HI is said in words ("LO · below 40"): a number after it is news, however close.
+    @Test func leavingOrReachingLoOrHiChangesItWithoutARateToo() {
+        #expect(AlertLiveValue.changed(look(39, rate: nil), look(43, rate: nil)))
+        #expect(AlertLiveValue.changed(look(43, rate: nil), look(39, rate: nil)))
+        #expect(AlertLiveValue.changed(look(401, rate: nil), look(398, rate: nil)))
+        #expect(!AlertLiveValue.changed(look(39, rate: nil), look(39, rate: nil)))
+    }
+
+    /// #195 review: the clock set back after a ring (the ring now looks in the future) never holds the updates back.
+    @Test func aRingInTheFutureAfterTheClockWentBackDoesntHoldUpdates() {
+        #expect(AlertLiveValue.due(look(70), look(80), rangAt: clock.now.addingTimeInterval(3600), now: clock.now))
+    }
+
     /// The registered glyph surface `alert-notification`: the card's look, asked as itself.
     @Test func theLookIsTheCardsAskedAsTheAlertNotificationSurface() {
         let r = GlucoseSample(at: clock.now.addingTimeInterval(-400), mgdl: 70, rate: -2.5)
