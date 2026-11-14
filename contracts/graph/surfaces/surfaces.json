@@ -372,8 +372,7 @@
         "rangeSide",
         "trendImage",
         "noReadingsSymbol",
-        "pillRect",
-        "chartRects",
+        "picture",
         "chartSpan",
         "treatmentBadge",
         "spokenReading"

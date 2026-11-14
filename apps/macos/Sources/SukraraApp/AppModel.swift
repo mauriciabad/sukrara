@@ -16,10 +16,26 @@ public final class AppModel {
     public let plan: LaunchPlan
     /// The monitored readings of the last 24 hours, oldest first: the followed wearer's, else Juggluco's on this
     /// network.
-    private(set) var readings: [Reading] = []
+    private(set) var readings: [Reading] = [] {
+        didSet {
+            cardReadings = Self.graph(readings)
+            panelReadings = Self.graph(allReadings)
+        }
+    }
     /// The source's stored history (up to 31 days), loaded when monitoring starts and again when the panel opens: the
     /// panel's chart scrolls through it, and every surface's 7 / 14 / 30-day slots are counted over it (`slots`).
-    private(set) var history: [Reading] = []
+    private(set) var history: [Reading] = [] {
+        didSet {
+            historyVersion += 1
+            panelReadings = Self.graph(allReadings)
+        }
+    }
+    /// `readings` and `allReadings` as the card draws them, made once per change: the panel's chart redraws on every
+    /// scroll step and must not convert a month of readings each time.
+    private var cardReadings: [GraphReading] = []
+    private var panelReadings: [GraphReading] = []
+    /// Counts the changes of `history`: a trend worked out off the main thread lands only on the history it was for.
+    @ObservationIgnored private var historyVersion = 0
     /// Every slot's numbers over `allReadings`, counted on each new reading, history load and card settings change:
     /// the menu bar, panel and widgets show the same rings.
     private(set) var slots: SlotNumbers?
@@ -310,14 +326,39 @@ public final class AppModel {
     /// THE one place the Mac works out the trend (contracts/trend, #204): every reading the card, the menu bar, the
     /// widgets, the alerts, the report and read aloud get has the trend of its own time, from the readings before it
     /// with the *Trend arrow* setting in use (`graph.trend`: this Mac's, or the wearer's mirrored one). Sorted by time.
-    private func withTrend(_ list: [Reading]) -> [Reading] { TrendRate.annotate(list, setting: graph.trend) }
+    private func withTrend(_ list: [Reading]) -> [Reading] { Self.withTrend(list, setting: graph.trend) }
 
-    /// The *Trend arrow* setting changed: every arrow follows at once; the alert rules judge from the next reading
-    /// (contracts/alerts/SPEC.md §2 "Fast alerts read the trend").
+    nonisolated private static func withTrend(_ list: [Reading], setting: TrendSetting) -> [Reading] {
+        TrendRate.annotate(list, setting: setting)
+    }
+
+    /// `withTrend` off the main thread, for the month of history (0.04 s in a release build, 0.8 s in a debug one: on
+    /// the main thread it stalled the panel as it opened, #181): the same function, so the same trends.
+    @concurrent nonisolated private static func withTrendInBackground(_ list: [Reading], setting: TrendSetting) async
+        -> [Reading]
+    {
+        withTrend(list, setting: setting)
+    }
+
+    /// The *Trend arrow* setting changed: every arrow follows at once (the history's as soon as it is worked out); the
+    /// alert rules judge from the next reading (contracts/alerts/SPEC.md §2 "Fast alerts read the trend").
     private func trendChanged() {
         readings = withTrend(readings)
-        history = withTrend(history)
         feedWidget()
+        trendHistory()
+    }
+
+    /// The history's trends with the setting in use, worked out off the main thread; again when the history changed
+    /// meanwhile (a reading joined it), dropped when the setting changed again (its own pass follows).
+    private func trendHistory() {
+        let setting = graph.trend, list = history, version = historyVersion
+        Task { [weak self] in
+            let annotated = await Self.withTrendInBackground(list, setting: setting)
+            guard let self, self.graph.trend == setting else { return }
+            guard self.historyVersion == version else { return self.trendHistory() }
+            self.history = annotated
+            self.feedWidget()
+        }
     }
 
     /// The newest reading with its trend (Settings › Readings › Trend arrow's preview).
@@ -333,7 +374,7 @@ public final class AppModel {
     /// The card's data at `now`, from the stores only (never made-up values on a release build).
     var cardData: CardData {
         CardData(
-            readings: readings.map(GraphReading.init),
+            readings: cardReadings,
             marks: marks, sensor: sensor,
             alerts: cardAlerts, now: now.timeIntervalSince1970, slots: slots)
     }
@@ -355,7 +396,7 @@ public final class AppModel {
     var panelData: CardData {
         var data = cardData
         guard !history.isEmpty else { return data }
-        data.readings = Self.graph(allReadings)
+        data.readings = panelReadings
         return data
     }
 
@@ -371,11 +412,11 @@ public final class AppModel {
 
     /// Counts every slot's numbers over the whole history once (the card surfaces only look them up).
     private func refreshSlots() {
-        let all = monitoring ? allReadings : []
+        let all = monitoring ? panelReadings : []
         let new =
             all.isEmpty
             ? nil
-            : SlotNumbers.of(Self.graph(all), now: now.timeIntervalSince1970, configs: [graph, widgetGraph])
+            : SlotNumbers.of(all, now: now.timeIntervalSince1970, configs: [graph, widgetGraph])
         if new != slots { slots = new }
     }
 
@@ -398,13 +439,19 @@ public final class AppModel {
                 case .none: []
                 }
             guard let self, self.historySource == source else { return }
-            let sorted = self.withTrend(loaded)
-            guard sorted != self.history else { return }
+            let setting = self.graph.trend, current = self.history, version = self.historyVersion
+            let sorted = await Self.withTrendInBackground(loaded, setting: setting)
+            guard self.historySource == source, self.historyVersion == version, self.graph.trend == setting,
+                await Self.differ(sorted, current)
+            else { return }
             self.history = sorted
             self.refreshSlots()
             self.feedWidget()
         }
     }
+
+    /// Whether a freshly loaded month differs from the one shown, compared off the main thread.
+    @concurrent nonisolated private static func differ(_ a: [Reading], _ b: [Reading]) async -> Bool { a != b }
 
     /// Nobody is followed and nothing is on its way (not following, declined, revoked, invite used, broken).
     var needsFollow: Bool {
@@ -504,6 +551,7 @@ public final class AppModel {
             try? await Task.sleep(for: .seconds(wait), tolerance: .seconds(1))
             guard !Task.isCancelled, let self else { return }
             self.now = self.clock.now
+            self.refreshSlots()  // counted at the card's now: the panel takes them as they are (`CardData.metrics`)
             self.restartTicker()
         }
     }

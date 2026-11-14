@@ -79,6 +79,27 @@ import Testing
     @MainActor
     func deliver(_ e: NSEvent) { NSApp.sendEvent(e) }
 
+    /// Opening the panel puts Sukrara in front, with another app there: macOS sends trackpad gestures only to the app
+    /// in front, so a pinch over the chart otherwise goes to the app behind (#181, 2026-11-14: "I cannot pinch to
+    /// zoom"; the cooperative `NSApp.activate()` left it behind). The front goes back to that app after. A run without
+    /// another app in front (no window server session) has nothing to check.
+    @Test @MainActor func openingThePanelPutsSukraraInFront() throws {
+        _ = NSApplication.shared
+        NSApp.setActivationPolicy(.accessory)  // the app's own policy (LSUIElement)
+        let me = ProcessInfo.processInfo.processIdentifier
+        guard let other = NSWorkspace.shared.frontmostApplication, other.processIdentifier != me else { return }
+        defer {
+            NSApp.yieldActivation(to: other)
+            other.activate()
+        }
+        StatusItemController.bringToFront()
+        let deadline = Date().addingTimeInterval(3)
+        while NSWorkspace.shared.frontmostApplication?.processIdentifier != me, Date() < deadline {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        }
+        #expect(NSWorkspace.shared.frontmostApplication?.processIdentifier == me)
+    }
+
     /// One window for every gesture in turn.
     @Test @MainActor func gesturesReachTheChartThroughTheEventLoop() throws {
         let (window, calls, done) = chart()

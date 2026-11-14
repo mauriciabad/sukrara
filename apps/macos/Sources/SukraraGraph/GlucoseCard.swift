@@ -574,6 +574,19 @@ public enum GlucoseCard {
         metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
         overflow: CGFloat = 0, view: ChartView? = nil
     ) -> CGImage? {
+        render(
+            size: size, scale: scale, readings: readings, marks: marks, now: now, st, pal, background: background,
+            surface: surface, metricsOf: metricsOf, alerts: alerts, overflow: overflow, view: view
+        )?.image
+    }
+
+    /// `image` with what it laid out (one drawing for both).
+    static func render(
+        size: CGSize, scale: CGFloat = 2, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
+        _ st: CardStyle, _ pal: GraphPalette, background: CGColor? = nil, surface: CardSurface,
+        metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = nil, alerts: CardAlerts = .none,
+        overflow: CGFloat = 0, view: ChartView? = nil
+    ) -> (image: CGImage, layout: CardLayout)? {
         let pw = max(16, Int((size.width + 2 * overflow) * scale)),
             ph = max(16, Int((size.height + 2 * overflow) * scale))
         guard
@@ -589,11 +602,11 @@ public enum GlucoseCard {
             ctx.fill(CGRect(x: 0, y: 0, width: size.width + 2 * overflow, height: size.height + 2 * overflow))
         }
         ctx.translateBy(x: overflow, y: overflow)
-        draw(
+        let layout = draw(
             ctx, size: size, readings: readings, marks: marks, now: now, st, pal, surface: surface, part: .all,
             metricsOf: metricsOf,
             alerts: alerts, view: view)
-        return ctx.makeImage()
+        return ctx.makeImage().map { ($0, layout) }
     }
 }
 
@@ -630,8 +643,12 @@ public struct CardData: Sendable, Equatable, Codable {
     public var latest: GraphReading? { readings.max { $0.t < $1.t } }
 
     /// A slot's numbers: the stored history's for a window longer than `readings` cover (counted for these ranges in
-    /// the last day), else counted from `readings` at `now` (exact, also in a widget frame hours ahead).
+    /// the last day), else counted from `readings` at `now` (exact, also in a widget frame hours ahead). Numbers
+    /// counted over these same readings at this same moment are taken as they are: the same count, not done again.
     func metrics(_ spec: RingSpec, _ bands: Bands) -> GlucoseMetrics {
+        if let slots, slots.at == now, slots.counted == readings.count, let m = slots.metrics(spec.window, bands) {
+            return m
+        }
         let covered = readings.map(\.t).min().map { now - $0 } ?? 0
         if spec.window > covered + 3600, let slots, now - slots.at < 86_400, now >= slots.at - 3600,
             let m = slots.metrics(spec.window, bands)
@@ -655,6 +672,9 @@ public struct SlotNumbers: Sendable, Equatable, Codable {
     var entries: [Entry]
     /// When they were counted (epoch s): the windows end then.
     public var at: TimeInterval
+    /// How many readings they were counted over (with `at`: a card drawn over that very history at that moment takes
+    /// them as they are instead of counting again; the panel's chart redraws on every scroll step).
+    var counted: Int
 
     /// The numbers for every window a card with any of `configs` can show (its slots, also those beyond the ring
     /// count a place may show, and the last-treatment slot's ring), over `history` up to `now`.
@@ -670,7 +690,7 @@ public struct SlotNumbers: Sendable, Equatable, Codable {
                         metrics: GlucoseMetrics.of(history, from: now - window, to: now, bands: bands)))
             }
         }
-        return SlotNumbers(entries: entries, at: now)
+        return SlotNumbers(entries: entries, at: now, counted: history.count)
     }
 
     func metrics(_ window: TimeInterval, _ bands: Bands) -> GlucoseMetrics? {
@@ -766,26 +786,30 @@ extension GlucoseCard {
         return surface == .menubarCard ? p.onModule(contrast: contrast) : p
     }
 
-    /// Where `surface`'s card at `size` draws its plot and, while `view` scrolls or zooms it, the "Now" pill (points
-    /// from the top left; nil when not drawn). The panel turns gestures over the plot into a `ChartView` and puts its
-    /// "Now" button on the pill.
-    public static func chartRects(
-        surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit,
-        view: ChartView? = nil, words: CardWords = .current
-    ) -> (plot: CGRect?, now: CGRect?) {
-        guard
-            let ctx = CGContext(
-                data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return (nil, nil) }
+    /// What a pressable, scrollable card (the panel) needs from one drawing: the card as a bitmap (as `image`), and
+    /// where it drew its plot, the "Now" pill (while `view` scrolls or zooms it) and its status pill (Eat carbs, Take
+    /// insulin, a mute), in points from the top left; nil when not drawn. The panel turns gestures over the plot into a
+    /// `ChartView` and puts its buttons on the pills. One drawing per frame: a scroll redraws only this.
+    public struct Picture {
+        public let image: CGImage?
+        public let plot: CGRect?
+        public let now: CGRect?
+        public let pill: CGRect?
+    }
+
+    public static func picture(
+        surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit, dark: Bool,
+        scale: CGFloat = 2, view: ChartView? = nil, contrast: Bool = false, words: CardWords = .current
+    ) -> Picture {
         var style = surface.style(config, PlaceOverrides(), sensor: data.sensor, words: words)
         style.unit = unit
-        let layout = draw(
-            ctx, size: size, readings: data.readings, marks: data.marks, now: data.now, style,
-            GraphPalette.of(dark: false), surface: surface, part: .all, metricsOf: data.metrics, alerts: data.alerts,
-            view: view)
-        return (layout.first("chart.plot")?.box, layout.first("chart.now")?.box)
+        let r = render(
+            size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
+            Self.palette(surface, dark: dark, contrast: contrast), surface: surface, metricsOf: data.metrics,
+            alerts: data.alerts, view: view)
+        return Picture(
+            image: r?.image, plot: r?.layout.first("chart.plot")?.box, now: r?.layout.first("chart.now")?.box,
+            pill: r?.layout.first("value.pill")?.box)
     }
 
     /// The length of `surface`'s chart window (s) with `config`: what a zoom starts from (nil = no chart).

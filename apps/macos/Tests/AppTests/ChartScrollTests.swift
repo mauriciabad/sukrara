@@ -51,6 +51,21 @@ import Testing
         #expect(abs((s.end ?? now) - span * (1 - anchor) - at) < 1)
     }
 
+    /// A pinch as the trackpad sends it (its start and end carry no magnification), then a two-finger swipe: the pinch
+    /// leaves the length it reached, the swipe pans at that length and never changes it (the PoC's ScrollSelfTest).
+    @Test func aPinchThenASwipeDontFight() {
+        var s = ChartScroll()
+        s.zoom(1, anchor: 0.5, default: def, first: first, now: now)  // the pinch begins
+        #expect(!s.away)
+        for _ in 0..<5 { s.zoom(1.1, anchor: 0.5, default: def, first: first, now: now) }
+        s.zoom(1, anchor: 0.5, default: def, first: first, now: now)  // and ends
+        let span = s.span(def), end = s.end ?? now
+        #expect(abs(span - def / pow(1.1, 5)) < 1)
+        s.by(-600, minEnd: first + span, now: now)
+        #expect(s.span(def) == span)
+        #expect(abs((s.end ?? now) - (end - 600)) < 1e-6)
+    }
+
     @Test func voiceOverStepsDoubleHalveAndPage() {
         var s = ChartScroll()
         s.step(out: true, default: def, first: first, now: now)
@@ -76,12 +91,13 @@ import Testing
         }
         let data = CardData(readings: readings, now: now)
         let size = CGSize(width: 340, height: 196)
-        let still = GlucoseCard.chartRects(
-            surface: .menubarCard, size: size, config: GraphConfig(), data: data, unit: .mgdl)
+        let still = GlucoseCard.picture(
+            surface: .menubarCard, size: size, config: GraphConfig(), data: data, unit: .mgdl, dark: false)
         #expect(still.plot != nil && still.now == nil)
-        let scrolled = GlucoseCard.chartRects(
-            surface: .menubarCard, size: size, config: GraphConfig(), data: data, unit: .mgdl,
+        let scrolled = GlucoseCard.picture(
+            surface: .menubarCard, size: size, config: GraphConfig(), data: data, unit: .mgdl, dark: false,
             view: ChartView(end: now - day, now: 1))
+        #expect(still.image != nil && scrolled.image != nil)
         let plot = try? #require(scrolled.plot), pill = try? #require(scrolled.now)
         #expect(plot.map { p in pill.map { p.contains($0) } ?? false } == true)
         #expect(

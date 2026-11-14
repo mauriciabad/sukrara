@@ -61,7 +61,7 @@ enum Blooms {
         _ ctx: CGContext, _ b: Bloom, cx: CGFloat, cy: CGFloat, r: CGFloat, isLeft: Bool, _ pal: GraphPalette,
         alpha: CGFloat
     ) {
-        faded(ctx, alpha) {
+        faded(ctx, alpha, around(cx, cx, cy, r)) {
             if b == .lavender {
                 spike(ctx, at(cx, cy, r * 1.25, isLeft ? 214 : -34), r, isLeft ? -56 : -124, pal)
             } else {
@@ -82,11 +82,19 @@ enum Blooms {
             return
         }
         let p1 = at(lx, cy, r * 1.25, -39), p2 = at(rx, cy, r * 1.25, 219)
-        faded(ctx, max(la, ra)) { centerPiece(ctx, b, CGPoint(x: (p1.x + p2.x) / 2, y: p1.y), unit(r, 1.3), pal) }
+        faded(ctx, max(la, ra), around(lx, rx, cy, r)) {
+            centerPiece(ctx, b, CGPoint(x: (p1.x + p2.x) / 2, y: p1.y), unit(r, 1.3), pal)
+        }
     }
 
-    private static func faded(_ ctx: CGContext, _ a: CGFloat, _ block: () -> Void) {
-        ctx.saveGState(); ctx.setAlpha(a); ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+    /// The room a flower drawn by rings of outer radius `r` centred between `lx` and `rx` can take: what a layer needs
+    /// (a layer the size of the whole card made every scroll step of the panel slow).
+    private static func around(_ lx: CGFloat, _ rx: CGFloat, _ cy: CGFloat, _ r: CGFloat) -> CGRect {
+        CGRect(x: min(lx, rx) - 2.5 * r, y: cy - 2.5 * r, width: abs(rx - lx) + 5 * r, height: 5 * r)
+    }
+
+    private static func faded(_ ctx: CGContext, _ a: CGFloat, _ room: CGRect, _ block: () -> Void) {
+        ctx.saveGState(); ctx.setAlpha(a); ctx.beginTransparencyLayer(in: room, auxiliaryInfo: nil)
         block()
         ctx.endTransparencyLayer(); ctx.restoreGState()
     }
@@ -326,7 +334,9 @@ enum Laurel {
     ) {
         ctx.saveGState()
         ctx.setAlpha(color.alpha)
-        ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+        // the layer only as large as the wreath can reach (a card-sized one made every scroll step of the panel slow)
+        ctx.beginTransparencyLayer(
+            in: CGRect(x: c.x - 2.5 * r, y: c.y - 2.5 * r, width: 5 * r, height: 5 * r), auxiliaryInfo: nil)
         let col = color.copy(alpha: 1) ?? color
         branch(ctx, c, r, col, isLeft: true, left)
         branch(ctx, c, r, col, isLeft: false, right)
@@ -379,7 +389,9 @@ enum TirRing {
         let sw = r * 0.2
         let rr = r - sw / 2
         let crownW = r * 0.74, crownBottom = c.y - r * 0.72
-        if mark == .crown { ctx.beginTransparencyLayer(auxiliaryInfo: nil) }
+        // the crown's layers only as large as the ring and its crown (not the whole card: the panel redraws per scroll)
+        let room = CGRect(x: c.x - 1.6 * r, y: c.y - 1.6 * r, width: 3.2 * r, height: 3.2 * r)
+        if mark == .crown { ctx.beginTransparencyLayer(in: room, auxiliaryInfo: nil) }
         ctx.saveGState()
         ctx.setLineWidth(sw)
         ctx.setLineCap(.butt)
@@ -421,7 +433,7 @@ enum TirRing {
             // faded as one layer: fill and outline overlapping at partial alpha would show a darker rim
             ctx.saveGState()
             ctx.setAlpha(emphasis)
-            ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+            ctx.beginTransparencyLayer(in: room, auxiliaryInfo: nil)
             Crown.fill(ctx, x: c.x, bottom: crownBottom, w: crownW, pal.knockout ? CGColor(gray: 1, alpha: 1) : pal.ink)
             ctx.endTransparencyLayer()
             ctx.restoreGState()

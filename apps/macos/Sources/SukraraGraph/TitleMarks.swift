@@ -55,23 +55,4 @@ extension GlucoseCard {
         }
         return ctx.makeImage()
     }
-
-    /// Where `surface`'s card at `size` draws its status pill (Eat carbs, Take insulin, a mute), in points from the
-    /// top left; nil without a pill. Surfaces that make the pill pressable put their button there (the panel).
-    public static func pillRect(
-        surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit
-    ) -> CGRect? {
-        guard
-            let ctx = CGContext(
-                data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return nil }
-        var style = surface.style(config, PlaceOverrides(), sensor: data.sensor)
-        style.unit = unit
-        let layout = draw(
-            ctx, size: size, readings: data.readings, marks: data.marks, now: data.now, style,
-            GraphPalette.of(dark: false), surface: surface, part: .all, metricsOf: data.metrics, alerts: data.alerts)
-        return layout.first("value.pill")?.box
-    }
 }
